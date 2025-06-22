@@ -1,0 +1,1096 @@
+﻿<Project DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003" ToolsVersion="12.0">
+  <PropertyGroup>
+    <ProjectType>Local</ProjectType>
+    <ProductVersion>9.0.30729</ProductVersion>
+    <SchemaVersion>2.0</SchemaVersion>
+    <ProjectGuid>{6234888C-E74D-4B3F-874E-4396EC85D8A8}</ProjectGuid>
+    <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
+    <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
+    <ApplicationIcon>app.ico</ApplicationIcon>
+    <AssemblyKeyContainerName>
+    </AssemblyKeyContainerName>
+    <AssemblyName>Merlin</AssemblyName>
+    <AssemblyOriginatorKeyFile>
+    </AssemblyOriginatorKeyFile>
+    <DefaultClientScript>JScript</DefaultClientScript>
+    <DefaultHTMLPageLayout>Grid</DefaultHTMLPageLayout>
+    <DefaultTargetSchema>IE50</DefaultTargetSchema>
+    <DelaySign>false</DelaySign>
+    <OutputType>WinExe</OutputType>
+    <RootNamespace>Merlin</RootNamespace>
+    <RunPostBuildEvent>OnBuildSuccess</RunPostBuildEvent>
+    <StartupObject>
+    </StartupObject>
+    <FileUpgradeFlags>
+    </FileUpgradeFlags>
+    <UpgradeBackupLocation>
+    </UpgradeBackupLocation>
+    <SccProjectName>
+    </SccProjectName>
+    <SccLocalPath>
+    </SccLocalPath>
+    <SccAuxPath>
+    </SccAuxPath>
+    <SccProvider>
+    </SccProvider>
+    <TargetZone>LocalIntranet</TargetZone>
+    <GenerateManifests>false</GenerateManifests>
+    <ManifestCertificateThumbprint>8AA5C4C76E402E8D24A59A1E20A3F80BEF9C8546</ManifestCertificateThumbprint>
+    <ManifestKeyFile>Client_TemporaryKey.pfx</ManifestKeyFile>
+    <SignManifests>false</SignManifests>
+    <IsWebBootstrapper>true</IsWebBootstrapper>
+    <OldToolsVersion>3.5</OldToolsVersion>
+    <TargetFrameworkVersion>v4.8</TargetFrameworkVersion>
+    <SignAssembly>false</SignAssembly>
+    <PublishUrl>http://localhost/Merlin/</PublishUrl>
+    <Install>true</Install>
+    <InstallFrom>Web</InstallFrom>
+    <UpdateEnabled>true</UpdateEnabled>
+    <UpdateMode>Foreground</UpdateMode>
+    <UpdateInterval>7</UpdateInterval>
+    <UpdateIntervalUnits>Days</UpdateIntervalUnits>
+    <UpdatePeriodically>false</UpdatePeriodically>
+    <UpdateRequired>false</UpdateRequired>
+    <MapFileExtensions>true</MapFileExtensions>
+    <ApplicationRevision>0</ApplicationRevision>
+    <ApplicationVersion>1.0.0.%2a</ApplicationVersion>
+    <UseApplicationTrust>false</UseApplicationTrust>
+    <BootstrapperEnabled>true</BootstrapperEnabled>
+    <TargetFrameworkProfile />
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
+    <OutputPath>bin\Debug\</OutputPath>
+    <AllowUnsafeBlocks>false</AllowUnsafeBlocks>
+    <BaseAddress>285212672</BaseAddress>
+    <CheckForOverflowUnderflow>false</CheckForOverflowUnderflow>
+    <ConfigurationOverrideFile>
+    </ConfigurationOverrideFile>
+    <DefineConstants>DEBUG;TRACE</DefineConstants>
+    <DocumentationFile>
+    </DocumentationFile>
+    <DebugSymbols>true</DebugSymbols>
+    <FileAlignment>4096</FileAlignment>
+    <NoStdLib>false</NoStdLib>
+    <NoWarn>
+    </NoWarn>
+    <Optimize>false</Optimize>
+    <RegisterForComInterop>false</RegisterForComInterop>
+    <RemoveIntegerChecks>false</RemoveIntegerChecks>
+    <TreatWarningsAsErrors>false</TreatWarningsAsErrors>
+    <WarningLevel>4</WarningLevel>
+    <RunCodeAnalysis>false</RunCodeAnalysis>
+    <PlatformTarget>x86</PlatformTarget>
+    <Prefer32Bit>false</Prefer32Bit>
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
+    <OutputPath>bin\Release\</OutputPath>
+    <AllowUnsafeBlocks>false</AllowUnsafeBlocks>
+    <BaseAddress>285212672</BaseAddress>
+    <CheckForOverflowUnderflow>false</CheckForOverflowUnderflow>
+    <ConfigurationOverrideFile>
+    </ConfigurationOverrideFile>
+    <DefineConstants>TRACE</DefineConstants>
+    <DocumentationFile>
+    </DocumentationFile>
+    <DebugSymbols>false</DebugSymbols>
+    <FileAlignment>4096</FileAlignment>
+    <NoStdLib>false</NoStdLib>
+    <NoWarn>
+    </NoWarn>
+    <Optimize>true</Optimize>
+    <RegisterForComInterop>false</RegisterForComInterop>
+    <RemoveIntegerChecks>false</RemoveIntegerChecks>
+    <TreatWarningsAsErrors>false</TreatWarningsAsErrors>
+    <WarningLevel>4</WarningLevel>
+    <UseVSHostingProcess>false</UseVSHostingProcess>
+    <Prefer32Bit>false</Prefer32Bit>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Debug|x86'">
+    <DebugSymbols>true</DebugSymbols>
+    <OutputPath>bin\x86\Debug\</OutputPath>
+    <DefineConstants>DEBUG;TRACE</DefineConstants>
+    <BaseAddress>285212672</BaseAddress>
+    <FileAlignment>4096</FileAlignment>
+    <PlatformTarget>AnyCPU</PlatformTarget>
+    <LangVersion>7.3</LangVersion>
+    <Prefer32Bit>false</Prefer32Bit>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Release|x86'">
+    <OutputPath>bin\x86\Release\</OutputPath>
+    <DefineConstants>TRACE</DefineConstants>
+    <BaseAddress>285212672</BaseAddress>
+    <Optimize>true</Optimize>
+    <FileAlignment>4096</FileAlignment>
+    <PlatformTarget>x86</PlatformTarget>
+    <UseVSHostingProcess>false</UseVSHostingProcess>
+    <LangVersion>7.3</LangVersion>
+    <Prefer32Bit>false</Prefer32Bit>
+  </PropertyGroup>
+  <ItemGroup>
+    <Reference Include="cli_basetypes, Version=1.0.20.0, Culture=neutral, PublicKeyToken=ce2cb7e279207b9e, processorArchitecture=MSIL">
+      <SpecificVersion>False</SpecificVersion>
+      <HintPath>..\Lib\cli_basetypes.dll</HintPath>
+    </Reference>
+    <Reference Include="cli_cppuhelper, Version=1.0.23.0, Culture=neutral, PublicKeyToken=ce2cb7e279207b9e, processorArchitecture=x86">
+      <SpecificVersion>False</SpecificVersion>
+      <HintPath>..\Lib\cli_cppuhelper.dll</HintPath>
+    </Reference>
+    <Reference Include="cli_oootypes, Version=1.0.9.0, Culture=neutral, PublicKeyToken=ce2cb7e279207b9e, processorArchitecture=MSIL">
+      <SpecificVersion>False</SpecificVersion>
+      <HintPath>..\Lib\cli_oootypes.dll</HintPath>
+    </Reference>
+    <Reference Include="cli_ure, Version=1.0.23.0, Culture=neutral, PublicKeyToken=ce2cb7e279207b9e, processorArchitecture=MSIL">
+      <SpecificVersion>False</SpecificVersion>
+      <HintPath>..\Lib\cli_ure.dll</HintPath>
+    </Reference>
+    <Reference Include="cli_uretypes, Version=1.0.9.0, Culture=neutral, PublicKeyToken=ce2cb7e279207b9e, processorArchitecture=MSIL">
+      <SpecificVersion>False</SpecificVersion>
+      <HintPath>..\Lib\cli_uretypes.dll</HintPath>
+    </Reference>
+    <Reference Include="CrystalDecisions.CrystalReports.Engine, Version=13.0.4000.0, Culture=neutral, PublicKeyToken=692fbea5521e1304, processorArchitecture=MSIL" />
+    <Reference Include="CrystalDecisions.ReportSource, Version=13.0.4000.0, Culture=neutral, PublicKeyToken=692fbea5521e1304, processorArchitecture=MSIL" />
+    <Reference Include="CrystalDecisions.Shared, Version=13.0.4000.0, Culture=neutral, PublicKeyToken=692fbea5521e1304, processorArchitecture=MSIL" />
+    <Reference Include="CrystalDecisions.Web, Version=13.0.4000.0, Culture=neutral, PublicKeyToken=692fbea5521e1304, processorArchitecture=MSIL" />
+    <Reference Include="CrystalDecisions.Windows.Forms, Version=13.0.4000.0, Culture=neutral, PublicKeyToken=692fbea5521e1304, processorArchitecture=MSIL" />
+    <Reference Include="log4net, Version=1.2.10.0, Culture=neutral, PublicKeyToken=692fbea5521e1304, processorArchitecture=x86">
+      <SpecificVersion>False</SpecificVersion>
+      <HintPath>..\Lib\log4net.dll</HintPath>
+    </Reference>
+    <Reference Include="Microsoft.Office.Interop.Excel, Version=11.0.0.0, Culture=neutral, PublicKeyToken=71e9bce111e9429c">
+      <SpecificVersion>False</SpecificVersion>
+      <HintPath>..\Lib\Microsoft.Office.Interop.Excel.dll</HintPath>
+    </Reference>
+    <Reference Include="Microsoft.Vbe.Interop, Version=11.0.0.0, Culture=neutral, PublicKeyToken=71e9bce111e9429c">
+      <SpecificVersion>False</SpecificVersion>
+      <HintPath>..\Lib\Microsoft.Vbe.Interop.dll</HintPath>
+    </Reference>
+    <Reference Include="Office, Version=11.0.0.0, Culture=neutral, PublicKeyToken=71e9bce111e9429c">
+      <SpecificVersion>False</SpecificVersion>
+      <HintPath>..\Lib\Office.dll</HintPath>
+    </Reference>
+    <Reference Include="OfficeDoc, Version=1.0.0.0, Culture=neutral, PublicKeyToken=704200c094cfd4f3, processorArchitecture=MSIL">
+      <SpecificVersion>False</SpecificVersion>
+      <HintPath>..\Lib\OfficeDoc.dll</HintPath>
+    </Reference>
+    <Reference Include="System">
+      <Name>System</Name>
+    </Reference>
+    <Reference Include="System.Buffers, Version=4.0.4.0, Culture=neutral, PublicKeyToken=cc7b13ffcd2ddd51, processorArchitecture=MSIL">
+      <HintPath>..\packages\System.Buffers.4.6.0\lib\net462\System.Buffers.dll</HintPath>
+    </Reference>
+    <Reference Include="System.Configuration" />
+    <Reference Include="System.Core">
+      <RequiredTargetFramework>3.5</RequiredTargetFramework>
+    </Reference>
+    <Reference Include="System.Data">
+      <Name>System.Data</Name>
+    </Reference>
+    <Reference Include="System.Drawing">
+      <Name>System.Drawing</Name>
+    </Reference>
+    <Reference Include="System.Memory, Version=4.0.2.0, Culture=neutral, PublicKeyToken=cc7b13ffcd2ddd51, processorArchitecture=MSIL">
+      <HintPath>..\packages\System.Memory.4.6.0\lib\net462\System.Memory.dll</HintPath>
+    </Reference>
+    <Reference Include="System.Numerics" />
+    <Reference Include="System.Numerics.Vectors, Version=4.1.5.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a, processorArchitecture=MSIL">
+      <HintPath>..\packages\System.Numerics.Vectors.4.6.0\lib\net462\System.Numerics.Vectors.dll</HintPath>
+    </Reference>
+    <Reference Include="System.Runtime.CompilerServices.Unsafe, Version=6.0.1.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a, processorArchitecture=MSIL">
+      <HintPath>..\packages\System.Runtime.CompilerServices.Unsafe.6.1.0\lib\net462\System.Runtime.CompilerServices.Unsafe.dll</HintPath>
+    </Reference>
+    <Reference Include="System.Runtime.Remoting">
+      <Name>System.Runtime.Remoting</Name>
+    </Reference>
+    <Reference Include="System.Threading.Tasks.Extensions, Version=4.2.1.0, Culture=neutral, PublicKeyToken=cc7b13ffcd2ddd51, processorArchitecture=MSIL">
+      <HintPath>..\packages\System.Threading.Tasks.Extensions.4.6.0\lib\net462\System.Threading.Tasks.Extensions.dll</HintPath>
+    </Reference>
+    <Reference Include="System.Web.Extensions" />
+    <Reference Include="System.Web.Services, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a, processorArchitecture=MSIL">
+      <SpecificVersion>False</SpecificVersion>
+      <HintPath>..\..\..\..\WINDOWS\assembly\GAC_MSIL\System.Web.Services\2.0.0.0__b03f5f7f11d50a3a\System.Web.Services.dll</HintPath>
+    </Reference>
+    <Reference Include="System.Windows.Forms">
+      <Name>System.Windows.Forms</Name>
+    </Reference>
+    <Reference Include="System.Windows.Forms.DataVisualization, Version=3.5.0.0, Culture=neutral, PublicKeyToken=31bf3856ad364e35, processorArchitecture=MSIL">
+      <Private>True</Private>
+    </Reference>
+    <Reference Include="System.Xml">
+      <Name>System.XML</Name>
+    </Reference>
+    <COMReference Include="QuartzTypeLib">
+      <Guid>{56A868B0-0AD4-11CE-B03A-0020AF0BA770}</Guid>
+      <VersionMajor>1</VersionMajor>
+      <VersionMinor>0</VersionMinor>
+      <Lcid>0</Lcid>
+      <WrapperTool>tlbimp</WrapperTool>
+      <Isolated>False</Isolated>
+    </COMReference>
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="app.config">
+    </None>
+    <None Include="Diagrams\Campaign.cd" />
+    <None Include="Diagrams\Action.cd" />
+    <None Include="Diagrams\ReportClasses.cd" />
+    <None Include="Diagrams\Pricelist.cd" />
+    <None Include="Diagrams\Issues.cd" />
+    <None Include="Diagrams\TariffGrids.cd" />
+    <None Include="Controls\GridControls.cd" />
+    <None Include="Icons\GoLeft.ICO" />
+    <None Include="Icons\GoRight.ICO" />
+    <BaseApplicationManifest Include="Properties\app.manifest" />
+    <EmbeddedResource Include="Controls\GenericGridView.resx">
+      <DependentUpon>GenericGridView.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Controls\TariffWithRangeGrid.resx">
+      <DependentUpon>TariffWithRangeGrid.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Forms\AgencyPassportForm.resx">
+      <DependentUpon>AgencyPassportForm.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Forms\AnnouncementJournalForm.resx">
+      <DependentUpon>AnnouncementJournalForm.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Forms\AudioJournalForm.resx">
+      <DependentUpon>AudioJournalForm.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Forms\AudioJournalImportForm.resx">
+      <DependentUpon>AudioJournalImportForm.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Forms\ChangePositioningForm.resx">
+      <DependentUpon>ChangePositioningForm.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Forms\CreateActionMaster\EditIssuesForm.resx">
+      <DependentUpon>EditIssuesForm.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Forms\CreateActionMaster\SelectMassmediasStep.resx">
+      <DependentUpon>SelectMassmediasStep.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Forms\FirmImportJournalForm.resx">
+      <DependentUpon>FirmImportJournalForm.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Forms\FrmTemplate2.resx">
+      <DependentUpon>FrmTemplate2.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Forms\GridReport\ExportGridForm.resx">
+      <DependentUpon>ExportGridForm.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Forms\FrmWindowTariffTemplate.resx">
+      <SubType>Designer</SubType>
+      <DependentUpon>FrmWindowTariffTemplate.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Forms\ManagerDiscountForm.resx">
+      <SubType>Designer</SubType>
+      <DependentUpon>ManagerDiscountForm.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Forms\MassmediaPassport.resx">
+      <SubType>Designer</SubType>
+      <DependentUpon>MassmediaPassport.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Forms\RollerMuteSelect.resx">
+      <DependentUpon>RollerMuteSelect.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Forms\RollersCopyFrm.resx">
+      <SubType>Designer</SubType>
+      <DependentUpon>RollersCopyFrm.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Forms\RollersDeleteFrm.resx">
+      <DependentUpon>RollersDeleteFrm.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Forms\CampaignDaysForm.resx">
+      <DependentUpon>CampaignDaysForm.cs</DependentUpon>
+      <SubType>Designer</SubType>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Forms\RollerChangeAdvertTypeForm.resx">
+      <DependentUpon>RollerChangeAdvertTypeForm.cs</DependentUpon>
+      <SubType>Designer</SubType>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Forms\SponsorCampaignSetAdertTypeForm.resx">
+      <DependentUpon>SponsorCampaignSetAdertTypeForm.cs</DependentUpon>
+      <SubType>Designer</SubType>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Forms\SelectCampaignsForm.resx">
+      <DependentUpon>SelectCampaignsForm.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Forms\UniversalPassportForm.resx">
+      <DependentUpon>UniversalPassportForm.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Icons\calendar.ico" />
+    <EmbeddedResource Include="Icons\Campaign.png" />
+    <EmbeddedResource Include="Icons\Action.png" />
+    <EmbeddedResource Include="Icons\Day.png" />
+    <EmbeddedResource Include="Icons\Issue.png" />
+    <EmbeddedResource Include="Icons\Massmedia.png" />
+    <EmbeddedResource Include="Icons\Message.png" />
+    <EmbeddedResource Include="Icons\Module.png" />
+    <EmbeddedResource Include="Icons\PackModule.png" />
+    <EmbeddedResource Include="Icons\payment.png" />
+    <EmbeddedResource Include="Icons\PriceList.png" />
+    <EmbeddedResource Include="Icons\Roller.png" />
+    <EmbeddedResource Include="Icons\SponsorProgram.png" />
+    <EmbeddedResource Include="Icons\StudioOrder.png" />
+    <EmbeddedResource Include="Icons\StudioOrderAction.png" />
+    <EmbeddedResource Include="Icons\DeleteItem.png" />
+    <EmbeddedResource Include="Icons\ExportExcel.png" />
+    <EmbeddedResource Include="Icons\Play.png" />
+    <EmbeddedResource Include="Icons\Properties.png" />
+    <EmbeddedResource Include="Icons\RefreshItem.png" />
+    <EmbeddedResource Include="Icons\Save.png" />
+    <EmbeddedResource Include="Icons\Stop.png" />
+    <EmbeddedResource Include="Icons\JournalActions.png" />
+    <EmbeddedResource Include="Icons\JournalMassmedia.png" />
+    <EmbeddedResource Include="Icons\JournalRoller.png" />
+    <EmbeddedResource Include="Icons\JournalStudioOrder.png" />
+    <EmbeddedResource Include="Icons\AddAction.png" />
+    <EmbeddedResource Include="Icons\AddStudioOrder.png" />
+    <EmbeddedResource Include="Icons\AddItem.png" />
+    <EmbeddedResource Include="Icons\JournalMessages.png" />
+    <EmbeddedResource Include="Icons\DeletedIssues.png" />
+    <EmbeddedResource Include="Icons\Administration.png" />
+    <EmbeddedResource Include="Icons\Director.png" />
+    <EmbeddedResource Include="Icons\Exit.png" />
+    <EmbeddedResource Include="Icons\Grid.png" />
+    <EmbeddedResource Include="Icons\Money.png" />
+    <EmbeddedResource Include="Icons\Statistic.png" />
+    <EmbeddedResource Include="Icons\Filter.png" />
+    <EmbeddedResource Include="Icons\Firm.png" />
+    <EmbeddedResource Include="Icons\default.png" />
+    <EmbeddedResource Include="Icons\MassmediaGroup.png" />
+    <EmbeddedResource Include="Icons\folder.png" />
+    <EmbeddedResource Include="Icons\error.png" />
+    <EmbeddedResource Include="Icons\bank.png" />
+    <EmbeddedResource Include="Icons\about.png" />
+    <EmbeddedResource Include="Icons\banks.png" />
+    <EmbeddedResource Include="Icons\export.png" />
+    <EmbeddedResource Include="Icons\Import.png" />
+    <Content Include="Icons\TEMPLATE.ICO" />
+    <Content Include="app.ico" />
+    <None Include="packages.config" />
+    <None Include="Resources\open.png" />
+    <None Include="Resources\import.png" />
+    <None Include="Resources\mute_roller.png" />
+    <EmbeddedResource Include="Icons\Traffic.png" />
+    <EmbeddedResource Include="Icons\User.png" />
+    <EmbeddedResource Include="Reports\BillContract.rpt">
+      <Generator>CrystalDecisions.VSDesigner.CodeGen.ReportCodeGenerator</Generator>
+      <LastGenOutput>BillContract.cs</LastGenOutput>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Reports\Contract.rpt">
+      <Generator>CrystalDecisions.VSDesigner.CodeGen.ReportCodeGenerator</Generator>
+      <LastGenOutput>Contract.cs</LastGenOutput>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Resources\SplashMain.png" />
+    <EmbeddedResource Include="Resources\okdisabled.gif" />
+    <EmbeddedResource Include="Resources\cancel.gif" />
+    <EmbeddedResource Include="Resources\cancelhover.gif" />
+    <EmbeddedResource Include="Resources\ok.gif" />
+    <EmbeddedResource Include="Resources\okhover.gif" />
+    <EmbeddedResource Include="Resources\leftImage.png" />
+    <EmbeddedResource Include="Resources\rightImage.jpg" />
+    <None Include="Resources\floppydisk.png" />
+    <None Include="Resources\printer.bmp" />
+    <None Include="Properties\Settings.settings">
+      <Generator>SettingsSingleFileGenerator</Generator>
+      <LastGenOutput>Settings.Designer.cs</LastGenOutput>
+    </None>
+    <Compile Include="AssemblyInfo.cs">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="Classes\ActionDeleted.cs" />
+    <Compile Include="Classes\ActionRoller.cs" />
+    <Compile Include="Classes\ActionRollerInStatJournal.cs" />
+    <Compile Include="Classes\AdvertAgUser.cs" />
+    <Compile Include="Classes\Announcement.cs" />
+    <Compile Include="Classes\Bank.cs" />
+    <Compile Include="Classes\CampaignModule.cs" />
+    <Compile Include="Classes\CampaignModuleDay.cs" />
+    <Compile Include="Classes\CampaignOnSingleMassmedia.cs" />
+    <Compile Include="Classes\CampaignPackDay.cs" />
+    <Compile Include="Classes\CampaignPackModule.cs" />
+    <Compile Include="Classes\Action.cs">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="Classes\CommonRoller.cs" />
+    <Compile Include="Classes\Domain\MasterIssue.cs" />
+    <Compile Include="Classes\FakeContainers\ActionContainer.cs">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="Classes\ActionOnMassmedia.cs">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="Classes\ActJournalRow.cs" />
+    <Compile Include="Classes\AdvertType.cs">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="Classes\Agency.cs">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="Classes\Brand.cs">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="Classes\Campaign.cs">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="Classes\CampaignDay.cs">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="Classes\CampaignPart.cs" />
+    <Compile Include="Classes\CampaignRoller.cs">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="Classes\EntityCampaign.cs" />
+    <Compile Include="Classes\FakeContainers\AdvertTypeContainer.cs" />
+    <Compile Include="Classes\FakeContainers\MassmediasContainer.cs" />
+    <Compile Include="Classes\FakeContainers\StudioOrderActionContainer.cs" />
+    <Compile Include="Classes\GridExport\DJinSerializer\DJinParam.cs" />
+    <Compile Include="Classes\GridExport\DJinSerializer\DJinExportDocument.cs" />
+    <Compile Include="Classes\GridExport\ExportDocument.cs" />
+    <Compile Include="Classes\GridExport\ExportParams.cs" />
+    <Compile Include="Classes\FirmBalanceIssues.cs">
+    </Compile>
+    <Compile Include="Classes\FirmBalanceStudioOrder.cs" />
+    <Compile Include="Classes\GridExport\ExportType.cs" />
+    <Compile Include="Classes\GridExport\ExportHelper.cs" />
+    <Compile Include="Classes\GridExport\VectorBoxSerializer\VectorBoxExportDocument.cs" />
+    <Compile Include="Classes\GridExport\VectorBoxSerializer\VectorBoxParam.cs" />
+    <Compile Include="Classes\Import\FirmImporter.cs" />
+    <Compile Include="Classes\InternalConstants.cs" />
+    <Compile Include="Classes\Firm.cs">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="Classes\FirmBalance.cs">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="Classes\Issue.cs" />
+    <Compile Include="Classes\IssueTemplate.cs" />
+    <Compile Include="Classes\ITariffWindow.cs" />
+    <Compile Include="Classes\MassmediaDiscount.cs" />
+    <Compile Include="Classes\MassmediaPricelist.cs" />
+    <Compile Include="Classes\MassmediasAndCampaignsContainer.cs" />
+    <Compile Include="Classes\MediaPlan.cs" />
+    <Compile Include="Classes\MediaPlanCampaignGroups.cs" />
+    <Compile Include="Classes\ModuleCampaignDay.cs" />
+    <Compile Include="Classes\MuteRoller.cs" />
+    <Compile Include="Classes\Organization.cs" />
+    <Compile Include="Classes\PackageDiscount.cs" />
+    <Compile Include="Classes\PackageDiscountPriceList.cs" />
+    <Compile Include="Classes\PackModule.cs" />
+    <Compile Include="Classes\PackModuleIssue.cs" />
+    <Compile Include="Classes\PaintingType.cs" />
+    <Compile Include="Classes\PaymentCommon.cs" />
+    <Compile Include="Classes\ProgramIssue.cs" />
+    <Compile Include="Classes\Reports\VolumeOfRealizationReportGenerator.cs" />
+    <Compile Include="Classes\RollerIssue.cs">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="Classes\IssueTransfer.cs" />
+    <Compile Include="Classes\Massmedia.cs">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="Classes\Module.cs">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="Classes\ModuleIssue.cs">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="Classes\ModulePricelist.cs">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="Classes\RollerPartOfSponsorCampaign.cs" />
+    <Compile Include="Classes\SpecialTariffWindow.cs" />
+    <Compile Include="Classes\SponsorCampaignPart.cs" />
+    <Compile Include="Classes\SponsorTariff.cs" />
+    <Compile Include="Classes\PackModulePricelist.cs">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="Classes\PaymentStudioOrder.cs">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="Classes\Pricelist.cs">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="Classes\ProductionStudio.cs">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="Classes\Launcher.cs" />
+    <Compile Include="Classes\ProgramPartOfSponsorCampaign.cs">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="Classes\Roller.cs">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="Classes\SponsorPricelist.cs">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="Classes\SponsorProgram.cs" />
+    <Compile Include="Classes\SponsorProgramPart.cs">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="Classes\StudioPricelist.cs">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="Classes\TableColumns.cs">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="Classes\Tariff.cs" />
+    <Compile Include="Classes\TariffWindow.cs" />
+    <Compile Include="Classes\TariffWindowPackModule.cs" />
+    <Compile Include="Classes\TariffWindowWithProgramIssue.cs" />
+    <Compile Include="Classes\TariffWindowWithRange.cs" />
+    <Compile Include="Classes\TariffWindowWithRollerIssues.cs" />
+    <Compile Include="Classes\Utils.cs">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="Classes\GridExport\VideoDJSerializer\VideoDJExportDocument.cs" />
+    <Compile Include="Classes\GridExport\VideoDJSerializer\VideoDJParam.cs" />
+    <Compile Include="Controls\DataGridViewTextCheckBoxCell.cs" />
+    <Compile Include="Controls\GenericGridView.cs">
+      <SubType>Component</SubType>
+    </Compile>
+    <Compile Include="Controls\GenericGridView.Designer.cs">
+      <DependentUpon>GenericGridView.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Controls\IRollerGrid.cs" />
+    <Compile Include="Controls\MediaControl.cs" />
+    <Compile Include="Controls\NavigationCaption.cs">
+      <SubType>UserControl</SubType>
+    </Compile>
+    <Compile Include="Controls\NavigationCaption.Designer.cs">
+      <DependentUpon>NavigationCaption.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Controls\PackModuleGrid.cs">
+      <SubType>UserControl</SubType>
+    </Compile>
+    <Compile Include="Controls\PackModuleGrid.Designer.cs">
+      <DependentUpon>PackModuleGrid.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Controls\ProgramIssuesGrid2.cs">
+      <SubType>UserControl</SubType>
+    </Compile>
+    <Compile Include="Controls\ProgramIssuesGrid2.Designer.cs">
+      <DependentUpon>ProgramIssuesGrid2.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Controls\RollerIssuesGrid3.cs">
+      <SubType>UserControl</SubType>
+    </Compile>
+    <Compile Include="Controls\RollerIssuesGrid3.Designer.cs">
+      <DependentUpon>RollerIssuesGrid3.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Controls\TariffGrid.cs">
+      <SubType>UserControl</SubType>
+    </Compile>
+    <Compile Include="Controls\TariffGrid.Designer.cs">
+      <DependentUpon>TariffGrid.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Controls\TariffGridWithCampaignIssues.cs">
+      <SubType>UserControl</SubType>
+    </Compile>
+    <Compile Include="Controls\TariffGridWithCampaignIssues.Designer.cs">
+      <DependentUpon>TariffGridWithCampaignIssues.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Controls\TariffGridWithIssuesOnSingleMassmedia.cs">
+      <SubType>UserControl</SubType>
+    </Compile>
+    <Compile Include="Controls\TariffGridWithIssuesOnSingleMassmedia.Designer.cs">
+      <DependentUpon>TariffGridWithIssuesOnSingleMassmedia.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Controls\TariffWindowGrid.cs">
+      <SubType>UserControl</SubType>
+    </Compile>
+    <Compile Include="Controls\TariffWindowGrid.Designer.cs">
+      <DependentUpon>TariffWindowGrid.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Controls\TariffWithRangeGrid.cs">
+      <SubType>UserControl</SubType>
+    </Compile>
+    <Compile Include="Controls\TariffWithRangeGrid.Designer.cs">
+      <DependentUpon>TariffWithRangeGrid.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Controls\TrafficGrid.cs">
+      <SubType>UserControl</SubType>
+    </Compile>
+    <Compile Include="Forms\ActionForm.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="Forms\ActionForm.Designer.cs">
+      <DependentUpon>ActionForm.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Forms\AudioJournalImportForm.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="Forms\AudioJournalImportForm.Designer.cs">
+      <DependentUpon>AudioJournalImportForm.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Forms\ChangePositioningForm.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="Forms\ChangePositioningForm.Designer.cs">
+      <DependentUpon>ChangePositioningForm.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Forms\CreateActionMaster\EditIssuesForm.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="Forms\CreateActionMaster\EditIssuesForm.Designer.cs">
+      <DependentUpon>EditIssuesForm.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Forms\CreateActionMaster\SelectMassmediasStep.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="Forms\CreateActionMaster\SelectMassmediasStep.Designer.cs">
+      <DependentUpon>SelectMassmediasStep.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Forms\FirmImportJournalForm.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="Forms\FirmImportJournalForm.Designer.cs">
+      <DependentUpon>FirmImportJournalForm.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Forms\FirmJournalForm.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="Forms\FrmTemplate2.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="Forms\FrmTemplate2.Designer.cs">
+      <DependentUpon>FrmTemplate2.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Forms\GridReport\ExportGridForm.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="Forms\GridReport\ExportGridForm.Designer.cs">
+      <DependentUpon>ExportGridForm.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Forms\FilterForm\ActionJournalFilter.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="Forms\FilterForm\ActionJournalFilter.Designer.cs">
+      <DependentUpon>ActionJournalFilter.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Forms\ActJournalForm.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="Forms\ActJournalForm.Designer.cs">
+      <DependentUpon>ActJournalForm.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Forms\AgencyPassportForm.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="Forms\AgencyPassportForm.Designer.cs">
+      <DependentUpon>AgencyPassportForm.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Forms\AnnouncementJournalForm.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="Forms\AnnouncementJournalForm.Designer.cs">
+      <DependentUpon>AnnouncementJournalForm.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Forms\AudioJournalForm.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="Forms\CampaignForm.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="Forms\CampaignForm.Designer.cs">
+      <DependentUpon>CampaignForm.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Forms\CreateCampaign\CampaignNewForm.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="Forms\CreateCampaign\CampaignNewForm.Designer.cs">
+      <DependentUpon>CampaignNewForm.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Forms\CreateCampaign\CampaignPassportFormBaseController.cs" />
+    <Compile Include="Forms\FilterForm\ManagerFilter.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="Forms\FilterForm\ManagerFilter.Designer.cs">
+      <DependentUpon>ManagerFilter.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Forms\FrmBill.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="Forms\FrmConfirmation.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="Forms\FrmFirmBalance.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="Forms\FrmFirmIssuesBalance.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="Forms\FrmFirmStudioOrderBalance.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="Forms\FrmGenerator.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="Forms\FrmGenerator.Designer.cs">
+      <DependentUpon>FrmGenerator.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Forms\GridReport\FrmGridReport.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="Forms\FrmManagerSelector.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="Forms\FrmMonths.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="Forms\FrmMonths.Designer.cs">
+      <DependentUpon>FrmMonths.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Forms\FrmPackModuleContent.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="Forms\FrmTemplate.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="Forms\FrmTemplate.Designer.cs">
+      <DependentUpon>FrmTemplate.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Forms\FrmWindowTariffTemplate.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="Forms\FrmWindowTariffTemplate.Designer.cs">
+      <DependentUpon>FrmWindowTariffTemplate.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Forms\GridReport\GridReportCreator.cs" />
+    <Compile Include="Forms\ManagerDiscountForm.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="Forms\ManagerDiscountForm.Designer.cs">
+      <DependentUpon>ManagerDiscountForm.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Forms\MassmediaPassport.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="Forms\MassmediaPassport.Designer.cs">
+      <DependentUpon>MassmediaPassport.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Forms\MassmediasJournal.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="Forms\MassmediasJournal.Designer.cs">
+      <DependentUpon>MassmediasJournal.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Forms\MDIForm.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="Forms\MDIForm.Designer.cs">
+      <DependentUpon>MDIForm.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Forms\PaymentCandidatesForm.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="Forms\PaymentCandidatesForm.Designer.cs">
+      <DependentUpon>PaymentCandidatesForm.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Forms\RollerMuteSelect.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="Forms\RollerMuteSelect.Designer.cs">
+      <DependentUpon>RollerMuteSelect.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Forms\RollerPassportForm.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="Forms\RollerPassportForm.Designer.cs">
+      <DependentUpon>RollerPassportForm.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Forms\RollersCopyFrm.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="Forms\RollersCopyFrm.Designer.cs">
+      <DependentUpon>RollersCopyFrm.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Forms\RollersDeleteFrm.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="Forms\RollersDeleteFrm.Designer.cs">
+      <DependentUpon>RollersDeleteFrm.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Forms\RollerStatisticForm.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="Forms\RollerStatisticForm.Designer.cs">
+      <DependentUpon>RollerStatisticForm.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Forms\CampaignDaysForm.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="Forms\CampaignDaysForm.Designer.cs">
+      <DependentUpon>CampaignDaysForm.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Forms\RollerChangeAdvertTypeForm.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="Forms\RollerChangeAdvertTypeForm.Designer.cs">
+      <DependentUpon>RollerChangeAdvertTypeForm.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Forms\SponsorCampaignSetAdertTypeForm.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="Forms\SponsorCampaignSetAdertTypeForm.Designer.cs">
+      <DependentUpon>SponsorCampaignSetAdertTypeForm.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Forms\RollerSubstitutionForm.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="Forms\RollerSubstitutionForm.Designer.cs">
+      <DependentUpon>RollerSubstitutionForm.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Forms\FilterForm\SOActionJournalFilter.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="Forms\FilterForm\SOActionJournalFilter.Designer.cs">
+      <DependentUpon>SOActionJournalFilter.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Forms\SelectCampaignsForm.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="Forms\SelectCampaignsForm.Designer.cs">
+      <DependentUpon>SelectCampaignsForm.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Forms\SponsorTariffPassport.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="Forms\SponsorTariffPassport.Designer.cs">
+      <DependentUpon>SponsorTariffPassport.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Forms\StatBalanceJournalForm.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="Forms\TariffWindowGenerationForm.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="Forms\TariffWindowGenerationForm.Designer.cs">
+      <DependentUpon>TariffWindowGenerationForm.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Forms\TariffPassport.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="Forms\TariffPassport.Designer.cs">
+      <DependentUpon>TariffPassport.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Forms\TariffWindowsDisabledStatusForm.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="Forms\TariffWindowsDisabledStatusForm.Designer.cs">
+      <DependentUpon>TariffWindowsDisabledStatusForm.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Forms\TrafficManagementForm.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="Forms\TrafficManagementForm.Designer.cs">
+      <DependentUpon>TrafficManagementForm.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Forms\UniversalPassportForm.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="Forms\UniversalPassportForm.Designer.cs">
+      <DependentUpon>UniversalPassportForm.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Forms\TransferDayForm.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="Forms\TransferDayForm.Designer.cs">
+      <DependentUpon>TransferDayForm.cs</DependentUpon>
+    </Compile>
+    <Compile Include="License\AdvertAgLicence.cs" />
+    <Compile Include="Properties\Resources.Designer.cs">
+      <AutoGen>True</AutoGen>
+      <DesignTime>True</DesignTime>
+      <DependentUpon>Resources.resx</DependentUpon>
+    </Compile>
+    <Compile Include="Reports\BillContract.cs">
+      <AutoGen>True</AutoGen>
+      <DesignTime>True</DesignTime>
+      <DependentUpon>BillContract.rpt</DependentUpon>
+      <SubType>Component</SubType>
+    </Compile>
+    <Compile Include="Reports\BillReport.cs" />
+    <Compile Include="Reports\BillContractReport.cs" />
+    <Compile Include="Reports\Contract.cs">
+      <AutoGen>True</AutoGen>
+      <DesignTime>True</DesignTime>
+      <DependentUpon>Contract.rpt</DependentUpon>
+      <SubType>Component</SubType>
+    </Compile>
+    <Compile Include="Reports\ContractReport.cs" />
+    <Compile Include="Reports\GenericBill.cs">
+      <AutoGen>True</AutoGen>
+      <DesignTime>True</DesignTime>
+      <DependentUpon>GenericBill.rpt</DependentUpon>
+      <SubType>Component</SubType>
+    </Compile>
+    <Compile Include="Reports\Grid.cs">
+      <DependentUpon>Grid.rpt</DependentUpon>
+      <DesignTime>True</DesignTime>
+      <AutoGen>True</AutoGen>
+      <SubType>Component</SubType>
+    </Compile>
+    <Compile Include="Reports\GenericReport.cs" />
+    <Compile Include="Reports\OnAirInquire.cs">
+      <AutoGen>True</AutoGen>
+      <DesignTime>True</DesignTime>
+      <DependentUpon>OnAirInquire.rpt</DependentUpon>
+      <SubType>Component</SubType>
+    </Compile>
+    <Compile Include="Reports\OnAirInquireReport.cs" />
+    <Compile Include="Properties\Settings.Designer.cs">
+      <AutoGen>True</AutoGen>
+      <DesignTimeSharedInput>True</DesignTimeSharedInput>
+      <DependentUpon>Settings.settings</DependentUpon>
+    </Compile>
+    <EmbeddedResource Include="Controls\NavigationCaption.resx">
+      <DependentUpon>NavigationCaption.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Controls\TariffGrid.resx">
+      <DependentUpon>TariffGrid.cs</DependentUpon>
+      <SubType>Designer</SubType>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Controls\TrafficGrid.resx">
+      <DependentUpon>TrafficGrid.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Forms\ActionForm.resx">
+      <SubType>Designer</SubType>
+      <DependentUpon>ActionForm.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Forms\CampaignForm.resx">
+      <DependentUpon>CampaignForm.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Forms\CreateCampaign\CampaignNewForm.resx">
+      <SubType>Designer</SubType>
+      <DependentUpon>CampaignNewForm.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Forms\FrmBill.resx">
+      <DependentUpon>FrmBill.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Forms\FrmConfirmation.resx">
+      <DependentUpon>FrmConfirmation.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Forms\FrmFirmBalance.resx">
+      <DependentUpon>FrmFirmBalance.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Forms\FrmGenerator.resx">
+      <DependentUpon>FrmGenerator.cs</DependentUpon>
+      <SubType>Designer</SubType>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Forms\GridReport\FrmGridReport.resx">
+      <DependentUpon>FrmGridReport.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Forms\FrmManagerSelector.resx">
+      <DependentUpon>FrmManagerSelector.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Forms\FrmMonths.resx">
+      <DependentUpon>FrmMonths.cs</DependentUpon>
+      <SubType>Designer</SubType>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Forms\FrmPackModuleContent.resx">
+      <DependentUpon>FrmPackModuleContent.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Forms\FrmTemplate.resx">
+      <SubType>Designer</SubType>
+      <DependentUpon>FrmTemplate.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Forms\MDIForm.resx">
+      <SubType>Designer</SubType>
+      <DependentUpon>MDIForm.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Forms\PaymentCandidatesForm.resx">
+      <SubType>Designer</SubType>
+      <DependentUpon>PaymentCandidatesForm.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Forms\RollerPassportForm.resx">
+      <DependentUpon>RollerPassportForm.cs</DependentUpon>
+      <SubType>Designer</SubType>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Forms\RollerStatisticForm.resx">
+      <DependentUpon>RollerStatisticForm.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Forms\RollerSubstitutionForm.resx">
+      <SubType>Designer</SubType>
+      <DependentUpon>RollerSubstitutionForm.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Forms\TariffWindowGenerationForm.resx">
+      <SubType>Designer</SubType>
+      <DependentUpon>TariffWindowGenerationForm.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Forms\TrafficManagementForm.resx">
+      <DependentUpon>TrafficManagementForm.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Forms\TransferDayForm.resx">
+      <SubType>Designer</SubType>
+      <DependentUpon>TransferDayForm.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Icons\tariff.ico" />
+    <EmbeddedResource Include="Properties\Resources.resx">
+      <Generator>PublicResXFileCodeGenerator</Generator>
+      <SubType>Designer</SubType>
+      <LastGenOutput>Resources.Designer.cs</LastGenOutput>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Reports\GenericBill.rpt">
+      <Generator>CrystalDecisions.VSDesigner.CodeGen.ReportCodeGenerator</Generator>
+      <LastGenOutput>GenericBill.cs</LastGenOutput>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Reports\Grid.rpt">
+      <Generator>CrystalDecisions.VSDesigner.CodeGen.ReportCodeGenerator</Generator>
+      <LastGenOutput>Grid.cs</LastGenOutput>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Reports\OnAirInquire.rpt">
+      <Generator>CrystalDecisions.VSDesigner.CodeGen.ReportCodeGenerator</Generator>
+      <LastGenOutput>OnAirInquire.cs</LastGenOutput>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Resources\Splash.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <Service Include="{967B4E0D-AD0C-4609-AB67-0FA40C0206D8}" />
+    <Service Include="{C0C07587-41A7-46C8-8FBD-3F9C8EBE2DDC}" />
+    <Service Include="{CF845C55-C321-4742-B673-E6212D061ED9}" />
+  </ItemGroup>
+  <ItemGroup>
+    <BootstrapperPackage Include="Microsoft.Net.Client.3.5">
+      <Visible>False</Visible>
+      <ProductName>.NET Framework Client Profile</ProductName>
+      <Install>false</Install>
+    </BootstrapperPackage>
+    <BootstrapperPackage Include="Microsoft.Net.Framework.2.0">
+      <Visible>False</Visible>
+      <ProductName>.NET Framework 2.0 %28x86%29</ProductName>
+      <Install>true</Install>
+    </BootstrapperPackage>
+    <BootstrapperPackage Include="Microsoft.Net.Framework.3.0">
+      <Visible>False</Visible>
+      <ProductName>.NET Framework 3.0 %28x86%29</ProductName>
+      <Install>false</Install>
+    </BootstrapperPackage>
+    <BootstrapperPackage Include="Microsoft.Net.Framework.3.5">
+      <Visible>False</Visible>
+      <ProductName>.NET Framework 3.5</ProductName>
+      <Install>false</Install>
+    </BootstrapperPackage>
+    <BootstrapperPackage Include="Microsoft.Net.Framework.3.5.SP1">
+      <Visible>False</Visible>
+      <ProductName>.NET Framework 3.5 SP1</ProductName>
+      <Install>false</Install>
+    </BootstrapperPackage>
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\FogSoft.WinForm\FogSoft.WinForm.csproj">
+      <Project>{1ebf7ba7-1185-4e37-afa7-f1b395b94ce5}</Project>
+      <Name>FogSoft.WinForm</Name>
+    </ProjectReference>
+    <ProjectReference Include="..\Microsoft.ApplicationBlocks.Data\Microsoft.ApplicationBlocks.Data.csproj">
+      <Project>{30933672-466E-4F67-A111-ABF267539146}</Project>
+      <Name>Microsoft.ApplicationBlocks.Data</Name>
+    </ProjectReference>
+  </ItemGroup>
+  <Import Project="$(MSBuildBinPath)\Microsoft.CSharp.targets" />
+  <PropertyGroup>
+    <PreBuildEvent>
+    </PreBuildEvent>
+    <PostBuildEvent>
+    </PostBuildEvent>
+  </PropertyGroup>
+</Project>

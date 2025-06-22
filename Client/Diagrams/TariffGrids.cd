@@ -1,0 +1,70 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<ClassDiagram MajorVersion="1" MinorVersion="1">
+  <Class Name="Merlin.Controls.TariffGrid" Collapsed="true">
+    <Position X="1.5" Y="0.5" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>ehBQIxQAUyICAABYBgGAAURKKxWeUQFFjmEAAExoBAY=</HashCode>
+      <FileName>Controls\TariffGrid.cs</FileName>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="Merlin.Controls.TariffGridWithCampaignIssues" Collapsed="true">
+    <Position X="3.75" Y="1" Width="2.5" />
+    <TypeIdentifier>
+      <HashCode>AABCAAABAiAAAAAAAgCIAAACAAEAAAACAAAAAgAAQAA=</HashCode>
+      <FileName>Controls\TariffGridWithCampaignIssues.cs</FileName>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="Merlin.Controls.TariffGridWithIssuesOnSingleMassmedia" Collapsed="true">
+    <Position X="7.5" Y="2.25" Width="2.75" />
+    <TypeIdentifier>
+      <HashCode>AAAAAAAAECAAAAgAAACAAAACIAUAAAAEEAAAAAAAAAE=</HashCode>
+      <FileName>Controls\TariffGridWithIssuesOnSingleMassmedia.cs</FileName>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="Merlin.Controls.TariffWindowGrid" Collapsed="true">
+    <Position X="8" Y="4.75" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>AAgACACAIagACBgEAQiAGAASBAAABAoVEEgACAAcAAo=</HashCode>
+      <FileName>Controls\TariffWindowGrid.cs</FileName>
+    </TypeIdentifier>
+    <Lollipop Position="0.2" />
+  </Class>
+  <Class Name="Merlin.Controls.RollerIssuesGrid3" Collapsed="true">
+    <Position X="8" Y="6.25" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>BAgACAgQASIBAAACRACAIUACCABAIIAAAAQQAAAIQBI=</HashCode>
+      <FileName>Controls\RollerIssuesGrid3.cs</FileName>
+    </TypeIdentifier>
+    <Lollipop Position="0.2" />
+  </Class>
+  <Class Name="Merlin.Controls.ProgramIssuesGrid2" Collapsed="true">
+    <Position X="5.25" Y="4.5" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>AAAACAAQASAQAACAAACAAAACQAAUACAAAAIIAAABARI=</HashCode>
+      <FileName>Controls\ProgramIssuesGrid2.cs</FileName>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="Merlin.Controls.PackModuleGrid" Collapsed="true">
+    <Position X="3.25" Y="2.25" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>AAAACAAAESAAAAAABACAAEACAAFAMAAIAAAACAAAQAo=</HashCode>
+      <FileName>Controls\PackModuleGrid.cs</FileName>
+    </TypeIdentifier>
+    <Lollipop Position="0.2" />
+  </Class>
+  <Class Name="Merlin.Controls.TrafficGrid" Collapsed="true">
+    <Position X="8" Y="7.5" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>AEQEUw0AAyAGAgBSCEKEAYAyIwA1CIKAcA0CA0jIJQA=</HashCode>
+      <FileName>Controls\TrafficGrid.cs</FileName>
+    </TypeIdentifier>
+  </Class>
+  <Interface Name="Merlin.Controls.IRollerGrid" Collapsed="true">
+    <Position X="0.75" Y="4.75" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>AAAAAAAAAwAAAAAAAAAIAEAAAAAAIAAAAAAACAAAAAA=</HashCode>
+      <FileName>Controls\IRollerGrid.cs</FileName>
+    </TypeIdentifier>
+  </Interface>
+  <Font Name="Segoe UI" Size="9" />
+</ClassDiagram>

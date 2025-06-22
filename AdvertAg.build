@@ -1,0 +1,174 @@
+<?xml version="1.0" ?>
+<project name="AdvertAg.Deployment" default="build">
+	<property name="nant.onfailure" value="label-restore" />
+
+	<property name="build.dir" value="./"/>
+	<property name="pack.dir" value="${directory::get-current-directory()}\..\..\deployment"/>
+	
+	<target name="dev-build" description="Build Solution [Dev]" depends="label, build, label-restore, pack"/>
+
+	<target name="build" description="Build Project" >
+		<!--msbuild project="qd2.sln">
+			<arg value="/nologo" />
+			<arg value="/consoleloggerparameters:NoSummary" />
+			<arg value="/property:WarningLevel=4;Configuration=debug" />
+		</msbuild-->
+		<exec program="C:\WINDOWS\Microsoft.NET\Framework\v3.5\msbuild.exe">
+			<arg value="qd2.sln" />
+			<arg value="/nologo" />
+			<arg value="/consoleloggerparameters:NoSummary" />
+			<arg value="/property:WarningLevel=4;Configuration=debug" />
+		</exec>
+	</target>
+	
+	<target name="label" description="Label Project [Prebuild]" if="${property::exists('CCNetLabel')}">
+
+		<regex pattern="\D*(?'version1'[\d\.]+)$" input="${CCNetLabel}" failonerror="false" />
+		<if test="${property::exists('version1')}">
+			<regex pattern="(?'version'((\d+\.){3}\d+))$" input="${version1}" failonerror="false" />
+		</if>
+		
+		<if test="${property::exists('version')}">
+			<echo message="Backing up original AssemblyInfo's, set new version info to ${version}"/>
+		</if>
+		
+		<foreach item="File" property="filename" if="${property::exists('version')}">
+			<in>
+				<items basedir="${build.dir}">
+					<include name="**/AssemblyInfo.cs" />
+				</items>
+			</in>
+			<do>
+				<copy file="${filename}" tofile="${filename}.bak" overwrite="true"/>
+				<copy file="${filename}" tofile="${filename}.labelled" >
+					<filterchain>
+						<replacestring from='[assembly: AssemblyVersion("1.0.0.0")]' to='[assembly: AssemblyVersion("${version}")]'/>
+						<replacestring from='[assembly: AssemblyFileVersion("1.0.0.0")]' to='[assembly: AssemblyFileVersion("${version}")]'/>
+					</filterchain>
+				</copy>
+				<move file="${filename}.labelled" tofile="${filename}" overwrite="true"/>
+			</do>
+		</foreach>
+	</target>
+
+	<target name="label-restore" description="Label Project [Postbuild]" if="${property::exists('CCNetLabel')}">
+		<echo message="Restoring original AssemblyInfo's"/>
+		
+		<foreach item="File" property="filename">
+			<in>
+				<items basedir="${build.dir}">
+					<include name="**/AssemblyInfo.cs.bak" />
+				</items>
+			</in>
+			<do>
+				<move file="${filename}" tofile="${path::get-directory-name(filename)}\${path::get-file-name-without-extension(filename)}" overwrite="true"/>
+			</do>
+		</foreach>
+	</target>
+
+	<target name="pack" description="Create Deployment Package." >
+	
+		<echo message="Clean up pack directory ..."/>
+		<delete>
+			<fileset basedir="${pack.dir}">
+				<include name="**/*" />
+			</fileset>
+		</delete>
+
+		<echo message="Copy sources to pack directory ..."/>
+		<copy todir="${pack.dir}\AdvertAg-Client\" includeemptydirs="false">
+			<fileset basedir="${build.dir}\Client\bin\Debug\">
+				<include name="*.exe" />
+				<include name="*.dll" />
+				<exclude name="*vshost.*" />
+			</fileset>
+		</copy>
+
+		<copy todir="${pack.dir}\AdvertAg-Client\" includeemptydirs="false">
+			<fileset basedir="${build.dir}\Lib\">
+				<include name="Microsoft.Office.Interop.Excel.dll" />
+				<include name="Microsoft.Vbe.Interop.dll" />
+				<include name="Office.dll" />
+			</fileset>
+		</copy>
+		
+		<copy todir="${pack.dir}\AdvertAg-Client\ru\" includeemptydirs="false">
+			<fileset basedir="${build.dir}\Client\bin\Debug\ru">
+				<include name="*.dll" />
+			</fileset>
+		</copy>
+		
+		<copy todir="${pack.dir}\AdvertAg-Client\ru\" includeemptydirs="false">
+			<fileset basedir="${build.dir}\CrystalReportLocalize.RU">
+				<include name="*.dll" />
+			</fileset>
+		</copy>
+
+		<copy todir="${pack.dir}\AdvertAg-Client\" includeemptydirs="false">
+			<fileset basedir="${build.dir}\Client\bin\Debug\">
+				<include name="*.config" />
+				<exclude name="*vshost.*" />
+			</fileset>
+			<filterchain>
+				<replacestring from='key="TestMode" value="true"' to='key="TestMode" value="false"'/>
+			</filterchain>
+		</copy>
+
+		<copy todir="${pack.dir}\AdvertAg-Protector\" includeemptydirs="false">
+			<fileset basedir="${build.dir}\Protector\bin\Debug\">
+				<include name="*.exe" />
+				<include name="*.dll" />
+				<exclude name="*vshost.*" />
+			</fileset>
+		</copy>
+
+		<copy todir="${pack.dir}\AdvertAg-Protector\" includeemptydirs="false">
+			<fileset basedir="${build.dir}\Lib\">
+				<include name="Microsoft.Office.Interop.Excel.dll" />
+				<include name="Microsoft.Vbe.Interop.dll" />
+				<include name="Office.dll" />
+			</fileset>
+		</copy>
+
+		<copy todir="${pack.dir}\AdvertAg-Protector\" includeemptydirs="false">
+			<fileset basedir="${build.dir}\Protector\bin\Debug\">
+				<include name="*.config" />
+				<exclude name="*vshost.*" />
+			</fileset>
+			<filterchain>
+				<replacestring from='key="TestMode" value="true"' to='key="TestMode" value="false"'/>
+			</filterchain>
+		</copy>
+
+		<copy todir="${pack.dir}\AdvertAg-Protector\" includeemptydirs="false">
+			<fileset basedir="${build.dir}\ConnectionStringsProtector\bin\Debug\">
+				<include name="*.exe" />
+			</fileset>
+		</copy>
+
+		<echo message="Create deployment package ..."/>
+		<property name="zipfile" value="${pack.dir}/AdvertAg-build.latest.zip"/>
+		<zip zipfile="${zipfile}" includeemptydirs="true">
+			<fileset basedir="${pack.dir}">
+				<include name="**/*" />
+			</fileset>
+		</zip>
+
+		<echo message="Clean up pack directory ..."/>
+		<delete>
+			<fileset basedir="${pack.dir}">
+				<include name="**/*" />
+				<exclude name="*.zip" />
+			</fileset>
+		</delete>
+	</target>
+
+	<target name="simian">
+		<echo message="Running Simian ..."/>
+		<exec program="d:\Development\simian-2.2.15\bin\simian-2.2.15.exe">
+			<arg value="-config=simian.config"/>
+			<arg value="-formatter=xml:build\log\simian.xml"/>
+		</exec>
+	</target>
+
+</project>

@@ -1,0 +1,177 @@
+<?xml version="1.0" encoding="utf-8"?>
+<root>
+  <!-- 
+    Microsoft ResX Schema 
+    
+    Version 2.0
+    
+    The primary goals of this format is to allow a simple XML format 
+    that is mostly human readable. The generation and parsing of the 
+    various data types are done through the TypeConverter classes 
+    associated with the data types.
+    
+    Example:
+    
+    ... ado.net/XML headers & schema ...
+    <resheader name="resmimetype">text/microsoft-resx</resheader>
+    <resheader name="version">2.0</resheader>
+    <resheader name="reader">System.Resources.ResXResourceReader, System.Windows.Forms, ...</resheader>
+    <resheader name="writer">System.Resources.ResXResourceWriter, System.Windows.Forms, ...</resheader>
+    <data name="Name1"><value>this is my long string</value><comment>this is a comment</comment></data>
+    <data name="Color1" type="System.Drawing.Color, System.Drawing">Blue</data>
+    <data name="Bitmap1" mimetype="application/x-microsoft.net.object.binary.base64">
+        <value>[base64 mime encoded serialized .NET Framework object]</value>
+    </data>
+    <data name="Icon1" type="System.Drawing.Icon, System.Drawing" mimetype="application/x-microsoft.net.object.bytearray.base64">
+        <value>[base64 mime encoded string representing a byte array form of the .NET Framework object]</value>
+        <comment>This is a comment</comment>
+    </data>
+                
+    There are any number of "resheader" rows that contain simple 
+    name/value pairs.
+    
+    Each data row contains a name, and value. The row also contains a 
+    type or mimetype. Type corresponds to a .NET class that support 
+    text/value conversion through the TypeConverter architecture. 
+    Classes that don't support this are serialized and stored with the 
+    mimetype set.
+    
+    The mimetype is used for serialized objects, and tells the 
+    ResXResourceReader how to depersist the object. This is currently not 
+    extensible. For a given mimetype the value must be set accordingly:
+    
+    Note - application/x-microsoft.net.object.binary.base64 is the format 
+    that the ResXResourceWriter will generate, however the reader can 
+    read any of the formats listed below.
+    
+    mimetype: application/x-microsoft.net.object.binary.base64
+    value   : The object must be serialized with 
+            : System.Runtime.Serialization.Formatters.Binary.BinaryFormatter
+            : and then encoded with base64 encoding.
+    
+    mimetype: application/x-microsoft.net.object.soap.base64
+    value   : The object must be serialized with 
+            : System.Runtime.Serialization.Formatters.Soap.SoapFormatter
+            : and then encoded with base64 encoding.
+
+    mimetype: application/x-microsoft.net.object.bytearray.base64
+    value   : The object must be serialized into a byte array 
+            : using a System.ComponentModel.TypeConverter
+            : and then encoded with base64 encoding.
+    -->
+  <xsd:schema id="root" xmlns="" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:msdata="urn:schemas-microsoft-com:xml-msdata">
+    <xsd:import namespace="http://www.w3.org/XML/1998/namespace" />
+    <xsd:element name="root" msdata:IsDataSet="true">
+      <xsd:complexType>
+        <xsd:choice maxOccurs="unbounded">
+          <xsd:element name="metadata">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" />
+              </xsd:sequence>
+              <xsd:attribute name="name" use="required" type="xsd:string" />
+              <xsd:attribute name="type" type="xsd:string" />
+              <xsd:attribute name="mimetype" type="xsd:string" />
+              <xsd:attribute ref="xml:space" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="assembly">
+            <xsd:complexType>
+              <xsd:attribute name="alias" type="xsd:string" />
+              <xsd:attribute name="name" type="xsd:string" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="data">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1" />
+                <xsd:element name="comment" type="xsd:string" minOccurs="0" msdata:Ordinal="2" />
+              </xsd:sequence>
+              <xsd:attribute name="name" type="xsd:string" use="required" msdata:Ordinal="1" />
+              <xsd:attribute name="type" type="xsd:string" msdata:Ordinal="3" />
+              <xsd:attribute name="mimetype" type="xsd:string" msdata:Ordinal="4" />
+              <xsd:attribute ref="xml:space" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="resheader">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1" />
+              </xsd:sequence>
+              <xsd:attribute name="name" type="xsd:string" use="required" />
+            </xsd:complexType>
+          </xsd:element>
+        </xsd:choice>
+      </xsd:complexType>
+    </xsd:element>
+  </xsd:schema>
+  <resheader name="resmimetype">
+    <value>text/microsoft-resx</value>
+  </resheader>
+  <resheader name="version">
+    <value>2.0</value>
+  </resheader>
+  <resheader name="reader">
+    <value>System.Resources.ResXResourceReader, System.Windows.Forms, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <resheader name="writer">
+    <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <metadata name="openTemplateDialog.TrayLocation" type="System.Drawing.Point, System.Drawing, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a">
+    <value>17, 17</value>
+  </metadata>
+  <assembly alias="System.Drawing" name="System.Drawing, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a" />
+  <data name="restoreTemplate.Image" type="System.Drawing.Bitmap, System.Drawing" mimetype="application/x-microsoft.net.object.bytearray.base64">
+    <value>
+        iVBORw0KGgoAAAANSUhEUgAAABgAAAAYCAYAAADgdz34AAAAAXNSR0IArs4c6QAAAARnQU1BAACxjwv8
+        YQUAAAAgY0hSTQAAeiYAAICEAAD6AAAAgOgAAHUwAADqYAAAOpgAABdwnLpRPAAAAAlwSFlzAAAScwAA
+        EnMBjCK5BwAAASpJREFUSEvtlE1LAmEQx7ckIaEOBXmxgx3sYJBoH0oUhQ4FBQUKGbkoeNv9Tr6/rdWH
+        +TszuWwXe0bc59bCj5lld+f/zNseAHCsXixgE6vBpTo2T7+zgFPy4RQ9+k5fVnUGHPyu90V8g32tiErA
+        KXm47X6i0CHYEtpMjAIcPN9eIf8R4Ias4JLvrigTc7n+FOAAubclESDXWuK6FfyC7t8DY7m2CkhDSeDH
+        +sg2F8JVgyArz4rRO9t6YiyRjBoFy7zMiLlw+To3njwUVAr4uHiaIh3yPI1bwMPZw5iY4Jx5nMQvcHI/
+        AnO6QTNB6k3mJh/XhkKKqQ9VI7qDgIdkZYCjal9ssjqIX+Cw3EdIgvyYS8T7EO5E5Gv+R6ox1QTaa9H+
+        Baz2wWpw7t0aXF0pXe7pE7EAAAAASUVORK5CYII=
+</value>
+  </data>
+  <data name="generateLicense.Image" type="System.Drawing.Bitmap, System.Drawing" mimetype="application/x-microsoft.net.object.bytearray.base64">
+    <value>
+        iVBORw0KGgoAAAANSUhEUgAAABgAAAAYCAYAAADgdz34AAAAAXNSR0IArs4c6QAAAARnQU1BAACxjwv8
+        YQUAAAAgY0hSTQAAeiYAAICEAAD6AAAAgOgAAHUwAADqYAAAOpgAABdwnLpRPAAAAAlwSFlzAAAScwAA
+        EnMBjCK5BwAAAR9JREFUSEtj/P//PwNNAcgCWmKaGg4OHVq6fgRZwGA88z+D8QwoRrCJCV6i4gBkOHPG
+        mf9MSBgkRlUL2LLP/mfLOvufNfsMmKa6BVx55/5z5Z77zwnFoGCjqg/4Cs//B2FeKKayD2b+Fy67+F+4
+        9OJ/ITC+QO0gmvlfvOrSf/FKCBYDYioH0cz/snVX/svUwvBlyn0AT/tGkHSv1HT1v1Lj1f+KQBqEIfKw
+        PIE7wvHmA5AB6u3X/6u3XQNiEA3BakC+WiuQbr1G0CcEMxrI9TrdN4D4+n+dLiANxNqd1/9rA2liUhJB
+        C8AlotGM/wZ9NyG49+Z/fSBNjOEklaag4DKZeBuIbxGdgkiyAOYTYpMnLJcTFUTEFAm41IxaQDAEADJf
+        KV1VHXzlAAAAAElFTkSuQmCC
+</value>
+  </data>
+  <metadata name="openLicenseDialog.TrayLocation" type="System.Drawing.Point, System.Drawing, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a">
+    <value>200, 17</value>
+  </metadata>
+  <data name="helpLabel.Text" xml:space="preserve">
+    <value>To generate a license, you should specify existing template file (type/paste to "Template file" text box or select by pressing "..." button). Then, you should specify license file name (if auto-generated name is not aceptable) and press "Generate license" button (you can do it by pressing &lt;Enter&gt;).
+If you want to change license template, you should edit template in text editor. Template file should contains at least one line - "Expired:yyyyMMdd" (e.g. "Expired:20080220").</value>
+  </data>
+  <data name="$this.Icon" type="System.Drawing.Icon, System.Drawing" mimetype="application/x-microsoft.net.object.bytearray.base64">
+    <value>
+        AAABAAIAICAQAAAAAADoAgAAJgAAABAQEAAAAAAAKAEAAA4DAAAoAAAAIAAAAEAAAAABAAQAAAAAAIAC
+        AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAgAAAgAAAAICAAIAAAACAAIAAgIAAAICAgADAwMAAAAD/AAD/
+        AAAA//8A/wAAAP8A/wD//wAA////AAAAAAAAAAAAAAAAAAAAAAAAAAB3cAAAAAAAAAd3AAAAAAAHAAAA
+        AAAAAAAAAHAAAAAAcAB3AAAAAAAAdwAHAAAAAAAHAAAAAAAAAABwAAAAAAAAAAAAAI8HcAAAAAAAAAAA
+        AAAAAI8I8AAAAAAAAAAAAAAAAI8I8ICIdwAAAAAAAAAAAP8I8I8I8AAAAAAAAAAAAAAP8I8Aj/+IdwAA
+        AAAAAAAA8AgAj//4AAAAAAAAAAAAD///////gIiIAAAAAAAAAI///4AAiAj/+HAAAAAAAGCP//8P+ACP
+        //+HBwAAAAZgiP//8P//////8IgHAAAOZgiP//8P/////wuwd3AGDmZgiAAAAAAAB/C7B4d3ZmDmZgAA
+        AAAAAAALsHh4d2ZmDmZgAAAAAAAAuwiHh4dmZmDuAAAAAAAABwD4iHh4ZmZmAAAAAAAAAAB/j4iHgGZm
+        ZgAAAAAAAAAACPj4iHBmZmYAAAAAAAAAAA+Pj4iABmZgAAAAAAAAAAAA+Pj4AAZmYAAAAAAAAAAAAI+P
+        jwAGZgAAAAAAAAAAAAAI+PAAAGYAAAAAAAAAAAAAD4+AAABgAAAAAAAAAAAAAAD4AAAAYAAAAAAAAAAA
+        AAAAgAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA//////x/
+        /j/7///f9z/87/78H3//8A///8AD//8AAf/+AAD//gAAf/4AAH/8AAB/8AAAD+AAAAPAAAABgAAAAAAA
+        AAAAP/gAAD/4AAB/+AAA//gBAf/8AQH//AGD//4Dg//+A4f//wfH//8Hz///j8///5//////////////
+        //8oAAAAEAAAACAAAAABAAQAAAAAAMAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAgAAAgAAAAICAAIAA
+        AACAAIAAgIAAAICAgADAwMAAAAD/AAD/AAAA//8A/wAAAP8A/wD//wAA////AAAHcAAAB3AAAHAAAAAA
+        BwAAAAAAAAAAAAAAAH9/AAAAAAD3//f/AAAAAH/w/wAAAAAI/w8A/4AADmCP8P/4CABg5gAAAACwd2YO
+        YAAACweHZmAAAAAAiHhmYAAAAAD4h2YAAAAAAI+AAAAAAAAACPAAAAAAAAAAAAAAAAAAAAAA5+cAAN/7
+        AAD8PwAA8A8AAOAHAADgBwAAgAEAAAAAAAAAAAAAA8AAAAfAAAAP4AAAH+EAAL/xAAC/+wAA//8AAA==
+</value>
+  </data>
+</root>

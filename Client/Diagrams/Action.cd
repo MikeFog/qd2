@@ -1,0 +1,39 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<ClassDiagram MajorVersion="1" MinorVersion="1">
+  <Class Name="Merlin.Classes.Action" Collapsed="true">
+    <Position X="5" Y="0.5" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>AMAACAAIABCCAAAiIAAAAAAQAAloRDBQAgQUA3AAKAA=</HashCode>
+      <FileName>Classes\Action.cs</FileName>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="Merlin.Classes.ActionOnMassmedia">
+    <Position X="3.25" Y="1.75" Width="1.5" />
+    <NestedTypes>
+      <Class Name="Merlin.Classes.ActionOnMassmedia.SplitRule" Collapsed="true">
+        <TypeIdentifier>
+          <NewMemberFileName>Classes\ActionOnMassmedia.cs</NewMemberFileName>
+        </TypeIdentifier>
+      </Class>
+    </NestedTypes>
+    <TypeIdentifier>
+      <HashCode>AAEhAFAAiAFAAAIAAQhgAAoGAAAYAQFQAAAgCAAAIRA=</HashCode>
+      <FileName>Classes\ActionOnMassmedia.cs</FileName>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="Merlin.Classes.Domain.StudioOrder.StudioOrderAction">
+    <Position X="6.75" Y="1.75" Width="2.75" />
+    <NestedTypes>
+      <Enum Name="Merlin.Classes.Domain.StudioOrder.StudioOrderAction.Status" Collapsed="true">
+        <TypeIdentifier>
+          <NewMemberFileName>Classes\Domain\StudioOrder\StudioOrderAction.cs</NewMemberFileName>
+        </TypeIdentifier>
+      </Enum>
+    </NestedTypes>
+    <TypeIdentifier>
+      <HashCode>AAABAABAAABAACAgAABAEAgGAAAIAAAAAAAEAAAACQA=</HashCode>
+      <FileName>Classes\Domain\StudioOrder\StudioOrderAction.cs</FileName>
+    </TypeIdentifier>
+  </Class>
+  <Font Name="Segoe UI" Size="9" />
+</ClassDiagram>

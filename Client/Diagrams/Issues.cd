@@ -1,0 +1,64 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<ClassDiagram MajorVersion="1" MinorVersion="1">
+  <Class Name="Merlin.Classes.Issue" Collapsed="true">
+    <Position X="4.25" Y="1.25" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>ACAAAAAAAAIgACAgAABAAACUAAAIAgAAAAAAAAAAAAA=</HashCode>
+      <FileName>Classes\Issue.cs</FileName>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="Merlin.Classes.CampaignPart" Collapsed="true">
+    <Position X="7.25" Y="1.25" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>AAASQQAgAAAAAAAAAABAAAQEAAEIAAAAAAAAAAAAAAA=</HashCode>
+      <FileName>Classes\CampaignPart.cs</FileName>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="FogSoft.WinForm.Classes.ObjectContainer" Collapsed="true">
+    <Position X="10.25" Y="1" Width="1.5" />
+    <TypeIdentifier />
+    <Lollipop Position="0.2" />
+  </Class>
+  <Class Name="Merlin.Classes.CampaignPartPackModuleIssue" Collapsed="true">
+    <Position X="2" Y="2.75" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>AAAAAAAAAAAgAQAAAAABAAAAAAAIAAAAAAAAAAAAAAA=</HashCode>
+      <FileName>Classes\CampaignPackModule.cs</FileName>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="Merlin.Classes.ModuleIssue" Collapsed="true">
+    <Position X="4.25" Y="2.75" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>AAAAAAAAAAAgAAAAAAABAAAAAAEAAAAAAAAAAAAAAAA=</HashCode>
+      <FileName>Classes\ModuleIssue.cs</FileName>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="Merlin.Classes.RollerIssue" Collapsed="true">
+    <Position X="6.5" Y="2.75" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>BAAAAAAAAAAiAgAAAAABAUAAAABIAIAAAAAAAAAAAAA=</HashCode>
+      <FileName>Classes\RollerIssue.cs</FileName>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="FogSoft.WinForm.Classes.Entity">
+    <Position X="10.25" Y="2.75" Width="1.5" />
+    <NestedTypes>
+      <Struct Name="FogSoft.WinForm.Classes.Entity.ParamNames" Collapsed="true">
+        <TypeIdentifier />
+      </Struct>
+      <Class Name="FogSoft.WinForm.Classes.Entity.Action" Collapsed="true">
+        <TypeIdentifier />
+      </Class>
+      <Class Name="FogSoft.WinForm.Classes.Entity.Attribute" Collapsed="true">
+        <TypeIdentifier />
+        <Lollipop Position="0.2" />
+      </Class>
+      <Class Name="FogSoft.WinForm.Classes.Entity.Filter" Collapsed="true">
+        <TypeIdentifier />
+      </Class>
+    </NestedTypes>
+    <TypeIdentifier />
+    <Lollipop Position="0.2" />
+  </Class>
+  <Font Name="Segoe UI" Size="9" />
+</ClassDiagram>

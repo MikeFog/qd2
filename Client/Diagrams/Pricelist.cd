@@ -1,0 +1,39 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<ClassDiagram MajorVersion="1" MinorVersion="1">
+  <Class Name="Merlin.Classes.Pricelist" Collapsed="true">
+    <Position X="5" Y="1" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>AAAAAAAAAAACgAAAAAAIAAgAAAAIAAIAAAAAAEAAAAA=</HashCode>
+      <FileName>Classes\Pricelist.cs</FileName>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="Merlin.Classes.MassmediaPricelist" Collapsed="true">
+    <Position X="2.75" Y="2.5" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>QQgAABBEAAAAABAEAAAYAAAEBAAIAQQAQAAAAAAQQAA=</HashCode>
+      <FileName>Classes\MassmediaPricelist.cs</FileName>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="Merlin.Classes.PackModulePricelist" Collapsed="true">
+    <Position X="5" Y="2.5" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>AAAAABAAgUAAAAAAAAAIAAAAAAAMAAAAAAAAAAAAAAA=</HashCode>
+      <FileName>Classes\PackModulePricelist.cs</FileName>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="Merlin.Classes.StudioPricelist" Collapsed="true">
+    <Position X="7.25" Y="2.5" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>AAAAAAAAAAAAAAAAAAAIAAAAAAAAAAAAAAAAAAAAAAA=</HashCode>
+      <FileName>Classes\StudioPricelist.cs</FileName>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="Merlin.Classes.ModulePricelist" Collapsed="true">
+    <Position X="2.75" Y="4" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>AAAwAAgQAQDIAACAAAAIEAAEAAAIAAAAAAAAAAACAAA=</HashCode>
+      <FileName>Classes\ModulePricelist.cs</FileName>
+    </TypeIdentifier>
+  </Class>
+  <Font Name="Segoe UI" Size="9" />
+</ClassDiagram>

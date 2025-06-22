@@ -1,0 +1,839 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<root>
+  <!-- 
+    Microsoft ResX Schema 
+    
+    Version 2.0
+    
+    The primary goals of this format is to allow a simple XML format 
+    that is mostly human readable. The generation and parsing of the 
+    various data types are done through the TypeConverter classes 
+    associated with the data types.
+    
+    Example:
+    
+    ... ado.net/XML headers & schema ...
+    <resheader name="resmimetype">text/microsoft-resx</resheader>
+    <resheader name="version">2.0</resheader>
+    <resheader name="reader">System.Resources.ResXResourceReader, System.Windows.Forms, ...</resheader>
+    <resheader name="writer">System.Resources.ResXResourceWriter, System.Windows.Forms, ...</resheader>
+    <data name="Name1"><value>this is my long string</value><comment>this is a comment</comment></data>
+    <data name="Color1" type="System.Drawing.Color, System.Drawing">Blue</data>
+    <data name="Bitmap1" mimetype="application/x-microsoft.net.object.binary.base64">
+        <value>[base64 mime encoded serialized .NET Framework object]</value>
+    </data>
+    <data name="Icon1" type="System.Drawing.Icon, System.Drawing" mimetype="application/x-microsoft.net.object.bytearray.base64">
+        <value>[base64 mime encoded string representing a byte array form of the .NET Framework object]</value>
+        <comment>This is a comment</comment>
+    </data>
+                
+    There are any number of "resheader" rows that contain simple 
+    name/value pairs.
+    
+    Each data row contains a name, and value. The row also contains a 
+    type or mimetype. Type corresponds to a .NET class that support 
+    text/value conversion through the TypeConverter architecture. 
+    Classes that don't support this are serialized and stored with the 
+    mimetype set.
+    
+    The mimetype is used for serialized objects, and tells the 
+    ResXResourceReader how to depersist the object. This is currently not 
+    extensible. For a given mimetype the value must be set accordingly:
+    
+    Note - application/x-microsoft.net.object.binary.base64 is the format 
+    that the ResXResourceWriter will generate, however the reader can 
+    read any of the formats listed below.
+    
+    mimetype: application/x-microsoft.net.object.binary.base64
+    value   : The object must be serialized with 
+            : System.Runtime.Serialization.Formatters.Binary.BinaryFormatter
+            : and then encoded with base64 encoding.
+    
+    mimetype: application/x-microsoft.net.object.soap.base64
+    value   : The object must be serialized with 
+            : System.Runtime.Serialization.Formatters.Soap.SoapFormatter
+            : and then encoded with base64 encoding.
+
+    mimetype: application/x-microsoft.net.object.bytearray.base64
+    value   : The object must be serialized into a byte array 
+            : using a System.ComponentModel.TypeConverter
+            : and then encoded with base64 encoding.
+    -->
+  <xsd:schema id="root" xmlns="" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:msdata="urn:schemas-microsoft-com:xml-msdata">
+    <xsd:import namespace="http://www.w3.org/XML/1998/namespace" />
+    <xsd:element name="root" msdata:IsDataSet="true">
+      <xsd:complexType>
+        <xsd:choice maxOccurs="unbounded">
+          <xsd:element name="metadata">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" />
+              </xsd:sequence>
+              <xsd:attribute name="name" use="required" type="xsd:string" />
+              <xsd:attribute name="type" type="xsd:string" />
+              <xsd:attribute name="mimetype" type="xsd:string" />
+              <xsd:attribute ref="xml:space" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="assembly">
+            <xsd:complexType>
+              <xsd:attribute name="alias" type="xsd:string" />
+              <xsd:attribute name="name" type="xsd:string" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="data">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1" />
+                <xsd:element name="comment" type="xsd:string" minOccurs="0" msdata:Ordinal="2" />
+              </xsd:sequence>
+              <xsd:attribute name="name" type="xsd:string" use="required" msdata:Ordinal="1" />
+              <xsd:attribute name="type" type="xsd:string" msdata:Ordinal="3" />
+              <xsd:attribute name="mimetype" type="xsd:string" msdata:Ordinal="4" />
+              <xsd:attribute ref="xml:space" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="resheader">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1" />
+              </xsd:sequence>
+              <xsd:attribute name="name" type="xsd:string" use="required" />
+            </xsd:complexType>
+          </xsd:element>
+        </xsd:choice>
+      </xsd:complexType>
+    </xsd:element>
+  </xsd:schema>
+  <resheader name="resmimetype">
+    <value>text/microsoft-resx</value>
+  </resheader>
+  <resheader name="version">
+    <value>2.0</value>
+  </resheader>
+  <resheader name="reader">
+    <value>System.Resources.ResXResourceReader, System.Windows.Forms, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <resheader name="writer">
+    <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <data name="IDS_REPORTNAMELABEL" xml:space="preserve">
+    <value>Subreport Name:</value>
+  </data>
+  <data name="IDS_MULTIPLE_RANGE_EDIT" xml:space="preserve">
+    <value>You can provide one or more ranges of values for this parameter.
+Enter a lower and an upper limit, then click Add, for each range of values you want to include.</value>
+  </data>
+  <data name="IDS_MULTIPLE_RANGE_PICK" xml:space="preserve">
+    <value>You can provide one or more ranges of values for this parameter.
+Choose a lower and an upper limit, then click Add, for each range of values you want to include.</value>
+  </data>
+  <data name="ID_SEARCH" xml:space="preserve">
+    <value>Find Text</value>
+  </data>
+  <data name="IDS_EXCEPTION_MAINREPORTDOCUMENT_GETLASTPAGENUMBERFROMENGINE" xml:space="preserve">
+    <value>Exception in MainReportDocument.GetLastPageNumberFromEngine: </value>
+  </data>
+  <data name="IDS_ENTERSEARCHSTRING" xml:space="preserve">
+    <value>Please enter the string you want to find.</value>
+  </data>
+  <data name="IDS_SHOW_EXPORTBUTTON_DESCRIPTION" xml:space="preserve">
+    <value>Determines whether the viewer toolbar has the button for exporting.</value>
+  </data>
+  <data name="ID_OnHandleExceptionDescr" xml:space="preserve">
+    <value>Fires when the viewer catches an exception and is about to handle it.</value>
+  </data>
+  <data name="IDS_LOGINDLG_TITLE" xml:space="preserve">
+    <value>Database Login</value>
+  </data>
+  <data name="IDS_EXCEPTION_REPORTDOCUMENTBASE_GETLASTPAGENUMBER" xml:space="preserve">
+    <value>Exception in ReportDocumentBase.GetLastPageNumber: </value>
+  </data>
+  <data name="ID_ZOOMING" xml:space="preserve">
+    <value>Zooming</value>
+  </data>
+  <data name="IDC_SEARCHCOMBO" xml:space="preserve">
+    <value>Search Control</value>
+  </data>
+  <data name="IDS_REPORT_SOURCE_DESCRIPTION" xml:space="preserve">
+    <value>The remote report service proxy of the report to be viewed.</value>
+  </data>
+  <data name="ID_OnDrillDescr" xml:space="preserve">
+    <value>Fires when graph drilldown or group drilldown is about to occur.</value>
+  </data>
+  <data name="IDS_EXCEPTION_REPORTDOCUMENTBASE_GETPAGE" xml:space="preserve">
+    <value>Exception in ReportDocumentBase.GetPage: </value>
+  </data>
+  <data name="IDS_EXCEPTION_TOOLTIPCAPTIONDUPLICATE" xml:space="preserve">
+    <value>Toolbar tooltip caption exists. Please choose another tooltip.</value>
+  </data>
+  <data name="IDS_ORIENTATION_MSG" xml:space="preserve">
+    <value>The report you are about to print is a pre-formatted image of the actual report data.  Changing orientation or paper size may result in loss of objects on each printed page.  Do you wish to continue?</value>
+  </data>
+  <data name="IDS_SHOW_GOTOPAGEBUTTON_DESCRIPTION" xml:space="preserve">
+    <value>Determines whether the viewer toolbar has the button for specifying page number.</value>
+  </data>
+  <data name="IDC_INCLUDE_LOWER_BOUND" xml:space="preserve">
+    <value>&amp;Include this value</value>
+  </data>
+  <data name="IDS_STRING" xml:space="preserve">
+    <value>String</value>
+  </data>
+  <data name="ID_EXPORT" xml:space="preserve">
+    <value>Export Report</value>
+  </data>
+  <data name="IDS_REPORTOBJECT" xml:space="preserve">
+    <value>Report Object</value>
+  </data>
+  <data name="IDS_ERROR_EMPTY_REPORT_NAME" xml:space="preserve">
+    <value>Report Name is Empty.</value>
+  </data>
+  <data name="IDS_GROUP_FOOTER" xml:space="preserve">
+    <value>Group Footer</value>
+  </data>
+  <data name="IDS_PT_TIME" xml:space="preserve">
+    <value>Time</value>
+  </data>
+  <data name="IDS_PT_DATE" xml:space="preserve">
+    <value>Date</value>
+  </data>
+  <data name="IDS_EXCEPTION_REPORTGROUPTREE_INITREPORTGROUPTREE" xml:space="preserve">
+    <value>Exception in ReportGroupTree.InitReportGroupTree: </value>
+  </data>
+  <data name="IDS_PREVIEW" xml:space="preserve">
+    <value>Preview</value>
+  </data>
+  <data name="ID_OPEN_REPORT_DIALOG_TITLE" xml:space="preserve">
+    <value>Open an Existing Crystal Report</value>
+  </data>
+  <data name="IDS_EXCEPTION_MAINREPORTDOCUMENT_GETPAGE" xml:space="preserve">
+    <value>Exception in MainReportDocument.GetPage: </value>
+  </data>
+  <data name="IDS_EXCEPTION_MAINREPORTDOCUMENT_GETGROUPINFOFORDRILLONGRAPH" xml:space="preserve">
+    <value>Exception in MainReportDocument.GetGroupInfoForDrillOnGraph: </value>
+  </data>
+  <data name="IDS_OK" xml:space="preserve">
+    <value>OK</value>
+  </data>
+  <data name="ID_BROWSE" xml:space="preserve">
+    <value>Browse ...</value>
+  </data>
+  <data name="IDS_ENBALE_STATUSBAR_DESCRIPTION" xml:space="preserve">
+    <value>Determines whether the CrystalReportViewer's status bar is visible or hidden.</value>
+  </data>
+  <data name="IDS_ERR_LOAD_EXPORT" xml:space="preserve">
+    <value>Couldn't initialize the export control.</value>
+  </data>
+  <data name="IDS_GROUP_HEADER" xml:space="preserve">
+    <value>Group Header</value>
+  </data>
+  <data name="ID_VIEW_GROUPTREE" xml:space="preserve">
+    <value>Toggle Group Tree</value>
+  </data>
+  <data name="IDS_FIELD" xml:space="preserve">
+    <value>Field:</value>
+  </data>
+  <data name="IDS_CHART" xml:space="preserve">
+    <value>Chart</value>
+  </data>
+  <data name="IDS_TOTAL_PAGENUMBER" xml:space="preserve">
+    <value>Total Page No.:</value>
+  </data>
+  <data name="IDS_DB_LOGON_FOR_SUB" xml:space="preserve">
+    <value>used by the subreport: </value>
+  </data>
+  <data name="IDS_PT_CURRENCY" xml:space="preserve">
+    <value>Currency</value>
+  </data>
+  <data name="IDS_INPLACE_SUBREPORT" xml:space="preserve">
+    <value>Subreport</value>
+  </data>
+  <data name="IDC_NO_LOWER_BOUND" xml:space="preserve">
+    <value>No l&amp;ower Bound</value>
+  </data>
+  <data name="IDS_DATABASENAME" xml:space="preserve">
+    <value>&amp;Database:</value>
+  </data>
+  <data name="IDS_PROMPT_MSG" xml:space="preserve">
+    <value>Please enter information for the prompt: </value>
+  </data>
+  <data name="IDS_ERROR_PARAMETER_RANGE" xml:space="preserve">
+    <value>The range start value must be less than or equal to the range end value.</value>
+  </data>
+  <data name="IDS_ERROR_PARAMETER_GREATER_THAN_MAX" xml:space="preserve">
+    <value>The value entered is larger than the maximum allowed for this parameter.</value>
+  </data>
+  <data name="IDS_BOOLEAN" xml:space="preserve">
+    <value>Boolean</value>
+  </data>
+  <data name="IDS_EXCEPTION_NULL_HOST" xml:space="preserve">
+    <value>Could not get IDesignerHost.</value>
+  </data>
+  <data name="IDS_ERR_GROUP_INFO" xml:space="preserve">
+    <value>The required group information is unavailable.</value>
+  </data>
+  <data name="IDS_FILEFILTER_XLS" xml:space="preserve">
+    <value>Microsoft Excel (*.xls)|*.xls</value>
+  </data>
+  <data name="IDS_FILEFILTER_RTF" xml:space="preserve">
+    <value>Rich Text Format (*.rtf)|*.rtf</value>
+  </data>
+  <data name="IDS_FILEFILTER_RPT" xml:space="preserve">
+    <value>Crystal Reports (*.rpt)|*.rpt</value>
+  </data>
+  <data name="IDS_FILEFILTER_PDF" xml:space="preserve">
+    <value>Adobe Acrobat (*.pdf)|*.pdf</value>
+  </data>
+  <data name="IDS_FILEFILTER_DOC" xml:space="preserve">
+    <value>Microsoft Word (*.doc)|*.doc</value>
+  </data>
+  <data name="IDS_FILEFILTER_RECORD_XLS" xml:space="preserve">
+    <value>Microsoft Excel Data Only (*.xls)|*.xls</value>
+  </data>
+  <data name="ID_SELECTEXPERT" xml:space="preserve">
+    <value>Select Expert</value>
+  </data>
+  <data name="ID_STOP" xml:space="preserve">
+    <value>Stop Loading</value>
+  </data>
+  <data name="ID_ZOOM" xml:space="preserve">
+    <value>Zoom</value>
+  </data>
+  <data name="ID_EDIT" xml:space="preserve">
+    <value>Edit ...</value>
+  </data>
+  <data name="ID_NONE" xml:space="preserve">
+    <value>(None)</value>
+  </data>
+  <data name="IDS_MAP" xml:space="preserve">
+    <value>Map</value>
+  </data>
+  <data name="IDS_PWD" xml:space="preserve">
+    <value>&amp;Password:</value>
+  </data>
+  <data name="IDS_OLEOBJECT" xml:space="preserve">
+    <value>OLE Object</value>
+  </data>
+  <data name="ID_ENTER_REPORT_SOURCE" xml:space="preserve">
+    <value>Enter Report Source</value>
+  </data>
+  <data name="IDS_EXCEPTION_REPORTDOCUMENTBASE_FINDGROUP" xml:space="preserve">
+    <value>Exception in ReportDocumentBase.FindGroup: </value>
+  </data>
+  <data name="IDS_SHOW_CLOSEBUTTON_DESCRIPTION" xml:space="preserve">
+    <value>Determines whether the viewer toolbar has the button for closing a report page.</value>
+  </data>
+  <data name="IDS_FREEZE_PANE" xml:space="preserve">
+    <value>&amp;Freeze Pane</value>
+  </data>
+  <data name="IDS_PT_BOOLEAN" xml:space="preserve">
+    <value>True or False</value>
+  </data>
+  <data name="IDC_VALUE_OR_BOOLEAN_LABEL" xml:space="preserve">
+    <value>Discrete va&amp;lues</value>
+  </data>
+  <data name="IDC_PROGRESSBAR" xml:space="preserve">
+    <value>Progress Control</value>
+  </data>
+  <data name="IDS_SHOW_PRINTBUTTON_DESCRIPTION" xml:space="preserve">
+    <value>Determines whether the viewer toolbar has the button for printing.</value>
+  </data>
+  <data name="IDS_SINGLE_RANGE_EDIT_AND_PICK" xml:space="preserve">
+    <value>You can provide a single range of values for this parameter.
+Choose or enter a lower and an upper limit to describe the range of values you want to include.</value>
+  </data>
+  <data name="IDS_SECTION" xml:space="preserve">
+    <value>Section</value>
+  </data>
+  <data name="IDC_NO_UPPER_BOUND" xml:space="preserve">
+    <value>No &amp;upper Bound</value>
+  </data>
+  <data name="IDS_EXCEPTION_TOOLBARBASE_INVALIDTOOLTIP" xml:space="preserve">
+    <value>Invald toolbar control tooltip.</value>
+  </data>
+  <data name="ID_OnSearchDescr" xml:space="preserve">
+    <value>Fires when the text search is about to occur.</value>
+  </data>
+  <data name="IDS_SINGLE_DISCRETE_EDIT_AND_PICK" xml:space="preserve">
+    <value>You can provide a single value for this parameter.
+Choose or enter the value you want to include.</value>
+  </data>
+  <data name="IDS_ERROR_INVALID_DATA_SOURCE" xml:space="preserve">
+    <value>Invalid data source.</value>
+  </data>
+  <data name="IDS_DISPLAY_TOOLBAR_DESCRIPTION" xml:space="preserve">
+    <value>Determines whether the CrystalReportViewer's toolbar is visible or hidden.</value>
+  </data>
+  <data name="IDS_EXCEPTION_DOCUMENTMANAGER_INITDOCUMENTMANAGER" xml:space="preserve">
+    <value>Exception in DocumentManager.InitDocumentManager: </value>
+  </data>
+  <data name="IDS_REPORT_FOOTER" xml:space="preserve">
+    <value>Report Footer</value>
+  </data>
+  <data name="IDS_PASSWORDCHAR" xml:space="preserve">
+    <value>c</value>
+  </data>
+  <data name="IDS_DB_LOGON_PROMPT" xml:space="preserve">
+    <value>Enter your user ID and password for the database</value>
+  </data>
+  <data name="IDS_PAGEN_SYMBOL" xml:space="preserve">
+    <value>of</value>
+  </data>
+  <data name="IDS_FINISH_SEARCHING" xml:space="preserve">
+    <value>Finished searching the document.</value>
+  </data>
+  <data name="IDC_ZOOMING_LABEL" xml:space="preserve">
+    <value>Please specify the zooming factor: (25 - 400)</value>
+  </data>
+  <data name="IDS_CUSTOMIZE" xml:space="preserve">
+    <value>Customize...</value>
+  </data>
+  <data name="IDS_PAGE_WIDTH" xml:space="preserve">
+    <value>Page Width</value>
+  </data>
+  <data name="IDS_MAIN_REPORT" xml:space="preserve">
+    <value>Main Report</value>
+  </data>
+  <data name="IDC_INCLUDE_UPPER_BOUND" xml:space="preserve">
+    <value>In&amp;clude this value</value>
+  </data>
+  <data name="IDS_SHOW_PAGENAVIGATEBUTTONS_DESCRIPTION" xml:space="preserve">
+    <value>Determines whether the viewer toolbar has the buttons for navigating the report pages.</value>
+  </data>
+  <data name="IDS_REPORT_HEADER" xml:space="preserve">
+    <value>Report Header</value>
+  </data>
+  <data name="IDS_EXCEPTION_REPORTDOCUMENTBASE_EXPORT" xml:space="preserve">
+    <value>Exception in ReportDocumentBase.Export: </value>
+  </data>
+  <data name="ID_NEXTPAGE" xml:space="preserve">
+    <value>Go to Next Page</value>
+  </data>
+  <data name="IDC_ZOOMCOMBO" xml:space="preserve">
+    <value>Zoom Control</value>
+  </data>
+  <data name="IDS_ZOOM_FACTOR_DEFAULT" xml:space="preserve">
+    <value>Zoom Factor: 100%</value>
+  </data>
+  <data name="IDS_PT_DATETIME" xml:space="preserve">
+    <value>Date Time</value>
+  </data>
+  <data name="IDS_FILEFILTER_HTML40" xml:space="preserve">
+    <value>HTML 4.0(DHTML) (*.html)|*.html</value>
+  </data>
+  <data name="IDS_FILEFILTER_HTML32" xml:space="preserve">
+    <value>HTML 3.2 (*.html)|*.html</value>
+  </data>
+  <data name="IDS_DISPLAY_GROUPTREE_DESCRIPTION" xml:space="preserve">
+    <value>Determines whether the CrystalReportViewer's group tree is visible or hidden.</value>
+  </data>
+  <data name="ID_SEARCH_EXPERT" xml:space="preserve">
+    <value>Search Expert</value>
+  </data>
+  <data name="IDS_OLAP_GRID" xml:space="preserve">
+    <value>OLAP Grid</value>
+  </data>
+  <data name="IDS_CONTENTS" xml:space="preserve">
+    <value>Next Level...</value>
+  </data>
+  <data name="IDS_EXCEPTION_MAINREPORTDOCUMENT_REFRESH" xml:space="preserve">
+    <value>Exception in MainReportDocument.Refresh: </value>
+  </data>
+  <data name="IDS_REPORT_NAME_DESCRIPTION" xml:space="preserve">
+    <value>The name or the URL of the report to be viewed.</value>
+  </data>
+  <data name="IDS_ERR_EXPORT_FAILED" xml:space="preserve">
+    <value>Export failed.</value>
+  </data>
+  <data name="IDS_DRILLDOWN" xml:space="preserve">
+    <value>Drill Down</value>
+  </data>
+  <data name="IDS_CURRENCY" xml:space="preserve">
+    <value>Currency</value>
+  </data>
+  <data name="IDC_PARAMETERFIELDS_LABEL" xml:space="preserve">
+    <value>Parameter Fields:</value>
+  </data>
+  <data name="IDS_ZOOM_FACTOR" xml:space="preserve">
+    <value>Zoom Factor:</value>
+  </data>
+  <data name="IDS_CRYSTALREPORT" xml:space="preserve">
+    <value>Crystal Report</value>
+  </data>
+  <data name="IDS_PROMPT_RANGE2" xml:space="preserve">
+    <value>The value must be between {0} and {1}.</value>
+  </data>
+  <data name="ID_OF" xml:space="preserve">
+    <value>of</value>
+  </data>
+  <data name="IDS_CANCEL_PROMPT_MSG" xml:space="preserve">
+    <value>Are you sure you want to cancel? If logon information is required, you will not be able to proceed.  The current default report prompts will be used.</value>
+  </data>
+  <data name="IDS_EXCEPTION_NULL_EXTENSIBILITYSERVICE" xml:space="preserve">
+    <value>Could not get IExtensibilityService.</value>
+  </data>
+  <data name="ID_HELP_ABOUT" xml:space="preserve">
+    <value>Help</value>
+  </data>
+  <data name="IDS_EXCEPTION_REPORTDOCUMENT_GETDRILLDOWNDOCUMENT" xml:space="preserve">
+    <value>Exception in ReportDocument.GetDrillDownDocument: </value>
+  </data>
+  <data name="IDS_ERR_INDEX_RANGE" xml:space="preserve">
+    <value>The index is out of range.</value>
+  </data>
+  <data name="IDS_EXCEPTION_DOCUMENTMANAGER_ADDREPORT" xml:space="preserve">
+    <value>Exception in DocumentManager.AddReport: </value>
+  </data>
+  <data name="IDS_ERR_BUSY" xml:space="preserve">
+    <value>The control is busy downloading data.</value>
+  </data>
+  <data name="IDS_PAGE_HEADER" xml:space="preserve">
+    <value>Page Header</value>
+  </data>
+  <data name="IDS_PROMPT_RANGE_STRING" xml:space="preserve">
+    <value>characters long</value>
+  </data>
+  <data name="ID_OnPageNavigateDescr" xml:space="preserve">
+    <value>Fires when the page navigation is about to occur.</value>
+  </data>
+  <data name="ID_LASTPAGE" xml:space="preserve">
+    <value>Go to Last Page</value>
+  </data>
+  <data name="IDS_SHOW_TEXTSEARCHBUTTON_DESCRIPTION" xml:space="preserve">
+    <value>Determines whether the viewer toolbar has the button for text searching.</value>
+  </data>
+  <data name="IDS_TABLENAMELABEL" xml:space="preserve">
+    <value>Table Name:</value>
+  </data>
+  <data name="ID_OnSubreportDrillDownDescr" xml:space="preserve">
+    <value>Fires when subreport drilldown is about to occur.</value>
+  </data>
+  <data name="ID_OPEN_REPORT_DIALOG_FILTER" xml:space="preserve">
+    <value>Crystal Reports (*.rpt)|*.rpt</value>
+  </data>
+  <data name="IDS_MSG_TITLE" xml:space="preserve">
+    <value>Crystal Report Windows Forms Viewer</value>
+  </data>
+  <data name="IDS_PT_STRING" xml:space="preserve">
+    <value>String</value>
+  </data>
+  <data name="IDS_LOGINID" xml:space="preserve">
+    <value>&amp;Login ID:</value>
+  </data>
+  <data name="IDS_LOADING" xml:space="preserve">
+    <value>Loading...</value>
+  </data>
+  <data name="IDS_CROSSTAB" xml:space="preserve">
+    <value>Cross-Tab</value>
+  </data>
+  <data name="IDC_PAGENUMBER" xml:space="preserve">
+    <value>Page Number</value>
+  </data>
+  <data name="IDCANCEL" xml:space="preserve">
+    <value>Cancel</value>
+  </data>
+  <data name="ID_REFRESH" xml:space="preserve">
+    <value>Refresh</value>
+  </data>
+  <data name="ID_VIEW_TOOLBAR" xml:space="preserve">
+    <value>Show/Hide Toolbar</value>
+  </data>
+  <data name="IDS_MAINREPORTLABEL" xml:space="preserve">
+    <value>Main Report</value>
+  </data>
+  <data name="IDC_DELETE_VALUE" xml:space="preserve">
+    <value>Dele&amp;te</value>
+  </data>
+  <data name="ID_EDIT_REPORT_SOURCE" xml:space="preserve">
+    <value>Edit Report Source</value>
+  </data>
+  <data name="IDC_RANGE_LABEL" xml:space="preserve">
+    <value>Range of values bet&amp;ween</value>
+  </data>
+  <data name="IDS_SELECTION_FORMULA_DESCRIPTION" xml:space="preserve">
+    <value>The record selection formula.</value>
+  </data>
+  <data name="IDC_END_OF_RANGE_LABEL" xml:space="preserve">
+    <value>&amp;End of range</value>
+  </data>
+  <data name="IDS_MISSING_PARAMETERFIELD_CURRENTVALUE" xml:space="preserve">
+    <value>Missing ParameterField current value.</value>
+  </data>
+  <data name="IDS_PROMPT_RANGE" xml:space="preserve">
+    <value>The value must be between {0} and {1}{2}.</value>
+  </data>
+  <data name="IDC_CHECK_NULLVALUE" xml:space="preserve">
+    <value>Set to NULL value</value>
+  </data>
+  <data name="IDS_MULTIPLE_RANGE_EDIT_AND_PICK" xml:space="preserve">
+    <value>You can provide one or more ranges of values for this parameter.
+Choose or enter a lower and an upper limit, then click Add, for each range of values you want to include.</value>
+  </data>
+  <data name="ID_OnRefreshDescr" xml:space="preserve">
+    <value>Fires when the report is about to be refreshed.</value>
+  </data>
+  <data name="IDS_SINGLE_RANGE_EDIT" xml:space="preserve">
+    <value>You can provide a single range of values for this parameter.
+Enter a lower and an upper limit to describe the range of values you want to include.</value>
+  </data>
+  <data name="IDS_SINGLE_RANGE_PICK" xml:space="preserve">
+    <value>You can provide a single range of values for this parameter.
+Choose a lower and an upper limit to describe the range of values you want to include.</value>
+  </data>
+  <data name="IDS_TEXTOBJECT" xml:space="preserve">
+    <value>Text Object</value>
+  </data>
+  <data name="IDS_EXCEPTION_REPORTDOCUMENTBASE_FINDTEXT" xml:space="preserve">
+    <value>Exception in ReportDocumentBase.FindText: </value>
+  </data>
+  <data name="IDS_MSG_STRINGNOTFOUND" xml:space="preserve">
+    <value>Could not find any more instances of the specified text after this page.</value>
+  </data>
+  <data name="IDS_PT_NUMBER" xml:space="preserve">
+    <value>Number</value>
+  </data>
+  <data name="IDC_START_OF_RANGE_LABEL" xml:space="preserve">
+    <value>&amp;Start of range</value>
+  </data>
+  <data name="IDS_SHOW_REFRESHBUTTON_DESCRIPTION" xml:space="preserve">
+    <value>Determines whether the viewer toolbar has the button for refreshing.</value>
+  </data>
+  <data name="IDS_EXCEPTION_REPORTDOCUMENTBASE_DRILLDOWNGRAPH" xml:space="preserve">
+    <value>Drilled on an area that does not have detail data. To drill down, please click on an area that has data.</value>
+  </data>
+  <data name="IDS_ERROR_PARAMETER_LESS_THAN_MIN" xml:space="preserve">
+    <value>The value entered is smaller than the minimum allowed for this parameter.</value>
+  </data>
+  <data name="IDS_EXCEPTION_MAINREPORTDOCUMENT_GETGROUPTREEFROMENGINE" xml:space="preserve">
+    <value>Exception in MainReportDocument.GetGroupTreeFromEngine: </value>
+  </data>
+  <data name="IDS_MULTIPLE_BOTH_EDIT_AND_PICK" xml:space="preserve">
+    <value>You can provide one or more values (including ranges) for this parameter.
+Choose or enter a value (or a lower and an upper limit), then click Add, for each value (range of values) you want to include.</value>
+  </data>
+  <data name="IDS_ERROR_PARAMETER_TYPE" xml:space="preserve">
+    <value>Please enter a {0} value.</value>
+  </data>
+  <data name="IDC_FINDNEXT" xml:space="preserve">
+    <value>&amp;Find Next</value>
+  </data>
+  <data name="IDC_FINDWHAT_LABEL" xml:space="preserve">
+    <value>Find what:</value>
+  </data>
+  <data name="IDS_EXCEPTION_TOOLBARBASE_INDEXOUTOFRANGE" xml:space="preserve">
+    <value>Toolbar control index is out of range.</value>
+  </data>
+  <data name="IDS_PAGE_FOOTER" xml:space="preserve">
+    <value>Page Footer</value>
+  </data>
+  <data name="IDC_VALUE_START_LABEL" xml:space="preserve">
+    <value>Value/Start</value>
+  </data>
+  <data name="ID_PRINT" xml:space="preserve">
+    <value>Print Report</value>
+  </data>
+  <data name="ID_CLOSE" xml:space="preserve">
+    <value>Close Current View</value>
+  </data>
+  <data name="ID_SELECTION_COPY" xml:space="preserve">
+    <value>Copy</value>
+  </data>
+  <data name="IDS_PROMPTPARAM_DLGTITLE2" xml:space="preserve">
+    <value>Please Provide Information - {0} of {1}</value>
+  </data>
+  <data name="IDS_DATE" xml:space="preserve">
+    <value>Date</value>
+  </data>
+  <data name="IDS_MEMO" xml:space="preserve">
+    <value>Memo</value>
+  </data>
+  <data name="IDS_BACK" xml:space="preserve">
+    <value>&lt; &amp;Back</value>
+  </data>
+  <data name="IDS_BLOB" xml:space="preserve">
+    <value>Blob Field</value>
+  </data>
+  <data name="IDS_HELP" xml:space="preserve">
+    <value>&amp;Help</value>
+  </data>
+  <data name="IDS_NEXT" xml:space="preserve">
+    <value>&amp;Next &gt;</value>
+  </data>
+  <data name="IDS_TEXT" xml:space="preserve">
+    <value>Text</value>
+  </data>
+  <data name="IDS_TIME" xml:space="preserve">
+    <value>Time</value>
+  </data>
+  <data name="IDS_SHOW_ZOOMBUTTON_DESCRIPTION" xml:space="preserve">
+    <value>Determines whether the viewer toolbar has the zoom button for setting the report page zooming level.</value>
+  </data>
+  <data name="IDS_EXPORT_COMPLETED" xml:space="preserve">
+    <value>Export completed.</value>
+  </data>
+  <data name="ID_PREVPAGE" xml:space="preserve">
+    <value>Go to Previous Page</value>
+  </data>
+  <data name="IDS_DEL_DRILL" xml:space="preserve">
+    <value>You can not continue this operation and keep your drill-down tabs.  If you continue, your drill-down tabs will be closed.
+
+Do you want to continue?</value>
+  </data>
+  <data name="IDS_MULTIPLE_BOTH_EDIT" xml:space="preserve">
+    <value>You can provide one or more values (including ranges) for this parameter.
+Enter a value (or a lower and an upper limit), then click Add, for each value (range of values) you want to include.</value>
+  </data>
+  <data name="IDS_MULTIPLE_BOTH_PICK" xml:space="preserve">
+    <value>You can provide one or more values (including ranges) for this parameter.
+Choose a value (or a lower and an upper limit), then click Add, for each value (range of values) you want to include.</value>
+  </data>
+  <data name="IDS_MSG_NO_RPT_NAME" xml:space="preserve">
+    <value>No report to view.</value>
+  </data>
+  <data name="IDS_SERVERNAME" xml:space="preserve">
+    <value>&amp;Server Name:</value>
+  </data>
+  <data name="IDS_SINGLE_DISCRETE_EDIT" xml:space="preserve">
+    <value>You can provide a single value for this parameter.
+Enter the value you want to include.</value>
+  </data>
+  <data name="IDS_SINGLE_DISCRETE_PICK" xml:space="preserve">
+    <value>You can provide a single value for this parameter.
+Choose the value you want to include.</value>
+  </data>
+  <data name="IDS_MULTIPLE_DISCRETE_EDIT" xml:space="preserve">
+    <value>You can provide one or more values for this parameter.
+Enter a value, then click Add, for each value you want to include.</value>
+  </data>
+  <data name="IDS_MULTIPLE_DISCRETE_PICK" xml:space="preserve">
+    <value>You can provide one or more values for this parameter.
+Choose a value, then click Add, for each value you want to include.</value>
+  </data>
+  <data name="IDS_PROMPT_TEXT" xml:space="preserve">
+    <value>&amp;Prompt:</value>
+  </data>
+  <data name="IDS_PROMPTPARAM_DLGTITLE" xml:space="preserve">
+    <value>Enter Parameter Values</value>
+  </data>
+  <data name="IDS_MSG_COULDNOTSTARTPRINTJOB" xml:space="preserve">
+    <value>Could not start print job.</value>
+  </data>
+  <data name="IDS_WHOLE_PAGE" xml:space="preserve">
+    <value>Whole Page</value>
+  </data>
+  <data name="IDS_ENABLE_DRILLDOWN_DESCRIPTION" xml:space="preserve">
+    <value>Determines whether the CrystalReportViewer's drilldown functionality is enabled.</value>
+  </data>
+  <data name="IDS_DETAIL" xml:space="preserve">
+    <value>Detail Section</value>
+  </data>
+  <data name="IDS_MULTIPLE_DISCRETE_EDIT_AND_PICK" xml:space="preserve">
+    <value>You can provide one or more values for this parameter.
+Choose or enter a value, then click Add, for each value you want to include.</value>
+  </data>
+  <data name="IDC_ADD_VALUE_OR_BOOLEAN" xml:space="preserve">
+    <value>&amp;Add</value>
+  </data>
+  <data name="IDS_ENABLE_TOOLTIP_DESCRIPTION" xml:space="preserve">
+    <value>Enable tooltips for objects within the viewer.</value>
+  </data>
+  <data name="IDS_AND_LABEL" xml:space="preserve">
+    <value>and</value>
+  </data>
+  <data name="IDS_ENTERZOOMFACTOR" xml:space="preserve">
+    <value>Please enter a valid zooming factor.</value>
+  </data>
+  <data name="IDS_DRILL_DOWN" xml:space="preserve">
+    <value>Drill-Down</value>
+  </data>
+  <data name="ID_PAGENUMBER" xml:space="preserve">
+    <value>Page Number</value>
+  </data>
+  <data name="ID_GOTOPAGE" xml:space="preserve">
+    <value>Go to Page</value>
+  </data>
+  <data name="IDS_EXPORT_UNAVAILABLE" xml:space="preserve">
+    <value>This report can not be exported.</value>
+  </data>
+  <data name="IDS_TRY_AGAIN" xml:space="preserve">
+    <value>Please try again.</value>
+  </data>
+  <data name="IDC_PICKDEFAULTS" xml:space="preserve">
+    <value>&amp;Pick from defaults</value>
+  </data>
+  <data name="IDS_CURRENT_PAGENUMBER" xml:space="preserve">
+    <value>Current Page No.:</value>
+  </data>
+  <data name="IDS_FINISH" xml:space="preserve">
+    <value>Finish</value>
+  </data>
+  <data name="IDC_ADD_RANGE_VALUES" xml:space="preserve">
+    <value>A&amp;dd</value>
+  </data>
+  <data name="IDS_EXCEPTION_REPORTDOCUMENTBASE_GETGROUPTREE" xml:space="preserve">
+    <value>Exception in ReportDocumentBase.GetGroupTree: </value>
+  </data>
+  <data name="IDS_VIEWTIME_SELECTION_FORMULA_DESCRIPTION" xml:space="preserve">
+    <value>The view time selection formula.</value>
+  </data>
+  <data name="IDS_DATETIME" xml:space="preserve">
+    <value>DateTime</value>
+  </data>
+  <data name="IDS_SHOW_GROUPTREEBUTTON_DESCRIPTION" xml:space="preserve">
+    <value>Determines whether the viewer toolbar has the button for showing or hiding the group tree.</value>
+  </data>
+  <data name="IDS_EXCEPTION_NULL_PROJECT" xml:space="preserve">
+    <value>Could not get Current Project.</value>
+  </data>
+  <data name="IDS_LOGON_FAILED" xml:space="preserve">
+    <value>Logon Failed.</value>
+  </data>
+  <data name="IDS_CANCEL" xml:space="preserve">
+    <value>Cancel</value>
+  </data>
+  <data name="IDC_GROUPTREE" xml:space="preserve">
+    <value>Group Tree</value>
+  </data>
+  <data name="IDS_USER_ID_PROMPT" xml:space="preserve">
+    <value>&amp;User ID:</value>
+  </data>
+  <data name="IDS_DISPLAY_BACKGROUNDEDGE_DESCRIPTION" xml:space="preserve">
+    <value>Determines whether the report is offset from the edge of its view window.</value>
+  </data>
+  <data name="ID_OnZoomDescr" xml:space="preserve">
+    <value>Fires when the zoom factor is about to be changed.</value>
+  </data>
+  <data name="IDS_USEINTEGRATEDSECURITYCHECKBOX" xml:space="preserve">
+    <value>Use Integrated Security</value>
+  </data>
+  <data name="IDS_UNFREEZE_PANE" xml:space="preserve">
+    <value>&amp;Unfreeze Pane</value>
+  </data>
+  <data name="IDS_ENTERPAGENUMBER" xml:space="preserve">
+    <value>Please enter a valid page number.</value>
+  </data>
+  <data name="IDC_PAGENUMBER_LABEL" xml:space="preserve">
+    <value>Please specify the page number:</value>
+  </data>
+  <data name="IDC_END_LABEL" xml:space="preserve">
+    <value>End</value>
+  </data>
+  <data name="IDC_LABEL_VALUES" xml:space="preserve">
+    <value>Values:</value>
+  </data>
+  <data name="IDS_PROMPT_RANGE_STRING2" xml:space="preserve">
+    <value>The value must be between {0} and {1} characters long.</value>
+  </data>
+  <data name="IDOK" xml:space="preserve">
+    <value>OK</value>
+  </data>
+  <data name="IDS_NUMBER" xml:space="preserve">
+    <value>Number</value>
+  </data>
+  <data name="IDC_START_LABEL" xml:space="preserve">
+    <value>Start</value>
+  </data>
+  <data name="ID_FIRSTPAGE" xml:space="preserve">
+    <value>Go to First Page</value>
+  </data>
+</root>

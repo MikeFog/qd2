@@ -1,0 +1,116 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<ClassDiagram MajorVersion="1" MinorVersion="1">
+  <Class Name="Merlin.Classes.Campaign" Collapsed="true">
+    <Position X="8" Y="2" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>EAgSDABAAxESQAgAABBABgIUCgmMAALQQgFCwVAIABQ=</HashCode>
+      <FileName>Classes\Campaign.cs</FileName>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="Merlin.Classes.CampaignPart" Collapsed="true">
+    <Position X="8" Y="0.75" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>AAASQQAgAAAAAAAAAABAAAQEAAEIAAAAAAAAAAAAAAA=</HashCode>
+      <FileName>Classes\CampaignPart.cs</FileName>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="Merlin.Classes.CampaignOnSingleMassmedia" Collapsed="true">
+    <Position X="6.75" Y="7.75" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>AAAAgAACAIAAAAAEAAAAAAAEAAAIAAAgACAAAgAIQAA=</HashCode>
+      <FileName>Classes\CampaignOnSingleMassmedia.cs</FileName>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="Merlin.Classes.CampaignPackModule" Collapsed="true">
+    <Position X="10" Y="7.75" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>BAAAAAAAAAAAABAAAABABgAEAAAoAAAAAAAQQAAIAIA=</HashCode>
+      <FileName>Classes\CampaignPackModule.cs</FileName>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="Merlin.Classes.CampaignDayForRoller" Collapsed="true">
+    <Position X="4.75" Y="2" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=</HashCode>
+      <FileName>Classes\CampaignDay.cs</FileName>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="Merlin.Classes.CampaignDay" Collapsed="true">
+    <Position X="6.5" Y="2.75" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>AAAAAAAQIAAAAAAAAAAAAEAAAAAIAAAAAAAAAAAAAAA=</HashCode>
+      <FileName>Classes\CampaignDay.cs</FileName>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="Merlin.Classes.CampaignModuleRollerIssue" Collapsed="true">
+    <Position X="11" Y="2" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=</HashCode>
+      <FileName>Classes\CampaignModule.cs</FileName>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="Merlin.Classes.CampaignPartPackModule" Collapsed="true">
+    <Position X="9.25" Y="3.75" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>AAAAAAAAAAAAAAAAAAAAAAAAAAAIAABAAAAAAAAAAAA=</HashCode>
+      <FileName>Classes\CampaignPackModule.cs</FileName>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="Merlin.Classes.CampaignRoller" Collapsed="true">
+    <Position X="3" Y="3" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>AAEAQIAAAAAAAgAAAAAAAEAEAABIAABgAAAAAAAAAAA=</HashCode>
+      <FileName>Classes\CampaignRoller.cs</FileName>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="Merlin.Classes.Issue" Collapsed="true">
+    <Position X="3.5" Y="4.5" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>ACAAAAAAAAIgACAgAABAAACUAAAIAgAAAAAAAAAAAAA=</HashCode>
+      <FileName>Classes\Issue.cs</FileName>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="Merlin.Classes.ModuleInCampaign" Collapsed="true">
+    <Position X="2.75" Y="2" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>AAAAAAAAAAAAAAAAAAABAAAAAAAIAABAAAAAAAAAAAA=</HashCode>
+      <FileName>Classes\ModuleIssue.cs</FileName>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="Merlin.Classes.ProgramIssue" Collapsed="true">
+    <Position X="13.5" Y="2.25" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>AAAAAAAAAAAgAAAAAAABAAAQAgAAAAAAAAAAAAAAAAA=</HashCode>
+      <FileName>Classes\ProgramIssue.cs</FileName>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="Merlin.Classes.ProgramPartOfSponsorCampaign" Collapsed="true">
+    <Position X="15.75" Y="2.25" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>AAAAAAAAAAAAAAgAAAABAAAAAAAIAAAAAAAAAAAAAAA=</HashCode>
+      <FileName>Classes\ProgramPartOfSponsorCampaign.cs</FileName>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="Merlin.Classes.RollerPartOfSponsorCampaign" Collapsed="true">
+    <Position X="5.25" Y="4.5" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>AAAAAAAAAAAAAAAAAAABAAAAAAAIAAAAAAAAAAAIAAA=</HashCode>
+      <FileName>Classes\RollerPartOfSponsorCampaign.cs</FileName>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="Merlin.Classes.SponsorCampaignPart" Collapsed="true">
+    <Position X="14.25" Y="3.5" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=</HashCode>
+      <FileName>Classes\SponsorCampaignPart.cs</FileName>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="Merlin.Classes.SponsorProgramPart" Collapsed="true">
+    <Position X="6.5" Y="3.75" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>AAAAAAAAAAAAAAAQAAFgAAA0AAAIAAAAACACAAAAAAA=</HashCode>
+      <FileName>Classes\SponsorProgramPart.cs</FileName>
+    </TypeIdentifier>
+  </Class>
+  <Font Name="Segoe UI" Size="9" />
+</ClassDiagram>
