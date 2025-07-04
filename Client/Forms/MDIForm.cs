@@ -262,6 +262,8 @@ namespace Merlin.Forms
                     Merlin.Classes.Import.FirmImporter importer = new Classes.Import.FirmImporter();
                     importer.Import();
                 }
+                else if (strMiName == "miHeadOrganizations")
+					ShowHeadCompanies(mi);
             }
 			catch (Exception ex)
 			{
@@ -644,15 +646,29 @@ namespace Merlin.Forms
 
 		private void ShowPaymentStudioOrders(ToolStripItem mi, bool fAgenciesFilter)
 		{
-			Dictionary<string, object> parameters = new Dictionary<string, object>();
-			parameters["filterAgencies"] = fAgenciesFilter;
+			Dictionary<string, object> parameters = new Dictionary<string, object>
+            {
+                ["filterAgencies"] = fAgenciesFilter
+            };
 			ShowMasterDetailsJournal(
 				EntityManager.GetEntity((int) Entities.PaymentStudioOrder),
 				EntityManager.GetEntity((int) Entities.PaymentStudioOrderAction),
 				mi.Text, parameters);
 		}
 
-		private void ShowPaymentCommon(ToolStripItem mi, bool fAgenciesFilter)
+        private void ShowHeadCompanies(ToolStripItem mi)
+        {
+            Dictionary<string, object> parameters = new Dictionary<string, object>
+            {
+                ["ShowInactive"] = 1
+            };
+			ShowMasterDetailsJournal(
+				EntityManager.GetEntity((int)Entities.HeadCompany),
+				EntityManager.GetEntity((int)Entities.Firm),
+				mi.Text, parameters);
+        }
+
+        private void ShowPaymentCommon(ToolStripItem mi, bool fAgenciesFilter)
 		{
 			Dictionary<string, object> parameters = new Dictionary<string, object>();
 			parameters["filterAgencies"] = fAgenciesFilter;

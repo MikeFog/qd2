@@ -149,7 +149,8 @@ namespace Merlin
 		AdvertTypeChild = 1243,
         ActionRollers = 1244,
         CommonRollers = 1246,
-        PackModuleIssueInCampaignForm = 1247
+        PackModuleIssueInCampaignForm = 1247,
+        HeadCompany = 1248,
     }
 
 	public struct RelationScenarios

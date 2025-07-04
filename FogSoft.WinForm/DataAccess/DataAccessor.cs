@@ -260,19 +260,6 @@ namespace FogSoft.WinForm.DataAccess
 			}
 		}
 
-		public static object ExecuteSQLScalar(string sqltext)
-		{
-			using (SqlConnection connection = new SqlConnection(ConnectionString))
-			{
-				connection.Open();
-
-				object res = SqlHelper.ExecuteScalar(connection, CommandType.Text, sqltext, DEFAULT_TIMEOUT);
-
-				connection.Close();
-				return res;
-			}
-		}
-
 		public static void ExecuteNonQuery(string procedureName, Dictionary<string, object> parameters)
 		{
 			ExecuteNonQuery(procedureName, parameters, DEFAULT_TIMEOUT, true);

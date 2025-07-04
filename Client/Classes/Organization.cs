@@ -53,6 +53,7 @@ namespace Merlin.Classes
             public const string FirmId = "firmID";
             public const string Email = "email";
             public const string IsActive = "isActive";
+            public const string HeadCompanyID = "headCompanyID";
         }
 		private Bitmap _bitmap;
 

@@ -454,6 +454,7 @@
     <Compile Include="Classes\GridExport\ExportHelper.cs" />
     <Compile Include="Classes\GridExport\VectorBoxSerializer\VectorBoxExportDocument.cs" />
     <Compile Include="Classes\GridExport\VectorBoxSerializer\VectorBoxParam.cs" />
+    <Compile Include="Classes\HeadCompany.cs" />
     <Compile Include="Classes\Import\FirmImporter.cs" />
     <Compile Include="Classes\InternalConstants.cs" />
     <Compile Include="Classes\Firm.cs">
