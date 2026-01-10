@@ -756,6 +756,12 @@
     <Compile Include="Forms\FrmTemplate.Designer.cs">
       <DependentUpon>FrmTemplate.cs</DependentUpon>
     </Compile>
+    <Compile Include="Forms\FrmTestTemplateEditor.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="Forms\FrmTestTemplateEditor.Designer.cs">
+      <DependentUpon>FrmTestTemplateEditor.cs</DependentUpon>
+    </Compile>
     <Compile Include="Forms\FrmWindowTariffTemplate.cs">
       <SubType>Form</SubType>
     </Compile>
