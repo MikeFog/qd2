@@ -12,10 +12,8 @@ namespace Merlin.Controls
 
         private void TemplateEditorControl_Load(object sender, EventArgs e)
         {
-            // Set initial state - Days of Week mode is checked by default
-            rbDaysOfWeek.Checked = true;
-            
-            // Apply the correct enabled state based on the selection
+            // Apply the correct enabled state based on the initial selection
+            // (rbDaysOfWeek.Checked = true is set in Designer)
             UpdateControlsState();
         }
 
