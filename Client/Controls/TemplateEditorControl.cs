@@ -15,6 +15,9 @@ namespace Merlin.Controls
         public TemplateEditorControl()
         {
             InitializeComponent();
+
+            rbDaysOfWeek.CheckedChanged += ScheduleMode_CheckedChanged;
+            rbEvenOdd.CheckedChanged += ScheduleMode_CheckedChanged;
         }
 
         protected override void OnLoad(EventArgs e)
@@ -25,8 +28,24 @@ namespace Merlin.Controls
 
             LoadCities();
             SetManagerDiscount();
+
             rbDaysOfWeek.Checked = true;
+            UpdateSchedulePatternEnabledState();
+
             dtEnd.Value = dtStart.Value.AddMonths(1);
+        }
+
+        private void ScheduleMode_CheckedChanged(object sender, EventArgs e)
+        {
+            UpdateSchedulePatternEnabledState();
+        }
+
+        private void UpdateSchedulePatternEnabledState()
+        {
+            bool useDaysOfWeek = rbDaysOfWeek.Checked;
+
+            flpDays.Enabled = useDaysOfWeek;
+            groupBox1.Enabled = !useDaysOfWeek;
         }
 
         private void SetManagerDiscount()
@@ -35,7 +54,6 @@ namespace Merlin.Controls
             {
                 nmManagerDiscount.Minimum = 0;
                 nmManagerDiscount.Value = 1;
-
             }
             else
             {
@@ -87,7 +105,6 @@ namespace Merlin.Controls
         public decimal ManagerDiscount
         {
             get => nmManagerDiscount.Value;
-
         }
 
         public bool[] DaysOfWeekChecked
@@ -97,20 +114,22 @@ namespace Merlin.Controls
                 // Порядок ВАЖЕН: Mon..Sun (0..6)
                 return new[]
                 {
-                chkMon.Checked,
-                chkTue.Checked,
-                chkWed.Checked,
-                chkThu.Checked,
-                chkFri.Checked,
-                chkSat.Checked,
-                chkSun.Checked
+                    chkMon.Checked,
+                    chkTue.Checked,
+                    chkWed.Checked,
+                    chkThu.Checked,
+                    chkFri.Checked,
+                    chkSat.Checked,
+                    chkSun.Checked
                 };
             }
         }
+
         public bool UseDaysOfWeek
         {
             get { return rbDaysOfWeek.Checked; }
         }
+
         public bool EvenDaysSelected
         {
             get { return rbEvenDays.Checked; }
