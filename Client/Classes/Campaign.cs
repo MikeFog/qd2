@@ -15,10 +15,11 @@ namespace Merlin.Classes
 {
     internal class Campaign : CampaignPart
     {
-		#region Constants -------------------------------------
+        private Agency _agency;
+        protected DataTable _modules;
+        private ActionOnMassmedia _action;
 
-		public const int ShortAttributesList = 1;
-        #endregion
+        public const int ShortAttributesList = 1;
         #region Nested type: ActionNames
 
         internal struct ActionNames
@@ -79,8 +80,6 @@ namespace Merlin.Classes
 
 		#endregion
 
-		#region CampaignTypes enum
-
 		public enum CampaignTypes
 		{
 			Simple = 1,
@@ -89,7 +88,6 @@ namespace Merlin.Classes
 			PackModule = 4
 		}
 
-		#region Constructors ----------------------------------
 
 		public Campaign(Entity entity) : base(entity)
 		{
@@ -125,13 +123,6 @@ namespace Merlin.Classes
 			this[ParamNames.PaymentTypeID] = paymentTypeId;
 			SelectEntity(campaignType);
 		}
-		#endregion
-
-		#endregion
-
-		private Agency agency;
-		protected DataTable modules;
-
 
 		public DateTime StartDate
 		{
@@ -187,9 +178,6 @@ namespace Merlin.Classes
         {
             get { return this[ParamNames.CampaignTypeName].ToString(); }
         }
-
-
-        private ActionOnMassmedia _action;
 
 		public ActionOnMassmedia Action
 		{
@@ -253,13 +241,13 @@ namespace Merlin.Classes
 		{
 			get
 			{
-				if (agency == null)
+				if (_agency == null)
 				{
 					if (!parameters.ContainsKey(Agency.ParamNames.AgencyId))
 						Refresh(InterfaceObjects.SimpleJournal);
-					agency = Agency.GetAgencyByID(int.Parse(this[Agency.ParamNames.AgencyId].ToString()));
+					_agency = Agency.GetAgencyByID(int.Parse(this[Agency.ParamNames.AgencyId].ToString()));
 				}
-				return agency;
+				return _agency;
 			}
 		}
 
@@ -712,19 +700,19 @@ namespace Merlin.Classes
 
 		public void ClearModuleList()
 		{
-			modules = null;
+			_modules = null;
 		}
 
 		public virtual bool HasModuleIssue(PresentationObject module)
 		{
 			if (isNew || CampaignType != CampaignTypes.Module)
 				return false;
-			if (modules == null)
+			if (_modules == null)
 			{
 				ChildEntity = EntityManager.GetEntity((int) Entities.CampaignModule);
-				modules = base.GetContent();
+				_modules = base.GetContent();
 			}
-			return modules.Select(string.Format("moduleID={0}", module.IDs[0])).Length > 0;
+			return _modules.Select(string.Format("moduleID={0}", module.IDs[0])).Length > 0;
 		}
 
         public void GetPriceByPeriodWithTax(DateTime startDate, DateTime finishDate, int massmediaId, bool showBlack, string rollerIDs, 

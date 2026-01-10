@@ -15,7 +15,7 @@ namespace Merlin.Classes
 
 		protected override Pricelist GetPriceList(DateTime date)
 		{
-			Dictionary<string, object> parametrsPL = new Dictionary<string, object>();
+			Dictionary<string, object> parametrsPL = DataAccessor.CreateParametersDictionary();
 			parametrsPL["theDate"] = date;
 			parametrsPL["campaignID"] = Parameters["campaignID"];
 			DataSet ds = DataAccessor.LoadDataSet("PricelistByDate", parametrsPL);

@@ -165,7 +165,7 @@ namespace Merlin.Forms.GridReport
 
 			try
 			{
-				DataSet ds = DataAccessor.LoadDataSet("rpt_Grid", procParameters, 120);
+				DataSet ds = DataAccessor.LoadDataSet("rpt_Grid_v3", procParameters, 120);
 				return ds;
 			}
 			catch (Exception exp)

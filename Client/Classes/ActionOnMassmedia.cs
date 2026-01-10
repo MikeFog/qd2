@@ -168,7 +168,7 @@ namespace Merlin.Classes
 			{
 				if (!IsSplitOrMergeEnabled(StartDate.Date)) return;
 						
-                DataTable dt = Campaigns;
+                DataTable dt = Campaigns();
 				if (dt.Rows.Count < 2)
 				{
 					MessageBox.ShowInformation(MessageAccessor.GetMessage("CanNotSplitAction"));
@@ -247,7 +247,7 @@ namespace Merlin.Classes
 
         private bool CheckCampaignsSelectionResultForActionSplit(SelectionForm selectionForm)
         {
-			if(selectionForm.AddedItems.Count == this.Campaigns.Rows.Count)
+			if(selectionForm.AddedItems.Count == this.Campaigns().Rows.Count)
 			{
                 MessageBox.ShowExclamation(MessageAccessor.GetMessage("TooManyCampaignsSelected"));
                 return false;
@@ -286,7 +286,7 @@ namespace Merlin.Classes
 
 		internal DataTable SetCampaignsFilterByType(Campaign.CampaignTypes type)
 		{
-            DataTable filteredCampaigns = Campaigns;
+            DataTable filteredCampaigns = Campaigns();
             filteredCampaigns.DefaultView.RowFilter = string.Format("campaignTypeID = {0}", (int)type);
 
             return filteredCampaigns;
@@ -661,7 +661,7 @@ namespace Merlin.Classes
 
             if (dtRollers.Rows.Count > 0)
 			{
-				SetAdvertType();
+				SetAdvertTypeOrSubstituteRoller();
 				MessageBox.ShowExclamation(MessageAccessor.GetMessage("ActivationWithRollersWithoutAdvType"));
 
                 return false;

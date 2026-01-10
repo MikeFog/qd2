@@ -209,43 +209,45 @@ namespace FogSoft.WinForm.DataAccess
 		{
 			try
 			{
+                object res = null;
                 parameters[ParamNames.LoggedUserID] = SecurityManager.LoggedUser.Id;
                 using (SqlConnection connection = new SqlConnection(ConnectionString))
 				{
-                    DateTime t = DateTime.Now;
-                    connection.Open();
-					_commandParameters = AssignSqlParameters(connection, procedureName, parameters);
-
-					object res = null;
-					if (isTransactionRequired)
+					using (var scope = DbExecutionScope.Start(procedureName, DEFAULT_TIMEOUT, cached: false))
 					{
-						if (ConfigurationUtil.IsUseCustomTransaction)
+						connection.Open();
+						_commandParameters = AssignSqlParameters(connection, procedureName, parameters);
+
+
+						if (isTransactionRequired)
 						{
-							throw new NotImplementedException("Cannot ExecuteScalar with custom Transactions");
+							if (ConfigurationUtil.IsUseCustomTransaction)
+							{
+								throw new NotImplementedException("Cannot ExecuteScalar with custom Transactions");
+							}
+							else
+							{
+								SqlTransaction transaction = connection.BeginTransaction();
+								try
+								{
+
+									res = SqlHelper.ExecuteScalar(transaction, CommandType.StoredProcedure, procedureName, DEFAULT_TIMEOUT, _commandParameters);
+									transaction.Commit();
+
+								}
+								catch
+								{
+									transaction.Rollback();
+									throw;
+								}
+							}
 						}
 						else
 						{
-							SqlTransaction transaction = connection.BeginTransaction();
-							try
-							{
-								
-								res = SqlHelper.ExecuteScalar(transaction, CommandType.StoredProcedure, procedureName, DEFAULT_TIMEOUT, _commandParameters);
-								transaction.Commit();
-                                
-                            }
-							catch
-							{
-								transaction.Rollback();
-								throw;
-							}
+							res = SqlHelper.ExecuteScalar(connection, CommandType.StoredProcedure, procedureName, DEFAULT_TIMEOUT, _commandParameters);
 						}
+						connection.Close();
 					}
-					else
-					{
-						res = SqlHelper.ExecuteScalar(connection, CommandType.StoredProcedure, procedureName, DEFAULT_TIMEOUT, _commandParameters);
-					}
-					connection.Close();
-					WriteExecutionTime(t, procedureName);
                     return res;
 				}
 			}
@@ -299,52 +301,62 @@ namespace FogSoft.WinForm.DataAccess
 					parameters[ParamNames.LoggedUserID] = SecurityManager.LoggedUser.Id;
                 DataSet ds;
 
-				using (SqlConnection connection = new SqlConnection(ConnectionString))
+				if (_transaction != null)
 				{
-					connection.Open();
-					_commandParameters = AssignSqlParameters(connection, procedureName, parameters);
-					if (isTransactionRequired)
+					using (var scope = DbExecutionScope.Start(procedureName, connectionTimeout, cached: false))
 					{
-                        DateTime t = DateTime.Now;
-                        if (ConfigurationUtil.IsUseCustomTransaction)
+						_commandParameters = AssignSqlParameters(_transaction.Connection, procedureName, parameters);
+						ds = SqlHelper.ExecuteDataset(_transaction, CommandType.StoredProcedure, procedureName, connectionTimeout, _commandParameters);
+                        scope.SetRows(ds.Tables.Count > 0 ? ds.Tables[0].Rows.Count : 0);
+                    }
+				}
+				else
+				{
+					using (SqlConnection connection = new SqlConnection(ConnectionString))
+					{
+						using (var scope = DbExecutionScope.Start(procedureName, connectionTimeout, cached: false))
 						{
-							ds = SqlHelper.ExecuteDataset(connection, CommandType.Text, CreateSQLwithTransaction(procedureName),
-														  connectionTimeout, _commandParameters);
+							connection.Open();
+							_commandParameters = AssignSqlParameters(connection, procedureName, parameters);
+							if (isTransactionRequired)
+							{
+								if (ConfigurationUtil.IsUseCustomTransaction)
+								{
+									ds = SqlHelper.ExecuteDataset(connection, CommandType.Text, CreateSQLwithTransaction(procedureName),
+																  connectionTimeout, _commandParameters);
+								}
+								else
+								{
+									SqlTransaction transaction = null;
+									if (_transaction == null)
+										transaction = connection.BeginTransaction();
+									try
+									{
+										ds = SqlHelper.ExecuteDataset(_transaction ?? transaction, CommandType.StoredProcedure, procedureName, connectionTimeout, _commandParameters);
+										transaction?.Commit();
+									}
+									catch
+									{
+										transaction?.Rollback();
+										throw;
+									}
+								}
+							}
+							else
+							{
+								var key = procedureName + GetKeyFromParameters(_commandParameters);
+								if (!forceFlag && _cache.TryGetValue(key, out DataSet value))
+									ds = value;
+								else
+								{
+									ds = SqlHelper.ExecuteDataset(connection, CommandType.StoredProcedure, procedureName, connectionTimeout, _commandParameters);
+									if (cachingTime > 0)
+										_cache.Set(key, ds, TimeSpan.FromSeconds(cachingTime));
+								}
+							}
+                            scope.SetRows(ds.Tables.Count > 0 ? ds.Tables[0].Rows.Count : 0);
                         }
-						else
-						{
-							SqlTransaction transaction = null;
-							if (_transaction == null)
-								transaction = connection.BeginTransaction();
-							try
-							{
-								ds = SqlHelper.ExecuteDataset(_transaction ?? transaction, CommandType.StoredProcedure, procedureName, connectionTimeout, _commandParameters);
-								transaction?.Commit();
-							}
-							catch
-							{
-								transaction?.Rollback();
-								throw;
-							}
-						}
-                        WriteExecutionTime(t, procedureName);
-                    }
-					else
-					{
-						DateTime t = DateTime.Now;
-						
-						var key = procedureName + GetKeyFromParameters(_commandParameters);
-						if (!forceFlag && _cache.TryGetValue(key, out DataSet value))
-							ds = value;
-						else
-						{
-                            ds = SqlHelper.ExecuteDataset(connection, CommandType.StoredProcedure, procedureName, connectionTimeout, _commandParameters);
-							if (cachingTime > 0)
-								_cache.Set(key, ds, TimeSpan.FromSeconds(cachingTime));
-						}
-                        WriteExecutionTime(t, procedureName);
-                    }
-					connection.Close();
+					}
 				}
                 procedureConfigsByName.TryGetValue(procedureName, out ProcedureConfig config);
                 config?.ProcessDataSet(ds);
@@ -374,47 +386,47 @@ namespace FogSoft.WinForm.DataAccess
 				parameters[ParamNames.LoggedUserID] = SecurityManager.LoggedUser.Id;
 
                 MessageAccessor.Parameters = parameters;
-                using (SqlConnection connection = new SqlConnection(ConnectionString))
+				using (SqlConnection connection = new SqlConnection(ConnectionString))
 				{
-                    DateTime t = DateTime.Now;
-                    connection.Open();
-					_commandParameters = AssignSqlParameters(connection, procedureName, parameters);
-
-					if (isTransactionRequired)
+					using (var scope = DbExecutionScope.Start(procedureName, connectionTimeout, cached: false))
 					{
-						
-						if (ConfigurationUtil.IsUseCustomTransaction)
+						connection.Open();
+						_commandParameters = AssignSqlParameters(connection, procedureName, parameters);
+
+						if (isTransactionRequired)
 						{
-							SqlHelper.ExecuteNonQuery(connection, CommandType.Text, CreateSQLwithTransaction(procedureName),
-							                          connectionTimeout,
-							                          _commandParameters);
+
+							if (ConfigurationUtil.IsUseCustomTransaction)
+							{
+								SqlHelper.ExecuteNonQuery(connection, CommandType.Text, CreateSQLwithTransaction(procedureName),
+														  connectionTimeout,
+														  _commandParameters);
+							}
+							else
+							{
+								SqlTransaction transaction = null;
+
+								if (_transaction == null)
+									transaction = connection.BeginTransaction();
+								try
+								{
+									SqlHelper.ExecuteNonQuery(_transaction ?? transaction, CommandType.StoredProcedure, procedureName, connectionTimeout, _commandParameters);
+									transaction?.Commit();
+								}
+								catch
+								{
+									transaction?.Rollback();
+									throw;
+								}
+							}
 						}
 						else
 						{
-							SqlTransaction transaction = null;
-
-							if (_transaction == null)
-								transaction = connection.BeginTransaction();
-							try
-							{
-								SqlHelper.ExecuteNonQuery(_transaction ?? transaction, CommandType.StoredProcedure, procedureName, connectionTimeout, _commandParameters);
-								transaction?.Commit();
-							}
-							catch
-							{
-								transaction?.Rollback();
-								throw;
-							}
+							SqlHelper.ExecuteNonQuery(connection, CommandType.StoredProcedure, procedureName, connectionTimeout, _commandParameters);
 						}
-                    }
-					else
-					{
-						SqlHelper.ExecuteNonQuery(connection, CommandType.StoredProcedure, procedureName, connectionTimeout, _commandParameters);
+						connection.Close();
 					}
-					connection.Close();
-					WriteExecutionTime(t, procedureName);
-                }
-
+				}
                 foreach (KeyValuePair<string, object> kvp in GetOutParameters())
 					parameters[kvp.Key] = kvp.Value;
 			}
@@ -492,8 +504,7 @@ end
 		/// <param name="connectionTimeout"></param>
 		/// <param name="dataSet">“аблица загруженна€ на сервер при помощи bulk - copy</param>
 		/// <returns></returns>
-		public static DataSet LoadDataSet(
-			string procedureName, IDictionary<string, object> parameters, int connectionTimeout, DataSet dataSet)
+		public static DataSet LoadDataSet(string procedureName, IDictionary<string, object> parameters, int connectionTimeout, DataSet dataSet)
 		{
 			try
 			{
@@ -503,34 +514,36 @@ end
 
                 using (SqlConnection connection = new SqlConnection(ConnectionString))
 				{
-					connection.Open();
-					_commandParameters = AssignSqlParameters(connection, procedureName, parameters);
-					if (ConfigurationUtil.IsUseCustomTransaction)
-						throw new NotImplementedException();
-
-					using (SqlTransaction transaction = connection.BeginTransaction())
+					using (var scope = DbExecutionScope.Start(procedureName, connectionTimeout, cached: false))
 					{
-						DateTime t = DateTime.Now;
-						try
-						{
-							foreach (DataTable table in dataSet.Tables)
-							{
-								SqlBulkCopyHelper.CopyToSqlTempTable(transaction, table, SqlBulkCopyHelper.ConstructOptions(transaction));
-							}
-							ds = SqlHelper.ExecuteDataset(
-								transaction, CommandType.StoredProcedure, procedureName, connectionTimeout, _commandParameters);
-							transaction.Commit();
-						}
-						catch
-						{
-							transaction.Rollback();
-							throw;
-						}
-                        WriteExecutionTime(t, procedureName);
-                    }
+						connection.Open();
+						_commandParameters = AssignSqlParameters(connection, procedureName, parameters);
+						if (ConfigurationUtil.IsUseCustomTransaction)
+							throw new NotImplementedException();
 
-					connection.Close();
-				}
+						using (SqlTransaction transaction = connection.BeginTransaction())
+						{
+							try
+							{
+								foreach (DataTable table in dataSet.Tables)
+								{
+									SqlBulkCopyHelper.CopyToSqlTempTable(transaction, table, SqlBulkCopyHelper.ConstructOptions(transaction));
+								}
+								ds = SqlHelper.ExecuteDataset(
+									transaction, CommandType.StoredProcedure, procedureName, connectionTimeout, _commandParameters);
+								transaction.Commit();
+							}
+							catch
+							{
+								transaction.Rollback();
+								throw;
+							}
+
+						}
+
+						scope.SetRows(ds.Tables.Count > 0 ? ds.Tables[0].Rows.Count : 0);
+					}
+                }
                 procedureConfigsByName.TryGetValue(procedureName, out ProcedureConfig config);
                 config?.ProcessDataSet(ds);
                 return ds;
@@ -564,9 +577,20 @@ end
 				{
 					if (parameterValues.ContainsKey(parameterName))
 					{
-						cmdParameters[i].Value = parameterValues[parameterName];
-					}
-					if (parameterValues.ContainsKey(parameterName)
+                        object val = parameterValues[parameterName];
+
+                        if (val is FogSoft.WinForm.DataAccess.TvpValue tvp)
+                        {
+                            cmdParameters[i].SqlDbType = SqlDbType.Structured;
+                            cmdParameters[i].TypeName = tvp.TypeName;
+                            cmdParameters[i].Value = tvp.Table ?? (object)DBNull.Value;
+                        }
+                        else
+                        {
+                            cmdParameters[i].Value = val ?? DBNull.Value;
+                        }
+                    }
+                    if (parameterValues.ContainsKey(parameterName)
 					    || cmdParameters[i].Direction != ParameterDirection.Input)
 					{
 						cmdParametersWithValues[j++] = cmdParameters[i];
@@ -627,13 +651,6 @@ end
                 var hashBytes = hashAlgorithm.ComputeHash(Encoding.UTF8.GetBytes(concatenated));
                 return BitConverter.ToString(hashBytes).Replace("-", "").ToLower();
             }
-        }
-
-		private static void WriteExecutionTime(DateTime startTime, string procedureName)
-		{
-            var diff = (DateTime.Now - startTime).TotalMilliseconds;
-            if (diff > 1000)
-                ErrorManager.Log.Info(string.Format("{0} {1}", procedureName, diff));
         }
     }
 }

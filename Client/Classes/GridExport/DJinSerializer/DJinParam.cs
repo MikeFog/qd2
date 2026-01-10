@@ -13,7 +13,8 @@ namespace Merlin.Classes.GridExport.DJinSerializer
 		public const string strEtc = "m";
 		public const string strJingle = "j";
 		public const string strLine = "\"{0}\",\"{1}\",\"{2}\",\"{3}\",\"{4}\",\"{5}\",\"{6}\"\r\n";
-		public const string strRoller = "c";
+        public const string strLine2 = "\"{0}\",\"{1}\",\"{2}\",\"{3}\",\"{4}\",\"{5}\",\"{6}\"";
+        public const string strRoller = "c";
 		public const string strRollerNews = "n";
 		public const string strRollerProgram = "p";
 		public const string strDefaultExt = ".mp3";

@@ -1,7 +1,6 @@
 using System;
 using System.Collections.Generic;
 using System.Data;
-using System.Text;
 using System.Windows.Forms;
 using FogSoft.WinForm;
 using FogSoft.WinForm.Classes;
@@ -9,9 +8,8 @@ using FogSoft.WinForm.DataAccess;
 using Merlin.Controls;
 using Merlin.Forms;
 using Merlin.Reports;
-using unoidl.com.sun.star.sheet;
-using Application=System.Windows.Forms.Application;
-using Constants=FogSoft.WinForm.Constants;
+using Application = System.Windows.Forms.Application;
+using Constants = FogSoft.WinForm.Constants;
 
 namespace Merlin.Classes
 {
@@ -68,10 +66,11 @@ namespace Merlin.Classes
 			try
 			{
 				Refresh();
-				Application.DoEvents();
+				
 				owner.Cursor = Cursors.WaitCursor;
+                Application.DoEvents();
 
-				Dictionary<string, object> procParameters = new Dictionary<string, object>(StringComparer.CurrentCultureIgnoreCase);
+                Dictionary<string, object> procParameters = new Dictionary<string, object>(StringComparer.CurrentCultureIgnoreCase);
 				procParameters[ParamNames.CampaignId] = CampaignId;
 				DataSet ds = DataAccessor.LoadDataSet("sl_Months", procParameters);
 
@@ -160,12 +159,12 @@ namespace Merlin.Classes
 		public override bool HasModuleIssue(PresentationObject module)
 		{
 			if(isNew) return false;
-			if (modules == null)
+			if (_modules == null)
 			{
 				ChildEntity = EntityManager.GetEntity((int)Entities.PackModuleInCampaign);
-				modules = base.GetContent();
+				_modules = base.GetContent();
 			}
-			return modules.Select(string.Format("packModuleID={0}", module.IDs[0])).Length > 0;
+			return _modules.Select(string.Format("packModuleID={0}", module.IDs[0])).Length > 0;
 		}
 
 		public override bool IsActionHidden(string actionName, ViewType type)

@@ -4,7 +4,6 @@ using FogSoft.WinForm.DataAccess;
 using FogSoft.WinForm.Forms;
 using System.Collections.Generic;
 using System.Data;
-using System.Runtime.Remoting.Messaging;
 using System.Windows.Forms;
 
 namespace Merlin.Classes
@@ -21,10 +20,18 @@ namespace Merlin.Classes
             ChildEntity = EntityManager.GetEntity((int)Entities.Firm);
         }
 
+        protected HeadCompany(Entity entity, DataRow row) : base(entity, row)
+        {
+        }
+
         private HeadCompany(int headCompanyID) : base(GetEntity())
         {
             this[Firm.ParamNames.HeadCompanyID] = headCompanyID;
             isNew = false;
+        }
+
+        protected HeadCompany(Entity entity) : base(entity)
+        {
         }
 
         public override DataTable GetContent()

@@ -272,7 +272,9 @@
     <Compile Include="Classes\TempFileWorker.cs" />
     <Compile Include="Classes\Time.cs" />
     <Compile Include="Controls\LoginCtl.cs" />
+    <Compile Include="DataAccess\DbExecutionScope.cs" />
     <Compile Include="DataAccess\SqlBulkCopyHelper.cs" />
+    <Compile Include="DataAccess\TvpValue.cs" />
     <Compile Include="Forms\About.cs">
       <SubType>Form</SubType>
     </Compile>

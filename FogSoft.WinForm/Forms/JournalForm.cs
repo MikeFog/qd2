@@ -16,18 +16,16 @@ namespace FogSoft.WinForm.Forms
 	{
 		#region Members ---------------------------------------
 
-		private readonly Entity entity;
+		private readonly Entity _entity;
+		private readonly Dictionary<string, object> _filterValues =	new Dictionary<string, object>(StringComparer.InvariantCultureIgnoreCase);
+		protected DataTable _dtData;
+        private readonly bool _needRefreshOnLoad = false;
 
-		private readonly Dictionary<string, object> filterValues =
-			new Dictionary<string, object>(StringComparer.InvariantCultureIgnoreCase);
+        #endregion
 
-		protected DataTable dtData;
+        #region Constructors ----------------------------------
 
-		#endregion
-
-		#region Constructors ----------------------------------
-
-		public JournalForm()
+        public JournalForm()
 		{
 			InitializeComponent();
 			SubInitializeComponent();
@@ -42,7 +40,7 @@ namespace FogSoft.WinForm.Forms
 				Cursor = Cursors.WaitCursor;
 
 				Text = caption;
-				this.entity = entity;
+				this._entity = entity;
 				grid.Entity = entity;
 				AlterToolbar();
                 grid.RecordCountChanged += RecordCountChanged;
@@ -51,13 +49,13 @@ namespace FogSoft.WinForm.Forms
                 if (!entity.IsFilterable)
 				{
 					if (!doNotRefresh)
-						needRefreshOnLoad = true;
+						_needRefreshOnLoad = true;
 				}
 				else
 				{
-					Globals.ResolveFilterInitialValues(filterValues, this.entity.XmlFilter);
-					if ((filterValues.Count > 0 || ConfigurationUtil.IsJournalLoadWhenEmptyFilter) && !doNotRefresh)
-						needRefreshOnLoad = true;
+					Globals.ResolveFilterInitialValues(_filterValues, this._entity.XmlFilter);
+					if ((_filterValues.Count > 0 || ConfigurationUtil.IsJournalLoadWhenEmptyFilter) && !doNotRefresh)
+						_needRefreshOnLoad = true;
 					else
 						Cursor = Cursors.Default;
 				}
@@ -74,11 +72,6 @@ namespace FogSoft.WinForm.Forms
 			}
 		}
 
-		private void SetHighlightEnabled()
-		{
-			tsbHighlight.Visible = grid.Entity != null && grid.DataSource != null && grid.Entity.GetColumnsForHighlight().Count > 0;
-		}
-
 		public JournalForm(Entity entity, string caption)
 			: this(entity, caption, false)
 		{
@@ -89,11 +82,11 @@ namespace FogSoft.WinForm.Forms
 		{
 			try
 			{
-				Application.DoEvents();
 				Cursor = Cursors.WaitCursor;
+                Application.DoEvents();
 
-				this.filterValues = filterValues;
-				needRefreshOnLoad = true;
+                this._filterValues = filterValues;
+				_needRefreshOnLoad = true;
 				SetHighlightEnabled();
 			}
 			catch(Exception ex)
@@ -111,11 +104,11 @@ namespace FogSoft.WinForm.Forms
 		{
 			try
 			{
-				Application.DoEvents();
 				Cursor = Cursors.WaitCursor;
+                Application.DoEvents();
 
-				Text = caption;
-				this.entity = entity;
+                Text = caption;
+				this._entity = entity;
 				grid.Entity = entity;
 				AlterToolbar();
 
@@ -135,7 +128,7 @@ namespace FogSoft.WinForm.Forms
 
 		public Dictionary<string, object> Filters
 		{
-			get { return filterValues; }
+			get { return _filterValues; }
 		}
 
 		#endregion
@@ -160,35 +153,41 @@ namespace FogSoft.WinForm.Forms
 
         }
 
-		private readonly bool needRefreshOnLoad = false;
-
 		protected override void OnLoad(EventArgs e)
 		{
 			base.OnLoad(e);
 
-			if (needRefreshOnLoad)
-				RefreshJournal();
+			if (_needRefreshOnLoad)
+			{
+                grid.RefreshAll += RefreshJournal;
+                RefreshJournal();
+            }
 		}
 
 		private void AlterToolbar()
 		{
-			tsbFilter.Enabled = entity.IsFilterable;
-			tsbEdit.Enabled = entity.IsActionEnabled(Constants.EntityActions.ShowPassport, ViewType.Journal);
-			tsbDelete.Enabled = entity.IsActionEnabled(Constants.EntityActions.Delete, ViewType.Journal);
-			tsbNew.Enabled = entity.IsActionEnabled(Constants.EntityActions.AddNew, ViewType.Journal);
-			tsbRefresh.Enabled = entity.IsRefreshEnabled();
+			tsbFilter.Enabled = _entity.IsFilterable;
+			tsbEdit.Enabled = _entity.IsActionEnabled(Constants.EntityActions.ShowPassport, ViewType.Journal);
+			tsbDelete.Enabled = _entity.IsActionEnabled(Constants.EntityActions.Delete, ViewType.Journal);
+			tsbNew.Enabled = _entity.IsActionEnabled(Constants.EntityActions.AddNew, ViewType.Journal);
+			tsbRefresh.Enabled = _entity.IsRefreshEnabled();
 		}
 
-		public void RefreshJournal()
+        private void SetHighlightEnabled()
+        {
+            tsbHighlight.Visible = grid.Entity != null && grid.DataSource != null && grid.Entity.GetColumnsForHighlight().Count > 0;
+        }
+
+        public void RefreshJournal()
 		{
 			tsbHighlight.Visible = false;
 			WaitCallback async = new WaitCallback(LoadData);
 
-			if(filterValues.Count > 0)
+			if(_filterValues.Count > 0)
 			{
 				tsbFilter.Image = Resources.FilterSet;
-				ThreadPool.QueueUserWorkItem(async, filterValues);
-			}
+				ThreadPool.QueueUserWorkItem(async, _filterValues);
+            }
 			else
 			{
 				tsbFilter.Image = Resources.Filter;
@@ -200,14 +199,14 @@ namespace FogSoft.WinForm.Forms
 		{
 			try
 			{
-				Application.DoEvents();
-
 				if (!IsDisposed && IsHandleCreated)
 					Globals.SetWaitCursor(this);
+                Application.DoEvents();
 
-				grid.Entity.ClearCache();
+                grid.Entity.ClearCache();
+				
 
-				dtData = stateInfo != null ? grid.Entity.GetContent((Dictionary<string, object>) stateInfo) : grid.Entity.GetContent();
+                _dtData = stateInfo != null ? grid.Entity.GetContent((Dictionary<string, object>) stateInfo) : grid.Entity.GetContent();
 
 				if (!IsHandleCreated)
 					Thread.Sleep(500);
@@ -230,8 +229,8 @@ namespace FogSoft.WinForm.Forms
 		{
 			try
 			{
-				if (dtData != null)
-					grid.DataSource = dtData.DefaultView;
+				if (_dtData != null)
+					grid.DataSource = _dtData.DefaultView;
 				RefreshStatusInfo();
 				SetHighlightEnabled();
 			}
@@ -269,7 +268,7 @@ namespace FogSoft.WinForm.Forms
 		{
 			try
 			{
-				PresentationObject presentationObject = entity.NewObject;
+				PresentationObject presentationObject = _entity.NewObject;
 				if(presentationObject.ShowPassport(this))
 				{
 					grid.AddRow(presentationObject);
@@ -352,9 +351,9 @@ namespace FogSoft.WinForm.Forms
 			try
 			{
 				//Если прикручен обработчик на фильтр то используем только его
-				bool filterReturn = OnFilterClick != null ? (OnFilterClick(this, entity, xmlFilter, filterValues)) 
-					: (xmlFilter == null) ? Globals.ShowFilter(this, entity, filterValues)
-				                    	: Globals.ShowFilter(this, entity, xmlFilter, filterValues);
+				bool filterReturn = OnFilterClick != null ? (OnFilterClick(this, _entity, xmlFilter, _filterValues)) 
+					: (xmlFilter == null) ? Globals.ShowFilter(this, _entity, _filterValues)
+				                    	: Globals.ShowFilter(this, _entity, xmlFilter, _filterValues);
 				if (filterReturn)
 				{
 					Cursor = Cursors.WaitCursor;

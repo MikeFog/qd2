@@ -21,7 +21,6 @@ namespace FogSoft.WinForm.Classes.Export.MSExcel
 
 		public MSExportDocument()
 		{
-			Log.Info("MSExportDocument()");
 			try
 			{
                 //app = (Application)Marshal.GetActiveObject("Excel.Application");
@@ -54,7 +53,7 @@ namespace FogSoft.WinForm.Classes.Export.MSExcel
 		{
             CultureInfo oldCulture = Thread.CurrentThread.CurrentCulture;
 
-            Log.Info("IDocumentSheet GetNewSheet(string name, string fontName, int fontSize)");
+            //Log.Info("IDocumentSheet GetNewSheet(string name, string fontName, int fontSize)");
 			if (wb == null)
 				wb = app.Workbooks.Add(XlWBATemplate.xlWBATWorksheet);
 			else

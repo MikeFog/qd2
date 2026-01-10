@@ -156,7 +156,7 @@ namespace Merlin.Classes
 				else if (actionName == ActionNames.PrintSelectivelyMediaPlanByPeriod)
 					PrintMediaPlan(ActionMediaPlanType.Period, true);
 				else if (actionName == ActionNames.SetAdvertType)
-					SetAdvertType();
+					SetAdvertTypeOrSubstituteRoller();
 				else if (actionName == ActionNames.PrintBillContract)
 					PrintBillContracts((Form)owner, false);
 				else
@@ -168,23 +168,15 @@ namespace Merlin.Classes
 			}
 		}
 
-        public virtual DataTable Campaigns
-		{
-			get
-			{
-				DataAccessor.PrepareParameters(parameters, ChildEntity, InterfaceObjects.SimpleJournal, Constants.Actions.Load);
-                return ((DataSet)DataAccessor.DoAction(parameters)).Tables[0];
-			}
-		}
+        public DataTable Campaigns(bool forceLoad = false)
+        {
+			DataAccessor.PrepareParameters(parameters, ChildEntity, InterfaceObjects.SimpleJournal, Constants.Actions.Load);
+			return ((DataSet)DataAccessor.DoAction(parameters, forceLoad)).Tables[0];
+        }
 
-		public int ActionId
+        public int ActionId
 		{
 			get { return int.Parse(this[ParamNames.ActionId].ToString()); }
-		}
-
-		public int StatusId
-		{
-			get { return int.Parse(this[ParamNames.StatusID].ToString()); }
 		}
 
 		public string FirmName
@@ -205,11 +197,6 @@ namespace Merlin.Classes
 		public decimal TotalPrice
 		{
 			get { return ParseHelper.GetDecimalFromObject(this[ParamNames.TotalPrice], 0); }
-		}
-
-		public decimal Ratio
-		{
-			get { return ParseHelper.GetDecimalFromObject(this[ParamNames.Ratio], 0); }
 		}
 
 		public Firm Firm
@@ -334,18 +321,18 @@ namespace Merlin.Classes
                         MediaPlan.CreateInstance(this, selectively).Show(false);
 						break;
 					case ActionMediaPlanType.Simple:
-                        MediaPlan.CreateInstance(GetCampaigns(Campaigns), selectively).Show(false);
+                        MediaPlan.CreateInstance(GetCampaigns(Campaigns()), selectively).Show(false);
 						break;
 					case ActionMediaPlanType.Month:
 						IList<DateTime> months = GetSelectedMonths();
 						if (months == null)
 							return;
-                        MediaPlan.CreateInstance(GetCampaigns(Campaigns), months, selectively).Show(false);
+                        MediaPlan.CreateInstance(GetCampaigns(Campaigns()), months, selectively).Show(false);
 						break;
 					case ActionMediaPlanType.Period:
 						FrmDateSelector selector = new FrmDateSelector(StartDate, FinishDate, "Выбор периода");
 						if (selector.ShowDialog(Globals.MdiParent) == DialogResult.OK)
-                            MediaPlan.CreateInstance(GetCampaigns(Campaigns), selector.StartDate, selector.FinishDate, selectively).Show(false);
+                            MediaPlan.CreateInstance(GetCampaigns(Campaigns()), selector.StartDate, selector.FinishDate, selectively).Show(false);
 						break;
 				}
 			//}
@@ -619,15 +606,16 @@ namespace Merlin.Classes
 			return parametersMM["agencies"].ToString();
 		}
 
-        protected void SetAdvertType()
+        protected void SetAdvertTypeOrSubstituteRoller()
         {
-            try
-            {
-                Dictionary<string, object> procParameters = DataAccessor.CreateParametersDictionary();
-                procParameters.Add(ParamNames.ActionId, ActionId);
-                Globals.ShowSimpleJournal(EntityManager.GetEntity((int)Entities.ActionRollers), 
-					string.Format("Ролики рекламной акции № {0}", ActionId), 
-					DataAccessor.LoadDataSet("ActionRollers", procParameters).Tables[0]);
+			try
+			{
+				Dictionary<string, object> procParameters = DataAccessor.CreateParametersDictionary();
+				procParameters.Add(ParamNames.ActionId, ActionId);
+				Globals.ShowSimpleJournal(EntityManager.GetEntity((int)Entities.ActionRollers),
+					string.Format("Ролики рекламной акции № {0}", ActionId),
+					procParameters, showModal: true);
+				FireContainerRefreshed();
             }
             finally { Cursor.Current = Cursors.Default; }
         }

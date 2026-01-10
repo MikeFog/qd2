@@ -31,12 +31,12 @@ namespace FogSoft.WinForm.Classes.Export
 			get
 			{
 				ExportOffice ret = ExportOffice.OO;
-				Log.Info("Try to find settings");
+				//Log.Info("Try to find settings");
 				string export = ConfigurationManager.AppSettings["ExportOffice"];
-				Log.InfoFormat("Export Settings: {0}", export);
+				//Log.InfoFormat("Export Settings: {0}", export);
 				if (!string.IsNullOrEmpty(export) && Enum.IsDefined(typeof(ExportOffice), export))
 					ret = (ExportOffice) Enum.Parse(typeof (ExportOffice), export);
-				Log.InfoFormat("Find settings: {0}", ret);
+				//Log.InfoFormat("Find settings: {0}", ret);
 				return ret;
 			}
 		}
@@ -66,12 +66,12 @@ namespace FogSoft.WinForm.Classes.Export
 		{
 			if (type == ExportOffice.MS)
 			{
-				Log.Info("Create new ms document");
+				//Log.Info("Create new ms document");
                 return doc = new MSExportDocument();
 			}
 			else if (type == ExportOffice.OO)
 			{
-				Log.Info("Create new oo document");
+				//Log.Info("Create new oo document");
 				return doc = new OOExportDocument();
 			}
 			return null;

@@ -130,7 +130,7 @@
   <data name="LicenseErrorCannotAddMassmedia" xml:space="preserve">
     <value>Невозможно добавить СМИ, так как будет превышено максимальное возможное количество СМИ, разрешенное по лицензии.</value>
   </data>
-  <data name="TitleGetRollerForSustitude" xml:space="preserve">
+  <data name="TitleGetRollerForSubstitude" xml:space="preserve">
     <value>Выберите ролик для замены.</value>
   </data>
   <data name="CannotReadImportFile" xml:space="preserve">
@@ -279,5 +279,8 @@
   </data>
   <data name="TariffNotFound" xml:space="preserve">
     <value>Не найден тариф для выполнения данной операции!</value>
+  </data>
+  <data name="Fan" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Resources\Веерное размещение.png;System.Byte[], mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
   </data>
 </root>

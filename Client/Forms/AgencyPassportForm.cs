@@ -1,8 +1,5 @@
 using System;
-using System.Collections.Generic;
 using System.Data;
-using System.Drawing;
-using System.IO;
 using FogSoft.WinForm.Passport.Classes;
 using FogSoft.WinForm.Passport.Forms;
 using Merlin.Classes;
@@ -12,7 +9,7 @@ namespace Merlin.Forms
 	public partial class AgencyPassportForm : PassportForm
 	{
 		private bool _isEventsCreated = false;
-		private Agency _agency;
+		private readonly Agency _agency;
 
 		public AgencyPassportForm(Agency ag, DataSet ds) : base(ag, ds)
 		{

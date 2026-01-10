@@ -33,6 +33,7 @@ namespace Merlin.Classes
 
         private string _selectedRollers = null;
 		private int _columnWithRollerName;
+		private PrintSettings _printSettings = new PrintSettings() { PrintWithSignatures = false };
 
 		#region Singleton
 
@@ -93,10 +94,13 @@ namespace Merlin.Classes
             Globals.SetWaitCursor(Globals.MdiParent);
             try
 			{
-				if (action == null)
-					needPrintPaintings = (FogSoft.WinForm.Forms.MessageBox.ShowQuestion("Распечатать документ с подготовленными подписями?") ==
-							 DialogResult.Yes);
-                
+                if (action == null)
+				{
+					var frmSettings = new Forms.PrintMediaPlanSettings();
+					if(frmSettings.ShowDialog(Globals.MdiParent) == DialogResult.Cancel) return;
+					_printSettings = frmSettings.Settings;
+                }
+
                 //Thread.CurrentThread.CurrentCulture = new System.Globalization.CultureInfo("en-US");
 
                 ProgressForm.Show(Globals.MdiParent, worker_DoWork, "Экспортируется график размещения...", null);
@@ -141,9 +145,7 @@ namespace Merlin.Classes
             }
 		}
 
-		private bool needPrintPaintings = false;
-
-        private bool SelectRollers()
+		private bool SelectRollers()
         {
             Dictionary<int, string> allRollers = new Dictionary<int, string>();
 
@@ -241,7 +243,7 @@ namespace Merlin.Classes
             }
             procParameters.Add("onlyRollers", true);
 
-            DataSet ds = DataAccessor.LoadDataSet("MediaPlanRetrieve", procParameters);
+            DataSet ds = DataAccessor.LoadDataSet("MediaPlanRetrieve_v2", procParameters);
             foreach (DataRow row in ds.Tables[0].Rows)
             {
                 int rollerID = ParseHelper.GetInt32FromObject(row["rollerID"], 0);
@@ -401,8 +403,11 @@ namespace Merlin.Classes
 			if ((campaign != null && campaign.CampaignType == Campaign.CampaignTypes.Sponsor) || (campaign == null && action != null))
 				PrintPrograms(ds.Tables[4]);
 			currentY++;
-			PrintTimeList(ds.Tables[1], campaign == null ? Campaign.CampaignTypes.Module : campaign.CampaignType);
-			PrintIssuesGrid(ds.Tables[1].Rows.Count, ds.Tables[2], ds.Tables[3], campaign == null ? Campaign.CampaignTypes.Module : campaign.CampaignType, year, month);
+			if (_columnWithRollerName > 0)
+			{
+				PrintTimeList(ds.Tables[1], campaign == null ? Campaign.CampaignTypes.Module : campaign.CampaignType);
+				PrintIssuesGrid(ds.Tables[1].Rows.Count, ds.Tables[2], ds.Tables[3], campaign == null ? Campaign.CampaignTypes.Module : campaign.CampaignType, year, month);
+			}
 			PrintFooter(campaign, ds.Tables[1], ds.Tables[2], mmIds, year, month);
 		}
 
@@ -438,7 +443,7 @@ namespace Merlin.Classes
                 procParameters.Add("rollerIDString", _selectedRollers);
             }
 
-            ds = DataAccessor.LoadDataSet("MediaPlanRetrieve", procParameters);
+            ds = DataAccessor.LoadDataSet("MediaPlanRetrieve_v2", procParameters);
 
             if (_selectively)
             {
@@ -497,7 +502,7 @@ namespace Merlin.Classes
 			{
 				foreach (string id in ids)
 				{
-					foreach (DataRow row in action.Campaigns.Rows)
+					foreach (DataRow row in action.Campaigns().Rows)
 					{
 						Campaign c = Campaign.GetCampaignById(int.Parse(row["campaignID"].ToString()));
 						if (c.CampaignType == Campaign.CampaignTypes.PackModule
@@ -521,19 +526,28 @@ namespace Merlin.Classes
             int totalDuration = dtTimeList.Rows.Count > 0 ? ids.Length * int.Parse(dtTimeList.Compute("sum(totalDuration)", string.Empty).ToString()) : 0;
             SetCellValue(currentY, 3, string.Format("Время трансляций: {0}", DateTimeUtils.Time2String(totalDuration)));
 			currentY++;
-			SetCellValue(currentY++, 3, $"Стоимость спланированной рекламы по тарифам: {tariffPriceTotal:c}");
-			decimal discount = 1 - (tariffPriceTotal == 0 ? 1 : (priceTotal / tariffPriceTotal));
-			if (discount != decimal.Zero)
+            decimal discount = 1 - (tariffPriceTotal == 0 ? 1 : (priceTotal / tariffPriceTotal));
+            if (!_printSettings.HideTariffPrice)
 			{
-				SetCellValue(currentY++, 3, string.Format("Скидка: {0}", discount.ToString("P")));
-				SetCellValue(currentY++, 3, $"Стоимость спланированной рекламы с учетом скидки: {priceTotal:c}");
+				SetCellValue(currentY++, 3, $"Стоимость спланированной рекламы: {priceTotal:c}");
+				SetCellValue(currentY++, 3, $"Стоимость спланированной рекламы по тарифам: {tariffPriceTotal:c}");
+
+				if (discount != decimal.Zero)
+				{
+					SetCellValue(currentY++, 3, string.Format("Скидка: {0}", discount.ToString("P")));
+					SetCellValue(currentY++, 3, $"Стоимость спланированной рекламы с учетом скидки: {priceTotal:c}");
+				}
 			}
-            if (taxPriceTotal > 0)
-                SetCellValue(currentY++, 3, $"В том числе  НДС  (5%): {taxPriceTotal:c}");
+			else
+			{
+				SetCellValue(currentY++, 3, $"Стоимость спланированной рекламы: {priceTotal:c}");
+            }
+			if (taxPriceTotal > 0)
+				SetCellValue(currentY++, 3, $"В том числе  НДС  (5%): {taxPriceTotal:c}");
             currentY++;
 			SetCellValue(currentY, 3, "Исполнитель:");
 
-			if (campaign != null && needPrintPaintings && campaign.Agency.SignatureBytes != null)
+			if (campaign != null && _printSettings.PrintWithSignatures && campaign.Agency.SignatureBytes != null)
 			{
                 activeSheet.InsertImage(currentY, 7, campaign.Agency.SignatureBytes);
             }
@@ -548,7 +562,7 @@ namespace Merlin.Classes
 
 		private void PrintIssuesGrid(int rowsCount, DataTable dtIssues, DataTable dataCounts, Campaign.CampaignTypes campaignType, int? year, int? month)
 		{
-			List<string[]> dateColumns = new List<string[]>();
+            List<string[]> dateColumns = new List<string[]>();
 			string[] dateColumn = null;
 			DateTime currentDate = (year.HasValue && month.HasValue) ? new DateTime(DateTime.MinValue.Year, DateTime.MinValue.Month, 1) : DateTime.MinValue;
 			List<int> weekend = new List<int>();
@@ -625,6 +639,7 @@ namespace Merlin.Classes
 			RotateCellsWithDate(left, data.GetLength(1));
 			currentY += rowsCount + 5;
             activeSheet.SetAutoFitCells(left - 1, (left - 1) + dateColumns.Count);
+
 			if (campaignType == Campaign.CampaignTypes.Sponsor)
 			{
 				activeSheet.SetColumnWidth(_columnWithRollerName, activeSheet.GetColumnWidth(_columnWithRollerName - 2));
@@ -714,8 +729,11 @@ namespace Merlin.Classes
 				SetCellValue(currentY, colIndex++, string.Format("№{0}", index++));
 				SetCellValue(currentY, colIndex++, DateTimeUtils.Time2String(int.Parse(row["duration"].ToString())));
 				SetCellValue(currentY, colIndex++, row["quantity"].ToString());
-				SetCellValue(currentY, colIndex, row["name"].ToString());
-				_columnWithRollerName = colIndex;
+				if (_printSettings.ShowAdvertisingInfo)
+					SetCellValue(currentY, colIndex, $"{row["name"]} - {row["advertTypeName"]}");
+				else
+                    SetCellValue(currentY, colIndex, row["name"].ToString());
+                _columnWithRollerName = colIndex;
 				currentY++;
 			}
 		}

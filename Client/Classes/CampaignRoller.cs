@@ -93,7 +93,9 @@ namespace Merlin.Classes
 				if (fSubstitute.ShowDialog(parentForm) == DialogResult.OK)
 				{
 					Cursor.Current = Cursors.WaitCursor;
-					Subtitute(campaign, roller, fSubstitute.NewRoller, fSubstitute.SelectedDays, moduleID, packModuleId);
+					Application.DoEvents();
+
+                    Subtitute(campaign, roller, fSubstitute.NewRoller, fSubstitute.SelectedDays, moduleID, packModuleId);
 					onEnd?.Invoke();
 				}
 			}
@@ -107,7 +109,7 @@ namespace Merlin.Classes
 			}
 		}
 
-		private static void Subtitute(Campaign campaign, Roller oldRoller, Roller newRoller,
+		public static void Subtitute(Campaign campaign, Roller oldRoller, Roller newRoller,
 								  DataTable days, object moduleID, object packModuleID)
 		{
 			Dictionary<string, object> procParameters = DataAccessor.PrepareParameters(
@@ -129,22 +131,6 @@ namespace Merlin.Classes
 			if (ds != null && ds.Tables.Count > 0 && ds.Tables[0].Rows.Count > 0)
 				Globals.ShowSimpleJournal(EntityManager.GetEntity((int) Entities.RollerUnSubtitude), "Незамененные ролики",
 				                          ds.Tables[0]);
-		}
-
-		public DataTable Issues
-		{
-			get
-			{
-				Dictionary<string, object> procParameters =
-					new Dictionary<string, object>(StringComparer.CurrentCultureIgnoreCase)
-					{
-                        [Campaign.ParamNames.MassmediaId] = ((CampaignOnSingleMassmedia)Campaign).Massmedia.MassmediaId,
-                        [Campaign.ParamNames.CampaignId] = Campaign.CampaignId,
-						[Roller.ParamNames.RollerId] = this[Roller.ParamNames.RollerId]
-                    };
-
-				return DataAccessor.LoadDataSet("IssuesByDate", procParameters).Tables[0];
-			}
 		}
 	}
 

@@ -29,6 +29,9 @@ namespace FogSoft.WinForm.Forms
 		/// </summary>
 		private void InitializeComponent()
 		{
+            this.backgroundLoader = new System.ComponentModel.BackgroundWorker();
+            this.alphaFormTransformer = new FogSoft.WinForm.Win32.AlphaFormTransformer.AlphaFormTransformer();
+            this.panelMain = new System.Windows.Forms.Panel();
             this.panelLgn = new System.Windows.Forms.Panel();
             this.pbLogin = new System.Windows.Forms.PictureBox();
             this.pbCancel = new System.Windows.Forms.PictureBox();
@@ -37,19 +40,46 @@ namespace FogSoft.WinForm.Forms
             this.labelPassword = new System.Windows.Forms.Label();
             this.labelUser = new System.Windows.Forms.Label();
             this.lblStatus = new System.Windows.Forms.Label();
-            this.alphaFormTransformer = new FogSoft.WinForm.Win32.AlphaFormTransformer.AlphaFormTransformer();
-            this.panelMain = new System.Windows.Forms.Panel();
             this.alphaFormMarker1 = new FogSoft.WinForm.Win32.AlphaFormTransformer.AlphaFormMarker();
-            this.backgroundLoader = new System.ComponentModel.BackgroundWorker();
+            this.alphaFormTransformer.SuspendLayout();
+            this.panelMain.SuspendLayout();
             this.panelLgn.SuspendLayout();
             ((System.ComponentModel.ISupportInitialize)(this.pbLogin)).BeginInit();
             ((System.ComponentModel.ISupportInitialize)(this.pbCancel)).BeginInit();
-            this.alphaFormTransformer.SuspendLayout();
-            this.panelMain.SuspendLayout();
             this.SuspendLayout();
+            // 
+            // backgroundLoader
+            // 
+            this.backgroundLoader.WorkerReportsProgress = true;
+            this.backgroundLoader.DoWork += new System.ComponentModel.DoWorkEventHandler(this.BackgroundLoader_DoWork);
+            this.backgroundLoader.ProgressChanged += new System.ComponentModel.ProgressChangedEventHandler(this.BackgroundLoader_ProgressChanged);
+            this.backgroundLoader.RunWorkerCompleted += new System.ComponentModel.RunWorkerCompletedEventHandler(this.BackgroundLoader_RunWorkerCompleted);
+            // 
+            // alphaFormTransformer
+            // 
+            this.alphaFormTransformer.AutoSize = true;
+            this.alphaFormTransformer.Controls.Add(this.panelMain);
+            this.alphaFormTransformer.Controls.Add(this.alphaFormMarker1);
+            this.alphaFormTransformer.Dock = System.Windows.Forms.DockStyle.Fill;
+            this.alphaFormTransformer.DragSleep = ((uint)(30u));
+            this.alphaFormTransformer.Location = new System.Drawing.Point(0, 0);
+            this.alphaFormTransformer.Name = "alphaFormTransformer";
+            this.alphaFormTransformer.Size = new System.Drawing.Size(578, 278);
+            this.alphaFormTransformer.TabIndex = 0;
+            // 
+            // panelMain
+            // 
+            this.panelMain.AutoSize = true;
+            this.panelMain.Controls.Add(this.panelLgn);
+            this.panelMain.Controls.Add(this.lblStatus);
+            this.panelMain.Location = new System.Drawing.Point(12, 12);
+            this.panelMain.Name = "panelMain";
+            this.panelMain.Size = new System.Drawing.Size(557, 254);
+            this.panelMain.TabIndex = 2;
             // 
             // panelLgn
             // 
+            this.panelLgn.AutoSize = true;
             this.panelLgn.BackColor = System.Drawing.Color.Transparent;
             this.panelLgn.Controls.Add(this.pbLogin);
             this.panelLgn.Controls.Add(this.pbCancel);
@@ -94,7 +124,7 @@ namespace FogSoft.WinForm.Forms
             this.textBoxPassword.MaxLength = 16;
             this.textBoxPassword.Name = "textBoxPassword";
             this.textBoxPassword.PasswordChar = '*';
-            this.textBoxPassword.Size = new System.Drawing.Size(170, 27);
+            this.textBoxPassword.Size = new System.Drawing.Size(170, 21);
             this.textBoxPassword.TabIndex = 3;
             this.textBoxPassword.Text = "kjnjc0512";
             this.textBoxPassword.TextChanged += new System.EventHandler(this.TextBox_TextChanged);
@@ -105,7 +135,7 @@ namespace FogSoft.WinForm.Forms
             this.textBoxLogin.Location = new System.Drawing.Point(145, 33);
             this.textBoxLogin.MaxLength = 32;
             this.textBoxLogin.Name = "textBoxLogin";
-            this.textBoxLogin.Size = new System.Drawing.Size(170, 27);
+            this.textBoxLogin.Size = new System.Drawing.Size(170, 21);
             this.textBoxLogin.TabIndex = 2;
             this.textBoxLogin.TextChanged += new System.EventHandler(this.TextBox_TextChanged);
             // 
@@ -113,9 +143,9 @@ namespace FogSoft.WinForm.Forms
             // 
             this.labelPassword.AutoSize = true;
             this.labelPassword.Font = new System.Drawing.Font("Tahoma", 10F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(204)));
-            this.labelPassword.Location = new System.Drawing.Point(84, 63);
+            this.labelPassword.Location = new System.Drawing.Point(8, 63);
             this.labelPassword.Name = "labelPassword";
-            this.labelPassword.Size = new System.Drawing.Size(78, 24);
+            this.labelPassword.Size = new System.Drawing.Size(55, 17);
             this.labelPassword.TabIndex = 1;
             this.labelPassword.Text = "Пароль";
             // 
@@ -123,9 +153,9 @@ namespace FogSoft.WinForm.Forms
             // 
             this.labelUser.AutoSize = true;
             this.labelUser.Font = new System.Drawing.Font("Tahoma", 10F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(204)));
-            this.labelUser.Location = new System.Drawing.Point(41, 34);
+            this.labelUser.Location = new System.Drawing.Point(6, 34);
             this.labelUser.Name = "labelUser";
-            this.labelUser.Size = new System.Drawing.Size(138, 24);
+            this.labelUser.Size = new System.Drawing.Size(98, 17);
             this.labelUser.TabIndex = 0;
             this.labelUser.Text = "Пользователь";
             // 
@@ -142,26 +172,6 @@ namespace FogSoft.WinForm.Forms
             this.lblStatus.TextAlign = System.Drawing.ContentAlignment.BottomRight;
             this.lblStatus.Visible = false;
             // 
-            // alphaFormTransformer
-            // 
-            this.alphaFormTransformer.Controls.Add(this.panelMain);
-            this.alphaFormTransformer.Controls.Add(this.alphaFormMarker1);
-            this.alphaFormTransformer.Dock = System.Windows.Forms.DockStyle.Fill;
-            this.alphaFormTransformer.DragSleep = ((uint)(30u));
-            this.alphaFormTransformer.Location = new System.Drawing.Point(0, 0);
-            this.alphaFormTransformer.Name = "alphaFormTransformer";
-            this.alphaFormTransformer.Size = new System.Drawing.Size(578, 278);
-            this.alphaFormTransformer.TabIndex = 0;
-            // 
-            // panelMain
-            // 
-            this.panelMain.Controls.Add(this.panelLgn);
-            this.panelMain.Controls.Add(this.lblStatus);
-            this.panelMain.Location = new System.Drawing.Point(12, 12);
-            this.panelMain.Name = "panelMain";
-            this.panelMain.Size = new System.Drawing.Size(554, 254);
-            this.panelMain.TabIndex = 2;
-            // 
             // alphaFormMarker1
             // 
             this.alphaFormMarker1.FillBorder = ((uint)(4u));
@@ -170,15 +180,9 @@ namespace FogSoft.WinForm.Forms
             this.alphaFormMarker1.Size = new System.Drawing.Size(26, 23);
             this.alphaFormMarker1.TabIndex = 0;
             // 
-            // backgroundLoader
-            // 
-            this.backgroundLoader.WorkerReportsProgress = true;
-            this.backgroundLoader.DoWork += new System.ComponentModel.DoWorkEventHandler(this.BackgroundLoader_DoWork);
-            this.backgroundLoader.ProgressChanged += new System.ComponentModel.ProgressChangedEventHandler(this.BackgroundLoader_ProgressChanged);
-            this.backgroundLoader.RunWorkerCompleted += new System.ComponentModel.RunWorkerCompletedEventHandler(this.BackgroundLoader_RunWorkerCompleted);
-            // 
             // SplashLogginForm
             // 
+            this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Inherit;
             this.ClientSize = new System.Drawing.Size(578, 278);
             this.Controls.Add(this.alphaFormTransformer);
             this.Font = new System.Drawing.Font("Segoe UI", 9F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(204)));
@@ -188,13 +192,16 @@ namespace FogSoft.WinForm.Forms
             this.StartPosition = System.Windows.Forms.FormStartPosition.CenterScreen;
             this.TopMost = true;
             this.KeyDown += new System.Windows.Forms.KeyEventHandler(this.SplashLogginForm_KeyDown);
+            this.alphaFormTransformer.ResumeLayout(false);
+            this.alphaFormTransformer.PerformLayout();
+            this.panelMain.ResumeLayout(false);
+            this.panelMain.PerformLayout();
             this.panelLgn.ResumeLayout(false);
             this.panelLgn.PerformLayout();
             ((System.ComponentModel.ISupportInitialize)(this.pbLogin)).EndInit();
             ((System.ComponentModel.ISupportInitialize)(this.pbCancel)).EndInit();
-            this.alphaFormTransformer.ResumeLayout(false);
-            this.panelMain.ResumeLayout(false);
             this.ResumeLayout(false);
+            this.PerformLayout();
 
 		}
 

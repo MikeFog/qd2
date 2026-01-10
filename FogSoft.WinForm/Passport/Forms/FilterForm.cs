@@ -9,12 +9,17 @@ namespace FogSoft.WinForm.Passport.Forms
 {
 	public partial class FilterForm : TabbedForm
 	{
+		public FilterForm()
+		{
+			InitializeComponent();
+		}
+
 		public FilterForm(Entity entity, DataSet ds, Dictionary<string, object> filter)
 			: base(entity.XmlFilter)
 		{
-			pageContext = new PageContext(ds, filter, entity);			
-			btnApply.Visible = false;
-		}
+			pageContext = new PageContext(ds, filter, entity);
+            btnApply.Visible = false;
+        }
 
 		public FilterForm(Entity entity, XPathNavigator navigator, DataSet ds, Dictionary<string, object> filter)
 			: base(navigator)
@@ -38,6 +43,6 @@ namespace FogSoft.WinForm.Passport.Forms
 		{
 			base.OnLoad(e);
 			Text = "Установить фильтр";
-		}
+        }
 	}
 }

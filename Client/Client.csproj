@@ -126,6 +126,9 @@
     <LangVersion>7.3</LangVersion>
     <Prefer32Bit>false</Prefer32Bit>
   </PropertyGroup>
+  <PropertyGroup>
+    <NoWin32Manifest>true</NoWin32Manifest>
+  </PropertyGroup>
   <ItemGroup>
     <Reference Include="cli_basetypes, Version=1.0.20.0, Culture=neutral, PublicKeyToken=ce2cb7e279207b9e, processorArchitecture=MSIL">
       <SpecificVersion>False</SpecificVersion>
@@ -185,6 +188,7 @@
     <Reference Include="System.Data">
       <Name>System.Data</Name>
     </Reference>
+    <Reference Include="System.Data.DataSetExtensions" />
     <Reference Include="System.Drawing">
       <Name>System.Drawing</Name>
     </Reference>
@@ -212,9 +216,6 @@
     <Reference Include="System.Windows.Forms">
       <Name>System.Windows.Forms</Name>
     </Reference>
-    <Reference Include="System.Windows.Forms.DataVisualization, Version=3.5.0.0, Culture=neutral, PublicKeyToken=31bf3856ad364e35, processorArchitecture=MSIL">
-      <Private>True</Private>
-    </Reference>
     <Reference Include="System.Xml">
       <Name>System.XML</Name>
     </Reference>
@@ -228,8 +229,7 @@
     </COMReference>
   </ItemGroup>
   <ItemGroup>
-    <None Include="app.config">
-    </None>
+    <None Include="app.config" />
     <None Include="Diagrams\Campaign.cd" />
     <None Include="Diagrams\Action.cd" />
     <None Include="Diagrams\ReportClasses.cd" />
@@ -243,8 +243,20 @@
     <EmbeddedResource Include="Controls\GenericGridView.resx">
       <DependentUpon>GenericGridView.cs</DependentUpon>
     </EmbeddedResource>
+    <EmbeddedResource Include="Controls\PriceCalculatorGrid.resx">
+      <DependentUpon>PriceCalculatorGrid.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Controls\RadiostationListWithGroup.resx">
+      <DependentUpon>RadiostationListWithGroup.cs</DependentUpon>
+    </EmbeddedResource>
     <EmbeddedResource Include="Controls\TariffWithRangeGrid.resx">
       <DependentUpon>TariffWithRangeGrid.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Controls\TemplateEditorControl.resx">
+      <DependentUpon>TemplateEditorControl.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Forms\ActionFinalPriceForm.resx">
+      <DependentUpon>ActionFinalPriceForm.cs</DependentUpon>
     </EmbeddedResource>
     <EmbeddedResource Include="Forms\AgencyPassportForm.resx">
       <DependentUpon>AgencyPassportForm.cs</DependentUpon>
@@ -287,6 +299,15 @@
     <EmbeddedResource Include="Forms\MassmediaPassport.resx">
       <SubType>Designer</SubType>
       <DependentUpon>MassmediaPassport.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Forms\PriceCalculatorForm.resx">
+      <DependentUpon>PriceCalculatorForm.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Forms\PrintMediaPlanSettings.resx">
+      <DependentUpon>PrintMediaPlanSettings.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Forms\RadiostationsSelector.resx">
+      <DependentUpon>RadiostationsSelector.cs</DependentUpon>
     </EmbeddedResource>
     <EmbeddedResource Include="Forms\RollerMuteSelect.resx">
       <DependentUpon>RollerMuteSelect.cs</DependentUpon>
@@ -364,6 +385,8 @@
     <EmbeddedResource Include="Icons\banks.png" />
     <EmbeddedResource Include="Icons\export.png" />
     <EmbeddedResource Include="Icons\Import.png" />
+    <EmbeddedResource Include="Icons\headcompany.png" />
+    <EmbeddedResource Include="Icons\fan.png" />
     <Content Include="Icons\TEMPLATE.ICO" />
     <Content Include="app.ico" />
     <None Include="packages.config" />
@@ -443,6 +466,7 @@
     <Compile Include="Classes\FakeContainers\AdvertTypeContainer.cs" />
     <Compile Include="Classes\FakeContainers\MassmediasContainer.cs" />
     <Compile Include="Classes\FakeContainers\StudioOrderActionContainer.cs" />
+    <Compile Include="Classes\GridExport\DJinSerializer\BlockManager.cs" />
     <Compile Include="Classes\GridExport\DJinSerializer\DJinParam.cs" />
     <Compile Include="Classes\GridExport\DJinSerializer\DJinExportDocument.cs" />
     <Compile Include="Classes\GridExport\ExportDocument.cs" />
@@ -452,9 +476,8 @@
     <Compile Include="Classes\FirmBalanceStudioOrder.cs" />
     <Compile Include="Classes\GridExport\ExportType.cs" />
     <Compile Include="Classes\GridExport\ExportHelper.cs" />
-    <Compile Include="Classes\GridExport\VectorBoxSerializer\VectorBoxExportDocument.cs" />
-    <Compile Include="Classes\GridExport\VectorBoxSerializer\VectorBoxParam.cs" />
     <Compile Include="Classes\HeadCompany.cs" />
+    <Compile Include="Classes\HeadCompanyWithActions.cs" />
     <Compile Include="Classes\Import\FirmImporter.cs" />
     <Compile Include="Classes\InternalConstants.cs" />
     <Compile Include="Classes\Firm.cs">
@@ -480,6 +503,7 @@
     <Compile Include="Classes\PackModuleIssue.cs" />
     <Compile Include="Classes\PaintingType.cs" />
     <Compile Include="Classes\PaymentCommon.cs" />
+    <Compile Include="Classes\PrintSettings.cs" />
     <Compile Include="Classes\ProgramIssue.cs" />
     <Compile Include="Classes\Reports\VolumeOfRealizationReportGenerator.cs" />
     <Compile Include="Classes\RollerIssue.cs">
@@ -543,8 +567,6 @@
     <Compile Include="Classes\Utils.cs">
       <SubType>Code</SubType>
     </Compile>
-    <Compile Include="Classes\GridExport\VideoDJSerializer\VideoDJExportDocument.cs" />
-    <Compile Include="Classes\GridExport\VideoDJSerializer\VideoDJParam.cs" />
     <Compile Include="Controls\DataGridViewTextCheckBoxCell.cs" />
     <Compile Include="Controls\GenericGridView.cs">
       <SubType>Component</SubType>
@@ -566,11 +588,23 @@
     <Compile Include="Controls\PackModuleGrid.Designer.cs">
       <DependentUpon>PackModuleGrid.cs</DependentUpon>
     </Compile>
+    <Compile Include="Controls\PriceCalculatorGrid.cs">
+      <SubType>UserControl</SubType>
+    </Compile>
+    <Compile Include="Controls\PriceCalculatorGrid.Designer.cs">
+      <DependentUpon>PriceCalculatorGrid.cs</DependentUpon>
+    </Compile>
     <Compile Include="Controls\ProgramIssuesGrid2.cs">
       <SubType>UserControl</SubType>
     </Compile>
     <Compile Include="Controls\ProgramIssuesGrid2.Designer.cs">
       <DependentUpon>ProgramIssuesGrid2.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Controls\RadiostationListWithGroup.cs">
+      <SubType>UserControl</SubType>
+    </Compile>
+    <Compile Include="Controls\RadiostationListWithGroup.Designer.cs">
+      <DependentUpon>RadiostationListWithGroup.cs</DependentUpon>
     </Compile>
     <Compile Include="Controls\RollerIssuesGrid3.cs">
       <SubType>UserControl</SubType>
@@ -608,8 +642,20 @@
     <Compile Include="Controls\TariffWithRangeGrid.Designer.cs">
       <DependentUpon>TariffWithRangeGrid.cs</DependentUpon>
     </Compile>
+    <Compile Include="Controls\TemplateEditorControl.cs">
+      <SubType>UserControl</SubType>
+    </Compile>
+    <Compile Include="Controls\TemplateEditorControl.Designer.cs">
+      <DependentUpon>TemplateEditorControl.cs</DependentUpon>
+    </Compile>
     <Compile Include="Controls\TrafficGrid.cs">
       <SubType>UserControl</SubType>
+    </Compile>
+    <Compile Include="Forms\ActionFinalPriceForm.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="Forms\ActionFinalPriceForm.Designer.cs">
+      <DependentUpon>ActionFinalPriceForm.cs</DependentUpon>
     </Compile>
     <Compile Include="Forms\ActionForm.cs">
       <SubType>Form</SubType>
@@ -786,6 +832,24 @@
     </Compile>
     <Compile Include="Forms\PaymentCandidatesForm.Designer.cs">
       <DependentUpon>PaymentCandidatesForm.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Forms\PriceCalculatorForm.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="Forms\PriceCalculatorForm.Designer.cs">
+      <DependentUpon>PriceCalculatorForm.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Forms\PrintMediaPlanSettings.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="Forms\PrintMediaPlanSettings.Designer.cs">
+      <DependentUpon>PrintMediaPlanSettings.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Forms\RadiostationsSelector.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="Forms\RadiostationsSelector.Designer.cs">
+      <DependentUpon>RadiostationsSelector.cs</DependentUpon>
     </Compile>
     <Compile Include="Forms\RollerMuteSelect.cs">
       <SubType>Form</SubType>

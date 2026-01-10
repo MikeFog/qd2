@@ -22,7 +22,7 @@ namespace Merlin.Forms
 		private readonly MediaControl mediaControl;
 		protected TariffGrid tariffGrid;
 		private bool changeFlag;
-		private IssueTemplate template;
+		private IssueTemplate _template;
 		private SmartGrid packDetails;
         protected Firm _firm;
 
@@ -410,32 +410,37 @@ namespace Merlin.Forms
 
 				if (tariffWindow != null && tariffGrid.EditMode == EditMode.Template)
 				{
-					template.SetTime(tariffWindow.WindowDate);
-					template.Parameters["Window"] = tariffWindow.WindowDate.TimeOfDay;
-					if(Globals.ShowQuestion("StartIssueGeneration", template.Parameters) == DialogResult.Yes)
+					_template.SetTime(tariffWindow.WindowDate);
+					_template.Parameters["Window"] = tariffWindow.WindowDate.TimeOfDay;
+					if(Globals.ShowQuestion("StartIssueGeneration", _template.Parameters) == DialogResult.Yes)
 					{
 						FrmGenerator form;
 						if (tariffGrid is ProgramIssuesGrid2)
 						{
 							form =
-								new FrmGenerator(template, _campaign, SponsorIssuesGrid.SponsorProgram,
+								new FrmGenerator(_template, _campaign, SponsorIssuesGrid.SponsorProgram,
 								                 tariffWindow.TariffId, tariffWindow.Price,
 								                 ((SponsorPricelist) SponsorIssuesGrid.Pricelist).Bonus);
 						}
+						else if(tariffGrid is TariffWithRangeGrid)
+						{
+							form = new FrmGenerator(_template, ((TariffWithRangeGrid)tariffGrid).AddIssuesRange);
+                        }
 						else
 						{
 							form =
-								new FrmGenerator(template, ((IRollerGrid) tariffGrid).Roller, RollerIssuesGrid.RollerPosition,
+								new FrmGenerator(_template, ((IRollerGrid)tariffGrid).Roller, RollerIssuesGrid.RollerPosition,
 								_campaign, RollerIssuesGrid.Pricelist, ((IRollerGrid)tariffGrid).Module, Grantor == null ? null : (int?)Grantor.Id);
 						}
 
 						form.ShowDialog(this);
 
-						if(template.IsDateCovered(tariffGrid.StartDate, tariffGrid.FinishDate))
+						if(_template.IsDateCovered(tariffGrid.StartDate, tariffGrid.FinishDate))
 						{
 							RefreshGrid();
 						}
-						CampaignStatusChanged();
+						if(!(tariffGrid is TariffWithRangeGrid))
+							CampaignStatusChanged();
 					}
 				}
 
@@ -668,11 +673,11 @@ namespace Merlin.Forms
 			{
 				if(tbbTemplate.Checked)
 				{
-					FrmTemplate form = new FrmTemplate(template);
+					FrmTemplate form = new FrmTemplate(_template);
 					if(form.ShowDialog(this) != DialogResult.OK)
 						tbbTemplate.Checked = false;
 					else
-						template = form.Template;
+						_template = form.Template;
 				}
 				SetEditMode();
 			}
@@ -701,16 +706,16 @@ namespace Merlin.Forms
 
 				if (formTemplate.ShowDialog(this) == DialogResult.OK)
 				{
-					template = formTemplate.Template;
+					_template = formTemplate.Template;
 	
-					FrmGenerator form = new FrmGenerator(template, roller, RollerIssuesGrid.RollerPosition,
+					FrmGenerator form = new FrmGenerator(_template, roller, RollerIssuesGrid.RollerPosition,
 					_campaign, null, ((IRollerGrid)tariffGrid).Module, Grantor == null ? null : (int?)Grantor.Id);
 
 					form.ShowDialog(this);
 					Application.DoEvents();
 					Cursor = Cursors.WaitCursor;
 
-					if (template.IsDateCovered(tariffGrid.StartDate, tariffGrid.FinishDate))
+					if (_template.IsDateCovered(tariffGrid.StartDate, tariffGrid.FinishDate))
 						RefreshGrid();
 
 					CampaignStatusChanged();

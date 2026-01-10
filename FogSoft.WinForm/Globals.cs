@@ -155,12 +155,20 @@ namespace FogSoft.WinForm
 			journal.BringToFront();
 		}
 
-		public static void ShowSimpleJournal(
-			Entity entity, string caption,
-			Dictionary<string, object> filterValues)
+        public static void ShowSimpleJournal(Entity entity, string caption, Dictionary<string, object> filterValues, bool showModal = false)
 		{
-			JournalForm journal = new JournalForm(entity, caption, filterValues) {MdiParent = MdiParent, Icon = MdiParent.Icon};
-			journal.Show();
+			JournalForm journal = new JournalForm(entity, caption, filterValues);
+			if (showModal && MdiParent != null)
+			{
+				journal.StartPosition = FormStartPosition.CenterParent;
+				journal.ShowDialog(MdiParent);
+			}
+			else
+			{
+				journal.MdiParent = MdiParent;
+				journal.Icon = MdiParent.Icon;
+                journal.Show();
+			}
 		}
 
 		public static void ShowSimpleJournal(
@@ -383,7 +391,7 @@ namespace FogSoft.WinForm
 			{
 				WaitCursorCallback d = new WaitCursorCallback(SetWaitCursor);
 				frm.Invoke(d, new object[] { frm });
-			}
+            }
 			else
 			{
 				try
@@ -396,7 +404,8 @@ namespace FogSoft.WinForm
 					ErrorManager.LogError("Cannot set wait cursor", e);
 				}
 			}
-		}
+            Application.DoEvents();
+        }
 
 		delegate void DefaultCursorCallback(Form frm);
 		public static void SetDefaultCursor(Form frm)

@@ -48,15 +48,23 @@ namespace Merlin.Classes
 				ChildEntity = EntityManager.GetEntity((int)Entities.SponsorCampaignProgram);
 				base.FireContainerRefreshed();
 			}
-            else if (actionName == Action.ActionNames.SetAdvertType)
-                SetAdvertType();
-            else if (actionName == ActionNames.EditIssues)
+			else if (actionName == Action.ActionNames.SetAdvertType)
+				SetAdvertType();
+			else if (actionName == ActionNames.EditIssues)
 				EditProgramIssues(owner as Form);
 			else if (actionName == Campaign.ActionNames.DeleteIssues)
+			{
 				if (Campaign.DeleteIssues(owner as Form, true, isFireEvent: false))
 					FireContainerRefreshed();
-                else
-                    base.DoAction(actionName, owner, interfaceObject);
+			}
+			else if (actionName == Constants.EntityActions.Refresh)
+			{
+				ClearCache();
+				iterator.ClearCache();
+				FireContainerRefreshed();
+			}
+			else
+				base.DoAction(actionName, owner, interfaceObject);
         }
 
         private void SetAdvertType()
@@ -81,7 +89,10 @@ namespace Merlin.Classes
 			fCampaign.ShowDialog(parentForm);
 			Application.DoEvents();
 			if (fCampaign.ChangeFlag)
+			{
 				campaign.RecalculateAction();
+                FireContainerRefreshed();
+            }
 		}
 
 		private static Entity GetEntity()

@@ -40,14 +40,19 @@ namespace FogSoft.WinForm.Classes
 			return settings;
 		}
 
-		public static bool IsTestMode
+        public static string MainConnectionString
+        {
+            get { return GetSettings("MainConnectionString", "Main"); }
+        }
+
+        public static bool IsTestMode
 		{
 			get { return GetBooleanSettings("TestMode", false); }
 		}
 
-		public static string MainConnectionString
-		{
-			get { return GetSettings("MainConnectionString", "Main"); }
+		public static int StoredProcExecutionTimeThreshold
+        {
+			get { return GetInt32Settings("StoredProcExecutionTimeThresholdMS", 1000); }
 		}
 
         public static string LegacyDBConnectionString

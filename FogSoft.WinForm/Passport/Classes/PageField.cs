@@ -1,9 +1,9 @@
+using FogSoft.WinForm.Classes;
 using System;
 using System.Collections.Generic;
 using System.Drawing;
 using System.Windows.Forms;
 using System.Xml.XPath;
-using FogSoft.WinForm.Classes;
 
 namespace FogSoft.WinForm.Passport.Classes
 {
@@ -13,19 +13,19 @@ namespace FogSoft.WinForm.Passport.Classes
 		protected Control controlInRightColumn;
 		protected AnchorStyles? aStyles;
 
-		protected PageTypes PageType { get; private set;}
+        protected PageTypes PageType { get; private set;}
 
-		protected PageField(XPathNavigator navigator, PageTypes type)
-			: base(navigator)
-		{
-			controlInLeftColumn = CreateLabel(navigator);
-			SetControlLockedFlag(navigator);
-			SetRequied(navigator);
-			PageType = type;
-			GetAnchorStyles(navigator);
-		}
+        protected PageField(XPathNavigator navigator, PageTypes type)
+            : base(navigator)
+        {
+            controlInLeftColumn = CreateLabel(navigator);
+            SetControlLockedFlag(navigator);
+            SetRequied(navigator);
+            PageType = type;
+            GetAnchorStyles(navigator);
+        }
 
-		private void GetAnchorStyles(XPathNavigator navigator)
+        private void GetAnchorStyles(XPathNavigator navigator)
 		{
 			string anchor = navigator.GetAttribute(Attributes.Anchor, string.Empty);
 			if (!string.IsNullOrEmpty(anchor))
@@ -51,7 +51,7 @@ namespace FogSoft.WinForm.Passport.Classes
 			}
 		}
 
-		protected PageField(XPathNavigator navigator, ColumnInfo columnInfo, PageTypes type)
+		protected PageField(XPathNavigator navigator, ColumnInfo columnInfo, PageTypes type, PageContext context = null)
 			: this(navigator, type)
 		{
 			if (isNullable)
@@ -60,7 +60,15 @@ namespace FogSoft.WinForm.Passport.Classes
 					isNullable = columnInfo.IsNullable;
 				else
 					isNullable = !IsMandatoryElement(navigator);
-			}
+
+				if (context != null && context.PresentationObject != null && context.PresentationObject.IsNew) 
+				{
+					var flag = IsMandatoryOnCreate(navigator);
+
+					if (flag.HasValue && flag == false)
+						isNullable = true;
+				}
+            }
 		}
 
 		protected PageField(XPathNavigator navigator, Control controlInRightColumn, PageTypes type)
@@ -71,8 +79,8 @@ namespace FogSoft.WinForm.Passport.Classes
 
 		protected PageField(
 			XPathNavigator navigator, ColumnInfo columnInfo,
-			Control controlInRightColumn, Control controlInLeftColumn, PageTypes type)
-			: this(navigator, columnInfo, type)
+			Control controlInRightColumn, Control controlInLeftColumn, PageTypes type, PageContext context = null)
+			: this(navigator, columnInfo, type, context)
 		{
 			this.controlInRightColumn = controlInRightColumn;
 			this.controlInRightColumn.Name = GetControlName(navigator);

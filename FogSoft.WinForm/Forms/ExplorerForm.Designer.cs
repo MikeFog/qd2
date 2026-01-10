@@ -37,6 +37,7 @@ namespace FogSoft.WinForm.Forms {
             this.statusStrip1 = new System.Windows.Forms.StatusStrip();
             this.slTotal = new System.Windows.Forms.ToolStripStatusLabel();
             this.tsJournal.SuspendLayout();
+            ((System.ComponentModel.ISupportInitialize)(this.splitContainer1)).BeginInit();
             this.splitContainer1.Panel1.SuspendLayout();
             this.splitContainer1.Panel2.SuspendLayout();
             this.splitContainer1.SuspendLayout();
@@ -56,7 +57,7 @@ namespace FogSoft.WinForm.Forms {
             this.tsbSumma});
             this.tsJournal.Location = new System.Drawing.Point(0, 0);
             this.tsJournal.Name = "tsJournal";
-            this.tsJournal.Size = new System.Drawing.Size(742, 38);
+            this.tsJournal.Size = new System.Drawing.Size(742, 34);
             this.tsJournal.TabIndex = 1;
             this.tsJournal.Text = "toolStrip1";
             // 
@@ -65,7 +66,7 @@ namespace FogSoft.WinForm.Forms {
             this.tsbEdit.Image = global::FogSoft.WinForm.Properties.Resources.EditItem;
             this.tsbEdit.ImageTransparentColor = System.Drawing.Color.Magenta;
             this.tsbEdit.Name = "tsbEdit";
-            this.tsbEdit.Size = new System.Drawing.Size(161, 33);
+            this.tsbEdit.Size = new System.Drawing.Size(161, 29);
             this.tsbEdit.Text = "Редактировать";
             this.tsbEdit.Click += new System.EventHandler(this.tsbEdit_Click);
             // 
@@ -74,7 +75,7 @@ namespace FogSoft.WinForm.Forms {
             this.tsbRefresh.Image = global::FogSoft.WinForm.Properties.Resources.Refresh;
             this.tsbRefresh.ImageTransparentColor = System.Drawing.Color.Magenta;
             this.tsbRefresh.Name = "tsbRefresh";
-            this.tsbRefresh.Size = new System.Drawing.Size(121, 33);
+            this.tsbRefresh.Size = new System.Drawing.Size(121, 29);
             this.tsbRefresh.Text = "Обновить";
             this.tsbRefresh.Click += new System.EventHandler(this.tsbRefresh_Click);
             // 
@@ -83,21 +84,21 @@ namespace FogSoft.WinForm.Forms {
             this.tsbDelete.Image = global::FogSoft.WinForm.Properties.Resources.DeleteItem;
             this.tsbDelete.ImageTransparentColor = System.Drawing.Color.Magenta;
             this.tsbDelete.Name = "tsbDelete";
-            this.tsbDelete.Size = new System.Drawing.Size(104, 33);
+            this.tsbDelete.Size = new System.Drawing.Size(104, 29);
             this.tsbDelete.Text = "Удалить";
             this.tsbDelete.Click += new System.EventHandler(this.tsbDelete_Click);
             // 
             // toolStripSeparator1
             // 
             this.toolStripSeparator1.Name = "toolStripSeparator1";
-            this.toolStripSeparator1.Size = new System.Drawing.Size(6, 38);
+            this.toolStripSeparator1.Size = new System.Drawing.Size(6, 34);
             // 
             // tsbExcel
             // 
             this.tsbExcel.Image = global::FogSoft.WinForm.Properties.Resources.ExportExcel;
             this.tsbExcel.ImageTransparentColor = System.Drawing.Color.Magenta;
             this.tsbExcel.Name = "tsbExcel";
-            this.tsbExcel.Size = new System.Drawing.Size(107, 33);
+            this.tsbExcel.Size = new System.Drawing.Size(107, 29);
             this.tsbExcel.Text = "Экспорт";
             this.tsbExcel.Click += new System.EventHandler(this.tsbExcel_Click);
             // 
@@ -106,7 +107,7 @@ namespace FogSoft.WinForm.Forms {
             this.tsbFilter.Image = global::FogSoft.WinForm.Properties.Resources.Filter;
             this.tsbFilter.ImageTransparentColor = System.Drawing.Color.Magenta;
             this.tsbFilter.Name = "tsbFilter";
-            this.tsbFilter.Size = new System.Drawing.Size(99, 33);
+            this.tsbFilter.Size = new System.Drawing.Size(99, 29);
             this.tsbFilter.Text = "Фильтр";
             this.tsbFilter.ToolTipText = "Установить Фильтр";
             this.tsbFilter.Click += new System.EventHandler(this.tsbFilter_Click);
@@ -124,7 +125,7 @@ namespace FogSoft.WinForm.Forms {
             // splitContainer1
             // 
             this.splitContainer1.Dock = System.Windows.Forms.DockStyle.Fill;
-            this.splitContainer1.Location = new System.Drawing.Point(0, 38);
+            this.splitContainer1.Location = new System.Drawing.Point(0, 34);
             this.splitContainer1.Margin = new System.Windows.Forms.Padding(3, 4, 3, 4);
             this.splitContainer1.Name = "splitContainer1";
             // 
@@ -135,7 +136,7 @@ namespace FogSoft.WinForm.Forms {
             // splitContainer1.Panel2
             // 
             this.splitContainer1.Panel2.Controls.Add(this.grid);
-            this.splitContainer1.Size = new System.Drawing.Size(742, 459);
+            this.splitContainer1.Size = new System.Drawing.Size(742, 463);
             this.splitContainer1.SplitterDistance = 262;
             this.splitContainer1.TabIndex = 2;
             this.splitContainer1.TabStop = false;
@@ -151,7 +152,8 @@ namespace FogSoft.WinForm.Forms {
             this.tvwStructure.Name = "tvwStructure";
             this.tvwStructure.SelectedItemsBitColumn = null;
             this.tvwStructure.SelectedItemsImageColumn = null;
-            this.tvwStructure.Size = new System.Drawing.Size(262, 459);
+            this.tvwStructure.ShowExpandButton = false;
+            this.tvwStructure.Size = new System.Drawing.Size(262, 463);
             this.tvwStructure.TabIndex = 0;
             this.tvwStructure.ContainerSelected += new FogSoft.WinForm.ContainerDelegate(this.tvwStructure_ContainerSelected);
             // 
@@ -169,12 +171,13 @@ namespace FogSoft.WinForm.Forms {
             this.grid.IsHighlightInvertColor = false;
             this.grid.IsNeedHighlight = false;
             this.grid.Location = new System.Drawing.Point(0, 0);
-            this.grid.Margin = new System.Windows.Forms.Padding(4, 4, 4, 4);
+            this.grid.Margin = new System.Windows.Forms.Padding(4);
             this.grid.MenuEnabled = true;
             this.grid.Name = "grid";
             this.grid.QuickSearchVisible = true;
             this.grid.SelectedObject = null;
-            this.grid.Size = new System.Drawing.Size(476, 459);
+            this.grid.ShowMultiselectColumn = true;
+            this.grid.Size = new System.Drawing.Size(476, 463);
             this.grid.TabIndex = 0;
             this.grid.ObjectDeleted += new FogSoft.WinForm.ObjectDelegate(this.grid_ObjectCreatedOrDeleted);
             this.grid.ObjectCreated += new FogSoft.WinForm.ObjectDelegate(this.grid_ObjectCreatedOrDeleted);
@@ -216,6 +219,7 @@ namespace FogSoft.WinForm.Forms {
             this.tsJournal.PerformLayout();
             this.splitContainer1.Panel1.ResumeLayout(false);
             this.splitContainer1.Panel2.ResumeLayout(false);
+            ((System.ComponentModel.ISupportInitialize)(this.splitContainer1)).EndInit();
             this.splitContainer1.ResumeLayout(false);
             this.statusStrip1.ResumeLayout(false);
             this.statusStrip1.PerformLayout();

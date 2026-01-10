@@ -66,7 +66,7 @@ namespace Merlin.Forms
                 using (SqlConnection connection = new SqlConnection(ConfigurationUtil.ConnectionStringLegacyDB.ConnectionString))
                 {
                     connection.Open();
-                    dtData = SqlHelper.ExecuteDataset(connection, CommandType.Text, @"select 
+                    _dtData = SqlHelper.ExecuteDataset(connection, CommandType.Text, @"select 
 	f.*,
 	b.bik as bank_bik,
 	b.corAccount as bank_corAccount,
@@ -95,7 +95,7 @@ from FirmBrand fb
                 {
                     int firmID = (short)row["firmID"];
 
-                    foreach (DataRow rowImport in dtData.Rows)
+                    foreach (DataRow rowImport in _dtData.Rows)
                     {
                         int importFirmID = (short)rowImport["firmID"];
 
@@ -103,7 +103,7 @@ from FirmBrand fb
                         {
                             if (showOnlyNew)
                             {
-                                dtData.Rows.Remove(rowImport);
+                                _dtData.Rows.Remove(rowImport);
                             }
                             else
                             {
@@ -235,7 +235,7 @@ from FirmBrand fb
 
             if (!hasErrors)
             {
-                dtData.Rows.Clear();
+                _dtData.Rows.Clear();
                 PopulateDataGrid();
                 Application.DoEvents();
                 RefreshJournal();

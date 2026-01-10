@@ -113,7 +113,7 @@ namespace Merlin.Controls
 		protected DateTime monday, startDate, finishDate;
 		protected DataTable dtGrid;
 
-		protected DataTable dtIssue;
+		protected DataTable _dtIssue, _dtWindoesWithCurrentFirmIssue;
 		protected ITariffWindow[,] tariffWindows;
 		protected DateTime[] weekDates;
 		protected GridColumn[] gridColumns;
@@ -135,7 +135,7 @@ namespace Merlin.Controls
 			SetEventHandlers();
 		}
 
-		public virtual EditMode EditMode
+        public virtual EditMode EditMode
 		{
 			get { return editMode; }
 			set
@@ -638,7 +638,12 @@ namespace Merlin.Controls
 			SetCellForeColor(rowIndex, columnIndex, Color.Blue);
 		}
 
-		public bool Jump2Date()
+        protected void MarkCellAsHavingCurrentFirmIssues(DataGridViewCell cell)
+        {
+            SetCellForeColor(cell.RowIndex, cell.ColumnIndex, Color.LightSeaGreen);
+        }
+
+        public bool Jump2Date()
 		{
 			FrmDateSelector fSelector = new FrmDateSelector("Выбор даты");
 			fSelector.Mode = FrmDateSelector.SelectorMode.SelectOne;

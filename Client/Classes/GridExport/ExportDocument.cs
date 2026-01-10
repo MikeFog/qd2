@@ -58,8 +58,7 @@ namespace Merlin.Classes.GridExport
 			Export(mm, date, fileName, data, broadcastTime);
 		}
 
-		protected abstract void Export(Massmedia mm, DateTime date, string fileName, DataTable data,
-		                             string broadcastTime);
+		protected abstract void Export(Massmedia mm, DateTime date, string fileName, DataTable data, string broadcastTime);
 
 		protected void ExportBlocks(Stream file, IEnumerable<DataRow> rows, Massmedia mm, DateTime date)
 		{
@@ -277,11 +276,6 @@ namespace Merlin.Classes.GridExport
 
 		#endregion
         
-		public static VideoExportType VideoExportType
-		{
-			get { return ConfigurationUtil.GetEnumSettings("VideoExportType", VideoExportType.VideoDJ); }
-		}
-
 		public static AudioExportType AudioExportType
 		{
 			get { return ConfigurationUtil.GetEnumSettings("AudioExportType", AudioExportType.DJin); }

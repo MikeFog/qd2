@@ -113,7 +113,7 @@ namespace Merlin.Controls
 				    && theDate >= startDate && theDate <= finishDate)
 				{
 					TariffWindowWithProgramIssue tariffWindow =
-						new TariffWindowWithProgramIssue(new Tariff(tariffRow), theDate, dtIssue, sponsorProgram, Campaign.CampaignId);
+						new TariffWindowWithProgramIssue(new Tariff(tariffRow), theDate, _dtIssue, sponsorProgram, Campaign.CampaignId);
 					tariffWindows[rowCount, dayNum] = tariffWindow;
 
 					if (tariffWindow.Issue == null)
@@ -132,7 +132,7 @@ namespace Merlin.Controls
 
 		private void LoadData()
 		{
-			dtIssue = _massmedia.
+			_dtIssue = _massmedia.
 				GetProgramIssues(pricelist, sponsorProgram, startDate, finishDate);
 		}
 

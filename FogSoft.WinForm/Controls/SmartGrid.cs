@@ -1,20 +1,22 @@
+﻿using FogSoft.WinForm.Classes;
 using System;
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.Data;
+using System.Diagnostics;
 using System.Drawing;
+using System.Linq;
 using System.Text.RegularExpressions;
 using System.Windows.Forms;
-using FogSoft.WinForm.Classes;
 using MessageBox = FogSoft.WinForm.Forms.MessageBox;
 
 namespace FogSoft.WinForm.Controls
 {
     public partial class SmartGrid : UserControl, IObjectControl
 	{
-		#region Events ----------------------------------------
-
-		public event EmptyDelegate DblClick;
+        #region Events ----------------------------------------
+        public event EmptyDelegate RefreshAll;
+        public event EmptyDelegate DblClick;
 		public event ObjectDelegate ObjectDeleted;
 		public event ObjectDelegate ObjectChanged;
 		public event ObjectDelegate ObjectSelected;
@@ -24,7 +26,6 @@ namespace FogSoft.WinForm.Controls
 		public event ObjectCheckedDelegate ObjectChecked;
 		public event ObjectParentChange EntityParentChanged;
         public event EventHandler<int> RecordCountChanged;
-
         #endregion
 
         #region Members ---------------------------------------
@@ -43,14 +44,23 @@ namespace FogSoft.WinForm.Controls
 
         #endregion
 
-        private const string QuickSearchText = "����� �� ����";
+        private const string QuickSearchText = "Поиск по полю";
 		public const string COL_IsSelected = "isObjectSelected";
+        private const string ROW_STYLE = "row_style";
 
-		public SmartGrid()
+        public SmartGrid()
 		{
 			InitializeComponent();
 			dataGrid.AutoGenerateColumns = false;
-		}
+            // Conectar este método a eventos del DataGridView:
+            dataGrid.ColumnWidthChanged += (s, e) => RepositionCheckBoxHeader();
+            dataGrid.Scroll += (s, e) => RepositionCheckBoxHeader();
+            dataGrid.Sorted += (s, e) => RepositionCheckBoxHeader();
+            dataGrid.ColumnHeaderMouseClick += (s, e) =>
+            {
+                BeginInvoke(new Action(() => RepositionCheckBoxHeader()));
+            };
+        }
 
 		public new bool Enabled
 		{
@@ -170,17 +180,25 @@ namespace FogSoft.WinForm.Controls
 
 				if(entity != null)
 				{
-					SetTablePKColumn(value.Table);
+                    if (checkboxes && !value.Table.Columns.Contains(COL_IsSelected))
+                    {
+                        DataColumn checkColumn = new DataColumn(COL_IsSelected, typeof(bool));
+                        checkColumn.DefaultValue = false;
+                        value.Table.Columns.Add(checkColumn);
+                    }
 
-					SetColumnHeaders(value.Table.Columns);
+                    SetTablePKColumn(value.Table);
+                    SetColumnHeaders(value.Table.Columns);
                     dataGrid.DataSource = value;
 
 					bm = BindingContext[dataGrid.DataSource];
 					bm.PositionChanged += new EventHandler(Bm_PositionChanged);
 					if(selectedObject != null)
 						SelectedObject = selectedObject;
+                    if (checkboxes && showMultiselectColumn)
+                        AddCheckBox2ColumnHeader();
 
-					RefreshDependantGrid();
+                    RefreshDependantGrid();
 					FireObjectSelected();
 				}
 				else
@@ -198,8 +216,8 @@ namespace FogSoft.WinForm.Controls
 					}
 				}
 				HighlightRows();
-			}
-		}
+            }
+        }
 
 		[Browsable(false)]
 		public string ColumnNameHighlight {get; set;}
@@ -373,8 +391,12 @@ namespace FogSoft.WinForm.Controls
 		{
 			if(entity == null || !IsAllowedEntity(presentationObject.Entity)) return;
 
-			if(dataGrid.DataSource == null)
+			if (dataGrid.DataSource == null)
+			{
 				DataSource = entity.LoadSingleObject(presentationObject).DefaultView;
+                // если объект "фейковый", как выпуск веерного размещения, то из БД он не загрузится
+                if (dataGrid.RowCount == 0) Globals.AddObject2DataTable(GridTable, presentationObject); ;
+            }
 			else
 				Globals.AddObject2DataTable(GridTable, presentationObject);
 
@@ -472,7 +494,7 @@ namespace FogSoft.WinForm.Controls
 				res = summa.ToString();
 			}
 
-			return string.Format("����� �� ������� ����� {0}", res);
+			return string.Format("Сумма по колонке равна {0}", res);
 		}
 
 		public void Clear()
@@ -571,11 +593,19 @@ namespace FogSoft.WinForm.Controls
 
 		private void AddImageColumn(Image icon)
 		{
-			DataGridViewImageColumn column = new DataGridViewImageColumn(true)
+            Bitmap resized = new Bitmap(16, 16);
+
+            using (Graphics g = Graphics.FromImage(resized))
+            {
+                g.DrawImage(icon, new Rectangle(0, 0, 16, 16));
+            }
+
+            DataGridViewImageColumn column = new DataGridViewImageColumn(true)
 			                                 	{
-			                                 		Image = icon,
+			                                 		Image = resized,
 			                                 		ValuesAreIcons = false,
-			                                 		Resizable = DataGridViewTriState.False
+			                                 		Resizable = DataGridViewTriState.False,
+													
 			                                 	};
 			dataGrid.Columns.Add(column);
 		}
@@ -607,27 +637,106 @@ namespace FogSoft.WinForm.Controls
             base.OnLoad(e);
 
 			if (checkboxes && showMultiselectColumn)
-				Show_chkBox();
+				AddCheckBox2ColumnHeader();
         }
 
-        private void Show_chkBox()
+        private void AddCheckBox2ColumnHeader()
         {
-			if (dataGrid.Columns.Count > 0)
-			{
-				Rectangle rect = dataGrid.GetCellDisplayRectangle(0, -1, true);
-				// set checkbox header to center of header cell. +1 pixel to position 
-				rect.Y = 3;
-				rect.X = rect.Location.X + 3;// (rect.Width / 4);
-                CheckBox checkboxHeader = new CheckBox
+            if (dataGrid.Columns.Count > 0)
+            {
+                // Asegurar que la primera columna tenga ancho suficiente
+                if (dataGrid.Columns[0].Width < 50)
                 {
-                    Name = "checkboxHeader",
-                    Size = new Size(18, 18),
-                    Location = rect.Location
-                };
-                checkboxHeader.CheckedChanged += new EventHandler(CheckboxHeader_CheckedChanged);
-				dataGrid.Controls.Add(checkboxHeader);
-			}
+                    dataGrid.Columns[0].Width = 50;
+                }
+
+                // Verificar si ya existe un checkbox con este nombre
+                CheckBox existingCheckbox = dataGrid.Controls.Find("checkboxHeader", false).FirstOrDefault() as CheckBox;
+
+                if (existingCheckbox == null)
+                {
+                    Rectangle rect = dataGrid.GetCellDisplayRectangle(0, -1, true);
+
+                    // Para el header, a veces el rectángulo no incluye los bordes correctamente
+                    // Usar el ancho real de la columna
+                    int columnWidth = dataGrid.Columns[0].Width;
+
+                    // Debug: ver los valores
+                    System.Diagnostics.Debug.WriteLine($"rect.X: {rect.X}, rect.Width: {rect.Width}, columnWidth: {columnWidth}");
+
+                    // Tamaño del checkbox
+                    Size checkboxSize = new Size(16, 16);
+
+                    // Centrar X usando el ancho de la columna y ajustando por el padding del header
+                    int centerX = rect.X + ((columnWidth - checkboxSize.Width) / 2);
+
+                    // Para headers, a veces necesitas un offset adicional
+                    if (centerX - rect.X < 5) // Si está muy pegado a la izquierda
+                    {
+                        centerX = rect.X + (columnWidth / 2) - (checkboxSize.Width / 2) + 1;
+                    }
+
+                    // Centrar Y: (alto de celda - alto de checkbox) / 2
+                    int centerY = rect.Y + ((rect.Height - checkboxSize.Height) / 2);
+
+                    System.Diagnostics.Debug.WriteLine($"centerX calculado: {centerX}, centerY: {centerY}");
+
+                    CheckBox checkboxHeader = new CheckBox
+                    {
+                        Name = "checkboxHeader",
+                        Size = checkboxSize,
+                        Location = new Point(centerX, centerY)
+                    };
+
+                    checkboxHeader.CheckedChanged += new EventHandler(CheckboxHeader_CheckedChanged);
+                    dataGrid.Controls.Add(checkboxHeader);
+                }
+            }
         }
+
+        // Método para reposicionar el checkbox cuando cambien las dimensiones
+        public void RepositionCheckBoxHeader()
+        {
+            /*
+            CheckBox existingCheckbox = dataGrid.Controls.Find("checkboxHeader", false).FirstOrDefault() as CheckBox;
+            if (existingCheckbox != null && dataGrid.Columns.Count > 0)
+            {
+                Rectangle rect = dataGrid.GetCellDisplayRectangle(0, -1, true);
+
+                // Recalcular posición centrada
+                int centerX = rect.X + ((rect.Width - existingCheckbox.Width) / 2);
+                int centerY = rect.Y + ((rect.Height - existingCheckbox.Height) / 2);
+
+                existingCheckbox.Location = new Point(centerX, centerY);
+            }
+			*/
+            CheckBox existingCheckbox = dataGrid.Controls.Find("checkboxHeader", false).FirstOrDefault() as CheckBox;
+            if (existingCheckbox != null && dataGrid.Columns.Count > 0)
+            {
+                Rectangle rect = dataGrid.GetCellDisplayRectangle(0, -1, true);
+
+                if (rect != Rectangle.Empty)
+                {
+                    int columnWidth = dataGrid.Columns[0].Width;
+
+                    // Recalcular posición centrada
+                    int centerX = rect.X + ((columnWidth - existingCheckbox.Width) / 2);
+
+                    // Ajuste adicional si es necesario
+                    if (centerX - rect.X < 5)
+                    {
+                        centerX = rect.X + (columnWidth / 2) - (existingCheckbox.Width / 2);
+                    }
+
+                    int centerY = rect.Y + ((rect.Height - existingCheckbox.Height) / 2);
+
+                    existingCheckbox.Location = new Point(centerX, centerY);
+                    existingCheckbox.BringToFront(); // Важно! Выводит checkbox на передний план
+                }
+            }
+        }
+
+
 
         private void CheckboxHeader_CheckedChanged(object sender, EventArgs e)
         {
@@ -721,6 +830,9 @@ namespace FogSoft.WinForm.Controls
 
                 currentObject.ParentChanged2 -= OnObjectParentChange2;
                 currentObject.ParentChanged2 += OnObjectParentChange2;
+
+				currentObject.RefreshAllData -= RefreshAll;
+				currentObject.RefreshAllData += RefreshAll;
 
                 if (currentObject is IVisualContainer objectContainer)
                 {
@@ -961,25 +1073,32 @@ namespace FogSoft.WinForm.Controls
 			string searchText = txQuickSearch.Text.ToLower();
             if (string.IsNullOrEmpty(searchText))
             {
-                // ���� ������ ������ �����, ���������� ��� ������
+                // Если строка поиска пуста, показываем все данные
                 DataSource.RowFilter = null;
             }
             else
             {
-				// ��������� ������ �� ��������� ���������
+				// Фильтруем данные по введенной подстроке
 				if (DataSource.Table.Columns[currentColumn.DataPropertyName].DataType == typeof(string))
-					DataSource.RowFilter = $"{currentColumn.DataPropertyName} LIKE '%{searchText}%'";
+					DataSource.RowFilter = $"{currentColumn.DataPropertyName} LIKE '%{EscapeLikeValue(searchText)}%'";
 				else
 				{
 					txQuickSearch.Text = string.Empty;
-                    MessageBox.ShowInformation(Properties.Resources.SearchForTextColumnsOnlyWarning);
+					MessageBox.ShowInformation(Properties.Resources.SearchForTextColumnsOnlyWarning);
 				}
             }
 
 			RefreshDependantGrid();
-
 			return DataSource.Count;
 			
+		}
+
+		private string EscapeLikeValue(string value)
+		{
+			return value.Replace("[", "[[]")
+						//.Replace("]", "[]]")
+						.Replace("%", "[%]")
+						.Replace("_", "[_]");
 		}
 
 		public bool Contains(PresentationObject presentationObject)
@@ -1000,7 +1119,7 @@ namespace FogSoft.WinForm.Controls
 				DataRow[] tempRows;
 				if(dataView.Sort == string.Empty)
 				{
-					//���� ���������� �� ������ - ������ ������� �������� ������ � ������� ����� DataTable
+					//Если сортировка не задана - просто находим заданную строку в массиве строк DataTable
 					tempRows = new DataRow[dataView.Count];
 					dataView.Table.Rows.CopyTo(tempRows, 0);
 				}
@@ -1114,6 +1233,43 @@ namespace FogSoft.WinForm.Controls
         internal Action<PresentationObject> RebuildCurrentNode { get; set; }
         internal Action<PresentationObject, Entity> RebuildTree { get; set; }
 
+        private void dataGrid_RowPrePaint(object sender, DataGridViewRowPrePaintEventArgs e)
+        {
+            try
+            {
+                // Проверяем, что строка не заголовочная и существует
+                if (e.RowIndex < 0 || e.RowIndex >= dataGrid.Rows.Count)
+                    return;
+
+                var row = dataGrid.Rows[e.RowIndex];
+
+                // Проверяем, что строка не новая (не для добавления)
+                if (row.IsNewRow)
+                    return;
+
+                // Получаем данные
+                if (row.DataBoundItem is DataRowView dataRowView)
+                {
+                    DataRow dataRow = dataRowView.Row;
+
+                    // Пример: подсветка просроченных записей
+                    if (dataRow.Table.Columns.Contains(ROW_STYLE) && dataRow[ROW_STYLE] != DBNull.Value)
+                    {
+                        for (int i = 0; i < dataGrid.Columns.Count; i++)
+                        {
+							if(dataRow[ROW_STYLE].ToString() == "bold")
+								dataGrid.Rows[e.RowIndex].Cells[i].Style.Font = new Font(dataGrid.Font, FontStyle.Bold);
+                        }
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                // Обработка ошибок
+                Debug.WriteLine($"Error in RowPrePaint: {ex.Message}");
+            }
+        }
+
         private void MultiSelectCheckAll(bool checkFlag)
 		{
 			dataGrid.SuspendLayout();
@@ -1127,8 +1283,13 @@ namespace FogSoft.WinForm.Controls
 					if ((checkFlag && !isRowChecked) || (!checkFlag && isRowChecked))
 					{
 						row.Cells[0].Value = checkFlag;
-						//PresentationObject po = CreateObject(row.DataBoundItem as DataRowView);
-						//CheckedStatusChanged(po, checkFlag);
+                        //PresentationObject po = CreateObject(row.DataBoundItem as DataRowView);
+                        //CheckedStatusChanged(po, checkFlag);
+                        if (row.DataBoundItem is DataRowView drv)
+                        {
+                            drv[COL_IsSelected] = checkFlag;
+                        }
+
                         dataGrid.RefreshEdit();
                     }
 				}				

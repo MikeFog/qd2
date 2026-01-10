@@ -10,6 +10,7 @@ using Merlin.Classes;
 using Merlin.Classes.GridExport;
 using Merlin.Reports;
 using System.Data;
+using System.Linq;
 
 namespace Merlin.Forms.GridReport
 {
@@ -31,17 +32,27 @@ namespace Merlin.Forms.GridReport
 
         private void btnFolderPath_Click(object sender, EventArgs e)
 		{
-			if (!string.IsNullOrEmpty(textBoxSelectedPath.Text))
-				folderBrowserDialog.SelectedPath = textBoxSelectedPath.Text;
+			if (!string.IsNullOrEmpty(txtPath2SaveTxt.Text))
+				folderBrowserDialog.SelectedPath = txtPath2SaveTxt.Text;
 			if (folderBrowserDialog.ShowDialog() == DialogResult.OK)
 			{
-				textBoxSelectedPath.Text = folderBrowserDialog.SelectedPath;
+				txtPath2SaveTxt.Text = folderBrowserDialog.SelectedPath;
 			}
 		}
 
-		private void btnExport_Click(object sender, EventArgs e)
+        private void btnFolderPath2_Click(object sender, EventArgs e)
+        {
+            if (!string.IsNullOrEmpty(txtPath2SaveWord.Text))
+                folderBrowserDialog.SelectedPath = txtPath2SaveWord.Text;
+            if (folderBrowserDialog.ShowDialog() == DialogResult.OK)
+            {
+                txtPath2SaveWord.Text = folderBrowserDialog.SelectedPath;
+            }
+        }
+
+        private void btnExport_Click(object sender, EventArgs e)
 		{
-			if (Directory.Exists(textBoxSelectedPath.Text))
+			if (Directory.Exists(txtPath2SaveTxt.Text))
 			{
 				progressBar.Maximum = grdRadiostations.Added2Checked.Count * 2;
 				progressBar.Value = 0;
@@ -57,7 +68,7 @@ namespace Merlin.Forms.GridReport
 		{
 			btnExport.Enabled = enabled;
 			grdRadiostations.Enabled = enabled;
-			textBoxSelectedPath.Enabled = enabled;
+			txtPath2SaveTxt.Enabled = enabled;
 			btnFolderPath.Enabled = enabled;
 			dateTimePicker.Enabled = enabled;
 		}
@@ -67,29 +78,32 @@ namespace Merlin.Forms.GridReport
 			List<PresentationObject> list = e.Argument as List<PresentationObject>;
 			BackgroundWorker worker = sender as BackgroundWorker;
 			DateTime dateTime = dateTimePicker.Value;
-			string selectedPath = textBoxSelectedPath.Text;
-			bool containsErrors = false;
+            string fileName = string.Empty;
+
+            bool containsErrors = false;
 			if (list != null && worker != null)
 			{
-				int index = 0;
-				foreach (Massmedia massmedia in list)
+				this.UseWaitCursor = true;
+                int index = 0;
+				foreach (Massmedia massmedia in list.Cast<Massmedia>())
 				{
 					try
 					{
-						string fileName = string.Format("{0}{1}{2}", selectedPath, Path.DirectorySeparatorChar,
-						                                ExportHelper.RemoveInvalidFileNameChars(massmedia.Name));
 						GridReportCreator creater = new GridReportCreator(massmedia, dateTime, null);
 						
+						if(!string.IsNullOrEmpty(txtPath2SaveWord.Text))
 						using (Grid report = creater.GetReport())
-						{
-							if (report != null)
-								report.ExportToDisk(ExportHelper.CrystalExportFormatType, fileName + ExportHelper.CrystalExportFormatTypeExtension);
-						}
+							{
+								fileName = string.Format("{0}{1}{2}", txtPath2SaveWord.Text, Path.DirectorySeparatorChar, 
+									ExportHelper.RemoveInvalidFileNameChars(massmedia.Name));
+								report?.ExportToDisk(ExportHelper.CrystalExportFormatType, fileName + ExportHelper.CrystalExportFormatTypeExtension);
+							}
 						
 						index++;
 						worker.ReportProgress(index/(list.Count*2), index);
-
-						creater.ExportDocument(fileName);
+                        fileName = string.Format("{0}{1}{2}", txtPath2SaveTxt.Text, Path.DirectorySeparatorChar,
+                                                        ExportHelper.RemoveInvalidFileNameChars(massmedia.Name));
+                        creater.ExportDocument(fileName);
 
 						index++;
 						worker.ReportProgress(index/(list.Count*2), index);
@@ -100,7 +114,8 @@ namespace Merlin.Forms.GridReport
 						containsErrors = true;
 					}
 				}
-			}
+				this.UseWaitCursor = false;
+            }
 			e.Result = containsErrors;
 		}
 
@@ -116,7 +131,7 @@ namespace Merlin.Forms.GridReport
 			SetControlStatus(true);
 			ButtonExportEnabled();
 			if (!result && ExportHelper.OpenFolderOnFinish)
-				Process.Start(textBoxSelectedPath.Text);
+				Process.Start(txtPath2SaveTxt.Text);
 			if (result)
 				FogSoft.WinForm.Forms.MessageBox.ShowExclamation(Resources.ExportProblemTitle, Resources.ExportProblem);
 		}
@@ -133,7 +148,7 @@ namespace Merlin.Forms.GridReport
 
 		public void ButtonExportEnabled()
 		{
-			btnExport.Enabled = !string.IsNullOrEmpty(textBoxSelectedPath.Text) 
+			btnExport.Enabled = !string.IsNullOrEmpty(txtPath2SaveTxt.Text) 
 			                    && grdRadiostations.Added2Checked.Count > 0;
 		}
 

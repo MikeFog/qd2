@@ -47,23 +47,23 @@ namespace Merlin.Forms
             // 
             // btnCancel
             // 
-            this.btnCancel.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Right)));
+            this.btnCancel.Anchor = System.Windows.Forms.AnchorStyles.None;
             this.btnCancel.DialogResult = System.Windows.Forms.DialogResult.Cancel;
             this.btnCancel.FlatStyle = System.Windows.Forms.FlatStyle.System;
-            this.btnCancel.Location = new System.Drawing.Point(275, 252);
+            this.btnCancel.Location = new System.Drawing.Point(309, 422);
             this.btnCancel.Name = "btnCancel";
-            this.btnCancel.Size = new System.Drawing.Size(80, 22);
+            this.btnCancel.Size = new System.Drawing.Size(85, 30);
             this.btnCancel.TabIndex = 7;
             this.btnCancel.Text = "Отмена";
             // 
             // btnOk
             // 
-            this.btnOk.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Right)));
+            this.btnOk.Anchor = System.Windows.Forms.AnchorStyles.None;
             this.btnOk.DialogResult = System.Windows.Forms.DialogResult.OK;
             this.btnOk.FlatStyle = System.Windows.Forms.FlatStyle.System;
-            this.btnOk.Location = new System.Drawing.Point(187, 252);
+            this.btnOk.Location = new System.Drawing.Point(211, 422);
             this.btnOk.Name = "btnOk";
-            this.btnOk.Size = new System.Drawing.Size(80, 22);
+            this.btnOk.Size = new System.Drawing.Size(85, 30);
             this.btnOk.TabIndex = 6;
             this.btnOk.Text = "Ок";
             // 
@@ -72,9 +72,9 @@ namespace Merlin.Forms
             this.gbWeekDays.Controls.Add(this.rbDays);
             this.gbWeekDays.Controls.Add(this.clbWeekDays);
             this.gbWeekDays.FlatStyle = System.Windows.Forms.FlatStyle.System;
-            this.gbWeekDays.Location = new System.Drawing.Point(12, 74);
+            this.gbWeekDays.Location = new System.Drawing.Point(20, 128);
             this.gbWeekDays.Name = "gbWeekDays";
-            this.gbWeekDays.Size = new System.Drawing.Size(181, 159);
+            this.gbWeekDays.Size = new System.Drawing.Size(302, 273);
             this.gbWeekDays.TabIndex = 8;
             this.gbWeekDays.TabStop = false;
             // 
@@ -83,10 +83,10 @@ namespace Merlin.Forms
             this.rbDays.AutoCheck = false;
             this.rbDays.AutoSize = true;
             this.rbDays.Checked = true;
-            this.rbDays.Location = new System.Drawing.Point(6, 0);
+            this.rbDays.Location = new System.Drawing.Point(11, 0);
             this.rbDays.Name = "rbDays";
             this.rbDays.Padding = new System.Windows.Forms.Padding(3, 0, 0, 0);
-            this.rbDays.Size = new System.Drawing.Size(88, 17);
+            this.rbDays.Size = new System.Drawing.Size(132, 28);
             this.rbDays.TabIndex = 11;
             this.rbDays.TabStop = true;
             this.rbDays.Text = "Дни недели";
@@ -99,9 +99,9 @@ namespace Merlin.Forms
             this.clbWeekDays.BorderStyle = System.Windows.Forms.BorderStyle.None;
             this.clbWeekDays.CheckOnClick = true;
             this.clbWeekDays.FormattingEnabled = true;
-            this.clbWeekDays.Location = new System.Drawing.Point(6, 31);
+            this.clbWeekDays.Location = new System.Drawing.Point(11, 53);
             this.clbWeekDays.Name = "clbWeekDays";
-            this.clbWeekDays.Size = new System.Drawing.Size(169, 112);
+            this.clbWeekDays.Size = new System.Drawing.Size(285, 168);
             this.clbWeekDays.TabIndex = 10;
             this.clbWeekDays.ItemCheck += new System.Windows.Forms.ItemCheckEventHandler(this.clbWeekDays_ItemCheck);
             // 
@@ -110,9 +110,9 @@ namespace Merlin.Forms
             this.gbOddEven.Controls.Add(this.rbNumber);
             this.gbOddEven.Controls.Add(this.rbOdd);
             this.gbOddEven.Controls.Add(this.rbEven);
-            this.gbOddEven.Location = new System.Drawing.Point(199, 75);
+            this.gbOddEven.Location = new System.Drawing.Point(332, 129);
             this.gbOddEven.Name = "gbOddEven";
-            this.gbOddEven.Size = new System.Drawing.Size(156, 159);
+            this.gbOddEven.Size = new System.Drawing.Size(260, 273);
             this.gbOddEven.TabIndex = 9;
             this.gbOddEven.TabStop = false;
             // 
@@ -123,7 +123,7 @@ namespace Merlin.Forms
             this.rbNumber.Location = new System.Drawing.Point(4, -2);
             this.rbNumber.Name = "rbNumber";
             this.rbNumber.Padding = new System.Windows.Forms.Padding(3, 0, 0, 0);
-            this.rbNumber.Size = new System.Drawing.Size(122, 17);
+            this.rbNumber.Size = new System.Drawing.Size(187, 28);
             this.rbNumber.TabIndex = 14;
             this.rbNumber.TabStop = true;
             this.rbNumber.Text = "Четный/Нечетный";
@@ -133,9 +133,9 @@ namespace Merlin.Forms
             // rbOdd
             // 
             this.rbOdd.AutoSize = true;
-            this.rbOdd.Location = new System.Drawing.Point(7, 48);
+            this.rbOdd.Location = new System.Drawing.Point(12, 83);
             this.rbOdd.Name = "rbOdd";
-            this.rbOdd.Size = new System.Drawing.Size(98, 17);
+            this.rbOdd.Size = new System.Drawing.Size(149, 28);
             this.rbOdd.TabIndex = 13;
             this.rbOdd.TabStop = true;
             this.rbOdd.Text = "Нечётные дни";
@@ -144,9 +144,9 @@ namespace Merlin.Forms
             // rbEven
             // 
             this.rbEven.AutoSize = true;
-            this.rbEven.Location = new System.Drawing.Point(7, 25);
+            this.rbEven.Location = new System.Drawing.Point(12, 44);
             this.rbEven.Name = "rbEven";
-            this.rbEven.Size = new System.Drawing.Size(86, 17);
+            this.rbEven.Size = new System.Drawing.Size(129, 28);
             this.rbEven.TabIndex = 12;
             this.rbEven.TabStop = true;
             this.rbEven.Text = "Чётные дни";
@@ -155,51 +155,51 @@ namespace Merlin.Forms
             // dtFinishDate
             // 
             this.dtFinishDate.Format = System.Windows.Forms.DateTimePickerFormat.Short;
-            this.dtFinishDate.Location = new System.Drawing.Point(148, 33);
+            this.dtFinishDate.Location = new System.Drawing.Point(246, 57);
             this.dtFinishDate.Name = "dtFinishDate";
-            this.dtFinishDate.Size = new System.Drawing.Size(200, 21);
+            this.dtFinishDate.Size = new System.Drawing.Size(346, 31);
             this.dtFinishDate.TabIndex = 13;
             // 
             // dtStartDate
             // 
             this.dtStartDate.Format = System.Windows.Forms.DateTimePickerFormat.Short;
-            this.dtStartDate.Location = new System.Drawing.Point(148, 9);
+            this.dtStartDate.Location = new System.Drawing.Point(246, 15);
             this.dtStartDate.Name = "dtStartDate";
-            this.dtStartDate.Size = new System.Drawing.Size(200, 21);
+            this.dtStartDate.Size = new System.Drawing.Size(346, 31);
             this.dtStartDate.TabIndex = 12;
             // 
             // label2
             // 
             this.label2.AutoSize = true;
-            this.label2.Location = new System.Drawing.Point(9, 33);
+            this.label2.Location = new System.Drawing.Point(15, 57);
             this.label2.Name = "label2";
-            this.label2.Size = new System.Drawing.Size(127, 13);
+            this.label2.Size = new System.Drawing.Size(197, 24);
             this.label2.TabIndex = 11;
             this.label2.Text = "Окончание  интервала:";
             // 
             // label1
             // 
             this.label1.AutoSize = true;
-            this.label1.Location = new System.Drawing.Point(9, 9);
+            this.label1.Location = new System.Drawing.Point(15, 15);
             this.label1.Name = "label1";
-            this.label1.Size = new System.Drawing.Size(105, 13);
+            this.label1.Size = new System.Drawing.Size(164, 24);
             this.label1.TabIndex = 10;
             this.label1.Text = "Начало интервала:";
             // 
             // FrmTemplate
             // 
-            this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
+            this.AutoScaleDimensions = new System.Drawing.SizeF(10F, 24F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
-            this.ClientSize = new System.Drawing.Size(369, 294);
+            this.ClientSize = new System.Drawing.Size(605, 478);
+            this.Controls.Add(this.btnCancel);
             this.Controls.Add(this.dtFinishDate);
             this.Controls.Add(this.dtStartDate);
             this.Controls.Add(this.label2);
             this.Controls.Add(this.label1);
             this.Controls.Add(this.gbOddEven);
-            this.Controls.Add(this.gbWeekDays);
-            this.Controls.Add(this.btnCancel);
             this.Controls.Add(this.btnOk);
-            this.Font = new System.Drawing.Font("Tahoma", 8.25F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(204)));
+            this.Controls.Add(this.gbWeekDays);
+            this.Font = new System.Drawing.Font("Segoe UI Variable Display", 9F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(204)));
             this.FormBorderStyle = System.Windows.Forms.FormBorderStyle.FixedDialog;
             this.MaximizeBox = false;
             this.MinimizeBox = false;

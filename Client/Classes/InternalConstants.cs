@@ -151,6 +151,11 @@ namespace Merlin
         CommonRollers = 1246,
         PackModuleIssueInCampaignForm = 1247,
         HeadCompany = 1248,
+        HeadCompanyWithConfirmedActions = 1255,
+        HeadCompanyWithUnconfirmedActions = 1256,
+        HeadCompanyWithDeletedActions = 1257,
+        StatVolumeOfRealiztionByMonthNew = 1258,
+        StatVolumeOfRealiztionNew = 1260,
     }
 
 	public struct RelationScenarios

@@ -18,7 +18,7 @@ namespace FogSoft.WinForm.Passport.Classes
 			XPathNavigator navigator, PageContext context,
 			Control controlInRightColumn, PageTypes type)
 			: base(navigator, GetColumnInfo(navigator, context), controlInRightColumn,
-				   CreateControlInLeftColumn(context.PageType, navigator), type) { }
+				   CreateControlInLeftColumn(context.PageType, navigator), type, context) { }
 
 		protected static DataTable GetSourceDataTable(XPathNavigator navigator, PageContext context)
 		{

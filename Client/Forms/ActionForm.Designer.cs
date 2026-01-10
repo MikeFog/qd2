@@ -27,7 +27,6 @@ namespace Merlin.Forms {
         /// </summary>
         private void InitializeComponent()
         {
-            this.components = new System.ComponentModel.Container();
             System.ComponentModel.ComponentResourceManager resources = new System.ComponentModel.ComponentResourceManager(typeof(ActionForm));
             this.lblPackDiscount = new System.Windows.Forms.Label();
             this.lblTariffSum = new System.Windows.Forms.Label();
@@ -50,6 +49,8 @@ namespace Merlin.Forms {
             this.tsbPrintMediaPlan = new System.Windows.Forms.ToolStripButton();
             this.toolStripSeparator2 = new System.Windows.Forms.ToolStripSeparator();
             this.tsbSetDiscount = new System.Windows.Forms.ToolStripButton();
+            this.tsbSetActionPrice = new System.Windows.Forms.ToolStripButton();
+            this.tsbEditMass = new System.Windows.Forms.ToolStripButton();
             this.grdCampaign = new FogSoft.WinForm.Controls.SmartGrid();
             this.chkPrintContract = new System.Windows.Forms.CheckBox();
             this.chkPrintBill = new System.Windows.Forms.CheckBox();
@@ -226,12 +227,14 @@ namespace Merlin.Forms {
             this.tsbEditProgIssues,
             this.tsbPrintMediaPlan,
             this.toolStripSeparator2,
-            this.tsbSetDiscount});
+            this.tsbSetDiscount,
+            this.tsbSetActionPrice,
+            this.tsbEditMass});
             this.tsAction.LayoutStyle = System.Windows.Forms.ToolStripLayoutStyle.VerticalStackWithOverflow;
-            this.tsAction.Location = new System.Drawing.Point(1124, 192);
+            this.tsAction.Location = new System.Drawing.Point(1112, 192);
             this.tsAction.Name = "tsAction";
             this.tsAction.Padding = new System.Windows.Forms.Padding(0, 0, 3, 0);
-            this.tsAction.Size = new System.Drawing.Size(37, 206);
+            this.tsAction.Size = new System.Drawing.Size(49, 300);
             this.tsAction.TabIndex = 25;
             this.tsAction.Text = "toolStrip1";
             // 
@@ -241,11 +244,10 @@ namespace Merlin.Forms {
             this.tsbAdd.Image = ((System.Drawing.Image)(resources.GetObject("tsbAdd.Image")));
             this.tsbAdd.ImageTransparentColor = System.Drawing.Color.Magenta;
             this.tsbAdd.Name = "tsbAdd";
-            this.tsbAdd.Size = new System.Drawing.Size(33, 28);
+            this.tsbAdd.Size = new System.Drawing.Size(45, 28);
             this.tsbAdd.Text = "toolStripButton1";
             this.tsbAdd.ToolTipText = "Добавить рекламную кампанию...";
             this.tsbAdd.Click += new System.EventHandler(this.AddCampaign);
-
             // 
             // tsbDelete
             // 
@@ -254,7 +256,7 @@ namespace Merlin.Forms {
             this.tsbDelete.Image = ((System.Drawing.Image)(resources.GetObject("tsbDelete.Image")));
             this.tsbDelete.ImageTransparentColor = System.Drawing.Color.Magenta;
             this.tsbDelete.Name = "tsbDelete";
-            this.tsbDelete.Size = new System.Drawing.Size(33, 28);
+            this.tsbDelete.Size = new System.Drawing.Size(45, 28);
             this.tsbDelete.Text = "toolStripButton2";
             this.tsbDelete.ToolTipText = "Удалить рекламную кампанию";
             this.tsbDelete.Click += new System.EventHandler(this.DeleteCampaign);
@@ -266,7 +268,7 @@ namespace Merlin.Forms {
             this.tsbEditRollerIssues.Image = ((System.Drawing.Image)(resources.GetObject("tsbEditRollerIssues.Image")));
             this.tsbEditRollerIssues.ImageTransparentColor = System.Drawing.Color.Magenta;
             this.tsbEditRollerIssues.Name = "tsbEditRollerIssues";
-            this.tsbEditRollerIssues.Size = new System.Drawing.Size(33, 28);
+            this.tsbEditRollerIssues.Size = new System.Drawing.Size(45, 28);
             this.tsbEditRollerIssues.Text = "toolStripButton3";
             this.tsbEditRollerIssues.ToolTipText = "Редактировать размещение роликов";
             this.tsbEditRollerIssues.Click += new System.EventHandler(this.EditRollerIssues);
@@ -278,7 +280,7 @@ namespace Merlin.Forms {
             this.tsbEditProgIssues.Image = ((System.Drawing.Image)(resources.GetObject("tsbEditProgIssues.Image")));
             this.tsbEditProgIssues.ImageTransparentColor = System.Drawing.Color.Magenta;
             this.tsbEditProgIssues.Name = "tsbEditProgIssues";
-            this.tsbEditProgIssues.Size = new System.Drawing.Size(33, 28);
+            this.tsbEditProgIssues.Size = new System.Drawing.Size(45, 28);
             this.tsbEditProgIssues.Text = "toolStripButton1";
             this.tsbEditProgIssues.ToolTipText = "Редактировать выходы спонсорских программ ";
             this.tsbEditProgIssues.Click += new System.EventHandler(this.EditProgIssues);
@@ -297,7 +299,7 @@ namespace Merlin.Forms {
             // toolStripSeparator2
             // 
             this.toolStripSeparator2.Name = "toolStripSeparator2";
-            this.toolStripSeparator2.Size = new System.Drawing.Size(33, 6);
+            this.toolStripSeparator2.Size = new System.Drawing.Size(45, 6);
             // 
             // tsbSetDiscount
             // 
@@ -306,15 +308,37 @@ namespace Merlin.Forms {
             this.tsbSetDiscount.Image = ((System.Drawing.Image)(resources.GetObject("tsbSetDiscount.Image")));
             this.tsbSetDiscount.ImageTransparentColor = System.Drawing.Color.Magenta;
             this.tsbSetDiscount.Name = "tsbSetDiscount";
-            this.tsbSetDiscount.Size = new System.Drawing.Size(33, 28);
+            this.tsbSetDiscount.Size = new System.Drawing.Size(45, 28);
             this.tsbSetDiscount.Text = "toolStripButton4";
             this.tsbSetDiscount.ToolTipText = "Установить менеджерскую скидку";
             this.tsbSetDiscount.Click += new System.EventHandler(this.SetDiscount);
             // 
+            // tsbSetActionPrice
+            // 
+            this.tsbSetActionPrice.DisplayStyle = System.Windows.Forms.ToolStripItemDisplayStyle.Image;
+            this.tsbSetActionPrice.Enabled = false;
+            this.tsbSetActionPrice.Image = ((System.Drawing.Image)(resources.GetObject("tsbSetActionPrice.Image")));
+            this.tsbSetActionPrice.ImageTransparentColor = System.Drawing.Color.Magenta;
+            this.tsbSetActionPrice.Name = "tsbSetActionPrice";
+            this.tsbSetActionPrice.Size = new System.Drawing.Size(45, 28);
+            this.tsbSetActionPrice.Text = "Установить цену рекламной акции";
+            this.tsbSetActionPrice.Click += new System.EventHandler(this.tsbSetActionPrice_Click);
+            // 
+            // tsbEditMass
+            // 
+            this.tsbEditMass.DisplayStyle = System.Windows.Forms.ToolStripItemDisplayStyle.Image;
+            this.tsbEditMass.Image = ((System.Drawing.Image)(resources.GetObject("tsbEditMass.Image")));
+            this.tsbEditMass.ImageTransparentColor = System.Drawing.Color.Magenta;
+            this.tsbEditMass.Name = "tsbEditMass";
+            this.tsbEditMass.Size = new System.Drawing.Size(45, 28);
+            this.tsbEditMass.Text = "tsbEditMass";
+            this.tsbEditMass.ToolTipText = "Веерное редактирование";
+            this.tsbEditMass.Click += new System.EventHandler(this.MassEdit);
+            // 
             // grdCampaign
             // 
-            this.grdCampaign.Anchor = ((System.Windows.Forms.AnchorStyles)((((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Bottom)
-            | System.Windows.Forms.AnchorStyles.Left)
+            this.grdCampaign.Anchor = ((System.Windows.Forms.AnchorStyles)((((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Bottom) 
+            | System.Windows.Forms.AnchorStyles.Left) 
             | System.Windows.Forms.AnchorStyles.Right)));
             this.grdCampaign.Caption = "Рекламные кампании";
             this.grdCampaign.CaptionVisible = true;
@@ -332,6 +356,7 @@ namespace Merlin.Forms {
             this.grdCampaign.Name = "grdCampaign";
             this.grdCampaign.QuickSearchVisible = false;
             this.grdCampaign.SelectedObject = null;
+            this.grdCampaign.ShowMultiselectColumn = true;
             this.grdCampaign.Size = new System.Drawing.Size(1096, 262);
             this.grdCampaign.TabIndex = 24;
             this.grdCampaign.ObjectSelected += new FogSoft.WinForm.ObjectDelegate(this.grdCampaign_ObjectSelected);
@@ -358,7 +383,7 @@ namespace Merlin.Forms {
             // 
             // separator3
             // 
-            this.separator3.Anchor = ((System.Windows.Forms.AnchorStyles)(((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Left)
+            this.separator3.Anchor = ((System.Windows.Forms.AnchorStyles)(((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Left) 
             | System.Windows.Forms.AnchorStyles.Right)));
             this.separator3.BackColor = System.Drawing.SystemColors.ControlText;
             this.separator3.Location = new System.Drawing.Point(15, 182);
@@ -369,7 +394,7 @@ namespace Merlin.Forms {
             // 
             // separator1
             // 
-            this.separator1.Anchor = ((System.Windows.Forms.AnchorStyles)(((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Left)
+            this.separator1.Anchor = ((System.Windows.Forms.AnchorStyles)(((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Left) 
             | System.Windows.Forms.AnchorStyles.Right)));
             this.separator1.BackColor = System.Drawing.SystemColors.ControlText;
             this.separator1.Location = new System.Drawing.Point(15, 58);
@@ -393,8 +418,8 @@ namespace Merlin.Forms {
             // 
             // tabAction
             // 
-            this.tabAction.Anchor = ((System.Windows.Forms.AnchorStyles)((((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Bottom)
-            | System.Windows.Forms.AnchorStyles.Left)
+            this.tabAction.Anchor = ((System.Windows.Forms.AnchorStyles)((((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Bottom) 
+            | System.Windows.Forms.AnchorStyles.Left) 
             | System.Windows.Forms.AnchorStyles.Right)));
             this.tabAction.Controls.Add(this.pageAction);
             this.tabAction.Location = new System.Drawing.Point(3, 3);
@@ -403,7 +428,6 @@ namespace Merlin.Forms {
             this.tabAction.SelectedIndex = 0;
             this.tabAction.Size = new System.Drawing.Size(1178, 648);
             this.tabAction.TabIndex = 4;
-
             // 
             // ActionForm
             // 
@@ -463,5 +487,7 @@ namespace Merlin.Forms {
         private System.Windows.Forms.CheckBox chkPrintMediaPlan;
         private System.Windows.Forms.CheckBox chkPrintSponsorContract;
         private System.Windows.Forms.CheckBox chkPrintBillContract;
+        private System.Windows.Forms.ToolStripButton tsbSetActionPrice;
+        private System.Windows.Forms.ToolStripButton tsbEditMass;
     }
 }

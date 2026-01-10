@@ -193,6 +193,8 @@ namespace Merlin.Controls
         private void MarkCell(TariffWindowWithRollerIssues window, int rowIndex, int columnIndex)
         {
             bool markFlag = false;
+			
+
 			if (rollerPosition != RollerPositions.Undefined)
 			{
 				if (!ShowUnconfirmed)
@@ -254,21 +256,29 @@ namespace Merlin.Controls
 			                                      startDate, finishDate, module,
 												  ShowUnconfirmed,
 			                                      campaign, rollerPosition);
-			dtIssue = ds.Tables[Constants.TableNames.Data];
-			
-			foreach (DataRow row in dtIssue.Rows)
+			_dtIssue = ds.Tables[Constants.TableNames.Data];
+            _dtWindoesWithCurrentFirmIssue = ds.Tables[Constants.TableNames.WindowsWithThisFirmIssue];
+            foreach (DataRow row in _dtWindoesWithCurrentFirmIssue.Rows)
+            {
+                DataGridViewCell cell =
+                    GetCell(TariffWindowWithRollerIssues.CreateTariffWindowById(
+                                int.Parse(row[TariffWindow.ParamNames.WindowId].ToString())));
+                if (cell != null)
+                    MarkCellAsHavingCurrentFirmIssues(cell);
+            }
+
+            foreach (DataRow row in _dtIssue.Rows)
 			{
 				DataGridViewCell cell =
 					GetCell(TariffWindowWithRollerIssues.CreateTariffWindowById(
 								int.Parse(row[TariffWindow.ParamNames.OriginalWindowId].ToString())));
 				if (cell != null)
-				{
 					MarkCellAsHavingCurrentCampaignIssues(cell);
-//					SetDataSourceValue(cell, cell.Value + " | " + row[TariffWindow.ParamNames.OriginalWindowId]);
-				}
 			}
 
-			DataTable dtCounts = ds.Tables[1];
+
+
+            DataTable dtCounts = ds.Tables[1];
 			foreach (DataRow row in dtCounts.Rows)
 			{
 				ChangeIssuesCounter(ParseHelper.GetInt32FromObject(row["weekday"], -1) + 1, ParseHelper.GetInt32FromObject(row["count"], 0));

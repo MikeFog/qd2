@@ -1,25 +1,27 @@
 using FogSoft.WinForm.Classes;
 using Merlin.Classes;
 using System;
-using System.Drawing;
 using System.Windows.Forms;
 
 namespace Merlin.Forms
 {
     public partial class ManagerDiscountForm : Form
 	{
-		private readonly decimal tariffPrice;
-		private decimal finalPrice;
+        public decimal FinalPrice { get; private set; }
+        private readonly decimal tariffPrice;
         private readonly decimal multiplyDiscount = 1;
 		private SecurityManager.User grantor;
 		private readonly DateTime startDate;
 		private readonly DateTime finishDate;
 		private DateTime _currentDate;
 
-		public ManagerDiscountForm()
+        public ManagerDiscountForm()
 		{
 			InitializeComponent();
-		}
+            AttachTextChangedEvent(txtRatio, txtRatio_TextChanged);
+            AttachTextChangedEvent(txtFinalPrice, txtFinalPrice_TextChanged);
+			txtFinalPrice.Maximum = decimal.MaxValue;
+        }
 
 		internal ManagerDiscountForm(Campaign campaign) : this()
 		{
@@ -36,10 +38,17 @@ namespace Merlin.Forms
 			chkCurrentDate.Visible = dtCurrentDate.Visible = SecurityManager.LoggedUser.IsBookKeeper || SecurityManager.LoggedUser.IsAdmin;
 		}
 
-		public decimal FinalPrice
-		{
-			get { return finalPrice; }
-		}
+        private void AttachTextChangedEvent(NumericUpDown numericUpDown, EventHandler handler)
+        {
+            foreach (Control ctrl in numericUpDown.Controls)
+            {
+                if (ctrl is TextBox textBox)
+                {
+                    textBox.TextChanged += handler;
+                    break;
+                }
+            }
+        }
 
 		public DateTime CurrentDate
 		{
@@ -56,19 +65,27 @@ namespace Merlin.Forms
 			get { return grantor; }
 		}
 
-		private void txtFinalPrice_TextChanged(object sender, EventArgs e)
-		{
-			if(ActiveControl == txtFinalPrice && txtFinalPrice.Text.Length > 0)
-				txtRatio.Value = (txtFinalPrice.Value / (tariffPrice * multiplyDiscount));
-		}
+        private void txtRatio_TextChanged(object sender, EventArgs e)
+        {
+            if (ActiveControl == txtRatio && txtRatio.Text.Length > 0)
+            {
+                TextBox textBox = (TextBox)sender;
+				if (decimal.TryParse(textBox.Text, out decimal ratioValue))
+					txtFinalPrice.Value = ratioValue * multiplyDiscount * tariffPrice;
+            }
+        }
 
-		private void txtRatio_TextChanged(object sender, EventArgs e)
-		{
-			if(ActiveControl == txtRatio && txtRatio.Text.Length > 0)
-				txtFinalPrice.Value = txtRatio.Value * multiplyDiscount * tariffPrice;
-		}
+        private void txtFinalPrice_TextChanged(object sender, EventArgs e)
+        {
+            if (ActiveControl == txtFinalPrice && txtFinalPrice.Text.Length > 0)
+            {
+                TextBox textBox = (TextBox)sender;
+                if (decimal.TryParse(textBox.Text, out decimal finalPrice))
+                    txtRatio.Value = (finalPrice / (tariffPrice * multiplyDiscount));
+            }
+        }
 
-		private void txtRatio_Leave(object sender, EventArgs e)
+        private void txtRatio_Leave(object sender, EventArgs e)
 		{
 			if(txtRatio.Text.Length == 0) txtRatio.Text = "0";
 		}
@@ -84,13 +101,13 @@ namespace Merlin.Forms
 			{
 				grantor = Utils.AskConfirmation(this);
 				if(grantor != null)
-					finalPrice = txtFinalPrice.Value;
+					FinalPrice = txtFinalPrice.Value;
 				else
 					DialogResult = DialogResult.None;
 			}
 			else
 			{
-				finalPrice = txtFinalPrice.Value;
+				FinalPrice = txtFinalPrice.Value;
 			}
 			_currentDate = dtCurrentDate.Value;
 		}

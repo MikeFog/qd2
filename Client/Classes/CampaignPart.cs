@@ -1,7 +1,6 @@
 using System;
 using System.Collections.Generic;
 using System.Data;
-using System.Diagnostics;
 using System.Windows.Forms;
 using FogSoft.WinForm;
 using FogSoft.WinForm.Classes;
@@ -15,8 +14,9 @@ namespace Merlin.Classes
 	internal class CampaignPart : ObjectContainer
 	{
         public const string OBJECT_ID = "objectID";
+        private Campaign _campaign;
 
-		protected CampaignPart(Entity entity, DataRow row) : base(entity, row)
+        protected CampaignPart(Entity entity, DataRow row) : base(entity, row)
 		{
 		}
 
@@ -43,22 +43,22 @@ namespace Merlin.Classes
 
 		public void RecalculateAndShowPriceChange(decimal price)
 		{
-			if (Campaign != null)
-			{
-				Campaign.RecalculateAction();
-				//RefreshCampaign();
-			}
+			Campaign?.RecalculateAction();
 
 			decimal newPrice = ((Campaign != null && Campaign.Action != null) ? Campaign.Action.TotalPrice : decimal.Zero);
+            ShowPriceChangeMessage(price, newPrice);
+        }
 
+        public static void ShowPriceChangeMessage(decimal price, decimal newPrice)
+        {
             Dictionary<string, object> msgParameters =
                 new Dictionary<string, object>(2, StringComparer.InvariantCultureIgnoreCase)
                 {
                     ["oldPrice"] = price.ToString("c"),
                     ["newPrice"] = newPrice.ToString("c")
                 };
-			Globals.ShowCompleted((newPrice == price) ? "CampaignPriceWithoutChanged" : "CampaignPriceChanged", msgParameters);
-		}
+            Globals.ShowCompleted((newPrice == price) ? "CampaignPriceWithoutChanged" : "CampaignPriceChanged", msgParameters);
+        }
 
 		public override bool IsActionHidden(string actionName, ViewType type)
 		{
@@ -81,8 +81,6 @@ namespace Merlin.Classes
         {
             get { return parameters[ActionOnMassmedia.ParamNames.DeleteDate] != DBNull.Value; }
         }
-
-        private Campaign _campaign;
 
 		public Campaign Campaign
 		{
@@ -205,7 +203,7 @@ namespace Merlin.Classes
                     return;
                 }
 
-                SelectionForm frm = new SelectionForm(eRoller, dt.DefaultView, Properties.Resources.TitleGetRollerForSustitude);
+                SelectionForm frm = new SelectionForm(eRoller, dt.DefaultView, Properties.Resources.TitleGetRollerForSubstitude);
                 if (frm.ShowDialog(Globals.MdiParent) == DialogResult.OK)
                 {
                     Cursor.Current = Cursors.WaitCursor;

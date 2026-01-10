@@ -1,42 +1,55 @@
+using FogSoft.WinForm.Classes;
 using System;
+using System.Collections.Generic;
 using System.Data;
 using System.IO;
-using FogSoft.WinForm.Classes;
+using System.Linq;
+using static System.Net.Mime.MediaTypeNames;
 
 namespace Merlin.Classes.GridExport.DJinSerializer
 {
 	internal class DJinExportDocument : ExportDocument
 	{
-		protected override void Export(Massmedia mm, DateTime date, string fileName, DataTable data, string broadcastTime)
+        protected override void Export(Massmedia mm, DateTime date, string fileName, DataTable data, string broadcastTime)
 		{
-			if (data.Select("isToday = 1 and rolActionTypeID is not null").Length > 0)
+            if (data.Select("isToday = 1 and rolActionTypeID is not null").Length > 0)
 			{
 				DataRow[] rows = data.Select("isToday = 1");
 				if (rows.Length > 0)
 				{
 					string fileFirst = string.Format("{0}_{1}_{2}-2359.txt", fileName, date.ToString("dd_MM_yyyy"), broadcastTime);
-					FileStream file = new FileStream(fileFirst, FileMode.Create);
-					ExportBlocks(file, rows, mm, date);
-					file.Close();
-				}
-			}
+					using (FileStream file = new FileStream(fileFirst, FileMode.Create))
+					{
+						ExportBlocks(file, rows, mm, date);
+					}
+                    BlockManager.ProcessFile(fileFirst);
+                }
+            }
 
 			if (data.Select("isToday = 0 and rolActionTypeID is not null").Length > 0)
 			{
 				DataRow[] rows = data.Select("isToday = 0");
 				if (rows.Length > 0)
 				{
-					string fileSecond =
-						string.Format("{0}_{1}_0000-{2}.txt", fileName, date.AddDays(1).ToString("dd_MM_yyyy"), broadcastTime);
-					FileStream file = new FileStream(fileSecond, FileMode.Create);
-					ExportBlocks(file, rows, mm, date);
-					file.Close();
-				}
-			}
-		}
+					string fileSecond =	string.Format("{0}_{1}_0000-{2}.txt", fileName, date.AddDays(1).ToString("dd_MM_yyyy"), broadcastTime);
+					using (FileStream file = new FileStream(fileSecond, FileMode.Create))
+						ExportBlocks(file, rows, mm, date);
+                    BlockManager.ProcessFile(fileSecond);
+                }
+            }
+        }
 
 		private readonly Random random = new Random(unchecked((int) DateTime.Now.Ticks));
 		private readonly string strAddedPath = string.Format("{{0}}{0}{{1}}.mp3", Path.DirectorySeparatorChar);
+
+		public string RollerString(DataRow row, Massmedia mm, DateTime date, int type) 
+		{
+            var typePreffix = DJinParam.strRoller + $"-type-{type}";
+            var volume = mm.VolumeCStr;
+			var fullPath = GetFullPath(row, mm, date, type);
+			var rollerDurationString = row[ExportParams.rollerDurationString].ToString();
+			return string.Format(DJinParam.strLine2, string.Empty, typePreffix, string.Empty, string.Empty, fullPath, rollerDurationString, volume);
+        }
 				
 		protected override void PrintRoller(Stream file, DataRow row, Massmedia mm, DateTime date, int type, Additional additional)
 		{
@@ -56,7 +69,12 @@ namespace Merlin.Classes.GridExport.DJinSerializer
 				typePreffix = DJinParam.strRollerNews;
                 volume = mm.VolumeNStr;
             }
-			else
+            else if (type == 4 || type == 5)
+            {
+                typePreffix = DJinParam.strRoller + $"-type-{type}"; 
+                volume = mm.VolumeNStr;
+            }
+            else
 			{
 				typePreffix = DJinParam.strRoller;
 				volume = mm.VolumeCStr;
@@ -83,7 +101,7 @@ namespace Merlin.Classes.GridExport.DJinSerializer
 			else
 				fileName = Path.GetFileName(row[ExportParams.path].ToString());
 
-			if (type != 1)
+			if (type != 1 && type != 4 && type != 5)
 			{
 				fileName = string.Format("{0}{1}{2}{3}"
 				                         , Path.GetFileNameWithoutExtension(fileName)
@@ -108,9 +126,17 @@ namespace Merlin.Classes.GridExport.DJinSerializer
 				string blockStart = string.Format("B{0}{1}{2}{3}{4}T", block["blockType"], block["notEarly"], block["notLater"], block["openBlock"], block["openPhonogram"]);
 				PrintLine(file, blockStart, string.Empty, ((DateTime) lastBlock).ToString("T"),
 				          blockName, string.Empty, fullDuration);
-			}
 
-			if ((!additional.NeedInJingle || !additional.NeedOutJingle) || !StringUtil.IsDBNullOrNull(block[ExportParams.description]))
+				// Ищем ролики с типом 4 - их надо разместить ДО входного джингла
+				/*
+                if (_issuesWithRolType4And5 != null && _issuesWithRolType4And5.TryGetValue((((DateTime)lastBlock).ToString("HH:mm"), "4"), out DataRow row))
+                {
+					PrintRoller(file, row, mm, (DateTime)lastBlock, 4, additional);
+                }
+				*/
+            }
+
+            if ((!additional.NeedInJingle || !additional.NeedOutJingle) || !StringUtil.IsDBNullOrNull(block[ExportParams.description]))
 			{
 				if (additional.NeedInJingle && !additional.IsAlive)
 					PrintLine(file, string.Empty, DJinParam.strJingle, string.Empty, string.Empty,
@@ -133,7 +159,14 @@ namespace Merlin.Classes.GridExport.DJinSerializer
 					          string.Empty, mm.VolumeMStr);
 				if (!isExtension)
 				{
-					PrintLine(file, DJinParam.strBlockEnd, string.Empty, ((DateTime) lastBlock).ToString("T"), string.Empty,
+                    // Ищем ролики с типом 5 - их надо разместить ДО входного джингла
+					/*
+                    if (_issuesWithRolType4And5 != null && _issuesWithRolType4And5.TryGetValue((((DateTime)lastBlock).ToString("HH:mm"), "5"), out DataRow row))
+                    {
+                        PrintRoller(file, row, mm, (DateTime)lastBlock, 5, additional);
+                    }
+					*/
+                    PrintLine(file, DJinParam.strBlockEnd, string.Empty, ((DateTime) lastBlock).ToString("T"), string.Empty,
 					          string.Empty,
 					          string.Empty);
 				}

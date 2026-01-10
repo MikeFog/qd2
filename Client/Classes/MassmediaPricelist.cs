@@ -71,7 +71,7 @@ namespace Merlin.Classes
 			}
 		}
 
-		private int MassmediaId
+		public int MassmediaId
 		{
 			get { return int.Parse(this[Massmedia.ParamNames.MassmediaId].ToString()); }
 		}

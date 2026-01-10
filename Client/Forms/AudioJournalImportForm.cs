@@ -64,8 +64,8 @@ namespace Merlin.Forms
                 using (SqlConnection connection = new SqlConnection(ConfigurationUtil.ConnectionStringLegacyDB.ConnectionString))
                 {
                     connection.Open();
-                    dtData = SqlHelper.ExecuteDataset(connection, CommandType.StoredProcedure, "Rollers", 300, DataAccessor.AssignSqlParameters(connection, "Rollers", Filters)).Tables[0];
-                    dtData.Columns.Add("isNew", typeof(bool));
+                    _dtData = SqlHelper.ExecuteDataset(connection, CommandType.StoredProcedure, "Rollers", 300, DataAccessor.AssignSqlParameters(connection, "Rollers", Filters)).Tables[0];
+                    _dtData.Columns.Add("isNew", typeof(bool));
                     connection.Close();
                 }
 
@@ -81,7 +81,7 @@ namespace Merlin.Forms
                 {
                     string rollerName = (string)row["name"];
 
-                    foreach (DataRow rowImport in dtData.Rows)
+                    foreach (DataRow rowImport in _dtData.Rows)
                     {
                         string importRollerName = (string)rowImport["name"];
                         int compare = string.Compare(importRollerName, rollerName, StringComparison.CurrentCulture);
@@ -89,7 +89,7 @@ namespace Merlin.Forms
                         {
                             if (showOnlyNew)
                             {
-                                dtData.Rows.Remove(rowImport);
+                                _dtData.Rows.Remove(rowImport);
                             }
                             else
                             {
@@ -197,7 +197,7 @@ namespace Merlin.Forms
 
             if (!hasErrors)
             {
-                dtData.Rows.Clear();
+                _dtData.Rows.Clear();
                 PopulateDataGrid();
                 Application.DoEvents();
                 RefreshJournal();

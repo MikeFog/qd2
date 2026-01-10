@@ -23,7 +23,7 @@ namespace Merlin.Forms
 			tbbRefresh.Image = Globals.GetImage(Constants.ActionsImages.Refresh);
 
             Entity entityMassmedia = (Entity)Massmedia.GetEntity().Clone();
-            entityMassmedia.AttributeSelector = (int)Massmedia.AttributeSelectors.NameAndGroupOnly;
+            entityMassmedia.AttributeSelector = (int)Massmedia.AttributeSelectors.TrafficDeadLine;
             grdMassmedia.Entity = entityMassmedia;
         }
 
@@ -71,9 +71,24 @@ namespace Merlin.Forms
 				grdTariffWindow.RefreshGrid();
 		}
 
-        private void cmbRadioStationGroup_SelectedItemChanged(object sender, EventArgs e)
+        private void CmbRadioStationGroup_SelectedItemChanged(object sender, EventArgs e)
         {
             Massmedia.LoadRadiostationsByGroup(cmbRadioStationGroup, grdMassmedia);
+        }
+
+        private void TsbMassClose_Click(object sender, EventArgs e)
+        {
+			var form = new RadiostationsSelector();
+			if(form.ShowDialog() == DialogResult.OK)
+			{
+				foreach(var item in form.SelectedItems)
+				{
+					if (item is Massmedia radiostaton)
+						radiostaton.SetDeadLine(form.DeadLine);
+                }
+                Massmedia.LoadRadiostationsByGroup(cmbRadioStationGroup, grdMassmedia);
+                grdTariffWindow.RefreshGrid();
+            }
         }
     }
 }

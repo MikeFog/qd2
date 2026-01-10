@@ -27,7 +27,7 @@ namespace Merlin.Classes
 		public override void DoAction(string actionName, IWin32Window owner, InterfaceObjects interfaceObject)
 		{
 			if (actionName == ActionNames.EditIssues)
-				EdiProgramIssues(owner as Form);
+				EditRollerIssues(owner as Form);
 			else if (actionName == ActionNames.ShowDays)
 			{
 				ChildEntity = EntityManager.GetEntity((int)Entities.CampaignDay);
@@ -45,18 +45,26 @@ namespace Merlin.Classes
 			}
             else if (actionName == Constants.Actions.ChangePositions)
                 ChangePositions((Form)owner);
+            else if (actionName == Constants.EntityActions.Refresh)
+            {
+                ClearCache();
+                iterator.ClearCache();
+                FireContainerRefreshed();
+            }
             else
 				base.DoAction(actionName, owner, interfaceObject);
 		}
 
-		public void EdiProgramIssues(Form parentForm)
+		public void EditRollerIssues(Form parentForm)
 		{
 			Campaign campaign = Campaign;
 			CampaignForm fCampaign = new CampaignForm(campaign, new RollerIssuesGrid3());
 			fCampaign.ShowDialog(parentForm);
 			Application.DoEvents();
 			if (fCampaign.ChangeFlag)
-				campaign.RecalculateAction();
+			{
+                FireContainerRefreshed();
+            }
 		}
 
 		#region Nested type: ActionNames

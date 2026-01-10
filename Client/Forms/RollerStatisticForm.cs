@@ -33,14 +33,15 @@ namespace Merlin.Forms
 				objectPickerUser.IsCreateNewAllowed = false;
 				objectPickerFirm.IsCreateNewAllowed = false;
 				opAdvertType.IsCreateNewAllowed = false;
+				opHeadCompany.IsCreateNewAllowed = false;	
 
 				opAdvertType.Scenario = RelationManager.GetScenario(RelationScenarios.AdvertTypes);
 
                 objectPickerFirm.SetEntity(EntityManager.GetEntity((int)Entities.Firm));
+                opHeadCompany.SetEntity(EntityManager.GetEntity((int)Entities.HeadCompany));
+                InitMassmediaGroups();
 
-				InitMassmediaGroups();
-
-				Dictionary<string, object> procParams = DataAccessor.CreateParametersDictionary();
+                Dictionary<string, object> procParams = DataAccessor.CreateParametersDictionary();
 				DataSet ds = DataAccessor.LoadDataSet("UserListByRights", procParams);
 				objectPickerUser.SetDataSource(EntityManager.GetEntity((int)Entities.User), ds.Tables[0]);
 				bool hasRight = SecurityManager.LoggedUser.IsRightToViewForeignActions()
@@ -74,7 +75,7 @@ namespace Merlin.Forms
 			cmbRadioStationGroup.DataSource = Massmedia.LoadGroupsWithShowAllOption();		
 		}
 
-		private void tsbRefresh_Click(object sender, EventArgs e)
+        private void tsbRefresh_Click(object sender, EventArgs e)
 		{
 			RefreshData();
 		}
@@ -106,6 +107,8 @@ namespace Merlin.Forms
 					procParameters["firmID"] = objectPickerFirm.SelectedObject.IDs[0];
                 if (opAdvertType.SelectedObject != null)
                     procParameters["advertTypeID"] = opAdvertType.SelectedObject.IDs[0];
+                if (opHeadCompany.SelectedObject != null)
+                    procParameters["headCompanyID"] = opHeadCompany.SelectedObject.IDs[0];
 
                 DataSet ds = DataAccessor.DoAction(procParameters) as DataSet;
 

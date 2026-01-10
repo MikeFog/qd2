@@ -34,20 +34,21 @@ namespace Merlin.Forms {
             // 
             this.btnCancel.Location = new System.Drawing.Point(634, 935);
             // 
+            // tabPassport
+            // 
+            this.tabPassport.Size = new System.Drawing.Size(804, 895);
+            // 
             // btnOk
             // 
             this.btnOk.Location = new System.Drawing.Point(547, 935);
             // 
-            // tabPassport
-            // 
-            this.tabPassport.Size = new System.Drawing.Size(796, 895);
-            // 
             // RollerSubstitutionForm
             // 
-            this.AutoScaleDimensions = new System.Drawing.SizeF(9F, 21F);
+            this.AutoScaleDimensions = new System.Drawing.SizeF(10F, 25F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
             this.ClientSize = new System.Drawing.Size(804, 936);
             this.Cursor = System.Windows.Forms.Cursors.Default;
+            this.FormBorderStyle = System.Windows.Forms.FormBorderStyle.Sizable;
             this.Name = "RollerSubstitutionForm";
             this.Text = "Замена ролика";
             ((System.ComponentModel.ISupportInitialize)(this.pbFake)).EndInit();

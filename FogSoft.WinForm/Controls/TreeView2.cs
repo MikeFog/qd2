@@ -15,12 +15,12 @@ namespace FogSoft.WinForm.Controls
 
 		public event ContainerDelegate ContainerSelected;
 		public event ObjectDelegate ObjectCreated;
-		//public event ObjectDelegate ObjectDeleted;
-		//public event ObjectDelegate ObjectChanged;
+        //public event ObjectDelegate ObjectDeleted;
+        //public event ObjectDelegate ObjectChanged;
 
-		#endregion
-
-		private const string FAKE_NODE = "fake node";
+        #endregion
+        private bool isExpanded = false;
+        private const string FAKE_NODE = "fake node";
 		private readonly Dictionary<string, int> iconResolver = new Dictionary<string, int>();
 		private SmartGrid dependantGrid;
 		private DataTable dtSelected;
@@ -36,7 +36,38 @@ namespace FogSoft.WinForm.Controls
 			InitializeComponent();
 		}
 
-		[Browsable(false)]
+        private void BtnToggleExpand_Click(object sender, EventArgs e)
+        {
+            try
+            {
+                ParentForm.Cursor = Cursors.WaitCursor;
+
+                if (isExpanded)
+                {
+                    // Сворачиваем все узлы
+                    tvStructure.CollapseAll();
+                    btnToggleExpand.Text = "Раскрыть всё";
+                    isExpanded = false;
+                }
+                else
+                {
+                    // Разворачиваем все узлы
+                    tvStructure.ExpandAll();
+                    btnToggleExpand.Text = "Схлопнуть всё";
+                    isExpanded = true;
+                }
+            }
+            catch (Exception ex)
+            {
+                ErrorManager.PublishError(ex);
+            }
+            finally
+            {
+                ParentForm.Cursor = Cursors.Default;
+            }
+        }
+
+        [Browsable(false)]
 		public FakeContainer Root
 		{
 			set
@@ -50,7 +81,13 @@ namespace FogSoft.WinForm.Controls
 			}
 		}
 
-		[Browsable(false)]
+		public bool ShowExpandButton
+		{
+			get { return btnToggleExpand.Visible; }
+			set { btnToggleExpand.Visible = value; }
+        }
+
+        [Browsable(false)]
 		public PresentationObject CurrentObject
 		{
 			get { return SelectedNodeTag as PresentationObject; }

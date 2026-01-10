@@ -23,6 +23,7 @@ namespace Merlin.Controls
         protected bool showTrafficWindows = false;
         protected Point mouseClickPoint;
         private readonly ToolStripMenuItem miChangePrice = new ToolStripMenuItem();
+        private readonly ToolStripMenuItem miDeleteTriffWindows = new ToolStripMenuItem();
         private readonly ContextMenuStrip cmTimeColumn = new ContextMenuStrip();
 		private const string NEW_PRICE = "newPrice";
 
@@ -109,7 +110,10 @@ namespace Merlin.Controls
 		{
             miChangePrice.Text = "Изменить цену...";
             miChangePrice.Click += ChangePrice;
-			cmTimeColumn.Items.AddRange(new ToolStripItem[] { miChangePrice });
+			miDeleteTriffWindows.Text = "Удалить сгенерированные рекламные окна";
+            miDeleteTriffWindows.Click += DeleteGeneratedTariffWindows;
+
+            cmTimeColumn.Items.AddRange(new ToolStripItem[] { miChangePrice, miDeleteTriffWindows });
         }
 
         private void SetContextMenu()
@@ -140,6 +144,45 @@ namespace Merlin.Controls
                 RefreshGrid();
         }
 
+		private void DeleteGeneratedTariffWindows(object sender, EventArgs e)
+		{
+			try
+			{
+				FrmDateSelector selector = new FrmDateSelector(Pricelist.StartDate, Pricelist.FinishDate, "Интервал удаления сгенерированных окон");
+				if (selector.ShowDialog() == DialogResult.OK)
+				{
+					DateTime startDate = selector.StartDate;
+					DateTime finishDate = selector.FinishDate;
+
+					Application.UseWaitCursor = true;
+					Application.DoEvents();
+                    string currentDateTime = GetNormalTimeString(dtGrid.Rows[CurrentRowIndex][ColTime].ToString());
+
+                    while (startDate < finishDate)
+					{
+						DateTime fDate = finishDate > startDate.AddDays(1) ? startDate.AddDays(1) : finishDate;
+						Dictionary<string, object> procParameters = DataAccessor.CreateParametersDictionary();
+						procParameters.Add(Pricelist.ParamNames.PricelistId, Pricelist.PricelistId);
+						procParameters.Add(Pricelist.ParamNames.StartDate, startDate);
+						procParameters.Add(Pricelist.ParamNames.FinishDate, fDate);
+						procParameters.Add(Massmedia.ParamNames.MassmediaId, ((MassmediaPricelist)Pricelist).MassmediaId);
+						procParameters.Add("time", currentDateTime);
+
+                        DataAccessor.ExecuteNonQuery("TariffWindowMassDelete", procParameters);
+
+						startDate = fDate; // One day
+
+						Application.DoEvents();
+					}
+					RefreshGrid();
+                }
+			}
+            catch (Exception ex)
+            {
+                ErrorManager.PublishError(ex);
+            }
+            finally {Application.UseWaitCursor = false; }
+        }
 
         private bool ValidatePassportData(Dictionary<string, object> parameters)
         {

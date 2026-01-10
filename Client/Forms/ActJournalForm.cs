@@ -26,7 +26,7 @@ namespace Merlin.Forms
 			DateTime datetime = DateTime.MinValue;
 			DataRow firstActionRow = null;
 			decimal total = 0;
-			foreach (DataRow row in dtData.Rows)
+			foreach (DataRow row in _dtData.Rows)
 			{
 				total += decimal.Parse(row["campaignTotal"].ToString());
 				if (actionId != row["actionId"].ToString())
@@ -46,18 +46,18 @@ namespace Merlin.Forms
 				else
 					row["currentDate"] = DBNull.Value;
 			}
-			object[] rowSum = new object[dtData.Columns.Count];
-			rowSum[dtData.Columns.IndexOf("firmName")] = "Итого";
-			rowSum[dtData.Columns.IndexOf("total")] = total;
-			rowSum[dtData.Columns.IndexOf("campaignId")] = 0;
-			rowSum[dtData.Columns.IndexOf("currentDate2")] = DateTime.Now;
-			rowSum[dtData.Columns.IndexOf("massmediaId")] = 0;
-			dtData.Rows.Add(rowSum);
+			object[] rowSum = new object[_dtData.Columns.Count];
+			rowSum[_dtData.Columns.IndexOf("firmName")] = "Итого";
+			rowSum[_dtData.Columns.IndexOf("total")] = total;
+			rowSum[_dtData.Columns.IndexOf("campaignId")] = 0;
+			rowSum[_dtData.Columns.IndexOf("currentDate2")] = DateTime.Now;
+			rowSum[_dtData.Columns.IndexOf("massmediaId")] = 0;
+			_dtData.Rows.Add(rowSum);
 			base.PopulateDataGrid();
 			Grid.InternalGrid.Rows[Grid.InternalGrid.Rows.Count - 1].DefaultCellStyle.Font 
 				= new Font(Grid.InternalGrid.DefaultCellStyle.Font, FontStyle.Bold);
 
-			if (dtData.DataSet != null && dtData.DataSet.Tables.Count > 1 && dtData.DataSet.Tables[1].Rows.Count > 0)
+			if (_dtData.DataSet != null && _dtData.DataSet.Tables.Count > 1 && _dtData.DataSet.Tables[1].Rows.Count > 0)
 				MessageBox.ShowInformation(Resources.ActJournalMassmediaExplamation);
 		}
 	}

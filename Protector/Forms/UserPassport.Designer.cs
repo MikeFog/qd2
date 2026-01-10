@@ -28,16 +28,34 @@ namespace Protector.Forms
 		/// </summary>
 		private void InitializeComponent()
 		{
-			((System.ComponentModel.ISupportInitialize)(this.pbFake)).BeginInit();
-			this.SuspendLayout();
-			// 
-			// UserPassport
-			// 
-			this.AutoScaleDimensions = new System.Drawing.SizeF(96F, 96F);
-			this.ClientSize = new System.Drawing.Size(373, 447);
-			this.Name = "UserPassport";
-			((System.ComponentModel.ISupportInitialize)(this.pbFake)).EndInit();
-			this.ResumeLayout(false);
+            ((System.ComponentModel.ISupportInitialize)(this.pbFake)).BeginInit();
+            this.SuspendLayout();
+            // 
+            // btnApply
+            // 
+            this.btnApply.Location = new System.Drawing.Point(669, 686);
+            // 
+            // btnCancel
+            // 
+            this.btnCancel.Location = new System.Drawing.Point(537, 686);
+            // 
+            // btnOk
+            // 
+            this.btnOk.Location = new System.Drawing.Point(405, 686);
+            // 
+            // tabPassport
+            // 
+            this.tabPassport.Location = new System.Drawing.Point(0, 0);
+            this.tabPassport.Size = new System.Drawing.Size(796, 674);
+            // 
+            // UserPassport
+            // 
+            this.AutoScaleDimensions = new System.Drawing.SizeF(144F, 144F);
+            this.ClientSize = new System.Drawing.Size(804, 734);
+            this.Margin = new System.Windows.Forms.Padding(9);
+            this.Name = "UserPassport";
+            ((System.ComponentModel.ISupportInitialize)(this.pbFake)).EndInit();
+            this.ResumeLayout(false);
 
 		}
 

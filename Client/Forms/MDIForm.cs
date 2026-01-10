@@ -4,6 +4,7 @@ using FogSoft.WinForm.Controls;
 using FogSoft.WinForm.DataAccess;
 using FogSoft.WinForm.Forms;
 using FogSoft.WinForm.Win32;
+using log4net;
 using Merlin.Classes;
 using Merlin.Classes.FakeContainers;
 using Merlin.Classes.Reports;
@@ -17,6 +18,7 @@ using System.Collections.Generic;
 using System.ComponentModel;
 using System.Configuration;
 using System.Drawing;
+using System.Security.Principal;
 using System.Text;
 using System.Threading;
 using System.Windows.Forms;
@@ -100,7 +102,9 @@ namespace Merlin.Forms
 					args.ReportProgress(res);
 					return false;
 				}
-				return true;
+
+                GlobalContext.Properties["user"] = SecurityManager.LoggedUser.LoginName;
+                return true;
 			}
 			catch(Exception exp)
 			{
@@ -169,11 +173,14 @@ namespace Merlin.Forms
 					MasterCreateAction();
 				else if (strMiName == "miActionJournalTraffic" || strMiName == "miActionJournalBuh"
 					|| strMiName == "miActionJournal")
-					ShowMassmediaActions(mi, RelationScenarios.ConfirmedAction, "Подтверждённые рекламные акции", Entities.FirmWithConfirmedActions, Entities.Action);
+					ShowMassmediaActions(mi, RelationScenarios.ConfirmedAction, "Подтверждённые рекламные акции", 
+						Entities.FirmWithConfirmedActions, Entities.Action, Entities.HeadCompanyWithConfirmedActions);
 				else if (strMiName == "miActionJournalUnconfirmed")
-					ShowMassmediaActions(mi, RelationScenarios.UnconfirmedAction, "Макеты рекламных акций", Entities.FirmWithUnconfirmedActions, Entities.Action);
+					ShowMassmediaActions(mi, RelationScenarios.UnconfirmedAction, "Макеты рекламных акций", 
+						Entities.FirmWithUnconfirmedActions, Entities.Action, Entities.HeadCompanyWithUnconfirmedActions);
 				else if (strMiName == "miActionJournalDeleted")
-					ShowMassmediaActions(mi, RelationScenarios.DeletedAction, "Удалённые рекламные акции", Entities.FirmWithDeletedActions, Entities.ActionDeleted);
+					ShowMassmediaActions(mi, RelationScenarios.DeletedAction, "Удалённые рекламные акции", 
+						Entities.FirmWithDeletedActions, Entities.ActionDeleted, Entities.HeadCompanyWithDeletedActions);
 				else if (strMiName == "miBank")
 					ShowBanks(mi);
 				else if (strMiName == "miBrand")
@@ -239,8 +246,6 @@ namespace Merlin.Forms
 					Globals.ShowSimpleJournal(EntityManager.GetEntity((int)Entities.LogDeletedIssue), mi.Text);
 				else if (strMiName == "miGroupMassmedia")
 					ShowMassmediaGroupJournal(mi);
-				else if (strMiName == "miAbout")
-					ShowAbout();
 				else if (strMiName == "miSpecialActions")
 					ShowSpecialAction(mi);
 				else if (strMiName == "miSpecialStudioOrderActions")
@@ -264,6 +269,8 @@ namespace Merlin.Forms
                 }
                 else if (strMiName == "miHeadOrganizations")
 					ShowHeadCompanies(mi);
+                else if (strMiName == "miPriceCalculator")
+                    ShowPriceCalculator(mi);
             }
 			catch (Exception ex)
 			{
@@ -439,9 +446,9 @@ namespace Merlin.Forms
 				EntityManager.GetEntity((int) Entities.PaymentType), mi.Text);
 		}
 
-		private void ShowMassmediaActions(ToolStripItem mi, string scenario, string caption, Entities firmEntity, Entities actionEntity)
+		private void ShowMassmediaActions(ToolStripItem mi, string scenario, string caption, Entities firmEntity, Entities actionEntity, Entities headCompanyEntity)
 		{
-			Globals.ShowBrowser(new ActionContainer(RelationManager.GetScenario(scenario), caption, firmEntity, actionEntity), mi.Text, this);
+			Globals.ShowBrowser(new ActionContainer(RelationManager.GetScenario(scenario), caption, firmEntity, actionEntity, headCompanyEntity), mi.Text, this);
 		}
 
 		private static void ShowBanks(ToolStripItem mi)
@@ -668,6 +675,12 @@ namespace Merlin.Forms
 				mi.Text, parameters);
         }
 
+		private void ShowPriceCalculator(ToolStripItem mi)
+		{
+			PriceCalculatorForm form = new PriceCalculatorForm { MdiParent = this, Icon = Globals.MdiParent.Icon };
+			form.Show();
+        }
+
         private void ShowPaymentCommon(ToolStripItem mi, bool fAgenciesFilter)
 		{
 			Dictionary<string, object> parameters = new Dictionary<string, object>();
@@ -793,6 +806,7 @@ namespace Merlin.Forms
 			switch (mi.Tag.ToString())
 			{
 				case "miStats.VolumeOfRealization":
+					/*
 					GraphForm frm = new GraphForm(new VolumeOfRealizationReportGenerator(), false)
 										{
 											MdiParent = Globals.MdiParent,
@@ -801,9 +815,23 @@ namespace Merlin.Forms
 					frm.OnFilterClick += ManagerFilter.FilterClick;
 					frm.Show();
 					return;
-					//entity = Entities.StatsVolumeofRealization;
-					//break;
-				case "miStats.VolumeOfRealization4Roll":
+					*/
+					entity = Entities.StatsVolumeofRealization;
+					break;
+                case "miStats.VolumeOfRealizationNew":
+					/*
+                    GraphForm frm2 = new GraphForm(new VolumeOfRealizationReportGenerator(), false)
+                    {
+                        MdiParent = Globals.MdiParent,
+                        Text = mi.Text
+                    };
+                    frm2.OnFilterClick += ManagerFilter.FilterClick;
+                    frm2.Show();
+                    return;
+					*/
+					entity = Entities.StatVolumeOfRealiztionNew;
+					break;	
+                case "miStats.VolumeOfRealization4Roll":
 					entity = Entities.StatsVolumeofRealization4Rollers;
 					break;
 				case "miStats.Balance":
@@ -832,7 +860,10 @@ namespace Merlin.Forms
 				case "miStats.VolumeRealizationByMonth":
 					entity = Entities.StatVolumeOfRealiztionByMonth;
 					break;
-				case "miStats.ModuleLoading":
+                case "miStats.VolRealizationByMonth2":
+                    entity = Entities.StatVolumeOfRealiztionByMonthNew;
+                    break;
+                case "miStats.ModuleLoading":
 					entity = Entities.StatModuleLoading;
 					caption = "Фактическое размещение рекламных модулей";
 					break;
@@ -892,45 +923,52 @@ namespace Merlin.Forms
 
 		private void CheckAnnouncements(object sender, EventArgs e)
 		{
-			//ShowTrafficManagement();
+            /*
+			PriceCalculatorForm priceCalculatorForm = new PriceCalculatorForm() { MdiParent = this, Icon = Icon };
+			priceCalculatorForm.Show();
 
-            			/*
-            ActionOnMassmedia a = new ActionOnMassmedia(166591);
-            a.Refresh();
-            a.DoAction(Constants.EntityActions.Edit, this, InterfaceObjects.SimpleJournal);
-			
-            return;
-
-            CampaignPackModule c2 = new CampaignPackModule(356193);
-            c2.Refresh();
-            c2.DoAction(Constants.EntityActions.Edit, this, InterfaceObjects.SimpleJournal);
-            return;
-
-            Massmedia massmedia = new Massmedia();
-            massmedia["MassmediaId"] = 163;
-            massmedia.IsNew = false;
-            massmedia.Refresh();
-
-            string fileName = "C:\\Tmp\\1\\";
-            GridReportCreator creater = new GridReportCreator(massmedia, new DateTime(2024, 06, 06), null);
-            creater.ExportDocument(fileName);
-            return;
-
-            a = new ActionOnMassmedia(161630);
-            a.Refresh();
-            a.DoAction(Classes.Action.ActionNames.PrintBillContract, this, InterfaceObjects.SimpleJournal);
-            return;
-
-            //ActionOnMassmedia a = new ActionOnMassmedia(161493);
-            a.Refresh();
-            a.DoAction(Merlin.Classes.Action.ActionNames.PrintBill, this, InterfaceObjects.SimpleJournal);
-            return;
-            Campaign c = new CampaignOnSingleMassmedia(355658);
-
+            
+            Campaign c = new CampaignOnSingleMassmedia(383269);
             c.Refresh();
-            c.ChildEntity = EntityManager.GetEntity((int)Entities.CampaignDay);
-            c.DoAction(Campaign.ActionNames.DeleteIssues, this, InterfaceObjects.SimpleJournal);
-			*/
+			c.DoAction("Edit", this, InterfaceObjects.SimpleJournal);
+
+             
+ ActionOnMassmedia a = new ActionOnMassmedia(173694);
+ a.Refresh();
+ a.DoAction(Constants.EntityActions.Edit, this, InterfaceObjects.SimpleJournal);
+
+ return;
+
+ CampaignPackModule c2 = new CampaignPackModule(356193);
+ c2.Refresh();
+ c2.DoAction(Constants.EntityActions.Edit, this, InterfaceObjects.SimpleJournal);
+ return;
+
+ Massmedia massmedia = new Massmedia();
+ massmedia["MassmediaId"] = 163;
+ massmedia.IsNew = false;
+ massmedia.Refresh();
+
+ string fileName = "C:\\Tmp\\1\\";
+ GridReportCreator creater = new GridReportCreator(massmedia, new DateTime(2024, 06, 06), null);
+ creater.ExportDocument(fileName);
+ return;
+
+ a = new ActionOnMassmedia(161630);
+ a.Refresh();
+ a.DoAction(Classes.Action.ActionNames.PrintBillContract, this, InterfaceObjects.SimpleJournal);
+ return;
+
+ //ActionOnMassmedia a = new ActionOnMassmedia(161493);
+ a.Refresh();
+ a.DoAction(Merlin.Classes.Action.ActionNames.PrintBill, this, InterfaceObjects.SimpleJournal);
+ return;
+ Campaign c = new CampaignOnSingleMassmedia(355658);
+
+ c.Refresh();
+ c.ChildEntity = EntityManager.GetEntity((int)Entities.CampaignDay);
+ c.DoAction(Campaign.ActionNames.DeleteIssues, this, InterfaceObjects.SimpleJournal);
+ */
 
             //ShowTrafficManagement();
             /*

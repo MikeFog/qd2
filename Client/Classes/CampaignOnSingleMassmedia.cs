@@ -20,13 +20,17 @@ namespace Merlin.Classes
 		{
 		}
 
-		public enum CampaignParts
+		public CampaignOnSingleMassmedia(DataRow row) : base(row)
+		{
+        }
+
+        public enum CampaignParts
 		{
 			ProgramPart = 1,
 			RollerPart = 2
 		}
 
-		private Massmedia massmedia;
+		private Massmedia _massmedia;
 
 		public override DataTable GetContent()
 		{
@@ -42,9 +46,9 @@ namespace Merlin.Classes
 			{
 				if(!parameters.ContainsKey(ParamNames.MassmediaId))
 					Refresh(InterfaceObjects.SimpleJournal);
-				if(massmedia == null)
-					massmedia = Massmedia.GetMassmediaByID(int.Parse(this[ParamNames.MassmediaId].ToString()));
-				return massmedia;
+				if(_massmedia == null)
+					_massmedia = Massmedia.GetMassmediaByID(int.Parse(this[ParamNames.MassmediaId].ToString()));
+				return _massmedia;
 			}
 		}
 
@@ -154,5 +158,16 @@ namespace Merlin.Classes
                 return Action.IsConfirmed;
             else return base.IsActionEnabled(actionName, type);
         }
-	}
+
+
+        public DataTable Days(PresentationObject roller)
+        {
+            Dictionary<string, object> procParameters = DataAccessor.CreateParametersDictionary();
+            procParameters.Add(ParamNames.CampaignId, CampaignId);
+            procParameters.Add(ParamNames.CampaignTypeId, (int)CampaignType);
+            procParameters.Add(Roller.ParamNames.RollerId, roller.IDs[0]);
+
+            return DataAccessor.LoadDataSet("RollerSubstitutionPassport", procParameters).Tables[2].Copy();
+        }
+    }
 }

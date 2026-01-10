@@ -19,8 +19,10 @@ namespace Merlin.Classes
 
 		public enum AttributeSelectors
 		{
-			NameAndGroupOnly = 1
-		}
+			NameAndGroupOnly = 1,
+			TrafficDeadLine = 2
+
+        }
 
 		protected struct ActionNames
 		{
@@ -310,7 +312,7 @@ namespace Merlin.Classes
 		{
 			Entity entity = EntityManager.GetEntity((int)Entities.MassmediaGroup);
 			entity.ClearCache();
-            DataTable dataTable = entity.GetContent();
+            DataTable dataTable = entity.GetContent().Copy();
             DataRow row = dataTable.NewRow();
             row[0] = 0;
             row[1] = "Показать все";

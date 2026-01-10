@@ -1,12 +1,11 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Data;
-using System.Drawing;
-using System.Windows.Forms;
-using FogSoft.WinForm.Classes;
+﻿using FogSoft.WinForm.Classes;
 using FogSoft.WinForm.DataAccess;
 using Merlin.Classes;
 using Merlin.Classes.Domain;
+using System;
+using System.Collections.Generic;
+using System.Data;
+using System.Windows.Forms;
 
 namespace Merlin.Controls
 {
@@ -40,13 +39,14 @@ namespace Merlin.Controls
 	    {
 	        AddedIssues = new DataTable();
 			AddedIssues.Columns.Add("issueDate", typeof(DateTime));
-			AddedIssues.Columns.Add("rollerName", typeof(string));
+			AddedIssues.Columns.Add(Entity.ParamNames.NAME, typeof(string));
 			AddedIssues.Columns.Add("rollerID", typeof(string));
-			AddedIssues.Columns.Add("duration", typeof(string));
+			AddedIssues.Columns.Add("durationString", typeof(string));
 			AddedIssues.Columns.Add("position", typeof(string));
 			AddedIssues.Columns.Add("positionID", typeof(string));
 			AddedIssues.Columns.Add("RowNum", typeof(Guid));
-	    }
+			AddedIssues.Columns.Add(Issue.ParamNames.IssueId, typeof(int));
+        }
 
 	    private DataTable Data { get; set; }
         public DataTable AddedIssues { get; set; }
@@ -86,10 +86,10 @@ namespace Merlin.Controls
                 PopulateGridTable(dataSet.Tables[2]);
 			};
 
-			updateDB = delegate(DataGridViewCell cell)
-           {
-               AddIssuesRange(cell);
-           };
+			updateDB = delegate (DataGridViewCell cell)
+			{
+			   AddIssuesRange(cell);
+			};
 
 			onGridPopulated = delegate
 			{
@@ -113,44 +113,47 @@ namespace Merlin.Controls
 			};
 		}
 
-	    private void AddIssuesRange(DataGridViewCell cell)
+		public DataRow AddIssuesRange(DateTime windowDate)
+		{
+			Dictionary<string, object> parameters = DataAccessor.CreateParametersDictionary();
+			parameters["actionID"] = _actionID;
+			parameters["issueDate"] = windowDate;
+			parameters["rollerID"] = Roller.RollerId;
+			parameters["rollerDuration"] = Roller.Duration;
+			parameters["positionId"] = (int)RollerPosition;
+			parameters["considerUnconfirmed"] = ShowUnconfirmed ? 1 : 0;
+            if (Grantor != null)
+				parameters["grantorID"] = Grantor.Id;
+			DataAccessor.ExecuteNonQuery("AddRangeIssues", parameters);
+			ActionOnMassmedia.GetActionById(_actionID).Recalculate();
+
+			DataRow row = AddedIssues.NewRow();
+			row[Issue.ParamNames.IssueId] = (new Random()).Next();
+			row["issueDate"] = windowDate;
+			row[Entity.ParamNames.NAME] = Roller.Name;
+			row["rollerID"] = Roller.RollerId;
+			row["durationString"] = Roller.DurationString;
+			row["RowNum"] = Guid.NewGuid();
+			row["position"] = RollerPosition == RollerPositions.Last ? "Последний" : RollerPosition == RollerPositions.First ? "Первый" : RollerPosition == RollerPositions.Second ? "Второй" : "Неопределена";
+			row["positionID"] = (int)RollerPosition;
+			AddedIssues.Rows.Add(row);
+			return row;
+		}
+
+        private void AddIssuesRange(DataGridViewCell cell)
 	    {
-            try
-            {
-                ITariffWindow window = GetTariffWindow(cell);
-                Dictionary<string, object> parameters = DataAccessor.CreateParametersDictionary();
-                parameters["actionID"] = _actionID;
-                parameters["issueDate"] = window.WindowDate;
-                parameters["rollerID"] = Roller.RollerId;
-                parameters["rollerDuration"] = Roller.Duration;
-                parameters["positionId"] = (int)RollerPosition;
-                if (Grantor != null)
-                    parameters["grantorID"] = Grantor.Id;
-                DataAccessor.ExecuteNonQuery("AddRangeIssues", parameters);
-                ActionOnMassmedia.GetActionById(_actionID).Recalculate();
-
-                DataRow row = AddedIssues.NewRow();
-                row["issueDate"] = window.WindowDate;
-                row["rollerName"] = Roller.Name;
-                row["rollerID"] = Roller.RollerId;
-                row["duration"] = Roller.DurationString;
-				row["RowNum"] = Guid.NewGuid();
-                row["position"] = RollerPosition == RollerPositions.Last ? "Последний" : RollerPosition == RollerPositions.First ? "Первый" : RollerPosition == RollerPositions.Second ? "Второй" : "Неопределена";
-            	row["positionID"] = (int)RollerPosition;
-                AddedIssues.Rows.Add(row);
-
-                MarkCellAsHavingCurrentCampaignIssues(cell.RowIndex, cell.ColumnIndex);
-                ChangeIssuesCounter(cell.ColumnIndex, _massmediasCount);
-            }
-            catch (Exception e)
-            {
-                ErrorManager.PublishError(e);
-            }
-            finally
-            {
-                RefreshGrid();
-            }
-	    }
+			try
+			{
+				AddIssuesRange(GetTariffWindow(cell).WindowDate);
+				MarkCellAsHavingCurrentCampaignIssues(cell.RowIndex, cell.ColumnIndex);
+				ChangeIssuesCounter(cell.ColumnIndex, _massmediasCount);
+				RefreshGrid();
+			}
+			catch (Exception e)
+			{
+				ErrorManager.PublishError(e);
+			}
+        }
 
 	    private void MarkCells()
 	    {

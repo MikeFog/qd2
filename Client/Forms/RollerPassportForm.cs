@@ -28,8 +28,7 @@ namespace Merlin.Forms
 		}
 
 		public RollerPassportForm(PresentationObject presentationObject, DataSet ds)
-			:
-				base(presentationObject, ds)
+			: base(presentationObject, ds)
 		{
 			InitializeComponent();
 		}
@@ -50,7 +49,9 @@ namespace Merlin.Forms
 			tdDuration = FindControl("duration") as TimeDuration;
 			tdDuration.Enabled = false;
 			txtName = FindControl("name") as TextBox;
-			txtName.Enabled = (!isUsed 	|| pageContext.PresentationObject.IsActionEnabled("ChangeVideoRollerName", ViewType.Journal));
+			txtName.Enabled = StringUtil.IsDBNullOrEmpty(Roller[Roller.ParamNames.Path]);
+
+				//(!isUsed 	|| pageContext.PresentationObject.IsActionEnabled("ChangeVideoRollerName", ViewType.Journal));
 
 			opFirm = FindControl("firmID") as ObjectPicker2;
 		    opFirm.IsCreateNewAllowed = true;
@@ -92,7 +93,9 @@ namespace Merlin.Forms
 					FileInfo fi = new FileInfo(fileDialog.FileName);
 					pageContext.Parameters["path"] = fi.FullName;
 					txtName.Text = Path.GetFileNameWithoutExtension(fi.Name);
-					btnApply.Enabled = true;
+                    txtName.Enabled = false;
+
+                    btnApply.Enabled = true;
 				}
 			}
 			catch (Exception ex)

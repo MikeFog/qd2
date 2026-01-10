@@ -30,7 +30,6 @@ namespace FogSoft.WinForm.Classes.Export.OOCalc
 
 		public IDocumentSheet GetNewSheet(string name, string fontName, int fontSize)
 		{
-			Log.Info("Start GetNewSheet");
 			if (!string.IsNullOrEmpty(name))
 			{
 				Regex re = new Regex("\\W");
@@ -71,7 +70,6 @@ namespace FogSoft.WinForm.Classes.Export.OOCalc
 						isFind = true;
 				}
 				if (isFind) continue;
-				Log.InfoFormat("Insert new sheet - '{0}'", newName);
 				xComponent.getSheets().insertNewByName(newName, 0);
 				break;
 			}

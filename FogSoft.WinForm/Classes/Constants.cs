@@ -98,7 +98,8 @@ namespace FogSoft.WinForm
 		public struct TableNames
 		{
 			public const string Data = "data";
-		}
+            public const string WindowsWithThisFirmIssue = "windowsWithThisFirm"; 
+        }
 
 		public struct ParamNames
 		{

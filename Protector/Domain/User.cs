@@ -1,13 +1,14 @@
-using System;
-using System.Collections.Generic;
-using System.Data;
-using System.Windows.Forms;
 using FogSoft.WinForm;
 using FogSoft.WinForm.Classes;
 using FogSoft.WinForm.DataAccess;
 using FogSoft.WinForm.Forms;
 using Protector.Forms;
 using Protector.License;
+using System;
+using System.Collections.Generic;
+using System.Configuration;
+using System.Data;
+using System.Windows.Forms;
 
 namespace Protector.Domain
 {
@@ -96,7 +97,8 @@ namespace Protector.Domain
 				DataAccessor.PrepareParameters(EntityManager.GetEntity((int)Entities.UserAdditionalMenu),
 				                               InterfaceObjects.SimpleJournal, Constants.Actions.Load);
 			procParameters[ParamNames.UserID] = parameters[ParamNames.UserID];
-			DataSet ds = (DataSet)DataAccessor.DoAction(procParameters);
+            procParameters.Add("languageCode", ConfigurationManager.AppSettings["Language"] ?? "ru");
+            DataSet ds = (DataSet)DataAccessor.DoAction(procParameters);
 
 			TreeViewSelector selector =
 				new TreeViewSelector(RelationManager.GetScenario(FrmMain.RelationScenarios.MenuItem),

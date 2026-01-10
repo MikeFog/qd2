@@ -27,6 +27,7 @@ namespace Merlin.Classes
             public const string IsCommon = "isCommon";
             public const string AdvertTypeName = "advertTypeName";
             public const string ParentId = "parentID";
+            public const string RolActionTypeID = "rolActionTypeID";
         }
 
         public struct ActionNames

@@ -39,9 +39,11 @@ namespace Merlin.Forms.CreateActionMaster
 
 				// Remove All Issues Grid
 				splitContainer4.Panel1Collapsed = true;
-				RefreshGrid();
-				tbbTemplate.Visible = tbbTemplate2.Visible = false;
-				grdCurrentCampaignIssues.Caption = "Добавленные выпуски";
+                tbbTemplate.Visible = true;
+                tbbTemplate2.Visible = false;
+                grdCurrentCampaignIssues.Caption = "Добавленные выпуски";
+
+                RefreshGrid();
 				tariffGrid.GridRefreshed += TariffGridRefreshed;
 				ActionOnMassmedia.GetActionById(((TariffWithRangeGrid)tariffGrid).ActionID).DisplayData(lstStat);
 				grdCurrentCampaignIssues.Entity = EntityManager.GetEntity((int)Entities.MasterIssues);

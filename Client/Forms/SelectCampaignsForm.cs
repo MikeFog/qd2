@@ -78,7 +78,7 @@ namespace Merlin.Forms
             }
             else if(_selectionMode == SelectionMode.Clone)
             {
-                dtData = _action.Campaigns;
+                dtData = _action.Campaigns();
                 _entity.AttributeSelector = 1;
                 dtData.Columns.Add(CLONEDATE_COLUMN_NAME, typeof(DateTime));
             }

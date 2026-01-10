@@ -17,6 +17,7 @@ namespace FogSoft.WinForm.Classes
 		public event ObjectDelegate ObjectCloned;
 		public event ObjectParentChange ParentChanged;
         public event ObjectParentChange2 ParentChanged2;
+		public event EmptyDelegate RefreshAllData;
 
         #region Constants -------------------------------------
 
@@ -435,6 +436,11 @@ namespace FogSoft.WinForm.Classes
 			ObjectDeleted?.Invoke(presentationObject);
 		}
 
+		protected void OnDataNeedRefresh()
+		{
+			RefreshAllData?.Invoke();
+        }
+
 		protected void OnObjectChanged(PresentationObject presentationObject)
 		{
 			ObjectChanged?.Invoke(presentationObject);
@@ -483,5 +489,37 @@ namespace FogSoft.WinForm.Classes
 				if (IDs[i] != po.IDs[i]) return false;
 			return true;
 		}
-	}
+
+		protected bool IsRefreshAllSet 
+		{ 			
+			get
+			{
+				return RefreshAllData != null;
+			}
+        }
+
+        /// <summary>
+        /// Load single object from database using primary key values
+        /// </summary>
+        /// <param name="pkValues">Primary key values dictionary</param>
+        /// <returns>Loaded presentation object or null if not found</returns>
+        public virtual PresentationObject LoadSingleObject(Dictionary<string, object> pkValues)
+        {
+            if (pkValues == null)
+                throw new ArgumentNullException(nameof(pkValues));
+
+            // Set PK values to current object
+            foreach (KeyValuePair<string, object> kvp in pkValues)
+                this[kvp.Key] = kvp.Value;
+
+            // Load data from database
+            DataTable dataTable = entity.LoadSingleObject(this);
+
+            if (dataTable == null || dataTable.Rows.Count == 0)
+                return null;
+
+            // Create and initialize object with correct type through Entity
+            return entity.CreateObject(dataTable.Rows[0]);
+        }
+    }
 }

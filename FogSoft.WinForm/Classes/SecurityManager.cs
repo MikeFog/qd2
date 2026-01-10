@@ -1,8 +1,10 @@
+using FogSoft.WinForm.DataAccess;
+using System;
 using System.Collections.Generic;
 using System.Data;
 using System.Security.Cryptography;
 using System.Text;
-using FogSoft.WinForm.DataAccess;
+using unoidl.com.sun.star.sheet;
 
 namespace FogSoft.WinForm.Classes
 {
@@ -27,6 +29,17 @@ namespace FogSoft.WinForm.Classes
             public string Phone { get; private set; }
             public string Email { get; private set; }
             public bool IsBookKeeper { get; private set; }
+			public string LoginName { get; set; }
+
+			public decimal GetDiscaunt(DateTime date) 
+			{
+				var parameters = DataAccessor.CreateParametersDictionary();
+                parameters[ParamNames.UserId] = Id;
+                parameters["CheckDate"] = date;
+
+                DataSet ds = DataAccessor.LoadDataSet("GetUserDiscount", parameters);
+				return decimal.Parse(ds.Tables[0].Rows[0]["discount"].ToString());
+            }
 
             internal User(DataSet ds)
 			{
@@ -87,7 +100,9 @@ namespace FogSoft.WinForm.Classes
 		public static void Login(string login, string password)
 		{
 			loggedUser = GetUser(login, password);
-		}
+			if (loggedUser != null)
+                loggedUser.LoginName = login;
+        }
 
 		public static void Clear()
 		{

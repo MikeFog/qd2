@@ -14,8 +14,7 @@ namespace FogSoft.WinForm.Passport.Classes
 		protected PageFieldDateTime(
 			XPathNavigator navigator, ColumnInfo columnInfo,
 			DateTimePickerFormat format, PageTypes pageType)
-			: base(
-				navigator, columnInfo, new DateTimePicker(), CreateControlInLeftColumn(pageType, navigator), pageType)
+			: base(navigator, columnInfo, new DateTimePicker(), CreateControlInLeftColumn(pageType, navigator), pageType)
 		{
 			Picker.Format = format;
 			Picker.ValueChanged += OnPickerValueChanged;

@@ -43,7 +43,9 @@ namespace FogSoft.WinForm.Passport.Classes
 			public const string ColumnName = "columnname";
 			public const string ColumnParentid = "columnparentid";
 			public const string ColumnId = "columnid";
-		}
+			public const string IsMandatoryOnCreate = "isMandatoryOnCreate";
+
+        }
 
 		public enum ShowStatus
 		{
@@ -76,17 +78,16 @@ namespace FogSoft.WinForm.Passport.Classes
 			this.control = control;
 		}
 
-		protected PageControl(Control control, XPathNavigator navigator)
-			: this(control)
+		protected PageControl(Control control, XPathNavigator navigator) : this(control)
 		{
 			this.control.Name = GetControlName(navigator);
 			caption = GetCaption(navigator);
-		}
+        }
 
 		protected PageControl(XPathNavigator navigator)
 		{
 			caption = GetCaption(navigator);
-		}
+        }
 
 		public virtual void Add2Page(Control parent, int left, int top, PageDimensions dimensions)
 		{
@@ -158,7 +159,14 @@ namespace FogSoft.WinForm.Passport.Classes
 			return ParseHelper.ParseToBoolean(val);
 		}
 
-		public static PageControl CreateInstance(XPathNavigator navigator, PageContext context)
+		protected bool? IsMandatoryOnCreate(XPathNavigator navigator)
+		{
+            string val = navigator.GetAttribute(Attributes.IsMandatoryOnCreate, "");
+            if (val == string.Empty) return null;
+            return ParseHelper.ParseToBoolean(val);
+        }
+
+        public static PageControl CreateInstance(XPathNavigator navigator, PageContext context)
 		{
 			switch(navigator.Name)
 			{

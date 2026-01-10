@@ -8,11 +8,11 @@ namespace FogSoft.WinForm.Passport.Classes
 	public class PassportPage
 	{
 		private TabPage tabPage;
-		private PageContext context;
+		private readonly PageContext context;
 		private int currentY;
 		private PageDimensions dimensions;
-		private List<PageControl> pageControls = new List<PageControl>();
-		private Dictionary<string, PageControl> sourceControls = new Dictionary<string, PageControl>();
+		private readonly List<PageControl> pageControls = new List<PageControl>();
+		private readonly Dictionary<string, PageControl> sourceControls = new Dictionary<string, PageControl>();
 
 		public event EmptyDelegate ValueChanged;
 
@@ -96,10 +96,9 @@ namespace FogSoft.WinForm.Passport.Classes
 			{
 				PageControl pageControl = PageControl.CreateInstance(nodes.Current, context);
 
-				//if(pageControl == null) continue;
+                //if(pageControl == null) continue;
 
-				pageControl.Add2Page(
-					tabPage, PageDimensions.Offsets.LeftMargin, currentY, dimensions);
+                pageControl.Add2Page(tabPage, PageDimensions.Offsets.LeftMargin, currentY, dimensions);
 
 				pageControls.Add(pageControl);
 				if(pageControl is IObjectSelector)
