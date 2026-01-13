@@ -119,7 +119,7 @@ namespace Merlin.Classes
 				ShowRollers();
 			else if (string.Compare(actionName, ActionNames.Recalculate) == 0)
 			{
-				Recalculate();
+				Recalculate(true);
 				FireContainerRefreshed();
 			}
             else if (actionName == ActionNames.Clone)
@@ -560,13 +560,19 @@ namespace Merlin.Classes
 			}
 		}
 
-		public void Recalculate(bool refreshFlag = true)
+		public void Recalculate(bool refreshFlag = true, DateTime? todayDate = null)
 		{
             Dictionary<string, object> procParameters = DataAccessor.PrepareParameters(
                 EntityManager.GetEntity((int)Entities.Action), InterfaceObjects.FakeModule,
                 Constants.Actions.Recalculate);
+
 			procParameters[ParamNames.ActionId] = ActionId;
+
+			if (todayDate.HasValue)
+				procParameters["todayDate"] = todayDate.Value;
+
             DataAccessor.DoAction(procParameters);
+
 			if (refreshFlag)
 				Refresh();
         }
