@@ -923,11 +923,11 @@ namespace Merlin.Forms
 
 		private void CheckAnnouncements(object sender, EventArgs e)
 		{
-            /*
+            
 			PriceCalculatorForm priceCalculatorForm = new PriceCalculatorForm() { MdiParent = this, Icon = Icon };
 			priceCalculatorForm.Show();
 
-            
+            /**************************************************************
             Campaign c = new CampaignOnSingleMassmedia(383269);
             c.Refresh();
 			c.DoAction("Edit", this, InterfaceObjects.SimpleJournal);

@@ -8,6 +8,10 @@ namespace Merlin.Controls
 {
     public partial class PriceCalculatorGrid : UserControl
     {
+        private const string ExtraChargeFirstRollerColumn = "extraChargeFirstRoller";
+        private const string ExtraChargeSecondRollerColumn = "extraChargeSecondRoller";
+        private const string ExtraChargeLastRollerColumn = "extraChargeLastRoller";
+
         private List<DateTime> _selectedDates;
         private DateTime _startDate;
         private decimal _managerDiscount = 1m;
@@ -17,6 +21,9 @@ namespace Merlin.Controls
         private bool _sortFlag;
         private readonly BindingSource _bindingSource = new BindingSource();
         private object _lastSelectedItem = null;
+        private string _lastCurrentColumnName;
+        private DataGridViewCell _pendingTargetCell; // <--- Здесь
+        private int _lastDataColumnIndex = -1; // колонка для удержания фокуса при стрелках
 
         public Action SummaryUpdater { get; set; }
 
@@ -29,30 +36,50 @@ namespace Merlin.Controls
             ConfigureGrid();
         }
 
+        /// <summary>
+        /// 
+        /// </summary>
         private void ConfigureGrid()
         {
             dgvStations.AutoGenerateColumns = false;
             dgvStations.AllowUserToAddRows = false;
             dgvStations.AllowUserToDeleteRows = false;
             dgvStations.MultiSelect = false;
-            dgvStations.SelectionMode = DataGridViewSelectionMode.RowHeaderSelect;
+
+            dgvStations.RowHeadersVisible = false;
+
+            // было:
+            // dgvStations.SelectionMode = DataGridViewSelectionMode.RowHeaderSelect;
+
+            // ✅ стало: нормальное поведение фокуса при редактировании
+            dgvStations.SelectionMode = DataGridViewSelectionMode.CellSelect;
+
+            dgvStations.AutoSizeColumnsMode = DataGridViewAutoSizeColumnsMode.None;
 
             dgvStations.EditingControlShowing += DgvStations_EditingControlShowing;
-            dgvStations.DataError += (s, e) => { e.ThrowException = false; }; // чтобы не всплывали исключения
+            dgvStations.DataError += (s, e) => { e.ThrowException = false; };
 
             dgvStations.CellValidating += DgvStations_CellValidating;
 
-
+            // Коммитим "грязные" значения (checkbox/combobox) сразу,
+            // но НЕ пересчитываем тут
             dgvStations.CurrentCellDirtyStateChanged += (s, e) =>
             {
-                if (dgvStations.IsCurrentCellDirty)
-                    dgvStations.CommitEdit(DataGridViewDataErrorContexts.Commit);
+                if (!dgvStations.IsCurrentCellDirty) return;
+                dgvStations.CommitEdit(DataGridViewDataErrorContexts.Commit);
             };
 
+            // ✅ ЕДИНАЯ точка пересчета для всех редактируемых колонок
             dgvStations.CellEndEdit += (s, e) =>
             {
                 if (_suppressRecalc) return;
-                HandleEditableCellChanged(e.RowIndex, e.ColumnIndex);
+
+                BeginInvoke((Action)(() =>
+                {
+                    if (_suppressRecalc) return;
+                    HandleEditableCellChanged(e.RowIndex, e.ColumnIndex);
+                    RestorePendingTargetCell();
+                }));
             };
 
             dgvStations.CellValueChanged += (s, e) =>
@@ -60,41 +87,61 @@ namespace Merlin.Controls
                 if (_suppressRecalc) return;
                 if (e.RowIndex < 0) return;
 
-                // чекбокс отрабатывает через CellValueChanged
-                if (dgvStations.Columns[e.ColumnIndex].Name == "colSelected")
+                string colName = dgvStations.Columns[e.ColumnIndex].Name;
+
+                // чекбокс — сразу обновляем summary
+                if (colName == "colSelected")
                     SummaryUpdater?.Invoke();
+
+                // ⚠ colPosition тут НЕ трогаем (пересчет уйдет через CellEndEdit/BeginInvoke)
             };
 
             dgvStations.MouseDown += (s, e) =>
             {
-                // Проверяем, что кликнули именно по ЗАГОЛОВКУ КОЛОНКИ
                 var hitInfo = dgvStations.HitTest(e.X, e.Y);
-
                 if (hitInfo.Type == DataGridViewHitTestType.ColumnHeader)
                 {
-                    // ФИКСИРУЕМ выделение ПЕРЕД тем как начнётся сортировка
                     if (dgvStations.CurrentRow != null)
                     {
                         _lastSelectedItem = dgvStations.CurrentRow.DataBoundItem;
-                        _sortFlag = true; // Включаем блокировку СЕЙЧАС
+                        _sortFlag = true;
                     }
                 }
             };
 
-            dgvStations.SelectionChanged += (s, e) => 
+            // ✅ запоминаем целевую ячейку и по MouseDown, и по MouseUp
+            dgvStations.CellMouseDown += (s, e) =>
+            {
+                if (e.RowIndex >= 0 && e.ColumnIndex >= 0)
+                    _pendingTargetCell = dgvStations.Rows[e.RowIndex].Cells[e.ColumnIndex];
+            };
+            dgvStations.CellMouseUp += (s, e) =>
+            {
+                if (e.RowIndex >= 0 && e.ColumnIndex >= 0)
+                    _pendingTargetCell = dgvStations.Rows[e.RowIndex].Cells[e.ColumnIndex];
+            };
+
+            dgvStations.SelectionChanged += (s, e) =>
             {
                 if (_sortFlag) return;
 
-                if (dgvStations.CurrentRow != null)
+                var cell = dgvStations.CurrentCell;
+                var colName = cell?.OwningColumn?.Name;
+                if (!string.IsNullOrEmpty(colName) && colName != "colSelected")
                 {
-                    // Запоминаем объект (DataRowView), а не ID
-                    _lastSelectedItem = dgvStations.CurrentRow.DataBoundItem;
+                    _lastCurrentColumnName = colName;
+                    _lastDataColumnIndex = cell.ColumnIndex;
                 }
+
+                if (dgvStations.CurrentRow != null)
+                    _lastSelectedItem = dgvStations.CurrentRow.DataBoundItem;
             };
 
+            // ✅ восстановленный обработчик сортировки
             dgvStations.Sorted += (s, e) =>
             {
-                if (_lastSelectedItem == null) return;
+                if (!_sortFlag) return;              // только если сами кликнули по заголовку
+                if (_lastSelectedItem == null) { _sortFlag = false; return; }
 
                 int newIndex = _bindingSource.IndexOf(_lastSelectedItem);
 
@@ -104,13 +151,21 @@ namespace Merlin.Controls
                     {
                         dgvStations.ClearSelection();
                         dgvStations.Rows[newIndex].Selected = true;
-                        dgvStations.CurrentCell = dgvStations.Rows[newIndex].Cells[0];
+
+                        int colIndex = 0;
+                        if (_pendingTargetCell != null && _pendingTargetCell.RowIndex == newIndex)
+                            colIndex = _pendingTargetCell.ColumnIndex;
+                        else if (!string.IsNullOrEmpty(_lastCurrentColumnName) &&
+                                 dgvStations.Columns.Contains(_lastCurrentColumnName))
+                            colIndex = dgvStations.Columns[_lastCurrentColumnName].Index;
+
+                        dgvStations.CurrentCell = dgvStations.Rows[newIndex].Cells[colIndex];
                         dgvStations.FirstDisplayedScrollingRowIndex = newIndex;
                     }
                 }
                 finally
                 {
-                    // Всегда снимаем флаг, даже если была ошибка
+                    _pendingTargetCell = null;
                     _sortFlag = false;
                 }
             };
@@ -121,8 +176,8 @@ namespace Merlin.Controls
             {
                 Name = "colSelected",
                 HeaderText = "",
-                Width = 32,
-                DataPropertyName = "IsSelected", // можно не биндить пока
+                Width = 24,
+                DataPropertyName = "IsSelected",
                 TrueValue = true,
                 FalseValue = false,
                 SortMode = DataGridViewColumnSortMode.Automatic
@@ -133,17 +188,34 @@ namespace Merlin.Controls
                 Name = "colName",
                 HeaderText = "Радиостанция",
                 DataPropertyName = "name",
-                AutoSizeMode = DataGridViewAutoSizeColumnMode.Fill,
-                MinimumWidth = 220,
+                AutoSizeMode = DataGridViewAutoSizeColumnMode.AllCells,
+                MinimumWidth = 160,
                 ReadOnly = true,
             });
+
+            const int NumericColWidth = 80;
 
             dgvStations.Columns.Add(new DataGridViewTextBoxColumn
             {
                 Name = "colRollerDuration",
                 HeaderText = "Пр-ть ролика",
                 DataPropertyName = "RollerDuration",
+                Width = NumericColWidth,
                 DefaultCellStyle = { Format = "N0", Alignment = DataGridViewContentAlignment.MiddleRight }
+            });
+
+            dgvStations.Columns.Add(new DataGridViewComboBoxColumn
+            {
+                Name = "colPosition",
+                HeaderText = "Позиция",
+                DataPropertyName = "Position",
+                Width = NumericColWidth,
+                DisplayStyle = DataGridViewComboBoxDisplayStyle.DropDownButton,
+                FlatStyle = FlatStyle.Flat,
+                ValueType = typeof(int),
+                ValueMember = "Key",
+                DisplayMember = "Value",
+                DataSource = BuildPositionItems()
             });
 
             dgvStations.Columns.Add(new DataGridViewTextBoxColumn
@@ -151,6 +223,7 @@ namespace Merlin.Controls
                 Name = "colPrimeWeekday",
                 HeaderText = "Цена прайм будни",
                 DataPropertyName = "PrimePricePerSecWeekday",
+                Width = NumericColWidth,
                 DefaultCellStyle = { Format = "c", Alignment = DataGridViewContentAlignment.MiddleRight },
                 ReadOnly = true
             });
@@ -160,6 +233,7 @@ namespace Merlin.Controls
                 Name = "colNonPrimeWeekday",
                 HeaderText = "Цена не-прайм будни",
                 DataPropertyName = "NonPrimePricePerSecWeekday",
+                Width = NumericColWidth,
                 DefaultCellStyle = { Format = "c", Alignment = DataGridViewContentAlignment.MiddleRight },
                 ReadOnly = true
             });
@@ -169,6 +243,7 @@ namespace Merlin.Controls
                 Name = "colPrimeWeekend",
                 HeaderText = "Цена прайм выходные",
                 DataPropertyName = "PrimePricePerSecWeekend",
+                Width = NumericColWidth,
                 DefaultCellStyle = { Format = "c", Alignment = DataGridViewContentAlignment.MiddleRight },
                 ReadOnly = true
             });
@@ -178,6 +253,7 @@ namespace Merlin.Controls
                 Name = "colNonPrimeWeekend",
                 HeaderText = "Цена не-прайм выходные",
                 DataPropertyName = "NonPrimePricePerSecWeekend",
+                Width = NumericColWidth,
                 DefaultCellStyle = { Format = "c", Alignment = DataGridViewContentAlignment.MiddleRight },
                 ReadOnly = true
             });
@@ -187,6 +263,7 @@ namespace Merlin.Controls
                 Name = "colPrimeTotalSpotsWeekday",
                 HeaderText = "Кол-во выходов прайм будни",
                 DataPropertyName = "PrimeTotalSpotsWeekday",
+                Width = NumericColWidth,
                 DefaultCellStyle = { Format = "N0", Alignment = DataGridViewContentAlignment.MiddleRight }
             });
 
@@ -195,6 +272,7 @@ namespace Merlin.Controls
                 Name = "colNonPrimeTotalSpotsWeekday",
                 HeaderText = "Кол-во выходов не прайм будни",
                 DataPropertyName = "NonPrimeTotalSpotsWeekday",
+                Width = NumericColWidth,
                 DefaultCellStyle = { Format = "N0", Alignment = DataGridViewContentAlignment.MiddleRight }
             });
 
@@ -203,6 +281,7 @@ namespace Merlin.Controls
                 Name = "colPrimeTotalSpotsWeekend",
                 HeaderText = "Кол-во выходов прайм выходные",
                 DataPropertyName = "PrimeTotalSpotsWeekend",
+                Width = NumericColWidth,
                 DefaultCellStyle = { Format = "N0", Alignment = DataGridViewContentAlignment.MiddleRight }
             });
 
@@ -211,14 +290,16 @@ namespace Merlin.Controls
                 Name = "colNonPrimeTotalSpotsWeekend",
                 HeaderText = "Кол-во выходов не прайм выходные",
                 DataPropertyName = "NonPrimeTotalSpotsWeekend",
+                Width = NumericColWidth,
                 DefaultCellStyle = { Format = "N0", Alignment = DataGridViewContentAlignment.MiddleRight }
             });
 
             dgvStations.Columns.Add(new DataGridViewTextBoxColumn
             {
                 Name = "colTotalAmount",
-                HeaderText = "Цена компании",
+                HeaderText = "Цена кампания",
                 DataPropertyName = "TotalAmount",
+                Width = NumericColWidth,
                 DefaultCellStyle = { Format = "c", Alignment = DataGridViewContentAlignment.MiddleRight },
                 ReadOnly = true
             });
@@ -226,44 +307,57 @@ namespace Merlin.Controls
             dgvStations.Columns.Add(new DataGridViewTextBoxColumn
             {
                 Name = "colCompanyDiscount",
-                HeaderText = "Скидка",
+                HeaderText = "Объёмная скидка",
                 DataPropertyName = "CompanyDiscount",
+                Width = NumericColWidth,
                 DefaultCellStyle = { Format = "N2", Alignment = DataGridViewContentAlignment.MiddleRight },
                 ReadOnly = true
             });
 
             dgvStations.Columns.Add(new DataGridViewTextBoxColumn
             {
-                Name = "colTotalWithDiscount",
-                HeaderText = "Цена компании со скидкой",
-                DataPropertyName = "TotalWithDiscount",
-                DefaultCellStyle = { Format = "c", Alignment = DataGridViewContentAlignment.MiddleRight },
+                Name = "colSeasonCoeff",
+                HeaderText = "Сезонный коэфф.",
+                DataPropertyName = "ManagerDiscount",
+                Width = NumericColWidth,
+                DefaultCellStyle = { Format = "N2", Alignment = DataGridViewContentAlignment.MiddleRight },
                 ReadOnly = true
             });
 
             dgvStations.Columns.Add(new DataGridViewTextBoxColumn
             {
-                Name = "colTotalTotalWithManagerDiscount",
-                HeaderText = "Цена компании со скидкой менеджера",
-                DataPropertyName = "TotalWithManagerDiscount",
+                Name = "colPackageDiscount",
+                HeaderText = "Пакетная скидка",
+                DataPropertyName = "PackageDiscount",
+                Width = NumericColWidth,
+                DefaultCellStyle = { Format = "N2", Alignment = DataGridViewContentAlignment.MiddleRight },
+                ReadOnly = true
+            });
+
+            dgvStations.Columns.Add(new DataGridViewTextBoxColumn
+            {
+                Name = "colTotalAfterPackage",
+                HeaderText = "Итог",
+                DataPropertyName = "TotalAfterPackage",
+                Width = NumericColWidth,
                 DefaultCellStyle = { Format = "c", Alignment = DataGridViewContentAlignment.MiddleRight },
                 ReadOnly = true
             });
 
-
-
-            dgvStations.Columns["colName"].AutoSizeMode = DataGridViewAutoSizeColumnMode.AllCells;
-            /*
-            foreach (DataGridViewColumn col in dgvStations.Columns)
-            {
-                if (col.Name == "colName")
-                    continue;
-
-                col.AutoSizeMode = DataGridViewAutoSizeColumnMode.ColumnHeader;
-            }
-            */
+            // ❌ убираем принудительное NotSortable
+            // foreach (DataGridViewColumn col in dgvStations.Columns)
+            //     col.SortMode = DataGridViewColumnSortMode.NotSortable;
 
             InitHeaderCheckbox();
+
+            dgvStations.KeyDown += (s, e) =>
+            {
+                if (e.KeyCode != Keys.Up && e.KeyCode != Keys.Down) return;
+                if (dgvStations.IsCurrentCellInEditMode) return; // в режиме редактирования обрабатывает EditingControl
+                e.Handled = true;
+                e.SuppressKeyPress = true;
+                MoveVertical(e.KeyCode == Keys.Down ? 1 : -1);
+            };
         }
 
         private void InitHeaderCheckbox()
@@ -280,7 +374,7 @@ namespace Merlin.Controls
             {
                 if (_bulkUpdating) return;
 
-                // cerrar edición actual
+                // cerrar edición current
                 dgvStations.EndEdit();
                 dgvStations.CommitEdit(DataGridViewDataErrorContexts.Commit);
                 dgvStations.CurrentCell = null;
@@ -364,29 +458,97 @@ namespace Merlin.Controls
 
         private void DgvStations_EditingControlShowing(object sender, DataGridViewEditingControlShowingEventArgs e)
         {
-            // интересуют только 3 редактируемые числовые колонки
             string colName = dgvStations.CurrentCell?.OwningColumn?.Name;
-            if (colName != "colRollerDuration" &&
-                colName != "colPrimeTotalSpots" &&
-                colName != "colNonPrimeTotalSpots")
-                return;
 
-            if (e.Control is TextBox tb)
+            // общий хендлер стрелок в режиме редактирования
+            e.Control.KeyDown -= EditingControl_KeyDown;
+            e.Control.KeyDown += EditingControl_KeyDown;
+
+            // 1) числовые колонки
+            if (colName == "colRollerDuration" ||
+                colName == "colPrimeTotalSpotsWeekday" ||
+                colName == "colNonPrimeTotalSpotsWeekday" ||
+                colName == "colPrimeTotalSpotsWeekend" ||
+                colName == "colNonPrimeTotalSpotsWeekend")
             {
-                tb.KeyPress -= NumericTextBox_KeyPress;
-                tb.KeyPress += NumericTextBox_KeyPress;
+                if (e.Control is TextBox tb)
+                {
+                    tb.KeyPress -= NumericTextBox_KeyPress;
+                    tb.KeyPress += NumericTextBox_KeyPress;
+                }
+                return;
+            }
+
+            // 2) позиция
+            if (colName == "colPosition" && e.Control is ComboBox cb)
+            {
+                cb.SelectionChangeCommitted -= PositionCombo_SelectionChangeCommitted;
+                cb.SelectionChangeCommitted += PositionCombo_SelectionChangeCommitted;
+                return;
             }
         }
 
-        private void NumericTextBox_KeyPress(object sender, KeyPressEventArgs e)
+        private void EditingControl_KeyDown(object sender, KeyEventArgs e)
         {
-            // разрешаем цифры, backspace, enter
-            if (char.IsControl(e.KeyChar) || char.IsDigit(e.KeyChar))
-                return;
-
-            // запрещаем всё остальное (буквы, пробелы, запятые, точки и т.п.)
+            if (e.KeyCode != Keys.Up && e.KeyCode != Keys.Down) return;
             e.Handled = true;
+            e.SuppressKeyPress = true;
+            MoveVertical(e.KeyCode == Keys.Down ? 1 : -1);
         }
+
+        private void MoveVertical(int delta)
+        {
+            var cell = dgvStations.CurrentCell;
+            if (cell == null) return;
+
+            int targetRow = cell.RowIndex + delta;
+            if (targetRow < 0 || targetRow >= dgvStations.Rows.Count) return;
+
+            int col = GetPreferredDataColumnIndex(cell);
+            if (col < 0) return;
+
+            // зафиксировать введённое значение перед переходом
+            try
+            {
+                dgvStations.EndEdit();
+                _bindingSource.EndEdit();
+            }
+            catch { }
+
+            try
+            {
+                dgvStations.CurrentCell = dgvStations.Rows[targetRow].Cells[col];
+            }
+            catch { }
+
+            var curName = dgvStations.CurrentCell?.OwningColumn?.Name;
+            if (!string.IsNullOrEmpty(curName) && curName != "colSelected")
+            {
+                _lastCurrentColumnName = curName;
+                _lastDataColumnIndex = dgvStations.CurrentCell.ColumnIndex;
+            }
+        }
+
+        private int GetPreferredDataColumnIndex(DataGridViewCell currentCell)
+        {
+            // если не чекбокс — остаёмся в той же колонке
+            if (currentCell?.OwningColumn?.Name != "colSelected")
+                return currentCell.ColumnIndex;
+
+            // если чекбокс — берём последнюю нормальную колонку
+            if (_lastDataColumnIndex >= 0 &&
+                _lastDataColumnIndex < dgvStations.Columns.Count &&
+                dgvStations.Columns[_lastDataColumnIndex].Name != "colSelected")
+                return _lastDataColumnIndex;
+
+            // fallback: первая не-чекбоксная колонка
+            for (int i = 0; i < dgvStations.Columns.Count; i++)
+                if (dgvStations.Columns[i].Name != "colSelected")
+                    return i;
+
+            return -1;
+        }
+
         private void DgvStations_CellValidating(object sender, DataGridViewCellValidatingEventArgs e)
         {
             if (e.RowIndex < 0) return;
@@ -437,17 +599,43 @@ namespace Merlin.Controls
         {
             if (rowIndex < 0) return;
 
+            // кого хотим оставить фокусным
+            var desiredCell = dgvStations.Rows[rowIndex].Cells[columnIndex];
+
             string colName = dgvStations.Columns[columnIndex].Name;
 
             if (colName == "colRollerDuration" ||
                 colName == "colPrimeTotalSpotsWeekday" ||
                 colName == "colNonPrimeTotalSpotsWeekday" ||
                 colName == "colPrimeTotalSpotsWeekend" ||
-                colName == "colNonPrimeTotalSpotsWeekend")
+                colName == "colNonPrimeTotalSpotsWeekend" ||
+                colName == "colPosition")
             {
                 RecalcRow(rowIndex);
                 SummaryUpdater?.Invoke();
+
+                // ✅ вернуть фокус туда, где пользователь редактировал/кликнул
+                RestoreCell(desiredCell);
             }
+        }
+
+        // новый вспомогательный метод
+        private void RestoreCell(DataGridViewCell cell)
+        {
+            if (cell == null) return;
+            if (cell.DataGridView != dgvStations) return;
+
+            int r = cell.RowIndex;
+            int c = cell.ColumnIndex;
+            if (r < 0 || r >= dgvStations.Rows.Count) return;
+            if (c < 0 || c >= dgvStations.Columns.Count) return;
+            if (dgvStations.Rows[r].Cells[c].ReadOnly) return;
+
+            try
+            {
+                dgvStations.CurrentCell = dgvStations.Rows[r].Cells[c];
+            }
+            catch { /* ignore */ }
         }
 
         private void RecalcRow(int rowIndex)
@@ -471,6 +659,8 @@ namespace Merlin.Controls
             int primeWeTotal = SafeInt(drv["PrimeTotalSpotsWeekend"], 0, 1_000_000);
             int nonPrimeWeTotal = SafeInt(drv["NonPrimeTotalSpotsWeekend"], 0, 1_000_000);
 
+            int position = NormalizePosition(drv["Position"]);
+
             // обратно нормализованные значения (если пользователь ввёл мусор)
             _suppressRecalc = true;
             try
@@ -482,6 +672,8 @@ namespace Merlin.Controls
 
                 drv["PrimeTotalSpotsWeekend"] = primeWeTotal;
                 drv["NonPrimeTotalSpotsWeekend"] = nonPrimeWeTotal;
+
+                drv["Position"] = position;
             }
             finally
             {
@@ -496,7 +688,8 @@ namespace Merlin.Controls
                 primeWdTotal: primeWdTotal,
                 nonPrimeWdTotal: nonPrimeWdTotal,
                 primeWeTotal: primeWeTotal,
-                nonPrimeWeTotal: nonPrimeWeTotal
+                nonPrimeWeTotal: nonPrimeWeTotal,
+                position: position
             );
 
             drv["TotalAmount"] = amount;
@@ -511,13 +704,14 @@ namespace Merlin.Controls
         }
 
         private decimal CalculateCampaignTariffPrice(
-    int stationId,
-    DataTable segmentsTable,
-    int durationSec,
-    int primeWdTotal,
-    int nonPrimeWdTotal,
-    int primeWeTotal,
-    int nonPrimeWeTotal)
+            int stationId,
+            DataTable segmentsTable,
+            int durationSec,
+            int primeWdTotal,
+            int nonPrimeWdTotal,
+            int primeWeTotal,
+            int nonPrimeWeTotal,
+            int position)
         {
             if (segmentsTable == null || _selectedDates == null || _selectedDates.Count == 0 || durationSec <= 0)
                 return 0m;
@@ -577,16 +771,60 @@ namespace Merlin.Controls
                      nonPrimeWE * nonPrimeWeInSeg)
                     * durationSec;
 
+                // extraCharge: проценты наценки (увеличиваем цену)
+                decimal extraPercent = GetExtraChargePercent(r, position);
+                if (extraPercent != 0m)
+                    segAmount *= (1m + extraPercent / 100m);
+
                 total += segAmount;
             }
 
             return total;
         }
 
+        private static int NormalizePosition(object value)
+        {
+            if (value == null || value == DBNull.Value)
+                return (int)Merlin.RollerPositions.Undefined;
+
+            try
+            {
+                return Convert.ToInt32(value);
+            }
+            catch
+            {
+                return (int)Merlin.RollerPositions.Undefined;
+            }
+        }
+
+        private static decimal GetExtraChargePercent(DataRow segmentRow, int position)
+        {
+            if (segmentRow == null) return 0m;
+
+            if (position == (int)Merlin.RollerPositions.First)
+                return SafeDecimal(segmentRow, ExtraChargeFirstRollerColumn);
+            if (position == (int)Merlin.RollerPositions.Second)
+                return SafeDecimal(segmentRow, ExtraChargeSecondRollerColumn);
+            if (position == (int)Merlin.RollerPositions.Last)
+                return SafeDecimal(segmentRow, ExtraChargeLastRollerColumn);
+
+            return 0m; // Undefined
+        }
+
+        private static decimal SafeDecimal(DataRow row, string columnName)
+        {
+            if (row?.Table == null || !row.Table.Columns.Contains(columnName)) return 0m;
+
+            object v = row[columnName];
+            if (v == null || v == DBNull.Value) return 0m;
+
+            return Convert.ToDecimal(v);
+        }
+
         public void LoadData(int massmediaGroupId, DateTime dateFrom, DateTime dateTo)
         {
             var p = DataAccessor.CreateParametersDictionary();
-            // Имена ключей ДОЛЖНЫ совпадать с параметрами процедуры (без @)
+            // Имена ключей ДОЛЖНЫ сопадать с параметрами процедуры (без @)
             if (massmediaGroupId > 0)
                 p["MassmediaGroupID"] = massmediaGroupId;
             p["DateFrom"] = dateFrom.Date;
@@ -634,12 +872,24 @@ namespace Merlin.Controls
             if (!dt.Columns.Contains("RollerDuration"))
                 dt.Columns.Add("RollerDuration", typeof(int));
 
+            if (!dt.Columns.Contains("ManagerDiscount"))
+                dt.Columns.Add("ManagerDiscount", typeof(decimal));
+
             if (!dt.Columns.Contains("IsSelected"))
             {
                 dt.Columns.Add("IsSelected", typeof(bool));
                 foreach (DataRow r in dt.Rows)
                     r["IsSelected"] = false; 
             }
+
+            if (!dt.Columns.Contains("PackageDiscount"))
+                dt.Columns.Add("PackageDiscount", typeof(decimal));
+
+            if (!dt.Columns.Contains("TotalAfterPackage"))
+                dt.Columns.Add("TotalAfterPackage", typeof(decimal));
+
+            if (!dt.Columns.Contains("Position"))
+                dt.Columns.Add("Position", typeof(int));
         }
 
         public List<DataRowView> GetSelectedRadiostations()
@@ -705,6 +955,11 @@ namespace Merlin.Controls
 
                 row["RollerDuration"] = durationSec;
 
+                // важно: DataGridViewComboBoxColumn не любит DBNull, нормализуем
+                if (row["Position"] == DBNull.Value)
+                    row["Position"] = (int)Merlin.RollerPositions.Undefined;
+
+                int position = NormalizePosition(row["Position"]);
                 int massmediaId = Convert.ToInt32(row["massmediaID"]);
 
                 decimal amount = CalculateCampaignTariffPrice(
@@ -714,7 +969,8 @@ namespace Merlin.Controls
                     primeWdTotal: primeTotalWd,
                     nonPrimeWdTotal: nonPrimeTotalWd,
                     primeWeTotal: primeTotalWe,
-                    nonPrimeWeTotal: nonPrimeTotalWe
+                    nonPrimeWeTotal: nonPrimeTotalWe,
+                    position: position
                 );
 
                 row["TotalAmount"] = amount;
@@ -727,13 +983,58 @@ namespace Merlin.Controls
 
                 row["CompanyDiscount"] = discountValue;
                 row["TotalWithDiscount"] = amount * discountValue;
-                row["TotalWithManagerDiscount"] = amount * discountValue * managerDiscount;
+                row["ManagerDiscount"] = _managerDiscount;
+                row["TotalWithManagerDiscount"] = amount * discountValue * _managerDiscount;
             }
 
             _suppressRecalc = false;
 
             foreach (DataGridViewRow row in dgvStations.Rows)
                 row.Cells["colSelected"].Value = false;
+        }
+
+        public void ApplyPackageTotals(decimal packageDiscount)
+        {
+            if (SummaryTable == null) return;
+
+            // Закрыть текущую редакцию, иначе грид может не обновиться визуально
+            dgvStations.EndEdit();
+            _bindingSource.EndEdit();
+
+            _suppressRecalc = true;
+            try
+            {
+                foreach (DataRow row in SummaryTable.Rows)
+                {
+                    bool isSelected = row["IsSelected"] != DBNull.Value && Convert.ToBoolean(row["IsSelected"]);
+
+                    if (isSelected)
+                    {
+                        row["PackageDiscount"] = packageDiscount;
+
+                        decimal baseTotal = 0m;
+                        object v = row["TotalWithManagerDiscount"];
+                        if (v != null && v != DBNull.Value)
+                            baseTotal = Convert.ToDecimal(v);
+
+                        // Итог после всех трёх скидок: объёмная -> менеджерская -> пакетная
+                        row["TotalAfterPackage"] = baseTotal * packageDiscount;
+                    }
+                    else
+                    {
+                        row["PackageDiscount"] = DBNull.Value;
+                        row["TotalAfterPackage"] = DBNull.Value;
+                    }
+                }
+            }
+            finally
+            {
+                _suppressRecalc = false;
+            }
+
+            // Сообщить биндингу и гриду, что данные обновились
+            _bindingSource.ResetBindings(false);
+            dgvStations.Invalidate();
         }
 
         private static decimal GetCompanyDiscount(int massmediaId, DateTime startDate, decimal tariffPrice)
@@ -874,6 +1175,9 @@ namespace Merlin.Controls
             {
                 foreach (DataRow row in SummaryTable.Rows)
                 {
+                    // обновляем видимую колонку "Сезонный коэффициент"
+                    row["ManagerDiscount"] = _managerDiscount;
+
                     // базовая сумма после "строчной" скидки уже посчитана
                     decimal totalWithDiscount = 0m;
 
@@ -890,6 +1194,116 @@ namespace Merlin.Controls
             }
 
             SummaryUpdater?.Invoke();
+        }
+
+        public void SetDefaultPosition(Merlin.RollerPositions position)
+        {
+            if (SummaryTable == null) return;
+
+            dgvStations.EndEdit();
+            _bindingSource.EndEdit();
+
+            _suppressRecalc = true;
+            try
+            {
+                int pos = (int)position;
+
+                foreach (DataRow row in SummaryTable.Rows)
+                    row["Position"] = pos;
+
+                // ✅ после массовой смены позиции пересчитываем цены по строкам
+                ReCalcAllRows();
+            }
+            finally
+            {
+                _suppressRecalc = false;
+            }
+
+            _bindingSource.ResetBindings(false);
+            dgvStations.Invalidate();
+
+            SummaryUpdater?.Invoke();
+        }
+
+        private void ReCalcAllRows()
+        {
+            if (dgvStations.Rows.Count == 0) return;
+
+            // Важно: RecalcRow зависит от dgvStations.Rows[rowIndex].DataBoundItem
+            for (int i = 0; i < dgvStations.Rows.Count; i++)
+                RecalcRow(i);
+        }
+
+        private static List<KeyValuePair<int, string>> BuildPositionItems()
+        {
+            return new List<KeyValuePair<int, string>>
+            {
+                new KeyValuePair<int, string>((int)Merlin.RollerPositions.Undefined, "без позиции"),
+                new KeyValuePair<int, string>((int)Merlin.RollerPositions.First, "первый"),
+                new KeyValuePair<int, string>((int)Merlin.RollerPositions.Second, "второй"),
+                new KeyValuePair<int, string>((int)Merlin.RollerPositions.Last, "последний"),
+            };
+        }
+
+        private void RestorePendingTargetCell()
+        {
+            var cell = _pendingTargetCell;
+            _pendingTargetCell = null;
+
+            // если мышью не запомнили — попробуем использовать последнюю рабочую колонку в той же строке
+            if (cell == null)
+            {
+                var cur = dgvStations.CurrentCell;
+                if (cur != null &&
+                    _lastDataColumnIndex >= 0 &&
+                    _lastDataColumnIndex < dgvStations.Columns.Count &&
+                    dgvStations.Columns[_lastDataColumnIndex].Name != "colSelected")
+                {
+                    cell = dgvStations.Rows[cur.RowIndex].Cells[_lastDataColumnIndex];
+                }
+                else
+                {
+                    var pt = dgvStations.PointToClient(Cursor.Position);
+                    var hit = dgvStations.HitTest(pt.X, pt.Y);
+                    if (hit.RowIndex >= 0 && hit.ColumnIndex >= 0)
+                        cell = dgvStations.Rows[hit.RowIndex].Cells[hit.ColumnIndex];
+                }
+            }
+
+            if (cell == null || cell.DataGridView != dgvStations) return;
+
+            int row = cell.RowIndex;
+            int col = cell.ColumnIndex;
+            if (row < 0 || row >= dgvStations.Rows.Count) return;
+            if (col < 0 || col >= dgvStations.Columns.Count) return;
+            if (dgvStations.Rows[row].Cells[col].ReadOnly) return;
+
+            try { dgvStations.CurrentCell = dgvStations.Rows[row].Cells[col]; }
+            catch { /* ignore */ }
+        }
+        private void PositionCombo_SelectionChangeCommitted(object sender, EventArgs e)
+        {
+            if (_suppressRecalc) return;
+            try
+            {
+                dgvStations.CommitEdit(DataGridViewDataErrorContexts.Commit);
+                dgvStations.EndEdit();
+                _bindingSource.EndEdit();
+            }
+            catch
+            {
+                // игнорируем, чтобы не ронять UI
+            }
+        }
+
+        private void NumericTextBox_KeyPress(object sender, KeyPressEventArgs e)
+        {
+            // разрешаем цифры, backspace, enter
+            if (char.IsControl(e.KeyChar) || char.IsDigit(e.KeyChar))
+                return;
+
+            // запрещаем остальное
+            e.Handled = true;
         }
     }
 }

@@ -14,6 +14,9 @@ namespace Merlin.Forms
             InitializeComponent();
             templateEditor.CalculateButton.Click += CalculateButton_Click;
             templateEditor.ManagerDiscountNum.ValueChanged += (s, e) => grdPriceCalculator.SetManagerDiscount(templateEditor.ManagerDiscount);
+
+           templateEditor.PositionChanged += (s, e) =>
+                grdPriceCalculator.SetDefaultPosition(templateEditor.SelectedPosition);
         }
 
         private void CalculateButton_Click(object sender, EventArgs e)
@@ -38,7 +41,6 @@ namespace Merlin.Forms
 
                 grdPriceCalculator.LoadData(templateEditor.MassmediaGroupId, templateEditor.DateFrom, templateEditor.DateTo);
 
-                // 2) строим список дат кампании
                 var selectedDates = BuildSelectedDates(
                     templateEditor.DateFrom, templateEditor.DateTo,
                     templateEditor.UseDaysOfWeek,
@@ -46,7 +48,6 @@ namespace Merlin.Forms
                     templateEditor.EvenDaysSelected
                 );
 
-                // 3) применяем расчёт к строкам
                 grdPriceCalculator.ApplyCalculation(
                     selectedDates,
                     templateEditor.DurationSec,
@@ -56,6 +57,9 @@ namespace Merlin.Forms
                     templateEditor.NonPrimePerDayWeekend,
                     templateEditor.ManagerDiscount
                 );
+
+                // ✅ протянуть позицию из шаблона в таблицу грида после пересоздания данных
+                grdPriceCalculator.SetDefaultPosition(templateEditor.SelectedPosition);
 
                 grdPriceCalculator.SummaryUpdater = UpdateSummary;
             }
@@ -102,32 +106,21 @@ namespace Merlin.Forms
         {
             try
             {
-                // 1) собрать выбранное
                 var selectedRows = grdPriceCalculator.GetSelectedRadiostations();
-
-                // 2) база суммы для пакета (как договорились — аналог Campaign.price)
                 decimal totalBeforePackageDiscount = grdPriceCalculator.GetSelectedTotalWithManagerDiscount();
 
-                // 3) получить пакетный коэффициент
-                //int? packagePriceListId;
                 decimal packageDiscount = GetPackageDiscount(
                     startDate: templateEditor.DateFrom,
                     priceTotal: totalBeforePackageDiscount,
                     selectedRows: selectedRows
-                //,packageDiscountPriceListId: out packagePriceListId*/
                 );
 
                 decimal totalAfterPackage = totalBeforePackageDiscount * packageDiscount;
 
-                // 4) вывести в gbSummary (лейблы ты сделаешь/уже есть)
-                templateEditor.DisplayTotal(totalBeforePackageDiscount, packageDiscount, totalAfterPackage);
+                // проставить значения в колонках грида (только для отмеченных строк)
+                grdPriceCalculator.ApplyPackageTotals(packageDiscount);
 
-                /*
-                // если хочешь показывать, какой пакет применился:
-                lblPackageInfo.Text = packagePriceListId.HasValue
-                    ? $"Пакет: {packagePriceListId.Value}"
-                    : "Пакет: —";
-                */
+                templateEditor.DisplayTotal(totalBeforePackageDiscount, packageDiscount, totalAfterPackage);
             }
             catch (Exception ex)
             {

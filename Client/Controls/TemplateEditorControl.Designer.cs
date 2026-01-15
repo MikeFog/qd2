@@ -174,7 +174,7 @@ namespace Merlin.Controls
             this.gbSchedulePattern.Margin = new System.Windows.Forms.Padding(3, 2, 3, 2);
             this.gbSchedulePattern.Name = "gbSchedulePattern";
             this.gbSchedulePattern.Padding = new System.Windows.Forms.Padding(9, 10, 9, 10);
-            this.gbSchedulePattern.Size = new System.Drawing.Size(829, 145);
+            this.gbSchedulePattern.Size = new System.Drawing.Size(869, 145);
             this.gbSchedulePattern.TabIndex = 35;
             this.gbSchedulePattern.TabStop = false;
             this.gbSchedulePattern.Text = "Шаблон выходов";
@@ -368,7 +368,7 @@ namespace Merlin.Controls
             this.cbCity.Font = new System.Drawing.Font("Segoe UI", 9F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(204)));
             this.cbCity.FormattingEnabled = true;
             this.cbCity.IntegralHeight = false;
-            this.cbCity.Location = new System.Drawing.Point(181, 4);
+            this.cbCity.Location = new System.Drawing.Point(221, 4);
             this.cbCity.Margin = new System.Windows.Forms.Padding(3, 4, 3, 4);
             this.cbCity.Name = "cbCity";
             this.cbCity.Size = new System.Drawing.Size(261, 33);
@@ -381,9 +381,9 @@ namespace Merlin.Controls
             this.lblDiscount.Font = new System.Drawing.Font("Segoe UI", 9F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(204)));
             this.lblDiscount.Location = new System.Drawing.Point(3, 320);
             this.lblDiscount.Name = "lblDiscount";
-            this.lblDiscount.Size = new System.Drawing.Size(172, 25);
+            this.lblDiscount.Size = new System.Drawing.Size(212, 25);
             this.lblDiscount.TabIndex = 29;
-            this.lblDiscount.Text = "Скидка менеджера:";
+            this.lblDiscount.Text = "Сезонный коэффициент:";
             this.lblDiscount.TextAlign = System.Drawing.ContentAlignment.MiddleLeft;
             // 
             // lblDuration
@@ -401,7 +401,7 @@ namespace Merlin.Controls
             // 
             this.nudDuration.Anchor = System.Windows.Forms.AnchorStyles.Left;
             this.nudDuration.Font = new System.Drawing.Font("Segoe UI", 9F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(204)));
-            this.nudDuration.Location = new System.Drawing.Point(181, 284);
+            this.nudDuration.Location = new System.Drawing.Point(221, 284);
             this.nudDuration.Margin = new System.Windows.Forms.Padding(3, 4, 3, 4);
             this.nudDuration.Maximum = new decimal(new int[] {
             120,
@@ -439,7 +439,7 @@ namespace Merlin.Controls
             // 
             this.nudPrimeWeekday.Anchor = System.Windows.Forms.AnchorStyles.Left;
             this.nudPrimeWeekday.Font = new System.Drawing.Font("Segoe UI", 9F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(204)));
-            this.nudPrimeWeekday.Location = new System.Drawing.Point(181, 238);
+            this.nudPrimeWeekday.Location = new System.Drawing.Point(221, 238);
             this.nudPrimeWeekday.Margin = new System.Windows.Forms.Padding(3, 4, 3, 4);
             this.nudPrimeWeekday.Maximum = new decimal(new int[] {
             200,
@@ -462,7 +462,7 @@ namespace Merlin.Controls
             this.lblNonPrime.Anchor = System.Windows.Forms.AnchorStyles.Left;
             this.lblNonPrime.AutoSize = true;
             this.lblNonPrime.Font = new System.Drawing.Font("Segoe UI", 9F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(204)));
-            this.lblNonPrime.Location = new System.Drawing.Point(448, 241);
+            this.lblNonPrime.Location = new System.Drawing.Point(488, 241);
             this.lblNonPrime.Name = "lblNonPrime";
             this.lblNonPrime.Size = new System.Drawing.Size(155, 25);
             this.lblNonPrime.TabIndex = 33;
@@ -472,7 +472,7 @@ namespace Merlin.Controls
             // 
             this.nudNonPrimeWeekday.Anchor = System.Windows.Forms.AnchorStyles.Left;
             this.nudNonPrimeWeekday.Font = new System.Drawing.Font("Segoe UI", 9F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(204)));
-            this.nudNonPrimeWeekday.Location = new System.Drawing.Point(706, 238);
+            this.nudNonPrimeWeekday.Location = new System.Drawing.Point(746, 238);
             this.nudNonPrimeWeekday.Margin = new System.Windows.Forms.Padding(3, 4, 3, 4);
             this.nudNonPrimeWeekday.Maximum = new decimal(new int[] {
             200,
@@ -506,7 +506,7 @@ namespace Merlin.Controls
             this.dtStart.Dock = System.Windows.Forms.DockStyle.Fill;
             this.dtStart.Font = new System.Drawing.Font("Segoe UI", 9F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(204)));
             this.dtStart.Format = System.Windows.Forms.DateTimePickerFormat.Short;
-            this.dtStart.Location = new System.Drawing.Point(181, 45);
+            this.dtStart.Location = new System.Drawing.Point(221, 45);
             this.dtStart.Margin = new System.Windows.Forms.Padding(3, 4, 3, 4);
             this.dtStart.Name = "dtStart";
             this.dtStart.Size = new System.Drawing.Size(261, 31);
@@ -517,7 +517,7 @@ namespace Merlin.Controls
             this.dtEnd.Dock = System.Windows.Forms.DockStyle.Fill;
             this.dtEnd.Font = new System.Drawing.Font("Segoe UI", 9F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(204)));
             this.dtEnd.Format = System.Windows.Forms.DateTimePickerFormat.Short;
-            this.dtEnd.Location = new System.Drawing.Point(448, 45);
+            this.dtEnd.Location = new System.Drawing.Point(488, 45);
             this.dtEnd.Margin = new System.Windows.Forms.Padding(3, 4, 3, 4);
             this.dtEnd.Name = "dtEnd";
             this.dtEnd.Size = new System.Drawing.Size(252, 31);
@@ -528,7 +528,7 @@ namespace Merlin.Controls
             this.lblPos.Anchor = System.Windows.Forms.AnchorStyles.Left;
             this.lblPos.AutoSize = true;
             this.lblPos.Font = new System.Drawing.Font("Segoe UI", 9F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(204)));
-            this.lblPos.Location = new System.Drawing.Point(448, 287);
+            this.lblPos.Location = new System.Drawing.Point(488, 287);
             this.lblPos.Name = "lblPos";
             this.lblPos.Size = new System.Drawing.Size(88, 25);
             this.lblPos.TabIndex = 31;
@@ -541,7 +541,7 @@ namespace Merlin.Controls
             this.cbPosition.Font = new System.Drawing.Font("Segoe UI", 9F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(204)));
             this.cbPosition.FormattingEnabled = true;
             this.cbPosition.IntegralHeight = false;
-            this.cbPosition.Location = new System.Drawing.Point(706, 283);
+            this.cbPosition.Location = new System.Drawing.Point(746, 283);
             this.cbPosition.Margin = new System.Windows.Forms.Padding(3, 4, 3, 4);
             this.cbPosition.Name = "cbPosition";
             this.cbPosition.Size = new System.Drawing.Size(126, 33);
@@ -556,7 +556,7 @@ namespace Merlin.Controls
             0,
             0,
             65536});
-            this.nmManagerDiscount.Location = new System.Drawing.Point(181, 323);
+            this.nmManagerDiscount.Location = new System.Drawing.Point(221, 323);
             this.nmManagerDiscount.Name = "nmManagerDiscount";
             this.nmManagerDiscount.Size = new System.Drawing.Size(261, 31);
             this.nmManagerDiscount.TabIndex = 36;
@@ -569,7 +569,7 @@ namespace Merlin.Controls
             // label2
             // 
             this.label2.AutoSize = true;
-            this.label2.Location = new System.Drawing.Point(838, 229);
+            this.label2.Location = new System.Drawing.Point(878, 229);
             this.label2.Name = "label2";
             this.label2.Size = new System.Drawing.Size(96, 50);
             this.label2.TabIndex = 38;
@@ -578,7 +578,7 @@ namespace Merlin.Controls
             // label3
             // 
             this.label3.AutoSize = true;
-            this.label3.Location = new System.Drawing.Point(1078, 229);
+            this.label3.Location = new System.Drawing.Point(1118, 229);
             this.label3.Name = "label3";
             this.label3.Size = new System.Drawing.Size(97, 50);
             this.label3.TabIndex = 39;
@@ -586,7 +586,7 @@ namespace Merlin.Controls
             // 
             // numPrimeWeekend
             // 
-            this.numPrimeWeekend.Location = new System.Drawing.Point(958, 232);
+            this.numPrimeWeekend.Location = new System.Drawing.Point(998, 232);
             this.numPrimeWeekend.Name = "numPrimeWeekend";
             this.numPrimeWeekend.Size = new System.Drawing.Size(114, 31);
             this.numPrimeWeekend.TabIndex = 40;
@@ -598,7 +598,7 @@ namespace Merlin.Controls
             // 
             // numNonPrimeWeekend
             // 
-            this.numNonPrimeWeekend.Location = new System.Drawing.Point(1198, 232);
+            this.numNonPrimeWeekend.Location = new System.Drawing.Point(1238, 232);
             this.numNonPrimeWeekend.Name = "numNonPrimeWeekend";
             this.numNonPrimeWeekend.Size = new System.Drawing.Size(120, 31);
             this.numNonPrimeWeekend.TabIndex = 41;
@@ -612,7 +612,7 @@ namespace Merlin.Controls
             // 
             this.lblTotalBeforePackageDiscount.AutoSize = true;
             this.tlTemplate.SetColumnSpan(this.lblTotalBeforePackageDiscount, 2);
-            this.lblTotalBeforePackageDiscount.Location = new System.Drawing.Point(838, 0);
+            this.lblTotalBeforePackageDiscount.Location = new System.Drawing.Point(878, 0);
             this.lblTotalBeforePackageDiscount.Name = "lblTotalBeforePackageDiscount";
             this.lblTotalBeforePackageDiscount.Size = new System.Drawing.Size(173, 25);
             this.lblTotalBeforePackageDiscount.TabIndex = 42;
@@ -622,7 +622,7 @@ namespace Merlin.Controls
             // 
             this.lblPackageDiscount.AutoSize = true;
             this.tlTemplate.SetColumnSpan(this.lblPackageDiscount, 2);
-            this.lblPackageDiscount.Location = new System.Drawing.Point(838, 41);
+            this.lblPackageDiscount.Location = new System.Drawing.Point(878, 41);
             this.lblPackageDiscount.Name = "lblPackageDiscount";
             this.lblPackageDiscount.Size = new System.Drawing.Size(151, 25);
             this.lblPackageDiscount.TabIndex = 43;
@@ -633,7 +633,7 @@ namespace Merlin.Controls
             this.lblTotalAfterPackageDiscount.AutoSize = true;
             this.tlTemplate.SetColumnSpan(this.lblTotalAfterPackageDiscount, 2);
             this.lblTotalAfterPackageDiscount.Font = new System.Drawing.Font("Segoe UI", 9F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, ((byte)(204)));
-            this.lblTotalAfterPackageDiscount.Location = new System.Drawing.Point(838, 80);
+            this.lblTotalAfterPackageDiscount.Location = new System.Drawing.Point(878, 80);
             this.lblTotalAfterPackageDiscount.Name = "lblTotalAfterPackageDiscount";
             this.lblTotalAfterPackageDiscount.Size = new System.Drawing.Size(57, 25);
             this.lblTotalAfterPackageDiscount.TabIndex = 44;
@@ -642,7 +642,7 @@ namespace Merlin.Controls
             // btnCalculate
             // 
             this.btnCalculate.Font = new System.Drawing.Font("Segoe UI", 9F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(204)));
-            this.btnCalculate.Location = new System.Drawing.Point(454, 324);
+            this.btnCalculate.Location = new System.Drawing.Point(494, 324);
             this.btnCalculate.Margin = new System.Windows.Forms.Padding(9, 4, 0, 4);
             this.btnCalculate.Name = "btnCalculate";
             this.btnCalculate.Size = new System.Drawing.Size(249, 38);

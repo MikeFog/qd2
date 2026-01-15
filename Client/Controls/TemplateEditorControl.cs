@@ -1,6 +1,8 @@
 ﻿using FogSoft.WinForm.Classes;
 using Merlin.Classes;
+using Merlin; // для RollerPositions
 using System;
+using System.Collections.Generic;
 using System.Data;
 using System.Linq;
 using System.Windows.Forms;
@@ -9,8 +11,19 @@ namespace Merlin.Controls
 {
     public partial class TemplateEditorControl : UserControl
     {
+        public event EventHandler PositionChanged;
+
         public Button CalculateButton => btnCalculate;
         public NumericUpDown ManagerDiscountNum => nmManagerDiscount;
+
+        public RollerPositions SelectedPosition
+        {
+            get
+            {
+                if (cbPosition.SelectedValue == null) return RollerPositions.Undefined;
+                return (RollerPositions)Convert.ToInt32(cbPosition.SelectedValue);
+            }
+        }
 
         public TemplateEditorControl()
         {
@@ -29,10 +42,44 @@ namespace Merlin.Controls
             LoadCities();
             SetManagerDiscount();
 
+            InitPositions();
+
             rbDaysOfWeek.Checked = true;
             UpdateSchedulePatternEnabledState();
 
             dtEnd.Value = dtStart.Value.AddMonths(1);
+        }
+
+        private void InitPositions()
+        {
+            var items = new List<KeyValuePair<int, string>>
+            {
+                new KeyValuePair<int, string>((int)RollerPositions.Undefined, "без позиции"),
+                new KeyValuePair<int, string>((int)RollerPositions.First, "первый"),
+                new KeyValuePair<int, string>((int)RollerPositions.Second, "второй"),
+                new KeyValuePair<int, string>((int)RollerPositions.Last, "последний"),
+            };
+
+            cbPosition.BeginUpdate();
+            try
+            {
+                cbPosition.DisplayMember = "Value";
+                cbPosition.ValueMember = "Key";
+                cbPosition.DataSource = items;
+                cbPosition.SelectedValue = (int)RollerPositions.Undefined;
+            }
+            finally
+            {
+                cbPosition.EndUpdate();
+            }
+
+            cbPosition.SelectedValueChanged -= CbPosition_SelectedValueChanged;
+            cbPosition.SelectedValueChanged += CbPosition_SelectedValueChanged;
+        }
+
+        private void CbPosition_SelectedValueChanged(object sender, EventArgs e)
+        {
+            PositionChanged?.Invoke(this, EventArgs.Empty);
         }
 
         private void ScheduleMode_CheckedChanged(object sender, EventArgs e)
