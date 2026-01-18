@@ -1,22 +1,68 @@
 ﻿using FogSoft.WinForm.Classes;
+using FogSoft.WinForm.Classes.Export.MSExcel;
 using FogSoft.WinForm.DataAccess;
 using System;
 using System.Collections.Generic;
 using System.Data;
+using System.Diagnostics;
+using System.Linq;
 using System.Windows.Forms;
 
 namespace Merlin.Forms
 {
     public partial class PriceCalculatorForm : Form
     {
+        private decimal _lastTotalBeforePackageDiscount;
+        private decimal _lastPackageDiscount;
+        private decimal _lastTotalAfterPackage;
+        private readonly string[] _columnsWithMoney = new[]
+        {
+            "Цена прайм будни",
+            "Цена не-прайм будни",
+            "Цена прайм выходные",
+            "Цена не-прайм выходные",
+            "Цена кампания",
+            "Итог"
+        };
+
         public PriceCalculatorForm()
         {
             InitializeComponent();
             templateEditor.CalculateButton.Click += CalculateButton_Click;
+            templateEditor.ExcelButton.Click += (s, e) => ExportSelectedToExcel();
             templateEditor.ManagerDiscountNum.ValueChanged += (s, e) => grdPriceCalculator.SetManagerDiscount(templateEditor.ManagerDiscount);
 
-           templateEditor.PositionChanged += (s, e) =>
+            templateEditor.PositionChanged += (s, e) =>
                 grdPriceCalculator.SetDefaultPosition(templateEditor.SelectedPosition);
+
+            // пересчитываем при смене дневных/выходных количеств
+            templateEditor.SpotsSettingsChanged += (s, e) => RecalculateFromTemplateInputs();
+        }
+
+        private void RecalculateFromTemplateInputs()
+        {
+            if (grdPriceCalculator.SummaryTable == null) return;
+
+            var selectedDates = BuildSelectedDates(
+                templateEditor.DateFrom, templateEditor.DateTo,
+                templateEditor.UseDaysOfWeek,
+                templateEditor.DaysOfWeekChecked,
+                templateEditor.EvenDaysSelected
+            );
+
+            grdPriceCalculator.ApplyCalculation(
+                selectedDates,
+                templateEditor.DurationSec,
+                templateEditor.PrimePerDayWeekday,
+                templateEditor.NonPrimePerDayWeekday,
+                templateEditor.PrimePerDayWeekend,
+                templateEditor.NonPrimePerDayWeekend,
+                templateEditor.ManagerDiscount
+            );
+
+            // оставить позицию из шаблона и актуальный SummaryUpdater
+            grdPriceCalculator.SetDefaultPosition(templateEditor.SelectedPosition);
+            grdPriceCalculator.SummaryUpdater = UpdateSummary;
         }
 
         private void CalculateButton_Click(object sender, EventArgs e)
@@ -104,53 +150,85 @@ namespace Merlin.Forms
 
         private void UpdateSummary()
         {
+            var swTotal = Stopwatch.StartNew();
+            var swStep = Stopwatch.StartNew();
+            Debug.WriteLine("[PriceCalc] UpdateSummary start");
+
             try
             {
                 var selectedRows = grdPriceCalculator.GetSelectedRadiostations();
-                decimal totalBeforePackageDiscount = grdPriceCalculator.GetSelectedTotalWithManagerDiscount();
+                Debug.WriteLine($"[PriceCalc] GetSelectedRadiostations: {swStep.ElapsedMilliseconds} ms");
 
+                swStep.Restart();
+                decimal totalBeforePackageDiscount = grdPriceCalculator.GetSelectedTotalWithManagerDiscount();
+                Debug.WriteLine($"[PriceCalc] GetSelectedTotalWithManagerDiscount: {swStep.ElapsedMilliseconds} ms");
+
+                swStep.Restart();
                 decimal packageDiscount = GetPackageDiscount(
                     startDate: templateEditor.DateFrom,
                     priceTotal: totalBeforePackageDiscount,
                     selectedRows: selectedRows
                 );
+                Debug.WriteLine($"[PriceCalc] GetPackageDiscount: {swStep.ElapsedMilliseconds} ms");
 
                 decimal totalAfterPackage = totalBeforePackageDiscount * packageDiscount;
 
-                // проставить значения в колонках грида (только для отмеченных строк)
+                swStep.Restart();
                 grdPriceCalculator.ApplyPackageTotals(packageDiscount);
+                Debug.WriteLine($"[PriceCalc] ApplyPackageTotals: {swStep.ElapsedMilliseconds} ms");
 
-                templateEditor.DisplayTotal(totalBeforePackageDiscount, packageDiscount, totalAfterPackage);
+                swStep.Restart();
+                DisplayTotal(totalBeforePackageDiscount, packageDiscount, totalAfterPackage);
+                Debug.WriteLine($"[PriceCalc] DisplayTotal: {swStep.ElapsedMilliseconds} ms");
             }
             catch (Exception ex)
             {
                 ErrorManager.PublishError(ex);
             }
+            finally
+            {
+                Debug.WriteLine($"[PriceCalc] UpdateSummary total: {swTotal.ElapsedMilliseconds} ms");
+            }
         }
 
         private decimal GetPackageDiscount(DateTime startDate, decimal priceTotal, List<DataRowView> selectedRows)
         {
-            if (selectedRows.Count == 0) return 1m;
+            var sw = Stopwatch.StartNew();
+            Debug.WriteLine($"[PriceCalc] GetPackageDiscount start, selected={selectedRows.Count}, priceTotal={priceTotal}");
 
-            var tvpTable = BuildSelectedMassmediaTvp(selectedRows);
+            try
+            {
+                if (selectedRows.Count == 0) return 1m;
 
-            var p = DataAccessor.CreateParametersDictionary();
-            p["startDate"] = startDate;
-            p["campaignTypeID"] = (byte)1;
-            p["priceTotal"] = priceTotal;
-            p["sel"] = new FogSoft.WinForm.DataAccess.TvpValue(tvpTable, "dbo.pc_SelectedMassmedia");
+                var tvpTable = BuildSelectedMassmediaTvp(selectedRows);
 
-            p["discountValue"] = null;               // OUT
-            p["packageDiscountPriceListID"] = null;  // OUT (если нужно показать какой пакет)
+                var p = DataAccessor.CreateParametersDictionary();
+                p["startDate"] = startDate;
+                p["campaignTypeID"] = (byte)1;
+                p["priceTotal"] = priceTotal;
+                p["sel"] = new FogSoft.WinForm.DataAccess.TvpValue(tvpTable, "dbo.pc_SelectedMassmedia");
 
-            DataAccessor.ExecuteNonQuery("pc_PackageDiscountCalculateModel", p, 30, false);
+                p["discountValue"] = null;               // OUT
+                p["packageDiscountPriceListID"] = null;  // OUT (если нужно показать какой пакет)
 
-            var dv = p["discountValue"];
-            return (dv == null || dv == DBNull.Value) ? 1m : Convert.ToDecimal(dv);
+                var swDb = Stopwatch.StartNew();
+                DataAccessor.ExecuteNonQuery("pc_PackageDiscountCalculateModel", p, 30, false);
+                Debug.WriteLine($"[PriceCalc] GetPackageDiscount ExecuteNonQuery: {swDb.ElapsedMilliseconds} ms");
+
+                var dv = p["discountValue"];
+                return (dv == null || dv == DBNull.Value) ? 1m : Convert.ToDecimal(dv);
+            }
+            finally
+            {
+                Debug.WriteLine($"[PriceCalc] GetPackageDiscount total: {sw.ElapsedMilliseconds} ms");
+            }
         }
 
         private DataTable BuildSelectedMassmediaTvp(IEnumerable<DataRowView> selectedRows)
         {
+            var sw = Stopwatch.StartNew();
+            int count = 0;
+
             var dt = new DataTable();
             dt.Columns.Add("massmediaID", typeof(short));
             dt.Columns.Add("durationSec", typeof(int)); // issuesDuration (секунды)
@@ -174,9 +252,127 @@ namespace Merlin.Forms
                 int issuesDurationSec = rollDuration * totalSpots;
 
                 dt.Rows.Add((short)massmediaId, issuesDurationSec);
+                count++;
             }
 
+            Debug.WriteLine($"[PriceCalc] BuildSelectedMassmediaTvp rows={count} in {sw.ElapsedMilliseconds} ms");
             return dt;
+        }
+
+        private void DisplayTotal(decimal totalBeforePackageDiscount, decimal packageDiscount, decimal totalAfterPackage)
+        {
+            // cache last calculated totals for later export
+            _lastTotalBeforePackageDiscount = totalBeforePackageDiscount;
+            _lastPackageDiscount = packageDiscount;
+            _lastTotalAfterPackage = totalAfterPackage;
+
+            templateEditor.TotalBeforePackageDiscount.Text = "По радиостанциям: " + totalBeforePackageDiscount.ToString("c");
+            templateEditor.PackageDiscount.Text = "Пакетная скидка: " + packageDiscount.ToString("N2");
+            templateEditor.TotalAfterPackageDiscount.Text = "Итог: " + totalAfterPackage.ToString("c");
+        }
+
+        private string BuildScheduleDescription()
+        {
+            if (templateEditor.UseDaysOfWeek)
+            {
+                var names = new[] { "Пн", "Вт", "Ср", "Чт", "Пт", "Сб", "Вс" };
+                var checkedDays = templateEditor.DaysOfWeekChecked;
+                var active = names.Where((n, i) => checkedDays[i]).ToList();
+                return active.Count > 0 ? string.Join(", ", active) : "—";
+            }
+
+            return templateEditor.EvenDaysSelected ? "Чётные дни" : "Нечётные дни";
+        }
+
+        /// <summary>
+        /// Экспорт отмеченных строк PriceCalculatorGrid в Excel.
+        /// Привяжите вызов к вашей кнопке/меню.
+        /// </summary>
+        public void ExportSelectedToExcel()
+        {
+            var dt = grdPriceCalculator.BuildSelectedExportTable();
+            if (dt == null || dt.Rows.Count == 0)
+            {
+                FogSoft.WinForm.Forms.MessageBox.ShowInformation("Нет отмеченных строк для экспорта.");
+                return;
+            }
+
+            var headers = dt.ExtendedProperties["Headers"] as Dictionary<string, string>;
+            var doc = new MSExportDocument();
+            try
+            {
+                doc.StartExport();
+                var sheet = doc.GetNewSheet("Отмеченные", "Arial", 10);
+                var cols = dt.Columns.Cast<DataColumn>().ToList();
+
+                // заголовки
+                for (int c = 0; c < cols.Count; c++)
+                {
+                    var name = cols[c].ColumnName;
+                    var header = headers != null && headers.ContainsKey(name) ? headers[name] : name;
+                    sheet.SetCellValue(1, c + 1, header);
+                    if (_columnsWithMoney.Contains(header))
+                        sheet.SetColumnNumberFormat(c + 1, "#,##0.00");
+                }
+
+                // данные
+                for (int r = 0; r < dt.Rows.Count; r++)
+                {
+                    var row = dt.Rows[r];
+                    for (int c = 0; c < cols.Count; c++)
+                        sheet.SetCellValue(r + 2, c + 1, row[c]);
+                }
+
+                sheet.SetBoldForRange(1, 1, 1, cols.Count);
+                sheet.SetBordersStyles(1, 1, dt.Rows.Count + 1, cols.Count, true);
+
+                int currentRow = dt.Rows.Count + 3; // пустая строка перед итогами
+
+                //sheet.SetCellValue(currentRow++, 1, "По радиостанциям: " + _lastTotalBeforePackageDiscount.ToString("c"));
+                sheet.SetCellValue(currentRow++, 1,
+                    "Пакетная скидка: " + _lastPackageDiscount.ToString("N2"));
+                sheet.SetCellValue(currentRow++, 1,
+                    "Итог: " + _lastTotalAfterPackage.ToString("c"));
+
+                currentRow += 1; // одна пустая строка после таблицы
+
+                sheet.SetCellValue(currentRow, 1, "Параметры расчета:");
+                sheet.SetBoldForRange(currentRow, 1, currentRow, 1);
+                currentRow++;
+
+                sheet.SetCellValue(currentRow++, 1, "Город/группа СМИ: " + templateEditor.MassmediaGroupName);
+                sheet.SetCellValue(currentRow++, 1,
+                    string.Format("Период: {0:d} - {1:d}", templateEditor.DateFrom, templateEditor.DateTo));
+                sheet.SetCellValue(currentRow++, 1,
+                    "Длительность ролика (сек): " + templateEditor.DurationSec);
+                sheet.SetCellValue(currentRow++, 1,
+                    string.Format("Выходы будни прайм/непрайм: {0} / {1}",
+                        templateEditor.PrimePerDayWeekday, templateEditor.NonPrimePerDayWeekday));
+                sheet.SetCellValue(currentRow++, 1,
+                    string.Format("Выходы выходные прайм/непрайм: {0} / {1}",
+                        templateEditor.PrimePerDayWeekend, templateEditor.NonPrimePerDayWeekend));
+                sheet.SetCellValue(currentRow++, 1,
+                    "Скидка менеджера: " + templateEditor.ManagerDiscount.ToString("N2"));
+                sheet.SetCellValue(currentRow++, 1,
+                    "Позиция: " + templateEditor.SelectedPositionName);
+                sheet.SetCellValue(currentRow++, 1,
+                    "График: " + BuildScheduleDescription());
+
+
+
+                int lastRow = currentRow - 1;
+
+                // перенос строк и автоподбор ширины по данным (без удлинения заголовками)
+                sheet.SetWrapText(1, 3, lastRow, cols.Count, true);
+                sheet.SetAutoFitCells(1, cols.Count);
+
+                sheet.SetAutoFitCells(); // keep global autofit if needed for other sheets
+                doc.FinishExport();
+            }
+            finally
+            {
+                doc.OnAppQuit();
+            }
         }
     }
 }

@@ -1,7 +1,10 @@
 ﻿using FogSoft.WinForm.DataAccess;
+using Merlin.Classes;
 using System;
 using System.Collections.Generic;
 using System.Data;
+using System.Diagnostics;
+using System.Linq;
 using System.Windows.Forms;
 
 namespace Merlin.Controls
@@ -24,8 +27,10 @@ namespace Merlin.Controls
         private string _lastCurrentColumnName;
         private DataGridViewCell _pendingTargetCell; // <--- Здесь
         private int _lastDataColumnIndex = -1; // колонка для удержания фокуса при стрелках
+        private bool _skipCellEndEdit;
+        private bool _suppressSummaryUpdate;
 
-        public Action SummaryUpdater { get; set; }
+        public System.Action SummaryUpdater { get; set; }
 
         public DataTable SegmentsTable { get; private set; }   // второй рекордсет (сегменты)
         public DataTable SummaryTable { get; private set; }   // первый рекордсет (для грида)
@@ -73,12 +78,14 @@ namespace Merlin.Controls
             dgvStations.CellEndEdit += (s, e) =>
             {
                 if (_suppressRecalc) return;
+                if (_skipCellEndEdit) return;
 
-                BeginInvoke((Action)(() =>
+                BeginInvoke((System.Action)(() =>
                 {
                     if (_suppressRecalc) return;
+                    if (_skipCellEndEdit) return;
                     HandleEditableCellChanged(e.RowIndex, e.ColumnIndex);
-                    RestorePendingTargetCell();
+                    //RestorePendingTargetCell();
                 }));
             };
 
@@ -91,15 +98,35 @@ namespace Merlin.Controls
 
                 // чекбокс — сразу обновляем summary
                 if (colName == "colSelected")
-                    SummaryUpdater?.Invoke();
-
-                // ⚠ colPosition тут НЕ трогаем (пересчет уйдет через CellEndEdit/BeginInvoke)
+                {
+                    var sw = Stopwatch.StartNew();
+                    Debug.WriteLine("[PriceCalc] colSelected -> SummaryUpdater start");
+                    RunWithWaitCursor(() =>
+                    {
+                        try
+                        {
+                            SummaryUpdater?.Invoke();
+                        }
+                        finally
+                        {
+                            Debug.WriteLine($"[PriceCalc] colSelected -> SummaryUpdater finished in {sw.ElapsedMilliseconds} ms");
+                        }
+                    });
+                }
             };
 
             dgvStations.MouseDown += (s, e) =>
             {
                 var hitInfo = dgvStations.HitTest(e.X, e.Y);
-                if (hitInfo.Type == DataGridViewHitTestType.ColumnHeader)
+
+                if (hitInfo.Type == DataGridViewHitTestType.Cell &&
+                    hitInfo.RowIndex >= 0 && hitInfo.ColumnIndex >= 0)
+                {
+                    _pendingTargetCell = dgvStations
+                        .Rows[hitInfo.RowIndex]
+                        .Cells[hitInfo.ColumnIndex];
+                }
+                else if (hitInfo.Type == DataGridViewHitTestType.ColumnHeader)
                 {
                     if (dgvStations.CurrentRow != null)
                     {
@@ -193,7 +220,7 @@ namespace Merlin.Controls
                 ReadOnly = true,
             });
 
-            const int NumericColWidth = 80;
+            const int NumericColWidth = 70;
 
             dgvStations.Columns.Add(new DataGridViewTextBoxColumn
             {
@@ -215,7 +242,7 @@ namespace Merlin.Controls
                 ValueType = typeof(int),
                 ValueMember = "Key",
                 DisplayMember = "Value",
-                DataSource = BuildPositionItems()
+                DataSource = Issue.GetRollerPositionItems()
             });
 
             dgvStations.Columns.Add(new DataGridViewTextBoxColumn
@@ -375,8 +402,11 @@ namespace Merlin.Controls
                 if (_bulkUpdating) return;
 
                 // cerrar edición current
-                dgvStations.EndEdit();
-                dgvStations.CommitEdit(DataGridViewDataErrorContexts.Commit);
+                SuppressRecalc(() =>
+                {
+                    dgvStations.EndEdit();
+                    dgvStations.CommitEdit(DataGridViewDataErrorContexts.Commit);
+                });
                 dgvStations.CurrentCell = null;
 
                 _bulkUpdating = true;
@@ -400,9 +430,8 @@ namespace Merlin.Controls
                     _bulkUpdating = false;
                 }
 
-                SummaryUpdater?.Invoke();
+                RunWithWaitCursor(() => SummaryUpdater?.Invoke());
             };
-
 
             dgvStations.Controls.Add(_headerCheckBox);
 
@@ -508,12 +537,11 @@ namespace Merlin.Controls
             if (col < 0) return;
 
             // зафиксировать введённое значение перед переходом
-            try
+            SuppressRecalc(() =>
             {
                 dgvStations.EndEdit();
                 _bindingSource.EndEdit();
-            }
-            catch { }
+            });
 
             try
             {
@@ -594,14 +622,11 @@ namespace Merlin.Controls
             dgvStations.Rows[e.RowIndex].ErrorText = "";
         }
 
-
         private void HandleEditableCellChanged(int rowIndex, int columnIndex)
         {
             if (rowIndex < 0) return;
 
-            // кого хотим оставить фокусным
             var desiredCell = dgvStations.Rows[rowIndex].Cells[columnIndex];
-
             string colName = dgvStations.Columns[columnIndex].Name;
 
             if (colName == "colRollerDuration" ||
@@ -612,30 +637,13 @@ namespace Merlin.Controls
                 colName == "colPosition")
             {
                 RecalcRow(rowIndex);
-                SummaryUpdater?.Invoke();
+                if (RowIsSelected(rowIndex))
+                    //RequestSummaryUpdate();
+                    SummaryUpdater?.Invoke();
 
-                // ✅ вернуть фокус туда, где пользователь редактировал/кликнул
-                RestoreCell(desiredCell);
+                // processed; drop it so it won't affect next edit
+                _pendingTargetCell = null;
             }
-        }
-
-        // новый вспомогательный метод
-        private void RestoreCell(DataGridViewCell cell)
-        {
-            if (cell == null) return;
-            if (cell.DataGridView != dgvStations) return;
-
-            int r = cell.RowIndex;
-            int c = cell.ColumnIndex;
-            if (r < 0 || r >= dgvStations.Rows.Count) return;
-            if (c < 0 || c >= dgvStations.Columns.Count) return;
-            if (dgvStations.Rows[r].Cells[c].ReadOnly) return;
-
-            try
-            {
-                dgvStations.CurrentCell = dgvStations.Rows[r].Cells[c];
-            }
-            catch { /* ignore */ }
         }
 
         private void RecalcRow(int rowIndex)
@@ -760,7 +768,7 @@ namespace Merlin.Controls
                 decimal nonPrimeWeInSeg = nonPrimeWeTotal * weShare;
 
                 decimal primeWD = Convert.ToDecimal(r["PrimePricePerSecWeekday"]);
-                decimal nonPrimeWD = Convert.ToDecimal(r["NonPrimePricePerSecWeekday"]);
+                decimal nonPrimeWD = Convert.ToDecimal(r["NonPrimePricePerSecWeekend"]);
                 decimal primeWE = Convert.ToDecimal(r["PrimePricePerSecWeekend"]);
                 decimal nonPrimeWE = Convert.ToDecimal(r["NonPrimePricePerSecWeekend"]);
 
@@ -997,10 +1005,16 @@ namespace Merlin.Controls
         {
             if (SummaryTable == null) return;
 
-            // Закрыть текущую редакцию, иначе грид может не обновиться визуально
-            dgvStations.EndEdit();
-            _bindingSource.EndEdit();
+            DoWithSkipCellEndEdit(() =>
+            {
+                SuppressRecalc(() =>
+                {
+                    dgvStations.EndEdit();
+                    _bindingSource.EndEdit();
+                });
+            });
 
+            _suppressSummaryUpdate = true;
             _suppressRecalc = true;
             try
             {
@@ -1017,7 +1031,6 @@ namespace Merlin.Controls
                         if (v != null && v != DBNull.Value)
                             baseTotal = Convert.ToDecimal(v);
 
-                        // Итог после всех трёх скидок: объёмная -> менеджерская -> пакетная
                         row["TotalAfterPackage"] = baseTotal * packageDiscount;
                     }
                     else
@@ -1032,9 +1045,9 @@ namespace Merlin.Controls
                 _suppressRecalc = false;
             }
 
-            // Сообщить биндингу и гриду, что данные обновились
             _bindingSource.ResetBindings(false);
-            dgvStations.Invalidate();
+            //dgvStations.Invalidate();
+            _suppressSummaryUpdate = false;
         }
 
         private static decimal GetCompanyDiscount(int massmediaId, DateTime startDate, decimal tariffPrice)
@@ -1058,7 +1071,7 @@ namespace Merlin.Controls
             return Convert.ToDecimal(val);
         }
 
-        // Эти 3 метода можно вынести в общий util, но для простоты держим тут
+        // Эти 3 метода можно вынести в общий util, но для простоты держим тот
         private static int CountDatesInRange(List<DateTime> dates, DateTime start, DateTime end)
         {
             int lo = LowerBound(dates, start);
@@ -1097,8 +1110,7 @@ namespace Merlin.Controls
                 bool isSelected = Convert.ToBoolean(row.Cells["colSelected"].Value ?? false);
                 if (!isSelected) continue;
 
-                var drv = row.DataBoundItem as DataRowView;
-                if (drv == null) continue;
+                if (!(row.DataBoundItem is DataRowView drv)) continue;
 
                 object v = drv["TotalWithManagerDiscount"];
                 if (v == DBNull.Value) continue;
@@ -1193,15 +1205,19 @@ namespace Merlin.Controls
                 _suppressRecalc = false;
             }
 
-            SummaryUpdater?.Invoke();
+            if (AnySelectedRows())
+                SummaryUpdater?.Invoke();
         }
 
         public void SetDefaultPosition(Merlin.RollerPositions position)
         {
             if (SummaryTable == null) return;
 
-            dgvStations.EndEdit();
-            _bindingSource.EndEdit();
+            DoWithSkipCellEndEdit(() =>
+            {
+                dgvStations.EndEdit();
+                _bindingSource.EndEdit();
+            });
 
             _suppressRecalc = true;
             try
@@ -1221,8 +1237,8 @@ namespace Merlin.Controls
 
             _bindingSource.ResetBindings(false);
             dgvStations.Invalidate();
-
-            SummaryUpdater?.Invoke();
+            if (AnySelectedRows())
+                SummaryUpdater?.Invoke();
         }
 
         private void ReCalcAllRows()
@@ -1234,61 +1250,18 @@ namespace Merlin.Controls
                 RecalcRow(i);
         }
 
-        private static List<KeyValuePair<int, string>> BuildPositionItems()
-        {
-            return new List<KeyValuePair<int, string>>
-            {
-                new KeyValuePair<int, string>((int)Merlin.RollerPositions.Undefined, "без позиции"),
-                new KeyValuePair<int, string>((int)Merlin.RollerPositions.First, "первый"),
-                new KeyValuePair<int, string>((int)Merlin.RollerPositions.Second, "второй"),
-                new KeyValuePair<int, string>((int)Merlin.RollerPositions.Last, "последний"),
-            };
-        }
 
-        private void RestorePendingTargetCell()
-        {
-            var cell = _pendingTargetCell;
-            _pendingTargetCell = null;
-
-            // если мышью не запомнили — попробуем использовать последнюю рабочую колонку в той же строке
-            if (cell == null)
-            {
-                var cur = dgvStations.CurrentCell;
-                if (cur != null &&
-                    _lastDataColumnIndex >= 0 &&
-                    _lastDataColumnIndex < dgvStations.Columns.Count &&
-                    dgvStations.Columns[_lastDataColumnIndex].Name != "colSelected")
-                {
-                    cell = dgvStations.Rows[cur.RowIndex].Cells[_lastDataColumnIndex];
-                }
-                else
-                {
-                    var pt = dgvStations.PointToClient(Cursor.Position);
-                    var hit = dgvStations.HitTest(pt.X, pt.Y);
-                    if (hit.RowIndex >= 0 && hit.ColumnIndex >= 0)
-                        cell = dgvStations.Rows[hit.RowIndex].Cells[hit.ColumnIndex];
-                }
-            }
-
-            if (cell == null || cell.DataGridView != dgvStations) return;
-
-            int row = cell.RowIndex;
-            int col = cell.ColumnIndex;
-            if (row < 0 || row >= dgvStations.Rows.Count) return;
-            if (col < 0 || col >= dgvStations.Columns.Count) return;
-            if (dgvStations.Rows[row].Cells[col].ReadOnly) return;
-
-            try { dgvStations.CurrentCell = dgvStations.Rows[row].Cells[col]; }
-            catch { /* ignore */ }
-        }
         private void PositionCombo_SelectionChangeCommitted(object sender, EventArgs e)
         {
             if (_suppressRecalc) return;
             try
             {
-                dgvStations.CommitEdit(DataGridViewDataErrorContexts.Commit);
-                dgvStations.EndEdit();
-                _bindingSource.EndEdit();
+                SuppressRecalc(() =>
+                {
+                    dgvStations.CommitEdit(DataGridViewDataErrorContexts.Commit);
+                    dgvStations.EndEdit();
+                    _bindingSource.EndEdit();
+                });
             }
             catch
             {
@@ -1305,5 +1278,163 @@ namespace Merlin.Controls
             // запрещаем остальное
             e.Handled = true;
         }
+
+        /// <summary>
+        /// Таблица для экспорта: только отмеченные строки, видимые колонки (кроме чекбокса), значения как текст.
+        /// ExtendedProperties["Headers"]: словарь ColumnName -> HeaderText.
+        /// </summary>
+        public DataTable BuildSelectedExportTable()
+        {
+            if (SummaryTable == null) 
+                return null;
+
+            var selectedRows = new HashSet<DataRow>();
+
+            foreach (DataGridViewRow gridRow in dgvStations.Rows)
+            {
+                bool isSelected = Convert.ToBoolean(gridRow.Cells["colSelected"].Value ?? false);
+                if (!isSelected) continue;
+
+                var drv = gridRow.DataBoundItem as DataRowView;
+                if (drv != null)
+                    selectedRows.Add(drv.Row);
+            }
+
+            if (selectedRows.Count == 0)
+                return null;
+
+            var exportCols = dgvStations.Columns.Cast<DataGridViewColumn>()
+                .Where(c => c.Visible && c.Name != "colSelected")
+                .OrderBy(c => c.DisplayIndex)
+                .ToList();
+
+            var dt = new DataTable("Export");
+            var positionLookup = Issue.GetRollerPositionItems()
+                .ToDictionary(kvp => kvp.Key, kvp => kvp.Value);
+
+            string ResolvePositionText(object rawValue)
+            {
+                int key = NormalizePosition(rawValue);
+                if (positionLookup.TryGetValue(key, out string text))
+                    return text;
+
+                if (rawValue == null || rawValue == DBNull.Value)
+                    return null;
+
+                return rawValue.ToString();
+            }
+
+            foreach (var col in exportCols)
+            {
+                Type columnType = typeof(string);
+
+                if (col.Name != "colPosition" &&
+                    !string.IsNullOrEmpty(col.DataPropertyName) &&
+                    SummaryTable.Columns.Contains(col.DataPropertyName))
+                {
+                    columnType = SummaryTable.Columns[col.DataPropertyName].DataType;
+                }
+
+                dt.Columns.Add(col.Name, columnType);
+            }
+
+            foreach (DataRow srcRow in selectedRows)
+            {
+                var newRow = dt.NewRow();
+                DataGridViewRow gridRow = null;
+
+                foreach (var col in exportCols)
+                {
+                    object value = null;
+
+                    if (!string.IsNullOrEmpty(col.DataPropertyName) &&
+                        SummaryTable.Columns.Contains(col.DataPropertyName))
+                    {
+                        value = srcRow[col.DataPropertyName];
+                    }
+                    else
+                    {
+                        if (gridRow == null)
+                        {
+                            gridRow = dgvStations.Rows
+                                .Cast<DataGridViewRow>()
+                                .FirstOrDefault(r =>
+                                {
+                                    var drv = r.DataBoundItem as DataRowView;
+                                    return drv != null && ReferenceEquals(drv.Row, srcRow);
+                                });
+                        }
+
+                        if (gridRow != null)
+                            value = gridRow.Cells[col.Name].Value;
+                    }
+
+                    if (col.Name == "colPosition")
+                        value = ResolvePositionText(value);
+
+                    newRow[col.Name] = value ?? (object)DBNull.Value;
+                }
+
+                dt.Rows.Add(newRow);
+            }
+
+            dt.ExtendedProperties["Headers"] =
+                exportCols.ToDictionary(c => c.Name, c => c.HeaderText);
+
+            return dt;
+        }
+
+        // универсальные хелперы
+        private void SuppressRecalc(System.Action action)
+        {
+            var prev = _suppressRecalc;
+            _suppressRecalc = true;
+            try { action(); }
+            finally { _suppressRecalc = prev; }
+        }
+
+        private void RunWithWaitCursor(System.Action action)
+        {
+            var prevUse = this.UseWaitCursor;
+            var prevCursor = Cursor.Current;
+            try
+            {
+                this.UseWaitCursor = true;
+                Cursor.Current = Cursors.WaitCursor;
+                action();
+            }
+            finally
+            {
+                this.UseWaitCursor = prevUse;
+                Cursor.Current = prevCursor;
+            }
+        }
+
+        private void DoWithSkipCellEndEdit(System.Action action)
+        {
+            var prev = _skipCellEndEdit;
+            _skipCellEndEdit = true;
+            try { action(); }
+            finally { _skipCellEndEdit = prev; }
+        }
+ 
+         private bool RowIsSelected(int rowIndex)
+         {
+             DataGridViewRow row = dgvStations.Rows[rowIndex];
+             return RowIsSelected(row);
+         }
+
+         private bool RowIsSelected(DataGridViewRow row)
+         {
+             if (row == null) return false;
+             return Convert.ToBoolean(row.Cells["colSelected"].Value ?? false);
+         }
+
+         private bool AnySelectedRows()
+         {
+             foreach (DataGridViewRow r in dgvStations.Rows)
+                 if (RowIsSelected(r)) return true;
+             return false;
+         }
     }
 }

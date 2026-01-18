@@ -24,5 +24,7 @@ namespace FogSoft.WinForm.Classes.Export
 		void InsertImage(int top, int left, byte[] image);
 		void SetColumnWidth(int columnIndex, double width);
         double GetColumnWidth(int columnIndex);
+		void SetColumnNumberFormat(int columnIndex, string format);
+        void SetWrapText(int top, int left, int bottom, int right, bool wrap);
     }
 }

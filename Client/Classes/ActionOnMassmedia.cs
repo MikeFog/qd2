@@ -645,12 +645,19 @@ namespace Merlin.Classes
 						, ds.Tables["notactivated"]);
 				}
 
-				if (!isTestActivation)
+				bool errorFlag = false;
+                if (ds.Tables["fatal_errors"].Rows.Count > 0)
+				{
+					MessageBox.ShowExclamation(ds.Tables["fatal_errors"].Rows[0]["errorMessage"].ToString());
+					errorFlag = true;
+                }
+
+				if (!isTestActivation && !errorFlag)
 				{
 					Refresh();
-                    Recalculate();
-                    OnObjectDeleted(this);
-                }
+					Recalculate();
+					OnObjectDeleted(this);
+				}
 			}
 			finally
 			{

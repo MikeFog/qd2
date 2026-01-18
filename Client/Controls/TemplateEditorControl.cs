@@ -1,8 +1,6 @@
 ﻿using FogSoft.WinForm.Classes;
 using Merlin.Classes;
-using Merlin; // для RollerPositions
 using System;
-using System.Collections.Generic;
 using System.Data;
 using System.Linq;
 using System.Windows.Forms;
@@ -12,9 +10,14 @@ namespace Merlin.Controls
     public partial class TemplateEditorControl : UserControl
     {
         public event EventHandler PositionChanged;
-
-        public Button CalculateButton => btnCalculate;
+        public event EventHandler SpotsSettingsChanged;
+        public Button CalculateButton => btnCalculate; 
+        public Button ExcelButton => btnExcel;
         public NumericUpDown ManagerDiscountNum => nmManagerDiscount;
+        public Label TotalBeforePackageDiscount => lblTotalBeforePackageDiscount;
+        public Label PackageDiscount => lblPackageDiscount;
+        public Label TotalAfterPackageDiscount => lblTotalAfterPackageDiscount; 
+
 
         public RollerPositions SelectedPosition
         {
@@ -22,6 +25,15 @@ namespace Merlin.Controls
             {
                 if (cbPosition.SelectedValue == null) return RollerPositions.Undefined;
                 return (RollerPositions)Convert.ToInt32(cbPosition.SelectedValue);
+            }
+        }
+
+        public string SelectedPositionName
+        {
+            get
+            {
+                var text = cbPosition.Text;
+                return string.IsNullOrWhiteSpace(text) ? SelectedPosition.ToString() : text;
             }
         }
 
@@ -33,32 +45,9 @@ namespace Merlin.Controls
             rbEvenOdd.CheckedChanged += ScheduleMode_CheckedChanged;
         }
 
-        protected override void OnLoad(EventArgs e)
-        {
-            base.OnLoad(e);
-
-            if (DesignMode) return; // чтобы дизайнер не лез в БД
-
-            LoadCities();
-            SetManagerDiscount();
-
-            InitPositions();
-
-            rbDaysOfWeek.Checked = true;
-            UpdateSchedulePatternEnabledState();
-
-            dtEnd.Value = dtStart.Value.AddMonths(1);
-        }
-
         private void InitPositions()
         {
-            var items = new List<KeyValuePair<int, string>>
-            {
-                new KeyValuePair<int, string>((int)RollerPositions.Undefined, "без позиции"),
-                new KeyValuePair<int, string>((int)RollerPositions.First, "первый"),
-                new KeyValuePair<int, string>((int)RollerPositions.Second, "второй"),
-                new KeyValuePair<int, string>((int)RollerPositions.Last, "последний"),
-            };
+            var items = Issue.GetRollerPositionItems();
 
             cbPosition.BeginUpdate();
             try
@@ -82,6 +71,11 @@ namespace Merlin.Controls
             PositionChanged?.Invoke(this, EventArgs.Empty);
         }
 
+        private void OnSpotsSettingsChanged(object sender, EventArgs e)
+        {
+            SpotsSettingsChanged?.Invoke(this, EventArgs.Empty);
+        }
+
         private void ScheduleMode_CheckedChanged(object sender, EventArgs e)
         {
             UpdateSchedulePatternEnabledState();
@@ -92,7 +86,7 @@ namespace Merlin.Controls
             bool useDaysOfWeek = rbDaysOfWeek.Checked;
 
             flpDays.Enabled = useDaysOfWeek;
-            groupBox1.Enabled = !useDaysOfWeek;
+            flpOdds.Enabled = !useDaysOfWeek;
         }
 
         private void SetManagerDiscount()
@@ -139,6 +133,8 @@ namespace Merlin.Controls
                 return Convert.ToInt32(cbCity.SelectedValue);
             }
         }
+
+        public string MassmediaGroupName => cbCity.Text;
 
         public DateTime DateFrom => dtStart.Value.Date;
         public DateTime DateTo => dtEnd.Value.Date;
@@ -188,11 +184,24 @@ namespace Merlin.Controls
             return DaysOfWeekChecked.Any(x => x);
         }
 
-        public void DisplayTotal(decimal totalBeforePackageDiscount, decimal packageDiscount, decimal totalAfterPackage)
+        protected override void OnLoad(EventArgs e)
         {
-            lblTotalBeforePackageDiscount.Text = "По радиостанциям: " + totalBeforePackageDiscount.ToString("c");
-            lblPackageDiscount.Text = "Пакетная скидка: " + packageDiscount.ToString("N2");
-            lblTotalAfterPackageDiscount.Text = "Итог: " + totalAfterPackage.ToString("c");
+            base.OnLoad(e);
+            if (DesignMode) return;
+            LoadCities();
+            SetManagerDiscount();
+            InitPositions();
+
+            // подписки на изменения количеств выходов
+            nudPrimeWeekday.ValueChanged += OnSpotsSettingsChanged;
+            nudNonPrimeWeekday.ValueChanged += OnSpotsSettingsChanged;
+            numPrimeWeekend.ValueChanged += OnSpotsSettingsChanged;
+            numNonPrimeWeekend.ValueChanged += OnSpotsSettingsChanged;
+
+            rbDaysOfWeek.Checked = true;
+            UpdateSchedulePatternEnabledState();
+
+            dtEnd.Value = dtStart.Value.AddMonths(1);
         }
     }
 }

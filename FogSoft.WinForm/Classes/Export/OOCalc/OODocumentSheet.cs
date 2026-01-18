@@ -154,13 +154,13 @@ namespace FogSoft.WinForm.Classes.Export.OOCalc
 
 		public void SetAutoFitCells()
 		{
-            SetAutoFitCells(0, rightColumn);
+            SetAutoFitCells(1, rightColumn);
 		}
 
         public void SetAutoFitCells(int left, int right)
         {
             XColumnRowRange columns = (XColumnRowRange)sheet;
-            for (int i = left; i <= right; i++)
+            for (int i = left - 1; i <= right - 1; i++)
             {
                 XPropertySet column = (XPropertySet)columns.getColumns().getByIndex(i).Value;
                 column.setPropertyValue("OptimalWidth", new Any(true));
@@ -219,7 +219,19 @@ namespace FogSoft.WinForm.Classes.Export.OOCalc
 
         public double GetColumnWidth(int columnIndex)
         {
-			return 0;
+			throw new NotImplementedException();
+        }
+
+        public void SetColumnNumberFormat(int columnIndex, string format)
+        {
+            throw new NotImplementedException();
+        }
+
+        public void SetWrapText(int top, int left, int bottom, int right, bool wrap)
+        {
+            SetCorrectSize(ref bottom, ref top, ref right, ref left);
+            XPropertySet set = (XPropertySet)sheet.getCellRangeByPosition(left - 1, top - 1, right - 1, bottom - 1);
+            set.setPropertyValue("IsTextWrapped", new Any(wrap));
         }
     }
 }

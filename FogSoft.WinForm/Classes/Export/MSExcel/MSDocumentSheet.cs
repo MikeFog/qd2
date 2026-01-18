@@ -59,9 +59,13 @@ namespace FogSoft.WinForm.Classes.Export.MSExcel
 
 		public void SetAutoFitCells(int left, int right)
         {
-        	Range range = worksheet.get_Range(worksheet.Cells[1, left + 1], worksheet.Cells[1, right]);
-        	range.EntireColumn.AutoFit();
-			Marshal.ReleaseComObject(range);
+            int lastRow = worksheet.UsedRange.Rows.Count;
+            if (lastRow < 1) lastRow = 1;
+            int topRow = lastRow > 1 ? 2 : 1;
+
+            Range range = worksheet.get_Range(worksheet.Cells[topRow, left], worksheet.Cells[lastRow, right]);
+            range.EntireColumn.AutoFit();
+            Marshal.ReleaseComObject(range);
         }
 
 		public void SetFormatForCell(int top, int left, int bottom, int right, Type type)
@@ -86,7 +90,37 @@ namespace FogSoft.WinForm.Classes.Export.MSExcel
                 SetRangeFormat(top, left, bottom, right, "h:mm");
         }
 
-		private void SetRangeFormat(int top, int left, int bottom, int right, string format)
+        public void SetColumnWidth(int columnIndex, double width)
+        {
+            Range rg = (Range)worksheet.Columns[columnIndex];
+            rg.ColumnWidth = width;
+            Marshal.ReleaseComObject(rg);
+        }
+
+        public double GetColumnWidth(int columnIndex)
+        {
+            Range rg = (Range)worksheet.Columns[columnIndex];
+
+            double res = (double)rg.ColumnWidth;
+            Marshal.ReleaseComObject(rg);
+            return res;
+        }
+
+        public void SetColumnNumberFormat(int columnIndex, string format)
+        {
+            Range rg = (Range)worksheet.Columns[columnIndex];
+            rg.NumberFormat = format;
+            Marshal.ReleaseComObject(rg);
+        }
+
+        public void SetWrapText(int top, int left, int bottom, int right, bool wrap)
+        {
+            Range rg = worksheet.get_Range(worksheet.Cells[top, left], worksheet.Cells[bottom, right]);
+            rg.WrapText = wrap;
+            Marshal.ReleaseComObject(rg);
+        }
+
+        private void SetRangeFormat(int top, int left, int bottom, int right, string format)
 		{
             Range rg = worksheet.get_Range(worksheet.Cells[top, left], worksheet.Cells[bottom, right]);
             rg.NumberFormat = format;
@@ -149,21 +183,5 @@ namespace FogSoft.WinForm.Classes.Export.MSExcel
 		{
 			return (float) (((double) value/resolution)*72);
 		}
-
-        void IDocumentSheet.SetColumnWidth(int columnIndex, double width)
-        {
-            Range rg = (Range)worksheet.Columns[columnIndex];
-			rg.ColumnWidth = width;
-            Marshal.ReleaseComObject(rg);
-        }
-
-        public double GetColumnWidth(int columnIndex)
-        {
-            Range rg = (Range)worksheet.Columns[columnIndex];
-			
-            double res = (double)rg.ColumnWidth;
-            Marshal.ReleaseComObject(rg);
-            return res;
-        }
     }
 }

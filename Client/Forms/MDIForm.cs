@@ -923,52 +923,52 @@ namespace Merlin.Forms
 
 		private void CheckAnnouncements(object sender, EventArgs e)
 		{
-            
-			PriceCalculatorForm priceCalculatorForm = new PriceCalculatorForm() { MdiParent = this, Icon = Icon };
-			priceCalculatorForm.Show();
-
             /**************************************************************
-            Campaign c = new CampaignOnSingleMassmedia(383269);
-            c.Refresh();
-			c.DoAction("Edit", this, InterfaceObjects.SimpleJournal);
+			var priceCalculatorForm = new PriceCalculatorForm() { MdiParent = this, Icon = Icon };
+			priceCalculatorForm.Show();
+            
 
-             
- ActionOnMassmedia a = new ActionOnMassmedia(173694);
- a.Refresh();
- a.DoAction(Constants.EntityActions.Edit, this, InterfaceObjects.SimpleJournal);
+           Campaign c = new CampaignOnSingleMassmedia(383269);
+           c.Refresh();
+           c.DoAction("Edit", this, InterfaceObjects.SimpleJournal);
 
- return;
 
- CampaignPackModule c2 = new CampaignPackModule(356193);
- c2.Refresh();
- c2.DoAction(Constants.EntityActions.Edit, this, InterfaceObjects.SimpleJournal);
- return;
+ActionOnMassmedia a = new ActionOnMassmedia(173694);
+a.Refresh();
+a.DoAction(Constants.EntityActions.Edit, this, InterfaceObjects.SimpleJournal);
 
- Massmedia massmedia = new Massmedia();
- massmedia["MassmediaId"] = 163;
- massmedia.IsNew = false;
- massmedia.Refresh();
+return;
 
- string fileName = "C:\\Tmp\\1\\";
- GridReportCreator creater = new GridReportCreator(massmedia, new DateTime(2024, 06, 06), null);
- creater.ExportDocument(fileName);
- return;
+CampaignPackModule c2 = new CampaignPackModule(356193);
+c2.Refresh();
+c2.DoAction(Constants.EntityActions.Edit, this, InterfaceObjects.SimpleJournal);
+return;
 
- a = new ActionOnMassmedia(161630);
- a.Refresh();
- a.DoAction(Classes.Action.ActionNames.PrintBillContract, this, InterfaceObjects.SimpleJournal);
- return;
+Massmedia massmedia = new Massmedia();
+massmedia["MassmediaId"] = 163;
+massmedia.IsNew = false;
+massmedia.Refresh();
 
- //ActionOnMassmedia a = new ActionOnMassmedia(161493);
- a.Refresh();
- a.DoAction(Merlin.Classes.Action.ActionNames.PrintBill, this, InterfaceObjects.SimpleJournal);
- return;
- Campaign c = new CampaignOnSingleMassmedia(355658);
+string fileName = "C:\\Tmp\\1\\";
+GridReportCreator creater = new GridReportCreator(massmedia, new DateTime(2024, 06, 06), null);
+creater.ExportDocument(fileName);
+return;
 
- c.Refresh();
- c.ChildEntity = EntityManager.GetEntity((int)Entities.CampaignDay);
- c.DoAction(Campaign.ActionNames.DeleteIssues, this, InterfaceObjects.SimpleJournal);
- */
+a = new ActionOnMassmedia(161630);
+a.Refresh();
+a.DoAction(Classes.Action.ActionNames.PrintBillContract, this, InterfaceObjects.SimpleJournal);
+return;
+
+//ActionOnMassmedia a = new ActionOnMassmedia(161493);
+a.Refresh();
+a.DoAction(Merlin.Classes.Action.ActionNames.PrintBill, this, InterfaceObjects.SimpleJournal);
+return;
+Campaign c = new CampaignOnSingleMassmedia(355658);
+
+c.Refresh();
+c.ChildEntity = EntityManager.GetEntity((int)Entities.CampaignDay);
+c.DoAction(Campaign.ActionNames.DeleteIssues, this, InterfaceObjects.SimpleJournal);
+*/
 
             //ShowTrafficManagement();
             /*

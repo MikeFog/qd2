@@ -124,5 +124,16 @@ namespace Merlin.Classes
 
 		public const int AttributeSelectorShort = 1;
 		public const int AttributeSelectorFull = 2;
+
+        public static List<KeyValuePair<int, string>> GetRollerPositionItems()
+        {
+            return new List<KeyValuePair<int, string>>
+            {
+                new KeyValuePair<int, string>((int)RollerPositions.Undefined, "без позиции"),
+                new KeyValuePair<int, string>((int)RollerPositions.First, "первый"),
+                new KeyValuePair<int, string>((int)RollerPositions.Second, "второй"),
+                new KeyValuePair<int, string>((int)RollerPositions.Last, "последний"),
+            };
+        }
 	}
 }
