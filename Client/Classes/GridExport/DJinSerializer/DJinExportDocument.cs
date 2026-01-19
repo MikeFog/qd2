@@ -1,10 +1,7 @@
 using FogSoft.WinForm.Classes;
 using System;
-using System.Collections.Generic;
 using System.Data;
 using System.IO;
-using System.Linq;
-using static System.Net.Mime.MediaTypeNames;
 
 namespace Merlin.Classes.GridExport.DJinSerializer
 {
@@ -42,14 +39,6 @@ namespace Merlin.Classes.GridExport.DJinSerializer
 		private readonly Random random = new Random(unchecked((int) DateTime.Now.Ticks));
 		private readonly string strAddedPath = string.Format("{{0}}{0}{{1}}.mp3", Path.DirectorySeparatorChar);
 
-		public string RollerString(DataRow row, Massmedia mm, DateTime date, int type) 
-		{
-            var typePreffix = DJinParam.strRoller + $"-type-{type}";
-            var volume = mm.VolumeCStr;
-			var fullPath = GetFullPath(row, mm, date, type);
-			var rollerDurationString = row[ExportParams.rollerDurationString].ToString();
-			return string.Format(DJinParam.strLine2, string.Empty, typePreffix, string.Empty, string.Empty, fullPath, rollerDurationString, volume);
-        }
 				
 		protected override void PrintRoller(Stream file, DataRow row, Massmedia mm, DateTime date, int type, Additional additional)
 		{
@@ -126,14 +115,6 @@ namespace Merlin.Classes.GridExport.DJinSerializer
 				string blockStart = string.Format("B{0}{1}{2}{3}{4}T", block["blockType"], block["notEarly"], block["notLater"], block["openBlock"], block["openPhonogram"]);
 				PrintLine(file, blockStart, string.Empty, ((DateTime) lastBlock).ToString("T"),
 				          blockName, string.Empty, fullDuration);
-
-				// Ищем ролики с типом 4 - их надо разместить ДО входного джингла
-				/*
-                if (_issuesWithRolType4And5 != null && _issuesWithRolType4And5.TryGetValue((((DateTime)lastBlock).ToString("HH:mm"), "4"), out DataRow row))
-                {
-					PrintRoller(file, row, mm, (DateTime)lastBlock, 4, additional);
-                }
-				*/
             }
 
             if ((!additional.NeedInJingle || !additional.NeedOutJingle) || !StringUtil.IsDBNullOrNull(block[ExportParams.description]))
@@ -159,13 +140,6 @@ namespace Merlin.Classes.GridExport.DJinSerializer
 					          string.Empty, mm.VolumeMStr);
 				if (!isExtension)
 				{
-                    // Ищем ролики с типом 5 - их надо разместить ДО входного джингла
-					/*
-                    if (_issuesWithRolType4And5 != null && _issuesWithRolType4And5.TryGetValue((((DateTime)lastBlock).ToString("HH:mm"), "5"), out DataRow row))
-                    {
-                        PrintRoller(file, row, mm, (DateTime)lastBlock, 5, additional);
-                    }
-					*/
                     PrintLine(file, DJinParam.strBlockEnd, string.Empty, ((DateTime) lastBlock).ToString("T"), string.Empty,
 					          string.Empty,
 					          string.Empty);

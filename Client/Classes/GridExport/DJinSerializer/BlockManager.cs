@@ -1,10 +1,8 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Data;
-using System.Globalization;
 using System.IO;
 using System.Linq;
-using System.Text;
 
 namespace Merlin.Classes.GridExport.DJinSerializer
 {
@@ -55,6 +53,10 @@ namespace Merlin.Classes.GridExport.DJinSerializer
             return blocks;
         }
 
+        private static bool IsBtOrBnt(string line) =>
+            line.StartsWith("\"BT\"", StringComparison.OrdinalIgnoreCase) ||
+            line.StartsWith("\"BNT\"", StringComparison.OrdinalIgnoreCase);
+
         private static Block ProcessBlock(Block original)
         {
             var lines = original.Lines;
@@ -63,8 +65,8 @@ namespace Merlin.Classes.GridExport.DJinSerializer
                 return original;
 
             // Buscamos BT y E
-            int btIndex = lines.FindIndex(l => l.StartsWith("\"BT\""));
-            int eIndex = lines.FindIndex(l => l.StartsWith("\"E\""));
+            int btIndex = lines.FindIndex(IsBtOrBnt);
+            int eIndex = lines.FindIndex(l => l.StartsWith("\"E\"", StringComparison.OrdinalIgnoreCase));
 
             if (btIndex == -1 || eIndex == -1 || eIndex <= btIndex)
             {
