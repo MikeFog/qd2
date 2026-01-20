@@ -818,19 +818,7 @@ namespace Merlin.Forms
 					*/
 					entity = Entities.StatsVolumeofRealization;
 					break;
-                case "miStats.VolumeOfRealizationNew":
-					/*
-                    GraphForm frm2 = new GraphForm(new VolumeOfRealizationReportGenerator(), false)
-                    {
-                        MdiParent = Globals.MdiParent,
-                        Text = mi.Text
-                    };
-                    frm2.OnFilterClick += ManagerFilter.FilterClick;
-                    frm2.Show();
-                    return;
-					*/
-					entity = Entities.StatVolumeOfRealiztionNew;
-					break;	
+
                 case "miStats.VolumeOfRealization4Roll":
 					entity = Entities.StatsVolumeofRealization4Rollers;
 					break;
@@ -860,9 +848,6 @@ namespace Merlin.Forms
 				case "miStats.VolumeRealizationByMonth":
 					entity = Entities.StatVolumeOfRealiztionByMonth;
 					break;
-                case "miStats.VolRealizationByMonth2":
-                    entity = Entities.StatVolumeOfRealiztionByMonthNew;
-                    break;
                 case "miStats.ModuleLoading":
 					entity = Entities.StatModuleLoading;
 					caption = "‘актическое размещение рекламных модулей";
