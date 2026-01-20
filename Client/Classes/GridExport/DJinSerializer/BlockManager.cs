@@ -53,10 +53,6 @@ namespace Merlin.Classes.GridExport.DJinSerializer
             return blocks;
         }
 
-        private static bool IsBtOrBnt(string line) =>
-            line.StartsWith("\"BT\"", StringComparison.OrdinalIgnoreCase) ||
-            line.StartsWith("\"BNT\"", StringComparison.OrdinalIgnoreCase);
-
         private static Block ProcessBlock(Block original)
         {
             var lines = original.Lines;
@@ -64,8 +60,8 @@ namespace Merlin.Classes.GridExport.DJinSerializer
             if (lines.Count == 0)
                 return original;
 
-            // Buscamos BT y E
-            int btIndex = lines.FindIndex(IsBtOrBnt);
+            // Buscamos B y E
+            int btIndex = lines.FindIndex(l => l.StartsWith("\"B\"", StringComparison.OrdinalIgnoreCase));
             int eIndex = lines.FindIndex(l => l.StartsWith("\"E\"", StringComparison.OrdinalIgnoreCase));
 
             if (btIndex == -1 || eIndex == -1 || eIndex <= btIndex)
