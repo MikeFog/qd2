@@ -154,8 +154,6 @@ namespace Merlin
         HeadCompanyWithConfirmedActions = 1255,
         HeadCompanyWithUnconfirmedActions = 1256,
         HeadCompanyWithDeletedActions = 1257,
-        StatVolumeOfRealiztionByMonthNew = 1258,
-        StatVolumeOfRealiztionNew = 1260,
     }
 
 	public struct RelationScenarios
