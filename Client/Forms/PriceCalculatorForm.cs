@@ -38,6 +38,7 @@ namespace Merlin.Forms
             // пересчитываем при смене дневных/выходных количеств
             templateEditor.SpotsSettingsChanged += (s, e) => RecalculateFromTemplateInputs();
             templateEditor.DurationChanged += (s, e) => RecalculateFromTemplateInputs();
+            grdPriceCalculator.SummaryUpdater = UpdateSummary;
         }
 
         private void RecalculateFromTemplateInputs()
@@ -63,7 +64,7 @@ namespace Merlin.Forms
 
             // оставить позицию из шаблона и актуальный SummaryUpdater
             //grdPriceCalculator.SetDefaultPosition(templateEditor.SelectedPosition);
-            grdPriceCalculator.SummaryUpdater = UpdateSummary;
+            UpdateSummary();
         }
 
         private void CalculateButton_Click(object sender, EventArgs e)
@@ -108,7 +109,7 @@ namespace Merlin.Forms
                 // ✅ протянуть позицию из шаблона в таблицу грида после пересоздания данных
                 grdPriceCalculator.SetDefaultPosition(templateEditor.SelectedPosition);
 
-                grdPriceCalculator.SummaryUpdater = UpdateSummary;
+                
             }
             catch (Exception ex)
             {
