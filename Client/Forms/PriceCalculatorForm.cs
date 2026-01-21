@@ -37,6 +37,7 @@ namespace Merlin.Forms
 
             // пересчитываем при смене дневных/выходных количеств
             templateEditor.SpotsSettingsChanged += (s, e) => RecalculateFromTemplateInputs();
+            templateEditor.DurationChanged += (s, e) => RecalculateFromTemplateInputs();
         }
 
         private void RecalculateFromTemplateInputs()
@@ -61,7 +62,7 @@ namespace Merlin.Forms
             );
 
             // оставить позицию из шаблона и актуальный SummaryUpdater
-            grdPriceCalculator.SetDefaultPosition(templateEditor.SelectedPosition);
+            //grdPriceCalculator.SetDefaultPosition(templateEditor.SelectedPosition);
             grdPriceCalculator.SummaryUpdater = UpdateSummary;
         }
 
@@ -266,8 +267,6 @@ namespace Merlin.Forms
             _lastPackageDiscount = packageDiscount;
             _lastTotalAfterPackage = totalAfterPackage;
 
-            templateEditor.TotalBeforePackageDiscount.Text = "По радиостанциям: " + totalBeforePackageDiscount.ToString("c");
-            templateEditor.PackageDiscount.Text = "Пакетная скидка: " + packageDiscount.ToString("N2");
             templateEditor.TotalAfterPackageDiscount.Text = "Итог: " + totalAfterPackage.ToString("c");
         }
 
@@ -303,62 +302,54 @@ namespace Merlin.Forms
             {
                 doc.StartExport();
                 var sheet = doc.GetNewSheet("Отмеченные", "Arial", 10);
-                var cols = dt.Columns.Cast<DataColumn>().ToList();
 
+                int currentRow = 1;
+                sheet.SetCellValue(currentRow, 1, "Параметры расчета:");
+                sheet.SetBoldForRange(currentRow, 1, currentRow, 1);
+                currentRow++;
+
+                sheet.SetCellValue(currentRow++, 1, "Город: " + templateEditor.MassmediaGroupName);
+                sheet.SetCellValue(currentRow++, 1, string.Format("Период: {0:d} - {1:d}", templateEditor.DateFrom, templateEditor.DateTo));
+                sheet.SetCellValue(currentRow++, 1, "График: " + BuildScheduleDescription());
+                
+                sheet.SetCellValue(currentRow++, 1, "Количество рекламных выпусков:" + grdPriceCalculator.GetTotalSpots());
+                sheet.SetCellValue(currentRow++, 1, "Хронометраж эфирного времени:" + grdPriceCalculator.GetTotalSeconds());
+
+                // Теперь таблица с данными
+                currentRow += 1; // одна пустая строка
                 // заголовки
+                var cols = dt.Columns.Cast<DataColumn>().ToList();
+                int headerRow = currentRow;
                 for (int c = 0; c < cols.Count; c++)
                 {
                     var name = cols[c].ColumnName;
                     var header = headers != null && headers.ContainsKey(name) ? headers[name] : name;
-                    sheet.SetCellValue(1, c + 1, header);
+                    sheet.SetCellValue(headerRow, c + 1, header);
                     if (_columnsWithMoney.Contains(header))
                         sheet.SetColumnNumberFormat(c + 1, "#,##0.00");
                 }
+                currentRow = headerRow + 1;
 
                 // данные
                 for (int r = 0; r < dt.Rows.Count; r++)
                 {
                     var row = dt.Rows[r];
                     for (int c = 0; c < cols.Count; c++)
-                        sheet.SetCellValue(r + 2, c + 1, row[c]);
+                    {
+                        sheet.SetCellValue(currentRow, c + 1, row[c]);
+                    }
+                    currentRow++;
                 }
 
-                sheet.SetBoldForRange(1, 1, 1, cols.Count);
-                sheet.SetBordersStyles(1, 1, dt.Rows.Count + 1, cols.Count, true);
-
-                int currentRow = dt.Rows.Count + 3; // пустая строка перед итогами
-
-                //sheet.SetCellValue(currentRow++, 1, "По радиостанциям: " + _lastTotalBeforePackageDiscount.ToString("c"));
-                sheet.SetCellValue(currentRow++, 1,
-                    "Пакетная скидка: " + _lastPackageDiscount.ToString("N2"));
-                sheet.SetCellValue(currentRow++, 1,
-                    "Итог: " + _lastTotalAfterPackage.ToString("c"));
-
-                currentRow += 1; // одна пустая строка после таблицы
-
-                sheet.SetCellValue(currentRow, 1, "Параметры расчета:");
-                sheet.SetBoldForRange(currentRow, 1, currentRow, 1);
+                sheet.SetBoldForRange(headerRow, 1, headerRow, cols.Count);
+                // выделяем жирным всю последнюю колонку (заголовок + данные)
+                sheet.SetBoldForRange(headerRow, cols.Count, headerRow + dt.Rows.Count, cols.Count);
+                sheet.SetBordersStyles(headerRow, 1, headerRow + dt.Rows.Count, cols.Count, true);
+                int totalRow = currentRow;
+                sheet.SetCellValue(totalRow, cols.Count-1, "Итог: ");
+                sheet.SetCellValue(totalRow, cols.Count,  _lastTotalAfterPackage);
+                sheet.SetBoldForRange(totalRow, cols.Count, totalRow, cols.Count);
                 currentRow++;
-
-                sheet.SetCellValue(currentRow++, 1, "Город/группа СМИ: " + templateEditor.MassmediaGroupName);
-                sheet.SetCellValue(currentRow++, 1,
-                    string.Format("Период: {0:d} - {1:d}", templateEditor.DateFrom, templateEditor.DateTo));
-                sheet.SetCellValue(currentRow++, 1,
-                    "Длительность ролика (сек): " + templateEditor.DurationSec);
-                sheet.SetCellValue(currentRow++, 1,
-                    string.Format("Выходы будни прайм/непрайм: {0} / {1}",
-                        templateEditor.PrimePerDayWeekday, templateEditor.NonPrimePerDayWeekday));
-                sheet.SetCellValue(currentRow++, 1,
-                    string.Format("Выходы выходные прайм/непрайм: {0} / {1}",
-                        templateEditor.PrimePerDayWeekend, templateEditor.NonPrimePerDayWeekend));
-                sheet.SetCellValue(currentRow++, 1,
-                    "Скидка менеджера: " + templateEditor.ManagerDiscount.ToString("N2"));
-                sheet.SetCellValue(currentRow++, 1,
-                    "Позиция: " + templateEditor.SelectedPositionName);
-                sheet.SetCellValue(currentRow++, 1,
-                    "График: " + BuildScheduleDescription());
-
-
 
                 int lastRow = currentRow - 1;
 

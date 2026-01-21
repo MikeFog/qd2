@@ -11,13 +11,11 @@ namespace Merlin.Controls
     {
         public event EventHandler PositionChanged;
         public event EventHandler SpotsSettingsChanged;
+        public event EventHandler DurationChanged;
         public Button CalculateButton => btnCalculate; 
         public Button ExcelButton => btnExcel;
         public NumericUpDown ManagerDiscountNum => nmManagerDiscount;
-        public Label TotalBeforePackageDiscount => lblTotalBeforePackageDiscount;
-        public Label PackageDiscount => lblPackageDiscount;
         public Label TotalAfterPackageDiscount => lblTotalAfterPackageDiscount; 
-
 
         public RollerPositions SelectedPosition
         {
@@ -71,10 +69,11 @@ namespace Merlin.Controls
             PositionChanged?.Invoke(this, EventArgs.Empty);
         }
 
-        private void OnSpotsSettingsChanged(object sender, EventArgs e)
-        {
+        private void OnSpotsSettingsChanged(object sender, EventArgs e) =>
             SpotsSettingsChanged?.Invoke(this, EventArgs.Empty);
-        }
+
+        private void OnDurationChanged(object sender, EventArgs e) =>
+            DurationChanged?.Invoke(this, EventArgs.Empty);
 
         private void ScheduleMode_CheckedChanged(object sender, EventArgs e)
         {
@@ -197,6 +196,8 @@ namespace Merlin.Controls
             nudNonPrimeWeekday.ValueChanged += OnSpotsSettingsChanged;
             numPrimeWeekend.ValueChanged += OnSpotsSettingsChanged;
             numNonPrimeWeekend.ValueChanged += OnSpotsSettingsChanged;
+
+            nudDuration.ValueChanged += OnDurationChanged;
 
             rbDaysOfWeek.Checked = true;
             UpdateSchedulePatternEnabledState();
