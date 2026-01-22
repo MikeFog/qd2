@@ -529,7 +529,8 @@ namespace Merlin.Classes
             decimal discount = 1 - (tariffPriceTotal == 0 ? 1 : (priceTotal / tariffPriceTotal));
             if (!_printSettings.HideTariffPrice)
 			{
-				SetCellValue(currentY++, 3, $"Стоимость спланированной рекламы: {priceTotal:c}");
+                if (discount == decimal.Zero)
+                    SetCellValue(currentY++, 3, $"Стоимость спланированной рекламы: {priceTotal:c}");
 				SetCellValue(currentY++, 3, $"Стоимость спланированной рекламы по тарифам: {tariffPriceTotal:c}");
 
 				if (discount != decimal.Zero)
@@ -638,7 +639,7 @@ namespace Merlin.Classes
                         
 			RotateCellsWithDate(left, data.GetLength(1));
 			currentY += rowsCount + 5;
-            activeSheet.SetAutoFitCells(left - 1, (left - 1) + dateColumns.Count);
+			activeSheet.SetAutoFitCells(left, left + dateColumns.Count);
 
 			if (campaignType == Campaign.CampaignTypes.Sponsor)
 			{
