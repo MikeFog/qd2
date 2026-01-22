@@ -61,7 +61,7 @@ namespace Merlin.Classes.GridExport.DJinSerializer
                 return original;
 
             // Buscamos B y E
-            int btIndex = lines.FindIndex(l => l.StartsWith("\"B\"", StringComparison.OrdinalIgnoreCase));
+            int btIndex = lines.FindIndex(l => l.StartsWith("\"B", StringComparison.OrdinalIgnoreCase));
             int eIndex = lines.FindIndex(l => l.StartsWith("\"E\"", StringComparison.OrdinalIgnoreCase));
 
             if (btIndex == -1 || eIndex == -1 || eIndex <= btIndex)
