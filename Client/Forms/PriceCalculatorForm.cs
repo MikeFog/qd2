@@ -86,6 +86,7 @@ namespace Merlin.Forms
                 UseWaitCursor = true;
                 Cursor.Current = Cursors.WaitCursor;
                 Application.DoEvents();
+                templateEditor.TotalAfterPackageDiscount.Text = "Итог: ";
 
                 grdPriceCalculator.LoadData(templateEditor.MassmediaGroupId, templateEditor.DateFrom, templateEditor.DateTo);
 
@@ -108,8 +109,6 @@ namespace Merlin.Forms
 
                 // ✅ протянуть позицию из шаблона в таблицу грида после пересоздания данных
                 grdPriceCalculator.SetDefaultPosition(templateEditor.SelectedPosition);
-
-                
             }
             catch (Exception ex)
             {

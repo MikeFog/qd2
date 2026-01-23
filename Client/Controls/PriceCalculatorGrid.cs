@@ -28,9 +28,6 @@ namespace Merlin.Controls
         private DataGridViewCell _pendingTargetCell; // <--- Здесь
         private int _lastDataColumnIndex = -1; // колонка для удержания фокуса при стрелках
         private bool _skipCellEndEdit;
-        private bool _suppressSummaryUpdate;
-        private bool _primeTotalsMerged;
-        private bool _nonPrimeTotalsMerged;
         private readonly Dictionary<string, string> _defaultColumnHeaders = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
 
         public System.Action SummaryUpdater { get; set; }
@@ -69,12 +66,13 @@ namespace Merlin.Controls
 
             dgvStations.CellValidating += DgvStations_CellValidating;
 
-            // Коммитим "грязные" значения (checkbox/combobox) сразу,
-            // но НЕ пересчитываем тут
+            // Коммитим сразу только checkbox/combobox, текстовые не трогаем
             dgvStations.CurrentCellDirtyStateChanged += (s, e) =>
             {
                 if (!dgvStations.IsCurrentCellDirty) return;
-                dgvStations.CommitEdit(DataGridViewDataErrorContexts.Commit);
+                var cell = dgvStations.CurrentCell;
+                if (cell is DataGridViewCheckBoxCell || cell is DataGridViewComboBoxCell)
+                    dgvStations.CommitEdit(DataGridViewDataErrorContexts.Commit);
             };
 
             // ✅ ЕДИНАЯ точка пересчета для всех редактируемых колонок
@@ -369,18 +367,13 @@ namespace Merlin.Controls
                 Name = "colTotalAfterPackage",
                 HeaderText = "Итог",
                 DataPropertyName = "TotalAfterPackage",
-                Width = NumericColWidth,
+                Width = NumericColWidth+50,
                 DefaultCellStyle = { Format = "c", Alignment = DataGridViewContentAlignment.MiddleRight },
                 ReadOnly = true
             });
 
-            // ❌ убираем принудительное NotSortable
-            // foreach (DataGridViewColumn col in dgvStations.Columns)
-            //     col.SortMode = DataGridViewColumnSortMode.NotSortable;
-
             CaptureDefaultColumnHeaders();
             InitHeaderCheckbox();
-            dgvStations.CellFormatting += DgvStations_CellFormatting;
 
             dgvStations.KeyDown += (s, e) =>
             {
@@ -1023,7 +1016,6 @@ namespace Merlin.Controls
                 });
             });
 
-            _suppressSummaryUpdate = true;
             _suppressRecalc = true;
             try
             {
@@ -1054,9 +1046,8 @@ namespace Merlin.Controls
                 _suppressRecalc = false;
             }
 
-            _bindingSource.ResetBindings(false);
+            //_bindingSource.ResetBindings(false);
             //dgvStations.Invalidate();
-            _suppressSummaryUpdate = false;
         }
 
         private static decimal GetCompanyDiscount(int massmediaId, DateTime startDate, decimal tariffPrice)
@@ -1412,16 +1403,47 @@ namespace Merlin.Controls
             if (SummaryTable == null || SummaryTable.Rows.Count == 0)
                 return;
 
-            _primeTotalsMerged = false;
-            _nonPrimeTotalsMerged = false;
+            // Все четыре одинаковые -> одна колонка
+            bool allMerged =
+                PriceColumnsEqual("PrimePricePerSecWeekday", "PrimePricePerSecWeekend") &&
+                PriceColumnsEqual("PrimePricePerSecWeekday", "NonPrimePricePerSecWeekday") &&
+                PriceColumnsEqual("PrimePricePerSecWeekday", "NonPrimePricePerSecWeekend");
 
+            if (allMerged)
+            {
+                SetColumnLayout("colPrimeWeekday", true, "Цена");
+                SetColumnLayout("colPrimeWeekend", false);
+                SetColumnLayout("colNonPrimeWeekday", false);
+                SetColumnLayout("colNonPrimeWeekend", false);
+                return;
+            }
+
+            // 1) обычное слияние прайм и не прайм по будни/выходные
             bool primeMerged = PriceColumnsEqual("PrimePricePerSecWeekday", "PrimePricePerSecWeekend");
             bool nonPrimeMerged = PriceColumnsEqual("NonPrimePricePerSecWeekday", "NonPrimePricePerSecWeekend");
 
-            //primeMerged = nonPrimeMerged = false;
+            if (primeMerged || nonPrimeMerged)
+            {
+                ApplyPrimeLayout(primeMerged);
+                ApplyNonPrimeLayout(nonPrimeMerged);
+                return;
+            }
 
-            ApplyPrimeLayout(primeMerged);
-            ApplyNonPrimeLayout(nonPrimeMerged);
+            // 2) альтернативное слияние: прайм с не-прайм по будним и по выходным
+            bool crossWeekdayMerged = PriceColumnsEqual("PrimePricePerSecWeekday", "NonPrimePricePerSecWeekday");
+            bool crossWeekendMerged = PriceColumnsEqual("PrimePricePerSecWeekend", "NonPrimePricePerSecWeekend");
+
+            if (crossWeekdayMerged)
+            {
+                SetColumnLayout("colPrimeWeekday", true, "Цена будни");
+                SetColumnLayout("colNonPrimeWeekday", false);
+            }
+
+            if (crossWeekendMerged)
+            {
+                SetColumnLayout("colPrimeWeekend", true, "Цена выходные");
+                SetColumnLayout("colNonPrimeWeekend", false);
+            }
         }
 
         private void ResetPriceColumnLayout()
@@ -1440,32 +1462,18 @@ namespace Merlin.Controls
         private void ApplyPrimeLayout(bool merged)
         {
             if (!merged) return;
-
-            _primeTotalsMerged = true;
-
-            // цены
-            SetColumnLayout("colPrimeWeekday", true, "Прайм");
+            // сжимаем только цены
+            SetColumnLayout("colPrimeWeekday", true, "Цена прайм");
             SetColumnLayout("colPrimeWeekend", false);
-
-            // количества: показываем сумму в колонке будни, выходные скрываем
-            SetColumnLayout("colPrimeTotalSpotsWeekday", true, "Кол-во выходов прайм");
-            SetColumnLayout("colPrimeTotalSpotsWeekend", false);
-            // редактирование разрешено; значение будет продублировано в скрытую выходную колонку
-         }
+        }
 
         private void ApplyNonPrimeLayout(bool merged)
         {
             if (!merged) return;
-
-            _nonPrimeTotalsMerged = true;
-
-            SetColumnLayout("colNonPrimeWeekday", true, "Не прайм");
+            // сжимаем только цены
+            SetColumnLayout("colNonPrimeWeekday", true, "Цена не прайм");
             SetColumnLayout("colNonPrimeWeekend", false);
-
-            SetColumnLayout("colNonPrimeTotalSpotsWeekday", true, "Кол-во выходов не прайм");
-            SetColumnLayout("colNonPrimeTotalSpotsWeekend", false);
-            // редактирование разрешено; значение будет продублировано в скрытую выходную колонку
-         }
+        }
 
         private void SetColumnLayout(string columnName, bool visible, string customHeader = null)
         {
@@ -1481,50 +1489,13 @@ namespace Merlin.Controls
                 column.HeaderText = header;
         }
 
-        private void SetColumnReadOnly(string columnName, bool readOnly)
-        {
-            var col = dgvStations.Columns[columnName];
-            if (col != null)
-                col.ReadOnly = readOnly;
-        }
-
-        private void DgvStations_CellFormatting(object sender, DataGridViewCellFormattingEventArgs e)
-        {
-            if (e.RowIndex < 0) return;
-            var colName = dgvStations.Columns[e.ColumnIndex].Name;
-            var drv = dgvStations.Rows[e.RowIndex].DataBoundItem as DataRowView;
-            if (drv == null) return;
-
-            if (_primeTotalsMerged && colName == "colPrimeTotalSpotsWeekday")
-            {
-                int wd = SafeInt(drv["PrimeTotalSpotsWeekday"], 0, int.MaxValue);
-                int we = SafeInt(drv["PrimeTotalSpotsWeekend"], 0, int.MaxValue);
-                e.Value = (wd + we).ToString("N0");
-                e.FormattingApplied = true;
-            }
-            else if (_nonPrimeTotalsMerged && colName == "colNonPrimeTotalSpotsWeekday")
-            {
-                int wd = SafeInt(drv["NonPrimeTotalSpotsWeekday"], 0, int.MaxValue);
-                int we = SafeInt(drv["NonPrimeTotalSpotsWeekend"], 0, int.MaxValue);
-                e.Value = (wd + we).ToString("N0");
-                e.FormattingApplied = true;
-            }
-            if (_primeTotalsMerged && colName == "colPrimeTotalSpotsWeekday")
-            {
-                int wd = SafeInt(drv["PrimeTotalSpotsWeekday"], 0, int.MaxValue);
-                e.Value = wd.ToString("N0");
-                e.FormattingApplied = true;
-            }
-            else if (_nonPrimeTotalsMerged && colName == "colNonPrimeTotalSpotsWeekday")
-            {
-                int wd = SafeInt(drv["NonPrimeTotalSpotsWeekday"], 0, int.MaxValue);
-                e.Value = wd.ToString("N0");
-                e.FormattingApplied = true;
-            }
-        }
-
         private bool PriceColumnsEqual(string leftColumn, string rightColumn)
         {
+            if (SummaryTable == null) return false;
+            if (!SummaryTable.Columns.Contains(leftColumn) ||
+                !SummaryTable.Columns.Contains(rightColumn))
+                return false;
+
             foreach (DataRow row in SummaryTable.Rows)
             {
                 decimal? left = ReadNullableDecimal(row[leftColumn]);
@@ -1601,7 +1572,7 @@ namespace Merlin.Controls
         }
 
         // Суммарное количество выходов по всем строкам (optional: только выбранные)
-        public int GetTotalSpots(bool onlySelected = false)
+        public int GetTotalSpots(bool onlySelected = true)
         {
             int total = 0;
             foreach (DataGridViewRow row in dgvStations.Rows)
@@ -1615,7 +1586,7 @@ namespace Merlin.Controls
         }
 
         // Общее время (в секундах) = сумма (кол-во выходов по строке * длительность ролика), опционально только выбранные
-        public int GetTotalSeconds(bool onlySelected = false)
+        public int GetTotalSeconds(bool onlySelected = true)
         {
             int totalSeconds = 0;
             foreach (DataGridViewRow row in dgvStations.Rows)

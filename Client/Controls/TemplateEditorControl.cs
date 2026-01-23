@@ -26,15 +26,6 @@ namespace Merlin.Controls
             }
         }
 
-        public string SelectedPositionName
-        {
-            get
-            {
-                var text = cbPosition.Text;
-                return string.IsNullOrWhiteSpace(text) ? SelectedPosition.ToString() : text;
-            }
-        }
-
         public TemplateEditorControl()
         {
             InitializeComponent();
@@ -134,13 +125,11 @@ namespace Merlin.Controls
         }
 
         public string MassmediaGroupName => cbCity.Text;
-
         public DateTime DateFrom => dtStart.Value.Date;
         public DateTime DateTo => dtEnd.Value.Date;
         public int DurationSec => Convert.ToInt32(nudDuration.Value);
         public int PrimePerDayWeekday => Convert.ToInt32(nudPrimeWeekday.Value);
         public int NonPrimePerDayWeekday => Convert.ToInt32(nudNonPrimeWeekday.Value);
-
         public int PrimePerDayWeekend => Convert.ToInt32(numPrimeWeekend.Value);
         public int NonPrimePerDayWeekend => Convert.ToInt32(numNonPrimeWeekend.Value);
 
