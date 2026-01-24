@@ -1,0 +1,11 @@
+﻿CREATE TABLE [dbo].[Studio] (
+    [studioID] SMALLINT NOT NULL,
+    [isActive] BIT      CONSTRAINT [DF__studio__isActive__039C5DE8] DEFAULT (1) NOT NULL,
+    CONSTRAINT [PK_Studio] PRIMARY KEY NONCLUSTERED ([studioID] ASC) WITH (FILLFACTOR = 90),
+    CONSTRAINT [UIX_Studio_name] UNIQUE CLUSTERED ([studioID] ASC) WITH (FILLFACTOR = 90)
+);
+
+
+GO
+ALTER TABLE [dbo].[Studio] SET (LOCK_ESCALATION = AUTO);
+

@@ -1,0 +1,18 @@
+﻿CREATE TABLE [dbo].[Bank] (
+    [bankId]     SMALLINT       IDENTITY (1, 1) NOT NULL,
+    [name]       NVARCHAR (255) NOT NULL,
+    [bik]        VARCHAR (32)   NOT NULL,
+    [corAccount] VARCHAR (32)   NOT NULL,
+    CONSTRAINT [PK_bank] PRIMARY KEY NONCLUSTERED ([bankId] ASC) WITH (FILLFACTOR = 90),
+    CONSTRAINT [UK_Bank_name] UNIQUE NONCLUSTERED ([name] ASC) WITH (FILLFACTOR = 90)
+);
+
+
+GO
+ALTER TABLE [dbo].[Bank] SET (LOCK_ESCALATION = AUTO);
+
+
+GO
+CREATE UNIQUE NONCLUSTERED INDEX [UIX_Bank_BIK]
+    ON [dbo].[Bank]([bik] ASC);
+

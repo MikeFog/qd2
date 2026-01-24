@@ -1,0 +1,3 @@
+﻿CREATE LOGIN [AdvertAgUser]
+    WITH PASSWORD = N'gog|vCp{era$U.l{tcecrm4smsFT7_&#$!~<{if2|{|yr.Fm', SID = 0x90ECFAA8657F3746919025633058D7B0, DEFAULT_LANGUAGE = [русский], CHECK_POLICY = OFF;
+

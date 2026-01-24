@@ -1,0 +1,5 @@
+﻿CREATE PROC [dbo].[BrandFilter]
+WITH EXECUTE AS OWNER
+AS
+SET NOCOUNT ON
+EXEC Firms

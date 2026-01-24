@@ -1,6 +1,6 @@
 Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio Version 18
-VisualStudioVersion = 18.0.11018.127 d18.0
+VisualStudioVersion = 18.0.11018.127
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "FogSoft.WinForm", "FogSoft.WinForm\FogSoft.WinForm.csproj", "{1EBF7BA7-1185-4E37-AFA7-F1B395B94CE5}"
 EndProject
@@ -14,6 +14,8 @@ EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Microsoft.ApplicationBlocks.Data", "Microsoft.ApplicationBlocks.Data\Microsoft.ApplicationBlocks.Data.csproj", "{30933672-466E-4F67-A111-ABF267539146}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ConnectionStringsProtector", "ConnectionStringsProtector\ConnectionStringsProtector.csproj", "{22C5CAEB-2CC4-4DC2-ADCE-488AFAC06906}"
+EndProject
+Project("{00D1A9C2-B5F0-4AF3-8072-F6C62B433612}") = "ArtvisDB", "ArtvisDB\ArtvisDB.sqlproj", "{764086BA-E75E-4E38-B80A-EC279AFA79F8}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -63,6 +65,18 @@ Global
 		{22C5CAEB-2CC4-4DC2-ADCE-488AFAC06906}.Release|Any CPU.Build.0 = Release|Any CPU
 		{22C5CAEB-2CC4-4DC2-ADCE-488AFAC06906}.Release|x86.ActiveCfg = Release|Any CPU
 		{22C5CAEB-2CC4-4DC2-ADCE-488AFAC06906}.Release|x86.Build.0 = Release|Any CPU
+		{764086BA-E75E-4E38-B80A-EC279AFA79F8}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{764086BA-E75E-4E38-B80A-EC279AFA79F8}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{764086BA-E75E-4E38-B80A-EC279AFA79F8}.Debug|Any CPU.Deploy.0 = Debug|Any CPU
+		{764086BA-E75E-4E38-B80A-EC279AFA79F8}.Debug|x86.ActiveCfg = Debug|Any CPU
+		{764086BA-E75E-4E38-B80A-EC279AFA79F8}.Debug|x86.Build.0 = Debug|Any CPU
+		{764086BA-E75E-4E38-B80A-EC279AFA79F8}.Debug|x86.Deploy.0 = Debug|Any CPU
+		{764086BA-E75E-4E38-B80A-EC279AFA79F8}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{764086BA-E75E-4E38-B80A-EC279AFA79F8}.Release|Any CPU.Build.0 = Release|Any CPU
+		{764086BA-E75E-4E38-B80A-EC279AFA79F8}.Release|Any CPU.Deploy.0 = Release|Any CPU
+		{764086BA-E75E-4E38-B80A-EC279AFA79F8}.Release|x86.ActiveCfg = Release|Any CPU
+		{764086BA-E75E-4E38-B80A-EC279AFA79F8}.Release|x86.Build.0 = Release|Any CPU
+		{764086BA-E75E-4E38-B80A-EC279AFA79F8}.Release|x86.Deploy.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

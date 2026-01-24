@@ -1,0 +1,15 @@
+﻿CREATE TABLE [dbo].[Brand] (
+    [brandID] SMALLINT      IDENTITY (1, 1) NOT NULL,
+    [name]    NVARCHAR (64) NOT NULL,
+    CONSTRAINT [PK_Brand] PRIMARY KEY NONCLUSTERED ([brandID] ASC) WITH (FILLFACTOR = 90)
+);
+
+
+GO
+ALTER TABLE [dbo].[Brand] SET (LOCK_ESCALATION = AUTO);
+
+
+GO
+CREATE UNIQUE CLUSTERED INDEX [UIX_Brand_name]
+    ON [dbo].[Brand]([name] ASC) WITH (FILLFACTOR = 90);
+

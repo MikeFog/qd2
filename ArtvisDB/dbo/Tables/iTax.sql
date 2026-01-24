@@ -1,0 +1,10 @@
+﻿CREATE TABLE [dbo].[iTax] (
+    [taxId] NCHAR (10)    NOT NULL,
+    [name]  NVARCHAR (32) NOT NULL,
+    CONSTRAINT [PK_Tax] PRIMARY KEY CLUSTERED ([taxId] ASC) WITH (FILLFACTOR = 90)
+);
+
+
+GO
+ALTER TABLE [dbo].[iTax] SET (LOCK_ESCALATION = AUTO);
+

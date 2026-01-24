@@ -1,0 +1,12 @@
+﻿CREATE TABLE [dbo].[FirmBrand] (
+    [firmID]  SMALLINT NOT NULL,
+    [brandID] SMALLINT NOT NULL,
+    CONSTRAINT [PK_FirmBrand] PRIMARY KEY CLUSTERED ([firmID] ASC, [brandID] ASC) WITH (FILLFACTOR = 90),
+    CONSTRAINT [FK_FirmBrand_Brand] FOREIGN KEY ([brandID]) REFERENCES [dbo].[Brand] ([brandID]) ON DELETE CASCADE,
+    CONSTRAINT [FK_FirmBrand_Firm] FOREIGN KEY ([firmID]) REFERENCES [dbo].[Firm] ([firmID]) ON DELETE CASCADE
+);
+
+
+GO
+ALTER TABLE [dbo].[FirmBrand] SET (LOCK_ESCALATION = AUTO);
+

@@ -6,6 +6,7 @@ using FogSoft.WinForm;
 using FogSoft.WinForm.Classes;
 using FogSoft.WinForm.DataAccess;
 using FogSoft.WinForm.Forms;
+using FogSoft.WinForm.Passport.Forms;
 using Protector.Forms;
 
 namespace Protector.Domain
@@ -65,13 +66,26 @@ namespace Protector.Domain
 					AssignNewUser(actionName, owner, interfaceObject);
 					break;
 
-				default:
+
+				case "SetManagerDiscount":
+					SetManagerDiscount(owner);
+                    break;
+
+
+                default:
 					base.DoAction(actionName, owner, interfaceObject);
 					break;
 			}
 		}
 
-		private void AssignExistingUser(IWin32Window owner)
+		private void SetManagerDiscount(IWin32Window owner)
+		{
+			UserDiscount userDiscount = new UserDiscount();
+			PassportForm passport = userDiscount.GetPassportForm(null);
+			passport.ShowDialog(owner);
+        }
+
+        private void AssignExistingUser(IWin32Window owner)
 		{
 			SelectionForm selector =
 				new SelectionForm(EntityManager.GetEntity((int) Entities.User), "Выбор пользователя");

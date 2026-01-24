@@ -1,0 +1,668 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003" ToolsVersion="4.0">
+  <PropertyGroup>
+    <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
+    <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
+    <Name>ArtvisDB</Name>
+    <SchemaVersion>2.0</SchemaVersion>
+    <ProjectVersion>4.1</ProjectVersion>
+    <ProjectGuid>{764086ba-e75e-4e38-b80a-ec279afa79f8}</ProjectGuid>
+    <DSP>Microsoft.Data.Tools.Schema.Sql.Sql170DatabaseSchemaProvider</DSP>
+    <OutputType>Database</OutputType>
+    <RootPath>
+    </RootPath>
+    <RootNamespace>ArtvisDB</RootNamespace>
+    <AssemblyName>ArtvisDB</AssemblyName>
+    <ModelCollation>1049,CI</ModelCollation>
+    <DefaultFileStructure>BySchemaAndSchemaType</DefaultFileStructure>
+    <DeployToDatabase>True</DeployToDatabase>
+    <TargetFrameworkVersion>v4.7.2</TargetFrameworkVersion>
+    <TargetLanguage>CS</TargetLanguage>
+    <AppDesignerFolder>Properties</AppDesignerFolder>
+    <SqlServerVerification>False</SqlServerVerification>
+    <IncludeCompositeObjects>True</IncludeCompositeObjects>
+    <TargetDatabaseSet>True</TargetDatabaseSet>
+    <DefaultCollation>Cyrillic_General_CI_AS</DefaultCollation>
+    <DefaultFilegroup>PRIMARY</DefaultFilegroup>
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
+    <OutputPath>bin\Release\</OutputPath>
+    <BuildScriptName>$(MSBuildProjectName).sql</BuildScriptName>
+    <TreatWarningsAsErrors>False</TreatWarningsAsErrors>
+    <DebugType>pdbonly</DebugType>
+    <Optimize>true</Optimize>
+    <DefineDebug>false</DefineDebug>
+    <DefineTrace>true</DefineTrace>
+    <ErrorReport>prompt</ErrorReport>
+    <WarningLevel>4</WarningLevel>
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
+    <OutputPath>bin\Debug\</OutputPath>
+    <BuildScriptName>$(MSBuildProjectName).sql</BuildScriptName>
+    <TreatWarningsAsErrors>false</TreatWarningsAsErrors>
+    <DebugSymbols>true</DebugSymbols>
+    <DebugType>full</DebugType>
+    <Optimize>false</Optimize>
+    <DefineDebug>true</DefineDebug>
+    <DefineTrace>true</DefineTrace>
+    <ErrorReport>prompt</ErrorReport>
+    <WarningLevel>4</WarningLevel>
+  </PropertyGroup>
+  <PropertyGroup>
+    <VisualStudioVersion Condition="'$(VisualStudioVersion)' == ''">11.0</VisualStudioVersion>
+    <!-- Default to the v11.0 targets path if the targets file for the current VS version is not found -->
+    <SSDTExists Condition="Exists('$(MSBuildExtensionsPath)\Microsoft\VisualStudio\v$(VisualStudioVersion)\SSDT\Microsoft.Data.Tools.Schema.SqlTasks.targets')">True</SSDTExists>
+    <VisualStudioVersion Condition="'$(SSDTExists)' == ''">11.0</VisualStudioVersion>
+  </PropertyGroup>
+  <Import Condition="'$(SQLDBExtensionsRefPath)' != ''" Project="$(SQLDBExtensionsRefPath)\Microsoft.Data.Tools.Schema.SqlTasks.targets" />
+  <Import Condition="'$(SQLDBExtensionsRefPath)' == ''" Project="$(MSBuildExtensionsPath)\Microsoft\VisualStudio\v$(VisualStudioVersion)\SSDT\Microsoft.Data.Tools.Schema.SqlTasks.targets" />
+  <ItemGroup>
+    <Folder Include="Properties" />
+    <Folder Include="dbo\" />
+    <Folder Include="dbo\Tables\" />
+    <Folder Include="dbo\Views\" />
+    <Folder Include="dbo\Defaults\" />
+    <Folder Include="Security\" />
+    <Folder Include="dbo\Functions\" />
+    <Folder Include="dbo\Stored Procedures\" />
+    <Folder Include="dbo\User Defined Types\" />
+  </ItemGroup>
+  <ItemGroup>
+    <Build Include="dbo\Tables\iMonthName.sql" />
+    <Build Include="dbo\Tables\Tariff.sql" />
+    <Build Include="dbo\Tables\iTax.sql" />
+    <Build Include="dbo\Tables\iEntityRelation.sql" />
+    <Build Include="dbo\Tables\GroupRight.sql" />
+    <Build Include="dbo\Tables\Group.sql" />
+    <Build Include="dbo\Tables\StudioOrderAction.sql" />
+    <Build Include="dbo\Tables\StudioPricelist.sql" />
+    <Build Include="dbo\Tables\Brand.sql" />
+    <Build Include="dbo\Tables\Pricelist.sql" />
+    <Build Include="dbo\Tables\iConfirmationType.sql" />
+    <Build Include="dbo\Tables\iRolType.sql" />
+    <Build Include="dbo\Tables\ConfirmationHistory.sql" />
+    <Build Include="dbo\Tables\Roller.sql" />
+    <Build Include="dbo\Tables\MassMedia.sql" />
+    <Build Include="dbo\Tables\PaymentStudioOrder.sql" />
+    <Build Include="dbo\Tables\UserAdditionRight.sql" />
+    <Build Include="dbo\Tables\Action.sql" />
+    <Build Include="dbo\Tables\iRollerActionType.sql" />
+    <Build Include="dbo\Tables\iMessage.sql" />
+    <Build Include="dbo\Tables\StudioTariff.sql" />
+    <Build Include="dbo\Tables\iStudioTariffType.sql" />
+    <Build Include="dbo\Tables\MassmediaGroup.sql" />
+    <Build Include="dbo\Tables\Firm.sql" />
+    <Build Include="dbo\Tables\UserMassmedia.sql" />
+    <Build Include="dbo\Tables\Bank.sql" />
+    <Build Include="dbo\Tables\ProgramIssue.sql" />
+    <Build Include="dbo\Tables\DisabledWindow.sql" />
+    <Build Include="dbo\Tables\iModules.sql" />
+    <Build Include="dbo\Tables\BlockType.sql" />
+    <Build Include="dbo\Tables\RolStyle.sql" />
+    <Build Include="dbo\Tables\SponsorProgram.sql" />
+    <Build Include="dbo\Tables\iMessageToActivate.sql" />
+    <Build Include="dbo\Tables\FirmBrand.sql" />
+    <Build Include="dbo\Tables\UserDiscount.sql" />
+    <Build Include="dbo\Tables\iTableAlias.sql" />
+    <Build Include="dbo\Tables\HeadCompany.sql" />
+    <Build Include="dbo\Tables\iCampaignType.sql" />
+    <Build Include="dbo\Tables\iInternalVariable.sql" />
+    <Build Include="dbo\Tables\SponsorProgramPricelist.sql" />
+    <Build Include="dbo\Tables\iEntity.sql" />
+    <Build Include="dbo\Tables\iEntityAttribute.sql" />
+    <Build Include="dbo\Tables\TariffUnion.sql" />
+    <Build Include="dbo\Tables\iActionName.sql" />
+    <Build Include="dbo\Tables\ActionMuteRollerAlert.sql" />
+    <Build Include="dbo\Tables\PaymentStudioOrderAction.sql" />
+    <Build Include="dbo\Tables\Campaign.sql" />
+    <Build Include="dbo\Tables\iMessageToSubtitute.sql" />
+    <Build Include="dbo\Tables\Issue.sql" />
+    <Build Include="dbo\Tables\StudioOrder.sql" />
+    <Build Include="dbo\Tables\iStoredProcedure.sql" />
+    <Build Include="dbo\Tables\AgencyTax.sql" />
+    <Build Include="dbo\Tables\PackModule.sql" />
+    <Build Include="dbo\Tables\StudioAgency.sql" />
+    <Build Include="dbo\Tables\Agency.sql" />
+    <Build Include="dbo\Tables\PackModulePriceList.sql" />
+    <Build Include="dbo\Tables\iPassport.sql" />
+    <Build Include="dbo\Tables\User.sql" />
+    <Build Include="dbo\Tables\GroupMember.sql" />
+    <Build Include="dbo\Tables\LogDeletedIssue.sql" />
+    <Build Include="dbo\Tables\iMessageParameter.sql" />
+    <Build Include="dbo\Tables\iIssuePosition.sql" />
+    <Build Include="dbo\Tables\SponsorTariff.sql" />
+    <Build Include="dbo\Tables\iStudioOrderActionStatus.sql" />
+    <Build Include="dbo\Tables\iEntityAction.sql" />
+    <Build Include="dbo\Tables\RollerBrand.sql" />
+    <Build Include="dbo\Tables\Bill.sql" />
+    <Build Include="dbo\Tables\Payment.sql" />
+    <Build Include="dbo\Tables\PaymentAction.sql" />
+    <Build Include="dbo\Tables\Announcement.sql" />
+    <Build Include="dbo\Tables\PaymentType.sql" />
+    <Build Include="dbo\Tables\PackModuleIssue.sql" />
+    <Build Include="dbo\Tables\UserAdditionMenu.sql" />
+    <Build Include="dbo\Tables\ModuleIssue.sql" />
+    <Build Include="dbo\Tables\Module.sql" />
+    <Build Include="dbo\Tables\iPaintingType.sql" />
+    <Build Include="dbo\Tables\TariffWindow.sql" />
+    <Build Include="dbo\Tables\iRelationScenario.sql" />
+    <Build Include="dbo\Tables\iModuleProcedure.sql" />
+    <Build Include="dbo\Tables\StudioOrderBill.sql" />
+    <Build Include="dbo\Tables\GroupMenu.sql" />
+    <Build Include="dbo\Tables\AgencyMassmedia.sql" />
+    <Build Include="dbo\Tables\PackageDiscountMassmedia.sql" />
+    <Build Include="dbo\Tables\TransferLog.sql" />
+    <Build Include="dbo\Tables\iMenu.sql" />
+    <Build Include="dbo\Tables\PackageDiscountPriceList.sql" />
+    <Build Include="dbo\Tables\ModulePriceList.sql" />
+    <Build Include="dbo\Tables\AdvertType.sql" />
+    <Build Include="dbo\Tables\AgencyBillNo.sql" />
+    <Build Include="dbo\Tables\PackageDiscount.sql" />
+    <Build Include="dbo\Tables\ModuleTariff.sql" />
+    <Build Include="dbo\Tables\DiscountRelease.sql" />
+    <Build Include="dbo\Tables\PackModuleContent.sql" />
+    <Build Include="dbo\Tables\Studio.sql" />
+    <Build Include="dbo\Tables\DiscountValue.sql" />
+    <Build Include="dbo\Tables\ReportType.sql" />
+    <Build Include="dbo\Tables\ReportPartText.sql" />
+    <Build Include="dbo\Views\vStudio.sql" />
+    <Build Include="dbo\Views\vUser.sql" />
+    <Build Include="dbo\Views\vMassmedia.sql" />
+    <Build Include="dbo\Views\vRoller.sql" />
+    <Build Include="dbo\Defaults\DF_false.sql" />
+    <Build Include="dbo\Defaults\DF_getdate.sql" />
+    <Build Include="dbo\Defaults\DF_true.sql" />
+    <Build Include="dbo\Defaults\true.sql" />
+    <Build Include="Security\AdvertAgMainRole.sql" />
+    <Build Include="Security\AdvertAgUser.sql" />
+    <Build Include="Security\AdvertAgUser_1.sql" />
+    <Build Include="Security\buh.sql" />
+    <Build Include="Security\artvis.sql" />
+    <Build Include="dbo\Functions\fn_GetTariffTimesWithBroadcast.sql" />
+    <Build Include="dbo\Functions\fn_FindTariffIDForChain.sql" />
+    <Build Include="dbo\Functions\f_SysParamsDateHistorySave.sql" />
+    <Build Include="dbo\Functions\fn_IsRightToViewGroupActions.sql" />
+    <Build Include="dbo\Functions\f_CheckLinkedTariffWindows.sql" />
+    <Build Include="dbo\Functions\fn_GetTariffWindowDateRangeStr.sql" />
+    <Build Include="dbo\Functions\fn_IsRightToViewForeignActions.sql" />
+    <Build Include="dbo\Functions\IsRollerInUseByActivatedAction.sql" />
+    <Build Include="dbo\Functions\f_IsActiveFilter.sql" />
+    <Build Include="dbo\Functions\CheckEmail.sql" />
+    <Build Include="dbo\Functions\fn_IsRightToEditForeignSOActions.sql">
+      <AnsiNulls>Off</AnsiNulls>
+      <QuotedIdentifier>Off</QuotedIdentifier>
+    </Build>
+    <Build Include="dbo\Functions\f_IsActiveChildFilter.sql" />
+    <Build Include="dbo\Functions\fn_IsRightToEditGroupSOActions.sql" />
+    <Build Include="dbo\Functions\f_IsGrantor.sql" />
+    <Build Include="dbo\Functions\fn_IsRightToViewGroupSOActions.sql" />
+    <Build Include="dbo\Functions\fn_IsRightToViewForeignSOActions.sql" />
+    <Build Include="dbo\Functions\MinDate.sql" />
+    <Build Include="dbo\Functions\fn_IsRightToEditForeignActions.sql">
+      <AnsiNulls>Off</AnsiNulls>
+      <QuotedIdentifier>Off</QuotedIdentifier>
+    </Build>
+    <Build Include="dbo\Functions\MaxDate.sql" />
+    <Build Include="dbo\Functions\fn_GetTimeString.sql" />
+    <Build Include="dbo\Functions\f_IsTrafficManager.sql" />
+    <Build Include="dbo\Functions\ToDateTimeString.sql" />
+    <Build Include="dbo\Functions\GetMaxDate.sql" />
+    <Build Include="dbo\Functions\ToShortDate.sql" />
+    <Build Include="dbo\Functions\GetMinDate.sql" />
+    <Build Include="dbo\Functions\fn_IsLastDayOfMonth.sql" />
+    <Build Include="dbo\Functions\fn_Int2Time.sql" />
+    <Build Include="dbo\Functions\fn_FirstDateOfMonth.sql" />
+    <Build Include="dbo\Functions\fn_GetPricelistIDByDate.sql" />
+    <Build Include="dbo\Functions\fn_LastDateOfMonth.sql" />
+    <Build Include="dbo\Functions\f_GetSponsorPricelistIDByDate.sql" />
+    <Build Include="dbo\Functions\IsActionEnabled.sql" />
+    <Build Include="dbo\Functions\fn_IsRight2GoBack.sql">
+      <AnsiNulls>Off</AnsiNulls>
+      <QuotedIdentifier>Off</QuotedIdentifier>
+    </Build>
+    <Build Include="dbo\Functions\fn_IsRightForMinus.sql">
+      <AnsiNulls>Off</AnsiNulls>
+      <QuotedIdentifier>Off</QuotedIdentifier>
+    </Build>
+    <Build Include="dbo\Functions\f_GetSponsorDuration.sql" />
+    <Build Include="dbo\Functions\GetTypeSize.sql">
+      <AnsiNulls>Off</AnsiNulls>
+      <QuotedIdentifier>Off</QuotedIdentifier>
+    </Build>
+    <Build Include="dbo\Functions\fn_IsPositionOk.sql" />
+    <Build Include="dbo\Functions\fn_IsDisabledWindow.sql">
+      <AnsiNulls>Off</AnsiNulls>
+      <QuotedIdentifier>Off</QuotedIdentifier>
+    </Build>
+    <Build Include="dbo\Functions\fn_BrandListByRollerId.sql" />
+    <Build Include="dbo\Functions\f_GetStudioTariffId.sql" />
+    <Build Include="dbo\Functions\f_OrderPrice.sql" />
+    <Build Include="dbo\Functions\fn_ProductListByRollerId.sql" />
+    <Build Include="dbo\Functions\fn_IsAcceptRatioForUser.sql" />
+    <Build Include="dbo\Functions\f_SysParamsDaysLog.sql" />
+    <Build Include="dbo\Functions\fn_GetIssuePrice.sql" />
+    <Build Include="dbo\Functions\fn_IssuesInModule.sql" />
+    <Build Include="dbo\Functions\fn_IsRightToEditGroupActions.sql" />
+    <Build Include="dbo\Functions\fn_GetPathForPackModueleAndModule.sql" />
+    <Build Include="dbo\Functions\f_IsAdmin.sql" />
+    <Build Include="dbo\Functions\fn_CreateTableFromString.sql" />
+    <Build Include="dbo\Functions\fn_GetMassmediasForUser.sql" />
+    <Build Include="dbo\Functions\fn_GetPriceByPeriod.sql" />
+    <Build Include="dbo\Functions\fn_GetPriceByPeriod1.sql" />
+    <Build Include="dbo\Functions\fn_statGetPrice.sql" />
+    <Build Include="dbo\Functions\f_range.sql" />
+    <Build Include="dbo\Functions\f_months.sql" />
+    <Build Include="dbo\Functions\fn_statGetPriceByMonth.sql" />
+    <Build Include="dbo\Functions\fn_GetUserGroups.sql" />
+    <Build Include="dbo\Functions\fn_GetMassmediasForUserMassmedia.sql" />
+    <Build Include="dbo\Functions\fn_GetPrice.sql" />
+    <Build Include="dbo\Stored Procedures\UserMassmediaAddID.sql" />
+    <Build Include="dbo\Stored Procedures\ModuleTariffs.sql" />
+    <Build Include="dbo\Stored Procedures\StatVolumeOfRealizationSecFilter.sql" />
+    <Build Include="dbo\Stored Procedures\Actions1.sql" />
+    <Build Include="dbo\Stored Procedures\stat_VolumeOfRealizationByMonth.sql" />
+    <Build Include="dbo\Stored Procedures\NextBillOrContractNo.sql">
+      <QuotedIdentifier>Off</QuotedIdentifier>
+    </Build>
+    <Build Include="dbo\Stored Procedures\Stat_VolumeOfRealizationSec.sql" />
+    <Build Include="dbo\Stored Procedures\FirmBrandID.sql" />
+    <Build Include="dbo\Stored Procedures\statVolumeOfRealizationMonthFilter.sql" />
+    <Build Include="dbo\Stored Procedures\ActionRollerStats.sql" />
+    <Build Include="dbo\Stored Procedures\PackageDiscounts.sql" />
+    <Build Include="dbo\Stored Procedures\statAvgDiscountFilter.sql" />
+    <Build Include="dbo\Stored Procedures\GroupMenuID.sql" />
+    <Build Include="dbo\Stored Procedures\SetAdvertTypeForCommmonRoller.sql" />
+    <Build Include="dbo\Stored Procedures\PackageDiscountIUD.sql" />
+    <Build Include="dbo\Stored Procedures\CampaignImportMediaPlus.sql" />
+    <Build Include="dbo\Stored Procedures\BrandFilter.sql" />
+    <Build Include="dbo\Stored Procedures\sl_LookupMassmediaGroupd.sql" />
+    <Build Include="dbo\Stored Procedures\PackageDiscountMassmedias.sql" />
+    <Build Include="dbo\Stored Procedures\RepairUser.sql" />
+    <Build Include="dbo\Stored Procedures\PricelistByDate.sql">
+      <QuotedIdentifier>Off</QuotedIdentifier>
+    </Build>
+    <Build Include="dbo\Stored Procedures\AdvertTypeChildrenFlat.sql" />
+    <Build Include="dbo\Stored Procedures\ActionRollers.sql" />
+    <Build Include="dbo\Stored Procedures\GroupRightsAssignedRetrieve.sql" />
+    <Build Include="dbo\Stored Procedures\PackageDiscountMassmediaID.sql" />
+    <Build Include="dbo\Stored Procedures\TariffIUD.sql" />
+    <Build Include="dbo\Stored Procedures\GroupMenus.sql" />
+    <Build Include="dbo\Stored Procedures\DeleteHistory.sql" />
+    <Build Include="dbo\Stored Procedures\PackageDiscountMassmediaPassport.sql" />
+    <Build Include="dbo\Stored Procedures\IssueIUD.sql" />
+    <Build Include="dbo\Stored Procedures\GroupRights.sql" />
+    <Build Include="dbo\Stored Procedures\PackModuleIssueContentRetrieve.sql" />
+    <Build Include="dbo\Stored Procedures\PackageDiscountPriceLists.sql" />
+    <Build Include="dbo\Stored Procedures\ModuleIUD.sql" />
+    <Build Include="dbo\Stored Procedures\PackageDiscountPriceListIUD.sql" />
+    <Build Include="dbo\Stored Procedures\ModuleTariffSelection.sql" />
+    <Build Include="dbo\Stored Procedures\RollerStyles.sql" />
+    <Build Include="dbo\Stored Procedures\PackModulesInCampaignRetrieve.sql" />
+    <Build Include="dbo\Stored Procedures\Grid.sql" />
+    <Build Include="dbo\Stored Procedures\ModuleTariffID.sql" />
+    <Build Include="dbo\Stored Procedures\RollerStylePassport.sql" />
+    <Build Include="dbo\Stored Procedures\sponsorTariffList.sql" />
+    <Build Include="dbo\Stored Procedures\UserListByRights.sql" />
+    <Build Include="dbo\Stored Procedures\AgencyTaxRetrieve.sql" />
+    <Build Include="dbo\Stored Procedures\GroupListByRights.sql" />
+    <Build Include="dbo\Stored Procedures\RolStyleIUD.sql" />
+    <Build Include="dbo\Stored Procedures\ShowDisabledWindows.sql" />
+    <Build Include="dbo\Stored Procedures\GroupRightID.sql" />
+    <Build Include="dbo\Stored Procedures\TaxRetrieve.sql" />
+    <Build Include="dbo\Stored Procedures\CampaignsForActJournalRetrieve.sql" />
+    <Build Include="dbo\Stored Procedures\BalanceFilter.sql" />
+    <Build Include="dbo\Stored Procedures\AgencyTaxIUD.sql" />
+    <Build Include="dbo\Stored Procedures\PaymentByManagerFilter.sql" />
+    <Build Include="dbo\Stored Procedures\FirmBalanceIssuesOnLoad.sql" />
+    <Build Include="dbo\Stored Procedures\SpecialSOActionPassport.sql" />
+    <Build Include="dbo\Stored Procedures\ActionsForBalance.sql" />
+    <Build Include="dbo\Stored Procedures\statManagerFilter.sql" />
+    <Build Include="dbo\Stored Procedures\Studios.sql" />
+    <Build Include="dbo\Stored Procedures\sl_TariffRetrieve.sql" />
+    <Build Include="dbo\Stored Procedures\ModuleIssueRetrieve.sql" />
+    <Build Include="dbo\Stored Procedures\PaymentCommonActionUsers.sql" />
+    <Build Include="dbo\Stored Procedures\sp_ChangeTariffWindowDisabledStatus.sql" />
+    <Build Include="dbo\Stored Procedures\GetMassmediasForPackModuleCampaign.sql" />
+    <Build Include="dbo\Stored Procedures\StudioIUD.sql" />
+    <Build Include="dbo\Stored Procedures\ActionsFilter.sql" />
+    <Build Include="dbo\Stored Procedures\rpt_OrderActionBill.sql" />
+    <Build Include="dbo\Stored Procedures\CampaignTypes.sql" />
+    <Build Include="dbo\Stored Procedures\CampaignModulesRetrieve.sql" />
+    <Build Include="dbo\Stored Procedures\AgencyMassmediaID.sql" />
+    <Build Include="dbo\Stored Procedures\GetPackModuleIssueDetails.sql" />
+    <Build Include="dbo\Stored Procedures\StudioAgencyID.sql" />
+    <Build Include="dbo\Stored Procedures\ModuleIssueContentRetrieve.sql" />
+    <Build Include="dbo\Stored Procedures\DeleteUnconfirmedActions.sql" />
+    <Build Include="dbo\Stored Procedures\StudioPricelists.sql" />
+    <Build Include="dbo\Stored Procedures\sp_CheckFirmINN.sql" />
+    <Build Include="dbo\Stored Procedures\StudioOrderAgencies.sql" />
+    <Build Include="dbo\Stored Procedures\AdminChangePassword.sql" />
+    <Build Include="dbo\Stored Procedures\ConfirmationHistoryID.sql" />
+    <Build Include="dbo\Stored Procedures\StudioOrderFilter.sql" />
+    <Build Include="dbo\Stored Procedures\OnAirInquireReport.sql" />
+    <Build Include="dbo\Stored Procedures\ModuleIssueIUD.sql" />
+    <Build Include="dbo\Stored Procedures\ConfirmationHistories.sql" />
+    <Build Include="dbo\Stored Procedures\RollerFilter.sql" />
+    <Build Include="dbo\Stored Procedures\UserAdditionalRightID.sql" />
+    <Build Include="dbo\Stored Procedures\ModulePricelistByDate.sql">
+      <QuotedIdentifier>Off</QuotedIdentifier>
+    </Build>
+    <Build Include="dbo\Stored Procedures\stat_VolumesByPaymentTypes.sql" />
+    <Build Include="dbo\Stored Procedures\UserAdditionalRights.sql" />
+    <Build Include="dbo\Stored Procedures\TariffWindowRetrieveByDate.sql" />
+    <Build Include="dbo\Stored Procedures\as_relationScenarios.sql" />
+    <Build Include="dbo\Stored Procedures\stat_VolumeOfRealizationNew.sql" />
+    <Build Include="dbo\Stored Procedures\ActionIssues.sql" />
+    <Build Include="dbo\Stored Procedures\GetUniqueMMsForAction.sql" />
+    <Build Include="dbo\Stored Procedures\hlp_GetMainUserCredentials.sql" />
+    <Build Include="dbo\Stored Procedures\WindowIssuesRetrieve.sql" />
+    <Build Include="dbo\Stored Procedures\MoveIssues2NewCampaign.sql" />
+    <Build Include="dbo\Stored Procedures\GetAgenciesString.sql" />
+    <Build Include="dbo\Stored Procedures\paymentTypeIUD.sql" />
+    <Build Include="dbo\Stored Procedures\IssuesByDate.sql" />
+    <Build Include="dbo\Stored Procedures\TariffWindowChangeDuration.sql" />
+    <Build Include="dbo\Stored Procedures\PackModuleContentIUD.sql" />
+    <Build Include="dbo\Stored Procedures\CampaignSetFinalPrice.sql" />
+    <Build Include="dbo\Stored Procedures\hlp_ActionDiscountCalculate.sql" />
+    <Build Include="dbo\Stored Procedures\TariffWindowChangeDurationInDay.sql" />
+    <Build Include="dbo\Stored Procedures\SponsorPricelistByDate.sql">
+      <QuotedIdentifier>Off</QuotedIdentifier>
+    </Build>
+    <Build Include="dbo\Stored Procedures\hlp_CompanyDiscountCalculate.sql" />
+    <Build Include="dbo\Stored Procedures\PaymentStudioOrders.sql" />
+    <Build Include="dbo\Stored Procedures\SayTrafficThatWindowLinkDeleted.sql" />
+    <Build Include="dbo\Stored Procedures\TariffWindowRetrieve.sql" />
+    <Build Include="dbo\Stored Procedures\stat_ModuleLoading.sql" />
+    <Build Include="dbo\Stored Procedures\StudioOrderActionPassport.sql" />
+    <Build Include="dbo\Stored Procedures\MassmediaGroups.sql" />
+    <Build Include="dbo\Stored Procedures\TariffWindowMoveTime.sql" />
+    <Build Include="dbo\Stored Procedures\StudioTariffList.sql" />
+    <Build Include="dbo\Stored Procedures\CheckLinkedWindows.sql" />
+    <Build Include="dbo\Stored Procedures\GenerateTariffWindows.sql" />
+    <Build Include="dbo\Stored Procedures\stat_ModuleFinancy.sql" />
+    <Build Include="dbo\Stored Procedures\RegistryDelete.sql" />
+    <Build Include="dbo\Stored Procedures\MassmediaGroupIUD.sql" />
+    <Build Include="dbo\Stored Procedures\UserGroupD.sql" />
+    <Build Include="dbo\Stored Procedures\StudioTariffPassport.sql" />
+    <Build Include="dbo\Stored Procedures\RollersWithoutAdvertype.sql" />
+    <Build Include="dbo\Stored Procedures\sl_GenerateTariffWindowsDay.sql" />
+    <Build Include="dbo\Stored Procedures\stat_PackModuleFinancy.sql" />
+    <Build Include="dbo\Stored Procedures\ProgramIssueFilter.sql" />
+    <Build Include="dbo\Stored Procedures\UserGroups.sql" />
+    <Build Include="dbo\Stored Procedures\sl_LookupAgency.sql" />
+    <Build Include="dbo\Stored Procedures\StudioTariffIUD.sql" />
+    <Build Include="dbo\Stored Procedures\ReportPartTextU.sql" />
+    <Build Include="dbo\Stored Procedures\stat_PackModuleLoading.sql" />
+    <Build Include="dbo\Stored Procedures\ActionRecalculate.sql" />
+    <Build Include="dbo\Stored Procedures\sl_LookupPaymentType.sql" />
+    <Build Include="dbo\Stored Procedures\GetUniqueMMsForPackModuleCampaign.sql" />
+    <Build Include="dbo\Stored Procedures\StudioPricelistIUD.sql" />
+    <Build Include="dbo\Stored Procedures\TariffWindowWithAdvertTypeRetrieve.sql" />
+    <Build Include="dbo\Stored Procedures\Rollers.sql" />
+    <Build Include="dbo\Stored Procedures\UserMassmediaID.sql" />
+    <Build Include="dbo\Stored Procedures\PaymentStudioOrderFilter.sql" />
+    <Build Include="dbo\Stored Procedures\stat_RollerStatisticCreated.sql" />
+    <Build Include="dbo\Stored Procedures\UserPassport.sql" />
+    <Build Include="dbo\Stored Procedures\PaymentStudioOrderPassport.sql" />
+    <Build Include="dbo\Stored Procedures\statRollersCreatedFilter.sql" />
+    <Build Include="dbo\Stored Procedures\ProgramIssueIUD.sql" />
+    <Build Include="dbo\Stored Procedures\Users.sql" />
+    <Build Include="dbo\Stored Procedures\ProcedureConfigurationRetrieve.sql" />
+    <Build Include="dbo\Stored Procedures\EntityInfoRetrieve.sql" />
+    <Build Include="dbo\Stored Procedures\TariffWindowChangePrice.sql" />
+    <Build Include="dbo\Stored Procedures\MergeActions.sql" />
+    <Build Include="dbo\Stored Procedures\ProgramIssuesDays.sql" />
+    <Build Include="dbo\Stored Procedures\DisabledWindowIUD.sql" />
+    <Build Include="dbo\Stored Procedures\UserDiscountIUD.sql" />
+    <Build Include="dbo\Stored Procedures\SponsorCampaignPrograms.sql" />
+    <Build Include="dbo\Stored Procedures\Firms.sql" />
+    <Build Include="dbo\Stored Procedures\UserDiscounts.sql" />
+    <Build Include="dbo\Stored Procedures\ProgramIssues.sql" />
+    <Build Include="dbo\Stored Procedures\rpt_Grid.sql" />
+    <Build Include="dbo\Stored Procedures\CheckRatioForUser.sql" />
+    <Build Include="dbo\Stored Procedures\AnnouncementList.sql" />
+    <Build Include="dbo\Stored Procedures\bankImport.sql" />
+    <Build Include="dbo\Stored Procedures\SponsorPrograms.sql" />
+    <Build Include="dbo\Stored Procedures\spLoadHeadCompany.sql" />
+    <Build Include="dbo\Stored Procedures\DeleteDeletedActions.sql" />
+    <Build Include="dbo\Stored Procedures\HeadCompanies.sql" />
+    <Build Include="dbo\Stored Procedures\Campaigns.sql" />
+    <Build Include="dbo\Stored Procedures\AnnouncementPassport.sql" />
+    <Build Include="dbo\Stored Procedures\sponsorProgramIUD.sql" />
+    <Build Include="dbo\Stored Procedures\HeadCompanyIUD.sql" />
+    <Build Include="dbo\Stored Procedures\HeadCompaniesWithActions.sql" />
+    <Build Include="dbo\Stored Procedures\SponsorTariffIUD.sql" />
+    <Build Include="dbo\Stored Procedures\hlp_GetStartFinishFromIssueDateAndBroadcastStart.sql" />
+    <Build Include="dbo\Stored Procedures\Brands.sql" />
+    <Build Include="dbo\Stored Procedures\StudioOrders.sql" />
+    <Build Include="dbo\Stored Procedures\GroupMemberID.sql" />
+    <Build Include="dbo\Stored Procedures\sp_DBVersion.sql" />
+    <Build Include="dbo\Stored Procedures\GetRollerIsUsed.sql" />
+    <Build Include="dbo\Stored Procedures\CampaignIssuesTransfers.sql" />
+    <Build Include="dbo\Stored Procedures\UserIUD.sql" />
+    <Build Include="dbo\Stored Procedures\ActionDeactivate.sql" />
+    <Build Include="dbo\Stored Procedures\TransferLogFilter.sql" />
+    <Build Include="dbo\Stored Procedures\SpecialActions.sql" />
+    <Build Include="dbo\Stored Procedures\SpecialActionIUD.sql" />
+    <Build Include="dbo\Stored Procedures\FirmManagers.sql" />
+    <Build Include="dbo\Stored Procedures\RollersForModule.sql" />
+    <Build Include="dbo\Stored Procedures\FirmStudioOrderManagers.sql" />
+    <Build Include="dbo\Stored Procedures\GetMuteRoller.sql" />
+    <Build Include="dbo\Stored Procedures\ConfirmationHistoryFilter.sql" />
+    <Build Include="dbo\Stored Procedures\TariffPassport.sql" />
+    <Build Include="dbo\Stored Procedures\ActionActivate.sql" />
+    <Build Include="dbo\Stored Procedures\SponsorPricelists.sql" />
+    <Build Include="dbo\Stored Procedures\ActionRollerSetAdvertType.sql" />
+    <Build Include="dbo\Stored Procedures\CreateActionMuteRollersAlerts.sql" />
+    <Build Include="dbo\Stored Procedures\AnnouncementIUD.sql" />
+    <Build Include="dbo\Stored Procedures\CreateNotActivatedActionsAnnouncement.sql" />
+    <Build Include="dbo\Stored Procedures\rpt_ActionPrograms.sql" />
+    <Build Include="dbo\Stored Procedures\RollerPassport.sql" />
+    <Build Include="dbo\Stored Procedures\PaymentStudioOrderActions.sql" />
+    <Build Include="dbo\Stored Procedures\stat_GetPrice_proc.sql" />
+    <Build Include="dbo\Stored Procedures\GetMassmedias.sql" />
+    <Build Include="dbo\Stored Procedures\TariffWindowWithRange.sql" />
+    <Build Include="dbo\Stored Procedures\stat_VolumeOfRealization3.sql" />
+    <Build Include="dbo\Stored Procedures\CreateActionMasterPassport.sql" />
+    <Build Include="dbo\Stored Procedures\stat_VolumeOfRealizationByMonth3.sql" />
+    <Build Include="dbo\Stored Procedures\SpecialActionPassport.sql" />
+    <Build Include="dbo\Stored Procedures\CreateActionWithRange.sql" />
+    <Build Include="dbo\Stored Procedures\PaymentStudioOrderIUD.sql" />
+    <Build Include="dbo\Stored Procedures\stat_GetPriceByMonth_proc.sql" />
+    <Build Include="dbo\Stored Procedures\PaymentTypesLoad.sql" />
+    <Build Include="dbo\Stored Procedures\AddRangeIssues.sql" />
+    <Build Include="dbo\Stored Procedures\StudioOrderActionsForPayment.sql" />
+    <Build Include="dbo\Stored Procedures\MediaPlanRetrieve_v2.sql" />
+    <Build Include="dbo\Stored Procedures\PackModules.sql" />
+    <Build Include="dbo\Stored Procedures\StudioOrderActionIUD.sql" />
+    <Build Include="dbo\Stored Procedures\rpt_Grid_v3.sql" />
+    <Build Include="dbo\Stored Procedures\banks.sql" />
+    <Build Include="dbo\Stored Procedures\ActionRestore.sql" />
+    <Build Include="dbo\Stored Procedures\StudioOrderActionsFilter.sql" />
+    <Build Include="dbo\Stored Procedures\PackModuleIUD.sql" />
+    <Build Include="dbo\Stored Procedures\StudioOrderPassport.sql" />
+    <Build Include="dbo\Stored Procedures\ActionAgencies.sql" />
+    <Build Include="dbo\Stored Procedures\statFactorAnalysis.sql" />
+    <Build Include="dbo\Stored Procedures\StudioOrderActions.sql" />
+    <Build Include="dbo\Stored Procedures\ActionsForPaymentCommon.sql" />
+    <Build Include="dbo\Stored Procedures\hlp_IssueVerify.sql" />
+    <Build Include="dbo\Stored Procedures\GenericBillIUD.sql" />
+    <Build Include="dbo\Stored Procedures\GenerateTariffWindowByTemplate.sql" />
+    <Build Include="dbo\Stored Procedures\sl_StudioOrderActions.sql" />
+    <Build Include="dbo\Stored Procedures\GenericBills.sql" />
+    <Build Include="dbo\Stored Procedures\GetUserData.sql" />
+    <Build Include="dbo\Stored Procedures\PaymentCommonActionID.sql" />
+    <Build Include="dbo\Stored Procedures\PaymentCommonActions.sql" />
+    <Build Include="dbo\Stored Procedures\PaymentCommonFilter.sql" />
+    <Build Include="dbo\Stored Procedures\StudioPassport.sql" />
+    <Build Include="dbo\Stored Procedures\PaymentCommonIUD.sql" />
+    <Build Include="dbo\Stored Procedures\Groups.sql" />
+    <Build Include="dbo\Stored Procedures\CampaignIUD.sql" />
+    <Build Include="dbo\Stored Procedures\PassportRetrieve.sql" />
+    <Build Include="dbo\Stored Procedures\PaymentCommonPassport.sql" />
+    <Build Include="dbo\Stored Procedures\GroupIUD.sql" />
+    <Build Include="dbo\Stored Procedures\RollerSubstitutionPassport.sql" />
+    <Build Include="dbo\Stored Procedures\PaymentsCommon.sql" />
+    <Build Include="dbo\Stored Procedures\MasterIssueDelete.sql" />
+    <Build Include="dbo\Stored Procedures\sl_Rollers.sql" />
+    <Build Include="dbo\Stored Procedures\PackModulePricelists.sql" />
+    <Build Include="dbo\Stored Procedures\rpt_GenericBill.sql" />
+    <Build Include="dbo\Stored Procedures\CheckPackModuleTariffWithMaxCapacity.sql" />
+    <Build Include="dbo\Stored Procedures\RollerSubstitute.sql" />
+    <Build Include="dbo\Stored Procedures\Pricelists.sql" />
+    <Build Include="dbo\Stored Procedures\PackModulePricelistIUD.sql" />
+    <Build Include="dbo\Stored Procedures\sl_Months.sql" />
+    <Build Include="dbo\Stored Procedures\LogDeletedIssueDelete.sql" />
+    <Build Include="dbo\Stored Procedures\DeleteUnusedDummyRollers.sql" />
+    <Build Include="dbo\Stored Procedures\IssuesDays.sql" />
+    <Build Include="dbo\Stored Procedures\sl_PaymentsCommon.sql" />
+    <Build Include="dbo\Stored Procedures\AnnouncementCheckForNew.sql" />
+    <Build Include="dbo\Stored Procedures\massmediaFilter.sql" />
+    <Build Include="dbo\Stored Procedures\LogsDeletedIssue.sql" />
+    <Build Include="dbo\Stored Procedures\CampaignRollers.sql" />
+    <Build Include="dbo\Stored Procedures\AgencyIUD.sql" />
+    <Build Include="dbo\Stored Procedures\LogDeletedIssueInsert.sql" />
+    <Build Include="dbo\Stored Procedures\stat_BalanceStudioOrder.sql" />
+    <Build Include="dbo\Stored Procedures\MediaPlanRetrieve.sql" />
+    <Build Include="dbo\Stored Procedures\stat_VolumeOfRealization.sql" />
+    <Build Include="dbo\Stored Procedures\ModuleCampaignRollers.sql" />
+    <Build Include="dbo\Stored Procedures\rpt_Grid_v2.sql" />
+    <Build Include="dbo\Stored Procedures\PackIssuesDays.sql" />
+    <Build Include="dbo\Stored Procedures\AdvertTypes.sql" />
+    <Build Include="dbo\Stored Procedures\bankListUpdate.sql" />
+    <Build Include="dbo\Stored Procedures\statFactorAnalysisFilter.sql" />
+    <Build Include="dbo\Stored Procedures\BalanceStudioOrderFilter.sql" />
+    <Build Include="dbo\Stored Procedures\stat_VolumeOfRealizationForRollers.sql" />
+    <Build Include="dbo\Stored Procedures\pc_GetStationsPriceModel.sql" />
+    <Build Include="dbo\Stored Procedures\AdvertTypeIUD.sql" />
+    <Build Include="dbo\Stored Procedures\PackModulePricelistByDate.sql">
+      <QuotedIdentifier>Off</QuotedIdentifier>
+    </Build>
+    <Build Include="dbo\Stored Procedures\sponsorPLIUD.sql" />
+    <Build Include="dbo\Stored Procedures\pc_PackageDiscountCalculateModel.sql" />
+    <Build Include="dbo\Stored Procedures\PackModuleContentRetrieve.sql" />
+    <Build Include="dbo\Stored Procedures\sl_Firms.sql" />
+    <Build Include="dbo\Stored Procedures\statVolumeOfRealizationFilter.sql" />
+    <Build Include="dbo\Stored Procedures\GetUserDiscount.sql" />
+    <Build Include="dbo\Stored Procedures\FirmBalanceStudioOrderOnLoad.sql" />
+    <Build Include="dbo\Stored Procedures\massmediaList_web.sql" />
+    <Build Include="dbo\Stored Procedures\Tariffs.sql" />
+    <Build Include="dbo\Stored Procedures\ReportPartTexts.sql" />
+    <Build Include="dbo\Stored Procedures\sl_Users.sql" />
+    <Build Include="dbo\Stored Procedures\sl_LookupAdvertType.sql" />
+    <Build Include="dbo\Stored Procedures\MassmediaAgencies.sql" />
+    <Build Include="dbo\Stored Procedures\MessageLoad.sql" />
+    <Build Include="dbo\Stored Procedures\sl_LookupCampaignType.sql" />
+    <Build Include="dbo\Stored Procedures\GetMonthes.sql" />
+    <Build Include="dbo\Stored Procedures\PaymentTypes.sql" />
+    <Build Include="dbo\Stored Procedures\sl_LookupRolType.sql" />
+    <Build Include="dbo\Stored Procedures\ActionIUD.sql" />
+    <Build Include="dbo\Stored Procedures\agencies.sql" />
+    <Build Include="dbo\Stored Procedures\statVolumeOfRealizationForRollersFilter.sql" />
+    <Build Include="dbo\Stored Procedures\TariffWindowIUD.sql" />
+    <Build Include="dbo\Stored Procedures\sl_Agencies.sql" />
+    <Build Include="dbo\Stored Procedures\agencyPassport.sql" />
+    <Build Include="dbo\Stored Procedures\PricelistIUD.sql" />
+    <Build Include="dbo\Stored Procedures\NewCampaignPassport.sql" />
+    <Build Include="dbo\Stored Procedures\IssueChangePositioningPassport.sql" />
+    <Build Include="dbo\Stored Procedures\LookupUsedAgency.sql" />
+    <Build Include="dbo\Stored Procedures\SysParamsUpdate.sql" />
+    <Build Include="dbo\Stored Procedures\PaymentStudioOrderActionID.sql" />
+    <Build Include="dbo\Stored Procedures\ActionsForRollerStatistic.sql" />
+    <Build Include="dbo\Stored Procedures\PackModuleTariffWindowsRetrieve.sql" />
+    <Build Include="dbo\Stored Procedures\PaymentStudioOrderActionUsers.sql" />
+    <Build Include="dbo\Stored Procedures\PackModulePriceListAllowedRolType.sql" />
+    <Build Include="dbo\Stored Procedures\stat_RollerStatistic.sql" />
+    <Build Include="dbo\Stored Procedures\PaymentStudioOrderActionFilter.sql" />
+    <Build Include="dbo\Stored Procedures\stat_BalanceAgency.sql">
+      <AnsiNulls>Off</AnsiNulls>
+      <QuotedIdentifier>Off</QuotedIdentifier>
+    </Build>
+    <Build Include="dbo\Stored Procedures\UserAdditionalMenuIUD.sql" />
+    <Build Include="dbo\Stored Procedures\bankIUD.sql" />
+    <Build Include="dbo\Stored Procedures\PackModuleIssueRetrieve.sql" />
+    <Build Include="dbo\Stored Procedures\sl_PaymentStudioOrders.sql" />
+    <Build Include="dbo\Stored Procedures\UserAdditionalMenus.sql" />
+    <Build Include="dbo\Stored Procedures\CampaignPackDayDelete.sql" />
+    <Build Include="dbo\Stored Procedures\PackModuleIssueID.sql" />
+    <Build Include="dbo\Stored Procedures\statBalanceFilter.sql" />
+    <Build Include="dbo\Stored Procedures\StudioOrderIUD.sql" />
+    <Build Include="dbo\Stored Procedures\hlp_PopulateTableFromCommaSeparatedString.sql" />
+    <Build Include="dbo\Stored Procedures\statBalanceAgencyFilter.sql" />
+    <Build Include="dbo\Stored Procedures\SysParams.sql" />
+    <Build Include="dbo\Stored Procedures\stat_VolumeOfRealization2.sql" />
+    <Build Include="dbo\Stored Procedures\CampaignModuleIssuesRetrieve.sql" />
+    <Build Include="dbo\Stored Procedures\CampaignTransferDay.sql" />
+    <Build Include="dbo\Stored Procedures\ModuleList.sql" />
+    <Build Include="dbo\Stored Procedures\CampaignModuleIssueDelete.sql" />
+    <Build Include="dbo\Stored Procedures\MenuItems.sql" />
+    <Build Include="dbo\Stored Procedures\StudioOrderActionPriceForAgency.sql" />
+    <Build Include="dbo\Stored Procedures\massmediaPassport.sql" />
+    <Build Include="dbo\Stored Procedures\GetPriceByPeriod.sql" />
+    <Build Include="dbo\Stored Procedures\UserAgencies.sql" />
+    <Build Include="dbo\Stored Procedures\DiscountReleases.sql" />
+    <Build Include="dbo\Stored Procedures\ModuleIssueCampaignDelete.sql" />
+    <Build Include="dbo\Stored Procedures\stat_FillPercentage.sql" />
+    <Build Include="dbo\Stored Procedures\statFillPercentageFilter.sql" />
+    <Build Include="dbo\Stored Procedures\GetIssuesPrice.sql" />
+    <Build Include="dbo\Stored Procedures\PackModuleIssueCampaignDelete.sql" />
+    <Build Include="dbo\Stored Procedures\StudioOrderBills.sql" />
+    <Build Include="dbo\Stored Procedures\SetIssueRatio.sql" />
+    <Build Include="dbo\Stored Procedures\SponsorCampaignProgramDelete.sql" />
+    <Build Include="dbo\Stored Procedures\AdvertTypePassport.sql" />
+    <Build Include="dbo\Stored Procedures\sp_GetAgencyPaintings.sql" />
+    <Build Include="dbo\Stored Procedures\SpecialStudioOrderActions.sql" />
+    <Build Include="dbo\Stored Procedures\IsModuleExist.sql" />
+    <Build Include="dbo\Stored Procedures\TransferLogRetrieve.sql" />
+    <Build Include="dbo\Stored Procedures\stat_VolumeOfRealizationByMonth2.sql" />
+    <Build Include="dbo\Stored Procedures\SpecialStudioOrderActionIUD.sql" />
+    <Build Include="dbo\Stored Procedures\DiscountValues.sql" />
+    <Build Include="dbo\Stored Procedures\sp_ChangeTariffWindowMarkedStatus.sql" />
+    <Build Include="dbo\Stored Procedures\CampaignsIssueDelete.sql" />
+    <Build Include="dbo\Stored Procedures\ModulePriceLists.sql" />
+    <Build Include="dbo\Stored Procedures\LicenseLoad.sql" />
+    <Build Include="dbo\Stored Procedures\stat_Balance.sql" />
+    <Build Include="dbo\Stored Procedures\CampaignDaysTreePassport.sql" />
+    <Build Include="dbo\Stored Procedures\FirmWithOrder.sql" />
+    <Build Include="dbo\Stored Procedures\DiscountValueIUD.sql" />
+    <Build Include="dbo\Stored Procedures\LicenseGet.sql" />
+    <Build Include="dbo\Stored Procedures\job_DeleteHistory.sql" />
+    <Build Include="dbo\Stored Procedures\StudioOrderBillIUD.sql" />
+    <Build Include="dbo\Stored Procedures\stat_BalanceManagerOrder.sql" />
+    <Build Include="dbo\Stored Procedures\stat_BalanceManager.sql" />
+    <Build Include="dbo\Stored Procedures\CampaignImportGrammofon.sql" />
+    <Build Include="dbo\Stored Procedures\massmediaList.sql" />
+    <Build Include="dbo\Stored Procedures\BrandFirms.sql" />
+    <Build Include="dbo\Stored Procedures\DiscountReleaseIUD.sql" />
+    <Build Include="dbo\Stored Procedures\ModulePricelistPassport.sql" />
+    <Build Include="dbo\Stored Procedures\ModulePricelistIUD.sql" />
+    <Build Include="dbo\Stored Procedures\FirmWithActions1.sql" />
+    <Build Include="dbo\Stored Procedures\stat_SponsorBusiness.sql" />
+    <Build Include="dbo\Stored Procedures\MassmediaIUD.sql" />
+    <Build Include="dbo\Stored Procedures\PackModuleContentPassport.sql" />
+    <Build Include="dbo\Stored Procedures\BrandIUD.sql" />
+    <Build Include="dbo\Stored Procedures\AgencyPainting.sql" />
+    <Build Include="dbo\Stored Procedures\disabledWindows.sql" />
+    <Build Include="dbo\Stored Procedures\SayAdminThatIssuesDelete.sql" />
+    <Build Include="dbo\Stored Procedures\RollerIUD.sql" />
+    <Build Include="dbo\Stored Procedures\DeleteActionsInPast.sql" />
+    <Build Include="dbo\Stored Procedures\rpt_StudioOrderAct.sql" />
+    <Build Include="dbo\Stored Procedures\FirmIUD.sql" />
+    <Build Include="dbo\Stored Procedures\sl_LookupSponsorProgram.sql" />
+    <Build Include="dbo\Stored Procedures\IssueTransfer.sql" />
+    <Build Include="dbo\Stored Procedures\ExportMediaPlusFormat.sql" />
+    <Build Include="dbo\Stored Procedures\FirmBrands.sql" />
+    <Build Include="dbo\Stored Procedures\TariffWindowMassDelete.sql" />
+    <Build Include="dbo\Stored Procedures\DiscountPassport.sql" />
+    <Build Include="dbo\Stored Procedures\Stat_AvgDiscount.sql" />
+    <Build Include="dbo\Stored Procedures\job_DeleteEmptyActions.sql" />
+    <Build Include="dbo\Stored Procedures\UserMenuItems.sql" />
+    <Build Include="dbo\User Defined Types\boolean.sql" />
+    <Build Include="dbo\User Defined Types\doubleString.sql" />
+    <Build Include="dbo\User Defined Types\DF_DATE.sql" />
+    <Build Include="dbo\User Defined Types\DF_TIME.sql" />
+    <Build Include="dbo\User Defined Types\DF_DATETIME.sql" />
+    <Build Include="dbo\User Defined Types\timeDuration.sql" />
+    <Build Include="dbo\User Defined Types\pc_SelectedMassmedia.sql" />
+  </ItemGroup>
+</Project>

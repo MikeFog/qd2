@@ -1,0 +1,20 @@
+﻿CREATE TABLE [dbo].[PaymentStudioOrder] (
+    [paymentID]     INT      IDENTITY (1, 1) NOT NULL,
+    [firmID]        SMALLINT NOT NULL,
+    [summa]         MONEY    CONSTRAINT [DF_PaymentStudioOrder_SUMMA] DEFAULT (0) NOT NULL,
+    [paymentDate]   DATETIME NOT NULL,
+    [userID]        SMALLINT NOT NULL,
+    [paymentTypeID] SMALLINT NOT NULL,
+    [agencyID]      SMALLINT NOT NULL,
+    [isEnabled]     BIT      CONSTRAINT [DF_PaymentStudioOrder_IS_ENABLED] DEFAULT (1) NOT NULL,
+    CONSTRAINT [PK_PaymentStudioOrder] PRIMARY KEY CLUSTERED ([paymentID] ASC) WITH (FILLFACTOR = 90),
+    CONSTRAINT [FK_PaymentStudioOrder_Agency] FOREIGN KEY ([agencyID]) REFERENCES [dbo].[Agency] ([agencyID]),
+    CONSTRAINT [FK_PaymentStudioOrder_Firm] FOREIGN KEY ([firmID]) REFERENCES [dbo].[Firm] ([firmID]) ON DELETE CASCADE,
+    CONSTRAINT [FK_PaymentStudioOrder_PaymentType] FOREIGN KEY ([paymentTypeID]) REFERENCES [dbo].[PaymentType] ([paymentTypeID]),
+    CONSTRAINT [FK_PaymentStudioOrder_User] FOREIGN KEY ([userID]) REFERENCES [dbo].[User] ([userID])
+);
+
+
+GO
+ALTER TABLE [dbo].[PaymentStudioOrder] SET (LOCK_ESCALATION = AUTO);
+

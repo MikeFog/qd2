@@ -1,0 +1,12 @@
+﻿CREATE TABLE [dbo].[RolStyle] (
+    [rolStyleID] SMALLINT     IDENTITY (1, 1) NOT NULL,
+    [name]       VARCHAR (64) NOT NULL,
+    [isActive]   BIT          CONSTRAINT [DF__rolstyle__isActi__00BFF13D] DEFAULT (1) NOT NULL,
+    CONSTRAINT [PK_ROLSTYLE] PRIMARY KEY NONCLUSTERED ([rolStyleID] ASC) WITH (FILLFACTOR = 90),
+    CONSTRAINT [UIX_RolStyle_name] UNIQUE NONCLUSTERED ([name] ASC) WITH (FILLFACTOR = 90)
+);
+
+
+GO
+ALTER TABLE [dbo].[RolStyle] SET (LOCK_ESCALATION = AUTO);
+
