@@ -80,9 +80,9 @@ namespace Protector.Domain
 
 		private void SetManagerDiscount(IWin32Window owner)
 		{
-			UserDiscount userDiscount = new UserDiscount();
-			PassportForm passport = userDiscount.GetPassportForm(null);
-			passport.ShowDialog(owner);
+			UserDiscountMass userDiscount = new UserDiscountMass(this);
+            if (userDiscount.ShowPassport(owner) && userDiscount.TableErrors.Rows.Count > 0)
+                Globals.ShowSimpleJournal(EntityManager.GetEntity((int)Entities.ErrTmplGen), "Ошибки", userDiscount.TableErrors);
         }
 
         private void AssignExistingUser(IWin32Window owner)
@@ -195,6 +195,15 @@ namespace Protector.Domain
 				else presentationObject.Delete(true);
 			}
 			ChildEntity = oldChild;
+		}
+
+		public DataTable GetUsers() 
+		{
+            Entity oldChild = ChildEntity;
+            ChildEntity = EntityManager.GetEntity((int)Entities.User);
+			DataTable res = GetContent();
+			ChildEntity = oldChild;
+            return res;
 		}
 
 		public override bool IsActionEnabled(string actionName, ViewType type)

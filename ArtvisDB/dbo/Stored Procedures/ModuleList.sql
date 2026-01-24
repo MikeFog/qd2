@@ -14,7 +14,8 @@ IF @theDate IS NULL
 		m.[name],
 		m.[path],
 		mm.[name] as massmediaName,
-		mm.groupName
+		mm.groupName,
+		Null as closestPriceListStartDate
 	FROM 
 		[Module] m
 		inner join vMassmedia mm on m.massmediaID = mm.massmediaID

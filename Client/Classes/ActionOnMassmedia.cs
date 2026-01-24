@@ -305,7 +305,7 @@ namespace Merlin.Classes
 					ActionOnMassmedia newAction = new ActionOnMassmedia(Firm);
 					newAction.Update();
 
-					DataTable tableErrors = Campaign.CreateErrorsTable();
+					DataTable tableErrors = ErrorManager.CreateErrorsTable();
 
 					foreach (var item in form.SelectedItems)
 					{
@@ -363,7 +363,7 @@ namespace Merlin.Classes
                 PackModule module = issue.PackModule;
                 Pricelist pricelist = module.GetPriceList(newDate);
                 if (pricelist == null)
-                    Campaign.AddErrorRow(tableErrors, newDate, string.Format(Properties.Resources.PackModulePricelistNotFound, module.Name));
+                    ErrorManager.AddErrorRow(tableErrors, newDate, string.Format(Properties.Resources.PackModulePricelistNotFound, module.Name));
                 else
                 {
                     try
@@ -372,7 +372,7 @@ namespace Merlin.Classes
                     }
                     catch (Exception ex)
                     {
-                        Campaign.AddErrorRow(tableErrors, newDate, MessageAccessor.GetMessage(ex.Message));
+                        ErrorManager.AddErrorRow(tableErrors, newDate, MessageAccessor.GetMessage(ex.Message));
                     }
                 }
             }
@@ -389,14 +389,14 @@ namespace Merlin.Classes
 				SponsorPricelist pricelist = issue.SponsorProgram.GetPricelist(newDate);
                 if (pricelist == null) 
 				{
-                    Campaign.AddErrorRow(tableErrors, newDate, string.Format(Properties.Resources.SponsorPricelistNotFound, issue.SponsorProgram.Name));
+                    ErrorManager.AddErrorRow(tableErrors, newDate, string.Format(Properties.Resources.SponsorPricelistNotFound, issue.SponsorProgram.Name));
                     continue; 
 				}
                     
 				SponsorTariff tariff = pricelist.GetTariffBydate(newDate);
                 if (tariff == null)
                 {
-                    Campaign.AddErrorRow(tableErrors, newDate, string.Format(Properties.Resources.SponsorTariffNotFound, issue.SponsorProgram.Name));
+                    ErrorManager.AddErrorRow(tableErrors, newDate, string.Format(Properties.Resources.SponsorTariffNotFound, issue.SponsorProgram.Name));
                     continue;
                 }
 
@@ -415,7 +415,7 @@ namespace Merlin.Classes
 				Module module = issue.Module;
 				ModulePricelist pricelist =  module.GetPriceList(newDate);
 				if (pricelist == null)
-					Campaign.AddErrorRow(tableErrors, newDate, string.Format(Properties.Resources.ModulePricelistNotFound, module.Name));
+					ErrorManager.AddErrorRow(tableErrors, newDate, string.Format(Properties.Resources.ModulePricelistNotFound, module.Name));
 				else
 				{
 					try
@@ -424,7 +424,7 @@ namespace Merlin.Classes
 					}
                     catch (Exception ex)
                     {
-                        Campaign.AddErrorRow(tableErrors, newDate, MessageAccessor.GetMessage(ex.Message));
+                        ErrorManager.AddErrorRow(tableErrors, newDate, MessageAccessor.GetMessage(ex.Message));
                     }
                 }
             }
@@ -448,12 +448,12 @@ namespace Merlin.Classes
 					}
 					catch (Exception ex)
 					{
-						Campaign.AddErrorRow(tableErrors, newDate, MessageAccessor.GetMessage(ex.Message));
+						ErrorManager.AddErrorRow(tableErrors, newDate, MessageAccessor.GetMessage(ex.Message));
 					}
                 }
 				else
 				{
-					Campaign.AddErrorRow(tableErrors, newDate, "Рекламное окно не найдено");
+					ErrorManager.AddErrorRow(tableErrors, newDate, "Рекламное окно не найдено");
 				}
 			}
         }

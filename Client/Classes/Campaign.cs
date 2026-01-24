@@ -359,7 +359,7 @@ namespace Merlin.Classes
 					Action.Refresh();
                     decimal price = Action.TotalPrice;
 
-                    DataTable tableErrors = CreateErrorsTable();
+                    DataTable tableErrors = ErrorManager.CreateErrorsTable();
 					
                     foreach (var id in selector.SelectedIDs)
 					{
@@ -401,7 +401,7 @@ namespace Merlin.Classes
 						catch (Exception ex)
 						{
 							item.Refresh();
-							AddErrorRow(tableErrors, DateTime.Parse(item[CampaignDay.ParamNames.IssueDate].ToString()), MessageAccessor.GetMessage(ex.Message));
+							ErrorManager.AddErrorRow(tableErrors, DateTime.Parse(item[CampaignDay.ParamNames.IssueDate].ToString()), MessageAccessor.GetMessage(ex.Message));
 						}
 					}
 					if (tableErrors.Rows.Count > 0)

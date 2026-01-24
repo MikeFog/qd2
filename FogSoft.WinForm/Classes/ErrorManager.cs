@@ -145,5 +145,24 @@ namespace FogSoft.WinForm.Classes
                 return MessageAccessor.GetMessage(ExtractConstraintName(sqlEx));
 			return ex.Message;
         }
-	}
+
+        public static DataTable CreateErrorsTable()
+        {
+            DataTable tableErrors = new DataTable();
+
+            DataColumn column = new DataColumn("issueDate", Type.GetType("System.DateTime"));
+            tableErrors.Columns.Add(column);
+            column = new DataColumn("description", System.Type.GetType("System.String"));
+            tableErrors.Columns.Add(column);
+            return tableErrors;
+        }
+
+        public static void AddErrorRow(DataTable table, DateTime date, string description)
+        {
+            DataRow row = table.NewRow();
+            row["issueDate"] = date;
+            row["description"] = description;
+            table.Rows.Add(row);
+        }
+    }
 }

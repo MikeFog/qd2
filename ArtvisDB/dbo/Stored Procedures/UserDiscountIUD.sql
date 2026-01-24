@@ -18,13 +18,19 @@ begin
 
 	if @actionName in ('AddItem','UpdateItem')
 	begin 
+		if @finishDate < @startDate
+		begin
+			raiserror('InvalidDiscountInterval', 16, 1)
+			return
+		end
+
 		if exists(
-			select * 
+			select 1
 			from UserDiscount ud 
 			where ud.userID = @userID
 				and (@discountID is null or ud.discountID <> @discountID)
-				and ((ud.startDate between @startDate and @finishDate)
-					or  (ud.finishDate between @startDate and @finishDate) ))
+				and ud.startDate <= @finishDate
+				and ud.finishDate >= @startDate)
 		begin
 			raiserror('CannotAddUserDiscount', 16, 1)
 			return 

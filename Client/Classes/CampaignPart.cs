@@ -104,24 +104,9 @@ namespace Merlin.Classes
 			get { return int.Parse(this[Campaign.ParamNames.CampaignId].ToString()); }
 		}
 
-        public static DataTable CreateErrorsTable()
-        {
-            DataTable tableErrors = new DataTable();
 
-            DataColumn column = new DataColumn(CampaignDay.ParamNames.IssueDate, Type.GetType("System.DateTime"));
-            tableErrors.Columns.Add(column);
-            column = new DataColumn("description", System.Type.GetType("System.String"));
-            tableErrors.Columns.Add(column);
-            return tableErrors;
-        }
 
-        public static void AddErrorRow(DataTable table, DateTime date, string description)
-        {
-            DataRow row = table.NewRow();
-            row[CampaignDay.ParamNames.IssueDate] = date;
-            row["description"] = description;
-            table.Rows.Add(row);
-        }
+
 
         protected void ChangePositions(Form owner)
         {
@@ -132,7 +117,7 @@ namespace Merlin.Classes
                 {
                     Application.DoEvents();
                     Cursor.Current = Cursors.WaitCursor;
-                    DataTable tableErrors = CreateErrorsTable();
+                    DataTable tableErrors = ErrorManager.CreateErrorsTable();
 
                     Campaign.Action.Refresh();
                     decimal price = Campaign.Action.TotalPrice;
@@ -169,7 +154,7 @@ namespace Merlin.Classes
                         {
 
                             item.Refresh();
-                            AddErrorRow(tableErrors, DateTime.Parse(item[CampaignDay.ParamNames.IssueDate].ToString()), MessageAccessor.GetMessage(ex.Message));
+                            ErrorManager.AddErrorRow(tableErrors, DateTime.Parse(item[CampaignDay.ParamNames.IssueDate].ToString()), MessageAccessor.GetMessage(ex.Message));
                         }
                     }
                     if (tableErrors.Rows.Count > 0)

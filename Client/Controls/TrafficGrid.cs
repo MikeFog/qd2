@@ -612,7 +612,7 @@ namespace Merlin.Controls
 				DateTime startDate = PassportStartDate(parameters);
 				DateTime finishDate = PassportFinishDate(parameters);
 
-                DataTable tableErrors = Campaign.CreateErrorsTable();
+                DataTable tableErrors = ErrorManager.CreateErrorsTable();
 
                 while (startDate <= finishDate)
 				{
@@ -625,7 +625,7 @@ namespace Merlin.Controls
 					}
 					catch(Exception ex) 
 					{ 
-						Campaign.AddErrorRow(tableErrors, date, MessageAccessor.GetMessage(ex.Message));
+						ErrorManager.AddErrorRow(tableErrors, date, MessageAccessor.GetMessage(ex.Message));
                     }
 
 					startDate = startDate.AddDays(1);

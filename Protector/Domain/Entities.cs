@@ -15,6 +15,8 @@
 		SysParam = 214,
 		UserMassmediaAdd = 220,
 		UserGroup = 223,
-		UserDiscount = 224
-	}
+		UserDiscount = 224,
+		UserDiscountMass = 1265,
+        ErrTmplGen = 157,
+    }
 }

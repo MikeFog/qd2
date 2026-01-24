@@ -73,10 +73,10 @@ namespace Merlin.Forms
 
         private void ShowErrors(DataRowCollection rows)
         {
-            DataTable tableErrors = Campaign.CreateErrorsTable();
+            DataTable tableErrors = ErrorManager.CreateErrorsTable();
             foreach (DataRow row in rows)
 			{
-                Campaign.AddErrorRow(tableErrors,(DateTime)row["windowDate"], MessageAccessor.GetMessage(row["errorMessage"].ToString()));
+                ErrorManager.AddErrorRow(tableErrors,(DateTime)row["windowDate"], MessageAccessor.GetMessage(row["errorMessage"].ToString()));
             }
             Globals.ShowSimpleJournal(EntityManager.GetEntity((int)Entities.ErrTmplGen), "Ошибки добавления рекламных окон", tableErrors);
         }
