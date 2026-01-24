@@ -65,5 +65,10 @@ namespace Merlin.Classes
 		{
 			get { return int.Parse(this[ParamNames.ModuleId].ToString()); }
 		}
-	}
+
+        public DateTime ClosestPricelistStartDate
+        {
+            get { return DateTime.Parse(this["closestPriceListStartDate"].ToString()); }
+        }
+    }
 }

@@ -139,7 +139,7 @@ namespace Merlin.Controls
 		private void LoadPricelist()
 		{
 			if(sponsorProgram != null)
-				pricelist = sponsorProgram.GetPricelist(currentDate);
+				pricelist = sponsorProgram.GetPricelist(_currentDate);
 		}
 
 		private void DeleteProgramIssue(int bonus, DataGridViewCell cell, TariffWindowWithProgramIssue tariffWindow)

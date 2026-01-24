@@ -67,7 +67,7 @@ namespace Merlin.Forms
 
 		private void tsbJump_Click(object sender, EventArgs e)
 		{
-			if (grdTariffWindow.Jump2Date())
+			if (grdTariffWindow.SelectDate2Jump())
 				grdTariffWindow.RefreshGrid();
 		}
 

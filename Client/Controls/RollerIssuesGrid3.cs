@@ -69,9 +69,9 @@ namespace Merlin.Controls
 			if (_massmedia == null) return;
 
 			if (module == null)
-				pricelist = _massmedia.GetPriceList(currentDate);
+				pricelist = _massmedia.GetPriceList(_currentDate);
 			else
-				pricelist = module.GetPriceList(currentDate);
+				pricelist = module.GetPriceList(_currentDate);
 
 			if (pricelist != null)
 			{

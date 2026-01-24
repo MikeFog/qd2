@@ -24,7 +24,7 @@ namespace Merlin.Controls
 		{
 			loadPricelist = delegate
 			                {
-							if(module != null) pricelist = module.GetPriceList(currentDate);
+							if(module != null) pricelist = module.GetPriceList(_currentDate);
 			                };
 
 			populateGrid = delegate

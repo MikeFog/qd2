@@ -51,7 +51,6 @@ namespace Merlin.Controls
 			excludeModuleTariffs = false;
 			loadPricelist = LoadPricelist;
 			defaultSelectionBackColor = InternalGrid.DefaultCellStyle.SelectionBackColor;
-
         }
 
         public TrafficGrid(bool showTrafficWindows)

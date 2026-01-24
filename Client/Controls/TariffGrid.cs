@@ -109,7 +109,7 @@ namespace Merlin.Controls
 		protected EditMode editMode;
 		protected Campaign campaign;
 		protected Pricelist pricelist;
-		protected DateTime currentDate = DateTime.Today.AddDays(1);
+		protected DateTime _currentDate = DateTime.Today.AddDays(1);
 		protected DateTime monday, startDate, finishDate;
 		protected DataTable dtGrid;
 
@@ -184,7 +184,7 @@ namespace Merlin.Controls
 			set
 			{
 				pricelist = value;
-				if (pricelist != null) currentDate = pricelist.StartDate;
+				if (pricelist != null) _currentDate = pricelist.StartDate;
 			}
 		}
 
@@ -388,7 +388,7 @@ namespace Merlin.Controls
 
 			// add first row with dates
 			DataRow row = dtGrid.NewRow();
-			DateTime theDate = currentDate;
+			DateTime theDate = _currentDate;
 
 			while (theDate.DayOfWeek != DayOfWeek.Monday)
 				theDate = theDate.AddDays(-1);
@@ -515,9 +515,9 @@ namespace Merlin.Controls
 				Cursor = Cursors.WaitCursor;
 
 				if (direction == Directions.Forward)
-					currentDate = finishDate.AddDays(1);
+					_currentDate = finishDate.AddDays(1);
 				else if (direction == Directions.Back)
-					currentDate = startDate.AddDays(-1);
+					_currentDate = startDate.AddDays(-1);
 
 				RefreshGrid();
 			}
@@ -557,8 +557,8 @@ namespace Merlin.Controls
 		[Browsable(false)]
 		public DateTime CurrentDate
 		{
-			get { return currentDate; }
-			set { currentDate = value; }
+			get => _currentDate;
+			set => _currentDate = value;
 		}
 
 		public ITariffWindow CurrentTariffWindow
@@ -643,7 +643,7 @@ namespace Merlin.Controls
             SetCellForeColor(cell.RowIndex, cell.ColumnIndex, Color.LightSeaGreen);
         }
 
-        public bool Jump2Date()
+        public bool SelectDate2Jump()
 		{
 			FrmDateSelector fSelector = new FrmDateSelector("Выбор даты");
 			fSelector.Mode = FrmDateSelector.SelectorMode.SelectOne;
@@ -672,8 +672,6 @@ namespace Merlin.Controls
 
         protected void MarkCellAsDisabled(int rowIndex, int columnIndex)
         {
-            
-            //SetCellBackColor(rowIndex, columnIndex, Color.LightPink);
             SetCellBackColor(rowIndex, columnIndex, Color.FromArgb(255, 231, 234));
         }
         protected void MarkCellAsMarked(int rowIndex, int columnIndex)

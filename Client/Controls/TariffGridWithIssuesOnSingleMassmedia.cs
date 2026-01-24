@@ -42,7 +42,7 @@ namespace Merlin.Controls
 				if (value == null) return;
 				_massmedia = ((CampaignOnSingleMassmedia)value).Massmedia;
 				if (campaign.StartDate != DateTime.MinValue)
-					currentDate = campaign.StartDate.Date;
+					_currentDate = campaign.StartDate.Date;
 			}
 		}
 
