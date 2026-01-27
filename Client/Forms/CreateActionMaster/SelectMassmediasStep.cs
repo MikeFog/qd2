@@ -88,7 +88,7 @@ namespace Merlin.Forms.CreateActionMaster
                 parameters["firmID"] = _firm.FirmId;
                 parameters["paymentTypeID"] = lookUpPaymentType.SelectedValue;
                 DataAccessor.ExecuteNonQuery("CreateActionWithRange", parameters);
-                ActionID = ParseHelper.GetInt32FromObject(parameters["actionID"], 0);
+                Action = ActionOnMassmedia.GetActionById(ParseHelper.GetInt32FromObject(parameters["actionID"], 0));
                 Globals.SetDefaultCursor(this);
             }
             catch (Exception ex)
@@ -136,7 +136,7 @@ namespace Merlin.Forms.CreateActionMaster
             get { return grdMassmedia.Added2Checked.Count; }
 	    }
 
-        public int ActionID
+        public ActionOnMassmedia Action
         {
             get; private set;
         }

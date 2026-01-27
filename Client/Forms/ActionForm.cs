@@ -359,7 +359,7 @@ namespace Merlin.Forms
         {
 			try
 			{
-                EditIssuesForm form = new EditIssuesForm(_action.Firm, _action.ActionId, grdCampaign.ItemsCount);
+                EditIssuesForm form = new EditIssuesForm(_action.Firm, _action, grdCampaign.ItemsCount);
                 form.ShowDialog(this);
             }
             catch (Exception ex)

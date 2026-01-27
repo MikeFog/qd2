@@ -601,10 +601,10 @@ namespace Merlin.Forms
 		{
 			try
 			{
-				Application.DoEvents();
 				Cursor.Current = Cursors.WaitCursor;
+                Application.DoEvents();
 
-				Firm firm = Firm.SelectFirm(this);
+                Firm firm = Firm.SelectFirm(this);
 				if (firm != null)
 					new ActionOnMassmedia(firm).ShowPassport(this);
 			}
@@ -618,18 +618,18 @@ namespace Merlin.Forms
 		{
 			try
 			{
-				Application.DoEvents();
 				Cursor.Current = Cursors.WaitCursor;
+                Application.DoEvents();
 
-				Firm firm = Firm.SelectFirm(this);
+                Firm firm = Firm.SelectFirm(this);
 				if (firm != null)
 				{
 					SelectMassmediasStep step1 = new SelectMassmediasStep(firm);
 					if (step1.ShowDialog(this) == DialogResult.OK)
 					{
-                        EditIssuesForm step2 = new EditIssuesForm(firm, step1.ActionID, step1.MassmediasCount);
+                        EditIssuesForm step2 = new EditIssuesForm(firm, step1.Action, step1.MassmediasCount);
 						step2.ShowDialog(this);
-                        ActionForm step3 = new ActionForm(ActionOnMassmedia.GetActionById(step1.ActionID));
+                        ActionForm step3 = new ActionForm(step1.Action);
 					    step3.ShowDialog(this);
 					}
 				}

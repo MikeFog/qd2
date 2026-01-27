@@ -13,16 +13,16 @@ namespace Merlin.Controls
 	{
 		private const string MinBroadcastColumnName = "minBroadcast";
 		private const string MaxBroadcastColumnName = "maxBroadcast";
-	    private readonly int _actionID;
-	    private readonly int _massmediasCount;
+        private readonly ActionOnMassmedia _action;
+        private readonly int _massmediasCount;
 		private Dictionary<string, string> _timeResolver;
 
-        public int ActionID
+        public ActionOnMassmedia Action
         {
-            get { return _actionID; }
+			get => _action;
         }
 
-        public TariffWithRangeGrid(int actionID, int massmediasCount)
+        public TariffWithRangeGrid(ActionOnMassmedia action, int massmediasCount)
 		{
 			InitializeComponent();
 			InitializeDelegates();
@@ -30,22 +30,14 @@ namespace Merlin.Controls
 			DateTime date = DateTime.Today.Date;
 			monday = startDate = date.AddDays(date.DayOfWeek - DayOfWeek.Monday);
 			finishDate = startDate.AddDays(7);
-            _actionID = actionID;
+            _action = action;
             _massmediasCount = massmediasCount;
             InitAddedIssuesData();
 		}
 
 	    private void InitAddedIssuesData()
 	    {
-	        AddedIssues = new DataTable();
-			AddedIssues.Columns.Add("issueDate", typeof(DateTime));
-			AddedIssues.Columns.Add(Entity.ParamNames.NAME, typeof(string));
-			AddedIssues.Columns.Add("rollerID", typeof(string));
-			AddedIssues.Columns.Add("durationString", typeof(string));
-			AddedIssues.Columns.Add("position", typeof(string));
-			AddedIssues.Columns.Add("positionID", typeof(string));
-			AddedIssues.Columns.Add("RowNum", typeof(Guid));
-			AddedIssues.Columns.Add(Issue.ParamNames.IssueId, typeof(int));
+			AddedIssues = _action.BuildAddedIssuesTable();
         }
 
 	    private DataTable Data { get; set; }
@@ -67,7 +59,7 @@ namespace Merlin.Controls
 			{
 				Dictionary<string, object> dictionary = DataAccessor.CreateParametersDictionary();
 				dictionary.Add("dateStart", StartDate);
-				dictionary.Add("actionID", _actionID);
+				dictionary.Add("actionID", _action.ActionId);
 				DataSet dataSet = DataAccessor.LoadDataSet("TariffWindowWithRange", dictionary);
 				Data = dataSet.Tables[0];
 
@@ -116,7 +108,7 @@ namespace Merlin.Controls
 		public DataRow AddIssuesRange(DateTime windowDate)
 		{
 			Dictionary<string, object> parameters = DataAccessor.CreateParametersDictionary();
-			parameters["actionID"] = _actionID;
+			parameters["actionID"] = _action.ActionId;
 			parameters["issueDate"] = windowDate;
 			parameters["rollerID"] = Roller.RollerId;
 			parameters["rollerDuration"] = Roller.Duration;
@@ -125,7 +117,7 @@ namespace Merlin.Controls
             if (Grantor != null)
 				parameters["grantorID"] = Grantor.Id;
 			DataAccessor.ExecuteNonQuery("AddRangeIssues", parameters);
-			ActionOnMassmedia.GetActionById(_actionID).Recalculate();
+			_action.Recalculate();
 
 			DataRow row = AddedIssues.NewRow();
 			row[Issue.ParamNames.IssueId] = (new Random()).Next();
@@ -305,14 +297,14 @@ namespace Merlin.Controls
 			try
 			{
 				Dictionary<string, object> parameters = DataAccessor.CreateParametersDictionary();
-				parameters[Merlin.Classes.Action.ParamNames.ActionId] = _actionID;
+				parameters[Merlin.Classes.Action.ParamNames.ActionId] = _action.ActionId;
 				parameters["issueDate"] = issue["issueDate"];
 				parameters["rollerID"] = issue["rollerID"];
 				parameters["positionId"] = issue["positionID"];
 				if (Grantor != null)
 					parameters["grantorID"] = Grantor.Id;
 				DataAccessor.ExecuteNonQuery("MasterIssueDelete", parameters);
-				ActionOnMassmedia.GetActionById(_actionID).Recalculate();
+				_action.Recalculate();
 
 				foreach (DataRow row in AddedIssues.Select(string.Format("RowNum = '{0}'", issue["RowNum"])))
 					AddedIssues.Rows.Remove(row);

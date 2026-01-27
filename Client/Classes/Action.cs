@@ -12,7 +12,7 @@ using MessageBox = FogSoft.WinForm.Forms.MessageBox;
 
 namespace Merlin.Classes
 {
-    public abstract class Action : ObjectContainer
+	public abstract class Action : ObjectContainer
 	{
 		public enum ActionMediaPlanType
 		{
@@ -34,13 +34,13 @@ namespace Merlin.Classes
 			public const string PrintBillMedia = "PrintBillMedia";
 			public const string PrintContractMedia = "PrintContractMedia";
 			public const string PrintContract = "PrintContract";
-            public const string PrintSponsorContract = "PrintSponsorContract";
+			public const string PrintSponsorContract = "PrintSponsorContract";
 			public const string PrintMediaPlan = "PrintMediaPlan";
 			public const string PrintMediaPlanMonth = "PrintMediaPlanMonth";
 			public const string PrintMediaPlanByPeriod = "PrintMediaPlanByPeriod";
-            public const string PrintSelectivelyMediaPlan = "PrintSelectivelyMediaPlan";
-            public const string PrintSelectivelyMediaPlanMonth = "PrintSelectivelyMediaPlanMonth";
-            public const string PrintSelectivelyMediaPlanByPeriod = "PrintSelectivelyMediaPlanByPeriod";
+			public const string PrintSelectivelyMediaPlan = "PrintSelectivelyMediaPlan";
+			public const string PrintSelectivelyMediaPlanMonth = "PrintSelectivelyMediaPlanMonth";
+			public const string PrintSelectivelyMediaPlanByPeriod = "PrintSelectivelyMediaPlanByPeriod";
 			public const string ExportContract = "ExportContract";
 
 			public const string PrintAgreement = "PrintAgreement";
@@ -54,19 +54,19 @@ namespace Merlin.Classes
 			public const string MarkAsNotReady = "MarkAsNotReady";
 			public const string MarkAsReady = "MarkAsReady";
 
-            public const string Activate = "Activate";
-            public const string ActivateTest = "ActivateTest";
-            public const string Deactivate = "Deactivate";
-            public const string Merge = "Merge";
-            public const string Recalculate = "Recalculate";
-            public const string ActionRollers = "ActionRollers";
-            public const string Clone = "Clone";
-            public const string SplitAction = "SplitAction";
-            public const string SplitCampaigns = "SplitCampaigns";
-            public const string Restore = "Restore";
-            public const string SetAdvertType = "SetAdvertType";
+			public const string Activate = "Activate";
+			public const string ActivateTest = "ActivateTest";
+			public const string Deactivate = "Deactivate";
+			public const string Merge = "Merge";
+			public const string Recalculate = "Recalculate";
+			public const string ActionRollers = "ActionRollers";
+			public const string Clone = "Clone";
+			public const string SplitAction = "SplitAction";
+			public const string SplitCampaigns = "SplitCampaigns";
+			public const string Restore = "Restore";
+			public const string SetAdvertType = "SetAdvertType";
 			public const string PrintBillContract = "Bill-Contract";
-        }
+		}
 
 		public struct ParamNames
 		{
@@ -84,8 +84,8 @@ namespace Merlin.Classes
 			public const string IsConfirmed = "isConfirmed";
 			public const string StatusID = "orderStatusID";
 			public const string StatusName = "orderStatusName";
-            public const string DeleteDate = "deleteDate";
-        }
+			public const string DeleteDate = "deleteDate";
+		}
 
 		#endregion
 
@@ -168,13 +168,13 @@ namespace Merlin.Classes
 			}
 		}
 
-        public DataTable Campaigns(bool forceLoad = false)
-        {
+		public DataTable Campaigns(bool forceLoad = false)
+		{
 			DataAccessor.PrepareParameters(parameters, ChildEntity, InterfaceObjects.SimpleJournal, Constants.Actions.Load);
 			return ((DataSet)DataAccessor.DoAction(parameters, forceLoad)).Tables[0];
-        }
+		}
 
-        public int ActionId
+		public int ActionId
 		{
 			get { return int.Parse(this[ParamNames.ActionId].ToString()); }
 		}
@@ -247,16 +247,16 @@ namespace Merlin.Classes
 			get { return int.Parse(parameters[SecurityManager.ParamNames.UserId].ToString()); }
 		}
 
-        public DateTime? DeleteDate
-        {
-            get 
+		public DateTime? DeleteDate
+		{
+			get
 			{
 				if (parameters[ParamNames.DeleteDate] == DBNull.Value) return null;
-				return DateTime.Parse(parameters[ParamNames.DeleteDate].ToString()); 
+				return DateTime.Parse(parameters[ParamNames.DeleteDate].ToString());
 			}
-        }
+		}
 
-        public SecurityManager.User Creator
+		public SecurityManager.User Creator
 		{
 			get { return SecurityManager.GetUser(CreatorId); }
 		}
@@ -266,15 +266,15 @@ namespace Merlin.Classes
 			PrintAgencyDocuments(owner, PrintContract, doExport);
 		}
 
-        public void PrintBillContracts(Form owner, bool doExport)
-        {
-            PrintAgencyDocuments(owner, PrintBillContract, doExport);
-        }
+		public void PrintBillContracts(Form owner, bool doExport)
+		{
+			PrintAgencyDocuments(owner, PrintBillContract, doExport);
+		}
 
-        public void PrintSponsorContracts(Form owner, bool doExport)
-        {
-            PrintAgencyDocuments(owner, PrintSponsorContract, doExport);
-        }
+		public void PrintSponsorContracts(Form owner, bool doExport)
+		{
+			PrintAgencyDocuments(owner, PrintSponsorContract, doExport);
+		}
 
 		public void PrintBills(Form owner, bool byMounth, bool doExport)
 		{
@@ -298,43 +298,43 @@ namespace Merlin.Classes
 					foreach (DateTime month in months)
 					{
 						Application.DoEvents();
-						Agency agency = (Agency) po;
+						Agency agency = (Agency)po;
 						BillReport report = new BillReport(this, agency, bill, month);
 						report.Show(string.Format("Счёт на предоплату, агенство '{0}' за месяц {1} {2} года", agency.Name
 							, DateTimeFormatInfo.CurrentInfo.MonthNames[month.Month - 1], month.Year));
 					}
 				}
 			}
-			else 
+			else
 				PrintAgencyDocuments(owner, PrintBill, false);
 		}
 
-        public void PrintMediaPlan(ActionMediaPlanType type, bool selectively)
+		public void PrintMediaPlan(ActionMediaPlanType type, bool selectively)
 		{
 			Refresh();
 			//DataSet ds = Campaigns;
 			//if (ds.Tables.Count > 0)
 			//{
-				switch (type)
-				{
-					case ActionMediaPlanType.Massmedias:
-                        MediaPlan.CreateInstance(this, selectively).Show(false);
-						break;
-					case ActionMediaPlanType.Simple:
-                        MediaPlan.CreateInstance(GetCampaigns(Campaigns()), selectively).Show(false);
-						break;
-					case ActionMediaPlanType.Month:
-						IList<DateTime> months = GetSelectedMonths();
-						if (months == null)
-							return;
-                        MediaPlan.CreateInstance(GetCampaigns(Campaigns()), months, selectively).Show(false);
-						break;
-					case ActionMediaPlanType.Period:
-						FrmDateSelector selector = new FrmDateSelector(StartDate, FinishDate, "Выбор периода");
-						if (selector.ShowDialog(Globals.MdiParent) == DialogResult.OK)
-                            MediaPlan.CreateInstance(GetCampaigns(Campaigns()), selector.StartDate, selector.FinishDate, selectively).Show(false);
-						break;
-				}
+			switch (type)
+			{
+				case ActionMediaPlanType.Massmedias:
+					MediaPlan.CreateInstance(this, selectively).Show(false);
+					break;
+				case ActionMediaPlanType.Simple:
+					MediaPlan.CreateInstance(GetCampaigns(Campaigns()), selectively).Show(false);
+					break;
+				case ActionMediaPlanType.Month:
+					IList<DateTime> months = GetSelectedMonths();
+					if (months == null)
+						return;
+					MediaPlan.CreateInstance(GetCampaigns(Campaigns()), months, selectively).Show(false);
+					break;
+				case ActionMediaPlanType.Period:
+					FrmDateSelector selector = new FrmDateSelector(StartDate, FinishDate, "Выбор периода");
+					if (selector.ShowDialog(Globals.MdiParent) == DialogResult.OK)
+						MediaPlan.CreateInstance(GetCampaigns(Campaigns()), selector.StartDate, selector.FinishDate, selectively).Show(false);
+					break;
+			}
 			//}
 		}
 
@@ -351,11 +351,11 @@ namespace Merlin.Classes
 		{
 			Dictionary<object, object> dMonthsToShow = SelectMonthsToShow();
 			FrmMonths f = new FrmMonths(dMonthsToShow, false);
-			if (f.ShowDialog(Globals.MdiParent) == DialogResult.Cancel) 
+			if (f.ShowDialog(Globals.MdiParent) == DialogResult.Cancel)
 				return null;
 			IList<DateTime> months = new List<DateTime>();
 			foreach (KeyValuePair<object, object> item in f.CheckedItems)
-				months.Add((DateTime) item.Key);
+				months.Add((DateTime)item.Key);
 			return months;
 		}
 
@@ -380,10 +380,10 @@ namespace Merlin.Classes
 
 		private DataSet GetMonthes()
 		{
-            Dictionary<string, object> procParameters = new Dictionary<string, object>(StringComparer.CurrentCultureIgnoreCase)
-            {
-                [ParamNames.ActionId] = ActionId
-            };
+			Dictionary<string, object> procParameters = new Dictionary<string, object>(StringComparer.CurrentCultureIgnoreCase)
+			{
+				[ParamNames.ActionId] = ActionId
+			};
 			return DataAccessor.LoadDataSet("GetMonthes", procParameters);
 		}
 
@@ -396,20 +396,20 @@ namespace Merlin.Classes
 			return DataAccessor.LoadDataSet("GetMassmedias", procParameters);
 		}
 
-        public bool IsConfirmed
-        {
-            get
-            {
-                if (!parameters.ContainsKey(ParamNames.IsConfirmed)) Refresh();
-                return bool.Parse(parameters[ParamNames.IsConfirmed].ToString());
-            }
-        }
+		public bool IsConfirmed
+		{
+			get
+			{
+				if (!parameters.ContainsKey(ParamNames.IsConfirmed)) Refresh();
+				return bool.Parse(parameters[ParamNames.IsConfirmed].ToString());
+			}
+		}
 
-        #endregion
+		#endregion
 
-        #region Private -----------------------------------
+		#region Private -----------------------------------
 
-        private void ChangeFirm(Control owner)
+		private void ChangeFirm(Control owner)
 		{
 			if (IsChangeFirmPossible)
 			{
@@ -422,29 +422,29 @@ namespace Merlin.Classes
 					this[ParamNames.FirmId] = newFirm.FirmId;
 					Update();
 					Refresh();
-                    OnObjectChanged(this);
-                    MessageBox.ShowInformation(Properties.Resources.FirmChangeSuccess);
-                }
+					OnObjectChanged(this);
+					MessageBox.ShowInformation(Properties.Resources.FirmChangeSuccess);
+				}
 			}
 			else
-                MessageBox.ShowExclamation(MessageAccessor.GetMessage("ChangeFirmIsForbidden"));
-        }
+				MessageBox.ShowExclamation(MessageAccessor.GetMessage("ChangeFirmIsForbidden"));
+		}
 
 		private bool IsChangeFirmPossible
 		{
-			get 
+			get
 			{
 				if (SecurityManager.LoggedUser.IsAdmin || SecurityManager.LoggedUser.IsBookKeeper || !IsConfirmed) return true;
 				// если акция началась в предыдущем месяце или ранее, то нельзя
 				if (new DateTime(StartDate.Year, StartDate.Month, 1) < new DateTime(DateTime.Today.Year, DateTime.Today.Month, 1)) return false;
 				// если начало в этом месяце, то не должна уже закончиться
-				if(FinishDate < DateTime.Today) return false;
+				if (FinishDate < DateTime.Today) return false;
 
 				return true;
 			}
 		}
 
-        private void ChangeCreator(Control owner)
+		private void ChangeCreator(Control owner)
 		{
 			PresentationObject manager = Utils.SelectManager(owner);
 			if (manager != null)
@@ -490,48 +490,48 @@ namespace Merlin.Classes
 
 		protected virtual void PrintContract(Form owner, Agency agency, bool exportReport)
 		{
-            PresentationObject bill = GetBill(agency, owner);
-            if (bill == null) return;
+			PresentationObject bill = GetBill(agency, owner);
+			if (bill == null) return;
 
-            Application.DoEvents();
-            owner.Cursor = Cursors.WaitCursor;
+			Application.DoEvents();
+			owner.Cursor = Cursors.WaitCursor;
 
-            ContractReport report = new ContractReport(this, agency, bill);
-            report.Show("Договор");
+			ContractReport report = new ContractReport(this, agency, bill);
+			report.Show("Договор");
 		}
 
-        protected virtual void PrintSponsorContract(Form owner, Agency agency, bool exportReport)
-        {
-            PresentationObject bill = GetBill(agency, owner);
-            if (bill == null) return;
+		protected virtual void PrintSponsorContract(Form owner, Agency agency, bool exportReport)
+		{
+			PresentationObject bill = GetBill(agency, owner);
+			if (bill == null) return;
 
-            Application.DoEvents();
-            owner.Cursor = Cursors.WaitCursor;
+			Application.DoEvents();
+			owner.Cursor = Cursors.WaitCursor;
 
-            ContractReport report = new ContractReport(this, agency, bill, true);
-            report.Show("Спонсорский договор");
-        }
+			ContractReport report = new ContractReport(this, agency, bill, true);
+			report.Show("Спонсорский договор");
+		}
 
-        private void PrintBillContract(Form owner, Agency agency, bool exportReport)
-        {
-            PresentationObject bill = GetBill(agency, owner);
-            if (bill == null) return;
+		private void PrintBillContract(Form owner, Agency agency, bool exportReport)
+		{
+			PresentationObject bill = GetBill(agency, owner);
+			if (bill == null) return;
 
-            Application.DoEvents();
-            owner.Cursor = Cursors.WaitCursor;
-            BillReport report = new BillContractReport(this, agency, bill);
-            report.Show("Счёт-договор");
-        }
+			Application.DoEvents();
+			owner.Cursor = Cursors.WaitCursor;
+			BillReport report = new BillContractReport(this, agency, bill);
+			report.Show("Счёт-договор");
+		}
 
 
-        protected virtual void PrintBill(Form owner, Agency agency, bool exportReport)
+		protected virtual void PrintBill(Form owner, Agency agency, bool exportReport)
 		{
 			// Load Bill data
 			PresentationObject bill = GetBill(agency, owner);
 			if (bill == null) return;
 
-            Application.DoEvents();
-            owner.Cursor = Cursors.WaitCursor;
+			Application.DoEvents();
+			owner.Cursor = Cursors.WaitCursor;
 			BillReport report = new BillReport(this, agency, bill);
 			if (exportReport) report.Export(ReportExportFormat.WordForWindows);
 			else report.Show("Счёт");
@@ -597,17 +597,17 @@ namespace Merlin.Classes
 		public string GetAgenciesString(string mmIds)
 		{
 			Dictionary<string, object> parametersMM = new Dictionary<string, object>
-            {
-                [ParamNames.ActionId] = ActionId,
-                ["massmediaIDString"] = mmIds,
-                ["agencies"] = DBNull.Value
-            };
+			{
+				[ParamNames.ActionId] = ActionId,
+				["massmediaIDString"] = mmIds,
+				["agencies"] = DBNull.Value
+			};
 			DataAccessor.ExecuteNonQuery("GetAgenciesString", parametersMM);
 			return parametersMM["agencies"].ToString();
 		}
 
-        protected void SetAdvertTypeOrSubstituteRoller()
-        {
+		protected void SetAdvertTypeOrSubstituteRoller()
+		{
 			try
 			{
 				Dictionary<string, object> procParameters = DataAccessor.CreateParametersDictionary();
@@ -616,8 +616,304 @@ namespace Merlin.Classes
 					string.Format("Ролики рекламной акции № {0}", ActionId),
 					procParameters, showModal: true);
 				FireContainerRefreshed();
-            }
-            finally { Cursor.Current = Cursors.Default; }
-        }
-    }
+			}
+			finally { Cursor.Current = Cursors.Default; }
+		}
+
+		#region Added issues calculation
+
+		public DataTable BuildAddedIssuesTable()
+		{
+			DataTable addedIssues = CreateAddedIssuesTable();
+			if (ChildEntity == null)
+				return addedIssues;
+
+			DataTable campaignsTable = Campaigns();
+			if (campaignsTable == null || campaignsTable.Rows.Count == 0)
+				return addedIssues;
+
+			IList<Campaign> campaigns = GetCampaigns(campaignsTable);
+			List<Campaign> actualCampaigns = new List<Campaign>();
+			foreach (Campaign campaign in campaigns)
+			{
+				if (campaign != null)
+					actualCampaigns.Add(campaign);
+			}
+
+			if (actualCampaigns.Count == 0)
+				return addedIssues;
+
+			Entity issueEntity = EntityManager.GetEntity((int)Entities.Issue);
+			List<Dictionary<IssueSlotKey, List<DataRow>>> groupedIssues = new List<Dictionary<IssueSlotKey, List<DataRow>>>();
+
+			foreach (Campaign campaign in actualCampaigns)
+			{
+				campaign.ChildEntity = issueEntity;
+				DataTable campaignIssues = campaign.GetContent();
+				Dictionary<IssueSlotKey, List<DataRow>> grouped = GroupIssuesBySlot(campaignIssues);
+
+				if (grouped.Count == 0)
+					return addedIssues;
+
+				groupedIssues.Add(grouped);
+			}
+
+			HashSet<IssueSlotKey> commonSlots = BuildCommonSlots(groupedIssues);
+			if (commonSlots.Count == 0)
+				return addedIssues;
+
+			List<IssueSlotKey> sortedSlots = new List<IssueSlotKey>(commonSlots);
+			sortedSlots.Sort(IssueSlotKeyComparer.Instance);
+
+			foreach (IssueSlotKey slot in sortedSlots)
+			{
+				DataRow representative = GetRepresentativeIssueRow(slot, groupedIssues);
+				if (representative != null)
+					TryAddIssueRow(addedIssues, representative, slot);
+			}
+
+			return addedIssues;
+		}
+
+		private static DataTable CreateAddedIssuesTable()
+		{
+			DataTable table = new DataTable("AddedIssues");
+			table.Columns.Add("issueDate", typeof(DateTime));
+			table.Columns.Add(Entity.ParamNames.NAME, typeof(string));
+			table.Columns.Add("rollerID", typeof(string));
+			table.Columns.Add("durationString", typeof(string));
+			table.Columns.Add("position", typeof(string));
+			table.Columns.Add("positionID", typeof(string));
+			table.Columns.Add("RowNum", typeof(Guid));
+			table.Columns.Add(Issue.ParamNames.IssueId, typeof(int));
+			return table;
+		}
+
+		private static Dictionary<IssueSlotKey, List<DataRow>> GroupIssuesBySlot(DataTable issues)
+		{
+			Dictionary<IssueSlotKey, List<DataRow>> result = new Dictionary<IssueSlotKey, List<DataRow>>();
+			if (issues == null || !issues.Columns.Contains(Issue.ParamNames.IssueDate))
+				return result;
+
+			foreach (DataRow row in issues.Rows)
+			{
+				if (!TryGetIssueDate(row, out DateTime issueDate))
+					continue;
+
+				IssueSlotKey key = IssueSlotKey.From(issueDate);
+				if (!result.TryGetValue(key, out List<DataRow> rows))
+				{
+					rows = new List<DataRow>();
+					result[key] = rows;
+				}
+
+				rows.Add(row);
+			}
+
+			return result;
+		}
+
+		private static HashSet<IssueSlotKey> BuildCommonSlots(List<Dictionary<IssueSlotKey, List<DataRow>>> groupedIssues)
+		{
+			HashSet<IssueSlotKey> commonSlots = null;
+			foreach (Dictionary<IssueSlotKey, List<DataRow>> campaignSlots in groupedIssues)
+			{
+				if (commonSlots == null)
+				{
+					commonSlots = new HashSet<IssueSlotKey>(campaignSlots.Keys);
+				}
+				else
+				{
+					commonSlots.IntersectWith(campaignSlots.Keys);
+				}
+
+				if (commonSlots.Count == 0)
+					break;
+			}
+
+			return commonSlots ?? new HashSet<IssueSlotKey>();
+		}
+
+		private static DataRow GetRepresentativeIssueRow(IssueSlotKey slot, List<Dictionary<IssueSlotKey, List<DataRow>>> groupedIssues)
+		{
+			foreach (Dictionary<IssueSlotKey, List<DataRow>> campaignSlots in groupedIssues)
+			{
+				List<DataRow> slotIssues;
+				if (campaignSlots.TryGetValue(slot, out slotIssues) && slotIssues != null && slotIssues.Count > 0)
+					return slotIssues[0];
+			}
+
+			return null;
+		}
+
+		private static bool TryAddIssueRow(DataTable target, DataRow source, IssueSlotKey slot)
+		{
+			DateTime issueDate;
+			if (!TryGetIssueDate(source, out issueDate))
+				return false;
+
+			return CreateAddedIssueRow(target, source, slot.ToDateTime());
+		}
+
+		private static bool CreateAddedIssueRow(DataTable target, DataRow source, DateTime issueDate)
+		{
+			if (!ColumnExists(source, Issue.ParamNames.IssueId))
+				return false;
+
+			int issueId = ParseHelper.ParseToInt32(source[Issue.ParamNames.IssueId].ToString(), 0);
+
+			DataRow newRow = target.NewRow();
+			newRow["issueDate"] = issueDate;
+			newRow[Entity.ParamNames.NAME] = ResolveString(source, Entity.ParamNames.NAME, RollerIssue.ParamNames.RollerName);
+			newRow["rollerID"] = ResolveString(source, Roller.ParamNames.RollerId);
+			newRow["durationString"] = ResolveDurationString(source);
+			int positionId = ResolvePositionId(source);
+			newRow["position"] = GetPositionDisplayName((RollerPositions)positionId);
+			newRow["positionID"] = positionId.ToString(CultureInfo.InvariantCulture);
+			newRow["RowNum"] = Guid.NewGuid();
+			newRow[Issue.ParamNames.IssueId] = issueId;
+			target.Rows.Add(newRow);
+			return true;
+		}
+
+		private static bool TryGetIssueDate(DataRow row, out DateTime issueDate)
+		{
+			issueDate = DateTime.MinValue;
+			if (!ColumnExists(row, Issue.ParamNames.IssueDate))
+				return false;
+
+			issueDate = ParseHelper.GetDateTimeFromObject(row[Issue.ParamNames.IssueDate], DateTime.MinValue);
+			return issueDate != DateTime.MinValue;
+		}
+
+		private static string ResolveDurationString(DataRow row)
+		{
+			if (ColumnExists(row, Roller.ParamNames.DurationString))
+			{
+				object value = row[Roller.ParamNames.DurationString];
+				if (value != DBNull.Value)
+					return value.ToString();
+			}
+
+			if (ColumnExists(row, Roller.ParamNames.Duration))
+			{
+				int seconds = ParseHelper.ParseToInt32(row[Roller.ParamNames.Duration].ToString(), 0);
+				if (seconds > 0)
+				{
+					TimeSpan span = TimeSpan.FromSeconds(seconds);
+					return span.Hours > 0 ? span.ToString(@"hh\:mm\:ss") : span.ToString(@"mm\:ss");
+				}
+			}
+
+			return string.Empty;
+		}
+
+		private static int ResolvePositionId(DataRow row)
+		{
+			if (ColumnExists(row, Issue.ParamNames.Position))
+				return ParseHelper.ParseToInt32(row[Issue.ParamNames.Position].ToString(), (int)RollerPositions.Undefined);
+
+			if (ColumnExists(row, "position"))
+				return ParseHelper.ParseToInt32(row["position"].ToString(), (int)RollerPositions.Undefined);
+
+			return (int)RollerPositions.Undefined;
+		}
+
+		private static string GetPositionDisplayName(RollerPositions position)
+		{
+			switch (position)
+			{
+				case RollerPositions.First:
+				case RollerPositions.FirstTransferred:
+					return "Первый";
+				case RollerPositions.Second:
+				case RollerPositions.SecondTransferred:
+					return "Второй";
+				case RollerPositions.Last:
+				case RollerPositions.LastTransferred:
+					return "Последний";
+				default:
+					return "Неопределена";
+			}
+		}
+
+		private static string ResolveString(DataRow row, params string[] columns)
+		{
+			if (row == null || row.Table == null)
+				return string.Empty;
+
+			foreach (string column in columns)
+			{
+				if (row.Table.Columns.Contains(column))
+				{
+					object value = row[column];
+					if (value != DBNull.Value)
+						return value.ToString();
+				}
+			}
+
+			return string.Empty;
+		}
+
+		private static bool ColumnExists(DataRow row, string columnName)
+		{
+			return row?.Table?.Columns.Contains(columnName) == true;
+		}
+
+		private readonly struct IssueSlotKey : IEquatable<IssueSlotKey>
+		{
+			private readonly DateTime date;
+			private readonly int slotIndex;
+
+			private IssueSlotKey(DateTime date, int slotIndex)
+			{
+				this.date = date;
+				this.slotIndex = slotIndex;
+			}
+
+			public static IssueSlotKey From(DateTime dateTime)
+			{
+				int slot = ((dateTime.Hour * 60) + dateTime.Minute) / 30;
+				return new IssueSlotKey(dateTime.Date, slot);
+			}
+
+			public DateTime ToDateTime()
+			{
+				return date.AddMinutes(slotIndex * 30);
+			}
+
+			public bool Equals(IssueSlotKey other)
+			{
+				return date == other.date && slotIndex == other.slotIndex;
+			}
+
+			public override bool Equals(object obj)
+			{
+				return obj is IssueSlotKey other && Equals(other);
+			}
+
+			public override int GetHashCode()
+			{
+				unchecked
+				{
+					return (date.GetHashCode() * 397) ^ slotIndex;
+				}
+			}
+		}
+
+		private sealed class IssueSlotKeyComparer : IComparer<IssueSlotKey>
+		{
+			public static readonly IssueSlotKeyComparer Instance = new IssueSlotKeyComparer();
+
+			private IssueSlotKeyComparer()
+			{
+			}
+
+			public int Compare(IssueSlotKey x, IssueSlotKey y)
+			{
+				return x.ToDateTime().CompareTo(y.ToDateTime());
+			}
+		}
+	}
+        #endregion
 }

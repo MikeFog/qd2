@@ -14,11 +14,11 @@ namespace Merlin.Forms.CreateActionMaster
 			InitializeComponent();
 		}
 
-		public EditIssuesForm(Firm firm, int actionID, int massmediasCount)
+		public EditIssuesForm(Firm firm, ActionOnMassmedia action, int massmediasCount)
 			: this()
 		{
 			_firm = firm;
-            SetTariffGrid(new TariffWithRangeGrid(actionID, massmediasCount));
+            SetTariffGrid(new TariffWithRangeGrid(action, massmediasCount));
 		}
 
 		protected override Firm Firm
@@ -45,9 +45,11 @@ namespace Merlin.Forms.CreateActionMaster
 
                 RefreshGrid();
 				tariffGrid.GridRefreshed += TariffGridRefreshed;
-				ActionOnMassmedia.GetActionById(((TariffWithRangeGrid)tariffGrid).ActionID).DisplayData(lstStat);
+				((TariffWithRangeGrid)tariffGrid).Action.DisplayData(lstStat);
 				grdCurrentCampaignIssues.Entity = EntityManager.GetEntity((int)Entities.MasterIssues);
-			}
+				ShowCurrentIssues(tariffGrid as TariffWithRangeGrid);
+
+            }
 			catch (Exception ex)
 			{
                 ErrorManager.PublishError(ex);
@@ -74,7 +76,7 @@ namespace Merlin.Forms.CreateActionMaster
 	    private void TariffGridRefreshed()
         {
             ShowCurrentIssues(((TariffWithRangeGrid)tariffGrid));
-            ActionOnMassmedia.GetActionById(((TariffWithRangeGrid)tariffGrid).ActionID).DisplayData(lstStat);
+            ((TariffWithRangeGrid)tariffGrid).Action.DisplayData(lstStat);
         }
 
 		public void DeleteIssue(MasterIssue issue)
