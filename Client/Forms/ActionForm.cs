@@ -361,6 +361,8 @@ namespace Merlin.Forms
 			{
                 EditIssuesForm form = new EditIssuesForm(_action.Firm, _action, grdCampaign.ItemsCount);
                 form.ShowDialog(this);
+                LoadCampaigns();
+                RefreshActionStats(false);
             }
             catch (Exception ex)
             {

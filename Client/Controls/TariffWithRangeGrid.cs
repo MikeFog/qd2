@@ -128,7 +128,10 @@ namespace Merlin.Controls
 			row["RowNum"] = Guid.NewGuid();
 			row["position"] = RollerPosition == RollerPositions.Last ? "Последний" : RollerPosition == RollerPositions.First ? "Первый" : RollerPosition == RollerPositions.Second ? "Второй" : "Неопределена";
 			row["positionID"] = (int)RollerPosition;
-			AddedIssues.Rows.Add(row);
+			
+			// replace AddedIssues.Rows.Add(row); with sorted insert
+			InsertIssueRowSorted(row);
+			
 			return row;
 		}
 
@@ -318,5 +321,24 @@ namespace Merlin.Controls
 				RefreshGrid();
 			}
 		}
+
+        // helper to keep AddedIssues sorted by issueDate
+        private void InsertIssueRowSorted(DataRow row)
+        {
+            DateTime newIssueDate = ParseHelper.GetDateTimeFromObject(row["issueDate"], DateTime.MinValue);
+            int insertIndex = AddedIssues.Rows.Count;
+
+            for (int i = 0; i < AddedIssues.Rows.Count; i++)
+            {
+                DateTime existingDate = ParseHelper.GetDateTimeFromObject(AddedIssues.Rows[i]["issueDate"], DateTime.MaxValue);
+                if (existingDate > newIssueDate)
+                {
+                    insertIndex = i;
+                    break;
+                }
+            }
+
+            AddedIssues.Rows.InsertAt(row, insertIndex);
+        }
 	}
 }
