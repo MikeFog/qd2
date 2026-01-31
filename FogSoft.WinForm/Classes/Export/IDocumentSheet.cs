@@ -26,5 +26,6 @@ namespace FogSoft.WinForm.Classes.Export
         double GetColumnWidth(int columnIndex);
 		void SetColumnNumberFormat(int columnIndex, string format);
         void SetWrapText(int top, int left, int bottom, int right, bool wrap);
+        void SetAutoFitRows(int top, int bottom);
     }
 }

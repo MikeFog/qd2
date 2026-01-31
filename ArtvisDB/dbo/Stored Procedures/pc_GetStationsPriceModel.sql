@@ -2,7 +2,8 @@
 (
     @MassmediaGroupID  int = null,
     @DateFrom          date,
-    @DateTo            date
+    @DateTo            date,
+    @loggedUserID      int
 )
 AS
 BEGIN
@@ -174,4 +175,7 @@ BEGIN
 		extraChargeLastRoller
     FROM #SegPrices
     ORDER BY [name], SegmentStart;
+
+    -- Resultset #3: информация о менеджерском коэффициенте
+    SELECT * FROM UserDiscount WHERE userID = @loggedUserID
 END

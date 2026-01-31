@@ -21,7 +21,7 @@ namespace Merlin.Forms
             "Цена не-прайм будни",
             "Цена прайм выходные",
             "Цена не-прайм выходные",
-            "Цена кампания",
+            "Цена кампании",
             "Итог"
         };
 
@@ -38,6 +38,11 @@ namespace Merlin.Forms
             // пересчитываем при смене дневных/выходных количеств
             templateEditor.SpotsSettingsChanged += (s, e) => RecalculateFromTemplateInputs();
             templateEditor.DurationChanged += (s, e) => RecalculateFromTemplateInputs();
+            templateEditor.ManagerDiscountModeChanged += (s, e) => RecalculateFromTemplateInputs();
+
+            // новый авто-пересчёт по датам/дням/чётности
+            templateEditor.ScheduleChanged += (s, e) => RecalculateFromTemplateInputs();
+
             grdPriceCalculator.SummaryUpdater = UpdateSummary;
         }
 
@@ -59,7 +64,8 @@ namespace Merlin.Forms
                 templateEditor.NonPrimePerDayWeekday,
                 templateEditor.PrimePerDayWeekend,
                 templateEditor.NonPrimePerDayWeekend,
-                templateEditor.ManagerDiscount
+                templateEditor.ManagerDiscount,
+                templateEditor.ManagerDiscountModeSingle
             );
 
             // оставить позицию из шаблона и актуальный SummaryUpdater
@@ -104,7 +110,8 @@ namespace Merlin.Forms
                     templateEditor.NonPrimePerDayWeekday,
                     templateEditor.PrimePerDayWeekend,
                     templateEditor.NonPrimePerDayWeekend,
-                    templateEditor.ManagerDiscount
+                    templateEditor.ManagerDiscount,
+                    templateEditor.ManagerDiscountModeSingle
                 );
 
                 // ✅ протянуть позицию из шаблона в таблицу грида после пересоздания данных
@@ -313,17 +320,20 @@ namespace Merlin.Forms
                 sheet.SetCellValue(currentRow++, 1, "График: " + BuildScheduleDescription());
                 
                 sheet.SetCellValue(currentRow++, 1, "Количество рекламных выпусков:" + grdPriceCalculator.GetTotalSpots());
-                sheet.SetCellValue(currentRow++, 1, "Хронометраж эфирного времени:" + grdPriceCalculator.GetTotalSeconds());
-
+                var totalSeconds = grdPriceCalculator.GetTotalSeconds();
+                var duration = TimeSpan.FromSeconds(totalSeconds);
+                sheet.SetCellValue(currentRow++, 1, "Хронометраж эфирного времени:" + duration.ToString(@"hh\:mm\:ss"));
                 // Теперь таблица с данными
                 currentRow += 1; // одна пустая строка
                 // заголовки
                 var cols = dt.Columns.Cast<DataColumn>().ToList();
+                var columnHeaders = new List<string>(cols.Count);
                 int headerRow = currentRow;
                 for (int c = 0; c < cols.Count; c++)
                 {
                     var name = cols[c].ColumnName;
                     var header = headers != null && headers.ContainsKey(name) ? headers[name] : name;
+                    columnHeaders.Add(header);
                     sheet.SetCellValue(headerRow, c + 1, header);
                     if (_columnsWithMoney.Contains(header))
                         sheet.SetColumnNumberFormat(c + 1, "#,##0.00");
@@ -353,11 +363,33 @@ namespace Merlin.Forms
 
                 int lastRow = currentRow - 1;
 
-                // перенос строк и автоподбор ширины по данным (без удлинения заголовками)
-                sheet.SetWrapText(1, 3, lastRow, cols.Count, true);
+                // перенос строк для заголовков и данных и автоподбор ширины, затем корректировка минимальной ширины по самому длинному слову заголовка
+                sheet.SetWrapText(headerRow, 1, lastRow, cols.Count, true);
                 sheet.SetAutoFitCells(1, cols.Count);
 
-                sheet.SetAutoFitCells(); // keep global autofit if needed for other sheets
+                for (int c = 0; c < cols.Count; c++)
+                {
+                    var headerText = columnHeaders[c];
+                    if (string.IsNullOrWhiteSpace(headerText))
+                        continue;
+
+                    var longestWordLength = headerText
+                        .Split(new[] { ' ', '\t', '\r', '\n' }, StringSplitOptions.RemoveEmptyEntries)
+                        .DefaultIfEmpty(string.Empty)
+                        .Max(w => w.Length);
+
+                    if (longestWordLength == 0)
+                        continue;
+
+                    var currentWidth = sheet.GetColumnWidth(c + 1);
+                    // Увеличиваем минимальную ширину с запасом, чтобы слова не дробились (учтём ширину кириллицы)
+                    var minWidth = Math.Max(currentWidth, Math.Ceiling(longestWordLength * 1.2) + 2);
+                    sheet.SetColumnWidth(c + 1, minWidth);
+                }
+
+                sheet.SetAutoFitRows(headerRow, lastRow);
+
+                //sheet.SetAutoFitCells(); // keep global autofit if needed for other sheets
                 doc.FinishExport();
             }
             finally

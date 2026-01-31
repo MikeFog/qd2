@@ -167,6 +167,16 @@ namespace FogSoft.WinForm.Classes.Export.OOCalc
             }
         }
 
+        public void SetAutoFitRows(int top, int bottom)
+        {
+            XColumnRowRange rows = (XColumnRowRange)sheet;
+            for (int i = top - 1; i <= bottom - 1; i++)
+            {
+                XPropertySet row = (XPropertySet)rows.getRows().getByIndex(i).Value;
+                row.setPropertyValue("OptimalHeight", new Any(true));
+            }
+        }
+
 		public void SetFormatForCell(int top, int left, int bottom, int right, Type type)
 		{
 			SetCorrectSize(ref bottom, ref top, ref right, ref left);

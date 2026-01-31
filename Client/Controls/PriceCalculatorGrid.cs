@@ -4,6 +4,7 @@ using System;
 using System.Collections.Generic;
 using System.Data;
 using System.Diagnostics;
+using System.Drawing;
 using System.Linq;
 using System.Windows.Forms;
 
@@ -30,14 +31,17 @@ namespace Merlin.Controls
         private bool _skipCellEndEdit;
         private readonly Dictionary<string, string> _defaultColumnHeaders = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
 
+        public bool UseManagerDiscountPeriods { get; set; }  // переключатель метода расчёта
         public System.Action SummaryUpdater { get; set; }
 
         public DataTable SegmentsTable { get; private set; }   // второй рекордсет (сегменты)
         public DataTable SummaryTable { get; private set; }   // первый рекордсет (для грида)
+        public DataTable ManagerDiscountTable { get; private set; }   // третий рекордсет (периоды maxRatio)
 
         public PriceCalculatorGrid()
         {
             InitializeComponent();
+            UseManagerDiscountPeriods = true;
             ConfigureGrid();
         }
 
@@ -217,11 +221,11 @@ namespace Merlin.Controls
                 HeaderText = "Радиостанция",
                 DataPropertyName = "name",
                 AutoSizeMode = DataGridViewAutoSizeColumnMode.AllCells,
-                MinimumWidth = 160,
+                //MinimumWidth = 160,
                 ReadOnly = true,
             });
 
-            const int NumericColWidth = 70;
+            const int NumericColWidth = 80;
 
             dgvStations.Columns.Add(new DataGridViewTextBoxColumn
             {
@@ -325,7 +329,7 @@ namespace Merlin.Controls
             dgvStations.Columns.Add(new DataGridViewTextBoxColumn
             {
                 Name = "colTotalAmount",
-                HeaderText = "Цена кампания",
+                HeaderText = "Цена кампании",
                 DataPropertyName = "TotalAmount",
                 Width = NumericColWidth,
                 DefaultCellStyle = { Format = "c", Alignment = DataGridViewContentAlignment.MiddleRight },
@@ -354,6 +358,16 @@ namespace Merlin.Controls
 
             dgvStations.Columns.Add(new DataGridViewTextBoxColumn
             {
+                Name = "colTotalBeforePackage",
+                HeaderText = "Цена до пакетной скидки",
+                DataPropertyName = "TotalBeforePackage",
+                Width = NumericColWidth + 30,
+                DefaultCellStyle = { Format = "c", Alignment = DataGridViewContentAlignment.MiddleRight },
+                ReadOnly = true
+            });
+
+            dgvStations.Columns.Add(new DataGridViewTextBoxColumn
+            {
                 Name = "colPackageDiscount",
                 HeaderText = "Пакетная скидка",
                 DataPropertyName = "PackageDiscount",
@@ -367,11 +381,11 @@ namespace Merlin.Controls
                 Name = "colTotalAfterPackage",
                 HeaderText = "Итог",
                 DataPropertyName = "TotalAfterPackage",
-                Width = NumericColWidth+50,
+                Width = NumericColWidth + 50,
                 DefaultCellStyle = { Format = "c", Alignment = DataGridViewContentAlignment.MiddleRight },
                 ReadOnly = true
             });
-
+            ApplyEditableColumnsBaseStyle();
             CaptureDefaultColumnHeaders();
             InitHeaderCheckbox();
 
@@ -383,6 +397,13 @@ namespace Merlin.Controls
                 e.SuppressKeyPress = true;
                 MoveVertical(e.KeyCode == Keys.Down ? 1 : -1);
             };
+
+            dgvStations.CellPainting += DgvStations_CellPainting;
+
+            // подсветим редактируемые колонки сразу
+            foreach (DataGridViewColumn c in dgvStations.Columns)
+                if (EditableColumns.Contains(c.Name))
+                    c.DefaultCellStyle.BackColor = Color.LightYellow;
         }
 
         private void InitHeaderCheckbox()
@@ -449,6 +470,15 @@ namespace Merlin.Controls
 
                 SyncHeaderCheckboxState();
             };
+        }
+
+        private void ApplyEditableColumnsBaseStyle()
+        {
+            foreach (DataGridViewColumn c in dgvStations.Columns)
+            {
+                if (EditableColumns.Contains(c.Name))
+                    c.DefaultCellStyle.BackColor = Color.LightYellow;
+            }
         }
 
         private void SyncHeaderCheckboxState()
@@ -620,6 +650,16 @@ namespace Merlin.Controls
             dgvStations.Rows[e.RowIndex].ErrorText = "";
         }
 
+        private static readonly HashSet<string> EditableColumns = new HashSet<string>
+        {
+            "colRollerDuration",
+            "colPrimeTotalSpotsWeekday",
+            "colNonPrimeTotalSpotsWeekday",
+            "colPrimeTotalSpotsWeekend",
+            "colNonPrimeTotalSpotsWeekend",
+            "colPosition"
+        };
+
         private void HandleEditableCellChanged(int rowIndex, int columnIndex)
         {
             if (rowIndex < 0) return;
@@ -629,12 +669,7 @@ namespace Merlin.Controls
 
             // При слитых колонках больше не дублируем значение в выходные — храним только введённое
 
-            if (colName == "colRollerDuration" ||
-                colName == "colPrimeTotalSpotsWeekday" ||
-                colName == "colNonPrimeTotalSpotsWeekday" ||
-                colName == "colPrimeTotalSpotsWeekend" ||
-                colName == "colNonPrimeTotalSpotsWeekend" ||
-                colName == "colPosition")
+            if (EditableColumns.Contains(colName))
             {
                 RecalcRow(rowIndex);
                 if (RowIsSelected(rowIndex))
@@ -688,27 +723,59 @@ namespace Merlin.Controls
                 _suppressRecalc = false;
             }
 
-            // считаем сумму по сегментам (учёт смены прайслистов внутри периода)
-            decimal amount = CalculateCampaignTariffPrice(
-                stationId: massmediaId,
-                segmentsTable: SegmentsTable,
-                durationSec: roller,
-                primeWdTotal: primeWdTotal,
-                nonPrimeWdTotal: nonPrimeWdTotal,
-                primeWeTotal: primeWeTotal,
-                nonPrimeWeTotal: nonPrimeWeTotal,
-                position: position
-            );
+            decimal baseAmount;
+            decimal amountWithManager;
+            decimal managerRatio;
 
-            drv["TotalAmount"] = amount;
+            if (UseManagerDiscountPeriods)
+            {
+                var managerPeriods = GetManagerDiscountPeriods();
+                CalculateCampaignTotalsWithManagerDiscount(
+                    stationId: massmediaId,
+                    segmentsTable: SegmentsTable,
+                    managerPeriods: managerPeriods,
+                    durationSec: roller,
+                    primeWdTotal: primeWdTotal,
+                    nonPrimeWdTotal: nonPrimeWdTotal,
+                    primeWeTotal: primeWeTotal,
+                    nonPrimeWeTotal: nonPrimeWeTotal,
+                    position: position,
+                    baseTotal: out baseAmount,
+                    totalWithManager: out amountWithManager,
+                    managerAvgRatio: out managerRatio);
+            }
+            else
+            {
+                baseAmount = CalculateCampaignTariffPrice(
+                    stationId: massmediaId,
+                    segmentsTable: SegmentsTable,
+                    durationSec: roller,
+                    primeWdTotal: primeWdTotal,
+                    nonPrimeWdTotal: nonPrimeWdTotal,
+                    primeWeTotal: primeWeTotal,
+                    nonPrimeWeTotal: nonPrimeWeTotal,
+                    position: position);
+
+                managerRatio = _managerDiscount;
+                amountWithManager = baseAmount * managerRatio;
+            }
+
+            drv["TotalAmount"] = baseAmount;
 
             // строчная скидка (объёмная)
-            decimal companyDiscount = GetCompanyDiscount(massmediaId, _startDate, amount);
+            decimal companyDiscount = GetCompanyDiscount(massmediaId, _startDate, baseAmount);
             drv["CompanyDiscount"] = companyDiscount;
 
             // итоги
-            drv["TotalWithDiscount"] = amount * companyDiscount;
-            drv["TotalWithManagerDiscount"] = amount * companyDiscount * _managerDiscount;
+            decimal totalWithDiscount = baseAmount * companyDiscount;
+            drv["TotalWithDiscount"] = totalWithDiscount;
+
+            decimal totalBeforePackage = amountWithManager * companyDiscount;
+            drv["ManagerDiscount"] = managerRatio;
+            drv["TotalWithManagerDiscount"] = totalBeforePackage;
+            drv["TotalBeforePackage"] = totalBeforePackage;
+
+            UpdatePackageTotal(drv.Row);
         }
 
         private decimal CalculateCampaignTariffPrice(
@@ -829,10 +896,37 @@ namespace Merlin.Controls
             return Convert.ToDecimal(v);
         }
 
+        private static decimal GetCompanyDiscount(int massmediaId, DateTime startDate, decimal tariffPrice)
+        {
+            var prms = DataAccessor.CreateParametersDictionary();
+
+            prms["massMediaID"] = (short)massmediaId;
+            prms["campaignTypeID"] = (byte)1;
+            prms["startDate"] = startDate;
+            prms["tariffPrice"] = tariffPrice;
+
+            // OUT
+            prms["discountValue"] = null;
+
+            DataAccessor.ExecuteNonQuery("hlp_CompanyDiscountCalculate", prms, 30, false);
+
+            object val = prms.ContainsKey("discountValue") ? prms["discountValue"] : null;
+            if (val == null || val == DBNull.Value) return 1m;
+
+            // discountValue в SQL float, прилетит как double чаще всего
+            return Convert.ToDecimal(val);
+        }
+
         public void LoadData(int massmediaGroupId, DateTime dateFrom, DateTime dateTo)
         {
+            // 0) Закоммитить возможное редактирование (особенно чекбокс)
+            dgvStations?.EndEdit();
+            _bindingSource?.EndEdit();
+
+            // 1) Сохраняем выбранные MassmediaID из текущей SummaryTable
+            var selectedIds = CaptureSelectedIds(SummaryTable);
+
             var p = DataAccessor.CreateParametersDictionary();
-            // Имена ключей ДОЛЖНЫ сопадать с параметрами процедуры (без @)
             if (massmediaGroupId > 0)
                 p["MassmediaGroupID"] = massmediaGroupId;
             p["DateFrom"] = dateFrom.Date;
@@ -842,13 +936,31 @@ namespace Merlin.Controls
 
             SummaryTable = ds.Tables.Count > 0 ? ds.Tables[0] : null;
             SegmentsTable = ds.Tables.Count > 1 ? ds.Tables[1] : null;
+            ManagerDiscountTable = ds.Tables.Count > 2 ? ds.Tables[2] : null;
 
             EnsureCalcColumns(SummaryTable);
-            //dgvStations.DataSource = SummaryTable;
-            _bindingSource.DataSource = SummaryTable; // Ваш DataTable
+
+            // 2) Восстанавливаем чекбоксы в новой SummaryTable
+            RestoreSelectedIds(SummaryTable, selectedIds);
+
+            _bindingSource.DataSource = SummaryTable;
             dgvStations.DataSource = _bindingSource;
             ApplyPriceColumnLayout();
+
+            // 3) Хедер-чекбокс: теперь можно ставить не всегда false, а по состоянию таблицы
+            if (_headerCheckBox != null)
+            {
+                _bulkUpdating = true;
+                try
+                {
+                    _headerCheckBox.Checked = SummaryTable != null
+                        && SummaryTable.Rows.Count > 0
+                        && SummaryTable.AsEnumerable().All(r => r.Field<bool?>("IsSelected") == true);
+                }
+                finally { _bulkUpdating = false; }
+            }
         }
+
 
         private static void EnsureCalcColumns(DataTable dt)
         {
@@ -885,11 +997,7 @@ namespace Merlin.Controls
                 dt.Columns.Add("ManagerDiscount", typeof(decimal));
 
             if (!dt.Columns.Contains("IsSelected"))
-            {
                 dt.Columns.Add("IsSelected", typeof(bool));
-                foreach (DataRow r in dt.Rows)
-                    r["IsSelected"] = false;
-            }
 
             if (!dt.Columns.Contains("PackageDiscount"))
                 dt.Columns.Add("PackageDiscount", typeof(decimal));
@@ -899,6 +1007,9 @@ namespace Merlin.Controls
 
             if (!dt.Columns.Contains("Position"))
                 dt.Columns.Add("Position", typeof(int));
+
+            if (!dt.Columns.Contains("TotalBeforePackage"))
+                dt.Columns.Add("TotalBeforePackage", typeof(decimal));
         }
 
         public List<DataRowView> GetSelectedRadiostations()
@@ -923,8 +1034,18 @@ namespace Merlin.Controls
             int nonPrimePerDayWeekday,
             int primePerDayWeekend,
             int nonPrimePerDayWeekend,
-            decimal managerDiscount)
+            decimal managerDiscount,
+            bool managerDiscountModeSingle)
         {
+            UseManagerDiscountPeriods = !managerDiscountModeSingle;
+            if (UseManagerDiscountPeriods)
+            {
+                ApplyCalculationWithManagerDiscountPeriods(selectedDates, durationSec,
+                    primePerDayWeekday, nonPrimePerDayWeekday,
+                    primePerDayWeekend, nonPrimePerDayWeekend);
+                return;
+            }
+
             if (SummaryTable == null) return;
 
             _suppressRecalc = true;
@@ -960,7 +1081,7 @@ namespace Merlin.Controls
                 row["PrimeTotalSpotsWeekday"] = primeTotalWd;
                 row["NonPrimeTotalSpotsWeekday"] = nonPrimeTotalWd;
                 row["PrimeTotalSpotsWeekend"] = primeTotalWe;
-                row["NonPrimeTotalSpotsWeekend"] = nonPrimeTotalWe;
+                row["NonPrimeTotalSpotsWeekend"] = nonPrimeTotalWe; // <-- было nonPrimeTotalWd
 
                 row["RollerDuration"] = durationSec;
 
@@ -993,7 +1114,11 @@ namespace Merlin.Controls
                 row["CompanyDiscount"] = discountValue;
                 row["TotalWithDiscount"] = amount * discountValue;
                 row["ManagerDiscount"] = _managerDiscount;
-                row["TotalWithManagerDiscount"] = amount * discountValue * _managerDiscount;
+                decimal totalBeforePackage = amount * discountValue * _managerDiscount;
+                row["TotalWithManagerDiscount"] = totalBeforePackage;
+                row["TotalBeforePackage"] = totalBeforePackage;
+
+                UpdatePackageTotal(row);
             }
 
             _suppressRecalc = false;
@@ -1003,10 +1128,101 @@ namespace Merlin.Controls
             dgvStations.Refresh();
         }
 
+        public void ApplyCalculationWithManagerDiscountPeriods(
+            List<DateTime> selectedDates,
+            int durationSec,
+            int primePerDayWeekday,
+            int nonPrimePerDayWeekday,
+            int primePerDayWeekend,
+            int nonPrimePerDayWeekend)
+        {
+            if (SummaryTable == null) return;
+
+            _suppressRecalc = true;
+
+            _selectedDates = selectedDates;
+            UpdateWeekdayWeekendColumnsEnabled();
+
+            _startDate = _selectedDates != null && _selectedDates.Count > 0
+                ? _selectedDates[0].Date
+                : DateTime.Today;
+
+            var managerPeriods = GetManagerDiscountPeriods();
+
+            int wdCount = 0, weCount = 0;
+            if (_selectedDates != null)
+            {
+                foreach (var d in _selectedDates)
+                {
+                    var dow = d.DayOfWeek;
+                    if (dow == DayOfWeek.Saturday || dow == DayOfWeek.Sunday) weCount++;
+                    else wdCount++;
+                }
+            }
+
+            int primeTotalWd = wdCount * primePerDayWeekday;
+            int nonPrimeTotalWd = wdCount * nonPrimePerDayWeekday;
+            int primeTotalWe = weCount * primePerDayWeekend;
+            int nonPrimeTotalWe = weCount * nonPrimePerDayWeekend;
+
+            foreach (DataRow row in SummaryTable.Rows)
+            {
+                row["PrimeTotalSpotsWeekday"] = primeTotalWd;
+                row["NonPrimeTotalSpotsWeekday"] = nonPrimeTotalWd;
+                row["PrimeTotalSpotsWeekend"] = primeTotalWe;
+                row["NonPrimeTotalSpotsWeekend"] = nonPrimeTotalWe;
+                row["RollerDuration"] = durationSec;
+
+                if (row["Position"] == DBNull.Value)
+                    row["Position"] = (int)Merlin.RollerPositions.Undefined;
+
+                int position = NormalizePosition(row["Position"]);
+                int massmediaId = Convert.ToInt32(row["massmediaID"]);
+
+                CalculateCampaignTotalsWithManagerDiscount(
+                    massmediaId,
+                    SegmentsTable,
+                    managerPeriods,
+                    durationSec,
+                    primeTotalWd,
+                    nonPrimeTotalWd,
+                    primeTotalWe,
+                    nonPrimeTotalWe,
+                    position,
+                    out decimal baseAmount,
+                    out decimal amountWithManager,
+                    out decimal managerAvgRatio);
+
+                row["TotalAmount"] = baseAmount;
+
+                decimal discountValue = GetCompanyDiscount(
+                    massmediaId,
+                    _startDate,
+                    baseAmount);
+
+                row["CompanyDiscount"] = discountValue;
+                row["TotalWithDiscount"] = baseAmount * discountValue;
+
+                row["ManagerDiscount"] = managerAvgRatio; // фактически применённый средневзвешенный коэфф.
+                decimal totalBeforePackage = amountWithManager * discountValue;
+                row["TotalWithManagerDiscount"] = totalBeforePackage;
+                row["TotalBeforePackage"] = totalBeforePackage;
+
+                UpdatePackageTotal(row);
+            }
+
+            _suppressRecalc = false;
+
+            ApplyPriceColumnLayout();
+            _bindingSource.ResetBindings(false);
+            dgvStations.Refresh();
+        }
+
         public void ApplyPackageTotals(decimal packageDiscount)
         {
             if (SummaryTable == null) return;
 
+            // зафиксировать редактирование перед массовым обновлением
             DoWithSkipCellEndEdit(() =>
             {
                 SuppressRecalc(() =>
@@ -1022,13 +1238,12 @@ namespace Merlin.Controls
                 foreach (DataRow row in SummaryTable.Rows)
                 {
                     bool isSelected = row["IsSelected"] != DBNull.Value && Convert.ToBoolean(row["IsSelected"]);
-
                     if (isSelected)
                     {
                         row["PackageDiscount"] = packageDiscount;
 
                         decimal baseTotal = 0m;
-                        object v = row["TotalWithManagerDiscount"];
+                        object v = row["TotalWithDiscount"];
                         if (v != null && v != DBNull.Value)
                             baseTotal = Convert.ToDecimal(v);
 
@@ -1045,33 +1260,121 @@ namespace Merlin.Controls
             {
                 _suppressRecalc = false;
             }
-
-            //_bindingSource.ResetBindings(false);
-            //dgvStations.Invalidate();
         }
 
-        private static decimal GetCompanyDiscount(int massmediaId, DateTime startDate, decimal tariffPrice)
+        private List<ManagerDiscountPeriod> GetManagerDiscountPeriods()
         {
-            var prms = DataAccessor.CreateParametersDictionary();
+            var result = new List<ManagerDiscountPeriod>();
 
-            prms["massMediaID"] = (short)massmediaId;
-            prms["campaignTypeID"] = (byte)1;
-            prms["startDate"] = startDate;
-            prms["tariffPrice"] = tariffPrice;
+            if (ManagerDiscountTable == null || ManagerDiscountTable.Rows.Count == 0)
+            {
+                result.Add(new ManagerDiscountPeriod(DateTime.MinValue, DateTime.MaxValue, 1m));
+                return result;
+            }
 
-            // OUT
-            prms["discountValue"] = null;
+            foreach (DataRow row in ManagerDiscountTable.Rows)
+            {
+                DateTime start = Convert.ToDateTime(row["startDate"]).Date;
+                DateTime finish = Convert.ToDateTime(row["finishDate"]).Date;
+                decimal ratio = 1m;
+                object v = row["maxRatio"];
+                if (v != null && v != DBNull.Value)
+                    ratio = Convert.ToDecimal(v);
+                if (ratio <= 0m) ratio = 1m;
 
-            DataAccessor.ExecuteNonQuery("hlp_CompanyDiscountCalculate", prms, 30, false);
+                result.Add(new ManagerDiscountPeriod(start, finish, ratio));
+            }
 
-            object val = prms.ContainsKey("discountValue") ? prms["discountValue"] : null;
-            if (val == null || val == DBNull.Value) return 1m;
-
-            // discountValue в SQL float, прилетит как double чаще всего
-            return Convert.ToDecimal(val);
+            result.Sort((a, b) => a.Start.CompareTo(b.Start));
+            return result;
         }
 
-        // Эти 3 метода можно вынести в общий util, но для простоты держим тот
+        private void CalculateCampaignTotalsWithManagerDiscount(
+            int stationId,
+            DataTable segmentsTable,
+            List<ManagerDiscountPeriod> managerPeriods,
+            int durationSec,
+            int primeWdTotal,
+            int nonPrimeWdTotal,
+            int primeWeTotal,
+            int nonPrimeWeTotal,
+            int position,
+            out decimal baseTotal,
+            out decimal totalWithManager,
+            out decimal managerAvgRatio)
+        {
+            baseTotal = 0m;
+            totalWithManager = 0m;
+            managerAvgRatio = 1m;
+
+            if (segmentsTable == null || _selectedDates == null || _selectedDates.Count == 0 || durationSec <= 0)
+                return;
+
+            var wdDates = new List<DateTime>(_selectedDates.Count);
+            var weDates = new List<DateTime>(_selectedDates.Count);
+            foreach (var d in _selectedDates)
+            {
+                var day = d.Date;
+                var dow = day.DayOfWeek;
+                if (dow == DayOfWeek.Saturday || dow == DayOfWeek.Sunday) weDates.Add(day);
+                else wdDates.Add(day);
+            }
+
+            int wdTotalDays = wdDates.Count;
+            int weTotalDays = weDates.Count;
+
+            if (wdTotalDays == 0) { primeWdTotal = 0; nonPrimeWdTotal = 0; }
+            if (weTotalDays == 0) { primeWeTotal = 0; nonPrimeWeTotal = 0; }
+
+            var rows = segmentsTable.Select("massmediaID = " + stationId, "SegmentStart ASC");
+            foreach (DataRow r in rows)
+            {
+                DateTime segStart = Convert.ToDateTime(r["SegmentStart"]).Date;
+                DateTime segEnd = Convert.ToDateTime(r["SegmentEnd"]).Date;
+
+                foreach (var p in managerPeriods)
+                {
+                    DateTime partStart = segStart > p.Start ? segStart : p.Start;
+                    DateTime partEnd = segEnd < p.End ? segEnd : p.End;
+                    if (partStart > partEnd) continue;
+
+                    int wdInPart = CountDatesInRange(wdDates, partStart, partEnd);
+                    int weInPart = CountDatesInRange(weDates, partStart, partEnd);
+                    if (wdInPart == 0 && weInPart == 0) continue;
+
+                    decimal wdShare = wdTotalDays > 0 ? (decimal)wdInPart / wdTotalDays : 0m;
+                    decimal weShare = weTotalDays > 0 ? (decimal)weInPart / weTotalDays : 0m;
+
+                    decimal primeWdInPart = primeWdTotal * wdShare;
+                    decimal nonPrimeWdInPart = nonPrimeWdTotal * wdShare;
+                    decimal primeWeInPart = primeWeTotal * weShare;
+                    decimal nonPrimeWeInPart = nonPrimeWeTotal * weShare;
+
+                    decimal primeWD = Convert.ToDecimal(r["PrimePricePerSecWeekday"]);
+                    decimal nonPrimeWD = Convert.ToDecimal(r["NonPrimePricePerSecWeekend"]);
+                    decimal primeWE = Convert.ToDecimal(r["PrimePricePerSecWeekend"]);
+                    decimal nonPrimeWE = Convert.ToDecimal(r["NonPrimePricePerSecWeekend"]);
+
+                    decimal partAmount =
+                        (primeWD * primeWdInPart +
+                         nonPrimeWD * nonPrimeWdInPart +
+                         primeWE * primeWeInPart +
+                         nonPrimeWE * nonPrimeWeInPart)
+                         * durationSec;
+
+                    decimal extraPercent = GetExtraChargePercent(r, position);
+                    if (extraPercent != 0m)
+                        partAmount *= (1m + extraPercent / 100m);
+
+                    baseTotal += partAmount;
+                    totalWithManager += partAmount * p.Ratio;
+                }
+            }
+
+            if (baseTotal > 0m)
+                managerAvgRatio = totalWithManager / baseTotal;
+        }
+
         private static int CountDatesInRange(List<DateTime> dates, DateTime start, DateTime end)
         {
             int lo = LowerBound(dates, start);
@@ -1167,10 +1470,10 @@ namespace Merlin.Controls
             if (col == null) return;
 
             col.ReadOnly = !enabled;
-
-            // визуально приглушаем
-            col.DefaultCellStyle.BackColor =
-                enabled ? System.Drawing.Color.White : System.Drawing.SystemColors.Control;
+            // сохраняем жёлтую подсветку для редактируемых, иначе — приглушаем
+            col.DefaultCellStyle.BackColor = enabled
+                ? (EditableColumns.Contains(columnName) ? Color.LightYellow : System.Drawing.Color.White)
+                : System.Drawing.SystemColors.Control;
         }
 
         public void SetManagerDiscount(decimal managerDiscount)
@@ -1197,7 +1500,11 @@ namespace Merlin.Controls
                     if (v != null && v != DBNull.Value)
                         totalWithDiscount = Convert.ToDecimal(v);
 
-                    row["TotalWithManagerDiscount"] = totalWithDiscount * _managerDiscount;
+                    decimal totalBeforePackage = totalWithDiscount * _managerDiscount;
+                    row["TotalWithManagerDiscount"] = totalBeforePackage;
+                    row["TotalBeforePackage"] = totalBeforePackage;
+
+                    UpdatePackageTotal(row);
                 }
             }
             finally
@@ -1248,6 +1555,29 @@ namespace Merlin.Controls
             // Важно: RecalcRow зависит от dgvStations.Rows[rowIndex].DataBoundItem
             for (int i = 0; i < dgvStations.Rows.Count; i++)
                 RecalcRow(i);
+        }
+
+        private void UpdatePackageTotal(DataRow row)
+        {
+            if (row == null) return;
+
+            object discountValue = row["PackageDiscount"];
+            if (discountValue == null || discountValue == DBNull.Value)
+            {
+                row["TotalAfterPackage"] = DBNull.Value;
+                return;
+            }
+
+            object totalWithDiscount = row["TotalWithDiscount"];
+            if (totalWithDiscount == null || totalWithDiscount == DBNull.Value)
+            {
+                row["TotalAfterPackage"] = DBNull.Value;
+                return;
+            }
+
+            decimal packageDiscount = Convert.ToDecimal(discountValue);
+            decimal baseTotal = Convert.ToDecimal(totalWithDiscount);
+            row["TotalAfterPackage"] = baseTotal * packageDiscount;
         }
 
         private void PositionCombo_SelectionChangeCommitted(object sender, EventArgs e)
@@ -1601,6 +1931,83 @@ namespace Merlin.Controls
                 totalSeconds += spots * duration;
             }
             return totalSeconds;
+        }
+
+        private sealed class ManagerDiscountPeriod
+        {
+            public ManagerDiscountPeriod(DateTime start, DateTime end, decimal ratio)
+            {
+                Start = start;
+                End = end;
+                Ratio = ratio;
+            }
+
+            public DateTime Start { get; private set; }
+            public DateTime End { get; private set; }
+            public decimal Ratio { get; private set; }
+        }
+
+        private void DgvStations_CellPainting(object sender, DataGridViewCellPaintingEventArgs e)
+        {
+            if (e.RowIndex != -1) return; // только заголовок
+            var col = dgvStations.Columns[e.ColumnIndex];
+            if (!EditableColumns.Contains(col.Name)) return;
+
+            e.PaintBackground(e.ClipBounds, false);
+            e.PaintContent(e.ClipBounds);
+
+            // замените на свою иконку из ресурсов, например Properties.Resources.Edit16
+            using (var iconBmp = FogSoft.WinForm.Properties.Resources.EditItem)
+            {
+                var imgSize = 12;
+                var rect = new Rectangle(
+                    e.CellBounds.Right - imgSize - 4,
+                    e.CellBounds.Top + (e.CellBounds.Height - imgSize) / 2,
+                    imgSize, imgSize);
+                e.Graphics.DrawImage(iconBmp, rect);
+            }
+
+            e.Handled = true;
+        }
+
+        private static HashSet<int> CaptureSelectedIds(DataTable dt)
+        {
+            var set = new HashSet<int>();
+            if(dt == null) return set;
+
+            if (!dt.Columns.Contains("IsSelected")) return set;
+            if (!dt.Columns.Contains("MassmediaID"))
+                throw new InvalidOperationException("SummaryTable не содержит колонку MassmediaID.");
+
+            foreach (DataRow r in dt.Rows)
+            {
+                if (r.RowState == DataRowState.Deleted) continue;
+
+                bool selected = r["IsSelected"] != DBNull.Value && (bool)r["IsSelected"];
+                if (!selected) continue;
+
+                if (r["MassmediaID"] == DBNull.Value) continue;
+                set.Add(Convert.ToInt32(r["MassmediaID"]));
+            }
+
+            return set;
+        }
+
+        private static void RestoreSelectedIds(DataTable dt, HashSet<int> selectedIds)
+        {
+            if (!dt.Columns.Contains("IsSelected"))
+                dt.Columns.Add("IsSelected", typeof(bool));
+
+            if (!dt.Columns.Contains("MassmediaID"))
+                throw new InvalidOperationException("SummaryTable не содержит колонку MassmediaID.");
+
+            foreach (DataRow r in dt.Rows)
+            {
+                if (r.RowState == DataRowState.Deleted) continue;
+
+                int id = (r["MassmediaID"] == DBNull.Value) ? 0 : Convert.ToInt32(r["MassmediaID"]);
+                r["IsSelected"] = (id != 0 && selectedIds.Contains(id));
+            }
         }
     }
 }

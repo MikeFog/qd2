@@ -1,6 +1,7 @@
 ﻿using FogSoft.WinForm.Classes;
 using Merlin.Classes;
 using System;
+using System.ComponentModel;
 using System.Data;
 using System.Linq;
 using System.Windows.Forms;
@@ -12,10 +13,15 @@ namespace Merlin.Controls
         public event EventHandler PositionChanged;
         public event EventHandler SpotsSettingsChanged;
         public event EventHandler DurationChanged;
-        public Button CalculateButton => btnCalculate; 
+        public event EventHandler ScheduleChanged;
+        public event EventHandler ManagerDiscountModeChanged;
+
+        private bool _loaded;
+
+        public Button CalculateButton => btnCalculate;
         public Button ExcelButton => btnExcel;
         public NumericUpDown ManagerDiscountNum => nmManagerDiscount;
-        public Label TotalAfterPackageDiscount => lblTotalAfterPackageDiscount; 
+        public Label TotalAfterPackageDiscount => lblTotalAfterPackageDiscount;
 
         public RollerPositions SelectedPosition
         {
@@ -30,8 +36,25 @@ namespace Merlin.Controls
         {
             InitializeComponent();
 
+            rbManagerDiscountPeriod.CheckedChanged += (s, e) => ManagerDiscountModeChanged?.Invoke(this, EventArgs.Empty);
+            //rbManagerDiscountSingle.CheckedChanged += (s, e) => ManagerDiscountModeChanged?.Invoke(this, EventArgs.Empty);
+
             rbDaysOfWeek.CheckedChanged += ScheduleMode_CheckedChanged;
             rbEvenOdd.CheckedChanged += ScheduleMode_CheckedChanged;
+            rbEvenDays.CheckedChanged += OnScheduleChanged;
+            rbOddDays.CheckedChanged += OnScheduleChanged;
+
+            //dtStart.ValueChanged += OnScheduleChanged;
+            //dtEnd.ValueChanged += OnScheduleChanged;
+
+            // Дни недели
+            chkMon.CheckedChanged += OnScheduleChanged;
+            chkTue.CheckedChanged += OnScheduleChanged;
+            chkWed.CheckedChanged += OnScheduleChanged;
+            chkThu.CheckedChanged += OnScheduleChanged;
+            chkFri.CheckedChanged += OnScheduleChanged;
+            chkSat.CheckedChanged += OnScheduleChanged;
+            chkSun.CheckedChanged += OnScheduleChanged;
         }
 
         private void InitPositions()
@@ -69,6 +92,7 @@ namespace Merlin.Controls
         private void ScheduleMode_CheckedChanged(object sender, EventArgs e)
         {
             UpdateSchedulePatternEnabledState();
+            OnScheduleChanged(sender, e);
         }
 
         private void UpdateSchedulePatternEnabledState()
@@ -138,6 +162,11 @@ namespace Merlin.Controls
             get => nmManagerDiscount.Value;
         }
 
+        public bool ManagerDiscountModeSingle
+        {
+            get => rbManagerDiscountSingle.Checked;
+        }
+
         public bool[] DaysOfWeekChecked
         {
             get
@@ -172,6 +201,12 @@ namespace Merlin.Controls
             return DaysOfWeekChecked.Any(x => x);
         }
 
+        private void OnScheduleChanged(object sender, EventArgs e)
+        {
+            if (!_loaded) return;
+            ScheduleChanged?.Invoke(this, EventArgs.Empty);
+        }
+
         protected override void OnLoad(EventArgs e)
         {
             base.OnLoad(e);
@@ -188,10 +223,40 @@ namespace Merlin.Controls
 
             nudDuration.ValueChanged += OnDurationChanged;
 
+            AttachEmptyToZeroGuard(nudPrimeWeekday, nudNonPrimeWeekday, numPrimeWeekend, numNonPrimeWeekend, nudDuration);
+
             rbDaysOfWeek.Checked = true;
             UpdateSchedulePatternEnabledState();
 
             dtEnd.Value = dtStart.Value.AddMonths(1);
+
+            _loaded = true;
+        }
+
+        private void AttachEmptyToZeroGuard(params NumericUpDown[] controls)
+        {
+            foreach (var nud in controls)
+            {
+                if (nud == null) continue;
+                nud.Validating -= NumericOnValidating;
+                nud.Validating += NumericOnValidating;
+            }
+        }
+
+        private void NumericOnValidating(object sender, CancelEventArgs e)
+        {
+            var nud = sender as NumericUpDown;
+            if (nud == null)
+                return;
+
+            if (!string.IsNullOrWhiteSpace(nud.Text))
+                return;
+
+            decimal fallback = 0m;
+            if (fallback < nud.Minimum || fallback > nud.Maximum)
+                fallback = nud.Minimum;
+
+            nud.Value = fallback;
         }
     }
 }

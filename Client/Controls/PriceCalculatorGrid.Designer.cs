@@ -19,6 +19,7 @@
             // 
             // dgvStations
             // 
+            this.dgvStations.AllowUserToResizeRows = false;
             this.dgvStations.ColumnHeadersHeightSizeMode = System.Windows.Forms.DataGridViewColumnHeadersHeightSizeMode.AutoSize;
             this.dgvStations.Dock = System.Windows.Forms.DockStyle.Fill;
             this.dgvStations.EditMode = System.Windows.Forms.DataGridViewEditMode.EditOnEnter;

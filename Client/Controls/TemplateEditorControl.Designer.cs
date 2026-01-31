@@ -18,8 +18,6 @@ namespace Merlin.Controls
         private System.Windows.Forms.Label lblPrime;
         private System.Windows.Forms.NumericUpDown nudPrimeWeekday;
 
-        private System.Windows.Forms.Label lblDiscount;
-
         private System.Windows.Forms.Label lblNonPrime;
         private System.Windows.Forms.NumericUpDown nudNonPrimeWeekday;
 
@@ -35,12 +33,20 @@ namespace Merlin.Controls
         private void InitializeComponent()
         {
             this.tlTemplate = new System.Windows.Forms.TableLayoutPanel();
+            this.panel1 = new System.Windows.Forms.Panel();
+            this.rbManagerDiscountPeriod = new System.Windows.Forms.RadioButton();
+            this.rbManagerDiscountSingle = new System.Windows.Forms.RadioButton();
+            this.btnExcel = new System.Windows.Forms.Button();
+            this.btnCalculate = new System.Windows.Forms.Button();
+            this.rbEvenOdd = new System.Windows.Forms.RadioButton();
             this.nmManagerDiscount = new System.Windows.Forms.NumericUpDown();
-            this.lblDiscount = new System.Windows.Forms.Label();
             this.lblPos = new System.Windows.Forms.Label();
             this.cbPosition = new System.Windows.Forms.ComboBox();
             this.nudDuration = new System.Windows.Forms.NumericUpDown();
             this.lblDuration = new System.Windows.Forms.Label();
+            this.flpOdds = new System.Windows.Forms.FlowLayoutPanel();
+            this.rbEvenDays = new System.Windows.Forms.RadioButton();
+            this.rbOddDays = new System.Windows.Forms.RadioButton();
             this.cmbCapmaighType = new System.Windows.Forms.ComboBox();
             this.flpDays = new System.Windows.Forms.FlowLayoutPanel();
             this.chkMon = new System.Windows.Forms.CheckBox();
@@ -67,21 +73,16 @@ namespace Merlin.Controls
             this.nudNonPrimeWeekday = new System.Windows.Forms.NumericUpDown();
             this.label4 = new System.Windows.Forms.Label();
             this.lblTotalAfterPackageDiscount = new System.Windows.Forms.Label();
-            this.rbOddDays = new System.Windows.Forms.RadioButton();
-            this.rbEvenDays = new System.Windows.Forms.RadioButton();
-            this.flpOdds = new System.Windows.Forms.FlowLayoutPanel();
-            this.btnExcel = new System.Windows.Forms.Button();
-            this.btnCalculate = new System.Windows.Forms.Button();
-            this.rbEvenOdd = new System.Windows.Forms.RadioButton();
             this.tlTemplate.SuspendLayout();
+            this.panel1.SuspendLayout();
             ((System.ComponentModel.ISupportInitialize)(this.nmManagerDiscount)).BeginInit();
             ((System.ComponentModel.ISupportInitialize)(this.nudDuration)).BeginInit();
+            this.flpOdds.SuspendLayout();
             this.flpDays.SuspendLayout();
             ((System.ComponentModel.ISupportInitialize)(this.numNonPrimeWeekend)).BeginInit();
             ((System.ComponentModel.ISupportInitialize)(this.numPrimeWeekend)).BeginInit();
             ((System.ComponentModel.ISupportInitialize)(this.nudPrimeWeekday)).BeginInit();
             ((System.ComponentModel.ISupportInitialize)(this.nudNonPrimeWeekday)).BeginInit();
-            this.flpOdds.SuspendLayout();
             this.SuspendLayout();
             // 
             // tlTemplate
@@ -97,13 +98,13 @@ namespace Merlin.Controls
             this.tlTemplate.ColumnStyles.Add(new System.Windows.Forms.ColumnStyle());
             this.tlTemplate.ColumnStyles.Add(new System.Windows.Forms.ColumnStyle());
             this.tlTemplate.ColumnStyles.Add(new System.Windows.Forms.ColumnStyle(System.Windows.Forms.SizeType.Absolute, 20F));
+            this.tlTemplate.Controls.Add(this.panel1, 5, 2);
+            this.tlTemplate.Controls.Add(this.btnExcel, 4, 6);
+            this.tlTemplate.Controls.Add(this.btnCalculate, 3, 6);
             this.tlTemplate.Controls.Add(this.rbEvenOdd, 0, 6);
             this.tlTemplate.Controls.Add(this.nmManagerDiscount, 6, 2);
-            this.tlTemplate.Controls.Add(this.btnCalculate, 4, 6);
-            this.tlTemplate.Controls.Add(this.lblDiscount, 5, 2);
             this.tlTemplate.Controls.Add(this.lblPos, 5, 1);
             this.tlTemplate.Controls.Add(this.cbPosition, 6, 1);
-            this.tlTemplate.Controls.Add(this.btnExcel, 3, 6);
             this.tlTemplate.Controls.Add(this.nudDuration, 6, 0);
             this.tlTemplate.Controls.Add(this.lblDuration, 5, 0);
             this.tlTemplate.Controls.Add(this.flpOdds, 1, 6);
@@ -139,8 +140,75 @@ namespace Merlin.Controls
             this.tlTemplate.RowStyles.Add(new System.Windows.Forms.RowStyle());
             this.tlTemplate.RowStyles.Add(new System.Windows.Forms.RowStyle());
             this.tlTemplate.RowStyles.Add(new System.Windows.Forms.RowStyle());
-            this.tlTemplate.Size = new System.Drawing.Size(1001, 275);
+            this.tlTemplate.Size = new System.Drawing.Size(1011, 275);
             this.tlTemplate.TabIndex = 0;
+            // 
+            // panel1
+            // 
+            this.panel1.AutoSize = true;
+            this.panel1.Controls.Add(this.rbManagerDiscountPeriod);
+            this.panel1.Controls.Add(this.rbManagerDiscountSingle);
+            this.panel1.Dock = System.Windows.Forms.DockStyle.Fill;
+            this.panel1.Location = new System.Drawing.Point(792, 85);
+            this.panel1.Name = "panel1";
+            this.tlTemplate.SetRowSpan(this.panel1, 2);
+            this.panel1.Size = new System.Drawing.Size(286, 70);
+            this.panel1.TabIndex = 1;
+            // 
+            // rbManagerDiscountPeriod
+            // 
+            this.rbManagerDiscountPeriod.AutoSize = true;
+            this.rbManagerDiscountPeriod.Checked = true;
+            this.rbManagerDiscountPeriod.Location = new System.Drawing.Point(4, 30);
+            this.rbManagerDiscountPeriod.Name = "rbManagerDiscountPeriod";
+            this.rbManagerDiscountPeriod.Size = new System.Drawing.Size(279, 29);
+            this.rbManagerDiscountPeriod.TabIndex = 30;
+            this.rbManagerDiscountPeriod.TabStop = true;
+            this.rbManagerDiscountPeriod.Text = "Актуальный сезонный коэфф.";
+            this.rbManagerDiscountPeriod.UseVisualStyleBackColor = true;
+            // 
+            // rbManagerDiscountSingle
+            // 
+            this.rbManagerDiscountSingle.AutoSize = true;
+            this.rbManagerDiscountSingle.Location = new System.Drawing.Point(4, 7);
+            this.rbManagerDiscountSingle.Name = "rbManagerDiscountSingle";
+            this.rbManagerDiscountSingle.Size = new System.Drawing.Size(184, 29);
+            this.rbManagerDiscountSingle.TabIndex = 30;
+            this.rbManagerDiscountSingle.Text = "Сезонный коэфф.:";
+            this.rbManagerDiscountSingle.UseVisualStyleBackColor = true;
+            // 
+            // btnExcel
+            // 
+            this.btnExcel.Location = new System.Drawing.Point(669, 232);
+            this.btnExcel.Margin = new System.Windows.Forms.Padding(0);
+            this.btnExcel.Name = "btnExcel";
+            this.btnExcel.Size = new System.Drawing.Size(120, 38);
+            this.btnExcel.TabIndex = 42;
+            this.btnExcel.Text = "Excel";
+            this.btnExcel.UseVisualStyleBackColor = true;
+            // 
+            // btnCalculate
+            // 
+            this.btnCalculate.Font = new System.Drawing.Font("Segoe UI", 9F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(204)));
+            this.btnCalculate.Location = new System.Drawing.Point(480, 232);
+            this.btnCalculate.Margin = new System.Windows.Forms.Padding(0);
+            this.btnCalculate.Name = "btnCalculate";
+            this.btnCalculate.Size = new System.Drawing.Size(120, 38);
+            this.btnCalculate.TabIndex = 1;
+            this.btnCalculate.Text = "Рассчитать";
+            this.btnCalculate.UseVisualStyleBackColor = true;
+            // 
+            // rbEvenOdd
+            // 
+            this.rbEvenOdd.AutoSize = true;
+            this.rbEvenOdd.Font = new System.Drawing.Font("Segoe UI", 9F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(204)));
+            this.rbEvenOdd.Location = new System.Drawing.Point(3, 236);
+            this.rbEvenOdd.Margin = new System.Windows.Forms.Padding(3, 4, 3, 4);
+            this.rbEvenOdd.Name = "rbEvenOdd";
+            this.rbEvenOdd.Size = new System.Drawing.Size(185, 29);
+            this.rbEvenOdd.TabIndex = 1;
+            this.rbEvenOdd.Text = "Чётные/нечётные:";
+            this.rbEvenOdd.UseVisualStyleBackColor = true;
             // 
             // nmManagerDiscount
             // 
@@ -150,9 +218,9 @@ namespace Merlin.Controls
             0,
             0,
             65536});
-            this.nmManagerDiscount.Location = new System.Drawing.Point(1010, 85);
+            this.nmManagerDiscount.Location = new System.Drawing.Point(1084, 85);
             this.nmManagerDiscount.Name = "nmManagerDiscount";
-            this.nmManagerDiscount.Size = new System.Drawing.Size(79, 31);
+            this.nmManagerDiscount.Size = new System.Drawing.Size(80, 31);
             this.nmManagerDiscount.TabIndex = 36;
             this.nmManagerDiscount.TextAlign = System.Windows.Forms.HorizontalAlignment.Right;
             this.nmManagerDiscount.Value = new decimal(new int[] {
@@ -161,21 +229,12 @@ namespace Merlin.Controls
             0,
             0});
             // 
-            // lblDiscount
-            // 
-            this.lblDiscount.AutoSize = true;
-            this.lblDiscount.Font = new System.Drawing.Font("Segoe UI", 9F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(204)));
-            this.lblDiscount.Location = new System.Drawing.Point(792, 82);
-            this.lblDiscount.Name = "lblDiscount";
-            this.lblDiscount.Size = new System.Drawing.Size(212, 25);
-            this.lblDiscount.TabIndex = 29;
-            this.lblDiscount.Text = "Сезонный коэффициент:";
-            // 
             // lblPos
             // 
+            this.lblPos.Anchor = System.Windows.Forms.AnchorStyles.Left;
             this.lblPos.AutoSize = true;
             this.lblPos.Font = new System.Drawing.Font("Segoe UI", 9F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(204)));
-            this.lblPos.Location = new System.Drawing.Point(792, 41);
+            this.lblPos.Location = new System.Drawing.Point(792, 49);
             this.lblPos.Name = "lblPos";
             this.lblPos.Size = new System.Drawing.Size(88, 25);
             this.lblPos.TabIndex = 31;
@@ -187,7 +246,7 @@ namespace Merlin.Controls
             this.cbPosition.Font = new System.Drawing.Font("Segoe UI", 9F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(204)));
             this.cbPosition.FormattingEnabled = true;
             this.cbPosition.IntegralHeight = false;
-            this.cbPosition.Location = new System.Drawing.Point(1010, 45);
+            this.cbPosition.Location = new System.Drawing.Point(1084, 45);
             this.cbPosition.Margin = new System.Windows.Forms.Padding(3, 4, 3, 4);
             this.cbPosition.Name = "cbPosition";
             this.cbPosition.Size = new System.Drawing.Size(80, 33);
@@ -197,7 +256,7 @@ namespace Merlin.Controls
             // 
             this.nudDuration.Anchor = System.Windows.Forms.AnchorStyles.Left;
             this.nudDuration.Font = new System.Drawing.Font("Segoe UI", 9F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(204)));
-            this.nudDuration.Location = new System.Drawing.Point(1010, 5);
+            this.nudDuration.Location = new System.Drawing.Point(1084, 5);
             this.nudDuration.Margin = new System.Windows.Forms.Padding(3, 4, 3, 4);
             this.nudDuration.Maximum = new decimal(new int[] {
             120,
@@ -230,6 +289,42 @@ namespace Merlin.Controls
             this.lblDuration.Size = new System.Drawing.Size(110, 25);
             this.lblDuration.TabIndex = 22;
             this.lblDuration.Text = "Ролик (сек.):";
+            // 
+            // flpOdds
+            // 
+            this.tlTemplate.SetColumnSpan(this.flpOdds, 2);
+            this.flpOdds.Controls.Add(this.rbEvenDays);
+            this.flpOdds.Controls.Add(this.rbOddDays);
+            this.flpOdds.Location = new System.Drawing.Point(194, 235);
+            this.flpOdds.Name = "flpOdds";
+            this.flpOdds.Size = new System.Drawing.Size(230, 37);
+            this.flpOdds.TabIndex = 1;
+            // 
+            // rbEvenDays
+            // 
+            this.rbEvenDays.AutoSize = true;
+            this.rbEvenDays.Checked = true;
+            this.rbEvenDays.Font = new System.Drawing.Font("Segoe UI", 9F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(204)));
+            this.rbEvenDays.Location = new System.Drawing.Point(3, 4);
+            this.rbEvenDays.Margin = new System.Windows.Forms.Padding(3, 4, 3, 4);
+            this.rbEvenDays.Name = "rbEvenDays";
+            this.rbEvenDays.Size = new System.Drawing.Size(97, 29);
+            this.rbEvenDays.TabIndex = 4;
+            this.rbEvenDays.TabStop = true;
+            this.rbEvenDays.Text = "Чётные";
+            this.rbEvenDays.UseVisualStyleBackColor = true;
+            // 
+            // rbOddDays
+            // 
+            this.rbOddDays.AutoSize = true;
+            this.rbOddDays.Font = new System.Drawing.Font("Segoe UI", 9F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(204)));
+            this.rbOddDays.Location = new System.Drawing.Point(106, 4);
+            this.rbOddDays.Margin = new System.Windows.Forms.Padding(3, 4, 3, 4);
+            this.rbOddDays.Name = "rbOddDays";
+            this.rbOddDays.Size = new System.Drawing.Size(117, 29);
+            this.rbOddDays.TabIndex = 5;
+            this.rbOddDays.Text = "Нечётные";
+            this.rbOddDays.UseVisualStyleBackColor = true;
             // 
             // cmbCapmaighType
             // 
@@ -354,10 +449,10 @@ namespace Merlin.Controls
             // 
             this.dtEnd.Font = new System.Drawing.Font("Segoe UI", 9F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(204)));
             this.dtEnd.Format = System.Windows.Forms.DateTimePickerFormat.Short;
-            this.dtEnd.Location = new System.Drawing.Point(321, 86);
-            this.dtEnd.Margin = new System.Windows.Forms.Padding(3, 4, 3, 4);
+            this.dtEnd.Location = new System.Drawing.Point(336, 86);
+            this.dtEnd.Margin = new System.Windows.Forms.Padding(2, 4, 3, 4);
             this.dtEnd.Name = "dtEnd";
-            this.dtEnd.Size = new System.Drawing.Size(99, 31);
+            this.dtEnd.Size = new System.Drawing.Size(138, 31);
             this.dtEnd.TabIndex = 5;
             // 
             // rbDaysOfWeek
@@ -379,9 +474,9 @@ namespace Merlin.Controls
             this.dtStart.Font = new System.Drawing.Font("Segoe UI", 9F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(204)));
             this.dtStart.Format = System.Windows.Forms.DateTimePickerFormat.Short;
             this.dtStart.Location = new System.Drawing.Point(194, 86);
-            this.dtStart.Margin = new System.Windows.Forms.Padding(3, 4, 3, 4);
+            this.dtStart.Margin = new System.Windows.Forms.Padding(3, 4, 2, 4);
             this.dtStart.Name = "dtStart";
-            this.dtStart.Size = new System.Drawing.Size(121, 31);
+            this.dtStart.Size = new System.Drawing.Size(138, 31);
             this.dtStart.TabIndex = 3;
             // 
             // numNonPrimeWeekend
@@ -399,8 +494,9 @@ namespace Merlin.Controls
             // 
             // label3
             // 
+            this.label3.Anchor = System.Windows.Forms.AnchorStyles.Left;
             this.label3.AutoSize = true;
-            this.label3.Location = new System.Drawing.Point(483, 121);
+            this.label3.Location = new System.Drawing.Point(483, 127);
             this.label3.Name = "label3";
             this.label3.Size = new System.Drawing.Size(183, 25);
             this.label3.TabIndex = 39;
@@ -421,8 +517,9 @@ namespace Merlin.Controls
             // 
             // label2
             // 
+            this.label2.Anchor = System.Windows.Forms.AnchorStyles.Left;
             this.label2.AutoSize = true;
-            this.label2.Location = new System.Drawing.Point(483, 82);
+            this.label2.Location = new System.Drawing.Point(483, 89);
             this.label2.Name = "label2";
             this.label2.Size = new System.Drawing.Size(154, 25);
             this.label2.TabIndex = 38;
@@ -554,75 +651,6 @@ namespace Merlin.Controls
             this.lblTotalAfterPackageDiscount.TabIndex = 2;
             this.lblTotalAfterPackageDiscount.Text = "Итог:";
             // 
-            // rbOddDays
-            // 
-            this.rbOddDays.AutoSize = true;
-            this.rbOddDays.Font = new System.Drawing.Font("Segoe UI", 9F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(204)));
-            this.rbOddDays.Location = new System.Drawing.Point(106, 4);
-            this.rbOddDays.Margin = new System.Windows.Forms.Padding(3, 4, 3, 4);
-            this.rbOddDays.Name = "rbOddDays";
-            this.rbOddDays.Size = new System.Drawing.Size(117, 29);
-            this.rbOddDays.TabIndex = 5;
-            this.rbOddDays.Text = "Нечётные";
-            this.rbOddDays.UseVisualStyleBackColor = true;
-            // 
-            // rbEvenDays
-            // 
-            this.rbEvenDays.AutoSize = true;
-            this.rbEvenDays.Checked = true;
-            this.rbEvenDays.Font = new System.Drawing.Font("Segoe UI", 9F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(204)));
-            this.rbEvenDays.Location = new System.Drawing.Point(3, 4);
-            this.rbEvenDays.Margin = new System.Windows.Forms.Padding(3, 4, 3, 4);
-            this.rbEvenDays.Name = "rbEvenDays";
-            this.rbEvenDays.Size = new System.Drawing.Size(97, 29);
-            this.rbEvenDays.TabIndex = 4;
-            this.rbEvenDays.TabStop = true;
-            this.rbEvenDays.Text = "Чётные";
-            this.rbEvenDays.UseVisualStyleBackColor = true;
-            // 
-            // flpOdds
-            // 
-            this.tlTemplate.SetColumnSpan(this.flpOdds, 2);
-            this.flpOdds.Controls.Add(this.rbEvenDays);
-            this.flpOdds.Controls.Add(this.rbOddDays);
-            this.flpOdds.Location = new System.Drawing.Point(194, 235);
-            this.flpOdds.Name = "flpOdds";
-            this.flpOdds.Size = new System.Drawing.Size(230, 37);
-            this.flpOdds.TabIndex = 1;
-            // 
-            // btnExcel
-            // 
-            this.btnExcel.Location = new System.Drawing.Point(480, 232);
-            this.btnExcel.Margin = new System.Windows.Forms.Padding(0);
-            this.btnExcel.Name = "btnExcel";
-            this.btnExcel.Size = new System.Drawing.Size(120, 38);
-            this.btnExcel.TabIndex = 42;
-            this.btnExcel.Text = "Excel";
-            this.btnExcel.UseVisualStyleBackColor = true;
-            // 
-            // btnCalculate
-            // 
-            this.btnCalculate.Font = new System.Drawing.Font("Segoe UI", 9F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(204)));
-            this.btnCalculate.Location = new System.Drawing.Point(669, 232);
-            this.btnCalculate.Margin = new System.Windows.Forms.Padding(0);
-            this.btnCalculate.Name = "btnCalculate";
-            this.btnCalculate.Size = new System.Drawing.Size(120, 38);
-            this.btnCalculate.TabIndex = 1;
-            this.btnCalculate.Text = "Рассчитать";
-            this.btnCalculate.UseVisualStyleBackColor = true;
-            // 
-            // rbEvenOdd
-            // 
-            this.rbEvenOdd.AutoSize = true;
-            this.rbEvenOdd.Font = new System.Drawing.Font("Segoe UI", 9F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(204)));
-            this.rbEvenOdd.Location = new System.Drawing.Point(3, 236);
-            this.rbEvenOdd.Margin = new System.Windows.Forms.Padding(3, 4, 3, 4);
-            this.rbEvenOdd.Name = "rbEvenOdd";
-            this.rbEvenOdd.Size = new System.Drawing.Size(185, 29);
-            this.rbEvenOdd.TabIndex = 1;
-            this.rbEvenOdd.Text = "Чётные/нечётные:";
-            this.rbEvenOdd.UseVisualStyleBackColor = true;
-            // 
             // TemplateEditorControl
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(10F, 25F);
@@ -633,21 +661,23 @@ namespace Merlin.Controls
             this.Controls.Add(this.tlTemplate);
             this.Font = new System.Drawing.Font("Segoe UI", 9F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(204)));
             this.Margin = new System.Windows.Forms.Padding(0);
-            this.MinimumSize = new System.Drawing.Size(1001, 0);
+            this.MinimumSize = new System.Drawing.Size(1011, 401);
             this.Name = "TemplateEditorControl";
-            this.Size = new System.Drawing.Size(1001, 238);
+            this.Size = new System.Drawing.Size(1011, 401);
             this.tlTemplate.ResumeLayout(false);
             this.tlTemplate.PerformLayout();
+            this.panel1.ResumeLayout(false);
+            this.panel1.PerformLayout();
             ((System.ComponentModel.ISupportInitialize)(this.nmManagerDiscount)).EndInit();
             ((System.ComponentModel.ISupportInitialize)(this.nudDuration)).EndInit();
+            this.flpOdds.ResumeLayout(false);
+            this.flpOdds.PerformLayout();
             this.flpDays.ResumeLayout(false);
             this.flpDays.PerformLayout();
             ((System.ComponentModel.ISupportInitialize)(this.numNonPrimeWeekend)).EndInit();
             ((System.ComponentModel.ISupportInitialize)(this.numPrimeWeekend)).EndInit();
             ((System.ComponentModel.ISupportInitialize)(this.nudPrimeWeekday)).EndInit();
             ((System.ComponentModel.ISupportInitialize)(this.nudNonPrimeWeekday)).EndInit();
-            this.flpOdds.ResumeLayout(false);
-            this.flpOdds.PerformLayout();
             this.ResumeLayout(false);
             this.PerformLayout();
 
@@ -681,5 +711,8 @@ namespace Merlin.Controls
         private System.Windows.Forms.RadioButton rbEvenDays;
         private System.Windows.Forms.RadioButton rbOddDays;
         private System.Windows.Forms.Label lblTotalAfterPackageDiscount;
+        private System.Windows.Forms.RadioButton rbManagerDiscountPeriod;
+        private System.Windows.Forms.RadioButton rbManagerDiscountSingle;
+        private System.Windows.Forms.Panel panel1;
     }
 }

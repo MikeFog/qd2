@@ -57,6 +57,16 @@ namespace FogSoft.WinForm.Classes.Export.MSExcel
 			Marshal.ReleaseComObject(range);
 		}
 
+        public void SetAutoFitRows(int top, int bottom)
+        {
+            int lastColumn = worksheet.UsedRange.Columns.Count;
+            if (lastColumn < 1) lastColumn = 1;
+
+            Range range = worksheet.get_Range(worksheet.Cells[top, 1], worksheet.Cells[bottom, lastColumn]);
+            range.Rows.AutoFit();
+            Marshal.ReleaseComObject(range);
+        }
+
 		public void SetAutoFitCells(int left, int right)
         {
             int lastRow = worksheet.UsedRange.Rows.Count;
