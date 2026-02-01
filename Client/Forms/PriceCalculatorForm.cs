@@ -158,45 +158,25 @@ namespace Merlin.Forms
 
         private void UpdateSummary()
         {
-            var swTotal = Stopwatch.StartNew();
-            var swStep = Stopwatch.StartNew();
-            Debug.WriteLine("[PriceCalc] UpdateSummary start");
-
             try
             {
                 var selectedRows = grdPriceCalculator.GetSelectedRadiostations();
-                Debug.WriteLine($"[PriceCalc] GetSelectedRadiostations: {swStep.ElapsedMilliseconds} ms");
 
-                swStep.Restart();
-                decimal totalBeforePackageDiscount = grdPriceCalculator.GetSelectedTotalWithManagerDiscount();
-                Debug.WriteLine($"[PriceCalc] GetSelectedTotalWithManagerDiscount: {swStep.ElapsedMilliseconds} ms");
-
-                swStep.Restart();
+                decimal totalwithCampaignDiscount = grdPriceCalculator.GetSelectedTotalWithCampaignDiscount();
                 decimal packageDiscount = GetPackageDiscount(
                     startDate: templateEditor.DateFrom,
-                    priceTotal: totalBeforePackageDiscount,
+                    priceTotal: totalwithCampaignDiscount,
                     selectedRows: selectedRows
                 );
-                Debug.WriteLine($"[PriceCalc] GetPackageDiscount: {swStep.ElapsedMilliseconds} ms");
 
-                decimal totalAfterPackage = totalBeforePackageDiscount * packageDiscount;
-
-                swStep.Restart();
-                grdPriceCalculator.ApplyPackageTotals(packageDiscount);
-                Debug.WriteLine($"[PriceCalc] ApplyPackageTotals: {swStep.ElapsedMilliseconds} ms");
-
-                swStep.Restart();
-                DisplayTotal(totalBeforePackageDiscount, packageDiscount, totalAfterPackage);
-                Debug.WriteLine($"[PriceCalc] DisplayTotal: {swStep.ElapsedMilliseconds} ms");
+                decimal totalAfterPackage = grdPriceCalculator.ApplyPackageTotals(packageDiscount);
+                DisplayTotal(totalwithCampaignDiscount, packageDiscount, totalAfterPackage);
             }
             catch (Exception ex)
             {
                 ErrorManager.PublishError(ex);
             }
-            finally
-            {
-                Debug.WriteLine($"[PriceCalc] UpdateSummary total: {swTotal.ElapsedMilliseconds} ms");
-            }
+
         }
 
         private decimal GetPackageDiscount(DateTime startDate, decimal priceTotal, List<DataRowView> selectedRows)

@@ -772,7 +772,6 @@ namespace Merlin.Controls
 
             decimal totalBeforePackage = amountWithManager * companyDiscount;
             drv["ManagerDiscount"] = managerRatio;
-            drv["TotalWithManagerDiscount"] = totalBeforePackage;
             drv["TotalBeforePackage"] = totalBeforePackage;
 
             UpdatePackageTotal(drv.Row);
@@ -987,9 +986,6 @@ namespace Merlin.Controls
             if (!dt.Columns.Contains("TotalWithDiscount"))
                 dt.Columns.Add("TotalWithDiscount", typeof(decimal));
 
-            if (!dt.Columns.Contains("TotalWithManagerDiscount"))
-                dt.Columns.Add("TotalWithManagerDiscount", typeof(decimal));
-
             if (!dt.Columns.Contains("RollerDuration"))
                 dt.Columns.Add("RollerDuration", typeof(int));
 
@@ -1115,7 +1111,6 @@ namespace Merlin.Controls
                 row["TotalWithDiscount"] = amount * discountValue;
                 row["ManagerDiscount"] = _managerDiscount;
                 decimal totalBeforePackage = amount * discountValue * _managerDiscount;
-                row["TotalWithManagerDiscount"] = totalBeforePackage;
                 row["TotalBeforePackage"] = totalBeforePackage;
 
                 UpdatePackageTotal(row);
@@ -1205,7 +1200,6 @@ namespace Merlin.Controls
 
                 row["ManagerDiscount"] = managerAvgRatio; // фактически применённый средневзвешенный коэфф.
                 decimal totalBeforePackage = amountWithManager * discountValue;
-                row["TotalWithManagerDiscount"] = totalBeforePackage;
                 row["TotalBeforePackage"] = totalBeforePackage;
 
                 UpdatePackageTotal(row);
@@ -1218,9 +1212,9 @@ namespace Merlin.Controls
             dgvStations.Refresh();
         }
 
-        public void ApplyPackageTotals(decimal packageDiscount)
+        public decimal ApplyPackageTotals(decimal packageDiscount)
         {
-            if (SummaryTable == null) return;
+            if (SummaryTable == null) return 0;
 
             // зафиксировать редактирование перед массовым обновлением
             DoWithSkipCellEndEdit(() =>
@@ -1234,7 +1228,9 @@ namespace Merlin.Controls
 
             _suppressRecalc = true;
             try
-            {
+            {   
+                decimal totalAfterPackage = 0m;
+
                 foreach (DataRow row in SummaryTable.Rows)
                 {
                     bool isSelected = row["IsSelected"] != DBNull.Value && Convert.ToBoolean(row["IsSelected"]);
@@ -1242,12 +1238,13 @@ namespace Merlin.Controls
                     {
                         row["PackageDiscount"] = packageDiscount;
 
-                        decimal baseTotal = 0m;
-                        object v = row["TotalWithDiscount"];
+                        decimal totalBeforePackage = 0m;
+                        object v = row["TotalBeforePackage"];
                         if (v != null && v != DBNull.Value)
-                            baseTotal = Convert.ToDecimal(v);
+                            totalBeforePackage = Convert.ToDecimal(v);
 
-                        row["TotalAfterPackage"] = baseTotal * packageDiscount;
+                        totalAfterPackage += totalBeforePackage * packageDiscount;
+                        row["TotalAfterPackage"] = totalBeforePackage * packageDiscount;
                     }
                     else
                     {
@@ -1255,6 +1252,7 @@ namespace Merlin.Controls
                         row["TotalAfterPackage"] = DBNull.Value;
                     }
                 }
+                return totalAfterPackage;
             }
             finally
             {
@@ -1404,7 +1402,7 @@ namespace Merlin.Controls
             return l;
         }
 
-        public decimal GetSelectedTotalWithManagerDiscount()
+        public decimal GetSelectedTotalWithCampaignDiscount()
         {
             decimal sum = 0m;
 
@@ -1415,7 +1413,7 @@ namespace Merlin.Controls
 
                 if (!(row.DataBoundItem is DataRowView drv)) continue;
 
-                object v = drv["TotalWithManagerDiscount"];
+                object v = drv["TotalWithDiscount"];
                 if (v == DBNull.Value) continue;
 
                 sum += Convert.ToDecimal(v);
@@ -1501,7 +1499,6 @@ namespace Merlin.Controls
                         totalWithDiscount = Convert.ToDecimal(v);
 
                     decimal totalBeforePackage = totalWithDiscount * _managerDiscount;
-                    row["TotalWithManagerDiscount"] = totalBeforePackage;
                     row["TotalBeforePackage"] = totalBeforePackage;
 
                     UpdatePackageTotal(row);
