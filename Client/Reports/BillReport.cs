@@ -6,7 +6,6 @@ using CrystalDecisions.CrystalReports.Engine;
 using FogSoft.WinForm.Classes;
 using FogSoft.WinForm.DataAccess;
 using Merlin.Classes;
-using static FogSoft.WinForm.Classes.Entity;
 
 namespace Merlin.Reports
 {
@@ -69,9 +68,29 @@ namespace Merlin.Reports
 			SetTextObjectText("txtDirector", _agency.Director);
 			SetTextObjectText("txtBookKeeper", _agency.BookKeeper);
             SetTextObjectText("txtTaxString", GenericReport.NoNDSText);
-            SetTextObjectText("txtContactPerson", _action.Creator.ContactInfo);
+            if (ConfigurationUtil.IsPrintContactPerson) 
+                SetTextObjectText("txtContactPerson", _action.Creator.ContactInfo);
+            else
+                SuppressFooters(_report, true);
+
             SetTextObjectText("txtNDSColumn", CalcTotalTax(dtData) == 0 ? "ÍÄÑ" : "ÍÄÑ (5%)");
         }
+
+
+        private static void SuppressFooters(ReportClass report, bool suppress = true)
+        {
+            foreach (Section s in report.ReportDefinition.Sections)
+            {
+                // Report Footer: ReportFooterSection1, ReportFooterSection2, ...
+                if (s.Name.StartsWith("ReportFooterSection", StringComparison.OrdinalIgnoreCase) ||
+                    // Page Footer: PageFooterSection1, PageFooterSection2, ...
+                    s.Name.StartsWith("PageFooterSection", StringComparison.OrdinalIgnoreCase))
+                {
+                    s.SectionFormat.EnableSuppress = suppress;
+                }
+            }
+        }
+
 
         private decimal CalcTotalTax(DataTable dtData)
         {

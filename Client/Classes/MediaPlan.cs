@@ -557,7 +557,7 @@ namespace Merlin.Classes
 			SetCellValue(currentY, 3, "Заказчик:");
 
 			currentY += 2;
-			if (campaign != null)
+			if (campaign != null && ConfigurationUtil.IsPrintContactPerson)
 				SetCellValue(currentY, 3, string.Format("Контактное лицо: {0}", campaign.Action.Creator.ContactInfo));
         }
 

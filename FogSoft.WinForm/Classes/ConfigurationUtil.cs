@@ -50,7 +50,12 @@ namespace FogSoft.WinForm.Classes
 			get { return GetBooleanSettings("TestMode", false); }
 		}
 
-		public static int StoredProcExecutionTimeThreshold
+        public static bool IsPrintContactPerson
+        {
+            get { return GetBooleanSettings("PrintContactPersonInfo", true); }
+        }
+
+        public static int StoredProcExecutionTimeThreshold
         {
 			get { return GetInt32Settings("StoredProcExecutionTimeThresholdMS", 1000); }
 		}
