@@ -36,7 +36,11 @@ namespace Merlin.Controls
         {
             InitializeComponent();
 
-            rbManagerDiscountPeriod.CheckedChanged += (s, e) => ManagerDiscountModeChanged?.Invoke(this, EventArgs.Empty);
+            rbManagerDiscountPeriod.CheckedChanged += (s, e) =>
+            {
+                ManagerDiscountModeChanged?.Invoke(this, EventArgs.Empty);
+                nmManagerDiscount.Enabled = rbManagerDiscountSingle.Checked;
+            };
             //rbManagerDiscountSingle.CheckedChanged += (s, e) => ManagerDiscountModeChanged?.Invoke(this, EventArgs.Empty);
 
             rbDaysOfWeek.CheckedChanged += ScheduleMode_CheckedChanged;
@@ -44,8 +48,8 @@ namespace Merlin.Controls
             rbEvenDays.CheckedChanged += OnScheduleChanged;
             rbOddDays.CheckedChanged += OnScheduleChanged;
 
-            //dtStart.ValueChanged += OnScheduleChanged;
-            //dtEnd.ValueChanged += OnScheduleChanged;
+            dtStart.ValueChanged += (s, e) => { SetManagerDiscount(); };
+            dtEnd.ValueChanged += (s, e) => { SetManagerDiscount(); };
 
             // Дни недели
             chkMon.CheckedChanged += OnScheduleChanged;
@@ -112,7 +116,7 @@ namespace Merlin.Controls
             }
             else
             {
-                nmManagerDiscount.Minimum = nmManagerDiscount.Value = SecurityManager.LoggedUser.GetDiscaunt(DateTime.Today);
+                nmManagerDiscount.Minimum = nmManagerDiscount.Value = SecurityManager.LoggedUser.GetDiscount(dtStart.Value, dtEnd.Value);
             }
         }
 

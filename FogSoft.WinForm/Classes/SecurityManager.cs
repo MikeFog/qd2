@@ -31,12 +31,12 @@ namespace FogSoft.WinForm.Classes
             public bool IsBookKeeper { get; private set; }
 			public string LoginName { get; set; }
 
-			public decimal GetDiscaunt(DateTime date) 
+			public decimal GetDiscount(DateTime startDate, DateTime finishDate) 
 			{
 				var parameters = DataAccessor.CreateParametersDictionary();
                 parameters[ParamNames.UserId] = Id;
-                parameters["CheckDate"] = date;
-
+                parameters["startDate"] = startDate;
+                parameters["finishDate"] = finishDate;
                 DataSet ds = DataAccessor.LoadDataSet("GetUserDiscount", parameters);
 				return decimal.Parse(ds.Tables[0].Rows[0]["discount"].ToString());
             }

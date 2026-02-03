@@ -213,6 +213,7 @@ namespace Merlin.Controls
             // nmManagerDiscount
             // 
             this.nmManagerDiscount.DecimalPlaces = 2;
+            this.nmManagerDiscount.Enabled = false;
             this.nmManagerDiscount.Increment = new decimal(new int[] {
             1,
             0,

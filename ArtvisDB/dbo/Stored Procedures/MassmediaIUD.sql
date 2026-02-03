@@ -2,7 +2,7 @@
 (
 @massmediaID smallint = NULL,
 @name nvarchar(32) = NULL,
-@prefix nvarchar(32) = NULL,
+@prefix nvarchar(256) = NULL,
 @roltypeID smallint = NULL,
 @deadLine datetime = NULL,
 @isActive bit = NULL,
