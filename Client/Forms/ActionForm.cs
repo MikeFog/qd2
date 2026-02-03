@@ -311,7 +311,7 @@ namespace Merlin.Forms
         {
             try
             {
-				if (_action.TotalPrice == 0) return;
+				//if (_action.TotalPrice == 0) return;
 
                 ActionFinalPriceForm form = new ActionFinalPriceForm(_action);
                 if (form.ShowDialog(this) == DialogResult.OK)
