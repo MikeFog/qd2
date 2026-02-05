@@ -22,7 +22,7 @@
     [name]                 VARCHAR (64)         NOT NULL,
     [director]             [dbo].[doubleString] NULL,
     [painting]             IMAGE                NULL,
-    [prefix]               VARCHAR (64)         NULL,
+    [prefix]               [dbo].[doubleString]         NULL,
     [fullPrefix]           [dbo].[doubleString] NULL,
     [reportString]         [dbo].[doubleString] NULL,
     [certificateIssued]    [dbo].[doubleString] NULL,
