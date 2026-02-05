@@ -38,7 +38,7 @@ BEGIN
 
     -- Начало общего времени выпуска в рамках broadCast (как раньше: по maxBroadcast)
     SET @dateWithBroadCastStart =
-        DATEADD(minute, DATEPART(minute, @maxBroadcast),
+        DATEADD(minute, 0, --DATEPART(minute, @maxBroadcast), проблема из-за минут при редактирвании веерной акции
         DATEADD(hour,   DATEPART(hour,   @maxBroadcast), @dateStart));
 
     --------------------------------------------------------------------
