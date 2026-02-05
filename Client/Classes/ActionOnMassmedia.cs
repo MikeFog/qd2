@@ -704,6 +704,7 @@ namespace Merlin.Classes
             lstStat.Items.Add("Общее время: " + this["duration"]);
             lstStat.Items.Add("Тариф: " + TariffPrice.ToString("c"));
             lstStat.Items.Add("Итого: " + TotalPrice.ToString("c"));
+            lstStat.Items.Add("Пакетная скидка: " + this[ParamNames.Discount]);
         }
 
         public DataTable Issues
