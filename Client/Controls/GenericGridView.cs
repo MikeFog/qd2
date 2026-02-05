@@ -51,7 +51,10 @@ namespace Merlin.Controls
                 bool isChecked = (bool)this[e.ColumnIndex, e.RowIndex].EditedFormattedValue;
                 if (_selectionMode == Merlin.SelectionMode.Agency)
                 {
-                    enableCell(Rows[CurrentCell.RowIndex].Cells[ColumnIndex.Calendar_Agency], isChecked);
+                    var calendarCell = Rows[CurrentCell.RowIndex].Cells[ColumnIndex.Calendar_Agency];
+                    enableCell(calendarCell, isChecked);
+                    if (isChecked)
+                        StartCalendarEdit(calendarCell);
                 }
                 else if (_selectionMode == Merlin.SelectionMode.Split)
                 {
@@ -62,13 +65,20 @@ namespace Merlin.Controls
                     else
                     {
                         var val = DBData.Rows[e.RowIndex]["splitType"];
-                        enableCell(Rows[CurrentCell.RowIndex].Cells[ColumnIndex.Calendar], 
-                            val != DBNull.Value && (int)val == (int)ActionOnMassmedia.SplitRule.SplitType.ByPeriod);
+                        var calendarEnabled = val != DBNull.Value &&
+                                               (int)val == (int)ActionOnMassmedia.SplitRule.SplitType.ByPeriod;
+                        var calendarCell = Rows[CurrentCell.RowIndex].Cells[ColumnIndex.Calendar];
+                        enableCell(calendarCell, calendarEnabled);
+                        if (calendarEnabled)
+                            StartCalendarEdit(calendarCell);
                     }
                 }
                 else
                 {
-                    enableCell(Rows[CurrentCell.RowIndex].Cells[ColumnIndex.Calendar_Clone], isChecked);
+                    var calendarCell = Rows[CurrentCell.RowIndex].Cells[ColumnIndex.Calendar_Clone];
+                    enableCell(calendarCell, isChecked);
+                    if (isChecked)
+                        StartCalendarEdit(calendarCell);
                 }
             }
         }
@@ -92,8 +102,22 @@ namespace Merlin.Controls
         {
             DataRowView v = ((ComboBox)sender).SelectedItem as DataRowView;
             if (v != null)
-                enableCell(Rows[CurrentCell.RowIndex].Cells[CurrentCell.ColumnIndex + 1],
-                    int.Parse(v.Row[0].ToString()) == (int)ActionOnMassmedia.SplitRule.SplitType.ByPeriod);
+            {
+                bool calendarEnabled = int.Parse(v.Row[0].ToString()) == (int)ActionOnMassmedia.SplitRule.SplitType.ByPeriod;
+                var calendarCell = Rows[CurrentCell.RowIndex].Cells[CurrentCell.ColumnIndex + 1];
+                enableCell(calendarCell, calendarEnabled);
+                if (calendarEnabled)
+                    StartCalendarEdit(calendarCell);
+            }
+        }
+
+        private void StartCalendarEdit(DataGridViewCell cell)
+        {
+            if (cell == null || cell.ReadOnly)
+                return;
+
+            CurrentCell = cell;
+            BeginEdit(true);
         }
 
         private void enableCell(DataGridViewCell dc, bool enabled)
@@ -290,6 +314,13 @@ namespace Merlin.Controls
                     ctl.Value = DateTime.Today;
                 }
 
+                if (DataGridView != null)
+                {
+                    DataGridView.CurrentCell.Value = ctl.Value;
+                    DataGridView.NotifyCurrentCellDirty(true);
+                    DataGridView.CommitEdit(DataGridViewDataErrorContexts.Commit);
+                }
+
             }
 
             public override Type EditType
@@ -461,9 +492,9 @@ namespace Merlin.Controls
                 if (Visible) 
                 {
                     valueChanged = true;
-                    dataGridView.CurrentCell.Value = Value.ToShortDateString();
-                    //dataGridView.EndEdit(); // Завершаем редактирование
+                    dataGridView.CurrentCell.Value = Value;
                     dataGridView.NotifyCurrentCellDirty(true);
+                    dataGridView.CommitEdit(DataGridViewDataErrorContexts.Commit);
                 }
             
 

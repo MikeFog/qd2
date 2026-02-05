@@ -56,22 +56,29 @@ namespace Merlin.Classes
 
         private void PrintContract(IWin32Window owner, bool isSponsor)
         {
-            SelectCampaignsForm fSelector = new SelectCampaignsForm(EntityManager.GetEntity((int)Entities.Agency));
-			if(fSelector.ShowDialog(owner) == DialogResult.OK)
+			try
 			{
-                Entity entityBill = EntityManager.GetEntity((int)Entities.GeneralBill);
-                foreach (var item in fSelector.SelectedItems)
+				SelectCampaignsForm fSelector = new SelectCampaignsForm(EntityManager.GetEntity((int)Entities.Agency));
+				if (fSelector.ShowDialog(owner) == DialogResult.OK)
 				{
-					Dictionary<string, object> parameters = new Dictionary<string, object>(StringComparer.CurrentCultureIgnoreCase)
-                    {
-                        [TableColumns.Bill.BillDate] = item.date
-                    };
-                    PresentationObject bill = entityBill.CreateObject(parameters);
+					((Form)owner).UseWaitCursor = true;
+					Application.DoEvents();
 
-                    ContractReport report = new ContractReport(this, (Agency)item.presentationObject, bill, isSponsor);
-                    report.Show(isSponsor ? "Спонсорский договор" : "Договор");
-                }
-            }
+					Entity entityBill = EntityManager.GetEntity((int)Entities.GeneralBill);
+					foreach (var item in fSelector.SelectedItems)
+					{
+						Dictionary<string, object> parameters = new Dictionary<string, object>(StringComparer.CurrentCultureIgnoreCase)
+						{
+							[TableColumns.Bill.BillDate] = item.date
+						};
+						PresentationObject bill = entityBill.CreateObject(parameters);
+
+						ContractReport report = new ContractReport(this, (Agency)item.presentationObject, bill, isSponsor);
+						report.Show(isSponsor ? "Спонсорский договор" : "Договор");
+					}
+				}
+			}
+			finally { ((Form)owner).UseWaitCursor = false; }
         }
 
         protected override void AssignNew(IWin32Window owner)

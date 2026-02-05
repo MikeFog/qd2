@@ -9,7 +9,7 @@ SET NOCOUNT ON
 Select 
 	a.*,
 	t.name as taxName,
-	'Налог для агентства ''' + ag.name + ''''
+	'Налог для агентства ''' + ag.name + '''' as name
 From
 	AgencyTax a
 	Inner Join iTax t On a.taxId = t.taxId

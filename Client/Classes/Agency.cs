@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Data;
+using System.Linq;
 using System.Windows.Forms;
 using FogSoft.WinForm;
 using FogSoft.WinForm.Classes;
@@ -146,8 +147,8 @@ namespace Merlin.Classes
             return DataAccessor.LoadDataSet("AgencyPainting", procParameters).Tables[0];
         }
 
-        public static List<PresentationObject> SelectAgencies(PresentationObject presentationObject,
-																													Dictionary<string, object> parameters, IWin32Window owner)
+        public static List<PresentationObject> SelectAgencies(PresentationObject presentationObject, 
+			Dictionary<string, object> parameters, IWin32Window owner)
 		{
 			// Load all agencies associated with given presentation objects
 			DataAccessor.PrepareParameters(parameters, presentationObject.Entity,
@@ -218,5 +219,37 @@ namespace Merlin.Classes
 				Cursor.Current = Cursors.Default;
 			}
 		}
+
+        public decimal GetTaxValue(DateTime date)
+        {
+			ChildEntity = EntityManager.GetEntity((int)Entities.AgencyTax);
+			var _taxTable = GetContent();
+
+
+            if (_taxTable == null || _taxTable.Rows.Count == 0)
+                return 0;
+
+            DataRow row = _taxTable.AsEnumerable()
+                .FirstOrDefault(r =>
+                    date >= r.Field<DateTime>("startDate") &&
+                    date <= r.Field<DateTime>("finishDate"));
+
+            if (row == null)
+                return 0;
+
+            decimal divisor = row.Field<decimal>("divisor");
+
+            if (divisor <= 1m)
+                throw new InvalidOperationException($"Invalid divisor value: {divisor}");
+
+            // ставка НДС в процентах
+            // divisor = (100 + rate) / rate  =>  rate = 100 / (divisor - 1)
+            return Math.Round(
+                100m / (divisor - 1m),
+                6,
+                MidpointRounding.AwayFromZero
+            );
+        }
+
     }
 }
