@@ -1,6 +1,4 @@
-﻿/*
-Mdified: Denis Gladkikh (dgladkikh@fogsoft.ru) 17.09.2008 - Add broadcast start logic to sponsor price list
-*/
+﻿
 CREATE           PROC [dbo].[rpt_GenericBill]
 (
 @actionId int,
@@ -12,8 +10,9 @@ WITH EXECUTE AS OWNER
 AS
 SET NOCOUNT ON
 
-declare @invoiceTableText varchar(1024)
+declare @invoiceTableText varchar(1024), @invoiceTableTextSponsor varchar(1024)
 select @invoiceTableText = reportText from [dbo].[ReportPartText] where codeName='invoice1'
+select @invoiceTableTextSponsor = reportText from [dbo].[ReportPartText] where codeName='InvoiceSponsor'
 
 declare @isByMonth bit
 select @isByMonth = case when @beginDate is not null and @endDate is not null then 1 else 0 end
@@ -80,7 +79,10 @@ begin
 	begin 
 		insert into @res
 		Select	
-			'Реклама в программе ''' + p.[name] + '''' AS NAME,
+			--'Реклама в программе ''' + p.[name] + '''' AS NAME,
+			replace(replace(replace(@invoiceTableTextSponsor, '{строка для счёта/договора}', IsNull(mm.reportString, '{строка для счёта/договора}')), 
+			'{группа радиостанций}', IsNull(mm.groupName, '{группа радиостанций}')),  
+			'{программа}', p.[name]) as name,
 			Sum(i.[tariffPrice] * i.[ratio]) as price,
 			sum(case when coalesce(at.divisor, 0) < 0.0000001 then 0 else ((i.[tariffPrice] * i.[ratio])/at.divisor) end)
 		From		
@@ -89,13 +91,14 @@ begin
 			inner join SponsorProgram p on i.programID = p.sponsorProgramID 
 			inner join SponsorTariff st on i.tariffID = st.tariffID
 			inner join SponsorProgramPricelist pl on st.priceListID = pl.pricelistID
+			inner join vMassmedia mm on c.massmediaID = mm.massmediaID
 			left join dbo.AgencyTax at on c.agencyID = at.agencyID
 				and Convert(datetime, Convert(varchar(8), DATEADD(mi, -DATEPART(mi, pl.broadcastStart), DATEADD(hh, -DATEPART(hh, pl.broadcastStart), i.issueDate)), 112), 112) between at.startDate and at.finishDate
 		Where		
 			i.campaignID = @campaignID and 
 			i.issueDate between DATEADD(mi, DATEPART(mi, pl.broadcastStart), DATEADD(hh, DATEPART(hh, pl.broadcastStart), @beginDate)) and dateadd(ss, -1, DATEADD(mi, DATEPART(mi, pl.broadcastStart), DATEADD(hh, DATEPART(hh, pl.broadcastStart), dateadd(day, 1, @endDate))))
 		GROUP BY 
-			p.[name]
+			p.[name], mm.reportString, mm.groupName
 	end 
 	else if (@campaignTypeID in (4))
 	begin 
