@@ -1,84 +1,96 @@
-﻿CREATE PROC [dbo].[Grid]
+﻿
+CREATE PROC [dbo].[Grid]
 (
-@massmediaID smallint,
-@startDate datetime,
-@finishDate datetime,
-@showUnconfirmed bit,
-@campaignID int = -1,
-@position smallint = 0,
-@moduleID int = null
+    @massmediaID smallint,
+    @startDate datetime,
+    @finishDate datetime,
+    @showUnconfirmed bit,
+    @campaignID int = -1,
+    @position smallint = 0,
+    @moduleID int = null
 )
 AS
-
-SET NOCOUNT ON
-SET DATEFIRST 1
-
-declare @a datetime
-declare @b datetime
-set	@a = dbo.ToShortDate(@startDate)
-set	@b = dateadd(day, -1, dbo.ToShortDate(@finishDate))
-
-declare @res table(rollerDuration int, 
-	windowDateOriginal datetime, 
-	timeString varchar(10), 
-	[weekday] tinyint, 
-	campaignID int, 
-	positionId smallint, 
-	originalWindowID int, 
-	moduleID int, 
-	rollerID int)
-
-insert into @res (
-	rollerDuration,
-	windowDateOriginal,
-	timeString,
-	[weekday],
-	campaignID,
-	positionId,
-	originalWindowID,
-	moduleID,
-	rollerID)
-SELECT 
-	r.duration as rollerDuration, 
-	tw.windowDateOriginal,
-	CONVERT(varchar(5), tw.windowDateOriginal, 108) as timeString,
-	DatePart(dw,tw.dayOriginal) as [weekday],
-	i.campaignID,
-	i.positionId,
-	i.originalWindowID,
-	mi.moduleID,
-	i.rollerID
-FROM 
-	Issue i WITH (NOLOCK)
-	inner join TariffWindow tw on i.originalWindowID = tw.windowId
-	inner join Roller r  on i.rollerID = r.rollerID
-	INNER JOIN Campaign c ON c.campaignID = i.campaignID 
-	left join ModuleIssue mi on i.moduleIssueID = mi.moduleIssueID
-where
-	c.massmediaID = @massmediaID AND
-	tw.dayOriginal between @a And @b AND
-	i.campaignID = Coalesce(@campaignID, i.campaignID) AND
-	(i.isConfirmed = 1 OR @showUnconfirmed = 1 OR i.campaignID = @campaignID)
-
-select * from @res as r where (@moduleID is null or r.moduleID = @moduleID) 
-
-select [weekday], count(*) as [count]
-from @res
-group by [weekday]
-
-declare @firmId int
-select @firmId = a.firmId From Campaign c inner join Action a on a.actionID = c.actionID where c.campaignID = @campaignID
-
-select 
-	distinct tw.windowId
-from 
-	Issue i WITH (NOLOCK)
-	inner join TariffWindow tw on i.originalWindowID = tw.windowId
-	INNER JOIN Campaign c ON c.campaignID = i.campaignID 
-	Inner Join Action a on a.actionID = c.actionID
-where
-	c.massmediaID = @massmediaID 
-	And tw.dayOriginal between @a And @b
-	And a.firmID = @firmId
-	And (i.isConfirmed = 1 OR @showUnconfirmed = 1)
-	And a.deleteDate Is Null
+BEGIN
+    SET NOCOUNT ON;
+    SET DATEFIRST 1;
+    
+    DECLARE @a datetime, @b datetime, @firmId int;
+    
+    SET @a = dbo.ToShortDate(@startDate);
+    SET @b = DATEADD(day, -1, dbo.ToShortDate(@finishDate));
+    
+    -- Получаем firmId один раз в начале (если нужен)
+    IF @campaignID <> -1
+    BEGIN
+        SELECT @firmId = a.firmId 
+        FROM dbo.Campaign c 
+        INNER JOIN dbo.Action a ON a.actionID = c.actionID 
+        WHERE c.campaignID = @campaignID;
+    END
+    
+    -- Используем временную таблицу вместо табличной переменной
+    CREATE TABLE #res (
+        rollerDuration int, 
+        windowDateOriginal datetime, 
+        timeString varchar(10), 
+        [weekday] tinyint, 
+        campaignID int, 
+        positionId smallint, 
+        originalWindowID int, 
+        moduleID int, 
+        rollerID int,
+        INDEX IX_res_moduleID (moduleID) INCLUDE (rollerDuration, windowDateOriginal, timeString, [weekday], campaignID, positionId, originalWindowID, rollerID),
+        INDEX IX_res_weekday (weekday)
+    );
+    
+    -- Основной запрос с использованием OPTION (RECOMPILE) для адаптивного плана
+    INSERT INTO #res
+    SELECT 
+        r.duration,
+        tw.windowDateOriginal,
+        CONVERT(varchar(5), tw.windowDateOriginal, 108),
+        DATEPART(dw, tw.dayOriginal),
+        i.campaignID,
+        i.positionId,
+        i.originalWindowID,
+        mi.moduleID,
+        i.rollerID
+    FROM dbo.Issue i  -- Убрали NOLOCK
+        INNER JOIN dbo.TariffWindow tw ON i.originalWindowID = tw.windowId
+        INNER JOIN dbo.Roller r ON i.rollerID = r.rollerID
+        INNER JOIN dbo.Campaign c ON c.campaignID = i.campaignID 
+        LEFT JOIN dbo.ModuleIssue mi ON i.moduleIssueID = mi.moduleIssueID
+    WHERE
+        c.massmediaID = @massmediaID 
+        AND tw.dayOriginal BETWEEN @a AND @b
+        AND (@campaignID = -1 OR i.campaignID = @campaignID)
+        AND (i.isConfirmed = 1 OR @showUnconfirmed = 1 OR i.campaignID = @campaignID)
+    OPTION (RECOMPILE);
+    
+    -- Результаты
+    SELECT * 
+    FROM #res 
+    WHERE @moduleID IS NULL OR moduleID = @moduleID;
+    
+    SELECT [weekday], COUNT(*) AS [count]
+    FROM #res
+    GROUP BY [weekday];
+    
+    -- Третий запрос только если нужен firmId
+    IF @campaignID <> -1 AND @firmId IS NOT NULL
+    BEGIN
+        SELECT DISTINCT tw.windowId
+        FROM dbo.Issue i
+            INNER JOIN dbo.TariffWindow tw ON i.originalWindowID = tw.windowId
+            INNER JOIN dbo.Campaign c ON c.campaignID = i.campaignID 
+            INNER JOIN dbo.Action a ON a.actionID = c.actionID
+        WHERE
+            c.massmediaID = @massmediaID 
+            AND tw.dayOriginal BETWEEN @a AND @b
+            AND a.firmID = @firmId
+            AND (i.isConfirmed = 1 OR @showUnconfirmed = 1)
+            AND a.deleteDate IS NULL;
+    END
+    
+    DROP TABLE #res;
+END

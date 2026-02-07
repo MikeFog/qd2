@@ -24,6 +24,7 @@
     [email]               VARCHAR (256)        NULL,
     [painting]            IMAGE                NULL,
     [reportPlace]         VARCHAR (64)         NULL,
+    [path2proposalTemplate] VARCHAR(128) NULL, 
     CONSTRAINT [PK_Agency] PRIMARY KEY NONCLUSTERED ([agencyID] ASC) WITH (FILLFACTOR = 90),
     CONSTRAINT [FK_Agency_Bank] FOREIGN KEY ([bankID]) REFERENCES [dbo].[Bank] ([bankId]),
     CONSTRAINT [UIX_Agency_name] UNIQUE CLUSTERED ([name] ASC) WITH (FILLFACTOR = 90)

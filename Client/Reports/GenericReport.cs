@@ -21,6 +21,7 @@ namespace Merlin.Reports
             public const string SponsorContractTitle2 = "SponsorContractTitle2";
             public const string SponsorContractHeader = "SponsorContractHeader";
             public const string SponsorContractSubject = "SponsorContract.ContractSubject";
+            public const string SponsorContractSubjectNoNDS = "SponsorContract.ContractSubjectNoNDS";
             public const string SponsorContractLegalInfoTitle = "SponsorContractLegalInfoTitle";
             public const string SponsorContractFooterLeftPart = "SponsorContractFooterLeftPart";
             public const string SponsorContractFooterRightPart = "SponsorContractFooterRightPart";
@@ -31,6 +32,7 @@ namespace Merlin.Reports
             public const string ContractTitle2 = "ContractTitle2";
             public const string ContractHeader = "ContractHeader";
             public const string ContractSubject = "Contract.ContractSubject";
+            public const string ContractSubjectNoNDS = "Contract.ContractSubjectNoNDS";
             public const string ContractLegalInfoTitle = "ContractLegalInfoTitle";
             public const string ContractFooterLeftPart = "ContractFooterLeftPart";
             public const string ContractFooterRightPart = "ContractFooterRightPart";

@@ -20,6 +20,7 @@ namespace Merlin.Controls
 
         public Button CalculateButton => btnCalculate;
         public Button ExcelButton => btnExcel;
+        public Button SaveButton => btnSave;
         public NumericUpDown ManagerDiscountNum => nmManagerDiscount;
         public Label TotalAfterPackageDiscount => lblTotalAfterPackageDiscount;
 
@@ -116,7 +117,7 @@ namespace Merlin.Controls
             }
             else
             {
-                nmManagerDiscount.Minimum = nmManagerDiscount.Value = SecurityManager.LoggedUser.GetDiscount(dtStart.Value, dtEnd.Value);
+                nmManagerDiscount.Value = nmManagerDiscount.Minimum =  SecurityManager.LoggedUser.GetDiscount(dtStart.Value, dtEnd.Value);
             }
         }
 

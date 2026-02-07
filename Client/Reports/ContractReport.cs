@@ -32,8 +32,15 @@ namespace Merlin.Reports
             else
                 _report.DataDefinition.FormulaFields["txtTitle"].Text = CreateFormulaText(_isSponsor ? ReportParts.SponsorContractTitle2: ReportParts.ContractTitle2);
             _report.DataDefinition.FormulaFields["txtHeader"].Text = CreateFormulaText(_isSponsor ? ReportParts.SponsorContractHeader : ReportParts.ContractHeader);
-            _report.DataDefinition.FormulaFields["txtContractSubject"].Text = 
-                CreateFormulaText(_isSponsor ? ReportParts.SponsorContractSubject : ReportParts.ContractSubject);
+
+            var taxValue = _agency.GetTaxValue(_contractDate);
+            if (taxValue > 0)
+                _report.DataDefinition.FormulaFields["txtContractSubject"].Text =
+                    CreateFormulaText(_isSponsor ? ReportParts.SponsorContractSubject : ReportParts.ContractSubject).Replace("{tax}", taxValue.ToString());
+            else
+                _report.DataDefinition.FormulaFields["txtContractSubject"].Text = 
+                    CreateFormulaText(_isSponsor ? ReportParts.SponsorContractSubjectNoNDS : ReportParts.ContractSubjectNoNDS);
+
             _report.DataDefinition.FormulaFields["txtLegalInfoTitle"].Text = 
                 CreateFormulaText(_isSponsor ? ReportParts.SponsorContractLegalInfoTitle : ReportParts.ContractLegalInfoTitle);
             _report.DataDefinition.FormulaFields["txtFooterLeftPart"].Text = 

@@ -28,14 +28,19 @@ CREATE           PROCEDURE [dbo].[AgencyIUD]
 @actionName varchar(32),
 @withResultset bit = 1,
 @painting image = null,
-@reportPlace varchar(64)
+@reportPlace varchar(64),
+@path2proposalTemplate varchar(128) = null
 )
 WITH EXECUTE AS OWNER
 as
 SET NOCOUNT ON
 IF @actionName = 'AddItem' BEGIN
-	INSERT INTO [Agency](name, address, phone, fax, email, account, inn, okpo, okonh, bankID, director, bookkeeper, prefix, isActive, directorSignature, bookkeeperSignature, fullPrefix, reportString, registration, kpp, egrn, okved, painting, reportPlace)
-	VALUES(@name, @address, @phone, @fax, @email, @account, @inn, @okpo, @okonh, @bankID, @director, @bookkeeper, @prefix, @isActive, @directorSignature, @bookkeeperSignature, @fullPrefix, @reportString, @registration, @kpp, @egrn, @okved, @painting, @reportPlace)
+	INSERT INTO [Agency](name, address, phone, fax, email, account, inn, okpo, okonh, bankID, director, 
+		bookkeeper, prefix, isActive, directorSignature, bookkeeperSignature, fullPrefix, reportString, 
+		registration, kpp, egrn, okved, painting, reportPlace, path2proposalTemplate)
+	VALUES(@name, @address, @phone, @fax, @email, @account, @inn, @okpo, @okonh, @bankID, @director, 
+		@bookkeeper, @prefix, @isActive, @directorSignature, @bookkeeperSignature, @fullPrefix, @reportString, 
+		@registration, @kpp, @egrn, @okved, @painting, @reportPlace, @path2proposalTemplate)
 
 	if @@rowcount <> 1
 	begin
@@ -77,7 +82,8 @@ ELSE IF @actionName = 'UpdateItem' BEGIN
 		reportString = @reportString, 
 		registration = @registration,
 		painting = @painting,
-		reportPlace = @reportPlace
+		reportPlace = @reportPlace,
+		path2proposalTemplate = @path2proposalTemplate
 	WHERE		
 		AgencyID = @AgencyID
 

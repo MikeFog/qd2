@@ -12,6 +12,25 @@ namespace Merlin.Controls
 {
     public partial class PriceCalculatorGrid : UserControl
     {
+        public enum PriceCalculatorColumn
+        {
+            PrimeTotalSpotsWeekday,
+            NonPrimeTotalSpotsWeekday,
+            PrimeTotalSpotsWeekend,
+            NonPrimeTotalSpotsWeekend,
+            TotalAmount,
+            CompanyDiscount,
+            TotalWithDiscount,
+            RollerDuration,
+            ManagerDiscount,
+            IsSelected,
+            PackageDiscount,
+            TotalAfterPackage,
+            Position,
+            TotalBeforePackage,
+        }
+
+        private static string ColumnName(PriceCalculatorColumn column) => column.ToString();
         private const string ExtraChargeFirstRollerColumn = "extraChargeFirstRoller";
         private const string ExtraChargeSecondRollerColumn = "extraChargeSecondRoller";
         private const string ExtraChargeLastRollerColumn = "extraChargeLastRoller";
@@ -104,18 +123,9 @@ namespace Merlin.Controls
                 // чекбокс — сразу обновляем summary
                 if (colName == "colSelected")
                 {
-                    var sw = Stopwatch.StartNew();
-                    Debug.WriteLine("[PriceCalc] colSelected -> SummaryUpdater start");
                     RunWithWaitCursor(() =>
                     {
-                        try
-                        {
-                            SummaryUpdater?.Invoke();
-                        }
-                        finally
-                        {
-                            Debug.WriteLine($"[PriceCalc] colSelected -> SummaryUpdater finished in {sw.ElapsedMilliseconds} ms");
-                        }
+                        SummaryUpdater?.Invoke();
                     });
                 }
             };
@@ -209,7 +219,7 @@ namespace Merlin.Controls
                 Name = "colSelected",
                 HeaderText = "",
                 Width = 24,
-                DataPropertyName = "IsSelected",
+                DataPropertyName = ColumnName(PriceCalculatorColumn.IsSelected),
                 TrueValue = true,
                 FalseValue = false,
                 SortMode = DataGridViewColumnSortMode.Automatic
@@ -231,7 +241,7 @@ namespace Merlin.Controls
             {
                 Name = "colRollerDuration",
                 HeaderText = "Пр-ть ролика",
-                DataPropertyName = "RollerDuration",
+                DataPropertyName = ColumnName(PriceCalculatorColumn.RollerDuration),
                 Width = NumericColWidth,
                 DefaultCellStyle = { Format = "N0", Alignment = DataGridViewContentAlignment.MiddleRight }
             });
@@ -240,7 +250,7 @@ namespace Merlin.Controls
             {
                 Name = "colPosition",
                 HeaderText = "Позиция",
-                DataPropertyName = "Position",
+                DataPropertyName = ColumnName(PriceCalculatorColumn.Position),
                 Width = NumericColWidth,
                 DisplayStyle = DataGridViewComboBoxDisplayStyle.DropDownButton,
                 FlatStyle = FlatStyle.Flat,
@@ -294,7 +304,7 @@ namespace Merlin.Controls
             {
                 Name = "colPrimeTotalSpotsWeekday",
                 HeaderText = "Кол-во выходов будни прайм",
-                DataPropertyName = "PrimeTotalSpotsWeekday",
+                DataPropertyName = ColumnName(PriceCalculatorColumn.PrimeTotalSpotsWeekday),
                 Width = NumericColWidth,
                 DefaultCellStyle = { Format = "N0", Alignment = DataGridViewContentAlignment.MiddleRight, NullValue = "0" }
             });
@@ -303,7 +313,7 @@ namespace Merlin.Controls
             {
                 Name = "colNonPrimeTotalSpotsWeekday",
                 HeaderText = "Кол-во выходов будни не прайм",
-                DataPropertyName = "NonPrimeTotalSpotsWeekday",
+                DataPropertyName = ColumnName(PriceCalculatorColumn.NonPrimeTotalSpotsWeekday),
                 Width = NumericColWidth,
                 DefaultCellStyle = { Format = "N0", Alignment = DataGridViewContentAlignment.MiddleRight, NullValue = "0" }
             });
@@ -312,7 +322,7 @@ namespace Merlin.Controls
             {
                 Name = "colPrimeTotalSpotsWeekend",
                 HeaderText = "Кол-во выходов выходные прайм",
-                DataPropertyName = "PrimeTotalSpotsWeekend",
+                DataPropertyName = ColumnName(PriceCalculatorColumn.PrimeTotalSpotsWeekend),
                 Width = NumericColWidth,
                 DefaultCellStyle = { Format = "N0", Alignment = DataGridViewContentAlignment.MiddleRight, NullValue = "0" }
             });
@@ -321,7 +331,7 @@ namespace Merlin.Controls
             {
                 Name = "colNonPrimeTotalSpotsWeekend",
                 HeaderText = "Кол-во выходов выходные не прайм",
-                DataPropertyName = "NonPrimeTotalSpotsWeekend",
+                DataPropertyName = ColumnName(PriceCalculatorColumn.NonPrimeTotalSpotsWeekend),
                 Width = NumericColWidth,
                 DefaultCellStyle = { Format = "N0", Alignment = DataGridViewContentAlignment.MiddleRight, NullValue = "0" }
             });
@@ -330,7 +340,7 @@ namespace Merlin.Controls
             {
                 Name = "colTotalAmount",
                 HeaderText = "Цена кампании",
-                DataPropertyName = "TotalAmount",
+                DataPropertyName = ColumnName(PriceCalculatorColumn.TotalAmount),
                 Width = NumericColWidth,
                 DefaultCellStyle = { Format = "c", Alignment = DataGridViewContentAlignment.MiddleRight },
                 ReadOnly = true
@@ -340,7 +350,7 @@ namespace Merlin.Controls
             {
                 Name = "colCompanyDiscount",
                 HeaderText = "Объёмная скидка",
-                DataPropertyName = "CompanyDiscount",
+                DataPropertyName = ColumnName(PriceCalculatorColumn.CompanyDiscount),
                 Width = NumericColWidth,
                 DefaultCellStyle = { Format = "N2", Alignment = DataGridViewContentAlignment.MiddleRight },
                 ReadOnly = true
@@ -350,7 +360,7 @@ namespace Merlin.Controls
             {
                 Name = "colSeasonCoeff",
                 HeaderText = "Сезонный коэфф.",
-                DataPropertyName = "ManagerDiscount",
+                DataPropertyName = ColumnName(PriceCalculatorColumn.ManagerDiscount),
                 Width = NumericColWidth,
                 DefaultCellStyle = { Format = "N2", Alignment = DataGridViewContentAlignment.MiddleRight },
                 ReadOnly = true
@@ -360,7 +370,7 @@ namespace Merlin.Controls
             {
                 Name = "colTotalBeforePackage",
                 HeaderText = "Цена до пакетной скидки",
-                DataPropertyName = "TotalBeforePackage",
+                DataPropertyName = ColumnName(PriceCalculatorColumn.TotalBeforePackage),
                 Width = NumericColWidth + 30,
                 DefaultCellStyle = { Format = "c", Alignment = DataGridViewContentAlignment.MiddleRight },
                 ReadOnly = true
@@ -370,7 +380,7 @@ namespace Merlin.Controls
             {
                 Name = "colPackageDiscount",
                 HeaderText = "Пакетная скидка",
-                DataPropertyName = "PackageDiscount",
+                DataPropertyName = ColumnName(PriceCalculatorColumn.PackageDiscount),
                 Width = NumericColWidth,
                 DefaultCellStyle = { Format = "N2", Alignment = DataGridViewContentAlignment.MiddleRight },
                 ReadOnly = true
@@ -380,7 +390,7 @@ namespace Merlin.Controls
             {
                 Name = "colTotalAfterPackage",
                 HeaderText = "Итог",
-                DataPropertyName = "TotalAfterPackage",
+                DataPropertyName = ColumnName(PriceCalculatorColumn.TotalAfterPackage),
                 Width = NumericColWidth + 50,
                 DefaultCellStyle = { Format = "c", Alignment = DataGridViewContentAlignment.MiddleRight },
                 ReadOnly = true
@@ -694,29 +704,29 @@ namespace Merlin.Controls
             int massmediaId = Convert.ToInt32(drv["massmediaID"]);
 
             // читаем редактируемые поля из строки
-            int roller = SafeInt(drv["RollerDuration"], 0, 3600);
+            int roller = SafeInt(drv[ColumnName(PriceCalculatorColumn.RollerDuration)], 0, 3600);
 
-            int primeWdTotal = SafeInt(drv["PrimeTotalSpotsWeekday"], 0, 1_000_000);
-            int nonPrimeWdTotal = SafeInt(drv["NonPrimeTotalSpotsWeekday"], 0, 1_000_000);
+            int primeWdTotal = SafeInt(drv[ColumnName(PriceCalculatorColumn.PrimeTotalSpotsWeekday)], 0, 1_000_000);
+            int nonPrimeWdTotal = SafeInt(drv[ColumnName(PriceCalculatorColumn.NonPrimeTotalSpotsWeekday)], 0, 1_000_000);
 
-            int primeWeTotal = SafeInt(drv["PrimeTotalSpotsWeekend"], 0, 1_000_000);
-            int nonPrimeWeTotal = SafeInt(drv["NonPrimeTotalSpotsWeekend"], 0, 1_000_000);
+            int primeWeTotal = SafeInt(drv[ColumnName(PriceCalculatorColumn.PrimeTotalSpotsWeekend)], 0, 1_000_000);
+            int nonPrimeWeTotal = SafeInt(drv[ColumnName(PriceCalculatorColumn.NonPrimeTotalSpotsWeekend)], 0, 1_000_000);
 
-            int position = NormalizePosition(drv["Position"]);
+            int position = NormalizePosition(drv[ColumnName(PriceCalculatorColumn.Position)]);
 
             // обратно нормализованные значения (если пользователь ввёл мусор)
             _suppressRecalc = true;
             try
             {
-                drv["RollerDuration"] = roller;
+                drv[ColumnName(PriceCalculatorColumn.RollerDuration)] = roller;
 
-                drv["PrimeTotalSpotsWeekday"] = primeWdTotal;
-                drv["NonPrimeTotalSpotsWeekday"] = nonPrimeWdTotal;
+                drv[ColumnName(PriceCalculatorColumn.PrimeTotalSpotsWeekday)] = primeWdTotal;
+                drv[ColumnName(PriceCalculatorColumn.NonPrimeTotalSpotsWeekday)] = nonPrimeWdTotal;
 
-                drv["PrimeTotalSpotsWeekend"] = primeWeTotal;
-                drv["NonPrimeTotalSpotsWeekend"] = nonPrimeWeTotal;
+                drv[ColumnName(PriceCalculatorColumn.PrimeTotalSpotsWeekend)] = primeWeTotal;
+                drv[ColumnName(PriceCalculatorColumn.NonPrimeTotalSpotsWeekend)] = nonPrimeWeTotal;
 
-                drv["Position"] = position;
+                drv[ColumnName(PriceCalculatorColumn.Position)] = position;
             }
             finally
             {
@@ -760,19 +770,19 @@ namespace Merlin.Controls
                 amountWithManager = baseAmount * managerRatio;
             }
 
-            drv["TotalAmount"] = baseAmount;
+            drv[ColumnName(PriceCalculatorColumn.TotalAmount)] = baseAmount;
 
             // строчная скидка (объёмная)
             decimal companyDiscount = GetCompanyDiscount(massmediaId, _startDate, baseAmount);
-            drv["CompanyDiscount"] = companyDiscount;
+            drv[ColumnName(PriceCalculatorColumn.CompanyDiscount)] = companyDiscount;
 
             // итоги
             decimal totalWithDiscount = baseAmount * companyDiscount;
-            drv["TotalWithDiscount"] = totalWithDiscount;
+            drv[ColumnName(PriceCalculatorColumn.TotalWithDiscount)] = totalWithDiscount;
 
             decimal totalBeforePackage = amountWithManager * companyDiscount;
-            drv["ManagerDiscount"] = managerRatio;
-            drv["TotalBeforePackage"] = totalBeforePackage;
+            drv[ColumnName(PriceCalculatorColumn.ManagerDiscount)] = managerRatio;
+            drv[ColumnName(PriceCalculatorColumn.TotalBeforePackage)] = totalBeforePackage;
 
             UpdatePackageTotal(drv.Row);
         }
@@ -952,9 +962,10 @@ namespace Merlin.Controls
                 _bulkUpdating = true;
                 try
                 {
+                    string isSelectedColumn = ColumnName(PriceCalculatorColumn.IsSelected);
                     _headerCheckBox.Checked = SummaryTable != null
                         && SummaryTable.Rows.Count > 0
-                        && SummaryTable.AsEnumerable().All(r => r.Field<bool?>("IsSelected") == true);
+                        && SummaryTable.AsEnumerable().All(r => r.Field<bool?>(isSelectedColumn) == true);
                 }
                 finally { _bulkUpdating = false; }
             }
@@ -965,47 +976,27 @@ namespace Merlin.Controls
         {
             if (dt == null) return;
 
-            if (!dt.Columns.Contains("PrimeTotalSpotsWeekday"))
-                dt.Columns.Add("PrimeTotalSpotsWeekday", typeof(int));
+            void EnsureColumn<T>(PriceCalculatorColumn column)
+            {
+                string name = ColumnName(column);
+                if (!dt.Columns.Contains(name))
+                    dt.Columns.Add(name, typeof(T));
+            }
 
-            if (!dt.Columns.Contains("NonPrimeTotalSpotsWeekday"))
-                dt.Columns.Add("NonPrimeTotalSpotsWeekday", typeof(int));
-
-            if (!dt.Columns.Contains("PrimeTotalSpotsWeekend"))
-                dt.Columns.Add("PrimeTotalSpotsWeekend", typeof(int));
-
-            if (!dt.Columns.Contains("NonPrimeTotalSpotsWeekend"))
-                dt.Columns.Add("NonPrimeTotalSpotsWeekend", typeof(int));
-
-            if (!dt.Columns.Contains("TotalAmount"))
-                dt.Columns.Add("TotalAmount", typeof(decimal));
-
-            if (!dt.Columns.Contains("CompanyDiscount"))
-                dt.Columns.Add("CompanyDiscount", typeof(decimal));
-
-            if (!dt.Columns.Contains("TotalWithDiscount"))
-                dt.Columns.Add("TotalWithDiscount", typeof(decimal));
-
-            if (!dt.Columns.Contains("RollerDuration"))
-                dt.Columns.Add("RollerDuration", typeof(int));
-
-            if (!dt.Columns.Contains("ManagerDiscount"))
-                dt.Columns.Add("ManagerDiscount", typeof(decimal));
-
-            if (!dt.Columns.Contains("IsSelected"))
-                dt.Columns.Add("IsSelected", typeof(bool));
-
-            if (!dt.Columns.Contains("PackageDiscount"))
-                dt.Columns.Add("PackageDiscount", typeof(decimal));
-
-            if (!dt.Columns.Contains("TotalAfterPackage"))
-                dt.Columns.Add("TotalAfterPackage", typeof(decimal));
-
-            if (!dt.Columns.Contains("Position"))
-                dt.Columns.Add("Position", typeof(int));
-
-            if (!dt.Columns.Contains("TotalBeforePackage"))
-                dt.Columns.Add("TotalBeforePackage", typeof(decimal));
+            EnsureColumn<int>(PriceCalculatorColumn.PrimeTotalSpotsWeekday);
+            EnsureColumn<int>(PriceCalculatorColumn.NonPrimeTotalSpotsWeekday);
+            EnsureColumn<int>(PriceCalculatorColumn.PrimeTotalSpotsWeekend);
+            EnsureColumn<int>(PriceCalculatorColumn.NonPrimeTotalSpotsWeekend);
+            EnsureColumn<decimal>(PriceCalculatorColumn.TotalAmount);
+            EnsureColumn<decimal>(PriceCalculatorColumn.CompanyDiscount);
+            EnsureColumn<decimal>(PriceCalculatorColumn.TotalWithDiscount);
+            EnsureColumn<int>(PriceCalculatorColumn.RollerDuration);
+            EnsureColumn<decimal>(PriceCalculatorColumn.ManagerDiscount);
+            EnsureColumn<bool>(PriceCalculatorColumn.IsSelected);
+            EnsureColumn<decimal>(PriceCalculatorColumn.PackageDiscount);
+            EnsureColumn<decimal>(PriceCalculatorColumn.TotalAfterPackage);
+            EnsureColumn<int>(PriceCalculatorColumn.Position);
+            EnsureColumn<decimal>(PriceCalculatorColumn.TotalBeforePackage);
         }
 
         public List<DataRowView> GetSelectedRadiostations()
@@ -1021,6 +1012,13 @@ namespace Merlin.Controls
                 rows.Add(drv);
             }
             return rows;
+        }
+
+        public List<DateTime> GetSelectedDates()
+        {
+            return _selectedDates != null
+                ? new List<DateTime>(_selectedDates)
+                : new List<DateTime>();
         }
 
         public void ApplyCalculation(
@@ -1074,18 +1072,18 @@ namespace Merlin.Controls
 
             foreach (DataRow row in SummaryTable.Rows)
             {
-                row["PrimeTotalSpotsWeekday"] = primeTotalWd;
-                row["NonPrimeTotalSpotsWeekday"] = nonPrimeTotalWd;
-                row["PrimeTotalSpotsWeekend"] = primeTotalWe;
-                row["NonPrimeTotalSpotsWeekend"] = nonPrimeTotalWe; // <-- было nonPrimeTotalWd
+                row[ColumnName(PriceCalculatorColumn.PrimeTotalSpotsWeekday)] = primeTotalWd;
+                row[ColumnName(PriceCalculatorColumn.NonPrimeTotalSpotsWeekday)] = nonPrimeTotalWd;
+                row[ColumnName(PriceCalculatorColumn.PrimeTotalSpotsWeekend)] = primeTotalWe;
+                row[ColumnName(PriceCalculatorColumn.NonPrimeTotalSpotsWeekend)] = nonPrimeTotalWe; // <-- было nonPrimeTotalWd
 
-                row["RollerDuration"] = durationSec;
+                row[ColumnName(PriceCalculatorColumn.RollerDuration)] = durationSec;
 
                 // важно: DataGridViewComboBoxColumn не любит DBNull, нормализуем
-                if (row["Position"] == DBNull.Value)
-                    row["Position"] = (int)Merlin.RollerPositions.Undefined;
+                if (row[ColumnName(PriceCalculatorColumn.Position)] == DBNull.Value)
+                    row[ColumnName(PriceCalculatorColumn.Position)] = (int)Merlin.RollerPositions.Undefined;
 
-                int position = NormalizePosition(row["Position"]);
+                int position = NormalizePosition(row[ColumnName(PriceCalculatorColumn.Position)]);
                 int massmediaId = Convert.ToInt32(row["massmediaID"]);
 
                 decimal amount = CalculateCampaignTariffPrice(
@@ -1099,7 +1097,7 @@ namespace Merlin.Controls
                     position: position
                 );
 
-                row["TotalAmount"] = amount;
+                row[ColumnName(PriceCalculatorColumn.TotalAmount)] = amount;
 
                 decimal discountValue = GetCompanyDiscount(
                     massmediaId: massmediaId,
@@ -1107,11 +1105,11 @@ namespace Merlin.Controls
                     tariffPrice: amount
                 );
 
-                row["CompanyDiscount"] = discountValue;
-                row["TotalWithDiscount"] = amount * discountValue;
-                row["ManagerDiscount"] = _managerDiscount;
+                row[ColumnName(PriceCalculatorColumn.CompanyDiscount)] = discountValue;
+                row[ColumnName(PriceCalculatorColumn.TotalWithDiscount)] = amount * discountValue;
+                row[ColumnName(PriceCalculatorColumn.ManagerDiscount)] = _managerDiscount;
                 decimal totalBeforePackage = amount * discountValue * _managerDiscount;
-                row["TotalBeforePackage"] = totalBeforePackage;
+                row[ColumnName(PriceCalculatorColumn.TotalBeforePackage)] = totalBeforePackage;
 
                 UpdatePackageTotal(row);
             }
@@ -1162,16 +1160,16 @@ namespace Merlin.Controls
 
             foreach (DataRow row in SummaryTable.Rows)
             {
-                row["PrimeTotalSpotsWeekday"] = primeTotalWd;
-                row["NonPrimeTotalSpotsWeekday"] = nonPrimeTotalWd;
-                row["PrimeTotalSpotsWeekend"] = primeTotalWe;
-                row["NonPrimeTotalSpotsWeekend"] = nonPrimeTotalWe;
-                row["RollerDuration"] = durationSec;
+                row[ColumnName(PriceCalculatorColumn.PrimeTotalSpotsWeekday)] = primeTotalWd;
+                row[ColumnName(PriceCalculatorColumn.NonPrimeTotalSpotsWeekday)] = nonPrimeTotalWd;
+                row[ColumnName(PriceCalculatorColumn.PrimeTotalSpotsWeekend)] = primeTotalWe;
+                row[ColumnName(PriceCalculatorColumn.NonPrimeTotalSpotsWeekend)] = nonPrimeTotalWe;
+                row[ColumnName(PriceCalculatorColumn.RollerDuration)] = durationSec;
 
-                if (row["Position"] == DBNull.Value)
-                    row["Position"] = (int)Merlin.RollerPositions.Undefined;
+                if (row[ColumnName(PriceCalculatorColumn.Position)] == DBNull.Value)
+                    row[ColumnName(PriceCalculatorColumn.Position)] = (int)Merlin.RollerPositions.Undefined;
 
-                int position = NormalizePosition(row["Position"]);
+                int position = NormalizePosition(row[ColumnName(PriceCalculatorColumn.Position)]);
                 int massmediaId = Convert.ToInt32(row["massmediaID"]);
 
                 CalculateCampaignTotalsWithManagerDiscount(
@@ -1188,19 +1186,19 @@ namespace Merlin.Controls
                     out decimal amountWithManager,
                     out decimal managerAvgRatio);
 
-                row["TotalAmount"] = baseAmount;
+                row[ColumnName(PriceCalculatorColumn.TotalAmount)] = baseAmount;
 
                 decimal discountValue = GetCompanyDiscount(
                     massmediaId,
                     _startDate,
                     baseAmount);
 
-                row["CompanyDiscount"] = discountValue;
-                row["TotalWithDiscount"] = baseAmount * discountValue;
+                row[ColumnName(PriceCalculatorColumn.CompanyDiscount)] = discountValue;
+                row[ColumnName(PriceCalculatorColumn.TotalWithDiscount)] = baseAmount * discountValue;
 
-                row["ManagerDiscount"] = managerAvgRatio; // фактически применённый средневзвешенный коэфф.
+                row[ColumnName(PriceCalculatorColumn.ManagerDiscount)] = managerAvgRatio; // фактически применённый средневзвешенный коэфф.
                 decimal totalBeforePackage = amountWithManager * discountValue;
-                row["TotalBeforePackage"] = totalBeforePackage;
+                row[ColumnName(PriceCalculatorColumn.TotalBeforePackage)] = totalBeforePackage;
 
                 UpdatePackageTotal(row);
             }
@@ -1233,23 +1231,24 @@ namespace Merlin.Controls
 
                 foreach (DataRow row in SummaryTable.Rows)
                 {
-                    bool isSelected = row["IsSelected"] != DBNull.Value && Convert.ToBoolean(row["IsSelected"]);
+                    var isSelectedValue = row[ColumnName(PriceCalculatorColumn.IsSelected)];
+                    bool isSelected = isSelectedValue != DBNull.Value && Convert.ToBoolean(isSelectedValue);
                     if (isSelected)
                     {
-                        row["PackageDiscount"] = packageDiscount;
+                        row[ColumnName(PriceCalculatorColumn.PackageDiscount)] = packageDiscount;
 
                         decimal totalBeforePackage = 0m;
-                        object v = row["TotalBeforePackage"];
+                        object v = row[ColumnName(PriceCalculatorColumn.TotalBeforePackage)];
                         if (v != null && v != DBNull.Value)
                             totalBeforePackage = Convert.ToDecimal(v);
 
                         totalAfterPackage += totalBeforePackage * packageDiscount;
-                        row["TotalAfterPackage"] = totalBeforePackage * packageDiscount;
+                        row[ColumnName(PriceCalculatorColumn.TotalAfterPackage)] = totalBeforePackage * packageDiscount;
                     }
                     else
                     {
-                        row["PackageDiscount"] = DBNull.Value;
-                        row["TotalAfterPackage"] = DBNull.Value;
+                        row[ColumnName(PriceCalculatorColumn.PackageDiscount)] = DBNull.Value;
+                        row[ColumnName(PriceCalculatorColumn.TotalAfterPackage)] = DBNull.Value;
                     }
                 }
                 return totalAfterPackage;
@@ -1413,7 +1412,7 @@ namespace Merlin.Controls
 
                 if (!(row.DataBoundItem is DataRowView drv)) continue;
 
-                object v = drv["TotalWithDiscount"];
+                object v = drv[ColumnName(PriceCalculatorColumn.TotalWithDiscount)];
                 if (v == DBNull.Value) continue;
 
                 sum += Convert.ToDecimal(v);
@@ -1489,17 +1488,17 @@ namespace Merlin.Controls
                 foreach (DataRow row in SummaryTable.Rows)
                 {
                     // обновляем видимую колонку "Сезонный коэффициент"
-                    row["ManagerDiscount"] = _managerDiscount;
+                    row[ColumnName(PriceCalculatorColumn.ManagerDiscount)] = _managerDiscount;
 
                     // базовая сумма после "строчной" скидки уже посчитана
                     decimal totalWithDiscount = 0m;
 
-                    object v = row["TotalWithDiscount"];
+                    object v = row[ColumnName(PriceCalculatorColumn.TotalWithDiscount)];
                     if (v != null && v != DBNull.Value)
                         totalWithDiscount = Convert.ToDecimal(v);
 
                     decimal totalBeforePackage = totalWithDiscount * _managerDiscount;
-                    row["TotalBeforePackage"] = totalBeforePackage;
+                    row[ColumnName(PriceCalculatorColumn.TotalBeforePackage)] = totalBeforePackage;
 
                     UpdatePackageTotal(row);
                 }
@@ -1558,23 +1557,23 @@ namespace Merlin.Controls
         {
             if (row == null) return;
 
-            object discountValue = row["PackageDiscount"];
+            object discountValue = row[ColumnName(PriceCalculatorColumn.PackageDiscount)];
             if (discountValue == null || discountValue == DBNull.Value)
             {
-                row["TotalAfterPackage"] = DBNull.Value;
+                row[ColumnName(PriceCalculatorColumn.TotalAfterPackage)] = DBNull.Value;
                 return;
             }
 
-            object totalWithDiscount = row["TotalWithDiscount"];
+            object totalWithDiscount = row[ColumnName(PriceCalculatorColumn.TotalWithDiscount)];
             if (totalWithDiscount == null || totalWithDiscount == DBNull.Value)
             {
-                row["TotalAfterPackage"] = DBNull.Value;
+                row[ColumnName(PriceCalculatorColumn.TotalAfterPackage)] = DBNull.Value;
                 return;
             }
 
             decimal packageDiscount = Convert.ToDecimal(discountValue);
             decimal baseTotal = Convert.ToDecimal(totalWithDiscount);
-            row["TotalAfterPackage"] = baseTotal * packageDiscount;
+            row[ColumnName(PriceCalculatorColumn.TotalAfterPackage)] = baseTotal * packageDiscount;
         }
 
         private void PositionCombo_SelectionChangeCommitted(object sender, EventArgs e)
@@ -1891,10 +1890,10 @@ namespace Merlin.Controls
         private static int GetRowTotalSpots(DataRowView drv)
         {
             if (drv == null) return 0;
-            int primeWd = SafeInt(drv["PrimeTotalSpotsWeekday"], 0, int.MaxValue);
-            int nonPrimeWd = SafeInt(drv["NonPrimeTotalSpotsWeekday"], 0, int.MaxValue);
-            int primeWe = SafeInt(drv["PrimeTotalSpotsWeekend"], 0, int.MaxValue);
-            int nonPrimeWe = SafeInt(drv["NonPrimeTotalSpotsWeekend"], 0, int.MaxValue);
+            int primeWd = SafeInt(drv[ColumnName(PriceCalculatorColumn.PrimeTotalSpotsWeekday)], 0, int.MaxValue);
+            int nonPrimeWd = SafeInt(drv[ColumnName(PriceCalculatorColumn.NonPrimeTotalSpotsWeekday)], 0, int.MaxValue);
+            int primeWe = SafeInt(drv[ColumnName(PriceCalculatorColumn.PrimeTotalSpotsWeekend)], 0, int.MaxValue);
+            int nonPrimeWe = SafeInt(drv[ColumnName(PriceCalculatorColumn.NonPrimeTotalSpotsWeekend)], 0, int.MaxValue);
             return primeWd + nonPrimeWd + primeWe + nonPrimeWe;
         }
 
@@ -1972,7 +1971,9 @@ namespace Merlin.Controls
             var set = new HashSet<int>();
             if(dt == null) return set;
 
-            if (!dt.Columns.Contains("IsSelected")) return set;
+            string isSelectedColumn = ColumnName(PriceCalculatorColumn.IsSelected);
+
+            if (!dt.Columns.Contains(isSelectedColumn)) return set;
             if (!dt.Columns.Contains("MassmediaID"))
                 throw new InvalidOperationException("SummaryTable не содержит колонку MassmediaID.");
 
@@ -1980,7 +1981,7 @@ namespace Merlin.Controls
             {
                 if (r.RowState == DataRowState.Deleted) continue;
 
-                bool selected = r["IsSelected"] != DBNull.Value && (bool)r["IsSelected"];
+                bool selected = r[isSelectedColumn] != DBNull.Value && (bool)r[isSelectedColumn];
                 if (!selected) continue;
 
                 if (r["MassmediaID"] == DBNull.Value) continue;
@@ -1992,8 +1993,9 @@ namespace Merlin.Controls
 
         private static void RestoreSelectedIds(DataTable dt, HashSet<int> selectedIds)
         {
-            if (!dt.Columns.Contains("IsSelected"))
-                dt.Columns.Add("IsSelected", typeof(bool));
+            string isSelectedColumn = ColumnName(PriceCalculatorColumn.IsSelected);
+            if (!dt.Columns.Contains(isSelectedColumn))
+                dt.Columns.Add(isSelectedColumn, typeof(bool));
 
             if (!dt.Columns.Contains("MassmediaID"))
                 throw new InvalidOperationException("SummaryTable не содержит колонку MassmediaID.");
@@ -2003,7 +2005,7 @@ namespace Merlin.Controls
                 if (r.RowState == DataRowState.Deleted) continue;
 
                 int id = (r["MassmediaID"] == DBNull.Value) ? 0 : Convert.ToInt32(r["MassmediaID"]);
-                r["IsSelected"] = (id != 0 && selectedIds.Contains(id));
+                r[isSelectedColumn] = (id != 0 && selectedIds.Contains(id));
             }
         }
     }

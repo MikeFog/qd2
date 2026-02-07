@@ -52,6 +52,7 @@ namespace Merlin.Classes
 		{
 			public const string AgencyId = "agencyID";
             public const string ReportPlace = "reportPlace";
+            public const string Path2ProposalTemplate = "path2proposalTemplate";
         }
 
 		public Agency() : base(EntityManager.GetEntity((int)Entities.Agency))

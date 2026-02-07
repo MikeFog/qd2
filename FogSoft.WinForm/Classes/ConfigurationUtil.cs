@@ -45,6 +45,11 @@ namespace FogSoft.WinForm.Classes
             get { return GetSettings("MainConnectionString", "Main"); }
         }
 
+        public static string ProposalTemplateFolder
+        {
+            get { return GetSettings("ProposalTemplateFolder", ""); }
+        }
+
         public static bool IsTestMode
 		{
 			get { return GetBooleanSettings("TestMode", false); }

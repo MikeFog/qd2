@@ -1,20 +1,27 @@
-﻿using FogSoft.WinForm.Classes;
+﻿using DocumentFormat.OpenXml.Bibliography;
+using FogSoft.WinForm;
+using FogSoft.WinForm.Classes;
 using FogSoft.WinForm.Classes.Export.MSExcel;
 using FogSoft.WinForm.DataAccess;
+using Merlin.Classes;
+using Merlin.Controls;
 using System;
 using System.Collections.Generic;
 using System.Data;
 using System.Diagnostics;
+using System.Drawing;
+using System.IO;
 using System.Linq;
+using System.Text;
 using System.Windows.Forms;
 
 namespace Merlin.Forms
 {
     public partial class PriceCalculatorForm : Form
     {
-        private decimal _lastTotalBeforePackageDiscount;
-        private decimal _lastPackageDiscount;
+        private readonly List<CampaignCalcSnapshot> _saved = new List<CampaignCalcSnapshot>();
         private decimal _lastTotalAfterPackage;
+        private Firm _firm;
         private readonly string[] _columnsWithMoney = new[]
         {
             "Цена прайм будни",
@@ -22,18 +29,26 @@ namespace Merlin.Forms
             "Цена прайм выходные",
             "Цена не-прайм выходные",
             "Цена кампании",
+            "Цена до пакетной скидки",
             "Итог"
+        };
+
+        private readonly string[] _columnsWithNumeric = new[]
+        {
+            "Сезонный коэфф.",
+            "Объёмная скидка",
+            "Пакетная скидка",
         };
 
         public PriceCalculatorForm()
         {
             InitializeComponent();
+            templateEditor.SaveButton.Click += (s, e) => SaveVariant();
             templateEditor.CalculateButton.Click += CalculateButton_Click;
             templateEditor.ExcelButton.Click += (s, e) => ExportSelectedToExcel();
             templateEditor.ManagerDiscountNum.ValueChanged += (s, e) => grdPriceCalculator.SetManagerDiscount(templateEditor.ManagerDiscount);
 
-            templateEditor.PositionChanged += (s, e) =>
-                grdPriceCalculator.SetDefaultPosition(templateEditor.SelectedPosition);
+            templateEditor.PositionChanged += (s, e) => grdPriceCalculator.SetDefaultPosition(templateEditor.SelectedPosition);
 
             // пересчитываем при смене дневных/выходных количеств
             templateEditor.SpotsSettingsChanged += (s, e) => RecalculateFromTemplateInputs();
@@ -44,6 +59,48 @@ namespace Merlin.Forms
             templateEditor.ScheduleChanged += (s, e) => RecalculateFromTemplateInputs();
 
             grdPriceCalculator.SummaryUpdater = UpdateSummary;
+            flpSaved.SizeChanged += FlpSaved_SizeChanged;
+            chkAll.CheckedChanged += ChkAll_CheckedChanged;
+            btnDeleteAllChecked.Click += BtnDeleteAllChecked_Click;
+            LoadAgencies();
+        }
+
+        private void FlpSaved_SizeChanged(object sender, EventArgs e)
+        {
+            ApplySnapshotCardWidths();
+        }
+
+        private void ChkAll_CheckedChanged(object sender, EventArgs e)
+        {
+            SetSnapshotSelection(chkAll.Checked);
+        }
+
+        private void BtnDeleteAllChecked_Click(object sender, EventArgs e)
+        {
+            DeleteCheckedSnapshots();
+        }
+
+        private void LoadAgencies()
+        {
+            // твой метод, который возвращает DataView
+            DataView dv = Agency.LoadAgencies(true).Tables[0].DefaultView;
+
+            cmbAgency.BeginUpdate();
+            try
+            {
+                cmbAgency.DataSource = dv;
+
+                // ВАЖНО: поставь реальные имена колонок.
+                // Если колонки без имён — см. блок ниже (как узнать имена).
+                cmbAgency.ValueMember = Agency.ParamNames.AgencyId;
+                cmbAgency.DisplayMember = Constants.Parameters.Name;
+
+                cmbAgency.SelectedValue = 1;
+            }
+            finally
+            {
+                cmbAgency.EndUpdate();
+            }
         }
 
         private void RecalculateFromTemplateInputs()
@@ -161,6 +218,7 @@ namespace Merlin.Forms
             try
             {
                 var selectedRows = grdPriceCalculator.GetSelectedRadiostations();
+                templateEditor.SaveButton.Enabled = templateEditor.ExcelButton.Enabled = selectedRows.Count >0;
 
                 decimal totalwithCampaignDiscount = grdPriceCalculator.GetSelectedTotalWithCampaignDiscount();
                 decimal packageDiscount = GetPackageDiscount(
@@ -170,51 +228,37 @@ namespace Merlin.Forms
                 );
 
                 decimal totalAfterPackage = grdPriceCalculator.ApplyPackageTotals(packageDiscount);
-                DisplayTotal(totalwithCampaignDiscount, packageDiscount, totalAfterPackage);
+                DisplayTotal(totalAfterPackage);
             }
             catch (Exception ex)
             {
                 ErrorManager.PublishError(ex);
             }
-
         }
 
         private decimal GetPackageDiscount(DateTime startDate, decimal priceTotal, List<DataRowView> selectedRows)
         {
-            var sw = Stopwatch.StartNew();
-            Debug.WriteLine($"[PriceCalc] GetPackageDiscount start, selected={selectedRows.Count}, priceTotal={priceTotal}");
+            if (selectedRows.Count == 0) return 1m;
 
-            try
-            {
-                if (selectedRows.Count == 0) return 1m;
+            var tvpTable = BuildSelectedMassmediaTvp(selectedRows);
 
-                var tvpTable = BuildSelectedMassmediaTvp(selectedRows);
+            var p = DataAccessor.CreateParametersDictionary();
+            p["startDate"] = startDate;
+            p["campaignTypeID"] = (byte)1;
+            p["priceTotal"] = priceTotal;
+            p["sel"] = new FogSoft.WinForm.DataAccess.TvpValue(tvpTable, "dbo.pc_SelectedMassmedia");
 
-                var p = DataAccessor.CreateParametersDictionary();
-                p["startDate"] = startDate;
-                p["campaignTypeID"] = (byte)1;
-                p["priceTotal"] = priceTotal;
-                p["sel"] = new FogSoft.WinForm.DataAccess.TvpValue(tvpTable, "dbo.pc_SelectedMassmedia");
+            p["discountValue"] = null;               // OUT
+            p["packageDiscountPriceListID"] = null;  // OUT (если нужно показать какой пакет)
 
-                p["discountValue"] = null;               // OUT
-                p["packageDiscountPriceListID"] = null;  // OUT (если нужно показать какой пакет)
+            DataAccessor.ExecuteNonQuery("pc_PackageDiscountCalculateModel", p, 30, false);
 
-                var swDb = Stopwatch.StartNew();
-                DataAccessor.ExecuteNonQuery("pc_PackageDiscountCalculateModel", p, 30, false);
-                Debug.WriteLine($"[PriceCalc] GetPackageDiscount ExecuteNonQuery: {swDb.ElapsedMilliseconds} ms");
-
-                var dv = p["discountValue"];
-                return (dv == null || dv == DBNull.Value) ? 1m : Convert.ToDecimal(dv);
-            }
-            finally
-            {
-                Debug.WriteLine($"[PriceCalc] GetPackageDiscount total: {sw.ElapsedMilliseconds} ms");
-            }
+            var dv = p["discountValue"];
+            return (dv == null || dv == DBNull.Value) ? 1m : Convert.ToDecimal(dv);
         }
 
         private DataTable BuildSelectedMassmediaTvp(IEnumerable<DataRowView> selectedRows)
         {
-            var sw = Stopwatch.StartNew();
             int count = 0;
 
             var dt = new DataTable();
@@ -243,17 +287,13 @@ namespace Merlin.Forms
                 count++;
             }
 
-            Debug.WriteLine($"[PriceCalc] BuildSelectedMassmediaTvp rows={count} in {sw.ElapsedMilliseconds} ms");
             return dt;
         }
 
-        private void DisplayTotal(decimal totalBeforePackageDiscount, decimal packageDiscount, decimal totalAfterPackage)
+        private void DisplayTotal(decimal totalAfterPackage)
         {
             // cache last calculated totals for later export
-            _lastTotalBeforePackageDiscount = totalBeforePackageDiscount;
-            _lastPackageDiscount = packageDiscount;
             _lastTotalAfterPackage = totalAfterPackage;
-
             templateEditor.TotalAfterPackageDiscount.Text = "Итог: " + totalAfterPackage.ToString("c");
         }
 
@@ -298,7 +338,7 @@ namespace Merlin.Forms
                 sheet.SetCellValue(currentRow++, 1, "Город: " + templateEditor.MassmediaGroupName);
                 sheet.SetCellValue(currentRow++, 1, string.Format("Период: {0:d} - {1:d}", templateEditor.DateFrom, templateEditor.DateTo));
                 sheet.SetCellValue(currentRow++, 1, "График: " + BuildScheduleDescription());
-                
+
                 sheet.SetCellValue(currentRow++, 1, "Количество рекламных выпусков:" + grdPriceCalculator.GetTotalSpots());
                 var totalSeconds = grdPriceCalculator.GetTotalSeconds();
                 var duration = TimeSpan.FromSeconds(totalSeconds);
@@ -317,6 +357,8 @@ namespace Merlin.Forms
                     sheet.SetCellValue(headerRow, c + 1, header);
                     if (_columnsWithMoney.Contains(header))
                         sheet.SetColumnNumberFormat(c + 1, "#,##0.00");
+                    else if (_columnsWithNumeric.Contains(header))
+                        sheet.SetColumnNumberFormat(c + 1, "0.00");
                 }
                 currentRow = headerRow + 1;
 
@@ -336,8 +378,8 @@ namespace Merlin.Forms
                 sheet.SetBoldForRange(headerRow, cols.Count, headerRow + dt.Rows.Count, cols.Count);
                 sheet.SetBordersStyles(headerRow, 1, headerRow + dt.Rows.Count, cols.Count, true);
                 int totalRow = currentRow;
-                sheet.SetCellValue(totalRow, cols.Count-1, "Итог: ");
-                sheet.SetCellValue(totalRow, cols.Count,  _lastTotalAfterPackage);
+                sheet.SetCellValue(totalRow, cols.Count - 1, "Итог: ");
+                sheet.SetCellValue(totalRow, cols.Count, _lastTotalAfterPackage);
                 sheet.SetBoldForRange(totalRow, cols.Count, totalRow, cols.Count);
                 currentRow++;
 
@@ -375,6 +417,376 @@ namespace Merlin.Forms
             finally
             {
                 doc.OnAppQuit();
+            }
+        }
+
+        private void SaveVariant()
+        {
+            var snapshot = BuildSnapshot();
+            if (_saved.Contains(snapshot))
+            {
+                MessageBox.Show("Данный вариант уже добавлен.", "Сохранение не требуется", MessageBoxButtons.OK, MessageBoxIcon.Stop);
+                return;
+            }
+            _saved.Add(snapshot);
+            RenderSavedVariants(_saved);
+        }
+
+        public CampaignCalcSnapshot BuildSnapshot()
+        {
+            var snap = new CampaignCalcSnapshot
+            {
+                DateFrom = grdPriceCalculator.GetSelectedDates().Min(),
+                DateTo = grdPriceCalculator.GetSelectedDates().Max(),
+                TotalDays = grdPriceCalculator.GetSelectedDates().Count,
+                TotalDuration = grdPriceCalculator.GetTotalSeconds(),
+
+
+                GrandTotal = _lastTotalAfterPackage,
+                Rows = new List<CampaignCalcRow>()
+            };
+
+            var selectedRows = grdPriceCalculator.GetSelectedRadiostations();
+            foreach (var rv in selectedRows)
+            {
+                if (rv == null) continue;
+
+                var r = rv.Row;
+                if (r == null) continue;
+                if (r.RowState == DataRowState.Deleted) continue;
+
+                var row = new CampaignCalcRow
+                {
+                    StationName = Convert.ToString(r["name"]),
+                    MassmediaId = Convert.ToInt32(r["massmediaID"]),
+
+                    // calc columns
+                    PrimeTotalSpotsWeekday = GetInt(r, ColumnName(PriceCalculatorGrid.PriceCalculatorColumn.PrimeTotalSpotsWeekday)),
+                    NonPrimeTotalSpotsWeekday = GetInt(r, ColumnName(PriceCalculatorGrid.PriceCalculatorColumn.NonPrimeTotalSpotsWeekday)),
+                    PrimeTotalSpotsWeekend = GetInt(r, ColumnName(PriceCalculatorGrid.PriceCalculatorColumn.PrimeTotalSpotsWeekend)),
+                    NonPrimeTotalSpotsWeekend = GetInt(r, ColumnName(PriceCalculatorGrid.PriceCalculatorColumn.NonPrimeTotalSpotsWeekend)),
+
+                    RollerDuration = GetInt(r, ColumnName(PriceCalculatorGrid.PriceCalculatorColumn.RollerDuration)),
+                    Position = GetInt(r, ColumnName(PriceCalculatorGrid.PriceCalculatorColumn.Position)),
+
+                    TotalBeforePackage = GetDecimal(r, ColumnName(PriceCalculatorGrid.PriceCalculatorColumn.TotalBeforePackage)),
+                    PackageDiscount = GetDecimal(r, ColumnName(PriceCalculatorGrid.PriceCalculatorColumn.PackageDiscount)),
+                    TotalAfterPackage = GetDecimal(r, ColumnName(PriceCalculatorGrid.PriceCalculatorColumn.TotalAfterPackage)),
+
+                    CompanyDiscount = GetDecimal(r, ColumnName(PriceCalculatorGrid.PriceCalculatorColumn.CompanyDiscount)),
+                    TotalWithDiscount = GetDecimal(r, ColumnName(PriceCalculatorGrid.PriceCalculatorColumn.TotalWithDiscount)),
+
+                    ManagerDiscount = GetDecimal(r, ColumnName(PriceCalculatorGrid.PriceCalculatorColumn.ManagerDiscount)),
+                    TotalAmount = GetDecimal(r, ColumnName(PriceCalculatorGrid.PriceCalculatorColumn.TotalAmount))
+                };
+
+                snap.Rows.Add(row);
+            }
+
+            return snap;
+        }
+
+        private static string ColumnName(PriceCalculatorGrid.PriceCalculatorColumn column) => column.ToString();
+
+        private static int GetInt(DataRow r, string col)
+        {
+            if (!r.Table.Columns.Contains(col)) return 0;
+            object v = r[col];
+            return v == DBNull.Value ? 0 : Convert.ToInt32(v);
+        }
+
+        private static decimal GetDecimal(DataRow r, string col)
+        {
+            if (!r.Table.Columns.Contains(col)) return 0m;
+            object v = r[col];
+            return v == DBNull.Value ? 0m : Convert.ToDecimal(v);
+        }
+
+        private static bool GetBool(DataRow r, string col)
+        {
+            if (!r.Table.Columns.Contains(col)) return false;
+            object v = r[col];
+            return v != DBNull.Value && Convert.ToBoolean(v);
+        }
+
+        private void RenderSavedVariants(IEnumerable<CampaignCalcSnapshot> items)
+        {
+            flpSaved.SuspendLayout();
+            try
+            {
+                flpSaved.Controls.Clear();
+
+                foreach (var snap in items)
+                {
+                    var card = CreateSnapshotCard(snap);
+                    flpSaved.Controls.Add(card);
+                }
+
+                ApplySnapshotCardWidths();
+                SetSnapshotSelection(chkAll.Checked);
+            }
+            finally
+            {
+                flpSaved.ResumeLayout(true);
+            }
+        }
+
+        private Control CreateSnapshotCard(CampaignCalcSnapshot snap)
+        {
+            var card = new Panel
+            {
+                AutoSize = false,
+                Width = GetSnapshotCardWidth(),
+                Padding = new Padding(8),
+                BorderStyle = BorderStyle.FixedSingle,
+                Tag = snap
+            };
+
+            var chk = new CheckBox
+            {
+                AutoSize = true,
+                Location = new Point(8, 8),
+                Name = "chkSelect",
+                Checked = true
+            };
+
+            var title = new Label
+            {
+                AutoSize = true,
+                Font = new Font(Font, FontStyle.Bold),
+                Location = new Point(30, 8),
+                Text = BuildTitle(snap),
+                Name = "lblTitle"
+            };
+
+            var details = new Label
+            {
+                AutoSize = true,
+                Location = new Point(30, 30),
+                MaximumSize = new Size(card.Width - 40, 0),
+                Text = BuildDetails(snap),
+                Name = "lblDetails"
+            };
+            var btnApply = new Button
+            {
+                Text = "Применить",
+                Width = 90,
+                Height = 26,
+                Location = new Point(30, details.Bottom + 8),
+                Tag = snap,
+                Name = "btnApply"
+            };
+            btnApply.Click += (s, e) => ApplySnapshot((CampaignCalcSnapshot)((Button)s).Tag);
+            var btnDelete = new Button
+            {
+                Text = "Удалить",
+                Width = 90,
+                Height = 26,
+                Location = new Point(30, details.Bottom + 8),
+                Tag = snap,
+                Name = "btnDelete"
+            };
+            btnDelete.Click += (s, e) => DeleteSnapshot((CampaignCalcSnapshot)((Button)s).Tag);
+
+            // Клик по карточке/тексту — переключает чекбокс
+            title.Click += (s, e) => chk.Checked = !chk.Checked;
+            details.Click += (s, e) => chk.Checked = !chk.Checked;
+
+            // лёгкая подсветка
+            card.MouseEnter += (s, e) => card.BackColor = Color.AliceBlue;
+            card.MouseLeave += (s, e) => card.BackColor = SystemColors.Control;
+
+            card.Controls.Add(chk);
+            card.Controls.Add(title);
+            card.Controls.Add(details);
+            //card.Controls.Add(btnApply);
+            card.Controls.Add(btnDelete);
+
+            LayoutSnapshotCard(card);
+
+            return card;
+        }
+
+        private void ApplySnapshotCardWidths()
+        {
+            int width = GetSnapshotCardWidth();
+            foreach (Control control in flpSaved.Controls)
+            {
+                if (control is Panel panel)
+                {
+                    panel.Width = width;
+                    LayoutSnapshotCard(panel);
+                }
+            }
+        }
+
+        private void SetSnapshotSelection(bool isChecked)
+        {
+            foreach (Control control in flpSaved.Controls)
+            {
+                var chk = control.Controls["chkSelect"] as CheckBox;
+                if (chk != null)
+                    chk.Checked = isChecked;
+            }
+        }
+
+        private void LayoutSnapshotCard(Panel card)
+        {
+            var title = card.Controls["lblTitle"] as Label;
+            var details = card.Controls["lblDetails"] as Label;
+            var btnDelete = card.Controls["btnDelete"] as Button;
+
+            if (title == null || details == null || btnDelete == null)
+                return;
+
+            details.MaximumSize = new Size(card.Width - 40, 0);
+            details.Size = details.PreferredSize;
+
+            btnDelete.Location = new Point(30, details.Bottom + 8);
+
+            card.Height = btnDelete.Bottom + 8;
+        }
+
+        private int GetSnapshotCardWidth()
+        {
+            int width = flpSaved.DisplayRectangle.Width - flpSaved.Padding.Horizontal;
+            if (flpSaved.VerticalScroll.Visible)
+                width -= SystemInformation.VerticalScrollBarWidth;
+
+            return Math.Max(100, width - 8);
+        }
+
+        private string BuildTitle(CampaignCalcSnapshot snap)
+        {
+            // Можно добавить название, если введёшь поле Name
+            return string.Format("Период: с {0:dd.MM.yyyy} до {1:dd.MM.yyyy}", snap.DateFrom, snap.DateTo);
+        }
+
+        private string BuildDetails(CampaignCalcSnapshot snap)
+        {
+            var duration = TimeSpan.FromSeconds(snap.TotalDuration);
+            StringBuilder builder = new StringBuilder();
+            builder.AppendLine(string.Format("Радиостанции: {0}", snap.GetRadiostationsList()));
+            builder.AppendLine(string.Format("Количество дней рекламной акции: {0}", snap.TotalDays));
+            builder.AppendLine(string.Format("Суммарный хронометраж эфирного времени: {0}", duration.ToString(@"hh\:mm\:ss")));
+            builder.AppendLine(string.Format("Итог: {0}", snap.GrandTotal.ToString("c")));
+            return builder.ToString();
+        }
+
+        private List<CampaignCalcSnapshot> GetCheckedSnapshots()
+        {
+            var result = new List<CampaignCalcSnapshot>();
+
+            foreach (Control c in flpSaved.Controls)
+            {
+                var snap = c.Tag as CampaignCalcSnapshot;
+                if (snap == null) continue;
+
+                // ищем чекбокс внутри карточки
+                var chk = c.Controls.OfType<CheckBox>().FirstOrDefault();
+                if (chk != null && chk.Checked)
+                    result.Add(snap);
+            }
+
+            return result;
+        }
+
+        private void ApplySnapshot(CampaignCalcSnapshot snap)
+        {
+            // 1) Перейти на вкладку "Расчёт"
+            //tabControl1.SelectedTab = tabCalc;
+
+            // 2) Установить параметры в контролы (DateFrom/DateTo/roller/etc)
+            // 3) Восстановить таблицу (или перезагрузить и отметить станции)
+            // Это следующий шаг, я помогу сделать правильно.
+        }
+        private void DeleteSnapshot(CampaignCalcSnapshot snap)
+        {
+            _saved.Remove(snap);
+            RenderSavedVariants(_saved);
+        }
+
+        private void DeleteCheckedSnapshots()
+        {
+            var snapshots = GetCheckedSnapshots();
+            if (snapshots.Count == 0)
+                return;
+
+            foreach (var snap in snapshots)
+                _saved.Remove(snap);
+
+            RenderSavedVariants(_saved);
+        }
+
+        private void btnCreaateProposal_Click(object sender, EventArgs e)
+        {
+            try
+            {
+                var list = GetCheckedSnapshots();
+                if (!list.Any())
+                {
+                    MessageBox.Show("Нет отмеченных вариантов для создания коммерческого предложения.", "Создание КП", MessageBoxButtons.OK, MessageBoxIcon.Information); 
+                    return;
+                }
+
+                if(_firm == null)
+                {
+                    _firm = Firm.SelectFirm(this);
+                    if (_firm == null) return;
+                    lblFirm.Text = _firm.PrefixWithName;    
+                }
+
+                if (cmbAgency.SelectedValue == null)
+                {
+                    MessageBox.Show("Пожалуйста, выберите агентство.", "Создание КП", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                    return;
+                }
+
+                var agency = Agency.GetAgencyByID(Convert.ToInt32(cmbAgency.SelectedValue));
+                var templatePath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, ConfigurationUtil.ProposalTemplateFolder, agency[Agency.ParamNames.Path2ProposalTemplate].ToString());
+                if (!File.Exists(templatePath))
+                {
+                    MessageBox.Show($"Шаблон коммерческого предложения для агентства «{agency.Name}» не найден по пути:\n{templatePath}", "Создание КП", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                    return;
+                }
+
+                var outFolder = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "CommercialOffers");
+                Directory.CreateDirectory(outFolder);
+
+                var outPath = Path.Combine(outFolder, $"КП_{DateTime.Now:yyyyMMdd_HHmmss}.docx");
+
+                var result = Cp.CpOneDocGenerator.GenerateOneDoc(
+                    list,
+                    templatePath,
+                    outPath,
+                    clientName: _firm.PrefixWithName,
+                    docDate: DateTime.Today,
+                    directorName: "Агамов Владислав Александрович",
+                    contactName: SecurityManager.LoggedUser.FullName,
+                    contactEmail: SecurityManager.LoggedUser.Email,
+                    contactPhone: SecurityManager.LoggedUser.Phone
+                );
+
+                Process.Start(new ProcessStartInfo(result) { UseShellExecute = true });
+            }
+            catch (Exception ex)
+            {
+                ErrorManager.PublishError(ex);
+            }
+        }
+
+        private void btnSelectFirm_Click(object sender, EventArgs e)
+        {
+            try
+            {
+                Firm firm = Firm.SelectFirm(this);
+                if (firm == null) return;
+                lblFirm.Text = firm.PrefixWithName;
+                _firm = firm;
+            }
+            catch (Exception ex)
+            {
+                ErrorManager.PublishError(ex);
             }
         }
     }
