@@ -207,6 +207,11 @@ namespace Merlin.Controls
         }
 
         // Setters for loading saved variants
+        private static decimal ClampToRange(NumericUpDown control, decimal value)
+        {
+            return Math.Max(control.Minimum, Math.Min(control.Maximum, value));
+        }
+
         public void SetMassmediaGroupId(int groupId)
         {
             if (cbCity.DataSource == null) return;
@@ -223,15 +228,15 @@ namespace Merlin.Controls
 
         public void SetDurationSec(int durationSec)
         {
-            nudDuration.Value = Math.Max(nudDuration.Minimum, Math.Min(nudDuration.Maximum, durationSec));
+            nudDuration.Value = ClampToRange(nudDuration, durationSec);
         }
 
         public void SetSpotsSettings(int primeWeekday, int nonPrimeWeekday, int primeWeekend, int nonPrimeWeekend)
         {
-            nudPrimeWeekday.Value = Math.Max(nudPrimeWeekday.Minimum, Math.Min(nudPrimeWeekday.Maximum, primeWeekday));
-            nudNonPrimeWeekday.Value = Math.Max(nudNonPrimeWeekday.Minimum, Math.Min(nudNonPrimeWeekday.Maximum, nonPrimeWeekday));
-            numPrimeWeekend.Value = Math.Max(numPrimeWeekend.Minimum, Math.Min(numPrimeWeekend.Maximum, primeWeekend));
-            numNonPrimeWeekend.Value = Math.Max(numNonPrimeWeekend.Minimum, Math.Min(numNonPrimeWeekend.Maximum, nonPrimeWeekend));
+            nudPrimeWeekday.Value = ClampToRange(nudPrimeWeekday, primeWeekday);
+            nudNonPrimeWeekday.Value = ClampToRange(nudNonPrimeWeekday, nonPrimeWeekday);
+            numPrimeWeekend.Value = ClampToRange(numPrimeWeekend, primeWeekend);
+            numNonPrimeWeekend.Value = ClampToRange(numNonPrimeWeekend, nonPrimeWeekend);
         }
 
         public void SetManagerDiscountSettings(decimal discount, bool isSingleMode)
@@ -240,7 +245,7 @@ namespace Merlin.Controls
             rbManagerDiscountPeriod.Checked = !isSingleMode;
             if (isSingleMode)
             {
-                nmManagerDiscount.Value = Math.Max(nmManagerDiscount.Minimum, Math.Min(nmManagerDiscount.Maximum, discount));
+                nmManagerDiscount.Value = ClampToRange(nmManagerDiscount, discount);
             }
         }
 
@@ -257,7 +262,7 @@ namespace Merlin.Controls
             if (useDaysOfWeek)
             {
                 rbDaysOfWeek.Checked = true;
-                if (daysOfWeekChecked != null && daysOfWeekChecked.Length >= 7)
+                if (daysOfWeekChecked != null && daysOfWeekChecked.Length == 7)
                 {
                     chkMon.Checked = daysOfWeekChecked[0];
                     chkTue.Checked = daysOfWeekChecked[1];
