@@ -19,6 +19,22 @@ namespace Merlin.Classes
 
         // Итог по всему расчёту
         public decimal GrandTotal { get; set; }
+
+        // Template editor settings for restoration
+        public int MassmediaGroupId { get; set; }
+        public int DurationSec { get; set; }
+        public int PrimePerDayWeekday { get; set; }
+        public int NonPrimePerDayWeekday { get; set; }
+        public int PrimePerDayWeekend { get; set; }
+        public int NonPrimePerDayWeekend { get; set; }
+        public decimal ManagerDiscountValue { get; set; }
+        public bool ManagerDiscountModeSingle { get; set; }
+        public int PositionValue { get; set; }
+
+        // Schedule settings
+        public bool UseDaysOfWeek { get; set; }
+        public bool EvenDaysSelected { get; set; }
+        public bool[] DaysOfWeekChecked { get; set; }
         public string GetRadiostationsList()
         {
             return Rows == null
