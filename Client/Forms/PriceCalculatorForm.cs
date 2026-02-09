@@ -441,8 +441,24 @@ namespace Merlin.Forms
                 TotalDays = grdPriceCalculator.GetSelectedDates().Count,
                 TotalDuration = grdPriceCalculator.GetTotalSeconds(),
 
-
                 GrandTotal = _lastTotalAfterPackage,
+
+                // Template editor settings
+                MassmediaGroupId = templateEditor.MassmediaGroupId,
+                DurationSec = templateEditor.DurationSec,
+                PrimePerDayWeekday = templateEditor.PrimePerDayWeekday,
+                NonPrimePerDayWeekday = templateEditor.NonPrimePerDayWeekday,
+                PrimePerDayWeekend = templateEditor.PrimePerDayWeekend,
+                NonPrimePerDayWeekend = templateEditor.NonPrimePerDayWeekend,
+                ManagerDiscountValue = templateEditor.ManagerDiscount,
+                ManagerDiscountModeSingle = templateEditor.ManagerDiscountModeSingle,
+                PositionValue = (int)templateEditor.SelectedPosition,
+
+                // Schedule settings
+                UseDaysOfWeek = templateEditor.UseDaysOfWeek,
+                EvenDaysSelected = templateEditor.EvenDaysSelected,
+                DaysOfWeekChecked = templateEditor.DaysOfWeekChecked,
+
                 Rows = new List<CampaignCalcRow>()
             };
 
@@ -599,7 +615,7 @@ namespace Merlin.Forms
             card.Controls.Add(chk);
             card.Controls.Add(title);
             card.Controls.Add(details);
-            //card.Controls.Add(btnApply);
+            card.Controls.Add(btnApply);
             card.Controls.Add(btnDelete);
 
             LayoutSnapshotCard(card);
@@ -634,17 +650,33 @@ namespace Merlin.Forms
         {
             var title = card.Controls["lblTitle"] as Label;
             var details = card.Controls["lblDetails"] as Label;
+            var btnApply = card.Controls["btnApply"] as Button;
             var btnDelete = card.Controls["btnDelete"] as Button;
 
-            if (title == null || details == null || btnDelete == null)
+            if (title == null || details == null)
                 return;
 
             details.MaximumSize = new Size(card.Width - 40, 0);
             details.Size = details.PreferredSize;
 
-            btnDelete.Location = new Point(30, details.Bottom + 8);
+            // Position buttons side by side
+            if (btnApply != null)
+            {
+                btnApply.Location = new Point(30, details.Bottom + 8);
+            }
 
-            card.Height = btnDelete.Bottom + 8;
+            if (btnDelete != null)
+            {
+                int leftPosition = btnApply != null ? btnApply.Right + 8 : 30;
+                btnDelete.Location = new Point(leftPosition, details.Bottom + 8);
+            }
+
+            int bottomMostButton = Math.Max(
+                btnApply?.Bottom ?? 0,
+                btnDelete?.Bottom ?? 0
+            );
+
+            card.Height = bottomMostButton + 8;
         }
 
         private int GetSnapshotCardWidth()
@@ -693,13 +725,96 @@ namespace Merlin.Forms
 
         private void ApplySnapshot(CampaignCalcSnapshot snap)
         {
-            // 1) Перейти на вкладку "Расчёт"
-            //tabControl1.SelectedTab = tabCalc;
-
-            // 2) Установить параметры в контролы (DateFrom/DateTo/roller/etc)
-            // 3) Восстановить таблицу (или перезагрузить и отметить станции)
-            // Это следующий шаг, я помогу сделать правильно.
+            LoadVariant(snap);
         }
+
+        public void LoadVariant(CampaignCalcSnapshot variant)
+        {
+            if (variant == null) return;
+
+            try
+            {
+                Cursor.Current = Cursors.WaitCursor;
+
+                // 1) Restore template editor settings
+                templateEditor.SetMassmediaGroupId(variant.MassmediaGroupId);
+                templateEditor.SetDateRange(variant.DateFrom, variant.DateTo);
+                templateEditor.SetDurationSec(variant.DurationSec);
+                templateEditor.SetSpotsSettings(
+                    variant.PrimePerDayWeekday,
+                    variant.NonPrimePerDayWeekday,
+                    variant.PrimePerDayWeekend,
+                    variant.NonPrimePerDayWeekend);
+                templateEditor.SetManagerDiscountSettings(variant.ManagerDiscountValue, variant.ManagerDiscountModeSingle);
+                templateEditor.SetPosition(variant.PositionValue);
+                templateEditor.SetSchedulePattern(
+                    variant.UseDaysOfWeek,
+                    variant.EvenDaysSelected,
+                    variant.DaysOfWeekChecked);
+
+                // 2) Reload grid data with the variant's massmedia group and date range
+                grdPriceCalculator.LoadData(variant.MassmediaGroupId, variant.DateFrom, variant.DateTo);
+
+                // 3) Build selected dates based on schedule pattern
+                var selectedDates = BuildSelectedDates(
+                    variant.DateFrom, variant.DateTo,
+                    variant.UseDaysOfWeek,
+                    variant.DaysOfWeekChecked,
+                    variant.EvenDaysSelected
+                );
+
+                // 4) Select radiostations from the saved variant
+                SelectRadiostationsFromVariant(variant);
+
+                // 5) Apply calculation to restore calculated values
+                grdPriceCalculator.ApplyCalculation(
+                    selectedDates,
+                    variant.DurationSec,
+                    variant.PrimePerDayWeekday,
+                    variant.NonPrimePerDayWeekday,
+                    variant.PrimePerDayWeekend,
+                    variant.NonPrimePerDayWeekend,
+                    variant.ManagerDiscountValue,
+                    variant.ManagerDiscountModeSingle
+                );
+
+                // 6) Set position
+                grdPriceCalculator.SetDefaultPosition((RollerPositions)variant.PositionValue);
+
+                // 7) Update summary
+                UpdateSummary();
+            }
+            catch (Exception ex)
+            {
+                ErrorManager.PublishError(ex);
+            }
+            finally
+            {
+                Cursor.Current = Cursors.Default;
+            }
+        }
+
+        private void SelectRadiostationsFromVariant(CampaignCalcSnapshot variant)
+        {
+            if (grdPriceCalculator.SummaryTable == null || variant.Rows == null) return;
+
+            // Get the MassmediaIds from the saved variant
+            var selectedIds = new HashSet<int>(variant.Rows.Select(r => r.MassmediaId));
+
+            // Mark rows in SummaryTable as selected based on MassmediaId
+            string isSelectedColumn = "IsSelected";
+            if (!grdPriceCalculator.SummaryTable.Columns.Contains(isSelectedColumn))
+                return;
+
+            foreach (DataRow row in grdPriceCalculator.SummaryTable.Rows)
+            {
+                if (row.RowState == DataRowState.Deleted) continue;
+
+                int massmediaId = (row["MassmediaID"] == DBNull.Value) ? 0 : Convert.ToInt32(row["MassmediaID"]);
+                row[isSelectedColumn] = (massmediaId != 0 && selectedIds.Contains(massmediaId));
+            }
+        }
+
         private void DeleteSnapshot(CampaignCalcSnapshot snap)
         {
             _saved.Remove(snap);

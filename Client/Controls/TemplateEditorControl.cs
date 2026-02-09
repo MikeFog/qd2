@@ -206,6 +206,84 @@ namespace Merlin.Controls
             return DaysOfWeekChecked.Any(x => x);
         }
 
+        // Setters for loading saved variants
+        private static decimal ClampToRange(NumericUpDown control, decimal value)
+        {
+            return Math.Max(control.Minimum, Math.Min(control.Maximum, value));
+        }
+
+        public void SetMassmediaGroupId(int groupId)
+        {
+            if (cbCity.DataSource == null) return;
+            cbCity.SelectedValue = groupId;
+        }
+
+        public void SetDateRange(DateTime dateFrom, DateTime dateTo)
+        {
+            _loaded = false;
+            dtStart.Value = dateFrom;
+            dtEnd.Value = dateTo;
+            _loaded = true;
+        }
+
+        public void SetDurationSec(int durationSec)
+        {
+            nudDuration.Value = ClampToRange(nudDuration, durationSec);
+        }
+
+        public void SetSpotsSettings(int primeWeekday, int nonPrimeWeekday, int primeWeekend, int nonPrimeWeekend)
+        {
+            nudPrimeWeekday.Value = ClampToRange(nudPrimeWeekday, primeWeekday);
+            nudNonPrimeWeekday.Value = ClampToRange(nudNonPrimeWeekday, nonPrimeWeekday);
+            numPrimeWeekend.Value = ClampToRange(numPrimeWeekend, primeWeekend);
+            numNonPrimeWeekend.Value = ClampToRange(numNonPrimeWeekend, nonPrimeWeekend);
+        }
+
+        public void SetManagerDiscountSettings(decimal discount, bool isSingleMode)
+        {
+            rbManagerDiscountSingle.Checked = isSingleMode;
+            rbManagerDiscountPeriod.Checked = !isSingleMode;
+            if (isSingleMode)
+            {
+                nmManagerDiscount.Value = ClampToRange(nmManagerDiscount, discount);
+            }
+        }
+
+        public void SetPosition(int positionValue)
+        {
+            if (cbPosition.DataSource == null) return;
+            cbPosition.SelectedValue = positionValue;
+        }
+
+        public void SetSchedulePattern(bool useDaysOfWeek, bool evenDaysSelected, bool[] daysOfWeekChecked)
+        {
+            _loaded = false;
+            
+            if (useDaysOfWeek)
+            {
+                rbDaysOfWeek.Checked = true;
+                if (daysOfWeekChecked != null && daysOfWeekChecked.Length == 7)
+                {
+                    chkMon.Checked = daysOfWeekChecked[0];
+                    chkTue.Checked = daysOfWeekChecked[1];
+                    chkWed.Checked = daysOfWeekChecked[2];
+                    chkThu.Checked = daysOfWeekChecked[3];
+                    chkFri.Checked = daysOfWeekChecked[4];
+                    chkSat.Checked = daysOfWeekChecked[5];
+                    chkSun.Checked = daysOfWeekChecked[6];
+                }
+            }
+            else
+            {
+                rbEvenOdd.Checked = true;
+                rbEvenDays.Checked = evenDaysSelected;
+                rbOddDays.Checked = !evenDaysSelected;
+            }
+
+            UpdateSchedulePatternEnabledState();
+            _loaded = true;
+        }
+
         private void OnScheduleChanged(object sender, EventArgs e)
         {
             if (!_loaded) return;
