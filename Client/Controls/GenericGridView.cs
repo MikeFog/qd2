@@ -46,40 +46,47 @@ namespace Merlin.Controls
         protected override void OnCellValueChanged(DataGridViewCellEventArgs e)
         {
             base.OnCellValueChanged(e);
-            if(e.ColumnIndex == ColumnIndex.CheckBox)
-            {
-                bool isChecked = (bool)this[e.ColumnIndex, e.RowIndex].EditedFormattedValue;
-                if (_selectionMode == Merlin.SelectionMode.Agency)
-                {
-                    var calendarCell = Rows[CurrentCell.RowIndex].Cells[ColumnIndex.Calendar_Agency];
-                    enableCell(calendarCell, isChecked);
-                    if (isChecked)
-                        StartCalendarEdit(calendarCell);
-                }
-                else if (_selectionMode == Merlin.SelectionMode.Split)
-                {
-                    enableCell(Rows[CurrentCell.RowIndex].Cells[ColumnIndex.ComboBox], isChecked);
 
-                    if (!isChecked)
-                        enableCell(Rows[CurrentCell.RowIndex].Cells[ColumnIndex.Calendar], isChecked);
-                    else
-                    {
-                        var val = DBData.Rows[e.RowIndex]["splitType"];
-                        var calendarEnabled = val != DBNull.Value &&
-                                               (int)val == (int)ActionOnMassmedia.SplitRule.SplitType.ByPeriod;
-                        var calendarCell = Rows[CurrentCell.RowIndex].Cells[ColumnIndex.Calendar];
-                        enableCell(calendarCell, calendarEnabled);
-                        if (calendarEnabled)
-                            StartCalendarEdit(calendarCell);
-                    }
+            if (e.RowIndex < 0 || e.ColumnIndex != ColumnIndex.CheckBox)
+                return;
+
+            var row = Rows[e.RowIndex];
+            var checkCell = row?.Cells[e.ColumnIndex];
+            bool isChecked = Convert.ToBoolean(checkCell?.Value ?? false);
+
+            if (_selectionMode == Merlin.SelectionMode.Agency)
+            {
+                var calendarCell = row.Cells[ColumnIndex.Calendar_Agency];
+                enableCell(calendarCell, isChecked);
+                if (isChecked)
+                    StartCalendarEdit(calendarCell);
+            }
+            else if (_selectionMode == Merlin.SelectionMode.Split)
+            {
+                var comboCell = row.Cells[ColumnIndex.ComboBox];
+                enableCell(comboCell, isChecked);
+
+                var calendarCell = row.Cells[ColumnIndex.Calendar];
+                if (!isChecked)
+                {
+                    enableCell(calendarCell, false);
                 }
                 else
                 {
-                    var calendarCell = Rows[CurrentCell.RowIndex].Cells[ColumnIndex.Calendar_Clone];
-                    enableCell(calendarCell, isChecked);
-                    if (isChecked)
+                    var val = DBData.Rows[e.RowIndex]["splitType"];
+                    bool calendarEnabled = val != DBNull.Value &&
+                                           (int)val == (int)ActionOnMassmedia.SplitRule.SplitType.ByPeriod;
+                    enableCell(calendarCell, calendarEnabled);
+                    if (calendarEnabled)
                         StartCalendarEdit(calendarCell);
                 }
+            }
+            else
+            {
+                var calendarCell = row.Cells[ColumnIndex.Calendar_Clone];
+                enableCell(calendarCell, isChecked);
+                if (isChecked)
+                    StartCalendarEdit(calendarCell);
             }
         }
 
@@ -116,8 +123,16 @@ namespace Merlin.Controls
             if (cell == null || cell.ReadOnly)
                 return;
 
-            CurrentCell = cell;
-            BeginEdit(true);
+            if (cell.Value == null || cell.Value == DBNull.Value)
+            {
+                cell.Value = DateTime.Today;
+            }
+
+            if (CurrentCell != cell)
+                CurrentCell = cell;
+
+            if (!IsCurrentCellInEditMode)
+                BeginEdit(true);
         }
 
         private void enableCell(DataGridViewCell dc, bool enabled)
@@ -299,9 +314,9 @@ namespace Merlin.Controls
 
             public override void InitializeEditingControl(int rowIndex, object  initialFormattedValue, DataGridViewCellStyle dataGridViewCellStyle)
             {
-                // Set the value of the editing control to the current cell value.
                 base.InitializeEditingControl(rowIndex, initialFormattedValue,
                     dataGridViewCellStyle);
+
                 CalendarEditingControl ctl =
                     DataGridView.EditingControl as CalendarEditingControl;
 
@@ -314,13 +329,9 @@ namespace Merlin.Controls
                     ctl.Value = DateTime.Today;
                 }
 
-                if (DataGridView != null)
-                {
-                    DataGridView.CurrentCell.Value = ctl.Value;
-                    DataGridView.NotifyCurrentCellDirty(true);
-                    DataGridView.CommitEdit(DataGridViewDataErrorContexts.Commit);
-                }
-
+                // Removed writing back to DataGridView.CurrentCell here: it triggered
+                // OnCellValueChanged → StartCalendarEdit → BeginEdit → recursion.
+                // OnValueChanged already pushes the selected date into the cell.
             }
 
             public override Type EditType
