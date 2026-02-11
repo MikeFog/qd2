@@ -228,7 +228,6 @@ namespace Merlin.Cp
         {
             public string StationsSet { get; set; }
             public decimal Price { get; set; }
-            public CampaignCalcSnapshot Snapshot { get; set; }
         }
 
         public static string GenerateOneDoc(
@@ -393,8 +392,7 @@ namespace Merlin.Cp
             var rows = group.Snapshots
                 .Select(s => new VariantRow { 
                     StationsSet = BuildStationsSetText(s), 
-                    Price = s.GrandTotal,
-                    Snapshot = s 
+                    Price = s.GrandTotal 
                 })
                 .OrderByDescending(x => x.Price)
                 .ToList();
