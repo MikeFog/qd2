@@ -102,6 +102,8 @@ namespace Merlin.Classes
         // Если есть ключи/имя — заполним, если колонок нет — будут null/0
         public int MassmediaId { get; set; }
         public string StationName { get; set; }
+        public string GroupName { get; set; }
+        public string ShortName { get; set; }
 
         // Calc columns
         public int PrimeTotalSpotsWeekday { get; set; }
@@ -132,6 +134,8 @@ namespace Merlin.Classes
 
             return MassmediaId == other.MassmediaId
                    && string.Equals(StationName, other.StationName, StringComparison.Ordinal)
+                   && string.Equals(GroupName, other.GroupName, StringComparison.Ordinal)
+                   && string.Equals(ShortName, other.ShortName, StringComparison.Ordinal)
                    && PrimeTotalSpotsWeekday == other.PrimeTotalSpotsWeekday
                    && NonPrimeTotalSpotsWeekday == other.NonPrimeTotalSpotsWeekday
                    && PrimeTotalSpotsWeekend == other.PrimeTotalSpotsWeekend
@@ -162,6 +166,8 @@ namespace Merlin.Classes
                 int hash = 17;
                 hash = (hash * 23) + MassmediaId.GetHashCode();
                 hash = (hash * 23) + (StationName != null ? StringComparer.Ordinal.GetHashCode(StationName) : 0);
+                hash = (hash * 23) + (GroupName != null ? StringComparer.Ordinal.GetHashCode(GroupName) : 0);
+                hash = (hash * 23) + (ShortName != null ? StringComparer.Ordinal.GetHashCode(ShortName) : 0);
                 hash = (hash * 23) + PrimeTotalSpotsWeekday.GetHashCode();
                 hash = (hash * 23) + NonPrimeTotalSpotsWeekday.GetHashCode();
                 hash = (hash * 23) + PrimeTotalSpotsWeekend.GetHashCode();

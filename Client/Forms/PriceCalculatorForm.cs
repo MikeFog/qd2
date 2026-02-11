@@ -474,6 +474,8 @@ namespace Merlin.Forms
                 {
                     StationName = Convert.ToString(r["name"]),
                     MassmediaId = Convert.ToInt32(r["massmediaID"]),
+                    GroupName = r.Table.Columns.Contains("groupName") ? Convert.ToString(r["groupName"]) : null,
+                    ShortName = r.Table.Columns.Contains("shortName") ? Convert.ToString(r["shortName"]) : null,
 
                     // calc columns
                     PrimeTotalSpotsWeekday = GetInt(r, ColumnName(PriceCalculatorGrid.PriceCalculatorColumn.PrimeTotalSpotsWeekday)),

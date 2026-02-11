@@ -251,6 +251,17 @@ namespace Merlin.Cp
             using (var doc = WordprocessingDocument.Open(outputPath, true))
             {
                 var body = doc.MainDocumentPart.Document.Body;
+                
+                // Collect shared groupNames from all groups
+                var sharedGroupNames = split.Groups
+                    .Select(g => GetSharedGroupName(g))
+                    .Where(gn => !string.IsNullOrWhiteSpace(gn))
+                    .Distinct(StringComparer.OrdinalIgnoreCase)
+                    .ToList();
+
+                // Determine the groupName to use for the placeholder
+                string groupNameValue = sharedGroupNames.Count == 1 ? sharedGroupNames[0] : string.Empty;
+
                 // 0). Подстановка текстовых плейсхолдеров
 
                 ReplaceTextPlaceholders2(doc, new Dictionary<string, string>
@@ -260,7 +271,8 @@ namespace Merlin.Cp
                     ["{{DIRECTOR_NAME}}"] = directorName,
                     ["{{CONTACT_NAME}}"] = contactName,
                     ["{{CONTACT_EMAIL}}"] = contactEmail,
-                    ["{{CONTACT_PHONE}}"] = contactPhone
+                    ["{{CONTACT_PHONE}}"] = contactPhone,
+                    ["{{groupName}}"] = groupNameValue
                 });
 
                 ReplaceTextPlaceholdersPreserveStylesEverywhere(doc, new Dictionary<string, string>
@@ -270,7 +282,8 @@ namespace Merlin.Cp
                     ["{{DIRECTOR_NAME}}"] = directorName,
                     ["{{CONTACT_NAME}}"] = contactName,
                     ["{{CONTACT_EMAIL}}"] = contactEmail,
-                    ["{{CONTACT_PHONE}}"] = contactPhone
+                    ["{{CONTACT_PHONE}}"] = contactPhone,
+                    ["{{groupName}}"] = groupNameValue
                 });
 
 
@@ -377,7 +390,10 @@ namespace Merlin.Cp
             emit(MakeParagraph(string.Empty, bold: false));
 
             var rows = group.Snapshots
-                .Select(s => new VariantRow { StationsSet = BuildStationsSetText(s), Price = s.GrandTotal })
+                .Select(s => new VariantRow { 
+                    StationsSet = BuildStationsSetText(s), 
+                    Price = s.GrandTotal 
+                })
                 .OrderByDescending(x => x.Price)
                 .ToList();
 
@@ -490,16 +506,56 @@ namespace Merlin.Cp
             emit(new Paragraph(new Run(new Break { Type = BreakValues.Page })));
         }
 
-        private static string BuildStationsSetText(CampaignCalcSnapshot s)
+        private static string GetSharedGroupName(Cp1Grouping.Cp1Group group)
         {
-            var names = (s.Rows ?? new List<CampaignCalcRow>())
-                .Where(r => !string.IsNullOrWhiteSpace(r.StationName))
-                .Select(r => r.StationName.Trim())
-                .Distinct(StringComparer.CurrentCulture)
-                .OrderBy(x => x, StringComparer.CurrentCulture)
+            if (group?.Snapshots == null || group.Snapshots.Count == 0)
+                return null;
+
+            // Get all distinct groupNames from all rows in all snapshots
+            var allGroupNames = group.Snapshots
+                .SelectMany(s => s.Rows ?? new List<CampaignCalcRow>())
+                .Where(r => !string.IsNullOrWhiteSpace(r.GroupName))
+                .Select(r => r.GroupName.Trim())
+                .Distinct(StringComparer.OrdinalIgnoreCase)
                 .ToList();
 
-            return string.Join(" + ", names);
+            // Return the shared groupName if all rows share exactly one groupName
+            return allGroupNames.Count == 1 ? allGroupNames[0] : null;
+        }
+
+        private static string BuildStationsSetText(CampaignCalcSnapshot s)
+        {
+            if (s?.Rows == null || s.Rows.Count == 0)
+                return string.Empty;
+
+            // Check if all rows have the same groupName (and it's not null/empty)
+            var allGroupNames = s.Rows
+                .Where(r => !string.IsNullOrWhiteSpace(r.GroupName))
+                .Select(r => r.GroupName.Trim())
+                .Distinct(StringComparer.OrdinalIgnoreCase)
+                .ToList();
+
+            bool useSameGroup = allGroupNames.Count == 1;
+
+            IEnumerable<string> names;
+            if (useSameGroup)
+            {
+                // Use shortName when all rows share the same groupName
+                names = s.Rows
+                    .Where(r => !string.IsNullOrWhiteSpace(r.ShortName))
+                    .Select(r => r.ShortName.Trim());
+            }
+            else
+            {
+                // Use StationName (full name with group) otherwise
+                names = s.Rows
+                    .Where(r => !string.IsNullOrWhiteSpace(r.StationName))
+                    .Select(r => r.StationName.Trim());
+            }
+
+            return string.Join(" + ", names
+                .Distinct(StringComparer.CurrentCulture)
+                .OrderBy(x => x, StringComparer.CurrentCulture));
         }
 
         private static string MapPosition(int position)
