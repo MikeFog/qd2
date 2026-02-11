@@ -365,13 +365,14 @@ namespace Merlin.Cp
             var spotsPerStation = pw + npw + pwe + npwe;
             var durationPerStation = TimeSpan.FromSeconds(spotsPerStation * rollerSec);
 
+            emit(MakeParagraph("Параметры расчёта одинаковые для каждой станции:", bold: false));
+            emit(MakeParagraph($"Продолжительность ролика: {rollerSec} сек.", bold: false));
             emit(MakeParagraph($"Период: с {group.Header.DateFrom:dd.MM.yyyy} до {group.Header.DateTo:dd.MM.yyyy}", bold: false));
             emit(MakeParagraph($"Количество дней рекламной акции: {group.Header.TotalDays}", bold: false));
-            emit(MakeParagraph($"Выпуски прайм/не прайм будни: {pw}/{npw}", bold: false));
-            emit(MakeParagraph($"Выпуски прайм/не прайм выходные: {pwe}/{npwe}", bold: false));
-            emit(MakeParagraph($"Количество выпусков на каждой станции: {spotsPerStation}", bold: false));
-            emit(MakeParagraph($"Хронометраж эфирного времени на каждой станции: {durationPerStation:hh\\:mm\\:ss}", bold: false));
-            emit(MakeParagraph($"Продолжительность ролика: {rollerSec} сек.", bold: false));
+            emit(MakeParagraph($"Количество ежедневных выпусков в будни: прайм - {pw}, не прайм - {npw}", bold: false));
+            emit(MakeParagraph($"Количество ежедневных выпусков в выходные: прайм - {pwe}, не прайм - {npwe}", bold: false));
+            emit(MakeParagraph($"Общее количество выпусков в день: {spotsPerStation}", bold: false));
+            emit(MakeParagraph($"Хронометраж эфирного времени: {durationPerStation:hh\\:mm\\:ss}", bold: false));
             emit(MakeParagraph($"Позиционирование в рекламном блоке: {MapPosition(positionId)}", bold: false));
             emit(MakeParagraph(string.Empty, bold: false));
 
@@ -510,7 +511,7 @@ namespace Merlin.Cp
         private static string FormatRub(decimal price)
         {
             var s = string.Format(new CultureInfo("ru-RU"), "{0:N0}", price);
-            return s + "\u00A0₽";
+            return s + "\u00A0руб.";
         }
 
         private static Paragraph MakeParagraph(string text, bool bold, string fontSize = null)

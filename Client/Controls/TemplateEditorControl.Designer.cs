@@ -284,12 +284,12 @@ namespace Merlin.Controls
             this.nudDuration.Location = new System.Drawing.Point(1279, 5);
             this.nudDuration.Margin = new System.Windows.Forms.Padding(3, 4, 3, 4);
             this.nudDuration.Maximum = new decimal(new int[] {
-            120,
+            1200,
             0,
             0,
             0});
             this.nudDuration.Minimum = new decimal(new int[] {
-            5,
+            1,
             0,
             0,
             0});

@@ -206,6 +206,26 @@ namespace Merlin.Properties {
         }
         
         /// <summary>
+        ///   Looks up a localized resource of type System.Drawing.Bitmap.
+        /// </summary>
+        public static System.Drawing.Bitmap erase {
+            get {
+                object obj = ResourceManager.GetObject("erase", resourceCulture);
+                return ((System.Drawing.Bitmap)(obj));
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized resource of type System.Drawing.Bitmap.
+        /// </summary>
+        public static System.Drawing.Bitmap erase2 {
+            get {
+                object obj = ResourceManager.GetObject("erase2", resourceCulture);
+                return ((System.Drawing.Bitmap)(obj));
+            }
+        }
+        
+        /// <summary>
         ///   Looks up a localized string similar to СМИ данной кампании отличается от СМИ экспортируемого файла..
         /// </summary>
         public static string ExportDifferentMassmedias {
@@ -559,6 +579,26 @@ namespace Merlin.Properties {
         public static string TitleGetRollerForSubstitude {
             get {
                 return ResourceManager.GetString("TitleGetRollerForSubstitude", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized resource of type System.Drawing.Bitmap.
+        /// </summary>
+        public static System.Drawing.Bitmap Ластик {
+            get {
+                object obj = ResourceManager.GetObject("Ластик", resourceCulture);
+                return ((System.Drawing.Bitmap)(obj));
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized resource of type System.Drawing.Bitmap.
+        /// </summary>
+        public static System.Drawing.Bitmap Ластик1 {
+            get {
+                object obj = ResourceManager.GetObject("Ластик1", resourceCulture);
+                return ((System.Drawing.Bitmap)(obj));
             }
         }
     }

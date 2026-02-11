@@ -24,8 +24,9 @@ namespace Merlin.Forms
             this.tabPage2 = new System.Windows.Forms.TabPage();
             this.flpSaved = new System.Windows.Forms.FlowLayoutPanel();
             this.pnlTop = new System.Windows.Forms.Panel();
+            this.button1 = new System.Windows.Forms.Button();
+            this.txtFirmName = new System.Windows.Forms.TextBox();
             this.cmbAgency = new System.Windows.Forms.ComboBox();
-            this.lblFirm = new System.Windows.Forms.Label();
             this.btnSelectFirm = new System.Windows.Forms.Button();
             this.btnDeleteAllChecked = new System.Windows.Forms.Button();
             this.btnCreaateProposal = new System.Windows.Forms.Button();
@@ -95,8 +96,9 @@ namespace Merlin.Forms
             // 
             // pnlTop
             // 
+            this.pnlTop.Controls.Add(this.button1);
+            this.pnlTop.Controls.Add(this.txtFirmName);
             this.pnlTop.Controls.Add(this.cmbAgency);
-            this.pnlTop.Controls.Add(this.lblFirm);
             this.pnlTop.Controls.Add(this.btnSelectFirm);
             this.pnlTop.Controls.Add(this.btnDeleteAllChecked);
             this.pnlTop.Controls.Add(this.btnCreaateProposal);
@@ -107,6 +109,22 @@ namespace Merlin.Forms
             this.pnlTop.Size = new System.Drawing.Size(1526, 65);
             this.pnlTop.TabIndex = 1;
             // 
+            // button1
+            // 
+            this.button1.Image = global::Merlin.Properties.Resources.Ластик;
+            this.button1.Location = new System.Drawing.Point(1310, 16);
+            this.button1.Name = "button1";
+            this.button1.Size = new System.Drawing.Size(155, 43);
+            this.button1.TabIndex = 7;
+            this.button1.UseVisualStyleBackColor = true;
+            // 
+            // txtFirmName
+            // 
+            this.txtFirmName.Location = new System.Drawing.Point(894, 20);
+            this.txtFirmName.Name = "txtFirmName";
+            this.txtFirmName.Size = new System.Drawing.Size(329, 31);
+            this.txtFirmName.TabIndex = 6;
+            // 
             // cmbAgency
             // 
             this.cmbAgency.FormattingEnabled = true;
@@ -115,20 +133,11 @@ namespace Merlin.Forms
             this.cmbAgency.Size = new System.Drawing.Size(182, 33);
             this.cmbAgency.TabIndex = 5;
             // 
-            // lblFirm
-            // 
-            this.lblFirm.AutoSize = true;
-            this.lblFirm.Location = new System.Drawing.Point(813, 17);
-            this.lblFirm.Name = "lblFirm";
-            this.lblFirm.Size = new System.Drawing.Size(169, 25);
-            this.lblFirm.TabIndex = 4;
-            this.lblFirm.Text = "Фирма не выбрана";
-            // 
             // btnSelectFirm
             // 
             this.btnSelectFirm.Location = new System.Drawing.Point(679, 16);
             this.btnSelectFirm.Name = "btnSelectFirm";
-            this.btnSelectFirm.Size = new System.Drawing.Size(120, 38);
+            this.btnSelectFirm.Size = new System.Drawing.Size(209, 38);
             this.btnSelectFirm.TabIndex = 3;
             this.btnSelectFirm.Text = "Выбрать фирму";
             this.btnSelectFirm.UseVisualStyleBackColor = true;
@@ -215,7 +224,8 @@ namespace Merlin.Forms
         private Button btnCreaateProposal;
         private Button btnDeleteAllChecked;
         private Button btnSelectFirm;
-        private Label lblFirm;
         private ComboBox cmbAgency;
+        private TextBox txtFirmName;
+        private Button button1;
     }
 }

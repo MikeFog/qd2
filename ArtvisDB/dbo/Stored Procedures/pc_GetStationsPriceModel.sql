@@ -146,16 +146,18 @@ BEGIN
 
     -- Resultset #1: 1 строка на станцию (для грида)
     SELECT
-        massmediaID,
-        [name],
-
+        s.massmediaID,
+        s.[name],
+        m.groupName,
+        m.name as shortName,
         PrimePricePerSecWeekday    = MAX(PrimePricePerSecWeekday),
         NonPrimePricePerSecWeekday = MAX(NonPrimePricePerSecWeekday),
 
         PrimePricePerSecWeekend    = MAX(PrimePricePerSecWeekend),
         NonPrimePricePerSecWeekend = MAX(NonPrimePricePerSecWeekend)
-    FROM #SegPrices
-    GROUP BY massmediaID, [name]
+    FROM #SegPrices s
+        INNER JOIN vMassMedia m ON m.massmediaID = s.massmediaID
+    GROUP BY s.massmediaID, s.[name], m.groupName, m.name
     ORDER BY [name];
 
     -- Resultset #2: по сегментам прайслистов

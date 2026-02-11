@@ -21,7 +21,6 @@ namespace Merlin.Forms
     {
         private readonly List<CampaignCalcSnapshot> _saved = new List<CampaignCalcSnapshot>();
         private decimal _lastTotalAfterPackage;
-        private Firm _firm;
         private readonly string[] _columnsWithMoney = new[]
         {
             "Цена прайм будни",
@@ -844,13 +843,6 @@ namespace Merlin.Forms
                     return;
                 }
 
-                if(_firm == null)
-                {
-                    _firm = Firm.SelectFirm(this);
-                    if (_firm == null) return;
-                    lblFirm.Text = _firm.PrefixWithName;    
-                }
-
                 if (cmbAgency.SelectedValue == null)
                 {
                     MessageBox.Show("Пожалуйста, выберите агентство.", "Создание КП", MessageBoxButtons.OK, MessageBoxIcon.Information);
@@ -874,7 +866,7 @@ namespace Merlin.Forms
                     list,
                     templatePath,
                     outPath,
-                    clientName: _firm.PrefixWithName,
+                    clientName: txtFirmName.Text,
                     docDate: DateTime.Today,
                     directorName: "Агамов Владислав Александрович",
                     contactName: SecurityManager.LoggedUser.FullName,
@@ -896,8 +888,7 @@ namespace Merlin.Forms
             {
                 Firm firm = Firm.SelectFirm(this);
                 if (firm == null) return;
-                lblFirm.Text = firm.PrefixWithName;
-                _firm = firm;
+                txtFirmName.Text = firm.PrefixWithName;
             }
             catch (Exception ex)
             {

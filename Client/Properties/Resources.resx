@@ -117,12 +117,162 @@
   <resheader name="writer">
     <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
   </resheader>
-  <data name="LoginErrorWithSuperAdmin" xml:space="preserve">
-    <value>Невозможно осуществить вход в систему "Рекламное агенство" с ролью главного администратора.</value>
+  <data name="ExportDifferentMassmedias" xml:space="preserve">
+    <value>СМИ данной кампании отличается от СМИ экспортируемого файла.</value>
+  </data>
+  <data name="NoContractDateSet" xml:space="preserve">
+    <value>Необходимо указать дату подписания договора для всех выбранных агентств</value>
   </data>
   <assembly alias="System.Windows.Forms" name="System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089" />
   <data name="GoRight" type="System.Resources.ResXFileRef, System.Windows.Forms">
     <value>..\Icons\GoRight.ICO;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="DeleteActionsInPastCompleted" xml:space="preserve">
+    <value>Неактивированные акции в прошлом успешно удалены.</value>
+  </data>
+  <data name="CampaignIssuesTransfersTitle" xml:space="preserve">
+    <value>Журнал переносов кампании</value>
+  </data>
+  <data name="FirmImportResult" xml:space="preserve">
+    <value>Успешно проимпортировано фирм: {0}.</value>
+  </data>
+  <data name="AgencyChangeSuccess" xml:space="preserve">
+    <value>Рекламное агентство успешно изменено.</value>
+  </data>
+  <data name="CannotReadExportFile" xml:space="preserve">
+    <value>Невозможно прочитать файл, или формат файла не верный. Операция прервана.</value>
+  </data>
+  <data name="SubstitutionImpossibleForDummyRoller" xml:space="preserve">
+    <value>Вы пытаетесь заменить рекламный ролик в активированной рекламной акции на ролик-пустышку без предмета рекламы. Операция прервана.</value>
+  </data>
+  <data name="NoCampaignTypeSelected" xml:space="preserve">
+    <value>Необходимо выбрать тип рекламной кампании.</value>
+  </data>
+  <data name="GoLeft" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Icons\GoLeft.ICO;System.Drawing.Bitmap, System.Drawing, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="NewPriceShouldBeDifferent" xml:space="preserve">
+    <value>Новая цена не должна быть равна текущей цене.</value>
+  </data>
+  <data name="NoRadiostationSelected" xml:space="preserve">
+    <value>Необходимо выбрать хотя бы одну радиостанцию.</value>
+  </data>
+  <data name="Fan" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Resources\Веерное размещение.png;System.Byte[], mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </data>
+  <data name="ImpossibleSetAdvertType" xml:space="preserve">
+    <value>Для того, чтобы назначить предмет рекламы для этого ролика, пожалуйста, используйте журнал рекламных акций.</value>
+  </data>
+  <data name="ExportProblemDirectoryDosntExist" xml:space="preserve">
+    <value>Указанная дирректория не существует. Убедитесь в правильности ввода и попробуйте снова.</value>
+  </data>
+  <data name="printer1" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Resources\printer.bmp;System.Drawing.Bitmap, System.Drawing, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="Ластик" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Resources\Ластик.png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="mute_roller" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Resources\mute_roller.png;System.Drawing.Bitmap, System.Drawing, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="ActJournalMassmediaExplamation" xml:space="preserve">
+    <value>В данной распечатке акта выполненных работ присутствуют выпуски на радиостанциях, которые не были отмечены как обработанные трафик-менеджером.</value>
+  </data>
+  <data name="CannotReadImportFile" xml:space="preserve">
+    <value>Невозможно прочитать импортируемый файл. Убедитесь что файл выбран правильно.</value>
+  </data>
+  <data name="DeactivationNotAllowed" xml:space="preserve">
+    <value>Только пользователь с правами администратора может деактивировать акцию, которая уже началась!</value>
+  </data>
+  <data name="SponsorTariffNotFound" xml:space="preserve">
+    <value>Не найден прайс-лист для программы '{0}' на указанную дату.</value>
+  </data>
+  <data name="PaymentTypeChangeSuccess" xml:space="preserve">
+    <value>Тип оплаты успешно изменён.</value>
+  </data>
+  <data name="TariffNotFound" xml:space="preserve">
+    <value>Не найден тариф для выполнения данной операции!</value>
+  </data>
+  <data name="OperationNotAllowed" xml:space="preserve">
+    <value>У вас нет прав на выполнение данной операции!</value>
+  </data>
+  <data name="CampaignExportSuccess" xml:space="preserve">
+    <value>Выпуски рекламной кампании проэкспортированы.</value>
+  </data>
+  <data name="AdvertTypeNotSelected" xml:space="preserve">
+    <value>Необходимо выбрать предмет рекламы.</value>
+  </data>
+  <data name="NoTariffWindowForGivenDate" xml:space="preserve">
+    <value>Для выбранной даты не сгенерированы рекламные окна.</value>
+  </data>
+  <data name="ActivationWithProgramIssuesWithoutAdvType" xml:space="preserve">
+    <value>Невозможно активировать акцию, так как она содержит выпуски спонсорских программ без предмета рекламы. Операция прервана.</value>
+  </data>
+  <data name="NoIssueSelected" xml:space="preserve">
+    <value>Вы ничего не выбрали. Пожалуйста, выберите хотя бы один рекламный выпуск. Операция прервана.</value>
+  </data>
+  <data name="ChangeAgencyIsForbidden" xml:space="preserve">
+    <value>Невозможно сменить агентство для выбранной рекламной кампании. Она либо завершилась, либо началась в одном из предыдущих месяцев.</value>
+  </data>
+  <data name="ModulePricelistNotFound" xml:space="preserve">
+    <value>Не найден прайс-лист для модуля '{0}' на указанную дату.</value>
+  </data>
+  <data name="LoginLoadMenu" xml:space="preserve">
+    <value>Загрузка меню приложения...</value>
+  </data>
+  <data name="LoginErrorWithSuperAdmin" xml:space="preserve">
+    <value>Невозможно осуществить вход в систему "Рекламное агенство" с ролью главного администратора.</value>
+  </data>
+  <data name="LicenseErrorProduct" xml:space="preserve">
+    <value>Ошибка при проверке лицензии.{0}Лицензия зарегистрированная на другой продукт.</value>
+  </data>
+  <data name="AdvertTypeMastBeSelected" xml:space="preserve">
+    <value>Для редактирования активированной спонскорской компании необходимо выбрать предмет рекламы.</value>
+  </data>
+  <data name="TitleGetRollerForSubstitude" xml:space="preserve">
+    <value>Выберите ролик для замены.</value>
+  </data>
+  <data name="StartDateShouldBeInsidePricelistDates" xml:space="preserve">
+    <value>Значение поля 'Начиная с' не должно быть меньше даты начала действия прайс-листа: {0}.</value>
+  </data>
+  <data name="calendar" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Icons\calendar.ico;System.Drawing.Bitmap, System.Drawing, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="NoAgencySelected" xml:space="preserve">
+    <value>Необходимо выбрать хотя бы одно агентство.</value>
+  </data>
+  <data name="SponsorPricelistNotFound" xml:space="preserve">
+    <value>Не найден прайс-лист для программы '{0}' на указанную дату.</value>
+  </data>
+  <data name="ChangePaymentTypeIsForbidden" xml:space="preserve">
+    <value>Невозможно сменить тип оплаты для выбранной рекламной кампании. Она либо завершилась, либо началась в одном из предыдущих месяцев.</value>
+  </data>
+  <data name="open3" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Resources\open.png;System.Drawing.Bitmap, System.Drawing, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="FinishDateShouldBeInsidePricelistDates" xml:space="preserve">
+    <value>Значение поля 'Оканчивая' должно быть больше даты окончания действия прайс-листа: {0}.</value>
+  </data>
+  <data name="LicenseCheck" xml:space="preserve">
+    <value>Проверка лицензии...</value>
+  </data>
+  <data name="NoPricelistForGivenDate" xml:space="preserve">
+    <value>Для выбранной даты отсутствует прайс-лист.</value>
+  </data>
+  <data name="erase2" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Resources\erase2.png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="ExportProblem" xml:space="preserve">
+    <value>При экспорте произошли ошибки. Возможно, не все файлы проэкспортировались. Обратитесь к вашему системному администратору за помощью.</value>
+  </data>
+  <data name="LicenseError" xml:space="preserve">
+    <value>Неудалось проверить лицензию или она просрочена.</value>
+  </data>
+  <data name="DummyRollerWithZeroDuration" xml:space="preserve">
+    <value>Вы пытаетесь создать ролик-пустышку с нулевой прододжительностью. Это запрещено.</value>
+  </data>
+  <data name="ExportProblemTitle" xml:space="preserve">
+    <value>Проблемы при экспорте</value>
   </data>
   <data name="CheckNewMessage" xml:space="preserve">
     <value>Проверка новых сообщений в системе...</value>
@@ -130,157 +280,19 @@
   <data name="LicenseErrorCannotAddMassmedia" xml:space="preserve">
     <value>Невозможно добавить СМИ, так как будет превышено максимальное возможное количество СМИ, разрешенное по лицензии.</value>
   </data>
-  <data name="TitleGetRollerForSubstitude" xml:space="preserve">
-    <value>Выберите ролик для замены.</value>
+  <data name="FirmChangeSuccess" xml:space="preserve">
+    <value>Фирма-заказчик успешно изменена.</value>
   </data>
-  <data name="CannotReadImportFile" xml:space="preserve">
-    <value>Невозможно прочитать импортируемый файл. Убедитесь что файл выбран правильно.</value>
-  </data>
-  <data name="mute_roller" type="System.Resources.ResXFileRef, System.Windows.Forms">
-    <value>..\Resources\mute_roller.png;System.Drawing.Bitmap, System.Drawing, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
-  </data>
-  <data name="printer1" type="System.Resources.ResXFileRef, System.Windows.Forms">
-    <value>..\Resources\printer.bmp;System.Drawing.Bitmap, System.Drawing, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
-  </data>
-  <data name="LicenseErrorMassmediaCount" xml:space="preserve">
-    <value>Ошибка при проверке лицензии.{0}Превышено максимальное число СМИ.</value>
-  </data>
-  <data name="LicenseErrorProduct" xml:space="preserve">
-    <value>Ошибка при проверке лицензии.{0}Лицензия зарегистрированная на другой продукт.</value>
-  </data>
-  <data name="calendar" type="System.Resources.ResXFileRef, System.Windows.Forms">
-    <value>..\Icons\calendar.ico;System.Drawing.Bitmap, System.Drawing, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
-  </data>
-  <data name="GoLeft" type="System.Resources.ResXFileRef, System.Windows.Forms">
-    <value>..\Icons\GoLeft.ICO;System.Drawing.Bitmap, System.Drawing, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
-  </data>
-  <data name="LoginLoadMenu" xml:space="preserve">
-    <value>Загрузка меню приложения...</value>
-  </data>
-  <data name="CampaignIssuesTransfersTitle" xml:space="preserve">
-    <value>Журнал переносов кампании</value>
-  </data>
-  <data name="LicenseError" xml:space="preserve">
-    <value>Неудалось проверить лицензию или она просрочена.</value>
-  </data>
-  <data name="LicenseCheck" xml:space="preserve">
-    <value>Проверка лицензии...</value>
-  </data>
-  <data name="open3" type="System.Resources.ResXFileRef, System.Windows.Forms">
-    <value>..\Resources\open.png;System.Drawing.Bitmap, System.Drawing, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
-  </data>
-  <data name="CannotReadExportFile" xml:space="preserve">
-    <value>Невозможно прочитать файл, или формат файла не верный. Операция прервана.</value>
-  </data>
-  <data name="CampaignExportSuccess" xml:space="preserve">
-    <value>Выпуски рекламной кампании проэкспортированы.</value>
-  </data>
-  <data name="ExportDifferentMassmedias" xml:space="preserve">
-    <value>СМИ данной кампании отличается от СМИ экспортируемого файла.</value>
-  </data>
-  <data name="ActJournalMassmediaExplamation" xml:space="preserve">
-    <value>В данной распечатке акта выполненных работ присутствуют выпуски на радиостанциях, которые не были отмечены как обработанные трафик-менеджером.</value>
-  </data>
-  <data name="DeleteActionsInPastCompleted" xml:space="preserve">
-    <value>Неактивированные акции в прошлом успешно удалены.</value>
-  </data>
-  <data name="ExportProblem" xml:space="preserve">
-    <value>При экспорте произошли ошибки. Возможно, не все файлы проэкспортировались. Обратитесь к вашему системному администратору за помощью.</value>
-  </data>
-  <data name="ExportProblemDirectoryDosntExist" xml:space="preserve">
-    <value>Указанная дирректория не существует. Убедитесь в правильности ввода и попробуйте снова.</value>
-  </data>
-  <data name="ExportProblemTitle" xml:space="preserve">
-    <value>Проблемы при экспорте</value>
-  </data>
-  <data name="ChangeAgencyIsForbidden" xml:space="preserve">
-    <value>Невозможно сменить агентство для выбранной рекламной кампании. Она либо завершилась, либо началась в одном из предыдущих месяцев.</value>
-  </data>
-  <data name="ChangePaymentTypeIsForbidden" xml:space="preserve">
-    <value>Невозможно сменить тип оплаты для выбранной рекламной кампании. Она либо завершилась, либо началась в одном из предыдущих месяцев.</value>
-  </data>
-  <data name="ModulePricelistNotFound" xml:space="preserve">
-    <value>Не найден прайс-лист для модуля '{0}' на указанную дату.</value>
-  </data>
-  <data name="SponsorPricelistNotFound" xml:space="preserve">
-    <value>Не найден прайс-лист для программы '{0}' на указанную дату.</value>
-  </data>
-  <data name="SponsorTariffNotFound" xml:space="preserve">
-    <value>Не найден прайс-лист для программы '{0}' на указанную дату.</value>
+  <data name="erase" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Resources\erase.png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
   </data>
   <data name="PackModulePricelistNotFound" xml:space="preserve">
     <value>Не найден прайс-лист для пакетного модуля '{0}' на указанную дату.</value>
   </data>
-  <data name="SubstitutionImpossibleForDummyRoller" xml:space="preserve">
-    <value>Вы пытаетесь заменить рекламный ролик в активированной рекламной акции на ролик-пустышку без предмета рекламы. Операция прервана.</value>
+  <data name="LicenseErrorMassmediaCount" xml:space="preserve">
+    <value>Ошибка при проверке лицензии.{0}Превышено максимальное число СМИ.</value>
   </data>
-  <data name="NoIssueSelected" xml:space="preserve">
-    <value>Вы ничего не выбрали. Пожалуйста, выберите хотя бы один рекламный выпуск. Операция прервана.</value>
-  </data>
-  <data name="DummyRollerWithZeroDuration" xml:space="preserve">
-    <value>Вы пытаетесь создать ролик-пустышку с нулевой прододжительностью. Это запрещено.</value>
-  </data>
-  <data name="NoAgencySelected" xml:space="preserve">
-    <value>Необходимо выбрать хотя бы одно агентство.</value>
-  </data>
-  <data name="NoContractDateSet" xml:space="preserve">
-    <value>Необходимо указать дату подписания договора для всех выбранных агентств</value>
-  </data>
-  <data name="AdvertTypeNotSelected" xml:space="preserve">
-    <value>Необходимо выбрать предмет рекламы.</value>
-  </data>
-  <data name="AgencyChangeSuccess" xml:space="preserve">
-    <value>Рекламное агентство успешно изменено.</value>
-  </data>
-  <data name="FirmChangeSuccess" xml:space="preserve">
-    <value>Фирма-заказчик успешно изменена.</value>
-  </data>
-  <data name="PaymentTypeChangeSuccess" xml:space="preserve">
-    <value>Тип оплаты успешно изменён.</value>
-  </data>
-  <data name="ActivationWithProgramIssuesWithoutAdvType" xml:space="preserve">
-    <value>Невозможно активировать акцию, так как она содержит выпуски спонсорских программ без предмета рекламы. Операция прервана.</value>
-  </data>
-  <data name="NoRadiostationSelected" xml:space="preserve">
-    <value>Необходимо выбрать хотя бы одну радиостанцию.</value>
-  </data>
-  <data name="NoCampaignTypeSelected" xml:space="preserve">
-    <value>Необходимо выбрать тип рекламной кампании.</value>
-  </data>
-  <data name="FinishDateShouldBeInsidePricelistDates" xml:space="preserve">
-    <value>Значение поля 'Оканчивая' должно быть больше даты окончания действия прайс-листа: {0}.</value>
-  </data>
-  <data name="NewPriceShouldBeDifferent" xml:space="preserve">
-    <value>Новая цена не должна быть равна текущей цене.</value>
-  </data>
-  <data name="StartDateShouldBeInsidePricelistDates" xml:space="preserve">
-    <value>Значение поля 'Начиная с' не должно быть меньше даты начала действия прайс-листа: {0}.</value>
-  </data>
-  <data name="NoPricelistForGivenDate" xml:space="preserve">
-    <value>Для выбранной даты отсутствует прайс-лист.</value>
-  </data>
-  <data name="NoTariffWindowForGivenDate" xml:space="preserve">
-    <value>Для выбранной даты не сгенерированы рекламные окна.</value>
-  </data>
-  <data name="FirmImportResult" xml:space="preserve">
-    <value>Успешно проимпортировано фирм: {0}.</value>
-  </data>
-  <data name="DeactivationNotAllowed" xml:space="preserve">
-    <value>Только пользователь с правами администратора может деактивировать акцию, которая уже началась!</value>
-  </data>
-  <data name="ImpossibleSetAdvertType" xml:space="preserve">
-    <value>Для того, чтобы назначить предмет рекламы для этого ролика, пожалуйста, используйте журнал рекламных акций.</value>
-  </data>
-  <data name="OperationNotAllowed" xml:space="preserve">
-    <value>У вас нет прав на выполнение данной операции!</value>
-  </data>
-  <data name="AdvertTypeMastBeSelected" xml:space="preserve">
-    <value>Для редактирования активированной спонскорской компании необходимо выбрать предмет рекламы.</value>
-  </data>
-  <data name="TariffNotFound" xml:space="preserve">
-    <value>Не найден тариф для выполнения данной операции!</value>
-  </data>
-  <data name="Fan" type="System.Resources.ResXFileRef, System.Windows.Forms">
-    <value>..\Resources\Веерное размещение.png;System.Byte[], mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  <data name="Ластик1" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Resources\Ластик1.png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
   </data>
 </root>
