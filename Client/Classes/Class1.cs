@@ -19,8 +19,8 @@ namespace Merlin.Classes
                 totalDays: 29,
                 rows: new[]
                 {
-            BuildRow(1, "Европа Плюс", 20, RollerPositions.First, 63, 63, 24, 24, 30000),
-            BuildRow(2, "Маруся ФМ",   20, RollerPositions.First, 63, 63, 24, 24, 28867),
+            BuildRow(1, "Европа Плюс (Ярославль)", 20, RollerPositions.First, 63, 63, 24, 24, 30000, "Ярославль", "Евр+"),
+            BuildRow(2, "Маруся ФМ (Ярославль)",   20, RollerPositions.First, 63, 63, 24, 24, 28867, "Ярославль2", "Маруся"),
                 },
                 grandTotal: 58867
             ));
@@ -31,8 +31,8 @@ namespace Merlin.Classes
     totalDays: 29,
     rows: new[]
     {
-            BuildRow(1, "Европа Плюс", 10, RollerPositions.First, 63, 63, 24, 24, 310000),
-            BuildRow(2, "Маруся ФМ",   20, RollerPositions.First, 63, 63, 24, 24, 2867),
+            BuildRow(1, "Европа Плюс", 10, RollerPositions.First, 63, 63, 24, 24, 310000, "Кострома", "RRR"),
+            BuildRow(2, "Маруся ФМ",   20, RollerPositions.First, 63, 63, 24, 24, 2867, "рыбинск", "Маруся"),
     },
     grandTotal: 9999
 ));
@@ -43,8 +43,8 @@ namespace Merlin.Classes
                 totalDays: 29,
                 rows: new[]
                 {
-            BuildRow(1, "Европа Плюс", 20, RollerPositions.First, 63, 63, 24, 24, 31000),
-            BuildRow(3, "Радио Дача",  20, RollerPositions.First, 63, 63, 24, 24, 27856),
+            BuildRow(1, "Европа Плюс", 20, RollerPositions.First, 63, 63, 24, 24, 11, "Ярославль", "Европа"),
+            BuildRow(3, "Радио Дача",  20, RollerPositions.First, 63, 63, 24, 24, 12, "Ярославль", "Дача"),
                 },
                 grandTotal: 58856
             ));
@@ -56,8 +56,8 @@ namespace Merlin.Classes
                 totalDays: 30,
                 rows: new[]
                 {
-            BuildRow(4, "NRG",       15, RollerPositions.Last, 40, 40, 10, 10, 42000),
-            BuildRow(5, "Хит FM",    15, RollerPositions.Last, 40, 40, 10, 10, 38000),
+            BuildRow(4, "NRG",       15, RollerPositions.Last, 40, 40, 10, 10, 42000, "Ярославль", "Евр+"),
+            BuildRow(5, "Хит FM",    15, RollerPositions.Last, 40, 40, 10, 10, 38000, "Ярославль", "Евр+"),
                 },
                 grandTotal: 80000
             ));
@@ -68,8 +68,8 @@ namespace Merlin.Classes
                 totalDays: 30,
                 rows: new[]
                 {
-            BuildRow(4, "NRG",       15, RollerPositions.Last, 40, 40, 10, 10, 45000),
-            BuildRow(6, "Юмор FM",   15, RollerPositions.Last, 40, 40, 10, 10, 37000),
+            BuildRow(4, "NRG",       15, RollerPositions.Last, 40, 40, 10, 10, 45000, "Ярославль", "Евр+"),
+            BuildRow(6, "Юмор FM",   15, RollerPositions.Last, 40, 40, 10, 10, 37000, "Ярославль", "Евр+"),
                 },
                 grandTotal: 82000
             ));
@@ -105,7 +105,9 @@ namespace Merlin.Classes
             int npw,
             int pwe,
             int npwe,
-            decimal totalAmount)
+            decimal totalAmount,
+            string groupName,
+            string shortName)
         {
             return new CampaignCalcRow
             {
@@ -120,7 +122,10 @@ namespace Merlin.Classes
                 PrimeTotalSpotsWeekend = pwe,
                 NonPrimeTotalSpotsWeekend = npwe,
 
-                TotalAmount = totalAmount
+                TotalAmount = totalAmount,
+                GroupName = groupName,
+                ShortName = shortName,
+                TotalAfterPackage = 200
             };
         }
     }

@@ -19,8 +19,7 @@ namespace Merlin.Forms
         private void InitializeComponent()
         {
             this.tabControl1 = new System.Windows.Forms.TabControl();
-            this.tabPage1 = new System.Windows.Forms.TabPage();
-            this.grdPriceCalculator = new Merlin.Controls.PriceCalculatorGrid();
+            this.tpCalc = new System.Windows.Forms.TabPage();
             this.tabPage2 = new System.Windows.Forms.TabPage();
             this.flpSaved = new System.Windows.Forms.FlowLayoutPanel();
             this.pnlTop = new System.Windows.Forms.Panel();
@@ -31,16 +30,17 @@ namespace Merlin.Forms
             this.btnDeleteAllChecked = new System.Windows.Forms.Button();
             this.btnCreaateProposal = new System.Windows.Forms.Button();
             this.chkAll = new System.Windows.Forms.CheckBox();
+            this.grdPriceCalculator = new Merlin.Controls.PriceCalculatorGrid();
             this.templateEditor = new Merlin.Controls.TemplateEditorControl();
             this.tabControl1.SuspendLayout();
-            this.tabPage1.SuspendLayout();
+            this.tpCalc.SuspendLayout();
             this.tabPage2.SuspendLayout();
             this.pnlTop.SuspendLayout();
             this.SuspendLayout();
             // 
             // tabControl1
             // 
-            this.tabControl1.Controls.Add(this.tabPage1);
+            this.tabControl1.Controls.Add(this.tpCalc);
             this.tabControl1.Controls.Add(this.tabPage2);
             this.tabControl1.Dock = System.Windows.Forms.DockStyle.Fill;
             this.tabControl1.Location = new System.Drawing.Point(0, 238);
@@ -49,27 +49,16 @@ namespace Merlin.Forms
             this.tabControl1.Size = new System.Drawing.Size(1540, 712);
             this.tabControl1.TabIndex = 5;
             // 
-            // tabPage1
+            // tpCalc
             // 
-            this.tabPage1.Controls.Add(this.grdPriceCalculator);
-            this.tabPage1.Location = new System.Drawing.Point(4, 34);
-            this.tabPage1.Name = "tabPage1";
-            this.tabPage1.Padding = new System.Windows.Forms.Padding(3);
-            this.tabPage1.Size = new System.Drawing.Size(1532, 674);
-            this.tabPage1.TabIndex = 0;
-            this.tabPage1.Text = "Расчёты";
-            this.tabPage1.UseVisualStyleBackColor = true;
-            // 
-            // grdPriceCalculator
-            // 
-            this.grdPriceCalculator.Dock = System.Windows.Forms.DockStyle.Fill;
-            this.grdPriceCalculator.Location = new System.Drawing.Point(3, 3);
-            this.grdPriceCalculator.Margin = new System.Windows.Forms.Padding(0);
-            this.grdPriceCalculator.Name = "grdPriceCalculator";
-            this.grdPriceCalculator.Size = new System.Drawing.Size(1526, 668);
-            this.grdPriceCalculator.SummaryUpdater = null;
-            this.grdPriceCalculator.TabIndex = 2;
-            this.grdPriceCalculator.UseManagerDiscountPeriods = true;
+            this.tpCalc.Controls.Add(this.grdPriceCalculator);
+            this.tpCalc.Location = new System.Drawing.Point(4, 34);
+            this.tpCalc.Name = "tpCalc";
+            this.tpCalc.Padding = new System.Windows.Forms.Padding(3);
+            this.tpCalc.Size = new System.Drawing.Size(1532, 674);
+            this.tpCalc.TabIndex = 0;
+            this.tpCalc.Text = "Расчёты";
+            this.tpCalc.UseVisualStyleBackColor = true;
             // 
             // tabPage2
             // 
@@ -112,17 +101,18 @@ namespace Merlin.Forms
             // button1
             // 
             this.button1.Image = global::Merlin.Properties.Resources.Ластик;
-            this.button1.Location = new System.Drawing.Point(1310, 16);
+            this.button1.Location = new System.Drawing.Point(1300, 16);
             this.button1.Name = "button1";
-            this.button1.Size = new System.Drawing.Size(155, 43);
+            this.button1.Size = new System.Drawing.Size(48, 35);
             this.button1.TabIndex = 7;
             this.button1.UseVisualStyleBackColor = true;
+            this.button1.Click += new System.EventHandler(this.button1_Click);
             // 
             // txtFirmName
             // 
             this.txtFirmName.Location = new System.Drawing.Point(894, 20);
             this.txtFirmName.Name = "txtFirmName";
-            this.txtFirmName.Size = new System.Drawing.Size(329, 31);
+            this.txtFirmName.Size = new System.Drawing.Size(400, 31);
             this.txtFirmName.TabIndex = 6;
             // 
             // cmbAgency
@@ -174,6 +164,17 @@ namespace Merlin.Forms
             this.chkAll.Text = "Выбрать все";
             this.chkAll.UseVisualStyleBackColor = true;
             // 
+            // grdPriceCalculator
+            // 
+            this.grdPriceCalculator.Dock = System.Windows.Forms.DockStyle.Fill;
+            this.grdPriceCalculator.Location = new System.Drawing.Point(3, 3);
+            this.grdPriceCalculator.Margin = new System.Windows.Forms.Padding(0);
+            this.grdPriceCalculator.Name = "grdPriceCalculator";
+            this.grdPriceCalculator.Size = new System.Drawing.Size(1526, 668);
+            this.grdPriceCalculator.SummaryUpdater = null;
+            this.grdPriceCalculator.TabIndex = 2;
+            this.grdPriceCalculator.UseManagerDiscountPeriods = true;
+            // 
             // templateEditor
             // 
             this.templateEditor.AutoSize = true;
@@ -203,7 +204,7 @@ namespace Merlin.Forms
             this.StartPosition = System.Windows.Forms.FormStartPosition.CenterScreen;
             this.Text = "Калькулятор кампании";
             this.tabControl1.ResumeLayout(false);
-            this.tabPage1.ResumeLayout(false);
+            this.tpCalc.ResumeLayout(false);
             this.tabPage2.ResumeLayout(false);
             this.pnlTop.ResumeLayout(false);
             this.pnlTop.PerformLayout();
@@ -215,7 +216,7 @@ namespace Merlin.Forms
         #endregion
         private Controls.TemplateEditorControl templateEditor;
         private TabControl tabControl1;
-        private TabPage tabPage1;
+        private TabPage tpCalc;
         private Controls.PriceCalculatorGrid grdPriceCalculator;
         private TabPage tabPage2;
         private FlowLayoutPanel flpSaved;

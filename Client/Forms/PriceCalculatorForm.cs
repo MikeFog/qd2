@@ -21,6 +21,10 @@ namespace Merlin.Forms
     {
         private readonly List<CampaignCalcSnapshot> _saved = new List<CampaignCalcSnapshot>();
         private decimal _lastTotalAfterPackage;
+        
+        // ✅ Добавляем поле для отслеживания редактируемого варианта
+        private CampaignCalcSnapshot _editingSnapshot = null;
+        
         private readonly string[] _columnsWithMoney = new[]
         {
             "Цена прайм будни",
@@ -131,6 +135,9 @@ namespace Merlin.Forms
 
         private void CalculateButton_Click(object sender, EventArgs e)
         {
+            // ✅ При новом расчете сбрасываем режим редактирования
+            _editingSnapshot = null;
+            
             if (!templateEditor.IsDaysOfWeekValid())
             {
                 FogSoft.WinForm.Forms.MessageBox.ShowExclamation("Выберите хотя бы один день недели");
@@ -170,7 +177,6 @@ namespace Merlin.Forms
                     templateEditor.ManagerDiscountModeSingle
                 );
 
-                // ✅ протянуть позицию из шаблона в таблицу грида после пересоздания данных
                 grdPriceCalculator.SetDefaultPosition(templateEditor.SelectedPosition);
             }
             catch (Exception ex)
@@ -422,11 +428,56 @@ namespace Merlin.Forms
         private void SaveVariant()
         {
             var snapshot = BuildSnapshot();
+            
+            // ✅ Проверяем, редактируем ли мы существующий вариант
+            if (_editingSnapshot != null)
+            {
+                // Спрашиваем пользователя, что делать
+                var result = MessageBox.Show(
+                    "Вы редактируете существующий вариант.\n\n" +
+                    "Да - перезаписать существующий вариант\n" +
+                    "Нет - сохранить как новый вариант\n" +
+                    "Отмена - отменить сохранение",
+                    "Сохранение варианта",
+                    MessageBoxButtons.YesNoCancel,
+                    MessageBoxIcon.Question);
+
+                if (result == DialogResult.Cancel)
+                {
+                    return; // Отменяем сохранение
+                }
+                else if (result == DialogResult.Yes)
+                {
+                    // Перезаписываем существующий вариант
+                    int index = _saved.IndexOf(_editingSnapshot);
+                    if (index >= 0)
+                    {
+                        _saved[index] = snapshot;
+                        _editingSnapshot = null; // Сбрасываем флаг редактирования
+                        RenderSavedVariants(_saved);
+                        return;
+                    }
+                    else
+                    {
+                        // Если вдруг не нашли (удалили пока редактировали), сохраняем как новый
+                        _editingSnapshot = null;
+                    }
+                }
+                else // DialogResult.No
+                {
+                    // Сохраняем как новый вариант
+                    _editingSnapshot = null; // Сбрасываем флаг редактирования
+                    // Продолжаем обычную логику сохранения ниже
+                }
+            }
+
+            // Обычная логика сохранения нового варианта
             if (_saved.Contains(snapshot))
             {
                 MessageBox.Show("Данный вариант уже добавлен.", "Сохранение не требуется", MessageBoxButtons.OK, MessageBoxIcon.Stop);
                 return;
             }
+            
             _saved.Add(snapshot);
             RenderSavedVariants(_saved);
         }
@@ -586,8 +637,8 @@ namespace Merlin.Forms
             };
             var btnApply = new Button
             {
-                Text = "Применить",
-                Width = 90,
+                Text = "Редактировать",
+                Width = 100,
                 Height = 26,
                 Location = new Point(30, details.Bottom + 8),
                 Tag = snap,
@@ -726,7 +777,24 @@ namespace Merlin.Forms
 
         private void ApplySnapshot(CampaignCalcSnapshot snap)
         {
+            // ✅ Устанавливаем флаг редактирования
+            _editingSnapshot = snap;
             LoadVariant(snap);
+            // ✅ Переключаемся на закладку с расчетами
+            if (tabControl1 != null && tpCalc != null)
+            {
+                tabControl1.SelectedTab = tpCalc;
+            }
+
+            // Устанавливаем фокус на редактор шаблона
+            templateEditor.Focus();
+
+        }
+
+        // ✅ Добавляем метод для сброса режима редактирования
+        private void ClearEditingMode()
+        {
+            _editingSnapshot = null;
         }
 
         public void LoadVariant(CampaignCalcSnapshot variant)
@@ -818,6 +886,12 @@ namespace Merlin.Forms
 
         private void DeleteSnapshot(CampaignCalcSnapshot snap)
         {
+            // ✅ Если удаляем редактируемый вариант, сбрасываем флаг
+            if (_editingSnapshot == snap)
+            {
+                _editingSnapshot = null;
+            }
+            
             _saved.Remove(snap);
             RenderSavedVariants(_saved);
         }
@@ -829,7 +903,14 @@ namespace Merlin.Forms
                 return;
 
             foreach (var snap in snapshots)
+            {
+                // ✅ Если удаляем редактируемый вариант, сбрасываем флаг
+                if (_editingSnapshot == snap)
+                {
+                    _editingSnapshot = null;
+                }
                 _saved.Remove(snap);
+            }
 
             RenderSavedVariants(_saved);
         }
@@ -896,6 +977,11 @@ namespace Merlin.Forms
             {
                 ErrorManager.PublishError(ex);
             }
+        }
+
+        private void button1_Click(object sender, EventArgs e)
+        {
+            txtFirmName.Text = string.Empty;
         }
     }
 }

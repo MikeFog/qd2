@@ -251,54 +251,31 @@ namespace Merlin.Cp
             using (var doc = WordprocessingDocument.Open(outputPath, true))
             {
                 var body = doc.MainDocumentPart.Document.Body;
-                
-                // Collect shared groupNames from all groups
-                var sharedGroupNames = split.Groups
-                    .Select(g => GetSharedGroupName(g))
-                    .Where(gn => !string.IsNullOrWhiteSpace(gn))
-                    .Distinct(StringComparer.OrdinalIgnoreCase)
-                    .ToList();
 
-                // Determine the groupName to use for the placeholder
-                string groupNameValue = sharedGroupNames.Count == 1 ? sharedGroupNames[0] : string.Empty;
-
-                // 0). Подстановка текстовых плейсхолдеров
-
-                ReplaceTextPlaceholders2(doc, new Dictionary<string, string>
-                {
-                    ["{{CLIENT_NAME}}"] = clientName,
-                    ["{{DOC_DATE}}"] = docDate.ToShortDateString(),
-                    ["{{DIRECTOR_NAME}}"] = directorName,
-                    ["{{CONTACT_NAME}}"] = contactName,
-                    ["{{CONTACT_EMAIL}}"] = contactEmail,
-                    ["{{CONTACT_PHONE}}"] = contactPhone,
-                    ["{{groupName}}"] = groupNameValue
-                });
-
+                // 0). Подстановка текстовых плейсхолдеров (убрали groupName отсюда)
                 ReplaceTextPlaceholdersPreserveStylesEverywhere(doc, new Dictionary<string, string>
                 {
                     ["{{CLIENT_NAME}}"] = clientName,
+                    ["{{STR1}}"] = string.IsNullOrEmpty(clientName) ? "по проведению рекламой кампании на радио" : "по проведению рекламой кампании на радио для",
                     ["{{DOC_DATE}}"] = docDate.ToString("dd.MM.yyyy"),
                     ["{{DIRECTOR_NAME}}"] = directorName,
                     ["{{CONTACT_NAME}}"] = contactName,
                     ["{{CONTACT_EMAIL}}"] = contactEmail,
-                    ["{{CONTACT_PHONE}}"] = contactPhone,
-                    ["{{groupName}}"] = groupNameValue
+                    ["{{CONTACT_PHONE}}"] = contactPhone
                 });
-
 
                 // 1) Ищем абзац-якорь с {{CONTENT}}
                 var anchorParagraph = FindAnchorParagraph(body, "{{CONTENT}}");
                 if (anchorParagraph == null)
                     throw new Exception("Не найден якорь {{CONTENT}} в шаблоне Word. Вставь {{CONTENT}} отдельным абзацем в нужное место.");
 
-                // 2) Генерим контент в список элементов (ничего не вставляем в документ по ходу генерации)
+                // 2) Генерим контент в список элементов
                 var generated = new List<OpenXmlElement>();
                 Action<OpenXmlElement> emit = e => generated.Add(e);
 
                 int blockNo = 1;
 
-                // КП-1 группы (включая группы из 1 варианта)
+                // КП-1 группы
                 foreach (var g in split.Groups)
                 {
                     if (blockNo > 1) AppendPageBreak(emit);
@@ -317,7 +294,7 @@ namespace Merlin.Cp
                     blockNo++;
                 }
 
-                // Детальные (ТОЛЬКО не-совместимые с КП-1)
+                // Детальные
                 foreach (var s in split.Remainder)
                 {
                     if (blockNo > 1) AppendPageBreak(emit);
@@ -326,7 +303,7 @@ namespace Merlin.Cp
                     blockNo++;
                 }
 
-                // 3) Вклеиваем элементы ПОСЛЕ якорного абзаца, сохраняя порядок
+                // 3) Вклеиваем элементы
                 OpenXmlElement cursor = anchorParagraph;
                 foreach (var el in generated)
                 {
@@ -334,7 +311,7 @@ namespace Merlin.Cp
                     cursor = el;
                 }
 
-                // 4) Удаляем якорь (целиком абзац)
+                // 4) Удаляем якорь
                 anchorParagraph.Remove();
 
                 doc.MainDocumentPart.Document.Save();
@@ -364,7 +341,13 @@ namespace Merlin.Cp
             string contactEmail,
             string contactPhone)
         {
-            emit(MakeParagraph($"{blockNo}) Линейная реклама на радио", bold: true, fontSize: "28"));
+            // Определяем groupName для этого блока
+            string blockGroupName = GetSharedGroupName(group);
+            string title = string.IsNullOrWhiteSpace(blockGroupName) 
+                ? $"{blockNo}) Линейная реклама на радио"
+                : $"{blockNo}) Линейная реклама на радио г. {blockGroupName}";
+            
+            emit(MakeParagraph(title, bold: true, fontSize: "28"));
             emit(MakeParagraph(string.Empty, bold: false));
 
             var pw = group.RowPattern.PrimeTotalSpotsWeekday;
@@ -389,9 +372,12 @@ namespace Merlin.Cp
             emit(MakeParagraph($"Позиционирование в рекламном блоке: {MapPosition(positionId)}", bold: false));
             emit(MakeParagraph(string.Empty, bold: false));
 
+            // ✅ Определяем для ВСЕЙ группы, можно ли использовать короткие имена
+            bool useShortNamesForGroup = !string.IsNullOrWhiteSpace(blockGroupName);
+
             var rows = group.Snapshots
                 .Select(s => new VariantRow { 
-                    StationsSet = BuildStationsSetText(s), 
+                    StationsSet = BuildStationsSetText(s, useShortNamesForGroup), 
                     Price = s.GrandTotal 
                 })
                 .OrderByDescending(x => x.Price)
@@ -433,11 +419,17 @@ namespace Merlin.Cp
             return table;
         }
 
-        // -------------------- БЛОК: ДЕТАЛЬНЫЙ (только remainder) --------------------
+        // -------------------- БЛОК: ДЕТАЛЬНЫЙ --------------------
 
         private static void AppendDetailedBlock(Action<OpenXmlElement> emit, int blockNo, CampaignCalcSnapshot s)
         {
-            emit(MakeParagraph($"{blockNo}) Линейная реклама на радио в Ярославле", bold: true, fontSize: "28"));
+            // Определяем groupName для этого блока
+            string blockGroupName = GetSharedGroupName(s);
+            string title = string.IsNullOrWhiteSpace(blockGroupName)
+                ? $"{blockNo}) Линейная реклама на радио"
+                : $"{blockNo}) Линейная реклама на радио г. {blockGroupName}";
+            
+            emit(MakeParagraph(title, bold: true, fontSize: "28"));
             emit(MakeParagraph($"Период: с {s.DateFrom:dd.MM.yyyy} до {s.DateTo:dd.MM.yyyy}", bold: false));
 
             var totalDur = TimeSpan.FromSeconds(Math.Max(0, s.TotalDuration));
@@ -463,17 +455,28 @@ namespace Merlin.Cp
                     new InsideHorizontalBorder { Val = BorderValues.Single, Size = 4 },
                     new InsideVerticalBorder { Val = BorderValues.Single, Size = 4 })));
 
+            // ✅ Добавлена колонка "Место\nв блоке" после "Ролик\n(сек)"
             table.AppendChild(BuildHeaderRow(new[]
             {
                 "Радиостанции",
-                "Ролик\n(сек)",
-                "Кол-во\nвыходов\nбудни\nпрайм",
-                "Кол-во\nвыходов\nбудни\nне прайм",
-                "Кол-во\nвыходов\nвыходные\nпрайм",
-                "Кол-во\nвыходов\nвыходные\nне прайм",
-                "Всего\nвыходов",
-                "Стоимость\nрекламной\nакции"
+                "Ролик (сек)",
+                "Место в блоке",
+                "Кол-во выходов будни прайм",
+                "Кол-во выходов будни не прайм",
+                "Кол-во выходов выходные прайм",
+                "Кол-во выходов выходные не прайм",
+                "Всего выходов",
+                "Стоимость рекламной акции"
             }));
+
+            // Определяем, все ли строки имеют одинаковый GroupName
+            var allGroupNames = (s.Rows ?? new List<CampaignCalcRow>())
+                .Where(r => !string.IsNullOrWhiteSpace(r.GroupName))
+                .Select(r => r.GroupName.Trim())
+                .Distinct(StringComparer.OrdinalIgnoreCase)
+                .ToList();
+
+            bool useShortNames = allGroupNames.Count == 1;
 
             foreach (var r in (s.Rows ?? new List<CampaignCalcRow>()))
             {
@@ -483,10 +486,17 @@ namespace Merlin.Cp
                     r.PrimeTotalSpotsWeekend +
                     r.NonPrimeTotalSpotsWeekend;
 
+                // Используем ShortName, если все GroupName одинаковые, иначе полное StationName
+                string stationName = useShortNames && !string.IsNullOrWhiteSpace(r.ShortName)
+                    ? r.ShortName
+                    : (r.StationName ?? "");
+
+                // ✅ Добавлено значение позиции MapPosition(r.Position)
                 table.AppendChild(BuildDataRow(new[]
                 {
-                    r.StationName ?? "",
+                    stationName,
                     r.RollerDuration.ToString(),
+                    MapPosition(r.Position),
                     r.PrimeTotalSpotsWeekday.ToString(),
                     r.NonPrimeTotalSpotsWeekday.ToString(),
                     r.PrimeTotalSpotsWeekend.ToString(),
@@ -523,31 +533,37 @@ namespace Merlin.Cp
             return allGroupNames.Count == 1 ? allGroupNames[0] : null;
         }
 
-        private static string BuildStationsSetText(CampaignCalcSnapshot s)
+        // Перегрузка для одного снапшота (для детальных блоков)
+        private static string GetSharedGroupName(CampaignCalcSnapshot snapshot)
         {
-            if (s?.Rows == null || s.Rows.Count == 0)
-                return string.Empty;
+            if (snapshot?.Rows == null || snapshot.Rows.Count == 0)
+                return null;
 
-            // Check if all rows have the same groupName (and it's not null/empty)
-            var allGroupNames = s.Rows
+            var allGroupNames = snapshot.Rows
                 .Where(r => !string.IsNullOrWhiteSpace(r.GroupName))
                 .Select(r => r.GroupName.Trim())
                 .Distinct(StringComparer.OrdinalIgnoreCase)
                 .ToList();
 
-            bool useSameGroup = allGroupNames.Count == 1;
+            return allGroupNames.Count == 1 ? allGroupNames[0] : null;
+        }
+
+        private static string BuildStationsSetText(CampaignCalcSnapshot s, bool useShortNames)
+        {
+            if (s?.Rows == null || s.Rows.Count == 0)
+                return string.Empty;
 
             IEnumerable<string> names;
-            if (useSameGroup)
+            if (useShortNames)
             {
-                // Use shortName when all rows share the same groupName
+                // Use shortName when instructed
                 names = s.Rows
                     .Where(r => !string.IsNullOrWhiteSpace(r.ShortName))
                     .Select(r => r.ShortName.Trim());
             }
             else
             {
-                // Use StationName (full name with group) otherwise
+                // Use StationName (full name with group)
                 names = s.Rows
                     .Where(r => !string.IsNullOrWhiteSpace(r.StationName))
                     .Select(r => r.StationName.Trim());
