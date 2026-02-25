@@ -47,7 +47,7 @@ namespace Merlin.Classes
 			return ParseHelper.ParseToBoolean(user.DataRow["isRightToViewGroupSOActions"].ToString());
 		}
 
-		public static bool IsAcceptRatioForUser(this SecurityManager.User user, float ratio, DateTime startDate, DateTime finishDate)
+		public static bool IsAcceptRatioForUser(this SecurityManager.User user, decimal ratio, DateTime startDate, DateTime finishDate)
 		{
 			Dictionary<string, object> parametersDictionary = DataAccessor.CreateParametersDictionary();
 			parametersDictionary.Add(SecurityManager.ParamNames.UserId, user.Id);

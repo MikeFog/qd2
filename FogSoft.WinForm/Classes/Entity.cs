@@ -397,7 +397,7 @@ namespace FogSoft.WinForm.Classes
 			{
 				foreach (Attribute attribute in SortedAttributes)
 				{
-					if ((new List<string> {"money", "float", "datetime", "real", "smallmoney", "numeric", "int"})
+					if ((new List<string> {"money", "float", "datetime", "real", "smallmoney", "numeric", "int", "decimal"})
 						.Contains(attribute.DataType.ToLower()))
 					{
 						dictionary.Add(attribute.Name, attribute.Alias);

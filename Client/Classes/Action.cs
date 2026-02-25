@@ -189,9 +189,9 @@ namespace Merlin.Classes
 			get { return ParseHelper.GetDecimalFromObject(this[ParamNames.TariffPrice], 0); }
 		}
 
-		public float Discount
+		public decimal Discount
 		{
-			get { return ParseHelper.GetFloatFromObject(this[ParamNames.Discount], 0); }
+			get { return ParseHelper.GetDecimalFromObject(this[ParamNames.Discount], 0); }
 		}
 
 		public decimal TotalPrice

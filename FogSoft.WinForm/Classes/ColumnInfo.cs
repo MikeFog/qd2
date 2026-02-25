@@ -27,16 +27,24 @@ namespace FogSoft.WinForm.Classes
 		//TODO: Temporary solution. Change later
 		public readonly decimal MaxValue = 100000;
 		public readonly decimal MinValue = -100000;
+		public readonly int? Precision;
+		public readonly int? Scale;	
 
-		public ColumnInfo(DataRow row)
+        public ColumnInfo(DataRow row)
 		{
 			ColumnName = row["column_name"].ToString();
 			DataType = row["data_type"].ToString();			
 			IsNullable = row["is_nullable"].ToString().ToLower() == "yes";
-
+			/*
 			if(row["CHARACTER_MAXIMUM_LENGTH"] != DBNull.Value)
 				MaxLength = ParseHelper.ParseToInt32(row["CHARACTER_MAXIMUM_LENGTH"].ToString(), 0);
+			
+			if(row["NUMERIC_PRECISION"] != DBNull.Value)
+				Precision = ParseHelper.ParseToInt32(row["NUMERIC_PRECISION"].ToString(), 0);
 
+			if(row["NUMERIC_SCALE"] != DBNull.Value)
+				Scale = ParseHelper.ParseToInt32(row["NUMERIC_SCALE"].ToString(), 0);
+			*/
 			string defValue = ProcessDefaultValue(row["column_default"]);
 			switch(DataType.ToLower())
 			{
@@ -120,8 +128,13 @@ namespace FogSoft.WinForm.Classes
 
 		public static bool IsMoneyData(ColumnInfo columnInfo, Entity.Attribute attribute)
 		{
-			return IsSQLType(columnInfo, attribute, SqlDbType.Money);
-		}
+			if( IsSQLType(columnInfo, attribute, SqlDbType.Money)) return true;
+            if (IsSQLType(columnInfo, attribute, SqlDbType.Decimal) && columnInfo != null)
+            {
+                return columnInfo.Precision == 18 && columnInfo.Scale == 2;
+            }
+			return false;
+        }
 
 		public static bool IsFloatData(ColumnInfo columnInfo, Entity.Attribute attribute)
 		{

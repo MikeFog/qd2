@@ -97,7 +97,7 @@ namespace Merlin.Forms
 
 		private void btnOk_Click(object sender, EventArgs e)
 		{
-			if(!SecurityManager.LoggedUser.IsAdmin && !SecurityManager.LoggedUser.IsAcceptRatioForUser((float)decimal.ToDouble(txtRatio.Value), startDate, finishDate))
+			if(!SecurityManager.LoggedUser.IsAdmin && !SecurityManager.LoggedUser.IsAcceptRatioForUser(txtRatio.Value, startDate, finishDate))
 			{
 				grantor = Utils.AskConfirmation(this);
 				if(grantor != null)
