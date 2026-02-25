@@ -7,6 +7,7 @@ using Merlin.Forms.CreateActionMaster;
 using Merlin.Forms.CreateCampaign;
 using System;
 using System.Data;
+using System.Diagnostics;
 using System.Windows.Forms;
 using Action = Merlin.Classes.Action;
 
@@ -323,18 +324,37 @@ namespace Merlin.Forms
                     try
                     {
                         DataAccessor.BeginTransaction();
-						foreach (DataRow row in dataTable.Rows)
-						{
-							Campaign campaign = new Campaign(row);
-							
-							var newP = form.IsManagerDiscount ? form.ManagerDiscount * campaign.Discount * campaign.PackDiscount * campaign.TariffPrice
-								: form.FinalPrice * campaign.FullPrice / _action.TotalPrice; 
+                        decimal distributedSoFar = 0m;
+                        int rowCount = dataTable.Rows.Count;
 
+                        for (int i = 0; i < rowCount; i++)
+                        {
+                            DataRow row = dataTable.Rows[i];
+                            Campaign campaign = new Campaign(row);
+                            decimal newP;
+
+                            if (i == rowCount - 1)
+                            {
+                                // ѕќ—Ћ≈ƒЌяя —“–ќ ј: забирает всЄ, что осталось от целевой суммы
+                                newP = form.FinalPrice - distributedSoFar;
+                            }
+                            else
+                            {
+                                // ќЅџ„Ќјя —“–ќ ј: считаем долю и жестко округл€ем до копеек
+                                decimal rawP = form.IsManagerDiscount
+                                    ? form.ManagerDiscount * campaign.Discount * campaign.PackDiscount * campaign.TariffPrice
+                                    : form.FinalPrice * campaign.FullPrice / _action.TotalPrice;
+
+                                newP = Math.Round(rawP, 2, MidpointRounding.AwayFromZero);
+                                distributedSoFar += newP;
+                            }
+
+                            Debug.WriteLine($"Campaign {i}: {newP}");
                             campaign.SetFinalPrice(newP, form.SelectedDate, SecurityManager.LoggedUser.Id);
-						}
+                        }
                         _action.Recalculate(refreshFlag: true, todayDate: form.SelectedDate	);
                         DataAccessor.CommitTransaction();
-					}
+                    }
 					catch  
 					{
                         DataAccessor.RollbackTransaction();
@@ -342,7 +362,7 @@ namespace Merlin.Forms
                     }
                     //action.Refresh();
                     grdCampaign.DataSource = _action.Campaigns(true).DefaultView;
-                    RefreshActionStats(false);
+                    RefreshActionStats(true);
                 }
             }
             catch (Exception ex)
