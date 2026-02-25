@@ -72,8 +72,18 @@ namespace Merlin.Forms
             if (_selectionMode == SelectionMode.Split)
             {
                 dtData = _action.SetCampaignsFilterByType(Campaign.CampaignTypes.Simple);
-                dtData.Columns.Add(SPLITTYPE_COLUMN_NAME, typeof(int));
-                dtData.Columns.Add(SPLITDATE_COLUMN_NAME, typeof(DateTime));
+                
+                var splitTypeColumn = dtData.Columns.Add(SPLITTYPE_COLUMN_NAME, typeof(int));
+                splitTypeColumn.DefaultValue = (int)ActionOnMassmedia.SplitRule.SplitType.ByPeriod;
+                
+                var splitDateColumn = dtData.Columns.Add(SPLITDATE_COLUMN_NAME, typeof(DateTime));
+                
+                foreach (DataRow row in dtData.Rows)
+                {
+                    row[SPLITTYPE_COLUMN_NAME] = (int)ActionOnMassmedia.SplitRule.SplitType.ByPeriod;
+                    row[SPLITDATE_COLUMN_NAME] = DateTime.Today;
+                }
+                
                 _entity.AttributeSelector = 2;
             }
             else if(_selectionMode == SelectionMode.Clone)
@@ -89,8 +99,21 @@ namespace Merlin.Forms
                 _entity.AttributeSelector = 1;
             }
             dtData.Columns.Add(SELECTION_COLUMN_NAME, typeof(Boolean));
-           
+   
             grdObjects.Fill(dtData, _entity, _selectionMode);
+    
+            // ✅ Синхронизируем состояние календарей после Fill
+            if (_selectionMode == SelectionMode.Split)
+            {
+                foreach (DataGridViewRow row in grdObjects.Rows)
+                {
+                    var calendarCell = row.Cells[7]; // ColumnIndex.Calendar
+                    // Т.к. по умолчанию везде ByPeriod - включаем календарь
+                    calendarCell.ReadOnly = false;
+                    calendarCell.Style.BackColor = calendarCell.OwningColumn.DefaultCellStyle.BackColor;
+                    calendarCell.Style.ForeColor = calendarCell.OwningColumn.DefaultCellStyle.ForeColor;
+                }
+            }
         }
 
         private void btnOk_Click(object sender, EventArgs e)

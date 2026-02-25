@@ -35,6 +35,18 @@ namespace Merlin.Controls
             BackgroundColor = System.Drawing.SystemColors.Window;
             RowHeadersWidthSizeMode = DataGridViewRowHeadersWidthSizeMode.AutoSizeToAllHeaders;
             InitializeComponent();
+            this.CurrentCellDirtyStateChanged += GenericGridView_CurrentCellDirtyStateChanged;
+        }
+
+
+        private void GenericGridView_CurrentCellDirtyStateChanged(object sender, EventArgs e)
+        {
+            if (!IsCurrentCellDirty || CurrentCell == null)
+                return;
+
+            // Коммитим изменения именно для combo/checkbox
+            if (CurrentCell is DataGridViewComboBoxCell || CurrentCell is DataGridViewCheckBoxCell)
+                CommitEdit(DataGridViewDataErrorContexts.Commit);
         }
 
         protected override void OnCellContentClick(DataGridViewCellEventArgs e)
@@ -63,22 +75,31 @@ namespace Merlin.Controls
             }
             else if (_selectionMode == Merlin.SelectionMode.Split)
             {
-                var comboCell = row.Cells[ColumnIndex.ComboBox];
-                enableCell(comboCell, isChecked);
-
+                // В режиме Split просто управляем доступностью календаря
+                // Не переключаем фокус автоматически - пользователь сам кликнет когда нужно
                 var calendarCell = row.Cells[ColumnIndex.Calendar];
+                
                 if (!isChecked)
                 {
+                    // Снимаем чекбокс - блокируем календарь
                     enableCell(calendarCell, false);
                 }
                 else
                 {
+                    // Включаем чекбокс - проверяем выбор в ComboBox
                     var val = DBData.Rows[e.RowIndex]["splitType"];
-                    bool calendarEnabled = val != DBNull.Value &&
-                                           (int)val == (int)ActionOnMassmedia.SplitRule.SplitType.ByPeriod;
-                    enableCell(calendarCell, calendarEnabled);
-                    if (calendarEnabled)
-                        StartCalendarEdit(calendarCell);
+                    if (val != DBNull.Value)
+                    {
+                        // Если в ComboBox выбрано "По периоду" - включаем календарь
+                        bool calendarEnabled = (int)val == (int)ActionOnMassmedia.SplitRule.SplitType.ByPeriod;
+                        enableCell(calendarCell, calendarEnabled);
+                        // Убрали StartCalendarEdit - не переключаемся автоматически
+                    }
+                    else
+                    {
+                        // Значение в ComboBox не выбрано - календарь заблокирован
+                        enableCell(calendarCell, false);
+                    }
                 }
             }
             else
@@ -92,29 +113,36 @@ namespace Merlin.Controls
 
         protected override void OnEditingControlShowing(DataGridViewEditingControlShowingEventArgs e)
         {
-            ComboBox combo = e.Control as ComboBox;
-            if (combo != null)
-            {
-                // Remove an existing event-handler, if present, to avoid 
-                // adding multiple handlers when the editing control is reused.
-                combo.SelectedIndexChanged -= new EventHandler(ComboBox_SelectedIndexChanged);
-
-                // Add the event handler. 
-                combo.SelectedIndexChanged += new EventHandler(ComboBox_SelectedIndexChanged);
-            }
             base.OnEditingControlShowing(e);
+
+            if (CurrentCell?.ColumnIndex != ColumnIndex.ComboBox)
+                return;
+
+            if (e.Control is ComboBox combo)
+            {
+                combo.SelectionChangeCommitted -= ComboBox_SelectionChangeCommitted;
+                combo.SelectionChangeCommitted += ComboBox_SelectionChangeCommitted;
+            }
         }
 
-        private void ComboBox_SelectedIndexChanged(object sender, EventArgs e)
+        private void ComboBox_SelectionChangeCommitted(object sender, EventArgs e)
         {
-            DataRowView v = ((ComboBox)sender).SelectedItem as DataRowView;
-            if (v != null)
+            // Скажем гриду "ячейка изменилась"
+            NotifyCurrentCellDirty(true);
+
+            // И принудительно зафиксируем (можно и без этого, если есть CurrentCellDirtyStateChanged,
+            // но так вообще железобетон)
+            CommitEdit(DataGridViewDataErrorContexts.Commit);
+            EndEdit();
+
+            // Дальше твоя логика включения/выключения календаря
+            if (sender is ComboBox cb && cb.SelectedItem is DataRowView v && CurrentCell != null)
             {
-                bool calendarEnabled = int.Parse(v.Row[0].ToString()) == (int)ActionOnMassmedia.SplitRule.SplitType.ByPeriod;
-                var calendarCell = Rows[CurrentCell.RowIndex].Cells[CurrentCell.ColumnIndex + 1];
+                var row = Rows[CurrentCell.RowIndex];
+                bool calendarEnabled = Convert.ToInt32(v.Row["Id"]) == (int)ActionOnMassmedia.SplitRule.SplitType.ByPeriod;
+
+                var calendarCell = row.Cells[ColumnIndex.Calendar];
                 enableCell(calendarCell, calendarEnabled);
-                if (calendarEnabled)
-                    StartCalendarEdit(calendarCell);
             }
         }
 
@@ -207,7 +235,8 @@ namespace Merlin.Controls
                     DataSource = CreateSplitTypeTable(),
                     DisplayMember = "Name",
                     ValueMember = "Id",
-                    ReadOnly = true
+                    ReadOnly = false,
+                    DisplayStyle = DataGridViewComboBoxDisplayStyle.DropDownButton
                 };
                 return column;
             }
