@@ -432,21 +432,15 @@ namespace Merlin.Forms
             // ✅ Проверяем, редактируем ли мы существующий вариант
             if (_editingSnapshot != null)
             {
-                // Спрашиваем пользователя, что делать
-                var result = MessageBox.Show(
-                    "Вы редактируете существующий вариант.\n\n" +
-                    "Да - перезаписать существующий вариант\n" +
-                    "Нет - сохранить как новый вариант\n" +
-                    "Отмена - отменить сохранение",
-                    "Сохранение варианта",
-                    MessageBoxButtons.YesNoCancel,
-                    MessageBoxIcon.Question);
-
-                if (result == DialogResult.Cancel)
+                PCSaveVariantQuestion form = new PCSaveVariantQuestion();
+                if(form.ShowDialog() == DialogResult.Cancel)
                 {
-                    return; // Отменяем сохранение
+                    return; // Пользователь отменил сохранение
                 }
-                else if (result == DialogResult.Yes)
+
+                // Спрашиваем пользователя, что делать
+
+                if (form.OverrideRadioButton.Checked)
                 {
                     // Перезаписываем существующий вариант
                     int index = _saved.IndexOf(_editingSnapshot);
@@ -463,7 +457,7 @@ namespace Merlin.Forms
                         _editingSnapshot = null;
                     }
                 }
-                else // DialogResult.No
+                else 
                 {
                     // Сохраняем как новый вариант
                     _editingSnapshot = null; // Сбрасываем флаг редактирования
@@ -835,7 +829,7 @@ namespace Merlin.Forms
                 // 4) Select radiostations from the saved variant
                 SelectRadiostationsFromVariant(variant);
 
-                // 5) Apply calculation to restore calculated values
+                // 5) Apply calculation to restore calculated values (with template defaults)
                 grdPriceCalculator.ApplyCalculation(
                     selectedDates,
                     variant.DurationSec,
@@ -847,11 +841,19 @@ namespace Merlin.Forms
                     variant.ManagerDiscountModeSingle
                 );
 
-                // 6) Set position
-                grdPriceCalculator.SetDefaultPosition((RollerPositions)variant.PositionValue);
+                // ✅ 6) Restore individual row values from saved snapshot (overrides template defaults)
+                grdPriceCalculator.RestoreRowDetails(variant.Rows);
 
-                // 7) Update summary
+                // 8) Update summary
                 UpdateSummary();
+                
+                // ✅ 9) Switch to calculation tab
+                if (tabControl1 != null && tpCalc != null)
+                {
+                    tabControl1.SelectedTab = tpCalc;
+                }
+                
+                templateEditor.Focus();
             }
             catch (Exception ex)
             {
@@ -943,7 +945,9 @@ namespace Merlin.Forms
                 var outFolder = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "CommercialOffers");
                 Directory.CreateDirectory(outFolder);
 
-                var outPath = Path.Combine(outFolder, $"КП_{DateTime.Now:yyyyMMdd_HHmmss}.docx");
+                var fileName = string.IsNullOrEmpty(txtFirmName.Text) ? $"КП_{DateTime.Now:dd.MM.yyyy}.docx" : $"КП для {txtFirmName.Text} {DateTime.Today:dd.MM.yyyy-HH-mm-ss}.docx";
+
+                var outPath = Path.Combine(outFolder, fileName);
 
                 var result = Cp.CpOneDocGenerator.GenerateOneDoc(
                     list,
@@ -951,7 +955,6 @@ namespace Merlin.Forms
                     outPath,
                     clientName: txtFirmName.Text,
                     docDate: DateTime.Today,
-                    directorName: "Агамов Владислав Александрович",
                     contactName: SecurityManager.LoggedUser.FullName,
                     contactEmail: SecurityManager.LoggedUser.Email,
                     contactPhone: SecurityManager.LoggedUser.Phone

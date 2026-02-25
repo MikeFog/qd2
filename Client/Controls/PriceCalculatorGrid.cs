@@ -52,7 +52,6 @@ namespace Merlin.Controls
 
         public bool UseManagerDiscountPeriods { get; set; }  // переключатель метода расчёта
         public System.Action SummaryUpdater { get; set; }
-
         public DataTable SegmentsTable { get; private set; }   // второй рекордсет (сегменты)
         public DataTable SummaryTable { get; private set; }   // первый рекордсет (для грида)
         public DataTable ManagerDiscountTable { get; private set; }   // третий рекордсет (периоды maxRatio)
@@ -971,7 +970,6 @@ namespace Merlin.Controls
             }
         }
 
-
         private static void EnsureCalcColumns(DataTable dt)
         {
             if (dt == null) return;
@@ -1226,7 +1224,7 @@ namespace Merlin.Controls
 
             _suppressRecalc = true;
             try
-            {   
+            {
                 decimal totalAfterPackage = 0m;
 
                 foreach (DataRow row in SummaryTable.Rows)
@@ -1969,7 +1967,7 @@ namespace Merlin.Controls
         private static HashSet<int> CaptureSelectedIds(DataTable dt)
         {
             var set = new HashSet<int>();
-            if(dt == null) return set;
+            if (dt == null) return set;
 
             string isSelectedColumn = ColumnName(PriceCalculatorColumn.IsSelected);
 
@@ -2007,6 +2005,70 @@ namespace Merlin.Controls
                 int id = (r["MassmediaID"] == DBNull.Value) ? 0 : Convert.ToInt32(r["MassmediaID"]);
                 r[isSelectedColumn] = (id != 0 && selectedIds.Contains(id));
             }
+        }
+
+        /// <summary>
+        /// Восстанавливает индивидуальные значения редактируемых полей из сохраненного snapshot
+        /// </summary>
+        public void RestoreRowDetails(List<CampaignCalcRow> savedRows)
+        {
+            if (SummaryTable == null || savedRows == null || savedRows.Count == 0)
+                return;
+
+            DoWithSkipCellEndEdit(() =>
+            {
+                dgvStations.EndEdit();
+                _bindingSource.EndEdit();
+            });
+
+            dgvStations.SuspendLayout();
+            _suppressRecalc = true;
+            try
+            {
+                var savedRowsDict = savedRows.ToDictionary(r => r.MassmediaId);
+                var validPositions = Issue.GetRollerPositionItems()
+                    .Select(kvp => kvp.Key)
+                    .ToHashSet();
+
+                foreach (DataRow row in SummaryTable.Rows)
+                {
+                    if (row.RowState == DataRowState.Deleted) continue;
+
+                    int massmediaId = Convert.ToInt32(row["massmediaID"]);
+
+                    if (!savedRowsDict.TryGetValue(massmediaId, out CampaignCalcRow savedRow))
+                        continue;
+
+                    row[ColumnName(PriceCalculatorColumn.RollerDuration)] = savedRow.RollerDuration;
+
+                    int positionValue = savedRow.Position;
+                    if (!validPositions.Contains(positionValue))
+                        positionValue = (int)Merlin.RollerPositions.Undefined;
+
+                    row[ColumnName(PriceCalculatorColumn.Position)] = positionValue;
+
+                    row[ColumnName(PriceCalculatorColumn.PrimeTotalSpotsWeekday)] = savedRow.PrimeTotalSpotsWeekday;
+                    row[ColumnName(PriceCalculatorColumn.NonPrimeTotalSpotsWeekday)] = savedRow.NonPrimeTotalSpotsWeekday;
+                    row[ColumnName(PriceCalculatorColumn.PrimeTotalSpotsWeekend)] = savedRow.PrimeTotalSpotsWeekend;
+                    row[ColumnName(PriceCalculatorColumn.NonPrimeTotalSpotsWeekend)] = savedRow.NonPrimeTotalSpotsWeekend;
+                }
+
+                // ✅ Сначала уведомляем BindingSource об изменениях
+                _bindingSource.ResetBindings(false);
+            }
+            finally
+            {
+                _suppressRecalc = false;
+                dgvStations.ResumeLayout();
+            }
+
+            // ✅ Пересчитываем после обновления биндинга
+            ReCalcAllRows();
+
+            // ✅ Финальное обновление
+            _bindingSource.ResetBindings(false);
+            dgvStations.Invalidate();
+            dgvStations.Refresh();
         }
     }
 }

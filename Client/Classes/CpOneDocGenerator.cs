@@ -224,6 +224,9 @@ namespace Merlin.Cp
 
     public static class CpOneDocGenerator
     {
+        private const string fontMediaum = "Montserrat Medium";
+        private const string fontNormal = "Montserrat";
+
         private sealed class VariantRow
         {
             public string StationsSet { get; set; }
@@ -236,7 +239,6 @@ namespace Merlin.Cp
             string outputPath,
             string clientName,
             DateTime docDate,
-            string directorName,
             string contactName,
             string contactEmail,
             string contactPhone)
@@ -258,7 +260,7 @@ namespace Merlin.Cp
                     ["{{CLIENT_NAME}}"] = clientName,
                     ["{{STR1}}"] = string.IsNullOrEmpty(clientName) ? "по проведению рекламой кампании на радио" : "по проведению рекламой кампании на радио для",
                     ["{{DOC_DATE}}"] = docDate.ToString("dd.MM.yyyy"),
-                    ["{{DIRECTOR_NAME}}"] = directorName,
+                    //["{{CONTACT_NAME}}"] = contactName + " " + contactEmail + " " + contactPhone
                     ["{{CONTACT_NAME}}"] = contactName,
                     ["{{CONTACT_EMAIL}}"] = contactEmail,
                     ["{{CONTACT_PHONE}}"] = contactPhone
@@ -271,7 +273,7 @@ namespace Merlin.Cp
 
                 // 2) Генерим контент в список элементов
                 var generated = new List<OpenXmlElement>();
-                Action<OpenXmlElement> emit = e => generated.Add(e);
+                void emit(OpenXmlElement e) => generated.Add(e);
 
                 int blockNo = 1;
 
@@ -280,17 +282,7 @@ namespace Merlin.Cp
                 {
                     if (blockNo > 1) AppendPageBreak(emit);
 
-                    AppendGroupBlock(
-                        emit,
-                        blockNo,
-                        g,
-                        clientName,
-                        docDate,
-                        directorName,
-                        contactName,
-                        contactEmail,
-                        contactPhone);
-
+                    AppendGroupBlock(emit, blockNo, g);
                     blockNo++;
                 }
 
@@ -333,21 +325,15 @@ namespace Merlin.Cp
         private static void AppendGroupBlock(
             Action<OpenXmlElement> emit,
             int blockNo,
-            Cp1Grouping.Cp1Group group,
-            string clientName,
-            DateTime validTill,
-            string directorName,
-            string contactName,
-            string contactEmail,
-            string contactPhone)
+            Cp1Grouping.Cp1Group group)
         {
             // Определяем groupName для этого блока
             string blockGroupName = GetSharedGroupName(group);
             string title = string.IsNullOrWhiteSpace(blockGroupName) 
-                ? $"{blockNo}) Линейная реклама на радио"
-                : $"{blockNo}) Линейная реклама на радио г. {blockGroupName}";
+                ? $"{blockNo}) Линейная реклама"
+                : $"{blockNo}) Линейная реклама в г. {blockGroupName}";
             
-            emit(MakeParagraph(title, bold: true, fontSize: "28"));
+            emit(MakeParagraph(title, bold: true));
             emit(MakeParagraph(string.Empty, bold: false));
 
             var pw = group.RowPattern.PrimeTotalSpotsWeekday;
@@ -361,15 +347,57 @@ namespace Merlin.Cp
             var spotsPerStation = pw + npw + pwe + npwe;
             var durationPerStation = TimeSpan.FromSeconds(spotsPerStation * rollerSec);
 
-            emit(MakeParagraph("Параметры расчёта одинаковые для каждой станции:", bold: false));
-            emit(MakeParagraph($"Продолжительность ролика: {rollerSec} сек.", bold: false));
-            emit(MakeParagraph($"Период: с {group.Header.DateFrom:dd.MM.yyyy} до {group.Header.DateTo:dd.MM.yyyy}", bold: false));
-            emit(MakeParagraph($"Количество дней рекламной акции: {group.Header.TotalDays}", bold: false));
-            emit(MakeParagraph($"Количество ежедневных выпусков в будни: прайм - {pw}, не прайм - {npw}", bold: false));
-            emit(MakeParagraph($"Количество ежедневных выпусков в выходные: прайм - {pwe}, не прайм - {npwe}", bold: false));
-            emit(MakeParagraph($"Общее количество выпусков в день: {spotsPerStation}", bold: false));
-            emit(MakeParagraph($"Хронометраж эфирного времени: {durationPerStation:hh\\:mm\\:ss}", bold: false));
-            emit(MakeParagraph($"Позиционирование в рекламном блоке: {MapPosition(positionId)}", bold: false));
+            emit(MakeMixedParagraph(
+                ("Параметры расчёта ", false, fontMediaum),    
+                ("одинаковые для каждой станции:", true, fontNormal)
+                ));
+
+            emit(MakeMixedParagraph(
+                ("Продолжительность ролика: ", false, fontMediaum),
+                ($"{rollerSec} сек.", true, "Montserrat")
+            ));
+
+            emit(MakeMixedParagraph(
+                ("Период: с ", false, fontMediaum),
+                ($"{group.Header.DateFrom:dd.MM.yyyy}", true, fontNormal),
+                (" до ", false, fontMediaum),
+                ($"{group.Header.DateTo:dd.MM.yyyy}", true, fontNormal)
+            ));
+
+            emit(MakeMixedParagraph(
+                ("Количество дней рекламной акции: ", false, fontMediaum),
+                ($"{group.Header.TotalDays}", true, fontNormal)
+            ));
+
+            emit(MakeMixedParagraph(
+                ("Количество ежедневных выпусков в будни: прайм - ", false, fontMediaum),
+                ($"{pw}", true, fontNormal),
+                (", не прайм - ", false, fontMediaum),
+                ($"{npw}", true, fontNormal)
+            ));
+
+            emit(MakeMixedParagraph(
+                ("Количество ежедневных выпусков в выходные: прайм - ", false, fontMediaum),
+                ($"{pwe}", true, fontNormal),
+                (", не прайм - ", false, fontMediaum),
+                ($"{npwe}", true, fontNormal)
+            ));
+
+            emit(MakeMixedParagraph(
+                ("Общее количество выпусков в день: ", false, fontMediaum),
+                ($"{spotsPerStation}", true, fontNormal)
+            ));
+
+            emit(MakeMixedParagraph(
+                ("Хронометраж эфирного времени: ", false, fontMediaum),
+                ($"{durationPerStation:hh\\:mm\\:ss}", true, fontNormal)
+            ));
+
+            emit(MakeMixedParagraph(
+                ("Позиционирование в рекламном блоке: ", false, fontMediaum),
+                ($"{MapPosition(positionId)}", true, fontNormal)
+            ));
+
             emit(MakeParagraph(string.Empty, bold: false));
 
             // ✅ Определяем для ВСЕЙ группы, можно ли использовать короткие имена
@@ -391,16 +419,27 @@ namespace Merlin.Cp
         private static Table BuildVariantsTable(List<VariantRow> variants)
         {
             var table = new Table();
+            // Создаем отступы
+            var tblMargins = new TableCellMarginDefault(
+                new TopMargin { Width = "100", Type = TableWidthUnitValues.Dxa },
+                new BottomMargin { Width = "100", Type = TableWidthUnitValues.Dxa },
+                new LeftMargin { Width = "100", Type = TableWidthUnitValues.Dxa },
+                new RightMargin { Width = "100", Type = TableWidthUnitValues.Dxa }
+            );
+
             table.AppendChild(new TableProperties(
                 new TableStyle { Val = "TableGrid" },
                 new TableWidth { Type = TableWidthUnitValues.Pct, Width = "5000" },
+                tblMargins, // Добавляем отступы здесь
                 new TableBorders(
                     new TopBorder { Val = BorderValues.Single, Size = 4 },
                     new BottomBorder { Val = BorderValues.Single, Size = 4 },
                     new LeftBorder { Val = BorderValues.Single, Size = 4 },
                     new RightBorder { Val = BorderValues.Single, Size = 4 },
                     new InsideHorizontalBorder { Val = BorderValues.Single, Size = 4 },
-                    new InsideVerticalBorder { Val = BorderValues.Single, Size = 4 })));
+                    new InsideVerticalBorder { Val = BorderValues.Single, Size = 4 }
+                )
+            ));
 
             // Заголовок
             var headerRow = new TableRow();
@@ -411,7 +450,7 @@ namespace Merlin.Cp
             foreach (var v in variants)
             {
                 var row = new TableRow();
-                row.AppendChild(BuildCell(v.StationsSet ?? string.Empty, bold: false));
+                row.AppendChild(BuildCell(v.StationsSet ?? string.Empty, bold: true));
                 row.AppendChild(BuildCell(FormatRub(v.Price), bold: true, right: true));
                 table.AppendChild(row);
             }
@@ -426,14 +465,24 @@ namespace Merlin.Cp
             // Определяем groupName для этого блока
             string blockGroupName = GetSharedGroupName(s);
             string title = string.IsNullOrWhiteSpace(blockGroupName)
-                ? $"{blockNo}) Линейная реклама на радио"
-                : $"{blockNo}) Линейная реклама на радио г. {blockGroupName}";
+                ? $"{blockNo}) Линейная реклама"
+                : $"{blockNo}) Линейная реклама в г. {blockGroupName}";
             
-            emit(MakeParagraph(title, bold: true, fontSize: "28"));
-            emit(MakeParagraph($"Период: с {s.DateFrom:dd.MM.yyyy} до {s.DateTo:dd.MM.yyyy}", bold: false));
+            emit(MakeParagraph(title, bold: true));
+            emit(MakeParagraph(string.Empty, bold: false));
+
+            emit(MakeMixedParagraph(
+                ("Период: с ", false, fontMediaum),
+                ($"{s.DateFrom:dd.MM.yyyy}", true, fontNormal),
+                (" до ", false, fontMediaum),
+                ($"{s.DateTo:dd.MM.yyyy}", true, fontNormal)
+            ));
 
             var totalDur = TimeSpan.FromSeconds(Math.Max(0, s.TotalDuration));
-            emit(MakeParagraph($"Суммарный хронометраж эфирного времени: {totalDur:hh\\:mm\\:ss}", bold: false));
+            emit(MakeMixedParagraph(
+                ("Суммарный хронометраж эфирного времени: ", false, fontMediaum),
+                ($"{totalDur:hh\\:mm\\:ss}", true, fontNormal)
+                ));
 
             emit(MakeParagraph("", bold: false));
             emit(BuildDetailedTable(s));
@@ -444,9 +493,17 @@ namespace Merlin.Cp
         private static Table BuildDetailedTable(CampaignCalcSnapshot s)
         {
             var table = new Table();
+            // Создаем отступы
+            var tblMargins = new TableCellMarginDefault(
+                new TopMargin { Width = "100", Type = TableWidthUnitValues.Dxa },
+                new BottomMargin { Width = "100", Type = TableWidthUnitValues.Dxa },
+                new LeftMargin { Width = "100", Type = TableWidthUnitValues.Dxa },
+                new RightMargin { Width = "100", Type = TableWidthUnitValues.Dxa }
+            );
             table.AppendChild(new TableProperties(
                 new TableStyle { Val = "TableGrid" },
                 new TableWidth { Type = TableWidthUnitValues.Pct, Width = "5000" },
+                tblMargins, // Добавляем отступы здесь
                 new TableBorders(
                     new TopBorder { Val = BorderValues.Single, Size = 4 },
                     new BottomBorder { Val = BorderValues.Single, Size = 4 },
@@ -608,7 +665,22 @@ namespace Merlin.Cp
         {
             var row = new TableRow();
             foreach (var h in headers)
-                row.AppendChild(BuildCell(h, bold: true, center: true));
+            {
+                var runProps = new RunProperties(
+                    new RunFonts { Ascii = fontNormal, HighAnsi = fontNormal, ComplexScript = fontNormal },
+                    new Bold(),
+                    new FontSize { Val = "16" } // 8pt
+                );
+
+                var run = new Run(runProps, new Text(h ?? "") { Space = SpaceProcessingModeValues.Preserve });
+                var p = new Paragraph(run);
+                p.ParagraphProperties = new ParagraphProperties(new Justification { Val = JustificationValues.Center });
+
+                var cell = new TableCell(p);
+                cell.AppendChild(new TableCellProperties(new TableCellVerticalAlignment { Val = TableVerticalAlignmentValues.Center }));
+
+                row.AppendChild(cell);
+            }
             return row;
         }
 
@@ -619,26 +691,37 @@ namespace Merlin.Cp
             {
                 bool center = i != 0 && i != values.Length - 1;
                 bool right = i == values.Length - 1;
-                row.AppendChild(BuildCell(values[i], bold: false, center: center, right: right));
+                // Передаем bold: true для всех ячеек
+                row.AppendChild(BuildCell(values[i], bold: true, center: center, right: right));
             }
             return row;
         }
 
         private static TableCell BuildCell(string text, bool bold, bool center = false, bool right = false)
         {
-            var p = MakeParagraph(text ?? "", bold);
+            // Создаем свойства текста: Montserrat, 8pt, Bold
+            var runProps = new RunProperties(
+                new RunFonts { Ascii = fontNormal, HighAnsi = fontNormal, ComplexScript = fontNormal },
+                new FontSize { Val = "16" }
+            );
 
+            if (bold) runProps.AppendChild(new Bold());
+
+            var run = new Run(runProps, new Text(text ?? "") { Space = SpaceProcessingModeValues.Preserve });
+            var p = new Paragraph(run);
+
+            // Настройка выравнивания
+            p.ParagraphProperties = new ParagraphProperties();
             if (center)
-                p.ParagraphProperties = new ParagraphProperties(new Justification { Val = JustificationValues.Center });
-            if (right)
-                p.ParagraphProperties = new ParagraphProperties(new Justification { Val = JustificationValues.Right });
+                p.ParagraphProperties.AppendChild(new Justification { Val = JustificationValues.Center });
+            else if (right)
+                p.ParagraphProperties.AppendChild(new Justification { Val = JustificationValues.Right });
 
             var cell = new TableCell(p);
             cell.AppendChild(new TableCellProperties(new TableCellVerticalAlignment { Val = TableVerticalAlignmentValues.Center }));
+
             return cell;
         }
-
-
 
         private static void ReplaceTextPlaceholders2(WordprocessingDocument doc, Dictionary<string, string> map)
         {
@@ -774,6 +857,64 @@ namespace Merlin.Cp
                     full = full.Substring(0, start) + replacement + full.Substring(end);
                 }
             }
+        }
+
+        private static Paragraph MakeMixedParagraph(params (string text, bool bold, string fontName)[] parts)
+        {
+            var p = new Paragraph();
+            foreach (var (text, bold, fontName) in parts)
+            {
+                var runProps = new RunProperties();
+
+                // Устанавливаем шрифт индивидуально для каждого Run
+                if (!string.IsNullOrEmpty(fontName))
+                {
+                    runProps.AppendChild(new RunFonts()
+                    {
+                        Ascii = fontName,
+                        HighAnsi = fontName,
+                        ComplexScript = fontName
+                    });
+                }
+
+                if (bold) runProps.AppendChild(new Bold());
+
+                var run = new Run(runProps, new Text(text) { Space = SpaceProcessingModeValues.Preserve });
+                p.AppendChild(run);
+            }
+            return p;
+        }
+
+        private static Paragraph MakeMixedParagraph(params (string text, bool bold)[] parts)
+        {
+            // Вызываем перегруженный метод с null, если шрифт не указан
+            return MakeMixedParagraph(null, parts);
+        }
+
+        private static Paragraph MakeMixedParagraph(string fontName, params (string text, bool bold)[] parts)
+        {
+            var p = new Paragraph();
+            foreach (var (text, bold) in parts)
+            {
+                var runProps = new RunProperties();
+
+                // Добавляем шрифт только если он передан
+                if (!string.IsNullOrEmpty(fontName))
+                {
+                    runProps.AppendChild(new RunFonts()
+                    {
+                        Ascii = fontName,
+                        HighAnsi = fontName,
+                        ComplexScript = fontName
+                    });
+                }
+
+                if (bold) runProps.AppendChild(new Bold());
+
+                var run = new Run(runProps, new Text(text) { Space = SpaceProcessingModeValues.Preserve });
+                p.AppendChild(run);
+            }
+            return p;
         }
     }
 }

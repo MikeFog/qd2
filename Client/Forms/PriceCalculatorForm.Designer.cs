@@ -20,6 +20,7 @@ namespace Merlin.Forms
         {
             this.tabControl1 = new System.Windows.Forms.TabControl();
             this.tpCalc = new System.Windows.Forms.TabPage();
+            this.grdPriceCalculator = new Merlin.Controls.PriceCalculatorGrid();
             this.tabPage2 = new System.Windows.Forms.TabPage();
             this.flpSaved = new System.Windows.Forms.FlowLayoutPanel();
             this.pnlTop = new System.Windows.Forms.Panel();
@@ -30,7 +31,6 @@ namespace Merlin.Forms
             this.btnDeleteAllChecked = new System.Windows.Forms.Button();
             this.btnCreaateProposal = new System.Windows.Forms.Button();
             this.chkAll = new System.Windows.Forms.CheckBox();
-            this.grdPriceCalculator = new Merlin.Controls.PriceCalculatorGrid();
             this.templateEditor = new Merlin.Controls.TemplateEditorControl();
             this.tabControl1.SuspendLayout();
             this.tpCalc.SuspendLayout();
@@ -59,6 +59,17 @@ namespace Merlin.Forms
             this.tpCalc.TabIndex = 0;
             this.tpCalc.Text = "Расчёты";
             this.tpCalc.UseVisualStyleBackColor = true;
+            // 
+            // grdPriceCalculator
+            // 
+            this.grdPriceCalculator.Dock = System.Windows.Forms.DockStyle.Fill;
+            this.grdPriceCalculator.Location = new System.Drawing.Point(3, 3);
+            this.grdPriceCalculator.Margin = new System.Windows.Forms.Padding(0);
+            this.grdPriceCalculator.Name = "grdPriceCalculator";
+            this.grdPriceCalculator.Size = new System.Drawing.Size(1526, 668);
+            this.grdPriceCalculator.SummaryUpdater = null;
+            this.grdPriceCalculator.TabIndex = 2;
+            this.grdPriceCalculator.UseManagerDiscountPeriods = true;
             // 
             // tabPage2
             // 
@@ -110,7 +121,7 @@ namespace Merlin.Forms
             // 
             // txtFirmName
             // 
-            this.txtFirmName.Location = new System.Drawing.Point(894, 20);
+            this.txtFirmName.Location = new System.Drawing.Point(894, 18);
             this.txtFirmName.Name = "txtFirmName";
             this.txtFirmName.Size = new System.Drawing.Size(400, 31);
             this.txtFirmName.TabIndex = 6;
@@ -118,7 +129,7 @@ namespace Merlin.Forms
             // cmbAgency
             // 
             this.cmbAgency.FormattingEnabled = true;
-            this.cmbAgency.Location = new System.Drawing.Point(491, 16);
+            this.cmbAgency.Location = new System.Drawing.Point(491, 18);
             this.cmbAgency.Name = "cmbAgency";
             this.cmbAgency.Size = new System.Drawing.Size(182, 33);
             this.cmbAgency.TabIndex = 5;
@@ -144,7 +155,7 @@ namespace Merlin.Forms
             // 
             // btnCreaateProposal
             // 
-            this.btnCreaateProposal.Location = new System.Drawing.Point(365, 16);
+            this.btnCreaateProposal.Location = new System.Drawing.Point(366, 16);
             this.btnCreaateProposal.Name = "btnCreaateProposal";
             this.btnCreaateProposal.Size = new System.Drawing.Size(120, 38);
             this.btnCreaateProposal.TabIndex = 1;
@@ -157,23 +168,12 @@ namespace Merlin.Forms
             this.chkAll.AutoSize = true;
             this.chkAll.Checked = true;
             this.chkAll.CheckState = System.Windows.Forms.CheckState.Checked;
-            this.chkAll.Location = new System.Drawing.Point(13, 16);
+            this.chkAll.Location = new System.Drawing.Point(13, 20);
             this.chkAll.Name = "chkAll";
             this.chkAll.Size = new System.Drawing.Size(139, 29);
             this.chkAll.TabIndex = 0;
             this.chkAll.Text = "Выбрать все";
             this.chkAll.UseVisualStyleBackColor = true;
-            // 
-            // grdPriceCalculator
-            // 
-            this.grdPriceCalculator.Dock = System.Windows.Forms.DockStyle.Fill;
-            this.grdPriceCalculator.Location = new System.Drawing.Point(3, 3);
-            this.grdPriceCalculator.Margin = new System.Windows.Forms.Padding(0);
-            this.grdPriceCalculator.Name = "grdPriceCalculator";
-            this.grdPriceCalculator.Size = new System.Drawing.Size(1526, 668);
-            this.grdPriceCalculator.SummaryUpdater = null;
-            this.grdPriceCalculator.TabIndex = 2;
-            this.grdPriceCalculator.UseManagerDiscountPeriods = true;
             // 
             // templateEditor
             // 
