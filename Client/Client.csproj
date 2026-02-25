@@ -322,6 +322,9 @@
       <SubType>Designer</SubType>
       <DependentUpon>MassmediaPassport.cs</DependentUpon>
     </EmbeddedResource>
+    <EmbeddedResource Include="Forms\PCSaveVariantQuestion.resx">
+      <DependentUpon>PCSaveVariantQuestion.cs</DependentUpon>
+    </EmbeddedResource>
     <EmbeddedResource Include="Forms\PriceCalculatorForm.resx">
       <DependentUpon>PriceCalculatorForm.cs</DependentUpon>
     </EmbeddedResource>
@@ -859,6 +862,12 @@
     </Compile>
     <Compile Include="Forms\PaymentCandidatesForm.Designer.cs">
       <DependentUpon>PaymentCandidatesForm.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Forms\PCSaveVariantQuestion.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="Forms\PCSaveVariantQuestion.Designer.cs">
+      <DependentUpon>PCSaveVariantQuestion.cs</DependentUpon>
     </Compile>
     <Compile Include="Forms\PriceCalculatorForm.cs">
       <SubType>Form</SubType>
