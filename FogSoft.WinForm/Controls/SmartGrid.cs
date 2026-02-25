@@ -487,7 +487,7 @@ namespace FogSoft.WinForm.Controls
 
 			if (tableColumn.DataType == typeof(decimal) || tableColumn.DataType == typeof(double))
 			{
-				res = decimal.Parse(summa.ToString()).ToString("f");
+				res = decimal.Parse(summa.ToString()).ToString("N");
 			}
 			else
 			{

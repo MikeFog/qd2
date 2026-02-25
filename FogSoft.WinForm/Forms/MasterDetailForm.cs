@@ -83,6 +83,9 @@ namespace FogSoft.WinForm.Forms
 				//}
 
 				//this.dtData = ((DataSet)DataAccessor.DoAction(parameters)).Tables[Constants.TableNames.Data];
+				UseWaitCursor = true;
+				Application.DoEvents();
+
 				dtData = grdMaster.Entity.GetContent(filterValues);
 				Invoke(new Globals.VoidCallback(PopulateMasterGrid));
 			}
@@ -92,8 +95,8 @@ namespace FogSoft.WinForm.Forms
 			}
 			finally
 			{
-				Cursor.Current = Cursors.Default;
-			}
+				UseWaitCursor = false;
+            }
 		}
 
 		private void PopulateMasterGrid()

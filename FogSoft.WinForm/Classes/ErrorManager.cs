@@ -1,18 +1,20 @@
+using FogSoft.WinForm.DataAccess;
+using FogSoft.WinForm.Properties;
+using log4net;
 using System;
 using System.Collections.Generic;
 using System.Data;
 using System.Data.SqlClient;
 using System.Reflection;
+using System.Text.RegularExpressions;
 using System.Windows.Forms;
-using FogSoft.WinForm.DataAccess;
-using FogSoft.WinForm.Properties;
-using log4net;
 
 namespace FogSoft.WinForm.Classes
 {
 	public static class ErrorManager
 	{
 	    private const string str_dbexceptonuniqueindex = "unique index";
+        private const string str_dbexceptonuniquekey = "unique key";
         private const string str_dbexceptonconstraint = "constraint";
         private const string str_dbexceptonREFERENCE = "REFERENCE";
 	    private const string str_dbexceptonuniqueindexRUS = "уникальным индексом";
@@ -94,21 +96,38 @@ namespace FogSoft.WinForm.Classes
         
 		private static string ExtractConstraintName(SqlException ex)
 		{
-            if (ex.Message.Contains(str_dbexceptonuniqueindex))
+			string message = ex.Message.ToLower();
+
+            if (message.Contains(str_dbexceptonuniqueindex))
                 return GetConstantName(ex.Message, str_dbexceptonuniqueindex);
-            else if (ex.Message.Contains(str_dbexceptonconstraint))
+            else if (message.Contains(str_dbexceptonconstraint))
                 return GetConstantName(ex.Message, str_dbexceptonconstraint);
-			else if (ex.Message.Contains(str_dbexceptonREFERENCE) && ex.Message.Contains(str_dbexceptonDELETE)
-					&& ex.Message.IndexOf(str_dbexceptonDELETE) < ex.Message.IndexOf(str_dbexceptonREFERENCE))
+			else if (message.Contains(str_dbexceptonREFERENCE.ToLower()) && message.Contains(str_dbexceptonDELETE)
+					&& message.IndexOf(str_dbexceptonDELETE) < message.IndexOf(str_dbexceptonREFERENCE))
                 return GetConstantName(ex.Message, str_dbexceptonREFERENCE);
-            else if (ex.Message.Contains(str_dbexceptonuniqueindexRUS))
+            else if (message.Contains(str_dbexceptonuniqueindexRUS))
                 return GetConstantName(ex.Message, str_dbexceptonuniqueindexRUS);
-            else if (ex.Message.Contains(str_dbexceptonconstraintRUS))
+            else if (message.Contains(str_dbexceptonconstraintRUS.ToLower()))
                 return GetConstantName(ex.Message, str_dbexceptonconstraintRUS);
+            else if (message.Contains(str_dbexceptonuniquekey))
+                return GetSqlIndexName(ex);
             return ex.Message;
 		}
 
-	    private static string GetConstantName(string message, string whatfind)
+		public static string GetSqlIndexName(SqlException ex)
+		{
+			// Ищем текст внутри двойных кавычек
+			var match = Regex.Match(ex.Message, @"\""([^\""]+)\""");
+
+			if (match.Success)
+			{
+				return match.Groups[1].Value; // Вернет UIX_Campaign
+			}
+
+			return string.Empty;
+		}
+
+    private static string GetConstantName(string message, string whatfind)
 	    {
             int x = message.IndexOf(whatfind);
             int indexStart1 = message.IndexOf(char_dbexceptonquote, x + 1);
