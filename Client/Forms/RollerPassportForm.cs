@@ -9,6 +9,7 @@ using System;
 using System.Data;
 using System.IO;
 using System.Windows.Forms;
+using NAudio.Wave;
 
 namespace Merlin.Forms
 {
@@ -108,17 +109,27 @@ namespace Merlin.Forms
 			}
 		}
 
-		private void GetFileDuration(string name)
-		{
-			IMediaControl mediaControl = new FilgraphManager();
-			mediaControl.RenderFile(name);
+        private void GetFileDuration(string filePath)
+        {
+            try
+            {
+                using (var reader = new AudioFileReader(filePath))
+                {
+                    var seconds = (int)Math.Round(reader.TotalTime.TotalSeconds, MidpointRounding.AwayFromZero);
+                    tdDuration.Value = seconds;
+                    tdDuration.Enabled = false;
+                }
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show("Не удалось определить длительность файла.\n" + ex.Message,
+                                "Ошибка",
+                                MessageBoxButtons.OK,
+                                MessageBoxIcon.Error);
+            }
+        }
 
-			int duration = (int) Decimal.Round((decimal) ((IMediaPosition)mediaControl).Duration, 0);
-			tdDuration.Value = duration;
-			tdDuration.Enabled = false;
-		}
-
-		private void isCommon_CheckedChanged(object sender, EventArgs e)
+        private void isCommon_CheckedChanged(object sender, EventArgs e)
 		{
 			firmStatusUpdate();
 		}
