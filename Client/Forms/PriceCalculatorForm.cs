@@ -945,7 +945,7 @@ namespace Merlin.Forms
                 var outFolder = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "CommercialOffers");
                 Directory.CreateDirectory(outFolder);
 
-                var fileName = string.IsNullOrEmpty(txtFirmName.Text) ? $"КП_{DateTime.Now:dd.MM.yyyy}.docx" : $"КП для {txtFirmName.Text} {DateTime.Today:dd.MM.yyyy-HH-mm-ss}.docx";
+                var fileName = string.IsNullOrEmpty(txtFirmName.Text) ? $"КП_{DateTime.Now:dd.MM.yyyy}.docx" : $"КП для {txtFirmName.Text} {DateTime.Now:dd.MM.yyyy-HH-mm-ss}.docx";
 
                 var outPath = Path.Combine(outFolder, fileName);
 
