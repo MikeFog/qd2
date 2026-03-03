@@ -86,6 +86,7 @@ namespace Merlin.Forms
             // flpSaved
             // 
             this.flpSaved.AutoScroll = true;
+            this.flpSaved.Controls.Add(this.chkAll);
             this.flpSaved.Dock = System.Windows.Forms.DockStyle.Fill;
             this.flpSaved.FlowDirection = System.Windows.Forms.FlowDirection.TopDown;
             this.flpSaved.Location = new System.Drawing.Point(3, 68);
@@ -102,7 +103,6 @@ namespace Merlin.Forms
             this.pnlTop.Controls.Add(this.btnSelectFirm);
             this.pnlTop.Controls.Add(this.btnDeleteAllChecked);
             this.pnlTop.Controls.Add(this.btnCreaateProposal);
-            this.pnlTop.Controls.Add(this.chkAll);
             this.pnlTop.Dock = System.Windows.Forms.DockStyle.Top;
             this.pnlTop.Location = new System.Drawing.Point(3, 3);
             this.pnlTop.Name = "pnlTop";
@@ -168,7 +168,7 @@ namespace Merlin.Forms
             this.chkAll.AutoSize = true;
             this.chkAll.Checked = true;
             this.chkAll.CheckState = System.Windows.Forms.CheckState.Checked;
-            this.chkAll.Location = new System.Drawing.Point(13, 20);
+            this.chkAll.Margin = new System.Windows.Forms.Padding(8, 8, 0, 4);
             this.chkAll.Name = "chkAll";
             this.chkAll.Size = new System.Drawing.Size(139, 29);
             this.chkAll.TabIndex = 0;
