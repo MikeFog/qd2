@@ -576,7 +576,9 @@ namespace Merlin.Forms
             flpSaved.SuspendLayout();
             try
             {
-                flpSaved.Controls.Clear();
+                var cards = flpSaved.Controls.OfType<Panel>().ToList();
+                foreach (var card in cards)
+                    flpSaved.Controls.Remove(card);
 
                 foreach (var snap in items)
                 {
