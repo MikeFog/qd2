@@ -263,10 +263,12 @@ namespace Merlin.Classes
 		{
 			DateTime broadcastStart = ((MassmediaPricelist) pricelist).BroadcastStart;
 
-			procParameters[RollerIssue.ParamNames.StartDate] =
-				startDate.Date.AddHours(broadcastStart.Hour).AddMinutes(broadcastStart.Minute);
-			procParameters[RollerIssue.ParamNames.FinishDate] =
-				finishDate.Date.AddDays(1).AddHours(broadcastStart.Hour).AddMinutes(broadcastStart.Minute - 1);
+			procParameters[RollerIssue.ParamNames.StartDate] = startDate.Date;
+
+			//startDate.Date.AddHours(broadcastStart.Hour).AddMinutes(broadcastStart.Minute);
+			procParameters[RollerIssue.ParamNames.FinishDate] = finishDate.Date;
+
+                //finishDate.Date.AddDays(1).AddHours(broadcastStart.Hour).AddMinutes(broadcastStart.Minute - 1);
 			procParameters[ParamNames.MassmediaId] = MassmediaId;
 		}
 
