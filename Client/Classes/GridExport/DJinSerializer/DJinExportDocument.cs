@@ -121,8 +121,8 @@ namespace Merlin.Classes.GridExport.DJinSerializer
 			{
 				if (additional.NeedInJingle && !additional.IsAlive)
 					PrintLine(file, string.Empty, DJinParam.strJingle, string.Empty, string.Empty,
-					          Path.GetFullPath(string.Format(strAddedPath, mm.EnterPath, random.Next(mm.EnterMin, mm.EnterMax))),
-					          string.Empty, mm.VolumeJStr);
+							  Path.GetFullPath(string.Format(strAddedPath, mm.EnterPath, random.Next(mm.EnterMin, mm.EnterMax + 1))),
+							  string.Empty, mm.VolumeJStr);
 			}
 		}
 
@@ -132,11 +132,11 @@ namespace Merlin.Classes.GridExport.DJinSerializer
 			{
 				if (additional.NeedOutJingle && !additional.IsAlive)
 					PrintLine(file, string.Empty, DJinParam.strJingle, string.Empty, string.Empty,
-							  Path.GetFullPath(string.Format(strAddedPath, mm.ExitPath, random.Next(mm.ExitMin, mm.ExitMax))),
-					          string.Empty, mm.VolumeJStr);
+							  Path.GetFullPath(string.Format(strAddedPath, mm.ExitPath, random.Next(mm.ExitMin, mm.ExitMax + 1))),
+							  string.Empty, mm.VolumeJStr);
 				if (additional.NeedExt && !additional.IsAlive)
 					PrintLine(file, string.Empty, DJinParam.strEtc, string.Empty, string.Empty,
-							  Path.GetFullPath(string.Format(strAddedPath, mm.EtcPath, random.Next(mm.EtcMin, mm.EtcMax))),
+							  Path.GetFullPath(string.Format(strAddedPath, mm.EtcPath, random.Next(mm.EtcMin, mm.EtcMax + 1))),
 					          string.Empty, mm.VolumeMStr);
 				if (!isExtension)
 				{
