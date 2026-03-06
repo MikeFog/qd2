@@ -28,12 +28,12 @@ namespace FogSoft.WinForm.Classes
 		public readonly decimal MaxValue = 100000;
 		public readonly decimal MinValue = -100000;
 		public readonly int? Precision;
-		public readonly int? Scale;	
+		public readonly int? Scale;
 
-        public ColumnInfo(DataRow row)
+		public ColumnInfo(DataRow row)
 		{
 			ColumnName = row["column_name"].ToString();
-			DataType = row["data_type"].ToString();			
+			DataType = row["data_type"].ToString();
 			IsNullable = row["is_nullable"].ToString().ToLower() == "yes";
 			/*
 			if(row["CHARACTER_MAXIMUM_LENGTH"] != DBNull.Value)
@@ -46,7 +46,7 @@ namespace FogSoft.WinForm.Classes
 				Scale = ParseHelper.ParseToInt32(row["NUMERIC_SCALE"].ToString(), 0);
 			*/
 			string defValue = ProcessDefaultValue(row["column_default"]);
-			switch(DataType.ToLower())
+			switch (DataType.ToLower())
 			{
 				case "tinyint":
 					MinValue = SqlByte.MinValue.Value;
@@ -56,7 +56,7 @@ namespace FogSoft.WinForm.Classes
 				case "smallint":
 					MinValue = SqlInt16.MinValue.Value;
 					MaxValue = SqlInt16.MaxValue.Value;
-					if(defValue != null) ColumnDefault = ParseHelper.ParseToInt32(defValue);
+					if (defValue != null) ColumnDefault = ParseHelper.ParseToInt32(defValue);
 					break;
 				case "int":
 				case "integer":
@@ -101,11 +101,11 @@ namespace FogSoft.WinForm.Classes
 		{
 			// Default value selected from database looks this way: (15)
 			// We have to delete first and final bracket symbols
-			if(defaultValue != DBNull.Value)
+			if (defaultValue != DBNull.Value)
 			{
 				string value = RemoveSigns(defaultValue.ToString());
 
-				if(DataType == SqlDbType.Bit.ToString().ToLower())
+				if (DataType == SqlDbType.Bit.ToString().ToLower())
 					value = value == "1" ? Boolean.TrueString : Boolean.FalseString;
 				return value;
 			}
@@ -128,17 +128,17 @@ namespace FogSoft.WinForm.Classes
 
 		public static bool IsMoneyData(ColumnInfo columnInfo, Entity.Attribute attribute)
 		{
-			if( IsSQLType(columnInfo, attribute, SqlDbType.Money)) return true;
-            if (IsSQLType(columnInfo, attribute, SqlDbType.Decimal) && columnInfo != null)
-            {
-                return columnInfo.Precision == 18 && columnInfo.Scale == 2;
-            }
+			if (IsSQLType(columnInfo, attribute, SqlDbType.Money)) return true;
+			if (IsSQLType(columnInfo, attribute, SqlDbType.Decimal) && columnInfo != null)
+			{
+				return columnInfo.Precision == 18 && columnInfo.Scale == 2;
+			}
 			return false;
-        }
+		}
 
 		public static bool IsFloatData(ColumnInfo columnInfo, Entity.Attribute attribute)
 		{
-			return IsSQLType(columnInfo, attribute, SqlDbType.Float);
+			return IsSQLType(columnInfo, attribute, SqlDbType.Float) || (IsSQLType(columnInfo, attribute, SqlDbType.Decimal) && !IsMoneyData(columnInfo, attribute));
 		}
 
 		public static bool IsSQLType(ColumnInfo columnInfo, Entity.Attribute attribute, SqlDbType type)
