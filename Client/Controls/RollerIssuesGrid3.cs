@@ -276,8 +276,6 @@ namespace Merlin.Controls
 					MarkCellAsHavingCurrentCampaignIssues(cell);
 			}
 
-
-
             DataTable dtCounts = ds.Tables[1];
 			foreach (DataRow row in dtCounts.Rows)
 			{
