@@ -63,10 +63,63 @@ namespace Merlin.Cp
             {
                 DateFrom = s.DateFrom.Date,
                 DateTo = s.DateTo.Date,
-                TotalDays = s.TotalDays,
+                TotalDays = s.TotalDays
             };
 
             return new Normalized { Source = s, Header = h, RowPattern = p0 };
+        }
+
+        private static void CountSelectedDaysByType(
+            DateTime dateFrom,
+            DateTime dateTo,
+            bool useDaysOfWeek,
+            bool evenDaysSelected,
+            bool[] daysOfWeekChecked,
+            out int weekdayDaysCount,
+            out int weekendDaysCount)
+        {
+            weekdayDaysCount = 0;
+            weekendDaysCount = 0;
+
+            if (dateTo < dateFrom)
+            {
+                var tmp = dateFrom;
+                dateFrom = dateTo;
+                dateTo = tmp;
+            }
+
+            for (var d = dateFrom.Date; d <= dateTo.Date; d = d.AddDays(1))
+            {
+                if (!IsDateSelectedBySchedule(d, useDaysOfWeek, evenDaysSelected, daysOfWeekChecked))
+                    continue;
+
+                if (d.DayOfWeek == DayOfWeek.Saturday || d.DayOfWeek == DayOfWeek.Sunday)
+                    weekendDaysCount++;
+                else
+                    weekdayDaysCount++;
+            }
+        }
+
+        private static bool IsDateSelectedBySchedule(
+            DateTime date,
+            bool useDaysOfWeek,
+            bool evenDaysSelected,
+            bool[] daysOfWeekChecked)
+        {
+            if (useDaysOfWeek)
+            {
+                if (daysOfWeekChecked == null || daysOfWeekChecked.Length != 7)
+                    return false;
+
+                // Mon=0 .. Sun=6
+                int idx = ((int)date.DayOfWeek + 6) % 7;
+                return daysOfWeekChecked[idx];
+            }
+
+            // true = чётные, false = нечётные
+            return evenDaysSelected
+                ? date.Day % 2 == 0
+                : date.Day % 2 == 1;
         }
 
         private static Cp1RowPattern BuildRowPattern(CampaignCalcRow r)
@@ -124,7 +177,6 @@ namespace Merlin.Cp
             public int NonPrimeTotalSpotsWeekday { get; set; }
             public int PrimeTotalSpotsWeekend { get; set; }
             public int NonPrimeTotalSpotsWeekend { get; set; }
-
             public int RollerDuration { get; set; }
             public int Position { get; set; }
 
@@ -327,30 +379,25 @@ namespace Merlin.Cp
             int blockNo,
             Cp1Grouping.Cp1Group group)
         {
-            // Определяем groupName для этого блока
             string blockGroupName = GetSharedGroupName(group);
-            string title = string.IsNullOrWhiteSpace(blockGroupName) 
+            string title = string.IsNullOrWhiteSpace(blockGroupName)
                 ? $"{blockNo}) Линейная реклама"
                 : $"{blockNo}) Линейная реклама в г. {blockGroupName}";
-            
+
             emit(MakeParagraph(title, bold: true));
             emit(MakeParagraph(string.Empty, bold: false));
 
-            var pw = group.RowPattern.PrimeTotalSpotsWeekday;
-            var npw = group.RowPattern.NonPrimeTotalSpotsWeekday;
-            var pwe = group.RowPattern.PrimeTotalSpotsWeekend;
-            var npwe = group.RowPattern.NonPrimeTotalSpotsWeekend;
+            var schedule = BuildScheduleInfo(group.Snapshots.FirstOrDefault());
 
             var rollerSec = group.RowPattern.RollerDuration;
             var positionId = group.RowPattern.Position;
 
-            var spotsPerStation = pw + npw + pwe + npwe;
-            var durationPerStation = TimeSpan.FromSeconds(spotsPerStation * rollerSec);
+            var durationPerStation = TimeSpan.FromSeconds(schedule.TotalSpotsPerStation * rollerSec);
 
             emit(MakeMixedParagraph(
-                ("Параметры расчёта ", false, fontMediaum),    
+                ("Параметры расчёта ", false, fontMediaum),
                 ("одинаковые для каждой станции:", true, fontNormal)
-                ));
+            ));
 
             emit(MakeMixedParagraph(
                 ("Продолжительность ролика: ", false, fontMediaum),
@@ -365,31 +412,35 @@ namespace Merlin.Cp
             ));
 
             emit(MakeMixedParagraph(
-                ("Количество дней рекламной акции: ", false, fontMediaum),
-                ($"{group.Header.TotalDays}", true, fontNormal)
+                ("Количество дней рекламной акции: будни - ", false, fontMediaum),
+                ($"{schedule.WeekdayDaysCount}", true, fontNormal),
+                (", выходные - ", false, fontMediaum),
+                ($"{schedule.WeekendDaysCount}", true, fontNormal)
             ));
 
             emit(MakeMixedParagraph(
-                ("Количество ежедневных выпусков в будни: прайм - ", false, fontMediaum),
-                ($"{pw}", true, fontNormal),
-                (", не прайм - ", false, fontMediaum),
-                ($"{npw}", true, fontNormal)
+                ("Количество ежедневных выпусков в прайм-тайм: будни - ", false, fontMediaum),
+                ($"{schedule.PrimePerDayWeekday}", true, fontNormal),
+                (", выходные - ", false, fontMediaum),
+                ($"{schedule.PrimePerDayWeekend}", true, fontNormal)
             ));
 
             emit(MakeMixedParagraph(
-                ("Количество ежедневных выпусков в выходные: прайм - ", false, fontMediaum),
-                ($"{pwe}", true, fontNormal),
-                (", не прайм - ", false, fontMediaum),
-                ($"{npwe}", true, fontNormal)
+                ("Количество ежедневных выпусков в офф-прайм: будни - ", false, fontMediaum),
+                ($"{schedule.NonPrimePerDayWeekday}", true, fontNormal),
+                (", выходные - ", false, fontMediaum),
+                ($"{schedule.NonPrimePerDayWeekend}", true, fontNormal)
             ));
 
             emit(MakeMixedParagraph(
-                ("Общее количество выпусков в день: ", false, fontMediaum),
-                ($"{spotsPerStation}", true, fontNormal)
+                ("Суммарное количество выпусков на каждой станции: будни - ", false, fontMediaum),
+                ($"{schedule.TotalSpotsWeekday}", true, fontNormal),
+                (", выходные - ", false, fontMediaum),
+                ($"{schedule.TotalSpotsWeekend}", true, fontNormal)
             ));
 
             emit(MakeMixedParagraph(
-                ("Хронометраж эфирного времени: ", false, fontMediaum),
+                ("Суммарный хронометраж эфирного времени на каждой станции: ", false, fontMediaum),
                 ($"{durationPerStation:hh\\:mm\\:ss}", true, fontNormal)
             ));
 
@@ -400,13 +451,13 @@ namespace Merlin.Cp
 
             emit(MakeParagraph(string.Empty, bold: false));
 
-            // ✅ Определяем для ВСЕЙ группы, можно ли использовать короткие имена
             bool useShortNamesForGroup = !string.IsNullOrWhiteSpace(blockGroupName);
 
             var rows = group.Snapshots
-                .Select(s => new VariantRow { 
-                    StationsSet = BuildStationsSetText(s, useShortNamesForGroup), 
-                    Price = s.GrandTotal 
+                .Select(s => new VariantRow
+                {
+                    StationsSet = BuildStationsSetText(s, useShortNamesForGroup),
+                    Price = s.GrandTotal
                 })
                 .OrderByDescending(x => x.Price)
                 .ToList();
@@ -462,14 +513,15 @@ namespace Merlin.Cp
 
         private static void AppendDetailedBlock(Action<OpenXmlElement> emit, int blockNo, CampaignCalcSnapshot s)
         {
-            // Определяем groupName для этого блока
             string blockGroupName = GetSharedGroupName(s);
             string title = string.IsNullOrWhiteSpace(blockGroupName)
                 ? $"{blockNo}) Линейная реклама"
                 : $"{blockNo}) Линейная реклама в г. {blockGroupName}";
-            
+
             emit(MakeParagraph(title, bold: true));
             emit(MakeParagraph(string.Empty, bold: false));
+
+            var schedule = BuildScheduleInfo(s);
 
             emit(MakeMixedParagraph(
                 ("Период: с ", false, fontMediaum),
@@ -478,11 +530,18 @@ namespace Merlin.Cp
                 ($"{s.DateTo:dd.MM.yyyy}", true, fontNormal)
             ));
 
+            emit(MakeMixedParagraph(
+                ("Количество дней рекламной акции: будни - ", false, fontMediaum),
+                ($"{schedule.WeekdayDaysCount}", true, fontNormal),
+                (", выходные - ", false, fontMediaum),
+                ($"{schedule.WeekendDaysCount}", true, fontNormal)
+            ));
+
             var totalDur = TimeSpan.FromSeconds(Math.Max(0, s.TotalDuration));
             emit(MakeMixedParagraph(
                 ("Суммарный хронометраж эфирного времени: ", false, fontMediaum),
                 ($"{totalDur:hh\\:mm\\:ss}", true, fontNormal)
-                ));
+            ));
 
             emit(MakeParagraph("", bold: false));
             emit(BuildDetailedTable(s));
@@ -723,21 +782,6 @@ namespace Merlin.Cp
             return cell;
         }
 
-        private static void ReplaceTextPlaceholders2(WordprocessingDocument doc, Dictionary<string, string> map)
-        {
-            foreach (var text in doc.MainDocumentPart.Document.Descendants<Text>())
-            {
-                if (string.IsNullOrEmpty(text.Text))
-                    continue;
-
-                foreach (var kv in map)
-                {
-                    if (text.Text.Contains(kv.Key))
-                        text.Text = text.Text.Replace(kv.Key, kv.Value ?? string.Empty);
-                }
-            }
-        }
-
         private static void ReplaceTextPlaceholdersPreserveStylesEverywhere(
             WordprocessingDocument doc,
             Dictionary<string, string> map)
@@ -765,6 +809,110 @@ namespace Merlin.Cp
             public Text TextNode { get; set; }
             public int Start { get; set; }   // start index in paragraph full string
             public int Length { get; set; }
+        }
+
+        private sealed class CampaignScheduleInfo
+        {
+            public int WeekdayDaysCount { get; set; }
+            public int WeekendDaysCount { get; set; }
+
+            public int PrimePerDayWeekday { get; set; }
+            public int NonPrimePerDayWeekday { get; set; }
+            public int PrimePerDayWeekend { get; set; }
+            public int NonPrimePerDayWeekend { get; set; }
+
+            public int TotalSpotsWeekday
+            {
+                get { return WeekdayDaysCount * (PrimePerDayWeekday + NonPrimePerDayWeekday); }
+            }
+
+            public int TotalSpotsWeekend
+            {
+                get { return WeekendDaysCount * (PrimePerDayWeekend + NonPrimePerDayWeekend); }
+            }
+
+            public int TotalSpotsPerStation
+            {
+                get { return TotalSpotsWeekday + TotalSpotsWeekend; }
+            }
+        }
+
+        private static CampaignScheduleInfo BuildScheduleInfo(CampaignCalcSnapshot snapshot)
+        {
+            var info = new CampaignScheduleInfo();
+            if (snapshot == null)
+                return info;
+
+            CountSelectedDaysByType(
+                snapshot.DateFrom.Date,
+                snapshot.DateTo.Date,
+                snapshot.UseDaysOfWeek,
+                snapshot.EvenDaysSelected,
+                snapshot.DaysOfWeekChecked,
+                out int weekdayDaysCount,
+                out int weekendDaysCount);
+
+            info.WeekdayDaysCount = weekdayDaysCount;
+            info.WeekendDaysCount = weekendDaysCount;
+            info.PrimePerDayWeekday = snapshot.PrimePerDayWeekday;
+            info.NonPrimePerDayWeekday = snapshot.NonPrimePerDayWeekday;
+            info.PrimePerDayWeekend = snapshot.PrimePerDayWeekend;
+            info.NonPrimePerDayWeekend = snapshot.NonPrimePerDayWeekend;
+
+            return info;
+        }
+
+        private static void CountSelectedDaysByType(
+            DateTime dateFrom,
+            DateTime dateTo,
+            bool useDaysOfWeek,
+            bool evenDaysSelected,
+            bool[] daysOfWeekChecked,
+            out int weekdayDaysCount,
+            out int weekendDaysCount)
+        {
+            weekdayDaysCount = 0;
+            weekendDaysCount = 0;
+
+            if (dateTo < dateFrom)
+            {
+                var tmp = dateFrom;
+                dateFrom = dateTo;
+                dateTo = tmp;
+            }
+
+            for (var d = dateFrom.Date; d <= dateTo.Date; d = d.AddDays(1))
+            {
+                if (!IsDateSelectedBySchedule(d, useDaysOfWeek, evenDaysSelected, daysOfWeekChecked))
+                    continue;
+
+                if (d.DayOfWeek == DayOfWeek.Saturday || d.DayOfWeek == DayOfWeek.Sunday)
+                    weekendDaysCount++;
+                else
+                    weekdayDaysCount++;
+            }
+        }
+
+        private static bool IsDateSelectedBySchedule(
+            DateTime date,
+            bool useDaysOfWeek,
+            bool evenDaysSelected,
+            bool[] daysOfWeekChecked)
+        {
+            if (useDaysOfWeek)
+            {
+                if (daysOfWeekChecked == null || daysOfWeekChecked.Length != 7)
+                    return false;
+
+                // Mon=0 .. Sun=6
+                int idx = ((int)date.DayOfWeek + 6) % 7;
+                return daysOfWeekChecked[idx];
+            }
+
+            // true = чётные, false = нечётные
+            return evenDaysSelected
+                ? date.Day % 2 == 0
+                : date.Day % 2 == 1;
         }
 
         private static void ReplaceInRootPreserveStyles(OpenXmlElement root, Dictionary<string, string> map)
@@ -867,38 +1015,6 @@ namespace Merlin.Cp
                 var runProps = new RunProperties();
 
                 // Устанавливаем шрифт индивидуально для каждого Run
-                if (!string.IsNullOrEmpty(fontName))
-                {
-                    runProps.AppendChild(new RunFonts()
-                    {
-                        Ascii = fontName,
-                        HighAnsi = fontName,
-                        ComplexScript = fontName
-                    });
-                }
-
-                if (bold) runProps.AppendChild(new Bold());
-
-                var run = new Run(runProps, new Text(text) { Space = SpaceProcessingModeValues.Preserve });
-                p.AppendChild(run);
-            }
-            return p;
-        }
-
-        private static Paragraph MakeMixedParagraph(params (string text, bool bold)[] parts)
-        {
-            // Вызываем перегруженный метод с null, если шрифт не указан
-            return MakeMixedParagraph(null, parts);
-        }
-
-        private static Paragraph MakeMixedParagraph(string fontName, params (string text, bool bold)[] parts)
-        {
-            var p = new Paragraph();
-            foreach (var (text, bold) in parts)
-            {
-                var runProps = new RunProperties();
-
-                // Добавляем шрифт только если он передан
                 if (!string.IsNullOrEmpty(fontName))
                 {
                     runProps.AppendChild(new RunFonts()

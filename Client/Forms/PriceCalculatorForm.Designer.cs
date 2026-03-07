@@ -23,6 +23,7 @@ namespace Merlin.Forms
             this.grdPriceCalculator = new Merlin.Controls.PriceCalculatorGrid();
             this.tabPage2 = new System.Windows.Forms.TabPage();
             this.flpSaved = new System.Windows.Forms.FlowLayoutPanel();
+            this.chkAll = new System.Windows.Forms.CheckBox();
             this.pnlTop = new System.Windows.Forms.Panel();
             this.button1 = new System.Windows.Forms.Button();
             this.txtFirmName = new System.Windows.Forms.TextBox();
@@ -30,11 +31,11 @@ namespace Merlin.Forms
             this.btnSelectFirm = new System.Windows.Forms.Button();
             this.btnDeleteAllChecked = new System.Windows.Forms.Button();
             this.btnCreaateProposal = new System.Windows.Forms.Button();
-            this.chkAll = new System.Windows.Forms.CheckBox();
             this.templateEditor = new Merlin.Controls.TemplateEditorControl();
             this.tabControl1.SuspendLayout();
             this.tpCalc.SuspendLayout();
             this.tabPage2.SuspendLayout();
+            this.flpSaved.SuspendLayout();
             this.pnlTop.SuspendLayout();
             this.SuspendLayout();
             // 
@@ -95,6 +96,19 @@ namespace Merlin.Forms
             this.flpSaved.TabIndex = 0;
             this.flpSaved.WrapContents = false;
             // 
+            // chkAll
+            // 
+            this.chkAll.AutoSize = true;
+            this.chkAll.Checked = true;
+            this.chkAll.CheckState = System.Windows.Forms.CheckState.Checked;
+            this.chkAll.Location = new System.Drawing.Point(10, 8);
+            this.chkAll.Margin = new System.Windows.Forms.Padding(10, 8, 0, 4);
+            this.chkAll.Name = "chkAll";
+            this.chkAll.Size = new System.Drawing.Size(139, 29);
+            this.chkAll.TabIndex = 0;
+            this.chkAll.Text = "Выбрать все";
+            this.chkAll.UseVisualStyleBackColor = true;
+            // 
             // pnlTop
             // 
             this.pnlTop.Controls.Add(this.button1);
@@ -112,7 +126,7 @@ namespace Merlin.Forms
             // button1
             // 
             this.button1.Image = global::Merlin.Properties.Resources.Ластик;
-            this.button1.Location = new System.Drawing.Point(1300, 16);
+            this.button1.Location = new System.Drawing.Point(1145, 3);
             this.button1.Name = "button1";
             this.button1.Size = new System.Drawing.Size(48, 35);
             this.button1.TabIndex = 7;
@@ -121,7 +135,7 @@ namespace Merlin.Forms
             // 
             // txtFirmName
             // 
-            this.txtFirmName.Location = new System.Drawing.Point(894, 18);
+            this.txtFirmName.Location = new System.Drawing.Point(739, 5);
             this.txtFirmName.Name = "txtFirmName";
             this.txtFirmName.Size = new System.Drawing.Size(400, 31);
             this.txtFirmName.TabIndex = 6;
@@ -129,14 +143,14 @@ namespace Merlin.Forms
             // cmbAgency
             // 
             this.cmbAgency.FormattingEnabled = true;
-            this.cmbAgency.Location = new System.Drawing.Point(491, 18);
+            this.cmbAgency.Location = new System.Drawing.Point(336, 5);
             this.cmbAgency.Name = "cmbAgency";
             this.cmbAgency.Size = new System.Drawing.Size(182, 33);
             this.cmbAgency.TabIndex = 5;
             // 
             // btnSelectFirm
             // 
-            this.btnSelectFirm.Location = new System.Drawing.Point(679, 16);
+            this.btnSelectFirm.Location = new System.Drawing.Point(524, 3);
             this.btnSelectFirm.Name = "btnSelectFirm";
             this.btnSelectFirm.Size = new System.Drawing.Size(209, 38);
             this.btnSelectFirm.TabIndex = 3;
@@ -146,7 +160,7 @@ namespace Merlin.Forms
             // 
             // btnDeleteAllChecked
             // 
-            this.btnDeleteAllChecked.Location = new System.Drawing.Point(158, 16);
+            this.btnDeleteAllChecked.Location = new System.Drawing.Point(3, 3);
             this.btnDeleteAllChecked.Name = "btnDeleteAllChecked";
             this.btnDeleteAllChecked.Size = new System.Drawing.Size(202, 38);
             this.btnDeleteAllChecked.TabIndex = 2;
@@ -155,25 +169,13 @@ namespace Merlin.Forms
             // 
             // btnCreaateProposal
             // 
-            this.btnCreaateProposal.Location = new System.Drawing.Point(366, 16);
+            this.btnCreaateProposal.Location = new System.Drawing.Point(211, 3);
             this.btnCreaateProposal.Name = "btnCreaateProposal";
             this.btnCreaateProposal.Size = new System.Drawing.Size(120, 38);
             this.btnCreaateProposal.TabIndex = 1;
             this.btnCreaateProposal.Text = "Создать КП";
             this.btnCreaateProposal.UseVisualStyleBackColor = true;
             this.btnCreaateProposal.Click += new System.EventHandler(this.btnCreaateProposal_Click);
-            // 
-            // chkAll
-            // 
-            this.chkAll.AutoSize = true;
-            this.chkAll.Checked = true;
-            this.chkAll.CheckState = System.Windows.Forms.CheckState.Checked;
-            this.chkAll.Margin = new System.Windows.Forms.Padding(8, 8, 0, 4);
-            this.chkAll.Name = "chkAll";
-            this.chkAll.Size = new System.Drawing.Size(139, 29);
-            this.chkAll.TabIndex = 0;
-            this.chkAll.Text = "Выбрать все";
-            this.chkAll.UseVisualStyleBackColor = true;
             // 
             // templateEditor
             // 
@@ -206,6 +208,8 @@ namespace Merlin.Forms
             this.tabControl1.ResumeLayout(false);
             this.tpCalc.ResumeLayout(false);
             this.tabPage2.ResumeLayout(false);
+            this.flpSaved.ResumeLayout(false);
+            this.flpSaved.PerformLayout();
             this.pnlTop.ResumeLayout(false);
             this.pnlTop.PerformLayout();
             this.ResumeLayout(false);

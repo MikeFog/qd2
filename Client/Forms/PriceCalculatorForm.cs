@@ -601,7 +601,7 @@ namespace Merlin.Forms
             {
                 AutoSize = false,
                 Width = GetSnapshotCardWidth(),
-                Padding = new Padding(8),
+                Padding = new Padding(0, 8, 8, 8),
                 BorderStyle = BorderStyle.FixedSingle,
                 Tag = snap
             };
@@ -609,7 +609,7 @@ namespace Merlin.Forms
             var chk = new CheckBox
             {
                 AutoSize = true,
-                Location = new Point(8, 8),
+                Location = new Point(7, 8), // ✅ 7 вместо 8 (компенсация border)
                 Name = "chkSelect",
                 Checked = true
             };
@@ -618,7 +618,7 @@ namespace Merlin.Forms
             {
                 AutoSize = true,
                 Font = new Font(Font, FontStyle.Bold),
-                Location = new Point(30, 8),
+                Location = new Point(29, 8), // ✅ 29 вместо 30 (для консистентности)
                 Text = BuildTitle(snap),
                 Name = "lblTitle"
             };
@@ -626,27 +626,29 @@ namespace Merlin.Forms
             var details = new Label
             {
                 AutoSize = true,
-                Location = new Point(30, 30),
+                Location = new Point(29, 30), // ✅ 29 вместо 30
                 MaximumSize = new Size(card.Width - 40, 0),
                 Text = BuildDetails(snap),
                 Name = "lblDetails"
             };
+            
             var btnApply = new Button
             {
                 Text = "Редактировать",
                 Width = 100,
                 Height = 26,
-                Location = new Point(30, details.Bottom + 8),
+                Location = new Point(29, details.Bottom + 8), // ✅ 29 вместо 30
                 Tag = snap,
                 Name = "btnApply"
             };
             btnApply.Click += (s, e) => ApplySnapshot((CampaignCalcSnapshot)((Button)s).Tag);
+            
             var btnDelete = new Button
             {
                 Text = "Удалить",
                 Width = 90,
                 Height = 26,
-                Location = new Point(30, details.Bottom + 8),
+                Location = new Point(29, details.Bottom + 8),
                 Tag = snap,
                 Name = "btnDelete"
             };
@@ -707,15 +709,14 @@ namespace Merlin.Forms
             details.MaximumSize = new Size(card.Width - 40, 0);
             details.Size = details.PreferredSize;
 
-            // Position buttons side by side
             if (btnApply != null)
             {
-                btnApply.Location = new Point(30, details.Bottom + 8);
+                btnApply.Location = new Point(29, details.Bottom + 8); // ✅ 29
             }
 
             if (btnDelete != null)
             {
-                int leftPosition = btnApply != null ? btnApply.Right + 8 : 30;
+                int leftPosition = btnApply != null ? btnApply.Right + 8 : 29;
                 btnDelete.Location = new Point(leftPosition, details.Bottom + 8);
             }
 
