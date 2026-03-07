@@ -87,9 +87,9 @@ namespace FogSoft.WinForm.Classes
 			{
 				childEntity = value;
 				ClearCache();
-				
-				//if (value != null)
-				//	Globals.ResolveFilterInitialValues(_filter, childEntity.XmlFilter);
+
+				if (value != null)
+					Globals.ResolveFilterInitialValues(_filter, childEntity.XmlFilter);
 			}
 		}
 
@@ -127,7 +127,10 @@ namespace FogSoft.WinForm.Classes
 			PresentationObject presentationObject = ResolveEntityForSelectedRow(row).CreateObject(row);
 			IObjectContainer objectContainer = presentationObject as IObjectContainer;
 			if(objectContainer != null)
+			{
 				objectContainer.RelationScenario = relationScenario;
+				objectContainer.Filter = CacheFilterValues(_filter);
+			}
 
 			return presentationObject;
 		}
