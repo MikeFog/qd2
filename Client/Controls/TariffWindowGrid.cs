@@ -21,6 +21,7 @@ namespace Merlin.Controls
 		protected Module module;
 		protected bool excludeModuleTariffs = false;
         protected bool showTrafficWindows = false;
+        
         protected Point mouseClickPoint;
         private readonly ToolStripMenuItem miChangePrice = new ToolStripMenuItem();
         private readonly ToolStripMenuItem miDeleteTriffWindows = new ToolStripMenuItem();
@@ -42,13 +43,14 @@ namespace Merlin.Controls
             dtTimeLookup.Columns.Add("name", typeof(string));
         }
 
-        public TariffWindowGrid(bool showTrafficWindows)
-            :this ()
+        public TariffWindowGrid(bool showTrafficWindows) : this ()
         {
             this.showTrafficWindows = showTrafficWindows;
         }
 
-		private DateTime CurrentWindowDate
+        public bool ShowDisabledWindows { get; set;	} = true;
+
+        private DateTime CurrentWindowDate
 		{
 			get
 			{
@@ -226,7 +228,7 @@ namespace Merlin.Controls
 				MassmediaPricelist massmediaPriceList = PricelistOnMassmedia;
 				massmediaPriceList.ExcludeModuleTariffs = excludeModuleTariffs;
 
-				DataSet dsWindows = massmediaPriceList.GetTariffWindows(startDate, finishDate, module, showTrafficWindows);
+				DataSet dsWindows = massmediaPriceList.GetTariffWindows(startDate, finishDate, module, showTrafficWindows, ShowDisabledWindows);
 
 				dtTime = dsWindows.Tables["time"];
 				tariffWindows = new ITariffWindow[dtTime.Rows.Count, 7];

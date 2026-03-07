@@ -8,7 +8,6 @@ using FogSoft.WinForm.Classes;
 using FogSoft.WinForm.DataAccess;
 using FogSoft.WinForm.Forms;
 using Merlin.Forms;
-using unoidl.com.sun.star.ucb;
 
 namespace Merlin.Classes
 {
@@ -20,7 +19,8 @@ namespace Merlin.Classes
 			public const string ExcludeSpecialWindows = "excludeSpecialWindows";
 			public const string BroadcastStart = "broadcastStart";
             public const string ShowTrafficWindows = "showTrafficWindows";
-		}
+            public const string ShowDisabledWindows = "showDisabledWindows";
+        }
 
 		private struct Actions
 		{
@@ -139,7 +139,7 @@ namespace Merlin.Classes
 			return ((DataSet) DataAccessor.DoAction(procParameters)).Tables[Constants.TableNames.Data];
 		}
 
-        public DataSet GetTariffWindows(DateTime startDate, DateTime finishDate, Module module, bool showTrafficWindows)
+        public DataSet GetTariffWindows(DateTime startDate, DateTime finishDate, Module module, bool showTrafficWindows, bool showDisabledWindows = true)
 		{
 			Dictionary<string, object> procParameters =
 				DataAccessor.PrepareParameters(EntityManager.GetEntity((int) Entities.TariffWindow));
@@ -150,6 +150,7 @@ namespace Merlin.Classes
 			procParameters[ParamNames.ExcludeSpecialWindows] = excludeSpecialWindows;
 			procParameters[ParamNames.ExcludeModuleTariffs] = excludeModuleTariffs;
             procParameters[ParamNames.ShowTrafficWindows] = showTrafficWindows;
+            procParameters[ParamNames.ShowDisabledWindows] = showDisabledWindows;
 			if (module != null)
 				procParameters[Module.ParamNames.ModuleId] = module.ModuleId;
 

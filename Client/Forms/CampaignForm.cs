@@ -915,5 +915,14 @@ namespace Merlin.Forms
                Cursor = Cursors.Default;
             }
         }
+
+        private void btnShowDisabled_CheckedChanged(object sender, EventArgs e)
+        {
+			if(tariffGrid is TariffWindowGrid grid)
+            {
+                grid.ShowDisabledWindows = btnShowDisabled.Checked;
+                RefreshGrid();
+            }
+        }
     }
 }
