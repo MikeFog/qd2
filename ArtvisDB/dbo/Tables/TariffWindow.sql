@@ -6,7 +6,7 @@
     [duration]                   [dbo].[timeDuration] NOT NULL,
     [timeInUseConfirmed]         [dbo].[timeDuration] CONSTRAINT [DF_TariffWindow_durationInUse] DEFAULT (0) NOT NULL,
     [timeInUseUnconfirmed]       [dbo].[timeDuration] CONSTRAINT [DF_TariffWindow_timeInUseConfirmer1] DEFAULT (0) NOT NULL,
-    [price]                      MONEY                NOT NULL,
+    [price]                      DECIMAL (18, 2)      NOT NULL,
     [isFirstPositionOccupied]    BIT                  CONSTRAINT [DF_TariffWindow_isFirstPositionOccupied] DEFAULT (0) NOT NULL,
     [isSecondPositionOccupied]   BIT                  CONSTRAINT [DF_TariffWindow_isSecondPositionOccupied] DEFAULT (0) NOT NULL,
     [isLastPositionOccupied]     BIT                  CONSTRAINT [DF_TariffWindow_isLastPositionOccupied] DEFAULT (0) NOT NULL,
@@ -30,6 +30,9 @@
     CONSTRAINT [FK_TariffWindow_TariffWindowNext] FOREIGN KEY ([windowNextId]) REFERENCES [dbo].[TariffWindow] ([windowId]),
     CONSTRAINT [FK_TariffWindow_TariffWindowUnion] FOREIGN KEY ([windowPrevId]) REFERENCES [dbo].[TariffWindow] ([windowId])
 );
+
+
+
 
 
 GO

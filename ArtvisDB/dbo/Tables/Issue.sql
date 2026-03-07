@@ -1,17 +1,17 @@
 ﻿CREATE TABLE [dbo].[Issue] (
-    [issueID]           INT        IDENTITY (1, 1) NOT NULL,
-    [rollerID]          INT        NOT NULL,
-    [originalWindowID]  INT        NOT NULL,
-    [actualWindowID]    INT        NOT NULL,
-    [campaignID]        INT        NOT NULL,
-    [positionId]        SMALLINT   CONSTRAINT [DF_Issue_position] DEFAULT (0) NOT NULL,
-    [ratio]             FLOAT (53) CONSTRAINT [DF_Issue_ratio] DEFAULT (1) NOT NULL,
-    [moduleIssueID]     INT        NULL,
-    [isConfirmed]       BIT        CONSTRAINT [DF_Issue_isConfirmed] DEFAULT (0) NOT NULL,
-    [packModuleIssueID] INT        NULL,
-    [tariffPrice]       MONEY      CONSTRAINT [DF_Issue_tariffPrice] DEFAULT (0) NOT NULL,
-    [grantorID]         SMALLINT   NULL,
-    [activationDate]    DATETIME   NULL,
+    [issueID]           INT              IDENTITY (1, 1) NOT NULL,
+    [rollerID]          INT              NOT NULL,
+    [originalWindowID]  INT              NOT NULL,
+    [actualWindowID]    INT              NOT NULL,
+    [campaignID]        INT              NOT NULL,
+    [positionId]        SMALLINT         CONSTRAINT [DF_Issue_position] DEFAULT (0) NOT NULL,
+    [ratio]             DECIMAL (18, 10) CONSTRAINT [DF_Issue_ratio] DEFAULT ((1)) NOT NULL,
+    [moduleIssueID]     INT              NULL,
+    [isConfirmed]       BIT              CONSTRAINT [DF_Issue_isConfirmed] DEFAULT (0) NOT NULL,
+    [packModuleIssueID] INT              NULL,
+    [tariffPrice]       DECIMAL (18, 2)  CONSTRAINT [DF_Issue_tariffPrice] DEFAULT ((0)) NOT NULL,
+    [grantorID]         SMALLINT         NULL,
+    [activationDate]    DATETIME         NULL,
     CONSTRAINT [PK_Issue] PRIMARY KEY NONCLUSTERED ([issueID] ASC) WITH (FILLFACTOR = 90),
     CONSTRAINT [FK_Issue_Campaign] FOREIGN KEY ([campaignID]) REFERENCES [dbo].[Campaign] ([campaignID]) ON DELETE CASCADE,
     CONSTRAINT [FK_Issue_IssuePosition] FOREIGN KEY ([positionId]) REFERENCES [dbo].[iIssuePosition] ([positionId]),
@@ -22,6 +22,9 @@
     CONSTRAINT [FK_Issue_TariffWindow1] FOREIGN KEY ([actualWindowID]) REFERENCES [dbo].[TariffWindow] ([windowId]),
     CONSTRAINT [FK_Issue_User] FOREIGN KEY ([grantorID]) REFERENCES [dbo].[User] ([userID])
 );
+
+
+
 
 
 GO

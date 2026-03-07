@@ -57,5 +57,8 @@ GROUP BY i.[campaignID], i.[rollerID], c.[massmediaID], r.[name], r.[duration], 
 	a.deleteDate
 ORDER BY
 	r.name
-
+GO
+GRANT EXECUTE
+    ON OBJECT::[dbo].[CampaignRollers] TO PUBLIC
+    AS [dbo];
 

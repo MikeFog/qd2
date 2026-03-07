@@ -42,17 +42,8 @@ ELSE BEGIN
 END
 
 Exec sl_TariffRetrieve
-
-
-
-
-
-
-
-
-
-
-
-
-
+GO
+GRANT EXECUTE
+    ON OBJECT::[dbo].[Tariffs] TO PUBLIC
+    AS [dbo];
 

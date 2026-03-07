@@ -14,6 +14,8 @@ INSERT INTO #Firm(firmID)
 SELECT DISTINCT firmID FROM roller
 
 Exec sl_Firms
-
-
+GO
+GRANT EXECUTE
+    ON OBJECT::[dbo].[RollerFilter] TO PUBLIC
+    AS [dbo];
 

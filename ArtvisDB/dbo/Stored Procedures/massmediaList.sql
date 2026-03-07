@@ -65,4 +65,8 @@ ELSE
 		and (@agencyID is null or exists(select * from dbo.AgencyMassmedia am where am.massmediaID = mm.massmediaID and am.agencyID = @agencyID))
 	ORDER BY 
 		mm.[name]
+GO
+GRANT EXECUTE
+    ON OBJECT::[dbo].[massmediaList] TO PUBLIC
+    AS [dbo];
 

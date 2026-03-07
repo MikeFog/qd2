@@ -6,7 +6,7 @@ CREATE PROCEDURE [dbo].[PaymentCommonActionID]
 (
 @paymentID int,
 @actionID int,
-@summa money = NULL,
+@summa decimal(18, 2) = NULL,
 @actionName varchar(32)
 )
 as
@@ -28,9 +28,3 @@ ELSE IF @actionName = 'DeleteItem' BEGIN
 	WHERE paymentID = @paymentID And actionID = @actionID
 
 	END
-
-
-
-
-
-

@@ -73,12 +73,12 @@ BEGIN
         agencyID smallint NULL,
         startDate datetime NULL,
         finishDate datetime NULL,
-        finalPrice money NULL,
+        finalPrice decimal(18,2) NULL,
         userID smallint NULL,
         firmID smallint NULL,
-        discount float NULL,
+        discount decimal(9,4) NULL,
         massmediaGroupID int NULL,
-        price money NULL
+        price decimal(18,2) NULL
     );
 
     CREATE UNIQUE CLUSTERED INDEX IX_Campaign
@@ -159,7 +159,7 @@ BEGIN
 
 	-- ========= Сборка SQL =========
 	SET @SQLString = N'
-	DECLARE @Summa money = 0;
+	DECLARE @Summa decimal(18,2) = 0;
 
 	SELECT @Summa = ISNULL(SUM(d.price), 0)
 	FROM #Campaign d
@@ -172,8 +172,8 @@ BEGIN
 		SET @SQLString += N'
 		DECLARE @res TABLE (
 			RowNum int,
-			sum4 money,
-			sum1 money,
+			sum4 decimal(18,2),
+			sum1 decimal(18,2),
 			firm varchar(256),
 			head_company varchar(256),
 			hc2 varchar(256),
@@ -191,8 +191,8 @@ BEGIN
 		SET @SQLString += N'
 		DECLARE @resAdvert TABLE (
 			RowNum int,
-			sum4 money,
-			sum1 money,
+			sum4 decimal(18,2),
+			sum1 decimal(18,2),
 			adverttype varchar(256),
 			topAdverttype varchar(256),
 			top2 varchar(256),

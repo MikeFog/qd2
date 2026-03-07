@@ -7,9 +7,9 @@
 @issueDate datetime = NULL,
 @rollerID int = NULL,
 @rollerDuration smallint = NULL,
-@ratio float = 1,
+@ratio decimal(18,10) = 1,
 @positionId smallint = 0,
-@tariffPrice money = NULL,
+@tariffPrice decimal(18,2) = NULL,
 @isConfirmed bit = NULL,
 @loggedUserId smallint,
 @actionName varchar(32),
@@ -29,7 +29,7 @@ DECLARE
 	@finishDate datetime,
 	@tariffTime datetime,
 	@rollerIssueDate datetime,
-	@issuePrice money,
+	@issuePrice decimal(18,2),
 	@extraChargeFirst tinyint,
 	@extraChargeSecond tinyint,
 	@extraChargeLast TINYINT,
@@ -37,7 +37,7 @@ DECLARE
 	@DeadLine datetime,
 	@campaignFinishDate datetime,
 	@msgError varchar(64),@res smallint,
-	@managerDiscount float,
+	@managerDiscount decimal(18,10),
 	@campaignStartDate datetime
 	
 EXEC hlp_GetMainUserCredentials

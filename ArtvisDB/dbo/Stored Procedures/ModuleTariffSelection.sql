@@ -35,9 +35,8 @@ WHERE
 	mpl.modulePriceListID = @modulePriceListID
 ORDER BY 
 	t.[time]
-
-
-
-
-
+GO
+GRANT EXECUTE
+    ON OBJECT::[dbo].[ModuleTariffSelection] TO PUBLIC
+    AS [dbo];
 

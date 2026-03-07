@@ -8,7 +8,7 @@ CREATE procedure [dbo].[AddRangeIssues]
 	@issueDate datetime, 
 	@rollerID int = NULL,
 	@rollerDuration smallint = NULL,
-	@positionId float = 0,
+	@positionId int = 0,
 	@loggedUserId smallint,
 	@actionID int,
 	@grantorID SMALLINT = NULL,
@@ -22,7 +22,7 @@ begin
 	declare cur_massmedias cursor local fast_forward for
 	select c.massmediaID, c.campaignID from dbo.Campaign c where c.actionID = @actionID
 	
-	declare @massmediaID smallint, @campaignID int, @windowID int, @price money
+	declare @massmediaID smallint, @campaignID int, @windowID int, @price decimal(18,2)
 	
 	open cur_massmedias
 	fetch next from cur_massmedias into @massmediaID, @campaignID
@@ -70,4 +70,3 @@ begin
 	end 
 
 end
-

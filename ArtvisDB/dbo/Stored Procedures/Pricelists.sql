@@ -35,9 +35,8 @@ BEGIN
     LEFT JOIN tw ON tw.pricelistID = pl.pricelistID
     ORDER BY pl.startDate DESC;
 END
-
-	
-
-
-
+GO
+GRANT EXECUTE
+    ON OBJECT::[dbo].[Pricelists] TO PUBLIC
+    AS [dbo];
 

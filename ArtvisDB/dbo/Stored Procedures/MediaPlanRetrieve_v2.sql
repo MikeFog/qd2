@@ -58,7 +58,7 @@ BEGIN
         issueDate datetime NOT NULL,          -- windowDateActual/Original
         comment nvarchar(32) NULL,
         positionID SMALLINT NULL,
-        price MONEY NULL,
+        price decimal(18,2) NULL,
         broadcast datetime NULL,              -- broadcastStart
         mmID smallint NOT NULL,               -- massmediaID
 
@@ -210,7 +210,7 @@ BEGIN
         SELECT
             i.timeString AS [time],
             MAX(i.comment) AS comment,
-            CAST(i.price AS float) AS price,
+            i.price,
             SUM(r.duration) / @massmediaCount AS totalDuration
         FROM #issue i
         INNER JOIN Roller r ON i.rollerId = r.rollerId
@@ -249,7 +249,7 @@ BEGIN
             i.rollerId,
             i.radioDate AS issueDate,
             i.timeString AS [time],
-            CAST(i.price AS float) AS price,
+            i.price,
             i.positionID
         FROM #issue i
         ORDER BY i.radioDate, i.timeString;

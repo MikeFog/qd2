@@ -3,7 +3,7 @@
 -- Create date: 
 -- Description:	
 -- =============================================
-CREATE procedure UserDiscountIUD 
+CREATE procedure [dbo].[UserDiscountIUD] 
 (
 	@discountID int = null out,
 	@userID smallint, 

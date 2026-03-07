@@ -639,5 +639,6 @@
     <Build Include="dbo\User Defined Types\DF_DATETIME.sql" />
     <Build Include="dbo\User Defined Types\timeDuration.sql" />
     <Build Include="dbo\User Defined Types\pc_SelectedMassmedia.sql" />
+    <Build Include="Security\RoleMemberships.sql" />
   </ItemGroup>
 </Project>

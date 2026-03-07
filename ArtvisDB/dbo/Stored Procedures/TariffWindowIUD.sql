@@ -5,7 +5,7 @@
 @windowDateOriginal datetime = NULL,
 @duration int = NULL,
 @duration_total int = NULL,
-@price money = NULL,
+@price decimal(18,2) = NULL,
 @massmediaID INT = NULL,
 @isDisabled bit = null,
 @windowPrevId int = null,
@@ -114,4 +114,3 @@ BEGIN
 
 	SELECT * FROM [TariffWindow] WHERE [windowId] = @windowId
 END
-

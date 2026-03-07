@@ -86,9 +86,8 @@ ELSE IF @actionName = 'UpdateItem' BEGIN
 	EXEC DiscountReleases @discountReleaseID = @discountReleaseID
 
 END
-
-
-
-
-
+GO
+GRANT EXECUTE
+    ON OBJECT::[dbo].[DiscountReleaseIUD] TO PUBLIC
+    AS [dbo];
 

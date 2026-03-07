@@ -9,7 +9,7 @@ CREATE   PROCEDURE [dbo].[ModulePricelistIUD]
 @priceListID smallint = NULL,
 @startDate DATETIME,
 @finishDate DATETIME,
-@price money = NULL,
+@price decimal(18,2) = NULL,
 @rollerID INT = NULL,
 @isStandAlone BIT = 0,
 @extraChargeFirstRoller tinyint = NULL,
@@ -129,7 +129,7 @@ ELSE IF @actionName = 'DeleteItem'
 ELSE IF @actionName = 'UpdateItem' BEGIN
 
 	-- Forbidden to change price if pricelist is in use
-	Declare @oldPrice money, @oldStartDate datetime, @oldFinishDate datetime
+	Declare @oldPrice decimal(18,2), @oldStartDate datetime, @oldFinishDate datetime
 	SELECT @oldPrice = price, @oldStartDate = startDate, @oldFinishDate = finishDate FROM ModulePricelist WHERE modulePricelistID = @modulePricelistID
 	IF @price <> @oldPrice and exists (
 		SELECT * FROM ModuleIssue WHERE modulePricelistID = @modulePricelistID
@@ -175,10 +175,3 @@ ELSE IF @actionName = 'UpdateItem' BEGIN
 	EXEC ModulePriceLists @modulePricelistID = @modulePricelistID		
 	
 END
-
-
-
-
-
-
-

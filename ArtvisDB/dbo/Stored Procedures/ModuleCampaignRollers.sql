@@ -16,5 +16,8 @@ SELECT
 FROM 
 	[ModuleIssue] mi
 	INNER JOIN Roller r ON r.rollerID = mi.rollerID
-
+GO
+GRANT EXECUTE
+    ON OBJECT::[dbo].[ModuleCampaignRollers] TO PUBLIC
+    AS [dbo];
 

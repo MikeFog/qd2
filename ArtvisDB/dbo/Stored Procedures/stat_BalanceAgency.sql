@@ -15,7 +15,7 @@ SET NOCOUNT ON
 -- calculate payments till defined date -----------------------
 create	table #tmp1
 (
-[summa] money,
+[summa] decimal(18,2),
 [agencyID] int,
 [firmID] int
 )
@@ -86,8 +86,8 @@ where		(a.userID = @loggedUserID or @isRightToViewForeignActions = 1 or (@isRigh
 
 declare	@campaignID int, @TypeID int, @UserID int,
 		@StartDay datetime, 
-		@Price money, @AgencyID int, 
-		@FinishDay datetime, @FinalPrice money, @firmID int, @actionDiscount float
+		@Price decimal(18,2), @AgencyID int, 
+		@FinishDay datetime, @FinalPrice decimal(18,2), @firmID int, @actionDiscount decimal(9,4)
 
 open	cur_Companies
 fetch	next from cur_Companies 
@@ -113,14 +113,14 @@ while	@@fetch_status = 0
 close cur_Companies
 deallocate	cur_Companies
 
-select		agencyID, sum(summa) as sum_plus, cast(0 as money) as sum_minus
+select		agencyID, sum(summa) as sum_plus, cast(0 as decimal(18,2)) as sum_minus
 into 		#tmp2
 from		#tmp1
 group by 	agencyID, firmID
 having		sum(summa) > 0
 
 insert into 	#tmp2
-select		agencyID, cast(0 as money) as sum_plus, sum(summa) as sum_minus
+select		agencyID, cast(0 as decimal(18,2)) as sum_plus, sum(summa) as sum_minus
 from		#tmp1
 group by 	agencyID, firmID
 having		sum(summa) < 0

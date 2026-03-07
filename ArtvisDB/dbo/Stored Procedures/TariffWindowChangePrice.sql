@@ -2,8 +2,8 @@
 CREATE   procedure [dbo].[TariffWindowChangePrice] 
 (
 	@time datetime, 
-	@price money,
-	@newPrice money,
+	@price decimal(18,2),
+	@newPrice decimal(18,2),
 	@startdate datetime,
 	@finishdate datetime,
 	@pricelistid int

@@ -7,7 +7,7 @@ CREATE           Procedure [dbo].[GetIssuesPrice]
 @campaignTypeID int,								
 @startDate datetime, 
 @finishDate DATETIME,
-@price money = 0 out
+@price decimal(18,2) = 0 out
 )
 as
 SET NOCOUNT on
@@ -56,25 +56,4 @@ Else If @campaignTypeID = 4 Begin
 	Where	
 		i.campaignID = @campaignID	and
 		i.issueDate between @startDate and @finishDate
-End				
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+End

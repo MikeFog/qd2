@@ -45,7 +45,7 @@ BEGIN
 	if @finishDay is not null
 		set @finishDay = dateadd(ss, -1, dateadd(day, 1, dbo.ToShortDate(@finishDay)))
 		
-	create table #res (packModuleID int, price money, actionID int, issueDate datetime, headCompanyID int)
+	create table #res (packModuleID int, price decimal(18,2), actionID int, issueDate datetime, headCompanyID int)
 	
 	insert into [#res] (packModuleID, price, actionID, issueDate, headCompanyID)
 	select 
@@ -87,7 +87,7 @@ BEGIN
 					 (a.userID <> @loggedUserID and ummm.foreignMassmedia = 0))
 		)
 	
-	declare @fullPrice money
+	declare @fullPrice decimal(18,2)
 	
 	select @fullPrice = sum(price) from #res 		
 		
@@ -132,5 +132,5 @@ BEGIN
 	if @IsGroupByDay = 1
 		select @sql = @sql + ', r.issueDate '
 		
-	execute sp_executesql @sql, N'@fullPrice money', @fullPrice
+	execute sp_executesql @sql, N'@fullPrice decimal(18,2)', @fullPrice
 END

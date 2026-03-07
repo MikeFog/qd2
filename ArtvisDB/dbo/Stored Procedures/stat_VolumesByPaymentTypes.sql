@@ -31,7 +31,7 @@ begin
 	insert into @ugroups (id) 
 	select * from dbo.[fn_GetUserGroups](@loggedUserID)
 	
-	create table #res(actionID int, userID smallint, firmID int, price money, paymentTypeID smallint, isHidden bit)
+	create table #res(actionID int, userID smallint, firmID int, price decimal(18,2), paymentTypeID smallint, isHidden bit)
 	
 --	insert into [#res] (
 --		actionID,
@@ -77,7 +77,7 @@ begin
 		and a.firmID = coalesce(@firmID, a.firmID)
 	
 	declare @actionID int, @userID smallint, 
-		@campaignPrice money, @paymentTypeID smallint, @isHidden bit,
+		@campaignPrice decimal(18,2), @paymentTypeID smallint, @isHidden bit,
 		@campaignstartdate datetime, @campaignfinishDate datetime, @campaignID int,
 		@campaignTypeID  tinyint
 	

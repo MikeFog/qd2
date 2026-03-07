@@ -1,5 +1,4 @@
-﻿
-CREATE PROC [dbo].[Grid]
+﻿CREATE PROC [dbo].[Grid]
 (
     @massmediaID smallint,
     @startDate datetime,
@@ -17,7 +16,8 @@ BEGIN
     DECLARE @a datetime, @b datetime, @firmId int;
     
     SET @a = dbo.ToShortDate(@startDate);
-    SET @b = DATEADD(day, -1, dbo.ToShortDate(@finishDate));
+    SET @b = dbo.ToShortDate(@finishDate);
+    --SET @b = DATEADD(day, -1, dbo.ToShortDate(@finishDate));
     
     -- Получаем firmId один раз в начале (если нужен)
     IF @campaignID <> -1
@@ -94,3 +94,8 @@ BEGIN
     
     DROP TABLE #res;
 END
+GO
+GRANT EXECUTE
+    ON OBJECT::[dbo].[Grid] TO PUBLIC
+    AS [dbo];
+

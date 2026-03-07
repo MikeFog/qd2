@@ -27,8 +27,8 @@ else
 
 declare @res Table (
 	[name] NVARCHAR(255),
-	[price] [MONEY] NOT null,
-	[taxPrice] [money] not null
+	[price] decimal(18,2) NOT null,
+	[taxPrice] decimal(18,2) not null
 )
 
 declare cur_campaigns cursor local fast_forward
@@ -43,7 +43,7 @@ where
 	((@beginDate is null and @endDate is null) or 
 	(c.startDate <= @endDate and c.finishDate >=  @beginDate))
 
-declare @campaignID int, @campaignTypeID tinyint, @price money, @startDate datetime, @finishDate datetime,@taxPrice money
+declare @campaignID int, @campaignTypeID tinyint, @price decimal(18,2), @startDate datetime, @finishDate datetime,@taxPrice decimal(18,2)
 open cur_campaigns
 
 fetch next from cur_campaigns into @campaignID, @campaignTypeID, @startDate, @finishDate
@@ -105,7 +105,7 @@ begin
 		Exec GetPriceByPeriod 
 			@campaignId, @campaignTypeID, @beginDate, @endDate, @price out, @withTax = 1, @taxPrice = @taxPrice out
 		
-		CREATE TABLE #tmp(massmediaID SMALLINT, price money, taxPrice money)--, tariffPrice MONEY)
+		CREATE TABLE #tmp(massmediaID SMALLINT, price decimal(18,2), taxPrice decimal(18,2))--, tariffPrice decimal(18,2))
 		INSERT INTO #tmp
 		SELECT 
 			m.[massmediaID], sum(mpl.[price]),--, i.[tariffPrice]
@@ -124,7 +124,7 @@ begin
 			and i.issueDate between @beginDate and @finishDate
 		group by m.massmediaID
 
-		declare @sumPrice MONEY
+		declare @sumPrice decimal(18,2)
 		SELECT @sumPrice = sum(t1.price) FROM [#tmp] AS t1
 		
 		INSERT INTO @res 
@@ -148,8 +148,8 @@ deallocate cur_campaigns
 declare @res2 Table (
 	[name] NVARCHAR(255),
 	[quantity] int NOT null,
-	[tax] [MONEY] NOT null,
-	[price] [money] not null,
+	[tax] decimal(18,2) NOT null,
+	[price] decimal(18,2) not null,
 	dirPainting image
 )
 
@@ -169,4 +169,3 @@ Update @res2 Set dirPainting = painting
 From Agency Where agencyID = @agencyId
 
 select * from @res2
-

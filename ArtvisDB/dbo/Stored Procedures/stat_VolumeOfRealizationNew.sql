@@ -49,7 +49,7 @@ If	@StartDay Is Null Or @FinishDay Is Null
 
 CREATE TABLE #tmp1
 (
-CompanyPrice MONEY,
+CompanyPrice decimal(18,2),
 MassmediaID SMALLINT,
 PaymentTypeID SMALLINT,
 ActionID INT,
@@ -58,7 +58,7 @@ Manager_ID SMALLINT,
 AgencyID SMALLINT,
 massmediaGroupID int,
 advertTypeID smallint,
-issuePrice MONEY
+issuePrice decimal(18,2)
 )
 
 Set	@StartDay = dbo.ToShortDate(@StartDay)
@@ -116,19 +116,19 @@ group by
 Declare	
 	@campaignID int, 
 	@ActionID int, 
-	@campaignPrice MONEY,
-	@SummaVar money,
+	@campaignPrice decimal(18,2),
+	@SummaVar decimal(18,2),
 	@CompStartDate datetime,
-	@actionDiscount float,
-	@sumPrice money,
-	@finalPrice money,
+	@actionDiscount decimal(9,4),
+	@sumPrice decimal(18,2),
+	@finalPrice decimal(18,2),
 	@cfinishDate datetime,
 	@campMassmediaGroupID int,
 	@mmID smallint,
 	@advTypeID smallint,
-	@issuePrice money
+	@issuePrice decimal(18,2)
 	
-declare @tmp table (massmediaID smallint, price money)
+declare @tmp table (massmediaID smallint, price decimal(18,2))
 
 Open	cur_companies
 Fetch	next from cur_companies into 
@@ -224,7 +224,7 @@ If	0 + @IsGroupByPaymentType + @IsGroupByCampaignType +
 Set 	@SQLString = @SQLString + 
 		N'case @Summa
 			when	0 then 0
-			else	Cast((IsNull(Sum(CompanyPrice), 0) * 100.0 / @Summa) as decimal(12,2))
+			else	Cast((IsNull(Sum(CompanyPrice), 0) * 100.0 / @Summa) as decimal(18,2))
 		End as "percent"	
 From	#tmp1'
 
@@ -315,7 +315,7 @@ If	0 + @IsGroupByPaymentType + @IsGroupByCampaignType +
 	end
 
 EXECUTE sp_executesql @SQLString,
-	N'@Summa money',
+	N'@Summa decimal(18,2)',
 	@Summa = @SummaVar		
 
 Drop		table #tmp1

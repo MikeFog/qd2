@@ -51,7 +51,7 @@ begin
 	declare @date datetime, @dateweek tinyint
 	set @date = @StartDay
 	
-	declare @res table(issueDate datetime, price money, programID int, tariffID int)
+	declare @res table(issueDate datetime, price decimal(18,2), programID int, tariffID int)
 	
 	while (@date <= @FinishDay)
 	begin 

@@ -18,4 +18,8 @@ WHERE
 	(@activeOnly = 0 Or sp.isActive = 1)
 ORDER BY 
 	sp.name
+GO
+GRANT EXECUTE
+    ON OBJECT::[dbo].[SponsorPrograms] TO PUBLIC
+    AS [dbo];
 

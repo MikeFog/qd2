@@ -5,7 +5,7 @@ CREATE PROCEDURE [dbo].[PaymentCommonIUD]
 (
 @paymentID int = NULL,
 @firmID smallint = NULL,
-@summa money = NULL,
+@summa decimal(18, 2) = NULL,
 @paymentDate datetime = NULL,
 @loggedUserID smallint = NULL,
 @paymentTypeID smallint = NULL,
@@ -40,7 +40,7 @@ ELSE IF @actionName = 'UpdateItem' BEGIN
 		DECLARE @oldFirmID smallint,
 			@oldAgencyID smallint,
 			@oldPaymentTypeID smallint,
-			@consumed money
+			@consumed decimal(18, 2)
 
 		SELECT @consumed = SUM(pa.summa) FROM [PaymentAction] pa WHERE pa.[paymentID] = @paymentID
 

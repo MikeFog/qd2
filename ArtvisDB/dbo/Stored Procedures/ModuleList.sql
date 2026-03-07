@@ -47,13 +47,8 @@ ELSE
 		m.[moduleID] = Coalesce(@moduleId, m.[moduleId])
 	ORDER BY
 		m.[name]
-
-
-
-
-
-
-
-
-
+GO
+GRANT EXECUTE
+    ON OBJECT::[dbo].[ModuleList] TO PUBLIC
+    AS [dbo];
 

@@ -1,18 +1,21 @@
 ﻿CREATE TABLE [dbo].[ProgramIssue] (
-    [issueID]      INT        IDENTITY (1, 1) NOT NULL,
-    [campaignID]   INT        NOT NULL,
-    [programID]    SMALLINT   NOT NULL,
-    [tariffID]     INT        NOT NULL,
-    [issueDate]    DATETIME   NOT NULL,
-    [ratio]        FLOAT (53) CONSTRAINT [DF_ProgramIssue_ratio] DEFAULT (1) NOT NULL,
-    [isConfirmed]  BIT        CONSTRAINT [DF_ProgramIssue_isConfirmed] DEFAULT (1) NOT NULL,
-    [tariffPrice]  MONEY      CONSTRAINT [DF_ProgramIssue_tariffPrice] DEFAULT (0) NOT NULL,
-    [advertTypeID] SMALLINT   NULL,
+    [issueID]      INT              IDENTITY (1, 1) NOT NULL,
+    [campaignID]   INT              NOT NULL,
+    [programID]    SMALLINT         NOT NULL,
+    [tariffID]     INT              NOT NULL,
+    [issueDate]    DATETIME         NOT NULL,
+    [ratio]        DECIMAL (18, 10) CONSTRAINT [DF_ProgramIssue_ratio] DEFAULT ((1)) NOT NULL,
+    [isConfirmed]  BIT              CONSTRAINT [DF_ProgramIssue_isConfirmed] DEFAULT (1) NOT NULL,
+    [tariffPrice]  DECIMAL (18, 2)  CONSTRAINT [DF_ProgramIssue_tariffPrice] DEFAULT ((0)) NOT NULL,
+    [advertTypeID] SMALLINT         NULL,
     CONSTRAINT [PK_ProgramIssue] PRIMARY KEY NONCLUSTERED ([issueID] ASC) WITH (FILLFACTOR = 90),
     CONSTRAINT [FK_ProgramIssue_AdvertType] FOREIGN KEY ([advertTypeID]) REFERENCES [dbo].[AdvertType] ([advertTypeID]),
     CONSTRAINT [FK_ProgramIssue_Campaign] FOREIGN KEY ([campaignID]) REFERENCES [dbo].[Campaign] ([campaignID]) ON DELETE CASCADE,
     CONSTRAINT [FK_ProgramIssue_SponsorTariff] FOREIGN KEY ([tariffID]) REFERENCES [dbo].[SponsorTariff] ([tariffID])
 );
+
+
+
 
 
 GO

@@ -11,7 +11,7 @@ declare @balance table (
 			firmId smallint not null,
 			agencyId smallint not null,
 			paymentTypeId smallint not null,
-			summa money not null,
+			summa decimal(18,2) not null,
 			managerId smallint not null,
 			oldActionID int not null,
 			newActionID int null
@@ -49,7 +49,7 @@ select b.firmID, b.agencyID, b.paymentTypeID, sum(b.summa), b.managerID from @ba
 group by b.firmID, b.agencyID, b.paymentTypeID, b.managerID
 
 
-declare @firmID smallint, @agencyID smallint, @paymentTypeID smallint, @summa money, @userID smallint
+declare @firmID smallint, @agencyID smallint, @paymentTypeID smallint, @summa decimal(18,2), @userID smallint
 
 open cur_balance
 
@@ -167,5 +167,3 @@ CREATE NONCLUSTERED INDEX [IX_Issue_ModuleIssueId] ON [dbo].[Issue]
 )WITH (PAD_INDEX  = OFF, STATISTICS_NORECOMPUTE  = OFF, SORT_IN_TEMPDB = OFF, IGNORE_DUP_KEY = OFF, DROP_EXISTING = OFF, ONLINE = OFF, ALLOW_ROW_LOCKS  = ON, ALLOW_PAGE_LOCKS  = ON) ON [PRIMARY]
 
 exec job_DeleteEmptyActions
-
-

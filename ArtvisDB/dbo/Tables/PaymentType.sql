@@ -8,6 +8,15 @@
 );
 
 
+
+
+
 GO
 ALTER TABLE [dbo].[PaymentType] SET (LOCK_ESCALATION = AUTO);
+
+
+GO
+GRANT SELECT
+    ON OBJECT::[dbo].[PaymentType] TO PUBLIC
+    AS [dbo];
 

@@ -24,6 +24,9 @@
 );
 
 
+
+
+
 GO
 ALTER TABLE [dbo].[Firm] SET (LOCK_ESCALATION = AUTO);
 

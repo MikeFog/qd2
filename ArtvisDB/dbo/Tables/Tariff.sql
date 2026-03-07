@@ -9,7 +9,7 @@
     [friday]          BIT                  CONSTRAINT [DF_Tariff_friday] DEFAULT ((1)) NOT NULL,
     [saturday]        BIT                  CONSTRAINT [DF_Tariff_saturday] DEFAULT ((1)) NOT NULL,
     [sunday]          BIT                  CONSTRAINT [DF_Tariff_sunday] DEFAULT ((1)) NOT NULL,
-    [price]           MONEY                NOT NULL,
+    [price]           DECIMAL (18, 2)      NOT NULL,
     [duration]        [dbo].[timeDuration] CONSTRAINT [DF_Tariff_duration] DEFAULT ((0)) NOT NULL,
     [comment]         NVARCHAR (32)        NULL,
     [isForModuleOnly] BIT                  NOT NULL,
@@ -28,6 +28,9 @@
     CONSTRAINT [FK_Tariff_BlockType] FOREIGN KEY ([blockTypeID]) REFERENCES [dbo].[BlockType] ([blockTypeID]),
     CONSTRAINT [FK_Tariff_Pricelist] FOREIGN KEY ([pricelistID]) REFERENCES [dbo].[Pricelist] ([pricelistID]) ON DELETE CASCADE
 );
+
+
+
 
 
 GO

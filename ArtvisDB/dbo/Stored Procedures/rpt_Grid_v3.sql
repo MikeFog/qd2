@@ -166,10 +166,7 @@ BEGIN
         CASE g1.cellRealTime WHEN '' THEN g1.tariffTime ELSE g1.cellRealTime END as tariffTime,
         g1.cellRealDuration,
         i.positionId,
-        CASE WHEN ip.positionId = -10
-            THEN ip.shortDescription + ' ' + r.[name]
-            ELSE r.[name] + ' ' + ip.shortDescription
-        END as [description],
+        r.[name] + ' ' + ip.shortDescription as [description],
         dbo.fn_Int2Time(r.duration) as rollerDurationString,
         r.duration as rollerDuration,
         r.[path],

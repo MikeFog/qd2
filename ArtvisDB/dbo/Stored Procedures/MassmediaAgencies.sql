@@ -14,3 +14,8 @@ FROM
 WHERE
 	am.massmediaID = @massmediaID
 	and a.isActive = 1
+GO
+GRANT EXECUTE
+    ON OBJECT::[dbo].[MassmediaAgencies] TO PUBLIC
+    AS [dbo];
+

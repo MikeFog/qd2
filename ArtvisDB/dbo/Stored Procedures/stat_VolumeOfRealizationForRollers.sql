@@ -67,7 +67,7 @@ WHERE so.createDate >= @StartDay And
 		(@ShowBlack <> 0 or pt.IsHidden = 0) And
 		(so.IsComplete = 1)
 
-Declare	@SummaVar money
+Declare	@SummaVar decimal(18,2)
 Select	@SummaVar = IsNull(sum(Summa), 0) From #tmp1
 
 Declare	@SQLString NVARCHAR(4000), @IsStarted int

@@ -9,7 +9,7 @@
     [friday]        BIT                  CONSTRAINT [DF_SponsorTariff_friday] DEFAULT ((1)) NOT NULL,
     [saturday]      BIT                  CONSTRAINT [DF_SponsorTariff_saturday] DEFAULT ((1)) NOT NULL,
     [sunday]        BIT                  CONSTRAINT [DF_SponsorTariff_sunday] DEFAULT ((1)) NOT NULL,
-    [price]         MONEY                CONSTRAINT [DF_SponsorTariff_price] DEFAULT ((0)) NOT NULL,
+    [price]         DECIMAL (18, 2)      CONSTRAINT [DF_SponsorTariff_price] DEFAULT ((0)) NOT NULL,
     [duration]      [dbo].[timeDuration] CONSTRAINT [DF_SponsorTariff_duration] DEFAULT ((0)) NOT NULL,
     [comment]       NVARCHAR (32)        NULL,
     [isAlive]       BIT                  NOT NULL,
@@ -21,6 +21,9 @@
     CONSTRAINT [PK_SponsorTariff] PRIMARY KEY NONCLUSTERED ([tariffID] ASC) WITH (FILLFACTOR = 90),
     CONSTRAINT [FK_SponsorTariff_SponsorProgramPricelist] FOREIGN KEY ([pricelistID]) REFERENCES [dbo].[SponsorProgramPricelist] ([pricelistID])
 );
+
+
+
 
 
 GO

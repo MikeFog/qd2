@@ -20,4 +20,8 @@ WHERE
 	spp.pricelistID = COALESCE(@pricelistID, spp.pricelistID) 
 ORDER BY
 	spp.finishDate DESC
+GO
+GRANT EXECUTE
+    ON OBJECT::[dbo].[SponsorPricelists] TO PUBLIC
+    AS [dbo];
 

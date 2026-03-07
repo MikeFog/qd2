@@ -20,5 +20,8 @@ WHERE
 	AND [discountValueID] = Coalesce(@discountValueID, [discountValueID])
 ORDER BY
 	summa DESC
-
+GO
+GRANT EXECUTE
+    ON OBJECT::[dbo].[DiscountValues] TO PUBLIC
+    AS [dbo];
 

@@ -5,7 +5,7 @@
 @programID smallint = NULL,
 @tariffID int = NULL,
 @issueDate datetime = NULL,
-@tariffPrice money = NULL,
+@tariffPrice decimal(18,2) = NULL,
 @bonus smallint = NULL,
 @loggedUserID smallint,
 @isConfirmed bit = null,
@@ -141,4 +141,3 @@ ELSE IF @actionName = 'UpdateItem'
 
 	EXEC dbo.[ProgramIssues] @issueID= @issueID
 	End
-

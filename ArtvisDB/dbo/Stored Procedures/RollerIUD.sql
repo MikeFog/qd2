@@ -33,8 +33,8 @@ BEGIN
 	IF @studioOrderID IS NULL
 		SELECT @studioOrderID = so.[studioOrderID] FROM [StudioOrder] so INNER JOIN [Roller] r ON so.[rollerID] = r.[rollerID] WHERE r.[rollerID] = @rollerID
 		
-	if exists(SELECT * FROM [StudioOrder] WHERE NAME = @name AND (@studioOrderID IS NULL OR [studioOrderID] <> @studioOrderID) AND ([rollerID] IS NULL OR @rollerID IS NULL OR [rollerID] <> @rollerID))
-		or exists(select * from Roller where [name] = @name and (@rollerID is null or rollerID <> @rollerID) and isMute = 0)
+	if exists(select * from Roller where [name] = @name and rolActionTypeID = @rolActionTypeID 
+		and (@rollerID is null or rollerID <> @rollerID) and isMute = 0)
 	BEGIN
 		RAISERROR('RollerName_Unique', 16, 1)
 		RETURN

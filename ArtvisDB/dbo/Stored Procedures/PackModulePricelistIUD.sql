@@ -9,7 +9,7 @@ CREATE    PROCEDURE [dbo].[PackModulePricelistIUD]
 @packModuleID smallint = NULL,
 @startDate datetime = NULL,
 @finishDate datetime = NULL,
-@price MONEY = NULL,
+@price decimal(18,2) = NULL,
 @extraChargeFirstRoller TINYINT,
 @extraChargeSecondRoller TINYINT,
 @extraChargeLastRoller TINYINT,
@@ -95,7 +95,7 @@ ELSE IF @actionName = 'UpdateItem' BEGIN
 	IF EXISTS(SELECT 1 FROM [dbo].[PackModuleIssue] WHERE pricelistID = @pricelistID) BEGIN
 		-- Если прайс-лист используется в рекламной кампании, то менять можно только дату окончания
 		Declare 
-			@priceCurrent MONEY,
+			@priceCurrent decimal(18,2),
 			@extraChargeFirstRollerCurrent TINYINT,
 			@extraChargeSecondRollerCurrent TINYINT,
 			@extraChargeLastRollerCurrent TINYINT,
@@ -146,12 +146,3 @@ ELSE IF @actionName = 'UpdateItem' BEGIN
 
 	EXEC PackModulePricelists @pricelistID = @pricelistID 
 END
-
-
-
-
-
-
-
-
-

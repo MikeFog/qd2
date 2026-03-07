@@ -21,12 +21,8 @@ WHERE
 	dw.[disabledWindowID] = COALESCE(@disabledWindowID, dw.[disabledWindowID])
 ORDER BY
 	dw.startDate desc
-
-
-
-
-
-
-
-
+GO
+GRANT EXECUTE
+    ON OBJECT::[dbo].[disabledWindows] TO PUBLIC
+    AS [dbo];
 

@@ -19,7 +19,7 @@ declare @ugroups table(id int)
 insert into @ugroups (id) 
 select * from dbo.[fn_GetUserGroups](@loggedUserID)
 
-DECLARE @paidUP TABLE(actionID INT, paidUp MONEY, paymentIsHidden bit, agencyID smallint)
+DECLARE @paidUP TABLE(actionID INT, paidUp decimal(18,2), paymentIsHidden bit, agencyID smallint)
 
 INSERT INTO @paidUP
 SELECT distinct
@@ -80,4 +80,3 @@ GROUP BY
 	a.actionID, pu.paidUp
 HAVING
 	cast(SUM(case when c.campaignTypeID = 4 then c.finalPrice else c.finalPrice * a.discount end)*100 as int) - cast(pu.paidUp * 100 as int) > 0
-

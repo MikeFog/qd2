@@ -62,6 +62,8 @@ SELECT
 	cols.is_nullable, cols.is_nullable, 
 	IsNull(cols.domain_name, cols.data_type)  as data_type,
 	cols.CHARACTER_MAXIMUM_LENGTH ,
+	cols.NUMERIC_PRECISION,
+	cols.NUMERIC_SCALE,
 	ent.entityID,
 	ent.codeName  as entityName
 FROM 		

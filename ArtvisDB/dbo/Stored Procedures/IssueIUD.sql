@@ -4,11 +4,11 @@
 @rollerID int = NULL,
 @rollerDuration smallint = NULL,
 @windowID int = NULL,
-@tariffWindowPrice money = NULL,
+@tariffWindowPrice decimal(18,2) = NULL,
 @campaignID int = NULL,
 @issueDate datetime = NULL,
-@positionId float = 0,
-@ratio float = 1,
+@positionId int = 0,
+@ratio decimal(18,10) = 1,
 @moduleIssueID int = NULL,
 @packModuleIssueID int = NULL,
 @isConfirmed bit = NULL,
@@ -34,13 +34,13 @@ DECLARE
 	@extraChargeFirst tinyint,
 	@extraChargeSecond tinyint,
 	@extraChargeLast tinyint,
-	@issuePrice money,
+	@issuePrice decimal(18,2),
 	@deadLine datetime,
 	@res smallint,
 	@msgError varchar(64),
 	@rolActionTypeID TINYINT,
 	@actionID int,
-	@managerDiscount float,
+	@managerDiscount decimal(18,10),
 	@campaignStartDate datetime,
 	@campaignFinishDate datetime
 
@@ -292,7 +292,7 @@ ELSE IF @actionName = 'UpdateItem' BEGIN
 		RETURN 
 	end
 	
-	DECLARE @tariffPrice MONEY
+	DECLARE @tariffPrice decimal(18,2)
 	
 	IF @oldPositionID != @positionId
 		SELECT @issuePrice = dbo.fn_GetIssuePrice(@rollerDuration, @tariffWindowPrice, 1, @positionId, @extraChargeFirst, @extraChargeSecond, @extraChargeLast)

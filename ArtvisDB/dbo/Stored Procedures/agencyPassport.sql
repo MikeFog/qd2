@@ -37,3 +37,8 @@ FROM
 		AND sa.[agencyID] = @agencyID
 ORDER BY
 	isObjectSelected desc, s.[name]
+GO
+GRANT EXECUTE
+    ON OBJECT::[dbo].[agencyPassport] TO PUBLIC
+    AS [dbo];
+

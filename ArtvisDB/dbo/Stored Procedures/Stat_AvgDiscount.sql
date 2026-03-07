@@ -57,11 +57,11 @@ begin
 
 	CREATE TABLE #res
 	(
-		campaignTariffPrice money,
-		campaignPrice money,
-		campaignVolumeDiscount float,
-		campaignManagerDiscount float,
-		campaignPackDiscount float,
+		campaignTariffPrice decimal(18,2),
+		campaignPrice decimal(18,2),
+		campaignVolumeDiscount decimal(9,4),
+		campaignManagerDiscount decimal(9,4),
+		campaignPackDiscount decimal(9,4),
 		MassmediaID SMALLINT,
 		PaymentTypeID SMALLINT,
 		ActionID INT,
@@ -124,16 +124,16 @@ begin
 			and (@actionID is null or a.actionID = @actionID)
 
 	Declare	@campaignID int, 
-		@campaignPrice MONEY,
-		@SummaVar money,
+		@campaignPrice decimal(18,2),
+		@SummaVar decimal(18,2),
 		@CompStartDate datetime,
-		@actionDiscount float,
-		@sumPrice money,
-		@finalPrice money,
+		@actionDiscount decimal(9,4),
+		@sumPrice decimal(18,2),
+		@finalPrice decimal(18,2),
 		@cfinishDate datetime,
-		@managerDiscount float,
-		@volumeDiscount float,
-		@campaignTariffPrice money
+		@managerDiscount decimal(9,4),
+		@volumeDiscount decimal(9,4),
+		@campaignTariffPrice decimal(18,2)
 
 	Open	cur_companies
 	Fetch	next from cur_companies into 
@@ -149,7 +149,7 @@ begin
 
 		IF @CampaignTypeID = 4
 		begin
-			declare @tmp table (massmediaID smallint, price money, tariffPrice money)
+			declare @tmp table (massmediaID smallint, price decimal(18,2), tariffPrice decimal(18,2))
 					
 			insert into @tmp(massmediaID, price)
 			select
@@ -217,11 +217,11 @@ begin
 
 	Set	@SQLString = @SQLString + N' coalesce(sum(r.campaignTariffPrice), 0) as tariffPrice
 		, coalesce(avg(r.campaignVolumeDiscount), 0) as volumeDiscount
-		, cast(coalesce(sum(r.campaignTariffPrice - r.campaignTariffPrice * r.campaignVolumeDiscount), 0) as money) as volumeDicountPrice
+		, cast(coalesce(sum(r.campaignTariffPrice - r.campaignTariffPrice * r.campaignVolumeDiscount), 0) as decimal(18,2)) as volumeDicountPrice
 		, coalesce(avg(r.campaignPackDiscount),0) as packDiscount
-		, cast(coalesce(sum(r.campaignTariffPrice * r.campaignVolumeDiscount * (1 - r.campaignPackDiscount)) , 0) as money) as discountPrice
+		, cast(coalesce(sum(r.campaignTariffPrice * r.campaignVolumeDiscount * (1 - r.campaignPackDiscount)) , 0) as decimal(18,2)) as discountPrice
 		, coalesce(avg(r.campaignManagerDiscount), 0) as managerDiscount
-		, cast(coalesce(sum(r.campaignTariffPrice * r.campaignVolumeDiscount * r.campaignPackDiscount * (1 - r.campaignManagerDiscount)), 0) as money) as managerDicountPrice
+		, cast(coalesce(sum(r.campaignTariffPrice * r.campaignVolumeDiscount * r.campaignPackDiscount * (1 - r.campaignManagerDiscount)), 0) as decimal(18,2)) as managerDicountPrice
 		, coalesce(sum(r.campaignPrice), 0) as price	
 	from #res as r '
 

@@ -39,3 +39,8 @@ select g.groupID, g.[name] from [Group] g
 	inner join GroupMember gm on g.groupID = gm.groupID
 	inner join [User] u on gm.userID = u.userID
 where gm.userID = @userID and u.isActive = 1
+GO
+GRANT EXECUTE
+    ON OBJECT::[dbo].[GetUserData] TO PUBLIC
+    AS [dbo];
+

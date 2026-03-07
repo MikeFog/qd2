@@ -22,6 +22,8 @@ ELSE
 		fb.firmID = @firmID
 	ORDER BY 
 		b.[name]
-
-
+GO
+GRANT EXECUTE
+    ON OBJECT::[dbo].[Brands] TO PUBLIC
+    AS [dbo];
 

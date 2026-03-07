@@ -65,8 +65,8 @@ BEGIN
 			
 	create table #res 
 	(
-		cPrice money,
-		price money,
+		cPrice decimal(18,2),
+		price decimal(18,2),
 		agencyID smallint,
 		firmID int,
 		massmediaID smallint,
@@ -74,8 +74,8 @@ BEGIN
 		userID smallint,
 		massmediaGroupID smallint,
 		campaignTypeID tinyint,
-		duration money,
-		cDuration money,
+		duration decimal(18,2),
+		cDuration decimal(18,2),
 		headCompanyID int
 	)
 	

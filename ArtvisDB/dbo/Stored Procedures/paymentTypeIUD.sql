@@ -36,10 +36,8 @@ ELSE IF @actionName = 'UpdateItem' BEGIN
 	WHERE paymentTypeID = @paymentTypeID
 
 	END
-
-
-
-
-
-
+GO
+GRANT EXECUTE
+    ON OBJECT::[dbo].[paymentTypeIUD] TO PUBLIC
+    AS [dbo];
 

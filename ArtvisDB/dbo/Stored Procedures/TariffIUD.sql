@@ -10,7 +10,7 @@
 @friday tinyint = NULL,
 @saturday tinyint = NULL,
 @sunday tinyint = NULL,
-@price money = 0,
+@price decimal(18,2) = 0,
 @duration smallint = NULL,
 @duration_total smallint = NULL,
 @comment nvarchar(32) = NULL,
@@ -154,7 +154,7 @@ ELSE IF @actionName = 'UpdateItem' BEGIN
 	-- Check if Tariff already in use and attributes can't be changed
 	Declare	@oldIsForModuleOnly bit,
 		@oldTime datetime, 
-		@oldPrice money,
+		@oldPrice decimal(18,2),
 		@oldMonday bit,
 		@oldTuesday bit,
 		@oldWednesday bit,

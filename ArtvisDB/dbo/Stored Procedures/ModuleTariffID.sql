@@ -15,7 +15,7 @@ CREATE  PROCEDURE [dbo].[ModuleTariffID]
 @friday tinyint = NULL,
 @saturday tinyint = NULL,
 @sunday tinyint = NULL,
-@price money = null,
+@price decimal(18,2) = null,
 @duration smallint = NULL,
 @duration_total smallint = NULL,
 @comment nvarchar(32) = NULL,
@@ -71,7 +71,7 @@ begin
 			@friday = @friday, --  tinyint
 			@saturday = @saturday, --  tinyint
 			@sunday = @sunday, --  tinyint
-			@price = @price, --  money
+			@price = @price, --  decimal(18,2)
 			@duration = @duration, --  smallint
 			@duration_total = @duration_total,
 			@comment = @comment, --  nvarchar(32)
@@ -83,8 +83,9 @@ begin
 			@needInJingle = @needInJingle, --  bit
 			@needOutJingle = @needOutJingle --  bit
 	END
-end 
-
-
-
+end
+GO
+GRANT EXECUTE
+    ON OBJECT::[dbo].[ModuleTariffID] TO PUBLIC
+    AS [dbo];
 

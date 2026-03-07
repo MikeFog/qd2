@@ -28,4 +28,8 @@ WHERE
 	(@issueDate is null or tw.dayOriginal = @issueDate)
 ORDER BY
 	tw.dayOriginal
+GO
+GRANT EXECUTE
+    ON OBJECT::[dbo].[IssuesDays] TO PUBLIC
+    AS [dbo];
 

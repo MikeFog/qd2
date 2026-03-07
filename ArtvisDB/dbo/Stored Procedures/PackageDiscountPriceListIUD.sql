@@ -9,8 +9,8 @@ CREATE PROCEDURE [dbo].[PackageDiscountPriceListIUD]
 	@packageDiscountId INT = NULL,
 	@startDate DATETIME = NULL,
 	@finishDate datetime = null,
-	@value MONEY = NULL,
-	@discount FLOAT = NULL,
+	@value decimal(18,2) = NULL,
+	@discount decimal(9,4) = NULL,
 	@eachVolume TINYINT = NULL,
 	@actionName varchar(32)
 )
@@ -78,4 +78,3 @@ END
 		EXEC PackageDiscountPriceLists @packageDiscountPriceListId = @packageDiscountPriceListId
 	END
 END
-

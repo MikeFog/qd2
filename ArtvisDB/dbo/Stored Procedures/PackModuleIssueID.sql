@@ -7,7 +7,7 @@
 @campaignId INT = NULL,
 @loggedUserId SMALLINT = NULL,
 @rollerDuration SMALLINT = NULL,
-@tariffPrice MONEY = NULL,
+@tariffPrice decimal(18,2) = NULL,
 @positionId SMALLINT = 0,
 @actionName VARCHAR(32),
 @grantorID SMALLINT = NULL
@@ -24,13 +24,13 @@ DECLARE
 	@rightForMinus bit, 
 	@rightToGoBack BIT,
 	@finishDate DATETIME,
-	@issuePrice MONEY,
+	@issuePrice decimal(18,2),
 	@windowId INT,
 	@windowDate DATETIME,
 	@actionID INT,
 	@isConfirmed BIT ,
 	@msgError varchar(64),@res smallint,
-	@managerDiscount float,
+	@managerDiscount decimal(18,10),
 	@campaignStartDate datetime,
 	@campaignFinishDate datetime
 	

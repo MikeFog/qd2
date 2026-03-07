@@ -33,9 +33,8 @@ ELSE IF @actionName = 'UpdateItem'
 		path = @path
 	WHERE		
 		moduleID = @moduleID
-
-
-
-
-
+GO
+GRANT EXECUTE
+    ON OBJECT::[dbo].[ModuleIUD] TO PUBLIC
+    AS [dbo];
 

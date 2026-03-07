@@ -1,7 +1,7 @@
 ﻿CREATE TABLE [dbo].[Payment] (
     [paymentID]     INT      IDENTITY (1, 1) NOT NULL,
     [firmID]        SMALLINT NOT NULL,
-    [summa]         MONEY    CONSTRAINT [DF_Payment_SUMMA] DEFAULT (0) NOT NULL,
+    [summa]         DECIMAL(18, 2)    CONSTRAINT [DF_Payment_SUMMA] DEFAULT (0) NOT NULL,
     [paymentDate]   DATETIME NOT NULL,
     [userID]        SMALLINT NOT NULL,
     [paymentTypeID] SMALLINT NOT NULL,

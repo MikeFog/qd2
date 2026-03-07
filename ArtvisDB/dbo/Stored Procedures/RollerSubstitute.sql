@@ -43,10 +43,10 @@ declare
 	@timeBonus int,
 	@issuesDuration int,
 	@deadline datetime,
-	@position float,
-	@newPrice money,
+	@position int,
+	@newPrice decimal(18,2),
 	@extraChargeFirst int, @extraChargeSecond int, @extraChargeLast int,
-	@tariffWindowPrice money, 
+	@tariffWindowPrice decimal(18,2), 
 	@diffDuration int,
 	@isConfirmed bit,
 	@date datetime,
@@ -79,7 +79,7 @@ Exec hlp_GetMainUserCredentials
 	@rightForMinus = @rightForMinus OUT
 
 declare @issues table (issueID int primary key, 
-	newPrice money, 
+	newPrice decimal(18,2), 
 	actualWindowID int, 
 	date smalldatetime,
 	isConfirmed bit, 

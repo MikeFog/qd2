@@ -83,7 +83,8 @@ ELSE
 		AND mps.pricelistID = @pricelistID
 	ORDER BY
 		[time]
-
-
-
+GO
+GRANT EXECUTE
+    ON OBJECT::[dbo].[ModuleTariffs] TO PUBLIC
+    AS [dbo];
 

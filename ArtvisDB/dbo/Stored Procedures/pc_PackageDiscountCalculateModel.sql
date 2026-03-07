@@ -2,9 +2,9 @@
 (
     @startDate datetime,
     @campaignTypeID tinyint,     -- у вас всегда 1
-    @priceTotal money,           -- сумма по выбранным станциям (аналог Sum(Campaign.price))
+    @priceTotal decimal(18,2),           -- сумма по выбранным станциям (аналог Sum(Campaign.price))
     @sel dbo.pc_SelectedMassmedia READONLY,
-    @discountValue float OUTPUT,
+    @discountValue decimal(9,4) OUTPUT,
     @packageDiscountPriceListID int OUTPUT
 )
 AS

@@ -13,7 +13,7 @@ set nocount on
 -- calculate payments till defined date -----------------------
 declare @tmp1 table
 (
-[summa] money,
+[summa] decimal(18,2),
 [userID] int,
 [agencyID] int,
 [firmID] int
@@ -89,8 +89,8 @@ where	(a.userID = @loggedUserID or @isRightToViewForeignActions = 1 or (@isRight
 
 Declare	@campaignID int, @TypeID int, @UserID int,
 		@StartDay datetime, 
-		@Price money, @AgencyID int, 
-		@FinishDay datetime, @FinalPrice money, @firmID int, @actiondiscount float
+		@Price decimal(18,2), @AgencyID int, 
+		@FinishDay datetime, @FinalPrice decimal(18,2), @firmID int, @actiondiscount decimal(9,4)
 
 Open	cur_Companies
 Fetch	next from cur_Companies 
@@ -131,12 +131,12 @@ Select	agency.agencyID, agency.Name, sum(summa) as summa
 From	#tmp2 join Agency on #tmp2.agencyID = agency.agencyID
 Group By agency.agencyID, agency.Name
 
-Declare	@name nvarchar(64), @summa money, @sqlText nvarchar(4000)
+Declare	@name nvarchar(64), @summa decimal(18,2), @sqlText nvarchar(4000)
 
 create table #result 
 (
 	RowNum int,
-	[$Итого] money default 0
+	[$Итого] decimal(18,2) default 0
 )
 insert #result(RowNum) select distinct UserID from #tmp2
 
@@ -148,13 +148,13 @@ begin
 	if @@fetch_status <> 0	
 		break
 
-	set @sqlText = N'ALTER TABLE #result ADD [$' + @name + '] money default 0 with values;'
+	set @sqlText = N'ALTER TABLE #result ADD [$' + @name + '] decimal(18,2) default 0 with values;'
 	exec sp_executeSQL @sqlText
 	set @sqlText = N'UPDATE #result set [$' + @name + '] = summa, [$Итого] = [$Итого] + summa from #result join #tmp2 on #result.RowNum = #tmp2.UserID and #tmp2.agencyID =' + cast(@agencyID as varchar)
 	exec sp_executeSQL @sqlText
 	-- summary
 	set @sqlText = N'UPDATE #result set [$' + @name + '] = @sum, [$Итого] = [$Итого] + @sum where RowNum = -1'
-	exec sp_executeSQL @sqlText, N'@sum money', @sum = @summa
+	exec sp_executeSQL @sqlText, N'@sum decimal(18,2)', @sum = @summa
 end
 
 close		cur_H	

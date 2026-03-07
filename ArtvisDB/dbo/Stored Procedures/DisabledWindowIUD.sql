@@ -95,4 +95,8 @@ ELSE IF @actionName = 'UpdateItem' BEGIN
 	EXEC disabledWindows @disabledWindowID = @disabledWindowID
 
 	END
+GO
+GRANT EXECUTE
+    ON OBJECT::[dbo].[DisabledWindowIUD] TO PUBLIC
+    AS [dbo];
 

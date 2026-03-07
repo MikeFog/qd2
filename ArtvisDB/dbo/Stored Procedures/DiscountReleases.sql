@@ -15,5 +15,8 @@ FROM
 WHERE
 	dr.[massmediaID] = Coalesce(@massmediaID, dr.[massmediaID])
 	AND dr.[discountReleaseID] = Coalesce(@discountReleaseID, dr.[discountReleaseID])
-
+GO
+GRANT EXECUTE
+    ON OBJECT::[dbo].[DiscountReleases] TO PUBLIC
+    AS [dbo];
 

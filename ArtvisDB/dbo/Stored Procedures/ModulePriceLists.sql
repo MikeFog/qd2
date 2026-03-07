@@ -22,14 +22,8 @@ WHERE
 	mpl.modulePriceListID = Coalesce(@modulePriceListID, mpl.modulePriceListID)
 ORDER BY
 	mpl.startDate ASC
-
-
-
-
-
-
-
-
-
-
+GO
+GRANT EXECUTE
+    ON OBJECT::[dbo].[ModulePriceLists] TO PUBLIC
+    AS [dbo];
 

@@ -54,3 +54,8 @@ WHERE
 	and (a.deleteDate Is Null or @showDeleted = 1)
 ORDER BY
 	pi.issueDate DESC
+GO
+GRANT EXECUTE
+    ON OBJECT::[dbo].[ProgramIssues] TO PUBLIC
+    AS [dbo];
+

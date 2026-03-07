@@ -32,3 +32,8 @@ ELSE IF @actionName = 'UpdateItem' BEGIN
 	WHERE bankID = @bankID
 
 	END
+GO
+GRANT EXECUTE
+    ON OBJECT::[dbo].[bankIUD] TO PUBLIC
+    AS [dbo];
+

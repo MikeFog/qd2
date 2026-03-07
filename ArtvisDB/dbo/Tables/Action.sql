@@ -1,23 +1,26 @@
 ﻿CREATE TABLE [dbo].[Action] (
-    [actionID]            INT        IDENTITY (1, 1) NOT NULL,
-    [firmID]              SMALLINT   NOT NULL,
-    [startDate]           DATETIME   NULL,
-    [finishDate]          DATETIME   NULL,
-    [discount]            FLOAT (53) CONSTRAINT [DF_Action_discount] DEFAULT ((1)) NOT NULL,
-    [userID]              SMALLINT   NULL,
-    [tariffPrice]         MONEY      CONSTRAINT [DF_Action_tariffPrice] DEFAULT ((0)) NOT NULL,
-    [priceSumByCampaigns] MONEY      CONSTRAINT [DF_Action_price] DEFAULT ((0)) NOT NULL,
-    [createDate]          DATETIME   CONSTRAINT [DF_Action_createDate] DEFAULT (getdate()) NOT NULL,
-    [modDate]             DATETIME   CONSTRAINT [DF_Action_modDate] DEFAULT (getdate()) NOT NULL,
-    [isSpecial]           TINYINT    CONSTRAINT [DF_Action_isSpecial] DEFAULT ((0)) NOT NULL,
-    [isConfirmed]         BIT        CONSTRAINT [DF_Action_isFake] DEFAULT ((0)) NOT NULL,
-    [totalPrice]          MONEY      CONSTRAINT [DF_Action_totalPrice] DEFAULT ((0)) NOT NULL,
-    [isAlerted]           BIT        CONSTRAINT [DF_Action_isAlerted] DEFAULT ((0)) NOT NULL,
-    [deleteDate]          DATETIME   NULL,
+    [actionID]            INT             IDENTITY (1, 1) NOT NULL,
+    [firmID]              SMALLINT        NOT NULL,
+    [startDate]           DATETIME        NULL,
+    [finishDate]          DATETIME        NULL,
+    [discount]            DECIMAL (9, 4)  CONSTRAINT [DF_Action_discount] DEFAULT ((1)) NOT NULL,
+    [userID]              SMALLINT        NULL,
+    [tariffPrice]         DECIMAL (18, 2) CONSTRAINT [DF_Action_tariffPrice] DEFAULT ((0)) NOT NULL,
+    [priceSumByCampaigns] DECIMAL (18, 2) CONSTRAINT [DF_Action_price] DEFAULT ((0)) NOT NULL,
+    [createDate]          DATETIME        CONSTRAINT [DF_Action_createDate] DEFAULT (getdate()) NOT NULL,
+    [modDate]             DATETIME        CONSTRAINT [DF_Action_modDate] DEFAULT (getdate()) NOT NULL,
+    [isSpecial]           TINYINT         CONSTRAINT [DF_Action_isSpecial] DEFAULT ((0)) NOT NULL,
+    [isConfirmed]         BIT             CONSTRAINT [DF_Action_isFake] DEFAULT ((0)) NOT NULL,
+    [totalPrice]          DECIMAL (18, 2) CONSTRAINT [DF_Action_totalPrice] DEFAULT ((0)) NOT NULL,
+    [isAlerted]           BIT             CONSTRAINT [DF_Action_isAlerted] DEFAULT ((0)) NOT NULL,
+    [deleteDate]          DATETIME        NULL,
     CONSTRAINT [PK_Action] PRIMARY KEY NONCLUSTERED ([actionID] ASC) WITH (FILLFACTOR = 90),
     CONSTRAINT [FK_Action_Firm] FOREIGN KEY ([firmID]) REFERENCES [dbo].[Firm] ([firmID]),
     CONSTRAINT [FK_Action_User] FOREIGN KEY ([userID]) REFERENCES [dbo].[User] ([userID])
 );
+
+
+
 
 
 GO
@@ -55,9 +58,7 @@ CREATE NONCLUSTERED INDEX [IX_Action_UserID]
 
 
 GO
-CREATE NONCLUSTERED INDEX [Action_isConfirmed]
-    ON [dbo].[Action]([isConfirmed] ASC)
-    INCLUDE([actionID], [discount], [userID], [isSpecial]);
+
 
 
 GO

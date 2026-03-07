@@ -2,12 +2,12 @@
 (
 @actionID int,
 @startDate datetime,
-@discountValue float output
+@discountValue decimal(9,4) output
 )
 AS
 SET NOCOUNT on
 
-DECLARE @avgDuration float, @campaignsCount tinyint, @priceByCampaigns money
+DECLARE @avgDuration float, @campaignsCount tinyint, @priceByCampaigns decimal(18,2)
 
 Select @priceByCampaigns = Sum([price]) From Campaign where actionID = @actionID
 

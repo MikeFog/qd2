@@ -12,7 +12,7 @@ CREATE FUNCTION [dbo].[fn_GetPriceByPeriod]
 @withTax bit = 0,
 @rollerIDString VARCHAR(8000) = null
 )
-RETURNS @Result TABLE (advertTypeID smallint, price money, tariffPrice money, taxPrice money)
+RETURNS @Result TABLE (advertTypeID smallint, price decimal(18, 2), tariffPrice decimal(18, 2), taxPrice decimal(18, 2))
 AS
 BEGIN
 	IF EXISTS(SELECT * 
@@ -187,8 +187,8 @@ BEGIN
 
 	ELSE
 
-		DECLARE @packModulePrice MONEY 
-		DECLARE @tariffPricePM MONEY
+		DECLARE @packModulePrice decimal(18, 2) 
+		DECLARE @tariffPricePM decimal(18, 2)
 
 		SELECT 
 			@packModulePrice = SUM(i.[tariffPrice] * i.[ratio]), @tariffPricePM = SUM(i.[tariffPrice])

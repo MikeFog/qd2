@@ -47,9 +47,9 @@ Declare @res Table(
 	currentdate DATETIME,
 	campaignId int,
 	typeId smallint,
-	total money NULL,
+	total decimal(18,2) NULL,
 	massmediaID INT null,
-	mistake money default 0,
+	mistake decimal(18,2) default 0,
 	issuesCount INT default 0,
 	issuesDuration timeDuration NULL default 0,
 	showByDuration BIT NULL default 1
@@ -105,14 +105,14 @@ END
 Declare	
 	@currentDate DATETIME,
 	@typeId smallint,
-	@total MONEY,
+	@total decimal(18,2),
 	@campaignID INT,
 	@massmediaID smallint,
 	@campaignStartDate datetime,
 	@campaignFinishDate datetime,
-	@campaignFinalPrice money,
-	@campaignAdiscount float,
-	@mistake money,
+	@campaignFinalPrice decimal(18,2),
+	@campaignAdiscount decimal(18,10),
+	@mistake decimal(18,2),
 	@userID smallint,
 	@issuesCount INT,
 	@issuesDuration timeDuration,
@@ -134,7 +134,7 @@ While @@fetch_status = 0 BEGIN
 		Exec GetPriceByPeriod 
 			@campaignId, @typeId, @startDate, @currentDate, @total OUT
 		
-		CREATE TABLE #tmp(massmediaID SMALLINT, price MONEY)
+		CREATE TABLE #tmp(massmediaID SMALLINT, price decimal(18,2))
 		INSERT INTO #tmp
 		SELECT 
 			m.[massmediaID], sum(mpl.[price])
@@ -148,7 +148,7 @@ While @@fetch_status = 0 BEGIN
 		group by m.massmediaID
 			
 			
-		declare @sumPrice MONEY
+		declare @sumPrice decimal(18,2)
 		SELECT @sumPrice = sum(t1.price) FROM [#tmp] AS t1
 			
 		INSERT INTO @res ([currentdate],[campaignId],[typeId],[total],[massmediaID])
@@ -243,7 +243,7 @@ Select
 	c.actionId,
 	c.startDate,
 	c.finishDate,
-	cast(null as money) as total,
+	cast(null as decimal(18,2)) as total,
 	r.total as campaignTotal,
 	f.name as firmName,
 	f.firmId,
@@ -273,4 +273,3 @@ from @res r
 	inner join MassMedia mm on r.massmediaID = mm.massmediaID 
 	inner join @massmedias mmu on mm.massmediaID = mmu.massmediaID 
 where mm.deadline < @finishDate
-

@@ -57,3 +57,8 @@ BEGIN
     ORDER BY
         [name];
 END
+GO
+GRANT EXECUTE
+    ON OBJECT::[dbo].[Firms] TO PUBLIC
+    AS [dbo];
+

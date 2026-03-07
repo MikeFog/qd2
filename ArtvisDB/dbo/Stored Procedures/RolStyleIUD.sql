@@ -34,7 +34,8 @@ ELSE IF @actionName = 'UpdateItem' BEGIN
 
 	EXEC RollerStyles @RolStyleID = @RolStyleID
 	END
-
-
-
+GO
+GRANT EXECUTE
+    ON OBJECT::[dbo].[RolStyleIUD] TO PUBLIC
+    AS [dbo];
 

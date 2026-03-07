@@ -13,7 +13,8 @@
 @excludeSpecialWindows BIT = 0,
 @excludeModuleTariffs BIT = 0,
 @massmediaID INT = NULL,
-@showTrafficWindows BIT = 0
+@showTrafficWindows BIT = 0,
+@showDisabledWindows bit = 1
 )
 AS
 Set Nocount On
@@ -53,6 +54,8 @@ Else If @moduleId Is Null
 		t.pricelistId = Coalesce(@pricelistId, t.pricelistId)
 		And tw.dayOriginal >= Coalesce(@startDate, tw.dayOriginal)
 		And tw.dayOriginal <= Coalesce(@finishDate, tw.dayOriginal)
+		And (tw.isDisabled = 0 or @showDisabledWindows = 1)
+
 	UNION all
 	SELECT DISTINCT
 		tw.windowId
@@ -65,6 +68,7 @@ Else If @moduleId Is Null
 		pl.pricelistId = Coalesce(@pricelistId, pl.pricelistId)
 		And tw.dayOriginal >= Coalesce(@startDate, tw.dayOriginal)
 		And tw.dayOriginal <= Coalesce(@finishDate, tw.dayOriginal)
+		And (tw.isDisabled = 0 or @showDisabledWindows = 1)
 Else
 	Insert Into @tmpWindow
 	Select

@@ -32,10 +32,10 @@ BEGIN
         SegmentStart                 date         NOT NULL,
         SegmentEnd                   date         NOT NULL,
 
-        PrimePricePerSecWeekday      money        NOT NULL,
-        NonPrimePricePerSecWeekday   money        NOT NULL,
-        PrimePricePerSecWeekend      money        NOT NULL,
-        NonPrimePricePerSecWeekend   money        NOT NULL,
+        PrimePricePerSecWeekday      decimal(18,2)        NOT NULL,
+        NonPrimePricePerSecWeekday   decimal(18,2)        NOT NULL,
+        PrimePricePerSecWeekend      decimal(18,2)        NOT NULL,
+        NonPrimePricePerSecWeekend   decimal(18,2)        NOT NULL,
 		extraChargeFirstRoller tinyint NOT NULL,
 		extraChargeSecondRoller tinyint NOT NULL,
 		extraChargeLastRoller tinyint NOT NULL

@@ -174,3 +174,8 @@ ELSE IF @actionName = 'UpdateItem'
 
 	EXEC Actions1 @actionID = @actionID
 END
+GO
+GRANT EXECUTE
+    ON OBJECT::[dbo].[ActionIUD] TO PUBLIC
+    AS [dbo];
+

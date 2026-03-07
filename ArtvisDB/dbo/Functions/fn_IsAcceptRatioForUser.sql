@@ -1,14 +1,14 @@
 ﻿CREATE FUNCTION [dbo].[fn_IsAcceptRatioForUser]
 (
 	@userID INT,
-	@ratio float,
+	@ratio decimal(9, 4),
 	@startDate datetime,
 	@finishDate datetime 
 )
 RETURNS BIT
 AS
 BEGIN
-	DECLARE @maxratio float
+	DECLARE @maxratio decimal(9, 4)
 
 	if @userID is not null
 	begin 

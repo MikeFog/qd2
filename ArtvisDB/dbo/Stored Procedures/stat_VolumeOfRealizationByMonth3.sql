@@ -58,12 +58,12 @@ BEGIN
         agencyID smallint NULL,
         startDate datetime NOT NULL,
         finishDate datetime NOT NULL,
-        finalPrice money NULL,
+        finalPrice decimal(18,2) NULL,
         userID smallint NOT NULL,
         firmID smallint NOT NULL,
-        discount float NULL,
+        discount decimal(9,4) NULL,
         massmediaGroupID int NULL,
-        price money NOT NULL
+        price decimal(18,2) NOT NULL
     );
 
     INSERT INTO #Campaign
@@ -81,7 +81,7 @@ BEGIN
     DECLARE @SQLString NVARCHAR(MAX), @IsStarted int;
 
     SET @SQLString = N'
-DECLARE @Summa money;
+DECLARE @Summa decimal(18,2);
 SET @Summa = 0;
 
 SELECT @Summa = ISNULL(SUM(d.price), 0)

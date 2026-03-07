@@ -9,7 +9,7 @@
 @loggedUserId smallint,
 @actionName varchar(32),
 @needShow bit = 1,
-@managerDiscount float = 1
+@managerDiscount decimal(18, 10) = 1
 )
 WITH EXECUTE AS OWNER
 as
@@ -160,3 +160,8 @@ ELSE IF @actionName = 'UpdateItem' BEGIN
 	if @needShow = 1
 		EXEC Campaigns @CampaignID = @CampaignID, @actionID = @actionID
 END
+GO
+GRANT EXECUTE
+    ON OBJECT::[dbo].[CampaignIUD] TO PUBLIC
+    AS [dbo];
+

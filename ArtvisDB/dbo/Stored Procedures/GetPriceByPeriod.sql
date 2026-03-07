@@ -7,11 +7,11 @@ CREATE                    PROC [dbo].[GetPriceByPeriod]
 @campaignTypeID int,
 @startDate datetime, 
 @finishDate datetime, 
-@price money OUT,
+@price decimal(18,2) OUT,
 @massmediaID INT = NULL,
-@tariffPrice MONEY = NULL out,
+@tariffPrice decimal(18,2) = NULL out,
 @showBlack bit = 1,
-@taxPrice money = null out,
+@taxPrice decimal(18,2) = null out,
 @withTax bit = 0,
 @rollerIDString VARCHAR(8000) = null
 )
@@ -142,8 +142,8 @@ end
 ELSE IF @campaignTypeID = 4
 BEGIN
 
-	DECLARE @packModulePrice MONEY 
-	DECLARE @tariffPricePM MONEY
+	DECLARE @packModulePrice decimal(18,2) 
+	DECLARE @tariffPricePM decimal(18,2)
 
 	if @withTax = 0
 		SELECT 
@@ -180,7 +180,7 @@ BEGIN
 			RETURN
 		END
 
-	CREATE TABLE #tmp(massmediaID SMALLINT, price MONEY)
+	CREATE TABLE #tmp(massmediaID SMALLINT, price decimal(18,2))
 	INSERT INTO #tmp
 	SELECT 
 		m.[massmediaID], sum(mpl.[price])
@@ -198,10 +198,10 @@ BEGIN
 		(@rollerIDString is null or rr.ID is not null)
 	group by m.massmediaID
 
-	declare @sumPrice money
+	declare @sumPrice decimal(18,2)
 	SELECT @sumPrice = sum(t1.price) FROM [#tmp] AS t1
 
-	DECLARE @sumPriceMM money
+	DECLARE @sumPriceMM decimal(18,2)
 	SELECT @sumPriceMM = sum(t1.price) FROM [#tmp] AS t1 WHERE t1.[massmediaID] = @massmediaID
 
 	SET @price = @packModulePrice * @sumPriceMM / @sumPrice

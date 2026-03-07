@@ -58,7 +58,7 @@ Declare @issue Table(
 	issueDate datetime,
 	comment nvarchar(32),
 	positionID SMALLINT,
-	price MONEY,
+	price decimal(18,2),
 	broadcast datetime,
 	mmID smallint 
 )
@@ -142,7 +142,7 @@ if @campaignTypeId is not null and @campaignTypeId = 1
 	SELECT
 		dbo.[fn_GetTimeString](i.broadcast, i.issueDate) as [time],
 		MAX(i.comment),
-		CAST(i.price AS float) AS price,
+		i.price,
 		sum(r.duration)/@massmediaCount totalDuration
 	From
 		@issue i
@@ -180,7 +180,7 @@ else if @campaignTypeId is null or @campaignTypeId = 1
 		i.rollerId,
 		Convert(datetime, Convert(varchar(8), DATEADD(mi, -DATEPART(mi, i.broadcast), DATEADD(hh, -DATEPART(hh, i.broadcast), i.issueDate)), 112), 112) AS issueDate,
 		dbo.[fn_GetTimeString](i.broadcast, i.issueDate) as [time],
-		cast(i.price as float) as price,
+		i.price,
 		i.positionID
 	From
 		@issue i

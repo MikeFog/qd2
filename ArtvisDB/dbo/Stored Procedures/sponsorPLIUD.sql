@@ -107,17 +107,8 @@ ELSE IF @actionName = 'UpdateItem' BEGIN
 
 	EXEC SponsorPricelists @pricelistID = @pricelistID
 	END
-
-
-
-
-
-
-
-
-
-
-
-
-
+GO
+GRANT EXECUTE
+    ON OBJECT::[dbo].[sponsorPLIUD] TO PUBLIC
+    AS [dbo];
 

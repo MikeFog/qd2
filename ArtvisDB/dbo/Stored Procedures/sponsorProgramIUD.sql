@@ -31,10 +31,8 @@ ELSE IF @actionName = 'UpdateItem'
 					massmediaID = @massmediaID, 
 					isActive = @isActive
 	WHERE		SponsorProgramID = @SponsorProgramID
-
-
-
-
-
-
+GO
+GRANT EXECUTE
+    ON OBJECT::[dbo].[sponsorProgramIUD] TO PUBLIC
+    AS [dbo];
 

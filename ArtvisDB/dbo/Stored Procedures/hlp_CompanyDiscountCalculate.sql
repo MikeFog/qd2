@@ -4,8 +4,8 @@ CREATE   PROC [dbo].[hlp_CompanyDiscountCalculate]
 @massMediaID smallint,
 @campaignTypeID tinyint,
 @startDate datetime,
-@tariffPrice money,
-@discountValue float output
+@tariffPrice decimal(18,2),
+@discountValue decimal(9,4) output
 )
 as
 SET NOCOUNT on
@@ -28,5 +28,3 @@ Where
 	Or 	(dr.[isForType3] = 1 And @campaignTypeID = 3)
 	)
 Set	@DiscountValue = IsNull(@DiscountValue, 1)
-
-

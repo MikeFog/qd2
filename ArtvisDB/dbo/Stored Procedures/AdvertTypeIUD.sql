@@ -38,6 +38,8 @@ ELSE IF @actionName = 'UpdateItem'
 	SET			name = @name, parentID = @parentID 
 	WHERE		AdvertTypeID = @AdvertTypeID
 	End
-
-
+GO
+GRANT EXECUTE
+    ON OBJECT::[dbo].[AdvertTypeIUD] TO PUBLIC
+    AS [dbo];
 

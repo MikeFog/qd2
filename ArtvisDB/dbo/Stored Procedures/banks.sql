@@ -21,6 +21,8 @@ WHERE
 	and (@bankName Is Null or CHARINDEX(@bankName, name) > 0)
 ORDER BY 
 	name
-
-
+GO
+GRANT EXECUTE
+    ON OBJECT::[dbo].[banks] TO PUBLIC
+    AS [dbo];
 

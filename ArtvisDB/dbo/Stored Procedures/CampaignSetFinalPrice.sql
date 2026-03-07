@@ -1,7 +1,7 @@
 ﻿CREATE		Procedure [dbo].[CampaignSetFinalPrice]
 (
 @campaignId int, 
-@finalPrice money,
+@finalPrice decimal(18,8),
 @campaignTypeId TINYINT,
 @loggedUserId INT,
 @grantorUserId INT = NULL,
@@ -12,13 +12,13 @@ As
 Set NoCount On
 
 Declare
-	@fixedPrice money,
+	@fixedPrice decimal(18,2),
 	@dayX datetime,
 	@theDate datetime,
 	@campaignStartDate datetime,
-	@packDiscount float,
+	@packDiscount decimal(9,4),
 	@actionId int,
-	@issuesPrice money,
+	@issuesPrice decimal(18,2),
 	@campaignFinishDate datetime,
 	@isAdmin bit
 
@@ -58,8 +58,8 @@ If /*@isAdmin = 0 And */ @fixedPrice > @finalPrice Begin
 	Return
 END
 
-DECLARE @managerDiscount FLOAT 
-SELECT @managerDiscount = CAST(@finalPrice AS FLOAT) / ( CAST(price AS FLOAT) * CAST(@packDiscount AS FLOAT))
+DECLARE @managerDiscount decimal(18, 10) 
+SELECT @managerDiscount = @finalPrice / ( price * @packDiscount)
 FROM [Campaign]
 WHERE [campaignID] = @campaignId
 

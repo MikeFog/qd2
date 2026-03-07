@@ -24,7 +24,7 @@ BEGIN
         m tinyint NOT NULL,
         campaignID int NOT NULL,
         massmediaID smallint NOT NULL,
-        moduleMassmediaPrice money NOT NULL,
+        moduleMassmediaPrice decimal(18,2) NOT NULL,
         PRIMARY KEY (y, m, campaignID, massmediaID)
     );
 
@@ -33,7 +33,7 @@ BEGIN
         y smallint NOT NULL,
         m tinyint NOT NULL,
         campaignID int NOT NULL,
-        modulePrice money NOT NULL,
+        modulePrice decimal(18,2) NOT NULL,
         PRIMARY KEY (y, m, campaignID)
     );
 
@@ -50,12 +50,12 @@ BEGIN
         agencyID smallint NULL,
         startDate datetime NOT NULL,
         finishDate datetime NOT NULL,
-        finalPrice money NULL,
+        finalPrice decimal(18,2) NULL,
         userID smallint NOT NULL,
         firmID smallint NOT NULL,
-        discount float NULL,
+        discount decimal(18,10) NULL,
         massmediaGroupID int NULL,
-        price money NOT NULL
+        price decimal(18,2) NOT NULL
     );
 
     CREATE UNIQUE CLUSTERED INDEX IX_Result
@@ -112,7 +112,7 @@ BEGIN
         a.firmID,
         a.discount,
         m.massmediaGroupID,
-        CAST(ROUND(SUM(i.tariffPrice * i.ratio), 2) AS money) AS price
+        CAST(ROUND(SUM(i.tariffPrice * i.ratio), 2) AS decimal(18,2)) AS price
     FROM dbo.f_months(@startDate, @finishDate) mn
         JOIN Campaign c
             ON c.campaignTypeID = 1
@@ -167,7 +167,7 @@ BEGIN
         a.firmID,
         a.discount,
         mm.massmediaGroupID,
-        CAST(ROUND(SUM(pi.tariffPrice * pi.ratio), 2) AS money) AS price
+        CAST(ROUND(SUM(pi.tariffPrice * pi.ratio), 2) AS decimal(18,2)) AS price
     FROM Campaign c
         JOIN Action a
             ON a.actionID = c.actionID
@@ -229,7 +229,7 @@ BEGIN
         a.firmID,
         a.discount,
         m.massmediaGroupID,
-        CAST(ROUND(SUM(mi.tariffPrice * mi.ratio), 2) AS money) AS price
+        CAST(ROUND(SUM(mi.tariffPrice * mi.ratio), 2) AS decimal(18,2)) AS price
     FROM Campaign c
         JOIN Action a
             ON a.actionID = c.actionID
@@ -278,7 +278,7 @@ BEGIN
         a.firmID,
         a.discount,
         mm.massmediaGroupID,
-        CAST(ROUND(SUM(pmi.tariffPrice * pmi.ratio * mmp.moduleMassmediaPrice / mp.modulePrice), 2) AS money) AS price
+        CAST(ROUND(SUM(pmi.tariffPrice * pmi.ratio * mmp.moduleMassmediaPrice / mp.modulePrice), 2) AS decimal(18,2)) AS price
     FROM Campaign c
         JOIN Action a
             ON a.actionID = c.actionID

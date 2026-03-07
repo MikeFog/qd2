@@ -9,24 +9,23 @@ WITH EXECUTE AS OWNER
 AS
 SET NOCOUNT ON
 Declare	
-	@discountValue float, 	
+	@discountValue decimal(9,4), 	
 	@discountValueID int,	
-	@tariffPrice money,
+	@tariffPrice decimal(18,2),
 	@campaignID int, 
 	@massmediaID smallint,
 	@campaignTypeID tinyint, 
 	@startDate datetime,
 	@finishDate datetime,
-	@price money,
-	@finalPrice money,
+	@price decimal(18,2),
+	@finalPrice decimal(18,2),
 	@theDate datetime,
-	@newDiscount float,
-	@estimatedPrice money,
-	@managerDiscountCampaign float,
-	@fixedPrice money,
-	@issuesPrice money,
-	@ratio float,
-	@campaignDiscount float,
+	@estimatedPrice decimal(18,2),
+	@managerDiscountCampaign decimal(18,10),
+	@fixedPrice decimal(18,2),
+	@issuesPrice decimal(18,2),
+	@ratio decimal(18,10),
+	@campaignDiscount decimal(9,4),
 	@timeBonus int,
 	@programsCount int
 	
@@ -206,7 +205,7 @@ WHILE	@@fetch_status = 0 BEGIN
 
 	IF @issuesPrice IS NOT NULL AND @issuesPrice > 0 
 	begin
-		Set	@ratio = (CAST(@estimatedPrice AS FLOAT) - CAST(@fixedPrice AS FLOAT)) / CAST(@issuesPrice AS FLOAT)
+		SET @ratio = (CAST(@estimatedPrice AS DECIMAL(18,10)) - @fixedPrice) / @issuesPrice;
 
 		if @ratio < 0
 		BEGIN
@@ -238,7 +237,7 @@ end
 close cur_companies
 deallocate cur_companies
 
-Declare @priceSumByCampaigns MONEY, @sumPackModules MONEY, @sumOther MONEY 
+Declare @priceSumByCampaigns decimal(18,2), @sumPackModules decimal(18,2), @sumOther decimal(18,2) 
 SELECT @sumPackModules = 0, @sumOther = 0, @priceSumByCampaigns = 0
 
 SELECT 
@@ -257,7 +256,7 @@ FROM [Campaign] c WHERE c.[actionID] = @actionID
 
 Update [Action]
 Set 	priceSumByCampaigns = IsNull(@priceSumByCampaigns, 0),
-	[totalPrice] = ISNULL((CAST([discount] AS MONEY)*@sumOther) + @sumPackModules,0)
+	[totalPrice] = ISNULL((CAST([discount] AS decimal(18,2))*@sumOther) + @sumPackModules,0)
 Where actionID = @actionID
 
 IF @needShow = 1

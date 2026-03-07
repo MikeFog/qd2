@@ -8,6 +8,9 @@
 );
 
 
+
+
+
 GO
 ALTER TABLE [dbo].[Bank] SET (LOCK_ESCALATION = AUTO);
 
@@ -15,4 +18,10 @@ ALTER TABLE [dbo].[Bank] SET (LOCK_ESCALATION = AUTO);
 GO
 CREATE UNIQUE NONCLUSTERED INDEX [UIX_Bank_BIK]
     ON [dbo].[Bank]([bik] ASC);
+
+
+GO
+GRANT SELECT
+    ON OBJECT::[dbo].[Bank] TO PUBLIC
+    AS [dbo];
 

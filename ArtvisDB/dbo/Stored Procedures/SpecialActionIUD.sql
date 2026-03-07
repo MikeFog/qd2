@@ -11,7 +11,7 @@ CREATE procedure [dbo].[SpecialActionIUD]
 	@firmID int,
 	@userID int,
 	@date datetime,
-	@price money,
+	@price decimal(18,2),
 	@agencyID int,
 	@paymentTypeID tinyint,
 	@loggedUserID smallint 

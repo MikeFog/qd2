@@ -8,7 +8,7 @@ CREATE FUNCTION [dbo].[fn_GetPriceByPeriod1]
 @startDate datetime, 
 @finishDate datetime
 )
-RETURNS @Result TABLE (advertTypeID smallint, price money)
+RETURNS @Result TABLE (advertTypeID smallint, price decimal(18, 2))
 AS
 BEGIN
 	IF EXISTS(SELECT * 
@@ -37,7 +37,6 @@ BEGIN
 	SET @finishDate = dbo.ToShortDate(@finishDate) 
 
 	IF	@campaignTypeID = 1 
-
 		INSERT @Result
 		SELECT 
 			r.advertTypeID, 
@@ -51,7 +50,6 @@ BEGIN
 		GROUP BY r.advertTypeID
 
 	ELSE IF	@campaignTypeID = 2	
-
 		INSERT @Result
 		SELECT
 			i.advertTypeID AS advertTypeID,
@@ -73,7 +71,6 @@ BEGIN
 		GROUP BY i.advertTypeID
 
 	ELSE IF	@campaignTypeID = 3 
-
 		INSERT @Result
 		SELECT
 			r.advertTypeID, 
@@ -86,7 +83,6 @@ BEGIN
 		GROUP BY r.advertTypeID
 
 	ELSE 
-
 		INSERT @Result
 		SELECT
 			r.advertTypeID, 

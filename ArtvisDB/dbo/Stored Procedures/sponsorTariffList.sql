@@ -34,9 +34,8 @@ WHERE
 	And st.sunday = Coalesce(@sunday, st.sunday)
 ORDER BY
 	st.[time]
-
-
-
-
-
+GO
+GRANT EXECUTE
+    ON OBJECT::[dbo].[sponsorTariffList] TO PUBLIC
+    AS [dbo];
 

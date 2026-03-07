@@ -17,4 +17,8 @@ WHERE
 	and dbo.f_IsActiveFilter(rs.IsActive, @ShowActive) = 1
 ORDER BY 
 	rs.[name]
+GO
+GRANT EXECUTE
+    ON OBJECT::[dbo].[RollerStyles] TO PUBLIC
+    AS [dbo];
 

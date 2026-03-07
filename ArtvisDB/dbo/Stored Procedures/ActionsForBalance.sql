@@ -43,7 +43,7 @@ BEGIN
 	insert into @ugroups (id) 
 	select * from dbo.[fn_GetUserGroups](@loggedUserID)
 		
-	CREATE TABLE #tmp1(actionID int primary key,	summa MONEY NULL, tariffPrice MONEY null, [priceSumByCampaigns] money null)
+	CREATE TABLE #tmp1(actionID int primary key,	summa decimal(18,2) NULL, tariffPrice decimal(18,2) null, [priceSumByCampaigns] decimal(18,2) null)
 	INSERT INTO #tmp1 ([actionID], [summa], [tariffPrice], [priceSumByCampaigns]) 
 	SELECT distinct a.actionID, 0, 0, 0
 	FROM 
@@ -103,8 +103,10 @@ BEGIN
 			(pt.IsHidden = 0 and @showWhite = 1)) 
 				
 	Declare	@campaignID int, @TypeID int, @StartDate DATETIME,
-			@Price money, @Action int,
-			@FinalPrice MONEY, @tariffPrice money, @managerDiscount float, @discount float, @finishDate datetime, @actiondiscount float
+			@Price decimal(18,2), @Action int,
+			@FinalPrice decimal(18,2), @tariffPrice decimal(18,2), 
+			@managerDiscount decimal(18,10), @discount decimal(9,4), 
+			@finishDate datetime, @actiondiscount decimal(9,4)
 		
 	Open	cur_Companies
 	Fetch	Next from cur_Companies

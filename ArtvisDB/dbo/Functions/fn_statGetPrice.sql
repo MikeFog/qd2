@@ -5,28 +5,28 @@
 @loggedUserID smallint
 )
 RETURNS @Result TABLE (
-			campaignID int, 
-			advertTypeID smallint,
-			actionID int, 
-			massmediaID smallint, 
-			paymentTypeID smallint, 
-			campaignTypeID tinyint, 
-			agencyID smallint,
-			startDate datetime,
-			finishDate datetime,
-			finalPrice money,
-			userID smallint,
-			firmID smallint,
-			discount float,
-			massmediaGroupID int,
-			price money,
-			INDEX i1 UNIQUE CLUSTERED (campaignID, massmediaID, advertTypeID)
-			)
+		campaignID int, 
+		advertTypeID smallint,
+		actionID int, 
+		massmediaID smallint, 
+		paymentTypeID smallint, 
+		campaignTypeID tinyint, 
+		agencyID smallint,
+		startDate datetime,
+		finishDate datetime,
+		finalPrice decimal(18, 2),
+		userID smallint,
+		firmID smallint,
+		discount decimal(18, 10),
+		massmediaGroupID int,
+		price decimal(18, 2),
+		INDEX i1 UNIQUE CLUSTERED (campaignID, massmediaID, advertTypeID)
+		)
 AS
 BEGIN
 
-	DECLARE @moduleMassmediaPrice TABLE (campaignID int, massmediaId smallint, moduleMassmediaPrice money, PRIMARY KEY (campaignID, massmediaId))
-	DECLARE @modulePrice TABLE (campaignID int primary key, modulePrice money)
+	DECLARE @moduleMassmediaPrice TABLE (campaignID int, massmediaId smallint, moduleMassmediaPrice decimal(18, 2), PRIMARY KEY (campaignID, massmediaId))
+	DECLARE @modulePrice TABLE (campaignID int primary key, modulePrice decimal(18, 2))
 
 	INSERT @moduleMassmediaPrice
 	SELECT 
@@ -92,7 +92,7 @@ BEGIN
 			MAX(a.firmID) AS firmID,
 			MAX(a.discount) AS discount,
 			MAX(m.massmediaGroupID) AS massmediaGroupID,
-			CAST(ROUND(SUM(i.[tariffPrice] * i.[ratio]),2) AS money) AS price
+			CAST(ROUND(SUM(i.[tariffPrice] * i.[ratio]),2) AS decimal(18, 2)) AS price
 		FROM	
 			Campaign c
 			JOIN Action a ON a.ActionID = c.actionID AND a.isConfirmed = 1
@@ -125,7 +125,7 @@ BEGIN
 			MAX(a.firmID) AS firmID,
 			MAX(a.discount) AS discount,
 			MAX(m.massmediaGroupID) AS massmediaGroupID,
-			CAST(ROUND(SUM(i.[tariffPrice] * i.[ratio]),2) AS money) AS price
+			CAST(ROUND(SUM(i.[tariffPrice] * i.[ratio]),2) AS decimal(18, 2)) AS price
 		FROM	
 			Campaign c
 			JOIN Action a ON c.ActionID = a.actionID AND a.isConfirmed = 1
@@ -165,7 +165,7 @@ BEGIN
 			MAX(a.firmID) AS firmID,
 			MAX(a.discount) AS discount,
 			MAX(m.massmediaGroupID) AS massmediaGroupID,
-			CAST(ROUND(SUM(i.[tariffPrice] * i.[ratio]),2) AS money) AS price
+			CAST(ROUND(SUM(i.[tariffPrice] * i.[ratio]),2) AS decimal(18, 2)) AS price
 		FROM	
 			Campaign c
 			JOIN Action a ON c.ActionID = a.actionID AND a.isConfirmed = 1
@@ -193,7 +193,7 @@ BEGIN
 			MAX(a.firmID) AS firmID,
 			MAX(a.discount) AS discount,
 			MAX(m.massmediaGroupID) AS massmediaGroupID,
-			CAST(ROUND(SUM(i.tariffPrice * i.ratio * mmp.moduleMassmediaPrice / mp.modulePrice),2) AS money) AS price
+			SUM(i.tariffPrice * i.ratio * mmp.moduleMassmediaPrice / mp.modulePrice) AS price
 		FROM	
 			Campaign c
 			JOIN Action a ON c.ActionID = a.actionID AND a.isConfirmed = 1

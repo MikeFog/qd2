@@ -91,3 +91,8 @@ declare @showMuteRollers bit
 set @showMuteRollers = case when @rollerID is not null then 1 else 0 end 
 */
 EXEC sl_Rollers @showMuteRollers = @showMuteRollers
+GO
+GRANT EXECUTE
+    ON OBJECT::[dbo].[Rollers] TO PUBLIC
+    AS [dbo];
+

@@ -11,7 +11,7 @@ as
 begin 
 	set nocount on;
 
-	declare @res table(rollerID int, massmediaID smallint, [count] int, price money)
+	declare @res table(rollerID int, massmediaID smallint, [count] int, price decimal(18,2))
 
     declare cur_campaigns cursor local fast_forward
     for	
@@ -66,7 +66,7 @@ begin
 			group by i.packModuleIssueID, tw.massmediaID
 		
 			insert into @res (rollerID,massmediaID,[count],	price) 
-			select pmIssue.rollerID, m.massmediaID, sum(issues.[count]), sum(pmIssue.price * cast(mpl.price as float) / cast(mmPriceSum.price as float))
+			select pmIssue.rollerID, m.massmediaID, sum(issues.[count]), sum(pmIssue.price * mpl.price/ mmPriceSum.price)
 			from 
 				(select pmi.packModuleIssueID, pmi.issueDate, pmi.pricelistID, pmi.rollerID, pmi.tariffPrice * pmi.ratio as price  
 					from PackModuleIssue pmi 
@@ -111,4 +111,3 @@ begin
 	order by 
 		mm.[name], rol.[name]
 end
-

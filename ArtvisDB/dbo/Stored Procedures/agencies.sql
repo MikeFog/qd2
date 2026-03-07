@@ -32,3 +32,8 @@ else
 		--and (@needStudioID is null or sa.studioID = @needStudioID)
 
 EXEC sl_agencies
+GO
+GRANT EXECUTE
+    ON OBJECT::[dbo].[agencies] TO PUBLIC
+    AS [dbo];
+

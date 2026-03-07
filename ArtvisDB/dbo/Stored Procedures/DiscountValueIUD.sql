@@ -4,7 +4,7 @@ CREATE   PROCEDURE [dbo].[DiscountValueIUD]
 (
 @discountValueID smallint = NULL,
 @discountReleaseID int = NULL,
-@summa money = NULL,
+@summa decimal(18,2) = NULL,
 @discount float = NULL,
 @actionName varchar(32)
 )
@@ -39,8 +39,8 @@ ELSE IF @actionName = 'UpdateItem' BEGIN
 
 	EXEC DiscountValues @discountValueID = @discountValueID
 END
-
-
-
-
+GO
+GRANT EXECUTE
+    ON OBJECT::[dbo].[DiscountValueIUD] TO PUBLIC
+    AS [dbo];
 

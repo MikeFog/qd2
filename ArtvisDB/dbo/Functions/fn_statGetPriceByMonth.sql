@@ -5,25 +5,25 @@
 @loggedUserID smallint
 )
 RETURNS @Result TABLE (
-			y smallint,
-			m tinyint,
-			campaignID int, 
-			advertTypeID smallint,
-			actionID int, 
-			massmediaID smallint, 
-			paymentTypeID smallint, 
-			campaignTypeID tinyint, 
-			agencyID smallint,
-			startDate datetime,
-			finishDate datetime,
-			finalPrice money,
-			userID smallint,
-			firmID smallint,
-			discount float,
-			massmediaGroupID int,
-			price money,
-			INDEX i1 UNIQUE CLUSTERED (y, m, campaignID, massmediaID, advertTypeID)
-			)
+		y smallint,
+		m tinyint,
+		campaignID int, 
+		advertTypeID smallint,
+		actionID int, 
+		massmediaID smallint, 
+		paymentTypeID smallint, 
+		campaignTypeID tinyint, 
+		agencyID smallint,
+		startDate datetime,
+		finishDate datetime,
+		finalPrice decimal(18, 2),
+		userID smallint,
+		firmID smallint,
+		discount decimal(9, 4),
+		massmediaGroupID int,
+		price decimal(18, 2),
+		INDEX i1 UNIQUE CLUSTERED (y, m, campaignID, massmediaID, advertTypeID)
+		)
 AS
 BEGIN
 

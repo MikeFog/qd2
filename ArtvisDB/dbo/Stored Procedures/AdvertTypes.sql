@@ -23,10 +23,8 @@ WHERE
 	)
 ORDER BY 
 	[name]
-
-
-
-
-
-
+GO
+GRANT EXECUTE
+    ON OBJECT::[dbo].[AdvertTypes] TO PUBLIC
+    AS [dbo];
 
