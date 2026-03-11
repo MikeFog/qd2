@@ -14,7 +14,7 @@ namespace Merlin.Forms
 	public partial class FrmGenerator : Form
 	{
 		private readonly IssueTemplate _template;
-		private readonly Campaign campaign;
+		private readonly Campaign _campaign;
 		private readonly PresentationObject module;
 		private readonly PresentationObject roller;
 		private readonly RollerPositions position;
@@ -36,7 +36,7 @@ namespace Merlin.Forms
 			InitializeComponent();
 			this._template = template;
 			this.module = module;
-			this.campaign = campaign;
+			this._campaign = campaign;
 			this.position = position;
 			this.pricelist = pricelist;
 			this.roller = roller;
@@ -48,7 +48,7 @@ namespace Merlin.Forms
 		{
 			InitializeComponent();
 			this._template = template;
-			this.campaign = campaign;
+			this._campaign = campaign;
 			this.program = program;
 			this.tariffID = tariffID;
 			this.price = price;
@@ -68,6 +68,12 @@ namespace Merlin.Forms
             grdSuccess.Entity = ResolveEntity();
             grdFail.Entity = EntityManager.GetEntity((int)Entities.ErrTmplGen);
             tbbExcel.Image = Globals.GetImage(Constants.ActionsImages.ExportExcel);
+			if (!_template.IsModeAdd)
+			{
+				this.Text = "Удаление рекламных выпусков по шаблону";
+				grdFail.Caption = "Ошибки удаления";
+                grdSuccess.Caption = "Удаленные выпуски";
+            }
         }
 
         private Entity ResolveEntity()
@@ -142,7 +148,8 @@ namespace Merlin.Forms
 					{
 						pbProgress.Value++;
 						Application.DoEvents();
-						List<PresentationObject> pos = AddIssues();
+						
+						List<PresentationObject> pos = _template.IsModeAdd ? AddIssues() : DeleteIssues();
 						if (pos != null)
 						{
 							foreach (PresentationObject po in pos)
@@ -162,8 +169,8 @@ namespace Merlin.Forms
 			{
 				pbProgress.Visible = false;
 				// Гарантированный вызов RecalculateAction в конце, независимо от результата
-				if (campaign != null)
-					campaign.RecalculateAction();
+				if (_campaign != null)
+					_campaign.RecalculateAction();
 			}
 		}
 
@@ -183,7 +190,17 @@ namespace Merlin.Forms
 			grdFail.AddRow(po);
 		}
 
-		private List<PresentationObject> AddIssues() 
+        private List<PresentationObject> DeleteIssues()
+		{
+			var issues = ((CampaignOnSingleMassmedia)_campaign).GetIssuesForDate(_template.CurrentDate);
+			foreach (var issue in issues) 
+				issue.Delete(true);
+
+            return issues;
+        }
+
+
+        private List<PresentationObject> AddIssues() 
 		{
 			if (_updateDB != null)
 			{
@@ -207,13 +224,13 @@ namespace Merlin.Forms
 
 		private List<PresentationObject> AddSimpleIssue()
 		{
-			ITariffWindow tariffWindow = TariffWindowWithRollerIssues.GetWindowByDate(_template.CurrentDate, ((CampaignOnSingleMassmedia)campaign).Massmedia) ?? throw new NullReferenceException("TariffWindowNotFound");
+			ITariffWindow tariffWindow = TariffWindowWithRollerIssues.GetWindowByDate(_template.CurrentDate, ((CampaignOnSingleMassmedia)_campaign).Massmedia) ?? throw new NullReferenceException("TariffWindowNotFound");
 			Issue issue;
 			try
 			{
 				DataAccessor.BeginTransaction();
-				issue = campaign.AddIssue(roller, tariffWindow, position, grantorID);
-				campaign.RecalculateAction(false);
+				issue = _campaign.AddIssue(roller, tariffWindow, position, grantorID);
+				_campaign.RecalculateAction(false);
 				DataAccessor.CommitTransaction();
 			}
 			catch
@@ -228,7 +245,7 @@ namespace Merlin.Forms
 
 		private List<PresentationObject> AddSimpleIssues()
         {
-			MassmediaPricelist pricelist = ((CampaignOnSingleMassmedia)campaign).Massmedia.GetPriceList(_template.CurrentDate) as MassmediaPricelist ?? throw new Exception("PriceListDoesntExist");
+			MassmediaPricelist pricelist = ((CampaignOnSingleMassmedia)_campaign).Massmedia.GetPriceList(_template.CurrentDate) as MassmediaPricelist ?? throw new Exception("PriceListDoesntExist");
             DataSet dsWindows = pricelist.GetTariffWindows(_template.CurrentDate, _template.CurrentDate, null, false);
 			DataTable dtTariffWindow = dsWindows.Tables[Constants.TableNames.Data];
 			List<PresentationObject> issues = new List<PresentationObject>();
@@ -248,8 +265,8 @@ namespace Merlin.Forms
                 try
                 {
                     DataAccessor.BeginTransaction();
-                    Issue issue = campaign.AddIssue(roller, windows[0], position, grantorID);
-                    campaign.RecalculateAction(false);
+                    Issue issue = _campaign.AddIssue(roller, windows[0], position, grantorID);
+                    _campaign.RecalculateAction(false);
                     DataAccessor.CommitTransaction();
 					issue.Refresh();
                     issues.Add(issue);
@@ -279,7 +296,7 @@ namespace Merlin.Forms
 
 		private List<PresentationObject> AddModuleIssue()
 		{
-            ModuleIssue moduleIssue = campaign.AddModuleIssue((Module)module, roller, (ModulePricelist)pricelist,
+            ModuleIssue moduleIssue = _campaign.AddModuleIssue((Module)module, roller, (ModulePricelist)pricelist,
                                                                      _template.CurrentDate, position, grantorID);
 			moduleIssue.Refresh();
             return new List<PresentationObject> { moduleIssue};			
@@ -287,7 +304,7 @@ namespace Merlin.Forms
 
 		private List<PresentationObject> AddPackModuleIssue()
 		{
-            PackModuleIssue packModuleIssue = ((CampaignPackModule)campaign).AddPackModuleIssue((PackModulePricelist)pricelist, (Roller)roller, position,
+            PackModuleIssue packModuleIssue = ((CampaignPackModule)_campaign).AddPackModuleIssue((PackModulePricelist)pricelist, (Roller)roller, position,
                                                                   _template.CurrentDate, grantorID);
 			packModuleIssue.Refresh();
 			return new List<PresentationObject> { packModuleIssue };
@@ -295,7 +312,7 @@ namespace Merlin.Forms
 
 		private List<PresentationObject> AddProgramIssue()
 		{
-            ProgramIssue programIssue = campaign.AddProgramIssue(program, tariffID, _template.CurrentDate, price, bonus, campaign.Action.IsConfirmed);
+            ProgramIssue programIssue = _campaign.AddProgramIssue(program, tariffID, _template.CurrentDate, price, bonus, _campaign.Action.IsConfirmed);
 			programIssue.Refresh();
             return new List<PresentationObject> { programIssue }; 
 		}

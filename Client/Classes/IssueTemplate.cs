@@ -58,6 +58,8 @@ namespace Merlin.Classes
 			}
         }
 
+		public bool IsModeAdd { get; set; }
+
         public Dictionary<string, object> Parameters
 		{
 			get

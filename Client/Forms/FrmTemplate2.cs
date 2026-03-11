@@ -2,14 +2,7 @@
 using FogSoft.WinForm.DataAccess;
 using Merlin.Classes;
 using System;
-using System.Collections.Generic;
-using System.ComponentModel;
-using System.Data;
-using System.Drawing;
-using System.Linq;
-using System.Text;
 using System.Windows.Forms;
-using unoidl.com.sun.star.frame.status;
 
 namespace Merlin.Forms
 {
@@ -28,7 +21,7 @@ namespace Merlin.Forms
                 new DateTime(DateTime.Today.Year, DateTime.Today.Month, DateTime.Today.Day, 12, 0, 0),
                 new DateTime(DateTime.Today.Year, DateTime.Today.Month, DateTime.Today.Day, 15, 0, 0),
                 2);
-
+            _template.IsModeAdd = true; 
             lblRollerName.Text = rollerName;
         }
 

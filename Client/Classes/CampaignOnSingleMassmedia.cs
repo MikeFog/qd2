@@ -169,5 +169,22 @@ namespace Merlin.Classes
 
             return DataAccessor.LoadDataSet("RollerSubstitutionPassport", procParameters).Tables[2].Copy();
         }
+
+        public List<PresentationObject> GetIssuesForDate(DateTime date)
+        {
+            Dictionary<string, object> procParameters = DataAccessor.CreateParametersDictionary();
+            procParameters.Add(ParamNames.CampaignId, CampaignId);
+            procParameters.Add(Issue.ParamNames.IssueDate, date.Date);
+            procParameters.Add(Massmedia.ParamNames.MassmediaId, MassmediaId);
+
+            List<PresentationObject> issues = new List<PresentationObject>();
+            foreach (DataRow row in DataAccessor.LoadDataSet("IssuesByDate", procParameters).Tables[0].Rows)
+            {
+                if ((DateTime)row[Issue.ParamNames.IssueDate] == date)
+                    issues.Add(new RollerIssue(row));
+            }
+
+            return issues;
+        }
     }
 }

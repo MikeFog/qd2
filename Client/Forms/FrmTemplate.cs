@@ -7,24 +7,12 @@ namespace Merlin.Forms
 {
 	public partial class FrmTemplate : Form
 	{
-		private IssueTemplate template;
-
-		public IssueTemplate Template
-		{
-			get
-			{
-				template.StartDate = dtStartDate.Value;
-				template.FinishDate = dtFinishDate.Value;
-				template.IsOdd = rbOdd.Checked;
-				template.Mode = (rbNumber.Checked) ? IssueTemplateMode.OddEvenDays : IssueTemplateMode.WeekDays;
-				return template;
-			}
-		}
+		private readonly IssueTemplate _template;
 
 		public FrmTemplate(IssueTemplate template)
 		{
-			this.template = template ?? new IssueTemplate();
-			this.template.Mode = IssueTemplateMode.WeekDays;
+			this._template = template ?? new IssueTemplate();
+			this._template.Mode = IssueTemplateMode.WeekDays;
 			InitializeComponent();
 		}
 
@@ -32,7 +20,19 @@ namespace Merlin.Forms
 		{
 		}
 
-		private static void SetDateTimeValue(DateTimePicker control, DateTime date)
+        public IssueTemplate Template
+        {
+            get
+            {
+                _template.StartDate = dtStartDate.Value;
+                _template.FinishDate = dtFinishDate.Value;
+                _template.IsOdd = rbOdd.Checked;
+                _template.Mode = (rbNumber.Checked) ? IssueTemplateMode.OddEvenDays : IssueTemplateMode.WeekDays;
+                return _template;
+            }
+        }
+
+        private static void SetDateTimeValue(DateTimePicker control, DateTime date)
 		{
 			if (control.MinDate < date && control.MaxDate > date)
 				control.Value = date;
@@ -43,21 +43,21 @@ namespace Merlin.Forms
 			clbWeekDays.Items.Clear();
 			for (	int i = 0; i < DateTimeUtils.WeekDayNames.Length; i++)
 			{
-				clbWeekDays.Items.Add(DateTimeUtils.WeekDayNames[i], template.WeekDays[i]);
+				clbWeekDays.Items.Add(DateTimeUtils.WeekDayNames[i], _template.WeekDays[i]);
 			}
-			rbDays.Checked = template.Mode == IssueTemplateMode.WeekDays;
-			rbOdd.Checked = template.IsOdd;
-			rbEven.Checked = !template.IsOdd;
+			rbDays.Checked = _template.Mode == IssueTemplateMode.WeekDays;
+			rbOdd.Checked = _template.IsOdd;
+			rbEven.Checked = !_template.IsOdd;
 
-			SetDateTimeValue(dtStartDate, template.StartDate);
-			SetDateTimeValue(dtFinishDate, template.FinishDate);
+			SetDateTimeValue(dtStartDate, _template.StartDate);
+			SetDateTimeValue(dtFinishDate, _template.FinishDate);
 
 			SetEnabled();
 		}
 
 		private void clbWeekDays_ItemCheck(object sender, ItemCheckEventArgs e)
 		{
-			template.WeekDays[e.Index] = e.NewValue == CheckState.Checked;
+			_template.WeekDays[e.Index] = e.NewValue == CheckState.Checked;
 		}
 
 		private void SetEnabled()
@@ -78,5 +78,22 @@ namespace Merlin.Forms
 
 			SetEnabled();
 		}
-	}
+
+        private void btnOk_Click(object sender, EventArgs e)
+        {
+			if (!rbModeAdd.Checked && !rbModeDelete.Checked)
+			{
+				MessageBox.Show("Надо выбрать что вы собираетесь делать: добавить или удалить рекламные выпуски!", Application.ProductName, MessageBoxButtons.OK, MessageBoxIcon.Warning);
+				this.DialogResult = DialogResult.None;
+            }
+			_template.IsModeAdd = rbModeAdd.Checked;
+        }
+
+		public void SetModeAdd() 
+		{ 
+			rbModeAdd.Checked = true; 
+			rbModeDelete.Checked = false;
+			rbModeAdd.Enabled = rbModeDelete.Enabled = false;
+		}
+    }
 }

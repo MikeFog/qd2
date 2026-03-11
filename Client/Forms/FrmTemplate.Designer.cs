@@ -41,8 +41,12 @@ namespace Merlin.Forms
             this.dtStartDate = new System.Windows.Forms.DateTimePicker();
             this.label2 = new System.Windows.Forms.Label();
             this.label1 = new System.Windows.Forms.Label();
+            this.flowLayoutPanel1 = new System.Windows.Forms.FlowLayoutPanel();
+            this.rbModeAdd = new System.Windows.Forms.RadioButton();
+            this.rbModeDelete = new System.Windows.Forms.RadioButton();
             this.gbWeekDays.SuspendLayout();
             this.gbOddEven.SuspendLayout();
+            this.flowLayoutPanel1.SuspendLayout();
             this.SuspendLayout();
             // 
             // btnCancel
@@ -50,7 +54,7 @@ namespace Merlin.Forms
             this.btnCancel.Anchor = System.Windows.Forms.AnchorStyles.None;
             this.btnCancel.DialogResult = System.Windows.Forms.DialogResult.Cancel;
             this.btnCancel.FlatStyle = System.Windows.Forms.FlatStyle.System;
-            this.btnCancel.Location = new System.Drawing.Point(309, 422);
+            this.btnCancel.Location = new System.Drawing.Point(309, 438);
             this.btnCancel.Name = "btnCancel";
             this.btnCancel.Size = new System.Drawing.Size(85, 30);
             this.btnCancel.TabIndex = 7;
@@ -61,18 +65,19 @@ namespace Merlin.Forms
             this.btnOk.Anchor = System.Windows.Forms.AnchorStyles.None;
             this.btnOk.DialogResult = System.Windows.Forms.DialogResult.OK;
             this.btnOk.FlatStyle = System.Windows.Forms.FlatStyle.System;
-            this.btnOk.Location = new System.Drawing.Point(211, 422);
+            this.btnOk.Location = new System.Drawing.Point(211, 438);
             this.btnOk.Name = "btnOk";
             this.btnOk.Size = new System.Drawing.Size(85, 30);
             this.btnOk.TabIndex = 6;
             this.btnOk.Text = "Ок";
+            this.btnOk.Click += new System.EventHandler(this.btnOk_Click);
             // 
             // gbWeekDays
             // 
             this.gbWeekDays.Controls.Add(this.rbDays);
             this.gbWeekDays.Controls.Add(this.clbWeekDays);
             this.gbWeekDays.FlatStyle = System.Windows.Forms.FlatStyle.System;
-            this.gbWeekDays.Location = new System.Drawing.Point(20, 128);
+            this.gbWeekDays.Location = new System.Drawing.Point(20, 156);
             this.gbWeekDays.Name = "gbWeekDays";
             this.gbWeekDays.Size = new System.Drawing.Size(302, 273);
             this.gbWeekDays.TabIndex = 8;
@@ -110,7 +115,7 @@ namespace Merlin.Forms
             this.gbOddEven.Controls.Add(this.rbNumber);
             this.gbOddEven.Controls.Add(this.rbOdd);
             this.gbOddEven.Controls.Add(this.rbEven);
-            this.gbOddEven.Location = new System.Drawing.Point(332, 129);
+            this.gbOddEven.Location = new System.Drawing.Point(332, 157);
             this.gbOddEven.Name = "gbOddEven";
             this.gbOddEven.Size = new System.Drawing.Size(260, 273);
             this.gbOddEven.TabIndex = 9;
@@ -155,7 +160,7 @@ namespace Merlin.Forms
             // dtFinishDate
             // 
             this.dtFinishDate.Format = System.Windows.Forms.DateTimePickerFormat.Short;
-            this.dtFinishDate.Location = new System.Drawing.Point(246, 57);
+            this.dtFinishDate.Location = new System.Drawing.Point(246, 117);
             this.dtFinishDate.Name = "dtFinishDate";
             this.dtFinishDate.Size = new System.Drawing.Size(346, 31);
             this.dtFinishDate.TabIndex = 13;
@@ -163,7 +168,7 @@ namespace Merlin.Forms
             // dtStartDate
             // 
             this.dtStartDate.Format = System.Windows.Forms.DateTimePickerFormat.Short;
-            this.dtStartDate.Location = new System.Drawing.Point(246, 15);
+            this.dtStartDate.Location = new System.Drawing.Point(246, 75);
             this.dtStartDate.Name = "dtStartDate";
             this.dtStartDate.Size = new System.Drawing.Size(346, 31);
             this.dtStartDate.TabIndex = 12;
@@ -171,7 +176,7 @@ namespace Merlin.Forms
             // label2
             // 
             this.label2.AutoSize = true;
-            this.label2.Location = new System.Drawing.Point(15, 57);
+            this.label2.Location = new System.Drawing.Point(15, 117);
             this.label2.Name = "label2";
             this.label2.Size = new System.Drawing.Size(197, 24);
             this.label2.TabIndex = 11;
@@ -180,17 +185,51 @@ namespace Merlin.Forms
             // label1
             // 
             this.label1.AutoSize = true;
-            this.label1.Location = new System.Drawing.Point(15, 15);
+            this.label1.Location = new System.Drawing.Point(15, 75);
             this.label1.Name = "label1";
             this.label1.Size = new System.Drawing.Size(164, 24);
             this.label1.TabIndex = 10;
             this.label1.Text = "Начало интервала:";
             // 
+            // flowLayoutPanel1
+            // 
+            this.flowLayoutPanel1.Controls.Add(this.rbModeAdd);
+            this.flowLayoutPanel1.Controls.Add(this.rbModeDelete);
+            this.flowLayoutPanel1.Dock = System.Windows.Forms.DockStyle.Top;
+            this.flowLayoutPanel1.Location = new System.Drawing.Point(0, 0);
+            this.flowLayoutPanel1.Name = "flowLayoutPanel1";
+            this.flowLayoutPanel1.Size = new System.Drawing.Size(605, 69);
+            this.flowLayoutPanel1.TabIndex = 14;
+            // 
+            // rbModeAdd
+            // 
+            this.rbModeAdd.AutoSize = true;
+            this.rbModeAdd.Location = new System.Drawing.Point(3, 3);
+            this.rbModeAdd.Name = "rbModeAdd";
+            this.rbModeAdd.Size = new System.Drawing.Size(196, 28);
+            this.rbModeAdd.TabIndex = 0;
+            this.rbModeAdd.TabStop = true;
+            this.rbModeAdd.Text = "Режим добавления ";
+            this.rbModeAdd.UseVisualStyleBackColor = true;
+            // 
+            // rbModeDelete
+            // 
+            this.rbModeDelete.AutoSize = true;
+            this.rbModeDelete.Location = new System.Drawing.Point(205, 3);
+            this.rbModeDelete.Name = "rbModeDelete";
+            this.rbModeDelete.Size = new System.Drawing.Size(171, 28);
+            this.rbModeDelete.TabIndex = 1;
+            this.rbModeDelete.TabStop = true;
+            this.rbModeDelete.Text = "Режим удаления";
+            this.rbModeDelete.UseVisualStyleBackColor = true;
+            // 
             // FrmTemplate
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(10F, 24F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
+            this.CancelButton = this.btnCancel;
             this.ClientSize = new System.Drawing.Size(605, 478);
+            this.Controls.Add(this.flowLayoutPanel1);
             this.Controls.Add(this.btnCancel);
             this.Controls.Add(this.dtFinishDate);
             this.Controls.Add(this.dtStartDate);
@@ -211,6 +250,8 @@ namespace Merlin.Forms
             this.gbWeekDays.PerformLayout();
             this.gbOddEven.ResumeLayout(false);
             this.gbOddEven.PerformLayout();
+            this.flowLayoutPanel1.ResumeLayout(false);
+            this.flowLayoutPanel1.PerformLayout();
             this.ResumeLayout(false);
             this.PerformLayout();
 
@@ -231,5 +272,8 @@ namespace Merlin.Forms
         private System.Windows.Forms.Label label1;
 		private System.Windows.Forms.RadioButton rbDays;
 		private System.Windows.Forms.RadioButton rbNumber;
+        private System.Windows.Forms.FlowLayoutPanel flowLayoutPanel1;
+        private System.Windows.Forms.RadioButton rbModeAdd;
+        private System.Windows.Forms.RadioButton rbModeDelete;
     }
 }
