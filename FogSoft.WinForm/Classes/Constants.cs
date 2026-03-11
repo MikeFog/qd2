@@ -22,7 +22,9 @@ namespace FogSoft.WinForm
 
 	public static class Constants
 	{
-		public struct Parameters
+		public const int EntityUser = 107;
+
+        public struct Parameters
 		{
 			public const string ParentId = "parentId";
 			public const string ChildId = "childId";
@@ -112,9 +114,7 @@ namespace FogSoft.WinForm
 		{
 			internal const string Default = "Всего объектов: {0}";
 			internal const string WithObjectType = "Всего объектов типа '{0}': {1}";
-
-			internal const string WithObjectTypeAndParentObjectName =
-				"Всего объектов типа '{0}' для объекта '{1}': {2}";
+			internal const string WithObjectTypeAndParentObjectName = "Всего объектов типа '{0}' для объекта '{1}': {2}";
 		}
 
 		public const string MethodNotImplemented = "Метод еще не реализован.";

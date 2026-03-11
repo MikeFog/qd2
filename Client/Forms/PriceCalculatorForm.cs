@@ -1,5 +1,4 @@
-﻿using DocumentFormat.OpenXml.Bibliography;
-using FogSoft.WinForm;
+﻿using FogSoft.WinForm;
 using FogSoft.WinForm.Classes;
 using FogSoft.WinForm.Classes.Export.MSExcel;
 using FogSoft.WinForm.DataAccess;
@@ -57,6 +56,7 @@ namespace Merlin.Forms
             templateEditor.SpotsSettingsChanged += (s, e) => RecalculateFromTemplateInputs();
             templateEditor.DurationChanged += (s, e) => RecalculateFromTemplateInputs();
             templateEditor.ManagerDiscountModeChanged += (s, e) => RecalculateFromTemplateInputs();
+            templateEditor.CurrentUserChanged += (s, e) => RecalculateFromTemplateInputs();
 
             // новый авто-пересчёт по датам/дням/чётности
             templateEditor.ScheduleChanged += (s, e) => RecalculateFromTemplateInputs();
@@ -125,7 +125,8 @@ namespace Merlin.Forms
                 templateEditor.PrimePerDayWeekend,
                 templateEditor.NonPrimePerDayWeekend,
                 templateEditor.ManagerDiscount,
-                templateEditor.ManagerDiscountModeSingle
+                templateEditor.ManagerDiscountModeSingle,
+                templateEditor.CurrentUserId
             );
 
             // оставить позицию из шаблона и актуальный SummaryUpdater
@@ -174,7 +175,8 @@ namespace Merlin.Forms
                     templateEditor.PrimePerDayWeekend,
                     templateEditor.NonPrimePerDayWeekend,
                     templateEditor.ManagerDiscount,
-                    templateEditor.ManagerDiscountModeSingle
+                    templateEditor.ManagerDiscountModeSingle,
+                    templateEditor.CurrentUserId
                 );
 
                 grdPriceCalculator.SetDefaultPosition(templateEditor.SelectedPosition);
@@ -496,6 +498,7 @@ namespace Merlin.Forms
                 NonPrimePerDayWeekend = templateEditor.NonPrimePerDayWeekend,
                 ManagerDiscountValue = templateEditor.ManagerDiscount,
                 ManagerDiscountModeSingle = templateEditor.ManagerDiscountModeSingle,
+                CurrentUserId = templateEditor.CurrentUserId,
                 PositionValue = (int)templateEditor.SelectedPosition,
 
                 // Schedule settings
@@ -817,6 +820,7 @@ namespace Merlin.Forms
                     variant.UseDaysOfWeek,
                     variant.EvenDaysSelected,
                     variant.DaysOfWeekChecked);
+                templateEditor.CurrentUserId = variant.CurrentUserId;
 
                 // 2) Reload grid data with the variant's massmedia group and date range
                 grdPriceCalculator.LoadData(variant.MassmediaGroupId, variant.DateFrom, variant.DateTo);
@@ -841,7 +845,8 @@ namespace Merlin.Forms
                     variant.PrimePerDayWeekend,
                     variant.NonPrimePerDayWeekend,
                     variant.ManagerDiscountValue,
-                    variant.ManagerDiscountModeSingle
+                    variant.ManagerDiscountModeSingle,
+                    variant.CurrentUserId
                 );
 
                 // ✅ 6) Restore individual row values from saved snapshot (overrides template defaults)

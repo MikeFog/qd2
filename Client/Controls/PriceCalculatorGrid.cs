@@ -944,7 +944,8 @@ namespace Merlin.Controls
 
             SummaryTable = ds.Tables.Count > 0 ? ds.Tables[0] : null;
             SegmentsTable = ds.Tables.Count > 1 ? ds.Tables[1] : null;
-            ManagerDiscountTable = ds.Tables.Count > 2 ? ds.Tables[2] : null;
+            ManagerDiscountTable = ds.Tables[2];
+            
 
             EnsureCalcColumns(SummaryTable);
 
@@ -1027,8 +1028,10 @@ namespace Merlin.Controls
             int primePerDayWeekend,
             int nonPrimePerDayWeekend,
             decimal managerDiscount,
-            bool managerDiscountModeSingle)
+            bool managerDiscountModeSingle,
+            int userId)
         {
+            ManagerDiscountTable.DefaultView.RowFilter = $"UserID = {userId}";
             UseManagerDiscountPeriods = !managerDiscountModeSingle;
             if (UseManagerDiscountPeriods)
             {
@@ -1261,14 +1264,15 @@ namespace Merlin.Controls
         {
             var result = new List<ManagerDiscountPeriod>();
 
-            if (ManagerDiscountTable == null || ManagerDiscountTable.Rows.Count == 0)
+            if (ManagerDiscountTable == null || ManagerDiscountTable.DefaultView.Count == 0)
             {
                 result.Add(new ManagerDiscountPeriod(DateTime.MinValue, DateTime.MaxValue, 1m));
                 return result;
             }
 
-            foreach (DataRow row in ManagerDiscountTable.Rows)
+            foreach (DataRowView rowView in ManagerDiscountTable.DefaultView)
             {
+                DataRow row = rowView.Row;
                 DateTime start = Convert.ToDateTime(row["startDate"]).Date;
                 DateTime finish = Convert.ToDateTime(row["finishDate"]).Date;
                 decimal ratio = 1m;

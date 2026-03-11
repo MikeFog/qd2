@@ -29,6 +29,7 @@ namespace Merlin.Classes
         public int NonPrimePerDayWeekend { get; set; }
         public decimal ManagerDiscountValue { get; set; }
         public bool ManagerDiscountModeSingle { get; set; }
+        public int CurrentUserId { get; set; }
         public int PositionValue { get; set; }
 
         // Schedule settings

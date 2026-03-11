@@ -4,7 +4,6 @@ using System.Collections.Generic;
 using System.Data;
 using System.Security.Cryptography;
 using System.Text;
-using unoidl.com.sun.star.sheet;
 
 namespace FogSoft.WinForm.Classes
 {
@@ -132,6 +131,13 @@ namespace FogSoft.WinForm.Classes
 			DataSet ds = DataAccessor.LoadDataSet("GetUserData", new Dictionary<string, object> { { SecurityManager.ParamNames.UserId, userID }});
 			return ds.Tables[0].Rows.Count > 0 ? new User(ds) : null;
 		}
-		#endregion
-	}
+
+		public static DataTable GetUsers()
+		{
+			Dictionary<string, object> parameters = DataAccessor.CreateParametersDictionary();
+			DataAccessor.PrepareParameters(parameters, EntityManager.GetEntity(Constants.EntityUser), InterfaceObjects.SimpleJournal, Constants.Actions.Load);
+			return ((DataSet)DataAccessor.DoAction(parameters)).Tables[Constants.TableNames.Data];
+		}
+        #endregion
+    }
 }

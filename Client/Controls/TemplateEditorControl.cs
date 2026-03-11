@@ -15,6 +15,8 @@ namespace Merlin.Controls
         public event EventHandler DurationChanged;
         public event EventHandler ScheduleChanged;
         public event EventHandler ManagerDiscountModeChanged;
+        public event EventHandler CurrentUserChanged;
+
 
         private bool _loaded;
 
@@ -60,6 +62,10 @@ namespace Merlin.Controls
             chkFri.CheckedChanged += OnScheduleChanged;
             chkSat.CheckedChanged += OnScheduleChanged;
             chkSun.CheckedChanged += OnScheduleChanged;
+
+            cmbUsers.DataSource = SecurityManager.GetUsers().DefaultView;
+            cmbUsers.SelectedValue = SecurityManager.LoggedUser.Id;
+            cmbUsers.Visible = lblManager.Visible = SecurityManager.LoggedUser.IsAdmin;
         }
 
         private void InitPositions()
@@ -110,14 +116,15 @@ namespace Merlin.Controls
 
         private void SetManagerDiscount()
         {
-            if (SecurityManager.LoggedUser.IsAdmin)
+            SecurityManager.User currentUser = SecurityManager.GetUser(cmbUsers.SelectedValue != null ? Convert.ToInt32(cmbUsers.SelectedValue) : SecurityManager.LoggedUser.Id);
+            if (currentUser.IsAdmin)
             {
                 nmManagerDiscount.Minimum = 0;
                 nmManagerDiscount.Value = 1;
             }
             else
             {
-                nmManagerDiscount.Value = nmManagerDiscount.Minimum =  SecurityManager.LoggedUser.GetDiscount(dtStart.Value, dtEnd.Value);
+                nmManagerDiscount.Value = nmManagerDiscount.Minimum = currentUser.GetDiscount(dtStart.Value, dtEnd.Value);
             }
         }
 
@@ -204,6 +211,12 @@ namespace Merlin.Controls
         {
             if (!UseDaysOfWeek) return true;
             return DaysOfWeekChecked.Any(x => x);
+        }
+
+        public int CurrentUserId
+        {
+            get { return Convert.ToInt32(cmbUsers.SelectedValue); }
+            set { cmbUsers.SelectedValue = value; }
         }
 
         // Setters for loading saved variants
@@ -340,6 +353,12 @@ namespace Merlin.Controls
                 fallback = nud.Minimum;
 
             nud.Value = fallback;
+        }
+
+        private void cmbUsers_SelectedItemChanged(object sender, EventArgs e)
+        {
+            SetManagerDiscount();
+            CurrentUserChanged?.Invoke(this, EventArgs.Empty);
         }
     }
 }
