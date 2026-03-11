@@ -5,7 +5,6 @@ using FogSoft.WinForm.Classes;
 using FogSoft.WinForm.Classes.Export;
 using FogSoft.WinForm.Properties;
 using Merlin.Classes;
-using Merlin.Classes.FakeContainers;
 
 namespace Merlin.Forms
 {
@@ -15,8 +14,7 @@ namespace Merlin.Forms
 		{
 			InitializeComponent();
 			InitializeToolbar();
-			tvwStructure.Root =
-				new MassmediasContainer("Радиостанция", null, RelationManager.GetScenario(RelationScenarios.TariffWindows));
+			tvwStructure.Root =	new FakeContainer("Радиостанция", null, RelationManager.GetScenario(RelationScenarios.TariffWindows));
 		}
 
 		private void InitializeToolbar()
