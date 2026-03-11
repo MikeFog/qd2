@@ -956,6 +956,7 @@ namespace Merlin.Forms
                 var fileName = string.IsNullOrEmpty(txtFirmName.Text) ? $"КП_{DateTime.Now:dd.MM.yyyy-HH-mm-ss}.docx" : $"КП для {txtFirmName.Text} {DateTime.Now:dd.MM.yyyy-HH-mm-ss}.docx";
 
                 var outPath = Path.Combine(outFolder, fileName);
+                SecurityManager.User user = SecurityManager.GetUser(templateEditor.CurrentUserId);
 
                 var result = Cp.CpOneDocGenerator.GenerateOneDoc(
                     list,
@@ -963,9 +964,9 @@ namespace Merlin.Forms
                     outPath,
                     clientName: txtFirmName.Text,
                     docDate: DateTime.Today,
-                    contactName: SecurityManager.LoggedUser.FullName,
-                    contactEmail: SecurityManager.LoggedUser.Email,
-                    contactPhone: SecurityManager.LoggedUser.Phone
+                    contactName: user.FullName,
+                    contactEmail: user.Email,
+                    contactPhone: user.Phone
                 );
 
                 Process.Start(new ProcessStartInfo(result) { UseShellExecute = true });
