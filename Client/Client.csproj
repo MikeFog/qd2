@@ -523,8 +523,6 @@
     </Compile>
     <Compile Include="Classes\EntityCampaign.cs" />
     <Compile Include="Classes\FakeContainers\AdvertTypeContainer.cs" />
-    <Compile Include="Classes\FakeContainers\MassmediasContainer.cs" />
-    <Compile Include="Classes\FakeContainers\StudioOrderActionContainer.cs" />
     <Compile Include="Classes\GridExport\DJinSerializer\BlockManager.cs" />
     <Compile Include="Classes\GridExport\DJinSerializer\DJinParam.cs" />
     <Compile Include="Classes\GridExport\DJinSerializer\DJinExportDocument.cs" />
@@ -548,7 +546,6 @@
     <Compile Include="Classes\Issue.cs" />
     <Compile Include="Classes\IssueTemplate.cs" />
     <Compile Include="Classes\ITariffWindow.cs" />
-    <Compile Include="Classes\MassmediaDiscount.cs" />
     <Compile Include="Classes\MassmediaPricelist.cs" />
     <Compile Include="Classes\MassmediasAndCampaignsContainer.cs" />
     <Compile Include="Classes\MediaPlan.cs" />
@@ -970,12 +967,6 @@
     </Compile>
     <Compile Include="Forms\RollerSubstitutionForm.Designer.cs">
       <DependentUpon>RollerSubstitutionForm.cs</DependentUpon>
-    </Compile>
-    <Compile Include="Forms\FilterForm\SOActionJournalFilter.cs">
-      <SubType>Form</SubType>
-    </Compile>
-    <Compile Include="Forms\FilterForm\SOActionJournalFilter.Designer.cs">
-      <DependentUpon>SOActionJournalFilter.cs</DependentUpon>
     </Compile>
     <Compile Include="Forms\SelectCampaignsForm.cs">
       <SubType>Form</SubType>
