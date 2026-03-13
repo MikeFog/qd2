@@ -17,7 +17,6 @@ namespace Merlin.Controls
         public event EventHandler ManagerDiscountModeChanged;
         public event EventHandler CurrentUserChanged;
 
-
         private bool _loaded;
 
         public Button CalculateButton => btnCalculate;
@@ -63,7 +62,7 @@ namespace Merlin.Controls
             chkSat.CheckedChanged += OnScheduleChanged;
             chkSun.CheckedChanged += OnScheduleChanged;
 
-            cmbUsers.DataSource = SecurityManager.GetUsers().DefaultView;
+            cmbUsers.DataSource = SecurityManager.GetUsers(true).DefaultView;
             cmbUsers.SelectedValue = SecurityManager.LoggedUser.Id;
             cmbUsers.Visible = lblManager.Visible = SecurityManager.LoggedUser.IsAdmin;
         }

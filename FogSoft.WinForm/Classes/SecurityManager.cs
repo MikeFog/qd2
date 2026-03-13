@@ -132,10 +132,12 @@ namespace FogSoft.WinForm.Classes
 			return ds.Tables[0].Rows.Count > 0 ? new User(ds) : null;
 		}
 
-		public static DataTable GetUsers()
+		public static DataTable GetUsers(bool activeOnly)
 		{
 			Dictionary<string, object> parameters = DataAccessor.CreateParametersDictionary();
 			DataAccessor.PrepareParameters(parameters, EntityManager.GetEntity(Constants.EntityUser), InterfaceObjects.SimpleJournal, Constants.Actions.Load);
+			parameters["activeOnly"] = activeOnly;
+
 			return ((DataSet)DataAccessor.DoAction(parameters)).Tables[Constants.TableNames.Data];
 		}
         #endregion
