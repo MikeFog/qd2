@@ -114,7 +114,7 @@ namespace Merlin.Classes
 
 		public bool IsDateCovered(DateTime startOfInterval, DateTime endOfInterval)
 		{
-			return StartDate <= endOfInterval && FinishDate >= startOfInterval;
+			return StartDate.Date <= endOfInterval && FinishDate.Date >= startOfInterval;
 		}
 
 		public bool MoveNext()
