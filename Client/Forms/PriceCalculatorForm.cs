@@ -954,6 +954,8 @@ namespace Merlin.Forms
                 Directory.CreateDirectory(outFolder);
 
                 var fileName = string.IsNullOrEmpty(txtFirmName.Text) ? $"КП_{DateTime.Now:dd.MM.yyyy-HH-mm-ss}.docx" : $"КП для {txtFirmName.Text} {DateTime.Now:dd.MM.yyyy-HH-mm-ss}.docx";
+                var invalidChars = Path.GetInvalidFileNameChars();
+                fileName = string.Concat(fileName.Select(ch => invalidChars.Contains(ch) ? '_' : ch));
 
                 var outPath = Path.Combine(outFolder, fileName);
                 SecurityManager.User user = SecurityManager.GetUser(templateEditor.CurrentUserId);
