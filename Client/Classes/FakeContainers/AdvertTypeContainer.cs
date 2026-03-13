@@ -1,9 +1,5 @@
 ﻿using FogSoft.WinForm;
 using FogSoft.WinForm.Classes;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
 using System.Windows.Forms;
 
 namespace Merlin.Classes.FakeContainers

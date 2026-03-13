@@ -1,7 +1,6 @@
 using System;
 using System.Collections.Generic;
 using System.Data;
-using System.Runtime.InteropServices.ComTypes;
 using System.Windows.Forms;
 using FogSoft.WinForm;
 using FogSoft.WinForm.Classes;
@@ -30,7 +29,8 @@ namespace Merlin.Classes
 			public const string AddDisabledWindow = "AddDisabledWindow";
 			public const string AddPriceList = "AddPriceList";
 			public const string AddModule = "AddModule";
-		}
+            public const string AssignRelease = "AssignRelease";
+        }
 
 		public new struct ParamNames
 		{
@@ -79,7 +79,8 @@ namespace Merlin.Classes
 				case ActionNames.AddDisabledWindow:
 				case ActionNames.AddPriceList:
 				case ActionNames.AddModule:
-					base.DoAction(Constants.EntityActions.AssignNew, owner, interfaceObject);
+                case ActionNames.AssignRelease:
+                    base.DoAction(Constants.EntityActions.AssignNew, owner, interfaceObject);
 					break;
 				default:
 					base.DoAction(actionName, owner, interfaceObject);
@@ -97,7 +98,9 @@ namespace Merlin.Classes
 				return ChildEntity != null && ChildEntity.Id == (int) Entities.Pricelist;
 			else if (actionName == ActionNames.AddModule)
 				return ChildEntity != null && ChildEntity.Id == (int) Entities.Module;
-			else if (actionName == Constants.EntityActions.ShowFilters)
+            else if (actionName == ActionNames.AssignRelease)
+                return ChildEntity != null && ChildEntity.Id == (int)Entities.DiscountRelease;
+            else if (actionName == Constants.EntityActions.ShowFilters)
 				return ChildEntity != null && ChildEntity.Id == (int) Entities.ProgramIssue;
 
 			return base.IsActionEnabled(actionName, type);

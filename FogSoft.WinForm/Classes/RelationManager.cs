@@ -34,13 +34,14 @@ namespace FogSoft.WinForm.Classes
 		public readonly string Name;
 		public readonly int StartingEntityID;
         public readonly Entity StartingEntity;
+        public readonly string XmlFilter;
 
         public RelationScenario(XmlNode node)
 		{
 			Name = node.Attributes["name"].Value;
 			StartingEntityID = ParseHelper.ParseToInt32(node.Attributes["startingEntityID"].Value);
 			StartingEntity = EntityManager.GetEntity(StartingEntityID);
-
+            XmlFilter = node.Attributes["filter"]?.Value;
 
             foreach (XmlNode xmlNode in node.SelectNodes("relation[@childEntityID]"))
 			{

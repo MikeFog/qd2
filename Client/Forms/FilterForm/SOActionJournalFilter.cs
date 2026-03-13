@@ -12,7 +12,7 @@ namespace Merlin.Forms.FilterForm
 	public partial class SOActionJournalFilter : FogSoft.WinForm.Passport.Forms.FilterForm
 	{
 		public SOActionJournalFilter(Entity entity, DataSet ds, Dictionary<string, object> filter) 
-			: base(entity, ds, filter)
+			: base(entity, ds, filter, entity.XmlFilter)
 		{
 			InitializeComponent();
 		}

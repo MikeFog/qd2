@@ -1,3 +1,5 @@
+using FogSoft.WinForm.Passport.Forms;
+using System;
 using System.Windows.Forms;
 
 namespace FogSoft.WinForm.Classes
@@ -27,7 +29,8 @@ namespace FogSoft.WinForm.Classes
 			childEntity = EntityManager.GetEntity(relationScenario.StartingEntityID);
 			this.name = name;
 			this.actions = actions;
-		}
+            Globals.ResolveFilterInitialValues(_filter, relationScenario.XmlFilter);
+        }
 
 		#endregion
 
@@ -43,7 +46,7 @@ namespace FogSoft.WinForm.Classes
 
 		virtual public bool IsFilterable
 		{
-			get { return false; }
+			get { return !string.IsNullOrEmpty(relationScenario.XmlFilter); }
 		}
 
 		protected virtual void FireContainerRefreshed()
@@ -94,7 +97,36 @@ namespace FogSoft.WinForm.Classes
 		#endregion
 
 		public virtual void ShowFilter(IWin32Window owner)
-		{			
-		}
-	}
+		{
+            try
+            {
+				if(!IsFilterable)
+					return;
+
+                Cursor.Current = Cursors.WaitCursor;
+                Application.DoEvents();
+
+                FilterForm frm = new FilterForm(relationScenario.StartingEntity, Globals.PrepareForFilter(RootEntity), _filter, relationScenario.XmlFilter);
+					
+                if (frm.ShowDialog(owner) == DialogResult.OK)
+                    FireContainerRefreshed();
+            }
+            catch (Exception ex)
+            {
+                ErrorManager.PublishError(ex);
+            }
+            finally
+            {
+                Cursor.Current = Cursors.Default;
+            }
+        }
+
+        protected Entity RootEntity
+        {
+            get
+            {
+                return relationScenario.StartingEntity;
+            }
+        }
+    }
 }

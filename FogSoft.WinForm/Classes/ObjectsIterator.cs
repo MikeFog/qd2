@@ -87,9 +87,10 @@ namespace FogSoft.WinForm.Classes
 			{
 				childEntity = value;
 				ClearCache();
-
+				/*
 				if (value != null)
 					Globals.ResolveFilterInitialValues(_filter, childEntity.XmlFilter);
+				*/
 			}
 		}
 

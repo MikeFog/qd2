@@ -34,7 +34,6 @@ namespace Merlin
 		AdvertType = 17,
 		ProductionStudio = 19,
 		Roller = 20,
-		MassmediaDiscount = 21,
 		DiscountRelease = 22,
 		DiscountValue = 23,
 		Action = 77,

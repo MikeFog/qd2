@@ -269,7 +269,9 @@ namespace FogSoft.WinForm.Classes
 				ds = DataAccessor.DoAction(clonedParameters) as DataSet;
 			}
 
-			FilterForm fFilter = new FilterForm(iterator.ChildEntity, ds, iterator.Filter);
+
+            ///TODO: ���������� ��������� ��������������� ������ - ������� ��� ������ ������ � ������ - ����� �� ��� ���� �� ��������� ���� � ����
+            FilterForm fFilter = new FilterForm(iterator.ChildEntity, ds, iterator.Filter, iterator.ChildEntity.XmlFilter);
 			if(fFilter.ShowDialog(owner) == DialogResult.OK)
 				FireContainerRefreshed();
 		}

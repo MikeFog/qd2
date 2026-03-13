@@ -219,13 +219,13 @@ namespace FogSoft.WinForm
 			}
 			return res.ToString();
 		}
-
+		
 		#region Filter
 
 		public static bool ShowFilter(
 			IWin32Window owner, Entity entity, Dictionary<string, object> filter)
 		{
-			return ShowFilter(new FilterForm(entity, PrepareForFilter(entity), filter), owner);
+			return ShowFilter(new FilterForm(entity, PrepareForFilter(entity), filter, entity.XmlFilter), owner);
 		}
 				
 		public static bool ShowFilter(

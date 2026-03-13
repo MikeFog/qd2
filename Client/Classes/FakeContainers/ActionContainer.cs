@@ -125,13 +125,5 @@ namespace Merlin.Classes.FakeContainers
 		}
 
 		public XPathNavigator XmlFilter { get; set; }
-
-		public Entity RootEntity
-		{
-			get
-			{
-				return relationScenario.StartingEntity;
-			}
-		}
 	}
 }

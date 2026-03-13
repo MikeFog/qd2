@@ -14,8 +14,8 @@ namespace FogSoft.WinForm.Passport.Forms
 			InitializeComponent();
 		}
 
-		public FilterForm(Entity entity, DataSet ds, Dictionary<string, object> filter)
-			: base(entity.XmlFilter)
+		public FilterForm(Entity entity, DataSet ds, Dictionary<string, object> filter, string xmlFilter)
+			: base(xmlFilter)
 		{
 			pageContext = new PageContext(ds, filter, entity);
             btnApply.Visible = false;

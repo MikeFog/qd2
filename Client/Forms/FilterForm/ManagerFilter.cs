@@ -13,7 +13,7 @@ namespace Merlin.Forms.FilterForm
 	public partial class ManagerFilter : FogSoft.WinForm.Passport.Forms.FilterForm
 	{
 		private ManagerFilter(Entity entity, DataSet ds, Dictionary<string, object> filter)
-			: base(entity, ds, filter)
+			: base(entity, ds, filter, entity.XmlFilter)
 		{
 			InitializeComponent();
 		}
