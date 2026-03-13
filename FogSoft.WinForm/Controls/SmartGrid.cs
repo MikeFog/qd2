@@ -60,6 +60,17 @@ namespace FogSoft.WinForm.Controls
             {
                 BeginInvoke(new Action(() => RepositionCheckBoxHeader()));
             };
+            dataGrid.DataBindingComplete += (s, e) =>
+            {
+                foreach (DataGridViewColumn col in dataGrid.Columns)
+                {
+					if (col.Width > 400)
+					{
+						col.AutoSizeMode = DataGridViewAutoSizeColumnMode.None;
+                        col.Width = 400;
+					}
+                }
+            };
         }
 
 		public new bool Enabled
@@ -616,7 +627,9 @@ namespace FogSoft.WinForm.Controls
 			column.DataPropertyName = entityAttribute.Name;
 			column.HeaderText = entityAttribute.Alias;
 			if (!(column is DataGridViewComboBoxColumn))
+			{
 				column.ReadOnly = true;
+			}
 
 			dataGrid.Columns.Add(column);
 		}
