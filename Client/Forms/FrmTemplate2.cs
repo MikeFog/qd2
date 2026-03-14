@@ -54,6 +54,7 @@ namespace Merlin.Forms
             _template.Quantity = ((int)txtQuantity.Value);
 
             _template.Mode = IssueTemplateMode.TimePeriod;
+            _template.IgnoreWindowsWithTheSameFirmIssue = cbIgnoreWindows.Checked;
         }
 
         private void clbWeekDays_ItemCheck(object sender, ItemCheckEventArgs e)

@@ -253,9 +253,15 @@ namespace Merlin.Forms
 
 			// выберем блоки, относящиеся к временному интервалу шаблона
 			string filter = string.Format("(hour > {0} And hour < {1}) OR (hour = {0} and min >= {2}) OR (hour = {1} and min <= {3})",
-	_template.StartTime.Hour, _template.FinishTime.Hour, _template.StartTime.Minute, _template.FinishTime.Minute);
+							_template.StartTime.Hour, _template.FinishTime.Hour, _template.StartTime.Minute, _template.FinishTime.Minute);
+
+			int firmId = _campaign.Action.FirmID;
 			foreach (DataRow row in dtTariffWindow.Select(filter))
-				windows.Add(new TariffWindowWithRollerIssues(row, Entities.TariffWindow));
+			{
+				var window = new TariffWindowWithRollerIssues(row, Entities.TariffWindow);
+				if (!_template.IgnoreWindowsWithTheSameFirmIssue || !window.IsRollerOfTheFirmExist(firmId, true))
+					windows.Add(window);
+			}
 			
 			// сортируем блоки по количеству свободного времени
 			windows.Sort();

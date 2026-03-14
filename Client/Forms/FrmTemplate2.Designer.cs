@@ -46,6 +46,7 @@ namespace Merlin.Forms
             this.gbWeekDays = new System.Windows.Forms.GroupBox();
             this.rbDays = new System.Windows.Forms.RadioButton();
             this.clbWeekDays = new System.Windows.Forms.CheckedListBox();
+            this.cbIgnoreWindows = new System.Windows.Forms.CheckBox();
             ((System.ComponentModel.ISupportInitialize)(this.txtQuantity)).BeginInit();
             this.gbWeekDays.SuspendLayout();
             this.SuspendLayout();
@@ -231,15 +232,28 @@ namespace Merlin.Forms
             this.clbWeekDays.Location = new System.Drawing.Point(7, 39);
             this.clbWeekDays.Margin = new System.Windows.Forms.Padding(3, 4, 3, 4);
             this.clbWeekDays.Name = "clbWeekDays";
-            this.clbWeekDays.Size = new System.Drawing.Size(386, 168);
+            this.clbWeekDays.Size = new System.Drawing.Size(386, 156);
             this.clbWeekDays.TabIndex = 10;
             this.clbWeekDays.ItemCheck += new System.Windows.Forms.ItemCheckEventHandler(this.clbWeekDays_ItemCheck);
+            // 
+            // cbIgnoreWindows
+            // 
+            this.cbIgnoreWindows.AutoSize = true;
+            this.cbIgnoreWindows.Checked = true;
+            this.cbIgnoreWindows.CheckState = System.Windows.Forms.CheckState.Checked;
+            this.cbIgnoreWindows.Location = new System.Drawing.Point(10, 3);
+            this.cbIgnoreWindows.Name = "cbIgnoreWindows";
+            this.cbIgnoreWindows.Size = new System.Drawing.Size(477, 28);
+            this.cbIgnoreWindows.TabIndex = 33;
+            this.cbIgnoreWindows.Text = "Не использовать окна где есть ролики данной фирмы";
+            this.cbIgnoreWindows.UseVisualStyleBackColor = true;
             // 
             // FrmTemplate2
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(10F, 24F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
             this.ClientSize = new System.Drawing.Size(461, 544);
+            this.Controls.Add(this.cbIgnoreWindows);
             this.Controls.Add(this.gbWeekDays);
             this.Controls.Add(this.lblRollerName);
             this.Controls.Add(this.label6);
@@ -291,5 +305,6 @@ namespace Merlin.Forms
         private System.Windows.Forms.GroupBox gbWeekDays;
         private System.Windows.Forms.RadioButton rbDays;
         private System.Windows.Forms.CheckedListBox clbWeekDays;
+        private System.Windows.Forms.CheckBox cbIgnoreWindows;
     }
 }

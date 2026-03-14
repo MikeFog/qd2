@@ -59,6 +59,7 @@ namespace Merlin.Classes
         }
 
 		public bool IsModeAdd { get; set; }
+        public bool IgnoreWindowsWithTheSameFirmIssue { get; set; }
 
         public Dictionary<string, object> Parameters
 		{

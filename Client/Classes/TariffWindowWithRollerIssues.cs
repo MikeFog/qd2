@@ -117,12 +117,13 @@ namespace Merlin.Classes
 			return ds.Tables[Constants.TableNames.Data].Rows.Count > 0;
 		}
 
-		public bool IsRollerOfTheFirmExist(int firmId)
+		public bool IsRollerOfTheFirmExist(int firmId, bool showUnconfirmed = false)
 		{
 			Dictionary<string, object> procParams = PrepareProcParameters();
 			procParams[Firm.ParamNames.FirmId] = firmId;
+            procParams["showUnconfirmed"] = showUnconfirmed;
 
-			DataSet ds = (DataSet)DataAccessor.DoAction(procParams);
+            DataSet ds = (DataSet)DataAccessor.DoAction(procParams);
 			return ds.Tables[Constants.TableNames.Data].Rows.Count > 0;
 		}
 
