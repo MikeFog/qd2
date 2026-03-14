@@ -110,11 +110,13 @@ namespace Merlin.Forms
 
                     if (_action.IsNew) _action.Update();
 
-					Campaign campaign = fNewCampaign.Campaign;
-					campaign.Action = _action;
-					campaign.Update();
+					foreach (Campaign campaign in fNewCampaign.Campaigns)
+					{
+						campaign.Action = _action;
+						campaign.Update();
 
-					grdCampaign.AddRow(campaign);
+						grdCampaign.AddRow(campaign);
+					}
 				}
 			}
 			catch (Exception ex)

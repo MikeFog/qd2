@@ -42,7 +42,7 @@ namespace Merlin.Forms.CreateCampaign
             this.label1.Location = new System.Drawing.Point(14, 10);
             this.label1.Margin = new System.Windows.Forms.Padding(4, 0, 4, 0);
             this.label1.Name = "label1";
-            this.label1.Size = new System.Drawing.Size(153, 15);
+            this.label1.Size = new System.Drawing.Size(226, 25);
             this.label1.TabIndex = 2;
             this.label1.Text = "Тип рекламной кампании:";
             // 
@@ -57,7 +57,7 @@ namespace Merlin.Forms.CreateCampaign
             this.cmbCampaignType.Name = "cmbCampaignType";
             this.cmbCampaignType.SelectedIndex = -1;
             this.cmbCampaignType.SelectedValue = null;
-            this.cmbCampaignType.Size = new System.Drawing.Size(490, 21);
+            this.cmbCampaignType.Size = new System.Drawing.Size(490, 33);
             this.cmbCampaignType.TabIndex = 3;
             // 
             // label2
@@ -66,7 +66,7 @@ namespace Merlin.Forms.CreateCampaign
             this.label2.Location = new System.Drawing.Point(14, 58);
             this.label2.Margin = new System.Windows.Forms.Padding(4, 0, 4, 0);
             this.label2.Name = "label2";
-            this.label2.Size = new System.Drawing.Size(74, 15);
+            this.label2.Size = new System.Drawing.Size(109, 25);
             this.label2.TabIndex = 4;
             this.label2.Text = "Тип оплаты:";
             // 
@@ -81,7 +81,7 @@ namespace Merlin.Forms.CreateCampaign
             this.cmbPaymentType.Name = "cmbPaymentType";
             this.cmbPaymentType.SelectedIndex = -1;
             this.cmbPaymentType.SelectedValue = null;
-            this.cmbPaymentType.Size = new System.Drawing.Size(490, 21);
+            this.cmbPaymentType.Size = new System.Drawing.Size(490, 33);
             this.cmbPaymentType.TabIndex = 5;
             // 
             // btnCancel
@@ -117,7 +117,7 @@ namespace Merlin.Forms.CreateCampaign
             | System.Windows.Forms.AnchorStyles.Right)));
             this.grdMassmedia.Caption = "Радиостанции";
             this.grdMassmedia.CaptionVisible = true;
-            this.grdMassmedia.CheckBoxes = false;
+            this.grdMassmedia.CheckBoxes = true;
             this.grdMassmedia.ColumnNameHighlight = null;
             this.grdMassmedia.DataSource = null;
             this.grdMassmedia.DependantGrid = null;
@@ -131,7 +131,8 @@ namespace Merlin.Forms.CreateCampaign
             this.grdMassmedia.Name = "grdMassmedia";
             this.grdMassmedia.QuickSearchVisible = false;
             this.grdMassmedia.SelectedObject = null;
-            this.grdMassmedia.Size = new System.Drawing.Size(490, 193);
+            this.grdMassmedia.ShowMultiselectColumn = true;
+            this.grdMassmedia.Size = new System.Drawing.Size(490, 468);
             this.grdMassmedia.TabIndex = 12;
             // 
             // grdAgency
@@ -148,12 +149,13 @@ namespace Merlin.Forms.CreateCampaign
             this.grdAgency.Font = new System.Drawing.Font("Segoe UI", 8.25F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(204)));
             this.grdAgency.IsHighlightInvertColor = false;
             this.grdAgency.IsNeedHighlight = false;
-            this.grdAgency.Location = new System.Drawing.Point(14, 355);
+            this.grdAgency.Location = new System.Drawing.Point(14, 630);
             this.grdAgency.Margin = new System.Windows.Forms.Padding(4, 3, 4, 3);
             this.grdAgency.MenuEnabled = false;
             this.grdAgency.Name = "grdAgency";
             this.grdAgency.QuickSearchVisible = false;
             this.grdAgency.SelectedObject = null;
+            this.grdAgency.ShowMultiselectColumn = true;
             this.grdAgency.Size = new System.Drawing.Size(490, 167);
             this.grdAgency.TabIndex = 13;
             // 
@@ -163,7 +165,7 @@ namespace Merlin.Forms.CreateCampaign
             this.label3.Location = new System.Drawing.Point(14, 105);
             this.label3.Margin = new System.Windows.Forms.Padding(4, 0, 4, 0);
             this.label3.Name = "label3";
-            this.label3.Size = new System.Drawing.Size(49, 15);
+            this.label3.Size = new System.Drawing.Size(73, 25);
             this.label3.TabIndex = 14;
             this.label3.Text = "Группа:";
             // 
@@ -178,16 +180,16 @@ namespace Merlin.Forms.CreateCampaign
             this.lookUpRolType.Name = "lookUpRolType";
             this.lookUpRolType.SelectedIndex = -1;
             this.lookUpRolType.SelectedValue = null;
-            this.lookUpRolType.Size = new System.Drawing.Size(490, 21);
+            this.lookUpRolType.Size = new System.Drawing.Size(490, 33);
             this.lookUpRolType.TabIndex = 15;
             // 
             // CampaignNewForm
             // 
             this.AcceptButton = this.btnOk;
-            this.AutoScaleDimensions = new System.Drawing.SizeF(7F, 15F);
+            this.AutoScaleDimensions = new System.Drawing.SizeF(10F, 25F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
             this.CancelButton = this.btnCancel;
-            this.ClientSize = new System.Drawing.Size(646, 527);
+            this.ClientSize = new System.Drawing.Size(646, 802);
             this.Controls.Add(this.label3);
             this.Controls.Add(this.lookUpRolType);
             this.Controls.Add(this.grdAgency);

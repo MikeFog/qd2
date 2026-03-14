@@ -1,19 +1,25 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Data;
+using System.Linq;
 using System.Windows.Forms;
 using FogSoft.WinForm;
 using FogSoft.WinForm.Classes;
 using FogSoft.WinForm.Controls;
 using FogSoft.WinForm.DataAccess;
 using Merlin.Classes;
-using Merlin.Properties;
 
 namespace Merlin.Forms.CreateCampaign
 {
 	internal class CampaignPassportFormBaseController
 	{
-		private DataSet Data { get; set;}
+        private SmartGrid _grdAgency;
+        private SmartGrid _grdMassmedia;
+        private LookUp _cmbPaymentType;
+        private LookUp _cmbCampaignType;
+        private LookUp _cmbMassmediaGroup;
+
+        private DataSet Data { get; set;}
 		private Form Form { get; set; }
 
 		private bool IsPackModuleCampaignTypeSelected
@@ -53,21 +59,15 @@ namespace Merlin.Forms.CreateCampaign
 			}
 		}
 
-		public Massmedia Massmedia
+		public List<Massmedia> Massmedias
 		{
 			get
 			{
 				if (_grdMassmedia == null || !_grdMassmedia.Enabled)
 					return null;
-				return (Massmedia)_grdMassmedia.SelectedObject;
+				return _grdMassmedia.Added2Checked.Cast<Massmedia>().ToList();
 			}
 		}
-
-		private SmartGrid _grdAgency;
-		private SmartGrid _grdMassmedia;
-		private LookUp _cmbPaymentType;
-		private LookUp _cmbCampaignType;
-		private LookUp _cmbMassmediaGroup;
 
 		public CampaignPassportFormBaseController(Form form)
 		{
@@ -167,21 +167,7 @@ namespace Merlin.Forms.CreateCampaign
 
 		void grdMassmedia_ObjectSelected(PresentationObject presentationObject)
 		{
-			if (_grdAgency == null)
-				return;
-
-			try
-			{
-				Application.DoEvents();
-				Form.Cursor = Cursors.WaitCursor;
-				Massmedia massmedia = (Massmedia)presentationObject;
-				_grdAgency.DataSource = massmedia.Agencies.DefaultView;
-				CheckOkButton();
-			}
-			finally
-			{
-				Form.Cursor = Cursors.Default;
-			}
+            CheckOkButton();
 		}
 
 		public event Globals.VoidCallback OnCheckOkButton;
