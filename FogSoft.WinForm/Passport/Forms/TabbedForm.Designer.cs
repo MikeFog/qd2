@@ -38,7 +38,7 @@ namespace FogSoft.WinForm.Passport.Forms {
             this.btnApply.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Right)));
             this.btnApply.Enabled = false;
             this.btnApply.FlatStyle = System.Windows.Forms.FlatStyle.System;
-            this.btnApply.Location = new System.Drawing.Point(676, 628);
+            this.btnApply.Location = new System.Drawing.Point(676, 723);
             this.btnApply.Margin = new System.Windows.Forms.Padding(4);
             this.btnApply.Name = "btnApply";
             this.btnApply.Size = new System.Drawing.Size(120, 33);
@@ -51,7 +51,7 @@ namespace FogSoft.WinForm.Passport.Forms {
             this.btnCancel.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Right)));
             this.btnCancel.DialogResult = System.Windows.Forms.DialogResult.Cancel;
             this.btnCancel.FlatStyle = System.Windows.Forms.FlatStyle.System;
-            this.btnCancel.Location = new System.Drawing.Point(551, 628);
+            this.btnCancel.Location = new System.Drawing.Point(551, 723);
             this.btnCancel.Margin = new System.Windows.Forms.Padding(4);
             this.btnCancel.Name = "btnCancel";
             this.btnCancel.Size = new System.Drawing.Size(120, 33);
@@ -80,7 +80,7 @@ namespace FogSoft.WinForm.Passport.Forms {
             this.tabPassport.Margin = new System.Windows.Forms.Padding(4);
             this.tabPassport.Name = "tabPassport";
             this.tabPassport.SelectedIndex = 0;
-            this.tabPassport.Size = new System.Drawing.Size(805, 619);
+            this.tabPassport.Size = new System.Drawing.Size(805, 714);
             this.tabPassport.TabIndex = 14;
             // 
             // tabPage1
@@ -88,7 +88,7 @@ namespace FogSoft.WinForm.Passport.Forms {
             this.tabPage1.Location = new System.Drawing.Point(4, 34);
             this.tabPage1.Margin = new System.Windows.Forms.Padding(4);
             this.tabPage1.Name = "tabPage1";
-            this.tabPage1.Size = new System.Drawing.Size(797, 581);
+            this.tabPage1.Size = new System.Drawing.Size(797, 676);
             this.tabPage1.TabIndex = 0;
             this.tabPage1.Text = "tabPage1";
             this.tabPage1.UseVisualStyleBackColor = true;
@@ -98,7 +98,7 @@ namespace FogSoft.WinForm.Passport.Forms {
             this.btnOk.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Right)));
             this.btnOk.DialogResult = System.Windows.Forms.DialogResult.OK;
             this.btnOk.FlatStyle = System.Windows.Forms.FlatStyle.System;
-            this.btnOk.Location = new System.Drawing.Point(427, 628);
+            this.btnOk.Location = new System.Drawing.Point(427, 723);
             this.btnOk.Margin = new System.Windows.Forms.Padding(4);
             this.btnOk.Name = "btnOk";
             this.btnOk.Size = new System.Drawing.Size(120, 33);
@@ -112,7 +112,7 @@ namespace FogSoft.WinForm.Passport.Forms {
             this.AutoScaleDimensions = new System.Drawing.SizeF(144F, 144F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Dpi;
             this.CancelButton = this.btnCancel;
-            this.ClientSize = new System.Drawing.Size(805, 672);
+            this.ClientSize = new System.Drawing.Size(805, 767);
             this.Controls.Add(this.tabPassport);
             this.Controls.Add(this.pbFake);
             this.Controls.Add(this.btnApply);
