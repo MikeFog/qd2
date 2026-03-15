@@ -49,6 +49,8 @@ IF @actionName = 'AddItem' begin
 		return 
 	end 
 
+	select @managerDiscount = IsNull(max([maxRatio]), 1) From UserDiscount where userID = @loggedUserId and [finishDate] > GETDATE()
+
 	INSERT INTO [Campaign](actionID, campaignTypeID, massmediaID, paymentTypeID, agencyID, modUser, managerDiscount)
 	VALUES(@actionID, @campaignTypeID, @massmediaID, @paymentTypeID, @agencyID, @loggedUserId, @managerDiscount)
 

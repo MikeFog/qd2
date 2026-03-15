@@ -35,7 +35,7 @@ Declare
 	
 Declare	cur_companies0 Cursor local fast_forward
 FOR 
-SELECT [campaignID], [campaignTypeID], massmediaID, tariffPrice, issuesCount FROM [Campaign] WHERE [actionID] = @actionID
+SELECT [campaignID], [campaignTypeID], massmediaID, tariffPrice, issuesCount + programsCount FROM [Campaign] WHERE [actionID] = @actionID
 
 Open	cur_companies0
 Fetch	next from cur_companies0 
@@ -118,7 +118,7 @@ WHILE	@@fetch_status = 0 begin
 	
 	exec hlp_CompanyDiscountCalculate @massMediaID, @campaignTypeID, @startDate, @tariffPrice, @campaignDiscount output
 
-	If @isNewCampaign = 1 
+	If @isNewCampaign = 1 and @issuesCount + @programsCount > 0 -- т.е. была новой но в нее вот только что добавили рекламные выпуски
 		SELECT TOP 1 @managerDiscountCampaign = IsNull(maxRatio, 1)
 		FROM [dbo].[UserDiscount]
 		WHERE userID = @loggedUserID
