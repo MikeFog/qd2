@@ -6,7 +6,8 @@
 CREATE PROCEDURE [dbo].[PackageDiscountPriceLists]
 (
 	@packageDiscountPriceListId INT = NULL,
-	@packageDiscountID INT = NULL 
+	@packageDiscountID INT = NULL,
+	@hidePLInThePast bit = 0
 )
 AS
 BEGIN
@@ -19,7 +20,7 @@ BEGIN
     WHERE 
 		pdpl.[packageDiscountID] = ISNULL(@packageDiscountID, pdpl.[packageDiscountID])
 		AND pdpl.[packageDiscountPriceListID] = ISNULL(@packageDiscountPriceListID, pdpl.[packageDiscountPriceListID])
+		And (@hidePLInThePast = 0 or pdpl.finishDate > GETDATE())
 	ORDER BY
 		pdpl.startDate desc
 END
-

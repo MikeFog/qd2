@@ -43,15 +43,12 @@ SET NOCOUNT ON;
 
 	-- 4. Agencies
 	CREATE TABLE #Agency(agencyID smallint)
+
 	Insert Into #Agency(agencyID)
-	select y.agencyID 
+	select x.agencyID 
 	from 
 	(Select Distinct agencyID From [Campaign]
 	UNION
 	SELECT DISTINCT agencyID FROM [Payment]) as x
-	inner join 
-			(
-				select distinct am.agencyID from AgencyMassmedia am 
-					inner join @massmedias mm on am.massmediaID = mm.massmediaID and mm.foreignMassmedia = 1
-			) y on y.agencyID = x.agencyID
+
 	Exec sl_Agencies

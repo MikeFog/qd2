@@ -2,7 +2,8 @@
 (
 @massmediaID smallint = NULL,
 @moduleId smallint = NULL,
-@theDate datetime = NULL
+@theDate datetime = NULL,
+@hideModulePLInThePast bit = 0
 )
 WITH EXECUTE AS OWNER
 AS
@@ -22,6 +23,11 @@ IF @theDate IS NULL
 	WHERE
 		m.[massmediaID] = Coalesce(@massmediaID, m.[massmediaID]) And
 		m.[moduleID] = Coalesce(@moduleId, m.[moduleId])
+		AND (@hideModulePLInThePast = 0 OR EXISTS(
+			SELECT 1 FROM ModulePricelist mpl 
+			WHERE m.moduleID = mpl.moduleID 
+			AND mpl.finishDate >= CAST(GETDATE() AS DATE)
+		))
 	ORDER BY
 		m.[name]
 ELSE

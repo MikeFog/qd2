@@ -3,6 +3,8 @@
 @firmId smallint = null,
 @startOfInterval datetime = null,
 @endOfInterval datetime = null,
+@createDateBegin datetime = null, -- Новый параметр
+@createDateEnd datetime = null,   -- Новый параметр
 @paymentTypeId smallint = null,
 @campaignTypeId tinyint = null,
 @campaignFinishDate datetime = null,
@@ -29,7 +31,7 @@
 @managerDiscount float = null,
 @massmediaGroupID int = null,
 @showDeleted bit = 0,
-@headCompanyId smallint = null  -- Добавлен новый параметр
+@headCompanyId smallint = null
 )
 AS
 SET NOCOUNT on
@@ -85,8 +87,7 @@ SET NOCOUNT on
 		WHERE	
 			(us.userID = @loggedUserID or @isRightToViewForeignActions = 1 or (@isRightToViewGroupActions = 1 and ug.id is not null)) and
 			((c.campaignTypeID <> 4 and umm.massmediaID is not null and ((a.userID = @loggedUserID and umm.myMassmedia = 1) or (a.userID <> @loggedUserID and umm.foreignMassmedia = 1) )) 
-				or (c.campaignTypeID = 4 and not exists(select * 
-														from PackModuleIssue pmi 
+				or (c.campaignTypeID = 4 and not exists(select * from PackModuleIssue pmi 
 															inner join PackModuleContent pmc on pmi.pricelistID = pmc.pricelistID
 															inner join Module m on pmc.moduleID = m.moduleID
 															left join @massmedias ummm on m.massmediaID = ummm.massmediaID
@@ -97,6 +98,9 @@ SET NOCOUNT on
 			a.isSpecial = 0 and	
 			a.finishDate >= Coalesce(@startOfInterval, a.finishDate) And
 			a.startDate <= Coalesce(@endOfInterval, a.startDate) And
+            -- Фильтр по дате создания
+            (@createDateBegin IS NULL OR a.createDate >= @createDateBegin) AND
+            (@createDateEnd IS NULL OR a.createDate <= @createDateEnd) AND
 			c.paymentTypeId = Coalesce(@paymentTypeId, c.paymentTypeId) And
 			c.campaignTypeId = Coalesce(@campaignTypeId, c.campaignTypeId) And
 			c.finishDate = Coalesce(@campaignFinishDate, c.finishDate) And
@@ -119,7 +123,7 @@ SET NOCOUNT on
 																and a1.finishDate >= @withoutActionsSince 
 																and (@startOfInterval is null or a1.startDate < @startOfInterval)))
 			and (@managerDiscount is null or (c.managerDiscount - @managerDiscount) < -0.005)
-			and f.headCompanyId = COALESCE(@headCompanyId, f.headCompanyId)  -- Добавлен фильтр по headCompanyId
+			and f.headCompanyId = COALESCE(@headCompanyId, f.headCompanyId) 
 		order by f.[name]
 	end 
 	else 
@@ -147,6 +151,9 @@ SET NOCOUNT on
 				and a.isSpecial = 0			
 				and a.finishDate >= IsNull(@startOfInterval, a.finishDate)
 				and a.startDate <= Coalesce(@endOfInterval, a.startDate) 
+                -- Фильтр по дате создания
+                and (@createDateBegin IS NULL OR a.createDate >= @createDateBegin)
+                and (@createDateEnd IS NULL OR a.createDate <= @createDateEnd)
 				AND (a.userID = @loggedUserID 
 						or @isRightToViewForeignActions = 1 
 						or (
@@ -178,7 +185,6 @@ SET NOCOUNT on
 				And	c.campaignTypeId = Coalesce(@campaignTypeId, c.campaignTypeId) 
 				And	c.finishDate = Coalesce(@campaignFinishDate, c.finishDate) 
 				And	a.firmId = Coalesce(@firmId2, a.firmId) 
-				--and a.modDate BETWEEN COALESCE(@changeStartOfInterval,'1900-01-01') AND COALESCE(@changeEndOfInterval, '2200-12-31')
 				and a.modDate BETWEEN COALESCE(@changeStartOfInterval,[dbo].[GetMinDate]()) AND COALESCE(@changeEndOfInterval, [dbo].[GetMaxDate]())
 				and (
 						@massmediaId IS NULL
@@ -218,5 +224,5 @@ SET NOCOUNT on
 					)
 				and (@managerDiscount is null or (c.managerDiscount - @managerDiscount) < -0.005)
 			)
-		AND f.headCompanyId = COALESCE(@headCompanyId, f.headCompanyId)  -- Добавлен фильтр по headCompanyId
+		AND f.headCompanyId = COALESCE(@headCompanyId, f.headCompanyId) 
 		order by f.[name]

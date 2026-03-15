@@ -30,13 +30,15 @@
 
 
 
+
+
+
 GO
 ALTER TABLE [dbo].[Campaign] SET (LOCK_ESCALATION = AUTO);
 
 
 GO
-CREATE UNIQUE CLUSTERED INDEX [UX_Campaign_actionID_massmediaID_campaignType_issueDuration]
-    ON [dbo].[Campaign]([actionID] ASC, [massmediaID] ASC, [campaignTypeID] ASC, [issuesDuration] ASC);
+
 
 
 GO

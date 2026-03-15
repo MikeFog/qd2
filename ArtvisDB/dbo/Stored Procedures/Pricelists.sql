@@ -1,8 +1,8 @@
-﻿
-CREATE PROC dbo.Pricelists
+﻿CREATE PROC [dbo].[Pricelists]
 (
     @massmediaID smallint = null,
-    @pricelistID smallint = null
+    @pricelistID smallint = null,
+    @hidePLInThePast bit = 0
 )
 AS
 BEGIN
@@ -14,6 +14,7 @@ BEGIN
         FROM dbo.Pricelist pl
         WHERE pl.massmediaID = COALESCE(@massmediaID, pl.massmediaID)
           AND pl.pricelistID = COALESCE(@pricelistID, pl.pricelistID)
+          AND (@hidePLInThePast = 0 OR pl.finishDate >= CAST(GETDATE() AS DATE))
     ),
     tw AS
     (

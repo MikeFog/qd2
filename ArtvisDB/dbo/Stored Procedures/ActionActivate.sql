@@ -251,11 +251,91 @@ begin
 --	INSERT INTO [LogDeletedIssue] ([userId],actionID,rollerId, issueDate, massmediaID) 
 --	select @loggedUserID, @actionID, i.rollerID, it.issueDate, tw.massmediaID 
 --	from @issue it inner join Issue i on it.issueID = i.issueID inner join TariffWindow tw on i.originalWindowID = tw.windowId where it.statusDescription <> 'OK'
-
+/*
 	delete from i from @issue it inner join Issue i on it.issueID = i.issueID where it.statusDescription <> 'OK'
 	delete from mi from @issue it inner join ModuleIssue mi on it.moduleIssueID = mi.moduleIssueID where it.statusDescription <> 'OK'
 	delete from pmi from @issue it inner join PackModuleIssue pmi on it.packModuleIssueID = pmi.packModuleIssueID where it.statusDescription <> 'OK'
 	delete from i from @programmissue it inner join ProgramIssue i on it.issueID = i.issueID where it.statusDescription <> 'OK'
+*/
+
+-- 1. Удаление обычных выпусков (Issue)
+	DECLARE @delIssueID int;
+	DECLARE cur_del_issue CURSOR LOCAL FOR
+		SELECT issueID FROM @issue WHERE statusDescription <> 'OK';
+	
+	OPEN cur_del_issue;
+	FETCH NEXT FROM cur_del_issue INTO @delIssueID;
+	WHILE @@FETCH_STATUS = 0
+	BEGIN
+		EXEC [dbo].[IssueIUD]
+			@issueID = @delIssueID,
+			@actionName = 'DeleteItem',
+			@loggedUserId = @loggedUserID;
+
+		FETCH NEXT FROM cur_del_issue INTO @delIssueID;
+	END
+	CLOSE cur_del_issue;
+	DEALLOCATE cur_del_issue;
+
+
+	-- 2. Удаление ProgramIssue (через соответствующую процедуру)
+	DECLARE @delProgIssueID int;
+	DECLARE cur_del_prog CURSOR LOCAL FOR
+		SELECT issueID FROM @programmissue WHERE statusDescription <> 'OK';
+	
+	OPEN cur_del_prog;
+	FETCH NEXT FROM cur_del_prog INTO @delProgIssueID;
+	WHILE @@FETCH_STATUS = 0
+	BEGIN
+		EXEC [dbo].[ProgramIssueIUD] -- Укажи правильное имя процедуры!
+			@issueID = @delProgIssueID,
+			@actionName = 'DeleteItem',
+			@loggedUserId = @loggedUserID;
+
+		FETCH NEXT FROM cur_del_prog INTO @delProgIssueID;
+	END
+	CLOSE cur_del_prog;
+	DEALLOCATE cur_del_prog;
+
+
+	-- 3. Удаление ModuleIssue (уникальные ID, чтобы не дергать процу дважды для одного модуля)
+	DECLARE @delModuleID int;
+	DECLARE cur_del_mod CURSOR LOCAL FOR
+		SELECT DISTINCT moduleIssueID FROM @issue WHERE statusDescription <> 'OK' AND moduleIssueID IS NOT NULL;
+	
+	OPEN cur_del_mod;
+	FETCH NEXT FROM cur_del_mod INTO @delModuleID;
+	WHILE @@FETCH_STATUS = 0
+	BEGIN
+		EXEC [dbo].[ModuleIssueIUD] -- Укажи правильное имя процедуры!
+			@moduleIssueID = @delModuleID, -- или @issueID, в зависимости от того, как проца принимает параметр
+			@actionName = 'DeleteItem',
+			@loggedUserId = @loggedUserID;
+
+		FETCH NEXT FROM cur_del_mod INTO @delModuleID;
+	END
+	CLOSE cur_del_mod;
+	DEALLOCATE cur_del_mod;
+
+
+	-- 4. Удаление PackModuleIssue 
+	DECLARE @delPackID int;
+	DECLARE cur_del_pack CURSOR LOCAL FOR
+		SELECT DISTINCT packModuleIssueID FROM @issue WHERE statusDescription <> 'OK' AND packModuleIssueID IS NOT NULL;
+	
+	OPEN cur_del_pack;
+	FETCH NEXT FROM cur_del_pack INTO @delPackID;
+	WHILE @@FETCH_STATUS = 0
+	BEGIN
+		EXEC [dbo].[PackModuleIssueID] -- Укажи правильное имя процедуры!
+			@packModuleIssueID = @delPackID, -- параметр твоей процы
+			@actionName = 'DeleteItem',
+			@loggedUserId = @loggedUserID;
+
+		FETCH NEXT FROM cur_del_pack INTO @delPackID;
+	END
+	CLOSE cur_del_pack;
+	DEALLOCATE cur_del_pack;
 
 	update i set isConfirmed = 1, activationDate = getdate()
 	from Issue i inner join @Issue it on i.issueID = it.issueID and it.statusDescription = 'OK' 
@@ -328,7 +408,7 @@ begin
 		group by i.actualWindowID ) as t1
 	Where
 		TariffWindow.windowId = t1.windowID
-		
+	/*	
 	Update 
 		TariffWindow
 	Set
@@ -362,7 +442,7 @@ begin
 		group by i.actualWindowID ) as t1
 	Where
 		TariffWindow.windowId = t1.windowID
-		
+	*/	
 	UPDATE [Action] Set isConfirmed = 1 WHERE actionID = @actionID
 	
 	exec ActionRecalculate

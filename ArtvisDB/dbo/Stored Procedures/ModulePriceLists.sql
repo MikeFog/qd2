@@ -3,7 +3,8 @@
 CREATE        PROC [dbo].[ModulePriceLists]
 (
 @moduleID smallint = NULL,
-@modulePriceListID smallint = NULL
+@modulePriceListID smallint = NULL,
+@hideModulePLInThePast bit = 0
 )
 
 AS
@@ -20,6 +21,7 @@ FROM
 WHERE
 	mpl.moduleID = Coalesce(@moduleID, mpl.moduleID) And
 	mpl.modulePriceListID = Coalesce(@modulePriceListID, mpl.modulePriceListID)
+	AND (@hideModulePLInThePast = 0 OR mpl.finishDate >= CAST(GETDATE() AS DATE))
 ORDER BY
 	mpl.startDate ASC
 GO

@@ -1,6 +1,8 @@
-﻿CREATE   PROC [dbo].[HeadCompaniesWithActions]
+﻿CREATE    PROC [dbo].[HeadCompaniesWithActions]
     @startOfInterval datetime = NULL,
     @endOfInterval datetime = NULL,
+    @createDateBegin datetime = NULL, -- Новый параметр: начало интервала даты создания
+    @createDateEnd datetime = NULL,   -- Новый параметр: конец интервала даты создания
     @firmId2 smallint = NULL,
     @showBlack BIT = 0,
     @showWhite BIT = 0,
@@ -44,6 +46,10 @@ BEGIN
     WHERE 
         (a.finishDate >= COALESCE(@startOfInterval, a.finishDate))
         AND (a.startDate <= COALESCE(@endOfInterval, a.startDate))
+        -- Фильтр по дате создания (createDate)
+        AND (@createDateBegin IS NULL OR a.createDate >= @createDateBegin)
+        AND (@createDateEnd IS NULL OR a.createDate <= @createDateEnd)
+        -- Конец фильтра по дате создания
         AND (a.firmID = COALESCE(@firmId2, a.firmID))
         AND ((@showBlack = 0 AND @showWhite = 0) OR (pt.IsHidden = 1 AND @showBlack = 1) OR (pt.IsHidden = 0 AND @showWhite = 1))
         AND (@actionID IS NULL OR a.actionID = @actionID)
@@ -63,7 +69,7 @@ BEGIN
             OR (c.campaignTypeID = 4 AND pack_media.massmediaGroupID = @massmediaGroupID)
         )
         AND (
-            (@isShowActivate = 0 AND @isShowNotActivate = 0 AND @showDeleted = 0) -- Показать все, если ни один флаг не установлен
+            (@isShowActivate = 0 AND @isShowNotActivate = 0 AND @showDeleted = 0) 
             OR (@isShowActivate = 1 AND a.isConfirmed = 1 AND a.deleteDate IS NULL)
             OR (@isShowNotActivate = 1 AND a.isConfirmed = 0 AND a.deleteDate IS NULL)
             OR (@showDeleted = 1 AND a.deleteDate IS NOT NULL)

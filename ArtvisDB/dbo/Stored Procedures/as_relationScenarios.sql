@@ -3,16 +3,19 @@ CREATE      PROC [dbo].[as_relationScenarios]
 as
 set nocount on
 SELECT 
-	scenario.name,
-	scenario.startingEntityID,
-	relation.parentEntityID,
-	relation.childEntityID,
-	relation.selector,
-	relation.isChildNodeExpandable
-FROM 
-	iRelationScenario scenario 
-	LEFT JOIN iEntityRelation relation ON scenario.relationScenarioID = relation.relationScenarioID
-ORDER BY 
-	scenario.name
-FOR XML AUTO
-
+    s.name AS "@name",
+    s.startingEntityID AS "@startingEntityID",
+    s.filter AS "@filter", -- Esto crea el elemento <filter> dentro de <scenario>
+    (
+        SELECT 
+            r.parentEntityID AS "@parentEntityID",
+            r.childEntityID AS "@childEntityID",
+            r.selector AS "@selector",
+            r.isChildNodeExpandable AS "@isChildNodeExpandable"
+        FROM iEntityRelation r
+        WHERE r.relationScenarioID = s.relationScenarioID
+        FOR XML PATH('relation'), TYPE
+    )
+FROM iRelationScenario s
+ORDER BY s.name
+FOR XML PATH('scenario')

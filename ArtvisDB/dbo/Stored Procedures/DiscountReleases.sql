@@ -3,7 +3,8 @@
 CREATE   PROC [dbo].[DiscountReleases]
 (
 @massmediaID smallint = NULL,
-@discountReleaseID smallint = NULL
+@discountReleaseID smallint = NULL,
+@hideDiscountsInThePast bit = 0
 )
 as
 set nocount on
@@ -15,6 +16,7 @@ FROM
 WHERE
 	dr.[massmediaID] = Coalesce(@massmediaID, dr.[massmediaID])
 	AND dr.[discountReleaseID] = Coalesce(@discountReleaseID, dr.[discountReleaseID])
+	And (@hideDiscountsInThePast = 0 or dr.finishDate > GETDATE() or dr.finishDate Is Null)
 GO
 GRANT EXECUTE
     ON OBJECT::[dbo].[DiscountReleases] TO PUBLIC

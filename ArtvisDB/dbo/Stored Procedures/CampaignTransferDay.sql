@@ -32,16 +32,20 @@ Declare
 	@rolActionTypeID TINYINT,
 	@issueDateOriginal DATETIME,
 	@actionID int,
-	@tomorrow datetime
+	@tomorrow datetime,
+	@managerDiscount decimal(18,10),
+	@campaignStartDate datetime
 
 SELECT 
 	@campaignTypeID	= c.campaignTypeID,
-	@campaignFinishDate = c.finishDate,
 	@timeBonus = c.timeBonus,
 	@issuesDuration = c.issuesDuration,
 	--@deadLine = m.deadLine,
 	@actionID = a.[actionID],
-	@isConfirmed = a.isConfirmed
+	@isConfirmed = a.isConfirmed,
+	@managerDiscount = c.managerDiscount,
+	@campaignStartDate = case when c.startDate > @newDate then @newDate else c.startDate end,
+	@campaignFinishDate = case when c.finishDate < @newDate then @newDate else c.finishDate end
 FROM 
 	Campaign c
 	INNER JOIN Action a ON c.actionID = a.actionID
@@ -57,6 +61,12 @@ From
 	Inner Join MassMedia mm on mm.massmediaID = tw.massmediaID
 Where 
 	i.campaignID = @campaignID
+
+if dbo.[fn_IsAcceptRatioForUser](@loggedUserId, @managerDiscount, @campaignStartDate, @campaignFinishDate) = 0
+begin 
+	 raiserror('CannotTransferDayBecauseOfManagerDiscount', 16, 1)
+	 return
+end
 
 Exec hlp_GetMainUserCredentials
 	@loggedUserId = @loggedUserId,

@@ -8,7 +8,8 @@
 CREATE      PROC [dbo].[PackModulePricelists]
 (
 @packModuleID smallint = null,
-@pricelistID smallint = null
+@pricelistID smallint = null,
+@hidePLInThePast bit = 0
 )
 as
 
@@ -33,13 +34,6 @@ FROM
 WHERE
 	pl.packModuleID = Coalesce(@packModuleID, pl.packModuleID) And
 	pl.[pricelistID] = Coalesce(@pricelistID, pl.[pricelistID])
+	And (@hidePLInThePast = 0 or pl.finishDate > GETDATE())
 ORDER BY 
 	pl.[startDate] DESC
-
-
-
-
-
-
-
-

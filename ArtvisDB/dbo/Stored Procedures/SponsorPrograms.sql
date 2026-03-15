@@ -2,7 +2,8 @@
 (
 @massmediaID smallint = null,
 @sponsorProgramID smallint = null,
-@activeOnly bit = 0
+@activeOnly bit = 0,
+@hideSponsorPLInThePast bit = 0
 )
 as
 SET NOCOUNT ON
@@ -16,6 +17,8 @@ WHERE
 	sp.massmediaID = Coalesce(@massmediaID, sp.massmediaID) And
 	sp.sponsorProgramID = Coalesce(@sponsorProgramID, sp.sponsorProgramID) And
 	(@activeOnly = 0 Or sp.isActive = 1)
+	And (@hideSponsorPLInThePast = 0 
+		Or Exists(Select 1 From [SponsorProgramPricelist] pl Where pl.sponsorProgramID = sp.sponsorProgramID And pl.finishDate > GETDATE()))
 ORDER BY 
 	sp.name
 GO

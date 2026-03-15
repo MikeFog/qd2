@@ -27,24 +27,30 @@ Declare
 	@ratio decimal(18,10),
 	@campaignDiscount decimal(9,4),
 	@timeBonus int,
-	@programsCount int
+	@programsCount int,
+	@issuesCount int,
+	@issueDuration int, 
+	@campaignCount int,
+	@isNewCampaign bit
 	
 Declare	cur_companies0 Cursor local fast_forward
 FOR 
-SELECT [campaignID], [campaignTypeID], massmediaID, tariffPrice FROM [Campaign] WHERE [actionID] = @actionID
+SELECT [campaignID], [campaignTypeID], massmediaID, tariffPrice, issuesCount FROM [Campaign] WHERE [actionID] = @actionID
 
 Open	cur_companies0
 Fetch	next from cur_companies0 
-Into	@campaignID, @campaignTypeID, @massmediaID, @tariffPrice
-
-declare @issueDuration int, @issueCount int, @campaignCount int
+Into	@campaignID, @campaignTypeID, @massmediaID, @tariffPrice, @issuesCount
 
 WHILE	@@fetch_status = 0 begin
 	select @timeBonus = 0, @programsCount = 0
+	if @issuesCount = 0
+		Set @isNewCampaign = 1
+	else
+		Set @isNewCampaign = 0
 
 	IF @campaignTypeID = 1
 		SELECT @issueDuration = SUM(r.[duration]), @tariffPrice = SUM(i.[tariffPrice]), 
-			@issueCount = COUNT(*), @finishDate = MAX(tw.dayOriginal),
+			@issuesCount = COUNT(*), @finishDate = MAX(tw.dayOriginal),
 			@startDate = MIN(tw.dayOriginal)
 					FROM [Issue] i 
 						inner join TariffWindow tw on i.originalWindowID = tw.windowId
@@ -68,7 +74,7 @@ WHILE	@@fetch_status = 0 begin
 					
 		SELECT 
 			@issueDuration = SUM(dbo.f_GetSponsorDuration(r.[duration], i.positionId, pl.extraChargeFirstRoller, pl.extraChargeSecondRoller, pl.extraChargeLastRoller)), 
-			@issueCount = COUNT(*), 
+			@issuesCount = COUNT(*), 
 			@startDate = CASE WHEN MIN(tw.dayOriginal) IS NULL OR @startDate < MIN(tw.dayOriginal) THEN @startDate ELSE MIN(tw.dayOriginal) end,
 			@finishDate = CASE WHEN MAX(tw.dayOriginal) IS NULL OR @finishDate > MAX(tw.dayOriginal) THEN @finishDate ELSE MAX(tw.dayOriginal) END
 		FROM 
@@ -84,7 +90,7 @@ WHILE	@@fetch_status = 0 begin
 	ELSE IF @campaignTypeID = 3
 	begin
 		SELECT 
-			@issueDuration = SUM(r.[duration]), @issueCount = COUNT(*) 
+			@issueDuration = SUM(r.[duration]), @issuesCount = COUNT(*) 
 		FROM 
 			[Issue] i 
 			inner join Roller r on i.rollerID = r.rollerID 
@@ -99,27 +105,37 @@ WHILE	@@fetch_status = 0 begin
 	END
 	ELSE IF @campaignTypeID = 4
 	begin
-		SELECT @issueDuration = SUM(r.[duration]), @issueCount = COUNT(*) 
-					FROM [Issue] i inner join Roller r on i.rollerID = r.rollerID WHERE i.[campaignID] = @campaignID
+		SELECT @issueDuration = SUM(r.[duration]), @issuesCount = COUNT(*) 
+		FROM [Issue] i inner join Roller r on i.rollerID = r.rollerID WHERE i.[campaignID] = @campaignID
 		
 		SELECT @tariffPrice = SUM(i.[tariffPrice]), 
 			@finishDate = MAX(i.[issueDate]),
 			@startDate = MIN(i.[issueDate])
-					FROM [PackModuleIssue] i WHERE i.[campaignID] = @campaignID
+		FROM [PackModuleIssue] i WHERE i.[campaignID] = @campaignID
 	END
 	
 	select @startDate = dbo.ToShortDate(@startDate), @finishDate = dbo.ToShortDate(@finishDate)
 	
 	exec hlp_CompanyDiscountCalculate @massMediaID, @campaignTypeID, @startDate, @tariffPrice, @campaignDiscount output
 
+	If @isNewCampaign = 1 
+		SELECT TOP 1 @managerDiscountCampaign = IsNull(maxRatio, 1)
+		FROM [dbo].[UserDiscount]
+		WHERE userID = @loggedUserID
+		  AND (startDate <= @finishDate AND finishDate >= @startDate)
+		ORDER BY maxRatio ASC; -- Берем минимальную maxRatio (максимальную скидку для клиента)
+	Else 
+		Set @managerDiscountCampaign = Null
+
 	UPDATE [Campaign] SET [tariffPrice] = ISNULL(@tariffPrice, 0), 
-		[issuesDuration] = ISNULL(@issueDuration, 0), [issuesCount] = ISNULL(@issueCount, 0),
+		[issuesDuration] = ISNULL(@issueDuration, 0), [issuesCount] = ISNULL(@issuesCount, 0),
 		[startDate] = @startDate, [finishDate] = @finishDate, discount = @campaignDiscount, 
-		timeBonus = isnull(@timeBonus, 0), programsCount = isnull(@programsCount, 0)
-		WHERE [campaignID] = @campaignID
+		timeBonus = isnull(@timeBonus, 0), programsCount = isnull(@programsCount, 0),
+		managerDiscount = IsNull(@managerDiscountCampaign, managerDiscount)
+	WHERE [campaignID] = @campaignID
 	
 	Fetch	next from cur_companies0 
-	Into	@campaignID, @campaignTypeID, @massmediaID, @tariffPrice
+	Into	@campaignID, @campaignTypeID, @massmediaID, @tariffPrice, @issuesCount
 end
 
 close cur_companies0
@@ -249,14 +265,14 @@ SELECT
 	@sumOther = 
 	CASE WHEN c.[campaignTypeID] = 4 
 		THEN @sumOther
-		ELSE (@sumOther + c.[finalPrice] )
+		ELSE (@sumOther + c.[finalPrice] * @discountValue)
 	END,
 	@priceSumByCampaigns = @priceSumByCampaigns + c.[finalPrice]
 FROM [Campaign] c WHERE c.[actionID] = @actionID
 
 Update [Action]
 Set 	priceSumByCampaigns = IsNull(@priceSumByCampaigns, 0),
-	[totalPrice] = ISNULL((CAST([discount] AS decimal(18,2))*@sumOther) + @sumPackModules,0)
+	[totalPrice] = ISNULL(@sumOther + @sumPackModules,0)
 Where actionID = @actionID
 
 IF @needShow = 1

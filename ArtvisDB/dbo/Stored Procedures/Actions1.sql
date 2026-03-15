@@ -4,6 +4,8 @@
 @firmID smallint = NULL,
 @startOfInterval datetime = null,
 @endOfInterval datetime = null,
+@createDateBegin datetime = null, -- Новый параметр
+@createDateEnd datetime = null,   -- Новый параметр
 @paymentTypeId tinyint = null,
 @campaignTypeId tinyint = null,
 @campaignFinishDate datetime = null,
@@ -72,6 +74,9 @@ SET NOCOUNT on
 			) x on a.actionID = x.actionID
 		where 
 			a.actionID = @actionID 
+            -- Фильтр по дате создания
+            AND (@createDateBegin IS NULL OR a.createDate >= @createDateBegin)
+            AND (@createDateEnd IS NULL OR a.createDate <= @createDateEnd)
 			and f.headCompanyID = COALESCE(@headCompanyID, f.headCompanyID)
 			AND (
 				(a.[isConfirmed] = 0 AND @isShowNotActivate = 1 And a.deleteDate is null) 
@@ -124,20 +129,12 @@ SET NOCOUNT on
 			left join @ugroups ug on gm.groupID = ug.id
 		WHERE	
 			(us.userID = @loggedUserID or @isRightToViewForeignActions = 1 or (@isRightToViewGroupActions = 1 and ug.id is not null)) and
-			/*
-			((c.campaignTypeID <> 4 and umm.massmediaID is not null and ((a.userID = @loggedUserID and umm.myMassmedia = 1) or (a.userID <> @loggedUserID and umm.foreignMassmedia = 1) )) 
-				or (c.campaignTypeID = 4 and not exists(select * 
-														from PackModuleIssue pmi 
-															inner join PackModuleContent pmc on pmi.pricelistID = pmc.pricelistID
-															inner join Module m on pmc.moduleID = m.moduleID
-															left join @massmedias ummm on m.massmediaID = ummm.massmediaID
-														where pmi.campaignID = c.campaignID and (ummm.massmediaID is null or 
-															(a.userID = @loggedUserID and ummm.myMassmedia = 0) or
-															 (a.userID <> @loggedUserID and ummm.foreignMassmedia = 0))))) and
-															 */
 			a.isSpecial = 0 and	
 			a.finishDate >= Coalesce(@startOfInterval, a.finishDate) And
 			a.startDate <= Coalesce(@endOfInterval, a.startDate) And
+            -- Фильтр по дате создания
+            (@createDateBegin IS NULL OR a.createDate >= @createDateBegin) AND
+            (@createDateEnd IS NULL OR a.createDate <= @createDateEnd) AND
 			c.paymentTypeId = Coalesce(@paymentTypeId, c.paymentTypeId) And
 			c.campaignTypeId = Coalesce(@campaignTypeId, c.campaignTypeId) And
 			c.finishDate = Coalesce(@campaignFinishDate, c.finishDate) And
@@ -193,9 +190,6 @@ SET NOCOUNT on
 				JOIN [ModulePriceList] AS mpl ON pmc.modulePriceListID = mpl.modulePriceListID
 				JOIN [Module] AS m ON mpl.[moduleID] = m.[moduleID]
 				) ON i.campaignID = c.campaignID
-			--Left Join Issue i On i.campaignID = c.campaignID
-			--Left join TariffWindow tw on i.originalWindowID = tw.windowId
-			--Left join MassMedia mm2 on tw.massmediaID = mm2.massmediaID
 		where
 			(a.userID = @loggedUserID 
 						or @isRightToViewForeignActions = 1 
@@ -227,6 +221,9 @@ SET NOCOUNT on
 			and	a.isSpecial = 0 and		
 			(a.finishDate >= Coalesce(@startOfInterval, a.finishDate) Or (a.finishDate Is Null And @startOfInterval Is Null )) And
 			(a.startDate <= Coalesce(@endOfInterval, a.startDate) Or (a.startDate Is Null And @endOfInterval Is Null ))  And
+            -- Фильтр по дате создания
+            (@createDateBegin IS NULL OR a.createDate >= @createDateBegin) AND
+            (@createDateEnd IS NULL OR a.createDate <= @createDateEnd) AND
 			c.paymentTypeId = Coalesce(@paymentTypeId, c.paymentTypeId) And
 			c.campaignTypeId = Coalesce(@campaignTypeId, c.campaignTypeId) And 
 			c.finishDate = Coalesce(@campaignFinishDate, c.finishDate) And
@@ -235,7 +232,7 @@ SET NOCOUNT on
 			a.modDate >= Coalesce(@changeStartOfInterval, a.modDate) And
 			a.modDate <= Coalesce(@changeEndOfInterval, a.modDate)
 			and (c.massmediaID = Coalesce(@massmediaId, c.massmediaId) Or c.massmediaID Is Null)	
-			and (m.massmediaID = Coalesce(@massmediaId, m.massmediaId) Or m.massmediaID Is Null)
+			and (m.massmediaID = Coalesce(@massmediaId, m.massmediaID) Or m.massmediaID Is Null)
 			and ((c.[agencyID] IS NULL AND @agencyID IS NULL) OR c.agencyId = Coalesce(@agencyID, c.agencyId)) And
 			a.actionId = Coalesce(@actionId, a.actionId) And
 			(pt.isHidden = 0 or @isHideWhite = 0) And

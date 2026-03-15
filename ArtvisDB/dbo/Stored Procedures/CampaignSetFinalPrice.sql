@@ -1,7 +1,7 @@
 ﻿CREATE		Procedure [dbo].[CampaignSetFinalPrice]
 (
 @campaignId int, 
-@finalPrice decimal(18,8),
+@finalPrice decimal(18,2),
 @campaignTypeId TINYINT,
 @loggedUserId INT,
 @grantorUserId INT = NULL,

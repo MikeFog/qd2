@@ -8,7 +8,11 @@
 @loggedUserID smallint = null,
 @mediaPlusMassmediaID smallint = null,
 @checkCanAdd bit = 0,
-@agencyID smallint = null
+@agencyID smallint = null,
+@hidePLInThePast bit = 0,
+@hideModulePLInThePast bit = 0,
+@hideSponsorPLInThePast bit = 0,
+@hideDiscountsInThePast bit = 0
 )
 AS
 SET NOCOUNT ON 
@@ -42,6 +46,26 @@ IF @startDate IS NOT NULL OR @finishDate IS NOT NULL
 		and (@mediaPlusMassmediaID is null or mm.mediaPlusMassmediaID = @mediaPlusMassmediaID)
 		--and (@checkCanAdd = 0 or exists(select * from AgencyMassmedia am where am.massmediaID = mm.massmediaID))
 		and (@agencyID is null or exists(select * from dbo.AgencyMassmedia am where am.massmediaID = mm.massmediaID and am.agencyID = @agencyID))
+		AND (@hidePLInThePast = 0 OR EXISTS(
+			SELECT 1 FROM Pricelist pl2 
+			WHERE pl2.massmediaID = mm.massmediaID 
+			AND pl2.finishDate >= CAST(GETDATE() AS DATE)
+		))
+		AND (@hideModulePLInThePast = 0 OR EXISTS(
+			SELECT 1 FROM ModulePricelist mpl inner join Module m2 on m2.moduleID = mpl.moduleID
+			WHERE m2.massmediaID = mm.massmediaID 
+			AND mpl.finishDate >= CAST(GETDATE() AS DATE)
+		))
+		AND (@hideSponsorPLInThePast = 0 OR EXISTS(
+			SELECT 1 FROM SponsorProgram sp Inner Join SponsorProgramPricelist pl on sp.sponsorProgramID = pl.sponsorProgramID
+			WHERE sp.massmediaID = mm.massmediaID 
+			AND pl.finishDate >= CAST(GETDATE() AS DATE)
+		))
+		AND (@hideDiscountsInThePast = 0 OR EXISTS(
+			SELECT 1 FROM DiscountRelease dr 
+			WHERE dr.massmediaID = mm.massmediaID 
+			AND (pl.finishDate >= GETDATE() or pl.finishDate Is Null)
+		))
 	ORDER BY 
 		mm.[name]
 ELSE
@@ -63,6 +87,21 @@ ELSE
 		and (@mediaPlusMassmediaID is null or mm.mediaPlusMassmediaID = @mediaPlusMassmediaID)
 		--and (@checkCanAdd = 0 or exists(select * from AgencyMassmedia am where am.massmediaID = mm.massmediaID))
 		and (@agencyID is null or exists(select * from dbo.AgencyMassmedia am where am.massmediaID = mm.massmediaID and am.agencyID = @agencyID))
+		AND (@hidePLInThePast = 0 OR EXISTS(
+			SELECT 1 FROM Pricelist pl2 
+			WHERE pl2.massmediaID = mm.massmediaID 
+			AND pl2.finishDate >= CAST(GETDATE() AS DATE)
+		))
+		AND (@hideModulePLInThePast = 0 OR EXISTS(
+			SELECT 1 FROM ModulePricelist mpl Inner Join Module m2 on m2.moduleID = mpl.moduleID
+			WHERE m2.massmediaID = mm.massmediaID 
+			AND mpl.finishDate >= CAST(GETDATE() AS DATE)
+		))
+		AND (@hideSponsorPLInThePast = 0 OR EXISTS(
+			SELECT 1 FROM SponsorProgram sp Inner Join SponsorProgramPricelist pl on sp.sponsorProgramID = pl.sponsorProgramID
+			WHERE sp.massmediaID = mm.massmediaID 
+			AND pl.finishDate >= CAST(GETDATE() AS DATE)
+		))
 	ORDER BY 
 		mm.[name]
 GO

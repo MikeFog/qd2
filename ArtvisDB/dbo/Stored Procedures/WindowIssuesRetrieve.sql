@@ -20,7 +20,7 @@ begin
 		dbo.fn_Int2Time(r.duration) as durationString,
 		c.actionID,
 		ip.[description] as issuePosition,
-		tw.windowDateOriginal as issueDate,
+		tw.windowDateActual as issueDate,
 		a.firmID,
 		u.userName as actionCreator,
 		r.advertTypeName,
@@ -33,7 +33,7 @@ begin
 		inner join [Action] a on c.actionID = a.actionID
 		inner join [User] u on a.userID = u.userID
 		Inner Join iIssuePosition ip On ip.positionId = i.positionId
-		Inner Join TariffWindow tw On tw.windowId = i.originalWindowID
+		Inner Join TariffWindow tw On tw.windowId = i.actualWindowID
 		Left Join Firm f On f.firmID = r.firmID
 	where (i.isConfirmed = 1 Or @showUnconfirmed = 1) and actualWindowId = @windowId
 		and r.rollerID = coalesce(@rollerID, r.rollerID)
@@ -66,7 +66,6 @@ begin
 		inner join [User] u on a.userID = u.userID
 		Inner Join iIssuePosition ip On ip.positionId = i.positionId
 		Inner Join TariffWindow tw On tw.windowId = i.actualWindowId
-		Left Join AdvertType advt on advt.advertTypeID = r.advertTypeID
 		Left Join Firm f On f.firmID = r.firmID
 	where (i.isConfirmed = 1 Or @showUnconfirmed = 1) and actualWindowId = @windowId
 		and r.rollerID = coalesce(@rollerID, r.rollerID)

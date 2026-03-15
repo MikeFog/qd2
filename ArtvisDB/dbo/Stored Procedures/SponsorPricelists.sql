@@ -5,7 +5,8 @@ Modified by: Denis Gladkikh (dgladkikh@fogsoft.ru) 17.09.2008
 CREATE          PROC [dbo].[SponsorPricelists]
 (
 @sponsorProgramID smallint = NULL,
-@pricelistID smallint = NULL
+@pricelistID smallint = NULL,
+@hideSponsorPLInThePast bit = 0
 )
 AS
 SET NOCOUNT ON
@@ -18,6 +19,7 @@ FROM
 WHERE
 	spp.sponsorProgramID = COALESCE(@sponsorProgramID, spp.sponsorProgramID) AND
 	spp.pricelistID = COALESCE(@pricelistID, spp.pricelistID) 
+	And (@hideSponsorPLInThePast = 0  Or spp.finishDate > GETDATE())
 ORDER BY
 	spp.finishDate DESC
 GO

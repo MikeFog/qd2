@@ -2,7 +2,8 @@
 (
 @packModuleID smallint = NULL,
 @date DATETIME = null,
-@loggedUserID smallint = null
+@loggedUserID smallint = null,
+@hidePLInThePast bit = 0
 )
 AS
 SET NOCOUNT ON
@@ -13,6 +14,9 @@ IF @date IS NULL
 		[PackModule] pm
 	WHERE 
 		pm.packModuleID  = Coalesce(@packModuleID, pm.packModuleID)
+		And(@hidePLInThePast = 0 
+			Or Exists(Select 1 From PackModulePriceList pl Where pl.packModuleID = pm.packModuleID And pl.finishDate > GETDATE())
+			)
 	ORDER BY 
 		[name]
 else
