@@ -107,7 +107,7 @@ namespace Merlin.Forms.CreateActionMaster
                     sb.AppendFormat("{0},", agencies.Rows[0][Agency.ParamNames.AgencyId]);
                 else
                 {
-                    SelectionForm selector = new SelectionForm(m, "Выбор агентства для радиостанции " + m.Name , false);
+                    SelectionForm selector = new SelectionForm(m, "Выбор агентства для радиостанции " + m.Name , false, CheckAgencySelection);
                     if (selector.ShowDialog(Globals.MdiParent) == DialogResult.OK)
                     {
                         sb.AppendFormat("{0},", ((MassmediaAgency)selector.SelectedObject).AgencyId);
@@ -119,6 +119,17 @@ namespace Merlin.Forms.CreateActionMaster
                 }
             }
             return sb.ToString();
+        }
+
+        private bool CheckAgencySelection(SelectionForm selectionForm)
+        {
+            if (selectionForm.SelectedObject == null)
+            {
+                FogSoft.WinForm.Forms.MessageBox.ShowExclamation(Properties.Resources.AgencyIsRequied);
+                return false;
+            }
+
+            return true;
         }
 
         private string GetMassmediasIDsString()

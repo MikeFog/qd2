@@ -92,13 +92,24 @@ namespace Merlin.Forms.CreateCampaign
         {
             DataTable agencies = m.Agencies;
 			if (agencies.Rows.Count == 1)
-				return (int)agencies.Rows[0][Agency.ParamNames.AgencyId];
+				return Convert.ToInt32(agencies.Rows[0][Agency.ParamNames.AgencyId]);
 
-            SelectionForm selector = new SelectionForm(m, "Выбор агентства для радиостанции " + m.Name, false);
+            SelectionForm selector = new SelectionForm(m, "Выбор агентства для радиостанции " + m.Name, false, CheckAgencySelection);
             if (selector.ShowDialog(Globals.MdiParent) == DialogResult.OK)
                 return ((MassmediaAgency)selector.SelectedObject).AgencyId;
 
 			return null;
+        }
+
+        private bool CheckAgencySelection(SelectionForm selectionForm)
+        {
+            if (selectionForm.SelectedObject == null)
+            {
+                FogSoft.WinForm.Forms.MessageBox.ShowExclamation(Properties.Resources.AgencyIsRequied);
+                return false;
+            }
+
+            return true;
         }
     }
 }

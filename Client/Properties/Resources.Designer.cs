@@ -106,6 +106,15 @@ namespace Merlin.Properties {
         }
         
         /// <summary>
+        ///   Looks up a localized string similar to Необходимо выбрать агентство .
+        /// </summary>
+        public static string AgencyIsRequied {
+            get {
+                return ResourceManager.GetString("AgencyIsRequied", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   Looks up a localized resource of type System.Drawing.Bitmap.
         /// </summary>
         public static System.Drawing.Bitmap calendar {

@@ -13,6 +13,7 @@ namespace Merlin.Forms.CreateCampaign
 {
 	internal class CampaignPassportFormBaseController
 	{
+        public event Globals.VoidCallback OnCheckOkButton;
         private SmartGrid _grdAgency;
         private SmartGrid _grdMassmedia;
         private LookUp _cmbPaymentType;
@@ -83,12 +84,12 @@ namespace Merlin.Forms.CreateCampaign
 			_cmbMassmediaGroup = cmbMassmediaGroup;
 
 			if (grdMassmedia != null)
-				grdMassmedia.ObjectSelected += new ObjectDelegate(grdMassmedia_ObjectSelected);
+                grdMassmedia.ObjectChecked += (presentationObject, state) => { CheckOkButton(); };
 
 			if (grdAgency != null)
-				grdAgency.ObjectSelected += new ObjectDelegate(grdAgency_ObjectSelected);
+				grdAgency.ObjectSelected += (presentationObject) => { CheckOkButton(); };
 
-			if (cmbCampaignType != null)
+            if (cmbCampaignType != null)
 				cmbCampaignType.SelectedItemChanged += new System.EventHandler(cmbCampaignType_SelectedItemChanged);
 
             Dictionary<string, object> procParameters =
@@ -120,7 +121,7 @@ namespace Merlin.Forms.CreateCampaign
 			LoadMassmediaData();
 		}
 
-		private void LoadMassmediaData()
+        private void LoadMassmediaData()
 		{
 			if (_grdMassmedia != null && _cmbMassmediaGroup != null)
 			{
@@ -160,18 +161,6 @@ namespace Merlin.Forms.CreateCampaign
 			CheckOkButton();
 		}
         
-		void grdAgency_ObjectSelected(PresentationObject presentationObject)
-		{
-			CheckOkButton();
-		}
-
-		void grdMassmedia_ObjectSelected(PresentationObject presentationObject)
-		{
-            CheckOkButton();
-		}
-
-		public event Globals.VoidCallback OnCheckOkButton;
-
 		public void CheckOkButton()
 		{
 			if (OnCheckOkButton != null)
