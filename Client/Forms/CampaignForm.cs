@@ -91,6 +91,11 @@ namespace Merlin.Forms
 			get { return _campaign != null && _campaign.CampaignType == Campaign.CampaignTypes.Module; }
 		}
 
+		private bool IsRangeCampaign 
+		{ 
+			get { return tariffGrid is TariffWithRangeGrid; } 
+		}
+
 		internal bool ChangeFlag
 		{
 			get { return changeFlag; }
@@ -275,6 +280,8 @@ namespace Merlin.Forms
 			splitContainer5.Panel1.Controls.Add(tariffGrid);
 			splitContainer5.Panel2Collapsed = !IsPackModuleCampaign;
 
+			//splitContainer5.Panel1.BackColor = Color.Red;
+
             if (tariffGrid is TariffGridWithCampaignIssues grid)
             {
                 grid.Campaign = _campaign;
@@ -422,20 +429,20 @@ namespace Merlin.Forms
 				{
 					_template.SetTime(tariffWindow.WindowDate);
 					_template.Parameters["Window"] = tariffWindow.WindowDate.TimeOfDay;
-					if(Globals.ShowQuestion("StartIssueGeneration", _template.Parameters) == DialogResult.Yes)
+					if (Globals.ShowQuestion(_template.IsModeAdd ? "StartIssueGeneration" : "StartIssuesDeleteByTemplate", _template.Parameters) == DialogResult.Yes)
 					{
 						FrmGenerator form;
 						if (tariffGrid is ProgramIssuesGrid2)
 						{
 							form =
 								new FrmGenerator(_template, _campaign, SponsorIssuesGrid.SponsorProgram,
-								                 tariffWindow.TariffId, tariffWindow.Price,
-								                 ((SponsorPricelist) SponsorIssuesGrid.Pricelist).Bonus);
+												 tariffWindow.TariffId, tariffWindow.Price,
+												 ((SponsorPricelist)SponsorIssuesGrid.Pricelist).Bonus);
 						}
-						else if(tariffGrid is TariffWithRangeGrid)
+						else if (IsRangeCampaign)
 						{
 							form = new FrmGenerator(_template, ((TariffWithRangeGrid)tariffGrid).AddIssuesRange);
-                        }
+						}
 						else
 						{
 							form =
@@ -445,11 +452,11 @@ namespace Merlin.Forms
 
 						form.ShowDialog(this);
 
-						if(_template.IsDateCovered(tariffGrid.StartDate, tariffGrid.FinishDate))
+						if (_template.IsDateCovered(tariffGrid.StartDate, tariffGrid.FinishDate))
 						{
 							RefreshGrid();
 						}
-						if(!(tariffGrid is TariffWithRangeGrid))
+						if (!(tariffGrid is TariffWithRangeGrid))
 							CampaignStatusChanged();
 					}
 				}
@@ -690,6 +697,9 @@ namespace Merlin.Forms
 				if(tbbTemplate.Checked)
 				{
 					FrmTemplate form = new FrmTemplate(_template);
+					if (IsRangeCampaign)
+						form.SetModeAdd();
+
 					if(form.ShowDialog(this) != DialogResult.OK)
 						tbbTemplate.Checked = false;
 					else

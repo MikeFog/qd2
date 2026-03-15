@@ -46,6 +46,7 @@ namespace Merlin.Forms {
             this.tbbModules = new System.Windows.Forms.ToolStripDropDownButton();
             this.tbbShowUnconfirmed = new System.Windows.Forms.ToolStripButton();
             this.toolStripSeparator1 = new System.Windows.Forms.ToolStripSeparator();
+            this.btnShowDisabled = new System.Windows.Forms.ToolStripButton();
             this.tbbPlay = new System.Windows.Forms.ToolStripButton();
             this.tsbStop = new System.Windows.Forms.ToolStripButton();
             this.toolStripSeparator3 = new System.Windows.Forms.ToolStripSeparator();
@@ -56,7 +57,6 @@ namespace Merlin.Forms {
             this.toolStripSeparator2 = new System.Windows.Forms.ToolStripSeparator();
             this.tbbExcel = new System.Windows.Forms.ToolStripButton();
             this.toolStripButtonGrantor = new System.Windows.Forms.ToolStripButton();
-            this.btnShowDisabled = new System.Windows.Forms.ToolStripButton();
             this.splitContainer1 = new System.Windows.Forms.SplitContainer();
             this.splitContainer2 = new System.Windows.Forms.SplitContainer();
             this.grdRollers = new FogSoft.WinForm.Controls.SmartGrid();
@@ -103,6 +103,7 @@ namespace Merlin.Forms {
             this.tbbModules,
             this.tbbShowUnconfirmed,
             this.toolStripSeparator1,
+            this.btnShowDisabled,
             this.tbbPlay,
             this.tsbStop,
             this.toolStripSeparator3,
@@ -112,8 +113,7 @@ namespace Merlin.Forms {
             this.tbbTemplate2,
             this.toolStripSeparator2,
             this.tbbExcel,
-            this.toolStripButtonGrantor,
-            this.btnShowDisabled});
+            this.toolStripButtonGrantor});
             this.tsCampaign.Location = new System.Drawing.Point(0, 0);
             this.tsCampaign.Name = "tsCampaign";
             this.tsCampaign.Size = new System.Drawing.Size(1592, 32);
@@ -265,6 +265,20 @@ namespace Merlin.Forms {
             this.toolStripSeparator1.Name = "toolStripSeparator1";
             this.toolStripSeparator1.Size = new System.Drawing.Size(6, 32);
             // 
+            // btnShowDisabled
+            // 
+            this.btnShowDisabled.Checked = true;
+            this.btnShowDisabled.CheckOnClick = true;
+            this.btnShowDisabled.CheckState = System.Windows.Forms.CheckState.Checked;
+            this.btnShowDisabled.DisplayStyle = System.Windows.Forms.ToolStripItemDisplayStyle.Image;
+            this.btnShowDisabled.Image = ((System.Drawing.Image)(resources.GetObject("btnShowDisabled.Image")));
+            this.btnShowDisabled.ImageTransparentColor = System.Drawing.Color.Magenta;
+            this.btnShowDisabled.Name = "btnShowDisabled";
+            this.btnShowDisabled.Size = new System.Drawing.Size(24, 29);
+            this.btnShowDisabled.Text = "Показать заблокированные";
+            this.btnShowDisabled.ToolTipText = "Показать заблокированные окна";
+            this.btnShowDisabled.CheckedChanged += new System.EventHandler(this.btnShowDisabled_CheckedChanged);
+            // 
             // tbbPlay
             // 
             this.tbbPlay.DisplayStyle = System.Windows.Forms.ToolStripItemDisplayStyle.Image;
@@ -353,20 +367,6 @@ namespace Merlin.Forms {
             this.toolStripButtonGrantor.Text = "Grant";
             this.toolStripButtonGrantor.ToolTipText = "Присоединить привилегированного пользователя.";
             this.toolStripButtonGrantor.Click += new System.EventHandler(this.toolStripButtonGrantor_Click);
-            // 
-            // btnShowDisabled
-            // 
-            this.btnShowDisabled.Checked = true;
-            this.btnShowDisabled.CheckOnClick = true;
-            this.btnShowDisabled.CheckState = System.Windows.Forms.CheckState.Checked;
-            this.btnShowDisabled.DisplayStyle = System.Windows.Forms.ToolStripItemDisplayStyle.Image;
-            this.btnShowDisabled.Image = ((System.Drawing.Image)(resources.GetObject("btnShowDisabled.Image")));
-            this.btnShowDisabled.ImageTransparentColor = System.Drawing.Color.Magenta;
-            this.btnShowDisabled.Name = "btnShowDisabled";
-            this.btnShowDisabled.Size = new System.Drawing.Size(24, 29);
-            this.btnShowDisabled.Text = "Показать заблокированные";
-            this.btnShowDisabled.ToolTipText = "Показать заблокированные окна";
-            this.btnShowDisabled.CheckedChanged += new System.EventHandler(this.btnShowDisabled_CheckedChanged);
             // 
             // splitContainer1
             // 
@@ -537,15 +537,13 @@ namespace Merlin.Forms {
             // 
             // splitContainer5
             // 
-            this.splitContainer5.Anchor = ((System.Windows.Forms.AnchorStyles)((((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Bottom) 
-            | System.Windows.Forms.AnchorStyles.Left) 
-            | System.Windows.Forms.AnchorStyles.Right)));
+            this.splitContainer5.Dock = System.Windows.Forms.DockStyle.Fill;
             this.splitContainer5.Location = new System.Drawing.Point(0, 0);
             this.splitContainer5.Margin = new System.Windows.Forms.Padding(4, 3, 4, 3);
             this.splitContainer5.Name = "splitContainer5";
             this.splitContainer5.Orientation = System.Windows.Forms.Orientation.Horizontal;
-            this.splitContainer5.Size = new System.Drawing.Size(891, 1004);
-            this.splitContainer5.SplitterDistance = 514;
+            this.splitContainer5.Size = new System.Drawing.Size(896, 1007);
+            this.splitContainer5.SplitterDistance = 515;
             this.splitContainer5.SplitterWidth = 5;
             this.splitContainer5.TabIndex = 1;
             // 
