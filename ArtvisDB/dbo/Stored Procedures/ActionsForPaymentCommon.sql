@@ -58,11 +58,10 @@ FROM
 	LEFT JOIN [PaymentType] pt ON p.[paymentTypeID] = pt.[paymentTypeID]
 GROUP BY 
 	a.actionID, pt.isHidden,p.agencyID
-	
 
 SELECT 
 	a.actionID,
-	SUM(case when c.campaignTypeID = 4 then c.finalPrice else c.finalPrice * a.discount end) AS finalPrice,
+	SUM(case when c.campaignTypeID = 4 then c.finalPrice else Cast(c.finalPrice * a.discount as decimal(18,2)) end) AS finalPrice,
 	pu.paidUp as paidUp
 FROM 
 	[Action] a
