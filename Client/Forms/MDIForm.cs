@@ -1,5 +1,4 @@
-﻿using DocumentFormat.OpenXml.Packaging;
-using FogSoft.WinForm;
+﻿using FogSoft.WinForm;
 using FogSoft.WinForm.Classes;
 using FogSoft.WinForm.Controls;
 using FogSoft.WinForm.DataAccess;
@@ -18,17 +17,13 @@ using System;
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.Configuration;
-using System.Diagnostics;
 using System.Drawing;
-using System.IO;
 using System.Text;
 using System.Threading;
 using System.Windows.Forms;
 using DateTime = System.DateTime;
 using MessageBox = FogSoft.WinForm.Forms.MessageBox;
 using Timer = System.Windows.Forms.Timer;
-
-using DocumentFormat.OpenXml.Wordprocessing;
 
 namespace Merlin.Forms
 {
@@ -148,9 +143,6 @@ namespace Merlin.Forms
 					ShowStudioTariff(mi);
 				else if (strMiName == "miProductionStudio")
 					ShowStudioJournal(mi);
-				else if (strMiName == "miProductionActionsBuh" || strMiName == "miProductionActionsStudio"
-					|| strMiName == "miProductionActions")
-					ShowOrderActions(mi);
 				else if (strMiName == "miPaymentType")
 					ShowPaymentTypes(mi);
 				else if (strMiName == "miMassMedia")
@@ -275,6 +267,8 @@ namespace Merlin.Forms
 					ShowHeadCompanies(mi);
                 else if (strMiName == "miPriceCalculator")
                     ShowPriceCalculator(mi);
+                else if (strMiName == "miManagerDiscountHistory")
+                    Globals.ShowSimpleJournal(EntityManager.GetEntity((int)Entities.ManagerDiscountHistory), mi.Text); ;
             }
 			catch (Exception ex)
 			{
@@ -439,11 +433,6 @@ namespace Merlin.Forms
 			}
 		}
 
-		private void ShowOrderActions(ToolStripItem mi)
-		{
-			Globals.ShowBrowser(new StudioOrderActionContainer(), mi.Text, this);
-		}
-
 		private static void ShowPaymentTypes(ToolStripItem mi)
 		{
 			Globals.ShowSimpleJournal(
@@ -527,8 +516,7 @@ namespace Merlin.Forms
 			                       		new Entity.Action(Constants.EntityActions.AddNew, "Создать новую радиостанцию")
 			                       	};
 
-			MassmediasContainer container =
-				new MassmediasContainer("Радиостанция", menu, RelationManager.GetScenario(RelationScenarios.DisabledWindows));
+			var container = new FakeContainer("Радиостанция", menu, RelationManager.GetScenario(RelationScenarios.DisabledWindows));
 			Globals.ShowBrowser(container, mi.Text, this);
 		}
 
@@ -540,8 +528,7 @@ namespace Merlin.Forms
 			                       		new Entity.Action(Constants.EntityActions.AddNew, "Создать новую радиостанцию")
 			                       	};
 
-			MassmediasContainer container =
-				new MassmediasContainer("Радиостанция", menu, RelationManager.GetScenario(RelationScenarios.SponsorProgramm));
+			var container = new FakeContainer("Радиостанция", menu, RelationManager.GetScenario(RelationScenarios.SponsorProgramm));
 			Globals.ShowBrowser(container, mi.Text, this);
 		}
 
@@ -553,8 +540,7 @@ namespace Merlin.Forms
 			                       		new Entity.Action(Constants.EntityActions.AddNew, "Создать новую радиостанцию")
 			                       	};
 
-			MassmediasContainer container =
-				new MassmediasContainer("Радиостанция", menu, RelationManager.GetScenario(RelationScenarios.Tariff));
+			var container = new FakeContainer("Радиостанция", menu, RelationManager.GetScenario(RelationScenarios.Tariff));
 			Globals.ShowBrowser(container, mi.Text, this);
 		}
 
@@ -566,8 +552,7 @@ namespace Merlin.Forms
 			                       		new Entity.Action(Constants.EntityActions.AddNew, "Добавить скидку")
 			                       	};
 
-			MassmediasContainer container =
-				new MassmediasContainer("Скидки", menu, RelationManager.GetScenario(RelationScenarios.Discount));
+			var container = new FakeContainer("Скидки", menu, RelationManager.GetScenario(RelationScenarios.Discount));
 			Globals.ShowBrowser(container, mi.Text, this);
 		}
 
@@ -579,8 +564,7 @@ namespace Merlin.Forms
 			                       		new Entity.Action(Constants.EntityActions.AddNew, "Создать новую радиостанцию")
 			                       	};
 
-			MassmediasContainer container =
-				new MassmediasContainer("Радиостанция", menu, RelationManager.GetScenario(RelationScenarios.Module));
+			var container = new FakeContainer("Радиостанция", menu, RelationManager.GetScenario(RelationScenarios.Module));
 			Globals.ShowBrowser(container, mi.Text, this);
 		}
 
@@ -912,31 +896,43 @@ namespace Merlin.Forms
 
 		private void CheckAnnouncements(object sender, EventArgs e)
 		{
+
+            return;
+
+            /*
+            ActionOnMassmedia a = new ActionOnMassmedia(173666);
+            a.Refresh();
+			a.SplitCampaign();
+			*/
+			
 			/*
-            var templatePath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, ConfigurationUtil.ProposalTemplatePath);
+            var agency = Agency.GetAgencyByID(Convert.ToInt32(202));
+            var templatePath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, ConfigurationUtil.ProposalTemplateFolder, agency[Agency.ParamNames.Path2ProposalTemplate].ToString());
+
             var outFolder = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "CommercialOffers");
             Directory.CreateDirectory(outFolder);
+            var fileName = $"КП для Радио-Драйв {DateTime.Now:dd.MM.yyyy-HH-mm-ss}.docx";
+            var outPath = Path.Combine(outFolder, fileName);
 
-            var outPath = Path.Combine(outFolder, $"КП_{DateTime.Now:yyyyMMdd_HHmmss}.docx");
 
-            var result = Cp.CpOneDocGenerator.GenerateOneDoc(
-                Class1.BuildTestSnapshotsForCp(),
-                templatePath,
-                outPath,
-                clientName: "Радар-Драйв",
-                docDate: DateTime.Today,
-                directorName: "Агамов Владислав Александрович",
-                contactName: SecurityManager.LoggedUser.FullName,
-                contactEmail: SecurityManager.LoggedUser.Email,
-                contactPhone: SecurityManager.LoggedUser.Phone
-            );
+			var result = Cp.CpOneDocGenerator.GenerateOneDoc(
+				Class1.BuildTestSnapshotsForCp(),
+				templatePath,
+				outPath,
+				clientName: "Радар-Драйв",
+				docDate: DateTime.Today,
+				contactName: SecurityManager.LoggedUser.FullName,
+				contactEmail: SecurityManager.LoggedUser.Email,
+				contactPhone: "+7 999 999 999 "//SecurityManager.LoggedUser.Phone
+			); 
 
             Process.Start(new ProcessStartInfo(result) { UseShellExecute = true });
 			*/
-            
-              var priceCalculatorForm = new PriceCalculatorForm() { MdiParent = this, Icon = Icon };
+         
+            var priceCalculatorForm = new PriceCalculatorForm() { MdiParent = this, Icon = Icon };
               priceCalculatorForm.Show();
-            /**************************************************************
+								
+            /*
 
                                      Campaign c = new CampaignOnSingleMassmedia(383269);
                                      c.Refresh();

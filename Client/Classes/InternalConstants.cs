@@ -153,6 +153,7 @@ namespace Merlin
         HeadCompanyWithConfirmedActions = 1255,
         HeadCompanyWithUnconfirmedActions = 1256,
         HeadCompanyWithDeletedActions = 1257,
+		ManagerDiscountHistory = 1266
     }
 
 	public struct RelationScenarios

@@ -78,4 +78,11 @@ Set
 Where
 	campaignID = @campaignId
 
+INSERT INTO [dbo].[ManagerDiscountHistory]
+           ([campaignID]
+           ,[userID]
+           ,[managerDiscount]
+           ,[discountSetTime])
+VALUES     (@campaignID, @loggedUserId, @managerDiscount, GETDATE())
+
 --Exec ActionRecalculate @actionId, 0, @loggedUserId, @todayDate
