@@ -119,11 +119,14 @@ WHILE	@@fetch_status = 0 begin
 	exec hlp_CompanyDiscountCalculate @massMediaID, @campaignTypeID, @startDate, @tariffPrice, @campaignDiscount output
 
 	If @isNewCampaign = 1 and @issuesCount + @programsCount > 0 -- т.е. была новой но в нее вот только что добавили рекламные выпуски
+		/*
 		SELECT TOP 1 @managerDiscountCampaign = IsNull(maxRatio, 1)
 		FROM [dbo].[UserDiscount]
 		WHERE userID = @loggedUserID
 		  AND (startDate <= @finishDate AND finishDate >= @startDate)
 		ORDER BY maxRatio ASC; -- Берем минимальную maxRatio (максимальную скидку для клиента)
+		*/
+		SELECT @managerDiscountCampaign = dbo.fn_GetMaxUserDiscount(@loggedUserID, @startDate, @finishDate)
 	Else 
 		Set @managerDiscountCampaign = Null
 

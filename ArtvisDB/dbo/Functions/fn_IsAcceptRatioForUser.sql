@@ -1,15 +1,21 @@
 ﻿CREATE FUNCTION [dbo].[fn_IsAcceptRatioForUser]
 (
 	@userID INT,
-	@ratio decimal(9, 4),
+	@ratio decimal(18,10),
 	@startDate datetime,
 	@finishDate datetime 
 )
 RETURNS BIT
 AS
 BEGIN
-	DECLARE @maxratio decimal(9, 4)
+	DECLARE @maxratio decimal(18,10)
+	select @startDate = dbo.ToShortDate(@startDate), @finishDate = dbo.ToShortDate(@finishDate)
+	SELECT @maxratio = dbo.fn_GetMaxUserDiscount(@userID, @startDate, @finishDate)
 
+	IF @maxratio <=  @ratio
+			return 1
+	return 0
+	/*
 	if @userID is not null
 	begin 
 		IF dbo.[f_IsAdmin](@userID) = 1
@@ -22,8 +28,8 @@ BEGIN
 		where ud.userID = @userID
 			and ud.startDate <= @finishDate
 				and ud.finishDate >= @startDate
-		
-		if @maxratio is null or 
+
+		if @maxratio is null /*or 
 			exists( -- Нету промежутков между датами
 				select ud.startDate, ud.finishDate
 				from UserDiscount ud
@@ -34,6 +40,7 @@ BEGIN
 						and ud.finishDate >= @startDate
 				group by ud.startDate, ud.finishDate
 				having datediff(day, ud.finishDate, min(ud2.startDate)) > 1)
+				*/
 			or not exists( -- Нет скидки на дату начала
 				select * from UserDiscount ud 
 					where  ud.userID = @userID
@@ -51,4 +58,5 @@ BEGIN
 	end 
 	
 	return 0
+	*/
 END
