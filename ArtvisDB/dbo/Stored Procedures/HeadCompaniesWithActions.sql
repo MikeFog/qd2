@@ -1,8 +1,8 @@
-﻿CREATE    PROC [dbo].[HeadCompaniesWithActions]
+﻿CREATE PROC [dbo].[HeadCompaniesWithActions]
     @startOfInterval datetime = NULL,
     @endOfInterval datetime = NULL,
-    @createDateBegin datetime = NULL, -- Новый параметр: начало интервала даты создания
-    @createDateEnd datetime = NULL,   -- Новый параметр: конец интервала даты создания
+    @createDateBegin datetime = NULL,
+    @createDateEnd datetime = NULL,
     @firmId2 smallint = NULL,
     @showBlack BIT = 0,
     @showWhite BIT = 0,
@@ -21,58 +21,88 @@ AS
 BEGIN
     SET NOCOUNT ON;
     
-    SELECT DISTINCT hc.*,	
-		@userID  AS userID, @startOfInterval as startOfInterval, @endOfInterval as endOfInterval, 
-		@actionID as actionID /*To filtered*/, @massmediaGroupID as massmediaGroupID, @showDeleted as showDeleted, 
-		@isShowActivate as isShowActivate, @isShowNotActivate as isShowNotActivate
+    SELECT DISTINCT
+        hc.*,
+        @userID AS userID,
+        @startOfInterval AS startOfInterval,
+        @endOfInterval AS endOfInterval,
+        @actionID AS actionID,
+        @massmediaGroupID AS massmediaGroupID,
+        @showDeleted AS showDeleted,
+        @isShowActivate AS isShowActivate,
+        @isShowNotActivate AS isShowNotActivate
     FROM HeadCompany hc
-    INNER JOIN Firm f ON hc.headCompanyID = f.headCompanyID
-    INNER JOIN Action a ON f.firmID = a.firmID
-    INNER JOIN Campaign c ON a.actionID = c.actionID
-    INNER JOIN PaymentType pt ON c.paymentTypeID = pt.paymentTypeID
-    LEFT JOIN MassMedia mm ON c.massmediaID = mm.massmediaID
-    LEFT JOIN (
-        -- Для campaignTypeID = 4 получаем massmediaID через цепочку PackModule
-        SELECT 
-            pmi.campaignID,
-            m.massmediaID,
-            mm2.massmediaGroupID
-        FROM PackModuleIssue pmi
-        INNER JOIN PackModulePriceList pmpl ON pmi.pricelistID = pmpl.priceListID
-        INNER JOIN PackModuleContent pmc ON pmpl.priceListID = pmc.pricelistID
-        INNER JOIN Module m ON pmc.moduleID = m.moduleID
-        INNER JOIN MassMedia mm2 ON m.massmediaID = mm2.massmediaID
-    ) pack_media ON c.campaignID = pack_media.campaignID AND c.campaignTypeID = 4
-    WHERE 
-        (a.finishDate >= COALESCE(@startOfInterval, a.finishDate))
-        AND (a.startDate <= COALESCE(@endOfInterval, a.startDate))
-        -- Фильтр по дате создания (createDate)
+        INNER JOIN Firm f
+            ON hc.headCompanyID = f.headCompanyID
+        INNER JOIN Action a
+            ON f.firmID = a.firmID
+        INNER JOIN Campaign c
+            ON a.actionID = c.actionID
+        INNER JOIN PaymentType pt
+            ON c.paymentTypeID = pt.paymentTypeID
+        LEFT JOIN MassMedia mm
+            ON c.massmediaID = mm.massmediaID
+        LEFT JOIN
+        (
+            SELECT 
+                pmi.campaignID,
+                m.massmediaID,
+                mm2.massmediaGroupID
+            FROM PackModuleIssue pmi
+                INNER JOIN PackModulePriceList pmpl
+                    ON pmi.pricelistID = pmpl.priceListID
+                INNER JOIN PackModuleContent pmc
+                    ON pmpl.priceListID = pmc.pricelistID
+                INNER JOIN Module m
+                    ON pmc.moduleID = m.moduleID
+                INNER JOIN MassMedia mm2
+                    ON m.massmediaID = mm2.massmediaID
+        ) pack_media
+            ON c.campaignID = pack_media.campaignID
+           AND c.campaignTypeID = 4
+    WHERE
+        a.finishDate >= COALESCE(@startOfInterval, a.finishDate)
+        AND a.startDate <= COALESCE(@endOfInterval, a.startDate)
+
         AND (@createDateBegin IS NULL OR a.createDate >= @createDateBegin)
         AND (@createDateEnd IS NULL OR a.createDate <= @createDateEnd)
-        -- Конец фильтра по дате создания
-        AND (a.firmID = COALESCE(@firmId2, a.firmID))
-        AND ((@showBlack = 0 AND @showWhite = 0) OR (pt.IsHidden = 1 AND @showBlack = 1) OR (pt.IsHidden = 0 AND @showWhite = 1))
+
+        AND (@firmId2 IS NULL OR a.firmID = @firmId2)
+
+        AND
+        (
+            (@showBlack = 1 AND pt.IsHidden = 1)
+            OR (@showWhite = 1 AND pt.IsHidden = 0)
+        )
+
         AND (@actionID IS NULL OR a.actionID = @actionID)
         AND (@headCompanyID IS NULL OR hc.headCompanyID = @headCompanyID)
         AND (@userID IS NULL OR a.userID = @userID)
         AND (@agencyID IS NULL OR c.agencyID = @agencyID)
         AND (@campaignTypeID IS NULL OR c.campaignTypeID = @campaignTypeID)
         AND (@paymentTypeID IS NULL OR c.paymentTypeID = @paymentTypeID)
-        AND (
-            @massmediaID IS NULL 
-            OR (c.campaignTypeID != 4 AND c.massmediaID = @massmediaID)
+
+        AND
+        (
+            @massmediaID IS NULL
+            OR (c.campaignTypeID <> 4 AND c.massmediaID = @massmediaID)
             OR (c.campaignTypeID = 4 AND pack_media.massmediaID = @massmediaID)
         )
-        AND (
-            @massmediaGroupID IS NULL 
-            OR (c.campaignTypeID != 4 AND mm.massmediaGroupID = @massmediaGroupID)
+
+        AND
+        (
+            @massmediaGroupID IS NULL
+            OR (c.campaignTypeID <> 4 AND mm.massmediaGroupID = @massmediaGroupID)
             OR (c.campaignTypeID = 4 AND pack_media.massmediaGroupID = @massmediaGroupID)
         )
-        AND (
-            (@isShowActivate = 0 AND @isShowNotActivate = 0 AND @showDeleted = 0) 
+
+        AND
+        (
+            (@isShowActivate = 0 AND @isShowNotActivate = 0 AND @showDeleted = 0)
             OR (@isShowActivate = 1 AND a.isConfirmed = 1 AND a.deleteDate IS NULL)
             OR (@isShowNotActivate = 1 AND a.isConfirmed = 0 AND a.deleteDate IS NULL)
             OR (@showDeleted = 1 AND a.deleteDate IS NOT NULL)
         )
-    ORDER BY hc.name
+    ORDER BY
+        hc.name;
 END
