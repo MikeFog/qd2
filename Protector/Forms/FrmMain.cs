@@ -34,14 +34,13 @@ namespace Protector.Forms
 		private ToolStripSeparator toolStripMenuItem1;
 		private ToolStripMenuItem miExit;
 		private ToolStripMenuItem tlsmAdministration;
-		private ToolStripMenuItem miAbout;
 		private ToolStripMenuItem tsmiLicense;
 		private ToolStripSeparator toolStripSeparator2;
 		private ToolStripMenuItem miChangePassAdmin;
 		private ToolStripMenuItem miSysParams;
 		private ToolStripMenuItem tsmiRecalculateTariffWindows;
-
-		private readonly MdiClientController mdiClientController = new MdiClientController();
+        private ToolStripMenuItem установитьПользовательскийКоэффициентToolStripMenuItem;
+        private readonly MdiClientController mdiClientController = new MdiClientController();
 
 		public FrmMain()
 		{
@@ -148,6 +147,7 @@ namespace Protector.Forms
             this.miUsers = new System.Windows.Forms.ToolStripMenuItem();
             this.miGroups = new System.Windows.Forms.ToolStripMenuItem();
             this.toolStripSeparator2 = new System.Windows.Forms.ToolStripSeparator();
+            this.установитьПользовательскийКоэффициентToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.miChangePassAdmin = new System.Windows.Forms.ToolStripMenuItem();
             this.toolStripMenuItem1 = new System.Windows.Forms.ToolStripSeparator();
             this.miExit = new System.Windows.Forms.ToolStripMenuItem();
@@ -155,7 +155,6 @@ namespace Protector.Forms
             this.tsmiRecalculateTariffWindows = new System.Windows.Forms.ToolStripMenuItem();
             this.miSysParams = new System.Windows.Forms.ToolStripMenuItem();
             this.tsmiLicense = new System.Windows.Forms.ToolStripMenuItem();
-            this.miAbout = new System.Windows.Forms.ToolStripMenuItem();
             this.MDIMenu.SuspendLayout();
             this.SuspendLayout();
             // 
@@ -165,11 +164,10 @@ namespace Protector.Forms
             this.MDIMenu.ImageScalingSize = new System.Drawing.Size(24, 24);
             this.MDIMenu.Items.AddRange(new System.Windows.Forms.ToolStripItem[] {
             this.miTop,
-            this.tlsmAdministration,
-            this.miAbout});
+            this.tlsmAdministration});
             this.MDIMenu.Location = new System.Drawing.Point(0, 0);
             this.MDIMenu.Name = "MDIMenu";
-            this.MDIMenu.Size = new System.Drawing.Size(792, 33);
+            this.MDIMenu.Size = new System.Drawing.Size(970, 33);
             this.MDIMenu.TabIndex = 1;
             this.MDIMenu.Text = "menuStrip1";
             // 
@@ -179,6 +177,7 @@ namespace Protector.Forms
             this.miUsers,
             this.miGroups,
             this.toolStripSeparator2,
+            this.установитьПользовательскийКоэффициентToolStripMenuItem,
             this.miChangePassAdmin,
             this.toolStripMenuItem1,
             this.miExit});
@@ -189,38 +188,45 @@ namespace Protector.Forms
             // miUsers
             // 
             this.miUsers.Name = "miUsers";
-            this.miUsers.Size = new System.Drawing.Size(426, 34);
+            this.miUsers.Size = new System.Drawing.Size(472, 34);
             this.miUsers.Text = "Журнал пользователей";
             this.miUsers.Click += new System.EventHandler(this.miUsers_Click);
             // 
             // miGroups
             // 
             this.miGroups.Name = "miGroups";
-            this.miGroups.Size = new System.Drawing.Size(426, 34);
+            this.miGroups.Size = new System.Drawing.Size(472, 34);
             this.miGroups.Text = "Группы и пользователи";
             this.miGroups.Click += new System.EventHandler(this.miGroups_Click);
             // 
             // toolStripSeparator2
             // 
             this.toolStripSeparator2.Name = "toolStripSeparator2";
-            this.toolStripSeparator2.Size = new System.Drawing.Size(423, 6);
+            this.toolStripSeparator2.Size = new System.Drawing.Size(469, 6);
+            // 
+            // установитьПользовательскийКоэффициентToolStripMenuItem
+            // 
+            this.установитьПользовательскийКоэффициентToolStripMenuItem.Name = "установитьПользовательскийКоэффициентToolStripMenuItem";
+            this.установитьПользовательскийКоэффициентToolStripMenuItem.Size = new System.Drawing.Size(472, 34);
+            this.установитьПользовательскийКоэффициентToolStripMenuItem.Text = "Установить пользовательский коэффициент";
+            this.установитьПользовательскийКоэффициентToolStripMenuItem.Click += new System.EventHandler(this.установитьПользовательскийКоэффициентToolStripMenuItem_Click);
             // 
             // miChangePassAdmin
             // 
             this.miChangePassAdmin.Name = "miChangePassAdmin";
-            this.miChangePassAdmin.Size = new System.Drawing.Size(426, 34);
+            this.miChangePassAdmin.Size = new System.Drawing.Size(472, 34);
             this.miChangePassAdmin.Text = "Сменить пароль пользователя \'admin\'";
             this.miChangePassAdmin.Click += new System.EventHandler(this.miChangePassAdmin_Click);
             // 
             // toolStripMenuItem1
             // 
             this.toolStripMenuItem1.Name = "toolStripMenuItem1";
-            this.toolStripMenuItem1.Size = new System.Drawing.Size(423, 6);
+            this.toolStripMenuItem1.Size = new System.Drawing.Size(469, 6);
             // 
             // miExit
             // 
             this.miExit.Name = "miExit";
-            this.miExit.Size = new System.Drawing.Size(426, 34);
+            this.miExit.Size = new System.Drawing.Size(472, 34);
             this.miExit.Text = "Выход";
             this.miExit.Click += new System.EventHandler(this.miExit_Click);
             // 
@@ -256,27 +262,17 @@ namespace Protector.Forms
             this.tsmiLicense.Visible = false;
             this.tsmiLicense.Click += new System.EventHandler(this.tsmiLicense_Click);
             // 
-            // miAbout
-            // 
-            this.miAbout.Alignment = System.Windows.Forms.ToolStripItemAlignment.Right;
-            this.miAbout.DisplayStyle = System.Windows.Forms.ToolStripItemDisplayStyle.Image;
-            this.miAbout.Image = global::Protector.Properties.Resources.about;
-            this.miAbout.Name = "miAbout";
-            this.miAbout.RightToLeft = System.Windows.Forms.RightToLeft.Yes;
-            this.miAbout.Size = new System.Drawing.Size(40, 29);
-            this.miAbout.Click += new System.EventHandler(this.miAbout_Click);
-            // 
             // FrmMain
             // 
-            this.AutoScaleBaseSize = new System.Drawing.Size(5, 13);
+            this.AutoScaleBaseSize = new System.Drawing.Size(8, 19);
             this.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(204)))), ((int)(((byte)(204)))), ((int)(((byte)(204)))));
             this.BackgroundImageLayout = System.Windows.Forms.ImageLayout.None;
-            this.ClientSize = new System.Drawing.Size(792, 553);
+            this.ClientSize = new System.Drawing.Size(970, 616);
             this.Controls.Add(this.MDIMenu);
             this.Icon = ((System.Drawing.Icon)(resources.GetObject("$this.Icon")));
             this.IsMdiContainer = true;
             this.MainMenuStrip = this.MDIMenu;
-            this.MinimumSize = new System.Drawing.Size(620, 460);
+            this.MinimumSize = new System.Drawing.Size(992, 672);
             this.Name = "FrmMain";
             this.Text = "Lord Protector";
             this.WindowState = System.Windows.Forms.FormWindowState.Maximized;
@@ -404,5 +400,19 @@ namespace Protector.Forms
 			po.Refresh();
 			po.ShowPassport(this);
 		}
-	}
+
+        private void установитьПользовательскийКоэффициентToolStripMenuItem_Click(object sender, EventArgs e)
+        {
+			try
+			{
+				SetUsersDiscount form = new SetUsersDiscount();
+				form.ShowDialog(this);
+            }
+			catch (Exception exp)
+			{
+
+                ErrorManager.PublishError(exp);
+            }
+        }
+    }
 }

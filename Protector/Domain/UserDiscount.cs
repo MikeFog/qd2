@@ -15,7 +15,14 @@ namespace Protector.Domain
 {
 	public class UserDiscount : PresentationObject
 	{
-		public UserDiscount(DataRow row)
+        public struct ParamNames
+        {
+            public const string StartDate = "startDate";
+            public const string FinishDate = "finishDate";
+            public const string MaxRatio = "maxRatio";
+        }
+
+        public UserDiscount(DataRow row)
 			: base(EntityManager.GetEntity((int)Entities.UserDiscount), row)
 		{
 		}

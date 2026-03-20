@@ -66,24 +66,11 @@ namespace Protector.Domain
 					AssignNewUser(actionName, owner, interfaceObject);
 					break;
 
-
-				case "SetManagerDiscount":
-					SetManagerDiscount(owner);
-                    break;
-
-
                 default:
 					base.DoAction(actionName, owner, interfaceObject);
 					break;
 			}
 		}
-
-		private void SetManagerDiscount(IWin32Window owner)
-		{
-			UserDiscountMass userDiscount = new UserDiscountMass(this);
-            if (userDiscount.ShowPassport(owner) && userDiscount.TableErrors.Rows.Count > 0)
-                Globals.ShowSimpleJournal(EntityManager.GetEntity((int)Entities.ErrTmplGen), "Ошибки", userDiscount.TableErrors);
-        }
 
         private void AssignExistingUser(IWin32Window owner)
 		{
