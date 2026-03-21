@@ -92,9 +92,9 @@ namespace FogSoft.WinForm.Forms
             this.btnCancel.Anchor = System.Windows.Forms.AnchorStyles.Bottom;
             this.btnCancel.DialogResult = System.Windows.Forms.DialogResult.Cancel;
             this.btnCancel.FlatStyle = System.Windows.Forms.FlatStyle.System;
-            this.btnCancel.Location = new System.Drawing.Point(179, 413);
+            this.btnCancel.Location = new System.Drawing.Point(254, 409);
             this.btnCancel.Name = "btnCancel";
-            this.btnCancel.Size = new System.Drawing.Size(80, 22);
+            this.btnCancel.Size = new System.Drawing.Size(100, 33);
             this.btnCancel.TabIndex = 6;
             this.btnCancel.Text = "Отмена";
             // 
@@ -102,9 +102,9 @@ namespace FogSoft.WinForm.Forms
             // 
             this.btnOk.Anchor = System.Windows.Forms.AnchorStyles.Bottom;
             this.btnOk.FlatStyle = System.Windows.Forms.FlatStyle.System;
-            this.btnOk.Location = new System.Drawing.Point(91, 413);
+            this.btnOk.Location = new System.Drawing.Point(148, 409);
             this.btnOk.Name = "btnOk";
-            this.btnOk.Size = new System.Drawing.Size(80, 22);
+            this.btnOk.Size = new System.Drawing.Size(100, 33);
             this.btnOk.TabIndex = 5;
             this.btnOk.Text = "Ok";
             this.btnOk.Click += new System.EventHandler(this.btnOk_Click);
@@ -121,14 +121,15 @@ namespace FogSoft.WinForm.Forms
             this.tvwStructure.Name = "tvwStructure";
             this.tvwStructure.SelectedItemsBitColumn = null;
             this.tvwStructure.SelectedItemsImageColumn = null;
-            this.tvwStructure.Size = new System.Drawing.Size(350, 400);
+            this.tvwStructure.ShowExpandButton = true;
+            this.tvwStructure.Size = new System.Drawing.Size(363, 400);
             this.tvwStructure.TabIndex = 0;
             // 
             // TreeViewSelector
             // 
             this.AcceptButton = this.btnOk;
             this.CancelButton = this.btnCancel;
-            this.ClientSize = new System.Drawing.Size(350, 443);
+            this.ClientSize = new System.Drawing.Size(363, 443);
             this.Controls.Add(this.btnCancel);
             this.Controls.Add(this.btnOk);
             this.Controls.Add(this.tvwStructure);

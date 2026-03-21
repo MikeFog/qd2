@@ -121,18 +121,18 @@ namespace FogSoft.WinForm.Forms
             // 
             this.btnCancel.DialogResult = System.Windows.Forms.DialogResult.Cancel;
             this.btnCancel.FlatStyle = System.Windows.Forms.FlatStyle.System;
-            this.btnCancel.Location = new System.Drawing.Point(179, 413);
+            this.btnCancel.Location = new System.Drawing.Point(244, 409);
             this.btnCancel.Name = "btnCancel";
-            this.btnCancel.Size = new System.Drawing.Size(80, 22);
+            this.btnCancel.Size = new System.Drawing.Size(100, 33);
             this.btnCancel.TabIndex = 6;
             this.btnCancel.Text = "Отмена";
             // 
             // btnOk
             // 
             this.btnOk.FlatStyle = System.Windows.Forms.FlatStyle.System;
-            this.btnOk.Location = new System.Drawing.Point(91, 413);
+            this.btnOk.Location = new System.Drawing.Point(137, 409);
             this.btnOk.Name = "btnOk";
-            this.btnOk.Size = new System.Drawing.Size(80, 22);
+            this.btnOk.Size = new System.Drawing.Size(100, 33);
             this.btnOk.TabIndex = 5;
             this.btnOk.Text = "Ok";
             this.btnOk.Click += new System.EventHandler(this.btnOk_Click);
@@ -157,6 +157,7 @@ namespace FogSoft.WinForm.Forms
             this.grdSelected.Padding = new System.Windows.Forms.Padding(5);
             this.grdSelected.QuickSearchVisible = false;
             this.grdSelected.SelectedObject = null;
+            this.grdSelected.ShowMultiselectColumn = true;
             this.grdSelected.Size = new System.Drawing.Size(350, 128);
             this.grdSelected.TabIndex = 7;
             this.grdSelected.ObjectChecked += new FogSoft.WinForm.ObjectCheckedDelegate(this.grdSelected_Checked);
@@ -171,6 +172,7 @@ namespace FogSoft.WinForm.Forms
             this.tvwStructure.Name = "tvwStructure";
             this.tvwStructure.SelectedItemsBitColumn = null;
             this.tvwStructure.SelectedItemsImageColumn = null;
+            this.tvwStructure.ShowExpandButton = true;
             this.tvwStructure.Size = new System.Drawing.Size(340, 272);
             this.tvwStructure.TabIndex = 0;
             this.tvwStructure.ContainerSelected += new FogSoft.WinForm.ContainerDelegate(this.tvwStructure_ContainerSelected);

@@ -641,5 +641,8 @@
     <Build Include="dbo\User Defined Types\pc_SelectedMassmedia.sql" />
     <Build Include="Security\RoleMemberships.sql" />
     <Build Include="Security\Permissions.sql" />
+    <Build Include="dbo\Tables\ManagerDiscountHistory.sql" />
+    <Build Include="dbo\Stored Procedures\ManagerDiscountHistoryRetrieve.sql" />
+    <Build Include="dbo\Functions\fn_GetMaxUserDiscount.sql" />
   </ItemGroup>
 </Project>

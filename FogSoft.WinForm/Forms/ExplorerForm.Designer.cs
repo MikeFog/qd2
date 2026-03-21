@@ -46,6 +46,7 @@ namespace FogSoft.WinForm.Forms {
             // 
             // tsJournal
             // 
+            this.tsJournal.Font = new System.Drawing.Font("Segoe UI Variable Text", 9F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(204)));
             this.tsJournal.ImageScalingSize = new System.Drawing.Size(24, 24);
             this.tsJournal.Items.AddRange(new System.Windows.Forms.ToolStripItem[] {
             this.tsbEdit,
@@ -57,7 +58,7 @@ namespace FogSoft.WinForm.Forms {
             this.tsbSumma});
             this.tsJournal.Location = new System.Drawing.Point(0, 0);
             this.tsJournal.Name = "tsJournal";
-            this.tsJournal.Size = new System.Drawing.Size(742, 34);
+            this.tsJournal.Size = new System.Drawing.Size(1197, 31);
             this.tsJournal.TabIndex = 1;
             this.tsJournal.Text = "toolStrip1";
             // 
@@ -66,7 +67,7 @@ namespace FogSoft.WinForm.Forms {
             this.tsbEdit.Image = global::FogSoft.WinForm.Properties.Resources.EditItem;
             this.tsbEdit.ImageTransparentColor = System.Drawing.Color.Magenta;
             this.tsbEdit.Name = "tsbEdit";
-            this.tsbEdit.Size = new System.Drawing.Size(161, 29);
+            this.tsbEdit.Size = new System.Drawing.Size(159, 28);
             this.tsbEdit.Text = "Редактировать";
             this.tsbEdit.Click += new System.EventHandler(this.tsbEdit_Click);
             // 
@@ -75,7 +76,7 @@ namespace FogSoft.WinForm.Forms {
             this.tsbRefresh.Image = global::FogSoft.WinForm.Properties.Resources.Refresh;
             this.tsbRefresh.ImageTransparentColor = System.Drawing.Color.Magenta;
             this.tsbRefresh.Name = "tsbRefresh";
-            this.tsbRefresh.Size = new System.Drawing.Size(121, 29);
+            this.tsbRefresh.Size = new System.Drawing.Size(119, 28);
             this.tsbRefresh.Text = "Обновить";
             this.tsbRefresh.Click += new System.EventHandler(this.tsbRefresh_Click);
             // 
@@ -84,21 +85,21 @@ namespace FogSoft.WinForm.Forms {
             this.tsbDelete.Image = global::FogSoft.WinForm.Properties.Resources.DeleteItem;
             this.tsbDelete.ImageTransparentColor = System.Drawing.Color.Magenta;
             this.tsbDelete.Name = "tsbDelete";
-            this.tsbDelete.Size = new System.Drawing.Size(104, 29);
+            this.tsbDelete.Size = new System.Drawing.Size(102, 28);
             this.tsbDelete.Text = "Удалить";
             this.tsbDelete.Click += new System.EventHandler(this.tsbDelete_Click);
             // 
             // toolStripSeparator1
             // 
             this.toolStripSeparator1.Name = "toolStripSeparator1";
-            this.toolStripSeparator1.Size = new System.Drawing.Size(6, 34);
+            this.toolStripSeparator1.Size = new System.Drawing.Size(6, 31);
             // 
             // tsbExcel
             // 
             this.tsbExcel.Image = global::FogSoft.WinForm.Properties.Resources.ExportExcel;
             this.tsbExcel.ImageTransparentColor = System.Drawing.Color.Magenta;
             this.tsbExcel.Name = "tsbExcel";
-            this.tsbExcel.Size = new System.Drawing.Size(107, 29);
+            this.tsbExcel.Size = new System.Drawing.Size(105, 28);
             this.tsbExcel.Text = "Экспорт";
             this.tsbExcel.Click += new System.EventHandler(this.tsbExcel_Click);
             // 
@@ -107,7 +108,7 @@ namespace FogSoft.WinForm.Forms {
             this.tsbFilter.Image = global::FogSoft.WinForm.Properties.Resources.Filter;
             this.tsbFilter.ImageTransparentColor = System.Drawing.Color.Magenta;
             this.tsbFilter.Name = "tsbFilter";
-            this.tsbFilter.Size = new System.Drawing.Size(99, 29);
+            this.tsbFilter.Size = new System.Drawing.Size(97, 28);
             this.tsbFilter.Text = "Фильтр";
             this.tsbFilter.ToolTipText = "Установить Фильтр";
             this.tsbFilter.Click += new System.EventHandler(this.tsbFilter_Click);
@@ -118,14 +119,14 @@ namespace FogSoft.WinForm.Forms {
             this.tsbSumma.Image = global::FogSoft.WinForm.Properties.Resources.SumColumn;
             this.tsbSumma.ImageTransparentColor = System.Drawing.Color.Magenta;
             this.tsbSumma.Name = "tsbSumma";
-            this.tsbSumma.Size = new System.Drawing.Size(194, 29);
+            this.tsbSumma.Size = new System.Drawing.Size(192, 28);
             this.tsbSumma.Text = "Сумма по колонке";
             this.tsbSumma.Click += new System.EventHandler(this.tsbSumma_Click);
             // 
             // splitContainer1
             // 
             this.splitContainer1.Dock = System.Windows.Forms.DockStyle.Fill;
-            this.splitContainer1.Location = new System.Drawing.Point(0, 34);
+            this.splitContainer1.Location = new System.Drawing.Point(0, 31);
             this.splitContainer1.Margin = new System.Windows.Forms.Padding(3, 4, 3, 4);
             this.splitContainer1.Name = "splitContainer1";
             // 
@@ -136,8 +137,8 @@ namespace FogSoft.WinForm.Forms {
             // splitContainer1.Panel2
             // 
             this.splitContainer1.Panel2.Controls.Add(this.grid);
-            this.splitContainer1.Size = new System.Drawing.Size(742, 463);
-            this.splitContainer1.SplitterDistance = 262;
+            this.splitContainer1.Size = new System.Drawing.Size(1197, 671);
+            this.splitContainer1.SplitterDistance = 422;
             this.splitContainer1.TabIndex = 2;
             this.splitContainer1.TabStop = false;
             // 
@@ -146,14 +147,14 @@ namespace FogSoft.WinForm.Forms {
             this.tvwStructure.CheckBoxes = false;
             this.tvwStructure.DependantGrid = null;
             this.tvwStructure.Dock = System.Windows.Forms.DockStyle.Fill;
-            this.tvwStructure.Font = new System.Drawing.Font("Segoe UI", 9F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(204)));
+            this.tvwStructure.Font = new System.Drawing.Font("Segoe UI Variable Text", 9F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(204)));
             this.tvwStructure.Location = new System.Drawing.Point(0, 0);
             this.tvwStructure.Margin = new System.Windows.Forms.Padding(3, 4, 3, 4);
             this.tvwStructure.Name = "tvwStructure";
             this.tvwStructure.SelectedItemsBitColumn = null;
             this.tvwStructure.SelectedItemsImageColumn = null;
             this.tvwStructure.ShowExpandButton = false;
-            this.tvwStructure.Size = new System.Drawing.Size(262, 463);
+            this.tvwStructure.Size = new System.Drawing.Size(422, 671);
             this.tvwStructure.TabIndex = 0;
             this.tvwStructure.ContainerSelected += new FogSoft.WinForm.ContainerDelegate(this.tvwStructure_ContainerSelected);
             // 
@@ -167,7 +168,7 @@ namespace FogSoft.WinForm.Forms {
             this.grid.DependantGrid = null;
             this.grid.Dock = System.Windows.Forms.DockStyle.Fill;
             this.grid.Entity = null;
-            this.grid.Font = new System.Drawing.Font("Segoe UI", 9F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(204)));
+            this.grid.Font = new System.Drawing.Font("Segoe UI Variable Text", 9F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(204)));
             this.grid.IsHighlightInvertColor = false;
             this.grid.IsNeedHighlight = false;
             this.grid.Location = new System.Drawing.Point(0, 0);
@@ -177,7 +178,7 @@ namespace FogSoft.WinForm.Forms {
             this.grid.QuickSearchVisible = true;
             this.grid.SelectedObject = null;
             this.grid.ShowMultiselectColumn = true;
-            this.grid.Size = new System.Drawing.Size(476, 463);
+            this.grid.Size = new System.Drawing.Size(771, 671);
             this.grid.TabIndex = 0;
             this.grid.ObjectDeleted += new FogSoft.WinForm.ObjectDelegate(this.grid_ObjectCreatedOrDeleted);
             this.grid.ObjectCreated += new FogSoft.WinForm.ObjectDelegate(this.grid_ObjectCreatedOrDeleted);
@@ -189,29 +190,29 @@ namespace FogSoft.WinForm.Forms {
             this.statusStrip1.ImageScalingSize = new System.Drawing.Size(24, 24);
             this.statusStrip1.Items.AddRange(new System.Windows.Forms.ToolStripItem[] {
             this.slTotal});
-            this.statusStrip1.Location = new System.Drawing.Point(0, 497);
+            this.statusStrip1.Location = new System.Drawing.Point(0, 702);
             this.statusStrip1.Name = "statusStrip1";
             this.statusStrip1.Padding = new System.Windows.Forms.Padding(1, 0, 16, 0);
-            this.statusStrip1.Size = new System.Drawing.Size(742, 22);
+            this.statusStrip1.Size = new System.Drawing.Size(1197, 22);
             this.statusStrip1.TabIndex = 3;
             this.statusStrip1.Text = "statusBar";
             // 
             // slTotal
             // 
             this.slTotal.Name = "slTotal";
-            this.slTotal.Size = new System.Drawing.Size(0, 15);
+            this.slTotal.Size = new System.Drawing.Size(0, 17);
             // 
             // ExplorerForm
             // 
-            this.AutoScaleDimensions = new System.Drawing.SizeF(10F, 25F);
+            this.AutoScaleDimensions = new System.Drawing.SizeF(10F, 24F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
-            this.ClientSize = new System.Drawing.Size(742, 519);
+            this.ClientSize = new System.Drawing.Size(1197, 724);
             this.Controls.Add(this.splitContainer1);
             this.Controls.Add(this.tsJournal);
             this.Controls.Add(this.statusStrip1);
-            this.Font = new System.Drawing.Font("Segoe UI", 9F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(204)));
+            this.Font = new System.Drawing.Font("Segoe UI Variable Text", 9F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(204)));
             this.Margin = new System.Windows.Forms.Padding(3, 4, 3, 4);
-            this.MinimumSize = new System.Drawing.Size(331, 227);
+            this.MinimumSize = new System.Drawing.Size(331, 220);
             this.Name = "ExplorerForm";
             this.ShowInTaskbar = false;
             this.Text = "ExplorerForm";

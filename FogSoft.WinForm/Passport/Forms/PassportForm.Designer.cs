@@ -19,6 +19,7 @@ namespace FogSoft.WinForm.Passport.Forms
     {
             ((System.ComponentModel.ISupportInitialize)(this.pbFake)).BeginInit();
             this.SuspendLayout();
+            // 
             // pbFake
             // 
             this.pbFake.Image = global::FogSoft.WinForm.Properties.Resources.New;
@@ -27,7 +28,8 @@ namespace FogSoft.WinForm.Passport.Forms
             // 
             // PassportForm
             // 
-
+            this.ClientSize = new System.Drawing.Size(805, 767);
+            this.Font = new System.Drawing.Font("Segoe UI Variable Text", 9F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(204)));
             this.Name = "PassportForm";
             ((System.ComponentModel.ISupportInitialize)(this.pbFake)).EndInit();
             this.ResumeLayout(false);

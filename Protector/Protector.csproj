@@ -162,6 +162,9 @@
     <Content Include="app.ico" />
     <Content Include="Icons\about.png" />
     <None Include="Resources\open.png" />
+    <EmbeddedResource Include="Forms\SetUsersDiscount.resx">
+      <DependentUpon>SetUsersDiscount.cs</DependentUpon>
+    </EmbeddedResource>
     <EmbeddedResource Include="Icons\tick.png" />
     <EmbeddedResource Include="Icons\tick_circle.png" />
     <EmbeddedResource Include="Icons\Group.png" />
@@ -213,6 +216,12 @@
     </Compile>
     <Compile Include="Domain\GroupMember.cs">
       <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="Forms\SetUsersDiscount.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="Forms\SetUsersDiscount.Designer.cs">
+      <DependentUpon>SetUsersDiscount.cs</DependentUpon>
     </Compile>
     <Compile Include="Launcher.cs" />
     <Compile Include="Forms\LicenseLoader.cs">

@@ -896,7 +896,6 @@ namespace Merlin.Forms
 
 		private void CheckAnnouncements(object sender, EventArgs e)
 		{
-
             return;
 
             /*

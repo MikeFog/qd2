@@ -37,37 +37,40 @@ namespace Merlin.Forms {
     /// the contents of this method with the code editor.
     /// </summary>
     private void InitializeComponent() {
-		System.ComponentModel.ComponentResourceManager resources = new System.ComponentModel.ComponentResourceManager(typeof(MdiForm));
-		this.MDIMenu = new System.Windows.Forms.MenuStrip();
-		this.SuspendLayout();
-		// 
-		// MDIMenu
-		// 
-		this.MDIMenu.LayoutStyle = System.Windows.Forms.ToolStripLayoutStyle.HorizontalStackWithOverflow;
-		this.MDIMenu.Location = new System.Drawing.Point(0, 0);
-		this.MDIMenu.Name = "MDIMenu";
-		this.MDIMenu.Size = new System.Drawing.Size(792, 24);
-		this.MDIMenu.TabIndex = 5;
-		this.MDIMenu.Text = "MDIMenu";
-		// 
-		// MdiForm
-		// 
-		this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
-		this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
-		this.ClientSize = new System.Drawing.Size(792, 553);
-		this.Controls.Add(this.MDIMenu);
-		this.Font = new System.Drawing.Font("Tahoma", 8.25F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(204)));
-		this.Icon = ((System.Drawing.Icon)(resources.GetObject("$this.Icon")));
-		this.IsMdiContainer = true;
-		this.KeyPreview = true;
-		this.MainMenuStrip = this.MDIMenu;
-		this.MinimumSize = new System.Drawing.Size(620, 460);
-		this.Name = "MdiForm";
-		this.Text = "MdiForm";
-		this.WindowState = System.Windows.Forms.FormWindowState.Maximized;
-		this.KeyDown += new System.Windows.Forms.KeyEventHandler(this.MDIForm_KeyDown);
-		this.ResumeLayout(false);
-		this.PerformLayout();
+            System.ComponentModel.ComponentResourceManager resources = new System.ComponentModel.ComponentResourceManager(typeof(MdiForm));
+            this.MDIMenu = new System.Windows.Forms.MenuStrip();
+            this.SuspendLayout();
+            // 
+            // MDIMenu
+            // 
+            this.MDIMenu.GripMargin = new System.Windows.Forms.Padding(2, 2, 0, 2);
+            this.MDIMenu.ImageScalingSize = new System.Drawing.Size(24, 24);
+            this.MDIMenu.LayoutStyle = System.Windows.Forms.ToolStripLayoutStyle.HorizontalStackWithOverflow;
+            this.MDIMenu.Location = new System.Drawing.Point(0, 0);
+            this.MDIMenu.Name = "MDIMenu";
+            this.MDIMenu.Padding = new System.Windows.Forms.Padding(10, 3, 0, 3);
+            this.MDIMenu.Size = new System.Drawing.Size(880, 36);
+            this.MDIMenu.TabIndex = 5;
+            this.MDIMenu.Text = "MDIMenu";
+            // 
+            // MdiForm
+            // 
+            this.AutoScaleDimensions = new System.Drawing.SizeF(10F, 24F);
+            this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
+            this.ClientSize = new System.Drawing.Size(880, 632);
+            this.Controls.Add(this.MDIMenu);
+            this.Font = new System.Drawing.Font("Segoe UI Variable Text", 9F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(204)));
+            this.Icon = ((System.Drawing.Icon)(resources.GetObject("$this.Icon")));
+            this.IsMdiContainer = true;
+            this.KeyPreview = true;
+            this.MainMenuStrip = this.MDIMenu;
+            this.MinimumSize = new System.Drawing.Size(686, 518);
+            this.Name = "MdiForm";
+            this.Text = "MdiForm";
+            this.WindowState = System.Windows.Forms.FormWindowState.Maximized;
+            this.KeyDown += new System.Windows.Forms.KeyEventHandler(this.MDIForm_KeyDown);
+            this.ResumeLayout(false);
+            this.PerformLayout();
 
     }
 

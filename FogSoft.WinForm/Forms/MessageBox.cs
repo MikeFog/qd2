@@ -87,7 +87,14 @@ namespace FogSoft.WinForm.Forms
 
 		public static void ShowExclamation(string text)
 		{
-			Show(Application.ProductName, text, null, MessageBoxIcon.Exclamation, MessageBoxButtons.Ok);
+
+            System.Windows.Forms.MessageBox.Show(
+                text, // Message
+                Application.ProductName,                                  // Title/Caption
+                System.Windows.Forms.MessageBoxButtons.OK,                                // Buttons
+                System.Windows.Forms.MessageBoxIcon.Warning                               // The Icon
+            );
+            //Show(Application.ProductName, text, null, MessageBoxIcon.Exclamation, MessageBoxButtons.Ok);
 		}
 
 		public static DialogResult ShowQuestion(string title, string text)

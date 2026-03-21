@@ -127,8 +127,9 @@
     <LangVersion>7.3</LangVersion>
     <Prefer32Bit>false</Prefer32Bit>
   </PropertyGroup>
+  <PropertyGroup />
   <PropertyGroup>
-    <NoWin32Manifest>true</NoWin32Manifest>
+    <ApplicationManifest>app.manifest</ApplicationManifest>
   </PropertyGroup>
   <ItemGroup>
     <Reference Include="cli_basetypes, Version=1.0.20.0, Culture=neutral, PublicKeyToken=ce2cb7e279207b9e, processorArchitecture=MSIL">
@@ -280,6 +281,7 @@
     <Content Include="Resources\erase.png" />
     <Content Include="Resources\Ластик.png" />
     <Content Include="Resources\Ластик1.png" />
+    <None Include="app.manifest" />
     <None Include="Resources\erase2.png" />
     <None Include="app.config" />
     <None Include="Diagrams\Campaign.cd" />
@@ -291,7 +293,6 @@
     <None Include="Controls\GridControls.cd" />
     <None Include="Icons\GoLeft.ICO" />
     <None Include="Icons\GoRight.ICO" />
-    <BaseApplicationManifest Include="Properties\app.manifest" />
     <EmbeddedResource Include="Controls\GenericGridView.resx">
       <DependentUpon>GenericGridView.cs</DependentUpon>
     </EmbeddedResource>

@@ -49,8 +49,6 @@ namespace FogSoft.WinForm.Passport.Forms
 				tabPassport.Visible = false;
 				if (xmlPassport != null) BuildPassport();
 
-				PlaceButtons();
-
 				tabPassport.TabPages.RemoveAt(0);
 				tabPassport.Visible = true;
 				FormBuildCompleted();
@@ -66,20 +64,6 @@ namespace FogSoft.WinForm.Passport.Forms
 			finally
 			{
 				Cursor.Current = Cursors.Default;
-			}
-		}
-
-		private void PlaceButtons()
-		{
-			if (!btnApply.Visible)
-			{
-				btnOk.Location = new Point(btnCancel.Location.X, btnOk.Location.Y); 
-				btnCancel.Location = new Point(btnApply.Location.X, btnCancel.Location.Y);
-			}
-
-			if (!btnCancel.Visible)
-			{
-				btnOk.Location = new Point(btnCancel.Location.X, btnOk.Location.Y); 
 			}
 		}
 

@@ -25,7 +25,9 @@ namespace FogSoft.WinForm
 		private DateTimePicker dtStartDate;
 		private DateTimePicker dtFinishDate;
 		private Button btnCancel;
-		private Button btnOk;
+        private TableLayoutPanel tableLayoutPanel1;
+        private FlowLayoutPanel flowLayoutPanel1;
+        private Button btnOk;
 
 		#endregion
 
@@ -82,30 +84,34 @@ namespace FogSoft.WinForm
             this.dtFinishDate = new System.Windows.Forms.DateTimePicker();
             this.btnCancel = new System.Windows.Forms.Button();
             this.btnOk = new System.Windows.Forms.Button();
+            this.tableLayoutPanel1 = new System.Windows.Forms.TableLayoutPanel();
+            this.flowLayoutPanel1 = new System.Windows.Forms.FlowLayoutPanel();
+            this.tableLayoutPanel1.SuspendLayout();
+            this.flowLayoutPanel1.SuspendLayout();
             this.SuspendLayout();
             // 
             // label1
             // 
             this.label1.AutoSize = true;
-            this.label1.Location = new System.Drawing.Point(14, 16);
+            this.label1.Location = new System.Drawing.Point(3, 0);
             this.label1.Name = "label1";
-            this.label1.Size = new System.Drawing.Size(114, 25);
+            this.label1.Size = new System.Drawing.Size(112, 24);
             this.label1.TabIndex = 0;
             this.label1.Text = "Дата начала:";
             // 
             // label2
             // 
             this.label2.AutoSize = true;
-            this.label2.Location = new System.Drawing.Point(14, 40);
+            this.label2.Location = new System.Drawing.Point(3, 37);
             this.label2.Name = "label2";
-            this.label2.Size = new System.Drawing.Size(147, 25);
+            this.label2.Size = new System.Drawing.Size(145, 24);
             this.label2.TabIndex = 1;
             this.label2.Text = "Дата окончания:";
             // 
             // dtStartDate
             // 
             this.dtStartDate.Format = System.Windows.Forms.DateTimePickerFormat.Short;
-            this.dtStartDate.Location = new System.Drawing.Point(160, 16);
+            this.dtStartDate.Location = new System.Drawing.Point(281, 3);
             this.dtStartDate.Name = "dtStartDate";
             this.dtStartDate.Size = new System.Drawing.Size(200, 31);
             this.dtStartDate.TabIndex = 2;
@@ -113,7 +119,7 @@ namespace FogSoft.WinForm
             // dtFinishDate
             // 
             this.dtFinishDate.Format = System.Windows.Forms.DateTimePickerFormat.Short;
-            this.dtFinishDate.Location = new System.Drawing.Point(160, 40);
+            this.dtFinishDate.Location = new System.Drawing.Point(281, 40);
             this.dtFinishDate.Name = "dtFinishDate";
             this.dtFinishDate.Size = new System.Drawing.Size(200, 31);
             this.dtFinishDate.TabIndex = 3;
@@ -122,39 +128,70 @@ namespace FogSoft.WinForm
             // 
             this.btnCancel.DialogResult = System.Windows.Forms.DialogResult.Cancel;
             this.btnCancel.FlatStyle = System.Windows.Forms.FlatStyle.System;
-            this.btnCancel.Location = new System.Drawing.Point(189, 81);
+            this.btnCancel.Location = new System.Drawing.Point(448, 3);
             this.btnCancel.Name = "btnCancel";
-            this.btnCancel.Size = new System.Drawing.Size(80, 22);
+            this.btnCancel.Size = new System.Drawing.Size(100, 33);
             this.btnCancel.TabIndex = 5;
             this.btnCancel.Text = "Отмена";
             // 
             // btnOk
             // 
             this.btnOk.FlatStyle = System.Windows.Forms.FlatStyle.System;
-            this.btnOk.Location = new System.Drawing.Point(101, 81);
+            this.btnOk.Location = new System.Drawing.Point(342, 3);
             this.btnOk.Name = "btnOk";
-            this.btnOk.Size = new System.Drawing.Size(80, 22);
+            this.btnOk.Size = new System.Drawing.Size(100, 33);
             this.btnOk.TabIndex = 4;
             this.btnOk.Text = "Ок";
             this.btnOk.Click += new System.EventHandler(this.btnOk_Click);
             // 
+            // tableLayoutPanel1
+            // 
+            this.tableLayoutPanel1.ColumnCount = 2;
+            this.tableLayoutPanel1.ColumnStyles.Add(new System.Windows.Forms.ColumnStyle(System.Windows.Forms.SizeType.Percent, 50F));
+            this.tableLayoutPanel1.ColumnStyles.Add(new System.Windows.Forms.ColumnStyle(System.Windows.Forms.SizeType.Percent, 50F));
+            this.tableLayoutPanel1.Controls.Add(this.label1, 0, 0);
+            this.tableLayoutPanel1.Controls.Add(this.dtStartDate, 1, 0);
+            this.tableLayoutPanel1.Controls.Add(this.label2, 0, 1);
+            this.tableLayoutPanel1.Controls.Add(this.dtFinishDate, 1, 1);
+            this.tableLayoutPanel1.Controls.Add(this.flowLayoutPanel1, 0, 2);
+            this.tableLayoutPanel1.Dock = System.Windows.Forms.DockStyle.Fill;
+            this.tableLayoutPanel1.Location = new System.Drawing.Point(0, 0);
+            this.tableLayoutPanel1.Name = "tableLayoutPanel1";
+            this.tableLayoutPanel1.RowCount = 3;
+            this.tableLayoutPanel1.RowStyles.Add(new System.Windows.Forms.RowStyle());
+            this.tableLayoutPanel1.RowStyles.Add(new System.Windows.Forms.RowStyle());
+            this.tableLayoutPanel1.RowStyles.Add(new System.Windows.Forms.RowStyle());
+            this.tableLayoutPanel1.Size = new System.Drawing.Size(557, 126);
+            this.tableLayoutPanel1.TabIndex = 6;
+            // 
+            // flowLayoutPanel1
+            // 
+            this.tableLayoutPanel1.SetColumnSpan(this.flowLayoutPanel1, 2);
+            this.flowLayoutPanel1.Controls.Add(this.btnCancel);
+            this.flowLayoutPanel1.Controls.Add(this.btnOk);
+            this.flowLayoutPanel1.Dock = System.Windows.Forms.DockStyle.Fill;
+            this.flowLayoutPanel1.FlowDirection = System.Windows.Forms.FlowDirection.RightToLeft;
+            this.flowLayoutPanel1.Location = new System.Drawing.Point(3, 77);
+            this.flowLayoutPanel1.Name = "flowLayoutPanel1";
+            this.flowLayoutPanel1.Size = new System.Drawing.Size(551, 100);
+            this.flowLayoutPanel1.TabIndex = 4;
+            // 
             // FrmDateSelector
             // 
+            this.AcceptButton = this.btnOk;
+            this.AutoSize = true;
             this.CancelButton = this.btnCancel;
-            this.ClientSize = new System.Drawing.Size(370, 110);
-            this.Controls.Add(this.btnCancel);
-            this.Controls.Add(this.btnOk);
-            this.Controls.Add(this.dtFinishDate);
-            this.Controls.Add(this.dtStartDate);
-            this.Controls.Add(this.label2);
-            this.Controls.Add(this.label1);
-            this.Font = new System.Drawing.Font("Segoe UI", 9F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(204)));
+            this.ClientSize = new System.Drawing.Size(557, 126);
+            this.Controls.Add(this.tableLayoutPanel1);
+            this.Font = new System.Drawing.Font("Segoe UI Variable Text", 9F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(204)));
             this.FormBorderStyle = System.Windows.Forms.FormBorderStyle.FixedToolWindow;
             this.Name = "FrmDateSelector";
             this.ShowInTaskbar = false;
             this.Text = "Даты начала и окончания";
+            this.tableLayoutPanel1.ResumeLayout(false);
+            this.tableLayoutPanel1.PerformLayout();
+            this.flowLayoutPanel1.ResumeLayout(false);
             this.ResumeLayout(false);
-            this.PerformLayout();
 
 		}
 
