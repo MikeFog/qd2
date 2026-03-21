@@ -9,6 +9,7 @@ using unoidl.com.sun.star.lang;
 using unoidl.com.sun.star.sheet;
 using unoidl.com.sun.star.table;
 using unoidl.com.sun.star.text;
+using unoidl.com.sun.star.util;
 using Point=unoidl.com.sun.star.awt.Point;
 using Size=unoidl.com.sun.star.awt.Size;
 
@@ -37,22 +38,50 @@ namespace FogSoft.WinForm.Classes.Export.OOCalc
 			int xCount = (right - left + 1);
 			Any[][] aData = new Any[yCount][];
 
+			var monthYearCells = new System.Collections.Generic.List<(int r, int c)>();
+
 			for (int j = top; j <= bottom; j++)
 			{
 				aData[j - top] = new Any[xCount];
 				for (int i = left; i <= right; i++)
 				{
 					object val = data[j - top, i - left];
-					aData[j - top][i-left] = (val == null || val == DBNull.Value) ? new Any(string.Empty) 
-						: (val is bool) ? new Any((bool)val)
-						: (val is double) ? new Any((double)val)
-						: (val is float) ? new Any((float)val)
-						: (val is decimal) ? new Any(decimal.ToDouble((decimal)val))
-						: new Any(val.ToString());
+					if (val is System.DateTime dt)
+					{
+						aData[j - top][i - left] = new Any(dt.ToOADate());
+						monthYearCells.Add((j - top, i - left));
+					}
+					else
+					{
+						aData[j - top][i - left] =
+							(val == null || val == DBNull.Value) ? new Any(string.Empty)
+							: (val is bool)    ? new Any((bool)val)
+							: (val is double)  ? new Any((double)val)
+							: (val is float)   ? new Any((float)val)
+							: (val is decimal) ? new Any(decimal.ToDouble((decimal)val))
+							: new Any(val.ToString());
+					}
 				}
 			}
 
 			rangeData.setDataArray(aData);
+
+			if (monthYearCells.Count > 0)
+			{
+				XNumberFormatsSupplier nfSupplier = (XNumberFormatsSupplier)xComponent;
+				XNumberFormats nf = nfSupplier.getNumberFormats();
+				Locale ruLocale = new Locale("ru", "RU", "");
+				int formatKey = nf.queryKey("MMMM YYYY", ruLocale, false);
+				if (formatKey == -1)
+					formatKey = nf.addNew("MMMM YYYY", ruLocale);
+
+				foreach (var (r, c) in monthYearCells)
+				{
+					XCell cell = sheet.getCellByPosition(left - 1 + c, top - 1 + r);
+					XPropertySet ps = (XPropertySet)cell;
+					ps.setPropertyValue("NumberFormat", new Any(formatKey));
+				}
+			}
 		}
 
 		public void SetBordersStyles(int top, int left, int bottom, int right, bool fNeedInsideVertical)

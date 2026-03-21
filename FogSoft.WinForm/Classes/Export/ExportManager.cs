@@ -246,13 +246,41 @@ namespace FogSoft.WinForm.Classes.Export
 			}
 		}
 
+        private static bool TryParseMonthYear(string s, out DateTime result)
+        {
+            result = default(DateTime);
+            if (string.IsNullOrWhiteSpace(s)) return false;
+
+            string cleaned = s.Trim();
+            if (cleaned.EndsWith("ã.", StringComparison.OrdinalIgnoreCase))
+                cleaned = cleaned.Substring(0, cleaned.Length - 2).Trim();
+            else if (cleaned.EndsWith("ã", StringComparison.OrdinalIgnoreCase))
+                cleaned = cleaned.Substring(0, cleaned.Length - 1).Trim();
+
+            if (DateTime.TryParseExact(cleaned, new[] { "MMMM yyyy", "MMM yyyy" },
+                    new CultureInfo("ru-RU"), DateTimeStyles.None, out result))
+            {
+                result = new DateTime(result.Year, result.Month, 1);
+                return true;
+            }
+
+            return false;
+        }
+
+        private static object ConvertCellValue(object val)
+        {
+            if (val is string s && TryParseMonthYear(s, out DateTime dt))
+                return dt;
+            return val;
+        }
+
 		private static object[,] ProcessData(DataView dv, List<Column> columns)
 		{
-			object[,] data = new object[dv.Count,columns.Count];
+			object[,] data = new object[dv.Count, columns.Count];
 			for (int i = 0; i < dv.Count; i++)
 				for (int j = 0; j < columns.Count; j++)
 				{
-					data[i, j] = columns[j].FormatValue(dv[i][columns[j].MappingName]);
+					data[i, j] = ConvertCellValue(columns[j].FormatValue(dv[i][columns[j].MappingName]));
 					//ErrorManager.Log.Info(data[i, j]);
 				}
 			return data;
@@ -261,13 +289,14 @@ namespace FogSoft.WinForm.Classes.Export
         private static object[,] ProcessData(DataTable dt, bool rotate)
 		{
             object[,] data = rotate ? new object[dt.Columns.Count, dt.Rows.Count] : new object[dt.Rows.Count, dt.Columns.Count];
-			for(int i = 0; i < dt.Rows.Count; i++)
+            for (int i = 0; i < dt.Rows.Count; i++)
                 for (int j = 0; j < dt.Columns.Count; j++)
                 {
-					if (rotate)
-						data[j, i] = dt.Rows[i][j];
-					else
-						data[i, j] = dt.Rows[i][j];
+                    object converted = ConvertCellValue(dt.Rows[i][j]);
+                    if (rotate)
+                        data[j, i] = converted;
+                    else
+                        data[i, j] = converted;
                 }
             return data;
 		}

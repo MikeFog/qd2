@@ -19,9 +19,30 @@ namespace FogSoft.WinForm.Classes.Export.MSExcel
 
 		public void SetValuesForRange(int top, int left, int bottom, int right, object[,] data)
 		{
-			Range rg = worksheet.get_Range(worksheet.Cells[top, left], worksheet.Cells[bottom, right]);
-			rg.set_Value(XlRangeValueDataType.xlRangeValueDefault, data);
-			Marshal.ReleaseComObject(rg);
+            int rows = data.GetLength(0);
+            int cols = data.GetLength(1);
+
+            // Запоминаем позиции DateTime-ячеек ДО конвертации в OADate
+            var monthYearCells = new System.Collections.Generic.List<(int r, int c)>();
+            for (int r = 0; r < rows; r++)
+                for (int c = 0; c < cols; c++)
+                    if (data[r, c] is DateTime dt)
+                    {
+                        monthYearCells.Add((r, c));
+                        data[r, c] = dt.ToOADate();
+                    }
+
+            Range rg = worksheet.get_Range(worksheet.Cells[top, left], worksheet.Cells[bottom, right]);
+            rg.set_Value(XlRangeValueDataType.xlRangeValueDefault, data);
+            Marshal.ReleaseComObject(rg);
+
+            // Применяем формат "Март 2026" (русский) к ячейкам, которые были DateTime
+            foreach (var (r, c) in monthYearCells)
+            {
+                Range cell = (Range)worksheet.Cells[top + r, left + c];
+                cell.NumberFormat = "[$-419]MMMM YYYY";
+                Marshal.ReleaseComObject(cell);
+            }
 		}
 
 		public void SetBordersStyles(int top, int left, int bottom, int right, bool fNeedInsideVertical)
