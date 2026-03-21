@@ -528,6 +528,15 @@ namespace Merlin.Properties {
         }
         
         /// <summary>
+        ///   Looks up a localized string similar to Вы выбрали режим заполнения рекламных окон с разбивкой на прайм и не прайм. Пожалуйчта, введите данные о количестве выходов в прайм и/или не прайм..
+        /// </summary>
+        public static string PrimeAndNonPrimeQuantityMissing {
+            get {
+                return ResourceManager.GetString("PrimeAndNonPrimeQuantityMissing", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   Looks up a localized resource of type System.Drawing.Bitmap.
         /// </summary>
         public static System.Drawing.Bitmap printer1 {

@@ -109,7 +109,11 @@ namespace Merlin.Classes
 
 		public int Quantity { get; internal set; }
 
-		public DateTime StartTime { get; internal set; }
+        public int QuantityPrime { get; internal set; }
+
+        public int QuantityNonPrime { get; internal set; }
+
+        public DateTime StartTime { get; internal set; }
 
 		public DateTime FinishTime { get; internal set; }
 

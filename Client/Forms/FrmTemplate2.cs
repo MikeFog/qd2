@@ -51,7 +51,9 @@ namespace Merlin.Forms
             _template.FinishDate = dtFinishDate.Value.Date;
             _template.StartTime = dtStartTime.Value;
             _template.FinishTime = dtFinishTime.Value;
-            _template.Quantity = ((int)txtQuantity.Value);
+            _template.Quantity = cbSplitPrime.Checked ? 0 : ((int)txtQuantity.Value);
+            _template.QuantityPrime = (int)numQuantityPrime.Value;
+            _template.QuantityNonPrime = (int)numQuantityNonPrime.Value;
 
             _template.Mode = IssueTemplateMode.TimePeriod;
             _template.IgnoreWindowsWithTheSameFirmIssue = cbIgnoreWindows.Checked;
@@ -66,6 +68,14 @@ namespace Merlin.Forms
         {
             SaveData2Template();
             bool errorFlag = false;
+
+            if(cbSplitPrime.Checked && _template.QuantityNonPrime + _template.QuantityPrime == 0)
+            {
+                FogSoft.WinForm.Forms.MessageBox.ShowExclamation(Properties.Resources.PrimeAndNonPrimeQuantityMissing);
+                errorFlag = true;
+            }
+
+            
             if(_template.StartDate > _template.FinishDate)
             {
                 FogSoft.WinForm.Forms.MessageBox.ShowExclamation(MessageAccessor.GetMessage("TemplateStartFinishDateError"));
@@ -78,6 +88,11 @@ namespace Merlin.Forms
             }
             if (errorFlag)
                 DialogResult = DialogResult.None;
+        }
+
+        private void cbSplitPrime_CheckedChanged(object sender, EventArgs e)
+        {
+            numQuantityPrime.Enabled = numQuantityNonPrime.Enabled = cbSplitPrime.Checked;
         }
     }
 }

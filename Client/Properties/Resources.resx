@@ -298,4 +298,7 @@
   <data name="AgencyIsRequied" xml:space="preserve">
     <value>Необходимо выбрать агентство </value>
   </data>
+  <data name="PrimeAndNonPrimeQuantityMissing" xml:space="preserve">
+    <value>Вы выбрали режим заполнения рекламных окон с разбивкой на прайм и не прайм. Пожалуйчта, введите данные о количестве выходов в прайм и/или не прайм.</value>
+  </data>
 </root>

@@ -8,6 +8,7 @@ using System.Collections.Generic;
 using System.ComponentModel;
 using System.Data;
 using System.Windows.Forms;
+using System.Linq;
 
 namespace Merlin.Forms
 {
@@ -249,24 +250,78 @@ namespace Merlin.Forms
             DataSet dsWindows = pricelist.GetTariffWindows(_template.CurrentDate, _template.CurrentDate, null, false);
 			DataTable dtTariffWindow = dsWindows.Tables[Constants.TableNames.Data];
 			List<PresentationObject> issues = new List<PresentationObject>();
-			List<TariffWindowWithRollerIssues> windows = new List<TariffWindowWithRollerIssues>();
 
-			// выберем блоки, относ€щиес€ к временному интервалу шаблона
+			// ‘ильтруем окна, попадающие в указанный временной диапазон
 			string filter = string.Format("(hour > {0} And hour < {1}) OR (hour = {0} and min >= {2}) OR (hour = {1} and min <= {3})",
 							_template.StartTime.Hour, _template.FinishTime.Hour, _template.StartTime.Minute, _template.FinishTime.Minute);
 
 			int firmId = _campaign.Action.FirmID;
-			foreach (DataRow row in dtTariffWindow.Select(filter))
-			{
-				var window = new TariffWindowWithRollerIssues(row, Entities.TariffWindow);
-				if (!_template.IgnoreWindowsWithTheSameFirmIssue || !window.IsRollerOfTheFirmExist(firmId, true))
-					windows.Add(window);
-			}
-			
-			// сортируем блоки по количеству свободного времени
-			windows.Sort();
+            var allWindows = new List<TariffWindowWithRollerIssues>();
+            foreach (DataRow row in dtTariffWindow.Select(filter))
+            {
+                var window = new TariffWindowWithRollerIssues(row, Entities.TariffWindow);
+                if (!_template.IgnoreWindowsWithTheSameFirmIssue || !window.IsRollerOfTheFirmExist(firmId, true))
+                    allWindows.Add(window);
+            }
 
-			for(int i = 0; i < _template.Quantity && windows.Count > 0; i++)
+            var rnd = new Random();
+
+            if (_template.Quantity != 0)
+            {
+                // –ежим: использовать все окна вместе, quantity = _template.Quantity
+                var windows = allWindows
+                    .Select(w => new { w, rand = rnd.Next() })
+                    .OrderBy(x => x.w)
+                    .ThenBy(x => x.rand)
+                    .Select(x => x.w)
+                    .ToList();
+
+                issues.AddRange(AddIssuesFromWindows(windows, _template.Quantity));
+            }
+            else
+            {
+                // –ежим: раздел€ем на prime (макс. цена) и non-prime (остальные)
+                List<TariffWindowWithRollerIssues> windowsPrime;
+                List<TariffWindowWithRollerIssues> windowsNonPrime;
+
+                if (allWindows.Count > 0)
+                {
+                    decimal maxPrice = allWindows.Max(w => w.Price);
+                    windowsPrime    = allWindows.Where(w => w.Price == maxPrice).ToList();
+                    windowsNonPrime = allWindows.Where(w => w.Price != maxPrice).ToList();
+                }
+                else
+                {
+                    windowsPrime    = new List<TariffWindowWithRollerIssues>();
+                    windowsNonPrime = new List<TariffWindowWithRollerIssues>();
+                }
+
+                windowsPrime = windowsPrime
+                    .Select(w => new { w, rand = rnd.Next() })
+                    .OrderBy(x => x.w)
+                    .ThenBy(x => x.rand)
+                    .Select(x => x.w)
+                    .ToList();
+
+                windowsNonPrime = windowsNonPrime
+                    .Select(w => new { w, rand = rnd.Next() })
+                    .OrderBy(x => x.w)
+                    .ThenBy(x => x.rand)
+                    .Select(x => x.w)
+                    .ToList();
+
+                issues.AddRange(AddIssuesFromWindows(windowsPrime,    _template.QuantityPrime));
+                issues.AddRange(AddIssuesFromWindows(windowsNonPrime, _template.QuantityNonPrime));
+            }
+
+            return issues;
+        }
+
+        private List<PresentationObject> AddIssuesFromWindows(List<TariffWindowWithRollerIssues> windows, int quantity)
+        {
+            var issues = new List<PresentationObject>();
+
+            for (int i = 0; i < quantity && windows.Count > 0; i++)
             {
                 try
                 {
@@ -274,30 +329,30 @@ namespace Merlin.Forms
                     Issue issue = _campaign.AddIssue(roller, windows[0], position, grantorID);
                     _campaign.RecalculateAction(false);
                     DataAccessor.CommitTransaction();
-					issue.Refresh();
+                    issue.Refresh();
                     issues.Add(issue);
                 }
-                catch(Exception ex)
+                catch (Exception ex)
                 {
                     DataAccessor.RollbackTransaction();
                     Dictionary<string, object> parameters = CreateMessageParameters();
                     parameters["description"] = Globals.GetMessage(ex.Message, parameters);
                     AddErrorInfo(parameters);
                 }
-                
-				windows.RemoveAt(0);
-			}
 
-			if (issues.Count < _template.Quantity)
-			{
-				Dictionary<string, object> parameters = CreateMessageParameters();
-				parameters["windowsQuantity"] = issues.Count;
-				parameters["requiredQuantity"] = _template.Quantity;
-				parameters["description"] = Globals.GetMessage("NotEnoughWindows", parameters);
-				AddErrorInfo(parameters);
-			}
+                windows.RemoveAt(0);
+            }
 
-			return issues;	
+            if (issues.Count < quantity)
+            {
+                Dictionary<string, object> parameters = CreateMessageParameters();
+                parameters["windowsQuantity"] = issues.Count;
+                parameters["requiredQuantity"] = quantity;
+                parameters["description"] = Globals.GetMessage("NotEnoughWindows", parameters);
+                AddErrorInfo(parameters);
+            }
+
+            return issues;
         }
 
 		private List<PresentationObject> AddModuleIssue()
