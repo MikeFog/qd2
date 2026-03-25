@@ -22,7 +22,7 @@ begin
 	declare cur_massmedias cursor local fast_forward for
 	select c.massmediaID, c.campaignID from dbo.Campaign c where c.actionID = @actionID
 	
-	declare @massmediaID smallint, @campaignID int, @windowID int, @price decimal(18,2)
+	declare @massmediaID smallint, @campaignID int, @windowID int, @price decimal(18,2), @windowDateActual datetime
 	
 	open cur_massmedias
 	fetch next from cur_massmedias into @massmediaID, @campaignID
@@ -31,7 +31,7 @@ begin
 	begin 
 		select @windowID = null, @price = null
 		
-		select top 1 @windowID = tw.windowId, @price = t.price
+		select top 1 @windowID = tw.windowId, @price = t.price, @windowDateActual = tw.windowDateActual
 		from TariffWindow tw
 			inner join dbo.Tariff t on tw.tariffId = t.tariffID
 		where tw.massmediaID = @massmediaID and tw.maxCapacity = 0 and tw.isDisabled = 0 and t.isForModuleOnly = 0
@@ -52,6 +52,7 @@ begin
 		exec dbo.IssueIUD
 			@rollerID = @rollerID,
 			@rollerDuration = @rollerDuration,
+			@issueDate = @windowDateActual,
 			@windowID = @windowID, 
 			@tariffWindowPrice = @price,
 			@campaignID = @campaignID,

@@ -1,4 +1,4 @@
-﻿CREATE FUNCTION dbo.fn_GetMaxUserDiscount
+﻿CREATE FUNCTION [dbo].[fn_GetMaxUserDiscount]
 (
     @userID INT,
     @startDate DATETIME,
@@ -8,35 +8,53 @@ RETURNS DECIMAL(18, 4)
 AS
 BEGIN
     DECLARE @maxRatio DECIMAL(18, 4);
-    DECLARE @totalCoveredSeconds INT;
-    DECLARE @targetDurationSeconds INT;
+    DECLARE @hasGap BIT = 0;
     DECLARE @result DECIMAL(18, 4);
 
     -- 1. Находим максимальный коэффициент из базы за этот период
     SELECT @maxRatio = MAX(maxRatio)
     FROM UserDiscount
     WHERE userID = @userID
-      AND startDate < @finishDate
-      AND finishDate > @startDate;
+      AND startDate <= @finishDate    -- ИСПРАВЛЕНО: было <
+      AND finishDate >= @startDate;   -- ИСПРАВЛЕНО: было >
 
-    -- 2. Считаем общую длительность нашего целевого периода в секундах
-    SET @targetDurationSeconds = DATEDIFF(SECOND, @startDate, @finishDate);
-
-    -- 3. Считаем сумму секунд, которые покрыты записями в базе
-    SELECT @totalCoveredSeconds = SUM(DATEDIFF(SECOND, 
-                CASE WHEN startDate < @startDate THEN @startDate ELSE startDate END, 
-                CASE WHEN finishDate > @finishDate THEN @finishDate ELSE finishDate END
-            ))
-    FROM UserDiscount
-    WHERE userID = @userID
-      AND startDate < @finishDate 
-      AND finishDate > @startDate;
-
-    -- 4. Основная логика выбора
-    -- Если записей нет или сумма секунд покрытия меньше длительности периода, значит есть "дырки"
-    IF ISNULL(@totalCoveredSeconds, 0) < @targetDurationSeconds
+    -- 2. Проверяем наличие реальных гэпов (разрыв больше 1 дня)
+    IF EXISTS (
+        SELECT 1
+        FROM UserDiscount ud1
+        INNER JOIN UserDiscount ud2 ON ud1.userID = ud2.userID
+            AND ud2.startDate > ud1.finishDate
+            AND DATEDIFF(DAY, ud1.finishDate, ud2.startDate) > 1
+        WHERE ud1.userID = @userID
+            AND ud1.startDate <= @finishDate    -- ИСПРАВЛЕНО
+            AND ud1.finishDate >= @startDate    -- ИСПРАВЛЕНО
+            AND ud2.startDate <= @finishDate    -- ИСПРАВЛЕНО
+            AND ud2.finishDate >= @startDate    -- ИСПРАВЛЕНО
+    )
     BEGIN
-        -- Есть зазоры (коэффициент 1.0). Выбираем максимум между 1.0 и тем, что в базе
+        SET @hasGap = 1;
+    END
+
+    -- 3. Проверяем покрытие начала и конца периода
+    IF NOT EXISTS (
+        SELECT 1 FROM UserDiscount
+        WHERE userID = @userID
+            AND startDate <= @startDate
+            AND finishDate >= @startDate
+    )
+    OR NOT EXISTS (
+        SELECT 1 FROM UserDiscount
+        WHERE userID = @userID
+            AND startDate <= @finishDate
+            AND finishDate >= @finishDate
+    )
+    BEGIN
+        SET @hasGap = 1;
+    END
+
+    -- 4. Логика выбора результата
+    IF @hasGap = 1
+    BEGIN
         IF @maxRatio > 1.0
             SET @result = @maxRatio;
         ELSE
@@ -44,7 +62,6 @@ BEGIN
     END
     ELSE
     BEGIN
-        -- Дырок нет, всё покрыто. Берем максимум из базы
         SET @result = ISNULL(@maxRatio, 1.0);
     END
 
