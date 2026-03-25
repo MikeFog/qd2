@@ -93,6 +93,7 @@ namespace Merlin.Forms
         private void cbSplitPrime_CheckedChanged(object sender, EventArgs e)
         {
             numQuantityPrime.Enabled = numQuantityNonPrime.Enabled = cbSplitPrime.Checked;
+            txtQuantity.Enabled = !cbSplitPrime.Checked;
         }
     }
 }
