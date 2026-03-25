@@ -145,6 +145,15 @@ namespace Protector.Properties {
         }
         
         /// <summary>
+        ///   Looks up a localized string similar to Операция выполнена успешно..
+        /// </summary>
+        internal static string OperationSuccess {
+            get {
+                return ResourceManager.GetString("OperationSuccess", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   Looks up a localized string similar to Выберите хотя бы одного пользователя.
         /// </summary>
         internal static string SelectAtLeastOneUser {

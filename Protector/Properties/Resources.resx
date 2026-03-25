@@ -151,4 +151,7 @@
   <data name="SelectAtLeastOneUser" xml:space="preserve">
     <value>Выберите хотя бы одного пользователя</value>
   </data>
+  <data name="OperationSuccess" xml:space="preserve">
+    <value>Операция выполнена успешно.</value>
+  </data>
 </root>

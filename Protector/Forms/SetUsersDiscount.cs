@@ -50,6 +50,8 @@ namespace Protector.Forms
                     userDiscount.IsNew = true;
                     userDiscount.Update();
                 }
+
+                MessageBox.Show(Properties.Resources.OperationSuccess, Application.ProductName, MessageBoxButtons.OK, MessageBoxIcon.Information);
             }
             catch (System.Exception ex)
             {
