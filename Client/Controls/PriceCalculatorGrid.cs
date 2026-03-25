@@ -3,7 +3,6 @@ using Merlin.Classes;
 using System;
 using System.Collections.Generic;
 using System.Data;
-using System.Diagnostics;
 using System.Drawing;
 using System.Linq;
 using System.Windows.Forms;
@@ -217,7 +216,7 @@ namespace Merlin.Controls
             {
                 Name = "colSelected",
                 HeaderText = "",
-                Width = 24,
+                Width = 30,
                 DataPropertyName = ColumnName(PriceCalculatorColumn.IsSelected),
                 TrueValue = true,
                 FalseValue = false,
@@ -234,7 +233,7 @@ namespace Merlin.Controls
                 ReadOnly = true,
             });
 
-            const int NumericColWidth = 80;
+            const int NumericColWidth = 95;
 
             dgvStations.Columns.Add(new DataGridViewTextBoxColumn
             {

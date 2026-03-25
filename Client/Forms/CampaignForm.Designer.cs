@@ -450,7 +450,7 @@ namespace Merlin.Forms {
             // 
             this.splitContainer3.Panel2.Controls.Add(this.splitContainer4);
             this.splitContainer3.Size = new System.Drawing.Size(691, 767);
-            this.splitContainer3.SplitterDistance = 147;
+            this.splitContainer3.SplitterDistance = 290;
             this.splitContainer3.SplitterWidth = 5;
             this.splitContainer3.TabIndex = 0;
             this.splitContainer3.Text = "splitContainer3";
@@ -464,7 +464,7 @@ namespace Merlin.Forms {
             this.lstStat.Location = new System.Drawing.Point(0, 0);
             this.lstStat.Margin = new System.Windows.Forms.Padding(4, 3, 4, 3);
             this.lstStat.Name = "lstStat";
-            this.lstStat.Size = new System.Drawing.Size(691, 147);
+            this.lstStat.Size = new System.Drawing.Size(691, 290);
             this.lstStat.TabIndex = 5;
             // 
             // splitContainer4
@@ -482,8 +482,8 @@ namespace Merlin.Forms {
             // splitContainer4.Panel2
             // 
             this.splitContainer4.Panel2.Controls.Add(this.grdCurrentCampaignIssues);
-            this.splitContainer4.Size = new System.Drawing.Size(691, 615);
-            this.splitContainer4.SplitterDistance = 298;
+            this.splitContainer4.Size = new System.Drawing.Size(691, 472);
+            this.splitContainer4.SplitterDistance = 283;
             this.splitContainer4.SplitterWidth = 5;
             this.splitContainer4.TabIndex = 1;
             // 
@@ -507,7 +507,7 @@ namespace Merlin.Forms {
             this.grdIssues.QuickSearchVisible = false;
             this.grdIssues.SelectedObject = null;
             this.grdIssues.ShowMultiselectColumn = true;
-            this.grdIssues.Size = new System.Drawing.Size(691, 298);
+            this.grdIssues.Size = new System.Drawing.Size(691, 283);
             this.grdIssues.TabIndex = 2;
             // 
             // grdCurrentCampaignIssues
@@ -530,7 +530,7 @@ namespace Merlin.Forms {
             this.grdCurrentCampaignIssues.QuickSearchVisible = false;
             this.grdCurrentCampaignIssues.SelectedObject = null;
             this.grdCurrentCampaignIssues.ShowMultiselectColumn = true;
-            this.grdCurrentCampaignIssues.Size = new System.Drawing.Size(691, 312);
+            this.grdCurrentCampaignIssues.Size = new System.Drawing.Size(691, 184);
             this.grdCurrentCampaignIssues.TabIndex = 1;
             this.grdCurrentCampaignIssues.ObjectDeleted += new FogSoft.WinForm.ObjectDelegate(this.grdCurrentCampaignIssues_ObjectDeleted);
             this.grdCurrentCampaignIssues.ObjectChanged += new FogSoft.WinForm.ObjectDelegate(this.grdCurrentCampaignIssues_ObjectChanged);

@@ -39,7 +39,7 @@ namespace Merlin.Forms.CreateCampaign
             // label1
             // 
             this.label1.AutoSize = true;
-            this.label1.Location = new System.Drawing.Point(14, 10);
+            this.label1.Location = new System.Drawing.Point(14, 6);
             this.label1.Margin = new System.Windows.Forms.Padding(4, 0, 4, 0);
             this.label1.Name = "label1";
             this.label1.Size = new System.Drawing.Size(226, 25);
@@ -52,7 +52,7 @@ namespace Merlin.Forms.CreateCampaign
             | System.Windows.Forms.AnchorStyles.Right)));
             this.cmbCampaignType.Font = new System.Drawing.Font("Tahoma", 8.25F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(204)));
             this.cmbCampaignType.IsNullable = false;
-            this.cmbCampaignType.Location = new System.Drawing.Point(14, 30);
+            this.cmbCampaignType.Location = new System.Drawing.Point(14, 34);
             this.cmbCampaignType.Margin = new System.Windows.Forms.Padding(4, 3, 4, 3);
             this.cmbCampaignType.Name = "cmbCampaignType";
             this.cmbCampaignType.SelectedIndex = -1;
@@ -63,7 +63,7 @@ namespace Merlin.Forms.CreateCampaign
             // label2
             // 
             this.label2.AutoSize = true;
-            this.label2.Location = new System.Drawing.Point(14, 58);
+            this.label2.Location = new System.Drawing.Point(14, 70);
             this.label2.Margin = new System.Windows.Forms.Padding(4, 0, 4, 0);
             this.label2.Name = "label2";
             this.label2.Size = new System.Drawing.Size(109, 25);
@@ -76,7 +76,7 @@ namespace Merlin.Forms.CreateCampaign
             | System.Windows.Forms.AnchorStyles.Right)));
             this.cmbPaymentType.Font = new System.Drawing.Font("Tahoma", 8.25F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(204)));
             this.cmbPaymentType.IsNullable = false;
-            this.cmbPaymentType.Location = new System.Drawing.Point(14, 77);
+            this.cmbPaymentType.Location = new System.Drawing.Point(14, 99);
             this.cmbPaymentType.Margin = new System.Windows.Forms.Padding(4, 3, 4, 3);
             this.cmbPaymentType.Name = "cmbPaymentType";
             this.cmbPaymentType.SelectedIndex = -1;
@@ -89,10 +89,10 @@ namespace Merlin.Forms.CreateCampaign
             this.btnCancel.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Right)));
             this.btnCancel.DialogResult = System.Windows.Forms.DialogResult.Cancel;
             this.btnCancel.FlatStyle = System.Windows.Forms.FlatStyle.System;
-            this.btnCancel.Location = new System.Drawing.Point(534, 62);
+            this.btnCancel.Location = new System.Drawing.Point(512, 80);
             this.btnCancel.Margin = new System.Windows.Forms.Padding(4, 3, 4, 3);
             this.btnCancel.Name = "btnCancel";
-            this.btnCancel.Size = new System.Drawing.Size(93, 25);
+            this.btnCancel.Size = new System.Drawing.Size(121, 41);
             this.btnCancel.TabIndex = 11;
             this.btnCancel.Text = "Отмена";
             // 
@@ -102,10 +102,10 @@ namespace Merlin.Forms.CreateCampaign
             this.btnOk.DialogResult = System.Windows.Forms.DialogResult.OK;
             this.btnOk.Enabled = false;
             this.btnOk.FlatStyle = System.Windows.Forms.FlatStyle.System;
-            this.btnOk.Location = new System.Drawing.Point(534, 30);
+            this.btnOk.Location = new System.Drawing.Point(512, 30);
             this.btnOk.Margin = new System.Windows.Forms.Padding(4, 3, 4, 3);
             this.btnOk.Name = "btnOk";
-            this.btnOk.Size = new System.Drawing.Size(93, 25);
+            this.btnOk.Size = new System.Drawing.Size(121, 44);
             this.btnOk.TabIndex = 10;
             this.btnOk.Text = "Ок";
             this.btnOk.Click += new System.EventHandler(this.btnOk_Click);
@@ -125,14 +125,14 @@ namespace Merlin.Forms.CreateCampaign
             this.grdMassmedia.Font = new System.Drawing.Font("Segoe UI", 9F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(204)));
             this.grdMassmedia.IsHighlightInvertColor = false;
             this.grdMassmedia.IsNeedHighlight = false;
-            this.grdMassmedia.Location = new System.Drawing.Point(14, 156);
+            this.grdMassmedia.Location = new System.Drawing.Point(14, 216);
             this.grdMassmedia.Margin = new System.Windows.Forms.Padding(4, 3, 4, 3);
             this.grdMassmedia.MenuEnabled = false;
             this.grdMassmedia.Name = "grdMassmedia";
             this.grdMassmedia.QuickSearchVisible = false;
             this.grdMassmedia.SelectedObject = null;
             this.grdMassmedia.ShowMultiselectColumn = true;
-            this.grdMassmedia.Size = new System.Drawing.Size(490, 468);
+            this.grdMassmedia.Size = new System.Drawing.Size(490, 442);
             this.grdMassmedia.TabIndex = 12;
             // 
             // grdAgency
@@ -149,20 +149,20 @@ namespace Merlin.Forms.CreateCampaign
             this.grdAgency.Font = new System.Drawing.Font("Segoe UI", 8.25F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(204)));
             this.grdAgency.IsHighlightInvertColor = false;
             this.grdAgency.IsNeedHighlight = false;
-            this.grdAgency.Location = new System.Drawing.Point(14, 630);
+            this.grdAgency.Location = new System.Drawing.Point(14, 664);
             this.grdAgency.Margin = new System.Windows.Forms.Padding(4, 3, 4, 3);
             this.grdAgency.MenuEnabled = false;
             this.grdAgency.Name = "grdAgency";
             this.grdAgency.QuickSearchVisible = false;
             this.grdAgency.SelectedObject = null;
             this.grdAgency.ShowMultiselectColumn = true;
-            this.grdAgency.Size = new System.Drawing.Size(490, 167);
+            this.grdAgency.Size = new System.Drawing.Size(490, 133);
             this.grdAgency.TabIndex = 13;
             // 
             // label3
             // 
             this.label3.AutoSize = true;
-            this.label3.Location = new System.Drawing.Point(14, 105);
+            this.label3.Location = new System.Drawing.Point(14, 139);
             this.label3.Margin = new System.Windows.Forms.Padding(4, 0, 4, 0);
             this.label3.Name = "label3";
             this.label3.Size = new System.Drawing.Size(73, 25);
@@ -175,7 +175,7 @@ namespace Merlin.Forms.CreateCampaign
             | System.Windows.Forms.AnchorStyles.Right)));
             this.lookUpRolType.Font = new System.Drawing.Font("Tahoma", 8.25F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(204)));
             this.lookUpRolType.IsNullable = false;
-            this.lookUpRolType.Location = new System.Drawing.Point(14, 125);
+            this.lookUpRolType.Location = new System.Drawing.Point(14, 170);
             this.lookUpRolType.Margin = new System.Windows.Forms.Padding(4, 3, 4, 3);
             this.lookUpRolType.Name = "lookUpRolType";
             this.lookUpRolType.SelectedIndex = -1;

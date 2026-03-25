@@ -43,12 +43,9 @@ namespace Merlin.Forms
             // 
             // PassportForm
             // 
-            this.AutoScaleDimensions = new System.Drawing.SizeF(96F, 96F);
-            this.ClientSize = new System.Drawing.Size(390, 486);
             this.Name = "RollerPassportForm";
             ((System.ComponentModel.ISupportInitialize)(this.pbFake)).EndInit();
             this.ResumeLayout(false);
-
     }
 
     #endregion

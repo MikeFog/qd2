@@ -223,7 +223,8 @@ namespace Merlin.Controls
                 DataGridViewCheckBoxColumn column = new DataGridViewCheckBoxColumn
                 {
                     ReadOnly = false,
-                    AutoSizeMode = DataGridViewAutoSizeColumnMode.AllCells
+                    AutoSizeMode = DataGridViewAutoSizeColumnMode.AllCells,
+                    Width = 40
                 };
                 return column;
             }

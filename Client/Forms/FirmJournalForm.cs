@@ -43,5 +43,20 @@ namespace Merlin.Forms
             FirmImportJournalForm form = new FirmImportJournalForm();
             form.ShowDialog(this);
         }
+
+        private void InitializeComponent()
+        {
+            this.SuspendLayout();
+            // 
+            // FirmJournalForm
+            // 
+            this.AutoScaleDimensions = new System.Drawing.SizeF(10F, 24F);
+            this.ClientSize = new System.Drawing.Size(1220, 919);
+            this.Font = new System.Drawing.Font("Segoe UI Variable Text", 9F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(204)));
+            this.Name = "FirmJournalForm";
+            this.ResumeLayout(false);
+            this.PerformLayout();
+
+        }
     }
 }
