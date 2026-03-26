@@ -48,10 +48,9 @@ namespace FogSoft.WinForm.Controls
         private const string ROW_STYLE = "row_style";
 
         public SmartGrid()
-		{
-			InitializeComponent();
-			dataGrid.AutoGenerateColumns = false;
-            // Conectar este método a eventos del DataGridView:
+        {
+            InitializeComponent();
+            dataGrid.AutoGenerateColumns = false;
             dataGrid.ColumnWidthChanged += (s, e) => RepositionCheckBoxHeader();
             dataGrid.Scroll += (s, e) => RepositionCheckBoxHeader();
             dataGrid.Sorted += (s, e) => RepositionCheckBoxHeader();
@@ -63,14 +62,14 @@ namespace FogSoft.WinForm.Controls
             {
                 foreach (DataGridViewColumn col in dataGrid.Columns)
                 {
-					if (col.Width > 400)
-					{
-						col.AutoSizeMode = DataGridViewAutoSizeColumnMode.None;
+                    if (col.Width > 400)
+                    {
+                        col.AutoSizeMode = DataGridViewAutoSizeColumnMode.None;
                         col.Width = 400;
-					}
+                    }
                 }
             };
-            dataGrid.RowStateChanged += DataGrid_RowStateChanged;
+            // dataGrid.RowStateChanged -= убрана подписка
             dataGrid.CellContentClick += DataGrid_CellContentClick;
         }
 
@@ -753,7 +752,7 @@ namespace FogSoft.WinForm.Controls
 
 
         private void CheckboxHeader_CheckedChanged(object sender, EventArgs e)
-        {
+		{
 			MultiSelectCheckAll(CheckboxHeader.Checked);
         }
 
@@ -1091,7 +1090,7 @@ namespace FogSoft.WinForm.Controls
                 DataSource.RowFilter = null;
             }
             else
-            {
+			{
 				// Фильтруем данные по введенной подстроке
 				if (DataSource.Table.Columns[currentColumn.DataPropertyName].DataType == typeof(string))
 					DataSource.RowFilter = $"{currentColumn.DataPropertyName} LIKE '%{EscapeLikeValue(searchText)}%'";
@@ -1168,54 +1167,6 @@ namespace FogSoft.WinForm.Controls
             {
                 _lockMultiSelect = false;
             }
-        }
-
-        private void DataGrid_RowStateChanged(object sender, DataGridViewRowStateChangedEventArgs e)
-        {
-            if (_lockMultiSelect)
-                return;
-            // МАГИЯ: Если грид не в фокусе, значит кликал не человек, а отработала автоматика WinForms.
-            // Просто игнорируем это выделение и не чекаем бокс!
-            if (!dataGrid.ContainsFocus) return;
-
-            if (!checkboxes || !showMultiselectColumn)
-                return;
-
-            if (e.Row == null || e.Row.IsNewRow)
-                return;
-
-            if (e.Row.Cells.Count == 0 || !(e.Row.Cells[0] is DataGridViewCheckBoxCell))
-                return;
-
-            // Si la fila está seleccionada, marcamos el checkbox.
-            if (e.Row.Selected)
-            {
-                bool currentValue = ParseHelper.GetBooleanFromObject(e.Row.Cells[0].Value, false);
-
-                if (!currentValue)
-                {
-                    _lockMultiSelect = true;
-                    try
-                    {
-                        e.Row.Cells[0].Value = true;
-
-                        if (e.Row.DataBoundItem is DataRowView drv)
-                            drv[COL_IsSelected] = true;
-
-                        PresentationObject po = CreateObject(e.Row.DataBoundItem as DataRowView);
-                        if (po != null)
-                        {
-                            CheckedStatusChanged(po, true);
-                            FireObjectChecked(po, true);
-                        }
-                    }
-                    finally
-                    {
-                        _lockMultiSelect = false;
-                    }
-                }
-            }
-            // Si la fila no está seleccionada, no hacemos nada. El checkbox se queda como esté.
         }
 
         private void DataGrid_CurrentCellDirtyStateChanged(object sender, EventArgs e)

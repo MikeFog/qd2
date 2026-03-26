@@ -38,7 +38,7 @@ namespace FogSoft.WinForm.Controls {
             // 
             this.lblCaption.BackColor = System.Drawing.SystemColors.InactiveCaption;
             this.lblCaption.Dock = System.Windows.Forms.DockStyle.Top;
-            this.lblCaption.Font = new System.Drawing.Font("Segoe UI", 9F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, ((byte)(204)));
+            this.lblCaption.Font = new System.Drawing.Font("Segoe UI Variable Text", 9F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(204)));
             this.lblCaption.ForeColor = System.Drawing.SystemColors.ActiveCaptionText;
             this.lblCaption.Location = new System.Drawing.Point(0, 0);
             this.lblCaption.Margin = new System.Windows.Forms.Padding(18, 0, 18, 0);
@@ -75,6 +75,7 @@ namespace FogSoft.WinForm.Controls {
             // txQuickSearch
             // 
             this.txQuickSearch.Dock = System.Windows.Forms.DockStyle.Fill;
+            this.txQuickSearch.Font = new System.Drawing.Font("Segoe UI Variable Text", 9F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(204)));
             this.txQuickSearch.Location = new System.Drawing.Point(166, 3);
             this.txQuickSearch.Margin = new System.Windows.Forms.Padding(4, 3, 4, 3);
             this.txQuickSearch.Name = "txQuickSearch";
