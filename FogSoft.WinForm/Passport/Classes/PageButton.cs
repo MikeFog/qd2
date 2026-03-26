@@ -11,7 +11,8 @@ namespace FogSoft.WinForm.Passport.Classes
 		{
 			control.Text = navigator.GetAttribute(Attributes.Caption, "");
 			control.Name = navigator.GetAttribute(Attributes.Name, "");
-		}
+			control.Height = 33;
+        }
 
 		public override void Add2Page(Control parent, int left, int top, PageDimensions dimensions)
 		{

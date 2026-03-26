@@ -50,8 +50,6 @@ namespace Protector.Forms
             // 
             // UserPassport
             // 
-            this.AutoScaleDimensions = new System.Drawing.SizeF(144F, 144F);
-            this.ClientSize = new System.Drawing.Size(804, 734);
             this.Margin = new System.Windows.Forms.Padding(9);
             this.Name = "UserPassport";
             ((System.ComponentModel.ISupportInitialize)(this.pbFake)).EndInit();

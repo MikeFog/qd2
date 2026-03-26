@@ -56,7 +56,7 @@ namespace FogSoft.WinForm.Forms {
             this.tsbHighlight});
             this.tsJournal.Location = new System.Drawing.Point(0, 0);
             this.tsJournal.Name = "tsJournal";
-            this.tsJournal.Size = new System.Drawing.Size(1217, 31);
+            this.tsJournal.Size = new System.Drawing.Size(1409, 31);
             this.tsJournal.TabIndex = 0;
             this.tsJournal.Text = "toolStrip1";
             // 
@@ -144,10 +144,10 @@ namespace FogSoft.WinForm.Forms {
             this.sbJournal.ImageScalingSize = new System.Drawing.Size(24, 24);
             this.sbJournal.Items.AddRange(new System.Windows.Forms.ToolStripItem[] {
             this.slTotal});
-            this.sbJournal.Location = new System.Drawing.Point(0, 694);
+            this.sbJournal.Location = new System.Drawing.Point(0, 841);
             this.sbJournal.Name = "sbJournal";
             this.sbJournal.Padding = new System.Windows.Forms.Padding(1, 0, 16, 0);
-            this.sbJournal.Size = new System.Drawing.Size(1217, 22);
+            this.sbJournal.Size = new System.Drawing.Size(1409, 22);
             this.sbJournal.TabIndex = 1;
             this.sbJournal.Text = "statusStrip1";
             // 
@@ -176,7 +176,7 @@ namespace FogSoft.WinForm.Forms {
             this.grid.QuickSearchVisible = true;
             this.grid.SelectedObject = null;
             this.grid.ShowMultiselectColumn = true;
-            this.grid.Size = new System.Drawing.Size(1217, 663);
+            this.grid.Size = new System.Drawing.Size(1409, 810);
             this.grid.TabIndex = 2;
             this.grid.ObjectDeleted += new FogSoft.WinForm.ObjectDelegate(this.grid_ObjectDeleted);
             this.grid.ColumnSelected += new FogSoft.WinForm.Controls.ColumnSelectedDelegate(this.grid_ColumnSelected);
@@ -185,7 +185,7 @@ namespace FogSoft.WinForm.Forms {
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(10F, 24F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
-            this.ClientSize = new System.Drawing.Size(1217, 716);
+            this.ClientSize = new System.Drawing.Size(1409, 863);
             this.Controls.Add(this.grid);
             this.Controls.Add(this.tsJournal);
             this.Controls.Add(this.sbJournal);

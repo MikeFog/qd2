@@ -57,7 +57,7 @@ namespace FogSoft.WinForm.Passport.Forms {
             this.tabPassport.Margin = new System.Windows.Forms.Padding(4);
             this.tabPassport.Name = "tabPassport";
             this.tabPassport.SelectedIndex = 0;
-            this.tabPassport.Size = new System.Drawing.Size(797, 702);
+            this.tabPassport.Size = new System.Drawing.Size(572, 680);
             this.tabPassport.TabIndex = 14;
             // 
             // tabPage1
@@ -65,7 +65,7 @@ namespace FogSoft.WinForm.Passport.Forms {
             this.tabPage1.Location = new System.Drawing.Point(4, 33);
             this.tabPage1.Margin = new System.Windows.Forms.Padding(4);
             this.tabPage1.Name = "tabPage1";
-            this.tabPage1.Size = new System.Drawing.Size(789, 665);
+            this.tabPage1.Size = new System.Drawing.Size(564, 643);
             this.tabPage1.TabIndex = 0;
             this.tabPage1.Text = "tabPage1";
             this.tabPage1.UseVisualStyleBackColor = true;
@@ -77,10 +77,10 @@ namespace FogSoft.WinForm.Passport.Forms {
             this.flowLayoutPanel1.Controls.Add(this.btnOk);
             this.flowLayoutPanel1.Dock = System.Windows.Forms.DockStyle.Fill;
             this.flowLayoutPanel1.FlowDirection = System.Windows.Forms.FlowDirection.RightToLeft;
-            this.flowLayoutPanel1.Location = new System.Drawing.Point(3, 713);
+            this.flowLayoutPanel1.Location = new System.Drawing.Point(3, 691);
             this.flowLayoutPanel1.Name = "flowLayoutPanel1";
             this.flowLayoutPanel1.Padding = new System.Windows.Forms.Padding(5);
-            this.flowLayoutPanel1.Size = new System.Drawing.Size(799, 51);
+            this.flowLayoutPanel1.Size = new System.Drawing.Size(574, 51);
             this.flowLayoutPanel1.TabIndex = 15;
             this.flowLayoutPanel1.WrapContents = false;
             // 
@@ -89,7 +89,7 @@ namespace FogSoft.WinForm.Passport.Forms {
             this.btnApply.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Right)));
             this.btnApply.Enabled = false;
             this.btnApply.FlatStyle = System.Windows.Forms.FlatStyle.System;
-            this.btnApply.Location = new System.Drawing.Point(669, 5);
+            this.btnApply.Location = new System.Drawing.Point(444, 5);
             this.btnApply.Margin = new System.Windows.Forms.Padding(6, 0, 0, 0);
             this.btnApply.Name = "btnApply";
             this.btnApply.Size = new System.Drawing.Size(120, 33);
@@ -102,7 +102,7 @@ namespace FogSoft.WinForm.Passport.Forms {
             this.btnCancel.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Right)));
             this.btnCancel.DialogResult = System.Windows.Forms.DialogResult.Cancel;
             this.btnCancel.FlatStyle = System.Windows.Forms.FlatStyle.System;
-            this.btnCancel.Location = new System.Drawing.Point(543, 5);
+            this.btnCancel.Location = new System.Drawing.Point(318, 5);
             this.btnCancel.Margin = new System.Windows.Forms.Padding(6, 0, 0, 0);
             this.btnCancel.Name = "btnCancel";
             this.btnCancel.Size = new System.Drawing.Size(120, 33);
@@ -114,7 +114,7 @@ namespace FogSoft.WinForm.Passport.Forms {
             this.btnOk.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Right)));
             this.btnOk.DialogResult = System.Windows.Forms.DialogResult.OK;
             this.btnOk.FlatStyle = System.Windows.Forms.FlatStyle.System;
-            this.btnOk.Location = new System.Drawing.Point(417, 5);
+            this.btnOk.Location = new System.Drawing.Point(192, 5);
             this.btnOk.Margin = new System.Windows.Forms.Padding(6, 0, 0, 0);
             this.btnOk.Name = "btnOk";
             this.btnOk.Size = new System.Drawing.Size(120, 33);
@@ -134,7 +134,7 @@ namespace FogSoft.WinForm.Passport.Forms {
             this.tableLayoutPanel1.RowCount = 2;
             this.tableLayoutPanel1.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Percent, 100F));
             this.tableLayoutPanel1.RowStyles.Add(new System.Windows.Forms.RowStyle());
-            this.tableLayoutPanel1.Size = new System.Drawing.Size(805, 767);
+            this.tableLayoutPanel1.Size = new System.Drawing.Size(580, 745);
             this.tableLayoutPanel1.TabIndex = 16;
             // 
             // TabbedForm
@@ -143,7 +143,7 @@ namespace FogSoft.WinForm.Passport.Forms {
             this.AutoScaleDimensions = new System.Drawing.SizeF(10F, 24F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
             this.CancelButton = this.btnCancel;
-            this.ClientSize = new System.Drawing.Size(805, 767);
+            this.ClientSize = new System.Drawing.Size(580, 745);
             this.Controls.Add(this.tableLayoutPanel1);
             this.Controls.Add(this.pbFake);
             this.Font = new System.Drawing.Font("Segoe UI Variable Text", 9F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(204)));

@@ -59,8 +59,7 @@ namespace Merlin.Forms
             // 
             // AgencyPassportForm
             // 
-            this.AutoScaleDimensions = new System.Drawing.SizeF(144F, 144F);
-            this.ClientSize = new System.Drawing.Size(585, 729);
+
             this.Margin = new System.Windows.Forms.Padding(9, 9, 9, 9);
             this.Name = "AgencyPassportForm";
             ((System.ComponentModel.ISupportInitialize)(this.pbFake)).EndInit();

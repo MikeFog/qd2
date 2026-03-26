@@ -26,7 +26,6 @@ namespace FogSoft.WinForm.Passport.Forms
             // 
             // FilterForm
             // 
-            this.ClientSize = new System.Drawing.Size(805, 767);
             this.Font = new System.Drawing.Font("Segoe UI Variable Text", 9F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(204)));
             this.Name = "FilterForm";
             ((System.ComponentModel.ISupportInitialize)(this.pbFake)).EndInit();
