@@ -267,9 +267,7 @@ namespace Merlin.Forms {
             // 
             // btnShowDisabled
             // 
-            this.btnShowDisabled.Checked = true;
             this.btnShowDisabled.CheckOnClick = true;
-            this.btnShowDisabled.CheckState = System.Windows.Forms.CheckState.Checked;
             this.btnShowDisabled.DisplayStyle = System.Windows.Forms.ToolStripItemDisplayStyle.Image;
             this.btnShowDisabled.Image = ((System.Drawing.Image)(resources.GetObject("btnShowDisabled.Image")));
             this.btnShowDisabled.ImageTransparentColor = System.Drawing.Color.Magenta;
