@@ -280,7 +280,10 @@ namespace Merlin.Forms
 			splitContainer5.Panel1.Controls.Add(tariffGrid);
 			splitContainer5.Panel2Collapsed = !IsPackModuleCampaign;
 
-			//splitContainer5.Panel1.BackColor = Color.Red;
+            //splitContainer5.Panel1.BackColor = Color.Red;
+
+            if (tariffGrid is TariffWindowGrid grid2)
+                grid2.ShowDisabledWindows = btnShowDisabled.Checked;
 
             if (tariffGrid is TariffGridWithCampaignIssues grid)
             {
@@ -788,14 +791,13 @@ namespace Merlin.Forms
 				Application.DoEvents();
 				Cursor = Cursors.WaitCursor;
 
-                ProcessToolbar();
-                SetFormCaption();
+				ProcessToolbar();
+				SetFormCaption();
 				SetTariffGrid();
 
 				if (!(tariffGrid is IRollerGrid))
 					HideGridWithCurrentIssues();
 
-				
 				InitModulesList();
 				if (!IsModuleCampaign && !IsPackModuleCampaign)
 					InitRollersList();
@@ -807,12 +809,11 @@ namespace Merlin.Forms
 					RollerIssuesGrid.ShowUnconfirmed = tbbShowUnconfirmed.Checked;
 				}
 
-				if (_campaign != null)
-					_campaign.DisplayCampaignData(lstStat);
+				_campaign?.DisplayCampaignData(lstStat);
 
-                grdRollers.ObjectDeleted += GrdRollers_ObjectDeleted;
+				grdRollers.ObjectDeleted += GrdRollers_ObjectDeleted;
 			}
-			catch(Exception ex)
+			catch (Exception ex)
 			{
 				ErrorManager.PublishError(ex);
 			}
