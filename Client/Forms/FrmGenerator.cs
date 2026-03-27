@@ -287,8 +287,21 @@ namespace Merlin.Forms
                 if (allWindows.Count > 0)
                 {
                     decimal maxPrice = allWindows.Max(w => w.Price);
-                    windowsPrime    = allWindows.Where(w => w.Price == maxPrice).ToList();
-                    windowsNonPrime = allWindows.Where(w => w.Price != maxPrice).ToList();
+                    windowsPrime = allWindows.Where(w => w.Price == maxPrice).ToList();
+
+                    // ¬тора€ по величине цена Ч наибольша€ среди оставшихс€
+                    var nonPrimePrices = allWindows
+                        .Select(w => w.Price)
+                        .Where(p => p != maxPrice)
+                        .Distinct()
+                        .OrderByDescending(p => p)
+                        .ToList();
+
+                    decimal? secondPrice = nonPrimePrices.Count > 0 ? nonPrimePrices[0] : (decimal?)null;
+
+                    windowsNonPrime = secondPrice.HasValue
+                        ? allWindows.Where(w => w.Price == secondPrice.Value).ToList()
+                        : new List<TariffWindowWithRollerIssues>();
                 }
                 else
                 {
