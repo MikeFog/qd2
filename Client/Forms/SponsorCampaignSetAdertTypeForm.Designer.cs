@@ -45,9 +45,7 @@ namespace Merlin.Forms {
             // 
             // SponsorCampaignSetAdertTypeForm
             // 
-            this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
-            this.ClientSize = new System.Drawing.Size(804, 936);
             this.Cursor = System.Windows.Forms.Cursors.Default;
             this.Name = "SponsorCampaignSetAdertTypeForm";
             this.Text = "Предметы рекламы";

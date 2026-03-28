@@ -44,9 +44,6 @@ namespace Merlin.Forms {
             // 
             // RollerSubstitutionForm
             // 
-            this.AutoScaleDimensions = new System.Drawing.SizeF(10F, 25F);
-            this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
-            this.ClientSize = new System.Drawing.Size(804, 936);
             this.Cursor = System.Windows.Forms.Cursors.Default;
             this.FormBorderStyle = System.Windows.Forms.FormBorderStyle.Sizable;
             this.Name = "RollerSubstitutionForm";

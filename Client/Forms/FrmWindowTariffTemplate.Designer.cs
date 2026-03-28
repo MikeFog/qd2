@@ -33,8 +33,7 @@ namespace Merlin.Forms
 			// 
 			// FrmWindowTariffTemplate
 			// 
-			this.AutoScaleDimensions = new System.Drawing.SizeF(96F, 96F);
-			this.ClientSize = new System.Drawing.Size(373, 447);
+
 			this.Name = "FrmWindowTariffTemplate";
 			this.Text = "Добавление рекламных окон по шаблону";
 			((System.ComponentModel.ISupportInitialize)(this.pbFake)).EndInit();

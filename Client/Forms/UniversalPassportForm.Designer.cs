@@ -49,12 +49,9 @@
             // 
             // UniversalPassportForm
             // 
-            this.AutoScaleDimensions = new System.Drawing.SizeF(96F, 96F);
-            this.ClientSize = new System.Drawing.Size(475, 526);
             this.Name = "UniversalPassportForm";
             ((System.ComponentModel.ISupportInitialize)(this.pbFake)).EndInit();
             this.ResumeLayout(false);
-
 		}
 
 		#endregion
