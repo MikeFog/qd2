@@ -45,41 +45,49 @@ BEGIN
 		
 	CREATE TABLE #tmp1(actionID int primary key,	summa decimal(18,2) NULL, tariffPrice decimal(18,2) null, [priceSumByCampaigns] decimal(18,2) null)
 	INSERT INTO #tmp1 ([actionID], [summa], [tariffPrice], [priceSumByCampaigns]) 
-	SELECT distinct a.actionID, 0, 0, 0
-	FROM 
-		[Action] a
-			Inner Join Campaign c ON c.actionId = a.actionId
-			Inner Join PaymentType pt ON pt.paymentTypeID = c.paymentTypeID
-			inner join [#Agency] ag on c.agencyID = ag.agencyID
-			inner join 
-			(
-				select distinct am.agencyID, max(cast(mm.foreignMassmedia as tinyint)) as foreignMassmedia from AgencyMassmedia am 
-					inner join @massmedias mm on am.massmediaID = mm.massmediaID
-				group by am.agencyID
-			) x on ag.agencyID = x.agencyID and (a.isSpecial = 0 or x.foreignMassmedia = 1) 
-			left join @massmedias umm on c.massmediaID = umm.massmediaID
-			left join GroupMember gm on a.userID = gm.userID
-			left join @ugroups ug on gm.groupID = ug.id
-		WHERE		
-			(a.userID = @loggedUserID or @isRightToViewForeignActions = 1 or (@isRightToViewGroupActions = 1 and ug.id is not null)) and
-			(a.isSpecial = 1 or (c.campaignTypeID <> 4 and umm.massmediaID is not null and ((a.userID = @loggedUserID and umm.myMassmedia = 1) or (a.userID <> @loggedUserID and umm.foreignMassmedia = 1) )) 
-				or (c.campaignTypeID = 4 and not exists(select * 
-														from PackModuleIssue pmi 
-															inner join PackModuleContent pmc on pmi.pricelistID = pmc.pricelistID
-															inner join Module m on pmc.moduleID = m.moduleID
-															left join @massmedias ummm on m.massmediaID = ummm.massmediaID
-														where pmi.campaignID = c.campaignID and (ummm.massmediaID is null or 
-															(a.userID = @loggedUserID and ummm.myMassmedia = 0) or
-															 (a.userID <> @loggedUserID and ummm.foreignMassmedia = 0) )))) and	
-			a.finishDate >= Coalesce(@startOfInterval, a.finishDate) And
-			a.startDate <= Coalesce(@endOfInterval, a.startDate) And
-			a.userId = Coalesce(@userId, a.userId) And
-			(pt.isHidden = 0 or @isHideWhite = 0) And
-			(pt.isHidden = 1 or @isHideBlack = 0) and
-			((pt.IsHidden = 1 and @showBlack = 1)  or
-			(pt.IsHidden = 0 and @showWhite = 1)) and
-			a.[firmID] = COALESCE(@firmID, a.[firmID]) 
-			AND (a.[isConfirmed] = 1)
+SELECT distinct a.actionID, 0, 0, 0
+FROM 
+	[Action] a
+		Inner Join Campaign c ON c.actionId = a.actionId
+		Inner Join PaymentType pt ON pt.paymentTypeID = c.paymentTypeID
+		inner join [#Agency] ag on c.agencyID = ag.agencyID
+		left join @massmedias umm on c.massmediaID = umm.massmediaID
+		left join GroupMember gm on a.userID = gm.userID
+		left join @ugroups ug on gm.groupID = ug.id
+WHERE		
+		(a.userID = @loggedUserID 
+		 or @isRightToViewForeignActions = 1 
+		 or (@isRightToViewGroupActions = 1 and ug.id is not null)) and
+
+		(a.isSpecial = 1 
+		 or (c.campaignTypeID <> 4 
+		     and umm.massmediaID is not null 
+		     and ((a.userID = @loggedUserID and umm.myMassmedia = 1) 
+		          or (a.userID <> @loggedUserID and umm.foreignMassmedia = 1)))
+		 or (c.campaignTypeID = 4 
+		     and not exists(
+				select *
+				from PackModuleIssue pmi 
+					inner join PackModuleContent pmc on pmi.pricelistID = pmc.pricelistID
+					inner join Module m on pmc.moduleID = m.moduleID
+					left join @massmedias ummm on m.massmediaID = ummm.massmediaID
+				where pmi.campaignID = c.campaignID 
+				  and (
+						ummm.massmediaID is null 
+						or (a.userID = @loggedUserID and ummm.myMassmedia = 0)
+						or (a.userID <> @loggedUserID and ummm.foreignMassmedia = 0)
+				  )
+		     )
+		)) and	
+		a.finishDate >= Coalesce(@startOfInterval, a.finishDate) and
+		a.startDate <= Coalesce(@endOfInterval, a.startDate) and
+		a.userId = Coalesce(@userId, a.userId) and
+		(pt.isHidden = 0 or @isHideWhite = 0) and
+		(pt.isHidden = 1 or @isHideBlack = 0) and
+		((pt.IsHidden = 1 and @showBlack = 1)  
+		 or (pt.IsHidden = 0 and @showWhite = 1)) and
+		a.[firmID] = COALESCE(@firmID, a.[firmID]) and
+		a.[isConfirmed] = 1
 		
 	Declare cur_Companies Cursor local fast_forward
 	For

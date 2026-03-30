@@ -77,19 +77,18 @@ begin
 	from
 		[Action] a 
 		inner join Campaign c ON c.[actionID] = a.[actionID]
-		inner join 
-		(
-			select distinct am.agencyID, max(cast(mm.foreignMassmedia as tinyint)) as foreignMassmedia from AgencyMassmedia am 
-				inner join @massmedias mm on am.massmediaID = mm.massmediaID
-			group by am.agencyID
-		) x on c.agencyID = x.agencyID and (a.isSpecial = 0 or x.foreignMassmedia = 1) 
 		inner join PaymentType pt On c.paymentTypeId = pt.paymentTypeId
 		left join @massmedias umm on c.massmediaID = umm.massmediaID
 		left join GroupMember gm on a.userID = gm.userID
 		left join @ugroups ug on gm.groupID = ug.id
 	Where	
 		(a.userID = @loggedUserID or @isRightToViewForeignActions = 1 or (@isRightToViewGroupActions = 1 and ug.id is not null)) 
-		and (a.isSpecial = 1 or c.campaignTypeID = 4 or umm.massmediaID is not null and ((a.userID = @loggedUserID and umm.myMassmedia = 1) or (a.userID <> @loggedUserID and umm.foreignMassmedia = 1))) 
+		and (
+			a.isSpecial = 1 
+			or c.campaignTypeID = 4 
+			or umm.massmediaID is not null 
+			and ((a.userID = @loggedUserID and umm.myMassmedia = 1) or (a.userID <> @loggedUserID and umm.foreignMassmedia = 1))
+		) 
 		and	a.isSpecial = 0	AND a.[actionID] = COALESCE(@actionID, a.[actionID])
 		and a.firmID = isnull(@firmID, a.firmID)
 		and c.agencyId = @agencyId AND
