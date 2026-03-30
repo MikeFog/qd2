@@ -680,7 +680,7 @@ namespace Merlin.Classes
 			lstStat.Items.Add("Выпусков: " + IssuesCount);
 			lstStat.Items.Add("Общее время: " + DateTimeUtils.Time2String(IssuesDuration));
 			lstStat.Items.Add("Тариф: " + TariffPrice.ToString("c"));
-			lstStat.Items.Add("Коэффициент: " + Discount);
+			lstStat.Items.Add("Коэффициент: " + Discount.ToString("0.00"));
 			lstStat.Items.Add("Итого: " + Price.ToString("c"));
 
 			if (CampaignType == CampaignTypes.Sponsor)
