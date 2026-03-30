@@ -222,34 +222,51 @@ namespace Merlin.Forms
 			}
 		}
 
-		private void SetDiscount(object sender, EventArgs e)
+		internal static bool SetManagerDiscount(Campaign campaign)
+		{
+			if (campaign == null || campaign.TariffPrice == 0)
+			{
+                FogSoft.WinForm.Forms.MessageBox.ShowExclamation("Невозможно установить итоговую стоимость компании и менеджерскую скидку, так как стоимость компании по тарифам равна нулю.");
+                return false;
+            }
+
+			ManagerDiscountForm fDiscount = new ManagerDiscountForm(campaign);
+			if (fDiscount.ShowDialog() == DialogResult.OK)
+			{
+				Globals.MdiParent.UseWaitCursor = true;
+				Application.DoEvents();
+
+				try
+				{
+					DataAccessor.BeginTransaction();
+					campaign.SetFinalPrice(fDiscount.FinalPrice, fDiscount.CurrentDate, fDiscount.Grantor == null ? null : (int?)fDiscount.Grantor.Id);
+					campaign.Action.Recalculate(refreshFlag: true, todayDate: fDiscount.CurrentDate);
+					DataAccessor.CommitTransaction();
+				}
+				catch
+				{
+					DataAccessor.RollbackTransaction();
+					throw;
+				}
+				finally
+				{
+                    Globals.MdiParent.UseWaitCursor = false;
+                }
+
+				return true;
+            }
+			return false;
+        }
+
+        private void SetDiscount(object sender, EventArgs e)
 		{
 			try
 			{
-				if (SelectedCampaign == null || SelectedCampaign.TariffPrice == 0) return;
-
-				ManagerDiscountForm fDiscount = new ManagerDiscountForm(SelectedCampaign);
-				if (fDiscount.ShowDialog(this) == DialogResult.OK)
-				{
-					UseWaitCursor = true;
-                    Application.DoEvents();
-
-                    Campaign campaign = SelectedCampaign;
-					try
-					{
-						DataAccessor.BeginTransaction();
-						campaign.SetFinalPrice(fDiscount.FinalPrice, fDiscount.CurrentDate, fDiscount.Grantor == null ? null : (int?)fDiscount.Grantor.Id);
-						_action.Recalculate(refreshFlag: true, todayDate: fDiscount.CurrentDate);
-                        DataAccessor.CommitTransaction();
-                    }
-					catch
-					{
-						DataAccessor.RollbackTransaction();
-						throw;
-                    }
-
-                    campaign.Refresh();
-					grdCampaign.UpdateRow(campaign);			
+                Campaign campaign = SelectedCampaign;
+                if (SetManagerDiscount(campaign))
+				{ 
+					campaign.Refresh();
+                    grdCampaign.UpdateRow(campaign);			
 					RefreshActionStats(false);
 				}
 			}
@@ -314,8 +331,12 @@ namespace Merlin.Forms
         {
             try
             {
-				//if (_action.TotalPrice == 0) return;
-
+				if (_action.TariffPrice == 0)
+				{
+					FogSoft.WinForm.Forms.MessageBox.ShowExclamation("Невозможно установить итоговую стоимость акции и менеджерскую скидку, так как стоимость акции по тарифам равна нулю.");
+                    return;
+                }
+				
                 ActionFinalPriceForm form = new ActionFinalPriceForm(_action);
                 if (form.ShowDialog(this) == DialogResult.OK)
                 {

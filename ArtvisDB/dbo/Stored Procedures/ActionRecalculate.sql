@@ -119,6 +119,7 @@ WHILE	@@fetch_status = 0 begin
 	exec hlp_CompanyDiscountCalculate @massMediaID, @campaignTypeID, @startDate, @tariffPrice, @campaignDiscount output
 
 	If @isNewCampaign = 1 and @issuesCount + @programsCount > 0 -- т.е. была новой но в нее вот только что добавили рекламные выпуски
+		or @isNewCampaign = 0 and @issuesCount + @programsCount = 0  -- не новая, но удалили все рекламные выпуски, т.е. она стала "новой"
 		/*
 		SELECT TOP 1 @managerDiscountCampaign = IsNull(maxRatio, 1)
 		FROM [dbo].[UserDiscount]
