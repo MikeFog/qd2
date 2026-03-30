@@ -335,6 +335,9 @@
     <EmbeddedResource Include="Forms\FirmImportJournalForm.resx">
       <DependentUpon>FirmImportJournalForm.cs</DependentUpon>
     </EmbeddedResource>
+    <EmbeddedResource Include="Forms\FirmJournalForm.resx">
+      <DependentUpon>FirmJournalForm.cs</DependentUpon>
+    </EmbeddedResource>
     <EmbeddedResource Include="Forms\FrmTemplate2.resx">
       <DependentUpon>FrmTemplate2.cs</DependentUpon>
     </EmbeddedResource>

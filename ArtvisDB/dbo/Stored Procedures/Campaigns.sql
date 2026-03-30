@@ -44,7 +44,7 @@ begin
 		INNER JOIN [Action] a ON cm.[actionID] = a.[actionID]
 		INNER JOIN [Firm] f ON a.[firmID] = f.[firmID]
 		LEFT JOIN vMassMedia mm ON mm.massmediaID = cm.massmediaID
-			AND cm.massmediaID = COALESCE(@massmediaID, cm.massmediaID)
+			--AND cm.massmediaID = COALESCE(@massmediaID, cm.massmediaID)
 		LEFT JOIN MassmediaGroup mg on mg.massmediaGroupID = mm.massmediaGroupID
 		INNER JOIN iCampaignType ct ON ct.campaignTypeID = cm.campaignTypeID
 		INNER JOIN PaymentType pt ON pt.paymentTypeID = cm.paymentTypeID

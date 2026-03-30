@@ -32,7 +32,7 @@ BEGIN
 		return
 	end 
 
-	DECLARE @deletedActionID INT
+	DECLARE @deletedActionID INT, @managerDiscount DECIMAL(18, 10), @managerDiscount2 DECIMAL(18, 10)
 	
 	IF @firstActionID < @secondActionID
 	BEGIN
@@ -47,17 +47,17 @@ BEGIN
 	
 	DECLARE cur_Campaigns CURSOR local fast_forward
 	FOR
-	SELECT c.[campaignID], c.[campaignTypeID]
+	SELECT c.[campaignID], c.[campaignTypeID], c.managerDiscount
 	FROM [Campaign] c
 	WHERE c.[actionID] = @deletedActionID
 
 	DECLARE @campaignID INT, @campaignNewID INT, @campaignType SMALLINT
 	OPEN cur_Campaigns
-	FETCH NEXT FROM cur_Campaigns INTO @campaignID, @campaignType
+	FETCH NEXT FROM cur_Campaigns INTO @campaignID, @campaignType, @managerDiscount
 
 	WHILE @@FETCH_STATUS = 0 BEGIN
 		SET @campaignNewID = 0
-		SELECT @campaignNewID = c1.[campaignID]
+		SELECT @campaignNewID = c1.[campaignID], @managerDiscount2 = c1.managerDiscount
 				FROM [Campaign] c1 
 					INNER JOIN [Campaign] c2 ON 
 						coalesce(c1.[massmediaID], -1) = coalesce(c2.[massmediaID], -1)
@@ -77,9 +77,13 @@ BEGIN
 			IF @campaignType = 2
 				UPDATE [ProgramIssue] SET [campaignID] = @campaignNewID WHERE [campaignID] = @campaignID
 			DELETE FROM [Campaign] WHERE [campaignID] = @campaignID
+		
+			UPDATE [Campaign] 
+			SET managerDiscount = GREATEST(@managerDiscount, @managerDiscount2) 
+			WHERE campaignID = @campaignNewID
 		END
 		
-		FETCH NEXT FROM cur_Campaigns INTO @campaignID, @campaignType
+		FETCH NEXT FROM cur_Campaigns INTO @campaignID, @campaignType, @managerDiscount
 	end
 	
 	close cur_Campaigns

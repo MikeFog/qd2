@@ -24,12 +24,16 @@
     [windowNextId]               INT                  NULL,
     [isMarked]                   BIT                  CONSTRAINT [DF_TariffWindow_isMarked] DEFAULT ((0)) NOT NULL,
     [duration_total]             [dbo].[timeDuration] CONSTRAINT [DF_TariffWindow_duration_total] DEFAULT ((0)) NOT NULL,
+    [windowTime]                 AS                   (CONVERT([time](0),[windowDateActual],0)) PERSISTED,
     CONSTRAINT [PK_TariffWindow] PRIMARY KEY NONCLUSTERED ([windowId] ASC),
     CONSTRAINT [FK_TariffWindow_Massmedia_OrigDate] FOREIGN KEY ([massmediaID]) REFERENCES [dbo].[MassMedia] ([massmediaID]),
     CONSTRAINT [FK_TariffWindow_Tariff] FOREIGN KEY ([tariffId]) REFERENCES [dbo].[Tariff] ([tariffID]),
     CONSTRAINT [FK_TariffWindow_TariffWindowNext] FOREIGN KEY ([windowNextId]) REFERENCES [dbo].[TariffWindow] ([windowId]),
     CONSTRAINT [FK_TariffWindow_TariffWindowUnion] FOREIGN KEY ([windowPrevId]) REFERENCES [dbo].[TariffWindow] ([windowId])
 );
+
+
+
 
 
 
@@ -95,4 +99,10 @@ GO
 CREATE NONCLUSTERED INDEX [IX_TariffWindow_mm_day]
     ON [dbo].[TariffWindow]([massmediaID] ASC, [dayActual] ASC)
     INCLUDE([tariffId], [duration], [windowId], [windowNextId], [windowPrevId], [duration_total], [maxCapacity]);
+
+
+GO
+CREATE NONCLUSTERED INDEX [IX_TariffWindow_mm_day_windowTime]
+    ON [dbo].[TariffWindow]([massmediaID] ASC, [dayActual] ASC, [windowTime] ASC)
+    INCLUDE([duration], [tariffId], [timeInUseConfirmed], [windowId], [maxCapacity], [capacityInUseConfirmed]);
 

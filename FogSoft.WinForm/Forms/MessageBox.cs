@@ -77,8 +77,14 @@ namespace FogSoft.WinForm.Forms
 
 		public static void ShowInformation(string text)
 		{
-			Show(Application.ProductName, text, null, MessageBoxIcon.Information, MessageBoxButtons.Ok);
-		}
+            System.Windows.Forms.MessageBox.Show(
+				text, // Message
+				Application.ProductName,                                  // Title/Caption
+				System.Windows.Forms.MessageBoxButtons.OK,                                // Buttons
+				System.Windows.Forms.MessageBoxIcon.Information                               // The Icon
+			);
+            //Show(Application.ProductName, text, null, MessageBoxIcon.Information, MessageBoxButtons.Ok);
+        }
 
 		public static void ShowExclamation(string title, string text)
 		{
@@ -97,35 +103,22 @@ namespace FogSoft.WinForm.Forms
             //Show(Application.ProductName, text, null, MessageBoxIcon.Exclamation, MessageBoxButtons.Ok);
 		}
 
-		public static DialogResult ShowQuestion(string title, string text)
-		{
-			return Show(title, text, null, MessageBoxIcon.Question, MessageBoxButtons.YesNo);
-		}
-
 		public static DialogResult ShowQuestion(string text)
 		{
-			return Show(Application.ProductName, text, null, MessageBoxIcon.Question, MessageBoxButtons.YesNo);
-		}
-
-		public static DialogResult ShowQuestion(string title, string text, MessageBoxButtons buttons)
-		{
-			return Show(title, text, null, MessageBoxIcon.Question, buttons);
-		}
-
-		public static DialogResult ShowQuestion(string text, MessageBoxButtons buttons)
-		{
-			return Show(Application.ProductName, text, null, MessageBoxIcon.Question, buttons);
-		}
-
-		public static void ShowCompleted(string title, string text)
-		{
-			Show(title, text, null, MessageBoxIcon.Completed, MessageBoxButtons.Ok);
-		}
+            return System.Windows.Forms.MessageBox.Show(
+				text, // Message
+				Application.ProductName,                                  // Title/Caption
+				System.Windows.Forms.MessageBoxButtons.YesNo,                                // Buttons
+				System.Windows.Forms.MessageBoxIcon.Question                              // The Icon
+			);
+            //return Show(Application.ProductName, text, null, MessageBoxIcon.Question, MessageBoxButtons.YesNo);
+        }
 
 		public static void ShowCompleted(string text)
 		{
-			Show(Application.ProductName, text, null, MessageBoxIcon.Completed, MessageBoxButtons.Ok);
-		}
+			//Show(Application.ProductName, text, null, MessageBoxIcon.Completed, MessageBoxButtons.Ok);
+			ShowInformation(text);
+        }
 
 		public static DialogResult Show(string title, string text, string advancedtext, MessageBoxIcon icon, MessageBoxButtons buttons)
 		{

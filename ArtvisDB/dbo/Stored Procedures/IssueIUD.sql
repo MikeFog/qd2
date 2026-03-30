@@ -105,6 +105,7 @@ begin
 	return
 end 
 
+--select @loggedUserId, @managerDiscount, @campaignStartDate, @campaignFinishDate
 if @actionName in ('AddItem', 'UpdateItem') 
 	and dbo.[fn_IsAcceptRatioForUser](@loggedUserId, @managerDiscount, @campaignStartDate, @campaignFinishDate) = 0
 begin 
@@ -187,6 +188,8 @@ IF @actionName = 'AddItem' BEGIN
 		RAISERROR('RollerWithoutAdvertType', 16, 1)
 		RETURN 
 	End
+
+	--select 1, @issueDate
 
 	Exec @res = hlp_IssueVerify	
 		Null,

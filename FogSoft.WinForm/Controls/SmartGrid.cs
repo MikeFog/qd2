@@ -186,6 +186,9 @@ namespace FogSoft.WinForm.Controls
 			get { return dataGrid.DataSource as DataView; }
 			set
 			{
+                // Сохраняем PK чекнутых объектов ДО Clear()
+                HashSet<string> checkedKeys = SaveCheckedKeys();
+
                 Clear();
 				if(value == null) return;
 
@@ -196,6 +199,12 @@ namespace FogSoft.WinForm.Controls
                         DataColumn checkColumn = new DataColumn(COL_IsSelected, typeof(bool));
                         checkColumn.DefaultValue = false;
                         value.Table.Columns.Add(checkColumn);
+                    }
+                    else if (checkboxes && value.Table.Columns.Contains(COL_IsSelected))
+                    {
+                        // Таблица переиспользуется — сбрасываем старые значения чекбоксов
+                        foreach (DataRow row in value.Table.Rows)
+                            row[COL_IsSelected] = false;
                     }
 
                     SetTablePKColumn(value.Table);
@@ -208,6 +217,10 @@ namespace FogSoft.WinForm.Controls
 						SelectedObject = selectedObject;
                     if (checkboxes && showMultiselectColumn)
                         AddCheckBox2ColumnHeader();
+
+                    // Восстанавливаем чекбоксы по сохранённым PK
+                    if (checkboxes && checkedKeys.Count > 0)
+                        RestoreCheckedKeys(value.Table, checkedKeys);
 
                     RefreshDependantGrid();
 					FireObjectSelected();
@@ -575,7 +588,45 @@ namespace FogSoft.WinForm.Controls
 			}
 		}
 
-		private void SetColumnHeaders(DataColumnCollection columns)
+        private HashSet<string> SaveCheckedKeys()
+        {
+            var keys = new HashSet<string>();
+            if (!checkboxes || added2Checked == null || entity == null) return keys;
+
+            foreach (PresentationObject po in added2Checked)
+                keys.Add(BuildCheckedKey(po.IDs));
+
+            return keys;
+        }
+
+        private static string BuildCheckedKey(object[] ids)
+        {
+            return string.Join("|", ids);
+        }
+
+        private void RestoreCheckedKeys(DataTable table, HashSet<string> checkedKeys)
+        {
+            // Итерируем через DefaultView, а не table.Rows,
+            // чтобы учитывать активный RowFilter
+            DataView view = table.DefaultView;
+            for (int i = 0; i < view.Count; i++)
+            {
+                DataRow row = view[i].Row;
+
+                object[] pkValues = new object[entity.PKColumns.Length];
+                for (int j = 0; j < entity.PKColumns.Length; j++)
+                    pkValues[j] = row[entity.PKColumns[j]];
+
+                if (checkedKeys.Contains(BuildCheckedKey(pkValues)))
+                {
+                    row[COL_IsSelected] = true;
+                    PresentationObject po = entity.CreateObject(row);
+                    added2Checked.Add(po);
+                }
+            }
+        }
+
+        private void SetColumnHeaders(DataColumnCollection columns)
 		{
 			if(checkboxes) AddMultiSelectColumn();
 
@@ -1122,27 +1173,32 @@ namespace FogSoft.WinForm.Controls
 
 		private void SelectObject()
 		{
-			if(selectedObject == null) return;
-			string query = selectedObject.PKWhereClause;
-			DataView dataView = (DataView)dataGrid.DataSource;
+			if (selectedObject == null) return;
+			if (dataGrid.DataSource == null) return;
 
-			DataRow[] rows = dataView.Table.Select(query, dataView.Sort);
-			if(rows.Length > 0)
-			{
-				DataRow[] tempRows;
-				if(dataView.Sort == string.Empty)
-				{
-					//Если сортировка не задана - просто находим заданную строку в массиве строк DataTable
-					tempRows = new DataRow[dataView.Count];
-					dataView.Table.Rows.CopyTo(tempRows, 0);
-				}
-				else
-					tempRows = dataView.Table.Select(dataView.RowFilter, dataView.Sort);
+            string query = selectedObject.PKWhereClause;
+            DataView dataView = (DataView)dataGrid.DataSource;
 
-				int rowIndex = Array.IndexOf(tempRows, rows[0]);
-				bm.Position = rowIndex;
-			}
-		}
+            DataRow[] rows = dataView.Table.Select(query, dataView.Sort);
+            if (rows.Length > 0)
+            {
+                DataRow[] tempRows;
+                if (dataView.Sort == string.Empty)
+                {
+                    // Используем Table.Rows.Count, а не dataView.Count:
+                    // dataView.Count — видимые строки, Table.Rows.Count — все строки таблицы,
+                    // именно столько элементов скопирует CopyTo.
+                    tempRows = new DataRow[dataView.Table.Rows.Count];
+                    dataView.Table.Rows.CopyTo(tempRows, 0);
+                }
+                else
+                    tempRows = dataView.Table.Select(dataView.RowFilter, dataView.Sort);
+
+                int rowIndex = Array.IndexOf(tempRows, rows[0]);
+                if (rowIndex >= 0)
+                    bm.Position = rowIndex;
+            }
+        }
 
         private void DataGrid_CellContentClick(object sender, DataGridViewCellEventArgs e)
         {

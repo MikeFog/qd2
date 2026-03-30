@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Data;
 using System.Data.SqlClient;
+using System.Diagnostics;
 using System.Linq;
 using System.Security.Cryptography;
 using System.Text;
@@ -301,7 +302,8 @@ namespace FogSoft.WinForm.DataAccess
 					parameters[ParamNames.LoggedUserID] = SecurityManager.LoggedUser.Id;
                 DataSet ds;
 
-				if (_transaction != null)
+
+                if (_transaction != null)
 				{
 					using (var scope = DbExecutionScope.Start(procedureName, connectionTimeout, cached: false))
 					{
@@ -332,7 +334,9 @@ namespace FogSoft.WinForm.DataAccess
 										transaction = connection.BeginTransaction();
 									try
 									{
-										ds = SqlHelper.ExecuteDataset(_transaction ?? transaction, CommandType.StoredProcedure, procedureName, connectionTimeout, _commandParameters);
+                                        string execScript = BuildExecScript(procedureName, _commandParameters);
+                                        Debug.Print(execScript);
+                                        ds = SqlHelper.ExecuteDataset(_transaction ?? transaction, CommandType.StoredProcedure, procedureName, connectionTimeout, _commandParameters);
 										transaction?.Commit();
 									}
 									catch
@@ -352,7 +356,9 @@ namespace FogSoft.WinForm.DataAccess
 									ds = SqlHelper.ExecuteDataset(connection, CommandType.StoredProcedure, procedureName, connectionTimeout, _commandParameters);
 									if (cachingTime > 0)
 										_cache.Set(key, ds, TimeSpan.FromSeconds(cachingTime));
-								}
+                                    string execScript = BuildExecScript(procedureName, _commandParameters);
+                                    Debug.Print(execScript);
+                                }
 							}
                             scope.SetRows(ds.Tables.Count > 0 ? ds.Tables[0].Rows.Count : 0);
                         }
@@ -427,6 +433,9 @@ namespace FogSoft.WinForm.DataAccess
 						connection.Close();
 					}
 				}
+                string execScript = BuildExecScript(procedureName, _commandParameters);
+				Debug.WriteLine(execScript);
+               
                 foreach (KeyValuePair<string, object> kvp in GetOutParameters())
 					parameters[kvp.Key] = kvp.Value;
 			}
@@ -436,9 +445,18 @@ namespace FogSoft.WinForm.DataAccess
 				{
 					exp.Data.Add("Procedure", procedureName);
                     foreach (SqlParameter parameter in _commandParameters)
-						exp.Data.Add("Parameter: " + parameter.ParameterName, parameter.Value);
-				}
-				throw;
+                    exp.Data.Add("Parameter: " + parameter.ParameterName, parameter.Value);
+                }
+
+                // Строка для запуска в Management Studio
+                try
+                {
+                    string execScript = BuildExecScript(procedureName, _commandParameters);
+                    exp.Data["ExecScript"] = execScript;
+                }
+                catch { /* не ломаем оригинальный exception */ }
+
+                throw;
 			}
 		}
 
@@ -652,5 +670,81 @@ end
                 return BitConverter.ToString(hashBytes).Replace("-", "").ToLower();
             }
         }
-    }
+
+        /// <summary>
+        /// Строит строку EXEC для запуска процедуры в Management Studio.
+        /// </summary>
+        private static string BuildExecScript(string procedureName, SqlParameter[] parameters)
+        {
+            if (parameters == null || parameters.Length == 0)
+                return $"EXEC [dbo].[{procedureName.TrimStart('[').TrimEnd(']')}]";
+
+            var sb = new StringBuilder();
+            sb.AppendLine($"EXEC\t[dbo].[{procedureName.TrimStart('[').TrimEnd(']')}]");
+
+            for (int i = 0; i < parameters.Length; i++)
+            {
+                SqlParameter p = parameters[i];
+                bool isLast = i == parameters.Length - 1;
+                bool isOutput = p.Direction == ParameterDirection.Output
+                             || p.Direction == ParameterDirection.InputOutput;
+
+                string valueStr = FormatSqlParamValue(p);
+                string outputSuffix = isOutput ? " OUTPUT" : string.Empty;
+                string comma = isLast ? string.Empty : ",";
+
+                sb.AppendLine($"\t\t{p.ParameterName} = {valueStr}{outputSuffix}{comma}");
+            }
+
+            return sb.ToString();
+        }
+
+        private static string FormatSqlParamValue(SqlParameter p)
+        {
+            // OUTPUT-параметры без входного значения
+            if (p.Direction == ParameterDirection.Output)
+                return p.ParameterName;
+
+            object val = p.Value;
+            if (val == null || val == DBNull.Value)
+                return "NULL";
+
+            switch (p.SqlDbType)
+            {
+                case SqlDbType.Char:
+                case SqlDbType.NChar:
+                case SqlDbType.VarChar:
+                case SqlDbType.NVarChar:
+                case SqlDbType.Text:
+                case SqlDbType.NText:
+                    // Экранируем одиночные кавычки внутри строки
+                    string escaped = val.ToString().Replace("'", "''");
+                    return $"N'{escaped}'";
+
+                case SqlDbType.DateTime:
+                case SqlDbType.DateTime2:
+                case SqlDbType.Date:
+                case SqlDbType.SmallDateTime:
+                    if (val is DateTime dt)
+                        return $"N'{dt:dd.MM.yyyy HH:mm:ss}'";
+                    return $"N'{val}'";
+
+                case SqlDbType.Bit:
+                    if (val is bool b)
+                        return b ? "1" : "0";
+                    return val.ToString();
+
+                case SqlDbType.Decimal:
+                case SqlDbType.Money:
+                case SqlDbType.SmallMoney:
+                case SqlDbType.Float:
+                case SqlDbType.Real:
+                    // Числа с плавающей точкой — инвариантная культура
+                    return Convert.ToDecimal(val).ToString(System.Globalization.CultureInfo.InvariantCulture);
+
+                default:
+                    return val.ToString();
+            }
+        }
+	}
 }

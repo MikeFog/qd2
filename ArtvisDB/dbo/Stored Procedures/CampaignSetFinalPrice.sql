@@ -63,6 +63,8 @@ SELECT @managerDiscount = @finalPrice / ( price * @packDiscount)
 FROM [Campaign]
 WHERE [campaignID] = @campaignId
 
+--select  @loggedUserId, @managerDiscount, @campaignStartDate, @campaignFinishDate
+
 IF (@grantorUserId IS NULL OR dbo.[fn_IsAcceptRatioForUser](@grantorUserId, @managerDiscount, @campaignStartDate, @campaignFinishDate) = 0 ) 
 	AND dbo.[fn_IsAcceptRatioForUser](@loggedUserId, @managerDiscount, @campaignStartDate, @campaignFinishDate) = 0
 	BEGIN

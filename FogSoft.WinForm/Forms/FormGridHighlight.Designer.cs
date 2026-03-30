@@ -33,18 +33,13 @@
             // 
             // FormGridHighlight
             // 
-            this.AutoScaleDimensions = new System.Drawing.SizeF(144F, 144F);
-            this.ClientSize = new System.Drawing.Size(1206, 1404);
             this.Font = new System.Drawing.Font("Segoe UI", 9F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(204)));
             this.Margin = new System.Windows.Forms.Padding(9, 9, 9, 9);
-            this.MinimumSize = new System.Drawing.Size(1228, 1460);
             this.Name = "FormGridHighlight";
             this.Text = "Подсветка значений";
             ((System.ComponentModel.ISupportInitialize)(this.pbFake)).EndInit();
             this.ResumeLayout(false);
-
 		}
-
 		#endregion
 	}
 }

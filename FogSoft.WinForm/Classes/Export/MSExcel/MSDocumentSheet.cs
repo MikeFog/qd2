@@ -24,12 +24,28 @@ namespace FogSoft.WinForm.Classes.Export.MSExcel
 
             // «апоминаем позиции DateTime-€чеек ƒќ конвертации в OADate
             var monthYearCells = new System.Collections.Generic.List<(int r, int c)>();
+            var russianMonths = new System.Collections.Generic.Dictionary<string, int>(System.StringComparer.OrdinalIgnoreCase)
+            {
+                { "€нварь",  1 }, { "февраль",  2 }, { "март",     3 },
+                { "апрель",  4 }, { "май",      5 }, { "июнь",     6 },
+                { "июль",    7 }, { "август",   8 }, { "сент€брь", 9 },
+                { "окт€брь", 10 }, { "но€брь", 11 }, { "декабрь", 12 }
+            };
+
             for (int r = 0; r < rows; r++)
                 for (int c = 0; c < cols; c++)
-                    if (data[r, c] is DateTime dt)
+                    if (data[r, c] is string str)
                     {
-                        monthYearCells.Add((r, c));
-                        data[r, c] = dt.ToOADate();
+                        string[] parts = str.Trim().Split(' ');
+                        bool hasYearSuffix = parts.Length == 3
+                            && string.Equals(parts[2].TrimEnd('.'), "г", System.StringComparison.OrdinalIgnoreCase);
+                        if ((parts.Length == 2 || hasYearSuffix)
+                            && russianMonths.TryGetValue(parts[0], out int month)
+                            && int.TryParse(parts[1], out int year))
+                        {
+                            monthYearCells.Add((r, c));
+                            data[r, c] = new DateTime(year, month, 1).ToOADate();
+                        }
                     }
 
             Range rg = worksheet.get_Range(worksheet.Cells[top, left], worksheet.Cells[bottom, right]);
