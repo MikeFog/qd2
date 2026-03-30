@@ -166,6 +166,7 @@ namespace Merlin.Forms
 				tbbModules.Text = "Выбор пакета";
 
             tbbTemplate.Visible = tbbTemplate2.Visible = !(IsModuleCampaign || IsPackModuleCampaign || tariffGrid is ProgramIssuesGrid2);
+			tbSetManagerDiscount.Enabled = !IsRangeCampaign;
 		}
 
 		private void InitModulesList()
@@ -933,6 +934,26 @@ namespace Merlin.Forms
             {
                 grid.ShowDisabledWindows = btnShowDisabled.Checked;
                 RefreshGrid();
+            }
+        }
+
+        private void toolStripButton1_Click(object sender, EventArgs e)
+        {
+            try
+            {
+                if (ActionForm.SetManagerDiscount(_campaign))
+                {
+					_campaign.Refresh();
+                    _campaign.DisplayCampaignData(lstStat);
+                }
+            }
+            catch (Exception ex)
+            {
+                ErrorManager.PublishError(ex);
+            }
+            finally
+            {
+                UseWaitCursor = false;
             }
         }
     }
