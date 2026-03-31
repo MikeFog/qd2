@@ -240,7 +240,7 @@ namespace Merlin.Forms
 				{
 					DataAccessor.BeginTransaction();
 					campaign.SetFinalPrice(fDiscount.FinalPrice, fDiscount.CurrentDate, fDiscount.Grantor == null ? null : (int?)fDiscount.Grantor.Id);
-					campaign.Action.Recalculate(refreshFlag: true, todayDate: fDiscount.CurrentDate);
+					campaign.Action.Recalculate(refreshFlag: false, todayDate: fDiscount.CurrentDate);
 					DataAccessor.CommitTransaction();
 				}
 				catch
@@ -267,7 +267,7 @@ namespace Merlin.Forms
 				{ 
 					campaign.Refresh();
                     grdCampaign.UpdateRow(campaign);			
-					RefreshActionStats(false);
+					RefreshActionStats(true);
 				}
 			}
 			catch (Exception ex)
