@@ -12,7 +12,9 @@ namespace FogSoft.WinForm.Passport.Classes
 			: base(new CheckBox(), navigator)
 		{
 			control.Text = navigator.GetAttribute(Attributes.Caption, "");
-			((CheckBox) control).CheckedChanged += PageFieldBoolean_CheckedChanged;
+            CheckBox control1 = ((CheckBox)control);
+			control1.Checked = navigator.GetAttribute(Attributes.Value, "").ToLower() == "true";
+            control1.CheckedChanged += PageFieldBoolean_CheckedChanged;
 			SetControlLockedFlag(navigator);
 		}
 
