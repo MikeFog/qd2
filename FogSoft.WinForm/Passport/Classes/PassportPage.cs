@@ -149,7 +149,7 @@ namespace FogSoft.WinForm.Passport.Classes
 				label.SetBold();
 				label.Add2Page(tabPage, left, top + labelType.Height + 5, dimensions);
 				label.OnAfterCreate();
-				currentY += PageDimensions.Offsets.LineSpacing;
+				currentY += label.Height + PageDimensions.Offsets.LineSpacing;
 			}
 		}
 
