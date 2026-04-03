@@ -110,18 +110,20 @@ namespace FogSoft.WinForm
             // 
             // dtStartDate
             // 
+            this.dtStartDate.Font = new System.Drawing.Font("Segoe UI", 9F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(204)));
             this.dtStartDate.Format = System.Windows.Forms.DateTimePickerFormat.Short;
             this.dtStartDate.Location = new System.Drawing.Point(281, 3);
             this.dtStartDate.Name = "dtStartDate";
-            this.dtStartDate.Size = new System.Drawing.Size(200, 31);
+            this.dtStartDate.Size = new System.Drawing.Size(251, 31);
             this.dtStartDate.TabIndex = 2;
             // 
             // dtFinishDate
             // 
+            this.dtFinishDate.Font = new System.Drawing.Font("Segoe UI", 9F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(204)));
             this.dtFinishDate.Format = System.Windows.Forms.DateTimePickerFormat.Short;
             this.dtFinishDate.Location = new System.Drawing.Point(281, 40);
             this.dtFinishDate.Name = "dtFinishDate";
-            this.dtFinishDate.Size = new System.Drawing.Size(200, 31);
+            this.dtFinishDate.Size = new System.Drawing.Size(251, 31);
             this.dtFinishDate.TabIndex = 3;
             // 
             // btnCancel
