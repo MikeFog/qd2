@@ -126,6 +126,7 @@ namespace Merlin.Forms
 			// if editing program issies and action is confirmed - select advert type
 			if (tbbStart.Checked)
 			{
+				tbbTemplate.Checked = false;
 				if (SponsorIssuesGrid != null && _campaign.Action.IsConfirmed)
 				{
 					Entity entity = EntityManager.GetEntity((int)Entities.AdvertTypeChild);
@@ -725,6 +726,7 @@ namespace Merlin.Forms
 		{
 			try
 			{
+				tbbTemplate.Checked = false;
 				Roller roller = ((IRollerGrid)tariffGrid).Roller;
 				if(roller == null)
 				{
