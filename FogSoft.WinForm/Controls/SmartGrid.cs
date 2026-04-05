@@ -397,7 +397,86 @@ namespace FogSoft.WinForm.Controls
 			return column;
 		}
 
-		public PresentationObject SelectedObject
+        public void AdjustColumnsWidth(int maxAutoColumnWidth = 400)
+        {
+            if (dataGrid.Columns.Count == 0)
+                return;
+
+            dataGrid.SuspendLayout();
+            try
+            {
+                // Сначала сбрасываем режимы, чтобы можно было пересчитать заново
+                foreach (DataGridViewColumn col in dataGrid.Columns)
+                {
+                    col.AutoSizeMode = DataGridViewAutoSizeColumnMode.None;
+                }
+
+                DataGridViewColumn fillColumn = null;
+
+                foreach (DataGridViewColumn col in dataGrid.Columns)
+                {
+                    // Служебные колонки
+                    if (col is DataGridViewCheckBoxColumn)
+                    {
+                        col.Width = 50;
+                        continue;
+                    }
+
+                    if (col is DataGridViewImageColumn)
+                    {
+                        col.Width = 24;
+                        continue;
+                    }
+
+                    // Для денежных / числовых / дат — под контент
+                    if (col.ValueType == typeof(DateTime) ||
+                        col.ValueType == typeof(decimal) ||
+                        col.ValueType == typeof(double) ||
+                        col.ValueType == typeof(float) ||
+                        col.ValueType == typeof(int) ||
+                        col.ValueType == typeof(long) ||
+                        col.ValueType == typeof(short))
+                    {
+                        col.AutoSizeMode = DataGridViewAutoSizeColumnMode.AllCells;
+                        continue;
+                    }
+
+                    // Строковые колонки:
+                    // если это последняя "нормальная" колонка — растягиваем
+                    fillColumn = col;
+                    col.AutoSizeMode = DataGridViewAutoSizeColumnMode.AllCells;
+                }
+
+                // Ограничиваем слишком широкие колонки
+                foreach (DataGridViewColumn col in dataGrid.Columns)
+                {
+                    if (col.AutoSizeMode == DataGridViewAutoSizeColumnMode.AllCells && col.Width > maxAutoColumnWidth)
+                    {
+                        col.AutoSizeMode = DataGridViewAutoSizeColumnMode.None;
+                        col.Width = maxAutoColumnWidth;
+                    }
+                }
+
+                // Последнюю подходящую текстовую колонку растягиваем
+                if (fillColumn != null &&
+                    !(fillColumn is DataGridViewCheckBoxColumn) &&
+                    !(fillColumn is DataGridViewImageColumn))
+                {
+                    fillColumn.AutoSizeMode = DataGridViewAutoSizeColumnMode.Fill;
+
+                    if (fillColumn.MinimumWidth < 120)
+                        fillColumn.MinimumWidth = 120;
+                }
+
+                RepositionCheckBoxHeader();
+            }
+            finally
+            {
+                dataGrid.ResumeLayout();
+            }
+        }
+
+        public PresentationObject SelectedObject
 		{
 			get
 			{
@@ -425,7 +504,8 @@ namespace FogSoft.WinForm.Controls
 				Globals.AddObject2DataTable(GridTable, presentationObject);
 
 			GridTable.AcceptChanges();
-			SelectedObject = presentationObject;
+            AdjustColumnsWidth();
+            SelectedObject = presentationObject;
 
 			FireObjectCreated(presentationObject);
 		}
