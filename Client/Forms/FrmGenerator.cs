@@ -356,7 +356,7 @@ namespace Merlin.Forms
                 windows.RemoveAt(0);
             }
 
-            if (issues.Count < quantity)
+            if (issues.Count + grdFail.ItemsCount < quantity)
             {
                 Dictionary<string, object> parameters = CreateMessageParameters();
                 parameters["windowsQuantity"] = issues.Count;
