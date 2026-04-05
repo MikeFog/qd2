@@ -4,8 +4,6 @@ using System.ComponentModel;
 using System.Data;
 using System.Windows.Forms;
 using FogSoft.WinForm.Classes;
-using FogSoft.WinForm.Controls;
-using FogSoft.WinForm.DataAccess;
 
 namespace FogSoft.WinForm.Forms
 {

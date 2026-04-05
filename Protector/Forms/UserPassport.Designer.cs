@@ -30,23 +30,7 @@ namespace Protector.Forms
 		{
             ((System.ComponentModel.ISupportInitialize)(this.pbFake)).BeginInit();
             this.SuspendLayout();
-            // 
-            // btnApply
-            // 
-            this.btnApply.Location = new System.Drawing.Point(669, 686);
-            // 
-            // btnCancel
-            // 
-            this.btnCancel.Location = new System.Drawing.Point(537, 686);
-            // 
-            // btnOk
-            // 
-            this.btnOk.Location = new System.Drawing.Point(405, 686);
-            // 
-            // tabPassport
-            // 
-            this.tabPassport.Location = new System.Drawing.Point(0, 0);
-            this.tabPassport.Size = new System.Drawing.Size(796, 674);
+
             // 
             // UserPassport
             // 
