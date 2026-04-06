@@ -185,7 +185,11 @@ namespace FogSoft.WinForm.Controls
 		{
 			get { return dataGrid.DataSource as DataView; }
 			set
-			{
+            {
+                // Признак первой загрузки: до этого источника данных не было.
+                // В этом случае COL_IsSelected, пришедший с сервера, нужно сохранить.
+                bool isFirstLoad = (dataGrid.DataSource == null);   // ← ДОБАВЛЕНО
+
                 // Сохраняем PK чекнутых объектов ДО Clear()
                 HashSet<string> checkedKeys = SaveCheckedKeys();
 
@@ -202,12 +206,17 @@ namespace FogSoft.WinForm.Controls
                     }
                     else if (checkboxes && value.Table.Columns.Contains(COL_IsSelected))
                     {
-                        // Таблица переиспользуется — сбрасываем старые значения чекбоксов
-                        foreach (DataRow row in value.Table.Rows)
-                            row[COL_IsSelected] = false;
+                        // Таблица переиспользуется — сбрасываем старые значения чекбоксов.
+                        // Но при первой загрузке сервер мог прислать уже отмеченные строки —
+                        // их трогать не нужно, checkedKeys всё равно пуст.
+                        if (!isFirstLoad)                           // ← ДОБАВЛЕНО
+                        {
+                            foreach (DataRow row in value.Table.Rows)
+                                row[COL_IsSelected] = false;
+                        }
                     }
 
-                    SetTablePKColumn(value.Table);
+                    SetTablePKColumn(value.Table); 
                     SetColumnHeaders(value.Table.Columns);
                     dataGrid.DataSource = value;
 
@@ -838,7 +847,7 @@ namespace FogSoft.WinForm.Controls
             }
         }
 
-        // Método para reposicionar el checkbox cuando cambien las dimensiones
+        // Метод для репозиционирования чекбокса при изменении размеров
         public void RepositionCheckBoxHeader()
         {
             /*
