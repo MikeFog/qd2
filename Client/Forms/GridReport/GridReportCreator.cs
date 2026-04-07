@@ -155,24 +155,17 @@ namespace Merlin.Forms.GridReport
 			if (Massmedia == null)
 				return null;
 
-			Dictionary<string, object> procParameters =
-				new Dictionary<string, object>(StringComparer.CurrentCultureIgnoreCase);
-			procParameters[Massmedia.ParamNames.MassmediaId] = Massmedia.MassmediaId;
-			procParameters["theDate"] = DateTime;
+            Dictionary<string, object> procParameters = new Dictionary<string, object>(StringComparer.CurrentCultureIgnoreCase)
+            {
+                [Massmedia.ParamNames.MassmediaId] = Massmedia.MassmediaId,
+                ["theDate"] = DateTime,
+                ["isExport"] = isExport
+            };
 			if (User != null)
 				procParameters[SecurityManager.ParamNames.UserId] = User.IDs[0];
-			procParameters["isExport"] = isExport;
 
-			try
-			{
-				DataSet ds = DataAccessor.LoadDataSet("rpt_Grid_v3", procParameters, 120);
-				return ds;
-			}
-			catch (Exception exp)
-			{
-				Log.InfoFormat("Error rpt_grid {0} : {1}", DateTime.Now, exp);
-				throw;
-			}
+			DataSet ds = DataAccessor.LoadDataSet("rpt_Grid_v3", procParameters, 120);
+			return ds;
 		}
         
 		private Grid InitializeReport(DataSet ds)
