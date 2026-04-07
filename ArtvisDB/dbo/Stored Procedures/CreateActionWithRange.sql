@@ -1,49 +1,49 @@
-﻿-- =============================================
--- Author:		Denis Gladkikh
--- Create date: 16.04.2009
--- Description:	Create Action With Range
--- =============================================
-CREATE PROCEDURE [dbo].[CreateActionWithRange]
-(
-	@massmediaString varchar(8000),
-	@agencyString varchar(8000),
-	@loggedUserId smallint,
-	@firmID smallint,
-	@paymentTypeID smallint,
-	@actionID int output
-)
-WITH EXECUTE AS OWNER
+﻿CREATE PROCEDURE [dbo].[CreateActionWithRange]
+    @massmediaString varchar(8000),
+    @agencyString varchar(8000),
+    @loggedUserId smallint,
+    @firmID smallint,
+    @paymentTypeID smallint,
+    @actionID int output
 AS
 BEGIN
-	set nocount on;
+    SET NOCOUNT ON;
 
-	declare @massmedias table(rowNum [smallint] IDENTITY(1,1) NOT NULL, id smallint)
-	insert into @massmedias(id)
-	select * from dbo.fn_CreateTableFromString(@massmediaString)
+    -- Убираем лишние запятые в начале и в конце строки (если они есть)
+    SET @massmediaString = TRIM(',' FROM @massmediaString);
+    SET @agencyString = TRIM(',' FROM @agencyString);
 
-	declare @agencies table(rowNum [smallint] IDENTITY(1,1) NOT NULL, id smallint)
-	insert into @agencies(id)
-	select * from dbo.fn_CreateTableFromString(@agencyString)
-
-	-- create action 
+    -- 1. Создаем запись в Action
     INSERT INTO [Action](firmID, userID, isConfirmed)
-	VALUES(@firmID, @loggedUserId, 0)
+    VALUES(@firmID, @loggedUserId, 0);
 
-	if @@rowcount <> 1
-	begin
-		raiserror('InternalError', 16, 1)
-		return 
-	end 
-	
-	SET @actionID = SCOPE_IDENTITY()
+    SET @actionID = SCOPE_IDENTITY();
 
-	INSERT INTO [Campaign](actionID, campaignTypeID, massmediaID, paymentTypeID, agencyID, modUser)
-	select @actionID, 1, mm.id, @paymentTypeID, ag.id, @loggedUserId
-	from @massmedias mm inner join @agencies ag on mm.rowNum = ag.rowNum
-	
-	exec dbo.ActionRecalculate
-		@actionID = @actionID, --  int
-		@needShow = 0, --  bit
-		@loggedUserID = @loggedUserID --  int
+    -- 2. Соединяем строки через порядковый номер (ordinal)
+    -- Мы убрали промежуточные таблицы, теперь всё летит напрямую в Campaign
+    INSERT INTO [Campaign](
+        actionID, 
+        campaignTypeID, 
+        massmediaID, 
+        paymentTypeID, 
+        agencyID, 
+        modUser
+    )
+    SELECT 
+        @actionID, 
+        1,                         -- campaignTypeID
+        TRY_CAST(mm.value AS INT), -- massmediaID
+        @paymentTypeID, 
+        TRY_CAST(ag.value AS INT), -- agencyID
+        @loggedUserId
+    FROM STRING_SPLIT(@massmediaString, ',', 1) AS mm
+    INNER JOIN STRING_SPLIT(@agencyString, ',', 1) AS ag ON mm.ordinal = ag.ordinal;
+
+    
+    -- 3. Если нужен пересчет:
+    EXEC dbo.ActionRecalculate 
+        @actionID = @actionID, 
+        @needShow = 0, 
+        @loggedUserID = @loggedUserId;
+    
 END
-
