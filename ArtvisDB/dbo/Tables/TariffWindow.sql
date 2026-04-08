@@ -39,6 +39,9 @@
 
 
 
+
+
+
 GO
 ALTER TABLE [dbo].[TariffWindow] SET (LOCK_ESCALATION = AUTO);
 
@@ -79,8 +82,7 @@ CREATE UNIQUE NONCLUSTERED INDEX [UX_TariffWindow_dayOriginal_windowID]
 
 
 GO
-CREATE NONCLUSTERED INDEX [IX_TariffWindow_TariffID_WindowDateOriginal]
-    ON [dbo].[TariffWindow]([tariffId] ASC, [windowDateOriginal] ASC);
+
 
 
 GO
@@ -105,4 +107,22 @@ GO
 CREATE NONCLUSTERED INDEX [IX_TariffWindow_mm_day_windowTime]
     ON [dbo].[TariffWindow]([massmediaID] ASC, [dayActual] ASC, [windowTime] ASC)
     INCLUDE([duration], [tariffId], [timeInUseConfirmed], [windowId], [maxCapacity], [capacityInUseConfirmed]);
+
+
+GO
+CREATE NONCLUSTERED INDEX [IX_TariffWindow_TariffID_DayOriginal]
+    ON [dbo].[TariffWindow]([tariffId] ASC, [dayOriginal] ASC)
+    INCLUDE([isDisabled], [windowId]);
+
+
+GO
+CREATE NONCLUSTERED INDEX [IX_TariffWindow_Search]
+    ON [dbo].[TariffWindow]([dayOriginal] ASC, [massmediaID] ASC)
+    INCLUDE([tariffId], [isDisabled]);
+
+
+GO
+CREATE NONCLUSTERED INDEX [IX_TariffWindow_ActualDate]
+    ON [dbo].[TariffWindow]([massmediaID] ASC, [windowDateActual] ASC)
+    INCLUDE([duration], [windowId]);
 

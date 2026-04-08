@@ -357,7 +357,7 @@ namespace FogSoft.WinForm.DataAccess
 									if (cachingTime > 0)
 										_cache.Set(key, ds, TimeSpan.FromSeconds(cachingTime));
                                     string execScript = BuildExecScript(procedureName, _commandParameters);
-                                    Debug.Print(execScript);
+									Debug.Print(execScript);
                                 }
 							}
                             scope.SetRows(ds.Tables.Count > 0 ? ds.Tables[0].Rows.Count : 0);

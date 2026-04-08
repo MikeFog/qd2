@@ -225,21 +225,11 @@ namespace Merlin.Forms
 
 		private List<PresentationObject> AddSimpleIssue()
 		{
-			ITariffWindow tariffWindow = TariffWindowWithRollerIssues.GetWindowByDate(_template.CurrentDate, ((CampaignOnSingleMassmedia)_campaign).Massmedia) ?? throw new NullReferenceException("TariffWindowNotFound");
-			Issue issue;
-			try
-			{
-				DataAccessor.BeginTransaction();
-				issue = _campaign.AddIssue(roller, tariffWindow, position, grantorID);
-				_campaign.RecalculateAction(false);
-				DataAccessor.CommitTransaction();
-			}
-			catch
-			{
-				DataAccessor.RollbackTransaction();
-				throw;
-			}
+			ITariffWindow tariffWindow = TariffWindowWithRollerIssues.GetWindowByDate(
+				_template.CurrentDate, ((CampaignOnSingleMassmedia)_campaign).Massmedia)
+				?? throw new NullReferenceException("TariffWindowNotFound");
 
+			Issue issue = _campaign.AddIssue(roller, tariffWindow, position, grantorID);
 			issue.Refresh();
 			return new List<PresentationObject> { issue };
 		}
@@ -332,41 +322,38 @@ namespace Merlin.Forms
 
         private List<PresentationObject> AddIssuesFromWindows(List<TariffWindowWithRollerIssues> windows, int quantity)
         {
-            var issues = new List<PresentationObject>();
+			var issues = new List<PresentationObject>();
 
-            for (int i = 0; i < quantity && windows.Count > 0; i++)
-            {
-                try
-                {
-                    DataAccessor.BeginTransaction();
-                    Issue issue = _campaign.AddIssue(roller, windows[0], position, grantorID);
-                    _campaign.RecalculateAction(false);
-                    DataAccessor.CommitTransaction();
-                    issue.Refresh();
-                    issues.Add(issue);
-                }
-                catch (Exception ex)
-                {
-                    DataAccessor.RollbackTransaction();
-                    Dictionary<string, object> parameters = CreateMessageParameters();
-                    parameters["description"] = Globals.GetMessage(ex.Message, parameters);
-                    AddErrorInfo(parameters);
-                }
+			for (int i = 0; i < quantity && windows.Count > 0; i++)
+			{
+				try
+				{
+					Issue issue = _campaign.AddIssue(roller, windows[0], position, grantorID);
+					issue.Refresh();
+					issues.Add(issue);
+				}
+				catch (Exception ex)
+				{
+					// DataAccessor.RollbackTransaction(); // убрать: транзакция здесь не открывается
+					Dictionary<string, object> parameters = CreateMessageParameters();
+					parameters["description"] = Globals.GetMessage(ex.Message, parameters);
+					AddErrorInfo(parameters);
+				}
 
-                windows.RemoveAt(0);
-            }
+				windows.RemoveAt(0);
+			}
 
-            if (issues.Count + grdFail.ItemsCount < quantity)
-            {
-                Dictionary<string, object> parameters = CreateMessageParameters();
-                parameters["windowsQuantity"] = issues.Count;
-                parameters["requiredQuantity"] = quantity;
-                parameters["description"] = Globals.GetMessage("NotEnoughWindows", parameters);
-                AddErrorInfo(parameters);
-            }
+			if (issues.Count + grdFail.ItemsCount < quantity)
+			{
+				Dictionary<string, object> parameters = CreateMessageParameters();
+				parameters["windowsQuantity"] = issues.Count;
+				parameters["requiredQuantity"] = quantity;
+				parameters["description"] = Globals.GetMessage("NotEnoughWindows", parameters);
+				AddErrorInfo(parameters);
+			}
 
-            return issues;
-        }
+			return issues;
+		}
 
 		private List<PresentationObject> AddModuleIssue()
 		{

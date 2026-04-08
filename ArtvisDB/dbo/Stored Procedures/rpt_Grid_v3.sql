@@ -13,6 +13,7 @@ CREATE   PROCEDURE [dbo].[rpt_Grid_v3]
 AS
 BEGIN
     SET NOCOUNT ON;
+    SET TRANSACTION ISOLATION LEVEL READ UNCOMMITTED; -- Добавляем сюда
     SET DATEFIRST 1;
 
     -- локальная "функция" логирования

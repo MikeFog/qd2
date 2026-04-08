@@ -1,170 +1,192 @@
-﻿CREATE PROC [dbo].[TariffWindowRetrieve]
+﻿
+CREATE PROC [dbo].[TariffWindowRetrieve]
 (
---@advertTypeId smallint,
-@pricelistId smallint = null,
-@broadcastStart datetime = null,
-@startDate datetime = null,
-@finishDate datetime = null,
-@moduleId smallint = null,
-@windowId int = null,
-@actualDate datetime = NULL,
-@windowDateActual DATETIME = NULL,
-@windowDateOriginal DATETIME = NULL,
-@excludeSpecialWindows BIT = 0,
-@excludeModuleTariffs BIT = 0,
-@massmediaID INT = NULL,
-@showTrafficWindows BIT = 0,
-@showDisabledWindows bit = 1
+    @pricelistId int = null,
+    @broadcastStart datetime = null,
+    @startDate datetime = null,
+    @finishDate datetime = null,
+    @moduleId int = null,
+    @windowId int = null,
+    @actualDate datetime = NULL,
+    @windowDateActual DATETIME = NULL,
+    @windowDateOriginal DATETIME = NULL,
+    @excludeSpecialWindows BIT = 0,
+    @excludeModuleTariffs BIT = 0,
+    @massmediaID INT = NULL,
+    @showTrafficWindows BIT = 0,
+    @showDisabledWindows bit = 1
 )
 AS
-Set Nocount On
+BEGIN
+    SET NOCOUNT ON;
+    -- Предотвращаем дедлоки при чтении
+    SET TRANSACTION ISOLATION LEVEL READ UNCOMMITTED;
 
-Declare @broadcasrStartHour tinyint
-If Not @broadcastStart Is Null 
-	Set @broadcasrStartHour = DatePart(hh, @broadcastStart)
-Else
-	Set @broadcasrStartHour = 0
+    DECLARE @broadcasrStartHour tinyint;
+    IF @broadcastStart IS NOT NULL 
+        SET @broadcasrStartHour = DATEPART(hh, @broadcastStart);
+    ELSE
+        SET @broadcasrStartHour = 0;
 
-Declare @tmpWindow Table (windowId int)
+    -- Используем временную таблицу вместо @tmpWindow для корректной статистики
+    CREATE TABLE #tmpWindow (windowId int PRIMARY KEY);
 
-IF @windowDateActual IS NOT NULL AND @windowDateOriginal IS NOT NULL AND @massmediaID IS NOT NULL 
-	INSERT INTO @tmpWindow
-	SELECT windowID 
-	FROM [TariffWindow]
-	WHERE [windowDateActual] = @windowDateActual 
-		AND [windowDateOriginal] = @windowDateOriginal
-		AND massmediaID = @massmediaID
-ELSE If @windowId Is Not Null
-	Insert Into @tmpWindow Values(@windowId)
-Else If @actualDate Is Not Null
-	Insert Into @tmpWindow
-	Select windowId
-	From TariffWindow
-	where @actualDate between windowDateActual and DATEADD(s, duration, windowDateActual)
-		AND massmediaID = @massmediaID 
-Else If @moduleId Is Null
-	Insert Into @tmpWindow
-	Select
-		tw.windowId
-	From
-		TariffWindow tw
-		Inner Join Tariff t On t.tariffId = tw.tariffId
-			AND (@excludeModuleTariffs = 0 OR t.[isForModuleOnly] = 0)
-	Where
-		t.pricelistId = Coalesce(@pricelistId, t.pricelistId)
-		And tw.dayOriginal >= Coalesce(@startDate, tw.dayOriginal)
-		And tw.dayOriginal <= Coalesce(@finishDate, tw.dayOriginal)
-		And (tw.isDisabled = 0 or @showDisabledWindows = 1)
+    -------------------------------------------------------------------------
+    -- 1. Наполнение списка ID окон
+    -------------------------------------------------------------------------
+    
+    -- Точечный поиск по датам
+    IF @windowDateActual IS NOT NULL AND @windowDateOriginal IS NOT NULL AND @massmediaID IS NOT NULL 
+    BEGIN
+        INSERT INTO #tmpWindow (windowId)
+        SELECT windowID 
+        FROM [TariffWindow]
+        WHERE [windowDateActual] = @windowDateActual 
+          AND [windowDateOriginal] = @windowDateOriginal
+          AND massmediaID = @massmediaID;
+    END
+    -- Поиск по конкретному ID
+    ELSE IF @windowId IS NOT NULL
+    BEGIN
+        INSERT INTO #tmpWindow (windowId) VALUES (@windowId);
+    END
+    -- Поиск по вхождению времени в длительность окна
+    Else If @actualDate Is Not Null
+    BEGIN
+        INSERT INTO #tmpWindow (windowId)
+        SELECT TOP 1 windowId
+        FROM TariffWindow
+        WHERE massmediaID = @massmediaID 
+          AND windowDateActual <= @actualDate -- Это SARGable условие (быстрый поиск по индексу)
+          AND DATEADD(s, duration, windowDateActual) >= @actualDate -- Проверка только для одной строки
+        ORDER BY windowDateActual DESC; -- Берем самое близкое к моменту
+    END
+    -- Основной поиск: Модуль НЕ указан
+    ELSE IF @moduleId IS NULL
+    BEGIN
+        INSERT INTO #tmpWindow (windowId)
+        SELECT tw.windowId
+        FROM TariffWindow tw
+        INNER JOIN Tariff t ON t.tariffId = tw.tariffId
+        WHERE (@excludeModuleTariffs = 0 OR t.[isForModuleOnly] = 0)
+          AND (@pricelistId IS NULL OR t.pricelistId = @pricelistId)
+          AND (@startDate IS NULL OR tw.dayOriginal >= @startDate)
+          AND (@finishDate IS NULL OR tw.dayOriginal <= @finishDate)
+          AND (tw.isDisabled = 0 OR @showDisabledWindows = 1)
 
-	UNION all
-	SELECT DISTINCT
-		tw.windowId
-	From
-		TariffWindow tw
-		INNER JOIN [Pricelist] pl ON pl.[massmediaID] = tw.massmediaID 
-			and tw.dayOriginal between pl.startDate and pl.finishDate
-	WHERE
-		tw.tariffID IS NULL AND @showTrafficWindows = 1 AND @excludeSpecialWindows = 0 AND 
-		pl.pricelistId = Coalesce(@pricelistId, pl.pricelistId)
-		And tw.dayOriginal >= Coalesce(@startDate, tw.dayOriginal)
-		And tw.dayOriginal <= Coalesce(@finishDate, tw.dayOriginal)
-		And (tw.isDisabled = 0 or @showDisabledWindows = 1)
-Else
-	Insert Into @tmpWindow
-	Select
-		tw.windowId
-	From
-		TariffWindow tw
-		Inner Join ModuleTariff mt On mt.tariffId = tw.tariffId
-		Inner Join ModulePriceList mpl On mpl.modulePriceListID = mt.modulePriceListID
-	Where
-		mpl.moduleId = @moduleId
-		And mpl.pricelistId = @pricelistId
-		and mpl.startDate <= @finishDate and mpl.finishDate >= @startDate
-		And tw.dayOriginal >= Coalesce(@startDate, tw.dayOriginal)
-		And tw.dayOriginal <= Coalesce(@finishDate, tw.dayOriginal)
-	UNION all
-	SELECT DISTINCT
-		tw.windowId
-	From
-		TariffWindow tw
-		INNER JOIN [Pricelist] pl ON pl.[massmediaID] = tw.massmediaID
-			and tw.dayOriginal between pl.startDate and pl.finishDate
-		INNER JOIN [Module] m ON tw.massmediaID = m.[massmediaID] AND m.moduleId = @moduleId
-		Inner Join ModulePriceList mpl On mpl.priceListID = pl.priceListID
-	WHERE
-		tw.tariffID IS NULL AND @showTrafficWindows = 1  AND @excludeSpecialWindows = 0 AND 
-		pl.pricelistId = Coalesce(@pricelistId, pl.pricelistId)
-		and mpl.startDate <= @finishDate and mpl.finishDate >= @startDate
-		And tw.dayOriginal >= Coalesce(@startDate, tw.dayOriginal)
-		And tw.dayOriginal <= Coalesce(@finishDate, tw.dayOriginal)
-				
-IF @excludeSpecialWindows = 0	
-	BEGIN
-	Select
-		tw.*,
-		'Рекламное окно ' + Convert(varchar(10), windowDateOriginal, 104) + ' ' + 
-			Convert(varchar(5), windowDateOriginal, 108)
-			+ case when windowDateOriginal != windowDateActual then ' (' + Convert(varchar(10), windowDateOriginal, 104) + ' ' + Convert(varchar(5), windowDateActual, 108) + ')' else '' end as [name] ,
-		DatePart(hh, windowDateOriginal) as [hour],
-		DatePart(mi, windowDateOriginal) as [min],
-		dayOriginal AS windowDateBroadcast,
-		dayActual  AS windowDateActualBroadcast
-	INTO #tmp1	
-	From
-		@tmpWindow ttw
-		Inner Join TariffWindow tw On ttw.windowId = tw.windowId
-	Order By
-		tw.windowDateOriginal Desc	
-	
-	SELECT DISTINCT	
-		DatePart(hh, windowDateOriginal) AS [hour],
-		DatePart(mi, windowDateOriginal) as [min],
-		price,
-		Case
-			When DatePart(hh, windowDateOriginal) >= @broadcasrStartHour Then 0
-			Else 1
-		End as flag
-	From #tmp1 
-		Order By flag, [hour], [min]	
+        UNION ALL
 
-	SELECT #tmp1.*, 
-		case 
-			when tu.tariffID is null then 0
-			else 1
-		end as IsTariffUnited 
-		FROM 
-			[#tmp1] Left Join TariffUnion tu On (#tmp1.tariffId = tu.tariffID or #tmp1.tariffId = tu.tariffUnionID)
-	END
-ELSE	
-	BEGIN
+        SELECT DISTINCT tw.windowId
+        FROM TariffWindow tw
+        INNER JOIN [Pricelist] pl ON pl.[massmediaID] = tw.massmediaID 
+            AND tw.dayOriginal BETWEEN pl.startDate AND pl.finishDate
+        WHERE tw.tariffID IS NULL 
+          AND @showTrafficWindows = 1 
+          AND @excludeSpecialWindows = 0 
+          AND (@pricelistId IS NULL OR pl.pricelistId = @pricelistId)
+          AND (@startDate IS NULL OR tw.dayOriginal >= @startDate)
+          AND (@finishDate IS NULL OR tw.dayOriginal <= @finishDate)
+          AND (tw.isDisabled = 0 OR @showDisabledWindows = 1);
+    END
+    -- Основной поиск: Модуль указан
+    ELSE
+    BEGIN
+        INSERT INTO #tmpWindow (windowId)
+        SELECT tw.windowId
+        FROM TariffWindow tw
+        INNER JOIN ModuleTariff mt ON mt.tariffId = tw.tariffId
+        INNER JOIN ModulePriceList mpl ON mpl.modulePriceListID = mt.modulePriceListID
+        WHERE mpl.moduleId = @moduleId
+          AND mpl.pricelistId = @pricelistId
+          AND mpl.startDate <= @finishDate AND mpl.finishDate >= @startDate
+          AND (@startDate IS NULL OR tw.dayOriginal >= @startDate)
+          AND (@finishDate IS NULL OR tw.dayOriginal <= @finishDate)
 
-	Select
-		tw.*,
-		'Рекламное окно ' + Convert(varchar(10), windowDateOriginal, 104) + ' ' + 
-			Convert(varchar(5), windowDateOriginal, 108) as [name],
-		DatePart(hh, windowDateOriginal) as [hour],
-		DatePart(mi, windowDateOriginal) as [min],
-		dayOriginal AS windowDateBroadcast,
-		dayActual AS windowDateActualBroadcast
-	INTO
-		#tmp2			
-	From
-		@tmpWindow ttw
-		Inner Join TariffWindow tw On ttw.windowId = tw.windowId
-	Order By
-		tw.windowDateOriginal Desc
-		
-	SELECT DISTINCT	
-		DatePart(hh, windowDateOriginal) AS [hour],
-		DatePart(mi, windowDateOriginal) as [min],
-		price,
-		Case
-			When DatePart(hh, windowDateOriginal) >= @broadcasrStartHour Then 0
-			Else 1
-		End as flag
-	From #tmp2 
-		Order By flag, [hour], [min]
-	
-	SELECT * FROM [#tmp2]
-	END
+        UNION ALL
+
+        SELECT DISTINCT tw.windowId
+        FROM TariffWindow tw
+        INNER JOIN [Pricelist] pl ON pl.[massmediaID] = tw.massmediaID
+            AND tw.dayOriginal BETWEEN pl.startDate AND pl.finishDate
+        INNER JOIN [Module] m ON tw.massmediaID = m.[massmediaID] AND m.moduleId = @moduleId
+        INNER JOIN ModulePriceList mpl ON mpl.priceListID = pl.priceListID
+        WHERE tw.tariffID IS NULL 
+          AND @showTrafficWindows = 1  
+          AND @excludeSpecialWindows = 0 
+          AND (@pricelistId IS NULL OR pl.pricelistId = @pricelistId)
+          AND mpl.startDate <= @finishDate AND mpl.finishDate >= @startDate
+          AND (@startDate IS NULL OR tw.dayOriginal >= @startDate)
+          AND (@finishDate IS NULL OR tw.dayOriginal <= @finishDate);
+    END
+
+    -------------------------------------------------------------------------
+    -- 2. Формирование финальных наборов данных
+    -------------------------------------------------------------------------
+
+    IF @excludeSpecialWindows = 0    
+    BEGIN
+        -- Формируем временный набор (без бесполезного ORDER BY внутри SELECT INTO)
+        SELECT
+            tw.*,
+            'Рекламное окно ' + CONVERT(varchar(10), windowDateOriginal, 104) + ' ' + 
+                CONVERT(varchar(5), windowDateOriginal, 108)
+                + CASE WHEN windowDateOriginal != windowDateActual 
+                       THEN ' (' + CONVERT(varchar(10), windowDateOriginal, 104) + ' ' + CONVERT(varchar(5), windowDateActual, 108) + ')' 
+                       ELSE '' END AS [name],
+            DATEPART(hh, windowDateOriginal) AS [hour],
+            DATEPART(mi, windowDateOriginal) AS [min],
+            dayOriginal AS windowDateBroadcast,
+            dayActual  AS windowDateActualBroadcast
+        INTO #final1 
+        FROM #tmpWindow ttw
+        INNER JOIN TariffWindow tw ON ttw.windowId = tw.windowId;
+
+        -- Первый результат (сетка часов)
+        SELECT DISTINCT    
+            [hour],
+            [min],
+            price,
+            CASE WHEN [hour] >= @broadcasrStartHour THEN 0 ELSE 1 END AS flag
+        FROM #final1 
+        ORDER BY flag, [hour], [min];
+
+        -- Второй результат (список окон)
+        SELECT f.*, 
+            CASE WHEN tu.tariffID IS NULL THEN 0 ELSE 1 END AS IsTariffUnited 
+        FROM #final1 f
+        LEFT JOIN TariffUnion tu ON (f.tariffId = tu.tariffID OR f.tariffId = tu.tariffUnionID)
+        ORDER BY f.windowDateOriginal DESC;
+        
+        DROP TABLE #final1;
+    END
+    ELSE    
+    BEGIN
+        SELECT
+            tw.*,
+            'Рекламное окно ' + CONVERT(varchar(10), windowDateOriginal, 104) + ' ' + 
+                CONVERT(varchar(5), windowDateOriginal, 108) AS [name],
+            DATEPART(hh, windowDateOriginal) AS [hour],
+            DATEPART(mi, windowDateOriginal) AS [min],
+            dayOriginal AS windowDateBroadcast,
+            dayActual AS windowDateActualBroadcast
+        INTO #final2           
+        FROM #tmpWindow ttw
+        INNER JOIN TariffWindow tw ON ttw.windowId = tw.windowId;
+        
+        -- Первый результат
+        SELECT DISTINCT    
+            [hour],
+            [min],
+            price,
+            CASE WHEN [hour] >= @broadcasrStartHour THEN 0 ELSE 1 END AS flag
+        FROM #final2 
+        ORDER BY flag, [hour], [min];
+    
+        -- Второй результат
+        SELECT * FROM #final2 ORDER BY windowDateOriginal DESC;
+
+        DROP TABLE #final2;
+    END
+
+    DROP TABLE #tmpWindow;
+END
