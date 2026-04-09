@@ -88,7 +88,7 @@ namespace Merlin.Controls
 			LoadData();
 
 			dtTariff = pricelist.GetTariffList();
-			tariffWindows = new TariffWindowWithProgramIssue[dtTariff.Rows.Count,7];
+			_tariffWindows = new TariffWindowWithProgramIssue[dtTariff.Rows.Count,7];
 
 			foreach (DataRow tariffRow in dtTariff.Rows)
 				ProcessTariffRow(rowCount++, tariffRow);
@@ -114,7 +114,7 @@ namespace Merlin.Controls
 				{
 					TariffWindowWithProgramIssue tariffWindow =
 						new TariffWindowWithProgramIssue(new Tariff(tariffRow), theDate, _dtIssue, sponsorProgram, Campaign.CampaignId);
-					tariffWindows[rowCount, dayNum] = tariffWindow;
+					_tariffWindows[rowCount, dayNum] = tariffWindow;
 
 					if (tariffWindow.Issue == null)
 						row[dayNum + FixedCols] = false;

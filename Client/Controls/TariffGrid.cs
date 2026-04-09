@@ -114,7 +114,7 @@ namespace Merlin.Controls
 		protected DataTable dtGrid;
 
 		protected DataTable _dtIssue, _dtWindoesWithCurrentFirmIssue;
-		protected ITariffWindow[,] tariffWindows;
+		protected ITariffWindow[,] _tariffWindows;
 		protected DateTime[] weekDates;
 		protected GridColumn[] gridColumns;
 		protected GridCellTypes gridCellType = GridCellTypes.Generic;
@@ -479,7 +479,7 @@ namespace Merlin.Controls
 		protected ITariffWindow GetTariffWindow(int rowIndex, int columnIndex)
 		{
 			if (rowIndex < FIXED_ROWS || columnIndex < FixedCols) return null;
-			return tariffWindows[rowIndex - FIXED_ROWS, columnIndex - FixedCols];
+			return _tariffWindows[rowIndex - FIXED_ROWS, columnIndex - FixedCols];
 		}
 
 		protected DataGridViewCell GetCell(ITariffWindow tariffWindow)
@@ -674,9 +674,16 @@ namespace Merlin.Controls
         {
             SetCellBackColor(rowIndex, columnIndex, Color.FromArgb(255, 231, 234));
         }
+
         protected void MarkCellAsMarked(int rowIndex, int columnIndex)
         {
             SetCellBackColor(rowIndex, columnIndex, Color.LightSteelBlue); 
+        }
+        protected Color MarkCellAsPrimePrice(int rowIndex, int columnIndex)
+        {
+			var currentColor = GetCell(rowIndex, columnIndex).Style.BackColor;
+            SetCellBackColor(rowIndex, columnIndex, Color.FromArgb(175, 140, 211));
+			return currentColor;	
         }
     }
 }

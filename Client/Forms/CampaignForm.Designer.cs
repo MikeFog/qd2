@@ -57,6 +57,8 @@ namespace Merlin.Forms {
             this.toolStripSeparator2 = new System.Windows.Forms.ToolStripSeparator();
             this.tbbExcel = new System.Windows.Forms.ToolStripButton();
             this.toolStripButtonGrantor = new System.Windows.Forms.ToolStripButton();
+            this.tbSetManagerDiscount = new System.Windows.Forms.ToolStripButton();
+            this.tbMarkPrimeWindows = new System.Windows.Forms.ToolStripButton();
             this.splitContainer1 = new System.Windows.Forms.SplitContainer();
             this.splitContainer2 = new System.Windows.Forms.SplitContainer();
             this.grdRollers = new FogSoft.WinForm.Controls.SmartGrid();
@@ -68,7 +70,6 @@ namespace Merlin.Forms {
             this.splitContainer5 = new System.Windows.Forms.SplitContainer();
             this.statusStrip1 = new System.Windows.Forms.StatusStrip();
             this.toolStripStatusLabelSelected = new System.Windows.Forms.ToolStripStatusLabel();
-            this.tbSetManagerDiscount = new System.Windows.Forms.ToolStripButton();
             this.tsCampaign.SuspendLayout();
             ((System.ComponentModel.ISupportInitialize)(this.splitContainer1)).BeginInit();
             this.splitContainer1.Panel1.SuspendLayout();
@@ -115,7 +116,8 @@ namespace Merlin.Forms {
             this.toolStripSeparator2,
             this.tbbExcel,
             this.toolStripButtonGrantor,
-            this.tbSetManagerDiscount});
+            this.tbSetManagerDiscount,
+            this.tbMarkPrimeWindows});
             this.tsCampaign.Location = new System.Drawing.Point(0, 0);
             this.tsCampaign.Name = "tsCampaign";
             this.tsCampaign.Size = new System.Drawing.Size(1592, 34);
@@ -368,6 +370,28 @@ namespace Merlin.Forms {
             this.toolStripButtonGrantor.ToolTipText = "Присоединить привилегированного пользователя.";
             this.toolStripButtonGrantor.Click += new System.EventHandler(this.toolStripButtonGrantor_Click);
             // 
+            // tbSetManagerDiscount
+            // 
+            this.tbSetManagerDiscount.DisplayStyle = System.Windows.Forms.ToolStripItemDisplayStyle.Image;
+            this.tbSetManagerDiscount.Image = ((System.Drawing.Image)(resources.GetObject("tbSetManagerDiscount.Image")));
+            this.tbSetManagerDiscount.ImageTransparentColor = System.Drawing.Color.Magenta;
+            this.tbSetManagerDiscount.Name = "tbSetManagerDiscount";
+            this.tbSetManagerDiscount.Size = new System.Drawing.Size(34, 29);
+            this.tbSetManagerDiscount.Text = "toolStripButton1";
+            this.tbSetManagerDiscount.Click += new System.EventHandler(this.toolStripButton1_Click);
+            // 
+            // tbMarkPrimeWindows
+            // 
+            this.tbMarkPrimeWindows.CheckOnClick = true;
+            this.tbMarkPrimeWindows.DisplayStyle = System.Windows.Forms.ToolStripItemDisplayStyle.Image;
+            this.tbMarkPrimeWindows.Image = ((System.Drawing.Image)(resources.GetObject("tbMarkPrimeWindows.Image")));
+            this.tbMarkPrimeWindows.ImageTransparentColor = System.Drawing.Color.Magenta;
+            this.tbMarkPrimeWindows.Name = "tbMarkPrimeWindows";
+            this.tbMarkPrimeWindows.Size = new System.Drawing.Size(34, 29);
+            this.tbMarkPrimeWindows.Text = "toolStripButton1";
+            this.tbMarkPrimeWindows.ToolTipText = "Подсветить окна прайм";
+            this.tbMarkPrimeWindows.Click += new System.EventHandler(this.MarkPrimeWindows);
+            // 
             // splitContainer1
             // 
             this.splitContainer1.Dock = System.Windows.Forms.DockStyle.Fill;
@@ -565,16 +589,6 @@ namespace Merlin.Forms {
             this.toolStripStatusLabelSelected.Size = new System.Drawing.Size(95, 17);
             this.toolStripStatusLabelSelected.Text = "Окно не выбрано";
             // 
-            // tbSetManagerDiscount
-            // 
-            this.tbSetManagerDiscount.DisplayStyle = System.Windows.Forms.ToolStripItemDisplayStyle.Image;
-            this.tbSetManagerDiscount.Image = ((System.Drawing.Image)(resources.GetObject("tbSetManagerDiscount.Image")));
-            this.tbSetManagerDiscount.ImageTransparentColor = System.Drawing.Color.Magenta;
-            this.tbSetManagerDiscount.Name = "tbSetManagerDiscount";
-            this.tbSetManagerDiscount.Size = new System.Drawing.Size(34, 29);
-            this.tbSetManagerDiscount.Text = "toolStripButton1";
-            this.tbSetManagerDiscount.Click += new System.EventHandler(this.toolStripButton1_Click);
-            // 
             // CampaignForm
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(10F, 25F);
@@ -656,7 +670,8 @@ namespace Merlin.Forms {
     private System.Windows.Forms.ToolStripMenuItem miShowlAdvertTypeNotExist;
     private System.Windows.Forms.ToolStripSeparator toolStripSeparator6;
     private System.Windows.Forms.ToolStripSeparator toolStripSeparator4;
-        private System.Windows.Forms.ToolStripButton btnShowDisabled;
-        private System.Windows.Forms.ToolStripButton tbSetManagerDiscount;
+    private System.Windows.Forms.ToolStripButton btnShowDisabled;
+    private System.Windows.Forms.ToolStripButton tbSetManagerDiscount;
+    private System.Windows.Forms.ToolStripButton tbMarkPrimeWindows;
     }
 }

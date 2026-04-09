@@ -231,7 +231,7 @@ namespace Merlin.Controls
 				DataSet dsWindows = massmediaPriceList.GetTariffWindows(startDate, finishDate, module, showTrafficWindows, ShowDisabledWindows);
 
 				dtTime = dsWindows.Tables["time"];
-				tariffWindows = new ITariffWindow[dtTime.Rows.Count, 7];
+				_tariffWindows = new ITariffWindow[dtTime.Rows.Count, 7];
 				dtTariffWindow = dsWindows.Tables[Constants.TableNames.Data];
 				if (dtTime.Rows.Count > 0)
 					PopulateGridTable();
@@ -307,7 +307,7 @@ namespace Merlin.Controls
 		private void OnTariffWindowDeleted(PresentationObject presentationObject)
 		{
 			SetDataSourceValue(RawDataGridView.CurrentCell, string.Empty);
-			tariffWindows[
+			_tariffWindows[
 				RawDataGridView.CurrentCell.RowIndex - FIXED_ROWS,
 				RawDataGridView.CurrentCell.ColumnIndex - FixedCols
 				] = null;
@@ -363,7 +363,7 @@ namespace Merlin.Controls
 				int columnIndex = DefineColumnIndex(timeAndPriceRow, dayOfWeek);
 				TariffWindowWithRollerIssues window = new TariffWindowWithRollerIssues(row, showTrafficWindows ? Entities.TariffWindowTM : Entities.TariffWindow);
 				
-                tariffWindows[rowIndex, columnIndex] = window;
+                _tariffWindows[rowIndex, columnIndex] = window;
 				gridRow[FixedCols + columnIndex] = GetCellContent(row);
 			}
 		}

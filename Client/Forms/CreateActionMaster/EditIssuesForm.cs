@@ -44,10 +44,10 @@ namespace Merlin.Forms.CreateActionMaster
                 grdCurrentCampaignIssues.Caption = "Добавленные выпуски";
 
                 RefreshGrid();
-				tariffGrid.GridRefreshed += TariffGridRefreshed;
-				((TariffWithRangeGrid)tariffGrid).Action.DisplayData(lstStat);
+				_tariffGrid.GridRefreshed += TariffGridRefreshed;
+				((TariffWithRangeGrid)_tariffGrid).Action.DisplayData(lstStat);
 				grdCurrentCampaignIssues.Entity = EntityManager.GetEntity((int)Entities.MasterIssues);
-				ShowCurrentIssues(tariffGrid as TariffWithRangeGrid);
+				ShowCurrentIssues(_tariffGrid as TariffWithRangeGrid);
 
             }
 			catch (Exception ex)
@@ -75,13 +75,13 @@ namespace Merlin.Forms.CreateActionMaster
 
 	    private void TariffGridRefreshed()
         {
-            ShowCurrentIssues(((TariffWithRangeGrid)tariffGrid));
-            ((TariffWithRangeGrid)tariffGrid).Action.DisplayData(lstStat);
+            ShowCurrentIssues(((TariffWithRangeGrid)_tariffGrid));
+            ((TariffWithRangeGrid)_tariffGrid).Action.DisplayData(lstStat);
         }
 
 		public void DeleteIssue(MasterIssue issue)
 		{
-			((TariffWithRangeGrid)tariffGrid).DeleteIssue(issue);
+			((TariffWithRangeGrid)_tariffGrid).DeleteIssue(issue);
 		}
 	}
 }

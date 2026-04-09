@@ -71,9 +71,9 @@ namespace Merlin.Controls
 								? null : (DateTime?)ParseHelper.GetDateTimeFromObject(oMinBroadCast, DateTime.Now);
 
 				if (MaxBroadCast.HasValue && MinBroadCast.HasValue)
-					tariffWindows = new ITariffWindow[(int)(MaxBroadCast.Value.AddDays(1) - MinBroadCast.Value).TotalHours * 2, 7];
+					_tariffWindows = new ITariffWindow[(int)(MaxBroadCast.Value.AddDays(1) - MinBroadCast.Value).TotalHours * 2, 7];
 				else
-					tariffWindows = null;
+					_tariffWindows = null;
 
                 PopulateGridTable(dataSet.Tables[2]);
 			};
@@ -192,7 +192,7 @@ namespace Merlin.Controls
 	    private void PopulateGridTable(DataTable dt)
 		{
 			_timeResolver = new Dictionary<string, string>();
-			if (tariffWindows != null && MaxBroadCast.HasValue)
+			if (_tariffWindows != null && MaxBroadCast.HasValue)
 			{
                 foreach (DataRow row in dt.Rows)
                 {
@@ -215,7 +215,7 @@ namespace Merlin.Controls
                     {
                         int iCol = ParseHelper.GetInt32FromObject(row["col"], 1) - 1;
                         dtGrid.Rows[rowIndex.Value][iCol + FixedCols] = GetCellContent(row);
-                        tariffWindows[rowIndex.Value - FIXED_ROWS, iCol] = new TariffWindowWithRange(row);
+                        _tariffWindows[rowIndex.Value - FIXED_ROWS, iCol] = new TariffWindowWithRange(row);
                     }
 				}
 			}

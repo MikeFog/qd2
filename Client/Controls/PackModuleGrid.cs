@@ -31,7 +31,7 @@ namespace Merlin.Controls
 			               {
 			               	DataSet dsWindows =	PackModulePricelist.GetTariffWindows(startDate, finishDate, ShowUnconfirmed);
 			               	DataRow gridRow = dtGrid.NewRow();
-							tariffWindows = new ITariffWindow[1, 7];
+							_tariffWindows = new ITariffWindow[1, 7];
 
 			               	gridRow[ColumnNames.Price] = PackModulePricelist.Price;
 
@@ -74,9 +74,9 @@ namespace Merlin.Controls
 														MarkCellAsHavingCurrentCampaignIssues(2, columnIndex);
 			                  	}
 
-													for(int i = 0; i < tariffWindows.Length; i++)
+													for(int i = 0; i < _tariffWindows.Length; i++)
 													{
-														TariffWindowPackModule tariffWindow = tariffWindows[0, i] as TariffWindowPackModule;
+														TariffWindowPackModule tariffWindow = _tariffWindows[0, i] as TariffWindowPackModule;
 														if (tariffWindow != null && ((rollerPosition == RollerPositions.First && !tariffWindow.isFirstBusy) || (rollerPosition == RollerPositions.Second && !tariffWindow.isSecondBusy) || (rollerPosition == RollerPositions.Last && !tariffWindow.isLastBusy)))
 															MarkCellAsNotOccupied(2, i + 1);
 													}
@@ -97,7 +97,7 @@ namespace Merlin.Controls
 				else
 					gridRow[columnIndex] = string.Format("{0} [{1}]", timeString, row["freeCapacity"]);
 
-				tariffWindows[0, columnIndex - 1] =
+				_tariffWindows[0, columnIndex - 1] =
 					new TariffWindowPackModule(row, PackModulePricelist.Price, module.PackModuleId);
 			}
 		}
