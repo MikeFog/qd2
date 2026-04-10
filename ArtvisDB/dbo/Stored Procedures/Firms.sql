@@ -38,7 +38,7 @@ BEGIN
                     finishDate,
                     ROW_NUMBER() OVER (PARTITION BY FirmID ORDER BY finishDate DESC) AS rn
                 FROM Action 
-                WHERE userID = ISNULL(@userId, userID)
+                WHERE userID = ISNULL(@userId, userID) and isConfirmed = 1
             ) AS RankedActions
             WHERE rn = 1
         ) AS ai 
