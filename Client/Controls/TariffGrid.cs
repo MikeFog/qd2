@@ -682,8 +682,8 @@ namespace Merlin.Controls
         protected Color MarkCellAsPrimePrice(int rowIndex, int columnIndex)
         {
 			var currentColor = GetCell(rowIndex, columnIndex).Style.BackColor;
-            SetCellBackColor(rowIndex, columnIndex, Color.FromArgb(175, 140, 211));
-			return currentColor;	
+            SetCellBackColor(rowIndex, columnIndex, Color.FromArgb(223, 211, 238));
+            return currentColor;	
         }
     }
 }
