@@ -698,13 +698,13 @@ namespace Merlin.Classes
         internal void DisplayData(ListBox lstStat)
         {
             lstStat.Items.Clear();
-            lstStat.Items.Add("Начало: " + (StartDate == DateTime.MinValue ? string.Empty : StartDate.ToShortDateString()));
-            lstStat.Items.Add("Окончание: " + (FinishDate == DateTime.MinValue ? string.Empty : FinishDate.ToShortDateString()));
-            lstStat.Items.Add("Выпусков: " + this["iCount"]);
-            lstStat.Items.Add("Общее время: " + this["duration"]);
-            lstStat.Items.Add("Тариф: " + TariffPrice.ToString("c"));
-            lstStat.Items.Add("Итого: " + TotalPrice.ToString("c"));
-            lstStat.Items.Add("Пакетная скидка: " + this[ParamNames.Discount]);
+            lstStat.Items.Add($"Начало: {(StartDate == DateTime.MinValue ? "" : StartDate.ToShortDateString())}");
+            lstStat.Items.Add($"Окончание: {(FinishDate == DateTime.MinValue ? "" : FinishDate.ToShortDateString())}");
+            lstStat.Items.Add($"Выпусков: {this["iCount"]}");
+            lstStat.Items.Add($"Общее время: {this["duration"]}");
+            lstStat.Items.Add($"Тариф: {TariffPrice:c}");
+            lstStat.Items.Add($"Итого: {TotalPrice:c}");
+            lstStat.Items.Add($"Пакетная скидка: {this[ParamNames.Discount]:F2}");
         }
 
         public DataTable Issues
