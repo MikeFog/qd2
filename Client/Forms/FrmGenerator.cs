@@ -1,7 +1,6 @@
 using FogSoft.WinForm;
 using FogSoft.WinForm.Classes;
 using FogSoft.WinForm.Classes.Export;
-using FogSoft.WinForm.DataAccess;
 using Merlin.Classes;
 using System;
 using System.Collections.Generic;
@@ -9,6 +8,7 @@ using System.ComponentModel;
 using System.Data;
 using System.Windows.Forms;
 using System.Linq;
+using System.Diagnostics;
 
 namespace Merlin.Forms
 {
@@ -16,10 +16,11 @@ namespace Merlin.Forms
 	{
 		private readonly IssueTemplate _template;
 		private readonly Campaign _campaign;
-		private readonly PresentationObject module;
-		private readonly PresentationObject roller;
-		private readonly RollerPositions position;
-		private readonly Pricelist pricelist;
+		private readonly PresentationObject _module;
+		private readonly PresentationObject _roller;
+		private readonly RollerPositions _position;
+		private readonly Pricelist _pricelist;
+		private DataTable _maxPrices;
 
 		private readonly SponsorProgram program;
 		private readonly int tariffID;
@@ -36,11 +37,11 @@ namespace Merlin.Forms
 		{
 			InitializeComponent();
 			this._template = template;
-			this.module = module;
+			this._module = module;
 			this._campaign = campaign;
-			this.position = position;
-			this.pricelist = pricelist;
-			this.roller = roller;
+			this._position = position;
+			this._pricelist = pricelist;
+			this._roller = roller;
 			this.grantorID = grantorID;
 		}
 
@@ -79,13 +80,13 @@ namespace Merlin.Forms
 
         private Entity ResolveEntity()
 		{
-			if (module == null && program == null)
+			if (_module == null && program == null)
 				return EntityManager.GetEntity((int)Entities.Issue);
-			else if (module == null)
+			else if (_module == null)
 				return ProgramIssue.GetEntity();
-			else if (module is Module)
+			else if (_module is Module)
 				return ModuleIssue.GetEntity();
-			else if (module is PackModule)
+			else if (_module is PackModule)
 				return PackModuleIssue.GetEntity();
 			return null;
 		}
@@ -134,6 +135,8 @@ namespace Merlin.Forms
 
 		public void Generate()
 		{
+			Stopwatch sw = Stopwatch.StartNew();
+
 			try
 			{
 				if (_template == null)
@@ -149,7 +152,7 @@ namespace Merlin.Forms
 					{
 						pbProgress.Value++;
 						Application.DoEvents();
-						
+
 						List<PresentationObject> pos = _template.IsModeAdd ? AddIssues() : DeleteIssues();
 						if (pos != null)
 						{
@@ -166,12 +169,21 @@ namespace Merlin.Forms
 					}
 				}
 			}
-			finally	
+			finally
 			{
+				sw.Stop();
+
 				pbProgress.Visible = false;
 				// Гарантированный вызов RecalculateAction в конце, независимо от результата
 				if (_campaign != null)
 					_campaign.RecalculateAction();
+				/*
+				MessageBox.Show(
+					string.Format("Генерация выполнена за {0:F2} сек.", sw.Elapsed.TotalSeconds),
+					"Время выполнения",
+					MessageBoxButtons.OK,
+					MessageBoxIcon.Information);
+				*/
 			}
 		}
 
@@ -200,7 +212,6 @@ namespace Merlin.Forms
             return issues;
         }
 
-
         private List<PresentationObject> AddIssues() 
 		{
 			if (_updateDB != null)
@@ -208,17 +219,21 @@ namespace Merlin.Forms
 				DataRow row = _updateDB(_template.CurrentDate);
 				return new List<PresentationObject> { new RollerIssue(row) };
 			}
-			else if (module == null && program == null)
+			else if (_module == null && program == null)
 			{
 				if (_template.Mode == IssueTemplateMode.TimePeriod)
+				{
+					if (_maxPrices == null)
+						_maxPrices = ((CampaignOnSingleMassmedia)_campaign).Massmedia.GetMaxPriceByDay(_template.StartDate, _template.FinishDate);
 					return AddSimpleIssues();
+				}
 				return AddSimpleIssue();
 			}
-			else if (module == null)
+			else if (_module == null)
 				return AddProgramIssue();
-			else if (module is Module)
+			else if (_module is Module)
 				return AddModuleIssue();
-			else if (module is PackModule)
+			else if (_module is PackModule)
 				return AddPackModuleIssue();
 			return null;
 		}
@@ -229,15 +244,17 @@ namespace Merlin.Forms
 				_template.CurrentDate, ((CampaignOnSingleMassmedia)_campaign).Massmedia)
 				?? throw new NullReferenceException("TariffWindowNotFound");
 
-			Issue issue = _campaign.AddIssue(roller, tariffWindow, position, grantorID);
+			Issue issue = _campaign.AddIssue(_roller, tariffWindow, _position, grantorID);
 			issue.Refresh();
 			return new List<PresentationObject> { issue };
 		}
 
 		private List<PresentationObject> AddSimpleIssues()
-        {
-			MassmediaPricelist pricelist = ((CampaignOnSingleMassmedia)_campaign).Massmedia.GetPriceList(_template.CurrentDate) as MassmediaPricelist ?? throw new Exception("PriceListDoesntExist");
-            DataSet dsWindows = pricelist.GetTariffWindows(_template.CurrentDate, _template.CurrentDate, null, false);
+		{
+			Massmedia radioStation = ((CampaignOnSingleMassmedia)_campaign).Massmedia;
+
+			MassmediaPricelist pricelist = radioStation.GetPriceList(_template.CurrentDate) as MassmediaPricelist ?? throw new Exception("PriceListDoesntExist");
+			DataSet dsWindows = pricelist.GetTariffWindows(_template.CurrentDate, _template.CurrentDate, null, false);
 			DataTable dtTariffWindow = dsWindows.Tables[Constants.TableNames.Data];
 			List<PresentationObject> issues = new List<PresentationObject>();
 
@@ -246,95 +263,130 @@ namespace Merlin.Forms
 							_template.StartTime.Hour, _template.FinishTime.Hour, _template.StartTime.Minute, _template.FinishTime.Minute);
 
 			int firmId = _campaign.Action.FirmID;
-            var allWindows = new List<TariffWindowWithRollerIssues>();
-            foreach (DataRow row in dtTariffWindow.Select(filter))
-            {
-                var window = new TariffWindowWithRollerIssues(row, Entities.TariffWindow);
-                if (!_template.IgnoreWindowsWithTheSameFirmIssue || !window.IsRollerOfTheFirmExist(firmId, true))
-                    allWindows.Add(window);
-            }
+			var allWindows = new List<TariffWindowWithRollerIssues>();
+			foreach (DataRow row in dtTariffWindow.Select(filter))
+			{
+				var window = new TariffWindowWithRollerIssues(row, Entities.TariffWindow);
+				if (!_template.IgnoreWindowsWithTheSameFirmIssue || !window.IsRollerOfTheFirmExist(firmId, true))
+					allWindows.Add(window);
+			}
 
-            var rnd = new Random();
+			var rnd = new Random();
 
-            if (_template.Quantity != 0)
-            {
-                // Режим: использовать все окна вместе, quantity = _template.Quantity
-                var windows = allWindows
-                    .Select(w => new { w, rand = rnd.Next() })
-                    .OrderBy(x => x.w)
-                    .ThenBy(x => x.rand)
-                    .Select(x => x.w)
-                    .ToList();
+			if (_template.Quantity != 0)
+			{
+				// Режим: использовать все окна вместе, quantity = _template.Quantity
+				var windows = allWindows
+					.Select(w => new { w, rand = rnd.Next() })
+					.OrderBy(x => x.w)
+					.ThenBy(x => x.rand)
+					.Select(x => x.w)
+					.ToList();
 
-                issues.AddRange(AddIssuesFromWindows(windows, _template.Quantity));
-            }
-            else
-            {
-                // Режим: разделяем на prime (макс. цена) и non-prime (остальные)
-                List<TariffWindowWithRollerIssues> windowsPrime;
-                List<TariffWindowWithRollerIssues> windowsNonPrime;
+				issues.AddRange(AddIssuesFromWindows(windows, _template.Quantity));
+			}
+			else
+			{
+				// Режим: разделяем на prime (цена дня из _maxPrices) и non-prime (остальные)
+				decimal? dayPrimePrice = GetPrimePriceForDate(_template.CurrentDate);
 
-                if (allWindows.Count > 0)
-                {
-                    decimal maxPrice = allWindows.Max(w => w.Price);
-                    windowsPrime = allWindows.Where(w => w.Price == maxPrice).ToList();
+				List<TariffWindowWithRollerIssues> windowsPrime;
+				List<TariffWindowWithRollerIssues> windowsNonPrime;
 
-                    // Вторая по величине цена — наибольшая среди оставшихся
-                    var nonPrimePrices = allWindows
-                        .Select(w => w.Price)
-                        .Where(p => p != maxPrice)
-                        .Distinct()
-                        .OrderByDescending(p => p)
-                        .ToList();
+				if (dayPrimePrice.HasValue)
+				{
+					windowsPrime = allWindows.Where(w => w.Price == dayPrimePrice.Value).ToList();
+					windowsNonPrime = allWindows.Where(w => w.Price != dayPrimePrice.Value).ToList();
+				}
+				else
+				{
+					// Нет прайм-цены на день: прайм-окон нет, остальные считаем non-prime
+					windowsPrime = new List<TariffWindowWithRollerIssues>();
+					windowsNonPrime = new List<TariffWindowWithRollerIssues>(allWindows);
+				}
 
-                    decimal? secondPrice = nonPrimePrices.Count > 0 ? nonPrimePrices[0] : (decimal?)null;
+				windowsPrime = windowsPrime
+					.Select(w => new { w, rand = rnd.Next() })
+					.OrderBy(x => x.w)
+					.ThenBy(x => x.rand)
+					.Select(x => x.w)
+					.ToList();
 
-                    windowsNonPrime = secondPrice.HasValue
-                        ? allWindows.Where(w => w.Price == secondPrice.Value).ToList()
-                        : new List<TariffWindowWithRollerIssues>();
-                }
-                else
-                {
-                    windowsPrime    = new List<TariffWindowWithRollerIssues>();
-                    windowsNonPrime = new List<TariffWindowWithRollerIssues>();
-                }
+				windowsNonPrime = windowsNonPrime
+					.Select(w => new { w, rand = rnd.Next() })
+					.OrderBy(x => x.w)
+					.ThenBy(x => x.rand)
+					.Select(x => x.w)
+					.ToList();
 
-                windowsPrime = windowsPrime
-                    .Select(w => new { w, rand = rnd.Next() })
-                    .OrderBy(x => x.w)
-                    .ThenBy(x => x.rand)
-                    .Select(x => x.w)
-                    .ToList();
+				// Всегда: prime -> только prime, non-prime -> только non-prime
+				issues.AddRange(AddIssuesFromWindows(windowsPrime, _template.QuantityPrime));
+				issues.AddRange(AddIssuesFromWindows(windowsNonPrime, _template.QuantityNonPrime));
+			}
 
-                windowsNonPrime = windowsNonPrime
-                    .Select(w => new { w, rand = rnd.Next() })
-                    .OrderBy(x => x.w)
-                    .ThenBy(x => x.rand)
-                    .Select(x => x.w)
-                    .ToList();
+			return issues;
+		}
 
-                issues.AddRange(AddIssuesFromWindows(windowsPrime,    _template.QuantityPrime));
-                issues.AddRange(AddIssuesFromWindows(windowsNonPrime, _template.QuantityNonPrime));
-            }
+		private decimal? GetPrimePriceForDate(DateTime date)
+		{
+			if (_maxPrices == null || _maxPrices.Rows.Count == 0)
+				return null;
 
-            return issues;
-        }
+			DataColumn dateColumn = _maxPrices.Columns.Cast<DataColumn>()
+				.FirstOrDefault(c => string.Equals(c.ColumnName, "Date", StringComparison.OrdinalIgnoreCase));
+			DataColumn priceColumn = _maxPrices.Columns.Cast<DataColumn>()
+				.FirstOrDefault(c => string.Equals(c.ColumnName, "Price", StringComparison.OrdinalIgnoreCase));
 
-        private List<PresentationObject> AddIssuesFromWindows(List<TariffWindowWithRollerIssues> windows, int quantity)
-        {
+			if (dateColumn == null || priceColumn == null)
+				return null;
+
+			foreach (DataRow row in _maxPrices.Rows)
+			{
+				DateTime rowDate = ParseHelper.GetDateTimeFromObject(row[dateColumn], DateTime.MinValue);
+				if (rowDate != DateTime.MinValue && rowDate.Date == date.Date)
+					return ParseHelper.GetDecimalFromObject(row[priceColumn], 0m);
+			}
+
+			return null;
+		}
+		
+		private List<PresentationObject> AddModuleIssue()
+		{
+            ModuleIssue moduleIssue = _campaign.AddModuleIssue((Module)_module, _roller, (ModulePricelist)_pricelist,
+                                                                     _template.CurrentDate, _position, grantorID);
+			moduleIssue.Refresh();
+            return new List<PresentationObject> { moduleIssue};			
+		}
+
+		private List<PresentationObject> AddPackModuleIssue()
+		{
+            PackModuleIssue packModuleIssue = ((CampaignPackModule)_campaign).AddPackModuleIssue((PackModulePricelist)_pricelist, (Roller)_roller, _position,
+                                                                  _template.CurrentDate, grantorID);
+			packModuleIssue.Refresh();
+			return new List<PresentationObject> { packModuleIssue };
+		}
+
+		private List<PresentationObject> AddProgramIssue()
+		{
+            ProgramIssue programIssue = _campaign.AddProgramIssue(program, tariffID, _template.CurrentDate, price, bonus, _campaign.Action.IsConfirmed);
+			programIssue.Refresh();
+            return new List<PresentationObject> { programIssue }; 
+		}
+
+		private List<PresentationObject> AddIssuesFromWindows(List<TariffWindowWithRollerIssues> windows, int quantity)
+		{
 			var issues = new List<PresentationObject>();
 
 			for (int i = 0; i < quantity && windows.Count > 0; i++)
 			{
 				try
 				{
-					Issue issue = _campaign.AddIssue(roller, windows[0], position, grantorID);
+					Issue issue = _campaign.AddIssue(_roller, windows[0], _position, grantorID);
 					issue.Refresh();
 					issues.Add(issue);
 				}
 				catch (Exception ex)
 				{
-					// DataAccessor.RollbackTransaction(); // убрать: транзакция здесь не открывается
 					Dictionary<string, object> parameters = CreateMessageParameters();
 					parameters["description"] = Globals.GetMessage(ex.Message, parameters);
 					AddErrorInfo(parameters);
@@ -353,29 +405,6 @@ namespace Merlin.Forms
 			}
 
 			return issues;
-		}
-
-		private List<PresentationObject> AddModuleIssue()
-		{
-            ModuleIssue moduleIssue = _campaign.AddModuleIssue((Module)module, roller, (ModulePricelist)pricelist,
-                                                                     _template.CurrentDate, position, grantorID);
-			moduleIssue.Refresh();
-            return new List<PresentationObject> { moduleIssue};			
-		}
-
-		private List<PresentationObject> AddPackModuleIssue()
-		{
-            PackModuleIssue packModuleIssue = ((CampaignPackModule)_campaign).AddPackModuleIssue((PackModulePricelist)pricelist, (Roller)roller, position,
-                                                                  _template.CurrentDate, grantorID);
-			packModuleIssue.Refresh();
-			return new List<PresentationObject> { packModuleIssue };
-		}
-
-		private List<PresentationObject> AddProgramIssue()
-		{
-            ProgramIssue programIssue = _campaign.AddProgramIssue(program, tariffID, _template.CurrentDate, price, bonus, _campaign.Action.IsConfirmed);
-			programIssue.Refresh();
-            return new List<PresentationObject> { programIssue }; 
 		}
 	}
 }

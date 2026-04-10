@@ -198,7 +198,17 @@ namespace Merlin.Classes
 			return null;
 		}
 
-		internal DataSet GetRollerCells(Pricelist pricelist, DateTime startDate, DateTime finishDate,
+		public DataTable GetMaxPriceByDay(DateTime dateFrom, DateTime dateTo)
+		{
+            Dictionary<string, object> procParameters = DataAccessor.CreateParametersDictionary();
+			procParameters[ParamNames.MassmediaId] = MassmediaId;
+			procParameters["DateFrom"] = dateFrom.Date;
+			procParameters["DateTo"] = dateTo.Date;
+
+            return DataAccessor.LoadDataSet("GetMaxPriceByDay", procParameters).Tables[0];
+        }
+
+        internal DataSet GetRollerCells(Pricelist pricelist, DateTime startDate, DateTime finishDate,
 		                              Module module, bool showUnconfirmed, Campaign campaign, RollerPositions rollerPosition)
 		{
 			Dictionary<string, object> procParameters = DataAccessor.PrepareParameters(

@@ -42,6 +42,9 @@
 
 
 
+
+
+
 GO
 ALTER TABLE [dbo].[TariffWindow] SET (LOCK_ESCALATION = AUTO);
 
@@ -125,4 +128,10 @@ GO
 CREATE NONCLUSTERED INDEX [IX_TariffWindow_ActualDate]
     ON [dbo].[TariffWindow]([massmediaID] ASC, [windowDateActual] ASC)
     INCLUDE([duration], [windowId]);
+
+
+GO
+CREATE NONCLUSTERED INDEX [IX_TariffWindow_MassmediaID_DayActual_Price]
+    ON [dbo].[TariffWindow]([massmediaID] ASC, [dayActual] ASC)
+    INCLUDE([price]);
 
