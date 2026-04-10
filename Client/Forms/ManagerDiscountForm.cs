@@ -8,12 +8,15 @@ namespace Merlin.Forms
     public partial class ManagerDiscountForm : Form
 	{
         public decimal FinalPrice { get; private set; }
+        public int? ManagerDiscountReasonId { get; private set; }
         private readonly decimal tariffPrice;
         private readonly decimal multiplyDiscount = 1;
 		private SecurityManager.User grantor;
 		private readonly DateTime startDate;
 		private readonly DateTime finishDate;
 		private DateTime _currentDate;
+        private readonly Campaign _campaign;
+
 
         public ManagerDiscountForm()
 		{
@@ -25,18 +28,36 @@ namespace Merlin.Forms
 
 		internal ManagerDiscountForm(Campaign campaign) : this()
 		{
-			tariffPrice = campaign.TariffPrice;
-			lblTariffPrice.Text = campaign.TariffPrice.ToString("c");
-		    lblDiscount.Text = campaign.Discount.ToString("F");
-		    lblPackDiscount.Text = campaign.PackDiscount.ToString("F");
-			txtFinalPrice.Maximum = decimal.MaxValue;
-            txtFinalPrice.Value = campaign.FullPrice;
-		    txtRatio.Value = Math.Min(Math.Max(campaign.ManagerDiscount, 0), 1000);
-		    multiplyDiscount = campaign.Discount * campaign.PackDiscount;
-			startDate = campaign.StartDate;
-			finishDate = campaign.FinishDate;
-			chkCurrentDate.Visible = dtCurrentDate.Visible = SecurityManager.LoggedUser.IsBookKeeper || SecurityManager.LoggedUser.IsAdmin;
-		}
+            _campaign = campaign;
+            tariffPrice = campaign.TariffPrice;
+            multiplyDiscount = _campaign.Discount * _campaign.PackDiscount;
+            startDate = _campaign.StartDate;
+            finishDate = _campaign.FinishDate;
+        }
+
+        protected override void OnLoad(EventArgs e)
+        {
+            base.OnLoad(e);
+
+            lblTariffPrice.Text = _campaign.TariffPrice.ToString("c");
+            lblDiscount.Text = _campaign.Discount.ToString("F");
+            lblPackDiscount.Text = _campaign.PackDiscount.ToString("F");
+            txtFinalPrice.Maximum = decimal.MaxValue;
+            txtFinalPrice.Value = _campaign.FullPrice;
+            txtRatio.Value = Math.Min(Math.Max(_campaign.ManagerDiscount, 0), 1000);
+            if (!(SecurityManager.LoggedUser.IsBookKeeper || SecurityManager.LoggedUser.IsAdmin))
+                Utils.HideTableLayoutRow(tableLayoutPanelMain, 6);
+            //chkCurrentDate.Visible = dtCurrentDate.Visible = SecurityManager.LoggedUser.IsBookKeeper || SecurityManager.LoggedUser.IsAdmin;
+            if (SecurityManager.LoggedUser.IsAdmin)
+            {
+                Entity entity = EntityManager.GetEntity((int)Entities.ManagerDiscountReason);
+                entity.ClearCache();
+                cmbReason.ColumnWithID = "ManagerDiscountReasonId";
+                cmbReason.DataSource = entity.GetContent().Copy().DefaultView;
+            }
+            else
+                Utils.HideTableLayoutRow(tableLayoutPanelMain, 5);
+        }
 
         private void AttachTextChangedEvent(NumericUpDown numericUpDown, EventHandler handler)
         {
@@ -108,9 +129,13 @@ namespace Merlin.Forms
 			else
 			{
 				FinalPrice = txtFinalPrice.Value;
+
 			}
 			_currentDate = dtCurrentDate.Value;
-		}
+            ManagerDiscountReasonId = cmbReason.SelectedValue != null
+                ? (int?)Convert.ToInt32(cmbReason.SelectedValue)
+                : null;
+        }
 
         private void checkBox1_CheckedChanged(object sender, EventArgs e)
         {

@@ -503,7 +503,7 @@ namespace Merlin.Classes
 			}
 		}
 
-		public void SetFinalPrice(decimal finalPrice, DateTime todayDate, int? grantorId)
+		public void SetFinalPrice(decimal finalPrice, DateTime todayDate, int? grantorId, int? managerDiscountReasonId)
 		{
 			Dictionary<string, object> procParameters = DataAccessor.PrepareParameters(
 				EntityManager.GetEntity((int) Entities.CampaignOnMassmedia), InterfaceObjects.FakeModule,
@@ -512,6 +512,7 @@ namespace Merlin.Classes
 			procParameters[ParamNames.CampaignTypeId] = (int) CampaignType;
 			procParameters[ParamNames.FinalPrice] = finalPrice;
 			procParameters[ParamNames.GrantorID] = (object) grantorId ?? DBNull.Value;
+            procParameters["managerDiscountReasonId"] = managerDiscountReasonId;
             procParameters["todayDate"] = todayDate;
 
             DataAccessor.DoAction(procParameters);

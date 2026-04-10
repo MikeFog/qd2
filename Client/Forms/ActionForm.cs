@@ -239,7 +239,7 @@ namespace Merlin.Forms
 				try
 				{
 					DataAccessor.BeginTransaction();
-					campaign.SetFinalPrice(fDiscount.FinalPrice, fDiscount.CurrentDate, fDiscount.Grantor == null ? null : (int?)fDiscount.Grantor.Id);
+					campaign.SetFinalPrice(fDiscount.FinalPrice, fDiscount.CurrentDate, fDiscount.Grantor == null ? null : (int?)fDiscount.Grantor.Id, fDiscount.ManagerDiscountReasonId	);
 					campaign.Action.Recalculate(refreshFlag: false, todayDate: fDiscount.CurrentDate);
 					DataAccessor.CommitTransaction();
 				}
@@ -373,7 +373,7 @@ namespace Merlin.Forms
                             }
 
                             Debug.WriteLine($"Campaign {i}: {newP}");
-                            campaign.SetFinalPrice(newP, form.SelectedDate, SecurityManager.LoggedUser.Id);
+                            campaign.SetFinalPrice(newP, form.SelectedDate, SecurityManager.LoggedUser.Id, form.ManagerDiscountReasonId);
                         }
                         _action.Recalculate(refreshFlag: true, todayDate: form.SelectedDate	);
                         DataAccessor.CommitTransaction();

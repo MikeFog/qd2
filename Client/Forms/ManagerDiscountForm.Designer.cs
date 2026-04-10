@@ -30,6 +30,8 @@ namespace Merlin.Forms
             this.chkCurrentDate = new System.Windows.Forms.CheckBox();
             this.tableLayoutPanelMain = new System.Windows.Forms.TableLayoutPanel();
             this.dtCurrentDate = new System.Windows.Forms.DateTimePicker();
+            this.label5 = new System.Windows.Forms.Label();
+            this.cmbReason = new FogSoft.WinForm.LookUp();
             this.buttonPanel = new System.Windows.Forms.Panel();
             ((System.ComponentModel.ISupportInitialize)(this.txtRatio)).BeginInit();
             ((System.ComponentModel.ISupportInitialize)(this.txtFinalPrice)).BeginInit();
@@ -41,9 +43,9 @@ namespace Merlin.Forms
             // 
             this.btnOK.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Right)));
             this.btnOK.DialogResult = System.Windows.Forms.DialogResult.OK;
-            this.btnOK.Location = new System.Drawing.Point(450, 8);
+            this.btnOK.Location = new System.Drawing.Point(413, 8);
             this.btnOK.Name = "btnOK";
-            this.btnOK.Size = new System.Drawing.Size(80, 32);
+            this.btnOK.Size = new System.Drawing.Size(120, 33);
             this.btnOK.TabIndex = 0;
             this.btnOK.Text = "Ок";
             this.btnOK.UseVisualStyleBackColor = true;
@@ -53,16 +55,15 @@ namespace Merlin.Forms
             // 
             this.btnCancel.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Right)));
             this.btnCancel.DialogResult = System.Windows.Forms.DialogResult.Cancel;
-            this.btnCancel.Location = new System.Drawing.Point(536, 8);
+            this.btnCancel.Location = new System.Drawing.Point(540, 8);
             this.btnCancel.Name = "btnCancel";
-            this.btnCancel.Size = new System.Drawing.Size(80, 32);
+            this.btnCancel.Size = new System.Drawing.Size(120, 33);
             this.btnCancel.TabIndex = 1;
             this.btnCancel.Text = "Отмена";
             this.btnCancel.UseVisualStyleBackColor = true;
             // 
             // label1
             // 
-            this.label1.Anchor = System.Windows.Forms.AnchorStyles.Left;
             this.label1.AutoSize = true;
             this.label1.Location = new System.Drawing.Point(15, 18);
             this.label1.Margin = new System.Windows.Forms.Padding(3, 6, 3, 6);
@@ -73,7 +74,6 @@ namespace Merlin.Forms
             // 
             // lblTariffPrice
             // 
-            this.lblTariffPrice.Anchor = System.Windows.Forms.AnchorStyles.Left;
             this.lblTariffPrice.AutoSize = true;
             this.lblTariffPrice.Location = new System.Drawing.Point(339, 18);
             this.lblTariffPrice.Margin = new System.Windows.Forms.Padding(3, 6, 3, 6);
@@ -84,7 +84,6 @@ namespace Merlin.Forms
             // 
             // label2
             // 
-            this.label2.Anchor = System.Windows.Forms.AnchorStyles.Left;
             this.label2.AutoSize = true;
             this.label2.Location = new System.Drawing.Point(15, 55);
             this.label2.Margin = new System.Windows.Forms.Padding(3, 6, 3, 6);
@@ -95,7 +94,6 @@ namespace Merlin.Forms
             // 
             // lblDiscount
             // 
-            this.lblDiscount.Anchor = System.Windows.Forms.AnchorStyles.Left;
             this.lblDiscount.AutoSize = true;
             this.lblDiscount.Location = new System.Drawing.Point(339, 55);
             this.lblDiscount.Margin = new System.Windows.Forms.Padding(3, 6, 3, 6);
@@ -117,7 +115,6 @@ namespace Merlin.Forms
             // 
             // lblPackDiscount
             // 
-            this.lblPackDiscount.Anchor = System.Windows.Forms.AnchorStyles.Left;
             this.lblPackDiscount.AutoSize = true;
             this.lblPackDiscount.Location = new System.Drawing.Point(339, 92);
             this.lblPackDiscount.Margin = new System.Windows.Forms.Padding(3, 6, 3, 6);
@@ -139,7 +136,6 @@ namespace Merlin.Forms
             // 
             // txtRatio
             // 
-            this.txtRatio.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Left | System.Windows.Forms.AnchorStyles.Right)));
             this.txtRatio.DecimalPlaces = 2;
             this.txtRatio.Increment = new decimal(new int[] {
             1,
@@ -154,7 +150,7 @@ namespace Merlin.Forms
             0,
             0});
             this.txtRatio.Name = "txtRatio";
-            this.txtRatio.Size = new System.Drawing.Size(274, 31);
+            this.txtRatio.Size = new System.Drawing.Size(315, 31);
             this.txtRatio.TabIndex = 7;
             this.txtRatio.Leave += new System.EventHandler(this.txtRatio_Leave);
             // 
@@ -171,7 +167,6 @@ namespace Merlin.Forms
             // 
             // txtFinalPrice
             // 
-            this.txtFinalPrice.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Left | System.Windows.Forms.AnchorStyles.Right)));
             this.txtFinalPrice.DecimalPlaces = 2;
             this.txtFinalPrice.Location = new System.Drawing.Point(339, 172);
             this.txtFinalPrice.Margin = new System.Windows.Forms.Padding(3, 6, 3, 6);
@@ -181,14 +176,14 @@ namespace Merlin.Forms
             0,
             0});
             this.txtFinalPrice.Name = "txtFinalPrice";
-            this.txtFinalPrice.Size = new System.Drawing.Size(274, 31);
+            this.txtFinalPrice.Size = new System.Drawing.Size(315, 31);
             this.txtFinalPrice.TabIndex = 9;
             this.txtFinalPrice.Leave += new System.EventHandler(this.txtFinalPrice_Leave);
             // 
             // chkCurrentDate
             // 
             this.chkCurrentDate.AutoSize = true;
-            this.chkCurrentDate.Location = new System.Drawing.Point(15, 212);
+            this.chkCurrentDate.Location = new System.Drawing.Point(15, 251);
             this.chkCurrentDate.Name = "chkCurrentDate";
             this.chkCurrentDate.Size = new System.Drawing.Size(318, 29);
             this.chkCurrentDate.TabIndex = 10;
@@ -212,14 +207,17 @@ namespace Merlin.Forms
             this.tableLayoutPanelMain.Controls.Add(this.txtRatio, 1, 3);
             this.tableLayoutPanelMain.Controls.Add(this.label4, 0, 4);
             this.tableLayoutPanelMain.Controls.Add(this.txtFinalPrice, 1, 4);
-            this.tableLayoutPanelMain.Controls.Add(this.chkCurrentDate, 0, 5);
-            this.tableLayoutPanelMain.Controls.Add(this.dtCurrentDate, 1, 5);
+            this.tableLayoutPanelMain.Controls.Add(this.chkCurrentDate, 0, 6);
+            this.tableLayoutPanelMain.Controls.Add(this.dtCurrentDate, 1, 6);
+            this.tableLayoutPanelMain.Controls.Add(this.label5, 0, 5);
+            this.tableLayoutPanelMain.Controls.Add(this.cmbReason, 1, 5);
             this.tableLayoutPanelMain.Dock = System.Windows.Forms.DockStyle.Top;
             this.tableLayoutPanelMain.GrowStyle = System.Windows.Forms.TableLayoutPanelGrowStyle.FixedSize;
             this.tableLayoutPanelMain.Location = new System.Drawing.Point(0, 0);
             this.tableLayoutPanelMain.Name = "tableLayoutPanelMain";
             this.tableLayoutPanelMain.Padding = new System.Windows.Forms.Padding(12);
-            this.tableLayoutPanelMain.RowCount = 7;
+            this.tableLayoutPanelMain.RowCount = 8;
+            this.tableLayoutPanelMain.RowStyles.Add(new System.Windows.Forms.RowStyle());
             this.tableLayoutPanelMain.RowStyles.Add(new System.Windows.Forms.RowStyle());
             this.tableLayoutPanelMain.RowStyles.Add(new System.Windows.Forms.RowStyle());
             this.tableLayoutPanelMain.RowStyles.Add(new System.Windows.Forms.RowStyle());
@@ -227,27 +225,47 @@ namespace Merlin.Forms
             this.tableLayoutPanelMain.RowStyles.Add(new System.Windows.Forms.RowStyle());
             this.tableLayoutPanelMain.RowStyles.Add(new System.Windows.Forms.RowStyle());
             this.tableLayoutPanelMain.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Absolute, 3F));
-            this.tableLayoutPanelMain.Size = new System.Drawing.Size(628, 254);
+            this.tableLayoutPanelMain.Size = new System.Drawing.Size(669, 298);
             this.tableLayoutPanelMain.TabIndex = 12;
             // 
             // dtCurrentDate
             // 
-            this.dtCurrentDate.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Left | System.Windows.Forms.AnchorStyles.Right)));
             this.dtCurrentDate.Enabled = false;
-            this.dtCurrentDate.Location = new System.Drawing.Point(339, 212);
+            this.dtCurrentDate.Location = new System.Drawing.Point(339, 251);
             this.dtCurrentDate.Name = "dtCurrentDate";
-            this.dtCurrentDate.Size = new System.Drawing.Size(274, 31);
+            this.dtCurrentDate.Size = new System.Drawing.Size(315, 31);
             this.dtCurrentDate.TabIndex = 11;
+            // 
+            // label5
+            // 
+            this.label5.Anchor = System.Windows.Forms.AnchorStyles.Left;
+            this.label5.AutoSize = true;
+            this.label5.Location = new System.Drawing.Point(15, 216);
+            this.label5.Name = "label5";
+            this.label5.Size = new System.Drawing.Size(217, 25);
+            this.label5.TabIndex = 12;
+            this.label5.Text = "Причина выдачи скидки:";
+            // 
+            // cmbReason
+            // 
+            this.cmbReason.Font = new System.Drawing.Font("Segoe UI", 8.25F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(204)));
+            this.cmbReason.IsNullable = false;
+            this.cmbReason.Location = new System.Drawing.Point(339, 212);
+            this.cmbReason.Name = "cmbReason";
+            this.cmbReason.SelectedIndex = -1;
+            this.cmbReason.SelectedValue = null;
+            this.cmbReason.Size = new System.Drawing.Size(315, 33);
+            this.cmbReason.TabIndex = 13;
             // 
             // buttonPanel
             // 
             this.buttonPanel.Controls.Add(this.btnCancel);
             this.buttonPanel.Controls.Add(this.btnOK);
             this.buttonPanel.Dock = System.Windows.Forms.DockStyle.Bottom;
-            this.buttonPanel.Location = new System.Drawing.Point(0, 252);
+            this.buttonPanel.Location = new System.Drawing.Point(0, 303);
             this.buttonPanel.Name = "buttonPanel";
             this.buttonPanel.Padding = new System.Windows.Forms.Padding(0, 8, 12, 12);
-            this.buttonPanel.Size = new System.Drawing.Size(628, 52);
+            this.buttonPanel.Size = new System.Drawing.Size(669, 52);
             this.buttonPanel.TabIndex = 13;
             // 
             // ManagerDiscountForm
@@ -256,7 +274,7 @@ namespace Merlin.Forms
             this.AutoScaleDimensions = new System.Drawing.SizeF(10F, 25F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
             this.CancelButton = this.btnCancel;
-            this.ClientSize = new System.Drawing.Size(628, 304);
+            this.ClientSize = new System.Drawing.Size(669, 355);
             this.Controls.Add(this.tableLayoutPanelMain);
             this.Controls.Add(this.buttonPanel);
             this.Font = new System.Drawing.Font("Segoe UI", 9F);
@@ -293,5 +311,7 @@ namespace Merlin.Forms
         private System.Windows.Forms.TableLayoutPanel tableLayoutPanelMain;
         private System.Windows.Forms.Panel buttonPanel;
         private System.Windows.Forms.DateTimePicker dtCurrentDate;
+        private System.Windows.Forms.Label label5;
+        private FogSoft.WinForm.LookUp cmbReason;
     }
 }

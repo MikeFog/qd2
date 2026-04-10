@@ -5,7 +5,8 @@
 @campaignTypeId TINYINT,
 @loggedUserId INT,
 @grantorUserId INT = NULL,
-@todayDate datetime = null
+@todayDate datetime = null,
+@managerDiscountReasonId smallint = null
 )
 WITH EXECUTE AS OWNER
 As
@@ -84,7 +85,8 @@ INSERT INTO [dbo].[ManagerDiscountHistory]
            ([campaignID]
            ,[userID]
            ,[managerDiscount]
-           ,[discountSetTime])
-VALUES     (@campaignID, @loggedUserId, @managerDiscount, GETDATE())
+           ,[discountSetTime]
+		   ,[managerDiscountReasonId])
+VALUES     (@campaignID, @loggedUserId, @managerDiscount, GETDATE(), @managerDiscountReasonId)
 
 --Exec ActionRecalculate @actionId, 0, @loggedUserId, @todayDate

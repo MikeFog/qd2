@@ -25,6 +25,8 @@
             this.chkCurrentDate = new System.Windows.Forms.CheckBox();
             this.rbRatio = new System.Windows.Forms.RadioButton();
             this.buttonPanel = new System.Windows.Forms.Panel();
+            this.label5 = new System.Windows.Forms.Label();
+            this.cmbReason = new FogSoft.WinForm.LookUp();
             ((System.ComponentModel.ISupportInitialize)(this.txtFinalPrice)).BeginInit();
             ((System.ComponentModel.ISupportInitialize)(this.txtRatio)).BeginInit();
             this.tableLayoutPanelMain.SuspendLayout();
@@ -35,9 +37,9 @@
             // 
             this.btnOK.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Right)));
             this.btnOK.DialogResult = System.Windows.Forms.DialogResult.OK;
-            this.btnOK.Location = new System.Drawing.Point(450, 8);
+            this.btnOK.Location = new System.Drawing.Point(369, 8);
             this.btnOK.Name = "btnOK";
-            this.btnOK.Size = new System.Drawing.Size(80, 32);
+            this.btnOK.Size = new System.Drawing.Size(120, 33);
             this.btnOK.TabIndex = 0;
             this.btnOK.Text = "Ок";
             this.btnOK.UseVisualStyleBackColor = true;
@@ -47,9 +49,9 @@
             // 
             this.btnCancel.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Right)));
             this.btnCancel.DialogResult = System.Windows.Forms.DialogResult.Cancel;
-            this.btnCancel.Location = new System.Drawing.Point(536, 8);
+            this.btnCancel.Location = new System.Drawing.Point(497, 8);
             this.btnCancel.Name = "btnCancel";
-            this.btnCancel.Size = new System.Drawing.Size(80, 32);
+            this.btnCancel.Size = new System.Drawing.Size(120, 33);
             this.btnCancel.TabIndex = 1;
             this.btnCancel.Text = "Отмена";
             this.btnCancel.UseVisualStyleBackColor = true;
@@ -97,6 +99,8 @@
             this.tableLayoutPanelMain.ColumnCount = 2;
             this.tableLayoutPanelMain.ColumnStyles.Add(new System.Windows.Forms.ColumnStyle());
             this.tableLayoutPanelMain.ColumnStyles.Add(new System.Windows.Forms.ColumnStyle());
+            this.tableLayoutPanelMain.Controls.Add(this.cmbReason, 1, 3);
+            this.tableLayoutPanelMain.Controls.Add(this.label5, 0, 3);
             this.tableLayoutPanelMain.Controls.Add(this.radioButton2, 0, 1);
             this.tableLayoutPanelMain.Controls.Add(this.txtRatio, 1, 0);
             this.tableLayoutPanelMain.Controls.Add(this.txtFinalPrice, 1, 1);
@@ -113,7 +117,7 @@
             this.tableLayoutPanelMain.RowStyles.Add(new System.Windows.Forms.RowStyle());
             this.tableLayoutPanelMain.RowStyles.Add(new System.Windows.Forms.RowStyle());
             this.tableLayoutPanelMain.RowStyles.Add(new System.Windows.Forms.RowStyle());
-            this.tableLayoutPanelMain.Size = new System.Drawing.Size(628, 157);
+            this.tableLayoutPanelMain.Size = new System.Drawing.Size(628, 183);
             this.tableLayoutPanelMain.TabIndex = 23;
             // 
             // radioButton2
@@ -165,11 +169,31 @@
             this.buttonPanel.Controls.Add(this.btnCancel);
             this.buttonPanel.Controls.Add(this.btnOK);
             this.buttonPanel.Dock = System.Windows.Forms.DockStyle.Bottom;
-            this.buttonPanel.Location = new System.Drawing.Point(0, 157);
+            this.buttonPanel.Location = new System.Drawing.Point(0, 183);
             this.buttonPanel.Name = "buttonPanel";
             this.buttonPanel.Padding = new System.Windows.Forms.Padding(0, 8, 12, 12);
             this.buttonPanel.Size = new System.Drawing.Size(628, 52);
             this.buttonPanel.TabIndex = 24;
+            // 
+            // label5
+            // 
+            this.label5.AutoSize = true;
+            this.label5.Location = new System.Drawing.Point(15, 135);
+            this.label5.Name = "label5";
+            this.label5.Size = new System.Drawing.Size(217, 25);
+            this.label5.TabIndex = 27;
+            this.label5.Text = "Причина выдачи скидки:";
+            // 
+            // cmbReason
+            // 
+            this.cmbReason.Font = new System.Drawing.Font("Segoe UI", 8.25F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(204)));
+            this.cmbReason.IsNullable = false;
+            this.cmbReason.Location = new System.Drawing.Point(285, 138);
+            this.cmbReason.Name = "cmbReason";
+            this.cmbReason.SelectedIndex = -1;
+            this.cmbReason.SelectedValue = null;
+            this.cmbReason.Size = new System.Drawing.Size(315, 33);
+            this.cmbReason.TabIndex = 28;
             // 
             // ActionFinalPriceForm
             // 
@@ -177,7 +201,7 @@
             this.AutoScaleDimensions = new System.Drawing.SizeF(10F, 25F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
             this.CancelButton = this.btnCancel;
-            this.ClientSize = new System.Drawing.Size(628, 209);
+            this.ClientSize = new System.Drawing.Size(628, 235);
             this.Controls.Add(this.tableLayoutPanelMain);
             this.Controls.Add(this.buttonPanel);
             this.Font = new System.Drawing.Font("Segoe UI", 9F);
@@ -209,5 +233,7 @@
         private System.Windows.Forms.CheckBox chkCurrentDate;
         private System.Windows.Forms.RadioButton rbRatio;
         private System.Windows.Forms.RadioButton radioButton2;
+        private System.Windows.Forms.Label label5;
+        private FogSoft.WinForm.LookUp cmbReason;
     }
 }

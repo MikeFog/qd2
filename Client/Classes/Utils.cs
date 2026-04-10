@@ -59,5 +59,44 @@ namespace Merlin.Classes
 			}
 			return null;
 		}
-	}
+
+        public static void HideTableLayoutRow(TableLayoutPanel tableLayoutPanelMain, int rowNum)
+        {
+            if (rowNum < 0 || rowNum >= tableLayoutPanelMain.RowCount)
+                return;
+
+            tableLayoutPanelMain.SuspendLayout();
+            try
+            {
+                // 1. Скрываем контролы
+                foreach (Control control in tableLayoutPanelMain.Controls)
+                {
+                    int controlRow = tableLayoutPanelMain.GetRow(control);
+                    int rowSpan = tableLayoutPanelMain.GetRowSpan(control);
+
+                    if (rowNum >= controlRow && rowNum < controlRow + rowSpan)
+                    {
+                        control.Visible = false;
+                    }
+                }
+
+                // Добавляем недостающие стили, если их меньше, чем строк
+                while (tableLayoutPanelMain.RowStyles.Count <= rowNum)
+                {
+                    // Добавляем дефолтный стиль (например, AutoSize), чтобы не сломать логику остальных строк
+                    tableLayoutPanelMain.RowStyles.Add(new RowStyle(SizeType.AutoSize));
+                }
+
+                // 3. Схлопываем
+                tableLayoutPanelMain.RowStyles[rowNum].SizeType = SizeType.Absolute;
+                tableLayoutPanelMain.RowStyles[rowNum].Height = 0;
+            }
+            finally
+            {
+                tableLayoutPanelMain.ResumeLayout(true);
+                // Дополнительный пинок для перерисовки
+                tableLayoutPanelMain.PerformLayout();
+            }
+        }
+    }
 }

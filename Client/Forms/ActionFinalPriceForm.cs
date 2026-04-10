@@ -13,6 +13,7 @@ namespace Merlin.Forms
         public decimal FinalPrice { get; private set; }
         public decimal ManagerDiscount { get; private set; }
         public bool IsManagerDiscount { get; private set; }
+        public int? ManagerDiscountReasonId { get; private set; }
 
         public DateTime SelectedDate { get; private set; }
 
@@ -20,7 +21,7 @@ namespace Merlin.Forms
         {
             InitializeComponent();
             AttachTextChangedEvent(txtRatio, txtRatio_ValueChanged);
-            chkCurrentDate.Visible = dtCurrentDate.Visible = SecurityManager.LoggedUser.IsBookKeeper || SecurityManager.LoggedUser.IsAdmin;
+            //chkCurrentDate.Visible = dtCurrentDate.Visible = SecurityManager.LoggedUser.IsBookKeeper || SecurityManager.LoggedUser.IsAdmin;
             txtFinalPrice.Maximum = decimal.MaxValue;
         }
 
@@ -30,6 +31,22 @@ namespace Merlin.Forms
             txtRatio.Value = 0;
             _action = action;
             _campaignsTable = action.Campaigns();
+        }
+
+        protected override void OnLoad(EventArgs e)
+        {
+            base.OnLoad(e);
+            if (!(SecurityManager.LoggedUser.IsBookKeeper || SecurityManager.LoggedUser.IsAdmin))
+                Utils.HideTableLayoutRow(tableLayoutPanelMain, 2);
+            if (SecurityManager.LoggedUser.IsAdmin)
+            {
+                Entity entity = EntityManager.GetEntity((int)Entities.ManagerDiscountReason);
+                entity.ClearCache();
+                cmbReason.ColumnWithID = "ManagerDiscountReasonId";
+                cmbReason.DataSource = entity.GetContent().Copy().DefaultView;
+            }
+            else
+                Utils.HideTableLayoutRow(tableLayoutPanelMain, 3);
         }
 
         private void AttachTextChangedEvent(NumericUpDown numericUpDown, EventHandler handler)
@@ -50,6 +67,9 @@ namespace Merlin.Forms
             ManagerDiscount = txtRatio.Value;
             FinalPrice = txtFinalPrice.Value;
             SelectedDate = dtCurrentDate.Enabled && dtCurrentDate.Visible ? dtCurrentDate.Value : DateTime.Today;
+            ManagerDiscountReasonId = cmbReason.SelectedValue != null
+                ? (int?)Convert.ToInt32(cmbReason.SelectedValue)
+                : null;
         }
 
         private void chkCurrentDate_CheckedChanged(object sender, EventArgs e)
