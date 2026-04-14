@@ -45,4 +45,4 @@ WHERE
     AND (@startOfCreateInterval IS NULL OR a.createDate         >= @startOfCreateInterval)
     AND (@endOfCreateInterval   IS NULL OR a.createDate         <= @endOfCreateInterval)
 ORDER BY 
-    md.[discountSetTime]
+    md.[discountSetTime] desc

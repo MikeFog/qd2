@@ -81,12 +81,19 @@ Set
 Where
 	campaignID = @campaignId
 
-INSERT INTO [dbo].[ManagerDiscountHistory]
-           ([campaignID]
-           ,[userID]
-           ,[managerDiscount]
-           ,[discountSetTime]
-		   ,[managerDiscountReasonId])
-VALUES     (@campaignID, @loggedUserId, @managerDiscount, GETDATE(), @managerDiscountReasonId)
+MERGE [dbo].[ManagerDiscountHistory] AS target
+USING (SELECT @campaignID AS campaignID) AS source
+ON (target.[campaignID] = source.campaignID)
 
---Exec ActionRecalculate @actionId, 0, @loggedUserId, @todayDate
+-- Если такая кампания уже есть в истории, обновляем данные
+WHEN MATCHED THEN
+    UPDATE SET 
+        [userID] = @loggedUserId,
+        [managerDiscount] = @managerDiscount,
+        [discountSetTime] = GETDATE(),
+        [managerDiscountReasonId] = @managerDiscountReasonId
+
+-- Если записи нет — вставляем новую
+WHEN NOT MATCHED THEN
+    INSERT ([campaignID], [userID], [managerDiscount], [discountSetTime], [managerDiscountReasonId])
+    VALUES (@campaignID, @loggedUserId, @managerDiscount, GETDATE(), @managerDiscountReasonId);
