@@ -647,5 +647,6 @@
     <Build Include="dbo\Tables\ManagerDiscountReason.sql" />
     <Build Include="dbo\Stored Procedures\ManagerDiscountReasons.sql" />
     <Build Include="dbo\Stored Procedures\ManagerDiscountReasonIUD.sql" />
+    <Build Include="dbo\Stored Procedures\GetMaxPriceByDay.sql" />
   </ItemGroup>
 </Project>
