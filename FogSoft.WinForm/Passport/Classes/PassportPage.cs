@@ -53,11 +53,6 @@ namespace FogSoft.WinForm.Passport.Classes
 			get { return tabPage; }
 		}
 
-		public bool Enabled
-		{
-			set { tabPage.Enabled = value; }
-		}
-
 		public void ResetValues()
 		{
 			foreach (PageControl pageControl in pageControls)
