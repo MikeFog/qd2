@@ -30,6 +30,9 @@
 
 
 
+
+
+
 GO
 ALTER TABLE [dbo].[Issue] SET (LOCK_ESCALATION = AUTO);
 
@@ -45,9 +48,7 @@ CREATE NONCLUSTERED INDEX [IX_Issue_PackModuleIssueId]
 
 
 GO
-CREATE NONCLUSTERED INDEX [IX_Issue_campaignID__rollerID_tariffPrice]
-    ON [dbo].[Issue]([campaignID] ASC)
-    INCLUDE([rollerID], [tariffPrice]);
+
 
 
 GO
@@ -56,8 +57,7 @@ CREATE NONCLUSTERED INDEX [IX_Issue_ModuleIssueId]
 
 
 GO
-CREATE NONCLUSTERED INDEX [IX_Issue_ActualWindowID]
-    ON [dbo].[Issue]([actualWindowID] ASC);
+
 
 
 GO

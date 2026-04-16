@@ -21,7 +21,7 @@
     [billDate]        DATETIME         NULL,
     [managerDiscount] DECIMAL (18, 10) CONSTRAINT [DF_Campaign_managerDiscount] DEFAULT ((1)) NOT NULL,
     [contractNo]      INT              NULL,
-    CONSTRAINT [PK_Campaign] PRIMARY KEY NONCLUSTERED ([campaignID] ASC),
+    CONSTRAINT [PK_Campaign] PRIMARY KEY CLUSTERED ([campaignID] ASC),
     CONSTRAINT [FK_Campaign_Action] FOREIGN KEY ([actionID]) REFERENCES [dbo].[Action] ([actionID]) ON DELETE CASCADE ON UPDATE CASCADE,
     CONSTRAINT [UIX_Campaign] UNIQUE NONCLUSTERED ([actionID] ASC, [massmediaID] ASC, [campaignTypeID] ASC, [paymentTypeID] ASC, [agencyID] ASC)
 );
@@ -33,8 +33,11 @@
 
 
 
+
+
+
 GO
-ALTER TABLE [dbo].[Campaign] SET (LOCK_ESCALATION = AUTO);
+
 
 
 GO
