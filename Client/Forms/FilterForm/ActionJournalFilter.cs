@@ -2,7 +2,6 @@
 using System.Data;
 using System.Windows.Forms;
 using System.Xml.XPath;
-using FogSoft.WinForm;
 using FogSoft.WinForm.Classes;
 using FogSoft.WinForm.Controls;
 using Merlin.Classes;
@@ -11,14 +10,8 @@ namespace Merlin.Forms.FilterForm
 {
 	internal partial class ActionJournalFilter : FogSoft.WinForm.Passport.Forms.FilterForm
 	{
-		public ActionJournalFilter(Entity entity, DataSet ds, Dictionary<string, object> filter) 
-			: base(entity, ds, filter,entity.XmlFilter)
-		{
-			InitializeComponent();
-		}
-
-		public ActionJournalFilter(Entity entity, XPathNavigator navigator, DataSet ds, Dictionary<string, object> filter) 
-			: base(entity, navigator, ds, filter)
+		public ActionJournalFilter(Entity entity, DataSet ds, Dictionary<string, object> filter, string xmlFilter)
+			: base(entity, ds, filter, xmlFilter)
 		{
 			InitializeComponent();
 		}

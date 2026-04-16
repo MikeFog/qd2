@@ -1,7 +1,10 @@
-using System;
-using System.Windows.Forms;
 using FogSoft.WinForm;
 using FogSoft.WinForm.Classes;
+using FogSoft.WinForm.Passport.Forms;
+using Merlin.Forms.FilterForm;
+using System;
+using System.Windows.Forms;
+using System.Xml.XPath;
 
 namespace Merlin.Classes.FakeContainers
 {
@@ -92,5 +95,27 @@ namespace Merlin.Classes.FakeContainers
                 ErrorManager.PublishError(e);
             }
         }
-	}
+
+        public override void ShowFilter(IWin32Window owner)
+        {
+            try
+            {
+                Application.DoEvents();
+                Cursor.Current = Cursors.WaitCursor;
+
+                FilterForm frm = new ActionJournalFilter(relationScenario.StartingEntity, Globals.PrepareForFilter(RootEntity), _filter, relationScenario.XmlFilter);
+
+                if (frm.ShowDialog(owner) == DialogResult.OK)
+                    FireContainerRefreshed();
+            }
+            catch (Exception ex)
+            {
+                ErrorManager.PublishError(ex);
+            }
+            finally
+            {
+                Cursor.Current = Cursors.Default;
+            }
+        }
+    }
 }
