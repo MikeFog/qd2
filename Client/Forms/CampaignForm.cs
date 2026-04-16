@@ -46,15 +46,11 @@ namespace Merlin.Forms
 			_campaign = campaign;
 			_campaign.Refresh();
 			_firm = campaign.Action.Firm;
-			SetTariffGrid(tariffGrid);
+            _tariffGrid = tariffGrid;
+            //SetTariffGrid(tariffGrid);
 
 			tbbModules.Image = IsPackModuleCampaign ? Globals.GetImage(Constants.ActionsImages.PackModule) 
 					: Globals.GetImage(Constants.ActionsImages.Module);
-		}
-
-		protected void SetTariffGrid(TariffGrid tariffGrid)
-		{
-			this._tariffGrid = tariffGrid;
 		}
 
 		protected virtual Firm Firm
@@ -287,6 +283,8 @@ namespace Merlin.Forms
             if (_tariffGrid is TariffWindowGrid grid2)
                 grid2.ShowDisabledWindows = btnShowDisabled.Checked;
 
+            SetEventHandlersFromGridEvents(_tariffGrid);
+
             if (_tariffGrid is TariffGridWithCampaignIssues grid)
             {
                 grid.Campaign = _campaign;
@@ -295,7 +293,7 @@ namespace Merlin.Forms
                     grid.RefreshGrid();
             }
 
-            SetEventHandlersFromGridEvents(_tariffGrid);
+            
 
 			if (IsPackModuleCampaign)
 			{
@@ -323,19 +321,22 @@ namespace Merlin.Forms
 			grid.CampaignStatusChanged += CampaignStatusChanged;
 			grid.CellClicked += grid_CellClicked;
 			grid.GridRefreshed += delegate
-														{
-															if (IsPackModuleCampaign || IsModuleCampaign)
-															{
-																InitModulesList();
-																InitRollersList();
-															}
-															grdCurrentCampaignIssues.Clear();
-															grdIssues.Clear();
-															if (packDetails != null)
-																packDetails.Clear();
-															SetStatus(null);
-															MarkPrimeWindows(null, null);
-														};
+										{
+											if (IsPackModuleCampaign || IsModuleCampaign)
+											{
+												InitModulesList();
+												InitRollersList();
+											}
+                                            if (!IsModuleCampaign && !IsPackModuleCampaign)
+                                                InitRollersList();
+                                            grdCurrentCampaignIssues.Clear();
+											grdIssues.Clear();
+											if (packDetails != null)
+												packDetails.Clear();
+											SetStatus(null);
+											MarkPrimeWindows(null, null);
+											MarkMarkedWindows(null, null);
+										};
 		}
 
 		private void InitRollersList()
@@ -554,8 +555,8 @@ namespace Merlin.Forms
 				Cursor = Cursors.WaitCursor;
 
 				_tariffGrid.RefreshGrid();
-				//if(bDoClick) grid_CellClicked(tariffGrid.CurrentTariffWindow);
-			}
+                //if(bDoClick) grid_CellClicked(tariffGrid.CurrentTariffWindow);
+            }
 			finally
 			{
 				Cursor = Cursors.Default;
@@ -691,9 +692,8 @@ namespace Merlin.Forms
                 return;
             }
 
-
             _tariffGrid.RefreshGrid();
-            if (IsPackModuleCampaign || IsModuleCampaign) InitRollersList();
+            //if (IsPackModuleCampaign || IsModuleCampaign) InitRollersList();
         }
 
         private void tbbTemplate_Click(object sender, EventArgs e)
@@ -801,11 +801,11 @@ namespace Merlin.Forms
 
 				if (!(_tariffGrid is IRollerGrid))
 					HideGridWithCurrentIssues();
-
+				
 				InitModulesList();
 				if (!IsModuleCampaign && !IsPackModuleCampaign)
 					InitRollersList();
-
+				
 				if (RollerIssuesGrid != null)
 				{
 					RollerIssuesGrid.IsPopUpMenuAllowed = false;
@@ -965,6 +965,14 @@ namespace Merlin.Forms
 			if(_tariffGrid is RollerIssuesGrid3 grid)
 			{
 				grid.MarkCellsWithPrimePrice(tbMarkPrimeWindows.Checked);
+            }
+        }
+
+        private void MarkMarkedWindows(object sender, EventArgs e)
+        {
+            if (_tariffGrid is RollerIssuesGrid3 grid)
+            {
+                grid.MarkMarkedCells(btnShowMarked.Checked);
             }
         }
     }

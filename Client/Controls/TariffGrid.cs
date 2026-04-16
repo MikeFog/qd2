@@ -675,15 +675,17 @@ namespace Merlin.Controls
             SetCellBackColor(rowIndex, columnIndex, Color.FromArgb(255, 231, 234));
         }
 
-        protected void MarkCellAsMarked(int rowIndex, int columnIndex)
+        protected Color MarkCellAsMarked(int rowIndex, int columnIndex)
         {
+            var currentColor = GetCell(rowIndex, columnIndex).Style.BackColor;
             SetCellBackColor(rowIndex, columnIndex, Color.LightSteelBlue); 
+            return currentColor;
         }
         protected Color MarkCellAsPrimePrice(int rowIndex, int columnIndex)
         {
 			var currentColor = GetCell(rowIndex, columnIndex).Style.BackColor;
             SetCellBackColor(rowIndex, columnIndex, Color.FromArgb(223, 211, 238));
-            return currentColor;	
+            return currentColor;
         }
     }
 }

@@ -18,7 +18,8 @@ namespace Merlin.Forms.CreateActionMaster
 			: this()
 		{
 			_firm = firm;
-            SetTariffGrid(new TariffWithRangeGrid(action, massmediasCount));
+			_tariffGrid = new TariffWithRangeGrid(action, massmediasCount);
+            //SetTariffGrid(new TariffWithRangeGrid(action, massmediasCount));
 		}
 
 		protected override Firm Firm

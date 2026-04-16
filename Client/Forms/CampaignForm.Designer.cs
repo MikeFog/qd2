@@ -31,7 +31,10 @@ namespace Merlin.Forms {
             this.tsCampaign = new System.Windows.Forms.ToolStrip();
             this.tbbRefresh = new System.Windows.Forms.ToolStripButton();
             this.tbbStart = new System.Windows.Forms.ToolStripButton();
+            this.tbbJump = new System.Windows.Forms.ToolStripButton();
             this.tsbMuteRoller = new System.Windows.Forms.ToolStripButton();
+            this.tbbPlay = new System.Windows.Forms.ToolStripButton();
+            this.tsbStop = new System.Windows.Forms.ToolStripButton();
             this.toolStripSeparator6 = new System.Windows.Forms.ToolStripSeparator();
             this.tbbPosition = new System.Windows.Forms.ToolStripDropDownButton();
             this.miShowAllPositions = new System.Windows.Forms.ToolStripMenuItem();
@@ -43,22 +46,18 @@ namespace Merlin.Forms {
             this.miShowlAdvertTypeExist = new System.Windows.Forms.ToolStripMenuItem();
             this.miShowlAdvertTypeNotExist = new System.Windows.Forms.ToolStripMenuItem();
             this.toolStripSeparator4 = new System.Windows.Forms.ToolStripSeparator();
-            this.tbbModules = new System.Windows.Forms.ToolStripDropDownButton();
             this.tbbShowUnconfirmed = new System.Windows.Forms.ToolStripButton();
+            this.tbMarkPrimeWindows = new System.Windows.Forms.ToolStripButton();
+            this.tbbModules = new System.Windows.Forms.ToolStripDropDownButton();
             this.toolStripSeparator1 = new System.Windows.Forms.ToolStripSeparator();
             this.btnShowDisabled = new System.Windows.Forms.ToolStripButton();
-            this.tbbPlay = new System.Windows.Forms.ToolStripButton();
-            this.tsbStop = new System.Windows.Forms.ToolStripButton();
             this.toolStripSeparator3 = new System.Windows.Forms.ToolStripSeparator();
-            this.tbbJump = new System.Windows.Forms.ToolStripButton();
-            this.toolStripSeparator5 = new System.Windows.Forms.ToolStripSeparator();
             this.tbbTemplate = new System.Windows.Forms.ToolStripButton();
             this.tbbTemplate2 = new System.Windows.Forms.ToolStripButton();
             this.toolStripSeparator2 = new System.Windows.Forms.ToolStripSeparator();
+            this.tbSetManagerDiscount = new System.Windows.Forms.ToolStripButton();
             this.tbbExcel = new System.Windows.Forms.ToolStripButton();
             this.toolStripButtonGrantor = new System.Windows.Forms.ToolStripButton();
-            this.tbSetManagerDiscount = new System.Windows.Forms.ToolStripButton();
-            this.tbMarkPrimeWindows = new System.Windows.Forms.ToolStripButton();
             this.splitContainer1 = new System.Windows.Forms.SplitContainer();
             this.splitContainer2 = new System.Windows.Forms.SplitContainer();
             this.grdRollers = new FogSoft.WinForm.Controls.SmartGrid();
@@ -70,6 +69,7 @@ namespace Merlin.Forms {
             this.splitContainer5 = new System.Windows.Forms.SplitContainer();
             this.statusStrip1 = new System.Windows.Forms.StatusStrip();
             this.toolStripStatusLabelSelected = new System.Windows.Forms.ToolStripStatusLabel();
+            this.btnShowMarked = new System.Windows.Forms.ToolStripButton();
             this.tsCampaign.SuspendLayout();
             ((System.ComponentModel.ISupportInitialize)(this.splitContainer1)).BeginInit();
             this.splitContainer1.Panel1.SuspendLayout();
@@ -97,30 +97,30 @@ namespace Merlin.Forms {
             this.tsCampaign.Items.AddRange(new System.Windows.Forms.ToolStripItem[] {
             this.tbbRefresh,
             this.tbbStart,
+            this.tbbJump,
             this.tsbMuteRoller,
+            this.tbbPlay,
+            this.tsbStop,
             this.toolStripSeparator6,
+            this.tbbModules,
             this.tbbPosition,
             this.tbbAdvertType,
             this.toolStripSeparator4,
-            this.tbbModules,
             this.tbbShowUnconfirmed,
+            this.tbMarkPrimeWindows,
             this.toolStripSeparator1,
             this.btnShowDisabled,
-            this.tbbPlay,
-            this.tsbStop,
+            this.btnShowMarked,
             this.toolStripSeparator3,
-            this.tbbJump,
-            this.toolStripSeparator5,
             this.tbbTemplate,
             this.tbbTemplate2,
             this.toolStripSeparator2,
-            this.tbbExcel,
-            this.toolStripButtonGrantor,
             this.tbSetManagerDiscount,
-            this.tbMarkPrimeWindows});
+            this.tbbExcel,
+            this.toolStripButtonGrantor});
             this.tsCampaign.Location = new System.Drawing.Point(0, 0);
             this.tsCampaign.Name = "tsCampaign";
-            this.tsCampaign.Size = new System.Drawing.Size(1592, 34);
+            this.tsCampaign.Size = new System.Drawing.Size(1592, 38);
             this.tsCampaign.TabIndex = 0;
             // 
             // tbbRefresh
@@ -144,6 +144,16 @@ namespace Merlin.Forms {
             this.tbbStart.ToolTipText = "Режим добавления";
             this.tbbStart.CheckedChanged += new System.EventHandler(this.tbbStart_CheckedChanged);
             // 
+            // tbbJump
+            // 
+            this.tbbJump.DisplayStyle = System.Windows.Forms.ToolStripItemDisplayStyle.Image;
+            this.tbbJump.Image = global::Merlin.Properties.Resources.calendar;
+            this.tbbJump.ImageTransparentColor = System.Drawing.Color.Magenta;
+            this.tbbJump.Name = "tbbJump";
+            this.tbbJump.Size = new System.Drawing.Size(34, 29);
+            this.tbbJump.Text = "Переход к выбранной дате";
+            this.tbbJump.Click += new System.EventHandler(this.tbbJump_Click);
+            // 
             // tsbMuteRoller
             // 
             this.tsbMuteRoller.DisplayStyle = System.Windows.Forms.ToolStripItemDisplayStyle.Image;
@@ -153,6 +163,26 @@ namespace Merlin.Forms {
             this.tsbMuteRoller.Size = new System.Drawing.Size(34, 29);
             this.tsbMuteRoller.Text = "Добавить ролик - пустышку";
             this.tsbMuteRoller.Click += new System.EventHandler(this.tsbMuteRoller_Click);
+            // 
+            // tbbPlay
+            // 
+            this.tbbPlay.DisplayStyle = System.Windows.Forms.ToolStripItemDisplayStyle.Image;
+            this.tbbPlay.ImageTransparentColor = System.Drawing.Color.Magenta;
+            this.tbbPlay.Name = "tbbPlay";
+            this.tbbPlay.Size = new System.Drawing.Size(34, 29);
+            this.tbbPlay.Text = "Прослушать ролик";
+            this.tbbPlay.Click += new System.EventHandler(this.tbbPlay_Click);
+            // 
+            // tsbStop
+            // 
+            this.tsbStop.DisplayStyle = System.Windows.Forms.ToolStripItemDisplayStyle.Image;
+            this.tsbStop.Enabled = false;
+            this.tsbStop.ImageTransparentColor = System.Drawing.Color.Magenta;
+            this.tsbStop.Name = "tsbStop";
+            this.tsbStop.Size = new System.Drawing.Size(34, 29);
+            this.tsbStop.Text = "Остановить прослушивание";
+            this.tsbStop.ToolTipText = "Остановить прослушивание";
+            this.tsbStop.Click += new System.EventHandler(this.tsbStop_Click);
             // 
             // toolStripSeparator6
             // 
@@ -212,7 +242,7 @@ namespace Merlin.Forms {
             this.tbbAdvertType.Image = ((System.Drawing.Image)(resources.GetObject("tbbAdvertType.Image")));
             this.tbbAdvertType.ImageTransparentColor = System.Drawing.Color.Magenta;
             this.tbbAdvertType.Name = "tbbAdvertType";
-            this.tbbAdvertType.Size = new System.Drawing.Size(193, 29);
+            this.tbbAdvertType.Size = new System.Drawing.Size(193, 33);
             this.tbbAdvertType.Text = "Предметы рекламы";
             this.tbbAdvertType.ToolTipText = "Предметы рекламы";
             this.tbbAdvertType.DropDownItemClicked += new System.Windows.Forms.ToolStripItemClickedEventHandler(this.tbbAdvertType_DropDownItemClicked);
@@ -243,14 +273,6 @@ namespace Merlin.Forms {
             this.toolStripSeparator4.Name = "toolStripSeparator4";
             this.toolStripSeparator4.Size = new System.Drawing.Size(6, 34);
             // 
-            // tbbModules
-            // 
-            this.tbbModules.ImageTransparentColor = System.Drawing.Color.Magenta;
-            this.tbbModules.Name = "tbbModules";
-            this.tbbModules.Size = new System.Drawing.Size(151, 29);
-            this.tbbModules.Text = "Выбор модуля";
-            this.tbbModules.Visible = false;
-            // 
             // tbbShowUnconfirmed
             // 
             this.tbbShowUnconfirmed.Checked = true;
@@ -263,6 +285,25 @@ namespace Merlin.Forms {
             this.tbbShowUnconfirmed.Text = "Учитывать макеты";
             this.tbbShowUnconfirmed.ToolTipText = "Показывать неподтвержденные выпуски";
             this.tbbShowUnconfirmed.Click += new System.EventHandler(this.tbbShowUnconfirmed_Click);
+            // 
+            // tbMarkPrimeWindows
+            // 
+            this.tbMarkPrimeWindows.CheckOnClick = true;
+            this.tbMarkPrimeWindows.Image = ((System.Drawing.Image)(resources.GetObject("tbMarkPrimeWindows.Image")));
+            this.tbMarkPrimeWindows.ImageTransparentColor = System.Drawing.Color.Magenta;
+            this.tbMarkPrimeWindows.Name = "tbMarkPrimeWindows";
+            this.tbMarkPrimeWindows.Size = new System.Drawing.Size(149, 29);
+            this.tbMarkPrimeWindows.Text = "Видеть прайм";
+            this.tbMarkPrimeWindows.ToolTipText = "Подсветить окна прайм";
+            this.tbMarkPrimeWindows.Click += new System.EventHandler(this.MarkPrimeWindows);
+            // 
+            // tbbModules
+            // 
+            this.tbbModules.ImageTransparentColor = System.Drawing.Color.Magenta;
+            this.tbbModules.Name = "tbbModules";
+            this.tbbModules.Size = new System.Drawing.Size(151, 29);
+            this.tbbModules.Text = "Выбор модуля";
+            this.tbbModules.Visible = false;
             // 
             // toolStripSeparator1
             // 
@@ -281,45 +322,10 @@ namespace Merlin.Forms {
             this.btnShowDisabled.ToolTipText = "Показать заблокированные окна";
             this.btnShowDisabled.CheckedChanged += new System.EventHandler(this.btnShowDisabled_CheckedChanged);
             // 
-            // tbbPlay
-            // 
-            this.tbbPlay.DisplayStyle = System.Windows.Forms.ToolStripItemDisplayStyle.Image;
-            this.tbbPlay.ImageTransparentColor = System.Drawing.Color.Magenta;
-            this.tbbPlay.Name = "tbbPlay";
-            this.tbbPlay.Size = new System.Drawing.Size(34, 29);
-            this.tbbPlay.Text = "Прослушать ролик";
-            this.tbbPlay.Click += new System.EventHandler(this.tbbPlay_Click);
-            // 
-            // tsbStop
-            // 
-            this.tsbStop.DisplayStyle = System.Windows.Forms.ToolStripItemDisplayStyle.Image;
-            this.tsbStop.Enabled = false;
-            this.tsbStop.ImageTransparentColor = System.Drawing.Color.Magenta;
-            this.tsbStop.Name = "tsbStop";
-            this.tsbStop.Size = new System.Drawing.Size(34, 29);
-            this.tsbStop.Text = "Остановить прослушивание";
-            this.tsbStop.ToolTipText = "Остановить прослушивание";
-            this.tsbStop.Click += new System.EventHandler(this.tsbStop_Click);
-            // 
             // toolStripSeparator3
             // 
             this.toolStripSeparator3.Name = "toolStripSeparator3";
             this.toolStripSeparator3.Size = new System.Drawing.Size(6, 34);
-            // 
-            // tbbJump
-            // 
-            this.tbbJump.DisplayStyle = System.Windows.Forms.ToolStripItemDisplayStyle.Image;
-            this.tbbJump.Image = global::Merlin.Properties.Resources.calendar;
-            this.tbbJump.ImageTransparentColor = System.Drawing.Color.Magenta;
-            this.tbbJump.Name = "tbbJump";
-            this.tbbJump.Size = new System.Drawing.Size(34, 29);
-            this.tbbJump.Text = "Переход к выбранной дате";
-            this.tbbJump.Click += new System.EventHandler(this.tbbJump_Click);
-            // 
-            // toolStripSeparator5
-            // 
-            this.toolStripSeparator5.Name = "toolStripSeparator5";
-            this.toolStripSeparator5.Size = new System.Drawing.Size(6, 34);
             // 
             // tbbTemplate
             // 
@@ -349,6 +355,16 @@ namespace Merlin.Forms {
             this.toolStripSeparator2.Name = "toolStripSeparator2";
             this.toolStripSeparator2.Size = new System.Drawing.Size(6, 34);
             // 
+            // tbSetManagerDiscount
+            // 
+            this.tbSetManagerDiscount.DisplayStyle = System.Windows.Forms.ToolStripItemDisplayStyle.Image;
+            this.tbSetManagerDiscount.Image = ((System.Drawing.Image)(resources.GetObject("tbSetManagerDiscount.Image")));
+            this.tbSetManagerDiscount.ImageTransparentColor = System.Drawing.Color.Magenta;
+            this.tbSetManagerDiscount.Name = "tbSetManagerDiscount";
+            this.tbSetManagerDiscount.Size = new System.Drawing.Size(34, 29);
+            this.tbSetManagerDiscount.Text = "Установить менеджерский коэффициент";
+            this.tbSetManagerDiscount.Click += new System.EventHandler(this.toolStripButton1_Click);
+            // 
             // tbbExcel
             // 
             this.tbbExcel.ImageTransparentColor = System.Drawing.Color.Magenta;
@@ -370,32 +386,10 @@ namespace Merlin.Forms {
             this.toolStripButtonGrantor.ToolTipText = "Присоединить привилегированного пользователя.";
             this.toolStripButtonGrantor.Click += new System.EventHandler(this.toolStripButtonGrantor_Click);
             // 
-            // tbSetManagerDiscount
-            // 
-            this.tbSetManagerDiscount.DisplayStyle = System.Windows.Forms.ToolStripItemDisplayStyle.Image;
-            this.tbSetManagerDiscount.Image = ((System.Drawing.Image)(resources.GetObject("tbSetManagerDiscount.Image")));
-            this.tbSetManagerDiscount.ImageTransparentColor = System.Drawing.Color.Magenta;
-            this.tbSetManagerDiscount.Name = "tbSetManagerDiscount";
-            this.tbSetManagerDiscount.Size = new System.Drawing.Size(34, 29);
-            this.tbSetManagerDiscount.Text = "toolStripButton1";
-            this.tbSetManagerDiscount.Click += new System.EventHandler(this.toolStripButton1_Click);
-            // 
-            // tbMarkPrimeWindows
-            // 
-            this.tbMarkPrimeWindows.CheckOnClick = true;
-            this.tbMarkPrimeWindows.DisplayStyle = System.Windows.Forms.ToolStripItemDisplayStyle.Image;
-            this.tbMarkPrimeWindows.Image = ((System.Drawing.Image)(resources.GetObject("tbMarkPrimeWindows.Image")));
-            this.tbMarkPrimeWindows.ImageTransparentColor = System.Drawing.Color.Magenta;
-            this.tbMarkPrimeWindows.Name = "tbMarkPrimeWindows";
-            this.tbMarkPrimeWindows.Size = new System.Drawing.Size(34, 29);
-            this.tbMarkPrimeWindows.Text = "toolStripButton1";
-            this.tbMarkPrimeWindows.ToolTipText = "Подсветить окна прайм";
-            this.tbMarkPrimeWindows.Click += new System.EventHandler(this.MarkPrimeWindows);
-            // 
             // splitContainer1
             // 
             this.splitContainer1.Dock = System.Windows.Forms.DockStyle.Fill;
-            this.splitContainer1.Location = new System.Drawing.Point(0, 34);
+            this.splitContainer1.Location = new System.Drawing.Point(0, 38);
             this.splitContainer1.Margin = new System.Windows.Forms.Padding(4, 3, 4, 3);
             this.splitContainer1.Name = "splitContainer1";
             // 
@@ -407,7 +401,7 @@ namespace Merlin.Forms {
             // 
             this.splitContainer1.Panel2.Controls.Add(this.splitContainer5);
             this.splitContainer1.Panel2.Controls.Add(this.statusStrip1);
-            this.splitContainer1.Size = new System.Drawing.Size(1592, 1027);
+            this.splitContainer1.Size = new System.Drawing.Size(1592, 1023);
             this.splitContainer1.SplitterDistance = 691;
             this.splitContainer1.SplitterWidth = 5;
             this.splitContainer1.TabIndex = 1;
@@ -428,8 +422,8 @@ namespace Merlin.Forms {
             // splitContainer2.Panel2
             // 
             this.splitContainer2.Panel2.Controls.Add(this.splitContainer3);
-            this.splitContainer2.Size = new System.Drawing.Size(691, 1027);
-            this.splitContainer2.SplitterDistance = 256;
+            this.splitContainer2.Size = new System.Drawing.Size(691, 1023);
+            this.splitContainer2.SplitterDistance = 254;
             this.splitContainer2.SplitterWidth = 5;
             this.splitContainer2.TabIndex = 0;
             this.splitContainer2.Text = "splitContainer2";
@@ -454,7 +448,7 @@ namespace Merlin.Forms {
             this.grdRollers.QuickSearchVisible = false;
             this.grdRollers.SelectedObject = null;
             this.grdRollers.ShowMultiselectColumn = true;
-            this.grdRollers.Size = new System.Drawing.Size(691, 256);
+            this.grdRollers.Size = new System.Drawing.Size(691, 254);
             this.grdRollers.TabIndex = 0;
             this.grdRollers.ObjectSelected += new FogSoft.WinForm.ObjectDelegate(this.grdRollers_ObjectSelected);
             // 
@@ -473,8 +467,8 @@ namespace Merlin.Forms {
             // splitContainer3.Panel2
             // 
             this.splitContainer3.Panel2.Controls.Add(this.splitContainer4);
-            this.splitContainer3.Size = new System.Drawing.Size(691, 766);
-            this.splitContainer3.SplitterDistance = 289;
+            this.splitContainer3.Size = new System.Drawing.Size(691, 764);
+            this.splitContainer3.SplitterDistance = 286;
             this.splitContainer3.SplitterWidth = 5;
             this.splitContainer3.TabIndex = 0;
             this.splitContainer3.Text = "splitContainer3";
@@ -488,7 +482,7 @@ namespace Merlin.Forms {
             this.lstStat.Location = new System.Drawing.Point(0, 0);
             this.lstStat.Margin = new System.Windows.Forms.Padding(4, 3, 4, 3);
             this.lstStat.Name = "lstStat";
-            this.lstStat.Size = new System.Drawing.Size(691, 289);
+            this.lstStat.Size = new System.Drawing.Size(691, 286);
             this.lstStat.TabIndex = 5;
             // 
             // splitContainer4
@@ -506,8 +500,8 @@ namespace Merlin.Forms {
             // splitContainer4.Panel2
             // 
             this.splitContainer4.Panel2.Controls.Add(this.grdCurrentCampaignIssues);
-            this.splitContainer4.Size = new System.Drawing.Size(691, 472);
-            this.splitContainer4.SplitterDistance = 283;
+            this.splitContainer4.Size = new System.Drawing.Size(691, 473);
+            this.splitContainer4.SplitterDistance = 282;
             this.splitContainer4.SplitterWidth = 5;
             this.splitContainer4.TabIndex = 1;
             // 
@@ -531,7 +525,7 @@ namespace Merlin.Forms {
             this.grdIssues.QuickSearchVisible = false;
             this.grdIssues.SelectedObject = null;
             this.grdIssues.ShowMultiselectColumn = true;
-            this.grdIssues.Size = new System.Drawing.Size(691, 283);
+            this.grdIssues.Size = new System.Drawing.Size(691, 282);
             this.grdIssues.TabIndex = 2;
             // 
             // grdCurrentCampaignIssues
@@ -554,7 +548,7 @@ namespace Merlin.Forms {
             this.grdCurrentCampaignIssues.QuickSearchVisible = false;
             this.grdCurrentCampaignIssues.SelectedObject = null;
             this.grdCurrentCampaignIssues.ShowMultiselectColumn = true;
-            this.grdCurrentCampaignIssues.Size = new System.Drawing.Size(691, 184);
+            this.grdCurrentCampaignIssues.Size = new System.Drawing.Size(691, 186);
             this.grdCurrentCampaignIssues.TabIndex = 1;
             this.grdCurrentCampaignIssues.ObjectDeleted += new FogSoft.WinForm.ObjectDelegate(this.grdCurrentCampaignIssues_ObjectDeleted);
             this.grdCurrentCampaignIssues.ObjectChanged += new FogSoft.WinForm.ObjectDelegate(this.grdCurrentCampaignIssues_ObjectChanged);
@@ -566,15 +560,15 @@ namespace Merlin.Forms {
             this.splitContainer5.Margin = new System.Windows.Forms.Padding(4, 3, 4, 3);
             this.splitContainer5.Name = "splitContainer5";
             this.splitContainer5.Orientation = System.Windows.Forms.Orientation.Horizontal;
-            this.splitContainer5.Size = new System.Drawing.Size(896, 1005);
-            this.splitContainer5.SplitterDistance = 513;
+            this.splitContainer5.Size = new System.Drawing.Size(896, 1001);
+            this.splitContainer5.SplitterDistance = 509;
             this.splitContainer5.SplitterWidth = 5;
             this.splitContainer5.TabIndex = 1;
             // 
             // statusStrip1
             // 
             this.statusStrip1.ImageScalingSize = new System.Drawing.Size(36, 36);
-            this.statusStrip1.Location = new System.Drawing.Point(0, 1005);
+            this.statusStrip1.Location = new System.Drawing.Point(0, 1001);
             this.statusStrip1.Name = "statusStrip1";
             this.statusStrip1.Padding = new System.Windows.Forms.Padding(1, 0, 16, 0);
             this.statusStrip1.RenderMode = System.Windows.Forms.ToolStripRenderMode.Professional;
@@ -588,6 +582,20 @@ namespace Merlin.Forms {
             this.toolStripStatusLabelSelected.Name = "toolStripStatusLabelSelected";
             this.toolStripStatusLabelSelected.Size = new System.Drawing.Size(95, 17);
             this.toolStripStatusLabelSelected.Text = "Окно не выбрано";
+            // 
+            // btnShowMarked
+            // 
+            this.btnShowMarked.Checked = true;
+            this.btnShowMarked.CheckOnClick = true;
+            this.btnShowMarked.CheckState = System.Windows.Forms.CheckState.Checked;
+            this.btnShowMarked.DisplayStyle = System.Windows.Forms.ToolStripItemDisplayStyle.Text;
+            this.btnShowMarked.Image = ((System.Drawing.Image)(resources.GetObject("btnShowMarked.Image")));
+            this.btnShowMarked.ImageTransparentColor = System.Drawing.Color.Magenta;
+            this.btnShowMarked.Name = "btnShowMarked";
+            this.btnShowMarked.Size = new System.Drawing.Size(102, 33);
+            this.btnShowMarked.Text = "Подсветка";
+            this.btnShowMarked.ToolTipText = "Подсветить помеченные окна";
+            this.btnShowMarked.CheckedChanged += new System.EventHandler(this.MarkMarkedWindows);
             // 
             // CampaignForm
             // 
@@ -663,7 +671,6 @@ namespace Merlin.Forms {
 	private System.Windows.Forms.SplitContainer splitContainer5;
 	protected System.Windows.Forms.ToolStripButton tsbMuteRoller;
     protected System.Windows.Forms.ToolStripButton tbbTemplate2;
-    private System.Windows.Forms.ToolStripSeparator toolStripSeparator5;
     private System.Windows.Forms.ToolStripDropDownButton tbbAdvertType;
     private System.Windows.Forms.ToolStripMenuItem miShowAllAdvertTypes;
     private System.Windows.Forms.ToolStripMenuItem miShowlAdvertTypeExist;
@@ -673,5 +680,6 @@ namespace Merlin.Forms {
     private System.Windows.Forms.ToolStripButton btnShowDisabled;
     private System.Windows.Forms.ToolStripButton tbSetManagerDiscount;
     private System.Windows.Forms.ToolStripButton tbMarkPrimeWindows;
+        private System.Windows.Forms.ToolStripButton btnShowMarked;
     }
 }
