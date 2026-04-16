@@ -1,4 +1,5 @@
-﻿using FogSoft.WinForm.Classes;
+﻿using DocumentFormat.OpenXml.Office2010.Excel;
+using FogSoft.WinForm.Classes;
 using Merlin.Classes;
 using System;
 using System.Data;
@@ -38,7 +39,7 @@ namespace Merlin.Forms
             base.OnLoad(e);
             if (!(SecurityManager.LoggedUser.IsBookKeeper || SecurityManager.LoggedUser.IsAdmin))
                 Utils.HideTableLayoutRow(tableLayoutPanelMain, 2);
-            if (SecurityManager.LoggedUser.IsAdmin)
+            if (SecurityManager.LoggedUser.Id != _action.UserID)
             {
                 Entity entity = EntityManager.GetEntity((int)Entities.ManagerDiscountReason);
                 entity.ClearCache();

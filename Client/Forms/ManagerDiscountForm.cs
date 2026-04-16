@@ -48,7 +48,7 @@ namespace Merlin.Forms
             if (!(SecurityManager.LoggedUser.IsBookKeeper || SecurityManager.LoggedUser.IsAdmin))
                 Utils.HideTableLayoutRow(tableLayoutPanelMain, 6);
             //chkCurrentDate.Visible = dtCurrentDate.Visible = SecurityManager.LoggedUser.IsBookKeeper || SecurityManager.LoggedUser.IsAdmin;
-            if (SecurityManager.LoggedUser.IsAdmin)
+            if (SecurityManager.LoggedUser.Id != _campaign.Action.UserID)
             {
                 Entity entity = EntityManager.GetEntity((int)Entities.ManagerDiscountReason);
                 entity.ClearCache();
