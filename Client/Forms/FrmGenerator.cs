@@ -254,15 +254,16 @@ namespace Merlin.Forms
 			Massmedia radioStation = ((CampaignOnSingleMassmedia)_campaign).Massmedia;
 
 			MassmediaPricelist pricelist = radioStation.GetPriceList(_template.CurrentDate) as MassmediaPricelist ?? throw new Exception("PriceListDoesntExist");
-			DataSet dsWindows = pricelist.GetTariffWindows(_template.CurrentDate, _template.CurrentDate, null, false);
+			DataSet dsWindows = pricelist.GetTariffWindows(_template.CurrentDate, _template.CurrentDate, null, false, false);
 			DataTable dtTariffWindow = dsWindows.Tables[Constants.TableNames.Data];
 			List<PresentationObject> issues = new List<PresentationObject>();
 
 			// Фильтруем окна, попадающие в указанный временной диапазон
-			string filter = string.Format("(hour > {0} And hour < {1}) OR (hour = {0} and min >= {2}) OR (hour = {1} and min <= {3})",
-							_template.StartTime.Hour, _template.FinishTime.Hour, _template.StartTime.Minute, _template.FinishTime.Minute);
+            int startTotal = _template.StartTime.Hour * 60 + _template.StartTime.Minute;
+            int finishTotal = _template.FinishTime.Hour * 60 + _template.FinishTime.Minute;
+            string filter = $"(hour * 60 + min) >= {startTotal} AND (hour * 60 + min) <= {finishTotal}";
 
-			int firmId = _campaign.Action.FirmID;
+            int firmId = _campaign.Action.FirmID;
 			var allWindows = new List<TariffWindowWithRollerIssues>();
 			foreach (DataRow row in dtTariffWindow.Select(filter))
 			{
@@ -283,7 +284,7 @@ namespace Merlin.Forms
 					.Select(x => x.w)
 					.ToList();
 
-				issues.AddRange(AddIssuesFromWindows(windows, _template.Quantity));
+				issues.AddRange(AddIssuesFromWindows(windows, _template.Quantity, "Недостаточно рекламных окон для размещения всех выпусков. Окон: {0}, выпусков {1}."));
 			}
 			else
 			{
@@ -320,8 +321,8 @@ namespace Merlin.Forms
 					.ToList();
 
 				// Всегда: prime -> только prime, non-prime -> только non-prime
-				issues.AddRange(AddIssuesFromWindows(windowsPrime, _template.QuantityPrime));
-				issues.AddRange(AddIssuesFromWindows(windowsNonPrime, _template.QuantityNonPrime));
+				issues.AddRange(AddIssuesFromWindows(windowsPrime, _template.QuantityPrime, "Недостаточно рекламных прайм окон для размещения всех выпусков. Окон: {0}, выпусков {1}."));
+				issues.AddRange(AddIssuesFromWindows(windowsNonPrime, _template.QuantityNonPrime, "Недостаточно рекламных не прайм окон для размещения всех выпусков. Окон: {0}, выпусков {1}."));
 			}
 
 			return issues;
@@ -373,7 +374,7 @@ namespace Merlin.Forms
             return new List<PresentationObject> { programIssue }; 
 		}
 
-		private List<PresentationObject> AddIssuesFromWindows(List<TariffWindowWithRollerIssues> windows, int quantity)
+		private List<PresentationObject> AddIssuesFromWindows(List<TariffWindowWithRollerIssues> windows, int quantity, string errorTemplate)
 		{
 			var issues = new List<PresentationObject>();
 
@@ -398,9 +399,7 @@ namespace Merlin.Forms
 			if (issues.Count + grdFail.ItemsCount < quantity)
 			{
 				Dictionary<string, object> parameters = CreateMessageParameters();
-				parameters["windowsQuantity"] = issues.Count;
-				parameters["requiredQuantity"] = quantity;
-				parameters["description"] = Globals.GetMessage("NotEnoughWindows", parameters);
+				parameters["description"] = string.Format(errorTemplate, issues.Count, quantity);// Globals.GetMessage("NotEnoughWindows", parameters);
 				AddErrorInfo(parameters);
 			}
 
