@@ -284,7 +284,7 @@ namespace Merlin.Forms
 					.Select(x => x.w)
 					.ToList();
 
-				issues.AddRange(AddIssuesFromWindows(windows, _template.Quantity, "Недостаточно рекламных окон для размещения всех выпусков. Окон: {0}, выпусков {1}."));
+				issues.AddRange(AddIssuesFromWindows(windows, _template.Quantity, "Недостаточно рекламных окон для размещения всех выпусков для добавления. Окон: {0}, выпусков {1}."));
 			}
 			else
 			{
@@ -321,8 +321,8 @@ namespace Merlin.Forms
 					.ToList();
 
 				// Всегда: prime -> только prime, non-prime -> только non-prime
-				issues.AddRange(AddIssuesFromWindows(windowsPrime, _template.QuantityPrime, "Недостаточно рекламных прайм окон для размещения всех выпусков. Окон: {0}, выпусков {1}."));
-				issues.AddRange(AddIssuesFromWindows(windowsNonPrime, _template.QuantityNonPrime, "Недостаточно рекламных не прайм окон для размещения всех выпусков. Окон: {0}, выпусков {1}."));
+				issues.AddRange(AddIssuesFromWindows(windowsPrime, _template.QuantityPrime, "Недостаточно рекламных окон прайм для размещения всех выпусков. Окон: {0}, выпусков {1}."));
+				issues.AddRange(AddIssuesFromWindows(windowsNonPrime, _template.QuantityNonPrime, "Недостаточно рекламных окон не прайм для размещения всех выпусков. Окон: {0}, выпусков для добавления {1}."));
 			}
 
 			return issues;
