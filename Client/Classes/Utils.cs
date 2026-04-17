@@ -32,20 +32,16 @@ namespace Merlin.Classes
 			return bank;
 		}
 
-		public static SecurityManager.User AskConfirmation(IWin32Window owner)
-		{
-			return AskConfirmation(owner, null, null);
-		}
 
-		public static SecurityManager.User AskConfirmation(IWin32Window owner, string title, string text)
+		public static (SecurityManager.User User, int? ManagerDiscountReasonId) AskConfirmation(IWin32Window owner)
 		{
-			FrmConfirmation fConfirmation = (title != null || text != null) ? new FrmConfirmation(title, text) : new FrmConfirmation();
+			FrmConfirmation fConfirmation = new FrmConfirmation();
 			if (fConfirmation.ShowDialog(owner) == DialogResult.OK)
 			{
 				if (fConfirmation.User == null)
 					Globals.ShowInfo("LoginIncorrect");
 				else if (fConfirmation.User.IsAdmin || fConfirmation.User.IsGrantor)
-					return fConfirmation.User;
+					return (fConfirmation.User, fConfirmation.ManagerDiscountReasonId);
 				else
 				{
 					Dictionary<string, object> parameters =
@@ -57,7 +53,7 @@ namespace Merlin.Classes
 					Globals.ShowInfo("ConfirmationError", parameters);
 				}
 			}
-			return null;
+			return (null, null);
 		}
 
         public static void HideTableLayoutRow(TableLayoutPanel tableLayoutPanelMain, int rowNum)

@@ -9,9 +9,9 @@ namespace Merlin.Forms
 	{
         public decimal FinalPrice { get; private set; }
         public int? ManagerDiscountReasonId { get; private set; }
+        public SecurityManager.User Grantor { get; private set; }
         private readonly decimal tariffPrice;
         private readonly decimal multiplyDiscount = 1;
-		private SecurityManager.User grantor;
 		private readonly DateTime startDate;
 		private readonly DateTime finishDate;
 		private DateTime _currentDate;
@@ -81,10 +81,7 @@ namespace Merlin.Forms
 			}
 		}
 
-		public SecurityManager.User Grantor
-		{
-			get { return grantor; }
-		}
+		
 
         private void txtRatio_TextChanged(object sender, EventArgs e)
         {
@@ -120,9 +117,13 @@ namespace Merlin.Forms
 		{
 			if(!SecurityManager.LoggedUser.IsAdmin && !SecurityManager.LoggedUser.IsAcceptRatioForUser(txtRatio.Value, startDate, finishDate))
 			{
-				grantor = Utils.AskConfirmation(this);
+                var (grantor, managerDiscountReasonId) = Utils.AskConfirmation(this);
 				if(grantor != null)
+				{
+					Grantor = grantor;
+					ManagerDiscountReasonId = managerDiscountReasonId;
 					FinalPrice = txtFinalPrice.Value;
+				}
 				else
 					DialogResult = DialogResult.None;
 			}
@@ -132,9 +133,10 @@ namespace Merlin.Forms
 
 			}
 			_currentDate = dtCurrentDate.Value;
-            ManagerDiscountReasonId = cmbReason.SelectedValue != null
-                ? (int?)Convert.ToInt32(cmbReason.SelectedValue)
-                : null;
+            if (Grantor == null)
+                ManagerDiscountReasonId = cmbReason.SelectedValue != null
+                    ? (int?)Convert.ToInt32(cmbReason.SelectedValue)
+                    : null;
         }
 
         private void checkBox1_CheckedChanged(object sender, EventArgs e)
