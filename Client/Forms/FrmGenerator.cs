@@ -145,14 +145,11 @@ namespace Merlin.Forms
 				pbProgress.Visible = true;
 				pbProgress.Maximum = _template.DaysCount;
 				Application.DoEvents();
-
-				while (_template.MoveNext())
+                _template.Reset();
+                while (_template.MoveNext())
 				{
 					try
 					{
-						pbProgress.Value++;
-						Application.DoEvents();
-
 						List<PresentationObject> pos = _template.IsModeAdd ? AddIssues() : DeleteIssues();
 						if (pos != null)
 						{
@@ -167,7 +164,9 @@ namespace Merlin.Forms
 						parameters["description"] = Globals.GetMessage(ex.Message, parameters);
 						AddErrorInfo(parameters);
 					}
-				}
+                    pbProgress.Value++;
+                    Application.DoEvents();
+                }
 			}
 			finally
 			{
@@ -396,7 +395,7 @@ namespace Merlin.Forms
 				windows.RemoveAt(0);
 			}
 
-			if (issues.Count + grdFail.ItemsCount < quantity)
+			if (issues.Count < quantity)
 			{
 				Dictionary<string, object> parameters = CreateMessageParameters();
 				parameters["description"] = string.Format(errorTemplate, issues.Count, quantity);// Globals.GetMessage("NotEnoughWindows", parameters);
