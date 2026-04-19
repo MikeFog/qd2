@@ -53,7 +53,46 @@ namespace Merlin.Forms
 					: Globals.GetImage(Constants.ActionsImages.Module);
 		}
 
-		protected virtual Firm Firm
+        private void CampaignForm_Load(object sender, EventArgs e)
+        {
+            try
+            {
+                Application.DoEvents();
+                Cursor = Cursors.WaitCursor;
+
+                ProcessToolbar();
+                SetFormCaption();
+                SetTariffGrid();
+                if (!(_tariffGrid is IRollerGrid))
+                    HideGridWithCurrentIssues();
+				
+                InitModulesList();
+				if(IsSponsorPrograEditing)
+					InitSponsorProgramList();
+
+                if (RollerIssuesGrid != null)
+                {
+                    RollerIssuesGrid.IsPopUpMenuAllowed = false;
+                    RollerIssuesGrid.ExcludeSpecialTariffs = true;
+                    RollerIssuesGrid.ShowUnconfirmed = tbbShowUnconfirmed.Checked;
+                }
+
+                _campaign?.DisplayCampaignData(lstStat);
+
+                grdRollers.ObjectDeleted += GrdRollers_ObjectDeleted;
+                
+            }
+            catch (Exception ex)
+            {
+                ErrorManager.PublishError(ex);
+            }
+            finally
+            {
+                Cursor = Cursors.Default;
+            }
+        }
+
+        protected virtual Firm Firm
 		{
 			get { return _firm; }
 		}
@@ -75,7 +114,13 @@ namespace Merlin.Forms
 			get { return _campaign != null && _campaign.CampaignType == Campaign.CampaignTypes.Sponsor; }
 		}
 
-		private bool IsPackModuleCampaign
+		private bool IsSponsorPrograEditing
+        {
+            [DebuggerStepThrough]
+            get { return _tariffGrid is ProgramIssuesGrid2; }
+        }
+
+        private bool IsPackModuleCampaign
 		{
 			[DebuggerStepThrough]
 			get { return _campaign != null && _campaign.CampaignType == Campaign.CampaignTypes.PackModule; }
@@ -278,8 +323,6 @@ namespace Merlin.Forms
 			splitContainer5.Panel1.Controls.Add(_tariffGrid);
 			splitContainer5.Panel2Collapsed = !IsPackModuleCampaign;
 
-            //splitContainer5.Panel1.BackColor = Color.Red;
-
             if (_tariffGrid is TariffWindowGrid grid2)
                 grid2.ShowDisabledWindows = btnShowDisabled.Checked;
 
@@ -292,8 +335,6 @@ namespace Merlin.Forms
                 if (IsSimplelCampaign || IsSponsorCampaign)
                     grid.RefreshGrid();
             }
-
-            
 
 			if (IsPackModuleCampaign)
 			{
@@ -323,16 +364,12 @@ namespace Merlin.Forms
 			grid.GridRefreshed += delegate
 										{
 											if (IsPackModuleCampaign || IsModuleCampaign)
-											{
 												InitModulesList();
+											if (!IsSponsorPrograEditing)
 												InitRollersList();
-											}
-                                            if (!IsModuleCampaign && !IsPackModuleCampaign)
-                                                InitRollersList();
                                             grdCurrentCampaignIssues.Clear();
 											grdIssues.Clear();
-											if (packDetails != null)
-												packDetails.Clear();
+											packDetails?.Clear();
 											SetStatus(null);
 											MarkPrimeWindows(null, null);
 											MarkMarkedWindows(null, null);
@@ -341,23 +378,22 @@ namespace Merlin.Forms
 
 		private void InitRollersList()
 		{
-			if(_tariffGrid is ProgramIssuesGrid2)
-			{
-				grdRollers.Caption = "Программы";
-				grdRollers.Entity = SponsorProgram.GetEntity();
-				grdRollers.DataSource =	((CampaignOnSingleMassmedia)_campaign).Massmedia.GetSponsorPrograms(true).DefaultView;
-			}
-			else
-			{
-				//Entity rollerEntity = (Entity)Roller.GetEntity().Clone();
-				//rollerEntity.AttributeSelector = (int)Roller.AttributeSelectors.NameOnly;
-				grdRollers.Entity = EntityManager.GetEntity((int)Entities.ActionRollers); // rollerEntity;
-				SetRollerDataSource();
-				EnableEditButtons();
-			}
+
+			//Entity rollerEntity = (Entity)Roller.GetEntity().Clone();
+			//rollerEntity.AttributeSelector = (int)Roller.AttributeSelectors.NameOnly;
+			grdRollers.Entity = EntityManager.GetEntity((int)Entities.ActionRollers); // rollerEntity;
+			SetRollerDataSource();
+			EnableEditButtons();
 		}
 
-		private void EnableEditButtons()
+		private void InitSponsorProgramList()
+        {
+            grdRollers.Caption = "Программы";
+            grdRollers.Entity = SponsorProgram.GetEntity();
+            grdRollers.DataSource = ((CampaignOnSingleMassmedia)_campaign).Massmedia.GetSponsorPrograms(true).DefaultView;
+        }
+
+        private void EnableEditButtons()
 		{
             tbbTemplate.Enabled = tbbTemplate2.Enabled = tbbPlay.Enabled = tbbStart.Enabled = grdRollers.InternalGrid.RowCount > 0;
         }
@@ -788,44 +824,7 @@ namespace Merlin.Forms
 			mediaControl.Stop();
 		}
 
-		private void CampaignForm_Load(object sender, EventArgs e)
-		{
-			try
-			{
-				Application.DoEvents();
-				Cursor = Cursors.WaitCursor;
-
-				ProcessToolbar();
-				SetFormCaption();
-				SetTariffGrid();
-
-				if (!(_tariffGrid is IRollerGrid))
-					HideGridWithCurrentIssues();
-				
-				InitModulesList();
-				if (!IsModuleCampaign && !IsPackModuleCampaign)
-					InitRollersList();
-				
-				if (RollerIssuesGrid != null)
-				{
-					RollerIssuesGrid.IsPopUpMenuAllowed = false;
-					RollerIssuesGrid.ExcludeSpecialTariffs = true;
-					RollerIssuesGrid.ShowUnconfirmed = tbbShowUnconfirmed.Checked;
-				}
-
-				_campaign?.DisplayCampaignData(lstStat);
-
-				grdRollers.ObjectDeleted += GrdRollers_ObjectDeleted;
-			}
-			catch (Exception ex)
-			{
-				ErrorManager.PublishError(ex);
-			}
-			finally
-			{
-				Cursor = Cursors.Default;
-			}
-		}
+		
 
         private void GrdRollers_ObjectDeleted(PresentationObject presentationObject)
         {
