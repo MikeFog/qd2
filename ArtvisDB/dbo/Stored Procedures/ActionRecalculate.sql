@@ -42,7 +42,7 @@ BEGIN
     (
         campaignID INT NOT NULL PRIMARY KEY,
         campaignTypeID TINYINT NOT NULL,
-        massmediaID SMALLINT NOT NULL,
+        massmediaID SMALLINT NULL,
         oldTotalCount INT NOT NULL,
         tariffPrice DECIMAL(18,2) NULL,
         issuesDuration INT NULL,

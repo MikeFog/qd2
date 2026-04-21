@@ -27,6 +27,12 @@
 );
 
 
+GO
+ALTER TABLE [dbo].[Campaign] SET (LOCK_ESCALATION = AUTO);
+
+
+
+
 
 
 
@@ -52,7 +58,14 @@ CREATE NONCLUSTERED INDEX [IX_Campaign_campaignTypeID__campaignID]
 
 GO
 CREATE NONCLUSTERED INDEX [IX_Campaign_Massmedia]
-    ON [dbo].[Campaign]([massmediaID] ASC, [startDate] ASC) WITH (FILLFACTOR = 90);
+    ON [dbo].[Campaign]([massmediaID] ASC, [startDate] ASC);
+
+
+GO
+ALTER INDEX [IX_Campaign_Massmedia]
+    ON [dbo].[Campaign] DISABLE;
+
+
 
 
 GO

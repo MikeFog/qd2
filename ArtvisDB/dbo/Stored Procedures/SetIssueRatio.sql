@@ -1,50 +1,66 @@
-﻿/*
-Mdified: Denis Gladkikh (dgladkikh@fogsoft.ru) 17.09.2008 - Add broadcast start logic to sponsor price list
-*/
-CREATE     PROC [dbo].[SetIssueRatio]
+﻿CREATE PROC [dbo].[SetIssueRatio]
 (
-@campaignID int, 
-@campaignTypeID int,
-@startDate datetime, 
-@finishDate datetime,
-@ratio float
+    @campaignID int,
+    @campaignTypeID int,
+    @startDate datetime,
+    @finishDate datetime,
+    @ratio float
 )
-As
-Set Nocount On
-DECLARE @issue TABLE(issueID int)
-Set	@startDate = Convert(datetime, Convert(varchar(8), @startDate, 112), 112)
-Set	@finishDate = Convert(datetime, Convert(varchar(8), @finishDate, 112), 112)
+AS
+BEGIN
+    SET NOCOUNT ON;
 
-INSERT @issue
-SELECT i.issueID
-FROM Issue i
-	JOIN TariffWindow tw ON	tw.windowId = i.originalWindowID
-WHERE i.campaignId = @campaignID  
-		and tw.dayOriginal between @startDate and @finishDate
+    CREATE TABLE #issue
+    (
+        issueID int NOT NULL PRIMARY KEY
+    );
 
-Update	Issue WITH (ROWLOCK)
-Set		ratio = @ratio
-WHERE issueID IN (SELECT issueID FROM @issue)
+    SET @startDate  = CONVERT(datetime, CONVERT(varchar(8), @startDate, 112), 112);
+    SET @finishDate = CONVERT(datetime, CONVERT(varchar(8), @finishDate, 112), 112);
 
-If @campaignTypeID = 2
-	Update	i
-	Set		i.Ratio = @ratio
-	from programIssue i inner join Campaign c on i.campaignId = @campaignID and c.campaignID = i.campaignID
-		inner join SponsorTariff st on i.tariffID = st.tariffID
-		inner join SponsorProgramPriceList pl on st.pricelistID = pl.pricelistID
-	where i.issueDate between DATEADD(mi, DATEPART(mi, pl.broadcastStart), DATEADD(hh, DATEPART(hh, pl.broadcastStart), @startDate))
-					and DATEADD(mi, DATEPART(mi, pl.broadcastStart), DATEADD(hh, DATEPART(hh, pl.broadcastStart), @finishDate))
+    INSERT INTO #issue (issueID)
+    SELECT i.issueID
+    FROM Issue i
+        INNER JOIN TariffWindow tw ON tw.windowId = i.originalWindowID
+    WHERE
+        i.campaignId = @campaignID
+        AND tw.dayOriginal BETWEEN @startDate AND @finishDate;
 
-If @campaignTypeID = 3
-	Update	moduleIssue
-	Set		ratio = @ratio
-	Where	campaignId = @campaignID and 
-			issueDate between @startDate and @finishDate
-			
-IF @campaignTypeID = 4
-	Update	[PackModuleIssue]
-	Set		[ratio] = @ratio
-	Where	[campaignID] = @campaignID and 
-			[issueDate] between @startDate and @finishDate
+    UPDATE i WITH (ROWLOCK)
+    SET i.ratio = @ratio
+    FROM Issue i
+        INNER JOIN #issue x ON x.issueID = i.issueID;
 
+    IF @campaignTypeID = 2
+        UPDATE i
+        SET i.Ratio = @ratio
+        FROM ProgramIssue i
+            INNER JOIN Campaign c
+                ON i.campaignId = @campaignID
+               AND c.campaignID = i.campaignID
+            INNER JOIN SponsorTariff st
+                ON i.tariffID = st.tariffID
+            INNER JOIN SponsorProgramPriceList pl
+                ON st.pricelistID = pl.pricelistID
+        WHERE
+            i.issueDate BETWEEN
+                DATEADD(mi, DATEPART(mi, pl.broadcastStart),
+                    DATEADD(hh, DATEPART(hh, pl.broadcastStart), @startDate))
+                AND
+                DATEADD(mi, DATEPART(mi, pl.broadcastStart),
+                    DATEADD(hh, DATEPART(hh, pl.broadcastStart), @finishDate));
 
+    IF @campaignTypeID = 3
+        UPDATE ModuleIssue
+        SET ratio = @ratio
+        WHERE
+            campaignId = @campaignID
+            AND issueDate BETWEEN @startDate AND @finishDate;
+
+    IF @campaignTypeID = 4
+        UPDATE [PackModuleIssue]
+        SET [ratio] = @ratio
+        WHERE
+            [campaignID] = @campaignID
+            AND [issueDate] BETWEEN @startDate AND @finishDate;
+END
