@@ -11,7 +11,9 @@ DECLARE @avgDuration float, @campaignsCount tinyint, @priceByCampaigns decimal(1
 
 Select @priceByCampaigns = Sum([price]) From Campaign where actionID = @actionID
 
-SELECT @avgDuration=AVG(CAST(c.issuesDuration AS float)), @campaignsCount=COUNT(DISTINCT c.massmediaID)
+-- ИСПРАВЛЕНО: COUNT(*) вместо COUNT(DISTINCT c.massmediaID)
+-- Это гарантирует, что каждая кампания (включая тип 3) учитывается отдельно
+SELECT @avgDuration=AVG(CAST(c.issuesDuration AS float)), @campaignsCount=COUNT(*)
 FROM Campaign c
 WHERE c.actionID=@actionID and c.campaignTypeID < 4
 
@@ -34,8 +36,10 @@ SELECT @discountValue=COALESCE(MIN(pl.discount),1) FROM (
 			c.actionID=@actionID
 		GROUP BY 
 			m.packageDiscountPriceListID
+		-- ИСПРАВЛЕНО: count(c.massmediaID) вместо count(DISTINCT m.massmediaID)
+		-- Считаем количество сопоставлённых кампаний, а не уникальных massmedia
 		HAVING 
-			count(DISTINCT m.massmediaID)=@campaignsCount
+			count(c.massmediaID)=@campaignsCount
 		) t
 	JOIN PackageDiscountPriceList pl ON pl.packageDiscountPriceListID=t.packageDiscountPriceListID
 	JOIN PackageDiscount d ON d.packageDiscountId=pl.packageDiscountID
