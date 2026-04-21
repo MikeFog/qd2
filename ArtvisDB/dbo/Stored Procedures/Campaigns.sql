@@ -35,7 +35,7 @@ begin
 		END AS packDiscount,
 		CASE cm.[campaignTypeID]
 			WHEN 4 THEN cm.[finalPrice]
-			ELSE cm.[finalPrice] * a.[discount]
+			ELSE CAST(cm.[finalPrice] * a.[discount] AS DECIMAL(9,2))
 		END AS fullPrice,
 		mg.name as groupName,
 		a.deleteDate
@@ -88,7 +88,7 @@ begin
 		END AS entityId,
 		NULL AS packmodulemassmediaID,
 		a.[discount] AS packDiscount,
-		cm.[finalPrice] * a.[discount] AS fullPrice,
+		CAST(cm.[finalPrice] * a.[discount] AS DECIMAL(9,2)) AS fullPrice,
 		mg.name as groupName,
 		a.deleteDate
 	FROM 
@@ -124,7 +124,7 @@ begin
 		171 AS entityId,
 		mm.massmediaID AS packmodulemassmediaID,
 		CAST(1 AS DECIMAL(9,4)) AS packDiscount,
-		cm.[finalPrice] AS fullPrice,
+		CAST(cm.[finalPrice] AS DECIMAL(9,2)) AS fullPrice,
 		mg.name as groupName,
 		a.deleteDate
 	FROM 
