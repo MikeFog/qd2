@@ -185,6 +185,6 @@ else if @campaignTypeID = 100 -- такого типа нет, это для в�
 		And pi.programID = IsNull(@objectID, pi.programID)
 	End
 
-select * from @days
+select * from @days order by issueDate
 
 select positionId as Id, description as name from iIssuePosition Where positionId In(-20, -10, 0, 10)

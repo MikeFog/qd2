@@ -87,4 +87,4 @@ begin
 	order by dbo.fn_GetTimeString(pl.broadcastStart, tw.windowDateOriginal)
 end 
 
-select * from @days
+select * from @days order by issueDate
