@@ -12,5 +12,6 @@ namespace Merlin.Classes
 		DataTable LoadIssues(bool showUnconfirmed, Entity issueEntity);
 		bool IsDisabled { get; }
 		bool IsMarked {  get; }
-	}
+		bool IsPrime { get; }
+    }
 }

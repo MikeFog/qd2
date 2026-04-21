@@ -7,7 +7,6 @@ using FogSoft.WinForm;
 using FogSoft.WinForm.Classes;
 using FogSoft.WinForm.DataAccess;
 using Merlin.Classes;
-using System.Collections.Generic;
 
 namespace Merlin.Controls
 {
@@ -15,8 +14,6 @@ namespace Merlin.Controls
 	{		
 		private Roller roller;
 		private DataTable _dtWindowsWithAdvertType;
-        private readonly Dictionary<Point, Color> _primePriceOriginalColors = new Dictionary<Point, Color>();
-        private readonly Dictionary<Point, Color> _markedCellOriginalColors = new Dictionary<Point, Color>();
 
         public RollerIssuesGrid3()
 			: this(true)
@@ -154,151 +151,14 @@ namespace Merlin.Controls
 		private void OnGridPopulated()
 		{
 			AddIssues2Grid();
-			if (module != null) MarkFullColumns();
+			if (module != null) 
+				MarkFullColumns();
+			else
+                RefreshWindowsColors();
+
             if (rollerPosition != RollerPositions.Undefined || _advertTypePresence != AdvertTypePresences.Undefined)
                 MarkCellsWithPositionAndAdvType();
-			MarkDisabledCells();
-/*
-            if (rollerPosition != RollerPositions.Undefined) MarkCellsWithRollerPosition();
-			if (_advertTypePresence != AdvertTypePresences.Undefined) MarkCellsWithAdvertTypePresence();
-*/
 		}
-
-		public void MarkCellsWithPrimePrice(bool flag)
-		{
-			if (_tariffWindows == null)
-				return;
-
-			if (!flag)
-			{
-				RestorePrimePriceCellColors();
-				return;
-			}
-
-			// Если уже были выделения (или повторный вызов) — сначала откатим старые
-			RestorePrimePriceCellColors();
-
-			int rowCount = _tariffWindows.GetLength(0);
-			int columnCount = _tariffWindows.GetLength(1);
-
-			// Для каждой колонки ищем максимальную цену
-			for (int columnIndex = 0; columnIndex < columnCount; columnIndex++)
-			{
-				bool hasWindowInColumn = false;
-				decimal maxPrice = decimal.MinValue;
-
-				for (int rowIndex = 0; rowIndex < rowCount; rowIndex++)
-				{
-					ITariffWindow window = _tariffWindows[rowIndex, columnIndex];
-					if (window == null)
-						continue;
-
-					if (!hasWindowInColumn || window.Price > maxPrice)
-					{
-						maxPrice = window.Price;
-						hasWindowInColumn = true;
-					}
-				}
-
-				if (!hasWindowInColumn)
-					continue;
-
-				// Проходим повторно и отмечаем все окна с максимальной ценой
-				for (int rowIndex = 0; rowIndex < rowCount; rowIndex++)
-				{
-					ITariffWindow window = _tariffWindows[rowIndex, columnIndex];
-					if (window != null && window.Price == maxPrice)
-					{
-						int gridRow = rowIndex + FIXED_ROWS;
-						int gridColumn = columnIndex + FixedCols;
-						Point key = new Point(gridColumn, gridRow);
-
-						if (!_primePriceOriginalColors.ContainsKey(key))
-						{
-							Color originalColor = MarkCellAsPrimePrice(gridRow, gridColumn);
-							if (!_primePriceOriginalColors.ContainsKey(key))
-								_primePriceOriginalColors.Add(key, originalColor);
-						}
-					}
-				}
-			}
-		}
-
-		private void RestorePrimePriceCellColors()
-		{
-			foreach (KeyValuePair<Point, Color> pair in _primePriceOriginalColors)
-			{
-				int columnIndex = pair.Key.X;
-				int rowIndex = pair.Key.Y;
-
-				if (rowIndex >= 0 && rowIndex < RawDataGridView.RowCount &&
-					columnIndex >= 0 && columnIndex < RawDataGridView.ColumnCount)
-				{
-					SetCellBackColor(rowIndex, columnIndex, pair.Value);
-				}
-			}
-
-			_primePriceOriginalColors.Clear();
-		}
-
-        private void RestoreMarkedCellColors()
-        {
-            foreach (KeyValuePair<Point, Color> pair in _markedCellOriginalColors)
-            {
-                int columnIndex = pair.Key.X;
-                int rowIndex = pair.Key.Y;
-
-                if (rowIndex >= 0 && rowIndex < RawDataGridView.RowCount &&
-                    columnIndex >= 0 && columnIndex < RawDataGridView.ColumnCount)
-                {
-                    SetCellBackColor(rowIndex, columnIndex, pair.Value);
-                }
-            }
-
-            _markedCellOriginalColors.Clear();
-        }
-
-        public void MarkMarkedCells(bool flag)
-        {
-            if (_tariffWindows == null)
-                return;
-
-            if (!flag)
-            {
-                RestoreMarkedCellColors();
-                return;
-            }
-
-            for (int rowIndex = FIXED_ROWS; rowIndex < RawDataGridView.RowCount; rowIndex++)
-                for (int columnIndex = FixedCols; columnIndex < RawDataGridView.ColumnCount; columnIndex++)
-                {
-					ITariffWindow window = GetTariffWindow(rowIndex, columnIndex);
-					if (window != null)
-					{
-						if (window.IsMarked)
-						{
-                            Color originalColor = MarkCellAsMarked(rowIndex, columnIndex);
-                            Point key = new Point(columnIndex, rowIndex);
-							if (!_markedCellOriginalColors.ContainsKey(key))
-								_markedCellOriginalColors.Add(key, originalColor);
-                        }
-					}
-                }
-        }
-
-        public void MarkDisabledCells()
-        {
-            for (int rowIndex = FIXED_ROWS; rowIndex < RawDataGridView.RowCount; rowIndex++)
-                for (int columnIndex = FixedCols; columnIndex < RawDataGridView.ColumnCount; columnIndex++)
-                {
-                    ITariffWindow window = GetTariffWindow(rowIndex, columnIndex);
-                    if (window != null)
-                    {
-                        if (window.IsDisabled)
-                            MarkCellAsDisabled(rowIndex, columnIndex);
-                    }
-                }
-        }
 
         private void MarkCellsWithPositionAndAdvType()
 		{

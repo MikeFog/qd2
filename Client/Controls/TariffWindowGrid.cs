@@ -1,15 +1,14 @@
-using System;
-using System.Collections.Generic;
-using System.ComponentModel;
-using System.Data;
-using System.Diagnostics;
-using System.Drawing;
-using System.Windows.Forms;
 using FogSoft.WinForm;
 using FogSoft.WinForm.Classes;
 using FogSoft.WinForm.DataAccess;
 using Merlin.Classes;
 using Merlin.Forms;
+using System;
+using System.Collections.Generic;
+using System.ComponentModel;
+using System.Data;
+using System.Drawing;
+using System.Windows.Forms;
 
 namespace Merlin.Controls
 {
@@ -49,6 +48,35 @@ namespace Merlin.Controls
         }
 
         public bool ShowDisabledWindows { get; set;	} = true;
+        public bool ShowMarkedWindows { get; set; }
+        public bool ShowPrimeWindows { get; set; }
+
+        public void RefreshWindowsColors()
+        {
+            int rowCount = _tariffWindows.GetLength(0);
+            int columnCount = _tariffWindows.GetLength(1);
+
+            for (int rowIndex = 0; rowIndex < rowCount; rowIndex++)
+            {
+                for (int columnIndex = 0; columnIndex < columnCount; columnIndex++)
+                {
+                    ITariffWindow window = _tariffWindows[rowIndex, columnIndex];
+                    if (window == null)
+                        continue;
+
+                    Color color = InternalGrid.DefaultCellStyle.BackColor;
+
+                    if (ShowDisabledWindows && window.IsDisabled)
+                        color = Color.FromArgb(255, 231, 234);
+                    else if (ShowMarkedWindows && window.IsMarked)
+                        color = Color.LightSteelBlue;
+                    else if (ShowPrimeWindows && window.IsPrime)
+                        color = Color.FromArgb(223, 211, 238); 
+
+					SetCellBackColor(rowIndex + FIXED_ROWS, columnIndex + FixedCols, color);
+                }
+            }
+        }
 
         private DateTime CurrentWindowDate
 		{
@@ -319,6 +347,53 @@ namespace Merlin.Controls
 			dtTimeLookup.Rows.Clear();
 			foreach (DataRow row in dtTime.Rows)
 				AddGridRow(row, dtTariffWindow, rowIndex++);
+			ProcessPrimeWindows();
+        }
+
+        private void ProcessPrimeWindows()
+        {
+            if (_tariffWindows == null)
+                return;
+
+            int rowsCount = _tariffWindows.GetLength(0);
+            int daysCount = _tariffWindows.GetLength(1);
+
+            for (int day = 0; day < daysCount; day++)
+            {
+                bool hasWindowsInDay = false;
+                decimal maxPrice = decimal.MinValue;
+
+                // 1) Находим максимальную цену в колонке (дне)
+                for (int row = 0; row < rowsCount; row++)
+                {
+                    ITariffWindow window = _tariffWindows[row, day];
+                    if (window == null)
+                        continue;
+
+                    if (!hasWindowsInDay || window.Price > maxPrice)
+                    {
+                        maxPrice = window.Price;
+                        hasWindowsInDay = true;
+                    }
+                }
+
+                if (!hasWindowsInDay)
+                    continue;
+
+                // 2) Проставляем IsPrime всем окнам дня
+                for (int row = 0; row < rowsCount; row++)
+                {
+                    ITariffWindow window = _tariffWindows[row, day];
+                    if (window == null)
+                        continue;
+
+                    TariffWindow tariffWindow = window as TariffWindow;
+                    if (tariffWindow == null)
+                        continue;
+
+                    tariffWindow.IsPrime = window.Price == maxPrice;
+                }
+            }
         }
 
 		private void AddGridRow(DataRow timeAndPriceRow, DataTable dtData, int rowIndex)

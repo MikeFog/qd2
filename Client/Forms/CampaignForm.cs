@@ -200,7 +200,8 @@ namespace Merlin.Forms
 
 		protected virtual void ProcessToolbar()
 		{
-			tsbMuteRoller.Enabled = tbMarkPrimeWindows.Enabled = IsSimplelCampaign;
+            tbMarkPrimeWindows.Visible = btnShowDisabled.Visible = btnShowMarked.Visible = IsSimplelCampaign;
+            tsbMuteRoller.Enabled = IsSimplelCampaign;
 			tsbMuteRoller.Visible = tbbPosition.Visible = tbbPlay.Visible = tsbStop.Visible = toolStripSeparator3.Visible = !(_tariffGrid is ProgramIssuesGrid2);
             tbbAdvertType.Visible = !(_tariffGrid is ProgramIssuesGrid2) && !(_tariffGrid is PackModuleGrid);
             tbbModules.Visible = IsModuleCampaign || IsPackModuleCampaign;
@@ -323,7 +324,7 @@ namespace Merlin.Forms
 			splitContainer5.Panel1.Controls.Add(_tariffGrid);
 			splitContainer5.Panel2Collapsed = !IsPackModuleCampaign;
 
-            if (_tariffGrid is TariffWindowGrid grid2)
+            if (IsSimplelCampaign && _tariffGrid is TariffWindowGrid grid2)
                 grid2.ShowDisabledWindows = btnShowDisabled.Checked;
 
             SetEventHandlersFromGridEvents(_tariffGrid);
@@ -371,8 +372,11 @@ namespace Merlin.Forms
 											grdIssues.Clear();
 											packDetails?.Clear();
 											SetStatus(null);
-											MarkPrimeWindows(null, null);
-											MarkMarkedWindows(null, null);
+											if (IsSimplelCampaign)
+											{
+												MarkPrimeWindows(null, null);
+												MarkMarkedWindows(null, null);
+											}
 										};
 		}
 
@@ -930,15 +934,6 @@ namespace Merlin.Forms
             }
         }
 
-        private void btnShowDisabled_CheckedChanged(object sender, EventArgs e)
-        {
-			if(_tariffGrid is TariffWindowGrid grid)
-            {
-                grid.ShowDisabledWindows = btnShowDisabled.Checked;
-                RefreshGrid();
-            }
-        }
-
         private void toolStripButton1_Click(object sender, EventArgs e)
         {
             try
@@ -963,7 +958,8 @@ namespace Merlin.Forms
         {
 			if(_tariffGrid is RollerIssuesGrid3 grid)
 			{
-				grid.MarkCellsWithPrimePrice(tbMarkPrimeWindows.Checked);
+				grid.ShowPrimeWindows = tbMarkPrimeWindows.Checked;
+                grid.RefreshWindowsColors();
             }
         }
 
@@ -971,7 +967,18 @@ namespace Merlin.Forms
         {
             if (_tariffGrid is RollerIssuesGrid3 grid)
             {
-                grid.MarkMarkedCells(btnShowMarked.Checked);
+                grid.ShowMarkedWindows = btnShowMarked.Checked;
+				grid.RefreshWindowsColors();
+            }
+        }
+
+        private void MarkDisabledWindows(object sender, EventArgs e)
+        {
+            if (_tariffGrid is TariffWindowGrid grid)
+            {
+                grid.ShowDisabledWindows = btnShowDisabled.Checked;
+                RefreshGrid();
+                //grid.RefreshWindowsColors();
             }
         }
     }

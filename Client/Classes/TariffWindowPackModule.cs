@@ -81,5 +81,9 @@ namespace Merlin.Classes
 			procParameters["showUnconfirmed"] = showUnconfirmed;
 			return DataAccessor.LoadDataSet("GetPackModuleIssueDetails", procParameters).Tables[0].DefaultView;
 		}
-	}
+        public bool IsPrime
+        {
+            get { return false; }
+        }
+    }
 }

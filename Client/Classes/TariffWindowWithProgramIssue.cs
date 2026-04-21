@@ -84,5 +84,9 @@ namespace Merlin.Classes
         {
             get { return false; }
         }
+        public bool IsPrime
+        {
+            get { return false; }
+        }
     }
 }

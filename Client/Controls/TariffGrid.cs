@@ -669,23 +669,5 @@ namespace Merlin.Controls
 		{
 			MarkCellAsOccupied(GetCell(rowIndex, columnIndex));
 		}
-
-        protected void MarkCellAsDisabled(int rowIndex, int columnIndex)
-        {
-            SetCellBackColor(rowIndex, columnIndex, Color.FromArgb(255, 231, 234));
-        }
-
-        protected Color MarkCellAsMarked(int rowIndex, int columnIndex)
-        {
-            var currentColor = GetCell(rowIndex, columnIndex).Style.BackColor;
-            SetCellBackColor(rowIndex, columnIndex, Color.LightSteelBlue); 
-            return currentColor;
-        }
-        protected Color MarkCellAsPrimePrice(int rowIndex, int columnIndex)
-        {
-			var currentColor = GetCell(rowIndex, columnIndex).Style.BackColor;
-            SetCellBackColor(rowIndex, columnIndex, Color.FromArgb(223, 211, 238));
-            return currentColor;
-        }
     }
 }

@@ -25,6 +25,8 @@ namespace Merlin.Classes
             public const string IsMarked = "isMarked";
         }
 
+		protected bool _isPrime;
+
 		protected TariffWindow(Entity entity) : base(entity)
 		{
 		}
@@ -113,6 +115,11 @@ namespace Merlin.Classes
         public bool IsMarked 
 		{
             get { return (bool)this[ParamNames.IsMarked]; }
+        }
+        public bool IsPrime
+        {
+            get { return _isPrime; }
+            set { _isPrime = value; }
         }
     }
 }
