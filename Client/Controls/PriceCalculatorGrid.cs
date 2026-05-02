@@ -271,7 +271,7 @@ namespace Merlin.Controls
             dgvStations.Columns.Add(new DataGridViewTextBoxColumn
             {
                 Name = "colNonPrimeWeekday",
-                HeaderText = "Цена будни не прайм",
+                HeaderText = "Цена будни офф прайм",
                 DataPropertyName = "NonPrimePricePerSecWeekday",
                 Width = NumericColWidth,
                 DefaultCellStyle = { Format = "c", Alignment = DataGridViewContentAlignment.MiddleRight },
@@ -291,7 +291,7 @@ namespace Merlin.Controls
             dgvStations.Columns.Add(new DataGridViewTextBoxColumn
             {
                 Name = "colNonPrimeWeekend",
-                HeaderText = "Цена выходные не прайм",
+                HeaderText = "Цена выходные офф прайм",
                 DataPropertyName = "NonPrimePricePerSecWeekend",
                 Width = NumericColWidth,
                 DefaultCellStyle = { Format = "c", Alignment = DataGridViewContentAlignment.MiddleRight },
@@ -310,7 +310,7 @@ namespace Merlin.Controls
             dgvStations.Columns.Add(new DataGridViewTextBoxColumn
             {
                 Name = "colNonPrimeTotalSpotsWeekday",
-                HeaderText = "Кол-во выходов будни не прайм",
+                HeaderText = "Кол-во выходов будни офф прайм",
                 DataPropertyName = ColumnName(PriceCalculatorColumn.NonPrimeTotalSpotsWeekday),
                 Width = NumericColWidth,
                 DefaultCellStyle = { Format = "N0", Alignment = DataGridViewContentAlignment.MiddleRight, NullValue = "0" }
@@ -328,7 +328,7 @@ namespace Merlin.Controls
             dgvStations.Columns.Add(new DataGridViewTextBoxColumn
             {
                 Name = "colNonPrimeTotalSpotsWeekend",
-                HeaderText = "Кол-во выходов выходные не прайм",
+                HeaderText = "Кол-во выходов выходные офф прайм",
                 DataPropertyName = ColumnName(PriceCalculatorColumn.NonPrimeTotalSpotsWeekend),
                 Width = NumericColWidth,
                 DefaultCellStyle = { Format = "N0", Alignment = DataGridViewContentAlignment.MiddleRight, NullValue = "0" }
@@ -1798,7 +1798,7 @@ namespace Merlin.Controls
         {
             if (!merged) return;
             // сжимаем только цены
-            SetColumnLayout("colNonPrimeWeekday", true, "Цена не прайм");
+            SetColumnLayout("colNonPrimeWeekday", true, "Цена офф прайм");
             SetColumnLayout("colNonPrimeWeekend", false);
         }
 

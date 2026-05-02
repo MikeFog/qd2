@@ -335,7 +335,7 @@ namespace Merlin.Forms
             this.label8.Name = "label8";
             this.label8.Size = new System.Drawing.Size(184, 24);
             this.label8.TabIndex = 36;
-            this.label8.Text = "Выходов в не прайм:";
+            this.label8.Text = "Выходов в офф прайм:";
             // 
             // numQuantityPrime
             // 
@@ -361,7 +361,7 @@ namespace Merlin.Forms
             this.cbSplitPrime.Name = "cbSplitPrime";
             this.cbSplitPrime.Size = new System.Drawing.Size(319, 28);
             this.cbSplitPrime.TabIndex = 39;
-            this.cbSplitPrime.Text = "С разбивкой на прайм и не прайм";
+            this.cbSplitPrime.Text = "С разбивкой на прайм и офф прайм";
             this.cbSplitPrime.UseVisualStyleBackColor = true;
             this.cbSplitPrime.CheckedChanged += new System.EventHandler(this.cbSplitPrime_CheckedChanged);
             // 

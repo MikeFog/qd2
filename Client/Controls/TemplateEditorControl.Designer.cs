@@ -532,7 +532,7 @@ namespace Merlin.Controls
             this.label3.Name = "label3";
             this.label3.Size = new System.Drawing.Size(183, 25);
             this.label3.TabIndex = 39;
-            this.label3.Text = "Выходные не прайм ";
+            this.label3.Text = "Выходные офф прайм ";
             // 
             // numPrimeWeekend
             // 
@@ -644,7 +644,7 @@ namespace Merlin.Controls
             this.lblNonPrime.Name = "lblNonPrime";
             this.lblNonPrime.Size = new System.Drawing.Size(147, 25);
             this.lblNonPrime.TabIndex = 33;
-            this.lblNonPrime.Text = "Будни не прайм:";
+            this.lblNonPrime.Text = "Будни офф прайм:";
             // 
             // nudNonPrimeWeekday
             // 

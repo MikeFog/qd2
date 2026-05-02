@@ -321,7 +321,7 @@ namespace Merlin.Forms
 
 				// Всегда: prime -> только prime, non-prime -> только non-prime
 				issues.AddRange(AddIssuesFromWindows(windowsPrime, _template.QuantityPrime, "Недостаточно рекламных окон прайм для размещения всех выпусков. Окон: {0}, выпусков {1}."));
-				issues.AddRange(AddIssuesFromWindows(windowsNonPrime, _template.QuantityNonPrime, "Недостаточно рекламных окон не прайм для размещения всех выпусков. Окон: {0}, выпусков для добавления {1}."));
+				issues.AddRange(AddIssuesFromWindows(windowsNonPrime, _template.QuantityNonPrime, "Недостаточно рекламных окон офф прайм для размещения всех выпусков. Окон: {0}, выпусков для добавления {1}."));
 			}
 
 			return issues;
