@@ -528,7 +528,7 @@ namespace Merlin.Properties {
         }
         
         /// <summary>
-        ///   Looks up a localized string similar to Вы выбрали режим заполнения рекламных окон с разбивкой на прайм и не прайм. Пожалуйчта, введите данные о количестве выходов в прайм и/или не прайм..
+        ///   Looks up a localized string similar to Вы выбрали режим заполнения рекламных окон с разбивкой на прайм и офф прайм. Пожалуйчта, введите данные о количестве выходов в прайм и/или офф прайм..
         /// </summary>
         public static string PrimeAndNonPrimeQuantityMissing {
             get {
