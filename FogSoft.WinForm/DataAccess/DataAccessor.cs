@@ -298,19 +298,20 @@ namespace FogSoft.WinForm.DataAccess
 		{
 			try
 			{
-				if(parameters != null && SecurityManager.LoggedUser != null)
+				if (parameters != null && SecurityManager.LoggedUser != null)
 					parameters[ParamNames.LoggedUserID] = SecurityManager.LoggedUser.Id;
-                DataSet ds;
+				DataSet ds;
 
-
-                if (_transaction != null)
+				if (_transaction != null)
 				{
 					using (var scope = DbExecutionScope.Start(procedureName, connectionTimeout, cached: false))
 					{
 						_commandParameters = AssignSqlParameters(_transaction.Connection, procedureName, parameters);
 						ds = SqlHelper.ExecuteDataset(_transaction, CommandType.StoredProcedure, procedureName, connectionTimeout, _commandParameters);
-                        scope.SetRows(ds.Tables.Count > 0 ? ds.Tables[0].Rows.Count : 0);
-                    }
+						scope.SetRows(ds.Tables.Count > 0 ? ds.Tables[0].Rows.Count : 0);
+						string execScript = BuildExecScript(procedureName, _commandParameters);
+						scope.SetExecScript(execScript);
+					}
 				}
 				else
 				{
@@ -334,9 +335,7 @@ namespace FogSoft.WinForm.DataAccess
 										transaction = connection.BeginTransaction();
 									try
 									{
-                                        string execScript = BuildExecScript(procedureName, _commandParameters);
-                                        Debug.Print(execScript);
-                                        ds = SqlHelper.ExecuteDataset(_transaction ?? transaction, CommandType.StoredProcedure, procedureName, connectionTimeout, _commandParameters);
+										ds = SqlHelper.ExecuteDataset(_transaction ?? transaction, CommandType.StoredProcedure, procedureName, connectionTimeout, _commandParameters);
 										transaction?.Commit();
 									}
 									catch
@@ -352,23 +351,21 @@ namespace FogSoft.WinForm.DataAccess
 								if (!forceFlag && _cache.TryGetValue(key, out DataSet value))
 									ds = value;
 								else
-								{
 									ds = SqlHelper.ExecuteDataset(connection, CommandType.StoredProcedure, procedureName, connectionTimeout, _commandParameters);
-									if (cachingTime > 0)
-										_cache.Set(key, ds, TimeSpan.FromSeconds(cachingTime));
-                                    string execScript = BuildExecScript(procedureName, _commandParameters);
-									Debug.Print(execScript);
-                                }
 							}
-                            scope.SetRows(ds.Tables.Count > 0 ? ds.Tables[0].Rows.Count : 0);
-                        }
+
+							scope.SetRows(ds.Tables.Count > 0 ? ds.Tables[0].Rows.Count : 0);
+							string execScript = BuildExecScript(procedureName, _commandParameters);
+							scope.SetExecScript(execScript);
+						}
 					}
 				}
-                procedureConfigsByName.TryGetValue(procedureName, out ProcedureConfig config);
-                config?.ProcessDataSet(ds);
-                return ds;
+
+				procedureConfigsByName.TryGetValue(procedureName, out ProcedureConfig config);
+				config?.ProcessDataSet(ds);
+				return ds;
 			}
-			catch(Exception exp)
+			catch (Exception exp)
 			{
 				if (parameters != null && exp.Data != null)
 				{
@@ -392,73 +389,72 @@ namespace FogSoft.WinForm.DataAccess
 				parameters[ParamNames.LoggedUserID] = SecurityManager.LoggedUser.Id;
 
                 MessageAccessor.Parameters = parameters;
-				using (SqlConnection connection = new SqlConnection(ConnectionString))
-				{
-					using (var scope = DbExecutionScope.Start(procedureName, connectionTimeout, cached: false))
-					{
-						connection.Open();
-						_commandParameters = AssignSqlParameters(connection, procedureName, parameters);
+                using (SqlConnection connection = new SqlConnection(ConnectionString))
+                {
+                    using (var scope = DbExecutionScope.Start(procedureName, connectionTimeout, cached: false))
+                    {
+                        connection.Open();
+                        _commandParameters = AssignSqlParameters(connection, procedureName, parameters);
 
-						if (isTransactionRequired)
-						{
+                        if (isTransactionRequired)
+                        {
+                            if (ConfigurationUtil.IsUseCustomTransaction)
+                            {
+                                SqlHelper.ExecuteNonQuery(connection, CommandType.Text, CreateSQLwithTransaction(procedureName),
+                                                          connectionTimeout,
+                                                          _commandParameters);
+                            }
+                            else
+                            {
+                                SqlTransaction transaction = null;
 
-							if (ConfigurationUtil.IsUseCustomTransaction)
-							{
-								SqlHelper.ExecuteNonQuery(connection, CommandType.Text, CreateSQLwithTransaction(procedureName),
-														  connectionTimeout,
-														  _commandParameters);
-							}
-							else
-							{
-								SqlTransaction transaction = null;
+                                if (_transaction == null)
+                                    transaction = connection.BeginTransaction();
+                                try
+                                {
+                                    SqlHelper.ExecuteNonQuery(_transaction ?? transaction, CommandType.StoredProcedure, procedureName, connectionTimeout, _commandParameters);
+                                    transaction?.Commit();
+                                }
+                                catch
+                                {
+                                    transaction?.Rollback();
+                                    throw;
+                                }
+                            }
+                        }
+                        else
+                        {
+                            SqlHelper.ExecuteNonQuery(connection, CommandType.StoredProcedure, procedureName, connectionTimeout, _commandParameters);
+                        }
 
-								if (_transaction == null)
-									transaction = connection.BeginTransaction();
-								try
-								{
-									SqlHelper.ExecuteNonQuery(_transaction ?? transaction, CommandType.StoredProcedure, procedureName, connectionTimeout, _commandParameters);
-									transaction?.Commit();
-								}
-								catch
-								{
-									transaction?.Rollback();
-									throw;
-								}
-							}
-						}
-						else
-						{
-							SqlHelper.ExecuteNonQuery(connection, CommandType.StoredProcedure, procedureName, connectionTimeout, _commandParameters);
-						}
-						connection.Close();
-					}
-				}
-                string execScript = BuildExecScript(procedureName, _commandParameters);
-				Debug.WriteLine(execScript);
-               
-                foreach (KeyValuePair<string, object> kvp in GetOutParameters())
-					parameters[kvp.Key] = kvp.Value;
-			}
-			catch(Exception exp)
-			{
-				if (parameters != null && exp.Data != null)
-				{
-					exp.Data.Add("Procedure", procedureName);
-                    foreach (SqlParameter parameter in _commandParameters)
-                    exp.Data.Add("Parameter: " + parameter.ParameterName, parameter.Value);
+                        connection.Close();
+                        string execScript = BuildExecScript(procedureName, _commandParameters);
+                        scope.SetExecScript(execScript);
+                    }
                 }
 
-                // Строка для запуска в Management Studio
+                foreach (KeyValuePair<string, object> kvp in GetOutParameters())
+                    parameters[kvp.Key] = kvp.Value;
+            }
+            catch (Exception exp)
+            {
+                if (parameters != null && exp.Data != null)
+                {
+                    exp.Data.Add("Procedure", procedureName);
+                    foreach (SqlParameter parameter in _commandParameters)
+                        exp.Data.Add("Parameter: " + parameter.ParameterName, parameter.Value);
+                }
+
                 try
                 {
                     string execScript = BuildExecScript(procedureName, _commandParameters);
                     exp.Data["ExecScript"] = execScript;
                 }
-                catch { /* не ломаем оригинальный exception */ }
+                catch { /* не должно перекрывать exception */ }
 
                 throw;
-			}
-		}
+            }
+        }
 
 		private static string CreateSQLwithTransaction(string procedureName)
 		{

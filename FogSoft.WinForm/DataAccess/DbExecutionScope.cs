@@ -15,6 +15,7 @@ namespace FogSoft.WinForm.DataAccess
         private readonly Stopwatch _sw;
 
         private int? _rows;
+        private string _execScript;
 
         //private const int INFO_THRESHOLD_MS = 1000;
         //private const int WARN_THRESHOLD_MS = 1000;
@@ -43,6 +44,11 @@ namespace FogSoft.WinForm.DataAccess
             _rows = rows;
         }
 
+        public void SetExecScript(string execScript)
+        {
+            _execScript = execScript;
+        }
+
         public void Dispose()
         {
             _sw.Stop();
@@ -51,8 +57,9 @@ namespace FogSoft.WinForm.DataAccess
             if (elapsedMs < ConfigurationUtil.StoredProcExecutionTimeThreshold)
                 return;
 
+            string name = _execScript ?? _procedureName;
             string msg =
-                $"{_procedureName} {elapsedMs}ms " +
+                $"{name} {elapsedMs}ms " +
                 $"timeout={_timeout}" +
                 (_rows.HasValue ? $" rows={_rows}" : "") +
                 (_cached ? " cached=true" : "");
