@@ -224,12 +224,12 @@ namespace Merlin.Forms {
             this.tsbAdd,
             this.tsbDelete,
             this.tsbEditRollerIssues,
+            this.tsbEditMass,
             this.tsbEditProgIssues,
             this.tsbPrintMediaPlan,
             this.toolStripSeparator2,
             this.tsbSetDiscount,
-            this.tsbSetActionPrice,
-            this.tsbEditMass});
+            this.tsbSetActionPrice});
             this.tsAction.LayoutStyle = System.Windows.Forms.ToolStripLayoutStyle.VerticalStackWithOverflow;
             this.tsAction.Location = new System.Drawing.Point(1112, 192);
             this.tsAction.Name = "tsAction";

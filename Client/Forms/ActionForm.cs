@@ -62,7 +62,7 @@ namespace Merlin.Forms
 
 		private void LoadCampaigns()
 		{
-			Entity entityCampaign = EntityManager.GetEntity((int) Entities.CampaignOnMassmedia);
+			Entity entityCampaign = EntityManager.GetEntity((int) Entities.CampaignOnMassmedia).Clone() as Entity;
 			entityCampaign.AttributeSelector = Campaign.ShortAttributesList;
 			grdCampaign.Entity = entityCampaign;
 			_action.ClearCache();
