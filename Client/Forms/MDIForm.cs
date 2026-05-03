@@ -268,7 +268,9 @@ namespace Merlin.Forms
                 else if (strMiName == "miPriceCalculator")
                     ShowPriceCalculator(mi);
                 else if (strMiName == "miManagerDiscountHistory")
-                    Globals.ShowSimpleJournal(EntityManager.GetEntity((int)Entities.ManagerDiscountHistory), mi.Text); ;
+                    Globals.ShowSimpleJournal(EntityManager.GetEntity((int)Entities.ManagerDiscountHistory), mi.Text);
+                else if (strMiName == "miManagerDiscountReason")
+                    Globals.ShowSimpleJournal(EntityManager.GetEntity((int)Entities.ManagerDiscountReason), mi.Text);
             }
 			catch (Exception ex)
 			{
@@ -897,14 +899,22 @@ namespace Merlin.Forms
 		private void CheckAnnouncements(object sender, EventArgs e)
 		{
             return;
+            ActionOnMassmedia a = new ActionOnMassmedia(180412);
+            a.Refresh();
+            a.DoAction(Constants.EntityActions.Edit, this, InterfaceObjects.SimpleJournal);
+            
+            Campaign c = new CampaignOnSingleMassmedia(396882);
+            c.Refresh();
+            c.DoAction("Edit", this, InterfaceObjects.SimpleJournal);
+            
 
             /*
             ActionOnMassmedia a = new ActionOnMassmedia(173666);
             a.Refresh();
 			a.SplitCampaign();
 			*/
-			
-			/*
+
+            /*
             var agency = Agency.GetAgencyByID(Convert.ToInt32(202));
             var templatePath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, ConfigurationUtil.ProposalTemplateFolder, agency[Agency.ParamNames.Path2ProposalTemplate].ToString());
 
@@ -927,7 +937,7 @@ namespace Merlin.Forms
 
             Process.Start(new ProcessStartInfo(result) { UseShellExecute = true });
 			*/
-         
+
             var priceCalculatorForm = new PriceCalculatorForm() { MdiParent = this, Icon = Icon };
               priceCalculatorForm.Show();
 								
