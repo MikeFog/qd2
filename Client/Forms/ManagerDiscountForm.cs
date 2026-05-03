@@ -1,6 +1,7 @@
 using FogSoft.WinForm.Classes;
 using Merlin.Classes;
 using System;
+using System.Data;
 using System.Windows.Forms;
 
 namespace Merlin.Forms
@@ -52,8 +53,13 @@ namespace Merlin.Forms
             {
                 Entity entity = EntityManager.GetEntity((int)Entities.ManagerDiscountReason);
                 entity.ClearCache();
+                DataTable dataTable = entity.GetContent().Copy();
+                DataRow row = dataTable.NewRow();
+                row[0] = 0;
+                row[1] = "";
+                dataTable.Rows.InsertAt(row, 0);
                 cmbReason.ColumnWithID = "ManagerDiscountReasonId";
-                cmbReason.DataSource = entity.GetContent().Copy().DefaultView;
+                cmbReason.DataSource = dataTable.DefaultView;
             }
             else
                 Utils.HideTableLayoutRow(tableLayoutPanelMain, 5);
@@ -115,7 +121,13 @@ namespace Merlin.Forms
 
 		private void btnOk_Click(object sender, EventArgs e)
 		{
-			if(!SecurityManager.LoggedUser.IsAdmin && !SecurityManager.LoggedUser.IsAcceptRatioForUser(txtRatio.Value, startDate, finishDate))
+            if (!VerifyInput())
+            {
+                DialogResult = DialogResult.None;
+                return;
+            }
+
+            if (!SecurityManager.LoggedUser.IsAdmin && !SecurityManager.LoggedUser.IsAcceptRatioForUser(txtRatio.Value, startDate, finishDate))
 			{
                 var (grantor, managerDiscountReasonId) = Utils.AskConfirmation(this);
 				if(grantor != null)
@@ -137,6 +149,16 @@ namespace Merlin.Forms
                 ManagerDiscountReasonId = cmbReason.SelectedValue != null
                     ? (int?)Convert.ToInt32(cmbReason.SelectedValue)
                     : null;
+        }
+
+        public bool VerifyInput()
+        {
+            if (cmbReason.Visible && Convert.ToInt32(cmbReason.SelectedValue) == 0)
+            {
+                MessageBox.Show("Необходимо выбрать причину выдачи скидки.", "Ошибка", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                return false;
+            }
+            return true;
         }
 
         private void checkBox1_CheckedChanged(object sender, EventArgs e)

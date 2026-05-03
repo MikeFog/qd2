@@ -43,8 +43,13 @@ namespace Merlin.Forms
             {
                 Entity entity = EntityManager.GetEntity((int)Entities.ManagerDiscountReason);
                 entity.ClearCache();
+                DataTable dataTable = entity.GetContent().Copy();
+                DataRow row = dataTable.NewRow();
+                row[0] = 0;
+                row[1] = "";
+                dataTable.Rows.InsertAt(row, 0);
                 cmbReason.ColumnWithID = "ManagerDiscountReasonId";
-                cmbReason.DataSource = entity.GetContent().Copy().DefaultView;
+                cmbReason.DataSource = dataTable.DefaultView;
             }
             else
                 Utils.HideTableLayoutRow(tableLayoutPanelMain, 3);
@@ -64,6 +69,12 @@ namespace Merlin.Forms
 
         private void BtnOK_Click(object sender, EventArgs e)
         {
+            if (!VerifyInput())
+            {
+                DialogResult = DialogResult.None;
+                return;
+            }
+
             IsManagerDiscount = rbRatio.Checked;
             ManagerDiscount = txtRatio.Value;
             FinalPrice = txtFinalPrice.Value;
@@ -71,6 +82,16 @@ namespace Merlin.Forms
             ManagerDiscountReasonId = cmbReason.SelectedValue != null
                 ? (int?)Convert.ToInt32(cmbReason.SelectedValue)
                 : null;
+        }
+
+        public bool VerifyInput()
+        {
+            if (cmbReason.Visible && Convert.ToInt32(cmbReason.SelectedValue) == 0)
+            {
+                MessageBox.Show("Необходимо выбрать причину выдачи скидки.", "Ошибка", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                return false;
+            }
+            return true;
         }
 
         private void chkCurrentDate_CheckedChanged(object sender, EventArgs e)
