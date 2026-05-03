@@ -159,6 +159,7 @@ SET NOCOUNT on
 			and (@withoutActionsSince is null or not exists(select top 1 a1.actionID 
 															from [Action] a1 
 															where a.firmID = a1.firmID  
+																and a1.isConfirmed = 1
 																and a1.finishDate >= @withoutActionsSince 
 																and (@startOfInterval is null or a1.startDate < @startOfInterval)))
 			and (@managerDiscount is null or (c.managerDiscount - @managerDiscount) < -0.005)
@@ -250,6 +251,7 @@ SET NOCOUNT on
 			and (@withoutActionsSince is null or not exists(select top 1 a1.actionID 
 															from [Action] a1 
 															where a.firmID = a1.firmID  
+																and a1.isConfirmed = 1
 																and a1.finishDate >= @withoutActionsSince 
 																and (@startOfInterval is null or a1.startDate < @startOfInterval)))
 			and (@managerDiscount is null or (c.managerDiscount - @managerDiscount) < -0.005)

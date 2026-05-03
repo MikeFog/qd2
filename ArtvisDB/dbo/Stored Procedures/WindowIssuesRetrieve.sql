@@ -1,4 +1,4 @@
-﻿CREATE     PROC [dbo].[WindowIssuesRetrieve]
+﻿CREATE PROC [dbo].[WindowIssuesRetrieve]
 (
 @windowId int,
 @showUnconfirmed bit = 0,
@@ -6,12 +6,10 @@
 @firmID int = null
 )
 AS
-
 SET NOCOUNT ON
-
 if @showUnconfirmed = 0
-begin 
-	SELECT 
+begin
+	SELECT
 		i.*,
 		r.[name],
 		r.duration,
@@ -27,23 +25,23 @@ begin
 		a.deleteDate,
 		f.name as firmName
 	FROM
-		Issue i
-		inner join vRoller r on i.rollerID = r.rollerID 
-		INNER JOIN Campaign c ON c.campaignID = i.campaignID
-		inner join [Action] a on c.actionID = a.actionID
-		inner join [User] u on a.userID = u.userID
-		Inner Join iIssuePosition ip On ip.positionId = i.positionId
-		Inner Join TariffWindow tw On tw.windowId = i.actualWindowID
-		Left Join Firm f On f.firmID = r.firmID
+		Issue i WITH (NOLOCK)
+		inner join vRoller r WITH (NOLOCK) on i.rollerID = r.rollerID
+		INNER JOIN Campaign c WITH (NOLOCK) ON c.campaignID = i.campaignID
+		inner join [Action] a WITH (NOLOCK) on c.actionID = a.actionID
+		inner join [User] u WITH (NOLOCK) on a.userID = u.userID
+		Inner Join iIssuePosition ip WITH (NOLOCK) On ip.positionId = i.positionId
+		Inner Join TariffWindow tw WITH (NOLOCK) On tw.windowId = i.actualWindowID
+		Left Join Firm f WITH (NOLOCK) On f.firmID = r.firmID
 	where (i.isConfirmed = 1 Or @showUnconfirmed = 1) and actualWindowId = @windowId
 		and r.rollerID = coalesce(@rollerID, r.rollerID)
 		and a.firmID = coalesce(@firmID, a.firmID)
-	ORDER BY 
+	ORDER BY
 		i.positionId
-end 
-else 
-begin 
-	SELECT 
+end
+else
+begin
+	SELECT
 		i.*,
 		r.[name],
 		r.duration,
@@ -59,18 +57,18 @@ begin
 		a.deleteDate,
 		f.name as firmName
 	FROM
-		Issue i
-		inner join vRoller r on i.rollerID = r.rollerID 
-		INNER JOIN Campaign c ON c.campaignID = i.campaignID
-		inner join [Action] a on c.actionID = a.actionID
-		inner join [User] u on a.userID = u.userID
-		Inner Join iIssuePosition ip On ip.positionId = i.positionId
-		Inner Join TariffWindow tw On tw.windowId = i.actualWindowId
-		Left Join Firm f On f.firmID = r.firmID
+		Issue i WITH (NOLOCK)
+		inner join vRoller r WITH (NOLOCK) on i.rollerID = r.rollerID
+		INNER JOIN Campaign c WITH (NOLOCK) ON c.campaignID = i.campaignID
+		inner join [Action] a WITH (NOLOCK) on c.actionID = a.actionID
+		inner join [User] u WITH (NOLOCK) on a.userID = u.userID
+		Inner Join iIssuePosition ip WITH (NOLOCK) On ip.positionId = i.positionId
+		Inner Join TariffWindow tw WITH (NOLOCK) On tw.windowId = i.actualWindowId
+		Left Join Firm f WITH (NOLOCK) On f.firmID = r.firmID
 	where (i.isConfirmed = 1 Or @showUnconfirmed = 1) and actualWindowId = @windowId
 		and r.rollerID = coalesce(@rollerID, r.rollerID)
 		and a.firmID = coalesce(@firmID, a.firmID)
 		and a.deleteDate Is Null
-	ORDER BY 
+	ORDER BY
 		i.positionId
 end

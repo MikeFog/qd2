@@ -453,7 +453,7 @@ BEGIN
     SELECT
         @priceSumByCampaigns = ISNULL(SUM(c.finalPrice), 0),
         @sumPackModules = ISNULL(SUM(CASE WHEN c.campaignTypeID = 4 THEN c.finalPrice ELSE 0 END), 0),
-        @sumOther = ISNULL(SUM(CASE WHEN c.campaignTypeID = 4 THEN 0 ELSE c.finalPrice * @discountValue END), 0)
+        @sumOther = ISNULL(SUM(CASE WHEN c.campaignTypeID = 4 THEN 0 ELSE CAST(c.finalPrice * @discountValue as decimal(18,2)) END), 0)
     FROM dbo.Campaign c
     WHERE c.actionID = @actionID;
 

@@ -9,8 +9,8 @@ as
 set nocount on
 
 IF (@actionID IS NOT NULL OR @campaignID IS NOT NULL /* (@campaignID IS NOT NULL AND @massmediaID IS NULL AND @actionID IS NULL)*/)
-begin 
-	SELECT 
+begin
+	SELECT
 		cm.*,
 		CASE cm.[campaignTypeID]
 			WHEN 4 THEN 'Пакетная модульная кампания'
@@ -30,7 +30,7 @@ begin
 			WHEN 4 THEN 171
 		END AS entityId,
 		CASE cm.[campaignTypeID]
-			WHEN 4 THEN CAST(1 AS DECIMAL(9,4)) 
+			WHEN 4 THEN CAST(1 AS DECIMAL(9,4))
 			ELSE a.[discount]
 		END AS packDiscount,
 		CASE cm.[campaignTypeID]
@@ -39,32 +39,31 @@ begin
 		END AS fullPrice,
 		mg.name as groupName,
 		a.deleteDate
-	FROM 
-		[Campaign] cm
-		INNER JOIN [Action] a ON cm.[actionID] = a.[actionID]
-		INNER JOIN [Firm] f ON a.[firmID] = f.[firmID]
-		LEFT JOIN vMassMedia mm ON mm.massmediaID = cm.massmediaID
-			--AND cm.massmediaID = COALESCE(@massmediaID, cm.massmediaID)
-		LEFT JOIN MassmediaGroup mg on mg.massmediaGroupID = mm.massmediaGroupID
-		INNER JOIN iCampaignType ct ON ct.campaignTypeID = cm.campaignTypeID
-		INNER JOIN PaymentType pt ON pt.paymentTypeID = cm.paymentTypeID
-		LEFT JOIN Agency ag ON ag.agencyId = cm.agencyId
-		LEFT OUTER JOIN [User] u ON u.userId = cm.modUser
+	FROM
+		[Campaign] cm WITH (NOLOCK)
+		INNER JOIN [Action] a WITH (NOLOCK) ON cm.[actionID] = a.[actionID]
+		INNER JOIN [Firm] f WITH (NOLOCK) ON a.[firmID] = f.[firmID]
+		LEFT JOIN vMassMedia mm WITH (NOLOCK) ON mm.massmediaID = cm.massmediaID
+		LEFT JOIN MassmediaGroup mg WITH (NOLOCK) on mg.massmediaGroupID = mm.massmediaGroupID
+		INNER JOIN iCampaignType ct WITH (NOLOCK) ON ct.campaignTypeID = cm.campaignTypeID
+		INNER JOIN PaymentType pt WITH (NOLOCK) ON pt.paymentTypeID = cm.paymentTypeID
+		LEFT JOIN Agency ag WITH (NOLOCK) ON ag.agencyId = cm.agencyId
+		LEFT OUTER JOIN [User] u WITH (NOLOCK) ON u.userId = cm.modUser
 	WHERE
 		cm.actionID = COALESCE(@actionID, cm.actionID) AND
 		cm.campaignID = COALESCE(@campaignID, cm.campaignID)
 	ORDER BY
 		cm.campaignID
 end
-ELSE 
-begin 
-	declare @isRightToViewForeignActions bit,	@isRightToViewGroupActions bit
+ELSE
+begin
+	declare @isRightToViewForeignActions bit, @isRightToViewGroupActions bit
 
 	select @isRightToViewForeignActions = dbo.fn_IsRightToViewForeignActions(@loggedUserID),
 		@isRightToViewGroupActions = dbo.fn_IsRightToViewGroupActions(@loggedUserID)
 
 	declare @ugroups table(id int)
-	insert into @ugroups (id) 
+	insert into @ugroups (id)
 	select * from dbo.[fn_GetUserGroups](@loggedUserID)
 
 	SELECT distinct
@@ -91,26 +90,24 @@ begin
 		CAST(cm.[finalPrice] * a.[discount] AS DECIMAL(9,2)) AS fullPrice,
 		mg.name as groupName,
 		a.deleteDate
-	FROM 
-		[Campaign] cm
-		INNER JOIN [Action] a ON cm.[actionID] = a.[actionID]
-		INNER JOIN [Firm] f ON a.[firmID] = f.[firmID]
-		INNER JOIN vMassMedia mm ON mm.massmediaID = cm.massmediaID
+	FROM
+		[Campaign] cm WITH (NOLOCK)
+		INNER JOIN [Action] a WITH (NOLOCK) ON cm.[actionID] = a.[actionID]
+		INNER JOIN [Firm] f WITH (NOLOCK) ON a.[firmID] = f.[firmID]
+		INNER JOIN vMassMedia mm WITH (NOLOCK) ON mm.massmediaID = cm.massmediaID
 			AND cm.massmediaID = COALESCE(@massmediaID, cm.massmediaID)
-		LEFT JOIN MassmediaGroup mg on mg.massmediaGroupID = mm.massmediaGroupID
-		INNER JOIN iCampaignType ct ON ct.campaignTypeID = cm.campaignTypeID
-		INNER JOIN PaymentType pt ON pt.paymentTypeID = cm.paymentTypeID
-		LEFT JOIN Agency ag ON ag.agencyId = cm.agencyId
-		LEFT OUTER JOIN [User] u ON u.userId = cm.modUser
-		left join GroupMember gm on a.userID = gm.userID
+		LEFT JOIN MassmediaGroup mg WITH (NOLOCK) on mg.massmediaGroupID = mm.massmediaGroupID
+		INNER JOIN iCampaignType ct WITH (NOLOCK) ON ct.campaignTypeID = cm.campaignTypeID
+		INNER JOIN PaymentType pt WITH (NOLOCK) ON pt.paymentTypeID = cm.paymentTypeID
+		LEFT JOIN Agency ag WITH (NOLOCK) ON ag.agencyId = cm.agencyId
+		LEFT OUTER JOIN [User] u WITH (NOLOCK) ON u.userId = cm.modUser
+		left join GroupMember gm WITH (NOLOCK) on a.userID = gm.userID
 		left join @ugroups ug on gm.groupID = ug.id
 	where
-		--(a.userID = @loggedUserID or @isRightToViewForeignActions = 1 or (@isRightToViewGroupActions = 1 and ug.id is not null)) and
 		cm.actionID = COALESCE(@actionID, cm.actionID) AND
 		cm.campaignID = COALESCE(@campaignID, cm.campaignID) AND
 		a.isConfirmed = 1 AND cm.[campaignTypeID] <> 4
 	union all
-	-- Догружаем пакетно модульные кампании
 	(SELECT DISTINCT
 		cm.*,
 		'Пакетная модульня кампания' AS name,
@@ -127,22 +124,22 @@ begin
 		CAST(cm.[finalPrice] AS DECIMAL(9,2)) AS fullPrice,
 		mg.name as groupName,
 		a.deleteDate
-	FROM 
-		[Campaign] cm
-		INNER JOIN [Action] a ON cm.[actionID] = a.[actionID]
-		INNER JOIN [Firm] f ON a.[firmID] = f.[firmID]
-		INNER JOIN iCampaignType ct ON ct.campaignTypeID = cm.campaignTypeID
+	FROM
+		[Campaign] cm WITH (NOLOCK)
+		INNER JOIN [Action] a WITH (NOLOCK) ON cm.[actionID] = a.[actionID]
+		INNER JOIN [Firm] f WITH (NOLOCK) ON a.[firmID] = f.[firmID]
+		INNER JOIN iCampaignType ct WITH (NOLOCK) ON ct.campaignTypeID = cm.campaignTypeID
 			AND cm.[campaignTypeID] = 4
-		INNER JOIN PaymentType pt ON pt.paymentTypeID = cm.paymentTypeID
-		LEFT JOIN Agency ag ON ag.agencyId = cm.agencyId
-		LEFT OUTER JOIN [User] u ON u.userId = cm.modUser
-		INNER JOIN [PackModuleIssue] pmi ON pmi.campaignID = cm.campaignID
-		INNER JOIN [PackModuleContent] pmc ON pmc.pricelistID = pmi.pricelistID
-		INNER JOIN Module m ON m.moduleID = pmc.moduleID
-		INNER JOIN vMassMedia mm ON mm.massmediaID = m.massmediaID
+		INNER JOIN PaymentType pt WITH (NOLOCK) ON pt.paymentTypeID = cm.paymentTypeID
+		LEFT JOIN Agency ag WITH (NOLOCK) ON ag.agencyId = cm.agencyId
+		LEFT OUTER JOIN [User] u WITH (NOLOCK) ON u.userId = cm.modUser
+		INNER JOIN [PackModuleIssue] pmi WITH (NOLOCK) ON pmi.campaignID = cm.campaignID
+		INNER JOIN [PackModuleContent] pmc WITH (NOLOCK) ON pmc.pricelistID = pmi.pricelistID
+		INNER JOIN Module m WITH (NOLOCK) ON m.moduleID = pmc.moduleID
+		INNER JOIN vMassMedia mm WITH (NOLOCK) ON mm.massmediaID = m.massmediaID
 			AND m.massmediaID = COALESCE(@massmediaID, m.massmediaID)
-		LEFT JOIN MassmediaGroup mg on mg.massmediaGroupID = mm.massmediaGroupID
-		left join GroupMember gm on a.userID = gm.userID
+		LEFT JOIN MassmediaGroup mg WITH (NOLOCK) on mg.massmediaGroupID = mm.massmediaGroupID
+		left join GroupMember gm WITH (NOLOCK) on a.userID = gm.userID
 		left join @ugroups ug on gm.groupID = ug.id
 	where
 		(a.userID = @loggedUserID or @isRightToViewForeignActions = 1 or (@isRightToViewGroupActions = 1 and ug.id is not null)) and
