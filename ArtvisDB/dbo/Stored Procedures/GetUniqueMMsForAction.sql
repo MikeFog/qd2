@@ -1,35 +1,22 @@
-﻿
-CREATE PROCEDURE [dbo].[GetUniqueMMsForAction]
+﻿CREATE PROCEDURE [dbo].[GetUniqueMMsForAction]
 (
 	@actionID int,
 	@isFact bit = 1
 )
 AS
-begin
-SET NOCOUNT on
-	if @isFact = 1
-		SELECT 
-			mm.[massmediaID], mm.[name], tw.windowDateActual as date, i.[rollerID], c.agencyID
-		FROM
-			Issue i
-			inner join TariffWindow tw on i.actualWindowID = tw.windowId
-			INNER JOIN Campaign c ON c.[campaignID] = i.[campaignID]
-			INNER JOIN [Action] a ON c.actionID = a.actionID
-			INNER JOIN [vMassmedia] mm ON tw.[massmediaID] = mm.[massmediaID] 
-		WHERE
-			c.actionID = @actionID
-	else 
-		SELECT 
-			mm.[massmediaID], mm.[name], tw.windowDateOriginal as date, i.[rollerID], c.agencyID
-		FROM
-			Issue i
-			inner join TariffWindow tw on i.originalWindowID = tw.windowId
-			INNER JOIN Campaign c ON c.[campaignID] = i.[campaignID]
-			INNER JOIN [Action] a ON c.actionID = a.actionID
-			INNER JOIN [vMassmedia] mm ON tw.[massmediaID] = mm.[massmediaID] 
-		WHERE
-			c.actionID = @actionID
-			
+BEGIN
+SET NOCOUNT ON
+	SELECT 
+		mm.[massmediaID],
+		mm.[name],
+		CASE WHEN @isFact = 1 THEN tw.windowDateActual ELSE tw.windowDateOriginal END as date,
+		i.[rollerID],
+		c.agencyID
+	FROM Issue i
+		INNER JOIN Campaign c ON c.[campaignID] = i.[campaignID]
+		INNER JOIN TariffWindow tw ON tw.windowId = CASE WHEN @isFact = 1 THEN i.actualWindowID ELSE i.originalWindowID END
+		INNER JOIN [vMassmedia] mm ON tw.[massmediaID] = mm.[massmediaID]
+	WHERE c.actionID = @actionID
 	Select distinct 
 		c.massmediaID, mm.name
 	From Campaign c
