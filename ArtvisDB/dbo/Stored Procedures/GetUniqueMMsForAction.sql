@@ -9,7 +9,7 @@ begin
 SET NOCOUNT on
 	if @isFact = 1
 		SELECT 
-			mm.[massmediaID], mm.[name], tw.windowDateActual as date, i.[rollerID]
+			mm.[massmediaID], mm.[name], tw.windowDateActual as date, i.[rollerID], c.agencyID
 		FROM
 			Issue i
 			inner join TariffWindow tw on i.actualWindowID = tw.windowId
@@ -20,7 +20,7 @@ SET NOCOUNT on
 			c.actionID = @actionID
 	else 
 		SELECT 
-			mm.[massmediaID], mm.[name], tw.windowDateOriginal as date, i.[rollerID]
+			mm.[massmediaID], mm.[name], tw.windowDateOriginal as date, i.[rollerID], c.agencyID
 		FROM
 			Issue i
 			inner join TariffWindow tw on i.originalWindowID = tw.windowId
@@ -36,4 +36,3 @@ SET NOCOUNT on
 		inner join vMassmedia mm on c.massmediaID = mm.massmediaID
 	Where c.actionID = @actionID and c.campaignTypeID = 2
 END
-

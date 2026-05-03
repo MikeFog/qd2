@@ -295,29 +295,67 @@ namespace Merlin.Classes
 
 		private void PrintActionInfo(bool isFact)
 		{
-            bool printedHeader = false;
-			IDictionary<String, String> mms = action.GetUniqueMassmedias(isFact);
-			foreach (KeyValuePair<string, string> mm in mms)
+			// Загружаем сырой датасет напрямую, чтобы получить agencyID
+			Dictionary<string, object> parametersMM = new Dictionary<string, object>();
+			parametersMM[Merlin.Classes.Action.ParamNames.ActionId] = action.ActionId;
+			parametersMM["isFact"] = isFact;
+			DataSet dsRaw = DataAccessor.LoadDataSet("GetUniqueMMsForAction", parametersMM);
+			DataTable dt = dsRaw.Tables[0];
+
+			// Группируем строки по agencyID, сохраняя порядок первого появления
+			var agencyRows = new Dictionary<int, List<DataRow>>();
+			var agencyOrder = new List<int>();
+			foreach (DataRow row in dt.Rows)
 			{
-                DataSet ds;
-                if (LoadData(null, mm.Key, isFact, null, null, out ds))
-                {
-                    if (!printedHeader)
-                    {
-                        currentY = 2;
-                        VerifyExportManager();
-                        activeSheet = ExportManager.Application.GetNewSheet(action.ActionId.ToString(), "Tahoma", 8);
-                        SetPageOrientation();
+				int agencyId = int.Parse(row["agencyID"].ToString());
+				if (!agencyRows.ContainsKey(agencyId))
+				{
+					agencyRows[agencyId] = new List<DataRow>();
+					agencyOrder.Add(agencyId);
+				}
+				agencyRows[agencyId].Add(row);
+			}
 
-                        printedHeader = true;
-                    }
+			// Для каждого агентства — отдельный лист Excel
+			foreach (int agencyId in agencyOrder)
+			{
+				Agency agency = Agency.GetAgencyByID(agencyId);
 
-                    PrintCaption(action.ActionId, 3, currentY);
-                    currentY++;
-                    PrintHeader(action, null, mm.Value, mm.Key);
-                    PrintContent(ds, null, mm.Key, isFact, null, null);
-                    currentY += 3;
-                }
+				// Строим MediaPlanCampaignGroups только из строк этого агентства
+				MediaPlanCampaignGroups mp = new MediaPlanCampaignGroups();
+				if (dsRaw.Tables.Count > 1)
+					mp.InitUniquesList(dsRaw.Tables[1]);
+				foreach (DataRow row in agencyRows[agencyId])
+					mp.AddMassmedia(
+						int.Parse(row["massmediaID"].ToString()),
+						row["name"].ToString(),
+						int.Parse(row["rollerID"].ToString()),
+						DateTime.Parse(row["date"].ToString()));
+
+				IDictionary<string, string> mms = mp.GetUniqueMassmedias();
+
+				bool printedHeader = false;
+				foreach (KeyValuePair<string, string> mm in mms)
+				{
+					DataSet ds;
+					if (LoadData(null, mm.Key, isFact, null, null, out ds))
+					{
+						if (!printedHeader)
+						{
+							currentY = 2;
+							VerifyExportManager();
+							activeSheet = ExportManager.Application.GetNewSheet(agency.Name, "Tahoma", 8);
+							SetPageOrientation();
+							printedHeader = true;
+						}
+
+						PrintCaption(action.ActionId, 3, currentY);
+						currentY++;
+						PrintHeader(action, agency, mm.Value, mm.Key);
+						PrintContent(ds, null, mm.Key, isFact, null, null);
+						currentY += 3;
+					}
+				}
 			}
 		}
 
