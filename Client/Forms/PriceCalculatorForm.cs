@@ -639,7 +639,7 @@ namespace Merlin.Forms
             {
                 Text = "Редактировать",
                 Width = 100,
-                Height = 26,
+                Height = 33,
                 Location = new Point(29, details.Bottom + 8), // ✅ 29 вместо 30
                 Tag = snap,
                 Name = "btnApply"
@@ -649,8 +649,8 @@ namespace Merlin.Forms
             var btnDelete = new Button
             {
                 Text = "Удалить",
-                Width = 90,
-                Height = 26,
+                Width = 100,
+                Height = 33,
                 Location = new Point(29, details.Bottom + 8),
                 Tag = snap,
                 Name = "btnDelete"
@@ -752,6 +752,7 @@ namespace Merlin.Forms
             StringBuilder builder = new StringBuilder();
             builder.AppendLine(string.Format("Радиостанции: {0}", snap.GetRadiostationsList()));
             builder.AppendLine(string.Format("Количество дней рекламной акции: {0}", snap.TotalDays));
+            builder.AppendLine(string.Format("Продолжительность ролика: {0}", snap.DurationSec));
             builder.AppendLine(string.Format("Суммарный хронометраж эфирного времени: {0}", duration.ToString(@"hh\:mm\:ss")));
             builder.AppendLine(string.Format("Итог: {0}", snap.GrandTotal.ToString("c")));
             return builder.ToString();
