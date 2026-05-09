@@ -62,7 +62,8 @@ namespace Merlin.Classes
 			SetChildEntity();
 			this[ParamNames.TotalPrice] = (decimal)0;
 			this[ParamNames.IsConfirmed] = false;
-		}
+            this[ParamNames.Ratio] = (decimal)1;
+        }
 
 		public int UserID
 		{

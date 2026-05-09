@@ -58,7 +58,13 @@ SET NOCOUNT on
 			'Акция №' + LTRIM(a.[actionID]) + ' (' + LTRIM(f.name) + ')'  as name,
 			f.name as firmName,
 			coalesce(x.iCount, 0) as iCount,
-			coalesce(x.duration, '00:00') as duration
+			coalesce(x.duration, '00:00') as duration,
+			Cast(
+				Case 
+					When a.tariffPrice = 0 Then 1
+					Else a.totalPrice/a.tariffPrice
+			End  
+			as decimal(5,2)) as finalRatio
 		from [Action] a
 			INNER JOIN [vUser] us ON us.userID = a.userID
 			INNER JOIN [Firm] f ON f.firmID = a.firmID

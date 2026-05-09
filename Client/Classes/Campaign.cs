@@ -680,9 +680,9 @@ namespace Merlin.Classes
 			lstStat.Items.Add("Окончание: " + text);
 			lstStat.Items.Add("Выпусков: " + IssuesCount);
 			lstStat.Items.Add("Общее время: " + DateTimeUtils.Time2String(IssuesDuration));
-			lstStat.Items.Add("Тариф: " + TariffPrice.ToString("c"));
-			lstStat.Items.Add("Коэффициент: " + Discount.ToString("0.00"));
-			lstStat.Items.Add("Итого: " + Price.ToString("c"));
+			lstStat.Items.Add("Цена по тарифам: " + TariffPrice.ToString("c"));
+			lstStat.Items.Add("Объёмная скидка: " + Discount.ToString("0.00"));
+			lstStat.Items.Add("Цена с учётом объёмной скидки: " + Price.ToString("c"));
 
 			if (CampaignType == CampaignTypes.Sponsor)
 			{

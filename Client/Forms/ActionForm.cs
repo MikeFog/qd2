@@ -1,7 +1,6 @@
 using FogSoft.WinForm;
 using FogSoft.WinForm.Classes;
 using FogSoft.WinForm.DataAccess;
-using FogSoft.WinForm.Forms;
 using Merlin.Classes;
 using Merlin.Forms.CreateActionMaster;
 using Merlin.Forms.CreateCampaign;
@@ -74,8 +73,8 @@ namespace Merlin.Forms
 			if (refreshFlag) _action.Refresh();
 
 			lblTariffSum.Text = _action.TariffPrice.ToString("c");
-			lblPackDiscount.Text = _action.Discount.ToString("f");
-			lblTotalPrice.Text = _action.TotalPrice.ToString("c");
+            lblRation.Text = ((decimal)_action[Action.ParamNames.Ratio]).ToString("f");
+            lblTotalPrice.Text = _action.TotalPrice.ToString("c");
 		}
 
 		private void grdCampaign_ObjectSelected(PresentationObject presentationObject)
@@ -344,6 +343,12 @@ namespace Merlin.Forms
                     Application.DoEvents();
 
 					DataTable dataTable = _action.Campaigns();
+                    // exclude campaigns with zero tariff price, as they won't be affected by discount and caused SQL error
+                    DataRow[] rows = dataTable.Select("TariffPrice <> 0");
+
+                    dataTable = rows.Length > 0
+                        ? rows.CopyToDataTable()
+                        : dataTable.Clone();
                     try
                     {
                         DataAccessor.BeginTransaction();
@@ -354,6 +359,8 @@ namespace Merlin.Forms
                         {
                             DataRow row = dataTable.Rows[i];
                             Campaign campaign = new Campaign(row);
+							if (campaign.TariffPrice == 0) continue;
+
                             decimal newP;
 
                             if (i == rowCount - 1)

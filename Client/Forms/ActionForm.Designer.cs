@@ -28,7 +28,7 @@ namespace Merlin.Forms {
         private void InitializeComponent()
         {
             System.ComponentModel.ComponentResourceManager resources = new System.ComponentModel.ComponentResourceManager(typeof(ActionForm));
-            this.lblPackDiscount = new System.Windows.Forms.Label();
+            this.lblRation = new System.Windows.Forms.Label();
             this.lblTariffSum = new System.Windows.Forms.Label();
             this.lblFirmName = new System.Windows.Forms.Label();
             this.label5 = new System.Windows.Forms.Label();
@@ -45,12 +45,12 @@ namespace Merlin.Forms {
             this.tsbAdd = new System.Windows.Forms.ToolStripButton();
             this.tsbDelete = new System.Windows.Forms.ToolStripButton();
             this.tsbEditRollerIssues = new System.Windows.Forms.ToolStripButton();
+            this.tsbEditMass = new System.Windows.Forms.ToolStripButton();
             this.tsbEditProgIssues = new System.Windows.Forms.ToolStripButton();
             this.tsbPrintMediaPlan = new System.Windows.Forms.ToolStripButton();
             this.toolStripSeparator2 = new System.Windows.Forms.ToolStripSeparator();
             this.tsbSetDiscount = new System.Windows.Forms.ToolStripButton();
             this.tsbSetActionPrice = new System.Windows.Forms.ToolStripButton();
-            this.tsbEditMass = new System.Windows.Forms.ToolStripButton();
             this.grdCampaign = new FogSoft.WinForm.Controls.SmartGrid();
             this.chkPrintContract = new System.Windows.Forms.CheckBox();
             this.chkPrintBill = new System.Windows.Forms.CheckBox();
@@ -63,20 +63,20 @@ namespace Merlin.Forms {
             this.tabAction.SuspendLayout();
             this.SuspendLayout();
             // 
-            // lblPackDiscount
+            // lblRation
             // 
-            this.lblPackDiscount.AutoSize = true;
-            this.lblPackDiscount.Location = new System.Drawing.Point(255, 124);
-            this.lblPackDiscount.Margin = new System.Windows.Forms.Padding(4, 0, 4, 0);
-            this.lblPackDiscount.Name = "lblPackDiscount";
-            this.lblPackDiscount.Size = new System.Drawing.Size(36, 25);
-            this.lblPackDiscount.TabIndex = 15;
-            this.lblPackDiscount.Text = "1.0";
+            this.lblRation.AutoSize = true;
+            this.lblRation.Location = new System.Drawing.Point(478, 124);
+            this.lblRation.Margin = new System.Windows.Forms.Padding(4, 0, 4, 0);
+            this.lblRation.Name = "lblRation";
+            this.lblRation.Size = new System.Drawing.Size(36, 25);
+            this.lblRation.TabIndex = 15;
+            this.lblRation.Text = "1.0";
             // 
             // lblTariffSum
             // 
             this.lblTariffSum.AutoSize = true;
-            this.lblTariffSum.Location = new System.Drawing.Point(255, 98);
+            this.lblTariffSum.Location = new System.Drawing.Point(478, 98);
             this.lblTariffSum.Margin = new System.Windows.Forms.Padding(4, 0, 4, 0);
             this.lblTariffSum.Name = "lblTariffSum";
             this.lblTariffSum.Size = new System.Drawing.Size(22, 25);
@@ -86,7 +86,7 @@ namespace Merlin.Forms {
             // lblFirmName
             // 
             this.lblFirmName.AutoSize = true;
-            this.lblFirmName.Location = new System.Drawing.Point(255, 70);
+            this.lblFirmName.Location = new System.Drawing.Point(478, 70);
             this.lblFirmName.Margin = new System.Windows.Forms.Padding(4, 0, 4, 0);
             this.lblFirmName.Name = "lblFirmName";
             this.lblFirmName.Size = new System.Drawing.Size(113, 25);
@@ -99,9 +99,9 @@ namespace Merlin.Forms {
             this.label5.Location = new System.Drawing.Point(27, 153);
             this.label5.Margin = new System.Windows.Forms.Padding(4, 0, 4, 0);
             this.label5.Name = "label5";
-            this.label5.Size = new System.Drawing.Size(65, 25);
+            this.label5.Size = new System.Drawing.Size(415, 25);
             this.label5.TabIndex = 8;
-            this.label5.Text = "Итого:";
+            this.label5.Text = "Стоимость рекламной акции со всеми скидками:";
             // 
             // label2
             // 
@@ -109,9 +109,9 @@ namespace Merlin.Forms {
             this.label2.Location = new System.Drawing.Point(27, 124);
             this.label2.Margin = new System.Windows.Forms.Padding(4, 0, 4, 0);
             this.label2.Name = "label2";
-            this.label2.Size = new System.Drawing.Size(151, 25);
+            this.label2.Size = new System.Drawing.Size(228, 25);
             this.label2.TabIndex = 4;
-            this.label2.Text = "Пакетная скидка:";
+            this.label2.Text = "Все скидки (коэффициент):";
             // 
             // label1
             // 
@@ -119,9 +119,9 @@ namespace Merlin.Forms {
             this.label1.Location = new System.Drawing.Point(27, 98);
             this.label1.Margin = new System.Windows.Forms.Padding(4, 0, 4, 0);
             this.label1.Name = "label1";
-            this.label1.Size = new System.Drawing.Size(173, 25);
+            this.label1.Size = new System.Drawing.Size(347, 25);
             this.label1.TabIndex = 3;
-            this.label1.Text = "Сумма по тарифам:";
+            this.label1.Text = "Стоимость рекламной акции без скидок:";
             // 
             // lblFirm
             // 
@@ -129,9 +129,9 @@ namespace Merlin.Forms {
             this.lblFirm.Location = new System.Drawing.Point(27, 70);
             this.lblFirm.Margin = new System.Windows.Forms.Padding(4, 0, 4, 0);
             this.lblFirm.Name = "lblFirm";
-            this.lblFirm.Size = new System.Drawing.Size(72, 25);
+            this.lblFirm.Size = new System.Drawing.Size(151, 25);
             this.lblFirm.TabIndex = 1;
-            this.lblFirm.Text = "Фирма:";
+            this.lblFirm.Text = "Фирма-заказчик:";
             // 
             // lblName
             // 
@@ -147,7 +147,7 @@ namespace Merlin.Forms {
             // lblTotalPrice
             // 
             this.lblTotalPrice.AutoSize = true;
-            this.lblTotalPrice.Location = new System.Drawing.Point(255, 153);
+            this.lblTotalPrice.Location = new System.Drawing.Point(478, 153);
             this.lblTotalPrice.Margin = new System.Windows.Forms.Padding(4, 0, 4, 0);
             this.lblTotalPrice.Name = "lblTotalPrice";
             this.lblTotalPrice.Size = new System.Drawing.Size(57, 25);
@@ -164,7 +164,7 @@ namespace Merlin.Forms {
             this.pageAction.Controls.Add(this.chkPrintContract);
             this.pageAction.Controls.Add(this.chkPrintBill);
             this.pageAction.Controls.Add(this.lblTotalPrice);
-            this.pageAction.Controls.Add(this.lblPackDiscount);
+            this.pageAction.Controls.Add(this.lblRation);
             this.pageAction.Controls.Add(this.lblTariffSum);
             this.pageAction.Controls.Add(this.lblFirmName);
             this.pageAction.Controls.Add(this.separator3);
@@ -231,10 +231,10 @@ namespace Merlin.Forms {
             this.tsbSetDiscount,
             this.tsbSetActionPrice});
             this.tsAction.LayoutStyle = System.Windows.Forms.ToolStripLayoutStyle.VerticalStackWithOverflow;
-            this.tsAction.Location = new System.Drawing.Point(1112, 192);
+            this.tsAction.Location = new System.Drawing.Point(1124, 192);
             this.tsAction.Name = "tsAction";
             this.tsAction.Padding = new System.Windows.Forms.Padding(0, 0, 3, 0);
-            this.tsAction.Size = new System.Drawing.Size(49, 300);
+            this.tsAction.Size = new System.Drawing.Size(37, 272);
             this.tsAction.TabIndex = 25;
             this.tsAction.Text = "toolStrip1";
             // 
@@ -244,7 +244,7 @@ namespace Merlin.Forms {
             this.tsbAdd.Image = ((System.Drawing.Image)(resources.GetObject("tsbAdd.Image")));
             this.tsbAdd.ImageTransparentColor = System.Drawing.Color.Magenta;
             this.tsbAdd.Name = "tsbAdd";
-            this.tsbAdd.Size = new System.Drawing.Size(45, 28);
+            this.tsbAdd.Size = new System.Drawing.Size(33, 28);
             this.tsbAdd.Text = "toolStripButton1";
             this.tsbAdd.ToolTipText = "Добавить рекламную кампанию...";
             this.tsbAdd.Click += new System.EventHandler(this.AddCampaign);
@@ -256,7 +256,7 @@ namespace Merlin.Forms {
             this.tsbDelete.Image = ((System.Drawing.Image)(resources.GetObject("tsbDelete.Image")));
             this.tsbDelete.ImageTransparentColor = System.Drawing.Color.Magenta;
             this.tsbDelete.Name = "tsbDelete";
-            this.tsbDelete.Size = new System.Drawing.Size(45, 28);
+            this.tsbDelete.Size = new System.Drawing.Size(33, 28);
             this.tsbDelete.Text = "toolStripButton2";
             this.tsbDelete.ToolTipText = "Удалить рекламную кампанию";
             this.tsbDelete.Click += new System.EventHandler(this.DeleteCampaign);
@@ -268,10 +268,21 @@ namespace Merlin.Forms {
             this.tsbEditRollerIssues.Image = ((System.Drawing.Image)(resources.GetObject("tsbEditRollerIssues.Image")));
             this.tsbEditRollerIssues.ImageTransparentColor = System.Drawing.Color.Magenta;
             this.tsbEditRollerIssues.Name = "tsbEditRollerIssues";
-            this.tsbEditRollerIssues.Size = new System.Drawing.Size(45, 28);
+            this.tsbEditRollerIssues.Size = new System.Drawing.Size(33, 28);
             this.tsbEditRollerIssues.Text = "toolStripButton3";
             this.tsbEditRollerIssues.ToolTipText = "Редактировать размещение роликов";
             this.tsbEditRollerIssues.Click += new System.EventHandler(this.EditRollerIssues);
+            // 
+            // tsbEditMass
+            // 
+            this.tsbEditMass.DisplayStyle = System.Windows.Forms.ToolStripItemDisplayStyle.Image;
+            this.tsbEditMass.Image = ((System.Drawing.Image)(resources.GetObject("tsbEditMass.Image")));
+            this.tsbEditMass.ImageTransparentColor = System.Drawing.Color.Magenta;
+            this.tsbEditMass.Name = "tsbEditMass";
+            this.tsbEditMass.Size = new System.Drawing.Size(33, 28);
+            this.tsbEditMass.Text = "tsbEditMass";
+            this.tsbEditMass.ToolTipText = "Веерное редактирование";
+            this.tsbEditMass.Click += new System.EventHandler(this.MassEdit);
             // 
             // tsbEditProgIssues
             // 
@@ -280,7 +291,7 @@ namespace Merlin.Forms {
             this.tsbEditProgIssues.Image = ((System.Drawing.Image)(resources.GetObject("tsbEditProgIssues.Image")));
             this.tsbEditProgIssues.ImageTransparentColor = System.Drawing.Color.Magenta;
             this.tsbEditProgIssues.Name = "tsbEditProgIssues";
-            this.tsbEditProgIssues.Size = new System.Drawing.Size(45, 28);
+            this.tsbEditProgIssues.Size = new System.Drawing.Size(33, 28);
             this.tsbEditProgIssues.Text = "toolStripButton1";
             this.tsbEditProgIssues.ToolTipText = "Редактировать выходы спонсорских программ ";
             this.tsbEditProgIssues.Click += new System.EventHandler(this.EditProgIssues);
@@ -291,7 +302,7 @@ namespace Merlin.Forms {
             this.tsbPrintMediaPlan.Image = global::Merlin.Properties.Resources.printer1;
             this.tsbPrintMediaPlan.ImageTransparentColor = System.Drawing.Color.Magenta;
             this.tsbPrintMediaPlan.Name = "tsbPrintMediaPlan";
-            this.tsbPrintMediaPlan.Size = new System.Drawing.Size(45, 28);
+            this.tsbPrintMediaPlan.Size = new System.Drawing.Size(33, 28);
             this.tsbPrintMediaPlan.Text = "toolStripButton1";
             this.tsbPrintMediaPlan.ToolTipText = "Распечатать график размещения кампании";
             this.tsbPrintMediaPlan.Click += new System.EventHandler(this.tsbPrintMediaPlan_Click);
@@ -299,7 +310,7 @@ namespace Merlin.Forms {
             // toolStripSeparator2
             // 
             this.toolStripSeparator2.Name = "toolStripSeparator2";
-            this.toolStripSeparator2.Size = new System.Drawing.Size(45, 6);
+            this.toolStripSeparator2.Size = new System.Drawing.Size(33, 6);
             // 
             // tsbSetDiscount
             // 
@@ -308,7 +319,7 @@ namespace Merlin.Forms {
             this.tsbSetDiscount.Image = ((System.Drawing.Image)(resources.GetObject("tsbSetDiscount.Image")));
             this.tsbSetDiscount.ImageTransparentColor = System.Drawing.Color.Magenta;
             this.tsbSetDiscount.Name = "tsbSetDiscount";
-            this.tsbSetDiscount.Size = new System.Drawing.Size(45, 28);
+            this.tsbSetDiscount.Size = new System.Drawing.Size(33, 28);
             this.tsbSetDiscount.Text = "toolStripButton4";
             this.tsbSetDiscount.ToolTipText = "Установить менеджерскую скидку";
             this.tsbSetDiscount.Click += new System.EventHandler(this.SetDiscount);
@@ -320,20 +331,9 @@ namespace Merlin.Forms {
             this.tsbSetActionPrice.Image = ((System.Drawing.Image)(resources.GetObject("tsbSetActionPrice.Image")));
             this.tsbSetActionPrice.ImageTransparentColor = System.Drawing.Color.Magenta;
             this.tsbSetActionPrice.Name = "tsbSetActionPrice";
-            this.tsbSetActionPrice.Size = new System.Drawing.Size(45, 28);
+            this.tsbSetActionPrice.Size = new System.Drawing.Size(33, 28);
             this.tsbSetActionPrice.Text = "Установить цену рекламной акции";
             this.tsbSetActionPrice.Click += new System.EventHandler(this.tsbSetActionPrice_Click);
-            // 
-            // tsbEditMass
-            // 
-            this.tsbEditMass.DisplayStyle = System.Windows.Forms.ToolStripItemDisplayStyle.Image;
-            this.tsbEditMass.Image = ((System.Drawing.Image)(resources.GetObject("tsbEditMass.Image")));
-            this.tsbEditMass.ImageTransparentColor = System.Drawing.Color.Magenta;
-            this.tsbEditMass.Name = "tsbEditMass";
-            this.tsbEditMass.Size = new System.Drawing.Size(45, 28);
-            this.tsbEditMass.Text = "tsbEditMass";
-            this.tsbEditMass.ToolTipText = "Веерное редактирование";
-            this.tsbEditMass.Click += new System.EventHandler(this.MassEdit);
             // 
             // grdCampaign
             // 
@@ -459,7 +459,7 @@ namespace Merlin.Forms {
 
         #endregion
 
-        private System.Windows.Forms.Label lblPackDiscount;
+        private System.Windows.Forms.Label lblRation;
         private System.Windows.Forms.Label lblTariffSum;
         private System.Windows.Forms.Label lblFirmName;
         private FogSoft.WinForm.Controls.Separator separator3;

@@ -76,7 +76,7 @@ namespace Merlin.Classes
 			public const string FirmName = "firmName";
 			public const string TariffPrice = "TariffPrice";
 			public const string Discount = "Discount";
-			public const string Ratio = "Ratio";
+			public const string Ratio = "FinalRatio";
 			public const string TotalPrice = "TotalPrice";
 			public const string NewCreatorId = "NewCreatorID";
 			public const string FinishDate = "finishDate";
@@ -572,27 +572,6 @@ namespace Merlin.Classes
 		}
 
 		#endregion
-
-		public IDictionary<string, string> GetUniqueMassmedias(bool isFact)
-		{
-			Dictionary<string, object> parametersMM = new Dictionary<string, object>();
-			parametersMM[ParamNames.ActionId] = ActionId;
-			parametersMM["isFact"] = isFact;
-			DataSet ds = DataAccessor.LoadDataSet("GetUniqueMMsForAction", parametersMM);
-
-			MediaPlanCampaignGroups mp = new MediaPlanCampaignGroups();
-			DataTable dt = ds.Tables[0];
-			if (ds.Tables.Count > 1)
-			{
-				mp.InitUniquesList(ds.Tables[1]);
-			}
-			foreach (DataRow dataRow in dt.Rows)
-				mp.AddMassmedia(int.Parse(dataRow["massmediaID"].ToString())
-					, dataRow["name"].ToString()
-					, int.Parse(dataRow["rollerID"].ToString())
-					, DateTime.Parse(dataRow["date"].ToString()));
-			return mp.GetUniqueMassmedias();
-		}
 
 		public string GetAgenciesString(string mmIds)
 		{
