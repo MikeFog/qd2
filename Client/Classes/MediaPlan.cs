@@ -338,7 +338,7 @@ namespace Merlin.Classes
 				foreach (KeyValuePair<string, string> mm in mms)
 				{
 					DataSet ds;
-					if (LoadData(null, mm.Key, isFact, null, null, out ds))
+					if (LoadData(null, mm.Key, isFact, null, null, agencyId, out ds))
 					{
 						if (!printedHeader)
 						{
@@ -400,7 +400,7 @@ namespace Merlin.Classes
             foreach (KeyValuePair<string, string> mm in mms)
             {
                 DataSet ds;
-                if (LoadData(campaign, mm.Key, isFact, year, month, out ds))
+                if (LoadData(campaign, mm.Key, isFact, year, month, null, out ds))
                 {
                     if (!printedHeader)
                     {
@@ -449,9 +449,12 @@ namespace Merlin.Classes
 			PrintFooter(campaign, ds.Tables[1], ds.Tables[2], mmIds, year, month);
 		}
 
-        private bool LoadData(Campaign campaign, string mmIds, bool isFact, int? year, int? month, out DataSet ds)
+        private bool LoadData(Campaign campaign, string mmIds, bool isFact, int? year, int? month, int? agencyId, out DataSet ds)
         {
             Dictionary<string, object> procParameters = new Dictionary<string, object>(2);
+			if(agencyId != null) 
+                procParameters.Add("agencyId", agencyId);
+
             if (campaign != null)
             {
                 procParameters.Add("campaignId", campaign.CampaignId);

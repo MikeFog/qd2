@@ -1,4 +1,5 @@
-﻿CREATE   PROCEDURE [dbo].[MediaPlanRetrieve_v2]
+﻿-- Created by GitHub Copilot in SSMS - review carefully before executing
+CREATE PROCEDURE [dbo].[MediaPlanRetrieve_v2]
 (
     @campaignId int = null,
     @campaignTypeId tinyint = null,
@@ -10,7 +11,8 @@
     @startDate datetime = null,
     @finishDate datetime = null,
     @onlyRollers bit = 0,
-    @rollerIDString VARCHAR(8000) = null
+    @rollerIDString VARCHAR(8000) = null,
+    @agencyId int = null                          -- опциональный фильтр по агентству
 )
 AS
 BEGIN
@@ -45,7 +47,7 @@ BEGIN
     IF @year IS NOT NULL AND @month IS NOT NULL
     BEGIN
         SET @monthStart = CONVERT(datetime, '01.' + CAST(@month AS varchar(2)) + '.' + CAST(@year AS varchar(4)), 104);
-        SET @monthEndExcl = DATEADD(day, 1, dbo.fn_LastDateOfMonth(@monthStart)); -- exclusive
+        SET @monthEndExcl = DATEADD(day, 1, dbo.fn_LastDateOfMonth(@monthStart));
     END
 
     --------------------------------------------------------------------
@@ -55,17 +57,15 @@ BEGIN
     (
         issueID INT NOT NULL,
         rollerId int NULL,
-        issueDate datetime NOT NULL,          -- windowDateActual/Original
+        issueDate datetime NOT NULL,
         comment nvarchar(32) NULL,
         positionID SMALLINT NULL,
         price decimal(18,2) NULL,
-        broadcast datetime NULL,              -- broadcastStart
-        mmID smallint NOT NULL,               -- massmediaID
-
-        -- вычислимые поля (чтобы не дергать UDF/DATEADD миллион раз)
+        broadcast datetime NULL,
+        mmID smallint NOT NULL,
         timeString varchar(5) NULL,
-        shiftedDate datetime NULL,            -- issueDate - broadcastStart (в минутах)
-        radioDate datetime NULL               -- начало радио-дня (00:00) для shiftedDate
+        shiftedDate datetime NULL,
+        radioDate datetime NULL
     );
 
     CREATE CLUSTERED INDEX CX_issue_issueDate ON #issue(issueDate);
@@ -74,7 +74,6 @@ BEGIN
 
     --------------------------------------------------------------------
     -- Заполнение #issue
-    -- ВАЖНО: правильное получение broadcastStart через Pricelist по massmedia и дате окна
     --------------------------------------------------------------------
     IF @isFact = 1
     BEGIN
@@ -106,6 +105,7 @@ BEGIN
         WHERE
             i.campaignId = ISNULL(@campaignId, i.campaignID)
             AND c.actionID = ISNULL(@actionID, c.actionID)
+            AND c.agencyID = ISNULL(@agencyId, c.agencyID)        -- фильтр по агентству
             AND (@rollerIDString IS NULL OR rr.rollerID IS NOT NULL)
             AND (@monthStart IS NULL OR (tw.dayActual >= @monthStart AND tw.dayActual < @monthEndExcl))
             AND ((@startDate IS NULL AND @finishDate IS NULL) OR (tw.dayActual BETWEEN @startDate AND @finishDate))
@@ -142,6 +142,7 @@ BEGIN
         WHERE
             i.campaignId = ISNULL(@campaignId, i.campaignID)
             AND c.actionID = ISNULL(@actionID, c.actionID)
+            AND c.agencyID = ISNULL(@agencyId, c.agencyID)        -- фильтр по агентству
             AND (@rollerIDString IS NULL OR rr.rollerID IS NOT NULL)
             AND (@monthStart IS NULL OR (tw.dayOriginal >= @monthStart AND tw.dayOriginal < @monthEndExcl))
             AND ((@startDate IS NULL AND @finishDate IS NULL) OR (tw.dayOriginal BETWEEN @startDate AND @finishDate))
@@ -174,7 +175,6 @@ BEGIN
                 112), 112),
         timeString =
         (
-            -- hourAdj = hour(issueDate) + 24 если время меньше broadcastStart
             RIGHT('0' + CAST(
                 (DATEPART(hour, i.issueDate) +
                     CASE WHEN (DATEPART(hour, i.issueDate) * 60 + DATEPART(minute, i.issueDate))
@@ -187,7 +187,7 @@ BEGIN
     FROM #issue i;
 
     --------------------------------------------------------------------
-    -- 1) Ролики (как было)
+    -- 1) Ролики
     --------------------------------------------------------------------
     SELECT
         r.rollerId,
@@ -203,7 +203,7 @@ BEGIN
         RETURN;
 
     --------------------------------------------------------------------
-    -- 2) Тайм-слоты (как было, но без fn_GetTimeString)
+    -- 2) Тайм-слоты
     --------------------------------------------------------------------
     IF @campaignTypeId IS NOT NULL AND @campaignTypeId = 1
     BEGIN
@@ -230,7 +230,7 @@ BEGIN
     END
 
     --------------------------------------------------------------------
-    -- 3) Детализация (как было, но radioDate/timeString уже готовы)
+    -- 3) Детализация
     --------------------------------------------------------------------
     IF @campaignTypeId IS NULL OR @campaignTypeId = 4
     BEGIN
@@ -266,7 +266,7 @@ BEGIN
     END
 
     --------------------------------------------------------------------
-    -- 4) Счётчики по дням / по radioDate (переписано без WHILE)
+    -- 4) Счётчики по дням
     --------------------------------------------------------------------
     IF @monthStart IS NOT NULL
     BEGIN
@@ -301,7 +301,7 @@ BEGIN
     END
 
     --------------------------------------------------------------------
-    -- 5) ProgramIssues (как у тебя в конце)
+    -- 5) ProgramIssues
     --------------------------------------------------------------------
     IF (@campaignTypeId IS NOT NULL AND @campaignTypeId = 2) OR (@actionId IS NOT NULL)
     BEGIN
@@ -313,6 +313,7 @@ BEGIN
         INNER JOIN Campaign c ON pri.campaignID = c.campaignID
         INNER JOIN #mm mm ON c.massmediaID = mm.massmediaID
         WHERE pri.campaignId = COALESCE(@campaignID, pri.campaignID)
-          AND c.actionID = COALESCE(@actionID, c.actionID);
+          AND c.actionID = COALESCE(@actionID, c.actionID)
+          AND c.agencyID = COALESCE(@agencyId, c.agencyID);      -- фильтр по агентству
     END
 END
