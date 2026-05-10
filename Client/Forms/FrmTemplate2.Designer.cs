@@ -42,10 +42,12 @@ namespace Merlin.Forms
             this.label6 = new System.Windows.Forms.Label();
             this.lblRollerName = new System.Windows.Forms.Label();
             this.gbWeekDays = new System.Windows.Forms.GroupBox();
-            this.rbDays = new System.Windows.Forms.RadioButton();
             this.clbWeekDays = new System.Windows.Forms.CheckedListBox();
             this.cbIgnoreWindows = new System.Windows.Forms.CheckBox();
             this.tableLayoutPanel1 = new System.Windows.Forms.TableLayoutPanel();
+            this.groupBox1 = new System.Windows.Forms.GroupBox();
+            this.rbOdd = new System.Windows.Forms.RadioButton();
+            this.rbEven = new System.Windows.Forms.RadioButton();
             this.flowLayoutPanel1 = new System.Windows.Forms.FlowLayoutPanel();
             this.btnCancel = new System.Windows.Forms.Button();
             this.btnOk = new System.Windows.Forms.Button();
@@ -54,18 +56,23 @@ namespace Merlin.Forms
             this.numQuantityPrime = new System.Windows.Forms.NumericUpDown();
             this.numQuantityNonPrime = new System.Windows.Forms.NumericUpDown();
             this.cbSplitPrime = new System.Windows.Forms.CheckBox();
+            this.panel1 = new System.Windows.Forms.Panel();
+            this.rbDays = new System.Windows.Forms.RadioButton();
+            this.rbNumber = new System.Windows.Forms.RadioButton();
             ((System.ComponentModel.ISupportInitialize)(this.txtQuantity)).BeginInit();
             this.gbWeekDays.SuspendLayout();
             this.tableLayoutPanel1.SuspendLayout();
+            this.groupBox1.SuspendLayout();
             this.flowLayoutPanel1.SuspendLayout();
             ((System.ComponentModel.ISupportInitialize)(this.numQuantityPrime)).BeginInit();
             ((System.ComponentModel.ISupportInitialize)(this.numQuantityNonPrime)).BeginInit();
+            this.panel1.SuspendLayout();
             this.SuspendLayout();
             // 
             // dtFinishDate
             // 
             this.dtFinishDate.Format = System.Windows.Forms.DateTimePickerFormat.Short;
-            this.dtFinishDate.Location = new System.Drawing.Point(330, 67);
+            this.dtFinishDate.Location = new System.Drawing.Point(332, 67);
             this.dtFinishDate.Margin = new System.Windows.Forms.Padding(3, 4, 3, 4);
             this.dtFinishDate.Name = "dtFinishDate";
             this.dtFinishDate.Size = new System.Drawing.Size(234, 31);
@@ -74,7 +81,7 @@ namespace Merlin.Forms
             // dtStartDate
             // 
             this.dtStartDate.Format = System.Windows.Forms.DateTimePickerFormat.Short;
-            this.dtStartDate.Location = new System.Drawing.Point(330, 28);
+            this.dtStartDate.Location = new System.Drawing.Point(332, 28);
             this.dtStartDate.Margin = new System.Windows.Forms.Padding(3, 4, 3, 4);
             this.dtStartDate.Name = "dtStartDate";
             this.dtStartDate.Size = new System.Drawing.Size(234, 31);
@@ -120,7 +127,7 @@ namespace Merlin.Forms
             // 
             this.dtFinishTime.CustomFormat = "HH:mm";
             this.dtFinishTime.Format = System.Windows.Forms.DateTimePickerFormat.Custom;
-            this.dtFinishTime.Location = new System.Drawing.Point(330, 145);
+            this.dtFinishTime.Location = new System.Drawing.Point(332, 145);
             this.dtFinishTime.Margin = new System.Windows.Forms.Padding(3, 4, 3, 4);
             this.dtFinishTime.Name = "dtFinishTime";
             this.dtFinishTime.ShowUpDown = true;
@@ -131,7 +138,7 @@ namespace Merlin.Forms
             // 
             this.dtStartTime.CustomFormat = "HH:mm";
             this.dtStartTime.Format = System.Windows.Forms.DateTimePickerFormat.Custom;
-            this.dtStartTime.Location = new System.Drawing.Point(330, 106);
+            this.dtStartTime.Location = new System.Drawing.Point(332, 106);
             this.dtStartTime.Margin = new System.Windows.Forms.Padding(3, 4, 3, 4);
             this.dtStartTime.Name = "dtStartTime";
             this.dtStartTime.ShowUpDown = true;
@@ -140,7 +147,7 @@ namespace Merlin.Forms
             // 
             // txtQuantity
             // 
-            this.txtQuantity.Location = new System.Drawing.Point(330, 184);
+            this.txtQuantity.Location = new System.Drawing.Point(332, 184);
             this.txtQuantity.Margin = new System.Windows.Forms.Padding(3, 4, 3, 4);
             this.txtQuantity.Minimum = new decimal(new int[] {
             1,
@@ -177,7 +184,7 @@ namespace Merlin.Forms
             // lblRollerName
             // 
             this.lblRollerName.AutoSize = true;
-            this.lblRollerName.Location = new System.Drawing.Point(330, 0);
+            this.lblRollerName.Location = new System.Drawing.Point(332, 0);
             this.lblRollerName.Name = "lblRollerName";
             this.lblRollerName.Size = new System.Drawing.Size(106, 24);
             this.lblRollerName.TabIndex = 31;
@@ -186,32 +193,15 @@ namespace Merlin.Forms
             // gbWeekDays
             // 
             this.gbWeekDays.AutoSize = true;
-            this.tableLayoutPanel1.SetColumnSpan(this.gbWeekDays, 2);
-            this.gbWeekDays.Controls.Add(this.rbDays);
             this.gbWeekDays.Controls.Add(this.clbWeekDays);
             this.gbWeekDays.FlatStyle = System.Windows.Forms.FlatStyle.System;
-            this.gbWeekDays.Location = new System.Drawing.Point(3, 331);
+            this.gbWeekDays.Location = new System.Drawing.Point(3, 371);
             this.gbWeekDays.Margin = new System.Windows.Forms.Padding(3, 4, 3, 4);
             this.gbWeekDays.Name = "gbWeekDays";
             this.gbWeekDays.Padding = new System.Windows.Forms.Padding(3, 4, 3, 4);
-            this.gbWeekDays.Size = new System.Drawing.Size(399, 290);
+            this.gbWeekDays.Size = new System.Drawing.Size(302, 255);
             this.gbWeekDays.TabIndex = 32;
             this.gbWeekDays.TabStop = false;
-            // 
-            // rbDays
-            // 
-            this.rbDays.AutoCheck = false;
-            this.rbDays.AutoSize = true;
-            this.rbDays.Checked = true;
-            this.rbDays.Location = new System.Drawing.Point(7, 0);
-            this.rbDays.Margin = new System.Windows.Forms.Padding(3, 4, 3, 4);
-            this.rbDays.Name = "rbDays";
-            this.rbDays.Padding = new System.Windows.Forms.Padding(3, 0, 0, 0);
-            this.rbDays.Size = new System.Drawing.Size(132, 28);
-            this.rbDays.TabIndex = 11;
-            this.rbDays.TabStop = true;
-            this.rbDays.Text = "Дни недели";
-            this.rbDays.UseVisualStyleBackColor = true;
             // 
             // clbWeekDays
             // 
@@ -222,7 +212,7 @@ namespace Merlin.Forms
             this.clbWeekDays.Location = new System.Drawing.Point(7, 39);
             this.clbWeekDays.Margin = new System.Windows.Forms.Padding(3, 4, 3, 4);
             this.clbWeekDays.Name = "clbWeekDays";
-            this.clbWeekDays.Size = new System.Drawing.Size(386, 252);
+            this.clbWeekDays.Size = new System.Drawing.Size(289, 252);
             this.clbWeekDays.TabIndex = 10;
             this.clbWeekDays.ItemCheck += new System.Windows.Forms.ItemCheckEventHandler(this.clbWeekDays_ItemCheck);
             // 
@@ -232,7 +222,7 @@ namespace Merlin.Forms
             this.cbIgnoreWindows.Checked = true;
             this.cbIgnoreWindows.CheckState = System.Windows.Forms.CheckState.Checked;
             this.tableLayoutPanel1.SetColumnSpan(this.cbIgnoreWindows, 2);
-            this.cbIgnoreWindows.Location = new System.Drawing.Point(3, 628);
+            this.cbIgnoreWindows.Location = new System.Drawing.Point(3, 633);
             this.cbIgnoreWindows.Name = "cbIgnoreWindows";
             this.cbIgnoreWindows.Size = new System.Drawing.Size(481, 28);
             this.cbIgnoreWindows.TabIndex = 33;
@@ -245,10 +235,11 @@ namespace Merlin.Forms
             this.tableLayoutPanel1.ColumnStyles.Add(new System.Windows.Forms.ColumnStyle(System.Windows.Forms.SizeType.Percent, 50F));
             this.tableLayoutPanel1.ColumnStyles.Add(new System.Windows.Forms.ColumnStyle(System.Windows.Forms.SizeType.Percent, 50F));
             this.tableLayoutPanel1.Controls.Add(this.label1, 0, 1);
-            this.tableLayoutPanel1.Controls.Add(this.cbIgnoreWindows, 0, 10);
+            this.tableLayoutPanel1.Controls.Add(this.gbWeekDays, 0, 10);
+            this.tableLayoutPanel1.Controls.Add(this.cbIgnoreWindows, 0, 11);
+            this.tableLayoutPanel1.Controls.Add(this.groupBox1, 1, 10);
             this.tableLayoutPanel1.Controls.Add(this.dtStartDate, 1, 1);
             this.tableLayoutPanel1.Controls.Add(this.lblRollerName, 1, 0);
-            this.tableLayoutPanel1.Controls.Add(this.gbWeekDays, 0, 9);
             this.tableLayoutPanel1.Controls.Add(this.label6, 0, 0);
             this.tableLayoutPanel1.Controls.Add(this.label2, 0, 2);
             this.tableLayoutPanel1.Controls.Add(this.dtFinishDate, 1, 2);
@@ -258,16 +249,18 @@ namespace Merlin.Forms
             this.tableLayoutPanel1.Controls.Add(this.dtStartTime, 1, 3);
             this.tableLayoutPanel1.Controls.Add(this.label3, 0, 4);
             this.tableLayoutPanel1.Controls.Add(this.dtFinishTime, 1, 4);
-            this.tableLayoutPanel1.Controls.Add(this.flowLayoutPanel1, 0, 11);
+            this.tableLayoutPanel1.Controls.Add(this.flowLayoutPanel1, 0, 12);
             this.tableLayoutPanel1.Controls.Add(this.label7, 0, 7);
             this.tableLayoutPanel1.Controls.Add(this.label8, 0, 8);
             this.tableLayoutPanel1.Controls.Add(this.numQuantityPrime, 1, 7);
             this.tableLayoutPanel1.Controls.Add(this.numQuantityNonPrime, 1, 8);
             this.tableLayoutPanel1.Controls.Add(this.cbSplitPrime, 0, 6);
+            this.tableLayoutPanel1.Controls.Add(this.panel1, 0, 9);
             this.tableLayoutPanel1.Dock = System.Windows.Forms.DockStyle.Fill;
             this.tableLayoutPanel1.Location = new System.Drawing.Point(0, 0);
             this.tableLayoutPanel1.Name = "tableLayoutPanel1";
-            this.tableLayoutPanel1.RowCount = 12;
+            this.tableLayoutPanel1.RowCount = 13;
+            this.tableLayoutPanel1.RowStyles.Add(new System.Windows.Forms.RowStyle());
             this.tableLayoutPanel1.RowStyles.Add(new System.Windows.Forms.RowStyle());
             this.tableLayoutPanel1.RowStyles.Add(new System.Windows.Forms.RowStyle());
             this.tableLayoutPanel1.RowStyles.Add(new System.Windows.Forms.RowStyle());
@@ -280,8 +273,43 @@ namespace Merlin.Forms
             this.tableLayoutPanel1.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Percent, 100F));
             this.tableLayoutPanel1.RowStyles.Add(new System.Windows.Forms.RowStyle());
             this.tableLayoutPanel1.RowStyles.Add(new System.Windows.Forms.RowStyle());
-            this.tableLayoutPanel1.Size = new System.Drawing.Size(654, 704);
+            this.tableLayoutPanel1.Size = new System.Drawing.Size(659, 709);
             this.tableLayoutPanel1.TabIndex = 34;
+            // 
+            // groupBox1
+            // 
+            this.groupBox1.Controls.Add(this.rbOdd);
+            this.groupBox1.Controls.Add(this.rbEven);
+            this.groupBox1.Location = new System.Drawing.Point(332, 370);
+            this.groupBox1.Name = "groupBox1";
+            this.groupBox1.Size = new System.Drawing.Size(260, 257);
+            this.groupBox1.TabIndex = 9;
+            this.groupBox1.TabStop = false;
+            // 
+            // rbOdd
+            // 
+            this.rbOdd.AutoSize = true;
+            this.rbOdd.Enabled = false;
+            this.rbOdd.Location = new System.Drawing.Point(12, 83);
+            this.rbOdd.Name = "rbOdd";
+            this.rbOdd.Size = new System.Drawing.Size(150, 28);
+            this.rbOdd.TabIndex = 13;
+            this.rbOdd.TabStop = true;
+            this.rbOdd.Text = "Нечётные дни";
+            this.rbOdd.UseVisualStyleBackColor = true;
+            // 
+            // rbEven
+            // 
+            this.rbEven.AutoSize = true;
+            this.rbEven.Checked = true;
+            this.rbEven.Enabled = false;
+            this.rbEven.Location = new System.Drawing.Point(12, 44);
+            this.rbEven.Name = "rbEven";
+            this.rbEven.Size = new System.Drawing.Size(130, 28);
+            this.rbEven.TabIndex = 12;
+            this.rbEven.TabStop = true;
+            this.rbEven.Text = "Чётные дни";
+            this.rbEven.UseVisualStyleBackColor = true;
             // 
             // flowLayoutPanel1
             // 
@@ -291,9 +319,9 @@ namespace Merlin.Forms
             this.flowLayoutPanel1.Controls.Add(this.btnOk);
             this.flowLayoutPanel1.Dock = System.Windows.Forms.DockStyle.Fill;
             this.flowLayoutPanel1.FlowDirection = System.Windows.Forms.FlowDirection.RightToLeft;
-            this.flowLayoutPanel1.Location = new System.Drawing.Point(3, 662);
+            this.flowLayoutPanel1.Location = new System.Drawing.Point(3, 667);
             this.flowLayoutPanel1.Name = "flowLayoutPanel1";
-            this.flowLayoutPanel1.Size = new System.Drawing.Size(648, 39);
+            this.flowLayoutPanel1.Size = new System.Drawing.Size(653, 39);
             this.flowLayoutPanel1.TabIndex = 34;
             // 
             // btnCancel
@@ -301,7 +329,7 @@ namespace Merlin.Forms
             this.btnCancel.Anchor = System.Windows.Forms.AnchorStyles.None;
             this.btnCancel.DialogResult = System.Windows.Forms.DialogResult.Cancel;
             this.btnCancel.FlatStyle = System.Windows.Forms.FlatStyle.System;
-            this.btnCancel.Location = new System.Drawing.Point(545, 3);
+            this.btnCancel.Location = new System.Drawing.Point(550, 3);
             this.btnCancel.Name = "btnCancel";
             this.btnCancel.Size = new System.Drawing.Size(100, 33);
             this.btnCancel.TabIndex = 29;
@@ -312,7 +340,7 @@ namespace Merlin.Forms
             this.btnOk.Anchor = System.Windows.Forms.AnchorStyles.None;
             this.btnOk.DialogResult = System.Windows.Forms.DialogResult.OK;
             this.btnOk.FlatStyle = System.Windows.Forms.FlatStyle.System;
-            this.btnOk.Location = new System.Drawing.Point(439, 3);
+            this.btnOk.Location = new System.Drawing.Point(444, 3);
             this.btnOk.Name = "btnOk";
             this.btnOk.Size = new System.Drawing.Size(100, 33);
             this.btnOk.TabIndex = 28;
@@ -333,14 +361,14 @@ namespace Merlin.Forms
             this.label8.AutoSize = true;
             this.label8.Location = new System.Drawing.Point(3, 290);
             this.label8.Name = "label8";
-            this.label8.Size = new System.Drawing.Size(184, 24);
+            this.label8.Size = new System.Drawing.Size(200, 24);
             this.label8.TabIndex = 36;
             this.label8.Text = "Выходов в офф прайм:";
             // 
             // numQuantityPrime
             // 
             this.numQuantityPrime.Enabled = false;
-            this.numQuantityPrime.Location = new System.Drawing.Point(330, 256);
+            this.numQuantityPrime.Location = new System.Drawing.Point(332, 256);
             this.numQuantityPrime.Name = "numQuantityPrime";
             this.numQuantityPrime.Size = new System.Drawing.Size(234, 31);
             this.numQuantityPrime.TabIndex = 37;
@@ -348,7 +376,7 @@ namespace Merlin.Forms
             // numQuantityNonPrime
             // 
             this.numQuantityNonPrime.Enabled = false;
-            this.numQuantityNonPrime.Location = new System.Drawing.Point(330, 293);
+            this.numQuantityNonPrime.Location = new System.Drawing.Point(332, 293);
             this.numQuantityNonPrime.Name = "numQuantityNonPrime";
             this.numQuantityNonPrime.Size = new System.Drawing.Size(234, 31);
             this.numQuantityNonPrime.TabIndex = 38;
@@ -359,11 +387,49 @@ namespace Merlin.Forms
             this.tableLayoutPanel1.SetColumnSpan(this.cbSplitPrime, 2);
             this.cbSplitPrime.Location = new System.Drawing.Point(3, 222);
             this.cbSplitPrime.Name = "cbSplitPrime";
-            this.cbSplitPrime.Size = new System.Drawing.Size(319, 28);
+            this.cbSplitPrime.Size = new System.Drawing.Size(335, 28);
             this.cbSplitPrime.TabIndex = 39;
             this.cbSplitPrime.Text = "С разбивкой на прайм и офф прайм";
             this.cbSplitPrime.UseVisualStyleBackColor = true;
             this.cbSplitPrime.CheckedChanged += new System.EventHandler(this.cbSplitPrime_CheckedChanged);
+            // 
+            // panel1
+            // 
+            this.tableLayoutPanel1.SetColumnSpan(this.panel1, 2);
+            this.panel1.Controls.Add(this.rbNumber);
+            this.panel1.Controls.Add(this.rbDays);
+            this.panel1.Location = new System.Drawing.Point(3, 330);
+            this.panel1.Name = "panel1";
+            this.panel1.Size = new System.Drawing.Size(632, 34);
+            this.panel1.TabIndex = 40;
+            // 
+            // rbDays
+            // 
+            this.rbDays.AutoCheck = false;
+            this.rbDays.AutoSize = true;
+            this.rbDays.Checked = true;
+            this.rbDays.Location = new System.Drawing.Point(4, 4);
+            this.rbDays.Margin = new System.Windows.Forms.Padding(3, 4, 3, 4);
+            this.rbDays.Name = "rbDays";
+            this.rbDays.Padding = new System.Windows.Forms.Padding(3, 0, 0, 0);
+            this.rbDays.Size = new System.Drawing.Size(132, 28);
+            this.rbDays.TabIndex = 12;
+            this.rbDays.TabStop = true;
+            this.rbDays.Text = "Дни недели";
+            this.rbDays.UseVisualStyleBackColor = true;
+            // 
+            // rbNumber
+            // 
+            this.rbNumber.AutoCheck = false;
+            this.rbNumber.AutoSize = true;
+            this.rbNumber.Location = new System.Drawing.Point(142, 3);
+            this.rbNumber.Name = "rbNumber";
+            this.rbNumber.Padding = new System.Windows.Forms.Padding(3, 0, 0, 0);
+            this.rbNumber.Size = new System.Drawing.Size(187, 28);
+            this.rbNumber.TabIndex = 15;
+            this.rbNumber.TabStop = true;
+            this.rbNumber.Text = "Четный/Нечетный";
+            this.rbNumber.UseVisualStyleBackColor = true;
             // 
             // FrmTemplate2
             // 
@@ -371,7 +437,7 @@ namespace Merlin.Forms
             this.AutoScaleDimensions = new System.Drawing.SizeF(10F, 24F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
             this.CancelButton = this.btnCancel;
-            this.ClientSize = new System.Drawing.Size(654, 704);
+            this.ClientSize = new System.Drawing.Size(659, 709);
             this.Controls.Add(this.tableLayoutPanel1);
             this.Font = new System.Drawing.Font("Segoe UI Variable Text", 9F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(204)));
             this.FormBorderStyle = System.Windows.Forms.FormBorderStyle.FixedDialog;
@@ -381,15 +447,17 @@ namespace Merlin.Forms
             this.Name = "FrmTemplate2";
             this.ShowInTaskbar = false;
             this.Text = "Шаблон для внесения роликов";
-            this.Load += new System.EventHandler(this.FrmTemplate2_Load);
             ((System.ComponentModel.ISupportInitialize)(this.txtQuantity)).EndInit();
             this.gbWeekDays.ResumeLayout(false);
-            this.gbWeekDays.PerformLayout();
             this.tableLayoutPanel1.ResumeLayout(false);
             this.tableLayoutPanel1.PerformLayout();
+            this.groupBox1.ResumeLayout(false);
+            this.groupBox1.PerformLayout();
             this.flowLayoutPanel1.ResumeLayout(false);
             ((System.ComponentModel.ISupportInitialize)(this.numQuantityPrime)).EndInit();
             ((System.ComponentModel.ISupportInitialize)(this.numQuantityNonPrime)).EndInit();
+            this.panel1.ResumeLayout(false);
+            this.panel1.PerformLayout();
             this.ResumeLayout(false);
 
         }
@@ -409,7 +477,6 @@ namespace Merlin.Forms
         private System.Windows.Forms.Label label6;
         private System.Windows.Forms.Label lblRollerName;
         private System.Windows.Forms.GroupBox gbWeekDays;
-        private System.Windows.Forms.RadioButton rbDays;
         private System.Windows.Forms.CheckedListBox clbWeekDays;
         private System.Windows.Forms.CheckBox cbIgnoreWindows;
         private System.Windows.Forms.TableLayoutPanel tableLayoutPanel1;
@@ -421,5 +488,11 @@ namespace Merlin.Forms
         private System.Windows.Forms.NumericUpDown numQuantityPrime;
         private System.Windows.Forms.NumericUpDown numQuantityNonPrime;
         private System.Windows.Forms.CheckBox cbSplitPrime;
+        private System.Windows.Forms.GroupBox groupBox1;
+        private System.Windows.Forms.RadioButton rbOdd;
+        private System.Windows.Forms.RadioButton rbEven;
+        private System.Windows.Forms.Panel panel1;
+        private System.Windows.Forms.RadioButton rbNumber;
+        private System.Windows.Forms.RadioButton rbDays;
     }
 }

@@ -33,10 +33,6 @@ namespace Merlin.Forms
             this.gbWeekDays = new System.Windows.Forms.GroupBox();
             this.rbDays = new System.Windows.Forms.RadioButton();
             this.clbWeekDays = new System.Windows.Forms.CheckedListBox();
-            this.gbOddEven = new System.Windows.Forms.GroupBox();
-            this.rbNumber = new System.Windows.Forms.RadioButton();
-            this.rbOdd = new System.Windows.Forms.RadioButton();
-            this.rbEven = new System.Windows.Forms.RadioButton();
             this.dtFinishDate = new System.Windows.Forms.DateTimePicker();
             this.dtStartDate = new System.Windows.Forms.DateTimePicker();
             this.label2 = new System.Windows.Forms.Label();
@@ -44,9 +40,16 @@ namespace Merlin.Forms
             this.flowLayoutPanel1 = new System.Windows.Forms.FlowLayoutPanel();
             this.rbModeAdd = new System.Windows.Forms.RadioButton();
             this.rbModeDelete = new System.Windows.Forms.RadioButton();
+            this.gbOddEven = new System.Windows.Forms.GroupBox();
+            this.radioButton1 = new System.Windows.Forms.RadioButton();
+            this.radioButton2 = new System.Windows.Forms.RadioButton();
+            this.radioButton3 = new System.Windows.Forms.RadioButton();
+            this.rbEven = new System.Windows.Forms.RadioButton();
+            this.rbOdd = new System.Windows.Forms.RadioButton();
+            this.rbNumber = new System.Windows.Forms.RadioButton();
             this.gbWeekDays.SuspendLayout();
-            this.gbOddEven.SuspendLayout();
             this.flowLayoutPanel1.SuspendLayout();
+            this.gbOddEven.SuspendLayout();
             this.SuspendLayout();
             // 
             // btnCancel
@@ -109,53 +112,6 @@ namespace Merlin.Forms
             this.clbWeekDays.Size = new System.Drawing.Size(285, 168);
             this.clbWeekDays.TabIndex = 10;
             this.clbWeekDays.ItemCheck += new System.Windows.Forms.ItemCheckEventHandler(this.clbWeekDays_ItemCheck);
-            // 
-            // gbOddEven
-            // 
-            this.gbOddEven.Controls.Add(this.rbNumber);
-            this.gbOddEven.Controls.Add(this.rbOdd);
-            this.gbOddEven.Controls.Add(this.rbEven);
-            this.gbOddEven.Location = new System.Drawing.Point(332, 157);
-            this.gbOddEven.Name = "gbOddEven";
-            this.gbOddEven.Size = new System.Drawing.Size(260, 273);
-            this.gbOddEven.TabIndex = 9;
-            this.gbOddEven.TabStop = false;
-            // 
-            // rbNumber
-            // 
-            this.rbNumber.AutoCheck = false;
-            this.rbNumber.AutoSize = true;
-            this.rbNumber.Location = new System.Drawing.Point(4, -2);
-            this.rbNumber.Name = "rbNumber";
-            this.rbNumber.Padding = new System.Windows.Forms.Padding(3, 0, 0, 0);
-            this.rbNumber.Size = new System.Drawing.Size(187, 28);
-            this.rbNumber.TabIndex = 14;
-            this.rbNumber.TabStop = true;
-            this.rbNumber.Text = "Четный/Нечетный";
-            this.rbNumber.UseVisualStyleBackColor = true;
-            this.rbNumber.Click += new System.EventHandler(this.groupButton_CheckChanged);
-            // 
-            // rbOdd
-            // 
-            this.rbOdd.AutoSize = true;
-            this.rbOdd.Location = new System.Drawing.Point(12, 83);
-            this.rbOdd.Name = "rbOdd";
-            this.rbOdd.Size = new System.Drawing.Size(149, 28);
-            this.rbOdd.TabIndex = 13;
-            this.rbOdd.TabStop = true;
-            this.rbOdd.Text = "Нечётные дни";
-            this.rbOdd.UseVisualStyleBackColor = true;
-            // 
-            // rbEven
-            // 
-            this.rbEven.AutoSize = true;
-            this.rbEven.Location = new System.Drawing.Point(12, 44);
-            this.rbEven.Name = "rbEven";
-            this.rbEven.Size = new System.Drawing.Size(129, 28);
-            this.rbEven.TabIndex = 12;
-            this.rbEven.TabStop = true;
-            this.rbEven.Text = "Чётные дни";
-            this.rbEven.UseVisualStyleBackColor = true;
             // 
             // dtFinishDate
             // 
@@ -223,6 +179,88 @@ namespace Merlin.Forms
             this.rbModeDelete.Text = "Режим удаления";
             this.rbModeDelete.UseVisualStyleBackColor = true;
             // 
+            // gbOddEven
+            // 
+            this.gbOddEven.Controls.Add(this.rbNumber);
+            this.gbOddEven.Controls.Add(this.rbOdd);
+            this.gbOddEven.Controls.Add(this.rbEven);
+            this.gbOddEven.Location = new System.Drawing.Point(332, 159);
+            this.gbOddEven.Name = "gbOddEven";
+            this.gbOddEven.Size = new System.Drawing.Size(260, 273);
+            this.gbOddEven.TabIndex = 9;
+            this.gbOddEven.TabStop = false;
+            // 
+            // radioButton1
+            // 
+            this.radioButton1.AutoCheck = false;
+            this.radioButton1.AutoSize = true;
+            this.radioButton1.Location = new System.Drawing.Point(4, -2);
+            this.radioButton1.Name = "radioButton1";
+            this.radioButton1.Padding = new System.Windows.Forms.Padding(3, 0, 0, 0);
+            this.radioButton1.Size = new System.Drawing.Size(187, 28);
+            this.radioButton1.TabIndex = 14;
+            this.radioButton1.TabStop = true;
+            this.radioButton1.Text = "Четный/Нечетный";
+            this.radioButton1.UseVisualStyleBackColor = true;
+            // 
+            // radioButton2
+            // 
+            this.radioButton2.AutoSize = true;
+            this.radioButton2.Location = new System.Drawing.Point(12, 83);
+            this.radioButton2.Name = "radioButton2";
+            this.radioButton2.Size = new System.Drawing.Size(149, 28);
+            this.radioButton2.TabIndex = 13;
+            this.radioButton2.TabStop = true;
+            this.radioButton2.Text = "Нечётные дни";
+            this.radioButton2.UseVisualStyleBackColor = true;
+            // 
+            // radioButton3
+            // 
+            this.radioButton3.AutoSize = true;
+            this.radioButton3.Location = new System.Drawing.Point(12, 44);
+            this.radioButton3.Name = "radioButton3";
+            this.radioButton3.Size = new System.Drawing.Size(129, 28);
+            this.radioButton3.TabIndex = 12;
+            this.radioButton3.TabStop = true;
+            this.radioButton3.Text = "Чётные дни";
+            this.radioButton3.UseVisualStyleBackColor = true;
+            // 
+            // rbEven
+            // 
+            this.rbEven.AutoSize = true;
+            this.rbEven.Location = new System.Drawing.Point(12, 44);
+            this.rbEven.Name = "rbEven";
+            this.rbEven.Size = new System.Drawing.Size(129, 28);
+            this.rbEven.TabIndex = 12;
+            this.rbEven.TabStop = true;
+            this.rbEven.Text = "Чётные дни";
+            this.rbEven.UseVisualStyleBackColor = true;
+            // 
+            // rbOdd
+            // 
+            this.rbOdd.AutoSize = true;
+            this.rbOdd.Location = new System.Drawing.Point(12, 83);
+            this.rbOdd.Name = "rbOdd";
+            this.rbOdd.Size = new System.Drawing.Size(149, 28);
+            this.rbOdd.TabIndex = 13;
+            this.rbOdd.TabStop = true;
+            this.rbOdd.Text = "Нечётные дни";
+            this.rbOdd.UseVisualStyleBackColor = true;
+            // 
+            // rbNumber
+            // 
+            this.rbNumber.AutoCheck = false;
+            this.rbNumber.AutoSize = true;
+            this.rbNumber.Location = new System.Drawing.Point(4, -2);
+            this.rbNumber.Name = "rbNumber";
+            this.rbNumber.Padding = new System.Windows.Forms.Padding(3, 0, 0, 0);
+            this.rbNumber.Size = new System.Drawing.Size(187, 28);
+            this.rbNumber.TabIndex = 14;
+            this.rbNumber.TabStop = true;
+            this.rbNumber.Text = "Четный/Нечетный";
+            this.rbNumber.UseVisualStyleBackColor = true;
+            this.rbNumber.Click += new System.EventHandler(this.groupButton_CheckChanged);
+            // 
             // FrmTemplate
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(10F, 24F);
@@ -248,10 +286,10 @@ namespace Merlin.Forms
             this.Load += new System.EventHandler(this.FrmTemplate_Load);
             this.gbWeekDays.ResumeLayout(false);
             this.gbWeekDays.PerformLayout();
-            this.gbOddEven.ResumeLayout(false);
-            this.gbOddEven.PerformLayout();
             this.flowLayoutPanel1.ResumeLayout(false);
             this.flowLayoutPanel1.PerformLayout();
+            this.gbOddEven.ResumeLayout(false);
+            this.gbOddEven.PerformLayout();
             this.ResumeLayout(false);
             this.PerformLayout();
 
@@ -262,18 +300,21 @@ namespace Merlin.Forms
         private System.Windows.Forms.Button btnCancel;
         private System.Windows.Forms.Button btnOk;
         private System.Windows.Forms.GroupBox gbWeekDays;
-		private System.Windows.Forms.GroupBox gbOddEven;
         private System.Windows.Forms.CheckedListBox clbWeekDays;
-        private System.Windows.Forms.RadioButton rbOdd;
-        private System.Windows.Forms.RadioButton rbEven;
         private System.Windows.Forms.DateTimePicker dtFinishDate;
         private System.Windows.Forms.DateTimePicker dtStartDate;
         private System.Windows.Forms.Label label2;
         private System.Windows.Forms.Label label1;
 		private System.Windows.Forms.RadioButton rbDays;
-		private System.Windows.Forms.RadioButton rbNumber;
         private System.Windows.Forms.FlowLayoutPanel flowLayoutPanel1;
         private System.Windows.Forms.RadioButton rbModeAdd;
         private System.Windows.Forms.RadioButton rbModeDelete;
+        private System.Windows.Forms.GroupBox gbOddEven;
+        private System.Windows.Forms.RadioButton rbNumber;
+        private System.Windows.Forms.RadioButton rbOdd;
+        private System.Windows.Forms.RadioButton rbEven;
+        private System.Windows.Forms.RadioButton radioButton1;
+        private System.Windows.Forms.RadioButton radioButton2;
+        private System.Windows.Forms.RadioButton radioButton3;
     }
 }

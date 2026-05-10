@@ -20,13 +20,16 @@ namespace Merlin.Forms
             _template = new IssueTemplate(DateTime.Today.AddDays(1), DateTime.Today.AddDays(1),
                 new DateTime(DateTime.Today.Year, DateTime.Today.Month, DateTime.Today.Day, 12, 0, 0),
                 new DateTime(DateTime.Today.Year, DateTime.Today.Month, DateTime.Today.Day, 15, 0, 0),
-                2);
-            _template.IsModeAdd = true; 
+                2)
+            {
+                IsModeAdd = true
+            };
             lblRollerName.Text = rollerName;
         }
 
-        private void FrmTemplate2_Load(object sender, EventArgs e)
+        protected override void OnLoad(EventArgs e)
         {
+            base.OnLoad(e);
             dtStartDate.Value = _template.StartDate;
             dtFinishDate.Value = _template.FinishDate;
             dtStartTime.Value = _template.StartTime;
@@ -38,6 +41,22 @@ namespace Merlin.Forms
             {
                 clbWeekDays.Items.Add(DateTimeUtils.WeekDayNames[i], true);
             }
+
+            this.rbDays.Click += new System.EventHandler(this.groupButton_CheckChanged);
+            this.rbNumber.Click += new System.EventHandler(this.groupButton_CheckChanged);
+        }
+
+        private void groupButton_CheckChanged(object sender, EventArgs e)
+        {
+            RadioButton senderRB = (RadioButton)sender;
+            senderRB.Checked = !senderRB.Checked;
+            if (sender == rbNumber)
+                rbDays.Checked = !senderRB.Checked;
+            else if (sender == rbDays)
+                rbNumber.Checked = !senderRB.Checked;
+            _template.IsOdd = rbOdd.Checked;
+            _template.Day2AddMode = (rbNumber.Checked) ? Day2AddMode.OddEvenDays : Day2AddMode.WeekDays;
+            SetEnabled();
         }
 
         public IssueTemplate Template
@@ -55,7 +74,7 @@ namespace Merlin.Forms
             _template.QuantityPrime = (int)numQuantityPrime.Value;
             _template.QuantityNonPrime = (int)numQuantityNonPrime.Value;
 
-            _template.Mode = IssueTemplateMode.TimePeriod;
+            _template.TemplateType = IssueTemplateType.TimePeriod;
             _template.IgnoreWindowsWithTheSameFirmIssue = cbIgnoreWindows.Checked;
         }
 
@@ -94,6 +113,13 @@ namespace Merlin.Forms
         {
             numQuantityPrime.Enabled = numQuantityNonPrime.Enabled = cbSplitPrime.Checked;
             txtQuantity.Enabled = !cbSplitPrime.Checked;
+        }
+
+        private void SetEnabled()
+        {
+            rbEven.Enabled = rbNumber.Checked;
+            rbOdd.Enabled = rbNumber.Checked;
+            clbWeekDays.Enabled = rbDays.Checked;
         }
     }
 }

@@ -5,16 +5,21 @@ using FogSoft.WinForm.Classes;
 
 namespace Merlin.Classes
 {
-	public enum IssueTemplateMode
+	public enum IssueTemplateType
 	{
-		WeekDays,
-		OddEvenDays,
+		Simple,
 		TimePeriod
 	}
 
-	public class IssueTemplate : IEnumerator
+    public enum Day2AddMode
+    {
+        WeekDays,
+        OddEvenDays,
+    }
+
+    public class IssueTemplate : IEnumerator
 	{
-		private IssueTemplateMode mode;
+		private Day2AddMode _day2AddMode;
 		private DateTime currentDate;
 		private bool bFirstMove;
 
@@ -30,20 +35,25 @@ namespace Merlin.Classes
 
 		public IssueTemplate()
 		{
-			mode = IssueTemplateMode.WeekDays;
-			weekDays = new bool[DateTimeUtils.WeekDayNames.Length];
+            TemplateType = IssueTemplateType.Simple;
+            _day2AddMode = Day2AddMode.WeekDays;
+			
+            weekDays = new bool[DateTimeUtils.WeekDayNames.Length];
 			StartDate = FinishDate = DateTime.MinValue.Date;
 			parameters = new Dictionary<string, object>();
 		}
 
         public IssueTemplate(DateTime startDate, DateTime finishDate, DateTime startTime, DateTime finishTime, int quantity)
         {
+            TemplateType = IssueTemplateType.TimePeriod;
+            _day2AddMode = Day2AddMode.WeekDays;
+
             StartDate = startDate;
             FinishDate = finishDate;
             StartTime = startTime;
             FinishTime = finishTime;
             Quantity = quantity;
-			mode = IssueTemplateMode.TimePeriod;
+			
             weekDays = new bool[DateTimeUtils.WeekDayNames.Length];
             parameters = new Dictionary<string, object>();
         }
@@ -67,7 +77,7 @@ namespace Merlin.Classes
 			{
 				parameters["StartDate"] = StartDate;
 				parameters["EndDate"] = FinishDate;
-				parameters["Template"] = (Mode == IssueTemplateMode.OddEvenDays) ? "Чётный/Нечётный" : "Дни недели";
+				parameters["Template"] = (_day2AddMode == Day2AddMode.OddEvenDays) ? "Чётный/Нечётный" : "Дни недели";
 				return parameters;
 			}
 		}
@@ -82,17 +92,18 @@ namespace Merlin.Classes
 			}
 		}
 
-		public IssueTemplateMode Mode
+		public Day2AddMode Day2AddMode
 		{
-			get { return mode; }
+			get { return _day2AddMode; }
 			set
 			{
 				Reset();
-				mode = value;
+				_day2AddMode = value;
 			}
 		}
 
-		public void SetTime(DateTime time)
+		public IssueTemplateType TemplateType {  get; set; }
+        public void SetTime(DateTime time)
 		{
 			StartDate = StartDate.Date + time.TimeOfDay;
 			FinishDate = FinishDate.Date + time.TimeOfDay;
@@ -125,7 +136,7 @@ namespace Merlin.Classes
 		public bool MoveNext()
 		{
 			if (StartDate > FinishDate) return false;
-			if (mode == IssueTemplateMode.OddEvenDays)
+			if (_day2AddMode == Day2AddMode.OddEvenDays)
 			{
 				bool bIsOdd = currentDate.Day%2 == 1;
 				if (!bFirstMove || bIsOdd != isOdd)

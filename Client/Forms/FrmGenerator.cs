@@ -220,7 +220,7 @@ namespace Merlin.Forms
 			}
 			else if (_module == null && program == null)
 			{
-				if (_template.Mode == IssueTemplateMode.TimePeriod)
+				if (_template.TemplateType == IssueTemplateType.TimePeriod)
 				{
 					if (_maxPrices == null)
 						_maxPrices = ((CampaignOnSingleMassmedia)_campaign).Massmedia.GetMaxPriceByDay(_template.StartDate, _template.FinishDate);

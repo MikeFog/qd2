@@ -9,16 +9,17 @@ namespace Merlin.Forms
 	{
 		private readonly IssueTemplate _template;
 
-		public FrmTemplate(IssueTemplate template)
+		public FrmTemplate(IssueTemplate template) : this()
 		{
-			this._template = template ?? new IssueTemplate();
-			this._template.Mode = IssueTemplateMode.WeekDays;
-			InitializeComponent();
+			_template = template ?? new IssueTemplate();
+			_template.Day2AddMode = Day2AddMode.WeekDays;
+			_template.TemplateType = IssueTemplateType.Simple;
 		}
 
-		public FrmTemplate() : this(null)
+		public FrmTemplate() 
 		{
-		}
+            InitializeComponent();
+        }
 
         public IssueTemplate Template
         {
@@ -27,7 +28,7 @@ namespace Merlin.Forms
                 _template.StartDate = dtStartDate.Value;
                 _template.FinishDate = dtFinishDate.Value;
                 _template.IsOdd = rbOdd.Checked;
-                _template.Mode = (rbNumber.Checked) ? IssueTemplateMode.OddEvenDays : IssueTemplateMode.WeekDays;
+                _template.Day2AddMode = (rbNumber.Checked) ? Day2AddMode.OddEvenDays : Day2AddMode.WeekDays;
                 return _template;
             }
         }
@@ -45,7 +46,7 @@ namespace Merlin.Forms
 			{
 				clbWeekDays.Items.Add(DateTimeUtils.WeekDayNames[i], _template.WeekDays[i]);
 			}
-			rbDays.Checked = _template.Mode == IssueTemplateMode.WeekDays;
+			rbDays.Checked = _template.Day2AddMode == Day2AddMode.WeekDays;
 			rbOdd.Checked = _template.IsOdd;
 			rbEven.Checked = !_template.IsOdd;
 
