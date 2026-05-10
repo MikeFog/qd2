@@ -680,7 +680,7 @@ namespace Merlin.Forms {
     private System.Windows.Forms.ToolStripSeparator toolStripSeparator4;
     private System.Windows.Forms.ToolStripButton btnShowDisabled;
     private System.Windows.Forms.ToolStripButton tbSetManagerDiscount;
-    private System.Windows.Forms.ToolStripButton tbMarkPrimeWindows;
-        private System.Windows.Forms.ToolStripButton btnShowMarked;
+    protected System.Windows.Forms.ToolStripButton tbMarkPrimeWindows;
+    private System.Windows.Forms.ToolStripButton btnShowMarked;
     }
 }

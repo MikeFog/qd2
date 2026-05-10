@@ -66,7 +66,7 @@ namespace Merlin.Classes
 
         public bool IsPrime 
         { 
-            get { return false; } 
+            get { return bool.Parse(_row["isPrime"].ToString()); ; } 
         }
     }
 }

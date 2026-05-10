@@ -47,37 +47,6 @@ namespace Merlin.Controls
             this.showTrafficWindows = showTrafficWindows;
         }
 
-        public bool ShowDisabledWindows { get; set;	} = true;
-        public bool ShowMarkedWindows { get; set; }
-        public bool ShowPrimeWindows { get; set; }
-
-        public void RefreshWindowsColors()
-        {
-            int rowCount = _tariffWindows.GetLength(0);
-            int columnCount = _tariffWindows.GetLength(1);
-
-            for (int rowIndex = 0; rowIndex < rowCount; rowIndex++)
-            {
-                for (int columnIndex = 0; columnIndex < columnCount; columnIndex++)
-                {
-                    ITariffWindow window = _tariffWindows[rowIndex, columnIndex];
-                    if (window == null)
-                        continue;
-
-                    Color color = InternalGrid.DefaultCellStyle.BackColor;
-
-                    if (ShowDisabledWindows && window.IsDisabled)
-                        color = Color.FromArgb(255, 231, 234);
-                    else if (ShowMarkedWindows && window.IsMarked)
-                        color = Color.LightSteelBlue;
-                    else if (ShowPrimeWindows && window.IsPrime)
-                        color = Color.FromArgb(223, 211, 238); 
-
-					SetCellBackColor(rowIndex + FIXED_ROWS, columnIndex + FixedCols, color);
-                }
-            }
-        }
-
         private DateTime CurrentWindowDate
 		{
 			get

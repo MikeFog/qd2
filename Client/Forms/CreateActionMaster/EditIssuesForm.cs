@@ -61,6 +61,7 @@ namespace Merlin.Forms.CreateActionMaster
         {
             base.ProcessToolbar();
 			tsbMuteRoller.Enabled = true;
+			tbMarkPrimeWindows.Visible = true;
         }
 
         protected override void ShowWindowIssues(ITariffWindow tariffWindow)

@@ -961,6 +961,11 @@ namespace Merlin.Forms
 				grid.ShowPrimeWindows = tbMarkPrimeWindows.Checked;
                 grid.RefreshWindowsColors();
             }
+			else if(_tariffGrid is TariffWithRangeGrid grid2)
+			{
+                grid2.ShowPrimeWindows = tbMarkPrimeWindows.Checked;
+                grid2.RefreshWindowsColors();
+            }
         }
 
         private void MarkMarkedWindows(object sender, EventArgs e)
