@@ -177,7 +177,7 @@ namespace Merlin.Forms {
             this.pageAction.Location = new System.Drawing.Point(4, 34);
             this.pageAction.Margin = new System.Windows.Forms.Padding(4);
             this.pageAction.Name = "pageAction";
-            this.pageAction.Size = new System.Drawing.Size(1170, 610);
+            this.pageAction.Size = new System.Drawing.Size(1592, 610);
             this.pageAction.TabIndex = 0;
             this.pageAction.Text = "Общие";
             // 
@@ -231,7 +231,7 @@ namespace Merlin.Forms {
             this.tsbSetDiscount,
             this.tsbSetActionPrice});
             this.tsAction.LayoutStyle = System.Windows.Forms.ToolStripLayoutStyle.VerticalStackWithOverflow;
-            this.tsAction.Location = new System.Drawing.Point(1124, 192);
+            this.tsAction.Location = new System.Drawing.Point(1546, 192);
             this.tsAction.Name = "tsAction";
             this.tsAction.Padding = new System.Windows.Forms.Padding(0, 0, 3, 0);
             this.tsAction.Size = new System.Drawing.Size(37, 272);
@@ -357,7 +357,7 @@ namespace Merlin.Forms {
             this.grdCampaign.QuickSearchVisible = false;
             this.grdCampaign.SelectedObject = null;
             this.grdCampaign.ShowMultiselectColumn = true;
-            this.grdCampaign.Size = new System.Drawing.Size(1096, 262);
+            this.grdCampaign.Size = new System.Drawing.Size(1518, 262);
             this.grdCampaign.TabIndex = 24;
             this.grdCampaign.ObjectSelected += new FogSoft.WinForm.ObjectDelegate(this.grdCampaign_ObjectSelected);
             // 
@@ -389,7 +389,7 @@ namespace Merlin.Forms {
             this.separator3.Location = new System.Drawing.Point(15, 182);
             this.separator3.Margin = new System.Windows.Forms.Padding(4);
             this.separator3.Name = "separator3";
-            this.separator3.Size = new System.Drawing.Size(1149, 2);
+            this.separator3.Size = new System.Drawing.Size(1571, 2);
             this.separator3.TabIndex = 9;
             // 
             // separator1
@@ -400,7 +400,7 @@ namespace Merlin.Forms {
             this.separator1.Location = new System.Drawing.Point(15, 58);
             this.separator1.Margin = new System.Windows.Forms.Padding(4);
             this.separator1.Name = "separator1";
-            this.separator1.Size = new System.Drawing.Size(1149, 2);
+            this.separator1.Size = new System.Drawing.Size(1571, 2);
             this.separator1.TabIndex = 2;
             // 
             // btnOk
@@ -408,7 +408,7 @@ namespace Merlin.Forms {
             this.btnOk.Anchor = System.Windows.Forms.AnchorStyles.Bottom;
             this.btnOk.DialogResult = System.Windows.Forms.DialogResult.OK;
             this.btnOk.FlatStyle = System.Windows.Forms.FlatStyle.System;
-            this.btnOk.Location = new System.Drawing.Point(524, 656);
+            this.btnOk.Location = new System.Drawing.Point(735, 656);
             this.btnOk.Margin = new System.Windows.Forms.Padding(4);
             this.btnOk.Name = "btnOk";
             this.btnOk.Size = new System.Drawing.Size(140, 39);
@@ -426,7 +426,7 @@ namespace Merlin.Forms {
             this.tabAction.Margin = new System.Windows.Forms.Padding(4);
             this.tabAction.Name = "tabAction";
             this.tabAction.SelectedIndex = 0;
-            this.tabAction.Size = new System.Drawing.Size(1178, 648);
+            this.tabAction.Size = new System.Drawing.Size(1600, 648);
             this.tabAction.TabIndex = 4;
             // 
             // ActionForm
@@ -434,7 +434,7 @@ namespace Merlin.Forms {
             this.AcceptButton = this.btnOk;
             this.AutoScaleDimensions = new System.Drawing.SizeF(144F, 144F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Dpi;
-            this.ClientSize = new System.Drawing.Size(1185, 705);
+            this.ClientSize = new System.Drawing.Size(1607, 705);
             this.Controls.Add(this.btnOk);
             this.Controls.Add(this.tabAction);
             this.Font = new System.Drawing.Font("Segoe UI", 9F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(204)));
