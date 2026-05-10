@@ -26,7 +26,7 @@ BEGIN
 		hc.name as headCompanyName
     FROM 
         [Firm] f
-		Inner Join HeadCompany hc on hc.headCompanyID = f.headCompanyID
+		Left Join HeadCompany hc on hc.headCompanyID = f.headCompanyID
         LEFT JOIN 
         (
             SELECT ActionId, FirmID, userID, finishDate
