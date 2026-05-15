@@ -703,8 +703,8 @@ namespace Merlin.Classes
             lstStat.Items.Add($"Окончание: {(FinishDate == DateTime.MinValue ? "" : FinishDate.ToShortDateString())}");
             lstStat.Items.Add($"Выпусков: {this["iCount"]}");
             lstStat.Items.Add($"Общее время: {this["duration"]}");
-            lstStat.Items.Add($"Тариф: {TariffPrice:c}");
-            lstStat.Items.Add($"Итого: {TotalPrice:c}");
+            lstStat.Items.Add($"Стоимость акции без скидок: {TariffPrice:c}");
+            lstStat.Items.Add($"Стоимость акции со всеми скидками: {TotalPrice:c}");
             lstStat.Items.Add($"Пакетная скидка: {this[ParamNames.Discount]:F2}");
         }
 

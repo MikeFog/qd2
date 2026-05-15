@@ -265,14 +265,24 @@ namespace FogSoft.WinForm
 			{
 				string name = node.Attributes[PageControl.Attributes.Name].Value;
 				string value = node.Attributes[PageControl.Attributes.Value].Value;
-				string argument = StringUtil.SubstringAfter(value, ":");
-				if (Regex.IsMatch(value, ".*:.*"))
+				var argument = StringUtil.SubstringAfter(value, ":");
+				DateTime currentMonthStart;
+
+                if (Regex.IsMatch(value, ".*:.*"))
 				{
 					value = StringUtil.SubstringBefore(value, ":");
 				}
 				switch(value)
 				{
-					case PageControl.InitialValueAbbreviations.LAST_MONTH:
+                    case PageControl.InitialValueAbbreviations.PREV_MONTH_BEGIN:
+                        currentMonthStart = new DateTime(DateTime.Today.Year, DateTime.Today.Month, 1);
+                        filterValues[name] = currentMonthStart.AddMonths(-1).ToString();
+                        break;
+                    case PageControl.InitialValueAbbreviations.PREV_MONTH_END:
+                        currentMonthStart = new DateTime(DateTime.Today.Year, DateTime.Today.Month, 1);
+                        filterValues[name] = currentMonthStart.AddDays(-1).ToString();
+                        break;
+                    case PageControl.InitialValueAbbreviations.LAST_MONTH:
 						filterValues[name] = DateTime.Today.AddMonths(-1).ToString();
 						break;
 
