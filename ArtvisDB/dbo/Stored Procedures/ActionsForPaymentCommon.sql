@@ -6,6 +6,16 @@
 AS
 SET NOCOUNT ON
 
+-- Проверка роли пользователя
+DECLARE @isAdmin bit = 0
+DECLARE @isBookKeeper bit = 0
+
+SELECT 
+	@isAdmin = IsAdmin,
+	@isBookKeeper = IsBookKeeper
+FROM [dbo].[user]
+WHERE userID = @loggedUserID
+
 declare @massmedias table(massmediaID smallint primary key, myMassmedia bit, foreignMassmedia bit)
 insert into @massmedias (massmediaID, myMassmedia, foreignMassmedia) 
 select * from dbo.fn_GetMassmediasForUser(@loggedUserID)
@@ -41,7 +51,7 @@ FROM
 				where u.userID = @loggedUserID or @isRightToViewForeignActions = 1 or (@isRightToViewGroupActions = 1 and ug.id is not null)
 			) as x on a.userID = x.userID
 			left join @massmedias umm on c.massmediaID = umm.massmediaID
-			where (dbo.f_IsAdmin(@loggedUserID) = 1 and a.isSpecial = 1) or
+			where ((@isAdmin = 1 or @isBookKeeper = 1) and a.isSpecial = 1) or
 		 		((c.campaignTypeID <> 4 and umm.massmediaID is not null and ((a.userID = @loggedUserID and umm.myMassmedia = 1) or (a.userID <> @loggedUserID and umm.foreignMassmedia = 1) )) 
 					or (c.campaignTypeID = 4 and not exists(select * 
 														from PackModuleIssue pmi 
