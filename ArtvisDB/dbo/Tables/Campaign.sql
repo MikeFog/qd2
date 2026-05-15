@@ -27,6 +27,9 @@
 );
 
 
+
+
+
 GO
 ALTER TABLE [dbo].[Campaign] SET (LOCK_ESCALATION = AUTO);
 
@@ -71,4 +74,10 @@ ALTER INDEX [IX_Campaign_Massmedia]
 GO
 CREATE NONCLUSTERED INDEX [IX_Campaign_actionID_massmediaID]
     ON [dbo].[Campaign]([actionID] ASC, [massmediaID] ASC) WITH (FILLFACTOR = 90);
+
+
+GO
+CREATE NONCLUSTERED INDEX [IX_Campaign_startDate_finishDate]
+    ON [dbo].[Campaign]([startDate] ASC, [finishDate] ASC)
+    INCLUDE([actionID], [campaignTypeID], [paymentTypeID], [massmediaID]);
 

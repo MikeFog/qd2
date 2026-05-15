@@ -23,6 +23,9 @@
 
 
 
+
+
+
 GO
 ALTER TABLE [dbo].[Action] SET (LOCK_ESCALATION = AUTO);
 
@@ -71,4 +74,10 @@ GO
 CREATE NONCLUSTERED INDEX [IX_Action_isSpecial_modDate__actionID_startDate_finishDate_userID_isConfirmed_deleteDate]
     ON [dbo].[Action]([isSpecial] ASC, [modDate] ASC)
     INCLUDE([actionID], [startDate], [finishDate], [userID], [isConfirmed], [deleteDate]);
+
+
+GO
+CREATE NONCLUSTERED INDEX [IX_Action_isConfirmed_createDate]
+    ON [dbo].[Action]([isConfirmed] ASC, [createDate] ASC)
+    INCLUDE([firmID], [userID], [actionID], [discount]);
 
