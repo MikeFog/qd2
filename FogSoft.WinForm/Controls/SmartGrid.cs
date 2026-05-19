@@ -41,6 +41,7 @@ namespace FogSoft.WinForm.Controls
         private DataGridViewColumn currentColumn;
 		private List<PresentationObject> added2Checked, removedFromChecked;
 		private SmartGrid dependantGrid;
+		private bool _suppressAdjustColumnsWidth = false;
         #endregion
 
         private const string QuickSearchText = "Поиск по полю";
@@ -60,14 +61,7 @@ namespace FogSoft.WinForm.Controls
             };
             dataGrid.DataBindingComplete += (s, e) =>
             {
-                foreach (DataGridViewColumn col in dataGrid.Columns)
-                {
-                    if (col.Width > 400)
-                    {
-                        col.AutoSizeMode = DataGridViewAutoSizeColumnMode.None;
-                        col.Width = 400;
-                    }
-                }
+				AdjustColumnsWidth();
             };
             // dataGrid.RowStateChanged -= убрана подписка
             dataGrid.CellContentClick += DataGrid_CellContentClick;
@@ -408,6 +402,129 @@ namespace FogSoft.WinForm.Controls
 
         public void AdjustColumnsWidth(int maxAutoColumnWidth = 400)
         {
+            if (dataGrid.Columns.Count == 0 || _suppressAdjustColumnsWidth)
+                return;
+
+            dataGrid.SuspendLayout();
+            try
+            {
+                dataGrid.AutoSizeColumnsMode = DataGridViewAutoSizeColumnsMode.None;
+
+                dataGrid.ColumnHeadersDefaultCellStyle.WrapMode = DataGridViewTriState.True;
+                dataGrid.ColumnHeadersHeightSizeMode = DataGridViewColumnHeadersHeightSizeMode.EnableResizing;
+                dataGrid.ColumnHeadersHeight = 60;
+
+                foreach (DataGridViewColumn col in dataGrid.Columns)
+                {
+                    col.AutoSizeMode = DataGridViewAutoSizeColumnMode.None;
+
+                    if (col is DataGridViewCheckBoxColumn)
+                    {
+                        col.Width = 50;
+                        continue;
+                    }
+
+                    int headerWidth = GetWrappedHeaderPreferredWidth(col, dataGrid.ColumnHeadersHeight);
+                    if (col is DataGridViewImageColumn)
+                    {
+                        if (string.IsNullOrWhiteSpace(col.HeaderText))
+                        {
+                            col.Width = 24;
+                        }
+                        else
+                        {
+                            col.AutoSizeMode = DataGridViewAutoSizeColumnMode.ColumnHeader;
+                        }
+
+                        continue;
+                    }
+
+                    int dataWidth = col.GetPreferredWidth(
+                        DataGridViewAutoSizeColumnMode.DisplayedCellsExceptHeader,
+                        true);
+
+                    
+
+                    int width = Math.Max(dataWidth, headerWidth);
+
+                    if (width > maxAutoColumnWidth)
+                        width = maxAutoColumnWidth;
+
+                    if (width < 50)
+                        width = 50;
+
+                    col.Width = width;
+                }
+
+                RepositionCheckBoxHeader();
+            }
+            finally
+            {
+                dataGrid.ResumeLayout();
+            }
+        }
+
+        private static string NormalizeHeaderText(string text)
+        {
+            if (string.IsNullOrEmpty(text))
+                return string.Empty;
+
+            text = text
+                .Replace('\u00A0', ' ')
+                .Replace('\t', ' ')
+                .Replace("\r\n", " ")
+                .Replace("\r", " ")
+                .Replace("\n", " ");
+
+            return Regex.Replace(text, @"\s+", " ").Trim();
+        }
+
+        private int GetWrappedHeaderPreferredWidth(DataGridViewColumn col, int headerHeight)
+        {
+            string text = NormalizeHeaderText(col.HeaderText);
+
+            if (string.IsNullOrEmpty(text))
+                return 20;
+
+            Font font = dataGrid.ColumnHeadersDefaultCellStyle.Font ?? dataGrid.Font;
+
+            const int padding = 18;
+
+            int singleLineWidth = TextRenderer.MeasureText(
+                text,
+                font,
+                new Size(int.MaxValue, int.MaxValue),
+                TextFormatFlags.SingleLine |
+                TextFormatFlags.NoPadding
+            ).Width + padding;
+
+            // Если это одно слово, его нельзя нормально перенести.
+            // Значит, возвращаем полную ширину одной строки.
+            if (text.IndexOf(' ') < 0)
+                return singleLineWidth;
+
+            int maxTextHeight = Math.Max(20, headerHeight - 12);
+
+            for (int width = 40; width <= 400; width += 5)
+            {
+                Size measuredSize = TextRenderer.MeasureText(
+                    text,
+                    font,
+                    new Size(width, int.MaxValue),
+                    TextFormatFlags.WordBreak |
+                    TextFormatFlags.TextBoxControl |
+                    TextFormatFlags.NoPadding
+                );
+
+                if (measuredSize.Height <= maxTextHeight)
+                    return Math.Min(width + padding, singleLineWidth);
+            }
+
+            return Math.Min(singleLineWidth, 400);
+        }
+
+        public void AdjustColumnsWidth2(int maxAutoColumnWidth = 400)
+        {
             if (dataGrid.Columns.Count == 0)
                 return;
 
@@ -446,7 +563,7 @@ namespace FogSoft.WinForm.Controls
                         col.ValueType == typeof(long) ||
                         col.ValueType == typeof(short))
                     {
-                        col.AutoSizeMode = DataGridViewAutoSizeColumnMode.AllCells;
+                        col.AutoSizeMode = DataGridViewAutoSizeColumnMode.ColumnHeader;
                         continue;
                     }
 
@@ -1340,7 +1457,6 @@ namespace FogSoft.WinForm.Controls
 				return;
 			PresentationObject po = CreateObject(DataSource.Table.DefaultView[e.RowIndex]);
 
-
             //PresentationObject po = CreateObject(bm.Current as DataRowView);
 			CheckedStatusChanged(po, GetCell(e.RowIndex, e.ColumnIndex).Value);
 			FireObjectChecked(po, ParseHelper.GetBooleanFromObject(GetCell(e.RowIndex, e.ColumnIndex).Value, false));
@@ -1455,30 +1571,38 @@ namespace FogSoft.WinForm.Controls
 
         private void MultiSelectCheckAll(bool checkFlag)
 		{
-			dataGrid.SuspendLayout();
-			//_lockMultiSelect = true;
-			foreach (DataGridViewRow row in dataGrid.Rows)
+            _suppressAdjustColumnsWidth = true;
+            try
 			{
-				if (row.Cells[0] is DataGridViewCheckBoxCell)
+				dataGrid.SuspendLayout();
+				//_lockMultiSelect = true;
+				foreach (DataGridViewRow row in dataGrid.Rows)
 				{
-					bool isRowChecked = row.Cells[0].Value != null && ((bool)row.Cells[0].Value);
-
-					if ((checkFlag && !isRowChecked) || (!checkFlag && isRowChecked))
+					if (row.Cells[0] is DataGridViewCheckBoxCell)
 					{
-						row.Cells[0].Value = checkFlag;
-                        //PresentationObject po = CreateObject(row.DataBoundItem as DataRowView);
-                        //CheckedStatusChanged(po, checkFlag);
-                        if (row.DataBoundItem is DataRowView drv)
-                        {
-                            drv[COL_IsSelected] = checkFlag;
-                        }
+						bool isRowChecked = row.Cells[0].Value != null && ((bool)row.Cells[0].Value);
 
-                        dataGrid.RefreshEdit();
-                    }
-				}				
+						if ((checkFlag && !isRowChecked) || (!checkFlag && isRowChecked))
+						{
+							row.Cells[0].Value = checkFlag;
+							//PresentationObject po = CreateObject(row.DataBoundItem as DataRowView);
+							//CheckedStatusChanged(po, checkFlag);
+							if (row.DataBoundItem is DataRowView drv)
+							{
+								drv[COL_IsSelected] = checkFlag;
+							}
+
+							dataGrid.RefreshEdit();
+						}
+					}
+				}
+				_lockMultiSelect = false;
+				dataGrid.ResumeLayout(false);
 			}
-			_lockMultiSelect = false;
-			dataGrid.ResumeLayout(false);
+			finally
+			{
+				_suppressAdjustColumnsWidth = false;	
+			}
 		}
 	}
 
