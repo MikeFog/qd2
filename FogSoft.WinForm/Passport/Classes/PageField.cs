@@ -132,7 +132,7 @@ namespace FogSoft.WinForm.Passport.Classes
 		public override void SetValue(Dictionary<string, object> parameters)
 		{
 			if(Checkbox != null)
-				Checkbox.Checked = parameters.ContainsKey(Name);
+				Checkbox.Checked = parameters.ContainsKey(Name) && parameters[Name] != DBNull.Value;
 		}
 
 		public override int Height
