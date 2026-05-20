@@ -17,7 +17,17 @@ CREATE PROC [dbo].[HeadCompaniesWithActions]
     @paymentTypeID smallint = NULL,
     @isShowActivate BIT = 0,
     @isShowNotActivate BIT = 0,
-    @showDeleted BIT = 0
+    @rollerId int = null,
+    @moduleID smallint = null,
+    @packModuleID smallint = null,
+    @showDeleted BIT = 0,
+    @issueDate datetime = null,
+    @issueDay datetime = null,
+    @campaignFinishDate datetime = null,
+    @withoutActionsSince datetime = null,
+    @managerDiscount decimal(8,2) = null,
+    @changeStartOfInterval datetime = null,
+    @changeEndOfInterval datetime = null
 AS
 BEGIN
     SET NOCOUNT ON;
@@ -39,15 +49,34 @@ BEGIN
         -- Начинаем проверку условий "вглубь"
         SELECT 1 
         FROM Firm f
-        INNER JOIN Action a ON f.firmID = a.firmID
-        INNER JOIN Campaign c ON a.actionID = c.actionID
-        INNER JOIN PaymentType pt ON c.paymentTypeID = pt.paymentTypeID
+            INNER JOIN Action a ON f.firmID = a.firmID
+            INNER JOIN Campaign c ON a.actionID = c.actionID
+            INNER JOIN PaymentType pt ON c.paymentTypeID = pt.paymentTypeID
+            LEFT JOIN Issue i ON c.campaignID = i.campaignID
+			LEFT JOIN TariffWindow tw ON i.originalWindowID = tw.windowId
+            left join ModuleIssue mi on i.moduleIssueID = mi.moduleIssueID
+            left join PackModuleIssue pmi on i.packModuleIssueID = pmi.packModuleIssueID
+			left join PackModulePriceList pmpl on pmi.pricelistID = pmpl.priceListID
         WHERE f.headCompanyID = hc.headCompanyID
+          AND (@issueDate is null or ((datepart(hh, tw.windowDateOriginal) = datepart(hh, @issueDate)) and (datepart(minute, tw.windowDateOriginal) = datepart(minute, @issueDate))) )
+		  AND (@issueDay is null or (@issueDay is not null and (tw.dayOriginal = @issueDay)))
+          and (@packModuleID is null or pmpl.packModuleID = @packModuleID)
+          AND c.finishDate = Coalesce(@campaignFinishDate, c.finishDate)
+          AND (@rollerId is null or i.rollerID = coalesce(@rollerId, i.rollerID))
+          AND (@moduleID is null or mi.moduleID = @moduleID)
+          AND (@withoutActionsSince is null or not exists(select top 1 a1.actionID 
+												from [Action] a1 
+												where a.firmID = a1.firmID  
+													and a1.finishDate >= @withoutActionsSince 
+													and (@startOfInterval is null or a1.startDate < @startOfInterval)))
+        and (@managerDiscount is null or (c.managerDiscount - @managerDiscount) < -0.005)
           -- Фильтры дат (SARGable)
           AND (@startOfInterval IS NULL OR a.finishDate >= @startOfInterval)
           AND (@endOfInterval IS NULL OR a.startDate <= @endOfInterval)
           AND (@createDateBegin IS NULL OR a.createDate >= @createDateBegin)
           AND (@createDateEnd IS NULL OR a.createDate <= @createDateEnd)
+		  AND (@changeStartOfInterval IS NULL OR a.modDate >= @changeStartOfInterval)
+          AND (@changeEndOfInterval IS NULL OR a.modDate <= @changeEndOfInterval)
           
           -- Фильтры фирмы и действий
           AND (@firmId2 IS NULL OR a.firmID = @firmId2)
