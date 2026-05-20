@@ -14,7 +14,7 @@
     [comment]         NVARCHAR (32)        NULL,
     [isForModuleOnly] BIT                  NOT NULL,
     [suffix]          VARCHAR (16)         NULL,
-    [needExt]         BIT                  CONSTRAINT [DF_Tariff_needExt] DEFAULT ((1)) NOT NULL,
+    [needExt]         BIT                  CONSTRAINT [DF_Tariff_needExt] DEFAULT ((0)) NOT NULL,
     [maxCapacity]     SMALLINT             NOT NULL,
     [needInJingle]    BIT                  CONSTRAINT [DF_Tariff_needInJingle] DEFAULT ((1)) NOT NULL,
     [needOutJingle]   BIT                  CONSTRAINT [DF_Tariff_needOutJingle] DEFAULT ((1)) NOT NULL,
@@ -33,8 +33,11 @@
 
 
 
+
+
+
 GO
-ALTER TABLE [dbo].[Tariff] SET (LOCK_ESCALATION = AUTO);
+
 
 
 GO

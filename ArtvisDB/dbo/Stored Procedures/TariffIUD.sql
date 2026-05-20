@@ -17,7 +17,7 @@
 @isForModuleOnly bit = 0,
 @actionName varchar(32),
 @suffix NVARCHAR(16) = NULL,
-@needExt BIT = 1,
+@needExt BIT = 0,
 @maxCapacity SMALLINT,
 @needInJingle bit = 1,
 @needOutJingle bit = 1,
