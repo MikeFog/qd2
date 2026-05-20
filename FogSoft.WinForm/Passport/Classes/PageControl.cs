@@ -57,7 +57,9 @@ namespace FogSoft.WinForm.Passport.Classes
 			public const string LAST_MONTH = "LAST_MONTH";
 			public const string LAST_WEEK = "LAST_WEEK";
 			public const string TODAY = "TODAY";
-			public const string StartOfTheMonth = "StartOfTheMonth";
+            public const string PREV_MONTH_BEGIN = "PREV_MONTH_BEGIN";
+            public const string PREV_MONTH_END = "PREV_MONTH_END";
+            public const string StartOfTheMonth = "StartOfTheMonth";
 			public const string EndOfTheMonth = "EndOfTheMonth";
             public const string StartOfTheLastMonth = "StartOfTheLastMonth";
 			public const string LoggedUser = "LoggedUser";
