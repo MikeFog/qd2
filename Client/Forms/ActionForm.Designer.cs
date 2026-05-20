@@ -69,7 +69,7 @@ namespace Merlin.Forms {
             this.lblRation.Location = new System.Drawing.Point(478, 124);
             this.lblRation.Margin = new System.Windows.Forms.Padding(4, 0, 4, 0);
             this.lblRation.Name = "lblRation";
-            this.lblRation.Size = new System.Drawing.Size(36, 25);
+            this.lblRation.Size = new System.Drawing.Size(31, 24);
             this.lblRation.TabIndex = 15;
             this.lblRation.Text = "1.0";
             // 
@@ -79,7 +79,7 @@ namespace Merlin.Forms {
             this.lblTariffSum.Location = new System.Drawing.Point(478, 98);
             this.lblTariffSum.Margin = new System.Windows.Forms.Padding(4, 0, 4, 0);
             this.lblTariffSum.Name = "lblTariffSum";
-            this.lblTariffSum.Size = new System.Drawing.Size(22, 25);
+            this.lblTariffSum.Size = new System.Drawing.Size(20, 24);
             this.lblTariffSum.TabIndex = 14;
             this.lblTariffSum.Text = "0";
             // 
@@ -89,7 +89,7 @@ namespace Merlin.Forms {
             this.lblFirmName.Location = new System.Drawing.Point(478, 70);
             this.lblFirmName.Margin = new System.Windows.Forms.Padding(4, 0, 4, 0);
             this.lblFirmName.Name = "lblFirmName";
-            this.lblFirmName.Size = new System.Drawing.Size(113, 25);
+            this.lblFirmName.Size = new System.Drawing.Size(110, 24);
             this.lblFirmName.TabIndex = 13;
             this.lblFirmName.Text = "lblFirmName";
             // 
@@ -99,7 +99,7 @@ namespace Merlin.Forms {
             this.label5.Location = new System.Drawing.Point(27, 153);
             this.label5.Margin = new System.Windows.Forms.Padding(4, 0, 4, 0);
             this.label5.Name = "label5";
-            this.label5.Size = new System.Drawing.Size(415, 25);
+            this.label5.Size = new System.Drawing.Size(414, 24);
             this.label5.TabIndex = 8;
             this.label5.Text = "Стоимость рекламной акции со всеми скидками:";
             // 
@@ -109,7 +109,7 @@ namespace Merlin.Forms {
             this.label2.Location = new System.Drawing.Point(27, 124);
             this.label2.Margin = new System.Windows.Forms.Padding(4, 0, 4, 0);
             this.label2.Name = "label2";
-            this.label2.Size = new System.Drawing.Size(228, 25);
+            this.label2.Size = new System.Drawing.Size(227, 24);
             this.label2.TabIndex = 4;
             this.label2.Text = "Все скидки (коэффициент):";
             // 
@@ -119,7 +119,7 @@ namespace Merlin.Forms {
             this.label1.Location = new System.Drawing.Point(27, 98);
             this.label1.Margin = new System.Windows.Forms.Padding(4, 0, 4, 0);
             this.label1.Name = "label1";
-            this.label1.Size = new System.Drawing.Size(347, 25);
+            this.label1.Size = new System.Drawing.Size(346, 24);
             this.label1.TabIndex = 3;
             this.label1.Text = "Стоимость рекламной акции без скидок:";
             // 
@@ -129,7 +129,7 @@ namespace Merlin.Forms {
             this.lblFirm.Location = new System.Drawing.Point(27, 70);
             this.lblFirm.Margin = new System.Windows.Forms.Padding(4, 0, 4, 0);
             this.lblFirm.Name = "lblFirm";
-            this.lblFirm.Size = new System.Drawing.Size(151, 25);
+            this.lblFirm.Size = new System.Drawing.Size(150, 24);
             this.lblFirm.TabIndex = 1;
             this.lblFirm.Text = "Фирма-заказчик:";
             // 
@@ -150,7 +150,7 @@ namespace Merlin.Forms {
             this.lblTotalPrice.Location = new System.Drawing.Point(478, 153);
             this.lblTotalPrice.Margin = new System.Windows.Forms.Padding(4, 0, 4, 0);
             this.lblTotalPrice.Name = "lblTotalPrice";
-            this.lblTotalPrice.Size = new System.Drawing.Size(57, 25);
+            this.lblTotalPrice.Size = new System.Drawing.Size(55, 24);
             this.lblTotalPrice.TabIndex = 18;
             this.lblTotalPrice.Text = "0.00р";
             // 
@@ -174,17 +174,17 @@ namespace Merlin.Forms {
             this.pageAction.Controls.Add(this.separator1);
             this.pageAction.Controls.Add(this.lblFirm);
             this.pageAction.Controls.Add(this.lblName);
-            this.pageAction.Location = new System.Drawing.Point(4, 34);
+            this.pageAction.Location = new System.Drawing.Point(4, 33);
             this.pageAction.Margin = new System.Windows.Forms.Padding(4);
             this.pageAction.Name = "pageAction";
-            this.pageAction.Size = new System.Drawing.Size(1592, 610);
+            this.pageAction.Size = new System.Drawing.Size(1343, 651);
             this.pageAction.TabIndex = 0;
             this.pageAction.Text = "Общие";
             // 
             // chkPrintBillContract
             // 
             this.chkPrintBillContract.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Left)));
-            this.chkPrintBillContract.Location = new System.Drawing.Point(15, 491);
+            this.chkPrintBillContract.Location = new System.Drawing.Point(15, 532);
             this.chkPrintBillContract.Margin = new System.Windows.Forms.Padding(4);
             this.chkPrintBillContract.Name = "chkPrintBillContract";
             this.chkPrintBillContract.Size = new System.Drawing.Size(453, 26);
@@ -195,20 +195,20 @@ namespace Merlin.Forms {
             // chkPrintSponsorContract
             // 
             this.chkPrintSponsorContract.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Left)));
-            this.chkPrintSponsorContract.Location = new System.Drawing.Point(15, 547);
+            this.chkPrintSponsorContract.Location = new System.Drawing.Point(15, 588);
             this.chkPrintSponsorContract.Margin = new System.Windows.Forms.Padding(4);
             this.chkPrintSponsorContract.Name = "chkPrintSponsorContract";
-            this.chkPrintSponsorContract.Size = new System.Drawing.Size(576, 24);
+            this.chkPrintSponsorContract.Size = new System.Drawing.Size(746, 32);
             this.chkPrintSponsorContract.TabIndex = 27;
             this.chkPrintSponsorContract.Text = "Распечатать спонсорский договор на проведение рекламной акции";
             // 
             // chkPrintMediaPlan
             // 
             this.chkPrintMediaPlan.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Left)));
-            this.chkPrintMediaPlan.Location = new System.Drawing.Point(15, 574);
+            this.chkPrintMediaPlan.Location = new System.Drawing.Point(15, 616);
             this.chkPrintMediaPlan.Margin = new System.Windows.Forms.Padding(4);
             this.chkPrintMediaPlan.Name = "chkPrintMediaPlan";
-            this.chkPrintMediaPlan.Size = new System.Drawing.Size(545, 26);
+            this.chkPrintMediaPlan.Size = new System.Drawing.Size(545, 31);
             this.chkPrintMediaPlan.TabIndex = 26;
             this.chkPrintMediaPlan.Text = "Распечатать график размещения рекламной акции";
             this.chkPrintMediaPlan.UseVisualStyleBackColor = true;
@@ -231,7 +231,7 @@ namespace Merlin.Forms {
             this.tsbSetDiscount,
             this.tsbSetActionPrice});
             this.tsAction.LayoutStyle = System.Windows.Forms.ToolStripLayoutStyle.VerticalStackWithOverflow;
-            this.tsAction.Location = new System.Drawing.Point(1546, 192);
+            this.tsAction.Location = new System.Drawing.Point(1297, 192);
             this.tsAction.Name = "tsAction";
             this.tsAction.Padding = new System.Windows.Forms.Padding(0, 0, 3, 0);
             this.tsAction.Size = new System.Drawing.Size(37, 272);
@@ -347,7 +347,7 @@ namespace Merlin.Forms {
             this.grdCampaign.DataSource = null;
             this.grdCampaign.DependantGrid = null;
             this.grdCampaign.Entity = null;
-            this.grdCampaign.Font = new System.Drawing.Font("Segoe UI", 9F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(204)));
+            this.grdCampaign.Font = new System.Drawing.Font("Segoe UI Variable Display", 9F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(204)));
             this.grdCampaign.IsHighlightInvertColor = false;
             this.grdCampaign.IsNeedHighlight = false;
             this.grdCampaign.Location = new System.Drawing.Point(15, 192);
@@ -357,24 +357,24 @@ namespace Merlin.Forms {
             this.grdCampaign.QuickSearchVisible = false;
             this.grdCampaign.SelectedObject = null;
             this.grdCampaign.ShowMultiselectColumn = true;
-            this.grdCampaign.Size = new System.Drawing.Size(1518, 262);
+            this.grdCampaign.Size = new System.Drawing.Size(1269, 303);
             this.grdCampaign.TabIndex = 24;
             this.grdCampaign.ObjectSelected += new FogSoft.WinForm.ObjectDelegate(this.grdCampaign_ObjectSelected);
             // 
             // chkPrintContract
             // 
             this.chkPrintContract.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Left)));
-            this.chkPrintContract.Location = new System.Drawing.Point(15, 520);
+            this.chkPrintContract.Location = new System.Drawing.Point(15, 561);
             this.chkPrintContract.Margin = new System.Windows.Forms.Padding(4);
             this.chkPrintContract.Name = "chkPrintContract";
-            this.chkPrintContract.Size = new System.Drawing.Size(576, 24);
+            this.chkPrintContract.Size = new System.Drawing.Size(576, 27);
             this.chkPrintContract.TabIndex = 21;
             this.chkPrintContract.Text = "Распечатать договор на проведение рекламной акции";
             // 
             // chkPrintBill
             // 
             this.chkPrintBill.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Left)));
-            this.chkPrintBill.Location = new System.Drawing.Point(15, 464);
+            this.chkPrintBill.Location = new System.Drawing.Point(15, 505);
             this.chkPrintBill.Margin = new System.Windows.Forms.Padding(4);
             this.chkPrintBill.Name = "chkPrintBill";
             this.chkPrintBill.Size = new System.Drawing.Size(420, 24);
@@ -389,7 +389,7 @@ namespace Merlin.Forms {
             this.separator3.Location = new System.Drawing.Point(15, 182);
             this.separator3.Margin = new System.Windows.Forms.Padding(4);
             this.separator3.Name = "separator3";
-            this.separator3.Size = new System.Drawing.Size(1571, 2);
+            this.separator3.Size = new System.Drawing.Size(1322, 2);
             this.separator3.TabIndex = 9;
             // 
             // separator1
@@ -400,7 +400,7 @@ namespace Merlin.Forms {
             this.separator1.Location = new System.Drawing.Point(15, 58);
             this.separator1.Margin = new System.Windows.Forms.Padding(4);
             this.separator1.Name = "separator1";
-            this.separator1.Size = new System.Drawing.Size(1571, 2);
+            this.separator1.Size = new System.Drawing.Size(1322, 2);
             this.separator1.TabIndex = 2;
             // 
             // btnOk
@@ -408,7 +408,7 @@ namespace Merlin.Forms {
             this.btnOk.Anchor = System.Windows.Forms.AnchorStyles.Bottom;
             this.btnOk.DialogResult = System.Windows.Forms.DialogResult.OK;
             this.btnOk.FlatStyle = System.Windows.Forms.FlatStyle.System;
-            this.btnOk.Location = new System.Drawing.Point(735, 656);
+            this.btnOk.Location = new System.Drawing.Point(611, 696);
             this.btnOk.Margin = new System.Windows.Forms.Padding(4);
             this.btnOk.Name = "btnOk";
             this.btnOk.Size = new System.Drawing.Size(140, 39);
@@ -426,7 +426,7 @@ namespace Merlin.Forms {
             this.tabAction.Margin = new System.Windows.Forms.Padding(4);
             this.tabAction.Name = "tabAction";
             this.tabAction.SelectedIndex = 0;
-            this.tabAction.Size = new System.Drawing.Size(1600, 648);
+            this.tabAction.Size = new System.Drawing.Size(1351, 688);
             this.tabAction.TabIndex = 4;
             // 
             // ActionForm
@@ -434,10 +434,10 @@ namespace Merlin.Forms {
             this.AcceptButton = this.btnOk;
             this.AutoScaleDimensions = new System.Drawing.SizeF(144F, 144F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Dpi;
-            this.ClientSize = new System.Drawing.Size(1607, 705);
+            this.ClientSize = new System.Drawing.Size(1358, 745);
             this.Controls.Add(this.btnOk);
             this.Controls.Add(this.tabAction);
-            this.Font = new System.Drawing.Font("Segoe UI", 9F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(204)));
+            this.Font = new System.Drawing.Font("Segoe UI Variable Display", 9F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(204)));
             this.Margin = new System.Windows.Forms.Padding(4);
             this.MaximizeBox = false;
             this.MinimizeBox = false;

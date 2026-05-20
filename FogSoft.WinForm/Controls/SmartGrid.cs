@@ -61,7 +61,14 @@ namespace FogSoft.WinForm.Controls
             };
             dataGrid.DataBindingComplete += (s, e) =>
             {
-				AdjustColumnsWidth();
+                foreach (DataGridViewColumn col in dataGrid.Columns)
+                {
+                    if (col.Width > 400)
+                    {
+                        col.AutoSizeMode = DataGridViewAutoSizeColumnMode.None;
+                        col.Width = 400;
+                    }
+                }
             };
             // dataGrid.RowStateChanged -= убрана подписка
             dataGrid.CellContentClick += DataGrid_CellContentClick;
@@ -400,7 +407,7 @@ namespace FogSoft.WinForm.Controls
 			return column;
 		}
 
-        public void AdjustColumnsWidth(int maxAutoColumnWidth = 400)
+        public void AdjustColumnsWidthExt(int maxAutoColumnWidth = 400)
         {
             if (dataGrid.Columns.Count == 0 || _suppressAdjustColumnsWidth)
                 return;
@@ -523,7 +530,7 @@ namespace FogSoft.WinForm.Controls
             return Math.Min(singleLineWidth, 400);
         }
 
-        public void AdjustColumnsWidth2(int maxAutoColumnWidth = 400)
+        public void AdjustColumnsWidth(int maxAutoColumnWidth = 400)
         {
             if (dataGrid.Columns.Count == 0)
                 return;
@@ -630,7 +637,7 @@ namespace FogSoft.WinForm.Controls
 				Globals.AddObject2DataTable(GridTable, presentationObject);
 
 			GridTable.AcceptChanges();
-            AdjustColumnsWidth();
+            AdjustColumnsWidthExt();
             SelectedObject = presentationObject;
 
 			FireObjectCreated(presentationObject);

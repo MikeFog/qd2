@@ -59,14 +59,21 @@ namespace Merlin.Forms
 			RefreshActionStats(false);
 		}
 
+        protected override void OnShown(EventArgs e)
+        {
+            base.OnShown(e);
+			LoadCampaigns();
+        }
+
 		private void LoadCampaigns()
 		{
-			Entity entityCampaign = EntityManager.GetEntity((int) Entities.CampaignOnMassmedia).Clone() as Entity;
-			entityCampaign.AttributeSelector = Campaign.ShortAttributesList;
-			grdCampaign.Entity = entityCampaign;
-			_action.ClearCache();
-			grdCampaign.DataSource = _action.GetContent().DefaultView;
-		}
+            Entity entityCampaign = EntityManager.GetEntity((int)Entities.CampaignOnMassmedia).Clone() as Entity;
+            entityCampaign.AttributeSelector = Campaign.ShortAttributesList;
+            grdCampaign.Entity = entityCampaign;
+            _action.ClearCache();
+            grdCampaign.DataSource = _action.GetContent().DefaultView;
+			grdCampaign.AdjustColumnsWidthExt();
+        }
 
 		private void RefreshActionStats(bool refreshFlag)
 		{
@@ -115,7 +122,8 @@ namespace Merlin.Forms
 						campaign.Update();
 
 						grdCampaign.AddRow(campaign);
-					}
+                        grdCampaign.AdjustColumnsWidthExt();
+                    }
 				}
 			}
 			catch (Exception ex)
