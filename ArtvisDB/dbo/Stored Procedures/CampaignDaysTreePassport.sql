@@ -65,7 +65,7 @@ if (@campaignTypeID in (1,2))
 		And i.rollerID = IsNull(@objectID, i.rollerID)
 		And i.positionId = IsNull(@positionID, i.positionId)
 	order 
-		by dbo.fn_GetTimeString(pl.broadcastStart, tw.windowDateOriginal)
+		by tw.windowDateOriginal
 end 
 else if @campaignTypeID = 3
 	Begin
@@ -185,6 +185,6 @@ else if @campaignTypeID = 100 -- такого типа нет, это для в�
 		And pi.programID = IsNull(@objectID, pi.programID)
 	End
 
-select * from @days order by issueDate
+select * from @days --order by issueDate
 
 select positionId as Id, description as name from iIssuePosition Where positionId In(-20, -10, 0, 10)
