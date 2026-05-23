@@ -87,12 +87,11 @@ namespace Merlin.Controls
 
 		private void UpdateDB(DataGridViewCell cell)
 		{
+			if (campaign == null) return;
+			if (!(GetTariffWindow(cell) is TariffWindowWithRollerIssues tariffWindow)) return;
+
 			using (ErrorManager.LogExecutionTime("RollerIssuesGrid3.UpdateDB"))
 			{
-				if (campaign == null) return;
-
-				if (!(GetTariffWindow(cell) is TariffWindowWithRollerIssues tariffWindow)) return;
-
 				if (module == null)
 					AddIssue(cell, tariffWindow);
 				else
