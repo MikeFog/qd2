@@ -205,7 +205,7 @@ namespace FogSoft.WinForm.Classes
             public void Dispose()
             {
                 _stopwatch.Stop();
-                Log.Info($"[PERF] {_procedureName} {_stopwatch.ElapsedMilliseconds}ms");
+                Log.Info($"[PERF] {_procedureName} executed in {_stopwatch.ElapsedMilliseconds}ms");
             }
         }
     }
