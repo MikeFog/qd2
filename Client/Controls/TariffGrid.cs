@@ -292,7 +292,7 @@ namespace Merlin.Controls
 				if (selectedWindow != null)
 					RestoreCurrentWindow();
 			}
-			else if(ShowMessages && grid is IRollerGrid) // пока проверка сделана только для обычных тарифов 
+			else if(ShowMessages && grid is IRollerGrid) // пїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅ 
 				FogSoft.WinForm.Forms.MessageBox.ShowInformation(Properties.Resources.NoPricelistForGivenDate);
 		}
 
@@ -347,7 +347,7 @@ namespace Merlin.Controls
 
 		protected virtual void SetNavigationCaption()
 		{
-			Caption.Caption = pricelist != null ? string.Format("Прайс-лист: {0} - {1}",
+			Caption.Caption = pricelist != null ? string.Format("пїЅпїЅпїЅпїЅпїЅ-пїЅпїЅпїЅпїЅ: {0} - {1}",
 			                                                    pricelist.StartDate.ToShortDateString(),
 			                                                    pricelist.FinishDate.ToShortDateString()) : string.Empty;
 		}
@@ -441,33 +441,39 @@ namespace Merlin.Controls
 
 		private void OnGridCellClick(object sender, DataGridViewCellEventArgs e)
 		{
-			try
+			using (ErrorManager.LogExecutionTime("TariffGrid.OnGridCellClick"))
 			{
-				if (e.ColumnIndex >= FixedCols && e.RowIndex >= FIXED_ROWS)
-					FireCellClicked(GetTariffWindow(e.RowIndex, e.ColumnIndex));
-			}
-			catch (Exception ex)
-			{
-				ErrorManager.PublishError(ex);
-			}
-			finally
-			{
-				Cursor.Current = Cursors.Default;
+				try
+				{
+					if (e.ColumnIndex >= FixedCols && e.RowIndex >= FIXED_ROWS)
+						FireCellClicked(GetTariffWindow(e.RowIndex, e.ColumnIndex));
+				}
+				catch (Exception ex)
+				{
+					ErrorManager.PublishError(ex);
+				}
+				finally
+				{
+					Cursor.Current = Cursors.Default;
+				}
 			}
 		}
 
 		private void FireCellClicked(ITariffWindow tariffWindow)
 		{
-			Application.DoEvents();
-			Cursor.Current = Cursors.WaitCursor;
-
-			if (tariffWindow != null)
+			using (ErrorManager.LogExecutionTime("TariffGrid.FireCellClicked"))
 			{
-				selectedWindow = tariffWindow;
-				if (editMode == EditMode.Edit && gridCellType == GridCellTypes.Generic && updateDB != null)
-					updateDB(GetCell(tariffWindow));
+				Application.DoEvents();
+				Cursor.Current = Cursors.WaitCursor;
+
+				if (tariffWindow != null)
+				{
+					selectedWindow = tariffWindow;
+					if (editMode == EditMode.Edit && gridCellType == GridCellTypes.Generic && updateDB != null)
+						updateDB(GetCell(tariffWindow));
+				}
+				onCellClicked(tariffWindow);
 			}
-			onCellClicked(tariffWindow);
 		}
 
 		protected virtual void onCellClicked(ITariffWindow tariffWindow)
@@ -649,7 +655,7 @@ namespace Merlin.Controls
 
         public bool SelectDate2Jump()
 		{
-			FrmDateSelector fSelector = new FrmDateSelector("Выбор даты");
+			FrmDateSelector fSelector = new FrmDateSelector("пїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅ");
 			fSelector.Mode = FrmDateSelector.SelectorMode.SelectOne;
 			if(fSelector.ShowDialog(this) == DialogResult.OK)
 			{

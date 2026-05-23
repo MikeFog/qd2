@@ -5,6 +5,7 @@ using System;
 using System.Collections.Generic;
 using System.Data;
 using System.Data.SqlClient;
+using System.Diagnostics;
 using System.Reflection;
 using System.Text.RegularExpressions;
 using System.Windows.Forms;
@@ -160,6 +161,11 @@ namespace FogSoft.WinForm.Classes
             Log.Error(messageError, e);
         }
 
+        public static IDisposable LogExecutionTime(string procedureName)
+        {
+            return new ExecutionTimeScope(procedureName);
+        }
+
         public static string GetErrorMessage(Exception ex)
         {
             if (ex is SqlException sqlEx && (sqlEx.Number == 547 || sqlEx.Number == 2627 || sqlEx.Number == 2601))
@@ -183,6 +189,24 @@ namespace FogSoft.WinForm.Classes
             row["issueDate"] = date;
             row["description"] = description;
             table.Rows.Add(row);
+        }
+
+        private sealed class ExecutionTimeScope : IDisposable
+        {
+            private readonly string _procedureName;
+            private readonly Stopwatch _stopwatch;
+
+            public ExecutionTimeScope(string procedureName)
+            {
+                _procedureName = procedureName;
+                _stopwatch = Stopwatch.StartNew();
+            }
+
+            public void Dispose()
+            {
+                _stopwatch.Stop();
+                Log.Info($"[PERF] {_procedureName} {_stopwatch.ElapsedMilliseconds}ms");
+            }
         }
     }
 }
