@@ -389,6 +389,24 @@ namespace FogSoft.WinForm.DataAccess
 				parameters[ParamNames.LoggedUserID] = SecurityManager.LoggedUser.Id;
 
                 MessageAccessor.Parameters = parameters;
+
+                if (_transaction != null)
+                {
+                    using (var scope = DbExecutionScope.Start(procedureName, connectionTimeout, cached: false))
+                    {
+                        _commandParameters = AssignSqlParameters(_transaction.Connection, procedureName, parameters);
+                        SqlHelper.ExecuteNonQuery(_transaction, CommandType.StoredProcedure, procedureName, connectionTimeout, _commandParameters);
+
+                        string execScript = BuildExecScript(procedureName, _commandParameters);
+                        scope.SetExecScript(execScript);
+                    }
+
+                    foreach (KeyValuePair<string, object> kvp in GetOutParameters())
+                        parameters[kvp.Key] = kvp.Value;
+
+                    return;
+                }
+
                 using (SqlConnection connection = new SqlConnection(ConnectionString))
                 {
                     using (var scope = DbExecutionScope.Start(procedureName, connectionTimeout, cached: false))
@@ -450,7 +468,7 @@ namespace FogSoft.WinForm.DataAccess
                     string execScript = BuildExecScript(procedureName, _commandParameters);
                     exp.Data["ExecScript"] = execScript;
                 }
-                catch { /* не должно перекрывать exception */ }
+                catch { /* не должен выбрасывать exception */ }
 
                 throw;
             }
@@ -686,10 +704,10 @@ end
                              || p.Direction == ParameterDirection.InputOutput;
 
                 string valueStr = FormatSqlParamValue(p);
-                string outputSuffix = isOutput ? " OUTPUT" : string.Empty;
+                string outputSuffix = isOutput ? "OUTPUT" : string.Empty;
                 string comma = isLast ? string.Empty : ",";
 
-                sb.AppendLine($"\t\t{p.ParameterName} = {valueStr}{outputSuffix}{comma}");
+                sb.AppendLine($"\t\t{p.ParameterName} = {valueStr} {outputSuffix} {comma}");
             }
 
             return sb.ToString();
