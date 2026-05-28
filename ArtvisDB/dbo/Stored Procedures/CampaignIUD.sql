@@ -149,18 +149,41 @@ ELSE IF @actionName = 'DeleteItem' begin
 	DELETE FROM [Campaign] WHERE CampaignID = @CampaignID
 END
 ELSE IF @actionName = 'UpdateItem' BEGIN
-	UPDATE	
-		[Campaign]
-	SET			
-		paymentTypeID = @paymentTypeID, 
-		agencyID = @agencyID,
-		modUser = @loggedUserId,
-		actionID = @actionID
-	WHERE		
-		CampaignID = @CampaignID
 
-	if @needShow = 1
-		EXEC Campaigns @CampaignID = @CampaignID, @actionID = @actionID
+    -- Detect agency change before updating
+    DECLARE @currentAgencyID SMALLINT;
+
+    SELECT @currentAgencyID = agencyID
+    FROM dbo.Campaign
+    WHERE CampaignID = @CampaignID;
+
+    -- If agencyID is being changed, check for conflicting payments
+    IF @currentAgencyID <> @agencyID
+    BEGIN
+        DECLARE @conflictingPaymentID INT;
+
+        SELECT TOP 1 @conflictingPaymentID = pa.paymentID
+        FROM dbo.Campaign c
+        INNER JOIN dbo.PaymentAction pa ON pa.actionID = c.actionID
+        INNER JOIN dbo.Payment p        ON p.paymentID  = pa.paymentID
+        WHERE c.CampaignID = @CampaignID
+          AND p.agencyID   = @currentAgencyID
+          AND p.isEnabled  = 1;
+
+        IF @conflictingPaymentID IS NOT NULL
+            RAISERROR('CannotChangeAgency_PaymentExists', 16, 1);
+    END
+
+    UPDATE [Campaign]
+    SET
+        paymentTypeID = @paymentTypeID,
+        agencyID      = @agencyID,
+        modUser       = @loggedUserId,
+        actionID      = @actionID
+    WHERE CampaignID = @CampaignID;
+
+    IF @needShow = 1
+        EXEC Campaigns @CampaignID = @CampaignID, @actionID = @actionID;
 END
 GO
 GRANT EXECUTE

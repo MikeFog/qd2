@@ -1,12 +1,12 @@
-using System;
-using System.Collections.Generic;
-using System.Data;
-using System.Windows.Forms;
 using FogSoft.WinForm;
 using FogSoft.WinForm.Classes;
 using FogSoft.WinForm.DataAccess;
 using FogSoft.WinForm.Forms;
 using Merlin.Forms;
+using System;
+using System.Collections.Generic;
+using System.Data;
+using System.Windows.Forms;
 using MessageBox = FogSoft.WinForm.Forms.MessageBox;
 
 namespace Merlin.Classes
@@ -563,19 +563,38 @@ namespace Merlin.Classes
 
 		public void Recalculate(bool refreshFlag = true, DateTime? todayDate = null)
 		{
-            Dictionary<string, object> procParameters = DataAccessor.PrepareParameters(
-                EntityManager.GetEntity((int)Entities.Action), InterfaceObjects.FakeModule,
-                Constants.Actions.Recalculate);
-
+			Dictionary<string, object> procParameters = DataAccessor.CreateParametersDictionary();
 			procParameters[ParamNames.ActionId] = ActionId;
 
 			if (todayDate.HasValue)
 				procParameters["todayDate"] = todayDate.Value;
 
-            DataAccessor.DoAction(procParameters);
+			// OUTPUT parameter
+			procParameters[ParamNames.TotalPrice] = DBNull.Value;
+			var oldTiotalPrice = TotalPrice;
+
+            DataAccessor.ExecuteNonQuery("ActionRecalculate", procParameters);
+			
+			// подтянем OUTPUT в объект (на случай, если refreshFlag = false)
+			if (procParameters.ContainsKey(ParamNames.TotalPrice) &&
+				procParameters[ParamNames.TotalPrice] != DBNull.Value)
+			{
+				this[ParamNames.TotalPrice] = procParameters[ParamNames.TotalPrice];
+			}
 
 			if (refreshFlag)
 				Refresh();
+
+			if (oldTiotalPrice > TotalPrice && IsConfirmed)
+				CorrectPaymentAction();
+		}
+
+		private void CorrectPaymentAction()
+		{
+            var p = DataAccessor.CreateParametersDictionary();
+
+            p[ParamNames.ActionId] = ActionId;
+            DataAccessor.ExecuteNonQuery("PaymentAction_CorrectByActionTotalPrice", p, 30, true);
         }
 
         private void SetChildEntity()
