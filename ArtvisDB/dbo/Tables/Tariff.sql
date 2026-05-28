@@ -30,6 +30,12 @@
 );
 
 
+GO
+ALTER TABLE [dbo].[Tariff] SET (LOCK_ESCALATION = AUTO);
+
+
+
+
 
 
 
