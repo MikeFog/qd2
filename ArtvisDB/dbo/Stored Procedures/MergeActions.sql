@@ -92,6 +92,6 @@ BEGIN
 	UPDATE [Campaign] SET [actionID] = @liveActionID WHERE [actionID] = @deletedActionID
 	DELETE FROM ACTION WHERE [actionID] = @deletedActionID
 
-	Exec [dbo].[ActionRecalculate] @actionID = @liveActionID, @needShow = 0, @loggedUserID = @loggedUserID
+	Exec [dbo].[ActionRecalculate] @actionID = @liveActionID, @loggedUserID = @loggedUserID
 
 END

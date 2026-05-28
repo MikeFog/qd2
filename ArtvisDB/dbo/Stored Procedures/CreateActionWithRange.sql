@@ -39,11 +39,10 @@ BEGIN
     FROM STRING_SPLIT(@massmediaString, ',', 1) AS mm
     INNER JOIN STRING_SPLIT(@agencyString, ',', 1) AS ag ON mm.ordinal = ag.ordinal;
 
-    
+    /*
     -- 3. Если нужен пересчет:
     EXEC dbo.ActionRecalculate 
         @actionID = @actionID, 
-        @needShow = 0, 
         @loggedUserID = @loggedUserId;
-    
+    */
 END

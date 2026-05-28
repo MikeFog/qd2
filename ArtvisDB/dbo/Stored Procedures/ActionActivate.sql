@@ -446,6 +446,5 @@ begin
 	UPDATE [Action] Set isConfirmed = 1 WHERE actionID = @actionID
 	
 	exec ActionRecalculate
-		@actionID = @actionID, --  int
-		@needShow = 0 --  bit
+		@actionID = @actionID
 END

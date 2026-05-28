@@ -1,9 +1,9 @@
 ﻿CREATE PROC [dbo].[ActionRecalculate]
 (
     @actionID INT,
-    @needShow BIT = 1,
     @loggedUserID INT = NULL,
-    @todayDate DATETIME = NULL
+    @todayDate DATETIME = NULL,
+    @totalPrice DECIMAL(18,2) = NULL OUTPUT  -- New OUTPUT parameter
 )
 WITH EXECUTE AS OWNER
 AS
@@ -457,12 +457,13 @@ BEGIN
     FROM dbo.Campaign c
     WHERE c.actionID = @actionID;
 
+    -- Set the OUTPUT parameter before updating the table
+    SET @totalPrice = ISNULL(@sumOther + @sumPackModules, 0);
+
     UPDATE dbo.[Action]
     SET
         priceSumByCampaigns = ISNULL(@priceSumByCampaigns, 0),
-        totalPrice = ISNULL(@sumOther + @sumPackModules, 0)
+        totalPrice = @totalPrice
     WHERE actionID = @actionID;
 
-    IF @needShow = 1
-        EXEC dbo.Actions1 @actionID = @actionID;
 END

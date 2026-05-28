@@ -31,7 +31,7 @@ begin
 	begin 
 		select @windowID = null, @price = null
 		
-		select top 1 @windowID = tw.windowId, @price = t.price, @windowDateActual = tw.windowDateActual
+		select top 1 @windowID = tw.windowId, @price = tw.price, @windowDateActual = tw.windowDateActual
 		from TariffWindow tw
 			inner join dbo.Tariff t on tw.tariffId = t.tariffID
 		where tw.massmediaID = @massmediaID and tw.maxCapacity = 0 and tw.isDisabled = 0 and t.isForModuleOnly = 0
