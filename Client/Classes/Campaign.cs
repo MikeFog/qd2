@@ -372,7 +372,7 @@ namespace Merlin.Classes
                                 [Campaign.ParamNames.CampaignId] = CampaignId
                             };
 
-							// в зависимости от типа кампании создаём разные "issue" и пытаемся их удалить
+							// пїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅ пїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅ "issue" пїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅ
 							if(isSponsorProgram)
 							{
                                 itemEntity = EntityManager.GetEntity((int)Entities.ProgramIssue);
@@ -406,7 +406,7 @@ namespace Merlin.Classes
 					}
 					if (tableErrors.Rows.Count > 0)
 					{
-						Globals.ShowSimpleJournal(EntityManager.GetEntity((int)Entities.ErrTmplGen), "Ошибки удаления", tableErrors);
+						Globals.ShowSimpleJournal(EntityManager.GetEntity((int)Entities.ErrTmplGen), "пїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ", tableErrors);
 					}
                     RecalculateAndShowPriceChange(price);
                     if (currentChild != null)
@@ -470,7 +470,7 @@ namespace Merlin.Classes
 			}
 			else if (isByPeriod)
 			{
-				FrmDateSelector selector = new FrmDateSelector(StartDate, FinishDate, "Выбор периода");
+				FrmDateSelector selector = new FrmDateSelector(StartDate, FinishDate, "пїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅ");
 				if (selector.ShowDialog(Globals.MdiParent) == DialogResult.OK)
                     MediaPlan.CreateInstance(this, selector.StartDate, selector.FinishDate, selectively).Show(isActual);
 			}
@@ -534,12 +534,12 @@ namespace Merlin.Classes
 			{
                 SelectionForm selector;
                 if (SecurityManager.LoggedUser.IsAdmin || SecurityManager.LoggedUser.IsBookKeeper)
-                    selector = new SelectionForm(EntityManager.GetEntity((int)Entities.Agency), "Рекламное агентство");
+                    selector = new SelectionForm(EntityManager.GetEntity((int)Entities.Agency), "пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ");
 				else
 					selector = new SelectionForm(EntityManager.GetEntity((int)Entities.Agency),
 					(this is CampaignOnSingleMassmedia radioStation) 
 						? radioStation.Massmedia.Agencies.DefaultView : SecurityManager.LoggedUser.Agencies.DefaultView,
-                    "Рекламное агентство");
+                    "пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ");
 				if (selector.ShowDialog(owner) == DialogResult.OK)
 				{
 					this[ParamNames.AgencyID] = selector.SelectedObject.IDs[0];
@@ -556,7 +556,7 @@ namespace Merlin.Classes
 		{
 			if (IsChangePossible)
 			{
-				SelectionForm selector = new SelectionForm(EntityManager.GetEntity((int)Entities.PaymentType), "Типы оплаты");
+				SelectionForm selector = new SelectionForm(EntityManager.GetEntity((int)Entities.PaymentType), "пїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅ");
 				if (selector.ShowDialog(owner) == DialogResult.OK)
 				{
 					this[ParamNames.PaymentTypeID] = selector.SelectedObject.IDs[0];
@@ -597,9 +597,12 @@ namespace Merlin.Classes
 
 		public Issue AddIssue(PresentationObject roller, ITariffWindow tariffWindow, RollerPositions rollerPosition, int? grantorID)
 		{
-			RollerIssue issue = new RollerIssue(this, roller, (TariffWindowWithRollerIssues) tariffWindow, rollerPosition, Action.IsConfirmed,grantorID);
-			issue.Update();
-			return issue;
+			using (PerformanceManager.LogExecutionTime("Campaign.AddIssue"))
+			{
+				RollerIssue issue = new RollerIssue(this, roller, (TariffWindowWithRollerIssues) tariffWindow, rollerPosition, Action.IsConfirmed, grantorID);
+				issue.Update();
+				return issue;
+			}
 		}
 
 		public ModuleIssue AddModuleIssue(Module module, PresentationObject roller,
@@ -671,24 +674,24 @@ namespace Merlin.Classes
 				text = string.Empty;
 			else
 				text = StartDate.ToShortDateString();
-			lstStat.Items.Add("Начало: " + text);
+			lstStat.Items.Add("пїЅпїЅпїЅпїЅпїЅпїЅ: " + text);
 
 			if (FinishDate == DateTime.MinValue)
 				text = string.Empty;
 			else
 				text = FinishDate.ToShortDateString();
-			lstStat.Items.Add("Окончание: " + text);
-			lstStat.Items.Add("Выпусков: " + IssuesCount);
-			lstStat.Items.Add("Общее время: " + DateTimeUtils.Time2String(IssuesDuration));
-			lstStat.Items.Add("Цена по тарифам: " + TariffPrice.ToString("c"));
-			lstStat.Items.Add("Объёмная скидка: " + Discount.ToString("0.00"));
-			lstStat.Items.Add("Цена с учётом объёмной скидки: " + Price.ToString("c"));
+			lstStat.Items.Add("пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ: " + text);
+			lstStat.Items.Add("пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ: " + IssuesCount);
+			lstStat.Items.Add("пїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅ: " + DateTimeUtils.Time2String(IssuesDuration));
+			lstStat.Items.Add("пїЅпїЅпїЅпїЅ пїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅ: " + TariffPrice.ToString("c"));
+			lstStat.Items.Add("пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅ: " + Discount.ToString("0.00"));
+			lstStat.Items.Add("пїЅпїЅпїЅпїЅ пїЅ пїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅ: " + Price.ToString("c"));
 
 			if (CampaignType == CampaignTypes.Sponsor)
 			{
 				lstStat.Items.Add("");
-				lstStat.Items.Add("Программ: " + ProgramIssuesCount);
-				lstStat.Items.Add("Бонус: " + DateTimeUtils.Time2String(Bonus - IssuesDuration));
+				lstStat.Items.Add("пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ: " + ProgramIssuesCount);
+				lstStat.Items.Add("пїЅпїЅпїЅпїЅпїЅ: " + DateTimeUtils.Time2String(Bonus - IssuesDuration));
 			}
 		}
 
@@ -758,9 +761,9 @@ namespace Merlin.Classes
 			get 
 			{
                 if (SecurityManager.LoggedUser.IsAdmin || SecurityManager.LoggedUser.IsBookKeeper|| !Action.IsConfirmed) return true;
-                // если акция началась в предыдущем месяце или ранее, то нельзя
+                // пїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅ, пїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅ
                 if (new DateTime(StartDate.Year, StartDate.Month, 1) < new DateTime(DateTime.Today.Year, DateTime.Today.Month, 1)) return false;
-                // если начало в этом месяце, то не должна уже закончиться
+                // пїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅ пїЅ пїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅ, пїЅпїЅ пїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ
                 if (FinishDate < DateTime.Today) return false;
 
                 return true;
