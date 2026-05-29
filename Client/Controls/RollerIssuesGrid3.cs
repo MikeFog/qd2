@@ -50,7 +50,7 @@ namespace Merlin.Controls
 				base.SetNavigationCaption();
 			else if (module != null)
 			{
-				Caption.Caption = string.Format("'{0}' пїЅпїЅпїЅпїЅпїЅ-пїЅпїЅпїЅпїЅ: {1} - {2}",
+				Caption.Caption = string.Format("'{0}' Прайс-лист: {1} - {2}",
 				                                module.Name,
 				                                pricelist.StartDate.ToShortDateString(),
 				                                pricelist.FinishDate.ToShortDateString());
@@ -88,25 +88,23 @@ namespace Merlin.Controls
 		private void UpdateDB(DataGridViewCell cell)
 		{
 			if (campaign == null) return;
-			if (!(GetTariffWindow(cell) is TariffWindowWithRollerIssues tariffWindow)) return;
 
-			using (PerformanceManager.LogExecutionTime("RollerIssuesGrid3.UpdateDB"))
+            if (!(GetTariffWindow(cell) is TariffWindowWithRollerIssues tariffWindow)) return;
+
+            if (module == null)
+				AddIssue(cell, tariffWindow);
+			else
 			{
-				if (module == null)
-					AddIssue(cell, tariffWindow);
-				else
-				{
-					if (!IsFullColumn(cell.ColumnIndex))
-						return;
+				if (!IsFullColumn(cell.ColumnIndex))
+					return;
 
-					AddModuleIssue(cell, tariffWindow);
-				}
-
-				campaign.Action.Refresh();
-
-				Refresh();
-				FireCampaignStatusChanged();
+				AddModuleIssue(cell, tariffWindow);
 			}
+
+            campaign.Action.Refresh();
+
+			Refresh();
+			FireCampaignStatusChanged();
 		}
 
 		private void AddModuleIssue(DataGridViewCell cell, TariffWindowWithRollerIssues tariffWindow)
@@ -134,23 +132,20 @@ namespace Merlin.Controls
 
 		private void AddIssue(DataGridViewCell cell, TariffWindowWithRollerIssues tariffWindow)
 		{
-			using (PerformanceManager.LogExecutionTime("RollerIssuesGrid3.AddIssue"))
+			try
 			{
-				try
-				{
-					DataAccessor.BeginTransaction();
-					CampaignOnSingleMassmedia.AddIssue(roller, tariffWindow, rollerPosition, Grantor == null ? null : (int?)Grantor.Id);
-					CampaignOnSingleMassmedia.RecalculateAction(false);
-					DataAccessor.CommitTransaction();
-				}
-				catch
-				{
-					DataAccessor.RollbackTransaction();
-					throw;
-				}
-
-				RefreshSingleCell(cell.RowIndex, cell.ColumnIndex, tariffWindow, TariffGridRefreshMode.WithAdd, true);
+				DataAccessor.BeginTransaction();
+				CampaignOnSingleMassmedia.AddIssue(roller, tariffWindow, rollerPosition, Grantor == null ? null : (int?)Grantor.Id);
+				CampaignOnSingleMassmedia.RecalculateAction(false);
+				DataAccessor.CommitTransaction();
 			}
+			catch
+			{
+				DataAccessor.RollbackTransaction();
+				throw;
+			}
+
+            RefreshSingleCell(cell.RowIndex, cell.ColumnIndex, tariffWindow, TariffGridRefreshMode.WithAdd, true);
 		}
 
 		private void OnGridPopulated()

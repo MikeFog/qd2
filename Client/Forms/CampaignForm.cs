@@ -102,7 +102,7 @@ namespace Merlin.Forms
 			[DebuggerStepThrough]
 			get 
 			{ 
-				// пїЅпїЅпїЅ пїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ, пїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅ
+				// Это либо простая кампания либо спонсорская, но редактируем ролики
 				return _campaign != null && (_campaign.CampaignType == Campaign.CampaignTypes.Simple 
 					|| (_campaign.CampaignType == Campaign.CampaignTypes.Sponsor && _tariffGrid is RollerIssuesGrid3)) ; 
 			}
@@ -171,7 +171,7 @@ namespace Merlin.Forms
 				if (SponsorIssuesGrid != null && _campaign.Action.IsConfirmed)
 				{
 					Entity entity = EntityManager.GetEntity((int)Entities.AdvertTypeChild);
-					SelectionForm form = new SelectionForm(entity, entity.GetContent().DefaultView, "пїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅ");
+					SelectionForm form = new SelectionForm(entity, entity.GetContent().DefaultView, "Выбор предмета рекламы");
 					if (form.ShowDialog(this) == DialogResult.OK)
 					{
 						SponsorIssuesGrid.AdvertType = form.SelectedObject;
@@ -206,7 +206,7 @@ namespace Merlin.Forms
             tbbAdvertType.Visible = !(_tariffGrid is ProgramIssuesGrid2) && !(_tariffGrid is PackModuleGrid);
             tbbModules.Visible = IsModuleCampaign || IsPackModuleCampaign;
 			if (IsPackModuleCampaign)
-				tbbModules.Text = "пїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅ";
+				tbbModules.Text = "Выбор пакета";
 
             tbbTemplate.Visible = tbbTemplate2.Visible = !(IsModuleCampaign || IsPackModuleCampaign || _tariffGrid is ProgramIssuesGrid2);
 			tbSetManagerDiscount.Enabled = !IsRangeCampaign;
@@ -311,9 +311,9 @@ namespace Merlin.Forms
 		protected virtual void SetFormCaption()
 		{
             if (_campaign is CampaignOnSingleMassmedia smc)
-                Text = string.Format("пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ {0}", smc.MassmediaNameWithGroup);
+                Text = string.Format("Просмотр информации на радиостанции {0}", smc.MassmediaNameWithGroup);
             else
-                Text = "пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ";
+                Text = "Пакетная модульная рекламная кампания";
         }
 
 		private void SetTariffGrid()
@@ -350,7 +350,7 @@ namespace Merlin.Forms
 			              		Dock = DockStyle.Fill,
 			              		Name = "packDetails",
 			              		CaptionVisible = true,
-			              		Caption = "пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ",
+			              		Caption = "Детальная информация по радиостанции",
 			              		MenuEnabled = false,
 			              		QuickSearchVisible = false
 			              	};
@@ -392,7 +392,7 @@ namespace Merlin.Forms
 
 		private void InitSponsorProgramList()
         {
-            grdRollers.Caption = "пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ";
+            grdRollers.Caption = "Программы";
             grdRollers.Entity = SponsorProgram.GetEntity();
             grdRollers.DataSource = ((CampaignOnSingleMassmedia)_campaign).Massmedia.GetSponsorPrograms(true).DefaultView;
         }
@@ -421,7 +421,7 @@ namespace Merlin.Forms
 				DataSet data = DataAccessor.LoadDataSet("RollersForModule", parameters);
 				if (data.Tables.Count > 0 && data.Tables[0].Rows.Count > 0)
 				{
-					// пїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅ, пїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅ "пїЅпїЅпїЅ пїЅпїЅпїЅпїЅ"
+					// если нашли ролик, это значит для модуля или пакета назначен ролик "для всех"
 					grdRollers.Entity = EntityManager.GetEntity((int)Entities.CommonRollers);
                     grdRollers.DataSource = data.Tables[0].DefaultView;
 					return;
@@ -438,21 +438,18 @@ namespace Merlin.Forms
 
 		private void CampaignStatusChanged()
 		{
-			using (PerformanceManager.LogExecutionTime("CampaignForm.CampaignStatusChanged"))
+			try
 			{
-				try
-				{
-					//campaign.RecalculateAction();
-					_campaign.Refresh();
-					_campaign.DisplayCampaignData(lstStat);
-					changeFlag = true;
-					HighlightSelectedModule();
-					RefreshDetails(_tariffGrid.CurrentTariffWindow);
-				}
-				catch (Exception ex)
-				{
-					ErrorManager.PublishError(ex);
-				}
+				//campaign.RecalculateAction();
+				_campaign.Refresh();
+				_campaign.DisplayCampaignData(lstStat);
+				changeFlag = true;
+				HighlightSelectedModule();
+				RefreshDetails(_tariffGrid.CurrentTariffWindow);
+			}
+			catch(Exception ex)
+			{
+				ErrorManager.PublishError(ex);
 			}
 		}
 
@@ -470,110 +467,104 @@ namespace Merlin.Forms
 
 		private void grid_CellClicked(ITariffWindow tariffWindow)
 		{
-			using (PerformanceManager.LogExecutionTime("CampaignForm.grid_CellClicked"))
+			try
 			{
-				try
-				{
-					Application.DoEvents();
-					Cursor.Current = Cursors.WaitCursor;
+				Application.DoEvents();
+				Cursor.Current = Cursors.WaitCursor;
 
-					if (tariffWindow != null && _tariffGrid.EditMode == EditMode.Template)
+				if (tariffWindow != null && _tariffGrid.EditMode == EditMode.Template)
+				{
+					_template.SetTime(tariffWindow.WindowDate);
+					_template.Parameters["Window"] = tariffWindow.WindowDate.TimeOfDay;
+					if (Globals.ShowQuestion(_template.IsModeAdd ? "StartIssueGeneration" : "StartIssuesDeleteByTemplate", _template.Parameters) == DialogResult.Yes)
 					{
-						_template.SetTime(tariffWindow.WindowDate);
-						_template.Parameters["Window"] = tariffWindow.WindowDate.TimeOfDay;
-						if (Globals.ShowQuestion(_template.IsModeAdd ? "StartIssueGeneration" : "StartIssuesDeleteByTemplate", _template.Parameters) == DialogResult.Yes)
+						FrmGenerator form;
+						if (_tariffGrid is ProgramIssuesGrid2)
 						{
-							FrmGenerator form;
-							if (_tariffGrid is ProgramIssuesGrid2)
-							{
-								form =
-									new FrmGenerator(_template, _campaign, SponsorIssuesGrid.SponsorProgram,
-													 tariffWindow.TariffId, tariffWindow.Price,
-													 ((SponsorPricelist)SponsorIssuesGrid.Pricelist).Bonus);
-							}
-							else if (IsRangeCampaign)
-							{
-								form = new FrmGenerator(_template, ((TariffWithRangeGrid)_tariffGrid).AddIssuesRange);
-							}
-							else
-							{
-								form =
-									new FrmGenerator(_template, ((IRollerGrid)_tariffGrid).Roller, RollerIssuesGrid.RollerPosition,
-									_campaign, RollerIssuesGrid.Pricelist, ((IRollerGrid)_tariffGrid).Module, Grantor == null ? null : (int?)Grantor.Id);
-							}
-
-							form.ShowDialog(this);
-
-							if (_template.IsDateCovered(_tariffGrid.StartDate, _tariffGrid.FinishDate))
-							{
-								RefreshGrid();
-							}
-							if (!(_tariffGrid is TariffWithRangeGrid))
-								CampaignStatusChanged();
+							form =
+								new FrmGenerator(_template, _campaign, SponsorIssuesGrid.SponsorProgram,
+												 tariffWindow.TariffId, tariffWindow.Price,
+												 ((SponsorPricelist)SponsorIssuesGrid.Pricelist).Bonus);
 						}
-					}
+						else if (IsRangeCampaign)
+						{
+							form = new FrmGenerator(_template, ((TariffWithRangeGrid)_tariffGrid).AddIssuesRange);
+						}
+						else
+						{
+							form =
+								new FrmGenerator(_template, ((IRollerGrid)_tariffGrid).Roller, RollerIssuesGrid.RollerPosition,
+								_campaign, RollerIssuesGrid.Pricelist, ((IRollerGrid)_tariffGrid).Module, Grantor == null ? null : (int?)Grantor.Id);
+						}
 
-					ShowWindowIssues(tariffWindow);
+						form.ShowDialog(this);
+
+						if (_template.IsDateCovered(_tariffGrid.StartDate, _tariffGrid.FinishDate))
+						{
+							RefreshGrid();
+						}
+						if (!(_tariffGrid is TariffWithRangeGrid))
+							CampaignStatusChanged();
+					}
 				}
-				catch (Exception ex)
-				{
-					ErrorManager.PublishError(ex);
-				}
-				finally
-				{
-					Cursor = Cursors.Default;
-				}
+
+				ShowWindowIssues(tariffWindow);
+			}
+			catch(Exception ex)
+			{
+				ErrorManager.PublishError(ex);
+			}
+			finally
+			{
+				Cursor = Cursors.Default;
 			}
 		}
 
 		protected virtual void ShowWindowIssues(ITariffWindow tariffWindow)
 		{
-			using (PerformanceManager.LogExecutionTime("CampaignForm.ShowWindowIssues"))
+			grdIssues.Clear();
+			grdCurrentCampaignIssues.Clear();
+
+			if (tariffWindow != null && _tariffGrid.IsActiveCellSelected && _tariffGrid.IssueEntity != null)
 			{
-				grdIssues.Clear();
-				grdCurrentCampaignIssues.Clear();
-
-				if (tariffWindow != null && _tariffGrid.IsActiveCellSelected && _tariffGrid.IssueEntity != null)
+				Entity issueEntity = (Entity)_tariffGrid.IssueEntity.Clone();
+				if(_tariffGrid is ProgramIssuesGrid2)
 				{
-					Entity issueEntity = (Entity)_tariffGrid.IssueEntity.Clone();
-					if (_tariffGrid is ProgramIssuesGrid2)
-					{
-						issueEntity.AttributeSelector = (int)ProgramIssue.AttributeSelectors.FirmNameOnly;
-						grdIssues.Entity = issueEntity;
-						grdIssues.DataSource =
-							((TariffWindowWithProgramIssue)tariffWindow).LoadIssues(RollerIssuesGrid.ShowUnconfirmed, issueEntity).DefaultView;
-					}
-					else
-					{
-						Entity currentCampaignIssueEntity = (Entity)issueEntity.Clone();
-						currentCampaignIssueEntity.AttributeSelector = Issue.AttributeSelectorShort;
-						grdCurrentCampaignIssues.Entity = currentCampaignIssueEntity;
-						DataTable dtIssues = tariffWindow.LoadIssues(RollerIssuesGrid.ShowUnconfirmed, currentCampaignIssueEntity);
-						if (dtIssues.Rows.Count > 0)
-							grdCurrentCampaignIssues.DataSource = GetCurrentCampaignIssues(dtIssues);
-
-						grdIssues.Entity = (Entity)EntityManager.GetEntity((int)Entities.Issue).Clone();
-						grdIssues.Entity.AttributeSelector = Issue.AttributeSelectorFull;
-
-						if (issueEntity.Id == (int)Entities.ModuleIssue)
-							dtIssues = tariffWindow.LoadIssues(RollerIssuesGrid.ShowUnconfirmed, grdIssues.Entity);
-						if (dtIssues.Rows.Count > 0)
-							grdIssues.DataSource = dtIssues.DefaultView;
-					}
+					issueEntity.AttributeSelector = (int)ProgramIssue.AttributeSelectors.FirmNameOnly;
+					grdIssues.Entity = issueEntity;
+					grdIssues.DataSource =
+						((TariffWindowWithProgramIssue)tariffWindow).LoadIssues(RollerIssuesGrid.ShowUnconfirmed, issueEntity).DefaultView;
 				}
-				SetStatus(tariffWindow);
+				else
+				{
+					Entity currentCampaignIssueEntity = (Entity)issueEntity.Clone();
+					currentCampaignIssueEntity.AttributeSelector = Issue.AttributeSelectorShort;
+					grdCurrentCampaignIssues.Entity = currentCampaignIssueEntity;
+					DataTable dtIssues = tariffWindow.LoadIssues(RollerIssuesGrid.ShowUnconfirmed, currentCampaignIssueEntity);
+					if (dtIssues.Rows.Count > 0)
+						grdCurrentCampaignIssues.DataSource = GetCurrentCampaignIssues(dtIssues);
 
-				RefreshDetails(tariffWindow);
+					grdIssues.Entity = (Entity)EntityManager.GetEntity((int)Entities.Issue).Clone();
+					grdIssues.Entity.AttributeSelector = Issue.AttributeSelectorFull;
+
+					if (issueEntity.Id == (int)Entities.ModuleIssue)
+						dtIssues = tariffWindow.LoadIssues(RollerIssuesGrid.ShowUnconfirmed, grdIssues.Entity);
+					if (dtIssues.Rows.Count > 0)
+						grdIssues.DataSource = dtIssues.DefaultView;
+				}
 			}
+			SetStatus(tariffWindow);
+
+			RefreshDetails(tariffWindow);
 		}
 
 		private void SetStatus(ITariffWindow tariffWindow)
 		{
 			toolStripStatusLabelSelected.Text =
 				(tariffWindow != null && _tariffGrid.IsActiveCellSelected)
-					? string.Format("пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅ: '{0}'",
+					? string.Format("Выбранное окно: '{0}'",
 					                tariffWindow.WindowDate.ToString(IsPackModuleCampaign ? "dd.MM.yyyy" : "dd.MM.yyyy HH:mm"))
-					: "пїЅпїЅпїЅпїЅ пїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅ";
+					: "Окно не выбрано";
 		}
 
 		private void RefreshDetails(ITariffWindow tariffWindow)
@@ -853,7 +844,7 @@ namespace Merlin.Forms
 		{
 			/*
 			if (Grantor == null)
-				Grantor = Utils.AskConfirmation(this, toolStripButtonGrantor.ToolTipText, "пїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅ пїЅ пїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ.");
+				Grantor = Utils.AskConfirmation(this, toolStripButtonGrantor.ToolTipText, "Введите логин и пароль привелигированного пользователя.");
 			else
 				Grantor = null;
 			toolStripButtonGrantor.Checked = (Grantor != null);		
@@ -922,13 +913,13 @@ namespace Merlin.Forms
 				AdvertTypePresences presence = (AdvertTypePresences)Enum.Parse(typeof(AdvertTypePresences), e.ClickedItem.Tag.ToString());
 				if (presence != AdvertTypePresences.Undefined)
 				{
-					TreeViewSelector tvSelector = new TreeViewSelector(RelationManager.GetScenario(RelationScenarios.AdvertTypes), "пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅ");
+					TreeViewSelector tvSelector = new TreeViewSelector(RelationManager.GetScenario(RelationScenarios.AdvertTypes), "Предметы рекламы");
 					if (tvSelector.ShowDialog(Parent) == DialogResult.OK)
 					{
 						Application.DoEvents();
 						Cursor = Cursors.WaitCursor;
 						rollerGrid.SetAdvertTypePresence(presence, tvSelector.SelectedObject);
-						tbbAdvertType.Text = (presence == AdvertTypePresences.Exist ? "пїЅпїЅпїЅпїЅ: " : "пїЅпїЅпїЅ: ") + tvSelector.SelectedObject.Name;
+						tbbAdvertType.Text = (presence == AdvertTypePresences.Exist ? "Есть: " : "Нет: ") + tvSelector.SelectedObject.Name;
 					}
 				}
 				else
