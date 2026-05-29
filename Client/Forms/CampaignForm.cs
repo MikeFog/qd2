@@ -438,7 +438,7 @@ namespace Merlin.Forms
 
 		private void CampaignStatusChanged()
 		{
-			using (ErrorManager.LogExecutionTime("CampaignForm.CampaignStatusChanged"))
+			using (PerformanceManager.LogExecutionTime("CampaignForm.CampaignStatusChanged"))
 			{
 				try
 				{
@@ -470,7 +470,7 @@ namespace Merlin.Forms
 
 		private void grid_CellClicked(ITariffWindow tariffWindow)
 		{
-			using (ErrorManager.LogExecutionTime("CampaignForm.grid_CellClicked"))
+			using (PerformanceManager.LogExecutionTime("CampaignForm.grid_CellClicked"))
 			{
 				try
 				{
@@ -528,7 +528,7 @@ namespace Merlin.Forms
 
 		protected virtual void ShowWindowIssues(ITariffWindow tariffWindow)
 		{
-			using (ErrorManager.LogExecutionTime("CampaignForm.ShowWindowIssues"))
+			using (PerformanceManager.LogExecutionTime("CampaignForm.ShowWindowIssues"))
 			{
 				grdIssues.Clear();
 				grdCurrentCampaignIssues.Clear();

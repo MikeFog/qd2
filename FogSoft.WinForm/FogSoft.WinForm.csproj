@@ -254,6 +254,7 @@
       <SubType>Code</SubType>
     </Compile>
     <Compile Include="Classes\ErrorManager.cs" />
+    <Compile Include="Classes\PerformanceManager.cs" />
     <Compile Include="Classes\Export\ExportManager.cs">
       <SubType>Code</SubType>
     </Compile>

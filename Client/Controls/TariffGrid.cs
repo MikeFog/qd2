@@ -441,7 +441,7 @@ namespace Merlin.Controls
 
 		private void OnGridCellClick(object sender, DataGridViewCellEventArgs e)
 		{
-			using (ErrorManager.LogExecutionTime("TariffGrid.OnGridCellClick"))
+			using (PerformanceManager.LogExecutionTime("TariffGrid.OnGridCellClick"))
 			{
 				try
 				{
@@ -461,7 +461,7 @@ namespace Merlin.Controls
 
 		private void FireCellClicked(ITariffWindow tariffWindow)
 		{
-			using (ErrorManager.LogExecutionTime("TariffGrid.FireCellClicked"))
+			using (PerformanceManager.LogExecutionTime("TariffGrid.FireCellClicked"))
 			{
 				Application.DoEvents();
 				Cursor.Current = Cursors.WaitCursor;

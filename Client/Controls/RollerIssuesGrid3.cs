@@ -90,7 +90,7 @@ namespace Merlin.Controls
 			if (campaign == null) return;
 			if (!(GetTariffWindow(cell) is TariffWindowWithRollerIssues tariffWindow)) return;
 
-			using (ErrorManager.LogExecutionTime("RollerIssuesGrid3.UpdateDB"))
+			using (PerformanceManager.LogExecutionTime("RollerIssuesGrid3.UpdateDB"))
 			{
 				if (module == null)
 					AddIssue(cell, tariffWindow);
@@ -134,7 +134,7 @@ namespace Merlin.Controls
 
 		private void AddIssue(DataGridViewCell cell, TariffWindowWithRollerIssues tariffWindow)
 		{
-			using (ErrorManager.LogExecutionTime("RollerIssuesGrid3.AddIssue"))
+			using (PerformanceManager.LogExecutionTime("RollerIssuesGrid3.AddIssue"))
 			{
 				try
 				{

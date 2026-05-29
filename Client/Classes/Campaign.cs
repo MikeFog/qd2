@@ -597,7 +597,7 @@ namespace Merlin.Classes
 
 		public Issue AddIssue(PresentationObject roller, ITariffWindow tariffWindow, RollerPositions rollerPosition, int? grantorID)
 		{
-			using (ErrorManager.LogExecutionTime("Campaign.AddIssue"))
+			using (PerformanceManager.LogExecutionTime("Campaign.AddIssue"))
 			{
 				RollerIssue issue = new RollerIssue(this, roller, (TariffWindowWithRollerIssues) tariffWindow, rollerPosition, Action.IsConfirmed, grantorID);
 				issue.Update();
