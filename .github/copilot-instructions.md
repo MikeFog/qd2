@@ -1,46 +1,28 @@
 # Copilot instructions for qd2
 
-## Repository context
-- Legacy **Windows Forms** desktop application for advertising/radio campaign operations, pricing, issues scheduling, payments, and reporting.
-- Main technologies: **C#**, **.NET Framework 3.5/4.8**, **MS SQL Server stored procedures**, **log4net**.
-- Main projects: `Client` (UI + business flows), `FogSoft.WinForm` (framework/DAL/passport engine), `Microsoft.ApplicationBlocks.Data` (SqlHelper), `ArtvisDB` (SQL objects).
+## Quick context
+- Legacy WinForms app (`Client`) + shared framework (`FogSoft.WinForm`) + SQL Server DB project (`ArtvisDB`).
+- DAL entrypoint: `FogSoft.WinForm/DataAccess/DataAccessor.cs`.
+- Main shell: `Client/Forms/MDIForm.cs` (`MdiForm` class).
 
-## Architecture at a glance
-- UI event handlers in forms/controls call domain classes (`Client/Classes/*`) and shared framework classes.
-- Data access is centralized in `FogSoft.WinForm/DataAccess/DataAccessor.cs`.
-- A large part of CRUD/actions is metadata-driven via entity/action mappings (`ProcedureConfigurationRetrieve.sql`, `iStoredProcedure`, `iModuleProcedure`, `iTableAlias`).
-- Some calls use explicit stored procedure names (`DataAccessor.LoadDataSet/ExecuteNonQuery/ExecuteScalar`) in business classes/forms.
+## Where to look first
+- UI/event handlers: `/tmp/workspace/MikeFog/qd2/Client/Forms` and `/tmp/workspace/MikeFog/qd2/Client/Controls`
+- Business/domain classes: `/tmp/workspace/MikeFog/qd2/Client/Classes`
+- Metadata-driven DB mapping: `ArtvisDB/dbo/Stored Procedures/ProcedureConfigurationRetrieve.sql`, tables `iStoredProcedure`, `iModuleProcedure`, `iTableAlias`
+- Explicit proc calls: search `DataAccessor.LoadDataSet(`, `ExecuteNonQuery(`, `ExecuteScalar(`.
 
-## Build and validation
-- Preferred environment: **Windows + Visual Studio/MSBuild** with .NET Framework targeting packs.
-- In Linux sandbox, `dotnet build qd2.sln -c Debug` fails (missing .NET Framework 3.5/4.8 reference assemblies).
-- Validate changes by targeted manual scenario checks in app UI and SQL verification.
+## Change rules
+- Keep existing patterns (`DataSet`/`DataTable`, event-driven forms, `ErrorManager.PublishError`).
+- Do not introduce new architecture/frameworks.
+- Do not change stored procedure contracts unless all callers (explicit + metadata-driven) are updated.
+- Keep patches minimal; avoid unrelated refactors.
 
-## Coding and change conventions
-- Keep existing style (legacy WinForms + DataSet/DataTable patterns).
-- Reuse existing entity/action/data access patterns; do not introduce new architecture layers/frameworks.
-- Keep patches minimal and grouped by related files; avoid many tiny unrelated edits.
-- Preserve Russian UI/business naming where already present.
+## High-risk areas (verify explicitly)
+- Transactions: `DataAccessor.BeginTransaction/CommitTransaction/RollbackTransaction` and multi-step flows in `Client/Forms/ActionForm.cs`.
+- Security: password hashing uses `MD5CryptoServiceProvider` in `FogSoft.WinForm/Classes/SecurityManager.cs`.
+- Sensitive logging: `DataAccessor` appends parameter values and generated exec scripts to exceptions/log scope (`BuildExecScript`, `exp.Data.Add(...)`).
+- Credentials/config: connection string is in `Client/app.config` (`<connectionStrings>`).
 
-## SQL/stored procedure rules
-- SQL scripts are under `ArtvisDB/dbo/*`.
-- Before changing a proc, find all C# callers (`DataAccessor.*("ProcName"...)`) and metadata mappings.
-- Do not change proc parameter contracts/output semantics unless all callers are updated.
-- Be careful with transaction-sensitive flows (`DataAccessor.BeginTransaction/CommitTransaction/RollbackTransaction`).
-- Keep long-running proc diagnostics intact (`DbExecutionScope`, `StoredProcExecutionTimeThresholdMS`).
-
-## WinForms UI rules
-- Follow existing event-driven patterns in forms and custom grids (`SmartGrid`, `GenericGridView`).
-- Preserve wait-cursor/error handling style (`UseWaitCursor`, `ErrorManager.PublishError`).
-- For grid changes, verify selection, check-all behavior, data binding side effects, and performance.
-
-## Logging/diagnostics rules
-- Keep log4net configuration behavior (`Client/app.config`, `logs/qd2.log`).
-- Maintain user context logging (`GlobalContext.Properties["user"]` set after login).
-- When adding diagnostics, keep them temporary, scoped, and removable.
-
-## What not to do
-- Do not refactor unrelated legacy code.
-- Do not rename DB objects/classes/methods without explicit request.
-- Do not change schema/stored procedure contracts without explicit task scope.
-- Do not assume modern ORM/service architecture; document and follow existing patterns.
+## Build/validation constraints
+- Linux `dotnet build qd2.sln -c Debug` fails without .NET Framework 3.5/4.8 targeting packs.
+- No test projects are present; validate by targeted manual UI + SQL scenarios.

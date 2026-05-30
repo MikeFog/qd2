@@ -97,6 +97,8 @@ Common risks:
 - Output parameter contract changes breaking caller expectations.
 - Connection/transaction lifetime assumptions in legacy mixed patterns.
 - Command timeout differences across calls (some calls use custom timeout values).
+- `BeginTransaction()` opens a connection and stores thread-static transaction state; mismatched commit/rollback can leak resources or lock data.
+- `BuildExecScript` + exception enrichment can expose sensitive parameter values in logs/error payloads.
 
 # Stored procedures and SQL objects
 
@@ -185,7 +187,7 @@ Main stored procedures:
 - `ActionRecalculate`, `MoveIssues2NewCampaign`, `CampaignIssuesTransfers`, `GetMonthes`, `GetMassmedias` (plus metadata-driven action CRUD).
 
 Important tables:
-- Campaign/action domain tables in `ArtvisDB/dbo/Tables` (campaign, action, issue linkage tables; exact confirmation recommended per deployment schema).
+- `Campaign`, `Action`, `Issue`, `ManagerDiscountHistory`, `ConfirmationHistory`.
 
 Typical flow:
 - UI edit -> domain object update -> recalculation proc(s) -> grid/stat refresh.
@@ -230,7 +232,7 @@ Main stored procedures:
 - `TariffWindowRetrieveByDate`, `TariffWindowWithAdvertTypeRetrieve`, `GenerateTariffWindowByTemplate`, `TariffWindowMassDelete`, `PackModuleTariffWindowsRetrieve`.
 
 Important tables:
-- Tariff window and related pricing tables in `ArtvisDB/dbo/Tables`.
+- `TariffWindow`, `Tariff`, `Pricelist`, `ModuleTariff`, `ModulePriceList`, `PackModulePriceList`, `SponsorTariff`, `StudioTariff`.
 
 Typical flow:
 - Select period/object -> retrieve windows -> edit/save/delete with validations.
@@ -252,7 +254,7 @@ Main stored procedures:
 - `RollerSubstitute`, `RollerSubstitutionPassport`, `IssuesByDate`, `IssueChangePositioningPassport`.
 
 Important tables:
-- Issue/roller linkage tables and scheduling tables in `ArtvisDB/dbo/Tables`.
+- `Issue`, `ProgramIssue`, `ModuleIssue`, `PackModuleIssue`, `Roller`, `LogDeletedIssue`.
 
 Typical flow:
 - Grid edits/substitutions -> transactional save -> issue list/grid refresh.
@@ -274,7 +276,7 @@ Main stored procedures:
 - `PaymentAction_CorrectByActionTotalPrice`, candidate selection/retrieval procs via metadata actions.
 
 Important tables:
-- Payment and payment-allocation tables in `ArtvisDB/dbo/Tables`.
+- `Payment`, `PaymentAction`, `PaymentStudioOrder`, `PaymentStudioOrderAction`, `StudioOrder`, `StudioOrderAction`, `StudioOrderBill`.
 
 Typical flow:
 - Load candidates -> distribute available payment remainder -> update payment-action links -> refresh balances.
@@ -296,7 +298,7 @@ Main stored procedures:
 - `AgencyPainting`, `firms`, `FirmManagers`, `FirmStudioOrderManagers`, `sp_CheckFirmINN`, `sp_SayAdminThatFirmInnDouble`.
 
 Important tables:
-- Firms/agencies/head-company tables in `ArtvisDB/dbo/Tables`.
+- `Firm`, `Agency`, `HeadCompany`, `FirmBrand`, `AgencyMassmedia`, `AgencyTax`, `AgencyBillNo`, `StudioAgency`.
 
 Typical flow:
 - Passport form validation -> save/update -> related balances/references refresh.
@@ -319,7 +321,7 @@ Main stored procedures:
 - `rpt_Grid_v3`, `rpt_Grid` (legacy creator), `stat_FillPercentage`, `rpt_OrderActionBill`, `OnAirInquireReport`.
 
 Important tables:
-- Report source domain tables under campaign/issues/payments/tariffs.
+- Report metadata tables: `ReportType`, `ReportPartText`; report data is assembled by procedures over domain tables such as `Campaign`, `Action`, `Issue`, `Payment`, `TariffWindow`.
 
 Typical flow:
 - Filter input -> report proc call(s) -> bind/export.
@@ -343,7 +345,7 @@ Main stored procedures:
 - `GetUserData`, `UserMenuItems`, `GetUserDiscount`, `UserAgencies`, `CheckRatioForUser`.
 
 Important tables:
-- User/rights/menu metadata tables in `ArtvisDB`.
+- `User`, `Group`, `GroupMember`, `GroupMenu`, `GroupRight`, `UserMassmedia`, `UserAdditionMenu`, `UserAdditionRight`, `iMenu`.
 
 Typical flow:
 - Login -> load user profile/rights -> set context -> menu/action enablement checks.
@@ -351,6 +353,13 @@ Typical flow:
 Known invariants/risks:
 - Rights flags gate critical operations (discount changes, reports, etc.).
 - User context must be set before data operations relying on logged user.
+
+# Security and operational risk hot-spots
+
+- Authentication hash is MD5 (`FogSoft.WinForm/Classes/SecurityManager.cs`, `GetHash`), which is weak by modern standards.
+- Default credentials are present in source config (`Client/app.config` → `connectionStrings/Main`).
+- DAL logs executable SQL text and parameter values (`FogSoft.WinForm/DataAccess/DataAccessor.cs`: `BuildExecScript`, `exp.Data.Add("Parameter: ...")`).
+- Metadata routing tables (`iStoredProcedure`, `iModuleProcedure`, `iEntityAction`) make behavior changes hard to trace without full caller search.
 
 # Logging and diagnostics
 
