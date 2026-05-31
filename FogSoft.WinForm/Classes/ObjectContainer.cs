@@ -43,18 +43,21 @@ namespace FogSoft.WinForm.Classes
 			: base(entity, row)
 		{
 			iterator.LoadContent = GetContent;
+			iterator.ChildObjectPostProcessor = ProcessCreatedChildObject;
 		}
 
         public ObjectContainer(Entity entity, Dictionary<string, object> parameters)
             : base(entity, parameters)
         {
             iterator.LoadContent = GetContent;
+            iterator.ChildObjectPostProcessor = ProcessCreatedChildObject;
         }
 
 		public ObjectContainer(Entity entity)
 			: base(entity)
 		{
 			iterator.LoadContent = GetContent;
+			iterator.ChildObjectPostProcessor = ProcessCreatedChildObject;
 		}
 
 		#endregion
@@ -81,7 +84,7 @@ namespace FogSoft.WinForm.Classes
 			return GetContent(filterValues, true);
 		}
 
-		// пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅ - пїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅ пїЅ пїЅпїЅпїЅпїЅпїЅпїЅ - пїЅпїЅпїЅпїЅпїЅ пїЅпїЅ пїЅпїЅпїЅ пїЅпїЅпїЅпїЅ пїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅ пїЅ пїЅпїЅпїЅпїЅ
+		// ?????????? ????????? ??????????????? ?????? - ??????? ??? ?????? ?????? ? ?????? - ????? ?? ??? ???? ?? ????????? ???? ? ????
 		private DataTable lastContentFilter = null;
 		private Dictionary<string, object> lastFilterValues = null;
 		private bool? lastForceFilterUsage = null;
@@ -213,7 +216,7 @@ namespace FogSoft.WinForm.Classes
 			if (iterator.ChildEntity == null)
 				return;
 
-			SelectionForm selector = new SelectionForm(iterator.ChildEntity, "пїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅ");
+			SelectionForm selector = new SelectionForm(iterator.ChildEntity, "??????? ??????");
 			if(selector.ShowDialog(owner) == DialogResult.OK)
 			{
 				PresentationObject presentationObject = selector.SelectedObject;
@@ -270,7 +273,7 @@ namespace FogSoft.WinForm.Classes
 			}
 
 
-            ///TODO: пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅ - пїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅ пїЅ пїЅпїЅпїЅпїЅпїЅпїЅ - пїЅпїЅпїЅпїЅпїЅ пїЅпїЅ пїЅпїЅпїЅ пїЅпїЅпїЅпїЅ пїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅ пїЅ пїЅпїЅпїЅпїЅ
+            ///TODO: ?????????? ????????? ??????????????? ?????? - ??????? ??? ?????? ?????? ? ?????? - ????? ?? ??? ???? ?? ????????? ???? ? ????
             FilterForm fFilter = new FilterForm(iterator.ChildEntity, ds, iterator.Filter, iterator.ChildEntity.XmlFilter);
 			if(fFilter.ShowDialog(owner) == DialogResult.OK)
 				FireContainerRefreshed();
@@ -285,6 +288,12 @@ namespace FogSoft.WinForm.Classes
         {
             get { return iterator.Filter; }
             set { iterator.Filter = value; }
+        }
+
+        // NEW: точка расширения для наследников контейнера
+        protected virtual PresentationObject ProcessCreatedChildObject(PresentationObject childObject, DataRow row)
+        {
+            return childObject;
         }
     }
 }

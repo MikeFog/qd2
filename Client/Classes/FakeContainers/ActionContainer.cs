@@ -3,6 +3,7 @@ using FogSoft.WinForm.Classes;
 using FogSoft.WinForm.Passport.Forms;
 using Merlin.Forms.FilterForm;
 using System;
+using System.Data;
 using System.Windows.Forms;
 using System.Xml.XPath;
 
@@ -117,5 +118,39 @@ namespace Merlin.Classes.FakeContainers
                 Cursor.Current = Cursors.Default;
             }
         }
-    }
+
+        private string GetStartDatePeriodString(object startDateObj, object finishDateObj) 
+        {
+            if (startDateObj != null && startDateObj != DBNull.Value && DateTime.TryParse(startDateObj.ToString(), out DateTime startDate) &&
+                finishDateObj != null && finishDateObj != DBNull.Value && DateTime.TryParse(finishDateObj.ToString(), out DateTime finishDate))
+            {
+                string formattedStartDate = startDate.ToString("dd.MM.yy");
+                string formattedFinishDate = finishDate.ToString("dd.MM.yy");
+                return $"[{formattedStartDate}-{formattedFinishDate}]";
+            }
+            return string.Empty;
+        }
+
+        // NEW: пример использования hook из ObjectsIterator
+		protected override PresentationObject ProcessCreatedChildObject(PresentationObject childObject, DataRow row)
+		{
+            // Пример: переименовываем только детей типа "акция"
+            if (ChildEntity != null &&
+                (ChildEntity.Id == (int)Entities.Action || ChildEntity.Id == (int)Entities.ActionDeleted))
+            {
+                string actionName = ParseHelper.GetStringFromObject(childObject[Constants.Parameters.Name], string.Empty);
+                string firmName = row.Table.Columns.Contains(Merlin.Classes.Action.ParamNames.FirmName)
+                    ? ParseHelper.GetStringFromObject(row[Merlin.Classes.Action.ParamNames.FirmName], string.Empty)
+                    : string.Empty;
+
+                if (!string.IsNullOrEmpty(firmName) && !string.IsNullOrEmpty(actionName))
+                    childObject[Constants.Parameters.Name] = string.Format("{0} ({1}) {2}",
+                        actionName,
+                        firmName,
+                        GetStartDatePeriodString(row[Action.ParamNames.StartDate], row[Action.ParamNames.FinishDate])
+                        );
+            }
+            return childObject;
+        }
+	}
 }

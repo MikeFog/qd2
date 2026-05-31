@@ -64,7 +64,9 @@ SET NOCOUNT on
 					When a.tariffPrice = 0 Then 1
 					Else a.totalPrice/a.tariffPrice
 			End  
-			as decimal(5,2)) as finalRatio
+			as decimal(5,2)) as finalRatio,
+			a.startDate,
+			a.finishDate
 		from [Action] a
 			INNER JOIN [vUser] us ON us.userID = a.userID
 			INNER JOIN [Firm] f ON f.firmID = a.firmID
@@ -114,14 +116,17 @@ SET NOCOUNT on
 		SELECT distinct 
 			a.*, 
 			us.userName as creator,
-			'Акция №' + LTRIM(a.[actionID]) + ' (' + LTRIM(f.name) + ')'  as name,
+			--'Акция №' + LTRIM(a.[actionID]) + ' (' + LTRIM(f.name) + ')'  as name,
+			'Акция №' + LTRIM(a.[actionID]) as name,
 			f.name as firmName,
 			Cast(
 			Case 
 				When a.tariffPrice = 0 Then 1
 				Else a.totalPrice/a.tariffPrice
 			End  
-			as decimal(5,2)) as finalRatio
+			as decimal(5,2)) as finalRatio,
+			a.startDate,
+			a.finishDate
 		FROM 
 			[Action] a
 			inner join @issues i on i.actionID = a.actionID
@@ -177,14 +182,17 @@ SET NOCOUNT on
 		SELECT distinct 
 			a.*, 
 			us.userName as creator,
-			'Акция №' + LTRIM(a.[actionID]) + ' (' + LTRIM(f.name) + ')'  as name,
+			--'Акция №' + LTRIM(a.[actionID]) + ' (' + LTRIM(f.name) + ')'  as name,
+			'Акция №' + LTRIM(a.[actionID]) as name,
 			f.name as firmName,
 			Cast(
 			Case 
 				When a.tariffPrice = 0 Then 1
 				Else a.totalPrice/a.tariffPrice
 			End  
-			as decimal(5,2)) as finalRatio
+			as decimal(5,2)) as finalRatio,
+			a.startDate,
+			a.finishDate
 		FROM 
 			[Action] a
 			Inner Join Campaign c ON c.actionId = a.actionId

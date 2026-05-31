@@ -14,14 +14,17 @@ namespace FogSoft.WinForm.Classes
 
 		public DataLoadDelegate LoadContent;
 
+		// NEW: hook для внешнего владельца (например, ObjectContainer)
+		public Func<PresentationObject, DataRow, PresentationObject> ChildObjectPostProcessor { get; set; }
+
 		private DataTable lastContentFilter = null;
 		private Dictionary<string, object> lastFilterValues = null;
 
 		public virtual DataTable GetContent()
 		{
 			return GetContent(_filter);
-		}		
-				
+		}
+
 		public virtual DataTable GetContent(Dictionary<string, object> filterValues)
 		{
 			if(LoadContent != null)
@@ -87,19 +90,15 @@ namespace FogSoft.WinForm.Classes
 			{
 				childEntity = value;
 				ClearCache();
-				/*
-				if (value != null)
-					Globals.ResolveFilterInitialValues(_filter, childEntity.XmlFilter);
-				*/
 			}
 		}
 
 		public void ResolveFilterInitialValues()
 		{
-            Globals.ResolveFilterInitialValues(_filter, childEntity.XmlFilter);
-        }
+			Globals.ResolveFilterInitialValues(_filter, childEntity.XmlFilter);
+		}
 
-        public RelationScenario RelationScenario
+		public RelationScenario RelationScenario
 		{
 			get { return relationScenario; }
 			set
@@ -123,7 +122,8 @@ namespace FogSoft.WinForm.Classes
 				yield return CreateChilObject(dtData.Rows[rowIndex]);
 		}
 
-		private PresentationObject CreateChilObject(DataRow row)
+		// CHANGED: private -> protected virtual
+		protected virtual PresentationObject CreateChilObject(DataRow row)
 		{
 			PresentationObject presentationObject = ResolveEntityForSelectedRow(row).CreateObject(row);
 			IObjectContainer objectContainer = presentationObject as IObjectContainer;
@@ -133,7 +133,20 @@ namespace FogSoft.WinForm.Classes
 				objectContainer.Filter = CacheFilterValues(_filter);
 			}
 
+			// NEW: сначала внутренний virtual hook (для наследников ObjectsIterator)
+			presentationObject = ProcessCreatedChildObject(presentationObject, row) ?? presentationObject;
+
+			// NEW: затем внешний callback (для композиции, например ObjectContainer)
+			if (ChildObjectPostProcessor != null)
+				presentationObject = ChildObjectPostProcessor(presentationObject, row) ?? presentationObject;
+
 			return presentationObject;
+		}
+
+		// NEW: точка расширения для наследников ObjectsIterator
+		protected virtual PresentationObject ProcessCreatedChildObject(PresentationObject childObject, DataRow row)
+		{
+			return childObject;
 		}
 
 		private Entity ResolveEntityForSelectedRow(DataRow row)
@@ -148,10 +161,10 @@ namespace FogSoft.WinForm.Classes
 			return GetEnumerator();
 		}
 
-        public Dictionary<string, object> Filter
+		public Dictionary<string, object> Filter
 		{
 			get { return _filter; }
 			set { _filter = value; }
 		}
-    }
+	}
 }
