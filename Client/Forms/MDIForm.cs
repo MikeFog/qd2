@@ -1,4 +1,4 @@
-п»їusing FogSoft.WinForm;
+using FogSoft.WinForm;
 using FogSoft.WinForm.Classes;
 using FogSoft.WinForm.Controls;
 using FogSoft.WinForm.DataAccess;
@@ -31,7 +31,7 @@ namespace Merlin.Forms
 	{
 		private const int WorkingDBVersion = 33;
 
-		private const string RefreshAlias = "РћР±РЅРѕРІРёС‚СЊ";
+		private const string RefreshAlias = "Обновить";
 		private readonly bool exitFlag;
 
 		private Timer announcementTimer;
@@ -169,13 +169,13 @@ namespace Merlin.Forms
 					MasterCreateAction();
 				else if (strMiName == "miActionJournalTraffic" || strMiName == "miActionJournalBuh"
 					|| strMiName == "miActionJournal")
-					ShowMassmediaActions(mi, RelationScenarios.ConfirmedAction, "РџРѕРґС‚РІРµСЂР¶РґС‘РЅРЅС‹Рµ СЂРµРєР»Р°РјРЅС‹Рµ Р°РєС†РёРё", 
+					ShowMassmediaActions(mi, RelationScenarios.ConfirmedAction, "Подтверждённые рекламные акции", 
 						Entities.FirmWithConfirmedActions, Entities.Action, Entities.HeadCompanyWithConfirmedActions);
 				else if (strMiName == "miActionJournalUnconfirmed")
-					ShowMassmediaActions(mi, RelationScenarios.UnconfirmedAction, "РњР°РєРµС‚С‹ СЂРµРєР»Р°РјРЅС‹С… Р°РєС†РёР№", 
+					ShowMassmediaActions(mi, RelationScenarios.UnconfirmedAction, "Макеты рекламных акций", 
 						Entities.FirmWithUnconfirmedActions, Entities.Action, Entities.HeadCompanyWithUnconfirmedActions);
 				else if (strMiName == "miActionJournalDeleted")
-					ShowMassmediaActions(mi, RelationScenarios.DeletedAction, "РЈРґР°Р»С‘РЅРЅС‹Рµ СЂРµРєР»Р°РјРЅС‹Рµ Р°РєС†РёРё", 
+					ShowMassmediaActions(mi, RelationScenarios.DeletedAction, "Удалённые рекламные акции", 
 						Entities.FirmWithDeletedActions, Entities.ActionDeleted, Entities.HeadCompanyWithDeletedActions);
 				else if (strMiName == "miBank")
 					ShowBanks(mi);
@@ -271,6 +271,8 @@ namespace Merlin.Forms
                     Globals.ShowSimpleJournal(EntityManager.GetEntity((int)Entities.ManagerDiscountHistory), mi.Text);
                 else if (strMiName == "miManagerDiscountReason")
                     Globals.ShowSimpleJournal(EntityManager.GetEntity((int)Entities.ManagerDiscountReason), mi.Text);
+                else if (strMiName == "miBonusesStat")
+                    Globals.ShowSimpleJournal(EntityManager.GetEntity((int)Entities.StatBonuses), mi.Text);
             }
 			catch (Exception ex)
 			{
@@ -286,7 +288,7 @@ namespace Merlin.Forms
         {
 			try
 			{
-				if (MessageBox.ShowQuestion("Р’С‹ С…РѕС‚РёС‚Рµ СѓРґР°Р»РёС‚СЊ РІСЃРµ РЅРµРёСЃРїРѕР»СЊР·СѓРµРјС‹Рµ СЂРѕР»РёРєРё-РїСѓСЃС‚С‹С€РєРё?") == DialogResult.Yes)
+				if (MessageBox.ShowQuestion("Вы хотите удалить все неиспользуемые ролики-пустышки?") == DialogResult.Yes)
 				{
 					Cursor.Current = Cursors.WaitCursor;
                     DataAccessor.ExecuteNonQuery("DeleteUnusedDummyRollers", DataAccessor.CreateParametersDictionary());
@@ -299,7 +301,7 @@ namespace Merlin.Forms
         {
             try
             {
-                if (MessageBox.ShowQuestion("Р’С‹ С…РѕС‚РёС‚Рµ РѕРєРѕРЅС‡Р°С‚РµР»СЊРЅРѕ СѓРґР°Р»РёС‚СЊ РІСЃРµ Р°РєС†РёРё РёР· Р¶СѓСЂРЅР°Р»Р° СѓРґР°Р»С‘РЅРЅС‹С… Р°РєС†РёР№?") == DialogResult.Yes)
+                if (MessageBox.ShowQuestion("Вы хотите окончательно удалить все акции из журнала удалённых акций?") == DialogResult.Yes)
                 {
                     Cursor.Current = Cursors.WaitCursor;
                     DataAccessor.ExecuteNonQuery("DeleteDeletedActions", DataAccessor.CreateParametersDictionary());
@@ -312,7 +314,7 @@ namespace Merlin.Forms
         {
             try
             {
-                if (MessageBox.ShowQuestion("Р’С‹ С…РѕС‚РёС‚Рµ РїРµСЂРµРјРµСЃС‚РёС‚СЊ РјР°РєРµС‚С‹ СЂРµРєР»Р°РјРЅС‹С… Р°РєС†РёР№ РІ Р¶СѓСЂРЅР°Р» СѓРґР°Р»С‘РЅРЅС‹С… Р°РєС†РёР№?") == DialogResult.Yes)
+                if (MessageBox.ShowQuestion("Вы хотите переместить макеты рекламных акций в журнал удалённых акций?") == DialogResult.Yes)
                 {
                     Cursor.Current = Cursors.WaitCursor;
                     DataAccessor.ExecuteNonQuery("DeleteUnconfirmedActions", DataAccessor.CreateParametersDictionary(), 300, true);
@@ -348,11 +350,11 @@ namespace Merlin.Forms
 			Entity.Action[] menu = new[]
 			                       	{
 			                       		new Entity.Action(Constants.EntityActions.Refresh, RefreshAlias, Constants.ActionsImages.Refresh),
-			                       		new Entity.Action(Constants.EntityActions.AddNew, "РЎРѕР·РґР°С‚СЊ РЅРѕРІСѓСЋ РЎРєРёРґРєСѓ")
+			                       		new Entity.Action(Constants.EntityActions.AddNew, "Создать новую Скидку")
 			                       	};
 
 			FakeContainer container =
-				new FakeContainer("РЎРєРёРґРєРё", menu, RelationManager.GetScenario(RelationScenarios.PackageDiscount));
+				new FakeContainer("Скидки", menu, RelationManager.GetScenario(RelationScenarios.PackageDiscount));
 			Globals.ShowBrowser(container, mi.Text, this);
 		}
 
@@ -411,10 +413,10 @@ namespace Merlin.Forms
 			Entity.Action[] menu = new[]
 			                       	{
 			                       		new Entity.Action(Constants.EntityActions.Refresh, RefreshAlias, Constants.ActionsImages.Refresh),
-			                       		new Entity.Action(Constants.EntityActions.AddNew, "РЎРѕР·РґР°С‚СЊ РЅРѕРІСѓСЋ СЃС‚СѓРґРёСЋ")
+			                       		new Entity.Action(Constants.EntityActions.AddNew, "Создать новую студию")
 			                       	};
 
-			FakeContainer container = new FakeContainer("РЎС‚СѓРґРёРё", menu,
+			FakeContainer container = new FakeContainer("Студии", menu,
 			                                            RelationManager.GetScenario(RelationScenarios.StudioTariff));
 			Globals.ShowBrowser(container, mi.Text, this);
 		}
@@ -515,10 +517,10 @@ namespace Merlin.Forms
 			Entity.Action[] menu = new[]
 			                       	{
 			                       		new Entity.Action(Constants.EntityActions.Refresh, RefreshAlias, Constants.ActionsImages.Refresh),
-			                       		new Entity.Action(Constants.EntityActions.AddNew, "РЎРѕР·РґР°С‚СЊ РЅРѕРІСѓСЋ СЂР°РґРёРѕСЃС‚Р°РЅС†РёСЋ")
+			                       		new Entity.Action(Constants.EntityActions.AddNew, "Создать новую радиостанцию")
 			                       	};
 
-			var container = new FakeContainer("Р Р°РґРёРѕСЃС‚Р°РЅС†РёСЏ", menu, RelationManager.GetScenario(RelationScenarios.DisabledWindows));
+			var container = new FakeContainer("Радиостанция", menu, RelationManager.GetScenario(RelationScenarios.DisabledWindows));
 			Globals.ShowBrowser(container, mi.Text, this);
 		}
 
@@ -527,10 +529,10 @@ namespace Merlin.Forms
 			Entity.Action[] menu = new[]
 			                       	{
 			                       		new Entity.Action(Constants.EntityActions.Refresh, RefreshAlias, Constants.ActionsImages.Refresh),
-			                       		new Entity.Action(Constants.EntityActions.AddNew, "РЎРѕР·РґР°С‚СЊ РЅРѕРІСѓСЋ СЂР°РґРёРѕСЃС‚Р°РЅС†РёСЋ")
+			                       		new Entity.Action(Constants.EntityActions.AddNew, "Создать новую радиостанцию")
 			                       	};
 
-			var container = new FakeContainer("Р Р°РґРёРѕСЃС‚Р°РЅС†РёСЏ", menu, RelationManager.GetScenario(RelationScenarios.SponsorProgramm));
+			var container = new FakeContainer("Радиостанция", menu, RelationManager.GetScenario(RelationScenarios.SponsorProgramm));
 			Globals.ShowBrowser(container, mi.Text, this);
 		}
 
@@ -539,10 +541,10 @@ namespace Merlin.Forms
 			Entity.Action[] menu = new[]
 			                       	{
 			                       		new Entity.Action(Constants.EntityActions.Refresh, RefreshAlias, Constants.ActionsImages.Refresh),
-			                       		new Entity.Action(Constants.EntityActions.AddNew, "РЎРѕР·РґР°С‚СЊ РЅРѕРІСѓСЋ СЂР°РґРёРѕСЃС‚Р°РЅС†РёСЋ")
+			                       		new Entity.Action(Constants.EntityActions.AddNew, "Создать новую радиостанцию")
 			                       	};
 
-			var container = new FakeContainer("Р Р°РґРёРѕСЃС‚Р°РЅС†РёСЏ", menu, RelationManager.GetScenario(RelationScenarios.Tariff));
+			var container = new FakeContainer("Радиостанция", menu, RelationManager.GetScenario(RelationScenarios.Tariff));
 			Globals.ShowBrowser(container, mi.Text, this);
 		}
 
@@ -551,10 +553,10 @@ namespace Merlin.Forms
 			Entity.Action[] menu = new[]
 			                       	{
 			                       		new Entity.Action(Constants.EntityActions.Refresh, RefreshAlias, Constants.ActionsImages.Refresh),
-			                       		new Entity.Action(Constants.EntityActions.AddNew, "Р”РѕР±Р°РІРёС‚СЊ СЃРєРёРґРєСѓ")
+			                       		new Entity.Action(Constants.EntityActions.AddNew, "Добавить скидку")
 			                       	};
 
-			var container = new FakeContainer("РЎРєРёРґРєРё", menu, RelationManager.GetScenario(RelationScenarios.Discount));
+			var container = new FakeContainer("Скидки", menu, RelationManager.GetScenario(RelationScenarios.Discount));
 			Globals.ShowBrowser(container, mi.Text, this);
 		}
 
@@ -563,10 +565,10 @@ namespace Merlin.Forms
 			Entity.Action[] menu = new[]
 			                       	{
 			                       		new Entity.Action(Constants.EntityActions.Refresh, RefreshAlias, Constants.ActionsImages.Refresh),
-			                       		new Entity.Action(Constants.EntityActions.AddNew, "РЎРѕР·РґР°С‚СЊ РЅРѕРІСѓСЋ СЂР°РґРёРѕСЃС‚Р°РЅС†РёСЋ")
+			                       		new Entity.Action(Constants.EntityActions.AddNew, "Создать новую радиостанцию")
 			                       	};
 
-			var container = new FakeContainer("Р Р°РґРёРѕСЃС‚Р°РЅС†РёСЏ", menu, RelationManager.GetScenario(RelationScenarios.Module));
+			var container = new FakeContainer("Радиостанция", menu, RelationManager.GetScenario(RelationScenarios.Module));
 			Globals.ShowBrowser(container, mi.Text, this);
 		}
 
@@ -575,7 +577,7 @@ namespace Merlin.Forms
 			Entity.Action[] menu = new[]
 									   {
 										new Entity.Action(Constants.EntityActions.Refresh, RefreshAlias, Constants.ActionsImages.Refresh),
-										new Entity.Action(Constants.EntityActions.AddNew, "РЎРѕР·РґР°С‚СЊ РЅРѕРІС‹Р№ РїСЂРµРґРјРµС‚ СЂРµРєР»Р°РјС‹")
+										new Entity.Action(Constants.EntityActions.AddNew, "Создать новый предмет рекламы")
 									   };
 			FakeContainer container = new AdvertTypeContainer();
 			Globals.ShowBrowser(container, mi.Text, this);
@@ -756,11 +758,11 @@ namespace Merlin.Forms
 			Entity.Action[] menu = new[]
 			                       	{
 			                       		new Entity.Action(Constants.EntityActions.Refresh, RefreshAlias, Constants.ActionsImages.Refresh),
-			                       		new Entity.Action(Constants.EntityActions.AddNew, "РЎРѕР·РґР°С‚СЊ РЅРѕРІС‹Р№ РїР°РєРµС‚РЅС‹Р№ РјРѕРґСѓР»СЊ")
+			                       		new Entity.Action(Constants.EntityActions.AddNew, "Создать новый пакетный модуль")
 			                       	};
 
 			FakeContainer container =
-				new FakeContainer("РџР°РєРµС‚РЅС‹Рµ РјРѕРґСѓР»Рё", menu, RelationManager.GetScenario(RelationScenarios.PackModules));
+				new FakeContainer("Пакетные модули", menu, RelationManager.GetScenario(RelationScenarios.PackModules));
 			Globals.ShowBrowser(container, mi.Text, this);
 		}
 
@@ -830,7 +832,7 @@ namespace Merlin.Forms
 					break;
 				case "miStats.SponsorBusiness":
 					entity = Entities.StatsSponsorBusiness;
-                    caption = "Р¤Р°РєС‚РёС‡РµСЃРєРѕРµ СЂР°Р·РјРµС‰РµРЅРёРµ СЃРїРѕРЅСЃРѕСЂСЃРєРёС… РїСЂРѕРіСЂР°РјРј";
+                    caption = "Фактическое размещение спонсорских программ";
                     break;
 				case "miStats.RollersCreated":
 					entity = Entities.StatsRollersCreated;
@@ -840,14 +842,14 @@ namespace Merlin.Forms
 					break;
                 case "miStats.ModuleLoading":
 					entity = Entities.StatModuleLoading;
-					caption = "Р¤Р°РєС‚РёС‡РµСЃРєРѕРµ СЂР°Р·РјРµС‰РµРЅРёРµ СЂРµРєР»Р°РјРЅС‹С… РјРѕРґСѓР»РµР№";
+					caption = "Фактическое размещение рекламных модулей";
 					break;
 				case "miStats.ModuleFinancy":
 					entity = Entities.StatModuleFinancy;
 					break;
 				case "miStats.PackModuleLoading":
 					entity = Entities.StatPackModuleLoading;
-                    caption = "Р¤Р°РєС‚РёС‡РµСЃРєРѕРµ СЂР°Р·РјРµС‰РµРЅРёРµ РїР°РєРµС‚РЅС‹С… СЂРµРєР»Р°РјРЅС‹С… РјРѕРґСѓР»РµР№";
+                    caption = "Фактическое размещение пакетных рекламных модулей";
                     break;
 				case "miStats.PackModuleFinancy":
 					entity = Entities.StatPackModuleFinancy;
@@ -875,7 +877,7 @@ namespace Merlin.Forms
 		private static void ShowStatBalance(ToolStripItem mi)
 		{
 			StatBalanceJournalForm journal = new StatBalanceJournalForm(EntityManager.GetEntity((int) Entities.StatsBalance),
-			                                                            "РЎС‚Р°С‚РёСЃС‚РёРєР° :: " + mi.Text) { MdiParent = Globals.MdiParent, Icon = Globals.MdiParent.Icon };
+			                                                            "Статистика :: " + mi.Text) { MdiParent = Globals.MdiParent, Icon = Globals.MdiParent.Icon };
 			journal.Show();
 		}
 
@@ -920,7 +922,7 @@ namespace Merlin.Forms
 
             var outFolder = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "CommercialOffers");
             Directory.CreateDirectory(outFolder);
-            var fileName = $"РљРџ РґР»СЏ Р Р°РґРёРѕ-Р”СЂР°Р№РІ {DateTime.Now:dd.MM.yyyy-HH-mm-ss}.docx";
+            var fileName = $"КП для Радио-Драйв {DateTime.Now:dd.MM.yyyy-HH-mm-ss}.docx";
             var outPath = Path.Combine(outFolder, fileName);
 
 
@@ -928,7 +930,7 @@ namespace Merlin.Forms
 				Class1.BuildTestSnapshotsForCp(),
 				templatePath,
 				outPath,
-				clientName: "Р Р°РґР°СЂ-Р”СЂР°Р№РІ",
+				clientName: "Радар-Драйв",
 				docDate: DateTime.Today,
 				contactName: SecurityManager.LoggedUser.FullName,
 				contactEmail: SecurityManager.LoggedUser.Email,
@@ -1003,7 +1005,7 @@ namespace Merlin.Forms
 			a.DoAction("Split", this, InterfaceObjects.SimpleJournal);
 			return;
 
-            ShowMassmediaActions(new ToolStripMenuItem("РђРєС†РёРё"));
+            ShowMassmediaActions(new ToolStripMenuItem("Акции"));
 			*/
 
             if (ConfigurationUtil.GetBooleanSettings("Announcement.Disable", false))
@@ -1085,7 +1087,7 @@ namespace Merlin.Forms
 
 		private void MDIForm_KeyDown(object sender, KeyEventArgs e)
 		{
-			// РџРµСЂРµР·Р°РіСЂСѓР·РёС‚СЊ РѕР±СЉРµРєС‚С‹ РёР· Р±Р°Р·С‹
+			// Перезагрузить объекты из базы
 			if (ConfigurationUtil.IsTestMode && e.Alt && e.Control && e.KeyCode == Keys.R)
 			{
 				EntityManager.ClearHash();
@@ -1096,7 +1098,7 @@ namespace Merlin.Forms
 
 				if (ConfigurationUtil.IsFullLoadDictionaries)
 				{
-					ProgressForm.Show(this, MdiFormReloadObjects, "РџРµСЂРµР·Р°РіСЂСѓР·РєР° РѕР±СЉРµРєС‚РѕРІ...", null);
+					ProgressForm.Show(this, MdiFormReloadObjects, "Перезагрузка объектов...", null);
 				}
 			}
 		}
