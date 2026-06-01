@@ -194,6 +194,101 @@ Known invariants/risks:
 - Discount/final price updates often require immediate recalculation.
 - Transaction boundaries are critical for multi-campaign updates.
 
+## Template-based advertising issue generation
+
+Scope:
+- Covers template add/remove flow initiated from campaign screens and from fan placement editing (`EditIssuesForm` + `TariffWithRangeGrid`).
+
+Entry points and form opening:
+- `CampaignForm.tbbTemplate_Click` creates `FrmTemplate` with current `IssueTemplate`.
+- `EditIssuesForm` inherits `CampaignForm`, so it uses the same `tbbTemplate_Click` entry point.
+- Template mode is activated by `CampaignForm.SetEditMode` (`EditMode.Template`) when toolbar template button is checked.
+
+`FrmTemplate` and `FrmGenerator` interaction:
+- `FrmTemplate` edits template date interval, weekday/odd-even rule, and add/remove mode (`IssueTemplate.IsModeAdd`).
+- In template edit mode, clicking a tariff cell triggers `CampaignForm.grid_CellClicked`.
+- `grid_CellClicked` calls `IssueTemplate.SetTime(windowDate)` and opens `FrmGenerator`.
+- `FrmGenerator.Generate()` iterates template dates (`IssueTemplate.MoveNext`) and dispatches:
+  - add path: `AddIssues()`;
+  - remove path: `DeleteIssues()`.
+
+Template representation (UI + code):
+- Day selection and odd/even mode: `FrmTemplate` controls + `IssueTemplate.Day2AddMode`, `IssueTemplate.WeekDays`, `IssueTemplate.IsOdd`.
+- Date boundaries: `IssueTemplate.StartDate` / `FinishDate`.
+- Selected position/window time comes from clicked grid cell (`ITariffWindow.WindowDate`) and is injected via `IssueTemplate.SetTime`.
+- Station/campaign scope is defined by active grid context:
+  - normal campaign mode: current `Campaign` (single massmedia campaign line);
+  - fan placement mode: action-wide range grid (`TariffWithRangeGrid`) covering all campaigns of the action.
+
+How selected template positions become issues:
+- For normal campaign mode:
+  - `FrmGenerator.AddSimpleIssue` -> `Campaign.AddIssue(...)` -> `RollerIssue.Update()` -> DB write via `IssueIUD` path.
+- For fan placement mode (`TariffWithRangeGrid`):
+  - `FrmGenerator` uses delegates:
+    - add: `TariffWithRangeGrid.AddIssuesRange(date)` -> proc `AddRangeIssues`;
+    - remove: `TariffWithRangeGrid.DeleteIssuesRange(date)` -> proc `MasterIssueDelete`.
+
+Insert/remove/recalculate/refresh flow:
+- Add (campaign): issue inserted per date; on generator finish `Campaign.RecalculateAction()`.
+- Remove (campaign): `CampaignOnSingleMassmedia.GetIssuesForDate(date)` + `issue.Delete(true)`; on finish recalculation runs.
+- Add (fan placement): `AddRangeIssues` inserts one issue per campaign/massmedia in action context; `_action.Recalculate()` is called.
+- Remove (fan placement): `MasterIssueDelete` removes matching issue per campaign/massmedia in action context; `_action.Recalculate()` is called.
+- UI refresh:
+  - `CampaignForm.grid_CellClicked` refreshes grid when template intersects visible date range.
+  - For `TariffWithRangeGrid`, `GridRefreshed` event in `EditIssuesForm` updates added issues grid and action statistics.
+
+Responsible methods/classes:
+- Add issues by template:
+  - `CampaignForm.grid_CellClicked`
+  - `FrmGenerator.Generate` / `AddIssues`
+  - `Campaign.AddIssue`, `TariffWithRangeGrid.AddIssuesRange`
+- Delete/remove issues by template:
+  - `FrmGenerator.DeleteIssues`
+  - `CampaignOnSingleMassmedia.GetIssuesForDate` + `Issue.Delete(true)` (campaign mode)
+  - `TariffWithRangeGrid.DeleteIssuesRange` (fan placement mode)
+- Apply template to campaign:
+  - `CampaignForm` + `FrmTemplate` + `FrmGenerator` (campaign-backed constructors)
+- Apply template to existing fan-placement issues:
+  - `CampaignForm` with range-grid branch -> `FrmGenerator` delegate constructor
+- Refresh after changes:
+  - `CampaignForm.RefreshGrid`, `CampaignForm.CampaignStatusChanged`
+  - `EditIssuesForm.TariffGridRefreshed`, `ShowCurrentIssues`, `Action.DisplayData`
+
+Database objects involved:
+- Stored procedures:
+  - `AddRangeIssues` (fan placement add)
+  - `MasterIssueDelete` (fan placement delete)
+  - `TariffWindowWithRange` (range grid data source)
+  - `IssuesByDate` (campaign-mode delete candidate retrieval)
+  - `ActionRecalculate` (recalculation after modifications)
+  - `IssueIUD` (low-level insert/delete execution)
+- Main tables touched by this flow:
+  - `Action`, `Campaign`, `Issue`, `TariffWindow`, `Tariff`.
+
+Mode/parameter differences (normal vs fan placement):
+- Normal campaign mode is driven by `_campaign` object in `FrmGenerator`.
+- Fan placement mode is driven by `TariffWithRangeGrid` delegates and `ActionID`-scoped procedures.
+- Distinguishing parameters for fan placement procs:
+  - `@actionID`, `@issueDate`, `@rollerID`, `@positionID`, optional `@grantorID`;
+  - add also uses `@rollerDuration`, `@considerUnconfirmed`.
+
+How `EditIssuesForm` uses template mechanism:
+- `EditIssuesForm` hosts `TariffWithRangeGrid` and inherits template toolbar behavior from `CampaignForm`.
+- Template dialog in range/fan placement context allows choosing both add and remove modes.
+- Range branch in `CampaignForm.grid_CellClicked` now passes both add and remove delegates into `FrmGenerator`.
+
+Business rules to preserve in this flow:
+- Do not delete unrelated issues (delete criteria remain date+roller+position within current action scope).
+- Do not affect other actions (procedures are scoped by `@actionID`).
+- Preserve station/massmedia filtering (`Campaign` rows under the current action, `TariffWindowWithRange` mm intersection logic).
+- Preserve date/time boundaries (30-minute window selection via clicked tariff window datetime).
+- Preserve confirmed/unconfirmed behavior (`considerUnconfirmed` handling in range add; existing campaign delete path unchanged).
+- Preserve recalculation (`RecalculateAction`/`Action.Recalculate`) after modifications.
+- Preserve existing UI refresh chain and stats updates.
+
+Open questions:
+- In campaign-mode delete (`IssuesByDate` + exact datetime match), behavior for multiple issues in the same date/time slot should be confirmed by domain owner.
+
 ## Price calculation
 
 Purpose:
