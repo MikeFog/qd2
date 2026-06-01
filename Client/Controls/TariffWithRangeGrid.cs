@@ -135,6 +135,39 @@ namespace Merlin.Controls
 			return row;
 		}
 
+		public List<PresentationObject> DeleteIssuesRange(DateTime windowDate)
+		{
+			Dictionary<string, object> parameters = DataAccessor.CreateParametersDictionary();
+			parameters[Merlin.Classes.Action.ParamNames.ActionId] = _action.ActionId;
+			parameters["issueDate"] = windowDate;
+			parameters["rollerID"] = Roller.RollerId;
+			parameters["positionId"] = (int)RollerPosition;
+			if (Grantor != null)
+				parameters["grantorID"] = Grantor.Id;
+			DataAccessor.ExecuteNonQuery("MasterIssueDelete", parameters);
+			_action.Recalculate();
+
+			DataRow rowToDelete = null;
+			foreach (DataRow row in AddedIssues.Rows)
+			{
+				DateTime issueDate = ParseHelper.GetDateTimeFromObject(row["issueDate"], DateTime.MinValue);
+				int rollerId = ParseHelper.GetInt32FromObject(row["rollerID"], 0);
+				int positionId = ParseHelper.GetInt32FromObject(row["positionID"], 0);
+				if (issueDate == windowDate && rollerId == Roller.RollerId && positionId == (int)RollerPosition)
+				{
+					rowToDelete = row;
+					break;
+				}
+			}
+
+			if (rowToDelete == null)
+				return new List<PresentationObject>();
+
+			PresentationObject issue = new RollerIssue(rowToDelete);
+			AddedIssues.Rows.Remove(rowToDelete);
+			return new List<PresentationObject> { issue };
+		}
+
         private void AddIssuesRange(DataGridViewCell cell)
 	    {
 			try
