@@ -137,11 +137,6 @@ namespace Merlin.Forms
 			get { return _tariffGrid is TariffWithRangeGrid; } 
 		}
 
-		protected virtual bool ForceTemplateAddModeForRangeCampaign
-		{
-			get { return true; }
-		}
-
 		internal bool ChangeFlag
 		{
 			get { return changeFlag; }
@@ -749,9 +744,6 @@ namespace Merlin.Forms
 				if(tbbTemplate.Checked)
 				{
 					FrmTemplate form = new FrmTemplate(_template);
-					if (IsRangeCampaign && ForceTemplateAddModeForRangeCampaign)
-						form.SetModeAdd();
-
 					if(form.ShowDialog(this) != DialogResult.OK)
 						tbbTemplate.Checked = false;
 					else

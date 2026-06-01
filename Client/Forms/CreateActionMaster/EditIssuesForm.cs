@@ -27,11 +27,6 @@ namespace Merlin.Forms.CreateActionMaster
 			get { return _firm; }
 		}
 
-		protected override bool ForceTemplateAddModeForRangeCampaign
-		{
-			get { return false; }
-		}
-
 		protected override void SetFormCaption()
 		{
 			//base.SetFormCaption();

@@ -109,7 +109,7 @@ Key files for this flow:
 - SQL: `AddRangeIssues.sql`, `MasterIssueDelete.sql`, `TariffWindowWithRange.sql`
 
 Fan placement safety checklist:
-- Confirm remove mode is available only where required (currently `EditIssuesForm` via `ForceTemplateAddModeForRangeCampaign` override).
+- Confirm remove mode is available in range/fan placement template flow.
 - Reuse existing stored procedures (`AddRangeIssues`, `MasterIssueDelete`) instead of duplicating business logic.
 - Keep delete criteria constrained to current action context + selected slot/roller/position.
 - Keep recalculation (`Action.Recalculate` / `Campaign.RecalculateAction`) and UI refresh chain intact after template operations.

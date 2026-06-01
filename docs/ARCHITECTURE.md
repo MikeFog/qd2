@@ -274,7 +274,7 @@ Mode/parameter differences (normal vs fan placement):
 
 How `EditIssuesForm` uses template mechanism:
 - `EditIssuesForm` hosts `TariffWithRangeGrid` and inherits template toolbar behavior from `CampaignForm`.
-- It overrides `ForceTemplateAddModeForRangeCampaign` to allow both add and remove template modes in fan placement context.
+- Template dialog in range/fan placement context allows choosing both add and remove modes.
 - Range branch in `CampaignForm.grid_CellClicked` now passes both add and remove delegates into `FrmGenerator`.
 
 Business rules to preserve in this flow:
