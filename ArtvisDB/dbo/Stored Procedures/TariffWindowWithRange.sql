@@ -60,6 +60,7 @@ BEGIN
         HasIssuesAllMassmedia            bit NOT NULL DEFAULT 0,
         HasIssuesUnconfirmed             bit NOT NULL DEFAULT 0,
         HasIssuesUnconfirmedAllMassmedia bit NOT NULL DEFAULT 0,
+        HasIssuesThisAction              bit NOT NULL DEFAULT 0,  -- ← новая
         CONSTRAINT PK_res PRIMARY KEY CLUSTERED ([date], [enddate])
     );
     INSERT INTO #res([date],[enddate],[col],[row])
@@ -89,6 +90,7 @@ BEGIN
         @maxEnd  datetime = (SELECT MAX([enddate]) FROM #res);
     SELECT
         tw.massmediaID,
+        tw.windowId,                  -- ← добавлено
         tw.windowDateOriginal,
         windowDay = CONVERT(datetime, CONVERT(varchar(8), tw.windowDateOriginal, 112), 112),
         tw.duration,
@@ -186,7 +188,7 @@ BEGIN
     --------------------------------------------------------------------
     -- 7) Все 4 колонки — один проход по данным
     --    FIX: исправлен некорректный JOIN #mm m ON m.massmediaID = m.massmediaID
-    --    OPT: ранний WHERE отсекает строки, не влияющие ни на одну из 4 колонок
+    --    OPT: ранний WHERE отсекает строки, не influencing ни на одну из 4 колонок
     --------------------------------------------------------------------
     ;WITH all_issues AS
     (
@@ -238,7 +240,28 @@ BEGIN
     FROM #res r
     JOIN slots s ON s.[date] = r.[date];
     --------------------------------------------------------------------
-    -- 8) Возвраты (как было)
+    -- 8) HasIssuesThisAction  ← должен быть ДО финальных SELECT-ов
+    --------------------------------------------------------------------
+    ;WITH this_action_issues AS
+    (
+        SELECT r.[date]
+        FROM #res r
+        JOIN #tw tw
+            ON tw.windowDateOriginal BETWEEN r.[date] AND r.[enddate]
+        JOIN dbo.Issue i
+            ON i.actualWindowID = tw.windowId
+        JOIN dbo.Campaign c
+            ON c.campaignID = i.campaignID
+           AND c.actionID   = @actionID
+        GROUP BY r.[date]
+    )
+    UPDATE r SET
+        r.HasIssuesThisAction = CONVERT(bit, 1)
+    FROM #res r
+    JOIN this_action_issues x ON x.[date] = r.[date];
+
+    --------------------------------------------------------------------
+    -- 9) Возвраты  ← только после всех UPDATE
     --------------------------------------------------------------------
     SELECT
         r.[date], r.[enddate], r.[col], r.[row],
@@ -248,6 +271,7 @@ BEGIN
         r.isPrime,
         r.HasIssues, r.HasIssuesAllMassmedia,
         r.HasIssuesUnconfirmed, r.HasIssuesUnconfirmedAllMassmedia,
+        r.HasIssuesThisAction,  -- ← новая
         DATEPART(hour, r.[date]) AS h,
         DATEPART(minute, r.[date]) AS m
     FROM #res r

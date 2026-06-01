@@ -168,13 +168,20 @@ namespace Merlin.Controls
                         continue;
                     }
 
+                    var cell = GetCell(rowIndex, columnIndex);
+                    if (window.HasCurrentActionIssues)
+                    {
+                        MarkCellAsHavingCurrentActionIssues(cell);
+                        continue;
+                    }
+
                     bool hasAllMassmediaIssues = HasAllMassmediaIssuesFlags(window);
 					bool hasAnyIssues = hasAllMassmediaIssues || HasFirmIssuesFlags(window);
 
                     if (!hasAnyIssues)
                         continue;
 
-                    var cell = GetCell(rowIndex, columnIndex);
+                    
                     if (hasAllMassmediaIssues)
                         MarkCellAsHavingCurrentFirmIssues(cell);
                     else if (hasAnyIssues)

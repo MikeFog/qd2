@@ -647,6 +647,11 @@ namespace Merlin.Controls
             SetCellForeColor(cell.RowIndex, cell.ColumnIndex, Color.LightSeaGreen);
         }
 
+        protected void MarkCellAsHavingCurrentActionIssues(DataGridViewCell cell)
+        {
+            SetCellForeColor(cell.RowIndex, cell.ColumnIndex, Color.Red);
+        }
+
         protected void MarkCellAsHavingCurrentFirmIssuesAnyMassmedia(DataGridViewCell cell)
         {
             SetCellForeColor(cell.RowIndex, cell.ColumnIndex, Color.Orange);

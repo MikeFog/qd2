@@ -12,6 +12,7 @@ namespace Merlin.Classes
         {
             _row = row;
 
+            HasCurrentActionIssues = ParseHelper.GetBooleanFromObject(row["HasIssuesThisAction"], false);
             HasIssues = ParseHelper.GetBooleanFromObject(row["HasIssues"], false);
             HasIssuesAllMassmedia = ParseHelper.GetBooleanFromObject(row["HasIssuesAllMassmedia"], false);
             HasIssuesUnconfirmed = ParseHelper.GetBooleanFromObject(row["HasIssuesUnconfirmed"], false);
@@ -50,6 +51,7 @@ namespace Merlin.Classes
             get { return int.Parse(_row["lastPositionsUnconfirmed"].ToString()); }
         }
 
+        public bool HasCurrentActionIssues { get; private set; }
         public bool HasIssues { get; private set; }
         public bool HasIssuesAllMassmedia { get; private set; }
         public bool HasIssuesUnconfirmed { get; private set; }
