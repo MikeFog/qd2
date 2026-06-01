@@ -86,6 +86,35 @@
 - Edge cases (partial payments, over-allocation, zero balances):
 - Validation dataset and expected results:
 
+## Template-based advertising issue generation
+
+Quick investigation map:
+- Form open path:
+  - `CampaignForm.tbbTemplate_Click` -> `FrmTemplate`.
+  - `EditIssuesForm` inherits `CampaignForm`, so same toolbar/template entry point is used.
+- Template execution path:
+  - template mode (`EditMode.Template`) -> `CampaignForm.grid_CellClicked` -> `FrmGenerator`.
+  - add/remove switch is `IssueTemplate.IsModeAdd`.
+- Mode-specific execution:
+  - Campaign mode: `FrmGenerator` uses `_campaign` add/delete logic.
+  - Fan placement mode (`TariffWithRangeGrid`): `FrmGenerator` uses range delegates (`AddIssuesRange`, `DeleteIssuesRange`).
+
+Key files for this flow:
+- `Client/Forms/FrmTemplate.cs`
+- `Client/Forms/FrmGenerator.cs`
+- `Client/Forms/CampaignForm.cs`
+- `Client/Forms/CreateActionMaster/EditIssuesForm.cs`
+- `Client/Controls/TariffWithRangeGrid.cs`
+- `Client/Classes/IssueTemplate.cs`
+- SQL: `AddRangeIssues.sql`, `MasterIssueDelete.sql`, `TariffWindowWithRange.sql`
+
+Fan placement safety checklist:
+- Confirm remove mode is available in range/fan placement template flow.
+- Reuse existing stored procedures (`AddRangeIssues`, `MasterIssueDelete`) instead of duplicating business logic.
+- Keep delete criteria constrained to current action context + selected slot/roller/position.
+- Keep recalculation (`Action.Recalculate` / `Campaign.RecalculateAction`) and UI refresh chain intact after template operations.
+- Verify no behavior regressions for non-range campaign template flow.
+
 ## Definition of done for AI changes
 
 - Build check attempted and environment limitations stated (if build cannot run locally).
