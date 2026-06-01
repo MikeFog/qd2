@@ -21,28 +21,10 @@ namespace Merlin.Classes
                 (ChildEntity.Id == (int)Entities.Action || ChildEntity.Id == (int)Entities.ActionDeleted))
             {
                 string actionName = ParseHelper.GetStringFromObject(childObject[Constants.Parameters.Name], string.Empty);
-
-                if (!string.IsNullOrEmpty(actionName))
-                {
-                    childObject[Constants.Parameters.Name] = string.Format(
-                        "{0} {1}",
-                        actionName,
-                        GetStartDatePeriodString(row[Action.ParamNames.StartDate], row[Action.ParamNames.FinishDate]));
-                }
+                ((Action)childObject).SetName(Action.CreateNameWithStartDatePeriod(actionName, row));
             }
 
             return childObject;
-        }
-
-        private string GetStartDatePeriodString(object startDateObj, object finishDateObj)
-        {
-            if (startDateObj != null && startDateObj != DBNull.Value && DateTime.TryParse(startDateObj.ToString(), out DateTime startDate) &&
-                finishDateObj != null && finishDateObj != DBNull.Value && DateTime.TryParse(finishDateObj.ToString(), out DateTime finishDate))
-            {
-                return string.Format("[{0:dd.MM.yy}-{1:dd.MM.yy}]", startDate, finishDate);
-            }
-
-            return string.Empty;
         }
     }
 

@@ -1,4 +1,4 @@
-п»їusing System;
+using System;
 using System.Collections.Generic;
 using System.Data;
 using System.Globalization;
@@ -89,7 +89,8 @@ namespace Merlin.Classes
 
 		#endregion
 
-		protected Firm firm;
+		protected Firm _firm;
+        private string _name;
 
 		#region Constructors ----------------------------------
 
@@ -168,7 +169,48 @@ namespace Merlin.Classes
 			}
 		}
 
-		public DataTable Campaigns(bool forceLoad = false)
+		public static string CreateNameWithStartDatePeriod(string actionName, DataRow row)
+		{
+			return string.Format("{0} {1}", actionName,
+				GetStartDatePeriodString(row[Action.ParamNames.StartDate], row[Action.ParamNames.FinishDate]));
+        }
+
+        public static string CreateNameWithFirmAndStartDatePeriod(string actionName, DataRow row)
+        {
+            string firmName = row.Table.Columns.Contains(Merlin.Classes.Action.ParamNames.FirmName)
+                ? ParseHelper.GetStringFromObject(row[Merlin.Classes.Action.ParamNames.FirmName], string.Empty)
+                : string.Empty;
+
+            return string.Format("{0} ({1}) {2}",
+                    actionName,
+                    firmName,
+                    GetStartDatePeriodString(row[Action.ParamNames.StartDate], row[Action.ParamNames.FinishDate])
+                    );
+        }
+
+        private static string GetStartDatePeriodString(object startDateObj, object finishDateObj)
+        {
+            if (startDateObj != null && startDateObj != DBNull.Value && DateTime.TryParse(startDateObj.ToString(), out DateTime startDate) &&
+                finishDateObj != null && finishDateObj != DBNull.Value && DateTime.TryParse(finishDateObj.ToString(), out DateTime finishDate))
+            {
+                return string.Format("[{0:dd.MM.yy}-{1:dd.MM.yy}]", startDate, finishDate);
+            }
+
+            return string.Empty;
+        }
+
+        public override string Name 
+		{ 
+			get { return _name ?? base.Name; }
+		}
+
+		public void SetName(string name)
+        {
+            _name = name;
+            this[Constants.Parameters.Name] = name;
+        }
+
+        public DataTable Campaigns(bool forceLoad = false)
 		{
 			DataAccessor.PrepareParameters(parameters, ChildEntity, InterfaceObjects.SimpleJournal, Constants.Actions.Load);
 			return ((DataSet)DataAccessor.DoAction(parameters, forceLoad)).Tables[0];
@@ -203,12 +245,12 @@ namespace Merlin.Classes
 		{
 			get
 			{
-				if (firm == null)
+				if (_firm == null)
 				{
 					if (!parameters.ContainsKey(ParamNames.FirmId)) Refresh();
-					firm = Firm.GetFirmById(int.Parse(this[ParamNames.FirmId].ToString()));
+					_firm = Firm.GetFirmById(int.Parse(this[ParamNames.FirmId].ToString()));
 				}
-				return firm;
+				return _firm;
 			}
 		}
 
@@ -300,7 +342,7 @@ namespace Merlin.Classes
 						Application.DoEvents();
 						Agency agency = (Agency)po;
 						BillReport report = new BillReport(this, agency, bill, month);
-						report.Show(string.Format("РЎС‡С‘С‚ РЅР° РїСЂРµРґРѕРїР»Р°С‚Сѓ, Р°РіРµРЅСЃС‚РІРѕ '{0}' Р·Р° РјРµСЃСЏС† {1} {2} РіРѕРґР°", agency.Name
+						report.Show(string.Format("Счёт на предоплату, агенство '{0}' за месяц {1} {2} года", agency.Name
 							, DateTimeFormatInfo.CurrentInfo.MonthNames[month.Month - 1], month.Year));
 					}
 				}
@@ -330,7 +372,7 @@ namespace Merlin.Classes
 					MediaPlan.CreateInstance(GetCampaigns(Campaigns()), months, selectively).Show(false);
 					break;
 				case ActionMediaPlanType.Period:
-					FrmDateSelector selector = new FrmDateSelector(StartDate, FinishDate, "Р’С‹Р±РѕСЂ РїРµСЂРёРѕРґР°");
+					FrmDateSelector selector = new FrmDateSelector(StartDate, FinishDate, "Выбор периода");
 					if (selector.ShowDialog(Globals.MdiParent) == DialogResult.OK)
 						MediaPlan.CreateInstance(GetCampaigns(Campaigns()), selector.StartDate, selector.FinishDate, selectively).Show(false);
 					break;
@@ -435,9 +477,9 @@ namespace Merlin.Classes
 			get
 			{
 				if (SecurityManager.LoggedUser.IsAdmin || SecurityManager.LoggedUser.IsBookKeeper || !IsConfirmed) return true;
-				// РµСЃР»Рё Р°РєС†РёСЏ РЅР°С‡Р°Р»Р°СЃСЊ РІ РїСЂРµРґС‹РґСѓС‰РµРј РјРµСЃСЏС†Рµ РёР»Рё СЂР°РЅРµРµ, С‚Рѕ РЅРµР»СЊР·СЏ
+				// если акция началась в предыдущем месяце или ранее, то нельзя
 				if (new DateTime(StartDate.Year, StartDate.Month, 1) < new DateTime(DateTime.Today.Year, DateTime.Today.Month, 1)) return false;
-				// РµСЃР»Рё РЅР°С‡Р°Р»Рѕ РІ СЌС‚РѕРј РјРµСЃСЏС†Рµ, С‚Рѕ РЅРµ РґРѕР»Р¶РЅР° СѓР¶Рµ Р·Р°РєРѕРЅС‡РёС‚СЊСЃСЏ
+				// если начало в этом месяце, то не должна уже закончиться
 				if (FinishDate < DateTime.Today) return false;
 
 				return true;
@@ -497,7 +539,7 @@ namespace Merlin.Classes
 			owner.Cursor = Cursors.WaitCursor;
 
 			ContractReport report = new ContractReport(this, agency, bill);
-			report.Show("Р”РѕРіРѕРІРѕСЂ");
+			report.Show("Договор");
 		}
 
 		protected virtual void PrintSponsorContract(Form owner, Agency agency, bool exportReport)
@@ -509,7 +551,7 @@ namespace Merlin.Classes
 			owner.Cursor = Cursors.WaitCursor;
 
 			ContractReport report = new ContractReport(this, agency, bill, true);
-			report.Show("РЎРїРѕРЅСЃРѕСЂСЃРєРёР№ РґРѕРіРѕРІРѕСЂ");
+			report.Show("Спонсорский договор");
 		}
 
 		private void PrintBillContract(Form owner, Agency agency, bool exportReport)
@@ -520,7 +562,7 @@ namespace Merlin.Classes
 			Application.DoEvents();
 			owner.Cursor = Cursors.WaitCursor;
 			BillReport report = new BillContractReport(this, agency, bill);
-			report.Show("РЎС‡С‘С‚-РґРѕРіРѕРІРѕСЂ");
+			report.Show("Счёт-договор");
 		}
 
 
@@ -534,7 +576,7 @@ namespace Merlin.Classes
 			owner.Cursor = Cursors.WaitCursor;
 			BillReport report = new BillReport(this, agency, bill);
 			if (exportReport) report.Export(ReportExportFormat.WordForWindows);
-			else report.Show("РЎС‡С‘С‚");
+			else report.Show("Счёт");
 		}
 
 		private PresentationObject GetBill(Agency agency, Form owner)
@@ -592,7 +634,7 @@ namespace Merlin.Classes
 				Dictionary<string, object> procParameters = DataAccessor.CreateParametersDictionary();
 				procParameters.Add(ParamNames.ActionId, ActionId);
 				Globals.ShowSimpleJournal(EntityManager.GetEntity((int)Entities.ActionRollers),
-					string.Format("Р РѕР»РёРєРё СЂРµРєР»Р°РјРЅРѕР№ Р°РєС†РёРё в„– {0}", ActionId),
+					string.Format("Ролики рекламной акции № {0}", ActionId),
 					procParameters, showModal: true);
 				FireContainerRefreshed();
 			}
@@ -644,11 +686,11 @@ namespace Merlin.Classes
 			List<IssueSlotKey> sortedSlots = new List<IssueSlotKey>(commonSlots);
 			sortedSlots.Sort(IssueSlotKeyComparer.Instance);
 
-			// в”Ђв”Ђ BuildAddedIssuesTable: С†РёРєР» РїРѕ СЃР»РѕС‚Р°Рј в”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђв”Ђ
+			// ?? BuildAddedIssuesTable: цикл по слотам ??????????????????????????????????
 			foreach (IssueSlotKey slot in sortedSlots)
 			{
-				int count = GetSlotIssueCount(slot, groupedIssues);   // в†ђ СЃРєРѕР»СЊРєРѕ issues РІ СЃР»РѕС‚Рµ
-				for (int i = 0; i < count; i++)                        // в†ђ РёС‚РµСЂРёСЂСѓРµРј РїРѕ РєР°Р¶РґРѕРјСѓ
+				int count = GetSlotIssueCount(slot, groupedIssues);   // ? сколько issues в слоте
+				for (int i = 0; i < count; i++)                        // ? итерируем по каждому
 				{
 					DataRow representative = GetRepresentativeIssueRow(slot, groupedIssues, i);
 					if (representative != null)
@@ -718,22 +760,22 @@ namespace Merlin.Classes
 			return commonSlots ?? new HashSet<IssueSlotKey>();
 		}
 
-		private static DataRow GetRepresentativeIssueRow(IssueSlotKey slot, List<Dictionary<IssueSlotKey, List<DataRow>>> groupedIssues, int index = 0)                                         // в†ђ Р±С‹Р»Рѕ: С‚РѕР»СЊРєРѕ [0]
+		private static DataRow GetRepresentativeIssueRow(IssueSlotKey slot, List<Dictionary<IssueSlotKey, List<DataRow>>> groupedIssues, int index = 0)                                         // ? было: только [0]
 		{
 			foreach (Dictionary<IssueSlotKey, List<DataRow>> campaignSlots in groupedIssues)
 			{
 				List<DataRow> slotIssues;
 				if (campaignSlots.TryGetValue(slot, out slotIssues)
 					&& slotIssues != null
-					&& slotIssues.Count > index)                   // в†ђ РїСЂРѕРІРµСЂСЏРµРј index
+					&& slotIssues.Count > index)                   // ? проверяем index
 					return slotIssues[index];
 			}
 			return null;
 		}
 
 		/// <summary>
-		/// Р’РѕР·РІСЂР°С‰Р°РµС‚ РєРѕР»РёС‡РµСЃС‚РІРѕ issues, РєРѕС‚РѕСЂС‹Рµ РЅСѓР¶РЅРѕ РґРѕР±Р°РІРёС‚СЊ РґР»СЏ РґР°РЅРЅРѕРіРѕ СЃР»РѕС‚Р°:
-		/// РјРёРЅРёРјСѓРј РїРѕ РІСЃРµРј РєР°РјРїР°РЅРёСЏРј (РїРµСЂРµСЃРµС‡РµРЅРёРµ РїРѕ РєРѕР»РёС‡РµСЃС‚РІСѓ).
+		/// Возвращает количество issues, которые нужно добавить для данного слота:
+		/// минимум по всем кампаниям (пересечение по количеству).
 		/// </summary>
 		private static int GetSlotIssueCount(
 			IssueSlotKey slot,
@@ -746,7 +788,7 @@ namespace Merlin.Classes
 				if (campaignSlots.TryGetValue(slot, out slotIssues))
 					min = Math.Min(min, slotIssues.Count);
 				else
-					return 0; // СЃР»РѕС‚Р° РЅРµС‚ РІ РєР°РєРѕР№-С‚Рѕ РєР°РјРїР°РЅРёРё вЂ” РЅРёС‡РµРіРѕ РЅРµ РґРѕР±Р°РІР»СЏРµРј
+					return 0; // слота нет в какой-то кампании — ничего не добавляем
 			}
 			return min == int.MaxValue ? 0 : min;
 		}
@@ -830,15 +872,15 @@ namespace Merlin.Classes
 			{
 				case RollerPositions.First:
 				case RollerPositions.FirstTransferred:
-					return "РџРµСЂРІС‹Р№";
+					return "Первый";
 				case RollerPositions.Second:
 				case RollerPositions.SecondTransferred:
-					return "Р’С‚РѕСЂРѕР№";
+					return "Второй";
 				case RollerPositions.Last:
 				case RollerPositions.LastTransferred:
-					return "РџРѕСЃР»РµРґРЅРёР№";
+					return "Последний";
 				default:
-					return "РќРµРѕРїСЂРµРґРµР»РµРЅР°";
+					return "Неопределена";
 			}
 		}
 
