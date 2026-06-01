@@ -1,4 +1,4 @@
-п»їusing FogSoft.WinForm.Classes;
+using FogSoft.WinForm.Classes;
 using FogSoft.WinForm.DataAccess;
 using Merlin.Classes;
 using Merlin.Classes.Domain;
@@ -126,7 +126,7 @@ namespace Merlin.Controls
 			row["rollerID"] = Roller.RollerId;
 			row["durationString"] = Roller.DurationString;
 			row["RowNum"] = Guid.NewGuid();
-			row["position"] = RollerPosition == RollerPositions.Last ? "РџРѕСЃР»РµРґРЅРёР№" : RollerPosition == RollerPositions.First ? "РџРµСЂРІС‹Р№" : RollerPosition == RollerPositions.Second ? "Р’С‚РѕСЂРѕР№" : "РќРµРѕРїСЂРµРґРµР»РµРЅР°";
+			row["position"] = RollerPosition == RollerPositions.Last ? "Последний" : RollerPosition == RollerPositions.First ? "Первый" : RollerPosition == RollerPositions.Second ? "Второй" : "Неопределена";
 			row["positionID"] = (int)RollerPosition;
 			
 			// replace AddedIssues.Rows.Add(row); with sorted insert
@@ -156,11 +156,46 @@ namespace Merlin.Controls
                 for (int columnIndex = FixedCols; columnIndex < RawDataGridView.ColumnCount; columnIndex++)
                 {
                     TariffWindowWithRange window = GetTariffWindow(rowIndex, columnIndex) as TariffWindowWithRange;
-                    if (RollerPosition != RollerPositions.Undefined) 
+                    if (window == null)
+                        continue;
+
+                    if (RollerPosition != RollerPositions.Undefined)
                         MarkCellWithRollerPosition(window, rowIndex, columnIndex);
-                    if (window != null && AddedIssues.Select(string.Format("[issueDate] = '{0}'", window.WindowDate)).Length > 0)
-                        MarkCellAsHavingCurrentCampaignIssues(rowIndex, columnIndex);
+
+					if (AddedIssues.Select(string.Format("[issueDate] = '{0}'", window.WindowDate)).Length > 0)
+					{
+						MarkCellAsHavingCurrentCampaignIssues(rowIndex, columnIndex);
+                        continue;
+                    }
+
+                    bool hasAllMassmediaIssues = HasAllMassmediaIssuesFlags(window);
+					bool hasAnyIssues = hasAllMassmediaIssues || HasFirmIssuesFlags(window);
+
+                    if (!hasAnyIssues)
+                        continue;
+
+                    var cell = GetCell(rowIndex, columnIndex);
+                    if (hasAllMassmediaIssues)
+                        MarkCellAsHavingCurrentFirmIssues(cell);
+                    else if (hasAnyIssues)
+                        MarkCellAsHavingCurrentFirmIssuesAnyMassmedia(cell);
                 }
+	    }
+
+	    private bool HasFirmIssuesFlags(TariffWindowWithRange window)
+	    {
+	        if (window == null) return false;
+
+	        return window.HasIssues
+	               || (ShowUnconfirmed && window.HasIssuesUnconfirmed);
+	    }
+
+	    private bool HasAllMassmediaIssuesFlags(TariffWindowWithRange window)
+	    {
+	        if (window == null) return false;
+
+	        return window.HasIssuesAllMassmedia
+	               || (ShowUnconfirmed && window.HasIssuesUnconfirmedAllMassmedia);
 	    }
 
         private void MarkCellWithRollerPosition(TariffWindowWithRange window, int rowIndex, int columnIndex)
@@ -255,14 +290,14 @@ namespace Merlin.Controls
 		{
 			gridColumns = new[]
 				{
-					new GridColumn("Р’СЂРµРјСЏ", ColumnNames.TimeString),
-					new GridColumn("РџРЅ.", ColumnNames.Monday),
-					new GridColumn("Р’С‚.", ColumnNames.Tuesday),
-					new GridColumn("РЎСЂ.", ColumnNames.Wednesday),
-					new GridColumn("Р§С‚.", ColumnNames.Thursday),
-					new GridColumn("РџС‚.", ColumnNames.Friday),
-					new GridColumn("РЎР±.", ColumnNames.Saturday),
-					new GridColumn("Р’СЃ.", ColumnNames.Sunday),
+					new GridColumn("Время", ColumnNames.TimeString),
+					new GridColumn("Пн.", ColumnNames.Monday),
+					new GridColumn("Вт.", ColumnNames.Tuesday),
+					new GridColumn("Ср.", ColumnNames.Wednesday),
+					new GridColumn("Чт.", ColumnNames.Thursday),
+					new GridColumn("Пт.", ColumnNames.Friday),
+					new GridColumn("Сб.", ColumnNames.Saturday),
+					new GridColumn("Вс.", ColumnNames.Sunday),
 					new GridColumn(ColumnNames.Time, ColumnNames.Time, true)
 				};
 		}

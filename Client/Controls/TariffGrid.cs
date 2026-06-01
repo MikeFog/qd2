@@ -647,6 +647,11 @@ namespace Merlin.Controls
             SetCellForeColor(cell.RowIndex, cell.ColumnIndex, Color.LightSeaGreen);
         }
 
+        protected void MarkCellAsHavingCurrentFirmIssuesAnyMassmedia(DataGridViewCell cell)
+        {
+            SetCellForeColor(cell.RowIndex, cell.ColumnIndex, Color.Orange);
+        }
+
         public bool SelectDate2Jump()
 		{
 			FrmDateSelector fSelector = new FrmDateSelector("Выбор даты");

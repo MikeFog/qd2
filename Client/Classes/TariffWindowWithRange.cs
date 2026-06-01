@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Data;
 using FogSoft.WinForm.Classes;
 
@@ -6,12 +6,17 @@ namespace Merlin.Classes
 {
     class TariffWindowWithRange : ITariffWindow
     {
-	    private readonly DataRow _row;
+        private readonly DataRow _row;
 
-		public TariffWindowWithRange(DataRow row)
-		{
-		    _row = row;
-		}
+        public TariffWindowWithRange(DataRow row)
+        {
+            _row = row;
+
+            HasIssues = ParseHelper.GetBooleanFromObject(row["HasIssues"], false);
+            HasIssuesAllMassmedia = ParseHelper.GetBooleanFromObject(row["HasIssuesAllMassmedia"], false);
+            HasIssuesUnconfirmed = ParseHelper.GetBooleanFromObject(row["HasIssuesUnconfirmed"], false);
+            HasIssuesUnconfirmedAllMassmedia = ParseHelper.GetBooleanFromObject(row["HasIssuesUnconfirmedAllMassmedia"], false);
+        }
 
         public DateTime WindowDate { get { return ParseHelper.GetDateTimeFromObject(_row["date"], DateTime.Now); } }
 
@@ -45,14 +50,19 @@ namespace Merlin.Classes
             get { return int.Parse(_row["lastPositionsUnconfirmed"].ToString()); }
         }
 
-		public decimal Price { get; private set; }
+        public bool HasIssues { get; private set; }
+        public bool HasIssuesAllMassmedia { get; private set; }
+        public bool HasIssuesUnconfirmed { get; private set; }
+        public bool HasIssuesUnconfirmedAllMassmedia { get; private set; }
 
-		public int TariffId { get; private set; }
+        public decimal Price { get; private set; }
 
-		public DataTable LoadIssues(bool showUnconfirmed, Entity issueEntity)
-		{
-			return null;
-		}
+        public int TariffId { get; private set; }
+
+        public DataTable LoadIssues(bool showUnconfirmed, Entity issueEntity)
+        {
+            return null;
+        }
 
         public bool IsDisabled
         {
@@ -64,9 +74,9 @@ namespace Merlin.Classes
             get { return false; }
         }
 
-        public bool IsPrime 
-        { 
-            get { return bool.Parse(_row["isPrime"].ToString()); ; } 
+        public bool IsPrime
+        {
+            get { return bool.Parse(_row["isPrime"].ToString()); }
         }
     }
 }
