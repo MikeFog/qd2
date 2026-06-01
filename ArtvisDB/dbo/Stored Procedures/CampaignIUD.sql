@@ -150,21 +150,24 @@ ELSE IF @actionName = 'DeleteItem' begin
 END
 ELSE IF @actionName = 'UpdateItem' BEGIN
 
-    -- Detect agency change before updating
-    DECLARE @currentAgencyID SMALLINT;
+    -- Read current values before update
+    DECLARE @currentAgencyID     SMALLINT;
+    DECLARE @currentPaymentTypeID SMALLINT;
 
-    SELECT @currentAgencyID = agencyID
+    SELECT
+        @currentAgencyID      = agencyID,
+        @currentPaymentTypeID = paymentTypeID
     FROM dbo.Campaign
     WHERE CampaignID = @CampaignID;
 
-    -- If agencyID is being changed, check for conflicting payments
+    -- Check agencyID change: block if a linked payment belongs to the old agency
     IF @currentAgencyID <> @agencyID
     BEGIN
         DECLARE @conflictingPaymentID INT;
 
         SELECT TOP 1 @conflictingPaymentID = pa.paymentID
         FROM dbo.Campaign c
-        INNER JOIN dbo.PaymentAction pa ON pa.actionID = c.actionID
+        INNER JOIN dbo.PaymentAction pa ON pa.actionID  = c.actionID
         INNER JOIN dbo.Payment p        ON p.paymentID  = pa.paymentID
         WHERE c.CampaignID = @CampaignID
           AND p.agencyID   = @currentAgencyID
@@ -174,7 +177,24 @@ ELSE IF @actionName = 'UpdateItem' BEGIN
             RAISERROR('CannotChangeAgency_PaymentExists', 16, 1);
     END
 
-    UPDATE [Campaign]
+    -- Check paymentTypeID change: block if a linked payment has the old paymentTypeID
+    IF @currentPaymentTypeID <> @paymentTypeID
+    BEGIN
+        DECLARE @conflictingPaymentID2 INT;
+
+        SELECT TOP 1 @conflictingPaymentID2 = pa.paymentID
+        FROM dbo.Campaign c
+        INNER JOIN dbo.PaymentAction pa ON pa.actionID      = c.actionID
+        INNER JOIN dbo.Payment p        ON p.paymentID      = pa.paymentID
+        WHERE c.CampaignID        = @CampaignID
+          AND p.paymentTypeID     = @currentPaymentTypeID
+          AND p.isEnabled         = 1;
+
+        IF @conflictingPaymentID2 IS NOT NULL
+            RAISERROR('CannotChangePaymentType_PaymentExists', 16, 1);
+    END
+
+    UPDATE dbo.Campaign
     SET
         paymentTypeID = @paymentTypeID,
         agencyID      = @agencyID,
