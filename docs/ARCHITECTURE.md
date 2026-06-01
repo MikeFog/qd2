@@ -288,7 +288,6 @@ Business rules to preserve in this flow:
 
 Open questions:
 - In campaign-mode delete (`IssuesByDate` + exact datetime match), behavior for multiple issues in the same date/time slot should be confirmed by domain owner.
-- Confirm whether any non-`EditIssuesForm` screens using `TariffWithRangeGrid` require forced add-only mode.
 
 ## Price calculation
 
