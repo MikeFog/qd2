@@ -61,3 +61,13 @@
 #*.PDF   diff=astextplain
 #*.rtf   diff=astextplain
 #*.RTF   diff=astextplain
+
+###############################################################################
+# Keep source text in UTF-8 to avoid Cyrillic corruption during edits
+###############################################################################
+*.cs        text working-tree-encoding=UTF-8
+*.config    text working-tree-encoding=UTF-8
+*.csproj    text working-tree-encoding=UTF-8
+*.sln       text working-tree-encoding=UTF-8
+*.sql       text working-tree-encoding=UTF-8
+*.resx      text working-tree-encoding=UTF-8
