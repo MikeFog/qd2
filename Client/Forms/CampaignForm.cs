@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Data;
 using System.Diagnostics;
@@ -101,9 +101,9 @@ namespace Merlin.Forms
 		{
 			[DebuggerStepThrough]
 			get 
-			{ 
-				// ��� ���� ������� �������� ���� �����������, �� ����������� ������
-				return _campaign != null && (_campaign.CampaignType == Campaign.CampaignTypes.Simple 
+			{
+                // Это либо простая кампания либо спонсорская, но редактируем ролики
+                return _campaign != null && (_campaign.CampaignType == Campaign.CampaignTypes.Simple 
 					|| (_campaign.CampaignType == Campaign.CampaignTypes.Sponsor && _tariffGrid is RollerIssuesGrid3)) ; 
 			}
 		}
@@ -171,7 +171,7 @@ namespace Merlin.Forms
 				if (SponsorIssuesGrid != null && _campaign.Action.IsConfirmed)
 				{
 					Entity entity = EntityManager.GetEntity((int)Entities.AdvertTypeChild);
-					SelectionForm form = new SelectionForm(entity, entity.GetContent().DefaultView, "����� �������� �������");
+					SelectionForm form = new SelectionForm(entity, entity.GetContent().DefaultView, "Выбор предмета рекламы");
 					if (form.ShowDialog(this) == DialogResult.OK)
 					{
 						SponsorIssuesGrid.AdvertType = form.SelectedObject;
@@ -206,7 +206,7 @@ namespace Merlin.Forms
             tbbAdvertType.Visible = !(_tariffGrid is ProgramIssuesGrid2) && !(_tariffGrid is PackModuleGrid) && !IsRangeCampaign;
             tbbModules.Visible = IsModuleCampaign || IsPackModuleCampaign;
 			if (IsPackModuleCampaign)
-				tbbModules.Text = "����� ������";
+				tbbModules.Text = "Выбор пакета";
 
             tbbTemplate.Visible = tbbTemplate2.Visible = !(IsModuleCampaign || IsPackModuleCampaign || _tariffGrid is ProgramIssuesGrid2);
 			tbSetManagerDiscount.Enabled = !IsRangeCampaign;
@@ -311,9 +311,9 @@ namespace Merlin.Forms
 		protected virtual void SetFormCaption()
 		{
             if (_campaign is CampaignOnSingleMassmedia smc)
-                Text = string.Format("�������� ���������� �� ������������ {0}", smc.MassmediaNameWithGroup);
+                Text = string.Format("Просмотр информации на радиостанции {0}", smc.MassmediaNameWithGroup);
             else
-                Text = "�������� ��������� ��������� ��������";
+                Text = "Пакетная модульная рекламная кампания";
         }
 
 		private void SetTariffGrid()
@@ -346,14 +346,14 @@ namespace Merlin.Forms
 		private void InitDetailsGrid()
 		{
 			packDetails = new SmartGrid
-			              	{
-			              		Dock = DockStyle.Fill,
-			              		Name = "packDetails",
-			              		CaptionVisible = true,
-			              		Caption = "��������� ���������� �� ������������",
-			              		MenuEnabled = false,
-			              		QuickSearchVisible = false
-			              	};
+			{
+				Dock = DockStyle.Fill,
+				Name = "packDetails",
+				CaptionVisible = true,
+				Caption = "Детальная информация по радиостанции",
+				MenuEnabled = false,
+				QuickSearchVisible = false
+			};
 			packDetails.InternalGrid.ReadOnly = true;
 			splitContainer5.Panel2.Controls.Add(packDetails);
 		}
@@ -392,7 +392,7 @@ namespace Merlin.Forms
 
 		private void InitSponsorProgramList()
         {
-            grdRollers.Caption = "���������";
+            grdRollers.Caption = "Программы";
             grdRollers.Entity = SponsorProgram.GetEntity();
             grdRollers.DataSource = ((CampaignOnSingleMassmedia)_campaign).Massmedia.GetSponsorPrograms(true).DefaultView;
         }
@@ -421,7 +421,7 @@ namespace Merlin.Forms
 				DataSet data = DataAccessor.LoadDataSet("RollersForModule", parameters);
 				if (data.Tables.Count > 0 && data.Tables[0].Rows.Count > 0)
 				{
-					// ���� ����� �����, ��� ������ ��� ������ ��� ������ �������� ����� "��� ����"
+					// ???? ????? ?????, ??? ?????? ??? ?????? ??? ?????? ???????? ????? "??? ????"
 					grdRollers.Entity = EntityManager.GetEntity((int)Entities.CommonRollers);
                     grdRollers.DataSource = data.Tables[0].DefaultView;
 					return;
@@ -561,12 +561,12 @@ namespace Merlin.Forms
 
 		private void SetStatus(ITariffWindow tariffWindow)
 		{
-			toolStripStatusLabelSelected.Text =
-				(tariffWindow != null && _tariffGrid.IsActiveCellSelected)
-					? string.Format("��������� ����: '{0}'",
-					                tariffWindow.WindowDate.ToString(IsPackModuleCampaign ? "dd.MM.yyyy" : "dd.MM.yyyy HH:mm"))
-					: "���� �� �������";
-		}
+            toolStripStatusLabelSelected.Text =
+                (tariffWindow != null && _tariffGrid.IsActiveCellSelected)
+                    ? string.Format("Выбранное окно: '{0}'",
+                                    tariffWindow.WindowDate.ToString(IsPackModuleCampaign ? "dd.MM.yyyy" : "dd.MM.yyyy HH:mm"))
+                    : "Окно не выбрано";
+        }
 
 		private void RefreshDetails(ITariffWindow tariffWindow)
 		{
@@ -842,7 +842,7 @@ namespace Merlin.Forms
 		{
 			/*
 			if (Grantor == null)
-				Grantor = Utils.AskConfirmation(this, toolStripButtonGrantor.ToolTipText, "������� ����� � ������ ������������������ ������������.");
+				Grantor = Utils.AskConfirmation(this, toolStripButtonGrantor.ToolTipText, "??????? ????? ? ?????? ?????????????????? ????????????.");
 			else
 				Grantor = null;
 			toolStripButtonGrantor.Checked = (Grantor != null);		
@@ -911,13 +911,13 @@ namespace Merlin.Forms
 				AdvertTypePresences presence = (AdvertTypePresences)Enum.Parse(typeof(AdvertTypePresences), e.ClickedItem.Tag.ToString());
 				if (presence != AdvertTypePresences.Undefined)
 				{
-					TreeViewSelector tvSelector = new TreeViewSelector(RelationManager.GetScenario(RelationScenarios.AdvertTypes), "�������� �������");
+					TreeViewSelector tvSelector = new TreeViewSelector(RelationManager.GetScenario(RelationScenarios.AdvertTypes), "???????? ???????");
 					if (tvSelector.ShowDialog(Parent) == DialogResult.OK)
 					{
 						Application.DoEvents();
 						Cursor = Cursors.WaitCursor;
 						rollerGrid.SetAdvertTypePresence(presence, tvSelector.SelectedObject);
-						tbbAdvertType.Text = (presence == AdvertTypePresences.Exist ? "����: " : "���: ") + tvSelector.SelectedObject.Name;
+						tbbAdvertType.Text = (presence == AdvertTypePresences.Exist ? "????: " : "???: ") + tvSelector.SelectedObject.Name;
 					}
 				}
 				else
