@@ -57,8 +57,8 @@ namespace Merlin.Forms
             this.numQuantityNonPrime = new System.Windows.Forms.NumericUpDown();
             this.cbSplitPrime = new System.Windows.Forms.CheckBox();
             this.panel1 = new System.Windows.Forms.Panel();
-            this.rbDays = new System.Windows.Forms.RadioButton();
             this.rbNumber = new System.Windows.Forms.RadioButton();
+            this.rbDays = new System.Windows.Forms.RadioButton();
             ((System.ComponentModel.ISupportInitialize)(this.txtQuantity)).BeginInit();
             this.gbWeekDays.SuspendLayout();
             this.tableLayoutPanel1.SuspendLayout();
@@ -403,6 +403,19 @@ namespace Merlin.Forms
             this.panel1.Size = new System.Drawing.Size(632, 34);
             this.panel1.TabIndex = 40;
             // 
+            // rbNumber
+            // 
+            this.rbNumber.AutoCheck = false;
+            this.rbNumber.AutoSize = true;
+            this.rbNumber.Location = new System.Drawing.Point(142, 3);
+            this.rbNumber.Name = "rbNumber";
+            this.rbNumber.Padding = new System.Windows.Forms.Padding(3, 0, 0, 0);
+            this.rbNumber.Size = new System.Drawing.Size(187, 28);
+            this.rbNumber.TabIndex = 15;
+            this.rbNumber.TabStop = true;
+            this.rbNumber.Text = "Четный/Нечетный";
+            this.rbNumber.UseVisualStyleBackColor = true;
+            // 
             // rbDays
             // 
             this.rbDays.AutoCheck = false;
@@ -417,19 +430,6 @@ namespace Merlin.Forms
             this.rbDays.TabStop = true;
             this.rbDays.Text = "Дни недели";
             this.rbDays.UseVisualStyleBackColor = true;
-            // 
-            // rbNumber
-            // 
-            this.rbNumber.AutoCheck = false;
-            this.rbNumber.AutoSize = true;
-            this.rbNumber.Location = new System.Drawing.Point(142, 3);
-            this.rbNumber.Name = "rbNumber";
-            this.rbNumber.Padding = new System.Windows.Forms.Padding(3, 0, 0, 0);
-            this.rbNumber.Size = new System.Drawing.Size(187, 28);
-            this.rbNumber.TabIndex = 15;
-            this.rbNumber.TabStop = true;
-            this.rbNumber.Text = "Четный/Нечетный";
-            this.rbNumber.UseVisualStyleBackColor = true;
             // 
             // FrmTemplate2
             // 
@@ -446,7 +446,7 @@ namespace Merlin.Forms
             this.MinimizeBox = false;
             this.Name = "FrmTemplate2";
             this.ShowInTaskbar = false;
-            this.Text = "Шаблон для внесения роликов";
+            this.Text = "Шаблон №1 для внесения роликов";
             ((System.ComponentModel.ISupportInitialize)(this.txtQuantity)).EndInit();
             this.gbWeekDays.ResumeLayout(false);
             this.tableLayoutPanel1.ResumeLayout(false);

@@ -83,7 +83,7 @@ namespace Merlin.Forms
                 procParameters[CampaignPart.OBJECT_ID] = campaignPart.IDs[1]; // packModuleID находится в IDs[1]
             else if (!(campaignPart is CampaignPackModule) && !(campaignPart is CampaignOnSingleMassmedia) && !(campaignPart is CampaignModule) && !(campaignPart is RollerPartOfSponsorCampaign))
                 procParameters[CampaignPart.OBJECT_ID] = campaignPart.IDs[0];
-            procParameters[Issue.ParamNames.Position] = cmbCurrentPosition != null ? cmbCurrentPosition.SelectedValue : 123; // несуществующий ID позиции, чтоб вернулась пустая таблица
+            procParameters[Issue.ParamNames.PositionId] = cmbCurrentPosition != null ? cmbCurrentPosition.SelectedValue : 123; // несуществующий ID позиции, чтоб вернулась пустая таблица
 
             return DataAccessor.LoadDataSet("IssueChangePositioningPassport", procParameters);
         }

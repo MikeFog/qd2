@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Data;
 using System.Windows.Forms;
@@ -16,7 +16,8 @@ namespace Merlin.Classes
 			public const string TariffId = "tariffID";
 			public const string TariffPrice = "tariffPrice";
 			public const string IssueDate = "issueDate";
-			public const string Position = "positionId";
+			public const string PositionId = "positionId";
+            public const string PositionName = "issuePosition";
             public const string ModuleIssueId = "moduleIssueID";
             public const string PackModuleIssueID = "packModuleIssueID";
         }
@@ -62,7 +63,7 @@ namespace Merlin.Classes
 
 		public RollerPositions Position
 		{
-			get { return (RollerPositions)Enum.Parse(typeof(RollerPositions), this[ParamNames.Position].ToString()); }
+			get { return (RollerPositions)Enum.Parse(typeof(RollerPositions), this[ParamNames.PositionId].ToString()); }
 		}
 
 		private void UpdatePosition(RollerPositions pos)
@@ -92,7 +93,7 @@ namespace Merlin.Classes
 
 		public void SetPosition(RollerPositions pos)
 		{
-            this[ParamNames.Position] = pos;
+            this[ParamNames.PositionId] = pos;
             Update();
         }
 
@@ -129,11 +130,29 @@ namespace Merlin.Classes
         {
             return new List<KeyValuePair<int, string>>
             {
-                new KeyValuePair<int, string>((int)RollerPositions.Undefined, "без позиции"),
-                new KeyValuePair<int, string>((int)RollerPositions.First, "первый"),
-                new KeyValuePair<int, string>((int)RollerPositions.Second, "второй"),
-                new KeyValuePair<int, string>((int)RollerPositions.Last, "последний"),
+                new KeyValuePair<int, string>((int)RollerPositions.Undefined, "Не определен"),
+                new KeyValuePair<int, string>((int)RollerPositions.First, "Первый"),
+                new KeyValuePair<int, string>((int)RollerPositions.Second, "Второй"),
+                new KeyValuePair<int, string>((int)RollerPositions.Last, "Последний"),
             };
         }
-	}
+
+        public static string GetPositionDisplayName(RollerPositions position)
+        {
+            switch (position)
+            {
+                case RollerPositions.First:
+                case RollerPositions.FirstTransferred:
+                    return "Первый";
+                case RollerPositions.Second:
+                case RollerPositions.SecondTransferred:
+                    return "Второй";
+                case RollerPositions.Last:
+                case RollerPositions.LastTransferred:
+                    return "Последний";
+                default:
+                    return "Не опеределен";
+            }
+        }
+    }
 }

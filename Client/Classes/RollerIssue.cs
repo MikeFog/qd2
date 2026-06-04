@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Data;
 using System.Windows.Forms;
@@ -52,7 +52,7 @@ namespace Merlin.Classes
 			this[ParamNames.IssueDate] = tariffWindow.WindowDate;
 			this[ParamNames.RollerDuration] = roller[Roller.ParamNames.Duration];
 			this[Action.ParamNames.IsConfirmed] = isConfirmed;
-			this[Issue.ParamNames.Position] = (int)position;
+			this[Issue.ParamNames.PositionId] = (int)position;
 			this["grantorID"] = (grantorID ?? (object)DBNull.Value);
 		}
 

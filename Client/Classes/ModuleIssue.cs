@@ -1,4 +1,4 @@
-using System;
+п»їusing System;
 using System.Collections.Generic;
 using System.Data;
 using System.Reflection;
@@ -70,7 +70,7 @@ namespace Merlin.Classes
 			this[Campaign.ParamNames.CampaignId] = campaign.CampaignId;
 			this[RollerIssue.ParamNames.RollerDuration] = roller[Roller.ParamNames.Duration];
 			this[Action.ParamNames.IsConfirmed] = isConfirmed;
-			this[ParamNames.Position] = (int)position;
+			this[ParamNames.PositionId] = (int)position;
 			this[ParamNames.TariffPrice] = modulePriceList.Price;
 			this["grantorID"] = (grantorID ?? (object)DBNull.Value);
 		}
@@ -152,7 +152,7 @@ namespace Merlin.Classes
         protected override DataSet PrepareSubstitutionParametersAndExecute(Dictionary<string, object> procParameters)
         {
             procParameters[Module.ParamNames.ModuleId] = ModuleId;
-			// Создадим специальную таблицу, небходимую для хранимой процедуры
+			// РЎРѕР·РґР°РґРёРј СЃРїРµС†РёР°Р»СЊРЅСѓСЋ С‚Р°Р±Р»РёС†Сѓ, РЅРµР±С…РѕРґРёРјСѓСЋ РґР»СЏ С…СЂР°РЅРёРјРѕР№ РїСЂРѕС†РµРґСѓСЂС‹
 			DataTable days = CreateTableWithDays(IssueDate);
 
             return DataAccessor.LoadDataSet("RollerSubstitute", procParameters, days);

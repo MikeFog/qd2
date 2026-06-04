@@ -489,7 +489,10 @@ namespace Merlin.Forms
 						else if (IsRangeCampaign)
 						{
 							TariffWithRangeGrid rangeGrid = (TariffWithRangeGrid)_tariffGrid;
-							form = new FrmGenerator(_template, rangeGrid.AddIssuesRange, rangeGrid.DeleteIssuesRange);
+							form = new FrmGenerator(
+								_template,
+								windowDate => rangeGrid.AddIssuesRange(windowDate, _template.IgnoreWindowsWithTheSameFirmIssue),
+								rangeGrid.DeleteIssuesRange);
 						}
 						else
 						{

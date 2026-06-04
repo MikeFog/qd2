@@ -1,4 +1,4 @@
-using FogSoft.WinForm;
+п»їusing FogSoft.WinForm;
 using FogSoft.WinForm.Classes;
 using FogSoft.WinForm.Classes.Export;
 using Merlin.Classes;
@@ -21,8 +21,9 @@ namespace Merlin.Forms
 		private readonly RollerPositions _position;
 		private readonly Pricelist _pricelist;
 		private DataTable _maxPrices;
+		private readonly int _firmId = -1;
 
-		private readonly SponsorProgram program;
+        private readonly SponsorProgram program;
 		private readonly int tariffID;
 		private readonly decimal price;
 		private readonly int bonus;
@@ -45,7 +46,8 @@ namespace Merlin.Forms
 			this._pricelist = pricelist;
 			this._roller = roller;
 			this.grantorID = grantorID;
-		}
+            _firmId = _campaign.Action.FirmID;
+        }
 
 		// For Sponsors Programs
 		internal FrmGenerator(IssueTemplate template, Campaign campaign, SponsorProgram program, int tariffID, decimal price, int bonus)
@@ -57,7 +59,8 @@ namespace Merlin.Forms
 			this.tariffID = tariffID;
 			this.price = price;
 			this.bonus = bonus;
-		}
+            _firmId = _campaign.Action.FirmID;
+        }
 
 		internal FrmGenerator(IssueTemplate template, UpdateDBDelegate updateDB, DeleteDBDelegate deleteDB = null) 
 		{
@@ -75,9 +78,9 @@ namespace Merlin.Forms
             tbbExcel.Image = Globals.GetImage(Constants.ActionsImages.ExportExcel);
 			if (!_template.IsModeAdd)
 			{
-                this.Text = "Удаление рекламных выпусков по шаблону";
-                grdFail.Caption = "Ошибки удаления";
-                grdSuccess.Caption = "Удаленные выпуски";
+                this.Text = "РЈРґР°Р»РµРЅРёРµ СЂРµРєР»Р°РјРЅС‹С… РІС‹РїСѓСЃРєРѕРІ РїРѕ С€Р°Р±Р»РѕРЅСѓ";
+                grdFail.Caption = "РћС€РёР±РєРё СѓРґР°Р»РµРЅРёСЏ";
+                grdSuccess.Caption = "РЈРґР°Р»РµРЅРЅС‹Рµ РІС‹РїСѓСЃРєРё";
             }
         }
 
@@ -176,7 +179,7 @@ namespace Merlin.Forms
 				sw.Stop();
 
 				pbProgress.Visible = false;
-                // Гарантированный вызов RecalculateAction в конце, независимо от результата
+                // Р“Р°СЂР°РЅС‚РёСЂРѕРІР°РЅРЅС‹Р№ РІС‹Р·РѕРІ RecalculateAction РІ РєРѕРЅС†Рµ, РЅРµР·Р°РІРёСЃРёРјРѕ РѕС‚ СЂРµР·СѓР»СЊС‚Р°С‚Р°
                 if (_campaign != null)
 					_campaign.RecalculateAction();
 			}
@@ -238,12 +241,16 @@ namespace Merlin.Forms
 
 		private List<PresentationObject> AddSimpleIssue()
 		{
-			ITariffWindow tariffWindow = TariffWindowWithRollerIssues.GetWindowByDate(
+			Issue issue = null;
+            TariffWindowWithRollerIssues window = (TariffWindowWithRollerIssues)TariffWindowWithRollerIssues.GetWindowByDate(
 				_template.CurrentDate, ((CampaignOnSingleMassmedia)_campaign).Massmedia)
 				?? throw new NullReferenceException("TariffWindowNotFound");
 
-			Issue issue = _campaign.AddIssue(_roller, tariffWindow, _position, grantorID);
-			issue.Refresh();
+            if (!_template.IgnoreWindowsWithTheSameFirmIssue || !window.IsRollerOfTheFirmExist(_firmId, true))
+                issue = _campaign.AddIssue(_roller, window, _position, grantorID);
+            else
+                throw new Exception("IssueWithTheSameFirmExists");
+            issue.Refresh();
 			return new List<PresentationObject> { issue };
 		}
 
@@ -256,17 +263,16 @@ namespace Merlin.Forms
 			DataTable dtTariffWindow = dsWindows.Tables[Constants.TableNames.Data];
 			List<PresentationObject> issues = new List<PresentationObject>();
 
-            // Фильтруем окна, попадающие в указанный временной диапазон
+            // Р¤РёР»СЊС‚СЂСѓРµРј РѕРєРЅР°, РїРѕРїР°РґР°СЋС‰РёРµ РІ СѓРєР°Р·Р°РЅРЅС‹Р№ РІСЂРµРјРµРЅРЅРѕР№ РґРёР°РїР°Р·РѕРЅ
             int startTotal = _template.StartTime.Hour * 60 + _template.StartTime.Minute;
             int finishTotal = _template.FinishTime.Hour * 60 + _template.FinishTime.Minute;
             string filter = $"(hour * 60 + min) >= {startTotal} AND (hour * 60 + min) <= {finishTotal}";
 
-            int firmId = _campaign.Action.FirmID;
 			var allWindows = new List<TariffWindowWithRollerIssues>();
 			foreach (DataRow row in dtTariffWindow.Select(filter))
 			{
 				var window = new TariffWindowWithRollerIssues(row, Entities.TariffWindow);
-				if (!_template.IgnoreWindowsWithTheSameFirmIssue || !window.IsRollerOfTheFirmExist(firmId, true))
+				if (!_template.IgnoreWindowsWithTheSameFirmIssue || !window.IsRollerOfTheFirmExist(_firmId, true))
 					allWindows.Add(window);
 			}
 
@@ -274,7 +280,7 @@ namespace Merlin.Forms
 
 			if (_template.Quantity != 0)
 			{
-                // Режим: использовать все окна вместе, quantity = _template.Quantity
+                // Р РµР¶РёРј: РёСЃРїРѕР»СЊР·РѕРІР°С‚СЊ РІСЃРµ РѕРєРЅР° РІРјРµСЃС‚Рµ, quantity = _template.Quantity
                 var windows = allWindows
 					.Select(w => new { w, rand = rnd.Next() })
 					.OrderBy(x => x.w)
@@ -282,7 +288,7 @@ namespace Merlin.Forms
 					.Select(x => x.w)
 					.ToList();
 
-                issues.AddRange(AddIssuesFromWindows(windows, _template.Quantity, "Недостаточно рекламных окон для размещения всех выпусков для добавления. Окон: {0}, выпусков {1}."));
+                issues.AddRange(AddIssuesFromWindows(windows, _template.Quantity, "РќРµРґРѕСЃС‚Р°С‚РѕС‡РЅРѕ СЂРµРєР»Р°РјРЅС‹С… РѕРєРѕРЅ РґР»СЏ СЂР°Р·РјРµС‰РµРЅРёСЏ РІСЃРµС… РІС‹РїСѓСЃРєРѕРІ РґР»СЏ РґРѕР±Р°РІР»РµРЅРёСЏ. РћРєРѕРЅ: {0}, РІС‹РїСѓСЃРєРѕРІ {1}."));
             }
 			else
 			{
@@ -299,7 +305,7 @@ namespace Merlin.Forms
 				}
 				else
 				{
-                    // Нет прайм-цены на день: прайм-окон нет, остальные считаем non-prime
+                    // РќРµС‚ РїСЂР°Р№Рј-С†РµРЅС‹ РЅР° РґРµРЅСЊ: РїСЂР°Р№Рј-РѕРєРѕРЅ РЅРµС‚, РѕСЃС‚Р°Р»СЊРЅС‹Рµ СЃС‡РёС‚Р°РµРј non-prime
                     windowsPrime = new List<TariffWindowWithRollerIssues>();
 					windowsNonPrime = new List<TariffWindowWithRollerIssues>(allWindows);
 				}
@@ -318,9 +324,9 @@ namespace Merlin.Forms
 					.Select(x => x.w)
 					.ToList();
 
-                // Всегда: prime -> только prime, non-prime -> только non-prime
-                issues.AddRange(AddIssuesFromWindows(windowsPrime, _template.QuantityPrime, "Недостаточно рекламных окон прайм для размещения всех выпусков. Окон: {0}, выпусков {1}."));
-                issues.AddRange(AddIssuesFromWindows(windowsNonPrime, _template.QuantityNonPrime, "Недостаточно рекламных окон офф прайм для размещения всех выпусков. Окон: {0}, выпусков для добавления {1}."));
+                // Р’СЃРµРіРґР°: prime -> С‚РѕР»СЊРєРѕ prime, non-prime -> С‚РѕР»СЊРєРѕ non-prime
+                issues.AddRange(AddIssuesFromWindows(windowsPrime, _template.QuantityPrime, "РќРµРґРѕСЃС‚Р°С‚РѕС‡РЅРѕ СЂРµРєР»Р°РјРЅС‹С… РѕРєРѕРЅ РїСЂР°Р№Рј РґР»СЏ СЂР°Р·РјРµС‰РµРЅРёСЏ РІСЃРµС… РІС‹РїСѓСЃРєРѕРІ. РћРєРѕРЅ: {0}, РІС‹РїСѓСЃРєРѕРІ {1}."));
+                issues.AddRange(AddIssuesFromWindows(windowsNonPrime, _template.QuantityNonPrime, "РќРµРґРѕСЃС‚Р°С‚РѕС‡РЅРѕ СЂРµРєР»Р°РјРЅС‹С… РѕРєРѕРЅ РѕС„С„ РїСЂР°Р№Рј РґР»СЏ СЂР°Р·РјРµС‰РµРЅРёСЏ РІСЃРµС… РІС‹РїСѓСЃРєРѕРІ. РћРєРѕРЅ: {0}, РІС‹РїСѓСЃРєРѕРІ РґР»СЏ РґРѕР±Р°РІР»РµРЅРёСЏ {1}."));
             }
 
             return issues;

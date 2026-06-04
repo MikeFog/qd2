@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Windows.Forms;
 using FogSoft.WinForm.Classes;
 using Merlin.Classes;
@@ -88,13 +88,7 @@ namespace Merlin.Forms
 				this.DialogResult = DialogResult.None;
             }
 			_template.IsModeAdd = rbModeAdd.Checked;
+            _template.IgnoreWindowsWithTheSameFirmIssue = cbIgnoreWindows.Checked;
         }
-
-		public void SetModeAdd() 
-		{ 
-			rbModeAdd.Checked = true; 
-			rbModeDelete.Checked = false;
-			rbModeAdd.Enabled = rbModeDelete.Enabled = false;
-		}
     }
 }

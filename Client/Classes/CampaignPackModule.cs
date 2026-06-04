@@ -1,4 +1,4 @@
-using System;
+п»їusing System;
 using System.Collections.Generic;
 using System.Data;
 using System.Windows.Forms;
@@ -103,7 +103,7 @@ namespace Merlin.Classes
 							Massmedia massmedia = Massmedia.GetMassmediaByID(mmId);
 							DataSet rs = GetOnAirInquireReport(mmId, CampaignId, (DateTime)dMonths[dm], ((DateTime)dMonths[dm]).AddMonths(1).AddDays(-1));
 							OnAirInquireReport report = new OnAirInquireReport(this, Agency, rs, f.IsOptionChecked, massmedia, (DateTime)dMonths[dm]);
-							report.Show("Эфирная справка");
+							report.Show("Р­С„РёСЂРЅР°СЏ СЃРїСЂР°РІРєР°");
 						}
 					}
 					else
@@ -120,7 +120,7 @@ namespace Merlin.Classes
 									Massmedia massmedia = Massmedia.GetMassmediaByID(mmId);
 									DataSet rs = GetOnAirInquireReport(mmId, CampaignId, (DateTime)dMonths[dm], ((DateTime)dMonths[dm]).AddMonths(1).AddDays(-1));
 									OnAirInquireReport report = new OnAirInquireReport(this, Agency, rs, f.IsOptionChecked, massmedia, (DateTime)dMonths[dm]);
-									report.Show("Эфирная справка");
+									report.Show("Р­С„РёСЂРЅР°СЏ СЃРїСЂР°РІРєР°");
 								}
 							}
 						}
@@ -199,7 +199,7 @@ namespace Merlin.Classes
 			issue[RollerIssue.ParamNames.RollerDuration] = roller.Duration;
 			issue[RollerIssue.ParamNames.IssueDate] = windowDate;
 			issue[ParamNames.TariffPrice] = pricelist.Price;
-			issue[Issue.ParamNames.Position] = (int)position;
+			issue[Issue.ParamNames.PositionId] = (int)position;
 			issue["grantorID"] = (grantorID ?? (object)DBNull.Value);
 			issue.Update();
 

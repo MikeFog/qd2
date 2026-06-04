@@ -1,10 +1,11 @@
-using FogSoft.WinForm.Classes;
+п»їusing FogSoft.WinForm.Classes;
 using FogSoft.WinForm.DataAccess;
 using Merlin.Classes;
 using Merlin.Classes.Domain;
 using System;
 using System.Collections.Generic;
 using System.Data;
+using System.Linq;
 using System.Windows.Forms;
 
 namespace Merlin.Controls
@@ -107,6 +108,11 @@ namespace Merlin.Controls
 
 		public DataRow AddIssuesRange(DateTime windowDate)
 		{
+			return AddIssuesRange(windowDate, false);
+		}
+
+		public DataRow AddIssuesRange(DateTime windowDate, bool ignoreWindowsWithTheSameFirmIssue)
+		{
 			Dictionary<string, object> parameters = DataAccessor.CreateParametersDictionary();
 			parameters["actionID"] = _action.ActionId;
 			parameters["issueDate"] = windowDate;
@@ -114,8 +120,10 @@ namespace Merlin.Controls
 			parameters["rollerDuration"] = Roller.Duration;
 			parameters["positionId"] = (int)RollerPosition;
 			parameters["considerUnconfirmed"] = ShowUnconfirmed ? 1 : 0;
-            if (Grantor != null)
+			parameters["ignoreWindowsWithTheSameFirmIssue"] = ignoreWindowsWithTheSameFirmIssue ? 1 : 0;
+			if (Grantor != null)
 				parameters["grantorID"] = Grantor.Id;
+
 			DataAccessor.ExecuteNonQuery("AddRangeIssues", parameters);
 			_action.Recalculate();
 
@@ -123,15 +131,15 @@ namespace Merlin.Controls
 			row[Issue.ParamNames.IssueId] = (new Random()).Next();
 			row["issueDate"] = windowDate;
 			row[Entity.ParamNames.NAME] = Roller.Name;
-			row["rollerID"] = Roller.RollerId;
+			row[Roller.ParamNames.RollerId] = Roller.RollerId;
 			row["durationString"] = Roller.DurationString;
 			row["RowNum"] = Guid.NewGuid();
-			row["position"] = RollerPosition == RollerPositions.Last ? "Последний" : RollerPosition == RollerPositions.First ? "Первый" : RollerPosition == RollerPositions.Second ? "Второй" : "Неопределена";
-			row["positionID"] = (int)RollerPosition;
-			
+			row[Issue.ParamNames.PositionName] = Issue.GetPositionDisplayName(RollerPosition);
+            row[Issue.ParamNames.PositionId] = (int)RollerPosition;
+
 			// replace AddedIssues.Rows.Add(row); with sorted insert
 			InsertIssueRowSorted(row);
-			
+
 			return row;
 		}
 
@@ -330,14 +338,14 @@ namespace Merlin.Controls
 		{
 			gridColumns = new[]
 				{
-					new GridColumn("Время", ColumnNames.TimeString),
-					new GridColumn("Пн.", ColumnNames.Monday),
-					new GridColumn("Вт.", ColumnNames.Tuesday),
-					new GridColumn("Ср.", ColumnNames.Wednesday),
-					new GridColumn("Чт.", ColumnNames.Thursday),
-					new GridColumn("Пт.", ColumnNames.Friday),
-					new GridColumn("Сб.", ColumnNames.Saturday),
-					new GridColumn("Вс.", ColumnNames.Sunday),
+					new GridColumn("Р’СЂРµРјСЏ", ColumnNames.TimeString),
+					new GridColumn("РџРЅ.", ColumnNames.Monday),
+					new GridColumn("Р’С‚.", ColumnNames.Tuesday),
+					new GridColumn("РЎСЂ.", ColumnNames.Wednesday),
+					new GridColumn("Р§С‚.", ColumnNames.Thursday),
+					new GridColumn("РџС‚.", ColumnNames.Friday),
+					new GridColumn("РЎР±.", ColumnNames.Saturday),
+					new GridColumn("Р’СЃ.", ColumnNames.Sunday),
 					new GridColumn(ColumnNames.Time, ColumnNames.Time, true)
 				};
 		}
