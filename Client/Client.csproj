@@ -527,6 +527,7 @@
     </Compile>
     <Compile Include="Classes\EntityCampaign.cs" />
     <Compile Include="Classes\FakeContainers\AdvertTypeContainer.cs" />
+    <Compile Include="Classes\FirmWithActions.cs" />
     <Compile Include="Classes\GridExport\DJinSerializer\BlockManager.cs" />
     <Compile Include="Classes\GridExport\DJinSerializer\DJinParam.cs" />
     <Compile Include="Classes\GridExport\DJinSerializer\DJinExportDocument.cs" />
