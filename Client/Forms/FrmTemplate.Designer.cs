@@ -302,7 +302,7 @@
             this.MinimizeBox = false;
             this.Name = "FrmTemplate";
             this.ShowInTaskbar = false;
-            this.Text = "Шаблон №2 для внесения роликов";
+            this.Text = "Шаблон №1 для внесения роликов";
             this.Load += new System.EventHandler(this.FrmTemplate_Load);
             this.gbWeekDays.ResumeLayout(false);
             this.gbWeekDays.PerformLayout();

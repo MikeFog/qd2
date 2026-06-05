@@ -6,12 +6,15 @@ using System.Windows.Forms;
 using FogSoft.WinForm;
 using FogSoft.WinForm.Classes;
 using FogSoft.WinForm.DataAccess;
+using log4net;
 using Merlin.Classes;
 
 namespace Merlin.Controls
 {
 	internal partial class RollerIssuesGrid3 : TariffWindowGrid, IRollerGrid
-	{		
+	{
+        private static readonly ILog Log = LogManager.GetLogger(typeof(RollerIssuesGrid3));
+
 		private Roller roller;
 		private DataTable _dtWindowsWithAdvertType;
 
@@ -132,20 +135,23 @@ namespace Merlin.Controls
 
 		private void AddIssue(DataGridViewCell cell, TariffWindowWithRollerIssues tariffWindow)
 		{
-			try
-			{
-				DataAccessor.BeginTransaction();
-				CampaignOnSingleMassmedia.AddIssue(roller, tariffWindow, rollerPosition, Grantor == null ? null : (int?)Grantor.Id);
-				CampaignOnSingleMassmedia.RecalculateAction(false);
-				DataAccessor.CommitTransaction();
-			}
-			catch
-			{
-				DataAccessor.RollbackTransaction();
-				throw;
-			}
+            using (OperationScope.Start($"AddIssue date={tariffWindow.WindowDate:yyyy-MM-dd HH:mm}"))
+            {
+                try
+                {
+                    DataAccessor.BeginTransaction();
+                    CampaignOnSingleMassmedia.AddIssue(roller, tariffWindow, rollerPosition, Grantor == null ? null : (int?)Grantor.Id);
+                    CampaignOnSingleMassmedia.RecalculateAction(false);
+                    DataAccessor.CommitTransaction();
+                }
+                catch
+                {
+                    DataAccessor.RollbackTransaction();
+                    throw;
+                }
 
-            RefreshSingleCell(cell.RowIndex, cell.ColumnIndex, tariffWindow, TariffGridRefreshMode.WithAdd, true);
+                RefreshSingleCell(cell.RowIndex, cell.ColumnIndex, tariffWindow, TariffGridRefreshMode.WithAdd, true);
+            }
 		}
 
 		private void OnGridPopulated()

@@ -710,6 +710,7 @@
     <Compile Include="Controls\TemplateEditorControl.Designer.cs">
       <DependentUpon>TemplateEditorControl.cs</DependentUpon>
     </Compile>
+    <Compile Include="Controls\TimePeriodAddResult.cs" />
     <Compile Include="Controls\TrafficGrid.cs">
       <SubType>UserControl</SubType>
     </Compile>

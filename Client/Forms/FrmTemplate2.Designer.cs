@@ -446,7 +446,7 @@ namespace Merlin.Forms
             this.MinimizeBox = false;
             this.Name = "FrmTemplate2";
             this.ShowInTaskbar = false;
-            this.Text = "Шаблон №1 для внесения роликов";
+            this.Text = "Шаблон №2 для внесения роликов";
             ((System.ComponentModel.ISupportInitialize)(this.txtQuantity)).EndInit();
             this.gbWeekDays.ResumeLayout(false);
             this.tableLayoutPanel1.ResumeLayout(false);

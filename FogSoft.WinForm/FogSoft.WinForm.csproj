@@ -333,6 +333,7 @@
       <SubType>Code</SubType>
     </Compile>
     <Compile Include="Classes\ObjectsIterator.cs" />
+    <Compile Include="Classes\OperationScope.cs" />
     <Compile Include="Classes\ParseHelper.cs" />
     <Compile Include="Classes\PassportLoader.cs">
       <SubType>Code</SubType>

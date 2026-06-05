@@ -1,5 +1,6 @@
 ﻿using FogSoft.WinForm.Classes;
 using FogSoft.WinForm.DataAccess;
+using log4net;
 using Merlin.Classes;
 using Merlin.Classes.Domain;
 using System;
@@ -12,6 +13,8 @@ namespace Merlin.Controls
 {
 	internal partial class TariffWithRangeGrid : TariffGrid, IRollerGrid
 	{
+        private static readonly ILog Log = LogManager.GetLogger(typeof(TariffWithRangeGrid));
+
 		private const string MinBroadcastColumnName = "minBroadcast";
 		private const string MaxBroadcastColumnName = "maxBroadcast";
         private readonly ActionOnMassmedia _action;
@@ -77,7 +80,7 @@ namespace Merlin.Controls
 					_tariffWindows = null;
 
                 PopulateGridTable(dataSet.Tables[2]);
-			};
+            };
 
 			updateDB = delegate (DataGridViewCell cell)
 			{
@@ -87,6 +90,7 @@ namespace Merlin.Controls
 			onGridPopulated = delegate
 			{
                 MarkCells();
+                RefreshWindowsColors();
                 if (MinBroadCast.HasValue)
                 {
                     foreach (DataRow row in AddedIssues.Rows)
@@ -111,36 +115,41 @@ namespace Merlin.Controls
 			return AddIssuesRange(windowDate, false);
 		}
 
-		public DataRow AddIssuesRange(DateTime windowDate, bool ignoreWindowsWithTheSameFirmIssue)
+		public DataRow AddIssuesRange(DateTime windowDate, bool ignoreWindowsWithTheSameFirmIssue,
+			bool recalculate = true)
 		{
-			Dictionary<string, object> parameters = DataAccessor.CreateParametersDictionary();
-			parameters["actionID"] = _action.ActionId;
-			parameters["issueDate"] = windowDate;
-			parameters["rollerID"] = Roller.RollerId;
-			parameters["rollerDuration"] = Roller.Duration;
-			parameters["positionId"] = (int)RollerPosition;
-			parameters["considerUnconfirmed"] = ShowUnconfirmed ? 1 : 0;
-			parameters["ignoreWindowsWithTheSameFirmIssue"] = ignoreWindowsWithTheSameFirmIssue ? 1 : 0;
-			if (Grantor != null)
-				parameters["grantorID"] = Grantor.Id;
+            using (OperationScope.Start($"AddIssuesRange date={windowDate:yyyy-MM-dd HH:mm} recalc={recalculate}"))
+            {
+                Dictionary<string, object> parameters = DataAccessor.CreateParametersDictionary();
+                parameters["actionID"] = _action.ActionId;
+                parameters["issueDate"] = windowDate;
+                parameters["rollerID"] = Roller.RollerId;
+                parameters["rollerDuration"] = Roller.Duration;
+                parameters["positionId"] = (int)RollerPosition;
+                parameters["considerUnconfirmed"] = ShowUnconfirmed ? 1 : 0;
+                parameters["ignoreWindowsWithTheSameFirmIssue"] = ignoreWindowsWithTheSameFirmIssue ? 1 : 0;
+                if (Grantor != null)
+                    parameters["grantorID"] = Grantor.Id;
 
-			DataAccessor.ExecuteNonQuery("AddRangeIssues", parameters);
-			_action.Recalculate();
+                DataAccessor.ExecuteNonQuery("AddRangeIssues", parameters);
+                if (recalculate)
+                    _action.Recalculate();
 
-			DataRow row = AddedIssues.NewRow();
-			row[Issue.ParamNames.IssueId] = (new Random()).Next();
-			row["issueDate"] = windowDate;
-			row[Entity.ParamNames.NAME] = Roller.Name;
-			row[Roller.ParamNames.RollerId] = Roller.RollerId;
-			row["durationString"] = Roller.DurationString;
-			row["RowNum"] = Guid.NewGuid();
-			row[Issue.ParamNames.PositionName] = Issue.GetPositionDisplayName(RollerPosition);
-            row[Issue.ParamNames.PositionId] = (int)RollerPosition;
+                DataRow row = AddedIssues.NewRow();
+                row[Issue.ParamNames.IssueId] = (new Random()).Next();
+                row["issueDate"] = windowDate;
+                row[Entity.ParamNames.NAME] = Roller.Name;
+                row[Roller.ParamNames.RollerId] = Roller.RollerId;
+                row["durationString"] = Roller.DurationString;
+                row["RowNum"] = Guid.NewGuid();
+                row[Issue.ParamNames.PositionName] = Issue.GetPositionDisplayName(RollerPosition);
+                row[Issue.ParamNames.PositionId] = (int)RollerPosition;
 
-			// replace AddedIssues.Rows.Add(row); with sorted insert
-			InsertIssueRowSorted(row);
+                // replace AddedIssues.Rows.Add(row); with sorted insert
+                InsertIssueRowSorted(row);
 
-			return row;
+                return row;
+            }
 		}
 
 		public List<PresentationObject> DeleteIssuesRange(DateTime windowDate)
@@ -404,6 +413,120 @@ namespace Merlin.Controls
 				RefreshGrid();
 			}
 		}
+
+        // ---------------------------------------------------------------
+        // TimePeriod range generation support
+        // ---------------------------------------------------------------
+
+        /// <summary>
+        /// Returns the Monday that starts the ISO week containing <paramref name="date"/>.
+        /// Handles Sunday correctly (DayOfWeek.Sunday == 0).
+        /// </summary>
+        private static DateTime GetWeekMonday(DateTime date)
+        {
+            int diff = (7 + (int)date.DayOfWeek - (int)DayOfWeek.Monday) % 7;
+            return date.Date.AddDays(-diff);
+        }
+
+        /// <summary>
+        /// Loads all 30-min slots for the ISO week that contains <paramref name="weekMonday"/>
+        /// from the TariffWindowWithRange stored procedure and caches them in
+        /// <paramref name="slotsCache"/> (keyed by Monday date).
+        /// </summary>
+        private List<TariffWindowWithRange> GetSlotsForWeek(
+            DateTime weekMonday,
+            Dictionary<DateTime, List<TariffWindowWithRange>> slotsCache)
+        {
+            if (!slotsCache.TryGetValue(weekMonday, out List<TariffWindowWithRange> slots))
+            {
+                Dictionary<string, object> dict = DataAccessor.CreateParametersDictionary();
+                dict.Add("dateStart", weekMonday);
+                dict.Add("actionID", _action.ActionId);
+                DataSet ds = DataAccessor.LoadDataSet("TariffWindowWithRange", dict);
+                slots = ds.Tables[0].Rows
+                          .Cast<DataRow>()
+                          .Select(r => new TariffWindowWithRange(r))
+                          .ToList();
+                slotsCache[weekMonday] = slots;
+            }
+            return slots;
+        }
+
+        /// <summary>
+        /// Adds issues for all selected slots within the <paramref name="startTime"/>–
+        /// <paramref name="finishTime"/> window on <paramref name="date"/> (both bounds
+        /// inclusive, matching the Simple TimePeriod behaviour).
+        ///
+        /// When <paramref name="quantity"/> &gt; 0: takes the first N available slots
+        /// chronologically regardless of prime.
+        /// When <paramref name="quantity"/> == 0: fills <paramref name="quantityPrime"/>
+        /// prime slots and <paramref name="quantityNonPrime"/> non-prime slots.
+        ///
+        /// Does NOT call _action.Recalculate() — the caller (FrmGenerator.finally) is
+        /// responsible for the single end-of-generation recalculate.
+        /// </summary>
+        public TimePeriodAddResult AddIssuesRangeTimePeriod(
+            DateTime date,
+            DateTime startTime,
+            DateTime finishTime,
+            int quantity,
+            int quantityPrime,
+            int quantityNonPrime,
+            bool ignoreWindowsWithTheSameFirmIssue,
+            Dictionary<DateTime, List<TariffWindowWithRange>> slotsCache)
+        {
+            using (OperationScope.Start(
+                $"AddIssuesRangeTimePeriod date={date:yyyy-MM-dd} " +
+                $"q={quantity}/{quantityPrime}p/{quantityNonPrime}np"))
+            {
+                DateTime weekMonday = GetWeekMonday(date);
+                List<TariffWindowWithRange> weekSlots = GetSlotsForWeek(weekMonday, slotsCache);
+
+                // Filter: same calendar date, within the time window (both bounds inclusive)
+                TimeSpan tsStart  = startTime.TimeOfDay;
+                TimeSpan tsFinish = finishTime.TimeOfDay;
+
+                List<TariffWindowWithRange> slotsForDate = weekSlots
+                    .Where(s => s.WindowDate.Date == date.Date
+                             && s.WindowDate.TimeOfDay >= tsStart
+                             && s.WindowDate.TimeOfDay <= tsFinish)
+                    .OrderBy(s => s.WindowDate)   // chronological, matching simple semantics
+                    .ToList();
+
+                var result = new TimePeriodAddResult();
+
+                IEnumerable<TariffWindowWithRange> selectedSlots;
+                if (quantity > 0)
+                {
+                    selectedSlots = slotsForDate.Take(quantity);
+                    result.ExpectedCount = quantity;
+                }
+                else
+                {
+                    IEnumerable<TariffWindowWithRange> primeSlots    = slotsForDate.Where(s =>  s.IsPrime).Take(quantityPrime);
+                    IEnumerable<TariffWindowWithRange> nonPrimeSlots = slotsForDate.Where(s => !s.IsPrime).Take(quantityNonPrime);
+                    selectedSlots = primeSlots.Concat(nonPrimeSlots);
+                    result.ExpectedCount = quantityPrime + quantityNonPrime;
+                }
+
+                foreach (TariffWindowWithRange slot in selectedSlots)
+                {
+                    try
+                    {
+                        DataRow row = AddIssuesRange(slot.WindowDate,
+                            ignoreWindowsWithTheSameFirmIssue,
+                            recalculate: false);
+                        result.Rows.Add(row);
+                    }
+                    catch (Exception ex)
+                    {
+                        result.Errors.Add(ex);
+                    }
+                }
+
+                return result;
+            }
+        }
 
         // helper to keep AddedIssues sorted by issueDate
         private void InsertIssueRowSorted(DataRow row)

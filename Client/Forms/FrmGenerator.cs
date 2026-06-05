@@ -1,7 +1,9 @@
 ﻿using FogSoft.WinForm;
 using FogSoft.WinForm.Classes;
 using FogSoft.WinForm.Classes.Export;
+using log4net;
 using Merlin.Classes;
+using Merlin.Controls;
 using System;
 using System.Collections.Generic;
 using System.ComponentModel;
@@ -14,6 +16,8 @@ namespace Merlin.Forms
 {
 	public partial class FrmGenerator : Form
 	{
+        private static readonly ILog Log = LogManager.GetLogger(typeof(FrmGenerator));
+
 		private readonly IssueTemplate _template;
 		private readonly Campaign _campaign;
 		private readonly PresentationObject _module;
@@ -31,8 +35,11 @@ namespace Merlin.Forms
 		private readonly int? grantorID;
         internal delegate DataRow UpdateDBDelegate(DateTime windowDate);
 		internal delegate List<PresentationObject> DeleteDBDelegate(DateTime windowDate);
+        internal delegate TimePeriodAddResult UpdateDBTimePeriodDelegate(DateTime date);
         private readonly UpdateDBDelegate _updateDB;
 		private readonly DeleteDBDelegate _deleteDB;
+        private readonly UpdateDBTimePeriodDelegate _updateTimePeriodDB;
+        private readonly ActionOnMassmedia _action;
 
         // For Simple Issue
         internal FrmGenerator(IssueTemplate template, PresentationObject roller, RollerPositions position,
@@ -62,12 +69,23 @@ namespace Merlin.Forms
             _firmId = _campaign.Action.FirmID;
         }
 
-		internal FrmGenerator(IssueTemplate template, UpdateDBDelegate updateDB, DeleteDBDelegate deleteDB = null) 
+		internal FrmGenerator(IssueTemplate template, UpdateDBDelegate updateDB, DeleteDBDelegate deleteDB = null)
 		{
             InitializeComponent();
-            _template = template; 
+            _template = template;
 			_updateDB = updateDB;
 			_deleteDB = deleteDB;
+        }
+
+        // For Range TimePeriod (FrmTemplate2 in fan-out campaign)
+        internal FrmGenerator(IssueTemplate template,
+            UpdateDBTimePeriodDelegate updateTimePeriodDB,
+            ActionOnMassmedia action)
+        {
+            InitializeComponent();
+            _template = template;
+            _updateTimePeriodDB = updateTimePeriodDB;
+            _action = action;
         }
 
         protected override void OnLoad(EventArgs e)
@@ -177,11 +195,16 @@ namespace Merlin.Forms
 			finally
 			{
 				sw.Stop();
+                Log.Info($"Generate completed in {sw.ElapsedMilliseconds}ms" +
+                    $" success={grdSuccess.InternalGrid.RowCount} fail={grdFail.InternalGrid.RowCount}");
 
 				pbProgress.Visible = false;
                 // Гарантированный вызов RecalculateAction в конце, независимо от результата
                 if (_campaign != null)
 					_campaign.RecalculateAction();
+                // Range TimePeriod: single recalculate after all slots are generated
+                else if (_action != null)
+                    _action.Recalculate();
 			}
 		}
 
@@ -213,9 +236,38 @@ namespace Merlin.Forms
             return issues;
         }
 
-        private List<PresentationObject> AddIssues() 
+        private List<PresentationObject> AddIssues()
 		{
-			if (_updateDB != null)
+            // Range + TimePeriod: delegate handles multiple slots per day
+            if (_updateTimePeriodDB != null)
+            {
+                TimePeriodAddResult result = _updateTimePeriodDB(_template.CurrentDate);
+
+                // Individual slot errors → grdFail, generation of remaining slots continues
+                foreach (Exception ex in result.Errors)
+                {
+                    Dictionary<string, object> p = CreateMessageParameters();
+                    p["description"] = Globals.GetMessage(ex.Message, p);
+                    AddErrorInfo(p);
+                }
+
+                // Summary error when fewer slots were placed than requested
+                if (result.Rows.Count < result.ExpectedCount)
+                {
+                    Dictionary<string, object> p = CreateMessageParameters();
+                    p["description"] = string.Format(
+                        "Недостаточно слотов для размещения. Добавлено: {0}, требовалось: {1}.",
+                        result.Rows.Count, result.ExpectedCount);
+                    AddErrorInfo(p);
+                }
+
+                return result.Rows
+                    .Select(r => (PresentationObject)new RollerIssue(r))
+                    .ToList();
+            }
+
+            // Range + Simple: single-slot delegate
+            if (_updateDB != null)
 			{
 				DataRow row = _updateDB(_template.CurrentDate);
 				return new List<PresentationObject> { new RollerIssue(row) };

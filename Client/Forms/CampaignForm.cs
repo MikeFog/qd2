@@ -781,18 +781,48 @@ namespace Merlin.Forms
 				if (formTemplate.ShowDialog(this) == DialogResult.OK)
 				{
 					_template = formTemplate.Template;
-	
-					FrmGenerator form = new FrmGenerator(_template, roller, RollerIssuesGrid.RollerPosition,
-					_campaign, null, ((IRollerGrid)_tariffGrid).Module, Grantor == null ? null : (int?)Grantor.Id);
 
-					form.ShowDialog(this);
-					Application.DoEvents();
-					Cursor = Cursors.WaitCursor;
+					if (IsRangeCampaign)
+					{
+						// Range TimePeriod: delegate-based FrmGenerator with per-week slot cache
+						TariffWithRangeGrid rangeGrid = (TariffWithRangeGrid)_tariffGrid;
+						var slotsCache = new Dictionary<DateTime, List<TariffWindowWithRange>>();
 
-					if (_template.IsDateCovered(_tariffGrid.StartDate, _tariffGrid.FinishDate))
-						RefreshGrid();
+						FrmGenerator form = new FrmGenerator(
+							_template,
+							date => rangeGrid.AddIssuesRangeTimePeriod(
+								date,
+								_template.StartTime,
+								_template.FinishTime,
+								_template.Quantity,
+								_template.QuantityPrime,
+								_template.QuantityNonPrime,
+								_template.IgnoreWindowsWithTheSameFirmIssue,
+								slotsCache),
+							rangeGrid.Action);
 
-					CampaignStatusChanged();
+						form.ShowDialog(this);
+						Application.DoEvents();
+						Cursor = Cursors.WaitCursor;
+
+						if (_template.IsDateCovered(_tariffGrid.StartDate, _tariffGrid.FinishDate))
+							RefreshGrid();
+						// CampaignStatusChanged() not called — consistent with Path 1 range
+					}
+					else
+					{
+						FrmGenerator form = new FrmGenerator(_template, roller, RollerIssuesGrid.RollerPosition,
+						_campaign, null, ((IRollerGrid)_tariffGrid).Module, Grantor == null ? null : (int?)Grantor.Id);
+
+						form.ShowDialog(this);
+						Application.DoEvents();
+						Cursor = Cursors.WaitCursor;
+
+						if (_template.IsDateCovered(_tariffGrid.StartDate, _tariffGrid.FinishDate))
+							RefreshGrid();
+
+						CampaignStatusChanged();
+					}
 				}
 			}
 			catch (Exception ex)
