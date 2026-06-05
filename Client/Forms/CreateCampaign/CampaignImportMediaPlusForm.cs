@@ -1,4 +1,4 @@
-using System;
+п»їusing System;
 using System.Windows.Forms;
 using FogSoft.WinForm.Classes;
 using Merlin.Classes;
@@ -71,7 +71,7 @@ namespace Merlin.Forms.CreateCampaign
 
 				bool isLoaded = ImportData.LoadData(textBoxFilePath.Text);
 
-				lblMassmedia.Text = (isLoaded && ImportData.Massmedia != null) ? ImportData.Massmedia.Name : "Радиостанция не найдена";
+				lblMassmedia.Text = (isLoaded && ImportData.Massmedia != null) ? ImportData.Massmedia.Name : "Р Р°РґРёРѕСЃС‚Р°РЅС†РёСЏ РЅРµ РЅР°Р№РґРµРЅР°";
 				grdAgency.DataSource = (isLoaded && ImportData.Massmedia != null) ? ImportData.Massmedia.Agencies.DefaultView : null;
 
 				CheckOkButton();

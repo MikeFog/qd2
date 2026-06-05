@@ -1,4 +1,4 @@
-using System.Text;
+Ôªøusing System.Text;
 
 namespace Merlin.Classes.GridExport.DJinSerializer
 {
@@ -6,8 +6,8 @@ namespace Merlin.Classes.GridExport.DJinSerializer
 	{
 		public const string strFilterDialog = "DJin (*.TXT)|*.txt";
 
-		public const string strBlockComment = "{0} ‚ {1}";
-		public const string strAdvert = "–ÂÍÎ‡Ï‡";
+		public const string strBlockComment = "{0} –≤ {1}";
+		public const string strAdvert = "–†–µ–∫–ª–∞–º–∞";
 		public const string strBlockEnd = "E";
 		//public const string strBlockStart = "BT";
 		public const string strEtc = "m";

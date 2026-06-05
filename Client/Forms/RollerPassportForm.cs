@@ -1,4 +1,4 @@
-using FogSoft.WinForm;
+п»їusing FogSoft.WinForm;
 using FogSoft.WinForm.Classes;
 using FogSoft.WinForm.Controls;
 using FogSoft.WinForm.DataAccess;
@@ -84,7 +84,7 @@ namespace Merlin.Forms
 				// Load file from the disk
 				OpenFileDialog fileDialog = new OpenFileDialog();
 				fileDialog.Filter =
-					"Звуковые файлы|*.mp2;*.mp3;*.wav|Звуковые файлы WAV|*.wav|Звуковые файлы MP3|*.mp3|Звуковые файлы MP2|*.mp2";
+					"Р—РІСѓРєРѕРІС‹Рµ С„Р°Р№Р»С‹|*.mp2;*.mp3;*.wav|Р—РІСѓРєРѕРІС‹Рµ С„Р°Р№Р»С‹ WAV|*.wav|Р—РІСѓРєРѕРІС‹Рµ С„Р°Р№Р»С‹ MP3|*.mp3|Р—РІСѓРєРѕРІС‹Рµ С„Р°Р№Р»С‹ MP2|*.mp2";
 
 				DialogResult result = fileDialog.ShowDialog(this);
 				Application.DoEvents();
@@ -122,8 +122,8 @@ namespace Merlin.Forms
             }
             catch (Exception ex)
             {
-                MessageBox.Show("Не удалось определить длительность файла.\n" + ex.Message,
-                                "Ошибка",
+                MessageBox.Show("РќРµ СѓРґР°Р»РѕСЃСЊ РѕРїСЂРµРґРµР»РёС‚СЊ РґР»РёС‚РµР»СЊРЅРѕСЃС‚СЊ С„Р°Р№Р»Р°.\n" + ex.Message,
+                                "РћС€РёР±РєР°",
                                 MessageBoxButtons.OK,
                                 MessageBoxIcon.Error);
             }
@@ -153,7 +153,7 @@ namespace Merlin.Forms
 
         protected override void ApplyChanges(Button clickedButton)
         {
-			// пара Фирма+Предмет либо пустые, либо заполнены (но не для пустышек)
+			// РїР°СЂР° Р¤РёСЂРјР°+РџСЂРµРґРјРµС‚ Р»РёР±Рѕ РїСѓСЃС‚С‹Рµ, Р»РёР±Рѕ Р·Р°РїРѕР»РЅРµРЅС‹ (РЅРѕ РЅРµ РґР»СЏ РїСѓСЃС‚С‹С€РµРє)
 			if (Roller.IsDummy 
                 || (opFirm.SelectedObject != null && opAdvertType.SelectedObject != null) 
 				|| (opFirm.SelectedObject == null && opAdvertType.SelectedObject == null))

@@ -1,4 +1,4 @@
-using System;
+п»їusing System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Data;
@@ -14,7 +14,7 @@ namespace FogSoft.WinForm.Classes
 
 		public DataLoadDelegate LoadContent;
 
-		// NEW: hook для внешнего владельца (например, ObjectContainer)
+		// NEW: hook РґР»СЏ РІРЅРµС€РЅРµРіРѕ РІР»Р°РґРµР»СЊС†Р° (РЅР°РїСЂРёРјРµСЂ, ObjectContainer)
 		public Func<PresentationObject, DataRow, PresentationObject> ChildObjectPostProcessor { get; set; }
 
 		private DataTable lastContentFilter = null;
@@ -133,17 +133,17 @@ namespace FogSoft.WinForm.Classes
 				objectContainer.Filter = CacheFilterValues(_filter);
 			}
 
-			// NEW: сначала внутренний virtual hook (для наследников ObjectsIterator)
+			// NEW: СЃРЅР°С‡Р°Р»Р° РІРЅСѓС‚СЂРµРЅРЅРёР№ virtual hook (РґР»СЏ РЅР°СЃР»РµРґРЅРёРєРѕРІ ObjectsIterator)
 			presentationObject = ProcessCreatedChildObject(presentationObject, row) ?? presentationObject;
 
-			// NEW: затем внешний callback (для композиции, например ObjectContainer)
+			// NEW: Р·Р°С‚РµРј РІРЅРµС€РЅРёР№ callback (РґР»СЏ РєРѕРјРїРѕР·РёС†РёРё, РЅР°РїСЂРёРјРµСЂ ObjectContainer)
 			if (ChildObjectPostProcessor != null)
 				presentationObject = ChildObjectPostProcessor(presentationObject, row) ?? presentationObject;
 
 			return presentationObject;
 		}
 
-		// NEW: точка расширения для наследников ObjectsIterator
+		// NEW: С‚РѕС‡РєР° СЂР°СЃС€РёСЂРµРЅРёСЏ РґР»СЏ РЅР°СЃР»РµРґРЅРёРєРѕРІ ObjectsIterator
 		protected virtual PresentationObject ProcessCreatedChildObject(PresentationObject childObject, DataRow row)
 		{
 			return childObject;

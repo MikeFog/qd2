@@ -1,4 +1,4 @@
-using System;
+Ôªøusing System;
 using System.Collections.Generic;
 using System.Data;
 using System.Drawing;
@@ -47,7 +47,7 @@ namespace Merlin.Forms
 					row["currentDate"] = DBNull.Value;
 			}
 			object[] rowSum = new object[_dtData.Columns.Count];
-			rowSum[_dtData.Columns.IndexOf("firmName")] = "»ÚÓ„Ó";
+			rowSum[_dtData.Columns.IndexOf("firmName")] = "–ò—Ç–æ–≥–æ";
 			rowSum[_dtData.Columns.IndexOf("total")] = total;
 			rowSum[_dtData.Columns.IndexOf("campaignId")] = 0;
 			rowSum[_dtData.Columns.IndexOf("currentDate2")] = DateTime.Now;

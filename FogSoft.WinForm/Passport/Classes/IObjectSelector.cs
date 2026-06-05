@@ -1,4 +1,4 @@
-namespace FogSoft.WinForm.Passport.Classes
+﻿namespace FogSoft.WinForm.Passport.Classes
 {
 	public interface IObjectSelector
 	{

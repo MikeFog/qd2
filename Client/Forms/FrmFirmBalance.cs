@@ -1,4 +1,4 @@
-using System;
+п»їusing System;
 using System.ComponentModel;
 using System.Data;
 using System.Text;
@@ -153,7 +153,7 @@ namespace Merlin.Forms
 			// 
 			// grdAction
 			// 
-			this.grdAction.Caption = "Акции";
+			this.grdAction.Caption = "РђРєС†РёРё";
 			this.grdAction.CaptionVisible = true;
 			this.grdAction.CheckBoxes = false;
 			this.grdAction.DataSource = null;
@@ -207,7 +207,7 @@ namespace Merlin.Forms
 			this.checkBoxShowBlack.Name = "checkBoxShowBlack";
 			this.checkBoxShowBlack.Size = new System.Drawing.Size(127, 17);
 			this.checkBoxShowBlack.TabIndex = 19;
-			this.checkBoxShowBlack.Text = "Показывать без оплаты";
+			this.checkBoxShowBlack.Text = "РџРѕРєР°Р·С‹РІР°С‚СЊ Р±РµР· РѕРїР»Р°С‚С‹";
 			this.checkBoxShowBlack.UseVisualStyleBackColor = true;
 			this.checkBoxShowBlack.CheckedChanged += new System.EventHandler(this.checkBoxShowBlack_CheckedChanged);
 			// 
@@ -220,7 +220,7 @@ namespace Merlin.Forms
 			this.checkBoxShowWhite.Name = "checkBoxShowWhite";
 			this.checkBoxShowWhite.Size = new System.Drawing.Size(127, 17);
 			this.checkBoxShowWhite.TabIndex = 18;
-			this.checkBoxShowWhite.Text = "Показывать с оплатой";
+			this.checkBoxShowWhite.Text = "РџРѕРєР°Р·С‹РІР°С‚СЊ СЃ РѕРїР»Р°С‚РѕР№";
 			this.checkBoxShowWhite.UseVisualStyleBackColor = true;
 			this.checkBoxShowWhite.CheckedChanged += new System.EventHandler(this.checkBoxShowWhite_CheckedChanged);
 			// 
@@ -232,7 +232,7 @@ namespace Merlin.Forms
 			this.label4.Name = "label4";
 			this.label4.Size = new System.Drawing.Size(64, 13);
 			this.label4.TabIndex = 17;
-			this.label4.Text = "Менеджер:";
+			this.label4.Text = "РњРµРЅРµРґР¶РµСЂ:";
 			// 
 			// opUsers
 			// 
@@ -289,7 +289,7 @@ namespace Merlin.Forms
 			this.label3.Name = "label3";
 			this.label3.Size = new System.Drawing.Size(93, 13);
 			this.label3.TabIndex = 11;
-			this.label3.Text = "Фирма-заказчик:";
+			this.label3.Text = "Р¤РёСЂРјР°-Р·Р°РєР°Р·С‡РёРє:";
 			// 
 			// label2
 			// 
@@ -299,7 +299,7 @@ namespace Merlin.Forms
 			this.label2.Name = "label2";
 			this.label2.Size = new System.Drawing.Size(124, 13);
 			this.label2.TabIndex = 10;
-			this.label2.Text = "Окончание интервала:";
+			this.label2.Text = "РћРєРѕРЅС‡Р°РЅРёРµ РёРЅС‚РµСЂРІР°Р»Р°:";
 			// 
 			// label1
 			// 
@@ -309,7 +309,7 @@ namespace Merlin.Forms
 			this.label1.Name = "label1";
 			this.label1.Size = new System.Drawing.Size(105, 13);
 			this.label1.TabIndex = 9;
-			this.label1.Text = "Начало интервала:";
+			this.label1.Text = "РќР°С‡Р°Р»Рѕ РёРЅС‚РµСЂРІР°Р»Р°:";
 			// 
 			// imageList1
 			// 
@@ -333,7 +333,7 @@ namespace Merlin.Forms
 			// 
 			// grdPayment
 			// 
-			this.grdPayment.Caption = "Платежи";
+			this.grdPayment.Caption = "РџР»Р°С‚РµР¶Рё";
 			this.grdPayment.CaptionVisible = true;
 			this.grdPayment.CheckBoxes = false;
 			this.grdPayment.Cursor = System.Windows.Forms.Cursors.Default;
@@ -353,7 +353,7 @@ namespace Merlin.Forms
 			// 
 			// grdAgency
 			// 
-			this.grdAgency.Caption = "Агентство";
+			this.grdAgency.Caption = "РђРіРµРЅС‚СЃС‚РІРѕ";
 			this.grdAgency.CaptionVisible = true;
 			this.grdAgency.CheckBoxes = true;
 			this.grdAgency.Cursor = System.Windows.Forms.Cursors.Default;
@@ -412,8 +412,8 @@ namespace Merlin.Forms
 			this.tbRefresh.ImageIndex = 3;
 			this.tbRefresh.Name = "tbRefresh";
 			this.tbRefresh.Tag = "REFRESH";
-			this.tbRefresh.Text = "Обновить";
-			this.tbRefresh.ToolTipText = "Обновить журнал";
+			this.tbRefresh.Text = "РћР±РЅРѕРІРёС‚СЊ";
+			this.tbRefresh.ToolTipText = "РћР±РЅРѕРІРёС‚СЊ Р¶СѓСЂРЅР°Р»";
 			// 
 			// FrmFirmBalance
 			// 
@@ -427,7 +427,7 @@ namespace Merlin.Forms
 			this.Controls.Add(this.tlbJournal);
 			this.Font = new System.Drawing.Font("Tahoma", 8.25F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(204)));
 			this.Name = "FrmFirmBalance";
-			this.Text = "Баланс для фирмы";
+			this.Text = "Р‘Р°Р»Р°РЅСЃ РґР»СЏ С„РёСЂРјС‹";
 			this.panel2.ResumeLayout(false);
 			this.panel1.ResumeLayout(false);
 			this.panel1.PerformLayout();
@@ -479,18 +479,18 @@ namespace Merlin.Forms
 
 				lstResult.Items.Clear();
 				decimal balanceOnStartOfInterval = RefreshBalanceOnStartOfInterval();
-				string text = string.Format("На начало интервала: {0}", balanceOnStartOfInterval.ToString("c"));
+				string text = string.Format("РќР° РЅР°С‡Р°Р»Рѕ РёРЅС‚РµСЂРІР°Р»Р°: {0}", balanceOnStartOfInterval.ToString("c"));
 				lstResult.Items.Add(text);
 
 				decimal totalSumPayment = RefreshPaymentInfo(grdPayment);
-				text = string.Format("Платежей за период: {0}", totalSumPayment.ToString("c"));
+				text = string.Format("РџР»Р°С‚РµР¶РµР№ Р·Р° РїРµСЂРёРѕРґ: {0}", totalSumPayment.ToString("c"));
 				lstResult.Items.Add(text);
 
 				decimal totalSumAction = RefreshActionInfo(grdAction);
-				text = string.Format("Акций за период: {0}", totalSumAction.ToString("c"));
+				text = string.Format("РђРєС†РёР№ Р·Р° РїРµСЂРёРѕРґ: {0}", totalSumAction.ToString("c"));
 				lstResult.Items.Add(text);
 
-				text = string.Format("На окончание интервала: {0}",
+				text = string.Format("РќР° РѕРєРѕРЅС‡Р°РЅРёРµ РёРЅС‚РµСЂРІР°Р»Р°: {0}",
 				                     (balanceOnStartOfInterval + totalSumPayment - totalSumAction).ToString("c"));
 				lstResult.Items.Add(text);
 			}

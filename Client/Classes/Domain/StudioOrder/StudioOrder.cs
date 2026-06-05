@@ -1,4 +1,4 @@
-using System;
+п»їusing System;
 using System.Collections.Generic;
 using System.Data;
 using System.Windows.Forms;
@@ -157,7 +157,7 @@ namespace Merlin.Classes.Domain.StudioOrder
 			DataSet ds = (DataSet)DataAccessor.DoAction(procParameters);
 
 			SelectionForm selector = new SelectionForm(
-				EntityManager.GetEntity((int) Entities.Agency), ds.Tables[Constants.TableNames.Data].DefaultView, "Агентства");
+				EntityManager.GetEntity((int) Entities.Agency), ds.Tables[Constants.TableNames.Data].DefaultView, "РђРіРµРЅС‚СЃС‚РІР°");
 
 			if (selector.ShowDialog(owner) == DialogResult.OK)
 			{
@@ -170,7 +170,7 @@ namespace Merlin.Classes.Domain.StudioOrder
 		private void ChangePaymentType(IWin32Window owner)
 		{
 			SelectionForm selector = new SelectionForm(
-				EntityManager.GetEntity((int) Entities.PaymentType), "Тип оплаты");
+				EntityManager.GetEntity((int) Entities.PaymentType), "РўРёРї РѕРїР»Р°С‚С‹");
 
 			if (selector.ShowDialog(owner) == DialogResult.OK)
 			{
@@ -192,7 +192,7 @@ namespace Merlin.Classes.Domain.StudioOrder
 					Agency.GetAgencyByID(int.Parse(this[Agency.ParamNames.AgencyId].ToString())),
 					this);
 				if (doExport) report.Export(ReportExportFormat.WordForWindows);
-				else report.Show("Акт выполненных работ");
+				else report.Show("РђРєС‚ РІС‹РїРѕР»РЅРµРЅРЅС‹С… СЂР°Р±РѕС‚");
 			}
 			finally
 			{
@@ -238,7 +238,7 @@ namespace Merlin.Classes.Domain.StudioOrder
 		{
 			Dictionary<string, object> filterValues = new Dictionary<string, object>();
 			filterValues.Add("rollerID", parameters["rollerID"]);
-			Globals.ShowSimpleJournal(EntityManager.GetEntity((int)Entities.Roller), "Созданный ролик", filterValues);
+			Globals.ShowSimpleJournal(EntityManager.GetEntity((int)Entities.Roller), "РЎРѕР·РґР°РЅРЅС‹Р№ СЂРѕР»РёРє", filterValues);
 		}
 	}
 }

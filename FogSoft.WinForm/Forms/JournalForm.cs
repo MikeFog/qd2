@@ -1,4 +1,4 @@
-using System;
+п»їusing System;
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.Data;
@@ -350,7 +350,7 @@ namespace FogSoft.WinForm.Forms
 		{
 			try
 			{
-				//Если прикручен обработчик на фильтр то используем только его
+				//Р•СЃР»Рё РїСЂРёРєСЂСѓС‡РµРЅ РѕР±СЂР°Р±РѕС‚С‡РёРє РЅР° С„РёР»СЊС‚СЂ С‚Рѕ РёСЃРїРѕР»СЊР·СѓРµРј С‚РѕР»СЊРєРѕ РµРіРѕ
 				bool filterReturn = OnFilterClick != null ? (OnFilterClick(this, _entity, xmlFilter, _filterValues)) 
 					: (xmlFilter == null) ? Globals.ShowFilter(this, _entity, _filterValues)
 				                    	: Globals.ShowFilter(this, _entity, xmlFilter, _filterValues);
@@ -373,7 +373,7 @@ namespace FogSoft.WinForm.Forms
 			{
 				Application.DoEvents();
 				Cursor = Cursors.WaitCursor;
-				ProgressForm.Show(this, Export_DoWorkEventHandler, "Экспорт...", null);
+				ProgressForm.Show(this, Export_DoWorkEventHandler, "Р­РєСЃРїРѕСЂС‚...", null);
 			}
 			catch(Exception ex)
 			{

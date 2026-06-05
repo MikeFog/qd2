@@ -1,4 +1,4 @@
-using System;
+п»їusing System;
 using System.Collections.Generic;
 using System.Data;
 using System.Windows.Forms;
@@ -78,7 +78,7 @@ namespace Merlin.Forms
 			{
                 ErrorManager.AddErrorRow(tableErrors,(DateTime)row["windowDate"], MessageAccessor.GetMessage(row["errorMessage"].ToString()));
             }
-            Globals.ShowSimpleJournal(EntityManager.GetEntity((int)Entities.ErrTmplGen), "Ошибки добавления рекламных окон", tableErrors);
+            Globals.ShowSimpleJournal(EntityManager.GetEntity((int)Entities.ErrTmplGen), "РћС€РёР±РєРё РґРѕР±Р°РІР»РµРЅРёСЏ СЂРµРєР»Р°РјРЅС‹С… РѕРєРѕРЅ", tableErrors);
         }
 
         private DataSet Save()

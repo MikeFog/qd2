@@ -1,4 +1,4 @@
-using System;
+п»їusing System;
 using System.Drawing;
 using System.Windows.Forms;
 using FogSoft.WinForm;
@@ -73,7 +73,7 @@ namespace Merlin.Forms
             // 
             // grdModules
             // 
-            this.grdModules.Caption = "Модули";
+            this.grdModules.Caption = "РњРѕРґСѓР»Рё";
             this.grdModules.CaptionVisible = true;
             this.grdModules.CheckBoxes = true;
             this.grdModules.ColumnNameHighlight = null;
@@ -94,7 +94,7 @@ namespace Merlin.Forms
             // 
             // grdMassmedia
             // 
-            this.grdMassmedia.Caption = "Радиостанция";
+            this.grdMassmedia.Caption = "Р Р°РґРёРѕСЃС‚Р°РЅС†РёСЏ";
             this.grdMassmedia.CaptionVisible = true;
             this.grdMassmedia.CheckBoxes = true;
             this.grdMassmedia.ColumnNameHighlight = null;
@@ -124,7 +124,7 @@ namespace Merlin.Forms
             this.btnCancel.Name = "btnCancel";
             this.btnCancel.Size = new System.Drawing.Size(83, 22);
             this.btnCancel.TabIndex = 17;
-            this.btnCancel.Text = "Отмена";
+            this.btnCancel.Text = "РћС‚РјРµРЅР°";
             // 
             // btnOk
             // 
@@ -135,7 +135,7 @@ namespace Merlin.Forms
             this.btnOk.Name = "btnOk";
             this.btnOk.Size = new System.Drawing.Size(84, 22);
             this.btnOk.TabIndex = 16;
-            this.btnOk.Text = "Ок";
+            this.btnOk.Text = "РћРє";
             this.btnOk.Click += new System.EventHandler(this.btnOk_Click);
             // 
             // FrmPackModuleContent
@@ -148,7 +148,7 @@ namespace Merlin.Forms
             this.Controls.Add(this.panel1);
             this.Font = new System.Drawing.Font("Tahoma", 8.25F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(204)));
             this.Name = "FrmPackModuleContent";
-            this.Text = "Пакетный модуль";
+            this.Text = "РџР°РєРµС‚РЅС‹Р№ РјРѕРґСѓР»СЊ";
             this.panel1.ResumeLayout(false);
             this.ResumeLayout(false);
 

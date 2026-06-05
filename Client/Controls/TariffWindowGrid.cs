@@ -1,4 +1,4 @@
-using FogSoft.WinForm;
+п»їusing FogSoft.WinForm;
 using FogSoft.WinForm.Classes;
 using FogSoft.WinForm.DataAccess;
 using Merlin.Classes;
@@ -16,7 +16,7 @@ namespace Merlin.Controls
 	{
 		protected DataTable dtTariffWindow;
 		protected DataTable dtTime;
-        protected DataTable dtTimeLookup; // таблица вида  Id, Name для показа в виде выпадающего списка
+        protected DataTable dtTimeLookup; // С‚Р°Р±Р»РёС†Р° РІРёРґР°  Id, Name РґР»СЏ РїРѕРєР°Р·Р° РІ РІРёРґРµ РІС‹РїР°РґР°СЋС‰РµРіРѕ СЃРїРёСЃРєР°
 		protected Module module;
 		protected bool excludeModuleTariffs = false;
         protected bool showTrafficWindows = false;
@@ -107,9 +107,9 @@ namespace Merlin.Controls
 
         protected virtual void InitializePopupMenus()
 		{
-            miChangePrice.Text = "Изменить цену...";
+            miChangePrice.Text = "РР·РјРµРЅРёС‚СЊ С†РµРЅСѓ...";
             miChangePrice.Click += ChangePrice;
-			miDeleteTriffWindows.Text = "Удалить сгенерированные рекламные окна";
+			miDeleteTriffWindows.Text = "РЈРґР°Р»РёС‚СЊ СЃРіРµРЅРµСЂРёСЂРѕРІР°РЅРЅС‹Рµ СЂРµРєР»Р°РјРЅС‹Рµ РѕРєРЅР°";
             miDeleteTriffWindows.Click += DeleteGeneratedTariffWindows;
 
             cmTimeColumn.Items.AddRange(new ToolStripItem[] { miChangePrice, miDeleteTriffWindows });
@@ -137,7 +137,7 @@ namespace Merlin.Controls
             dictionary.Add(Pricelist.ParamNames.PricelistId, Pricelist.PricelistId);
 
             UniversalPassportForm frm = new UniversalPassportForm(dictionary, UniversalPassportForm.PassportNames.ChangeTariffWindowsPrice,
-                UniversalPassportForm.ProcedureNames.ChangePrice, "Изменение цены", ValidatePassportData);
+                UniversalPassportForm.ProcedureNames.ChangePrice, "РР·РјРµРЅРµРЅРёРµ С†РµРЅС‹", ValidatePassportData);
 
             if (frm.ShowDialog() == DialogResult.OK)
                 RefreshGrid();
@@ -147,7 +147,7 @@ namespace Merlin.Controls
 		{
 			try
 			{
-				FrmDateSelector selector = new FrmDateSelector(Pricelist.StartDate, Pricelist.FinishDate, "Интервал удаления сгенерированных окон");
+				FrmDateSelector selector = new FrmDateSelector(Pricelist.StartDate, Pricelist.FinishDate, "РРЅС‚РµСЂРІР°Р» СѓРґР°Р»РµРЅРёСЏ СЃРіРµРЅРµСЂРёСЂРѕРІР°РЅРЅС‹С… РѕРєРѕРЅ");
 				if (selector.ShowDialog() == DialogResult.OK)
 				{
 					DateTime startDate = selector.StartDate;
@@ -332,7 +332,7 @@ namespace Merlin.Controls
                 bool hasWindowsInDay = false;
                 decimal maxPrice = decimal.MinValue;
 
-                // 1) Находим максимальную цену в колонке (дне)
+                // 1) РќР°С…РѕРґРёРј РјР°РєСЃРёРјР°Р»СЊРЅСѓСЋ С†РµРЅСѓ РІ РєРѕР»РѕРЅРєРµ (РґРЅРµ)
                 for (int row = 0; row < rowsCount; row++)
                 {
                     ITariffWindow window = _tariffWindows[row, day];
@@ -349,7 +349,7 @@ namespace Merlin.Controls
                 if (!hasWindowsInDay)
                     continue;
 
-                // 2) Проставляем IsPrime всем окнам дня
+                // 2) РџСЂРѕСЃС‚Р°РІР»СЏРµРј IsPrime РІСЃРµРј РѕРєРЅР°Рј РґРЅСЏ
                 for (int row = 0; row < rowsCount; row++)
                 {
                     ITariffWindow window = _tariffWindows[row, day];

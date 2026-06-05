@@ -1,4 +1,4 @@
-using System;
+п»їusing System;
 using System.Collections.Generic;
 using System.Data;
 using System.Linq;
@@ -167,7 +167,7 @@ namespace Merlin.Classes
 			{
 				// If more than one row - display selector with checkboxes
 				SelectionForm selector = new SelectionForm(
-					EntityManager.GetEntity((int)Entities.Agency), dtAgency.DefaultView, "Выбор агентств", true);
+					EntityManager.GetEntity((int)Entities.Agency), dtAgency.DefaultView, "Р’С‹Р±РѕСЂ Р°РіРµРЅС‚СЃС‚РІ", true);
 
 				if(selector.ShowDialog(owner) == DialogResult.OK)
 				{
@@ -243,7 +243,7 @@ namespace Merlin.Classes
             if (divisor <= 1m)
                 throw new InvalidOperationException($"Invalid divisor value: {divisor}");
 
-            // ставка НДС в процентах
+            // СЃС‚Р°РІРєР° РќР”РЎ РІ РїСЂРѕС†РµРЅС‚Р°С…
             // divisor = (100 + rate) / rate  =>  rate = 100 / (divisor - 1)
             return Math.Round(
                 100m / (divisor - 1m),

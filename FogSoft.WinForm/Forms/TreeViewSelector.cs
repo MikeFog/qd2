@@ -1,4 +1,4 @@
-using System;
+п»їusing System;
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.Data;
@@ -96,7 +96,7 @@ namespace FogSoft.WinForm.Forms
             this.btnCancel.Name = "btnCancel";
             this.btnCancel.Size = new System.Drawing.Size(100, 33);
             this.btnCancel.TabIndex = 6;
-            this.btnCancel.Text = "Отмена";
+            this.btnCancel.Text = "РћС‚РјРµРЅР°";
             // 
             // btnOk
             // 
@@ -140,7 +140,7 @@ namespace FogSoft.WinForm.Forms
             this.Name = "TreeViewSelector";
             this.ShowIcon = false;
             this.ShowInTaskbar = false;
-            this.Text = "Выбор объекта";
+            this.Text = "Р’С‹Р±РѕСЂ РѕР±СЉРµРєС‚Р°";
             this.ResumeLayout(false);
 
 		}

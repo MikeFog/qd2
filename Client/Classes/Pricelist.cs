@@ -1,4 +1,4 @@
-using System;
+п»їusing System;
 using System.Collections.Generic;
 using System.Data;
 using System.Windows.Forms;
@@ -64,7 +64,7 @@ namespace Merlin.Classes
 		{
 			try
 			{
-				FrmDateSelector fSelector = new FrmDateSelector("Даты начала и окончания");
+				FrmDateSelector fSelector = new FrmDateSelector("Р”Р°С‚С‹ РЅР°С‡Р°Р»Р° Рё РѕРєРѕРЅС‡Р°РЅРёСЏ");
 				if (fSelector.ShowDialog(owner) == DialogResult.OK)
 				{
                     Dictionary<string, object> newParameters = Parameters;
@@ -74,7 +74,7 @@ namespace Merlin.Classes
 						Clone(newParameters);
 					else
 					{
-						SelectionForm selector = new SelectionForm(EntityManager.GetEntity((int)Entities.MassMedia), "Радиостанции", true, CheckSelectionResult);
+						SelectionForm selector = new SelectionForm(EntityManager.GetEntity((int)Entities.MassMedia), "Р Р°РґРёРѕСЃС‚Р°РЅС†РёРё", true, CheckSelectionResult);
 
 						if (selector.ShowDialog(owner) == DialogResult.OK)
 						{
@@ -98,7 +98,7 @@ namespace Merlin.Classes
 								}
 							}
 							if (tableErrors.Rows.Count > 0)
-								Globals.ShowSimpleJournal(EntityManager.GetEntity((int)Entities.ErrTmplGen), "Ошибки клонирования", tableErrors);
+								Globals.ShowSimpleJournal(EntityManager.GetEntity((int)Entities.ErrTmplGen), "РћС€РёР±РєРё РєР»РѕРЅРёСЂРѕРІР°РЅРёСЏ", tableErrors);
 						}
 					}
 				}

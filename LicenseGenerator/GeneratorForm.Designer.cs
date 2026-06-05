@@ -1,4 +1,4 @@
-namespace FogSoft.LicenseGenerator
+﻿namespace FogSoft.LicenseGenerator
 {
 	partial class GeneratorForm
 	{

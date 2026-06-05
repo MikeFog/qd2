@@ -1,4 +1,4 @@
-using FogSoft.WinForm.Classes;
+﻿using FogSoft.WinForm.Classes;
 using System;
 using System.Collections.Generic;
 using System.Drawing;

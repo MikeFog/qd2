@@ -1,4 +1,4 @@
-namespace FogSoft.WinForm.Forms {
+п»їnamespace FogSoft.WinForm.Forms {
   partial class JournalForm {
     /// <summary>
     /// Required designer variable.
@@ -66,7 +66,7 @@ namespace FogSoft.WinForm.Forms {
             this.tsbNew.ImageTransparentColor = System.Drawing.Color.Magenta;
             this.tsbNew.Name = "tsbNew";
             this.tsbNew.Size = new System.Drawing.Size(95, 28);
-            this.tsbNew.Text = "Новый";
+            this.tsbNew.Text = "РќРѕРІС‹Р№";
             this.tsbNew.Click += new System.EventHandler(this.tsbNew_Click);
             // 
             // tsbEdit
@@ -75,7 +75,7 @@ namespace FogSoft.WinForm.Forms {
             this.tsbEdit.ImageTransparentColor = System.Drawing.Color.Magenta;
             this.tsbEdit.Name = "tsbEdit";
             this.tsbEdit.Size = new System.Drawing.Size(159, 28);
-            this.tsbEdit.Text = "Редактировать";
+            this.tsbEdit.Text = "Р РµРґР°РєС‚РёСЂРѕРІР°С‚СЊ";
             this.tsbEdit.Click += new System.EventHandler(this.tsbEdit_Click);
             // 
             // tsbDelete
@@ -84,7 +84,7 @@ namespace FogSoft.WinForm.Forms {
             this.tsbDelete.ImageTransparentColor = System.Drawing.Color.Magenta;
             this.tsbDelete.Name = "tsbDelete";
             this.tsbDelete.Size = new System.Drawing.Size(102, 28);
-            this.tsbDelete.Text = "Удалить";
+            this.tsbDelete.Text = "РЈРґР°Р»РёС‚СЊ";
             this.tsbDelete.Click += new System.EventHandler(this.tsbDelete_Click);
             // 
             // toolStripSeparator1
@@ -98,7 +98,7 @@ namespace FogSoft.WinForm.Forms {
             this.tsbRefresh.ImageTransparentColor = System.Drawing.Color.Magenta;
             this.tsbRefresh.Name = "tsbRefresh";
             this.tsbRefresh.Size = new System.Drawing.Size(119, 28);
-            this.tsbRefresh.Text = "Обновить";
+            this.tsbRefresh.Text = "РћР±РЅРѕРІРёС‚СЊ";
             this.tsbRefresh.Click += new System.EventHandler(this.tsbRefresh_Click);
             // 
             // tsbFilter
@@ -107,7 +107,7 @@ namespace FogSoft.WinForm.Forms {
             this.tsbFilter.ImageTransparentColor = System.Drawing.Color.Magenta;
             this.tsbFilter.Name = "tsbFilter";
             this.tsbFilter.Size = new System.Drawing.Size(97, 28);
-            this.tsbFilter.Text = "Фильтр";
+            this.tsbFilter.Text = "Р¤РёР»СЊС‚СЂ";
             this.tsbFilter.Click += new System.EventHandler(this.tsbFilter_Click);
             // 
             // tsbExcel
@@ -116,7 +116,7 @@ namespace FogSoft.WinForm.Forms {
             this.tsbExcel.ImageTransparentColor = System.Drawing.Color.Magenta;
             this.tsbExcel.Name = "tsbExcel";
             this.tsbExcel.Size = new System.Drawing.Size(105, 28);
-            this.tsbExcel.Text = "Экспорт";
+            this.tsbExcel.Text = "Р­РєСЃРїРѕСЂС‚";
             this.tsbExcel.Click += new System.EventHandler(this.tsbExcel_Click);
             // 
             // tsbSumma
@@ -126,7 +126,7 @@ namespace FogSoft.WinForm.Forms {
             this.tsbSumma.ImageTransparentColor = System.Drawing.Color.Magenta;
             this.tsbSumma.Name = "tsbSumma";
             this.tsbSumma.Size = new System.Drawing.Size(192, 28);
-            this.tsbSumma.Text = "Сумма по колонке";
+            this.tsbSumma.Text = "РЎСѓРјРјР° РїРѕ РєРѕР»РѕРЅРєРµ";
             this.tsbSumma.Click += new System.EventHandler(this.tsbSumma_Click);
             // 
             // tsbHighlight
@@ -135,7 +135,7 @@ namespace FogSoft.WinForm.Forms {
             this.tsbHighlight.ImageTransparentColor = System.Drawing.Color.Magenta;
             this.tsbHighlight.Name = "tsbHighlight";
             this.tsbHighlight.Size = new System.Drawing.Size(124, 28);
-            this.tsbHighlight.Text = "Подсветка";
+            this.tsbHighlight.Text = "РџРѕРґСЃРІРµС‚РєР°";
             this.tsbHighlight.Click += new System.EventHandler(this.tsbHighlight_Click);
             // 
             // sbJournal

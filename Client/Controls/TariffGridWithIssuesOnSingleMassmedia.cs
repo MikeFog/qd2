@@ -1,4 +1,4 @@
-using System;
+ï»¿using System;
 using System.Data;
 using Merlin.Classes;
 
@@ -19,15 +19,15 @@ namespace Merlin.Controls
 		{
 			gridColumns = new []
 				{
-					new GridColumn("Öåíà", ColumnNames.Price, "c", Type.GetType("System.Decimal")),
-					new GridColumn("Âğåìÿ", ColumnNames.TimeString),
-					new GridColumn("Ïí.", ColumnNames.Monday),
-					new GridColumn("Âò.", ColumnNames.Tuesday),
-					new GridColumn("Ñğ.", ColumnNames.Wednesday),
-					new GridColumn("×ò.", ColumnNames.Thursday),
-					new GridColumn("Ïò.", ColumnNames.Friday),
-					new GridColumn("Ñá.", ColumnNames.Saturday),
-					new GridColumn("Âñ.", ColumnNames.Sunday),
+					new GridColumn("Ğ¦ĞµĞ½Ğ°", ColumnNames.Price, "c", Type.GetType("System.Decimal")),
+					new GridColumn("Ğ’Ñ€ĞµĞ¼Ñ", ColumnNames.TimeString),
+					new GridColumn("ĞŸĞ½.", ColumnNames.Monday),
+					new GridColumn("Ğ’Ñ‚.", ColumnNames.Tuesday),
+					new GridColumn("Ğ¡Ñ€.", ColumnNames.Wednesday),
+					new GridColumn("Ğ§Ñ‚.", ColumnNames.Thursday),
+					new GridColumn("ĞŸÑ‚.", ColumnNames.Friday),
+					new GridColumn("Ğ¡Ğ±.", ColumnNames.Saturday),
+					new GridColumn("Ğ’Ñ.", ColumnNames.Sunday),
 					new GridColumn(ColumnNames.Time, ColumnNames.Time, true)
 				};
 		}

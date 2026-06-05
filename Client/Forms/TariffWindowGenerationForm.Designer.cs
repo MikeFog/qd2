@@ -1,4 +1,4 @@
-namespace Merlin.Forms
+п»їnamespace Merlin.Forms
 {
   partial class TariffWindowGenerationForm
   {
@@ -55,7 +55,7 @@ namespace Merlin.Forms
 		this.tsbEdit.ImageTransparentColor = System.Drawing.Color.Magenta;
 		this.tsbEdit.Name = "tsbEdit";
 		this.tsbEdit.Size = new System.Drawing.Size(91, 22);
-		this.tsbEdit.Text = "Редактировать";
+		this.tsbEdit.Text = "Р РµРґР°РєС‚РёСЂРѕРІР°С‚СЊ";
 		this.tsbEdit.Click += new System.EventHandler(this.tsbEdit_Click);
 		// 
 		// tsbRefresh
@@ -63,7 +63,7 @@ namespace Merlin.Forms
 		this.tsbRefresh.ImageTransparentColor = System.Drawing.Color.Magenta;
 		this.tsbRefresh.Name = "tsbRefresh";
 		this.tsbRefresh.Size = new System.Drawing.Size(65, 22);
-		this.tsbRefresh.Text = "Обновить";
+		this.tsbRefresh.Text = "РћР±РЅРѕРІРёС‚СЊ";
 		this.tsbRefresh.Click += new System.EventHandler(this.tsbRefresh_Click);
 		// 
 		// tsbDelete
@@ -71,7 +71,7 @@ namespace Merlin.Forms
 		this.tsbDelete.ImageTransparentColor = System.Drawing.Color.Magenta;
 		this.tsbDelete.Name = "tsbDelete";
 		this.tsbDelete.Size = new System.Drawing.Size(55, 22);
-		this.tsbDelete.Text = "Удалить";
+		this.tsbDelete.Text = "РЈРґР°Р»РёС‚СЊ";
 		this.tsbDelete.Click += new System.EventHandler(this.tsbDelete_Click);
 		// 
 		// toolStripSeparator1
@@ -84,7 +84,7 @@ namespace Merlin.Forms
 		this.tsbExcel.ImageTransparentColor = System.Drawing.Color.Magenta;
 		this.tsbExcel.Name = "tsbExcel";
 		this.tsbExcel.Size = new System.Drawing.Size(56, 22);
-		this.tsbExcel.Text = "Экспорт";
+		this.tsbExcel.Text = "Р­РєСЃРїРѕСЂС‚";
 		this.tsbExcel.Click += new System.EventHandler(this.tsbExcel_Click);
 		// 
 		// tsJump2Date
@@ -92,8 +92,8 @@ namespace Merlin.Forms
 		this.tsJump2Date.ImageTransparentColor = System.Drawing.Color.Magenta;
 		this.tsJump2Date.Name = "tsJump2Date";
 		this.tsJump2Date.Size = new System.Drawing.Size(92, 22);
-		this.tsJump2Date.Text = "Переход к дате";
-		this.tsJump2Date.ToolTipText = "Переход к выбранной дате";
+		this.tsJump2Date.Text = "РџРµСЂРµС…РѕРґ Рє РґР°С‚Рµ";
+		this.tsJump2Date.ToolTipText = "РџРµСЂРµС…РѕРґ Рє РІС‹Р±СЂР°РЅРЅРѕР№ РґР°С‚Рµ";
 		this.tsJump2Date.Click += new System.EventHandler(this.tsJump2Date_Click);
 		// 
 		// splitContainer1
@@ -133,8 +133,8 @@ namespace Merlin.Forms
 		this.tsbFilter.ImageTransparentColor = System.Drawing.Color.Magenta;
 		this.tsbFilter.Name = "tsbFilter";
 		this.tsbFilter.Size = new System.Drawing.Size(52, 22);
-		this.tsbFilter.Text = "Фильтр";
-		this.tsbFilter.ToolTipText = "Установить Фильтр";
+		this.tsbFilter.Text = "Р¤РёР»СЊС‚СЂ";
+		this.tsbFilter.ToolTipText = "РЈСЃС‚Р°РЅРѕРІРёС‚СЊ Р¤РёР»СЊС‚СЂ";
 		this.tsbFilter.Click += new System.EventHandler(this.tsbFilter_Click);
 		// 
 		// windowGrid
@@ -166,7 +166,7 @@ namespace Merlin.Forms
 		this.Font = new System.Drawing.Font("Tahoma", 8.25F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(204)));
 		this.Name = "TariffWindowGenerationForm";
 		this.ShowInTaskbar = false;
-		this.Text = "Генерация рекламных окон";
+		this.Text = "Р“РµРЅРµСЂР°С†РёСЏ СЂРµРєР»Р°РјРЅС‹С… РѕРєРѕРЅ";
 		this.tsJournal.ResumeLayout(false);
 		this.tsJournal.PerformLayout();
 		this.splitContainer1.Panel1.ResumeLayout(false);

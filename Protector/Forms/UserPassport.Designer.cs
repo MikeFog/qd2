@@ -1,4 +1,4 @@
-namespace Protector.Forms
+﻿namespace Protector.Forms
 {
 	partial class UserPassport
 	{

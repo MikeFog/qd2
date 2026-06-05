@@ -1,4 +1,4 @@
-using System;
+ï»¿using System;
 using System.Collections.Generic;
 using System.Globalization;
 using System.IO;
@@ -157,7 +157,7 @@ namespace Merlin.Classes.GridExport.DJinSerializer
 
 		private static string GetBlockName(string strs)
 		{
-			// remove time in end of string " â HH:mm"
+			// remove time in end of string " Ð² HH:mm"
 			return strs.Length > 8 ? strs.Substring(0, strs.Length - 8) : string.Empty;
 		}
 
@@ -242,7 +242,7 @@ namespace Merlin.Classes.GridExport.DJinSerializer
 
 		public string GetName()
 		{
-			return string.Format("{0} â {1}", name, time.ToString("t"));
+			return string.Format("{0} Ð² {1}", name, time.ToString("t"));
 		}
 
 		public string GetDuration()

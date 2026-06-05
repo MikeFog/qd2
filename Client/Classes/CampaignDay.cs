@@ -1,4 +1,4 @@
-using System;
+п»їusing System;
 using System.Collections.Generic;
 using System.Windows.Forms;
 using FogSoft.WinForm;
@@ -80,7 +80,7 @@ namespace Merlin.Classes
 					procParameters[Campaign.ParamNames.CampaignId] = this[Campaign.ParamNames.CampaignId];
 					procParameters["oldDate"] = this[RollerIssue.ParamNames.IssueDate];
 					procParameters["newDate"] = fTransfer.TargetDate;
-					// этот параметр для показа возможного сообщения об ошибке
+					// СЌС‚РѕС‚ РїР°СЂР°РјРµС‚СЂ РґР»СЏ РїРѕРєР°Р·Р° РІРѕР·РјРѕР¶РЅРѕРіРѕ СЃРѕРѕР±С‰РµРЅРёСЏ РѕР± РѕС€РёР±РєРµ
                     procParameters[Issue.ParamNames.IssueDate] = fTransfer.TargetDate;
                     procParameters[Massmedia.ParamNames.MassmediaId] = this[Massmedia.ParamNames.MassmediaId];
 					DataAccessor.DoAction(procParameters);

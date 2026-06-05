@@ -1,4 +1,4 @@
-using FogSoft.WinForm.DataAccess;
+﻿using FogSoft.WinForm.DataAccess;
 using System;
 using System.Collections.Generic;
 using System.Data;

@@ -1,4 +1,4 @@
-using System;
+п»їusing System;
 using System.Collections.Generic;
 using System.Data;
 using System.Windows.Forms;
@@ -37,7 +37,7 @@ namespace Merlin.Forms
 			btnApply.Visible = false;
 			DataSet ds = LoadData(moduleID, packModuleID);
 			pageContext = new PageContext(ds, CreateParameters(ds));
-			Text = "Замена ролика";
+			Text = "Р—Р°РјРµРЅР° СЂРѕР»РёРєР°";
 		}
 
 		public Roller NewRoller
@@ -159,7 +159,7 @@ namespace Merlin.Forms
 		{
 			if (cbSubtituteOnMute.Checked)
 			{
-				// если это активированная акция, то для "пустышки" обязательно надо указать предмет рекламы
+				// РµСЃР»Рё СЌС‚Рѕ Р°РєС‚РёРІРёСЂРѕРІР°РЅРЅР°СЏ Р°РєС†РёСЏ, С‚Рѕ РґР»СЏ "РїСѓСЃС‚С‹С€РєРё" РѕР±СЏР·Р°С‚РµР»СЊРЅРѕ РЅР°РґРѕ СѓРєР°Р·Р°С‚СЊ РїСЂРµРґРјРµС‚ СЂРµРєР»Р°РјС‹
 				if(opAdvertType.SelectedObject == null && campaign.Action.IsConfirmed)
 				{
                     FogSoft.WinForm.Forms.MessageBox.ShowExclamation(Properties.Resources.SubstitutionImpossibleForDummyRoller);

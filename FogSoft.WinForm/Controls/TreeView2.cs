@@ -1,4 +1,4 @@
-using System;
+п»їusing System;
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.Data;
@@ -44,16 +44,16 @@ namespace FogSoft.WinForm.Controls
 
                 if (isExpanded)
                 {
-                    // Сворачиваем все узлы
+                    // РЎРІРѕСЂР°С‡РёРІР°РµРј РІСЃРµ СѓР·Р»С‹
                     tvStructure.CollapseAll();
-                    btnToggleExpand.Text = "Раскрыть всё";
+                    btnToggleExpand.Text = "Р Р°СЃРєСЂС‹С‚СЊ РІСЃС‘";
                     isExpanded = false;
                 }
                 else
                 {
-                    // Разворачиваем все узлы
+                    // Р Р°Р·РІРѕСЂР°С‡РёРІР°РµРј РІСЃРµ СѓР·Р»С‹
                     tvStructure.ExpandAll();
-                    btnToggleExpand.Text = "Схлопнуть всё";
+                    btnToggleExpand.Text = "РЎС…Р»РѕРїРЅСѓС‚СЊ РІСЃС‘";
                     isExpanded = true;
                 }
             }
@@ -107,7 +107,7 @@ namespace FogSoft.WinForm.Controls
             DataSource = dtSource;
             DataRow[] childs = DataSource.Select(string.Format("{0} is null", parentIDColumn));
 			tvStructure.Nodes.Clear();
-            TreeNode root = tvStructure.Nodes.Add("Все");
+            TreeNode root = tvStructure.Nodes.Add("Р’СЃРµ");
             foreach (DataRow row in childs)
             {
                 TreeNode node = root.Nodes.Add(row[nameColumn].ToString());

@@ -1,4 +1,4 @@
-namespace FogSoft.WinForm.Forms {
+Ôªønamespace FogSoft.WinForm.Forms {
   partial class SelectionForm {
     /// <summary>
     /// Required designer variable.
@@ -94,7 +94,7 @@ namespace FogSoft.WinForm.Forms {
             this.btnCancel.Name = "btnCancel";
             this.btnCancel.Size = new System.Drawing.Size(120, 33);
             this.btnCancel.TabIndex = 7;
-            this.btnCancel.Text = "ŒÚÏÂÌ‡";
+            this.btnCancel.Text = "–û—Ç–º–µ–Ω–∞";
             // 
             // btnOk
             // 
@@ -105,7 +105,7 @@ namespace FogSoft.WinForm.Forms {
             this.btnOk.Name = "btnOk";
             this.btnOk.Size = new System.Drawing.Size(120, 33);
             this.btnOk.TabIndex = 6;
-            this.btnOk.Text = "ŒÍ";
+            this.btnOk.Text = "–û–∫";
             this.btnOk.Click += new System.EventHandler(this.btnOk_Click);
             // 
             // SelectionForm
@@ -125,7 +125,7 @@ namespace FogSoft.WinForm.Forms {
             this.ShowIcon = false;
             this.ShowInTaskbar = false;
             this.StartPosition = System.Windows.Forms.FormStartPosition.CenterScreen;
-            this.Text = "¬˚·Ó Ó·˙ÂÍÚ‡";
+            this.Text = "–í—ã–±–æ—Ä –æ–±—ä–µ–∫—Ç–∞";
             this.FormClosing += new System.Windows.Forms.FormClosingEventHandler(this.SelectionForm_FormClosing);
             this.tableLayoutPanel1.ResumeLayout(false);
             this.tableLayoutPanel1.PerformLayout();

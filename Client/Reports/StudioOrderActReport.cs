@@ -1,4 +1,4 @@
-using System;
+Ôªøusing System;
 using System.Collections.Generic;
 using System.Data;
 using CrystalDecisions.CrystalReports.Engine;
@@ -49,7 +49,7 @@ namespace Merlin.Reports
 			{
 				decimal price = decimal.Parse(row["price"].ToString());
 				string priceString = Money.MoneyToString(price, true);
-				row["priceString"] = string.Format("Õ‡ ÒÛÏÏÛ: {0} ({1})", price.ToString("c"), priceString);
+				row["priceString"] = string.Format("–ù–∞ —Å—É–º–º—É: {0} ({1})", price.ToString("c"), priceString);
 				totalPrice += price;
 			}
 			return totalPrice;

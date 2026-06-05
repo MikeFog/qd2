@@ -1,4 +1,4 @@
-using System;
+п»їusing System;
 using System.Collections.Generic;
 using System.Configuration;
 using System.Data;
@@ -99,7 +99,7 @@ namespace FogSoft.WinForm.Classes.Export
 			internal object FormatValue(object val)
 			{
 				if(columnType == typeof(bool))
-					return (bool) val ? "Да" : "Нет";
+					return (bool) val ? "Р”Р°" : "РќРµС‚";
 				return val;
 			}
 		}
@@ -125,7 +125,7 @@ namespace FogSoft.WinForm.Classes.Export
 				else if(dg.DataSource is DataView)
 					dv = (DataView) dg.DataSource;
 				//else 
-				//	throw new ApplicationException("Неизвестный источник данных " + (dg.DataSource != null ? string.Format("'{0}'", dg.DataSource.GetType()) : string.Empty));
+				//	throw new ApplicationException("РќРµРёР·РІРµСЃС‚РЅС‹Р№ РёСЃС‚РѕС‡РЅРёРє РґР°РЅРЅС‹С… " + (dg.DataSource != null ? string.Format("'{0}'", dg.DataSource.GetType()) : string.Empty));
 
 				if (dv == null || dv.Count == 0)
 					return;
@@ -252,9 +252,9 @@ namespace FogSoft.WinForm.Classes.Export
             if (string.IsNullOrWhiteSpace(s)) return false;
 
             string cleaned = s.Trim();
-            if (cleaned.EndsWith("г.", StringComparison.OrdinalIgnoreCase))
+            if (cleaned.EndsWith("Рі.", StringComparison.OrdinalIgnoreCase))
                 cleaned = cleaned.Substring(0, cleaned.Length - 2).Trim();
-            else if (cleaned.EndsWith("г", StringComparison.OrdinalIgnoreCase))
+            else if (cleaned.EndsWith("Рі", StringComparison.OrdinalIgnoreCase))
                 cleaned = cleaned.Substring(0, cleaned.Length - 1).Trim();
 
             if (DateTime.TryParseExact(cleaned, new[] { "MMMM yyyy", "MMM yyyy" },

@@ -1,4 +1,4 @@
-using System;
+п»їusing System;
 using System.Windows.Forms;
 using FogSoft.WinForm;
 using FogSoft.WinForm.Classes;
@@ -8,7 +8,7 @@ namespace Merlin.Classes
 	internal class MassmediasAndCampaignsContainer : FakeContainer
 	{
 		public MassmediasAndCampaignsContainer()
-			: base("Радиостанции", null, RelationManager.GetScenario(RelationScenarios.MassmediaAndCampaign))
+			: base("Р Р°РґРёРѕСЃС‚Р°РЅС†РёРё", null, RelationManager.GetScenario(RelationScenarios.MassmediaAndCampaign))
 		{
 		}
 

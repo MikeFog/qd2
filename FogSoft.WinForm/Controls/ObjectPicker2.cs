@@ -1,4 +1,4 @@
-using System;
+п»їusing System;
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.Data;
@@ -108,9 +108,9 @@ namespace FogSoft.WinForm.Controls
 
 		private void SetTooltips()
 		{
-			ttOjectPicker.SetToolTip(btnClear, "Отменить выбор");
-			ttOjectPicker.SetToolTip(btnSelect, "Выбрать объект");
-			ttOjectPicker.SetToolTip(btnCreateNew, "Создать новый объект");
+			ttOjectPicker.SetToolTip(btnClear, "РћС‚РјРµРЅРёС‚СЊ РІС‹Р±РѕСЂ");
+			ttOjectPicker.SetToolTip(btnSelect, "Р’С‹Р±СЂР°С‚СЊ РѕР±СЉРµРєС‚");
+			ttOjectPicker.SetToolTip(btnCreateNew, "РЎРѕР·РґР°С‚СЊ РЅРѕРІС‹Р№ РѕР±СЉРµРєС‚");
 		}
 
 		private void ObjectPicker2_Resize(object sender, EventArgs e)
@@ -138,7 +138,7 @@ namespace FogSoft.WinForm.Controls
 //          if(this.dataTable == null && !this.entity.IsFilterable) this.LoadData();
 					if (dataTable == null) LoadData();
 
-					SelectionForm selector = new SelectionForm(entity, dataTable.DefaultView, "Выбрать объект");
+					SelectionForm selector = new SelectionForm(entity, dataTable.DefaultView, "Р’С‹Р±СЂР°С‚СЊ РѕР±СЉРµРєС‚");
 					if (selector.ShowDialog(Parent) == DialogResult.OK)
 						presentationObject = selector.SelectedObject;
 				}
@@ -168,7 +168,7 @@ namespace FogSoft.WinForm.Controls
 			// If entity supports Filters - don't load data here. Give user
 			// a chance to set filters before loading huge amount of data
 
-			// Добавил новый кеш parameters для object selector - так как забитые по умолчанию значения затираются значениями из фильтра
+			// Р”РѕР±Р°РІРёР» РЅРѕРІС‹Р№ РєРµС€ parameters РґР»СЏ object selector - С‚Р°Рє РєР°Рє Р·Р°Р±РёС‚С‹Рµ РїРѕ СѓРјРѕР»С‡Р°РЅРёСЋ Р·РЅР°С‡РµРЅРёСЏ Р·Р°С‚РёСЂР°СЋС‚СЃСЏ Р·РЅР°С‡РµРЅРёСЏРјРё РёР· С„РёР»СЊС‚СЂР°
 			Dictionary<string, object> parameters = DataAccess.DataAccessor.CreateParametersDictionary();
 			if (entity.IsFilterable)
 				Globals.ResolveFilterInitialValues(parameters, entity.XmlFilter);

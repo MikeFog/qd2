@@ -1,4 +1,4 @@
-using System;
+Ôªøusing System;
 using System.Collections.Generic;
 using System.Data;
 using System.Globalization;
@@ -43,9 +43,9 @@ namespace Merlin.Reports
             SetPaintings(_agency, dtData);
 
 			_report.SetDataSource(dtData);			
-			SetTextObjectText("txtBillNo", _month.HasValue ? string.Format("—˜∏Ú π {0} ÓÚ {1} Á‡ ÏÂÒˇˆ {2} {3} „Ó‰‡ Í {5} π {4}", BillNo, BillDate.ToShortDateString()
-				, DateTimeFormatInfo.CurrentInfo.MonthNames[_month.Value.Month - 1], _month.Value.Year, _action.ActionId, "‡ÍˆËË") :
-							  string.Format("—˜∏Ú π {0} ÓÚ {1} Í {3} π {2}", BillNo, BillDate.ToShortDateString(), _action.ActionId, "‡ÍˆËË"));
+			SetTextObjectText("txtBillNo", _month.HasValue ? string.Format("–°—á—ë—Ç ‚Ññ {0} –æ—Ç {1} –∑–∞ –º–µ—Å—è—Ü {2} {3} –≥–æ–¥–∞ –∫ {5} ‚Ññ {4}", BillNo, BillDate.ToShortDateString()
+				, DateTimeFormatInfo.CurrentInfo.MonthNames[_month.Value.Month - 1], _month.Value.Year, _action.ActionId, "–∞–∫—Ü–∏–∏") :
+							  string.Format("–°—á—ë—Ç ‚Ññ {0} –æ—Ç {1} –∫ {3} ‚Ññ {2}", BillNo, BillDate.ToShortDateString(), _action.ActionId, "–∞–∫—Ü–∏–∏"));
 			SetTextObjectText("txtAgency", _agency.PrefixWithName);
 			SetTextObjectText("txtAgencyINN", _agency.INN);
             SetTextObjectText("txtAgencyKPP", _agency.KPP);
@@ -73,7 +73,7 @@ namespace Merlin.Reports
             else
                 SuppressFooters(_report, true);
 
-            SetTextObjectText("txtNDSColumn", CalcTotalTax(dtData) == 0 ? "Õƒ—" : "Õƒ— (5%)");
+            SetTextObjectText("txtNDSColumn", CalcTotalTax(dtData) == 0 ? "–ù–î–°" : "–ù–î–° (5%)");
         }
 
 

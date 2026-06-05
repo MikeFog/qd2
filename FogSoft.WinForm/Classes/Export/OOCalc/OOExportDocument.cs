@@ -1,4 +1,4 @@
-using System.Reflection;
+Ôªøusing System.Reflection;
 using System.Text.RegularExpressions;
 using log4net;
 using Microsoft.Win32;
@@ -170,8 +170,8 @@ namespace FogSoft.WinForm.Classes.Export.OOCalc
 			XStyleFamiliesSupplier style = (XStyleFamiliesSupplier)xComponent;
 			XNameContainer styles = (XNameContainer)style.getStyleFamilies().getByName("PageStyles").Value;
 			object obj;
-			if (styles.hasByName("¡‡ÁÓ‚˚È"))
-				obj = styles.getByName("¡‡ÁÓ‚˚È").Value;
+			if (styles.hasByName("–ë–∞–∑–æ–≤—ã–π"))
+				obj = styles.getByName("–ë–∞–∑–æ–≤—ã–π").Value;
 			else
 				obj = styles.getByName("Default").Value;
 

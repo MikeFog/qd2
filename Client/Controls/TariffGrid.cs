@@ -1,4 +1,4 @@
-using System;
+п»їusing System;
 using System.ComponentModel;
 using System.Data;
 using System.Diagnostics;
@@ -292,7 +292,7 @@ namespace Merlin.Controls
 				if (selectedWindow != null)
 					RestoreCurrentWindow();
 			}
-			else if(ShowMessages && grid is IRollerGrid) // пока проверка сделана только для обычных тарифов 
+			else if(ShowMessages && grid is IRollerGrid) // РїРѕРєР° РїСЂРѕРІРµСЂРєР° СЃРґРµР»Р°РЅР° С‚РѕР»СЊРєРѕ РґР»СЏ РѕР±С‹С‡РЅС‹С… С‚Р°СЂРёС„РѕРІ 
 				FogSoft.WinForm.Forms.MessageBox.ShowInformation(Properties.Resources.NoPricelistForGivenDate);
 		}
 
@@ -347,7 +347,7 @@ namespace Merlin.Controls
 
 		protected virtual void SetNavigationCaption()
 		{
-			Caption.Caption = pricelist != null ? string.Format("Прайс-лист: {0} - {1}",
+			Caption.Caption = pricelist != null ? string.Format("РџСЂР°Р№СЃ-Р»РёСЃС‚: {0} - {1}",
 			                                                    pricelist.StartDate.ToShortDateString(),
 			                                                    pricelist.FinishDate.ToShortDateString()) : string.Empty;
 		}
@@ -659,7 +659,7 @@ namespace Merlin.Controls
 
         public bool SelectDate2Jump()
 		{
-			FrmDateSelector fSelector = new FrmDateSelector("Выбор даты");
+			FrmDateSelector fSelector = new FrmDateSelector("Р’С‹Р±РѕСЂ РґР°С‚С‹");
 			fSelector.Mode = FrmDateSelector.SelectorMode.SelectOne;
 			if(fSelector.ShowDialog(this) == DialogResult.OK)
 			{

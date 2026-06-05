@@ -1,4 +1,4 @@
-namespace FogSoft.WinForm.Controls
+Ôªønamespace FogSoft.WinForm.Controls
 {
     partial class TreeView2
     {
@@ -57,7 +57,7 @@ namespace FogSoft.WinForm.Controls
             this.btnToggleExpand.Name = "btnToggleExpand";
             this.btnToggleExpand.Size = new System.Drawing.Size(211, 30);
             this.btnToggleExpand.TabIndex = 1;
-            this.btnToggleExpand.Text = "–‡ÒÍ˚Ú¸ ‚Ò∏";
+            this.btnToggleExpand.Text = "–†–∞—Å–∫—Ä—ã—Ç—å –≤—Å—ë";
             this.btnToggleExpand.Click += new System.EventHandler(this.BtnToggleExpand_Click);
             // 
             // panelContainer

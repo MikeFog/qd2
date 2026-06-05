@@ -1,4 +1,4 @@
-using System;
+п»їusing System;
 using System.Data;
 using CrystalDecisions.CrystalReports.Engine;
 using FogSoft.WinForm.Classes;
@@ -80,7 +80,7 @@ namespace Merlin.Reports
             Firm firm = action.Firm;
             */
             PrintFooter(_agency, _action.Firm);
-            SetTextObjectText("txtNumber", (_isSponsor ? "Спонсорский договор к рекламной акции № " : "Договор для рекламной акции № ") + _action.ActionId);
+            SetTextObjectText("txtNumber", (_isSponsor ? "РЎРїРѕРЅСЃРѕСЂСЃРєРёР№ РґРѕРіРѕРІРѕСЂ Рє СЂРµРєР»Р°РјРЅРѕР№ Р°РєС†РёРё в„– " : "Р”РѕРіРѕРІРѕСЂ РґР»СЏ СЂРµРєР»Р°РјРЅРѕР№ Р°РєС†РёРё в„– ") + _action.ActionId);
 
             SetTextObjectText("txtBillDate", date.ToShortDateString());
 

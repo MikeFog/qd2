@@ -1,4 +1,4 @@
-using System;
+п»їusing System;
 using System.Collections.Generic;
 using System.Data;
 using System.Windows.Forms;
@@ -75,7 +75,7 @@ namespace Protector.Domain
         private void AssignExistingUser(IWin32Window owner)
 		{
 			SelectionForm selector =
-				new SelectionForm(EntityManager.GetEntity((int) Entities.User), "Выбор пользователя");
+				new SelectionForm(EntityManager.GetEntity((int) Entities.User), "Р’С‹Р±РѕСЂ РїРѕР»СЊР·РѕРІР°С‚РµР»СЏ");
 			if (selector.ShowDialog(owner) == DialogResult.OK)
 			{
 				Dictionary<string, object> newObjParameters = selector.SelectedObject.Parameters;
@@ -115,7 +115,7 @@ namespace Protector.Domain
 
 			TreeViewSelector selector =
 				new TreeViewSelector(RelationManager.GetScenario(FrmMain.RelationScenarios.MenuItem),
-				                     "Пункты меню", true, ds.Tables[Constants.TableNames.Data]);
+				                     "РџСѓРЅРєС‚С‹ РјРµРЅСЋ", true, ds.Tables[Constants.TableNames.Data]);
 			selector.SelectedItemsImageColumn = "img";
 			if (selector.ShowDialog(owner) == DialogResult.OK)
 			{
@@ -151,7 +151,7 @@ namespace Protector.Domain
 		{
 			Entity oldChild = ChildEntity;
 			ChildEntity = EntityManager.GetEntity((int) Entities.GroupRight);
-			SelectionForm selector = new SelectionForm(ChildEntity, GetContent().DefaultView, "Права для группы", true);
+			SelectionForm selector = new SelectionForm(ChildEntity, GetContent().DefaultView, "РџСЂР°РІР° РґР»СЏ РіСЂСѓРїРїС‹", true);
 			if (selector.ShowDialog(owner) == DialogResult.OK)
 			{
 				Application.DoEvents();

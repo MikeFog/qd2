@@ -1,4 +1,4 @@
-namespace Merlin.Forms
+п»їnamespace Merlin.Forms
 {
     partial class ManagerDiscountForm
     {
@@ -47,7 +47,7 @@ namespace Merlin.Forms
             this.btnOK.Name = "btnOK";
             this.btnOK.Size = new System.Drawing.Size(120, 33);
             this.btnOK.TabIndex = 0;
-            this.btnOK.Text = "Ок";
+            this.btnOK.Text = "РћРє";
             this.btnOK.UseVisualStyleBackColor = true;
             this.btnOK.Click += new System.EventHandler(this.btnOk_Click);
             // 
@@ -59,7 +59,7 @@ namespace Merlin.Forms
             this.btnCancel.Name = "btnCancel";
             this.btnCancel.Size = new System.Drawing.Size(120, 33);
             this.btnCancel.TabIndex = 1;
-            this.btnCancel.Text = "Отмена";
+            this.btnCancel.Text = "РћС‚РјРµРЅР°";
             this.btnCancel.UseVisualStyleBackColor = true;
             // 
             // label1
@@ -70,7 +70,7 @@ namespace Merlin.Forms
             this.label1.Name = "label1";
             this.label1.Size = new System.Drawing.Size(159, 25);
             this.label1.TabIndex = 0;
-            this.label1.Text = "Цена по тарифам:";
+            this.label1.Text = "Р¦РµРЅР° РїРѕ С‚Р°СЂРёС„Р°Рј:";
             // 
             // lblTariffPrice
             // 
@@ -90,7 +90,7 @@ namespace Merlin.Forms
             this.label2.Name = "label2";
             this.label2.Size = new System.Drawing.Size(74, 25);
             this.label2.TabIndex = 2;
-            this.label2.Text = "Скидка:";
+            this.label2.Text = "РЎРєРёРґРєР°:";
             // 
             // lblDiscount
             // 
@@ -111,7 +111,7 @@ namespace Merlin.Forms
             this.label6.Name = "label6";
             this.label6.Size = new System.Drawing.Size(151, 25);
             this.label6.TabIndex = 4;
-            this.label6.Text = "Пакетная скидка:";
+            this.label6.Text = "РџР°РєРµС‚РЅР°СЏ СЃРєРёРґРєР°:";
             // 
             // lblPackDiscount
             // 
@@ -132,7 +132,7 @@ namespace Merlin.Forms
             this.label3.Name = "label3";
             this.label3.Size = new System.Drawing.Size(198, 25);
             this.label3.TabIndex = 6;
-            this.label3.Text = "Менеджерская скидка:";
+            this.label3.Text = "РњРµРЅРµРґР¶РµСЂСЃРєР°СЏ СЃРєРёРґРєР°:";
             // 
             // txtRatio
             // 
@@ -163,7 +163,7 @@ namespace Merlin.Forms
             this.label4.Name = "label4";
             this.label4.Size = new System.Drawing.Size(185, 25);
             this.label4.TabIndex = 8;
-            this.label4.Text = "Окончательная цена:";
+            this.label4.Text = "РћРєРѕРЅС‡Р°С‚РµР»СЊРЅР°СЏ С†РµРЅР°:";
             // 
             // txtFinalPrice
             // 
@@ -187,7 +187,7 @@ namespace Merlin.Forms
             this.chkCurrentDate.Name = "chkCurrentDate";
             this.chkCurrentDate.Size = new System.Drawing.Size(318, 29);
             this.chkCurrentDate.TabIndex = 10;
-            this.chkCurrentDate.Text = "Изменить цену акции в прошлом:";
+            this.chkCurrentDate.Text = "РР·РјРµРЅРёС‚СЊ С†РµРЅСѓ Р°РєС†РёРё РІ РїСЂРѕС€Р»РѕРј:";
             this.chkCurrentDate.UseVisualStyleBackColor = true;
             this.chkCurrentDate.CheckedChanged += new System.EventHandler(this.checkBox1_CheckedChanged);
             // 
@@ -244,7 +244,7 @@ namespace Merlin.Forms
             this.label5.Name = "label5";
             this.label5.Size = new System.Drawing.Size(217, 25);
             this.label5.TabIndex = 12;
-            this.label5.Text = "Причина выдачи скидки:";
+            this.label5.Text = "РџСЂРёС‡РёРЅР° РІС‹РґР°С‡Рё СЃРєРёРґРєРё:";
             // 
             // cmbReason
             // 
@@ -283,7 +283,7 @@ namespace Merlin.Forms
             this.MinimizeBox = false;
             this.Name = "ManagerDiscountForm";
             this.StartPosition = System.Windows.Forms.FormStartPosition.CenterParent;
-            this.Text = "Менеджерская скидка";
+            this.Text = "РњРµРЅРµРґР¶РµСЂСЃРєР°СЏ СЃРєРёРґРєР°";
             ((System.ComponentModel.ISupportInitialize)(this.txtRatio)).EndInit();
             ((System.ComponentModel.ISupportInitialize)(this.txtFinalPrice)).EndInit();
             this.tableLayoutPanelMain.ResumeLayout(false);

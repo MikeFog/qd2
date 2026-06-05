@@ -1,4 +1,4 @@
-namespace Merlin.Classes.GridExport
+﻿namespace Merlin.Classes.GridExport
 {
 	public struct ExportParams
 	{

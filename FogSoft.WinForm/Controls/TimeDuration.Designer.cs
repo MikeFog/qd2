@@ -1,4 +1,4 @@
-namespace FogSoft.WinForm.Controls
+Ôªønamespace FogSoft.WinForm.Controls
 {
   partial class TimeDuration
   {
@@ -60,7 +60,7 @@ namespace FogSoft.WinForm.Controls
             this.lblMin.Name = "lblMin";
             this.lblMin.Size = new System.Drawing.Size(33, 15);
             this.lblMin.TabIndex = 1;
-            this.lblMin.Text = "ÏËÌ.";
+            this.lblMin.Text = "–º–∏–Ω.";
             // 
             // txtSec
             // 
@@ -85,7 +85,7 @@ namespace FogSoft.WinForm.Controls
             this.lblSec.Name = "lblSec";
             this.lblSec.Size = new System.Drawing.Size(28, 15);
             this.lblSec.TabIndex = 3;
-            this.lblSec.Text = "ÒÂÍ.";
+            this.lblSec.Text = "—Å–µ–∫.";
             // 
             // TimeDuration
             // 

@@ -1,4 +1,4 @@
-namespace Merlin.Forms
+п»їnamespace Merlin.Forms
 {
 	partial class FrmWindowTariffTemplate
 	{
@@ -35,7 +35,7 @@ namespace Merlin.Forms
 			// 
 
 			this.Name = "FrmWindowTariffTemplate";
-			this.Text = "Добавление рекламных окон по шаблону";
+			this.Text = "Р”РѕР±Р°РІР»РµРЅРёРµ СЂРµРєР»Р°РјРЅС‹С… РѕРєРѕРЅ РїРѕ С€Р°Р±Р»РѕРЅСѓ";
 			((System.ComponentModel.ISupportInitialize)(this.pbFake)).EndInit();
 			this.ResumeLayout(false);
 			this.PerformLayout();

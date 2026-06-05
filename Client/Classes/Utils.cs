@@ -1,4 +1,4 @@
-using System;
+п»їusing System;
 using System.Collections.Generic;
 using System.Drawing;
 using System.IO;
@@ -16,7 +16,7 @@ namespace Merlin.Classes
 		public static PresentationObject SelectManager(IWin32Window owner)
 		{
 			SelectionForm fSelector =
-				new SelectionForm(EntityManager.GetEntity((int) Entities.User), "Менеджер");
+				new SelectionForm(EntityManager.GetEntity((int) Entities.User), "РњРµРЅРµРґР¶РµСЂ");
 			if (fSelector.ShowDialog(owner) == DialogResult.OK) return fSelector.SelectedObject;
 			return null;
 		}
@@ -64,7 +64,7 @@ namespace Merlin.Classes
             tableLayoutPanelMain.SuspendLayout();
             try
             {
-                // 1. Скрываем контролы
+                // 1. РЎРєСЂС‹РІР°РµРј РєРѕРЅС‚СЂРѕР»С‹
                 foreach (Control control in tableLayoutPanelMain.Controls)
                 {
                     int controlRow = tableLayoutPanelMain.GetRow(control);
@@ -76,21 +76,21 @@ namespace Merlin.Classes
                     }
                 }
 
-                // Добавляем недостающие стили, если их меньше, чем строк
+                // Р”РѕР±Р°РІР»СЏРµРј РЅРµРґРѕСЃС‚Р°СЋС‰РёРµ СЃС‚РёР»Рё, РµСЃР»Рё РёС… РјРµРЅСЊС€Рµ, С‡РµРј СЃС‚СЂРѕРє
                 while (tableLayoutPanelMain.RowStyles.Count <= rowNum)
                 {
-                    // Добавляем дефолтный стиль (например, AutoSize), чтобы не сломать логику остальных строк
+                    // Р”РѕР±Р°РІР»СЏРµРј РґРµС„РѕР»С‚РЅС‹Р№ СЃС‚РёР»СЊ (РЅР°РїСЂРёРјРµСЂ, AutoSize), С‡С‚РѕР±С‹ РЅРµ СЃР»РѕРјР°С‚СЊ Р»РѕРіРёРєСѓ РѕСЃС‚Р°Р»СЊРЅС‹С… СЃС‚СЂРѕРє
                     tableLayoutPanelMain.RowStyles.Add(new RowStyle(SizeType.AutoSize));
                 }
 
-                // 3. Схлопываем
+                // 3. РЎС…Р»РѕРїС‹РІР°РµРј
                 tableLayoutPanelMain.RowStyles[rowNum].SizeType = SizeType.Absolute;
                 tableLayoutPanelMain.RowStyles[rowNum].Height = 0;
             }
             finally
             {
                 tableLayoutPanelMain.ResumeLayout(true);
-                // Дополнительный пинок для перерисовки
+                // Р”РѕРїРѕР»РЅРёС‚РµР»СЊРЅС‹Р№ РїРёРЅРѕРє РґР»СЏ РїРµСЂРµСЂРёСЃРѕРІРєРё
                 tableLayoutPanelMain.PerformLayout();
             }
         }

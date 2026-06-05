@@ -1,4 +1,4 @@
-using System;
+п»їusing System;
 using System.Collections.Generic;
 using System.Data;
 using System.Data.SqlClient;
@@ -98,7 +98,7 @@ namespace FogSoft.WinForm.DataAccess
 		public static void LoadProcedureConfig()
 		{
 			DataSet ds = LoadDataSet("ProcedureConfigurationRetrieve", null);
-			// коллекция процедур с доступом по ключу
+			// РєРѕР»Р»РµРєС†РёСЏ РїСЂРѕС†РµРґСѓСЂ СЃ РґРѕСЃС‚СѓРїРѕРј РїРѕ РєР»СЋС‡Сѓ
 			foreach (DataRow row in ds.Tables[0].Rows)
 			{
 				string key =
@@ -110,7 +110,7 @@ namespace FogSoft.WinForm.DataAccess
 				ProcedureConfig config = new ProcedureConfig(row, selectedRows);
 				procedureConfigs.Add(key, config);
             }
-            // коллекция процедур с доступом по имени процедуры
+            // РєРѕР»Р»РµРєС†РёСЏ РїСЂРѕС†РµРґСѓСЂ СЃ РґРѕСЃС‚СѓРїРѕРј РїРѕ РёРјРµРЅРё РїСЂРѕС†РµРґСѓСЂС‹
             foreach (DataRow row in ds.Tables[2].Rows)
             {
                 string storedProcedureId = row["storedProcedureID"].ToString();
@@ -468,7 +468,7 @@ namespace FogSoft.WinForm.DataAccess
                     string execScript = BuildExecScript(procedureName, _commandParameters);
                     exp.Data["ExecScript"] = execScript;
                 }
-                catch { /* не должен выбрасывать exception */ }
+                catch { /* РЅРµ РґРѕР»Р¶РµРЅ РІС‹Р±СЂР°СЃС‹РІР°С‚СЊ exception */ }
 
                 throw;
             }
@@ -534,7 +534,7 @@ end
 		/// <param name="procedureName"></param>
 		/// <param name="parameters"></param>
 		/// <param name="connectionTimeout"></param>
-		/// <param name="dataSet">Таблица загруженная на сервер при помощи bulk - copy</param>
+		/// <param name="dataSet">РўР°Р±Р»РёС†Р° Р·Р°РіСЂСѓР¶РµРЅРЅР°СЏ РЅР° СЃРµСЂРІРµСЂ РїСЂРё РїРѕРјРѕС‰Рё bulk - copy</param>
 		/// <returns></returns>
 		public static DataSet LoadDataSet(string procedureName, IDictionary<string, object> parameters, int connectionTimeout, DataSet dataSet)
 		{
@@ -670,14 +670,14 @@ end
             if (parameters == null || parameters.Length == 0)
                 return string.Empty;
 
-            // Сортируем параметры по имени, чтобы одинаковые массивы давали одинаковый результат
+            // РЎРѕСЂС‚РёСЂСѓРµРј РїР°СЂР°РјРµС‚СЂС‹ РїРѕ РёРјРµРЅРё, С‡С‚РѕР±С‹ РѕРґРёРЅР°РєРѕРІС‹Рµ РјР°СЃСЃРёРІС‹ РґР°РІР°Р»Рё РѕРґРёРЅР°РєРѕРІС‹Р№ СЂРµР·СѓР»СЊС‚Р°С‚
             var sortedParameters = parameters.OrderBy(p => p.ParameterName).ToArray();
 
-            // Создаем строку, объединяя свойства каждого параметра
+            // РЎРѕР·РґР°РµРј СЃС‚СЂРѕРєСѓ, РѕР±СЉРµРґРёРЅСЏСЏ СЃРІРѕР№СЃС‚РІР° РєР°Р¶РґРѕРіРѕ РїР°СЂР°РјРµС‚СЂР°
             var concatenated = string.Join(";", sortedParameters.Select(p =>
                 $"{p.ParameterName}:{p.SqlDbType}:{p.Size}:{p.Value}"));
 
-            // Вычисляем хэш (MD5, SHA256 или другой алгоритм)
+            // Р’С‹С‡РёСЃР»СЏРµРј С…СЌС€ (MD5, SHA256 РёР»Рё РґСЂСѓРіРѕР№ Р°Р»РіРѕСЂРёС‚Рј)
             using (var hashAlgorithm = SHA256.Create())
             {
                 var hashBytes = hashAlgorithm.ComputeHash(Encoding.UTF8.GetBytes(concatenated));
@@ -686,7 +686,7 @@ end
         }
 
         /// <summary>
-        /// Строит строку EXEC для запуска процедуры в Management Studio.
+        /// РЎС‚СЂРѕРёС‚ СЃС‚СЂРѕРєСѓ EXEC РґР»СЏ Р·Р°РїСѓСЃРєР° РїСЂРѕС†РµРґСѓСЂС‹ РІ Management Studio.
         /// </summary>
         private static string BuildExecScript(string procedureName, SqlParameter[] parameters)
         {
@@ -715,7 +715,7 @@ end
 
         private static string FormatSqlParamValue(SqlParameter p)
         {
-            // OUTPUT-параметры без входного значения
+            // OUTPUT-РїР°СЂР°РјРµС‚СЂС‹ Р±РµР· РІС…РѕРґРЅРѕРіРѕ Р·РЅР°С‡РµРЅРёСЏ
             if (p.Direction == ParameterDirection.Output)
                 return p.ParameterName;
 
@@ -731,7 +731,7 @@ end
                 case SqlDbType.NVarChar:
                 case SqlDbType.Text:
                 case SqlDbType.NText:
-                    // Экранируем одиночные кавычки внутри строки
+                    // Р­РєСЂР°РЅРёСЂСѓРµРј РѕРґРёРЅРѕС‡РЅС‹Рµ РєР°РІС‹С‡РєРё РІРЅСѓС‚СЂРё СЃС‚СЂРѕРєРё
                     string escaped = val.ToString().Replace("'", "''");
                     return $"N'{escaped}'";
 
@@ -753,7 +753,7 @@ end
                 case SqlDbType.SmallMoney:
                 case SqlDbType.Float:
                 case SqlDbType.Real:
-                    // Числа с плавающей точкой — инвариантная культура
+                    // Р§РёСЃР»Р° СЃ РїР»Р°РІР°СЋС‰РµР№ С‚РѕС‡РєРѕР№ вЂ” РёРЅРІР°СЂРёР°РЅС‚РЅР°СЏ РєСѓР»СЊС‚СѓСЂР°
                     return Convert.ToDecimal(val).ToString(System.Globalization.CultureInfo.InvariantCulture);
 
                 default:

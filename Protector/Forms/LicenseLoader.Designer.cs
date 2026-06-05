@@ -1,4 +1,4 @@
-namespace Protector.Forms
+п»їnamespace Protector.Forms
 {
 	partial class LicenseLoader
 	{
@@ -53,7 +53,7 @@ namespace Protector.Forms
 			this.groupBoxLicenseLoader.Size = new System.Drawing.Size(448, 111);
 			this.groupBoxLicenseLoader.TabIndex = 0;
 			this.groupBoxLicenseLoader.TabStop = false;
-			this.groupBoxLicenseLoader.Text = "Загрузка лицензии";
+			this.groupBoxLicenseLoader.Text = "Р—Р°РіСЂСѓР·РєР° Р»РёС†РµРЅР·РёРё";
 			// 
 			// btnLoadLicense
 			// 
@@ -65,7 +65,7 @@ namespace Protector.Forms
 			this.btnLoadLicense.Name = "btnLoadLicense";
 			this.btnLoadLicense.Size = new System.Drawing.Size(159, 29);
 			this.btnLoadLicense.TabIndex = 3;
-			this.btnLoadLicense.Text = "Загрузить лицензию";
+			this.btnLoadLicense.Text = "Р—Р°РіСЂСѓР·РёС‚СЊ Р»РёС†РµРЅР·РёСЋ";
 			this.btnLoadLicense.TextAlign = System.Drawing.ContentAlignment.MiddleRight;
 			this.btnLoadLicense.UseVisualStyleBackColor = true;
 			this.btnLoadLicense.Click += new System.EventHandler(this.btnLoadLicense_Click);
@@ -97,7 +97,7 @@ namespace Protector.Forms
 			this.labelLicencePath.Name = "labelLicencePath";
 			this.labelLicencePath.Size = new System.Drawing.Size(137, 13);
 			this.labelLicencePath.TabIndex = 0;
-			this.labelLicencePath.Text = "Путь до файла лицензии:";
+			this.labelLicencePath.Text = "РџСѓС‚СЊ РґРѕ С„Р°Р№Р»Р° Р»РёС†РµРЅР·РёРё:";
 			// 
 			// groupBoxLicense
 			// 
@@ -108,7 +108,7 @@ namespace Protector.Forms
 			this.groupBoxLicense.Size = new System.Drawing.Size(448, 115);
 			this.groupBoxLicense.TabIndex = 1;
 			this.groupBoxLicense.TabStop = false;
-			this.groupBoxLicense.Text = "Текущая лицензия";
+			this.groupBoxLicense.Text = "РўРµРєСѓС‰Р°СЏ Р»РёС†РµРЅР·РёСЏ";
 			// 
 			// lblLicence
 			// 
@@ -117,15 +117,15 @@ namespace Protector.Forms
 			this.lblLicence.Name = "lblLicence";
 			this.lblLicence.Size = new System.Drawing.Size(435, 82);
 			this.lblLicence.TabIndex = 0;
-			this.lblLicence.Text = "Лицензия не предоставлена";
+			this.lblLicence.Text = "Р›РёС†РµРЅР·РёСЏ РЅРµ РїСЂРµРґРѕСЃС‚Р°РІР»РµРЅР°";
 			this.lblLicence.TextAlign = System.Drawing.ContentAlignment.BottomLeft;
 			// 
 			// frmBrowseLicence
 			// 
 			this.frmBrowseLicence.DefaultExt = "lic";
 			this.frmBrowseLicence.FileName = "frmBrowseLicence";
-			this.frmBrowseLicence.Filter = "Файл лицензии|*.lic";
-			this.frmBrowseLicence.Title = "Файл лицензии";
+			this.frmBrowseLicence.Filter = "Р¤Р°Р№Р» Р»РёС†РµРЅР·РёРё|*.lic";
+			this.frmBrowseLicence.Title = "Р¤Р°Р№Р» Р»РёС†РµРЅР·РёРё";
 			// 
 			// buttonClose
 			// 
@@ -135,7 +135,7 @@ namespace Protector.Forms
 			this.buttonClose.Name = "buttonClose";
 			this.buttonClose.Size = new System.Drawing.Size(75, 23);
 			this.buttonClose.TabIndex = 2;
-			this.buttonClose.Text = "Закрыть";
+			this.buttonClose.Text = "Р—Р°РєСЂС‹С‚СЊ";
 			this.buttonClose.UseVisualStyleBackColor = true;
 			// 
 			// LicenseLoader
@@ -155,7 +155,7 @@ namespace Protector.Forms
 			this.ShowIcon = false;
 			this.ShowInTaskbar = false;
 			this.StartPosition = System.Windows.Forms.FormStartPosition.CenterParent;
-			this.Text = "Лицензия";
+			this.Text = "Р›РёС†РµРЅР·РёСЏ";
 			this.groupBoxLicenseLoader.ResumeLayout(false);
 			this.groupBoxLicenseLoader.PerformLayout();
 			this.groupBoxLicense.ResumeLayout(false);

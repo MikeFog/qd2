@@ -1,4 +1,4 @@
-namespace Merlin.Controls
+﻿namespace Merlin.Controls
 {
 	abstract partial class TariffGridWithIssuesOnSingleMassmedia
 	{

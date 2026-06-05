@@ -1,4 +1,4 @@
-namespace Merlin.Forms
+﻿namespace Merlin.Forms
 {
 	partial class MassmediasJournal
 	{

@@ -1,4 +1,4 @@
-using System;
+п»їusing System;
 using System.Collections.Generic;
 using System.Data;
 using System.Windows.Forms;
@@ -128,7 +128,7 @@ namespace Merlin.Classes
 		private void EditTariffList(IWin32Window owner)
 		{
 			SelectionForm selector = new SelectionForm(
-				EntityManager.GetEntity((int) Entities.Tariff), LoadTariffList().DefaultView, "Тарифы для модуля", true);
+				EntityManager.GetEntity((int) Entities.Tariff), LoadTariffList().DefaultView, "РўР°СЂРёС„С‹ РґР»СЏ РјРѕРґСѓР»СЏ", true);
 			if (selector.ShowDialog(owner) == DialogResult.OK)
 			{
 				Application.DoEvents();

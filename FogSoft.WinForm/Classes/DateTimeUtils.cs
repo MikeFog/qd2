@@ -1,4 +1,4 @@
-using System;
+п»їusing System;
 using System.Globalization;
 
 namespace FogSoft.WinForm.Classes
@@ -6,23 +6,23 @@ namespace FogSoft.WinForm.Classes
 	public static class DateTimeUtils
 	{
 		public static string[] WeekDayNames = {
-		                                      	"Понедельник",
-		                                      	"Вторник",
-		                                      	"Среда",
-		                                      	"Четверг",
-		                                      	"Пятница",
-		                                      	"Суббота",
-		                                      	"Воскресенье"
+		                                      	"РџРѕРЅРµРґРµР»СЊРЅРёРє",
+		                                      	"Р’С‚РѕСЂРЅРёРє",
+		                                      	"РЎСЂРµРґР°",
+		                                      	"Р§РµС‚РІРµСЂРі",
+		                                      	"РџСЏС‚РЅРёС†Р°",
+		                                      	"РЎСѓР±Р±РѕС‚Р°",
+		                                      	"Р’РѕСЃРєСЂРµСЃРµРЅСЊРµ"
 		                                      };
 
 		private static readonly string[] WeekDayNamesShort = {
-		                                            	"Пн.",
-		                                            	"Вт.",
-		                                            	"Ср.",
-		                                            	"Чт.",
-		                                            	"Пт.",
-		                                            	"Сб.",
-		                                            	"Вс."
+		                                            	"РџРЅ.",
+		                                            	"Р’С‚.",
+		                                            	"РЎСЂ.",
+		                                            	"Р§С‚.",
+		                                            	"РџС‚.",
+		                                            	"РЎР±.",
+		                                            	"Р’СЃ."
 		                                            };
 
 		public enum WeekDayNameFormat

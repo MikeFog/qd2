@@ -1,4 +1,4 @@
-using System.Drawing;
+﻿using System.Drawing;
 
 namespace FogSoft.WinForm.Controls {
   partial class ObjectPicker2 {

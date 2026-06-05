@@ -1,4 +1,4 @@
-using System.Collections;
+п»їusing System.Collections;
 using System.Collections.Generic;
 using System.Data;
 using System.Windows.Forms;
@@ -290,7 +290,7 @@ namespace FogSoft.WinForm.Classes
             set { iterator.Filter = value; }
         }
 
-        // NEW: точка расширения для наследников контейнера
+        // NEW: С‚РѕС‡РєР° СЂР°СЃС€РёСЂРµРЅРёСЏ РґР»СЏ РЅР°СЃР»РµРґРЅРёРєРѕРІ РєРѕРЅС‚РµР№РЅРµСЂР°
         protected virtual PresentationObject ProcessCreatedChildObject(PresentationObject childObject, DataRow row)
         {
             return childObject;

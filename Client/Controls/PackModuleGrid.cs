@@ -1,4 +1,4 @@
-using System;
+Ôªøusing System;
 using System.Collections.Generic;
 using System.Data;
 using System.Windows.Forms;
@@ -112,14 +112,14 @@ namespace Merlin.Controls
 		{
 			gridColumns = new GridColumn[]
 				{
-					new GridColumn("÷ÂÌ‡", ColumnNames.Price, "c", Type.GetType("System.Decimal")),
-					new GridColumn("œÌ.", ColumnNames.Monday),
-					new GridColumn("¬Ú.", ColumnNames.Tuesday),
-					new GridColumn("—.", ColumnNames.Wednesday),
-					new GridColumn("◊Ú.", ColumnNames.Thursday),
-					new GridColumn("œÚ.", ColumnNames.Friday),
-					new GridColumn("—·.", ColumnNames.Saturday),
-					new GridColumn("¬Ò.", ColumnNames.Sunday),
+					new GridColumn("–¶–µ–Ω–∞", ColumnNames.Price, "c", Type.GetType("System.Decimal")),
+					new GridColumn("–ü–Ω.", ColumnNames.Monday),
+					new GridColumn("–í—Ç.", ColumnNames.Tuesday),
+					new GridColumn("–°—Ä.", ColumnNames.Wednesday),
+					new GridColumn("–ß—Ç.", ColumnNames.Thursday),
+					new GridColumn("–ü—Ç.", ColumnNames.Friday),
+					new GridColumn("–°–±.", ColumnNames.Saturday),
+					new GridColumn("–í—Å.", ColumnNames.Sunday),
 					new GridColumn(ColumnNames.Time, ColumnNames.Time, true)
 				};			
 		}
@@ -151,7 +151,7 @@ namespace Merlin.Controls
 		protected override void SetNavigationCaption()
 		{
 			if(pricelist == null) return;
-			Caption.Caption = string.Format("'{0}' œ‡ÈÒ-ÎËÒÚ: {1} - {2}",
+			Caption.Caption = string.Format("'{0}' –ü—Ä–∞–π—Å-–ª–∏—Å—Ç: {1} - {2}",
 			                                module.Name,
 			                                pricelist.StartDate.ToShortDateString(),
 			                                pricelist.FinishDate.ToShortDateString());

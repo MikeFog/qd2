@@ -1,4 +1,4 @@
-using System;
+п»їusing System;
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.Data;
@@ -148,16 +148,16 @@ namespace Merlin.Forms.GridReport
             this.tbRefresh.ImageIndex = 9;
             this.tbRefresh.Name = "tbRefresh";
             this.tbRefresh.Tag = "REFRESH";
-            this.tbRefresh.Text = "Обновить";
-            this.tbRefresh.ToolTipText = "Обновить журнал";
+            this.tbRefresh.Text = "РћР±РЅРѕРІРёС‚СЊ";
+            this.tbRefresh.ToolTipText = "РћР±РЅРѕРІРёС‚СЊ Р¶СѓСЂРЅР°Р»";
             // 
             // tbExport
             // 
             this.tbExport.Enabled = false;
             this.tbExport.ImageIndex = 8;
             this.tbExport.Name = "tbExport";
-            this.tbExport.Text = "Экспорт...";
-            this.tbExport.ToolTipText = "Экспортировать плей-лист...";
+            this.tbExport.Text = "Р­РєСЃРїРѕСЂС‚...";
+            this.tbExport.ToolTipText = "Р­РєСЃРїРѕСЂС‚РёСЂРѕРІР°С‚СЊ РїР»РµР№-Р»РёСЃС‚...";
             // 
             // viewer
             // 
@@ -219,7 +219,7 @@ namespace Merlin.Forms.GridReport
             this.label3.Name = "label3";
             this.label3.Size = new System.Drawing.Size(78, 17);
             this.label3.TabIndex = 4;
-            this.label3.Text = "Менеджер:";
+            this.label3.Text = "РњРµРЅРµРґР¶РµСЂ:";
             // 
             // label2
             // 
@@ -228,7 +228,7 @@ namespace Merlin.Forms.GridReport
             this.label2.Name = "label2";
             this.label2.Size = new System.Drawing.Size(45, 17);
             this.label2.TabIndex = 3;
-            this.label2.Text = "Дата:";
+            this.label2.Text = "Р”Р°С‚Р°:";
             // 
             // dtDate
             // 
@@ -245,7 +245,7 @@ namespace Merlin.Forms.GridReport
             this.label1.Name = "label1";
             this.label1.Size = new System.Drawing.Size(131, 21);
             this.label1.TabIndex = 0;
-            this.label1.Text = "Радиостанция:";
+            this.label1.Text = "Р Р°РґРёРѕСЃС‚Р°РЅС†РёСЏ:";
             // 
             // FrmGridReport
             // 
@@ -257,7 +257,7 @@ namespace Merlin.Forms.GridReport
             this.MinimumSize = new System.Drawing.Size(648, 400);
             this.Name = "FrmGridReport";
             this.ShowInTaskbar = false;
-            this.Text = "Сетка вещания";
+            this.Text = "РЎРµС‚РєР° РІРµС‰Р°РЅРёСЏ";
             this.panel1.ResumeLayout(false);
             this.panel1.PerformLayout();
             this.ResumeLayout(false);

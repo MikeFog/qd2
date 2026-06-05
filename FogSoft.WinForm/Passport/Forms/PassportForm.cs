@@ -1,4 +1,4 @@
-using System;
+п»їusing System;
 using System.Collections.Generic;
 using System.Data;
 using System.Windows.Forms;
@@ -74,8 +74,8 @@ namespace FogSoft.WinForm.Passport.Forms
 
 		private void SetFormCaption()
 		{
-			Text = pageContext.PresentationObject.IsNew ? string.Format("Новый: {0}", pageContext.PresentationObject.Entity.Name) 
-				: string.Format("Cвойства: {0}", pageContext.PresentationObject.Name);
+			Text = pageContext.PresentationObject.IsNew ? string.Format("РќРѕРІС‹Р№: {0}", pageContext.PresentationObject.Entity.Name) 
+				: string.Format("CРІРѕР№СЃС‚РІР°: {0}", pageContext.PresentationObject.Name);
 		}
 
 		protected override bool IsReadonlyPassport(XPathNavigator navigator)

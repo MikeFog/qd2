@@ -1,4 +1,4 @@
-namespace Merlin.Forms {
+п»їnamespace Merlin.Forms {
   partial class RollerChangeAdvertTypeForm {
     /// <summary>
     /// Required designer variable.
@@ -46,7 +46,7 @@ namespace Merlin.Forms {
             // 
             this.Cursor = System.Windows.Forms.Cursors.Default;
             this.Name = "RollerSubstitutionForm";
-            this.Text = "Замена ролика";
+            this.Text = "Р—Р°РјРµРЅР° СЂРѕР»РёРєР°";
             ((System.ComponentModel.ISupportInitialize)(this.pbFake)).EndInit();
             this.ResumeLayout(false);
 

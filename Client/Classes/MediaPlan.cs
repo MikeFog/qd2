@@ -1,4 +1,4 @@
-using FogSoft.WinForm;
+п»їusing FogSoft.WinForm;
 using FogSoft.WinForm.Classes;
 using FogSoft.WinForm.Classes.Export;
 using FogSoft.WinForm.DataAccess;
@@ -103,7 +103,7 @@ namespace Merlin.Classes
 
                 //Thread.CurrentThread.CurrentCulture = new System.Globalization.CultureInfo("en-US");
 
-                ProgressForm.Show(Globals.MdiParent, worker_DoWork, "Экспортируется график размещения...", null);
+                ProgressForm.Show(Globals.MdiParent, worker_DoWork, "Р­РєСЃРїРѕСЂС‚РёСЂСѓРµС‚СЃСЏ РіСЂР°С„РёРє СЂР°Р·РјРµС‰РµРЅРёСЏ...", null);
 			}
 			catch(Exception e)
 			{
@@ -191,7 +191,7 @@ namespace Merlin.Classes
 
             var selectRollersAction = new System.Action(() =>
             {
-                SelectionForm selectRollers = new SelectionForm(EntityManager.GetEntity((int)Entities.Roller), dataTable.DefaultView, "Выберите ролики", true);
+                SelectionForm selectRollers = new SelectionForm(EntityManager.GetEntity((int)Entities.Roller), dataTable.DefaultView, "Р’С‹Р±РµСЂРёС‚Рµ СЂРѕР»РёРєРё", true);
                 if (selectRollers.ShowDialog(Globals.MdiParent) == DialogResult.OK && selectRollers.AddedItems.Count > 0)
                 {
                     string[] rollerIDs = new string[selectRollers.AddedItems.Count];
@@ -295,14 +295,14 @@ namespace Merlin.Classes
 
 		private void PrintActionInfo(bool isFact)
 		{
-			// Загружаем сырой датасет напрямую, чтобы получить agencyID
+			// Р—Р°РіСЂСѓР¶Р°РµРј СЃС‹СЂРѕР№ РґР°С‚Р°СЃРµС‚ РЅР°РїСЂСЏРјСѓСЋ, С‡С‚РѕР±С‹ РїРѕР»СѓС‡РёС‚СЊ agencyID
 			Dictionary<string, object> parametersMM = new Dictionary<string, object>();
 			parametersMM[Merlin.Classes.Action.ParamNames.ActionId] = action.ActionId;
 			parametersMM["isFact"] = isFact;
 			DataSet dsRaw = DataAccessor.LoadDataSet("GetUniqueMMsForAction", parametersMM);
 			DataTable dt = dsRaw.Tables[0];
 
-			// Группируем строки по agencyID, сохраняя порядок первого появления
+			// Р“СЂСѓРїРїРёСЂСѓРµРј СЃС‚СЂРѕРєРё РїРѕ agencyID, СЃРѕС…СЂР°РЅСЏСЏ РїРѕСЂСЏРґРѕРє РїРµСЂРІРѕРіРѕ РїРѕСЏРІР»РµРЅРёСЏ
 			var agencyRows = new Dictionary<int, List<DataRow>>();
 			var agencyOrder = new List<int>();
 			foreach (DataRow row in dt.Rows)
@@ -316,12 +316,12 @@ namespace Merlin.Classes
 				agencyRows[agencyId].Add(row);
 			}
 
-			// Для каждого агентства — отдельный лист Excel
+			// Р”Р»СЏ РєР°Р¶РґРѕРіРѕ Р°РіРµРЅС‚СЃС‚РІР° вЂ” РѕС‚РґРµР»СЊРЅС‹Р№ Р»РёСЃС‚ Excel
 			foreach (int agencyId in agencyOrder)
 			{
 				Agency agency = Agency.GetAgencyByID(agencyId);
 
-				// Строим MediaPlanCampaignGroups только из строк этого агентства
+				// РЎС‚СЂРѕРёРј MediaPlanCampaignGroups С‚РѕР»СЊРєРѕ РёР· СЃС‚СЂРѕРє СЌС‚РѕРіРѕ Р°РіРµРЅС‚СЃС‚РІР°
 				MediaPlanCampaignGroups mp = new MediaPlanCampaignGroups();
 				if (dsRaw.Tables.Count > 1)
 					mp.InitUniquesList(dsRaw.Tables[1]);
@@ -509,7 +509,7 @@ namespace Merlin.Classes
 
 		private void PrintPrograms(DataTable dtProgIssues)
 		{
-			SetCellValue(currentY, 3, "Программы:");
+			SetCellValue(currentY, 3, "РџСЂРѕРіСЂР°РјРјС‹:");
 			foreach (DataRow row in dtProgIssues.Rows)
 			{
 				DateTime issueDate = DateTime.Parse(row["issueDate"].ToString());
@@ -563,31 +563,31 @@ namespace Merlin.Classes
 				}
 			}
 
-			SetCellValue(currentY++, 3, string.Format("Всего трансляций: {0}", dtIssues.Rows.Count * ids.Length));
+			SetCellValue(currentY++, 3, string.Format("Р’СЃРµРіРѕ С‚СЂР°РЅСЃР»СЏС†РёР№: {0}", dtIssues.Rows.Count * ids.Length));
             int totalDuration = dtTimeList.Rows.Count > 0 ? ids.Length * int.Parse(dtTimeList.Compute("sum(totalDuration)", string.Empty).ToString()) : 0;
-            SetCellValue(currentY, 3, string.Format("Время трансляций: {0}", DateTimeUtils.Time2String(totalDuration)));
+            SetCellValue(currentY, 3, string.Format("Р’СЂРµРјСЏ С‚СЂР°РЅСЃР»СЏС†РёР№: {0}", DateTimeUtils.Time2String(totalDuration)));
 			currentY++;
             decimal discount = 1 - (tariffPriceTotal == 0 ? 1 : (priceTotal / tariffPriceTotal));
             if (!_printSettings.HideTariffPrice)
 			{
                 if (discount == decimal.Zero)
-                    SetCellValue(currentY++, 3, $"Стоимость спланированной рекламы: {priceTotal:c}");
-				SetCellValue(currentY++, 3, $"Стоимость спланированной рекламы по тарифам: {tariffPriceTotal:c}");
+                    SetCellValue(currentY++, 3, $"РЎС‚РѕРёРјРѕСЃС‚СЊ СЃРїР»Р°РЅРёСЂРѕРІР°РЅРЅРѕР№ СЂРµРєР»Р°РјС‹: {priceTotal:c}");
+				SetCellValue(currentY++, 3, $"РЎС‚РѕРёРјРѕСЃС‚СЊ СЃРїР»Р°РЅРёСЂРѕРІР°РЅРЅРѕР№ СЂРµРєР»Р°РјС‹ РїРѕ С‚Р°СЂРёС„Р°Рј: {tariffPriceTotal:c}");
 
 				if (discount != decimal.Zero)
 				{
-					SetCellValue(currentY++, 3, string.Format("Скидка: {0}", discount.ToString("P")));
-					SetCellValue(currentY++, 3, $"Стоимость спланированной рекламы с учетом скидки: {priceTotal:c}");
+					SetCellValue(currentY++, 3, string.Format("РЎРєРёРґРєР°: {0}", discount.ToString("P")));
+					SetCellValue(currentY++, 3, $"РЎС‚РѕРёРјРѕСЃС‚СЊ СЃРїР»Р°РЅРёСЂРѕРІР°РЅРЅРѕР№ СЂРµРєР»Р°РјС‹ СЃ СѓС‡РµС‚РѕРј СЃРєРёРґРєРё: {priceTotal:c}");
 				}
 			}
 			else
 			{
-				SetCellValue(currentY++, 3, $"Стоимость спланированной рекламы: {priceTotal:c}");
+				SetCellValue(currentY++, 3, $"РЎС‚РѕРёРјРѕСЃС‚СЊ СЃРїР»Р°РЅРёСЂРѕРІР°РЅРЅРѕР№ СЂРµРєР»Р°РјС‹: {priceTotal:c}");
             }
 			if (taxPriceTotal > 0)
-				SetCellValue(currentY++, 3, $"В том числе  НДС  (5%): {taxPriceTotal:c}");
+				SetCellValue(currentY++, 3, $"Р’ С‚РѕРј С‡РёСЃР»Рµ  РќР”РЎ  (5%): {taxPriceTotal:c}");
             currentY++;
-			SetCellValue(currentY, 3, "Исполнитель:");
+			SetCellValue(currentY, 3, "РСЃРїРѕР»РЅРёС‚РµР»СЊ:");
 
 			if (campaign != null && _printSettings.PrintWithSignatures && campaign.Agency.SignatureBytes != null)
 			{
@@ -595,11 +595,11 @@ namespace Merlin.Classes
             }
 
 			currentY += 4;
-			SetCellValue(currentY, 3, "Заказчик:");
+			SetCellValue(currentY, 3, "Р—Р°РєР°Р·С‡РёРє:");
 
 			currentY += 2;
 			if (campaign != null && ConfigurationUtil.IsPrintContactPerson)
-				SetCellValue(currentY, 3, string.Format("Контактное лицо: {0}", campaign.Action.Creator.ContactInfo));
+				SetCellValue(currentY, 3, string.Format("РљРѕРЅС‚Р°РєС‚РЅРѕРµ Р»РёС†Рѕ: {0}", campaign.Action.Creator.ContactInfo));
         }
 
 		private void PrintIssuesGrid(int rowsCount, DataTable dtIssues, DataTable dataCounts, Campaign.CampaignTypes campaignType, int? year, int? month)
@@ -729,11 +729,11 @@ namespace Merlin.Classes
 
 		private void PrintTimeList(DataTable dtTimes, Campaign.CampaignTypes campaignType)
 		{
-			SetCellValue(currentY, 1, "Время");
-			SetCellValue(currentY, 2, "Коммент.");
+			SetCellValue(currentY, 1, "Р’СЂРµРјСЏ");
+			SetCellValue(currentY, 2, "РљРѕРјРјРµРЅС‚.");
             if (campaignType == Campaign.CampaignTypes.Simple)
-                SetCellValue(currentY, 3, "Цена");
-            SetCellValue(currentY, campaignType == Campaign.CampaignTypes.Simple ? 4 : 3, "Прод-ть");
+                SetCellValue(currentY, 3, "Р¦РµРЅР°");
+            SetCellValue(currentY, campaignType == Campaign.CampaignTypes.Simple ? 4 : 3, "РџСЂРѕРґ-С‚СЊ");
 			activeSheet.SetBoldForRange(currentY, 1, currentY, 3 + (campaignType == Campaign.CampaignTypes.Simple ? 1 : 0));
 			ExportManager.CopyData2WorkSheet(activeSheet, dtTimes, 1, ++currentY);
 			CreateTimeCollection(dtTimes.Rows, campaignType);
@@ -763,12 +763,12 @@ namespace Merlin.Classes
 			int index = 1;
 			colRollers = new Dictionary<int, int>(dtRollers.Rows.Count);
 			int colIndex = type == Campaign.CampaignTypes.Simple ? 4 : 3;
-			SetCellValue(currentY, colIndex, "Ролики:");
+			SetCellValue(currentY, colIndex, "Р РѕР»РёРєРё:");
 			foreach (DataRow row in dtRollers.Rows)
 			{
                 colIndex = type == Campaign.CampaignTypes.Simple ? 5 : 4;
 				colRollers.Add(int.Parse(row["rollerId"].ToString()), index);
-				SetCellValue(currentY, colIndex++, string.Format("№{0}", index++));
+				SetCellValue(currentY, colIndex++, string.Format("в„–{0}", index++));
 				SetCellValue(currentY, colIndex++, DateTimeUtils.Time2String(int.Parse(row["duration"].ToString())));
 				SetCellValue(currentY, colIndex++, row["quantity"].ToString());
 				if (_printSettings.ShowAdvertisingInfo)
@@ -784,12 +784,12 @@ namespace Merlin.Classes
 		{
 			currentY++;
 
-            SetCellValue(currentY++, 1, string.Format("Заказчик: {0}", a.Firm.PrefixWithName));
+            SetCellValue(currentY++, 1, string.Format("Р—Р°РєР°Р·С‡РёРє: {0}", a.Firm.PrefixWithName));
 			if (agency != null)
-				SetCellValue(currentY++, 1, string.Format("Исполнитель: {0}", agency.PrefixWithName));
+				SetCellValue(currentY++, 1, string.Format("РСЃРїРѕР»РЅРёС‚РµР»СЊ: {0}", agency.PrefixWithName));
 			else
-                // TODO: Тут явно неправильно, так как теперь идентификаторы агентства и радиостанции не совпадают!
-                SetCellValue(currentY++, 1, string.Format("Исполнители: {0}", action.GetAgenciesString(mmIds)));
+                // TODO: РўСѓС‚ СЏРІРЅРѕ РЅРµРїСЂР°РІРёР»СЊРЅРѕ, С‚Р°Рє РєР°Рє С‚РµРїРµСЂСЊ РёРґРµРЅС‚РёС„РёРєР°С‚РѕСЂС‹ Р°РіРµРЅС‚СЃС‚РІР° Рё СЂР°РґРёРѕСЃС‚Р°РЅС†РёРё РЅРµ СЃРѕРІРїР°РґР°СЋС‚!
+                SetCellValue(currentY++, 1, string.Format("РСЃРїРѕР»РЅРёС‚РµР»Рё: {0}", action.GetAgenciesString(mmIds)));
 
 			StringBuilder massmediaNames = new StringBuilder();
             StringBuilder groupNames = new StringBuilder();
@@ -809,9 +809,9 @@ namespace Merlin.Classes
 
             }
 
-            SetCellValue(currentY++, 1, string.Format("Радиостанция: {0}", mmNames));
-            SetCellValue(currentY++, 1, string.Format("СМИ: {0}", massmediaNames.ToString()));
-            SetCellValue(currentY++, 1, string.Format("Территория распространения: {0}", groupNames.ToString()));
+            SetCellValue(currentY++, 1, string.Format("Р Р°РґРёРѕСЃС‚Р°РЅС†РёСЏ: {0}", mmNames));
+            SetCellValue(currentY++, 1, string.Format("РЎРњР: {0}", massmediaNames.ToString()));
+            SetCellValue(currentY++, 1, string.Format("РўРµСЂСЂРёС‚РѕСЂРёСЏ СЂР°СЃРїСЂРѕСЃС‚СЂР°РЅРµРЅРёСЏ: {0}", groupNames.ToString()));
         }
 
 		private void PrintCaption(int actionID, int x, int y)
@@ -819,11 +819,11 @@ namespace Merlin.Classes
 			activeSheet.SetStyleForRange(y, x, y, x, true, true, 12);
             if (_selectively)
             {
-                SetCellValue(y, x, string.Format("Частичный график размещения для рекламной акции № {0}", actionID));
+                SetCellValue(y, x, string.Format("Р§Р°СЃС‚РёС‡РЅС‹Р№ РіСЂР°С„РёРє СЂР°Р·РјРµС‰РµРЅРёСЏ РґР»СЏ СЂРµРєР»Р°РјРЅРѕР№ Р°РєС†РёРё в„– {0}", actionID));
             }
             else
             {
-                SetCellValue(y, x, string.Format("График размещения для рекламной акции № {0}", actionID));
+                SetCellValue(y, x, string.Format("Р“СЂР°С„РёРє СЂР°Р·РјРµС‰РµРЅРёСЏ РґР»СЏ СЂРµРєР»Р°РјРЅРѕР№ Р°РєС†РёРё в„– {0}", actionID));
             }
 		}
 				

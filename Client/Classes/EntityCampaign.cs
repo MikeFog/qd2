@@ -1,4 +1,4 @@
-using System.Data;
+﻿using System.Data;
 using FogSoft.WinForm.Classes;
 
 namespace Merlin.Classes

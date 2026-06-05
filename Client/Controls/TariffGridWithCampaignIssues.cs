@@ -1,4 +1,4 @@
-using System.ComponentModel;
+﻿using System.ComponentModel;
 using FogSoft.WinForm.Classes;
 using Merlin.Classes;
 

@@ -1,4 +1,4 @@
-using System;
+п»їusing System;
 using System.Collections.Generic;
 using System.Data;
 using System.Windows.Forms;
@@ -268,7 +268,7 @@ namespace Merlin.Classes
 				TariffWindowWithRollerIssues window = CreateTariffWindowById(isWithPrev ? int.Parse(this[ParamNames.WindowPrevId].ToString()) : int.Parse(this[ParamNames.WindowNextId].ToString()));
 				window.Refresh();
 
-				if (MessageBox.ShowQuestion(string.Format("Хотите отменить объединение рекламных окон '{0}' и '{1}'?", WindowDate.ToString("g"), window.WindowDate.ToString("g"))) == DialogResult.Yes)
+				if (MessageBox.ShowQuestion(string.Format("РҐРѕС‚РёС‚Рµ РѕС‚РјРµРЅРёС‚СЊ РѕР±СЉРµРґРёРЅРµРЅРёРµ СЂРµРєР»Р°РјРЅС‹С… РѕРєРѕРЅ '{0}' Рё '{1}'?", WindowDate.ToString("g"), window.WindowDate.ToString("g"))) == DialogResult.Yes)
 				{
                     Cursor.Current = Cursors.WaitCursor;
                     if (isWithPrev)

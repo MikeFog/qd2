@@ -1,4 +1,4 @@
-namespace Merlin.Forms {
+п»їnamespace Merlin.Forms {
     partial class ActionForm
     {
         /// <summary>
@@ -101,7 +101,7 @@ namespace Merlin.Forms {
             this.label5.Name = "label5";
             this.label5.Size = new System.Drawing.Size(414, 24);
             this.label5.TabIndex = 8;
-            this.label5.Text = "Стоимость рекламной акции со всеми скидками:";
+            this.label5.Text = "РЎС‚РѕРёРјРѕСЃС‚СЊ СЂРµРєР»Р°РјРЅРѕР№ Р°РєС†РёРё СЃРѕ РІСЃРµРјРё СЃРєРёРґРєР°РјРё:";
             // 
             // label2
             // 
@@ -111,7 +111,7 @@ namespace Merlin.Forms {
             this.label2.Name = "label2";
             this.label2.Size = new System.Drawing.Size(227, 24);
             this.label2.TabIndex = 4;
-            this.label2.Text = "Все скидки (коэффициент):";
+            this.label2.Text = "Р’СЃРµ СЃРєРёРґРєРё (РєРѕСЌС„С„РёС†РёРµРЅС‚):";
             // 
             // label1
             // 
@@ -121,7 +121,7 @@ namespace Merlin.Forms {
             this.label1.Name = "label1";
             this.label1.Size = new System.Drawing.Size(346, 24);
             this.label1.TabIndex = 3;
-            this.label1.Text = "Стоимость рекламной акции без скидок:";
+            this.label1.Text = "РЎС‚РѕРёРјРѕСЃС‚СЊ СЂРµРєР»Р°РјРЅРѕР№ Р°РєС†РёРё Р±РµР· СЃРєРёРґРѕРє:";
             // 
             // lblFirm
             // 
@@ -131,7 +131,7 @@ namespace Merlin.Forms {
             this.lblFirm.Name = "lblFirm";
             this.lblFirm.Size = new System.Drawing.Size(150, 24);
             this.lblFirm.TabIndex = 1;
-            this.lblFirm.Text = "Фирма-заказчик:";
+            this.lblFirm.Text = "Р¤РёСЂРјР°-Р·Р°РєР°Р·С‡РёРє:";
             // 
             // lblName
             // 
@@ -152,7 +152,7 @@ namespace Merlin.Forms {
             this.lblTotalPrice.Name = "lblTotalPrice";
             this.lblTotalPrice.Size = new System.Drawing.Size(55, 24);
             this.lblTotalPrice.TabIndex = 18;
-            this.lblTotalPrice.Text = "0.00р";
+            this.lblTotalPrice.Text = "0.00СЂ";
             // 
             // pageAction
             // 
@@ -179,7 +179,7 @@ namespace Merlin.Forms {
             this.pageAction.Name = "pageAction";
             this.pageAction.Size = new System.Drawing.Size(1343, 651);
             this.pageAction.TabIndex = 0;
-            this.pageAction.Text = "Общие";
+            this.pageAction.Text = "РћР±С‰РёРµ";
             // 
             // chkPrintBillContract
             // 
@@ -189,7 +189,7 @@ namespace Merlin.Forms {
             this.chkPrintBillContract.Name = "chkPrintBillContract";
             this.chkPrintBillContract.Size = new System.Drawing.Size(453, 26);
             this.chkPrintBillContract.TabIndex = 28;
-            this.chkPrintBillContract.Text = "Распечатать счет-договор";
+            this.chkPrintBillContract.Text = "Р Р°СЃРїРµС‡Р°С‚Р°С‚СЊ СЃС‡РµС‚-РґРѕРіРѕРІРѕСЂ";
             this.chkPrintBillContract.UseVisualStyleBackColor = true;
             // 
             // chkPrintSponsorContract
@@ -200,7 +200,7 @@ namespace Merlin.Forms {
             this.chkPrintSponsorContract.Name = "chkPrintSponsorContract";
             this.chkPrintSponsorContract.Size = new System.Drawing.Size(746, 32);
             this.chkPrintSponsorContract.TabIndex = 27;
-            this.chkPrintSponsorContract.Text = "Распечатать спонсорский договор на проведение рекламной акции";
+            this.chkPrintSponsorContract.Text = "Р Р°СЃРїРµС‡Р°С‚Р°С‚СЊ СЃРїРѕРЅСЃРѕСЂСЃРєРёР№ РґРѕРіРѕРІРѕСЂ РЅР° РїСЂРѕРІРµРґРµРЅРёРµ СЂРµРєР»Р°РјРЅРѕР№ Р°РєС†РёРё";
             // 
             // chkPrintMediaPlan
             // 
@@ -210,7 +210,7 @@ namespace Merlin.Forms {
             this.chkPrintMediaPlan.Name = "chkPrintMediaPlan";
             this.chkPrintMediaPlan.Size = new System.Drawing.Size(545, 31);
             this.chkPrintMediaPlan.TabIndex = 26;
-            this.chkPrintMediaPlan.Text = "Распечатать график размещения рекламной акции";
+            this.chkPrintMediaPlan.Text = "Р Р°СЃРїРµС‡Р°С‚Р°С‚СЊ РіСЂР°С„РёРє СЂР°Р·РјРµС‰РµРЅРёСЏ СЂРµРєР»Р°РјРЅРѕР№ Р°РєС†РёРё";
             this.chkPrintMediaPlan.UseVisualStyleBackColor = true;
             // 
             // tsAction
@@ -246,7 +246,7 @@ namespace Merlin.Forms {
             this.tsbAdd.Name = "tsbAdd";
             this.tsbAdd.Size = new System.Drawing.Size(33, 28);
             this.tsbAdd.Text = "toolStripButton1";
-            this.tsbAdd.ToolTipText = "Добавить рекламную кампанию...";
+            this.tsbAdd.ToolTipText = "Р”РѕР±Р°РІРёС‚СЊ СЂРµРєР»Р°РјРЅСѓСЋ РєР°РјРїР°РЅРёСЋ...";
             this.tsbAdd.Click += new System.EventHandler(this.AddCampaign);
             // 
             // tsbDelete
@@ -258,7 +258,7 @@ namespace Merlin.Forms {
             this.tsbDelete.Name = "tsbDelete";
             this.tsbDelete.Size = new System.Drawing.Size(33, 28);
             this.tsbDelete.Text = "toolStripButton2";
-            this.tsbDelete.ToolTipText = "Удалить рекламную кампанию";
+            this.tsbDelete.ToolTipText = "РЈРґР°Р»РёС‚СЊ СЂРµРєР»Р°РјРЅСѓСЋ РєР°РјРїР°РЅРёСЋ";
             this.tsbDelete.Click += new System.EventHandler(this.DeleteCampaign);
             // 
             // tsbEditRollerIssues
@@ -270,7 +270,7 @@ namespace Merlin.Forms {
             this.tsbEditRollerIssues.Name = "tsbEditRollerIssues";
             this.tsbEditRollerIssues.Size = new System.Drawing.Size(33, 28);
             this.tsbEditRollerIssues.Text = "toolStripButton3";
-            this.tsbEditRollerIssues.ToolTipText = "Редактировать размещение роликов";
+            this.tsbEditRollerIssues.ToolTipText = "Р РµРґР°РєС‚РёСЂРѕРІР°С‚СЊ СЂР°Р·РјРµС‰РµРЅРёРµ СЂРѕР»РёРєРѕРІ";
             this.tsbEditRollerIssues.Click += new System.EventHandler(this.EditRollerIssues);
             // 
             // tsbEditMass
@@ -281,7 +281,7 @@ namespace Merlin.Forms {
             this.tsbEditMass.Name = "tsbEditMass";
             this.tsbEditMass.Size = new System.Drawing.Size(33, 28);
             this.tsbEditMass.Text = "tsbEditMass";
-            this.tsbEditMass.ToolTipText = "Веерное редактирование";
+            this.tsbEditMass.ToolTipText = "Р’РµРµСЂРЅРѕРµ СЂРµРґР°РєС‚РёСЂРѕРІР°РЅРёРµ";
             this.tsbEditMass.Click += new System.EventHandler(this.MassEdit);
             // 
             // tsbEditProgIssues
@@ -293,7 +293,7 @@ namespace Merlin.Forms {
             this.tsbEditProgIssues.Name = "tsbEditProgIssues";
             this.tsbEditProgIssues.Size = new System.Drawing.Size(33, 28);
             this.tsbEditProgIssues.Text = "toolStripButton1";
-            this.tsbEditProgIssues.ToolTipText = "Редактировать выходы спонсорских программ ";
+            this.tsbEditProgIssues.ToolTipText = "Р РµРґР°РєС‚РёСЂРѕРІР°С‚СЊ РІС‹С…РѕРґС‹ СЃРїРѕРЅСЃРѕСЂСЃРєРёС… РїСЂРѕРіСЂР°РјРј ";
             this.tsbEditProgIssues.Click += new System.EventHandler(this.EditProgIssues);
             // 
             // tsbPrintMediaPlan
@@ -304,7 +304,7 @@ namespace Merlin.Forms {
             this.tsbPrintMediaPlan.Name = "tsbPrintMediaPlan";
             this.tsbPrintMediaPlan.Size = new System.Drawing.Size(33, 28);
             this.tsbPrintMediaPlan.Text = "toolStripButton1";
-            this.tsbPrintMediaPlan.ToolTipText = "Распечатать график размещения кампании";
+            this.tsbPrintMediaPlan.ToolTipText = "Р Р°СЃРїРµС‡Р°С‚Р°С‚СЊ РіСЂР°С„РёРє СЂР°Р·РјРµС‰РµРЅРёСЏ РєР°РјРїР°РЅРёРё";
             this.tsbPrintMediaPlan.Click += new System.EventHandler(this.tsbPrintMediaPlan_Click);
             // 
             // toolStripSeparator2
@@ -321,7 +321,7 @@ namespace Merlin.Forms {
             this.tsbSetDiscount.Name = "tsbSetDiscount";
             this.tsbSetDiscount.Size = new System.Drawing.Size(33, 28);
             this.tsbSetDiscount.Text = "toolStripButton4";
-            this.tsbSetDiscount.ToolTipText = "Установить менеджерскую скидку";
+            this.tsbSetDiscount.ToolTipText = "РЈСЃС‚Р°РЅРѕРІРёС‚СЊ РјРµРЅРµРґР¶РµСЂСЃРєСѓСЋ СЃРєРёРґРєСѓ";
             this.tsbSetDiscount.Click += new System.EventHandler(this.SetDiscount);
             // 
             // tsbSetActionPrice
@@ -332,7 +332,7 @@ namespace Merlin.Forms {
             this.tsbSetActionPrice.ImageTransparentColor = System.Drawing.Color.Magenta;
             this.tsbSetActionPrice.Name = "tsbSetActionPrice";
             this.tsbSetActionPrice.Size = new System.Drawing.Size(33, 28);
-            this.tsbSetActionPrice.Text = "Установить цену рекламной акции";
+            this.tsbSetActionPrice.Text = "РЈСЃС‚Р°РЅРѕРІРёС‚СЊ С†РµРЅСѓ СЂРµРєР»Р°РјРЅРѕР№ Р°РєС†РёРё";
             this.tsbSetActionPrice.Click += new System.EventHandler(this.tsbSetActionPrice_Click);
             // 
             // grdCampaign
@@ -340,7 +340,7 @@ namespace Merlin.Forms {
             this.grdCampaign.Anchor = ((System.Windows.Forms.AnchorStyles)((((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Bottom) 
             | System.Windows.Forms.AnchorStyles.Left) 
             | System.Windows.Forms.AnchorStyles.Right)));
-            this.grdCampaign.Caption = "Рекламные кампании";
+            this.grdCampaign.Caption = "Р РµРєР»Р°РјРЅС‹Рµ РєР°РјРїР°РЅРёРё";
             this.grdCampaign.CaptionVisible = true;
             this.grdCampaign.CheckBoxes = false;
             this.grdCampaign.ColumnNameHighlight = null;
@@ -369,7 +369,7 @@ namespace Merlin.Forms {
             this.chkPrintContract.Name = "chkPrintContract";
             this.chkPrintContract.Size = new System.Drawing.Size(576, 27);
             this.chkPrintContract.TabIndex = 21;
-            this.chkPrintContract.Text = "Распечатать договор на проведение рекламной акции";
+            this.chkPrintContract.Text = "Р Р°СЃРїРµС‡Р°С‚Р°С‚СЊ РґРѕРіРѕРІРѕСЂ РЅР° РїСЂРѕРІРµРґРµРЅРёРµ СЂРµРєР»Р°РјРЅРѕР№ Р°РєС†РёРё";
             // 
             // chkPrintBill
             // 
@@ -379,7 +379,7 @@ namespace Merlin.Forms {
             this.chkPrintBill.Name = "chkPrintBill";
             this.chkPrintBill.Size = new System.Drawing.Size(420, 24);
             this.chkPrintBill.TabIndex = 19;
-            this.chkPrintBill.Text = "Распечатать счет на предоплату";
+            this.chkPrintBill.Text = "Р Р°СЃРїРµС‡Р°С‚Р°С‚СЊ СЃС‡РµС‚ РЅР° РїСЂРµРґРѕРїР»Р°С‚Сѓ";
             // 
             // separator3
             // 
@@ -446,7 +446,7 @@ namespace Merlin.Forms {
             this.ShowIcon = false;
             this.ShowInTaskbar = false;
             this.StartPosition = System.Windows.Forms.FormStartPosition.CenterParent;
-            this.Text = "Рекламная акция";
+            this.Text = "Р РµРєР»Р°РјРЅР°СЏ Р°РєС†РёСЏ";
             this.Load += new System.EventHandler(this.ActionForm_Load);
             this.pageAction.ResumeLayout(false);
             this.pageAction.PerformLayout();

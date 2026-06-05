@@ -1,4 +1,4 @@
-namespace Merlin.Forms {
+п»їnamespace Merlin.Forms {
   partial class PaymentCandidatesForm {
     /// <summary>
     /// Required designer variable.
@@ -57,7 +57,7 @@ namespace Merlin.Forms {
 		this.label2.Name = "label2";
 		this.label2.Size = new System.Drawing.Size(54, 13);
 		this.label2.TabIndex = 6;
-		this.label2.Text = "Остаток:";
+		this.label2.Text = "РћСЃС‚Р°С‚РѕРє:";
 		// 
 		// label1
 		// 
@@ -66,11 +66,11 @@ namespace Merlin.Forms {
 		this.label1.Name = "label1";
 		this.label1.Size = new System.Drawing.Size(42, 13);
 		this.label1.TabIndex = 5;
-		this.label1.Text = "Сумма:";
+		this.label1.Text = "РЎСѓРјРјР°:";
 		// 
 		// grdCandidates
 		// 
-		this.grdCandidates.Caption = "Кандидаты на оплату";
+		this.grdCandidates.Caption = "РљР°РЅРґРёРґР°С‚С‹ РЅР° РѕРїР»Р°С‚Сѓ";
 		this.grdCandidates.CaptionVisible = true;
 		this.grdCandidates.CheckBoxes = true;
 		this.grdCandidates.DataSource = null;
@@ -94,7 +94,7 @@ namespace Merlin.Forms {
 		this.btnCancel.Name = "btnCancel";
 		this.btnCancel.Size = new System.Drawing.Size(75, 23);
 		this.btnCancel.TabIndex = 11;
-		this.btnCancel.Text = "Отмена";
+		this.btnCancel.Text = "РћС‚РјРµРЅР°";
 		// 
 		// btnOk
 		// 
@@ -103,7 +103,7 @@ namespace Merlin.Forms {
 		this.btnOk.Name = "btnOk";
 		this.btnOk.Size = new System.Drawing.Size(75, 23);
 		this.btnOk.TabIndex = 10;
-		this.btnOk.Text = "Ок";
+		this.btnOk.Text = "РћРє";
 		this.btnOk.Click += new System.EventHandler(this.btnOk_Click);
 		// 
 		// PaymentCandidatesForm
@@ -127,7 +127,7 @@ namespace Merlin.Forms {
 		this.Name = "PaymentCandidatesForm";
 		this.ShowIcon = false;
 		this.ShowInTaskbar = false;
-		this.Text = "Кандидаты на оплату";
+		this.Text = "РљР°РЅРґРёРґР°С‚С‹ РЅР° РѕРїР»Р°С‚Сѓ";
 		this.ResumeLayout(false);
 		this.PerformLayout();
 

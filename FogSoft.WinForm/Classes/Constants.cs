@@ -1,4 +1,4 @@
-namespace FogSoft.WinForm
+п»їnamespace FogSoft.WinForm
 {
 	public enum MessageNames
 	{
@@ -112,11 +112,11 @@ namespace FogSoft.WinForm
 
 		internal struct ItemsCountTemplates
 		{
-			internal const string Default = "Всего объектов: {0}";
-			internal const string WithObjectType = "Всего объектов типа '{0}': {1}";
-			internal const string WithObjectTypeAndParentObjectName = "Всего объектов типа '{0}' для объекта '{1}': {2}";
+			internal const string Default = "Р’СЃРµРіРѕ РѕР±СЉРµРєС‚РѕРІ: {0}";
+			internal const string WithObjectType = "Р’СЃРµРіРѕ РѕР±СЉРµРєС‚РѕРІ С‚РёРїР° '{0}': {1}";
+			internal const string WithObjectTypeAndParentObjectName = "Р’СЃРµРіРѕ РѕР±СЉРµРєС‚РѕРІ С‚РёРїР° '{0}' РґР»СЏ РѕР±СЉРµРєС‚Р° '{1}': {2}";
 		}
 
-		public const string MethodNotImplemented = "Метод еще не реализован.";
+		public const string MethodNotImplemented = "РњРµС‚РѕРґ РµС‰Рµ РЅРµ СЂРµР°Р»РёР·РѕРІР°РЅ.";
 	}
 }

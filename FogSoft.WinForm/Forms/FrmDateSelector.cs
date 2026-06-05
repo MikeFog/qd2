@@ -1,4 +1,4 @@
-using System;
+п»їusing System;
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.Windows.Forms;
@@ -97,7 +97,7 @@ namespace FogSoft.WinForm
             this.label1.Name = "label1";
             this.label1.Size = new System.Drawing.Size(112, 24);
             this.label1.TabIndex = 0;
-            this.label1.Text = "Дата начала:";
+            this.label1.Text = "Р”Р°С‚Р° РЅР°С‡Р°Р»Р°:";
             // 
             // label2
             // 
@@ -106,7 +106,7 @@ namespace FogSoft.WinForm
             this.label2.Name = "label2";
             this.label2.Size = new System.Drawing.Size(145, 24);
             this.label2.TabIndex = 1;
-            this.label2.Text = "Дата окончания:";
+            this.label2.Text = "Р”Р°С‚Р° РѕРєРѕРЅС‡Р°РЅРёСЏ:";
             // 
             // dtStartDate
             // 
@@ -134,7 +134,7 @@ namespace FogSoft.WinForm
             this.btnCancel.Name = "btnCancel";
             this.btnCancel.Size = new System.Drawing.Size(100, 33);
             this.btnCancel.TabIndex = 5;
-            this.btnCancel.Text = "Отмена";
+            this.btnCancel.Text = "РћС‚РјРµРЅР°";
             // 
             // btnOk
             // 
@@ -143,7 +143,7 @@ namespace FogSoft.WinForm
             this.btnOk.Name = "btnOk";
             this.btnOk.Size = new System.Drawing.Size(100, 33);
             this.btnOk.TabIndex = 4;
-            this.btnOk.Text = "Ок";
+            this.btnOk.Text = "РћРє";
             this.btnOk.Click += new System.EventHandler(this.btnOk_Click);
             // 
             // tableLayoutPanel1
@@ -189,7 +189,7 @@ namespace FogSoft.WinForm
             this.FormBorderStyle = System.Windows.Forms.FormBorderStyle.FixedToolWindow;
             this.Name = "FrmDateSelector";
             this.ShowInTaskbar = false;
-            this.Text = "Даты начала и окончания";
+            this.Text = "Р”Р°С‚С‹ РЅР°С‡Р°Р»Р° Рё РѕРєРѕРЅС‡Р°РЅРёСЏ";
             this.tableLayoutPanel1.ResumeLayout(false);
             this.tableLayoutPanel1.PerformLayout();
             this.flowLayoutPanel1.ResumeLayout(false);
@@ -222,7 +222,7 @@ namespace FogSoft.WinForm
 				{
 					mode = value;
 					label2.Visible = dtFinishDate.Visible = (mode == SelectorMode.SelectRange);
-					label1.Text = (mode == SelectorMode.SelectOne) ? "Дата:" : "Дата начала:";
+					label1.Text = (mode == SelectorMode.SelectOne) ? "Р”Р°С‚Р°:" : "Р”Р°С‚Р° РЅР°С‡Р°Р»Р°:";
 				}
 			}
 		}

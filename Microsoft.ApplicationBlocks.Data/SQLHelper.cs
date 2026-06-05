@@ -1,4 +1,4 @@
-// ===============================================================================
+Ôªø// ===============================================================================
 // Microsoft Data Access Application Block for .NET
 // http://msdn.microsoft.com/library/en-us/dnbda/html/daab-rm.asp
 //
@@ -833,8 +833,8 @@ namespace Microsoft.ApplicationBlocks.Data
 				// Detach the SqlParameters from the command object, so they can be used again.
 				// HACK: There is a problem here, the output parameter values are fletched 
 				// when the reader is closed, so if the parameters are detached from the command
-				// then the SqlReader can¥t set its values. 
-				// When this happen, the parameters can¥t be used again in other command.
+				// then the SqlReader can“ët set its values. 
+				// When this happen, the parameters can“ët be used again in other command.
 				bool canClear = true;
 				foreach(SqlParameter commandParameter in cmd.Parameters)
 				{

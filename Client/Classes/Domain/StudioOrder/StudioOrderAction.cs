@@ -1,4 +1,4 @@
-using System;
+п»їusing System;
 using System.Collections.Generic;
 using System.Data;
 using System.Windows.Forms;
@@ -76,7 +76,7 @@ namespace Merlin.Classes.Domain.StudioOrder
 
 		private void ChangeOwner(IWin32Window owner)
 		{
-			SelectionForm selector = new SelectionForm(EntityManager.GetEntity((int) Entities.User), "Менеджеры");
+			SelectionForm selector = new SelectionForm(EntityManager.GetEntity((int) Entities.User), "РњРµРЅРµРґР¶РµСЂС‹");
 			if (selector.ShowDialog(owner) == DialogResult.OK)
 			{
 				this[SecurityManager.ParamNames.UserId] = selector.SelectedObject.IDs[0];
@@ -98,7 +98,7 @@ namespace Merlin.Classes.Domain.StudioOrder
 			StudioOrderActionBillReport report =
 				new StudioOrderActionBillReport(this, agency, Firm, bill);
 			if (exportReport) report.Export(ReportExportFormat.WordForWindows);
-			else report.Show("Счёт на предоплату");
+			else report.Show("РЎС‡С‘С‚ РЅР° РїСЂРµРґРѕРїР»Р°С‚Сѓ");
 		}
 
 		private PresentationObject GetStudioOrderBill(Agency agency, Form owner)
@@ -120,7 +120,7 @@ namespace Merlin.Classes.Domain.StudioOrder
 
 			StudioOrderContractReport report = new StudioOrderContractReport(this, agency, Firm, billDate);
 			if (exportReport) report.Export(ReportExportFormat.WordForWindows);
-			else report.Show("Договор на производство роликов");
+			else report.Show("Р”РѕРіРѕРІРѕСЂ РЅР° РїСЂРѕРёР·РІРѕРґСЃС‚РІРѕ СЂРѕР»РёРєРѕРІ");
 		}
 
 		public static StudioOrderAction GetOrderActionByID(int actionID)

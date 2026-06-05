@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Data;
 using System.Diagnostics;
@@ -193,7 +193,7 @@ namespace Merlin.Classes.GridExport
 			int duration = 0;
 			int tariffId = 0;
 			
-			// there're 2 possibilities how to union windows - through tarriff� and through windows
+			// there're 2 possibilities how to union windows - through tarriffы and through windows
 			if(rowList[currentIndex][ExportParams.tariffUnionID] != DBNull.Value)
 			{
 				int tariffUnionId = int.Parse(rowList[currentIndex][ExportParams.tariffUnionID].ToString());

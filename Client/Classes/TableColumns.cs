@@ -1,4 +1,4 @@
-namespace Merlin.Classes
+﻿namespace Merlin.Classes
 {
 	public sealed class TableColumns
 	{

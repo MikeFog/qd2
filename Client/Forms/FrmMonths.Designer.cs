@@ -1,4 +1,4 @@
-namespace Merlin.Forms
+п»їnamespace Merlin.Forms
 {
     partial class FrmMonths
     {
@@ -42,7 +42,7 @@ namespace Merlin.Forms
 			this.btnCancel.Name = "btnCancel";
 			this.btnCancel.Size = new System.Drawing.Size(75, 23);
 			this.btnCancel.TabIndex = 11;
-			this.btnCancel.Text = "Отмена";
+			this.btnCancel.Text = "РћС‚РјРµРЅР°";
 			// 
 			// btnOk
 			// 
@@ -52,7 +52,7 @@ namespace Merlin.Forms
 			this.btnOk.Name = "btnOk";
 			this.btnOk.Size = new System.Drawing.Size(75, 23);
 			this.btnOk.TabIndex = 10;
-			this.btnOk.Text = "Ок";
+			this.btnOk.Text = "РћРє";
 			// 
 			// lstMonth
 			// 
@@ -70,7 +70,7 @@ namespace Merlin.Forms
 			this.chkOption.Name = "chkOption";
 			this.chkOption.Size = new System.Drawing.Size(104, 17);
 			this.chkOption.TabIndex = 13;
-			this.chkOption.Text = "Включать цену";
+			this.chkOption.Text = "Р’РєР»СЋС‡Р°С‚СЊ С†РµРЅСѓ";
 			this.chkOption.UseVisualStyleBackColor = true;
 			// 
 			// FrmMonths
@@ -92,7 +92,7 @@ namespace Merlin.Forms
 			this.Padding = new System.Windows.Forms.Padding(10);
 			this.ShowIcon = false;
 			this.ShowInTaskbar = false;
-			this.Text = "Выбор месяца";
+			this.Text = "Р’С‹Р±РѕСЂ РјРµСЃСЏС†Р°";
 			this.ResumeLayout(false);
 			this.PerformLayout();
 

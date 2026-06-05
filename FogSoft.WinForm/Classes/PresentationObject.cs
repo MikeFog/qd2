@@ -1,4 +1,4 @@
-using System;
+п»їusing System;
 using System.Collections.Generic;
 using System.Data;
 using System.Text;
@@ -21,8 +21,8 @@ namespace FogSoft.WinForm.Classes
 
         #region Constants -------------------------------------
 
-        private const string DELETE_PROMPT = "Эта операция приведет к удалению объекта '{0}' из системы. Продолжить?";
-		private const string DETACH_PROMPT = "Вы действительно хотите отсоединить объект '{0}'?";
+        private const string DELETE_PROMPT = "Р­С‚Р° РѕРїРµСЂР°С†РёСЏ РїСЂРёРІРµРґРµС‚ Рє СѓРґР°Р»РµРЅРёСЋ РѕР±СЉРµРєС‚Р° '{0}' РёР· СЃРёСЃС‚РµРјС‹. РџСЂРѕРґРѕР»Р¶РёС‚СЊ?";
+		private const string DETACH_PROMPT = "Р’С‹ РґРµР№СЃС‚РІРёС‚РµР»СЊРЅРѕ С…РѕС‚РёС‚Рµ РѕС‚СЃРѕРµРґРёРЅРёС‚СЊ РѕР±СЉРµРєС‚ '{0}'?";
 
 		#endregion
 
@@ -181,7 +181,7 @@ namespace FogSoft.WinForm.Classes
 			}
 			catch
 			{
-				// Если Update не состоится, тогда в объекте будет неверная информация.
+				// Р•СЃР»Рё Update РЅРµ СЃРѕСЃС‚РѕРёС‚СЃСЏ, С‚РѕРіРґР° РІ РѕР±СЉРµРєС‚Рµ Р±СѓРґРµС‚ РЅРµРІРµСЂРЅР°СЏ РёРЅС„РѕСЂРјР°С†РёСЏ.
 				if (string.Compare(actionName, Constants.Actions.Update) == 0)
 					Refresh();
 				throw;

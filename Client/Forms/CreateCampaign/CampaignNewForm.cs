@@ -1,4 +1,4 @@
-using FogSoft.WinForm;
+﻿using FogSoft.WinForm;
 using FogSoft.WinForm.Classes;
 using FogSoft.WinForm.Forms;
 using Merlin.Classes;
@@ -54,7 +54,7 @@ namespace Merlin.Forms.CreateCampaign
 		{
 			try
 			{
-				// это пакетная копания, у нее нет massmedia
+				// СЌС‚Рѕ РїР°РєРµС‚РЅР°СЏ РєРѕРїР°РЅРёСЏ, Сѓ РЅРµРµ РЅРµС‚ massmedia
 				if(!grdMassmedia.Enabled)
                     _campaigns.Add(Campaign.CreateInstance(
                         _controller.CampaignTypeID,
@@ -94,7 +94,7 @@ namespace Merlin.Forms.CreateCampaign
 			if (agencies.Rows.Count == 1)
 				return Convert.ToInt32(agencies.Rows[0][Agency.ParamNames.AgencyId]);
 
-            SelectionForm selector = new SelectionForm(m, "Выбор агентства для радиостанции " + m.Name, false, CheckAgencySelection);
+            SelectionForm selector = new SelectionForm(m, "Р’С‹Р±РѕСЂ Р°РіРµРЅС‚СЃС‚РІР° РґР»СЏ СЂР°РґРёРѕСЃС‚Р°РЅС†РёРё " + m.Name, false, CheckAgencySelection);
             if (selector.ShowDialog(Globals.MdiParent) == DialogResult.OK)
                 return ((MassmediaAgency)selector.SelectedObject).AgencyId;
 

@@ -1,4 +1,4 @@
-namespace FogSoft.WinForm.Passport.Forms
+﻿namespace FogSoft.WinForm.Passport.Forms
 {
   partial class FilterForm
   {

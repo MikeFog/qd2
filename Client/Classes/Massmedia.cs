@@ -1,4 +1,4 @@
-using System;
+п»їusing System;
 using System.Collections.Generic;
 using System.Data;
 using System.Windows.Forms;
@@ -330,7 +330,7 @@ namespace Merlin.Classes
             DataTable dataTable = entity.GetContent().Copy();
             DataRow row = dataTable.NewRow();
             row[0] = 0;
-            row[1] = "Показать все";
+            row[1] = "РџРѕРєР°Р·Р°С‚СЊ РІСЃРµ";
             dataTable.Rows.InsertAt(row, 0);
             return dataTable.DefaultView;
         }

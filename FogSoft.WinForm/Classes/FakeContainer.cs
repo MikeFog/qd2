@@ -1,4 +1,4 @@
-using FogSoft.WinForm.Passport.Forms;
+﻿using FogSoft.WinForm.Passport.Forms;
 using System;
 using System.Windows.Forms;
 

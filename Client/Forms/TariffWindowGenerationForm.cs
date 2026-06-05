@@ -1,4 +1,4 @@
-using System;
+п»їusing System;
 using System.Windows.Forms;
 using FogSoft.WinForm;
 using FogSoft.WinForm.Classes;
@@ -14,7 +14,7 @@ namespace Merlin.Forms
 		{
 			InitializeComponent();
 			InitializeToolbar();
-			tvwStructure.Root =	new FakeContainer("Радиостанция", null, RelationManager.GetScenario(RelationScenarios.TariffWindows));
+			tvwStructure.Root =	new FakeContainer("Р Р°РґРёРѕСЃС‚Р°РЅС†РёСЏ", null, RelationManager.GetScenario(RelationScenarios.TariffWindows));
 		}
 
 		private void InitializeToolbar()
@@ -129,7 +129,7 @@ namespace Merlin.Forms
 		{
 			try
 			{
-				FrmDateSelector fSelector = new FrmDateSelector("Выбор даты");
+				FrmDateSelector fSelector = new FrmDateSelector("Р’С‹Р±РѕСЂ РґР°С‚С‹");
 				fSelector.Mode = FrmDateSelector.SelectorMode.SelectOne;
 				if (fSelector.ShowDialog(this) == DialogResult.OK)
 				{

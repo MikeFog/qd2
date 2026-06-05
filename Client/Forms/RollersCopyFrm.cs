@@ -1,4 +1,4 @@
-using System;
+п»їusing System;
 using System.Data;
 using System.IO;
 using System.Windows.Forms;
@@ -21,8 +21,8 @@ namespace Merlin.Forms
 		public RollersCopyFrm(DataView data, string path)
 			:this()
 		{
-			grid.RawDataGridView.Columns.Add("filePath", "Файл");
-			grid.RawDataGridView.Columns.Add("status", "Состояние");
+			grid.RawDataGridView.Columns.Add("filePath", "Р¤Р°Р№Р»");
+			grid.RawDataGridView.Columns.Add("status", "РЎРѕСЃС‚РѕСЏРЅРёРµ");
 			grid.RawDataGridView.Columns[0].DataPropertyName = "filePath";
 			grid.RawDataGridView.Columns[1].DataPropertyName = "status";
 			foreach (DataRowView row in data)
@@ -88,8 +88,8 @@ namespace Merlin.Forms
 			grid.SetColumnsWidth();
 			foreach (DataGridViewRow row in grid.RawDataGridView.Rows)
 			{
-				row.Cells["status"].Value = "Копируется";
-				string status = "Скопирован";
+				row.Cells["status"].Value = "РљРѕРїРёСЂСѓРµС‚СЃСЏ";
+				string status = "РЎРєРѕРїРёСЂРѕРІР°РЅ";
 				try
 				{
 					File.Copy(row.Cells["filePath"].Value.ToString(),
@@ -97,7 +97,7 @@ namespace Merlin.Forms
 				}
 				catch
 				{
-					status = "Не удалось";
+					status = "РќРµ СѓРґР°Р»РѕСЃСЊ";
 				}
 				finally
 				{

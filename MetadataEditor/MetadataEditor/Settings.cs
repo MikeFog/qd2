@@ -1,4 +1,4 @@
-namespace MetadataEditor
+﻿namespace MetadataEditor
 {
 	public sealed class Settings
 	{

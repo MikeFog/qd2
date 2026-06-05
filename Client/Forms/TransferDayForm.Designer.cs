@@ -1,4 +1,4 @@
-namespace Merlin.Forms
+п»їnamespace Merlin.Forms
 {
 	partial class TransferDayForm
 	{
@@ -47,7 +47,7 @@ namespace Merlin.Forms
             this.btnCancel.Name = "btnCancel";
             this.btnCancel.Size = new System.Drawing.Size(75, 23);
             this.btnCancel.TabIndex = 21;
-            this.btnCancel.Text = "Отмена";
+            this.btnCancel.Text = "РћС‚РјРµРЅР°";
             // 
             // btnOk
             // 
@@ -56,7 +56,7 @@ namespace Merlin.Forms
             this.btnOk.Name = "btnOk";
             this.btnOk.Size = new System.Drawing.Size(75, 23);
             this.btnOk.TabIndex = 20;
-            this.btnOk.Text = "Ок";
+            this.btnOk.Text = "РћРє";
             // 
             // dtTargetDate
             // 
@@ -72,7 +72,7 @@ namespace Merlin.Forms
             this.label4.Name = "label4";
             this.label4.Size = new System.Drawing.Size(102, 15);
             this.label4.TabIndex = 18;
-            this.label4.Text = "Куда переносить:";
+            this.label4.Text = "РљСѓРґР° РїРµСЂРµРЅРѕСЃРёС‚СЊ:";
             // 
             // lblSourceDate
             // 
@@ -90,7 +90,7 @@ namespace Merlin.Forms
             this.label3.Name = "label3";
             this.label3.Size = new System.Drawing.Size(115, 15);
             this.label3.TabIndex = 16;
-            this.label3.Text = "Откуда переносить:";
+            this.label3.Text = "РћС‚РєСѓРґР° РїРµСЂРµРЅРѕСЃРёС‚СЊ:";
             // 
             // lblFinishDate
             // 
@@ -117,7 +117,7 @@ namespace Merlin.Forms
             this.label2.Name = "label2";
             this.label2.Size = new System.Drawing.Size(170, 15);
             this.label2.TabIndex = 13;
-            this.label2.Text = "Дата окончания прайс-листа:";
+            this.label2.Text = "Р”Р°С‚Р° РѕРєРѕРЅС‡Р°РЅРёСЏ РїСЂР°Р№СЃ-Р»РёСЃС‚Р°:";
             // 
             // label1
             // 
@@ -126,7 +126,7 @@ namespace Merlin.Forms
             this.label1.Name = "label1";
             this.label1.Size = new System.Drawing.Size(149, 15);
             this.label1.TabIndex = 12;
-            this.label1.Text = "Дата начала прайс-листа:";
+            this.label1.Text = "Р”Р°С‚Р° РЅР°С‡Р°Р»Р° РїСЂР°Р№СЃ-Р»РёСЃС‚Р°:";
             // 
             // TransferDayForm
             // 
@@ -149,7 +149,7 @@ namespace Merlin.Forms
             this.MinimizeBox = false;
             this.Name = "TransferDayForm";
             this.StartPosition = System.Windows.Forms.FormStartPosition.CenterScreen;
-            this.Text = "Перенос дня";
+            this.Text = "РџРµСЂРµРЅРѕСЃ РґРЅСЏ";
             this.ResumeLayout(false);
             this.PerformLayout();
 

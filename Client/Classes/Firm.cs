@@ -1,4 +1,4 @@
-using System;
+п»їusing System;
 using System.Collections.Generic;
 using System.Configuration;
 using System.Data;
@@ -74,7 +74,7 @@ namespace Merlin.Classes
 						PresentationObject bill = entityBill.CreateObject(parameters);
 
 						ContractReport report = new ContractReport(this, (Agency)item.presentationObject, bill, isSponsor);
-						report.Show(isSponsor ? "Спонсорский договор" : "Договор");
+						report.Show(isSponsor ? "РЎРїРѕРЅСЃРѕСЂСЃРєРёР№ РґРѕРіРѕРІРѕСЂ" : "Р”РѕРіРѕРІРѕСЂ");
 					}
 				}
 			}
@@ -98,7 +98,7 @@ namespace Merlin.Classes
 		{
 			// Show existing brands
 			SelectionForm fSelector =
-				new SelectionForm(EntityManager.GetEntity((int) Entities.Brand), "Брэнды");
+				new SelectionForm(EntityManager.GetEntity((int) Entities.Brand), "Р‘СЂСЌРЅРґС‹");
 
 			// and assign it to the firm
 			if (fSelector.ShowDialog(owner) == DialogResult.OK)
@@ -162,7 +162,7 @@ namespace Merlin.Classes
 				if (entity.IsFilterable)
 					Globals.ResolveFilterInitialValues(filterValues, entity.XmlFilter);
 				SelectionForm fSelector =
-					new SelectionForm(entity, entity.GetContent(filterValues).DefaultView, "Фирма-заказчик");
+					new SelectionForm(entity, entity.GetContent(filterValues).DefaultView, "Р¤РёСЂРјР°-Р·Р°РєР°Р·С‡РёРє");
 
 				if (fSelector.ShowDialog(owner) == DialogResult.OK) 
 					return (Firm) fSelector.SelectedObject;

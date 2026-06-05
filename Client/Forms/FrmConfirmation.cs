@@ -1,4 +1,4 @@
-using System;
+п»їusing System;
 using System.ComponentModel;
 using System.Windows.Forms;
 using FogSoft.WinForm.Classes;
@@ -71,8 +71,8 @@ namespace Merlin.Forms
             this.label1.Name = "label1";
             this.label1.Size = new System.Drawing.Size(785, 74);
             this.label1.TabIndex = 0;
-            this.label1.Text = "Вы не обладаете необходимыми привилегиями для выполнения данной операции. Необход" +
-    "имо подтверждение от пользователя, с соответствующим уровнем привилегий.";
+            this.label1.Text = "Р’С‹ РЅРµ РѕР±Р»Р°РґР°РµС‚Рµ РЅРµРѕР±С…РѕРґРёРјС‹РјРё РїСЂРёРІРёР»РµРіРёСЏРјРё РґР»СЏ РІС‹РїРѕР»РЅРµРЅРёСЏ РґР°РЅРЅРѕР№ РѕРїРµСЂР°С†РёРё. РќРµРѕР±С…РѕРґ" +
+    "РёРјРѕ РїРѕРґС‚РІРµСЂР¶РґРµРЅРёРµ РѕС‚ РїРѕР»СЊР·РѕРІР°С‚РµР»СЏ, СЃ СЃРѕРѕС‚РІРµС‚СЃС‚РІСѓСЋС‰РёРј СѓСЂРѕРІРЅРµРј РїСЂРёРІРёР»РµРіРёР№.";
             // 
             // pictureBox1
             // 
@@ -94,7 +94,7 @@ namespace Merlin.Forms
             this.btnCancel.Name = "btnCancel";
             this.btnCancel.Size = new System.Drawing.Size(120, 33);
             this.btnCancel.TabIndex = 13;
-            this.btnCancel.Text = "Отмена";
+            this.btnCancel.Text = "РћС‚РјРµРЅР°";
             // 
             // btnOk
             // 
@@ -107,7 +107,7 @@ namespace Merlin.Forms
             this.btnOk.Name = "btnOk";
             this.btnOk.Size = new System.Drawing.Size(120, 33);
             this.btnOk.TabIndex = 12;
-            this.btnOk.Text = "Ок";
+            this.btnOk.Text = "РћРє";
             this.btnOk.Click += new System.EventHandler(this.btnOk_Click);
             // 
             // txtPassword
@@ -134,7 +134,7 @@ namespace Merlin.Forms
             this.label3.Name = "label3";
             this.label3.Size = new System.Drawing.Size(76, 24);
             this.label3.TabIndex = 9;
-            this.label3.Text = "Пароль:";
+            this.label3.Text = "РџР°СЂРѕР»СЊ:";
             // 
             // label4
             // 
@@ -144,7 +144,7 @@ namespace Merlin.Forms
             this.label4.Name = "label4";
             this.label4.Size = new System.Drawing.Size(128, 24);
             this.label4.TabIndex = 8;
-            this.label4.Text = "Пользователь:";
+            this.label4.Text = "РџРѕР»СЊР·РѕРІР°С‚РµР»СЊ:";
             // 
             // label5
             // 
@@ -154,7 +154,7 @@ namespace Merlin.Forms
             this.label5.Name = "label5";
             this.label5.Size = new System.Drawing.Size(215, 24);
             this.label5.TabIndex = 15;
-            this.label5.Text = "Причина выдачи скидки:";
+            this.label5.Text = "РџСЂРёС‡РёРЅР° РІС‹РґР°С‡Рё СЃРєРёРґРєРё:";
             // 
             // cmbReason
             // 
@@ -189,7 +189,7 @@ namespace Merlin.Forms
             this.Name = "FrmConfirmation";
             this.ShowInTaskbar = false;
             this.StartPosition = System.Windows.Forms.FormStartPosition.CenterParent;
-            this.Text = "Подтверждение";
+            this.Text = "РџРѕРґС‚РІРµСЂР¶РґРµРЅРёРµ";
             ((System.ComponentModel.ISupportInitialize)(this.pictureBox1)).EndInit();
             this.ResumeLayout(false);
             this.PerformLayout();

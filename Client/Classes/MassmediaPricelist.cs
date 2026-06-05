@@ -1,4 +1,4 @@
-using System;
+п»їusing System;
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.Data;
@@ -98,7 +98,7 @@ namespace Merlin.Classes
 
 		private void ShowDisabledWindows()
 		{
-			FrmDateSelector selector = new FrmDateSelector(StartDate, FinishDate, "Выбрать период отчета");
+			FrmDateSelector selector = new FrmDateSelector(StartDate, FinishDate, "Р’С‹Р±СЂР°С‚СЊ РїРµСЂРёРѕРґ РѕС‚С‡РµС‚Р°");
 			if (selector.ShowDialog(Globals.MdiParent) == DialogResult.OK)
 			{
 				DataSet ds = DataAccessor.LoadDataSet("ShowDisabledWindows",
@@ -108,7 +108,7 @@ namespace Merlin.Classes
 				                         		{"startDate", selector.StartDate},
 				                         		{"finishDate", selector.FinishDate}
 				                         	});
-				Globals.ShowSimpleJournal(EntityManager.GetEntity((int)Entities.TariffWindow), "Заблокированные выпуски", ds.Tables[0]);
+				Globals.ShowSimpleJournal(EntityManager.GetEntity((int)Entities.TariffWindow), "Р—Р°Р±Р»РѕРєРёСЂРѕРІР°РЅРЅС‹Рµ РІС‹РїСѓСЃРєРё", ds.Tables[0]);
 			}
 		}
 
@@ -196,7 +196,7 @@ namespace Merlin.Classes
             TariffWindowsDisabledStatusForm frm = 
 				new TariffWindowsDisabledStatusForm(this, isSpecial, TariffWindowsDisabledStatusForm.Procedures.MarkWindows)
             {
-                Text = isSpecial ? "Пометить окна цветом" : "Снять пометку окон цветом"
+                Text = isSpecial ? "РџРѕРјРµС‚РёС‚СЊ РѕРєРЅР° С†РІРµС‚РѕРј" : "РЎРЅСЏС‚СЊ РїРѕРјРµС‚РєСѓ РѕРєРѕРЅ С†РІРµС‚РѕРј"
             };
             if (frm.ShowDialog(owner) == DialogResult.OK)
             {
@@ -217,7 +217,7 @@ namespace Merlin.Classes
             TariffWindowsDisabledStatusForm frm = 
 				new TariffWindowsDisabledStatusForm(this, isDisabled, TariffWindowsDisabledStatusForm.Procedures.DisableWindows)
             {
-                Text = isDisabled ? "Запретить вносить выпуски в окна" : "Разрешить вносить выпуски в окна"
+                Text = isDisabled ? "Р—Р°РїСЂРµС‚РёС‚СЊ РІРЅРѕСЃРёС‚СЊ РІС‹РїСѓСЃРєРё РІ РѕРєРЅР°" : "Р Р°Р·СЂРµС€РёС‚СЊ РІРЅРѕСЃРёС‚СЊ РІС‹РїСѓСЃРєРё РІ РѕРєРЅР°"
             };
             if (frm.ShowDialog(owner) == DialogResult.OK)
 			{
@@ -237,7 +237,7 @@ namespace Merlin.Classes
 		{
 			try
 			{
-				FrmDateSelector selector = new FrmDateSelector(StartDate, FinishDate, "Интервал генерации окон");
+				FrmDateSelector selector = new FrmDateSelector(StartDate, FinishDate, "РРЅС‚РµСЂРІР°Р» РіРµРЅРµСЂР°С†РёРё РѕРєРѕРЅ");
 				if (selector.ShowDialog(owner) == DialogResult.OK)
 				{
 					Application.DoEvents();
@@ -247,7 +247,7 @@ namespace Merlin.Classes
 
 					int count = (selector.FinishDate - selector.StartDate).Days/7 + 1; // count in weeks
 
-					ProgressForm.Show(owner, GenerateTariffWindows, 0, count, 1, "Генерирование рекламных окон...", list);
+					ProgressForm.Show(owner, GenerateTariffWindows, 0, count, 1, "Р“РµРЅРµСЂРёСЂРѕРІР°РЅРёРµ СЂРµРєР»Р°РјРЅС‹С… РѕРєРѕРЅ...", list);
 					CheckLinkedWindows(selector.StartDate, selector.FinishDate);
 					Refresh();
 					FireContainerRefreshed();
@@ -317,7 +317,7 @@ namespace Merlin.Classes
 			try
 			{
 				FrmDateSelector selector =
-					new FrmDateSelector(StartDate, FinishDate, "Интервал удаления сгенерированных окон");
+					new FrmDateSelector(StartDate, FinishDate, "РРЅС‚РµСЂРІР°Р» СѓРґР°Р»РµРЅРёСЏ СЃРіРµРЅРµСЂРёСЂРѕРІР°РЅРЅС‹С… РѕРєРѕРЅ");
 				if (selector.ShowDialog(owner) == DialogResult.OK)
 				{
 					Application.DoEvents();
@@ -327,7 +327,7 @@ namespace Merlin.Classes
 
 					int count = (selector.FinishDate - selector.StartDate).Days + 1; // count in days
 
-					ProgressForm.Show(owner, DeleteGeneratedTariffWindows, 0, count, 1, "Удаление сгенерированных рекламных окон...", list);
+					ProgressForm.Show(owner, DeleteGeneratedTariffWindows, 0, count, 1, "РЈРґР°Р»РµРЅРёРµ СЃРіРµРЅРµСЂРёСЂРѕРІР°РЅРЅС‹С… СЂРµРєР»Р°РјРЅС‹С… РѕРєРѕРЅ...", list);
 
 					Refresh();
 					FireContainerRefreshed();

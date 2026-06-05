@@ -1,4 +1,4 @@
-using System;
+п»їusing System;
 using System.ComponentModel;
 using System.Data;
 using System.Drawing;
@@ -53,7 +53,7 @@ namespace Merlin.Controls
 				base.SetNavigationCaption();
 			else if (module != null)
 			{
-				Caption.Caption = string.Format("'{0}' Прайс-лист: {1} - {2}",
+				Caption.Caption = string.Format("'{0}' РџСЂР°Р№СЃ-Р»РёСЃС‚: {1} - {2}",
 				                                module.Name,
 				                                pricelist.StartDate.ToShortDateString(),
 				                                pricelist.FinishDate.ToShortDateString());

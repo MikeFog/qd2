@@ -1,4 +1,4 @@
-namespace FogSoft.WinForm.Controls {
+п»їnamespace FogSoft.WinForm.Controls {
 	partial class SmartGrid {
 		/// <summary> 
 		/// Required designer variable.
@@ -94,7 +94,7 @@ namespace FogSoft.WinForm.Controls {
             this.lbQuickSearch.Padding = new System.Windows.Forms.Padding(23, 0, 0, 0);
             this.lbQuickSearch.Size = new System.Drawing.Size(162, 25);
             this.lbQuickSearch.TabIndex = 2;
-            this.lbQuickSearch.Text = "Поиск по полю";
+            this.lbQuickSearch.Text = "РџРѕРёСЃРє РїРѕ РїРѕР»СЋ";
             this.lbQuickSearch.TextAlign = System.Drawing.ContentAlignment.MiddleLeft;
             // 
             // dataGrid

@@ -1,4 +1,4 @@
-using System;
+п»їusing System;
 using System.Collections.Generic;
 using System.Data;
 using System.Drawing;
@@ -115,14 +115,14 @@ namespace FogSoft.WinForm.Classes
 
 		public static void CreateMDIListMenu(MenuStrip appMenu)
 		{
-			ToolStripMenuItem menuItemWin = new ToolStripMenuItem("Окно") {Image = Resources.Window};
+			ToolStripMenuItem menuItemWin = new ToolStripMenuItem("РћРєРЅРѕ") {Image = Resources.Window};
 			appMenu.Items.Add(menuItemWin);
 			appMenu.MdiWindowListItem = menuItemWin;
 
-			CreateMDIListMenuItem(menuItemWin, "Сверху вниз", MdiLayout.TileHorizontal, Resources.WindowDown);
-			CreateMDIListMenuItem(menuItemWin, "Слева направо", MdiLayout.TileVertical, Resources.WindowLeft);
-			CreateMDIListMenuItem(menuItemWin, "Каскадом", MdiLayout.Cascade, Resources.WindowCascad);
-			CreateMDIListMenuItem(menuItemWin, "Упорядочить значки", MdiLayout.ArrangeIcons, Resources.WindowOrder);
+			CreateMDIListMenuItem(menuItemWin, "РЎРІРµСЂС…Сѓ РІРЅРёР·", MdiLayout.TileHorizontal, Resources.WindowDown);
+			CreateMDIListMenuItem(menuItemWin, "РЎР»РµРІР° РЅР°РїСЂР°РІРѕ", MdiLayout.TileVertical, Resources.WindowLeft);
+			CreateMDIListMenuItem(menuItemWin, "РљР°СЃРєР°РґРѕРј", MdiLayout.Cascade, Resources.WindowCascad);
+			CreateMDIListMenuItem(menuItemWin, "РЈРїРѕСЂСЏРґРѕС‡РёС‚СЊ Р·РЅР°С‡РєРё", MdiLayout.ArrangeIcons, Resources.WindowOrder);
 		}
 
 		private static void CreateMDIListMenuItem(

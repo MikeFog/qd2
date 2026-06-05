@@ -1,4 +1,4 @@
-using System;
+п»їusing System;
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.Data;
@@ -68,19 +68,19 @@ namespace Merlin.Controls
         
 		protected override void InitializePopupMenus()
 		{
-			miSetDeadLine.Text = "Пометить как обработанный";
+			miSetDeadLine.Text = "РџРѕРјРµС‚РёС‚СЊ РєР°Рє РѕР±СЂР°Р±РѕС‚Р°РЅРЅС‹Р№";
 			miSetDeadLine.Click += SetDeadLine;
-			miCreateNewWindow.Text = "Создать новое окно...";
+			miCreateNewWindow.Text = "РЎРѕР·РґР°С‚СЊ РЅРѕРІРѕРµ РѕРєРЅРѕ...";
 			miCreateNewWindow.Click += CreateNewTariffWindow;
-			miCreateNewWindowTemplate.Text = "Создать новое окно по шаблону...";
+			miCreateNewWindowTemplate.Text = "РЎРѕР·РґР°С‚СЊ РЅРѕРІРѕРµ РѕРєРЅРѕ РїРѕ С€Р°Р±Р»РѕРЅСѓ...";
 			miCreateNewWindowTemplate.Click += CreateNewTariffWindowTemplate;
-            miCorrectDurationInDay.Text = "Изменить продолжительность...";
+            miCorrectDurationInDay.Text = "РР·РјРµРЅРёС‚СЊ РїСЂРѕРґРѕР»Р¶РёС‚РµР»СЊРЅРѕСЃС‚СЊ...";
             miCorrectDurationInDay.Click += MiCorrectDurationInDay_Click;
-            miCorrectTime.Text = "Отредактировать время выхода...";
+            miCorrectTime.Text = "РћС‚СЂРµРґР°РєС‚РёСЂРѕРІР°С‚СЊ РІСЂРµРјСЏ РІС‹С…РѕРґР°...";
 			miCorrectTime.Click += MiCorrectTime_Click;
-            miCorrectDuration.Text = "Изменить продолжительность...";
+            miCorrectDuration.Text = "РР·РјРµРЅРёС‚СЊ РїСЂРѕРґРѕР»Р¶РёС‚РµР»СЊРЅРѕСЃС‚СЊ...";
             miCorrectDuration.Click += MiCorrectDuration_Click;
-            miDeleteWindows.Text = "Удалить...";
+            miDeleteWindows.Text = "РЈРґР°Р»РёС‚СЊ...";
             miDeleteWindows.Click += MiDeleteWindows_Click;
 
 			cmColumnHeader.Items.AddRange(new ToolStripItem[]
@@ -230,11 +230,11 @@ namespace Merlin.Controls
 
             if (window == null)
             {
-                MessageBox.ShowInformation(string.Format("Не могу найти {0} окно для рекламного окна '{1}'. Операция прервана!", isWithPrev ? "предыдущее" : "последующее", CurrentTariffWindow.WindowDate.ToString("g")));
+                MessageBox.ShowInformation(string.Format("РќРµ РјРѕРіСѓ РЅР°Р№С‚Рё {0} РѕРєРЅРѕ РґР»СЏ СЂРµРєР»Р°РјРЅРѕРіРѕ РѕРєРЅР° '{1}'. РћРїРµСЂР°С†РёСЏ РїСЂРµСЂРІР°РЅР°!", isWithPrev ? "РїСЂРµРґС‹РґСѓС‰РµРµ" : "РїРѕСЃР»РµРґСѓСЋС‰РµРµ", CurrentTariffWindow.WindowDate.ToString("g")));
                 return null;
             }
 
-            if (MessageBox.ShowQuestion(string.Format("Хотите объединить рекламные окна '{0}' и '{1}'?", CurrentTariffWindow.WindowDate.ToString("g"), window.WindowDate.ToString("g"))) == DialogResult.Yes)
+            if (MessageBox.ShowQuestion(string.Format("РҐРѕС‚РёС‚Рµ РѕР±СЉРµРґРёРЅРёС‚СЊ СЂРµРєР»Р°РјРЅС‹Рµ РѕРєРЅР° '{0}' Рё '{1}'?", CurrentTariffWindow.WindowDate.ToString("g"), window.WindowDate.ToString("g"))) == DialogResult.Yes)
 				return window;
 			return null;
 		}
@@ -376,7 +376,7 @@ namespace Merlin.Controls
 			try
 			{
 				Application.DoEvents();
-				if (MessageBox.ShowQuestion(string.Format("Вы действительно хотите пометить день '{0}' как обработанный на радиостанции '{1}'?"
+				if (MessageBox.ShowQuestion(string.Format("Р’С‹ РґРµР№СЃС‚РІРёС‚РµР»СЊРЅРѕ С…РѕС‚РёС‚Рµ РїРѕРјРµС‚РёС‚СЊ РґРµРЅСЊ '{0}' РєР°Рє РѕР±СЂР°Р±РѕС‚Р°РЅРЅС‹Р№ РЅР° СЂР°РґРёРѕСЃС‚Р°РЅС†РёРё '{1}'?"
 						, CurrentColumnDate.ToString("dd.MM.yyyy"), Massmedia.Name)) == DialogResult.Yes)
 				{
 					Cursor = Cursors.WaitCursor;
@@ -427,7 +427,7 @@ namespace Merlin.Controls
 				}
 
                 ShowUniversalPassport(dictionary, UniversalPassportForm.PassportNames.ChangeDurationInDay, UniversalPassportForm.ProcedureNames.ChangeDurationInDay,
-					"Изменение продолжительности", ValidatePassportDatetimes, dtTimeLookup.DataSet);
+					"РР·РјРµРЅРµРЅРёРµ РїСЂРѕРґРѕР»Р¶РёС‚РµР»СЊРЅРѕСЃС‚Рё", ValidatePassportDatetimes, dtTimeLookup.DataSet);
 			}
             catch (Exception ex)
             {
@@ -476,7 +476,7 @@ namespace Merlin.Controls
 				dictionary.Add("startDate", CurrentDate);
 				dictionary.Add("finishDate", CurrentDate);
 
-				UniversalPassportForm frm = new UniversalPassportForm(dictionary, UniversalPassportForm.PassportNames.DeleteWindows, DeleteWindows, "Удалить окна", ValidatePassportDates);
+				UniversalPassportForm frm = new UniversalPassportForm(dictionary, UniversalPassportForm.PassportNames.DeleteWindows, DeleteWindows, "РЈРґР°Р»РёС‚СЊ РѕРєРЅР°", ValidatePassportDates);
 				if (frm.ShowDialog(this) == DialogResult.OK)
 					RefreshGrid();
 			}
@@ -495,7 +495,7 @@ namespace Merlin.Controls
 			try
 			{
 				DataRow row = dtGrid.Rows[CurrentRowIndex];
-				// строки типа "25:15" надо привести к нормальному виду
+				// СЃС‚СЂРѕРєРё С‚РёРїР° "25:15" РЅР°РґРѕ РїСЂРёРІРµСЃС‚Рё Рє РЅРѕСЂРјР°Р»СЊРЅРѕРјСѓ РІРёРґСѓ
 				string time = row[ColTime].ToString();
 				string[] parts = time.Split(':');
 				int hour = int.Parse(parts[0].ToString());
@@ -523,7 +523,7 @@ namespace Merlin.Controls
 				dictionary.Add("finishDate", CurrentDate);
 				dictionary.Add("pricelistid", Pricelist.PricelistId);
 				ShowUniversalPassport(dictionary, UniversalPassportForm.PassportNames.ChangeDuration, UniversalPassportForm.ProcedureNames.ChangeDuration,
-					"Изменение продолжительности", ValidatePassportDates);
+					"РР·РјРµРЅРµРЅРёРµ РїСЂРѕРґРѕР»Р¶РёС‚РµР»СЊРЅРѕСЃС‚Рё", ValidatePassportDates);
 			}
             catch (Exception ex)
             {
@@ -550,7 +550,7 @@ namespace Merlin.Controls
 				dictionary.Add("pricelistid", Pricelist.PricelistId);
 
 				ShowUniversalPassport(dictionary, UniversalPassportForm.PassportNames.MoveTime, UniversalPassportForm.ProcedureNames.MoveTime,
-					"Перенос времени выхода", ValidatePassportDates);
+					"РџРµСЂРµРЅРѕСЃ РІСЂРµРјРµРЅРё РІС‹С…РѕРґР°", ValidatePassportDates);
 			}
             catch (Exception ex)
             {
@@ -632,7 +632,7 @@ namespace Merlin.Controls
 				}
                 if (tableErrors.Rows.Count > 0)
                 {
-                    Globals.ShowSimpleJournal(EntityManager.GetEntity((int)Entities.ErrTmplGen), "Ошибки удаления", tableErrors);
+                    Globals.ShowSimpleJournal(EntityManager.GetEntity((int)Entities.ErrTmplGen), "РћС€РёР±РєРё СѓРґР°Р»РµРЅРёСЏ", tableErrors);
                 }
                 RefreshGrid();
 			}
@@ -783,7 +783,7 @@ namespace Merlin.Controls
 			DataGridViewCell cell = GetCell(sourceTariffWindow);
 			if (cell != null)
 			{
-				// если уже сохранили какой-то цвет, то затирать его не надо
+				// РµСЃР»Рё СѓР¶Рµ СЃРѕС…СЂР°РЅРёР»Рё РєР°РєРѕР№-С‚Рѕ С†РІРµС‚, С‚Рѕ Р·Р°С‚РёСЂР°С‚СЊ РµРіРѕ РЅРµ РЅР°РґРѕ
 				if(sourceCellBackColor == Color.White)
 					sourceCellBackColor = CheckWindowOverflow(cell) ? Color.Red : Color.White;
 				UpdateGridCell(cell, sourceTariffWindow);

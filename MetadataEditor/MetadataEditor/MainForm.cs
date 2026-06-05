@@ -1,4 +1,4 @@
-using System;
+п»їusing System;
 using System.ComponentModel;
 using System.Data;
 using System.Data.SqlClient;
@@ -330,7 +330,7 @@ namespace MetadataEditor
 				try
 				{
 					command.ExecuteNonQuery();
-					statusLabel.Text = "Изменения сохранены.";
+					statusLabel.Text = "РР·РјРµРЅРµРЅРёСЏ СЃРѕС…СЂР°РЅРµРЅС‹.";
 					Thread thread = new Thread(ClearStatusLabel) {Priority = ThreadPriority.Lowest};
 					thread.Start();
 				}
@@ -441,7 +441,7 @@ namespace MetadataEditor
 
 		private void tbPassport_TextChanged(object sender, EventArgs e)
 		{
-			statusLabel.Text = "Текст изменён.";
+			statusLabel.Text = "РўРµРєСЃС‚ РёР·РјРµРЅС‘РЅ.";
 		}
 
 		private void rbPassports_CheckedChanged(object sender, EventArgs e)

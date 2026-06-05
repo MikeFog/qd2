@@ -1,4 +1,4 @@
-namespace Merlin.Forms {
+п»їnamespace Merlin.Forms {
   partial class StudioOrderActionForm {
     /// <summary>
     /// Required designer variable.
@@ -74,7 +74,7 @@ namespace Merlin.Forms {
       this.pageAction.Name = "pageAction";
       this.pageAction.Size = new System.Drawing.Size(504, 232);
       this.pageAction.TabIndex = 0;
-      this.pageAction.Text = "Общие";
+      this.pageAction.Text = "РћР±С‰РёРµ";
       // 
       // toolStrip1
       // 
@@ -102,7 +102,7 @@ namespace Merlin.Forms {
       this.tsbAdd.Name = "tsbAdd";
       this.tsbAdd.Size = new System.Drawing.Size(22, 20);
       this.tsbAdd.Text = "toolStripButton1";
-      this.tsbAdd.ToolTipText = "Добавить заказ";
+      this.tsbAdd.ToolTipText = "Р”РѕР±Р°РІРёС‚СЊ Р·Р°РєР°Р·";
       this.tsbAdd.Click += new System.EventHandler(this.CreateOrder);
       // 
       // tsbDelete
@@ -113,7 +113,7 @@ namespace Merlin.Forms {
       this.tsbDelete.Name = "tsbDelete";
       this.tsbDelete.Size = new System.Drawing.Size(22, 20);
       this.tsbDelete.Text = "toolStripButton2";
-      this.tsbDelete.ToolTipText = "Удалить заказ";
+      this.tsbDelete.ToolTipText = "РЈРґР°Р»РёС‚СЊ Р·Р°РєР°Р·";
       this.tsbDelete.Click += new System.EventHandler(this.DeleteOrder);
       // 
       // tsbEdit
@@ -124,7 +124,7 @@ namespace Merlin.Forms {
       this.tsbEdit.Name = "tsbEdit";
       this.tsbEdit.Size = new System.Drawing.Size(22, 20);
       this.tsbEdit.Text = "toolStripButton3";
-      this.tsbEdit.ToolTipText = "Редактировать заказ";
+      this.tsbEdit.ToolTipText = "Р РµРґР°РєС‚РёСЂРѕРІР°С‚СЊ Р·Р°РєР°Р·";
       this.tsbEdit.Click += new System.EventHandler(this.EditOrder);
       // 
       // toolStripSeparator1
@@ -140,12 +140,12 @@ namespace Merlin.Forms {
       this.tsbSetDiscount.Name = "tsbSetDiscount";
       this.tsbSetDiscount.Size = new System.Drawing.Size(22, 20);
       this.tsbSetDiscount.Text = "toolStripButton4";
-      this.tsbSetDiscount.ToolTipText = "Менеджерская скидка";
+      this.tsbSetDiscount.ToolTipText = "РњРµРЅРµРґР¶РµСЂСЃРєР°СЏ СЃРєРёРґРєР°";
       this.tsbSetDiscount.Click += new System.EventHandler(this.SetDiscount);
       // 
       // grdOrders
       // 
-      this.grdOrders.Caption = "Заказы на производство роликов";
+      this.grdOrders.Caption = "Р—Р°РєР°Р·С‹ РЅР° РїСЂРѕРёР·РІРѕРґСЃС‚РІРѕ СЂРѕР»РёРєРѕРІ";
       this.grdOrders.CaptionVisible = true;
       this.grdOrders.CheckBoxes = false;
       this.grdOrders.DataSource = null;
@@ -168,7 +168,7 @@ namespace Merlin.Forms {
       this.chkPrintBill.Name = "chkPrintBill";
       this.chkPrintBill.Size = new System.Drawing.Size(280, 16);
       this.chkPrintBill.TabIndex = 20;
-      this.chkPrintBill.Text = "Распечатать счёт на предоплату";
+      this.chkPrintBill.Text = "Р Р°СЃРїРµС‡Р°С‚Р°С‚СЊ СЃС‡С‘С‚ РЅР° РїСЂРµРґРѕРїР»Р°С‚Сѓ";
       // 
       // chkPrintAgreement
       // 
@@ -177,7 +177,7 @@ namespace Merlin.Forms {
       this.chkPrintAgreement.Name = "chkPrintAgreement";
       this.chkPrintAgreement.Size = new System.Drawing.Size(280, 16);
       this.chkPrintAgreement.TabIndex = 19;
-      this.chkPrintAgreement.Text = "Распечатать договор на производство роликов";
+      this.chkPrintAgreement.Text = "Р Р°СЃРїРµС‡Р°С‚Р°С‚СЊ РґРѕРіРѕРІРѕСЂ РЅР° РїСЂРѕРёР·РІРѕРґСЃС‚РІРѕ СЂРѕР»РёРєРѕРІ";
       // 
       // lblTotalPrice
       // 
@@ -221,7 +221,7 @@ namespace Merlin.Forms {
       this.label2.Name = "label2";
       this.label2.Size = new System.Drawing.Size(118, 13);
       this.label2.TabIndex = 4;
-      this.label2.Text = "Окончательная цена:";
+      this.label2.Text = "РћРєРѕРЅС‡Р°С‚РµР»СЊРЅР°СЏ С†РµРЅР°:";
       // 
       // label1
       // 
@@ -230,7 +230,7 @@ namespace Merlin.Forms {
       this.label1.Name = "label1";
       this.label1.Size = new System.Drawing.Size(104, 13);
       this.label1.TabIndex = 3;
-      this.label1.Text = "Сумма по тарифам:";
+      this.label1.Text = "РЎСѓРјРјР° РїРѕ С‚Р°СЂРёС„Р°Рј:";
       // 
       // lblFirm
       // 
@@ -239,7 +239,7 @@ namespace Merlin.Forms {
       this.lblFirm.Name = "lblFirm";
       this.lblFirm.Size = new System.Drawing.Size(43, 13);
       this.lblFirm.TabIndex = 1;
-      this.lblFirm.Text = "Фирма:";
+      this.lblFirm.Text = "Р¤РёСЂРјР°:";
       // 
       // btnOk
       // 
@@ -249,7 +249,7 @@ namespace Merlin.Forms {
       this.btnOk.Name = "btnOk";
       this.btnOk.Size = new System.Drawing.Size(93, 26);
       this.btnOk.TabIndex = 7;
-      this.btnOk.Text = "Ок";
+      this.btnOk.Text = "РћРє";
       this.btnOk.Click += new System.EventHandler(this.btnOk_Click);
       // 
       // StudioOrderActionForm
@@ -265,7 +265,7 @@ namespace Merlin.Forms {
       this.MinimizeBox = false;
       this.Name = "StudioOrderActionForm";
       this.ShowInTaskbar = false;
-      this.Text = "Заказ на производство роликов";
+      this.Text = "Р—Р°РєР°Р· РЅР° РїСЂРѕРёР·РІРѕРґСЃС‚РІРѕ СЂРѕР»РёРєРѕРІ";
       this.tabAction.ResumeLayout(false);
       this.pageAction.ResumeLayout(false);
       this.pageAction.PerformLayout();

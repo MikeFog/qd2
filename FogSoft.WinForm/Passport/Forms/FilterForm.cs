@@ -1,4 +1,4 @@
-using System.Collections.Generic;
+п»їusing System.Collections.Generic;
 using System.Data;
 using System.Windows.Forms;
 using System.Xml.XPath;
@@ -42,7 +42,7 @@ namespace FogSoft.WinForm.Passport.Forms
 		protected override void OnLoad(System.EventArgs e)
 		{
 			base.OnLoad(e);
-			Text = "Установить фильтр";
+			Text = "РЈСЃС‚Р°РЅРѕРІРёС‚СЊ С„РёР»СЊС‚СЂ";
         }
 	}
 }

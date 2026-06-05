@@ -1,4 +1,4 @@
-using System;
+п»їusing System;
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.Windows.Forms;
@@ -64,7 +64,7 @@ namespace Merlin.Forms
 			this.label1.Name = "label1";
 			this.label1.Size = new System.Drawing.Size(74, 13);
 			this.label1.TabIndex = 0;
-			this.label1.Text = "Номер счёта:";
+			this.label1.Text = "РќРѕРјРµСЂ СЃС‡С‘С‚Р°:";
 			// 
 			// label2
 			// 
@@ -73,7 +73,7 @@ namespace Merlin.Forms
 			this.label2.Name = "label2";
 			this.label2.Size = new System.Drawing.Size(37, 13);
 			this.label2.TabIndex = 1;
-			this.label2.Text = "Дата:";
+			this.label2.Text = "Р”Р°С‚Р°:";
 			// 
 			// txtNumber
 			// 
@@ -103,7 +103,7 @@ namespace Merlin.Forms
 			this.btnCancel.Name = "btnCancel";
 			this.btnCancel.Size = new System.Drawing.Size(83, 22);
 			this.btnCancel.TabIndex = 15;
-			this.btnCancel.Text = "Отмена";
+			this.btnCancel.Text = "РћС‚РјРµРЅР°";
 			// 
 			// btnOk
 			// 
@@ -116,7 +116,7 @@ namespace Merlin.Forms
 			this.btnOk.Name = "btnOk";
 			this.btnOk.Size = new System.Drawing.Size(84, 22);
 			this.btnOk.TabIndex = 14;
-			this.btnOk.Text = "Ок";
+			this.btnOk.Text = "РћРє";
 			this.btnOk.Click += new System.EventHandler(this.btnOk_Click);
 			// 
 			// FrmBill
@@ -139,7 +139,7 @@ namespace Merlin.Forms
 			this.Name = "FrmBill";
 			this.ShowInTaskbar = false;
 			this.StartPosition = System.Windows.Forms.FormStartPosition.CenterParent;
-			this.Text = "Дата и номер счёта";
+			this.Text = "Р”Р°С‚Р° Рё РЅРѕРјРµСЂ СЃС‡С‘С‚Р°";
 			this.ResumeLayout(false);
 			this.PerformLayout();
 		}

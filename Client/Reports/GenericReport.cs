@@ -1,4 +1,4 @@
-using System;
+п»їusing System;
 using System.Collections.Generic;
 using System.Data;
 using System.Diagnostics;
@@ -170,7 +170,7 @@ namespace Merlin.Reports
 
 		protected void SetPaintings(Organization organization, DataTable dtData)
 		{
-			if(organization.Signature != null && MessageBox.ShowQuestion("Распечатать документ с подготовленными подписями?") == DialogResult.Yes)
+			if(organization.Signature != null && MessageBox.ShowQuestion("Р Р°СЃРїРµС‡Р°С‚Р°С‚СЊ РґРѕРєСѓРјРµРЅС‚ СЃ РїРѕРґРіРѕС‚РѕРІР»РµРЅРЅС‹РјРё РїРѕРґРїРёСЃСЏРјРё?") == DialogResult.Yes)
 			{
                 UpdateTopsOnChange(SetResolution(organization.Signature, DirPainting), DirPainting);
                 _report.Refresh();
@@ -200,7 +200,7 @@ namespace Merlin.Reports
 		/// </summary>
 		/// <param name="row"></param>
 		/// <param name="painting"></param>
-		/// <returns>Возвращает измененную высоту в twips</returns>
+		/// <returns>Р’РѕР·РІСЂР°С‰Р°РµС‚ РёР·РјРµРЅРµРЅРЅСѓСЋ РІС‹СЃРѕС‚Сѓ РІ twips</returns>
 		private int SetResolution(Image img, BlobFieldObject painting)
 		{
 			if (painting == null)

@@ -1,4 +1,4 @@
-using System;
+п»їusing System;
 using System.Collections.Generic;
 using System.Data;
 using System.Diagnostics;
@@ -280,7 +280,7 @@ namespace Merlin.Classes
 			#region IComparable<DateTime> Members
 
 			/// <summary>
-			/// Сравнение по дате, время не учитывается
+			/// РЎСЂР°РІРЅРµРЅРёРµ РїРѕ РґР°С‚Рµ, РІСЂРµРјСЏ РЅРµ СѓС‡РёС‚С‹РІР°РµС‚СЃСЏ
 			/// </summary>
 			/// <param name="other"></param>
 			/// <returns></returns>
@@ -326,7 +326,7 @@ namespace Merlin.Classes
 			#region IComparable<DateTime> Members
 
 			/// <summary>
-			/// Сравнение по дате, время не учитывается
+			/// РЎСЂР°РІРЅРµРЅРёРµ РїРѕ РґР°С‚Рµ, РІСЂРµРјСЏ РЅРµ СѓС‡РёС‚С‹РІР°РµС‚СЃСЏ
 			/// </summary>
 			/// <param name="other"></param>
 			/// <returns></returns>
@@ -362,7 +362,7 @@ namespace Merlin.Classes
 			#region IComparable<DateTime> Members
 
 			/// <summary>
-			/// Сравненени по дате, время не учитывается
+			/// РЎСЂР°РІРЅРµРЅРµРЅРё РїРѕ РґР°С‚Рµ, РІСЂРµРјСЏ РЅРµ СѓС‡РёС‚С‹РІР°РµС‚СЃСЏ
 			/// </summary>
 			/// <param name="other"></param>
 			/// <returns></returns>

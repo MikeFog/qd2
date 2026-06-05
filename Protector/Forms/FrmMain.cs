@@ -1,4 +1,4 @@
-using System;
+п»їusing System;
 using System.Collections.Generic;
 using System.Drawing;
 using System.Windows.Forms;
@@ -22,10 +22,10 @@ namespace Protector.Forms
 		public struct RelationScenarios
 		{
 			public const string Group = "Group";
-			public const string MenuItem = "Пункты меню";
+			public const string MenuItem = "РџСѓРЅРєС‚С‹ РјРµРЅСЋ";
 		}
 
-		private const string RefreshAlias = "Обновить";
+		private const string RefreshAlias = "РћР±РЅРѕРІРёС‚СЊ";
 		private readonly bool exitFlag;
 		private MenuStrip MDIMenu;
 		private ToolStripMenuItem miTop;
@@ -39,7 +39,7 @@ namespace Protector.Forms
 		private ToolStripMenuItem miChangePassAdmin;
 		private ToolStripMenuItem miSysParams;
 		private ToolStripMenuItem tsmiRecalculateTariffWindows;
-        private ToolStripMenuItem установитьПользовательскийКоэффициентToolStripMenuItem;
+        private ToolStripMenuItem СѓСЃС‚Р°РЅРѕРІРёС‚СЊРџРѕР»СЊР·РѕРІР°С‚РµР»СЊСЃРєРёР№РљРѕСЌС„С„РёС†РёРµРЅС‚ToolStripMenuItem;
         private readonly MdiClientController mdiClientController = new MdiClientController();
 
 		public FrmMain()
@@ -147,7 +147,7 @@ namespace Protector.Forms
             this.miUsers = new System.Windows.Forms.ToolStripMenuItem();
             this.miGroups = new System.Windows.Forms.ToolStripMenuItem();
             this.toolStripSeparator2 = new System.Windows.Forms.ToolStripSeparator();
-            this.установитьПользовательскийКоэффициентToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
+            this.СѓСЃС‚Р°РЅРѕРІРёС‚СЊРџРѕР»СЊР·РѕРІР°С‚РµР»СЊСЃРєРёР№РљРѕСЌС„С„РёС†РёРµРЅС‚ToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.miChangePassAdmin = new System.Windows.Forms.ToolStripMenuItem();
             this.toolStripMenuItem1 = new System.Windows.Forms.ToolStripSeparator();
             this.miExit = new System.Windows.Forms.ToolStripMenuItem();
@@ -177,26 +177,26 @@ namespace Protector.Forms
             this.miUsers,
             this.miGroups,
             this.toolStripSeparator2,
-            this.установитьПользовательскийКоэффициентToolStripMenuItem,
+            this.СѓСЃС‚Р°РЅРѕРІРёС‚СЊРџРѕР»СЊР·РѕРІР°С‚РµР»СЊСЃРєРёР№РљРѕСЌС„С„РёС†РёРµРЅС‚ToolStripMenuItem,
             this.miChangePassAdmin,
             this.toolStripMenuItem1,
             this.miExit});
             this.miTop.Name = "miTop";
             this.miTop.Size = new System.Drawing.Size(143, 29);
-            this.miTop.Text = "Пользователи";
+            this.miTop.Text = "РџРѕР»СЊР·РѕРІР°С‚РµР»Рё";
             // 
             // miUsers
             // 
             this.miUsers.Name = "miUsers";
             this.miUsers.Size = new System.Drawing.Size(472, 34);
-            this.miUsers.Text = "Журнал пользователей";
+            this.miUsers.Text = "Р–СѓСЂРЅР°Р» РїРѕР»СЊР·РѕРІР°С‚РµР»РµР№";
             this.miUsers.Click += new System.EventHandler(this.miUsers_Click);
             // 
             // miGroups
             // 
             this.miGroups.Name = "miGroups";
             this.miGroups.Size = new System.Drawing.Size(472, 34);
-            this.miGroups.Text = "Группы и пользователи";
+            this.miGroups.Text = "Р“СЂСѓРїРїС‹ Рё РїРѕР»СЊР·РѕРІР°С‚РµР»Рё";
             this.miGroups.Click += new System.EventHandler(this.miGroups_Click);
             // 
             // toolStripSeparator2
@@ -204,18 +204,18 @@ namespace Protector.Forms
             this.toolStripSeparator2.Name = "toolStripSeparator2";
             this.toolStripSeparator2.Size = new System.Drawing.Size(469, 6);
             // 
-            // установитьПользовательскийКоэффициентToolStripMenuItem
+            // СѓСЃС‚Р°РЅРѕРІРёС‚СЊРџРѕР»СЊР·РѕРІР°С‚РµР»СЊСЃРєРёР№РљРѕСЌС„С„РёС†РёРµРЅС‚ToolStripMenuItem
             // 
-            this.установитьПользовательскийКоэффициентToolStripMenuItem.Name = "установитьПользовательскийКоэффициентToolStripMenuItem";
-            this.установитьПользовательскийКоэффициентToolStripMenuItem.Size = new System.Drawing.Size(472, 34);
-            this.установитьПользовательскийКоэффициентToolStripMenuItem.Text = "Установить пользовательский коэффициент";
-            this.установитьПользовательскийКоэффициентToolStripMenuItem.Click += new System.EventHandler(this.установитьПользовательскийКоэффициентToolStripMenuItem_Click);
+            this.СѓСЃС‚Р°РЅРѕРІРёС‚СЊРџРѕР»СЊР·РѕРІР°С‚РµР»СЊСЃРєРёР№РљРѕСЌС„С„РёС†РёРµРЅС‚ToolStripMenuItem.Name = "СѓСЃС‚Р°РЅРѕРІРёС‚СЊРџРѕР»СЊР·РѕРІР°С‚РµР»СЊСЃРєРёР№РљРѕСЌС„С„РёС†РёРµРЅС‚ToolStripMenuItem";
+            this.СѓСЃС‚Р°РЅРѕРІРёС‚СЊРџРѕР»СЊР·РѕРІР°С‚РµР»СЊСЃРєРёР№РљРѕСЌС„С„РёС†РёРµРЅС‚ToolStripMenuItem.Size = new System.Drawing.Size(472, 34);
+            this.СѓСЃС‚Р°РЅРѕРІРёС‚СЊРџРѕР»СЊР·РѕРІР°С‚РµР»СЊСЃРєРёР№РљРѕСЌС„С„РёС†РёРµРЅС‚ToolStripMenuItem.Text = "РЈСЃС‚Р°РЅРѕРІРёС‚СЊ РїРѕР»СЊР·РѕРІР°С‚РµР»СЊСЃРєРёР№ РєРѕСЌС„С„РёС†РёРµРЅС‚";
+            this.СѓСЃС‚Р°РЅРѕРІРёС‚СЊРџРѕР»СЊР·РѕРІР°С‚РµР»СЊСЃРєРёР№РљРѕСЌС„С„РёС†РёРµРЅС‚ToolStripMenuItem.Click += new System.EventHandler(this.СѓСЃС‚Р°РЅРѕРІРёС‚СЊРџРѕР»СЊР·РѕРІР°С‚РµР»СЊСЃРєРёР№РљРѕСЌС„С„РёС†РёРµРЅС‚ToolStripMenuItem_Click);
             // 
             // miChangePassAdmin
             // 
             this.miChangePassAdmin.Name = "miChangePassAdmin";
             this.miChangePassAdmin.Size = new System.Drawing.Size(472, 34);
-            this.miChangePassAdmin.Text = "Сменить пароль пользователя \'admin\'";
+            this.miChangePassAdmin.Text = "РЎРјРµРЅРёС‚СЊ РїР°СЂРѕР»СЊ РїРѕР»СЊР·РѕРІР°С‚РµР»СЏ \'admin\'";
             this.miChangePassAdmin.Click += new System.EventHandler(this.miChangePassAdmin_Click);
             // 
             // toolStripMenuItem1
@@ -227,7 +227,7 @@ namespace Protector.Forms
             // 
             this.miExit.Name = "miExit";
             this.miExit.Size = new System.Drawing.Size(472, 34);
-            this.miExit.Text = "Выход";
+            this.miExit.Text = "Р’С‹С…РѕРґ";
             this.miExit.Click += new System.EventHandler(this.miExit_Click);
             // 
             // tlsmAdministration
@@ -238,27 +238,27 @@ namespace Protector.Forms
             this.tsmiLicense});
             this.tlsmAdministration.Name = "tlsmAdministration";
             this.tlsmAdministration.Size = new System.Drawing.Size(199, 29);
-            this.tlsmAdministration.Text = "Администрирование";
+            this.tlsmAdministration.Text = "РђРґРјРёРЅРёСЃС‚СЂРёСЂРѕРІР°РЅРёРµ";
             // 
             // tsmiRecalculateTariffWindows
             // 
             this.tsmiRecalculateTariffWindows.Name = "tsmiRecalculateTariffWindows";
             this.tsmiRecalculateTariffWindows.Size = new System.Drawing.Size(349, 34);
-            this.tsmiRecalculateTariffWindows.Text = "Пересчитать остатки в окнах";
+            this.tsmiRecalculateTariffWindows.Text = "РџРµСЂРµСЃС‡РёС‚Р°С‚СЊ РѕСЃС‚Р°С‚РєРё РІ РѕРєРЅР°С…";
             this.tsmiRecalculateTariffWindows.Click += new System.EventHandler(this.tsmiRecalculateTariffWindow_Click);
             // 
             // miSysParams
             // 
             this.miSysParams.Name = "miSysParams";
             this.miSysParams.Size = new System.Drawing.Size(349, 34);
-            this.miSysParams.Text = "Настройки...";
+            this.miSysParams.Text = "РќР°СЃС‚СЂРѕР№РєРё...";
             this.miSysParams.Click += new System.EventHandler(this.miSysParams_Click);
             // 
             // tsmiLicense
             // 
             this.tsmiLicense.Name = "tsmiLicense";
             this.tsmiLicense.Size = new System.Drawing.Size(349, 34);
-            this.tsmiLicense.Text = "Лицензия...";
+            this.tsmiLicense.Text = "Р›РёС†РµРЅР·РёСЏ...";
             this.tsmiLicense.Visible = false;
             this.tsmiLicense.Click += new System.EventHandler(this.tsmiLicense_Click);
             // 
@@ -305,11 +305,11 @@ namespace Protector.Forms
 				Entity.Action[] menu = new[]
 				                       	{
 				                       		new Entity.Action(Constants.EntityActions.Refresh, RefreshAlias, Constants.ActionsImages.Refresh),
-				                       		new Entity.Action(Constants.EntityActions.AddNew, "Создать новую группу")
+				                       		new Entity.Action(Constants.EntityActions.AddNew, "РЎРѕР·РґР°С‚СЊ РЅРѕРІСѓСЋ РіСЂСѓРїРїСѓ")
 				                       	};
 
 				FakeContainer container =
-					new FakeContainer("Группы пользователей", menu, RelationManager.GetScenario(RelationScenarios.Group));
+					new FakeContainer("Р“СЂСѓРїРїС‹ РїРѕР»СЊР·РѕРІР°С‚РµР»РµР№", menu, RelationManager.GetScenario(RelationScenarios.Group));
 				Globals.ShowBrowser(container, ((ToolStripMenuItem) sender).Text, this);
 			}
 			catch (Exception ex)
@@ -333,7 +333,7 @@ namespace Protector.Forms
 			{
 				Application.DoEvents();
 				Globals.SetWaitCursor(this);
-				ProgressForm.Show(this, RecalculateWindows, "Пересчитываются остатки...", null);
+				ProgressForm.Show(this, RecalculateWindows, "РџРµСЂРµСЃС‡РёС‚С‹РІР°СЋС‚СЃСЏ РѕСЃС‚Р°С‚РєРё...", null);
 				Globals.ShowInfo("TariffWindowsRecalculates");
 			}
 			catch (Exception exp)
@@ -401,7 +401,7 @@ namespace Protector.Forms
 			po.ShowPassport(this);
 		}
 
-        private void установитьПользовательскийКоэффициентToolStripMenuItem_Click(object sender, EventArgs e)
+        private void СѓСЃС‚Р°РЅРѕРІРёС‚СЊРџРѕР»СЊР·РѕРІР°С‚РµР»СЊСЃРєРёР№РљРѕСЌС„С„РёС†РёРµРЅС‚ToolStripMenuItem_Click(object sender, EventArgs e)
         {
 			try
 			{

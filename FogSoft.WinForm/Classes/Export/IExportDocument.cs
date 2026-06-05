@@ -1,4 +1,4 @@
-namespace FogSoft.WinForm.Classes.Export
+﻿namespace FogSoft.WinForm.Classes.Export
 {
 	public interface IExportDocument
 	{

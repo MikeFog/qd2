@@ -1,4 +1,4 @@
-using System.Data;
+п»їusing System.Data;
 using System.Windows.Forms;
 using MessageBox = FogSoft.WinForm.Forms.MessageBox;
 using FogSoft.WinForm.Classes;
@@ -11,7 +11,7 @@ namespace Protector.Domain
 		public GroupMember(DataRow row) : base(EntityManager.GetEntity((int)Entities.GroupMember), row) { }
 		public GroupMember(Entity entity, DataRow row) : base(entity, row) { }	
 
-		private const string DETACH_PROMPT = "Удалить пользователя '{0}' из состава группы?";
+		private const string DETACH_PROMPT = "РЈРґР°Р»РёС‚СЊ РїРѕР»СЊР·РѕРІР°С‚РµР»СЏ '{0}' РёР· СЃРѕСЃС‚Р°РІР° РіСЂСѓРїРїС‹?";
 
 		public override void Detach()
 		{

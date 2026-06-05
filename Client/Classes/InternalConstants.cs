@@ -1,4 +1,4 @@
-namespace Merlin
+п»їnamespace Merlin
 {
 	public enum RollerPositions
 	{
@@ -163,7 +163,7 @@ namespace Merlin
 		public const string StoredProcedures = "Stored procedures";
 		public const string Tariff = "Tariff";
 		public const string SponsorProgramm = "Sponsor programm";
-		public const string AdvertTypes = "Предметы рекламы";
+		public const string AdvertTypes = "РџСЂРµРґРјРµС‚С‹ СЂРµРєР»Р°РјС‹";
 		public const string DisabledWindows = "Disabled windows";
 		public const string Discount = "Discount";
 		public const string PackageDiscount = "PackageDiscount";
@@ -172,7 +172,7 @@ namespace Merlin
         public const string DeletedAction = "DeletedAction";
 		public const string Module = "Module";
 		public const string UsedSponsorPrograms = "Used Sponsor Programs";
-		public const string StudioTariff = "Тарифы на производство роликов";
+		public const string StudioTariff = "РўР°СЂРёС„С‹ РЅР° РїСЂРѕРёР·РІРѕРґСЃС‚РІРѕ СЂРѕР»РёРєРѕРІ";
 		public const string ProductionAction = "ProductionAction";
 		public const string MassmediaAndCampaign = "Massmedia and Campaigns";
 		public const string Massmedia = "Massmedia";

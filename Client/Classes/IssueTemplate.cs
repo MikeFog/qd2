@@ -1,4 +1,4 @@
-using System;
+п»їusing System;
 using System.Collections;
 using System.Collections.Generic;
 using FogSoft.WinForm.Classes;
@@ -77,7 +77,7 @@ namespace Merlin.Classes
 			{
 				parameters["StartDate"] = StartDate;
 				parameters["EndDate"] = FinishDate;
-				parameters["Template"] = (_day2AddMode == Day2AddMode.OddEvenDays) ? "Чётный/Нечётный" : "Дни недели";
+				parameters["Template"] = (_day2AddMode == Day2AddMode.OddEvenDays) ? "Р§С‘С‚РЅС‹Р№/РќРµС‡С‘С‚РЅС‹Р№" : "Р”РЅРё РЅРµРґРµР»Рё";
 				return parameters;
 			}
 		}

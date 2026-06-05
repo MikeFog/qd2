@@ -1,4 +1,4 @@
-using System.Reflection;
+п»їusing System.Reflection;
 using System.Runtime.InteropServices;
 
 //
@@ -10,7 +10,7 @@ using System.Runtime.InteropServices;
 [assembly: AssemblyDescription("")]
 [assembly: AssemblyConfiguration("")]
 [assembly: AssemblyCompany("FogSoft")]
-[assembly: AssemblyProduct("АС Рекламное Агентство")]
+[assembly: AssemblyProduct("РђРЎ Р РµРєР»Р°РјРЅРѕРµ РђРіРµРЅС‚СЃС‚РІРѕ")]
 [assembly: AssemblyCopyright("FogSoft")]
 [assembly: AssemblyTrademark("FogSoft")]
 [assembly: AssemblyCulture("")]

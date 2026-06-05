@@ -1,8 +1,8 @@
-/****************************************************************************
+﻿/****************************************************************************
 'Title:			Class ParseHelper
 'Author:		Oleg Aksenov
 'Date Created:	9/30/2005
-'Copyright:		Copyright �2005-2010, Excis, LLC.
+'Copyright:		Copyright ©2005-2010, Excis, LLC.
 'Purpose: 		This class checks strings for minimal "Parse"-requirements 
 '				and perform safe parsing
 'History:

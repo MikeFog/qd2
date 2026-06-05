@@ -1,4 +1,4 @@
-using System;
+Ôªøusing System;
 using System.Collections.Generic;
 using System.Data;
 using FogSoft.WinForm.Classes;
@@ -11,7 +11,7 @@ namespace Merlin.Reports
 	internal class StudioOrderActionBillReport : BillReport
 	{
 		public StudioOrderActionBillReport(StudioOrderAction action, Agency agency, IOrganization firm, PresentationObject bill)
-			: base(action, agency, firm, bill, new StudioOrderActionBill(), "‰Ó„Ó‚ÓÛ")
+			: base(action, agency, firm, bill, new StudioOrderActionBill(), "–¥–æ–≥–æ–≤–æ—Ä—É")
 		{
 		}
 

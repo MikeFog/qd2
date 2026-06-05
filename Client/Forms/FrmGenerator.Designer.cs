@@ -1,4 +1,4 @@
-namespace Merlin.Forms
+п»їnamespace Merlin.Forms
 {
     partial class FrmGenerator
     {
@@ -59,7 +59,7 @@ namespace Merlin.Forms
             this.tbbExcel.ImageTransparentColor = System.Drawing.Color.Magenta;
             this.tbbExcel.Name = "tbbExcel";
             this.tbbExcel.Size = new System.Drawing.Size(83, 29);
-            this.tbbExcel.Text = "Экспорт";
+            this.tbbExcel.Text = "Р­РєСЃРїРѕСЂС‚";
             this.tbbExcel.Click += new System.EventHandler(this.tbbExcel_Click);
             // 
             // pbProgress
@@ -90,7 +90,7 @@ namespace Merlin.Forms
             // 
             // grdSuccess
             // 
-            this.grdSuccess.Caption = "Добавленные выпуски";
+            this.grdSuccess.Caption = "Р”РѕР±Р°РІР»РµРЅРЅС‹Рµ РІС‹РїСѓСЃРєРё";
             this.grdSuccess.CaptionVisible = true;
             this.grdSuccess.CheckBoxes = false;
             this.grdSuccess.ColumnNameHighlight = null;
@@ -113,7 +113,7 @@ namespace Merlin.Forms
             // 
             // grdFail
             // 
-            this.grdFail.Caption = "Ошибки (не добавлены в сетку вещания)";
+            this.grdFail.Caption = "РћС€РёР±РєРё (РЅРµ РґРѕР±Р°РІР»РµРЅС‹ РІ СЃРµС‚РєСѓ РІРµС‰Р°РЅРёСЏ)";
             this.grdFail.CaptionVisible = true;
             this.grdFail.CheckBoxes = false;
             this.grdFail.ColumnNameHighlight = null;
@@ -153,7 +153,7 @@ namespace Merlin.Forms
             this.btnOk.Name = "btnOk";
             this.btnOk.Size = new System.Drawing.Size(100, 33);
             this.btnOk.TabIndex = 6;
-            this.btnOk.Text = "Ок";
+            this.btnOk.Text = "РћРє";
             this.btnOk.UseVisualStyleBackColor = true;
             // 
             // FrmGenerator
@@ -169,7 +169,7 @@ namespace Merlin.Forms
             this.ShowIcon = false;
             this.ShowInTaskbar = false;
             this.StartPosition = System.Windows.Forms.FormStartPosition.CenterParent;
-            this.Text = "Внесение роликов по шаблону";
+            this.Text = "Р’РЅРµСЃРµРЅРёРµ СЂРѕР»РёРєРѕРІ РїРѕ С€Р°Р±Р»РѕРЅСѓ";
             this.toolStrip1.ResumeLayout(false);
             this.toolStrip1.PerformLayout();
             this.tableLayoutPanel1.ResumeLayout(false);

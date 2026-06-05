@@ -1,4 +1,4 @@
-using System;
+п»їusing System;
 using System.Collections.Generic;
 using System.Drawing;
 using System.Drawing.Drawing2D;
@@ -80,7 +80,7 @@ namespace FogSoft.WinForm.Passport.Classes
 		{
 			OpenFileDialog dlg = new OpenFileDialog
 			                     	{
-			                     		Filter = "Файлы изображений(*.BMP;*.JPG;*.GIF;*.PNG)|*.BMP;*.JPG;*.GIF;*.PNG"
+			                     		Filter = "Р¤Р°Р№Р»С‹ РёР·РѕР±СЂР°Р¶РµРЅРёР№(*.BMP;*.JPG;*.GIF;*.PNG)|*.BMP;*.JPG;*.GIF;*.PNG"
 			                     	};
 			Application.DoEvents();
 			if (dlg.ShowDialog(Globals.MdiParent) == DialogResult.OK)

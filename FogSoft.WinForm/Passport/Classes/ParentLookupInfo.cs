@@ -1,4 +1,4 @@
-using System.Xml.XPath;
+﻿using System.Xml.XPath;
 
 namespace FogSoft.WinForm.Passport.Classes
 {

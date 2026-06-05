@@ -1,4 +1,4 @@
-using System.Collections.Generic;
+Ôªøusing System.Collections.Generic;
 using System.Data;
 using System.Windows.Forms;
 using FogSoft.WinForm;
@@ -94,7 +94,7 @@ namespace Merlin.Classes
 
 			PaymentCandidatesForm candidates =
 				new PaymentCandidatesForm(this, entityPaymentCandidate, ds.Tables[Constants.TableNames.Data],
-				                          "¿ÍˆËË Ì‡ ÓÔÎ‡ÚÛ");
+				                          "–ê–∫—Ü–∏–∏ –Ω–∞ –æ–ø–ª–∞—Ç—É");
 			if (candidates.ShowDialog(owner) == DialogResult.OK)
 			{
 				Refresh();

@@ -1,4 +1,4 @@
-namespace Merlin.Controls {
+п»їnamespace Merlin.Controls {
 	partial class NavigationCaption {
 		/// <summary> 
 		/// Required designer variable.
@@ -58,7 +58,7 @@ namespace Merlin.Controls {
       this.lblCaption.Name = "lblCaption";
       this.lblCaption.Size = new System.Drawing.Size(560, 23);
       this.lblCaption.TabIndex = 2;
-      this.lblCaption.Text = "Прайс-лист от:";
+      this.lblCaption.Text = "РџСЂР°Р№СЃ-Р»РёСЃС‚ РѕС‚:";
       this.lblCaption.TextAlign = System.Drawing.ContentAlignment.MiddleCenter;
       // 
       // NavigationCaption2

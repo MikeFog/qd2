@@ -1,4 +1,4 @@
-namespace FogSoft.WinForm.Forms
+п»їnamespace FogSoft.WinForm.Forms
 {
   partial class LoginForm
   {
@@ -46,7 +46,7 @@ namespace FogSoft.WinForm.Forms
 		this.btnCancel.Name = "btnCancel";
 		this.btnCancel.Size = new System.Drawing.Size(109, 24);
 		this.btnCancel.TabIndex = 13;
-		this.btnCancel.Text = "Отмена";
+		this.btnCancel.Text = "РћС‚РјРµРЅР°";
 		// 
 		// btnOk
 		// 
@@ -57,7 +57,7 @@ namespace FogSoft.WinForm.Forms
 		this.btnOk.Name = "btnOk";
 		this.btnOk.Size = new System.Drawing.Size(109, 24);
 		this.btnOk.TabIndex = 12;
-		this.btnOk.Text = "Ок";
+		this.btnOk.Text = "РћРє";
 		this.btnOk.Click += new System.EventHandler(this.btnOk_Click);
 		// 
 		// txtPassword
@@ -84,7 +84,7 @@ namespace FogSoft.WinForm.Forms
 		this.label2.Name = "label2";
 		this.label2.Size = new System.Drawing.Size(48, 13);
 		this.label2.TabIndex = 9;
-		this.label2.Text = "Пароль:";
+		this.label2.Text = "РџР°СЂРѕР»СЊ:";
 		// 
 		// label1
 		// 
@@ -93,7 +93,7 @@ namespace FogSoft.WinForm.Forms
 		this.label1.Name = "label1";
 		this.label1.Size = new System.Drawing.Size(83, 13);
 		this.label1.TabIndex = 8;
-		this.label1.Text = "Пользователь:";
+		this.label1.Text = "РџРѕР»СЊР·РѕРІР°С‚РµР»СЊ:";
 		// 
 		// LoginForm
 		// 

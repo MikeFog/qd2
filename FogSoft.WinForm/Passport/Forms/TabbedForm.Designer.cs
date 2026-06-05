@@ -1,4 +1,4 @@
-namespace FogSoft.WinForm.Passport.Forms {
+ï»¿namespace FogSoft.WinForm.Passport.Forms {
   public partial class TabbedForm {
     /// <summary>
     /// Required designer variable.
@@ -94,7 +94,7 @@ namespace FogSoft.WinForm.Passport.Forms {
             this.btnApply.Name = "btnApply";
             this.btnApply.Size = new System.Drawing.Size(120, 33);
             this.btnApply.TabIndex = 15;
-            this.btnApply.Text = "Ïðèìåíèòü";
+            this.btnApply.Text = "ÐŸÑ€Ð¸Ð¼ÐµÐ½Ð¸Ñ‚ÑŒ";
             this.btnApply.Click += new System.EventHandler(this.btnOk_Click);
             // 
             // btnCancel
@@ -107,7 +107,7 @@ namespace FogSoft.WinForm.Passport.Forms {
             this.btnCancel.Name = "btnCancel";
             this.btnCancel.Size = new System.Drawing.Size(120, 33);
             this.btnCancel.TabIndex = 14;
-            this.btnCancel.Text = "Îòìåíà";
+            this.btnCancel.Text = "ÐžÑ‚Ð¼ÐµÐ½Ð°";
             // 
             // btnOk
             // 
@@ -119,7 +119,7 @@ namespace FogSoft.WinForm.Passport.Forms {
             this.btnOk.Name = "btnOk";
             this.btnOk.Size = new System.Drawing.Size(120, 33);
             this.btnOk.TabIndex = 13;
-            this.btnOk.Text = "Îê";
+            this.btnOk.Text = "ÐžÐº";
             this.btnOk.Click += new System.EventHandler(this.btnOk_Click);
             // 
             // tableLayoutPanel1

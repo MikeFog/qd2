@@ -1,4 +1,4 @@
-using FogSoft.WinForm;
+﻿using FogSoft.WinForm;
 using FogSoft.WinForm.Classes;
 using System;
 using System.Data;

@@ -1,4 +1,4 @@
-using System;
+п»їusing System;
 using System.Collections.Generic;
 using System.Data;
 using System.Diagnostics;
@@ -35,7 +35,7 @@ namespace Merlin.Forms
 			btnApply.Visible = false;
 			DataSet ds = LoadData(moduleID, packModuleID);
 			pageContext = new PageContext(ds, CreateParameters(ds));
-			Text = "Замена ролика";
+			Text = "Р—Р°РјРµРЅР° СЂРѕР»РёРєР°";
 		}
 
 		public List<DateTime> SelectedDays

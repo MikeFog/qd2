@@ -1,4 +1,4 @@
-using System;
+п»їusing System;
 using System.Drawing;
 using System.Windows.Forms;
 using FogSoft.WinForm;
@@ -67,8 +67,8 @@ namespace Merlin.Forms
             tsbListen.ImageTransparentColor = Color.Magenta;
             tsbListen.Name = "tsbListen";
             tsbListen.Size = new Size(41, 22);
-            tsbListen.Text = "Прослушать ролик";
-            tsbListen.ToolTipText = "Прослушать ролик";
+            tsbListen.Text = "РџСЂРѕСЃР»СѓС€Р°С‚СЊ СЂРѕР»РёРє";
+            tsbListen.ToolTipText = "РџСЂРѕСЃР»СѓС€Р°С‚СЊ СЂРѕР»РёРє";
             tsbListen.Click += new EventHandler(tsbListen_Click);
 
             tsbStop.DisplayStyle = ToolStripItemDisplayStyle.Image;
@@ -77,8 +77,8 @@ namespace Merlin.Forms
             tsbStop.ImageTransparentColor = Color.Magenta;
             tsbStop.Name = "tsbStop";
             tsbStop.Size = new Size(23, 22);
-            tsbStop.Text = "Остановить прослушивание";
-            tsbStop.ToolTipText = "Остановить прослушивание";
+            tsbStop.Text = "РћСЃС‚Р°РЅРѕРІРёС‚СЊ РїСЂРѕСЃР»СѓС€РёРІР°РЅРёРµ";
+            tsbStop.ToolTipText = "РћСЃС‚Р°РЅРѕРІРёС‚СЊ РїСЂРѕСЃР»СѓС€РёРІР°РЅРёРµ";
             tsbStop.Click += new EventHandler(tsbStop_Click);
 
 			tsbExport.DisplayStyle = ToolStripItemDisplayStyle.ImageAndText;
@@ -87,8 +87,8 @@ namespace Merlin.Forms
 			tsbExport.ImageTransparentColor = Color.Magenta;
 			tsbExport.Name = "tsbExport";
 			tsbExport.Size = new Size(41, 22);
-			tsbExport.Text = "Сохранить";
-			tsbExport.ToolTipText = "Экспортировать ролики";
+			tsbExport.Text = "РЎРѕС…СЂР°РЅРёС‚СЊ";
+			tsbExport.ToolTipText = "Р­РєСЃРїРѕСЂС‚РёСЂРѕРІР°С‚СЊ СЂРѕР»РёРєРё";
 			tsbExport.Click += new EventHandler(tsbExport_Click);
 
             if (SecurityManager.LoggedUser.IsAdmin)
@@ -105,8 +105,8 @@ namespace Merlin.Forms
                 tsbDeleteAll.ImageTransparentColor = Color.Magenta;
                 tsbDeleteAll.Name = "tsbDeleteAll";
                 tsbDeleteAll.Size = new Size(41, 22);
-                tsbDeleteAll.Text = "Удалить все";
-                tsbDeleteAll.ToolTipText = "Удалить все не используемые ролики";
+                tsbDeleteAll.Text = "РЈРґР°Р»РёС‚СЊ РІСЃРµ";
+                tsbDeleteAll.ToolTipText = "РЈРґР°Р»РёС‚СЊ РІСЃРµ РЅРµ РёСЃРїРѕР»СЊР·СѓРµРјС‹Рµ СЂРѕР»РёРєРё";
                 tsbDeleteAll.Click += new EventHandler(tsbDeleteAll_Click);
             }
 
@@ -123,8 +123,8 @@ namespace Merlin.Forms
                 tsbImport.ImageTransparentColor = Color.Magenta;
                 tsbImport.Name = "tsbImport";
                 tsbImport.Size = new Size(41, 22);
-                tsbImport.Text = "Импортировать";
-                tsbImport.ToolTipText = "Импортировать ролики...";
+                tsbImport.Text = "РРјРїРѕСЂС‚РёСЂРѕРІР°С‚СЊ";
+                tsbImport.ToolTipText = "РРјРїРѕСЂС‚РёСЂРѕРІР°С‚СЊ СЂРѕР»РёРєРё...";
                 tsbImport.Click += new EventHandler(tsbImport_Click);
             }
         }
@@ -145,7 +145,7 @@ namespace Merlin.Forms
 		private void tsbExport_Click(object sender, EventArgs e)
 		{
 			FolderBrowserDialog dlg = new FolderBrowserDialog();
-			dlg.Description = "Выбирете каталог для сохранения роликов";
+			dlg.Description = "Р’С‹Р±РёСЂРµС‚Рµ РєР°С‚Р°Р»РѕРі РґР»СЏ СЃРѕС…СЂР°РЅРµРЅРёСЏ СЂРѕР»РёРєРѕРІ";
 			if (dlg.ShowDialog(this) == DialogResult.OK)
 			{
 				RollersCopyFrm frm = new RollersCopyFrm(Grid.DataSource, dlg.SelectedPath);
@@ -157,7 +157,7 @@ namespace Merlin.Forms
         {
             if (this.Grid.InternalGrid != null && this.Grid.InternalGrid.Rows != null && this.Grid.InternalGrid.Rows.Count > 0)
             {
-                if (MessageBox.ShowQuestion("Удалить все отображаемые ролики вместе с физическими файлами?") == DialogResult.Yes)
+                if (MessageBox.ShowQuestion("РЈРґР°Р»РёС‚СЊ РІСЃРµ РѕС‚РѕР±СЂР°Р¶Р°РµРјС‹Рµ СЂРѕР»РёРєРё РІРјРµСЃС‚Рµ СЃ С„РёР·РёС‡РµСЃРєРёРјРё С„Р°Р№Р»Р°РјРё?") == DialogResult.Yes)
                 {
                     RollersDeleteFrm frm = new RollersDeleteFrm(Grid.DataSource);
                     frm.ShowDialog(this);

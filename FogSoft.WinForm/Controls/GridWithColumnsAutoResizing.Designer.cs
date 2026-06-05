@@ -1,4 +1,4 @@
-namespace FogSoft.WinForm.Controls {
+﻿namespace FogSoft.WinForm.Controls {
   partial class GridWithColumnsAutoResizing {
     private System.ComponentModel.IContainer components = null;
 

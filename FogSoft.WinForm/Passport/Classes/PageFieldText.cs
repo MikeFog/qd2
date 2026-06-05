@@ -1,4 +1,4 @@
-using System;
+п»їusing System;
 using System.Collections.Generic;
 using System.Windows.Forms;
 using System.Xml.XPath;
@@ -60,7 +60,7 @@ namespace FogSoft.WinForm.Passport.Classes
 				if (_hashIt)
 					if (TextBox.Text != string.Empty)
 						parameters[Name] = SecurityManager.GetHash(TextBox.Text);
-					else // иначе затирался пароль
+					else // РёРЅР°С‡Рµ Р·Р°С‚РёСЂР°Р»СЃСЏ РїР°СЂРѕР»СЊ
 						parameters.Remove(Name);
             }
 			else

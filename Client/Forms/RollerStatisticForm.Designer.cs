@@ -1,4 +1,4 @@
-namespace Merlin.Forms {
+п»їnamespace Merlin.Forms {
   partial class RollerStatisticForm {
     /// <summary>
     /// Required designer variable.
@@ -86,7 +86,7 @@ namespace Merlin.Forms {
             this.tsbRefresh.Name = "tsbRefresh";
             this.tsbRefresh.Size = new System.Drawing.Size(34, 20);
             this.tsbRefresh.Text = "toolStripButton1";
-            this.tsbRefresh.ToolTipText = "Обновить информацию";
+            this.tsbRefresh.ToolTipText = "РћР±РЅРѕРІРёС‚СЊ РёРЅС„РѕСЂРјР°С†РёСЋ";
             this.tsbRefresh.Click += new System.EventHandler(this.tsbRefresh_Click);
             // 
             // tsbExcel
@@ -95,7 +95,7 @@ namespace Merlin.Forms {
             this.tsbExcel.ImageTransparentColor = System.Drawing.Color.Magenta;
             this.tsbExcel.Name = "tsbExcel";
             this.tsbExcel.Size = new System.Drawing.Size(34, 20);
-            this.tsbExcel.Text = "Экспорт таблицы";
+            this.tsbExcel.Text = "Р­РєСЃРїРѕСЂС‚ С‚Р°Р±Р»РёС†С‹";
             this.tsbExcel.Click += new System.EventHandler(this.tsbExcel_Click);
             // 
             // toolStripSeparator3
@@ -109,7 +109,7 @@ namespace Merlin.Forms {
             this.tbbPlay.ImageTransparentColor = System.Drawing.Color.Magenta;
             this.tbbPlay.Name = "tbbPlay";
             this.tbbPlay.Size = new System.Drawing.Size(34, 20);
-            this.tbbPlay.Text = "Прослушать ролик";
+            this.tbbPlay.Text = "РџСЂРѕСЃР»СѓС€Р°С‚СЊ СЂРѕР»РёРє";
             this.tbbPlay.Click += new System.EventHandler(this.tbbPlay_Click);
             // 
             // tsbStop
@@ -119,8 +119,8 @@ namespace Merlin.Forms {
             this.tsbStop.ImageTransparentColor = System.Drawing.Color.Magenta;
             this.tsbStop.Name = "tsbStop";
             this.tsbStop.Size = new System.Drawing.Size(34, 20);
-            this.tsbStop.Text = "Остановить прослушивание";
-            this.tsbStop.ToolTipText = "Остановить прослушивание";
+            this.tsbStop.Text = "РћСЃС‚Р°РЅРѕРІРёС‚СЊ РїСЂРѕСЃР»СѓС€РёРІР°РЅРёРµ";
+            this.tsbStop.ToolTipText = "РћСЃС‚Р°РЅРѕРІРёС‚СЊ РїСЂРѕСЃР»СѓС€РёРІР°РЅРёРµ";
             this.tsbStop.Click += new System.EventHandler(this.tsbStop_Click);
             // 
             // toolStripSeparator1
@@ -135,7 +135,7 @@ namespace Merlin.Forms {
             this.tsbSplitByManager.ImageTransparentColor = System.Drawing.Color.Magenta;
             this.tsbSplitByManager.Name = "tsbSplitByManager";
             this.tsbSplitByManager.Size = new System.Drawing.Size(34, 20);
-            this.tsbSplitByManager.Text = "С разбивкой по менеджерам";
+            this.tsbSplitByManager.Text = "РЎ СЂР°Р·Р±РёРІРєРѕР№ РїРѕ РјРµРЅРµРґР¶РµСЂР°Рј";
             this.tsbSplitByManager.Click += new System.EventHandler(this.tsbSetting_Click);
             // 
             // tsbSplitByDays
@@ -145,7 +145,7 @@ namespace Merlin.Forms {
             this.tsbSplitByDays.ImageTransparentColor = System.Drawing.Color.Magenta;
             this.tsbSplitByDays.Name = "tsbSplitByDays";
             this.tsbSplitByDays.Size = new System.Drawing.Size(34, 20);
-            this.tsbSplitByDays.Text = "С разбивкой по дням";
+            this.tsbSplitByDays.Text = "РЎ СЂР°Р·Р±РёРІРєРѕР№ РїРѕ РґРЅСЏРј";
             this.tsbSplitByDays.Click += new System.EventHandler(this.tsbSetting_Click);
             // 
             // splitContainer1
@@ -208,7 +208,7 @@ namespace Merlin.Forms {
             // 
             // grdMassmedia
             // 
-            this.grdMassmedia.Caption = "Радиостанции";
+            this.grdMassmedia.Caption = "Р Р°РґРёРѕСЃС‚Р°РЅС†РёРё";
             this.grdMassmedia.CaptionVisible = true;
             this.grdMassmedia.CheckBoxes = true;
             this.grdMassmedia.ColumnNameHighlight = null;
@@ -249,7 +249,7 @@ namespace Merlin.Forms {
             this.label4.Name = "label4";
             this.label4.Size = new System.Drawing.Size(203, 25);
             this.label4.TabIndex = 70;
-            this.label4.Text = "Группа компаний:";
+            this.label4.Text = "Р“СЂСѓРїРїР° РєРѕРјРїР°РЅРёР№:";
             // 
             // cmbRadioStationGroup
             // 
@@ -275,7 +275,7 @@ namespace Merlin.Forms {
             this.lbl.Name = "lbl";
             this.lbl.Size = new System.Drawing.Size(73, 25);
             this.lbl.TabIndex = 56;
-            this.lbl.Text = "Группа:";
+            this.lbl.Text = "Р“СЂСѓРїРїР°:";
             // 
             // checkBoxShowWhite
             // 
@@ -288,7 +288,7 @@ namespace Merlin.Forms {
             this.checkBoxShowWhite.Name = "checkBoxShowWhite";
             this.checkBoxShowWhite.Size = new System.Drawing.Size(495, 29);
             this.checkBoxShowWhite.TabIndex = 63;
-            this.checkBoxShowWhite.Text = "Показывать с оплатой";
+            this.checkBoxShowWhite.Text = "РџРѕРєР°Р·С‹РІР°С‚СЊ СЃ РѕРїР»Р°С‚РѕР№";
             this.checkBoxShowWhite.UseVisualStyleBackColor = true;
             // 
             // checkBoxShowBlack
@@ -302,7 +302,7 @@ namespace Merlin.Forms {
             this.checkBoxShowBlack.Name = "checkBoxShowBlack";
             this.checkBoxShowBlack.Size = new System.Drawing.Size(495, 29);
             this.checkBoxShowBlack.TabIndex = 64;
-            this.checkBoxShowBlack.Text = "Показывать без оплаты";
+            this.checkBoxShowBlack.Text = "РџРѕРєР°Р·С‹РІР°С‚СЊ Р±РµР· РѕРїР»Р°С‚С‹";
             this.checkBoxShowBlack.UseVisualStyleBackColor = true;
             // 
             // opAdvertType
@@ -324,7 +324,7 @@ namespace Merlin.Forms {
             this.label3.Name = "label3";
             this.label3.Size = new System.Drawing.Size(166, 25);
             this.label3.TabIndex = 69;
-            this.label3.Text = "Предмет рекламы:";
+            this.label3.Text = "РџСЂРµРґРјРµС‚ СЂРµРєР»Р°РјС‹:";
             // 
             // objectPickerFirm
             // 
@@ -345,7 +345,7 @@ namespace Merlin.Forms {
             this.label2.Name = "label2";
             this.label2.Size = new System.Drawing.Size(72, 25);
             this.label2.TabIndex = 67;
-            this.label2.Text = "Фирма:";
+            this.label2.Text = "Р¤РёСЂРјР°:";
             // 
             // objectPickerUser
             // 
@@ -366,7 +366,7 @@ namespace Merlin.Forms {
             this.label1.Name = "label1";
             this.label1.Size = new System.Drawing.Size(103, 25);
             this.label1.TabIndex = 66;
-            this.label1.Text = "Менеджер:";
+            this.label1.Text = "РњРµРЅРµРґР¶РµСЂ:";
             // 
             // dtFinish
             // 
@@ -388,7 +388,7 @@ namespace Merlin.Forms {
             // 
             // grdActions
             // 
-            this.grdActions.Caption = "Рекламные акции";
+            this.grdActions.Caption = "Р РµРєР»Р°РјРЅС‹Рµ Р°РєС†РёРё";
             this.grdActions.CaptionVisible = true;
             this.grdActions.CheckBoxes = false;
             this.grdActions.ColumnNameHighlight = null;
@@ -443,7 +443,7 @@ namespace Merlin.Forms {
             this.Font = new System.Drawing.Font("Segoe UI", 9F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(204)));
             this.Margin = new System.Windows.Forms.Padding(4, 3, 4, 3);
             this.Name = "RollerStatisticForm";
-            this.Text = "Рекламные ролики на радиостанции";
+            this.Text = "Р РµРєР»Р°РјРЅС‹Рµ СЂРѕР»РёРєРё РЅР° СЂР°РґРёРѕСЃС‚Р°РЅС†РёРё";
             this.Load += new System.EventHandler(this.RollerStatisticForm_Load);
             this.tlbRollerStatistic.ResumeLayout(false);
             this.tlbRollerStatistic.PerformLayout();

@@ -1,4 +1,4 @@
-using System;
+п»їusing System;
 using System.Collections.Generic;
 using System.Data;
 using System.Windows.Forms;
@@ -147,7 +147,7 @@ namespace Merlin.Classes
                             item = itemEntity.CreateObject(parameters);
 
                             item.Refresh();
-                            // по любому это будет кто-то из наследников Issue, или сам Issue
+                            // РїРѕ Р»СЋР±РѕРјСѓ СЌС‚Рѕ Р±СѓРґРµС‚ РєС‚Рѕ-С‚Рѕ РёР· РЅР°СЃР»РµРґРЅРёРєРѕРІ Issue, РёР»Рё СЃР°Рј Issue
                             ((Issue)item).SetPosition(selector.NewPosition);
                         }
                         catch (Exception ex)
@@ -159,7 +159,7 @@ namespace Merlin.Classes
                     }
                     if (tableErrors.Rows.Count > 0)
                     {
-                        Globals.ShowSimpleJournal(EntityManager.GetEntity((int)Entities.ErrTmplGen), "Ошибки изменения позиционирования", tableErrors);
+                        Globals.ShowSimpleJournal(EntityManager.GetEntity((int)Entities.ErrTmplGen), "РћС€РёР±РєРё РёР·РјРµРЅРµРЅРёСЏ РїРѕР·РёС†РёРѕРЅРёСЂРѕРІР°РЅРёСЏ", tableErrors);
                     }
                     //OnParentChanged(this, 2);
                     FireContainerRefreshed();
@@ -213,7 +213,7 @@ namespace Merlin.Classes
 
                         if (ds != null && ds.Tables.Count > 0 && ds.Tables[0].Rows.Count > 0)
                             FogSoft.WinForm.Forms.MessageBox.ShowExclamation(ds.Tables[0].Rows[0]["message"].ToString());
-                        //Globals.ShowSimpleJournal(EntityManager.GetEntity((int)Entities.RollerUnSubtitude), "Незамененные ролики", ds.Tables[0]);
+                        //Globals.ShowSimpleJournal(EntityManager.GetEntity((int)Entities.RollerUnSubtitude), "РќРµР·Р°РјРµРЅРµРЅРЅС‹Рµ СЂРѕР»РёРєРё", ds.Tables[0]);
                         RecalculateAndShowPriceChange(price);
                         //Refresh();
                         OnParentChanged(this, EntityManager.GetEntity((int)Entities.GeneralCampaign));

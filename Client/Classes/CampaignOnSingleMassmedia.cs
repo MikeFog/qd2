@@ -1,4 +1,4 @@
-using System;
+п»їusing System;
 using System.Collections.Generic;
 using System.Data;
 using System.Windows.Forms;
@@ -112,7 +112,7 @@ namespace Merlin.Classes
 				{
 					DataSet rs = GetOnAirInquireReport(MassmediaId, CampaignId, (DateTime)dMonths[dm], ((DateTime)dMonths[dm]).AddMonths(1).AddDays(-1));
 					OnAirInquireReport report = new OnAirInquireReport(this, Agency, rs, f.IsOptionChecked, Massmedia, (DateTime)dMonths[dm]);
-					report.Show("Эфирная справка");
+					report.Show("Р­С„РёСЂРЅР°СЏ СЃРїСЂР°РІРєР°");
 				}
 			}
 			finally
@@ -134,7 +134,7 @@ namespace Merlin.Classes
 
             object[] rowVals = new object[dt.Columns.Count];
 			rowVals[0] = CampaignParts.ProgramPart;
-			rowVals[1] = "Программы для спонсоров";
+			rowVals[1] = "РџСЂРѕРіСЂР°РјРјС‹ РґР»СЏ СЃРїРѕРЅСЃРѕСЂРѕРІ";
 			rowVals[2] = this[ParamNames.CampaignId];
 			rowVals[3] = MassmediaId;
             rowVals[4] = Action.DeleteDate;
@@ -142,7 +142,7 @@ namespace Merlin.Classes
             dt.Rows.Add(rowVals);
 
 			rowVals[0] = CampaignParts.RollerPart;
-			rowVals[1] = "Рекламные ролики";
+			rowVals[1] = "Р РµРєР»Р°РјРЅС‹Рµ СЂРѕР»РёРєРё";
 			rowVals[2] = this[ParamNames.CampaignId];
 			rowVals[3] = MassmediaId;
             rowVals[4] = Action.DeleteDate;

@@ -1,4 +1,4 @@
-using System;
+п»їusing System;
 using System.Collections.Generic;
 using System.Data;
 using CrystalDecisions.CrystalReports.Engine;
@@ -64,12 +64,12 @@ namespace Merlin.Reports
                 _campaign.GetPriceByPeriodWithTax(new DateTime(_month.Year, _month.Month, 1),
                     new DateTime(_month.Year, _month.Month, DateTime.DaysInMonth(_month.Year, _month.Month), 23, 59, 59),
                     _radiostation.MassmediaId, false, null, out decimal price, out _, out decimal taxPrice);
-                SetTextObjectText("txtPrice", $"Сумма: {price:c} ({Money.MoneyToString(price, false)})");
+                SetTextObjectText("txtPrice", $"РЎСѓРјРјР°: {price:c} ({Money.MoneyToString(price, false)})");
                 if (taxPrice > 0)
-                    SetTextObjectText("txtTaxString", $"В том числе  НДС  (5%) - {taxPrice:c}");
+                    SetTextObjectText("txtTaxString", $"Р’ С‚РѕРј С‡РёСЃР»Рµ  РќР”РЎ  (5%) - {taxPrice:c}");
             }
 
-            SetTextObjectText("txtCaption", string.Format("Эфирная справка для акции №{0}", _campaign.Action.ActionId));
+            SetTextObjectText("txtCaption", string.Format("Р­С„РёСЂРЅР°СЏ СЃРїСЂР°РІРєР° РґР»СЏ Р°РєС†РёРё в„–{0}", _campaign.Action.ActionId));
         }
     }
 }

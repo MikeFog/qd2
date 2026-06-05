@@ -1,4 +1,4 @@
-namespace Merlin.Forms.CreateCampaign
+п»їnamespace Merlin.Forms.CreateCampaign
 {
 	partial class CampaignImportMediaPlusForm
 	{
@@ -49,7 +49,7 @@ namespace Merlin.Forms.CreateCampaign
             this.lblFile.Name = "lblFile";
             this.lblFile.Size = new System.Drawing.Size(82, 13);
             this.lblFile.TabIndex = 0;
-            this.lblFile.Text = "Файл импорта:";
+            this.lblFile.Text = "Р¤Р°Р№Р» РёРјРїРѕСЂС‚Р°:";
             // 
             // textBoxFilePath
             // 
@@ -82,7 +82,7 @@ namespace Merlin.Forms.CreateCampaign
             this.btnOk.Name = "btnOk";
             this.btnOk.Size = new System.Drawing.Size(80, 22);
             this.btnOk.TabIndex = 3;
-            this.btnOk.Text = "Ок";
+            this.btnOk.Text = "РћРє";
             this.btnOk.UseVisualStyleBackColor = true;
             // 
             // btnCancel
@@ -93,7 +93,7 @@ namespace Merlin.Forms.CreateCampaign
             this.btnCancel.Name = "btnCancel";
             this.btnCancel.Size = new System.Drawing.Size(80, 22);
             this.btnCancel.TabIndex = 4;
-            this.btnCancel.Text = "Отмена";
+            this.btnCancel.Text = "РћС‚РјРµРЅР°";
             this.btnCancel.UseVisualStyleBackColor = true;
             // 
             // grdAgency
@@ -101,7 +101,7 @@ namespace Merlin.Forms.CreateCampaign
             this.grdAgency.Anchor = ((System.Windows.Forms.AnchorStyles)((((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Bottom) 
             | System.Windows.Forms.AnchorStyles.Left) 
             | System.Windows.Forms.AnchorStyles.Right)));
-            this.grdAgency.Caption = "Счёт выписан от";
+            this.grdAgency.Caption = "РЎС‡С‘С‚ РІС‹РїРёСЃР°РЅ РѕС‚";
             this.grdAgency.CaptionVisible = true;
             this.grdAgency.CheckBoxes = false;
             this.grdAgency.ColumnNameHighlight = null;
@@ -126,7 +126,7 @@ namespace Merlin.Forms.CreateCampaign
             this.label2.Name = "label2";
             this.label2.Size = new System.Drawing.Size(70, 13);
             this.label2.TabIndex = 14;
-            this.label2.Text = "Тип оплаты:";
+            this.label2.Text = "РўРёРї РѕРїР»Р°С‚С‹:";
             // 
             // cmbPaymentType
             // 
@@ -143,8 +143,8 @@ namespace Merlin.Forms.CreateCampaign
             // 
             // openFileDialog
             // 
-            this.openFileDialog.Filter = "Файл MEDIA PLUS (*.mpm)|*.mpm";
-            this.openFileDialog.Title = "Выбор файла импорта";
+            this.openFileDialog.Filter = "Р¤Р°Р№Р» MEDIA PLUS (*.mpm)|*.mpm";
+            this.openFileDialog.Title = "Р’С‹Р±РѕСЂ С„Р°Р№Р»Р° РёРјРїРѕСЂС‚Р°";
             // 
             // btnLoad
             // 
@@ -155,7 +155,7 @@ namespace Merlin.Forms.CreateCampaign
             this.btnLoad.Name = "btnLoad";
             this.btnLoad.Size = new System.Drawing.Size(90, 23);
             this.btnLoad.TabIndex = 18;
-            this.btnLoad.Text = "Загрузить";
+            this.btnLoad.Text = "Р—Р°РіСЂСѓР·РёС‚СЊ";
             this.btnLoad.TextAlign = System.Drawing.ContentAlignment.MiddleRight;
             this.btnLoad.UseVisualStyleBackColor = true;
             this.btnLoad.Click += new System.EventHandler(this.btnLoad_Click);
@@ -167,7 +167,7 @@ namespace Merlin.Forms.CreateCampaign
             this.lblMassmediaLb.Name = "lblMassmediaLb";
             this.lblMassmediaLb.Size = new System.Drawing.Size(83, 13);
             this.lblMassmediaLb.TabIndex = 19;
-            this.lblMassmediaLb.Text = "Радиостанция:";
+            this.lblMassmediaLb.Text = "Р Р°РґРёРѕСЃС‚Р°РЅС†РёСЏ:";
             // 
             // lblMassmedia
             // 
@@ -176,7 +176,7 @@ namespace Merlin.Forms.CreateCampaign
             this.lblMassmedia.Name = "lblMassmedia";
             this.lblMassmedia.Size = new System.Drawing.Size(296, 13);
             this.lblMassmedia.TabIndex = 20;
-            this.lblMassmedia.Text = "Радиостанция не найдена";
+            this.lblMassmedia.Text = "Р Р°РґРёРѕСЃС‚Р°РЅС†РёСЏ РЅРµ РЅР°Р№РґРµРЅР°";
             this.lblMassmedia.TextAlign = System.Drawing.ContentAlignment.MiddleRight;
             // 
             // CampaignImportMediaPlusForm
@@ -203,7 +203,7 @@ namespace Merlin.Forms.CreateCampaign
             this.ShowIcon = false;
             this.ShowInTaskbar = false;
             this.StartPosition = System.Windows.Forms.FormStartPosition.CenterScreen;
-            this.Text = "Импорт кампании \"MEDIAPLUS\"";
+            this.Text = "РРјРїРѕСЂС‚ РєР°РјРїР°РЅРёРё \"MEDIAPLUS\"";
             this.Load += new System.EventHandler(this.CampaignImportForm_Load);
             this.ResumeLayout(false);
             this.PerformLayout();

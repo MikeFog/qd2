@@ -1,4 +1,4 @@
-using FogSoft.WinForm.Classes;
+﻿using FogSoft.WinForm.Classes;
 using FogSoft.WinForm.Forms;
 
 namespace Merlin.Forms

@@ -1,4 +1,4 @@
-using System;
+п»їusing System;
 using System.Collections.Generic;
 using System.Data;
 using System.Windows.Forms;
@@ -129,7 +129,7 @@ namespace Merlin.Classes
 			DataSet ds = DataAccessor.LoadDataSet("RollerSubstitute", procParameters, days);
 
 			if (ds != null && ds.Tables.Count > 0 && ds.Tables[0].Rows.Count > 0)
-				Globals.ShowSimpleJournal(EntityManager.GetEntity((int) Entities.RollerUnSubtitude), "Незамененные ролики",
+				Globals.ShowSimpleJournal(EntityManager.GetEntity((int) Entities.RollerUnSubtitude), "РќРµР·Р°РјРµРЅРµРЅРЅС‹Рµ СЂРѕР»РёРєРё",
 				                          ds.Tables[0]);
 		}
 	}

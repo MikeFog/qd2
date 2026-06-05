@@ -1,4 +1,4 @@
-namespace Protector.Forms
+п»їnamespace Protector.Forms
 {
 	partial class ChangePasswordFrm
 	{
@@ -44,7 +44,7 @@ namespace Protector.Forms
 			this.buttonOk.Name = "buttonOk";
 			this.buttonOk.Size = new System.Drawing.Size(75, 23);
 			this.buttonOk.TabIndex = 0;
-			this.buttonOk.Text = "Сменить";
+			this.buttonOk.Text = "РЎРјРµРЅРёС‚СЊ";
 			this.buttonOk.UseVisualStyleBackColor = true;
 			this.buttonOk.Click += new System.EventHandler(this.buttonOk_Click);
 			// 
@@ -56,7 +56,7 @@ namespace Protector.Forms
 			this.buttonCancel.Name = "buttonCancel";
 			this.buttonCancel.Size = new System.Drawing.Size(75, 23);
 			this.buttonCancel.TabIndex = 1;
-			this.buttonCancel.Text = "Отмена";
+			this.buttonCancel.Text = "РћС‚РјРµРЅР°";
 			this.buttonCancel.UseVisualStyleBackColor = true;
 			// 
 			// textBoxPassword
@@ -87,7 +87,7 @@ namespace Protector.Forms
 			this.labelNewPassword.Name = "labelNewPassword";
 			this.labelNewPassword.Size = new System.Drawing.Size(83, 13);
 			this.labelNewPassword.TabIndex = 4;
-			this.labelNewPassword.Text = "Новый пароль:";
+			this.labelNewPassword.Text = "РќРѕРІС‹Р№ РїР°СЂРѕР»СЊ:";
 			// 
 			// lblConfirmNew
 			// 
@@ -97,7 +97,7 @@ namespace Protector.Forms
 			this.lblConfirmNew.Name = "lblConfirmNew";
 			this.lblConfirmNew.Size = new System.Drawing.Size(94, 13);
 			this.lblConfirmNew.TabIndex = 6;
-			this.lblConfirmNew.Text = "Подтверждение:";
+			this.lblConfirmNew.Text = "РџРѕРґС‚РІРµСЂР¶РґРµРЅРёРµ:";
 			// 
 			// ChangePasswordFrm
 			// 
@@ -117,7 +117,7 @@ namespace Protector.Forms
 			this.ShowIcon = false;
 			this.ShowInTaskbar = false;
 			this.StartPosition = System.Windows.Forms.FormStartPosition.CenterParent;
-			this.Text = "Сменить пароль пользователя \'admin\'";
+			this.Text = "РЎРјРµРЅРёС‚СЊ РїР°СЂРѕР»СЊ РїРѕР»СЊР·РѕРІР°С‚РµР»СЏ \'admin\'";
 			this.ResumeLayout(false);
 			this.PerformLayout();
 

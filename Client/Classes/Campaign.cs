@@ -1,4 +1,4 @@
-using System;
+п»їusing System;
 using System.Collections.Generic;
 using System.Data;
 using System.Windows.Forms;
@@ -372,7 +372,7 @@ namespace Merlin.Classes
                                 [Campaign.ParamNames.CampaignId] = CampaignId
                             };
 
-							// в зависимости от типа кампании создаём разные "issue" и пытаемся их удалить
+							// РІ Р·Р°РІРёСЃРёРјРѕСЃС‚Рё РѕС‚ С‚РёРїР° РєР°РјРїР°РЅРёРё СЃРѕР·РґР°С‘Рј СЂР°Р·РЅС‹Рµ "issue" Рё РїС‹С‚Р°РµРјСЃСЏ РёС… СѓРґР°Р»РёС‚СЊ
 							if(isSponsorProgram)
 							{
                                 itemEntity = EntityManager.GetEntity((int)Entities.ProgramIssue);
@@ -406,7 +406,7 @@ namespace Merlin.Classes
 					}
 					if (tableErrors.Rows.Count > 0)
 					{
-						Globals.ShowSimpleJournal(EntityManager.GetEntity((int)Entities.ErrTmplGen), "Ошибки удаления", tableErrors);
+						Globals.ShowSimpleJournal(EntityManager.GetEntity((int)Entities.ErrTmplGen), "РћС€РёР±РєРё СѓРґР°Р»РµРЅРёСЏ", tableErrors);
 					}
                     RecalculateAndShowPriceChange(price);
                     if (currentChild != null)
@@ -470,7 +470,7 @@ namespace Merlin.Classes
 			}
 			else if (isByPeriod)
 			{
-				FrmDateSelector selector = new FrmDateSelector(StartDate, FinishDate, "Выбор периода");
+				FrmDateSelector selector = new FrmDateSelector(StartDate, FinishDate, "Р’С‹Р±РѕСЂ РїРµСЂРёРѕРґР°");
 				if (selector.ShowDialog(Globals.MdiParent) == DialogResult.OK)
                     MediaPlan.CreateInstance(this, selector.StartDate, selector.FinishDate, selectively).Show(isActual);
 			}
@@ -534,12 +534,12 @@ namespace Merlin.Classes
 			{
                 SelectionForm selector;
                 if (SecurityManager.LoggedUser.IsAdmin || SecurityManager.LoggedUser.IsBookKeeper)
-                    selector = new SelectionForm(EntityManager.GetEntity((int)Entities.Agency), "Рекламное агентство");
+                    selector = new SelectionForm(EntityManager.GetEntity((int)Entities.Agency), "Р РµРєР»Р°РјРЅРѕРµ Р°РіРµРЅС‚СЃС‚РІРѕ");
 				else
 					selector = new SelectionForm(EntityManager.GetEntity((int)Entities.Agency),
 					(this is CampaignOnSingleMassmedia radioStation) 
 						? radioStation.Massmedia.Agencies.DefaultView : SecurityManager.LoggedUser.Agencies.DefaultView,
-                    "Рекламное агентство");
+                    "Р РµРєР»Р°РјРЅРѕРµ Р°РіРµРЅС‚СЃС‚РІРѕ");
 				if (selector.ShowDialog(owner) == DialogResult.OK)
 				{
 					this[ParamNames.AgencyID] = selector.SelectedObject.IDs[0];
@@ -556,7 +556,7 @@ namespace Merlin.Classes
 		{
 			if (IsChangePossible)
 			{
-				SelectionForm selector = new SelectionForm(EntityManager.GetEntity((int)Entities.PaymentType), "Типы оплаты");
+				SelectionForm selector = new SelectionForm(EntityManager.GetEntity((int)Entities.PaymentType), "РўРёРїС‹ РѕРїР»Р°С‚С‹");
 				if (selector.ShowDialog(owner) == DialogResult.OK)
 				{
 					this[ParamNames.PaymentTypeID] = selector.SelectedObject.IDs[0];
@@ -671,24 +671,24 @@ namespace Merlin.Classes
 				text = string.Empty;
 			else
 				text = StartDate.ToShortDateString();
-			lstStat.Items.Add("Начало: " + text);
+			lstStat.Items.Add("РќР°С‡Р°Р»Рѕ: " + text);
 
 			if (FinishDate == DateTime.MinValue)
 				text = string.Empty;
 			else
 				text = FinishDate.ToShortDateString();
-			lstStat.Items.Add("Окончание: " + text);
-			lstStat.Items.Add("Выпусков: " + IssuesCount);
-			lstStat.Items.Add("Общее время: " + DateTimeUtils.Time2String(IssuesDuration));
-			lstStat.Items.Add("Цена по тарифам: " + TariffPrice.ToString("c"));
-			lstStat.Items.Add("Объёмная скидка: " + Discount.ToString("0.00"));
-			lstStat.Items.Add("Цена с учётом объёмной скидки: " + Price.ToString("c"));
+			lstStat.Items.Add("РћРєРѕРЅС‡Р°РЅРёРµ: " + text);
+			lstStat.Items.Add("Р’С‹РїСѓСЃРєРѕРІ: " + IssuesCount);
+			lstStat.Items.Add("РћР±С‰РµРµ РІСЂРµРјСЏ: " + DateTimeUtils.Time2String(IssuesDuration));
+			lstStat.Items.Add("Р¦РµРЅР° РїРѕ С‚Р°СЂРёС„Р°Рј: " + TariffPrice.ToString("c"));
+			lstStat.Items.Add("РћР±СЉС‘РјРЅР°СЏ СЃРєРёРґРєР°: " + Discount.ToString("0.00"));
+			lstStat.Items.Add("Р¦РµРЅР° СЃ СѓС‡С‘С‚РѕРј РѕР±СЉС‘РјРЅРѕР№ СЃРєРёРґРєРё: " + Price.ToString("c"));
 
 			if (CampaignType == CampaignTypes.Sponsor)
 			{
 				lstStat.Items.Add("");
-				lstStat.Items.Add("Программ: " + ProgramIssuesCount);
-				lstStat.Items.Add("Бонус: " + DateTimeUtils.Time2String(Bonus - IssuesDuration));
+				lstStat.Items.Add("РџСЂРѕРіСЂР°РјРј: " + ProgramIssuesCount);
+				lstStat.Items.Add("Р‘РѕРЅСѓСЃ: " + DateTimeUtils.Time2String(Bonus - IssuesDuration));
 			}
 		}
 
@@ -758,9 +758,9 @@ namespace Merlin.Classes
 			get 
 			{
                 if (SecurityManager.LoggedUser.IsAdmin || SecurityManager.LoggedUser.IsBookKeeper|| !Action.IsConfirmed) return true;
-                // если акция началась в предыдущем месяце или ранее, то нельзя
+                // РµСЃР»Рё Р°РєС†РёСЏ РЅР°С‡Р°Р»Р°СЃСЊ РІ РїСЂРµРґС‹РґСѓС‰РµРј РјРµСЃСЏС†Рµ РёР»Рё СЂР°РЅРµРµ, С‚Рѕ РЅРµР»СЊР·СЏ
                 if (new DateTime(StartDate.Year, StartDate.Month, 1) < new DateTime(DateTime.Today.Year, DateTime.Today.Month, 1)) return false;
-                // если начало в этом месяце, то не должна уже закончиться
+                // РµСЃР»Рё РЅР°С‡Р°Р»Рѕ РІ СЌС‚РѕРј РјРµСЃСЏС†Рµ, С‚Рѕ РЅРµ РґРѕР»Р¶РЅР° СѓР¶Рµ Р·Р°РєРѕРЅС‡РёС‚СЊСЃСЏ
                 if (FinishDate < DateTime.Today) return false;
 
                 return true;

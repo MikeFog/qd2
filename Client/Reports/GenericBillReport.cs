@@ -1,4 +1,4 @@
-using System;
+Ôªøusing System;
 using System.Collections.Generic;
 using System.Data;
 using CrystalDecisions.CrystalReports.Engine;
@@ -10,7 +10,7 @@ namespace Merlin.Reports
 {
 	internal class GenericBillReport : BillReport
 	{
-		private const string SignName = "‡ÍˆËË";
+		private const string SignName = "–∞–∫—Ü–∏–∏";
 
 		public GenericBillReport(Classes.Action action, Agency agency, PresentationObject bill)
 			: base(action, agency, bill, new GenericBill(), SignName)

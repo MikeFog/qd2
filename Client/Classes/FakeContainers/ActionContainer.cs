@@ -1,4 +1,4 @@
-using FogSoft.WinForm;
+п»їusing FogSoft.WinForm;
 using FogSoft.WinForm.Classes;
 using FogSoft.WinForm.Passport.Forms;
 using Merlin.Forms.FilterForm;
@@ -29,12 +29,12 @@ namespace Merlin.Classes.FakeContainers
 
         private static readonly Entity.Action[] menu = new[]
 		{
-		new Entity.Action(ActionNames.ShowHeadCompanies, "Акции c разбивкой по группам компаний"),	
-		new Entity.Action(ActionNames.ShowFirms, "Акции с разбивкой на фирмы", Constants.ActionsImages.Firm),
-		new Entity.Action(ActionNames.ShowActions, "Акции без разбивки на фирмы"),
+		new Entity.Action(ActionNames.ShowHeadCompanies, "РђРєС†РёРё c СЂР°Р·Р±РёРІРєРѕР№ РїРѕ РіСЂСѓРїРїР°Рј РєРѕРјРїР°РЅРёР№"),	
+		new Entity.Action(ActionNames.ShowFirms, "РђРєС†РёРё СЃ СЂР°Р·Р±РёРІРєРѕР№ РЅР° С„РёСЂРјС‹", Constants.ActionsImages.Firm),
+		new Entity.Action(ActionNames.ShowActions, "РђРєС†РёРё Р±РµР· СЂР°Р·Р±РёРІРєРё РЅР° С„РёСЂРјС‹"),
 		new Entity.Action(null, "-"),
-		new Entity.Action(Constants.EntityActions.ShowFilters, "Установить фильтр", Constants.ActionsImages.Filter),
-		new Entity.Action(Constants.EntityActions.Refresh, "Обновить", Constants.ActionsImages.Refresh)
+		new Entity.Action(Constants.EntityActions.ShowFilters, "РЈСЃС‚Р°РЅРѕРІРёС‚СЊ С„РёР»СЊС‚СЂ", Constants.ActionsImages.Filter),
+		new Entity.Action(Constants.EntityActions.Refresh, "РћР±РЅРѕРІРёС‚СЊ", Constants.ActionsImages.Refresh)
 		};
 
 		#endregion
@@ -119,10 +119,10 @@ namespace Merlin.Classes.FakeContainers
             }
         }
 
-        // NEW: пример использования hook из ObjectsIterator
+        // NEW: РїСЂРёРјРµСЂ РёСЃРїРѕР»СЊР·РѕРІР°РЅРёСЏ hook РёР· ObjectsIterator
 		protected override PresentationObject ProcessCreatedChildObject(PresentationObject childObject, DataRow row)
 		{
-            // Пример: переименовываем только детей типа "акция"
+            // РџСЂРёРјРµСЂ: РїРµСЂРµРёРјРµРЅРѕРІС‹РІР°РµРј С‚РѕР»СЊРєРѕ РґРµС‚РµР№ С‚РёРїР° "Р°РєС†РёСЏ"
             if (ChildEntity != null &&
                 (ChildEntity.Id == (int)Entities.Action || ChildEntity.Id == (int)Entities.ActionDeleted))
             {

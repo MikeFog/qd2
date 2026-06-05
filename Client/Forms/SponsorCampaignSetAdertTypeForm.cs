@@ -1,4 +1,4 @@
-using System;
+п»їusing System;
 using System.Collections.Generic;
 using System.Data;
 using System.Windows.Forms;
@@ -28,7 +28,7 @@ namespace Merlin.Forms
 		public SponsorCampaignSetAdertTypeForm(Campaign campaign)
 			: base(PassportLoader.Load("ChangeAdvertTypeForSponsorIssues"))
 		{
-            Text = "Предметы рекламы";
+            Text = "РџСЂРµРґРјРµС‚С‹ СЂРµРєР»Р°РјС‹";
             _campaign = campaign;
 			btnApply.Visible = false;
 			DataSet ds = LoadData();
@@ -85,8 +85,8 @@ namespace Merlin.Forms
                 Cursor = Cursors.WaitCursor;
 
                 TreeView2 tvSelector = FindControl("days") as TreeView2;
-                //  В AddedIDs будут IssueID - они целочисленные, и идентификаторы дней, так как у дней в дереве тоже можно
-                // галочку поставить. В качестве ID дня используется дата. Нам нужны только рекламные выпуски
+                //  Р’ AddedIDs Р±СѓРґСѓС‚ IssueID - РѕРЅРё С†РµР»РѕС‡РёСЃР»РµРЅРЅС‹Рµ, Рё РёРґРµРЅС‚РёС„РёРєР°С‚РѕСЂС‹ РґРЅРµР№, С‚Р°Рє РєР°Рє Сѓ РґРЅРµР№ РІ РґРµСЂРµРІРµ С‚РѕР¶Рµ РјРѕР¶РЅРѕ
+                // РіР°Р»РѕС‡РєСѓ РїРѕСЃС‚Р°РІРёС‚СЊ. Р’ РєР°С‡РµСЃС‚РІРµ ID РґРЅСЏ РёСЃРїРѕР»СЊР·СѓРµС‚СЃСЏ РґР°С‚Р°. РќР°Рј РЅСѓР¶РЅС‹ С‚РѕР»СЊРєРѕ СЂРµРєР»Р°РјРЅС‹Рµ РІС‹РїСѓСЃРєРё
                 foreach (object id in tvSelector.AddedIDs)
                 {
                     if (id != null && int.TryParse(id.ToString(), out int issueId))

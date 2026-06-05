@@ -1,4 +1,4 @@
-namespace Merlin.Forms
+п»їnamespace Merlin.Forms
 {
 	partial class RollersCopyFrm
 	{
@@ -51,7 +51,7 @@ namespace Merlin.Forms
 			this.tbbExcel.ImageTransparentColor = System.Drawing.Color.Magenta;
 			this.tbbExcel.Name = "tbbExcel";
 			this.tbbExcel.Size = new System.Drawing.Size(52, 22);
-			this.tbbExcel.Text = "Экспорт";
+			this.tbbExcel.Text = "Р­РєСЃРїРѕСЂС‚";
 			this.tbbExcel.Click += new System.EventHandler(this.tbbExcel_Click);
 			// 
 			// tsProgressBar
@@ -85,7 +85,7 @@ namespace Merlin.Forms
 			this.Name = "RollersCopyFrm";
 			this.ShowIcon = false;
 			this.ShowInTaskbar = false;
-			this.Text = "Копирование роликов";
+			this.Text = "РљРѕРїРёСЂРѕРІР°РЅРёРµ СЂРѕР»РёРєРѕРІ";
 			this.toolStrip1.ResumeLayout(false);
 			this.toolStrip1.PerformLayout();
 			this.ResumeLayout(false);

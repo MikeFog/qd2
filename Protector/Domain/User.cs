@@ -1,4 +1,4 @@
-using FogSoft.WinForm;
+п»їusing FogSoft.WinForm;
 using FogSoft.WinForm.Classes;
 using FogSoft.WinForm.DataAccess;
 using FogSoft.WinForm.Forms;
@@ -102,7 +102,7 @@ namespace Protector.Domain
 
 			TreeViewSelector selector =
 				new TreeViewSelector(RelationManager.GetScenario(FrmMain.RelationScenarios.MenuItem),
-				                     "Пункты меню пользователя", true, ds.Tables[Constants.TableNames.Data]) { SelectedItemsImageColumn = "img", SelectedItemsBitColumn = "isObjectSelected" };
+				                     "РџСѓРЅРєС‚С‹ РјРµРЅСЋ РїРѕР»СЊР·РѕРІР°С‚РµР»СЏ", true, ds.Tables[Constants.TableNames.Data]) { SelectedItemsImageColumn = "img", SelectedItemsBitColumn = "isObjectSelected" };
 			if (selector.ShowDialog(owner) == DialogResult.OK)
 			{
 				Application.DoEvents();
@@ -136,7 +136,7 @@ namespace Protector.Domain
 		private void EditUserAdditionalRights(IWin32Window owner)
 		{
 			ChildEntity = EntityManager.GetEntity((int)Entities.UserAdditionalRight);
-			SelectionForm selector = new SelectionForm(ChildEntity, GetContent().DefaultView, "Права для пользователя", true);
+			SelectionForm selector = new SelectionForm(ChildEntity, GetContent().DefaultView, "РџСЂР°РІР° РґР»СЏ РїРѕР»СЊР·РѕРІР°С‚РµР»СЏ", true);
 			if (selector.ShowDialog(owner) == DialogResult.OK)
 			{
 				Application.DoEvents();

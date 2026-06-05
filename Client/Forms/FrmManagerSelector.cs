@@ -1,4 +1,4 @@
-using System;
+п»їusing System;
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.Data;
@@ -92,7 +92,7 @@ namespace Merlin.Forms
 			this.label1.Name = "label1";
 			this.label1.Size = new System.Drawing.Size(105, 13);
 			this.label1.TabIndex = 0;
-			this.label1.Text = "Начало интервала:";
+			this.label1.Text = "РќР°С‡Р°Р»Рѕ РёРЅС‚РµСЂРІР°Р»Р°:";
 			// 
 			// label2
 			// 
@@ -101,7 +101,7 @@ namespace Merlin.Forms
 			this.label2.Name = "label2";
 			this.label2.Size = new System.Drawing.Size(124, 13);
 			this.label2.TabIndex = 1;
-			this.label2.Text = "Окончание интервала:";
+			this.label2.Text = "РћРєРѕРЅС‡Р°РЅРёРµ РёРЅС‚РµСЂРІР°Р»Р°:";
 			// 
 			// dtStart
 			// 
@@ -124,12 +124,12 @@ namespace Merlin.Forms
 			this.btnRefresh.Name = "btnRefresh";
 			this.btnRefresh.Size = new System.Drawing.Size(344, 24);
 			this.btnRefresh.TabIndex = 4;
-			this.btnRefresh.Text = "Обновить информацию";
+			this.btnRefresh.Text = "РћР±РЅРѕРІРёС‚СЊ РёРЅС„РѕСЂРјР°С†РёСЋ";
 			this.btnRefresh.Click += new System.EventHandler(this.btnRefresh_Click);
 			// 
 			// grdUsers
 			// 
-			this.grdUsers.Caption = "Менеджеры";
+			this.grdUsers.Caption = "РњРµРЅРµРґР¶РµСЂС‹";
 			this.grdUsers.CaptionVisible = true;
 			this.grdUsers.CheckBoxes = true;
 			this.grdUsers.DataSource = null;
@@ -153,7 +153,7 @@ namespace Merlin.Forms
 			this.btnCancel.Name = "btnCancel";
 			this.btnCancel.Size = new System.Drawing.Size(75, 23);
 			this.btnCancel.TabIndex = 9;
-			this.btnCancel.Text = "Отмена";
+			this.btnCancel.Text = "РћС‚РјРµРЅР°";
 			// 
 			// btnOk
 			// 
@@ -163,7 +163,7 @@ namespace Merlin.Forms
 			this.btnOk.Name = "btnOk";
 			this.btnOk.Size = new System.Drawing.Size(75, 23);
 			this.btnOk.TabIndex = 8;
-			this.btnOk.Text = "Ок";
+			this.btnOk.Text = "РћРє";
 			this.btnOk.Click += new System.EventHandler(this.btnOk_Click);
 			// 
 			// objectPickerAgency
@@ -181,7 +181,7 @@ namespace Merlin.Forms
 			this.label3.Name = "label3";
 			this.label3.Size = new System.Drawing.Size(58, 13);
 			this.label3.TabIndex = 11;
-			this.label3.Text = "Агенство:";
+			this.label3.Text = "РђРіРµРЅСЃС‚РІРѕ:";
 			// 
 			// FrmManagerSelector
 			// 
@@ -204,7 +204,7 @@ namespace Merlin.Forms
 			this.MinimizeBox = false;
 			this.Name = "FrmManagerSelector";
 			this.ShowInTaskbar = false;
-			this.Text = "Выбор менеджеров";
+			this.Text = "Р’С‹Р±РѕСЂ РјРµРЅРµРґР¶РµСЂРѕРІ";
 			this.ResumeLayout(false);
 			this.PerformLayout();
 

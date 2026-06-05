@@ -1,4 +1,4 @@
-namespace Merlin.Forms {
+п»їnamespace Merlin.Forms {
   partial class SponsorCampaignSetAdertTypeForm
     {
     /// <summary>
@@ -48,7 +48,7 @@ namespace Merlin.Forms {
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
             this.Cursor = System.Windows.Forms.Cursors.Default;
             this.Name = "SponsorCampaignSetAdertTypeForm";
-            this.Text = "Предметы рекламы";
+            this.Text = "РџСЂРµРґРјРµС‚С‹ СЂРµРєР»Р°РјС‹";
             ((System.ComponentModel.ISupportInitialize)(this.pbFake)).EndInit();
             this.ResumeLayout(false);
 

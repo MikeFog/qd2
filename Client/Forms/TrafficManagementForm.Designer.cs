@@ -1,4 +1,4 @@
-using Merlin.Controls;
+п»їusing Merlin.Controls;
 
 namespace Merlin.Forms {
 	partial class TrafficManagementForm {
@@ -60,7 +60,7 @@ namespace Merlin.Forms {
             this.tbbRefresh.ImageTransparentColor = System.Drawing.Color.Magenta;
             this.tbbRefresh.Name = "tbbRefresh";
             this.tbbRefresh.Size = new System.Drawing.Size(34, 24);
-            this.tbbRefresh.ToolTipText = "Обновить информацию";
+            this.tbbRefresh.ToolTipText = "РћР±РЅРѕРІРёС‚СЊ РёРЅС„РѕСЂРјР°С†РёСЋ";
             this.tbbRefresh.Click += new System.EventHandler(this.tbbRefresh_Click);
             // 
             // toolStripSeparator1
@@ -75,8 +75,8 @@ namespace Merlin.Forms {
             this.tsbJump.ImageTransparentColor = System.Drawing.Color.Magenta;
             this.tsbJump.Name = "tsbJump";
             this.tsbJump.Size = new System.Drawing.Size(34, 24);
-            this.tsbJump.Text = "Переход к дате";
-            this.tsbJump.ToolTipText = "Переход к выбранной дате";
+            this.tsbJump.Text = "РџРµСЂРµС…РѕРґ Рє РґР°С‚Рµ";
+            this.tsbJump.ToolTipText = "РџРµСЂРµС…РѕРґ Рє РІС‹Р±СЂР°РЅРЅРѕР№ РґР°С‚Рµ";
             this.tsbJump.Click += new System.EventHandler(this.tsbJump_Click);
             // 
             // tsbMassClose
@@ -87,7 +87,7 @@ namespace Merlin.Forms {
             this.tsbMassClose.Name = "tsbMassClose";
             this.tsbMassClose.Size = new System.Drawing.Size(34, 24);
             this.tsbMassClose.Text = "tsbMassClose";
-            this.tsbMassClose.ToolTipText = "Пометить дни как обработанные";
+            this.tsbMassClose.ToolTipText = "РџРѕРјРµС‚РёС‚СЊ РґРЅРё РєР°Рє РѕР±СЂР°Р±РѕС‚Р°РЅРЅС‹Рµ";
             this.tsbMassClose.Click += new System.EventHandler(this.TsbMassClose_Click);
             // 
             // splitContainer1
@@ -135,7 +135,7 @@ namespace Merlin.Forms {
             // 
             // grdMassmedia
             // 
-            this.grdMassmedia.Caption = "Радиостанции";
+            this.grdMassmedia.Caption = "Р Р°РґРёРѕСЃС‚Р°РЅС†РёРё";
             this.grdMassmedia.CaptionVisible = true;
             this.grdMassmedia.CheckBoxes = false;
             this.grdMassmedia.ColumnNameHighlight = null;
@@ -172,7 +172,7 @@ namespace Merlin.Forms {
             // 
             // grdSelectedCellIssues
             // 
-            this.grdSelectedCellIssues.Caption = "Выпуски";
+            this.grdSelectedCellIssues.Caption = "Р’С‹РїСѓСЃРєРё";
             this.grdSelectedCellIssues.CaptionVisible = true;
             this.grdSelectedCellIssues.CheckBoxes = false;
             this.grdSelectedCellIssues.ColumnNameHighlight = null;
@@ -251,7 +251,7 @@ namespace Merlin.Forms {
             this.Controls.Add(this.toolStrip1);
             this.Margin = new System.Windows.Forms.Padding(4, 5, 4, 5);
             this.Name = "TrafficManagementForm";
-            this.Text = "Трафик-менеджмент";
+            this.Text = "РўСЂР°С„РёРє-РјРµРЅРµРґР¶РјРµРЅС‚";
             this.toolStrip1.ResumeLayout(false);
             this.toolStrip1.PerformLayout();
             this.splitContainer1.Panel1.ResumeLayout(false);
