@@ -4,7 +4,7 @@ using FogSoft.WinForm.Classes;
 
 namespace Merlin.Classes
 {
-    class TariffWindowWithRange : ITariffWindow
+    class TariffWindowWithRange : ITariffWindow, IComparable<TariffWindowWithRange>
     {
         private readonly DataRow _row;
 
@@ -12,6 +12,8 @@ namespace Merlin.Classes
         {
             _row = row;
 
+            TimeWithConfirmed = ParseHelper.GetInt32FromObject(row["timeWithConfirmed"], 0);
+            TimeWithUnConfirmed = ParseHelper.GetInt32FromObject(row["timeWithUnConfirmed"], 0);
             HasCurrentActionIssues = ParseHelper.GetBooleanFromObject(row["HasIssuesThisAction"], false);
             HasIssues = ParseHelper.GetBooleanFromObject(row["HasIssues"], false);
             HasIssuesAllMassmedia = ParseHelper.GetBooleanFromObject(row["HasIssuesAllMassmedia"], false);
@@ -20,6 +22,9 @@ namespace Merlin.Classes
         }
 
         public DateTime WindowDate { get { return ParseHelper.GetDateTimeFromObject(_row["date"], DateTime.Now); } }
+
+        public int TimeWithConfirmed { get; private set; }
+        public int TimeWithUnConfirmed { get; private set; }
 
         public bool IsFirstPositionOccupied
         {
@@ -79,6 +84,15 @@ namespace Merlin.Classes
         public bool IsPrime
         {
             get { return bool.Parse(_row["isPrime"].ToString()); }
+        }
+
+        public int CompareTo(TariffWindowWithRange other)
+        {
+            if (other == null) return 0;
+
+            if (TimeWithUnConfirmed > other.TimeWithUnConfirmed) return -1;
+            if (TimeWithUnConfirmed < other.TimeWithUnConfirmed) return 1;
+            return 0;
         }
     }
 }

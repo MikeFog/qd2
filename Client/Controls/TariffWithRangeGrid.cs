@@ -486,11 +486,16 @@ namespace Merlin.Controls
                 TimeSpan tsStart  = startTime.TimeOfDay;
                 TimeSpan tsFinish = finishTime.TimeOfDay;
 
+                var rnd = new Random();
+
                 List<TariffWindowWithRange> slotsForDate = weekSlots
                     .Where(s => s.WindowDate.Date == date.Date
                              && s.WindowDate.TimeOfDay >= tsStart
                              && s.WindowDate.TimeOfDay <= tsFinish)
-                    .OrderBy(s => s.WindowDate)   // chronological, matching simple semantics
+                    .Select(s => new { w = s, rand = rnd.Next() })
+                    .OrderBy(x => x.w)       // IComparable — сначала самые свободные (max TimeWithUnConfirmed)
+                    .ThenBy(x => x.rand)     // среди одинаковых — рандом
+                    .Select(x => x.w)
                     .ToList();
 
                 var result = new TimePeriodAddResult();
