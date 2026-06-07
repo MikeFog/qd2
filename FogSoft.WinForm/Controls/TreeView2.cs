@@ -34,6 +34,7 @@ namespace FogSoft.WinForm.Controls
 		public TreeView2()
 		{
 			InitializeComponent();
+			tvStructure.KeyDown += TvStructure_KeyDown;
 		}
 
         private void BtnToggleExpand_Click(object sender, EventArgs e)
@@ -616,9 +617,32 @@ namespace FogSoft.WinForm.Controls
 		public void DeleteCurrentObject()
 		{
 			PresentationObject presentationObject = CurrentObject;
-			if(presentationObject != null && presentationObject.Delete())
+			if(presentationObject != null)
 			{
-				DeleteNode(presentationObject);
+				if (!presentationObject.IsActionEnabled(Constants.EntityActions.Delete, ViewType.Journal))
+					return;
+				if(presentationObject.Delete())
+				{
+					DeleteNode(presentationObject);
+				}
+			}
+		}
+
+			private void TvStructure_KeyDown(object sender, KeyEventArgs e)
+		{
+			if (e.KeyCode != Keys.Delete)
+				return;
+
+			e.Handled = true;
+			e.SuppressKeyPress = true;
+
+			try
+			{
+				DeleteCurrentObject();
+			}
+			catch (Exception ex)
+			{
+				ErrorManager.PublishError(ex);
 			}
 		}
 

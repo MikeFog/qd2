@@ -72,6 +72,7 @@ namespace FogSoft.WinForm.Controls
             };
             // dataGrid.RowStateChanged -= убрана подписка
             dataGrid.CellContentClick += DataGrid_CellContentClick;
+            dataGrid.KeyDown += DataGrid_KeyDown;
         }
 
 		public new bool Enabled
@@ -1512,11 +1513,31 @@ namespace FogSoft.WinForm.Controls
 			PresentationObject presentationObject = SelectedObject;
 			if(presentationObject != null)
 			{
+				if (!presentationObject.IsActionEnabled(Constants.EntityActions.Delete, ViewType.Journal))
+					return;
 				if(presentationObject.Delete())
 				{
 					DeleteRow(presentationObject);
 					FireObjectDeleted(presentationObject);
 				}
+			}
+		}
+
+		private void DataGrid_KeyDown(object sender, KeyEventArgs e)
+		{
+			if (e.KeyCode != Keys.Delete)
+				return;
+
+			e.Handled = true;
+			e.SuppressKeyPress = true;
+
+			try
+			{
+				DeleteCurrentObject();
+			}
+			catch (Exception ex)
+			{
+				ErrorManager.PublishError(ex);
 			}
 		}
 
