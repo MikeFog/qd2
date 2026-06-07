@@ -274,7 +274,10 @@ CampaignForm (после form.ShowDialog):
   - Агрегация: `MIN(isPrime)` по всем СМИ → слот prime только если **все** СМИ прайм
 - Данные загружаются через `GetSlotsForWeek` → `LoadDataSet("TariffWindowWithRange", ...)`
 - Кеш по неделям (`slotsCache`) — локальная переменная-замыкание, живёт один запуск генерации
-- Выбор: `OrderBy(slot.WindowDate)` — хронологически
+- Сортировка окон (для обоих случаев — quantity > 0 и prime split):
+  - Первичная: `OrderBy(w)` — `IComparable<TariffWindowWithRange>` по `TimeWithUnConfirmed` (убывание: **сначала самые свободные**)
+  - Вторичная: `ThenBy(rand)` — среди одинаково свободных — **рандомный порядок**
+  - Аналогично линейной кампании
 - **Path 1 (Simple шаблон)**: prime не используется — `AddRangeIssues` выбирает `TOP 1` по свободному времени
 
 ---
