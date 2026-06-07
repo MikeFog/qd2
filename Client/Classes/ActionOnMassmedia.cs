@@ -689,21 +689,35 @@ namespace Merlin.Classes
         {
 			Dictionary<string, object> procParameters = DataAccessor.CreateParametersDictionary();
 			procParameters[ParamNames.ActionId] = ActionId;
-			DataTable dtRollers = DataAccessor.LoadDataSet("RollersWithoutAdvertype", procParameters).Tables[0];
-            DataTable dtProgramIssues = DataAccessor.LoadDataSet("RollersWithoutAdvertype", procParameters).Tables[1];
+            DataSet dataSet = DataAccessor.LoadDataSet("RollersWithoutAdvertype", procParameters);
+            DataTable dtRollers = dataSet.Tables[0];
+            DataTable dtProgramIssues = dataSet.Tables[1];
 
             if (dtRollers.Rows.Count > 0)
 			{
-				SetAdvertTypeOrSubstituteRoller();
-				MessageBox.ShowExclamation(MessageAccessor.GetMessage("ActivationWithRollersWithoutAdvType"));
-
-                return false;
+                // allow rhe user assign advert type for rollers without it and then try to activate again without test flag.
+				// If there are still rollers without advert type - show message and do not activate
+                SetAdvertTypeOrSubstituteRoller();
+                dataSet = DataAccessor.LoadDataSet("RollersWithoutAdvertype", procParameters);
+                dtRollers = dataSet.Tables[0];
+				if (dtRollers.Rows.Count > 0)
+				{
+					MessageBox.ShowExclamation(MessageAccessor.GetMessage("ActivationWithRollersWithoutAdvType"));
+					return false;
+				}
             }
 
 			if (dtProgramIssues.Rows.Count > 0)
 			{
+                // the same for program issues without advert type
                 MessageBox.ShowExclamation(Properties.Resources.ActivationWithProgramIssuesWithoutAdvType);
-                return false;
+                dataSet = DataAccessor.LoadDataSet("RollersWithoutAdvertype", procParameters);
+                dtProgramIssues = dataSet.Tables[1];
+				if (dtProgramIssues.Rows.Count > 0)
+				{
+					MessageBox.ShowExclamation(MessageAccessor.GetMessage("ActivationWithProgramIssuesWithoutAdvType"));
+					return false;
+				}
             }
 			return true;
         }
