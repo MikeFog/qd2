@@ -140,9 +140,9 @@ BEGIN
             timeWithConfirmed          = MAX(tw.duration - tw.timeInUseConfirmed),
             timeWithUnConfirmed        = MAX(tw.duration - tw.timeInUseConfirmed - tw.timeInUseUnconfirmed),
             -- СТАРАЯ ЛОГИКА: MIN по флагам/счетчикам внутри СМИ
-            isFirstPositionOccupied    = MIN(CONVERT(int, tw.isFirstPositionOccupied)),
-            isSecondPositionOccupied   = MIN(CONVERT(int, tw.isSecondPositionOccupied)),
-            isLastPositionOccupied     = MIN(CONVERT(int, tw.isLastPositionOccupied)),
+            isFirstPositionOccupied    = MAX(CONVERT(int, tw.isFirstPositionOccupied)),
+            isSecondPositionOccupied   = MAX(CONVERT(int, tw.isSecondPositionOccupied)),
+            isLastPositionOccupied     = MAX(CONVERT(int, tw.isLastPositionOccupied)),
             firstPositionsUnconfirmed  = MIN(tw.firstPositionsUnconfirmed),
             secondPositionsUnconfirmed = MIN(tw.secondPositionsUnconfirmed),
             lastPositionsUnconfirmed   = MIN(tw.lastPositionsUnconfirmed),
