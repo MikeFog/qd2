@@ -29,7 +29,8 @@ BEGIN
     UPDATE i WITH (ROWLOCK)
     SET i.ratio = @ratio
     FROM Issue i
-        INNER JOIN #issue x ON x.issueID = i.issueID;
+        INNER JOIN #issue x ON x.issueID = i.issueID
+    WHERE i.ratio <> @ratio;
 
     IF @campaignTypeID = 2
         UPDATE i
@@ -48,19 +49,22 @@ BEGIN
                     DATEADD(hh, DATEPART(hh, pl.broadcastStart), @startDate))
                 AND
                 DATEADD(mi, DATEPART(mi, pl.broadcastStart),
-                    DATEADD(hh, DATEPART(hh, pl.broadcastStart), @finishDate));
+                    DATEADD(hh, DATEPART(hh, pl.broadcastStart), @finishDate))
+            AND i.Ratio <> @ratio;
 
     IF @campaignTypeID = 3
         UPDATE ModuleIssue
         SET ratio = @ratio
         WHERE
             campaignId = @campaignID
-            AND issueDate BETWEEN @startDate AND @finishDate;
+            AND issueDate BETWEEN @startDate AND @finishDate
+            AND ratio <> @ratio;
 
     IF @campaignTypeID = 4
         UPDATE [PackModuleIssue]
         SET [ratio] = @ratio
         WHERE
             [campaignID] = @campaignID
-            AND [issueDate] BETWEEN @startDate AND @finishDate;
+            AND [issueDate] BETWEEN @startDate AND @finishDate
+            AND [ratio] <> @ratio;
 END
