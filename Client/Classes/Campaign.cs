@@ -195,7 +195,10 @@ namespace Merlin.Classes
 
 		public void RecalculateAction(bool refreshFlag = true)
 		{
-			Action.Recalculate(refreshFlag);
+			using (OperationScope.Start("RecalculateAction"))
+			{
+				Action.Recalculate(refreshFlag);
+			}
 		}
 
 		public int? ActionId
@@ -597,9 +600,12 @@ namespace Merlin.Classes
 
 		public Issue AddIssue(PresentationObject roller, ITariffWindow tariffWindow, RollerPositions rollerPosition, int? grantorID)
 		{
-			RollerIssue issue = new RollerIssue(this, roller, (TariffWindowWithRollerIssues) tariffWindow, rollerPosition, Action.IsConfirmed,grantorID);
-			issue.Update();
-			return issue;
+			using (OperationScope.Start("CampaignAddIssue"))
+			{
+				RollerIssue issue = new RollerIssue(this, roller, (TariffWindowWithRollerIssues) tariffWindow, rollerPosition, Action.IsConfirmed,grantorID);
+				issue.Update();
+				return issue;
+			}
 		}
 
 		public ModuleIssue AddModuleIssue(Module module, PresentationObject roller,

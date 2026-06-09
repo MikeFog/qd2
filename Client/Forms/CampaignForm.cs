@@ -438,6 +438,8 @@ namespace Merlin.Forms
 
 		private void CampaignStatusChanged()
 		{
+			using (OperationScope.Start("CampaignStatusChanged"))
+			{
 			try
 			{
 				//campaign.RecalculateAction();
@@ -450,6 +452,7 @@ namespace Merlin.Forms
 			catch(Exception ex)
 			{
 				ErrorManager.PublishError(ex);
+			}
 			}
 		}
 
@@ -683,6 +686,8 @@ namespace Merlin.Forms
 		{
 			try
 			{
+				if (_campaign == null) return;
+
 				_campaign.RecalculateAction();
 				((IRollerGrid)_tariffGrid).RefreshCurrentCell(grdCurrentCampaignIssues.ItemsCount > 0, TariffGridRefreshMode.WithDelete);
 				ShowWindowIssues(_tariffGrid.CurrentTariffWindow);

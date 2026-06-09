@@ -91,6 +91,8 @@ namespace Merlin.Controls
 		private void UpdateDB(DataGridViewCell cell)
 		{
 			if (campaign == null) return;
+			using (OperationScope.Start($"UpdateDB cell={cell.RowIndex},{cell.ColumnIndex}"))
+			{
 
             if (!(GetTariffWindow(cell) is TariffWindowWithRollerIssues tariffWindow)) return;
 
@@ -108,6 +110,7 @@ namespace Merlin.Controls
 
 			Refresh();
 			FireCampaignStatusChanged();
+		}
 		}
 
 		private void AddModuleIssue(DataGridViewCell cell, TariffWindowWithRollerIssues tariffWindow)

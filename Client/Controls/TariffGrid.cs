@@ -441,6 +441,8 @@ namespace Merlin.Controls
 
 		private void OnGridCellClick(object sender, DataGridViewCellEventArgs e)
 		{
+			using (OperationScope.Start("OnGridCellClick"))
+			{
 			try
 			{
 				if (e.ColumnIndex >= FixedCols && e.RowIndex >= FIXED_ROWS)
@@ -455,11 +457,14 @@ namespace Merlin.Controls
 				Cursor.Current = Cursors.Default;
 			}
 		}
+		}
 
 		private void FireCellClicked(ITariffWindow tariffWindow)
 		{
 			Application.DoEvents();
 			Cursor.Current = Cursors.WaitCursor;
+			using (OperationScope.Start($"FireCellClicked window={tariffWindow?.WindowDate:yyyy-MM-dd HH:mm}"))
+			{
 
 			if (tariffWindow != null)
 			{
@@ -468,6 +473,7 @@ namespace Merlin.Controls
 					updateDB(GetCell(tariffWindow));
 			}
 			onCellClicked(tariffWindow);
+			}
 		}
 
 		protected virtual void onCellClicked(ITariffWindow tariffWindow)

@@ -563,6 +563,8 @@ namespace Merlin.Classes
 
 		public void Recalculate(bool refreshFlag = true, DateTime? todayDate = null)
 		{
+			using (OperationScope.Start("ActionRecalculate"))
+			{
 			Dictionary<string, object> procParameters = DataAccessor.CreateParametersDictionary();
 			procParameters[ParamNames.ActionId] = ActionId;
 
@@ -587,6 +589,7 @@ namespace Merlin.Classes
 
 			if (oldTiotalPrice > TotalPrice && IsConfirmed)
 				CorrectPaymentAction();
+		}
 		}
 
 		private void CorrectPaymentAction()
