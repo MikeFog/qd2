@@ -299,7 +299,14 @@ namespace Merlin.Forms
 				?? throw new NullReferenceException("TariffWindowNotFound");
 
             if (!_template.IgnoreWindowsWithTheSameFirmIssue || !window.IsRollerOfTheFirmExist(_firmId, true))
+			{
+				if (_position != RollerPositions.Undefined && IsPositionOccupied(window, _position))
+				{
+					Log.Info($"Position {_position} already occupied in window {window.WindowDate}, skipping");
+					throw new Exception("PositionAlreadyOccupied");
+				}
                 issue = _campaign.AddIssue(_roller, window, _position, grantorID);
+			}
             else
                 throw new Exception("IssueWithTheSameFirmExists");
             issue.Refresh();
@@ -324,8 +331,11 @@ namespace Merlin.Forms
 			foreach (DataRow row in dtTariffWindow.Select(filter))
 			{
 				var window = new TariffWindowWithRollerIssues(row, Entities.TariffWindow);
-				if (!_template.IgnoreWindowsWithTheSameFirmIssue || !window.IsRollerOfTheFirmExist(_firmId, true))
+				if ((!_template.IgnoreWindowsWithTheSameFirmIssue || !window.IsRollerOfTheFirmExist(_firmId, true))
+				    && (_position == RollerPositions.Undefined || !IsPositionOccupied(window, _position)))
+				{
 					allWindows.Add(window);
+				}
 			}
 
 			var rnd = new Random();
@@ -428,6 +438,24 @@ namespace Merlin.Forms
             ProgramIssue programIssue = _campaign.AddProgramIssue(program, tariffID, _template.CurrentDate, price, bonus, _campaign.Action.IsConfirmed);
 			programIssue.Refresh();
             return new List<PresentationObject> { programIssue }; 
+		}
+
+		/// <summary>
+		/// Проверяет, занята ли указанная позиция ролика в окне.
+		/// </summary>
+		private static bool IsPositionOccupied(TariffWindowWithRollerIssues window, RollerPositions position)
+		{
+			switch (position)
+			{
+				case RollerPositions.First:
+					return window.IsFirstPositionOccupied;
+				case RollerPositions.Second:
+					return window.IsSecondPositionOccupied;
+				case RollerPositions.Last:
+					return window.IsLastPositionOccupied;
+				default:
+					return false;
+			}
 		}
 
 		private List<PresentationObject> AddIssuesFromWindows(List<TariffWindowWithRollerIssues> windows, int quantity, string errorTemplate)

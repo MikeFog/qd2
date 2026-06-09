@@ -6,6 +6,7 @@ using Merlin.Classes.Domain;
 using System;
 using System.Collections.Generic;
 using System.Data;
+using System.Diagnostics;
 using System.Linq;
 using System.Windows.Forms;
 
@@ -14,8 +15,9 @@ namespace Merlin.Controls
 	internal partial class TariffWithRangeGrid : TariffGrid, IRollerGrid
 	{
         private static readonly ILog Log = LogManager.GetLogger(typeof(TariffWithRangeGrid));
+        private static int _tempIssueId = 0;
 
-		private const string MinBroadcastColumnName = "minBroadcast";
+        private const string MinBroadcastColumnName = "minBroadcast";
 		private const string MaxBroadcastColumnName = "maxBroadcast";
         private readonly ActionOnMassmedia _action;
         private readonly int _massmediasCount;
@@ -121,7 +123,7 @@ namespace Merlin.Controls
             using (OperationScope.Start($"AddIssuesRange date={windowDate:yyyy-MM-dd HH:mm} recalc={recalculate}"))
             {
                 Dictionary<string, object> parameters = DataAccessor.CreateParametersDictionary();
-                parameters["actionID"] = _action.ActionId;
+                parameters[ActionOnMassmedia.ParamNames.ActionId] = _action.ActionId;
                 parameters["issueDate"] = windowDate;
                 parameters["rollerID"] = Roller.RollerId;
                 parameters["rollerDuration"] = Roller.Duration;
@@ -136,7 +138,8 @@ namespace Merlin.Controls
                     _action.Recalculate();
 
                 DataRow row = AddedIssues.NewRow();
-                row[Issue.ParamNames.IssueId] = (new Random()).Next();
+                row[Issue.ParamNames.IssueId] = System.Threading.Interlocked.Decrement(ref _tempIssueId);
+                Debug.WriteLine(row[Issue.ParamNames.IssueId]);
                 row["issueDate"] = windowDate;
                 row[Entity.ParamNames.NAME] = Roller.Name;
                 row[Roller.ParamNames.RollerId] = Roller.RollerId;
@@ -144,6 +147,7 @@ namespace Merlin.Controls
                 row["RowNum"] = Guid.NewGuid();
                 row[Issue.ParamNames.PositionName] = Issue.GetPositionDisplayName(RollerPosition);
                 row[Issue.ParamNames.PositionId] = (int)RollerPosition;
+                row[ActionOnMassmedia.ParamNames.ActionId] = _action.ActionId;
 
                 // replace AddedIssues.Rows.Add(row); with sorted insert
                 InsertIssueRowSorted(row);
@@ -243,7 +247,7 @@ namespace Merlin.Controls
 	    {
 	        if (window == null) return false;
 
-	        return window.HasIssues
+	        return window.HasIssues || window.HasCurrentActionIssues
 	               || (ShowUnconfirmed && window.HasIssuesUnconfirmed);
 	    }
 
@@ -254,6 +258,22 @@ namespace Merlin.Controls
 	        return window.HasIssuesAllMassmedia
 	               || (ShowUnconfirmed && window.HasIssuesUnconfirmedAllMassmedia);
 	    }
+
+        /// <summary>
+        /// Проверяет, доступна ли текущая позиция ролика (RollerPosition) в окне.
+        /// Если позиция не определена (Undefined) — всегда доступно.
+        /// </summary>
+        private bool IsPositionAvailable(TariffWindowWithRange window)
+        {
+            if (_rollerPosition == RollerPositions.Undefined)
+                return true;
+
+            if (!ShowUnconfirmed)
+                return IsConfirmedPositionNotOccupied(window);
+
+            return IsConfirmedPositionNotOccupied(window)
+                && IsUnconfirmedPositionsNotOccupied(window);
+        }
 
         private void MarkCellWithRollerPosition(TariffWindowWithRange window, int rowIndex, int columnIndex)
         {
@@ -491,7 +511,9 @@ namespace Merlin.Controls
                 List<TariffWindowWithRange> slotsForDate = weekSlots
                     .Where(s => s.WindowDate.Date == date.Date
                              && s.WindowDate.TimeOfDay >= tsStart
-                             && s.WindowDate.TimeOfDay <= tsFinish)
+                             && s.WindowDate.TimeOfDay < tsFinish
+                             && (_rollerPosition == RollerPositions.Undefined || IsPositionAvailable(s))
+                             && (!ignoreWindowsWithTheSameFirmIssue || !HasFirmIssuesFlags(s)))
                     .Select(s => new { w = s, rand = rnd.Next() })
                     .OrderBy(x => x.w)       // IComparable — сначала самые свободные (max TimeWithUnConfirmed)
                     .ThenBy(x => x.rand)     // среди одинаковых — рандом
