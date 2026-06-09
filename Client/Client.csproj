@@ -486,6 +486,7 @@
     <Compile Include="Classes\ActionRollerInStatJournal.cs" />
     <Compile Include="Classes\AdvertAgUser.cs" />
     <Compile Include="Classes\Announcement.cs" />
+    <Compile Include="Classes\BalanceStatRow.cs" />
     <Compile Include="Classes\Bank.cs" />
     <Compile Include="Classes\CampaignModule.cs" />
     <Compile Include="Classes\CampaignModuleDay.cs" />
