@@ -419,8 +419,8 @@ namespace FogSoft.WinForm.DataAccess
                             if (ConfigurationUtil.IsUseCustomTransaction)
                             {
                                 SqlHelper.ExecuteNonQuery(connection, CommandType.Text, CreateSQLwithTransaction(procedureName),
-                                                          connectionTimeout,
-                                                          _commandParameters);
+                                                  connectionTimeout,
+                                                  _commandParameters);
                             }
                             else
                             {
@@ -456,19 +456,40 @@ namespace FogSoft.WinForm.DataAccess
             }
             catch (Exception exp)
             {
+                string execScript = null;
+
                 if (parameters != null && exp.Data != null)
                 {
-                    exp.Data.Add("Procedure", procedureName);
-                    foreach (SqlParameter parameter in _commandParameters)
-                        exp.Data.Add("Parameter: " + parameter.ParameterName, parameter.Value);
+                    exp.Data["Procedure"] = procedureName;
+
+                    if (_commandParameters != null)
+                    {
+                        foreach (SqlParameter parameter in _commandParameters)
+                            exp.Data["Parameter: " + parameter.ParameterName] = parameter.Value;
+                    }
                 }
 
                 try
                 {
-                    string execScript = BuildExecScript(procedureName, _commandParameters);
-                    exp.Data["ExecScript"] = execScript;
+                    if (_commandParameters != null)
+                    {
+                        execScript = BuildExecScript(procedureName, _commandParameters);
+                        if (exp.Data != null)
+                            exp.Data["ExecScript"] = execScript;
+                    }
                 }
-                catch { /* не должен выбрасывать exception */ }
+                catch
+                {
+                    // ignore logging preparation errors
+                }
+
+                // Всегда логируем вызов процедуры с параметрами при ошибке
+                ErrorManager.Log.Error(
+                    string.Format("ExecuteNonQuery failed. Procedure: {0}{1}{2}",
+                        procedureName,
+                        Environment.NewLine,
+                        execScript ?? "<ExecScript unavailable>"),
+                    exp);
 
                 throw;
             }
