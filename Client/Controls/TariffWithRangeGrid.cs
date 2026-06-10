@@ -407,33 +407,6 @@ namespace Merlin.Controls
             RefreshGrid();
         }
 
-        public void DeleteIssue(MasterIssue issue)
-		{
-			try
-			{
-				Dictionary<string, object> parameters = DataAccessor.CreateParametersDictionary();
-				parameters[Merlin.Classes.Action.ParamNames.ActionId] = _action.ActionId;
-				parameters["issueDate"] = issue["issueDate"];
-				parameters["rollerID"] = issue["rollerID"];
-				parameters["positionId"] = issue["positionID"];
-				if (Grantor != null)
-					parameters["grantorID"] = Grantor.Id;
-				DataAccessor.ExecuteNonQuery("MasterIssueDelete", parameters);
-				_action.Recalculate();
-
-				foreach (DataRow row in AddedIssues.Select(string.Format("RowNum = '{0}'", issue["RowNum"])))
-					AddedIssues.Rows.Remove(row);
-			}
-			catch(Exception e)
-			{
-				ErrorManager.PublishError(e);
-			}
-			finally
-			{
-				RefreshGrid();
-			}
-		}
-
         // ---------------------------------------------------------------
         // TimePeriod range generation support
         // ---------------------------------------------------------------

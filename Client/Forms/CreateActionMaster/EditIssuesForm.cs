@@ -49,11 +49,7 @@ namespace Merlin.Forms.CreateActionMaster
 				_action.DisplayData(lstStat);
 				grdCurrentCampaignIssues.Entity = EntityManager.GetEntity((int)Entities.MasterIssues);
 				ShowCurrentIssues(_tariffGrid as TariffWithRangeGrid);
-
-                this.grdCurrentCampaignIssues.ObjectDeleted += (p) => {
-					_action.Recalculate();
-                    _action.DisplayData(lstStat);
-                };
+				grdCurrentCampaignIssues.ObjectDeleted += GrdCurrentCampaignIssues_ObjectDeleted;
 
             }
 			catch (Exception ex)
@@ -86,9 +82,16 @@ namespace Merlin.Forms.CreateActionMaster
             _action.DisplayData(lstStat);
         }
 
-		public void DeleteIssue(MasterIssue issue)
+		private void GrdCurrentCampaignIssues_ObjectDeleted(FogSoft.WinForm.Classes.PresentationObject presentationObject)
 		{
-			((TariffWithRangeGrid)_tariffGrid).DeleteIssue(issue);
+			TariffWithRangeGrid rangeGrid = (TariffWithRangeGrid)_tariffGrid;
+			MasterIssue issue = (MasterIssue)presentationObject;
+			foreach (System.Data.DataRow row in rangeGrid.AddedIssues.Select(
+				string.Format("RowNum = '{0}'", issue["RowNum"])))
+				rangeGrid.AddedIssues.Rows.Remove(row);
+			_action.Recalculate();
+			rangeGrid.RefreshGrid();
+			//TariffGridRefreshed();
 		}
 	}
 }

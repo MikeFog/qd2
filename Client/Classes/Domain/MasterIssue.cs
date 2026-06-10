@@ -1,8 +1,6 @@
-﻿using FogSoft.WinForm;
+using FogSoft.WinForm;
 using FogSoft.WinForm.Classes;
 using FogSoft.WinForm.DataAccess;
-using Merlin.Forms.CreateActionMaster;
-using System.Collections.Generic;
 using System.Data;
 using System.Windows.Forms;
 
@@ -26,21 +24,17 @@ namespace Merlin.Classes.Domain
 		public override void DoAction(string actionName, IWin32Window owner, InterfaceObjects interfaceObject)
 		{
 			if (actionName == Constants.EntityActions.Delete)
-			{
-				EditIssuesForm form = owner as EditIssuesForm;
-				if (form != null)
-				{
-					form.DeleteIssue(this);
-				}
-			}
+				Delete();
 		}
 
-        public override bool Delete()
-        {
-            ActionOnMassmedia a = new ActionOnMassmedia((int)parameters[Action.ParamNames.ActionId]);
-            //DataAccessor.ExecuteNonQuery("MasterIssueDelete", parameters);
-			//a.Recalculate();	
-            return true;
-        }
+		public override bool Delete(bool silenceFlag)
+		{
+			if (!silenceFlag && !ConfirmDelete())
+				return false;
+
+			DataAccessor.ExecuteNonQuery("MasterIssueDelete", parameters);
+			OnObjectDeleted(this);
+			return true;
+		}
 	}
 }
