@@ -712,7 +712,8 @@ namespace Merlin.Classes
 			table.Columns.Add(Issue.ParamNames.PositionId, typeof(string));
 			table.Columns.Add("RowNum", typeof(Guid));
 			table.Columns.Add(Issue.ParamNames.IssueId, typeof(int));
-			return table;
+            table.Columns.Add(Action.ParamNames.ActionId, typeof(int));
+            return table;
 		}
 
 		private static Dictionary<IssueSlotKey, List<DataRow>> GroupIssuesBySlot(DataTable issues)
@@ -793,7 +794,7 @@ namespace Merlin.Classes
 			return min == int.MaxValue ? 0 : min;
 		}
 
-		private static bool TryAddIssueRow(DataTable target, DataRow source, IssueSlotKey slot)
+		private bool TryAddIssueRow(DataTable target, DataRow source, IssueSlotKey slot)
 		{
 			DateTime issueDate;
 			if (!TryGetIssueDate(source, out issueDate))
@@ -802,7 +803,7 @@ namespace Merlin.Classes
 			return CreateAddedIssueRow(target, source, slot.ToDateTime());
 		}
 
-		private static bool CreateAddedIssueRow(DataTable target, DataRow source, DateTime issueDate)
+		private bool CreateAddedIssueRow(DataTable target, DataRow source, DateTime issueDate)
 		{
 			if (!ColumnExists(source, Issue.ParamNames.IssueId))
 				return false;
@@ -819,7 +820,9 @@ namespace Merlin.Classes
 			newRow["positionID"] = positionId.ToString(CultureInfo.InvariantCulture);
 			newRow["RowNum"] = Guid.NewGuid();
 			newRow[Issue.ParamNames.IssueId] = issueId;
-			target.Rows.Add(newRow);
+            newRow[Action.ParamNames.ActionId] = ActionId;
+
+            target.Rows.Add(newRow);
 			return true;
 		}
 

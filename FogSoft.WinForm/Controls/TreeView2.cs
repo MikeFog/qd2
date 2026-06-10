@@ -621,10 +621,11 @@ namespace FogSoft.WinForm.Controls
 			{
 				if (!presentationObject.IsActionEnabled(Constants.EntityActions.Delete, ViewType.Journal))
 					return;
-				if(presentationObject.Delete())
-				{
-					DeleteNode(presentationObject);
-				}
+
+                presentationObject.ObjectDeleted -= OnTreeViewObjectDeleted;
+                presentationObject.ObjectDeleted += OnTreeViewObjectDeleted;
+
+                presentationObject.DoAction(Constants.EntityActions.Delete, ParentForm, InterfaceObjects.SimpleJournal); 
 			}
 		}
 

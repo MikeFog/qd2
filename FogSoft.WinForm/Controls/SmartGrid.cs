@@ -1508,18 +1508,77 @@ namespace FogSoft.WinForm.Controls
 			}
 		}
 
-		public void DeleteCurrentObject()
+        public void DeleteCurrentObject()
+        {
+            PresentationObject presentationObject = SelectedObject;
+            if (presentationObject == null)
+                return;
+            if (!presentationObject.IsActionEnabled(Constants.EntityActions.Delete, ViewType.Journal))
+                return;
+
+            presentationObject.ObjectDeleted -= OnObjectDeleted;
+            presentationObject.ObjectDeleted += OnObjectDeleted;
+
+            presentationObject.DoAction(Constants.EntityActions.Delete, ParentForm, interfaceObject);
+        }
+
+        public void DeleteSelectedObjects()
 		{
-			PresentationObject presentationObject = SelectedObject;
-			if(presentationObject != null)
+			MessageBox.ShowInformation("Массовое удаление ещё не реализовано.");
+            return;
+            if (dataGrid.SelectedRows.Count <= 1)
 			{
-				if (!presentationObject.IsActionEnabled(Constants.EntityActions.Delete, ViewType.Journal))
-					return;
-				if(presentationObject.Delete())
+				DeleteCurrentObject();
+				return;
+			}
+
+			var selectedRows = new DataGridViewRow[dataGrid.SelectedRows.Count];
+			dataGrid.SelectedRows.CopyTo(selectedRows, 0);
+
+			PresentationObject firstPo = CreateObject(selectedRows[0].DataBoundItem as DataRowView);
+			if (firstPo == null)
+				return;
+
+			if (!firstPo.IsActionEnabled(Constants.EntityActions.Delete, ViewType.Journal))
+				return;
+
+			string msg = string.Format("Вы действительно хотите удалить выбранные объекты? ({0} шт.)", selectedRows.Length);
+			if (Forms.MessageBox.ShowQuestion(msg) != DialogResult.Yes)
+				return;
+
+			try
+			{
+				Cursor = Cursors.WaitCursor;
+
+				foreach (DataGridViewRow row in selectedRows)
 				{
-					DeleteRow(presentationObject);
-					FireObjectDeleted(presentationObject);
+					if (row.DataBoundItem == null || row.IsNewRow)
+						continue;
+
+					try
+					{
+						PresentationObject po = CreateObject(row.DataBoundItem as DataRowView);
+						if (po == null)
+							continue;
+
+						if (!po.IsActionEnabled(Constants.EntityActions.Delete, ViewType.Journal))
+							continue;
+
+						if (po.Delete(true))
+						{
+							DeleteRow(po);
+							FireObjectDeleted(po);
+						}
+					}
+					catch (Exception ex)
+					{
+						ErrorManager.PublishError(ex);
+					}
 				}
+			}
+			finally
+			{
+				Cursor = Cursors.Default;
 			}
 		}
 
@@ -1533,7 +1592,10 @@ namespace FogSoft.WinForm.Controls
 
 			try
 			{
-				DeleteCurrentObject();
+				if (dataGrid.SelectedRows.Count > 1)
+					DeleteSelectedObjects();
+				else
+					DeleteCurrentObject();
 			}
 			catch (Exception ex)
 			{

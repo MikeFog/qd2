@@ -109,7 +109,7 @@
             this.dataGrid.Dock = System.Windows.Forms.DockStyle.Fill;
             this.dataGrid.Location = new System.Drawing.Point(0, 59);
             this.dataGrid.Margin = new System.Windows.Forms.Padding(4, 3, 4, 3);
-            this.dataGrid.MultiSelect = false;
+            this.dataGrid.MultiSelect = true;
             this.dataGrid.Name = "dataGrid";
             this.dataGrid.RowHeadersBorderStyle = System.Windows.Forms.DataGridViewHeaderBorderStyle.Single;
             this.dataGrid.RowHeadersWidth = 25;

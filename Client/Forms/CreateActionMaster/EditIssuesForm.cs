@@ -8,8 +8,9 @@ namespace Merlin.Forms.CreateActionMaster
 {
 	internal partial class EditIssuesForm : CampaignForm
 	{
+        private readonly ActionOnMassmedia _action;
 
-		private EditIssuesForm()
+        private EditIssuesForm()
 		{
 			InitializeComponent();
 		}
@@ -18,7 +19,8 @@ namespace Merlin.Forms.CreateActionMaster
 			: this()
 		{
 			_firm = firm;
-			_tariffGrid = new TariffWithRangeGrid(action, massmediasCount);
+            _action = action;
+            _tariffGrid = new TariffWithRangeGrid(action, massmediasCount);
             //SetTariffGrid(new TariffWithRangeGrid(action, massmediasCount));
 		}
 
@@ -37,17 +39,21 @@ namespace Merlin.Forms.CreateActionMaster
 			try
 			{
 				base.OnLoad(e);
+				
 
-				// Remove All Issues Grid
-				splitContainer4.Panel1Collapsed = true;
                 tbbTemplate.Visible = true;
                 grdCurrentCampaignIssues.Caption = "Добавленные выпуски";
 
                 RefreshGrid();
 				_tariffGrid.GridRefreshed += TariffGridRefreshed;
-				((TariffWithRangeGrid)_tariffGrid).Action.DisplayData(lstStat);
+				_action.DisplayData(lstStat);
 				grdCurrentCampaignIssues.Entity = EntityManager.GetEntity((int)Entities.MasterIssues);
 				ShowCurrentIssues(_tariffGrid as TariffWithRangeGrid);
+
+                this.grdCurrentCampaignIssues.ObjectDeleted += (p) => {
+					_action.Recalculate();
+                    _action.DisplayData(lstStat);
+                };
 
             }
 			catch (Exception ex)
@@ -77,7 +83,7 @@ namespace Merlin.Forms.CreateActionMaster
 	    private void TariffGridRefreshed()
         {
             ShowCurrentIssues(((TariffWithRangeGrid)_tariffGrid));
-            ((TariffWithRangeGrid)_tariffGrid).Action.DisplayData(lstStat);
+            _action.DisplayData(lstStat);
         }
 
 		public void DeleteIssue(MasterIssue issue)
