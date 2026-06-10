@@ -303,7 +303,7 @@ namespace Merlin.Forms
 				if (_position != RollerPositions.Undefined && IsPositionOccupied(window, _position))
 				{
 					Log.Info($"Position {_position} already occupied in window {window.WindowDate}, skipping");
-					throw new Exception("PositionAlreadyOccupied");
+					throw new Exception("FirstLastIssueError");
 				}
                 issue = _campaign.AddIssue(_roller, window, _position, grantorID);
 			}
