@@ -18,6 +18,7 @@ namespace FogSoft.WinForm.Controls
         public event EmptyDelegate RefreshAll;
         public event EmptyDelegate DblClick;
 		public event ObjectDelegate ObjectDeleted;
+		public event ObjectsDelegate ObjectsDeleted;
 		public event ObjectDelegate ObjectChanged;
 		public event ObjectDelegate ObjectSelected;
 		public event ObjectDelegate ObjectCreated;
@@ -47,6 +48,10 @@ namespace FogSoft.WinForm.Controls
         private const string QuickSearchText = "Поиск по полю";
 		public const string COL_IsSelected = "isObjectSelected";
         private const string ROW_STYLE = "row_style";
+		private const string MASS_DELETE_ERROR_ENTITY_PK = "__id";
+		private const string MASS_DELETE_ERROR_NAME = "name";
+		private const string MASS_DELETE_ERROR_TEXT = "error";
+		private const int MASS_DELETE_ERROR_ENTITY_ID = -5001;
 
         public SmartGrid()
         {
@@ -1263,6 +1268,12 @@ namespace FogSoft.WinForm.Controls
             ObjectDeleted?.Invoke(presentationObject);
         }
 
+		private void FireObjectsDeleted(IList<PresentationObject> presentationObjects)
+		{
+			if (presentationObjects != null && presentationObjects.Count > 0)
+				ObjectsDeleted?.Invoke(presentationObjects);
+		}
+
 		private void FireObjectChanged(PresentationObject presentationObject)
 		{
             ObjectChanged?.Invoke(presentationObject);
@@ -1524,8 +1535,6 @@ namespace FogSoft.WinForm.Controls
 
         public void DeleteSelectedObjects()
 		{
-			MessageBox.ShowInformation("Массовое удаление ещё не реализовано.");
-            return;
             if (dataGrid.SelectedRows.Count <= 1)
 			{
 				DeleteCurrentObject();
@@ -1546,6 +1555,10 @@ namespace FogSoft.WinForm.Controls
 			if (Forms.MessageBox.ShowQuestion(msg) != DialogResult.Yes)
 				return;
 
+			List<PresentationObject> deletedObjects = new List<PresentationObject>();
+			DataTable deleteErrors = CreateDeleteErrorsTable();
+			int errorId = 1;
+
 			try
 			{
 				Cursor = Cursors.WaitCursor;
@@ -1562,17 +1575,24 @@ namespace FogSoft.WinForm.Controls
 							continue;
 
 						if (!po.IsActionEnabled(Constants.EntityActions.Delete, ViewType.Journal))
+						{
+							AddDeleteError(deleteErrors, errorId++, ResolveObjectName(po, row), "Удаление недоступно для выбранного объекта.");
 							continue;
+						}
 
 						if (po.Delete(true))
 						{
 							DeleteRow(po);
-							FireObjectDeleted(po);
+							deletedObjects.Add(po);
+						}
+						else
+						{
+							AddDeleteError(deleteErrors, errorId++, ResolveObjectName(po, row), "Не удалось удалить объект.");
 						}
 					}
 					catch (Exception ex)
 					{
-						ErrorManager.PublishError(ex);
+						AddDeleteError(deleteErrors, errorId++, ResolveObjectName(null, row), ex.Message);
 					}
 				}
 			}
@@ -1580,6 +1600,67 @@ namespace FogSoft.WinForm.Controls
 			{
 				Cursor = Cursors.Default;
 			}
+
+			FireObjectsDeleted(deletedObjects);
+
+			if (deleteErrors.Rows.Count == 0)
+			{
+				MessageBox.ShowInformation(string.Format("Успешно удалено объектов: {0}.", deletedObjects.Count));
+				return;
+			}
+
+			Entity errorEntity = EntityManager.CreateVirtualEntity(
+				MASS_DELETE_ERROR_ENTITY_ID,
+				"Ошибки удаления",
+				"MassDeleteErrors",
+				MASS_DELETE_ERROR_ENTITY_PK,
+				new Entity.Attribute(MASS_DELETE_ERROR_NAME, "Название", "nvarchar"),
+				new Entity.Attribute(MASS_DELETE_ERROR_TEXT, "Ошибка", "nvarchar"));
+
+			Globals.ShowSimpleJournal(errorEntity, "Ошибки массового удаления", deleteErrors);
+		}
+
+		private static DataTable CreateDeleteErrorsTable()
+		{
+			DataTable table = new DataTable();
+			table.Columns.Add(MASS_DELETE_ERROR_ENTITY_PK, typeof(int));
+			table.Columns.Add(MASS_DELETE_ERROR_NAME, typeof(string));
+			table.Columns.Add(MASS_DELETE_ERROR_TEXT, typeof(string));
+			return table;
+		}
+
+		private static void AddDeleteError(DataTable table, int id, string objectName, string errorText)
+		{
+			DataRow row = table.NewRow();
+			row[MASS_DELETE_ERROR_ENTITY_PK] = id;
+			row[MASS_DELETE_ERROR_NAME] = string.IsNullOrEmpty(objectName) ? "<без названия>" : objectName;
+			row[MASS_DELETE_ERROR_TEXT] = errorText;
+			table.Rows.Add(row);
+		}
+
+		private static string ResolveObjectName(PresentationObject po, DataGridViewRow row)
+		{
+			if (po != null && !string.IsNullOrEmpty(po.Name))
+				return po.Name;
+
+			if (row?.DataBoundItem is DataRowView dataRowView)
+			{
+				if (dataRowView.Row.Table.Columns.Contains(Constants.Parameters.Name))
+				{
+					object value = dataRowView.Row[Constants.Parameters.Name];
+					return value == DBNull.Value ? string.Empty : value.ToString();
+				}
+
+				foreach (DataColumn column in dataRowView.Row.Table.Columns)
+				{
+					if (column.ColumnName == MASS_DELETE_ERROR_ENTITY_PK) continue;
+					object value = dataRowView.Row[column];
+					if (value != DBNull.Value && value != null)
+						return value.ToString();
+				}
+			}
+
+			return string.Empty;
 		}
 
 		private void DataGrid_KeyDown(object sender, KeyEventArgs e)

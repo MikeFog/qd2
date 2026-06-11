@@ -80,6 +80,7 @@ namespace Merlin.Forms
                 _campaign?.DisplayCampaignData(lstStat);
 
                 grdRollers.ObjectDeleted += GrdRollers_ObjectDeleted;
+				grdCurrentCampaignIssues.ObjectsDeleted += grdCurrentCampaignIssues_ObjectsDeleted;
                 
             }
             catch (Exception ex)
@@ -686,18 +687,34 @@ namespace Merlin.Forms
 		{
 			try
 			{
-				if (_campaign == null) return;
-
-				_campaign.RecalculateAction();
-				((IRollerGrid)_tariffGrid).RefreshCurrentCell(grdCurrentCampaignIssues.ItemsCount > 0, TariffGridRefreshMode.WithDelete);
-				ShowWindowIssues(_tariffGrid.CurrentTariffWindow);
-
-				CampaignStatusChanged();
+				ProcessCurrentCampaignIssuesDelete();
 			}
 			catch(Exception ex)
 			{
 				ErrorManager.PublishError(ex);
 			}
+		}
+
+		private void grdCurrentCampaignIssues_ObjectsDeleted(IList<PresentationObject> presentationObjects)
+		{
+			try
+			{
+				ProcessCurrentCampaignIssuesDelete();
+			}
+			catch (Exception ex)
+			{
+				ErrorManager.PublishError(ex);
+			}
+		}
+
+		private void ProcessCurrentCampaignIssuesDelete()
+		{
+			if (_campaign == null) return;
+
+			_campaign.RecalculateAction();
+			((IRollerGrid)_tariffGrid).RefreshCurrentCell(grdCurrentCampaignIssues.ItemsCount > 0, TariffGridRefreshMode.WithDelete);
+			ShowWindowIssues(_tariffGrid.CurrentTariffWindow);
+			CampaignStatusChanged();
 		}
 
 		private void tbbPlay_Click(object sender, EventArgs e)

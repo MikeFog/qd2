@@ -60,6 +60,7 @@ namespace FogSoft.WinForm
 	public delegate Image IconLoaderDelegate(string iconName);
 
 	public delegate void ObjectDelegate(PresentationObject presentationObject);
+	public delegate void ObjectsDelegate(IList<PresentationObject> presentationObjects);
 
 	public delegate void ObjectParentChange(PresentationObject presentationObject, int parentDepth);
 
