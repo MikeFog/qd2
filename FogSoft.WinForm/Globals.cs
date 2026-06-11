@@ -145,14 +145,20 @@ namespace FogSoft.WinForm
 		public static void ShowSimpleJournal(Entity entity, string caption)
 		{
 			JournalForm journal = new JournalForm(entity, caption) {MdiParent = MdiParent, Icon = MdiParent.Icon};
+
 			journal.Show();
 		}
 
 		public static void ShowSimpleJournal(Entity entity, string caption, DataTable dt)
 		{
 			JournalForm journal = new JournalForm(entity, caption, dt) {MdiParent = MdiParent, Icon = MdiParent.Icon};
-			journal.Show();
-			journal.BringToFront();
+			
+            journal.Shown += (s, e) =>
+            {
+                journal.Grid?.AdjustColumnsWidth();
+            };
+            journal.Show();
+            journal.BringToFront();
 		}
 
         public static void ShowSimpleJournal(Entity entity, string caption, Dictionary<string, object> filterValues, bool showModal = false)
