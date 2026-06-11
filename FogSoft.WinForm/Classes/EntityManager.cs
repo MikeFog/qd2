@@ -62,6 +62,80 @@ namespace FogSoft.WinForm.Classes
 			entitiesById.Clear();
 		}
 
+		/// <summary>
+		/// Creates an in-memory entity definition that is not loaded from DB metadata.
+		/// Use this for read-only DataTable presentation scenarios (e.g. technical journals),
+		/// where SmartGrid/JournalForm requires Entity metadata to render columns.
+		/// </summary>
+		public static Entity CreateVirtualEntity(
+			int entityId, string entityName, string codeName, string pkColumn, params Entity.Attribute[] attributes)
+		{
+			DataTable dtEntity = new DataTable();
+			dtEntity.Columns.Add(Constants.ParamNames.EntityId, typeof(int));
+			dtEntity.Columns.Add("passport", typeof(string));
+			dtEntity.Columns.Add("filter", typeof(string));
+			dtEntity.Columns.Add("className", typeof(string));
+			dtEntity.Columns.Add("assemblyName", typeof(string));
+			dtEntity.Columns.Add("name", typeof(string));
+			dtEntity.Columns.Add("codeName", typeof(string));
+			dtEntity.Columns.Add("pkColumn", typeof(string));
+			dtEntity.Columns.Add("iconName", typeof(string));
+			dtEntity.Columns.Add("parentId", typeof(object));
+
+			DataRow entityRow = dtEntity.NewRow();
+			entityRow[Constants.ParamNames.EntityId] = entityId;
+			entityRow["passport"] = string.Empty;
+			entityRow["filter"] = string.Empty;
+			entityRow["className"] = typeof(PresentationObject).FullName;
+			entityRow["assemblyName"] = string.Empty;
+			entityRow["name"] = entityName;
+			entityRow["codeName"] = codeName;
+			entityRow["pkColumn"] = pkColumn;
+			entityRow["iconName"] = string.Empty;
+			entityRow["parentId"] = DBNull.Value;
+			dtEntity.Rows.Add(entityRow);
+
+			DataTable dtAttributes = new DataTable();
+			dtAttributes.Columns.Add(Entity.ParamNames.NAME, typeof(string));
+			dtAttributes.Columns.Add(Entity.ParamNames.ALIAS, typeof(string));
+			dtAttributes.Columns.Add(Entity.ParamNames.DATA_TYPE, typeof(string));
+			dtAttributes.Columns.Add("selector", typeof(int));
+			foreach (Entity.Attribute attribute in attributes)
+			{
+				DataRow row = dtAttributes.NewRow();
+				row[Entity.ParamNames.NAME] = attribute.Name;
+				row[Entity.ParamNames.ALIAS] = attribute.Alias;
+				row[Entity.ParamNames.DATA_TYPE] = attribute.DataType;
+				row["selector"] = 0;
+				dtAttributes.Rows.Add(row);
+			}
+
+			DataTable dtActions = new DataTable();
+			dtActions.Columns.Add(Entity.ParamNames.NAME, typeof(string));
+			dtActions.Columns.Add(Entity.ParamNames.ALIAS, typeof(string));
+			dtActions.Columns.Add(Entity.ParamNames.IS_ACTION_ENABLED, typeof(bool));
+			dtActions.Columns.Add(Entity.ParamNames.IMG_RESOURCE_NAME, typeof(string));
+			dtActions.Columns.Add(Constants.ParamNames.EntityId, typeof(int));
+			dtActions.Columns.Add("isHidden", typeof(bool));
+			dtActions.Columns.Add("ParentID", typeof(object));
+
+			DataRow refreshAction = dtActions.NewRow();
+			refreshAction[Entity.ParamNames.NAME] = Constants.EntityActions.Refresh;
+			refreshAction[Entity.ParamNames.ALIAS] = "Refresh";
+			refreshAction[Entity.ParamNames.IS_ACTION_ENABLED] = false;
+			refreshAction[Entity.ParamNames.IMG_RESOURCE_NAME] = string.Empty;
+			refreshAction[Constants.ParamNames.EntityId] = entityId;
+			refreshAction["isHidden"] = true;
+			refreshAction["ParentID"] = DBNull.Value;
+			dtActions.Rows.Add(refreshAction);
+
+			return new Entity(
+				dtEntity.Rows[0],
+				new DataRow[0],
+				dtAttributes.Select(),
+				dtActions.Select());
+		}
+
 		private static void LoadEntity(Dictionary<string, object> parameters)
 		{
 			DataRow row = null;
