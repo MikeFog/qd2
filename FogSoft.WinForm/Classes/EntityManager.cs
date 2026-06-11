@@ -62,6 +62,11 @@ namespace FogSoft.WinForm.Classes
 			entitiesById.Clear();
 		}
 
+		/// <summary>
+		/// Creates an in-memory entity definition that is not loaded from DB metadata.
+		/// Use this for read-only DataTable presentation scenarios (e.g. technical journals),
+		/// where SmartGrid/JournalForm requires Entity metadata to render columns.
+		/// </summary>
 		public static Entity CreateVirtualEntity(
 			int entityId, string entityName, string codeName, string pkColumn, params Entity.Attribute[] attributes)
 		{
@@ -81,7 +86,7 @@ namespace FogSoft.WinForm.Classes
 			entityRow[Constants.ParamNames.EntityId] = entityId;
 			entityRow["passport"] = string.Empty;
 			entityRow["filter"] = string.Empty;
-			entityRow["className"] = "FogSoft.WinForm.Classes.PresentationObject";
+			entityRow["className"] = typeof(PresentationObject).FullName;
 			entityRow["assemblyName"] = string.Empty;
 			entityRow["name"] = entityName;
 			entityRow["codeName"] = codeName;

@@ -52,6 +52,7 @@ namespace FogSoft.WinForm.Controls
 		private const string MASS_DELETE_ERROR_NAME = "name";
 		private const string MASS_DELETE_ERROR_TEXT = "error";
 		private const int MASS_DELETE_ERROR_ENTITY_ID = -5001;
+		private static readonly string[] ObjectNameCandidates = { Constants.Parameters.Name, "title", "caption" };
 
         public SmartGrid()
         {
@@ -1557,7 +1558,7 @@ namespace FogSoft.WinForm.Controls
 
 			List<PresentationObject> deletedObjects = new List<PresentationObject>();
 			DataTable deleteErrors = CreateDeleteErrorsTable();
-			int errorId = 1;
+			int errorRowNumber = 1;
 
 			try
 			{
@@ -1576,7 +1577,10 @@ namespace FogSoft.WinForm.Controls
 
 						if (!po.IsActionEnabled(Constants.EntityActions.Delete, ViewType.Journal))
 						{
-							AddDeleteError(deleteErrors, errorId++, ResolveObjectName(po, row), "Удаление недоступно для выбранного объекта.");
+							string objectName = ResolveObjectName(po, row);
+							if (string.IsNullOrEmpty(objectName))
+								objectName = "<без названия>";
+							AddDeleteError(deleteErrors, errorRowNumber++, objectName, string.Format("Удаление недоступно для объекта '{0}'.", objectName));
 							continue;
 						}
 
@@ -1587,12 +1591,17 @@ namespace FogSoft.WinForm.Controls
 						}
 						else
 						{
-							AddDeleteError(deleteErrors, errorId++, ResolveObjectName(po, row), "Не удалось удалить объект.");
+							string objectName = ResolveObjectName(po, row);
+							if (string.IsNullOrEmpty(objectName))
+								objectName = "<без названия>";
+							AddDeleteError(deleteErrors, errorRowNumber++, objectName, string.Format("Не удалось удалить объект '{0}'.", objectName));
 						}
 					}
 					catch (Exception ex)
 					{
-						AddDeleteError(deleteErrors, errorId++, ResolveObjectName(null, row), ex.Message);
+						string objectName = ResolveObjectName(null, row);
+						string errorText = string.Format("Строка #{0}: {1}", row.Index + 1, ex.Message);
+						AddDeleteError(deleteErrors, errorRowNumber++, objectName, errorText);
 					}
 				}
 			}
@@ -1645,13 +1654,20 @@ namespace FogSoft.WinForm.Controls
 
 			if (row?.DataBoundItem is DataRowView dataRowView)
 			{
-				if (dataRowView.Row.Table.Columns.Contains(Constants.Parameters.Name))
+				foreach (string candidate in ObjectNameCandidates)
 				{
-					object value = dataRowView.Row[Constants.Parameters.Name];
-					return value == DBNull.Value ? string.Empty : value.ToString();
+					if (!dataRowView.Row.Table.Columns.Contains(candidate))
+						continue;
+
+					object value = dataRowView.Row[candidate];
+					if (value != DBNull.Value && value != null)
+						return value.ToString();
 				}
 
-				foreach (DataColumn column in dataRowView.Row.Table.Columns)
+				foreach (DataColumn column in dataRowView.Row.Table.Columns
+					         .Cast<DataColumn>()
+					         .Where(c => c.DataType == typeof(string))
+					         .OrderBy(c => c.ColumnName))
 				{
 					if (column.ColumnName == MASS_DELETE_ERROR_ENTITY_PK) continue;
 					object value = dataRowView.Row[column];
