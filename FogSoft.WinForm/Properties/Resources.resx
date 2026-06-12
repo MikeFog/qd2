@@ -117,45 +117,117 @@
   <resheader name="writer">
     <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
   </resheader>
-  <data name="CheckDBVersionError" xml:space="preserve">
-    <value>Невозможно проверить базу данных сервера,{0}либо версия базы данных отличается от версии приложения.{0}Обратитесь за помощью к вашему системному администратору.</value>
-  </data>
-  <assembly alias="System.Windows.Forms" name="System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089" />
-  <data name="Edit" type="System.Resources.ResXFileRef, System.Windows.Forms">
-    <value>..\Images\Edit.png;System.Drawing.Bitmap, System.Drawing, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
-  </data>
-  <data name="LicenseErrorUsersCount" xml:space="preserve">
-    <value>Ошибка при проверке лицензии.{0}Превышено максимальное число пользователей.</value>
-  </data>
-  <data name="LoginLoadRelations" xml:space="preserve">
-    <value>Загрузка сценариев системы...</value>
-  </data>
-  <data name="LoginApplicationStart" xml:space="preserve">
-    <value>Запуск приложения...</value>
-  </data>
-  <data name="Tick" type="System.Resources.ResXFileRef, System.Windows.Forms">
-    <value>..\Images\Tick.png;System.Drawing.Bitmap, System.Drawing, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
-  </data>
-  <data name="WindowCascad" type="System.Resources.ResXFileRef, System.Windows.Forms">
-    <value>..\Images\WindowCascad.png;System.Drawing.Bitmap, System.Drawing, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
-  </data>
-  <data name="SumColumn" type="System.Resources.ResXFileRef, System.Windows.Forms">
-    <value>..\Images\SumColumn.png;System.Drawing.Bitmap, System.Drawing, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
-  </data>
-  <data name="CloseImage" type="System.Resources.ResXFileRef, System.Windows.Forms">
-    <value>..\Images\CloseImage.png;System.Drawing.Bitmap, System.Drawing, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  <data name="LoginLoadProcedures" xml:space="preserve">
+    <value>Загрузка хранимых процедур...</value>
   </data>
   <data name="CannotCheckUser" xml:space="preserve">
     <value>Невозможно идентифицировать пользователя.{0}Обратитесь за помощью к вашему системному администратору.</value>
   </data>
+  <assembly alias="System.Windows.Forms" name="System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089" />
+  <data name="WindowCascad" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Images\WindowCascad.png;System.Drawing.Bitmap, System.Drawing, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="WindowOrder" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Images\WindowOrder.png;System.Drawing.Bitmap, System.Drawing, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="NewItem" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Images\NewItem.png;System.Drawing.Bitmap, System.Drawing, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="LicenseExpired" xml:space="preserve">
+    <value>Лицензия просрочена.</value>
+  </data>
+  <data name="Refresh" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Images\Refresh.png;System.Drawing.Bitmap, System.Drawing, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="open2" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Images\open.png;System.Drawing.Bitmap, System.Drawing, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="LicenceError" xml:space="preserve">
+    <value>Ошибка чтения лицензии.</value>
+  </data>
+  <data name="ApplicationError" xml:space="preserve">
+    <value>В программе произошла ошибка.</value>
+  </data>
+  <data name="CheckDbVersion" xml:space="preserve">
+    <value>Проверка версии базы данных сервера...</value>
+  </data>
+  <data name="LicenseErrorUsersCount" xml:space="preserve">
+    <value>Ошибка при проверке лицензии.{0}Превышено максимальное число пользователей.</value>
+  </data>
+  <data name="SearchForTextColumnsOnlyWarning" xml:space="preserve">
+    <value>Поиск работает только для колонок, которые содержат текстовую информацию!</value>
+  </data>
+  <data name="Error" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Images\Error.png;System.Drawing.Bitmap, System.Drawing, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="ExportExcel" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Images\ExportExcel.png;System.Drawing.Bitmap, System.Drawing, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="Completed" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Images\Completed.png;System.Drawing.Bitmap, System.Drawing, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="LoginLoadRelations" xml:space="preserve">
+    <value>Загрузка сценариев системы...</value>
+  </data>
+  <data name="DeleteItem" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Images\DeleteItem.png;System.Drawing.Bitmap, System.Drawing, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="Edit" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Images\Edit.png;System.Drawing.Bitmap, System.Drawing, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="WindowLeft" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Images\WindowLeft.png;System.Drawing.Bitmap, System.Drawing, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
   <data name="LoginLoadMessages" xml:space="preserve">
     <value>Загрузка сообщений системы...</value>
+  </data>
+  <data name="LoginLoadEntities" xml:space="preserve">
+    <value>Загрузка основых объектов системы...</value>
+  </data>
+  <data name="Tick" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Images\Tick.png;System.Drawing.Bitmap, System.Drawing, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="LoginCheckUser" xml:space="preserve">
+    <value>Идентификация пользователя в системе...</value>
+  </data>
+  <data name="CloseImage" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Images\CloseImage.png;System.Drawing.Bitmap, System.Drawing, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="New" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Images\New.png;System.Drawing.Bitmap, System.Drawing, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="attributes" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Images\attributes.png;System.Drawing.Bitmap, System.Drawing, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="EditItem" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Images\EditItem.png;System.Drawing.Bitmap, System.Drawing, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="CheckDBVersionError" xml:space="preserve">
+    <value>Невозможно проверить базу данных сервера,{0}либо версия базы данных отличается от версии приложения.{0}Обратитесь за помощью к вашему системному администратору.</value>
+  </data>
+  <data name="Exclamation" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Images\Exclamation.png;System.Drawing.Bitmap, System.Drawing, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="SumColumn" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Images\SumColumn.png;System.Drawing.Bitmap, System.Drawing, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="LoginApplicationStart" xml:space="preserve">
+    <value>Запуск приложения...</value>
+  </data>
+  <data name="Question" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Images\Question.png;System.Drawing.Bitmap, System.Drawing, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
   </data>
   <data name="LoginLoadPassports" xml:space="preserve">
     <value>Загрузка вспомогательных форм системы...</value>
   </data>
-  <data name="Error" type="System.Resources.ResXFileRef, System.Windows.Forms">
-    <value>..\Images\Error.png;System.Drawing.Bitmap, System.Drawing, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  <data name="FilterSet" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Images\FilterSet.png;System.Drawing.Bitmap, System.Drawing, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="Filter" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Images\Filter.png;System.Drawing.Bitmap, System.Drawing, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  </data>
+  <data name="LoginTwise" xml:space="preserve">
+    <value>Невозможно войти в систему дважду под одним пользователем.</value>
   </data>
   <data name="WindowDown" type="System.Resources.ResXFileRef, System.Windows.Forms">
     <value>..\Images\WindowDown.png;System.Drawing.Bitmap, System.Drawing, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
@@ -163,94 +235,25 @@
   <data name="Search" type="System.Resources.ResXFileRef, System.Windows.Forms">
     <value>..\Images\Search.png;System.Drawing.Bitmap, System.Drawing, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
   </data>
-  <data name="LoginCheckUser" xml:space="preserve">
-    <value>Идентификация пользователя в системе...</value>
-  </data>
-  <data name="FilterSet" type="System.Resources.ResXFileRef, System.Windows.Forms">
-    <value>..\Images\FilterSet.png;System.Drawing.Bitmap, System.Drawing, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
-  </data>
-  <data name="WindowLeft" type="System.Resources.ResXFileRef, System.Windows.Forms">
-    <value>..\Images\WindowLeft.png;System.Drawing.Bitmap, System.Drawing, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
-  </data>
-  <data name="New" type="System.Resources.ResXFileRef, System.Windows.Forms">
-    <value>..\Images\New.png;System.Drawing.Bitmap, System.Drawing, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
-  </data>
-  <data name="ErrorLogin" xml:space="preserve">
-    <value>Невозможно войти в систему с такими именем пользователя и {0}паролем. Проверьте правильность ввода и повторите попытку.</value>
-  </data>
-  <data name="Exclamation" type="System.Resources.ResXFileRef, System.Windows.Forms">
-    <value>..\Images\Exclamation.png;System.Drawing.Bitmap, System.Drawing, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
-  </data>
-  <data name="ApplicationError" xml:space="preserve">
-    <value>В программе произошла ошибка.</value>
-  </data>
-  <data name="WindowOrder" type="System.Resources.ResXFileRef, System.Windows.Forms">
-    <value>..\Images\WindowOrder.png;System.Drawing.Bitmap, System.Drawing, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
-  </data>
   <data name="DefaultCannotDeleteObject" xml:space="preserve">
     <value>Объект не может быть удален, так как он используется в связях с другими объектами. Операция прервана.</value>
-  </data>
-  <data name="ExportExcel" type="System.Resources.ResXFileRef, System.Windows.Forms">
-    <value>..\Images\ExportExcel.png;System.Drawing.Bitmap, System.Drawing, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
-  </data>
-  <data name="CheckDbVersion" xml:space="preserve">
-    <value>Проверка версии базы данных сервера...</value>
-  </data>
-  <data name="color" type="System.Resources.ResXFileRef, System.Windows.Forms">
-    <value>..\Images\color.png;System.Drawing.Bitmap, System.Drawing, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
-  </data>
-  <data name="open2" type="System.Resources.ResXFileRef, System.Windows.Forms">
-    <value>..\Images\open.png;System.Drawing.Bitmap, System.Drawing, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
-  </data>
-  <data name="Completed" type="System.Resources.ResXFileRef, System.Windows.Forms">
-    <value>..\Images\Completed.png;System.Drawing.Bitmap, System.Drawing, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
-  </data>
-  <data name="Refresh" type="System.Resources.ResXFileRef, System.Windows.Forms">
-    <value>..\Images\Refresh.png;System.Drawing.Bitmap, System.Drawing, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
-  </data>
-  <data name="LoginLoadEntities" xml:space="preserve">
-    <value>Загрузка основых объектов системы...</value>
-  </data>
-  <data name="LoginTwise" xml:space="preserve">
-    <value>Невозможно войти в систему дважду под одним пользователем.</value>
-  </data>
-  <data name="LicenceError" xml:space="preserve">
-    <value>Ошибка чтения лицензии.</value>
   </data>
   <data name="Window" type="System.Resources.ResXFileRef, System.Windows.Forms">
     <value>..\Images\Window.png;System.Drawing.Bitmap, System.Drawing, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
   </data>
-  <data name="Question" type="System.Resources.ResXFileRef, System.Windows.Forms">
-    <value>..\Images\Question.png;System.Drawing.Bitmap, System.Drawing, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
-  </data>
-  <data name="Filter" type="System.Resources.ResXFileRef, System.Windows.Forms">
-    <value>..\Images\Filter.png;System.Drawing.Bitmap, System.Drawing, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
-  </data>
-  <data name="NewItem" type="System.Resources.ResXFileRef, System.Windows.Forms">
-    <value>..\Images\NewItem.png;System.Drawing.Bitmap, System.Drawing, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  <data name="color" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Images\color.png;System.Drawing.Bitmap, System.Drawing, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
   </data>
   <data name="floppydisk" type="System.Resources.ResXFileRef, System.Windows.Forms">
     <value>..\Images\floppydisk.png;System.Drawing.Bitmap, System.Drawing, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
   </data>
-  <data name="LicenseExpired" xml:space="preserve">
-    <value>Лицензия просрочена.</value>
-  </data>
-  <data name="DeleteItem" type="System.Resources.ResXFileRef, System.Windows.Forms">
-    <value>..\Images\DeleteItem.png;System.Drawing.Bitmap, System.Drawing, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
-  </data>
-  <data name="EditItem" type="System.Resources.ResXFileRef, System.Windows.Forms">
-    <value>..\Images\EditItem.png;System.Drawing.Bitmap, System.Drawing, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
-  </data>
   <data name="Information" type="System.Resources.ResXFileRef, System.Windows.Forms">
     <value>..\Images\Information.png;System.Drawing.Bitmap, System.Drawing, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
   </data>
-  <data name="attributes" type="System.Resources.ResXFileRef, System.Windows.Forms">
-    <value>..\Images\attributes.png;System.Drawing.Bitmap, System.Drawing, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
+  <data name="ErrorLogin" xml:space="preserve">
+    <value>Невозможно войти в систему с такими именем пользователя и {0}паролем. Проверьте правильность ввода и повторите попытку.</value>
   </data>
-  <data name="LoginLoadProcedures" xml:space="preserve">
-    <value>Загрузка хранимых процедур...</value>
-  </data>
-  <data name="SearchForTextColumnsOnlyWarning" xml:space="preserve">
-    <value>Поиск работает только для колонок, которые содержат текстовую информацию!</value>
+  <data name="folder-download" type="System.Resources.ResXFileRef, System.Windows.Forms">
+    <value>..\Resources\folder-download.png;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
   </data>
 </root>

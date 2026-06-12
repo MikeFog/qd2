@@ -1,8 +1,7 @@
-using System.Collections.Generic;
-using FogSoft.WinForm.Classes;
+﻿using System.Collections.Generic;
 using FogSoft.WinForm.DataAccess;
 
-namespace Merlin.Classes
+namespace FogSoft.WinForm.Classes
 {
     /// <summary>
     /// Provides access to per-user settings stored in the database (UserSetting table).

@@ -16,8 +16,8 @@ namespace Merlin.Forms.GridReport
 {
 	public partial class ExportGridForm : Form
 	{
-        private const string SettingPath2SaveTxt  = "ExportGridForm.Path2SaveTxt";
-        private const string SettingPath2SaveWord = "ExportGridForm.Path2SaveWord";
+        private const string SettingPath2SaveTxt  = "ExportGridForm.Path2SaveScheduleTxt";
+        private const string SettingPath2SaveWord = "ExportGridForm.Path2SaveScheduleWord";
 
         public ExportGridForm()
 		{
