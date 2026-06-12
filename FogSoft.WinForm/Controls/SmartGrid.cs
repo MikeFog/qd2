@@ -13,46 +13,46 @@ using MessageBox = FogSoft.WinForm.Forms.MessageBox;
 namespace FogSoft.WinForm.Controls
 {
     public partial class SmartGrid : UserControl, IObjectControl
-	{
+    {
         #region Events ----------------------------------------
         public event EmptyDelegate RefreshAll;
         public event EmptyDelegate DblClick;
-		public event ObjectDelegate ObjectDeleted;
-		public event ObjectsDelegate ObjectsDeleted;
-		public event ObjectDelegate ObjectChanged;
-		public event ObjectDelegate ObjectSelected;
-		public event ObjectDelegate ObjectCreated;
-		public event ContainerDelegate ContainerRefreshed;
-		public event ColumnSelectedDelegate ColumnSelected;
-		public event ObjectCheckedDelegate ObjectChecked;
-		public event ObjectParentChange EntityParentChanged;
+        public event ObjectDelegate ObjectDeleted;
+        public event ObjectsDelegate ObjectsDeleted;
+        public event ObjectDelegate ObjectChanged;
+        public event ObjectDelegate ObjectSelected;
+        public event ObjectDelegate ObjectCreated;
+        public event ContainerDelegate ContainerRefreshed;
+        public event ColumnSelectedDelegate ColumnSelected;
+        public event ObjectCheckedDelegate ObjectChecked;
+        public event ObjectParentChange EntityParentChanged;
         public event EventHandler<int> RecordCountChanged;
         #endregion
 
         #region Members ---------------------------------------
 
         private BindingManagerBase bm;
-		private PresentationObject selectedObject;
-		private Entity entity;
-		private InterfaceObjects interfaceObject = InterfaceObjects.SimpleJournal;
-		private RelationScenario relationScenario;
-		private bool isMenuEnabled = true;
-		private bool checkboxes = false;
-		private bool showMultiselectColumn = true;
+        private PresentationObject selectedObject;
+        private Entity entity;
+        private InterfaceObjects interfaceObject = InterfaceObjects.SimpleJournal;
+        private RelationScenario relationScenario;
+        private bool isMenuEnabled = true;
+        private bool checkboxes = false;
+        private bool showMultiselectColumn = true;
         private DataGridViewColumn currentColumn;
-		private List<PresentationObject> added2Checked, removedFromChecked;
-		private SmartGrid dependantGrid;
-		private bool _suppressAdjustColumnsWidth = false;
+        private List<PresentationObject> added2Checked, removedFromChecked;
+        private SmartGrid dependantGrid;
+        private bool _suppressAdjustColumnsWidth = false;
         #endregion
 
         private const string QuickSearchText = "Поиск по полю";
-		public const string COL_IsSelected = "isObjectSelected";
+        public const string COL_IsSelected = "isObjectSelected";
         private const string ROW_STYLE = "row_style";
-		private const string MASS_DELETE_ERROR_ENTITY_PK = "__id";
-		private const string MASS_DELETE_ERROR_NAME = "name";
-		private const string MASS_DELETE_ERROR_TEXT = "error";
-		private const int MASS_DELETE_ERROR_ENTITY_ID = -5001;
-		private static readonly string[] ObjectNameCandidates = { Constants.Parameters.Name, "title", "caption" };
+        private const string MASS_DELETE_ERROR_ENTITY_PK = "__id";
+        private const string MASS_DELETE_ERROR_NAME = "name";
+        private const string MASS_DELETE_ERROR_TEXT = "error";
+        private const int MASS_DELETE_ERROR_ENTITY_ID = -5001;
+        private static readonly string[] ObjectNameCandidates = { Constants.Parameters.Name, "title", "caption" };
 
         public SmartGrid()
         {
@@ -81,118 +81,118 @@ namespace FogSoft.WinForm.Controls
             dataGrid.KeyDown += DataGrid_KeyDown;
         }
 
-		public new bool Enabled
-		{
-			get { return base.Enabled; }
-			set 
-			{ 
-				base.Enabled = value;
-				dataGrid.ForeColor = value ? SystemColors.ControlText : SystemColors.GrayText; 
-			}
-		}
+        public new bool Enabled
+        {
+            get { return base.Enabled; }
+            set
+            {
+                base.Enabled = value;
+                dataGrid.ForeColor = value ? SystemColors.ControlText : SystemColors.GrayText;
+            }
+        }
 
-		public bool QuickSearchVisible
-		{
-			get { return panelSearch.Visible; }
-			set { panelSearch.Visible = value; }
-		}
+        public bool QuickSearchVisible
+        {
+            get { return panelSearch.Visible; }
+            set { panelSearch.Visible = value; }
+        }
 
-		public string Caption
-		{
-			get { return lblCaption.Text; }
-			set { lblCaption.Text = value; }
-		}
+        public string Caption
+        {
+            get { return lblCaption.Text; }
+            set { lblCaption.Text = value; }
+        }
 
-		public bool CaptionVisible
-		{
-			get { return lblCaption.Visible; }
-			set { lblCaption.Visible = value; }
-		}
+        public bool CaptionVisible
+        {
+            get { return lblCaption.Visible; }
+            set { lblCaption.Visible = value; }
+        }
 
-		public bool CheckBoxes 
-		{
-			get { return checkboxes; }
-			set { checkboxes = value; }
-		}
+        public bool CheckBoxes
+        {
+            get { return checkboxes; }
+            set { checkboxes = value; }
+        }
 
-        public bool ShowMultiselectColumn 
-		{
+        public bool ShowMultiselectColumn
+        {
             get { return showMultiselectColumn; }
             set { showMultiselectColumn = value; }
         }
 
         [Browsable(false)]
-		public int ItemsCount
-		{
-			get { return (bm == null) ? 0 : bm.Count; }
-		}
+        public int ItemsCount
+        {
+            get { return (bm == null) ? 0 : bm.Count; }
+        }
 
-		[Browsable(false)]
-		public Entity Entity
-		{
-			get { return entity; }
-			set
-			{
-				SelectedObject = null;
-				if(value == null) return;
-				entity = value;
-			}
-		}
+        [Browsable(false)]
+        public Entity Entity
+        {
+            get { return entity; }
+            set
+            {
+                SelectedObject = null;
+                if (value == null) return;
+                entity = value;
+            }
+        }
 
-		[Browsable(false)]
-		public SmartGrid DependantGrid
-		{
-			get { return dependantGrid; }
-			set
-			{
-				dependantGrid = value;
-				if(dependantGrid != null)
-					dependantGrid.ObjectDeleted += DependantGrid_ObjectDeleted;
-			}
-		}
+        [Browsable(false)]
+        public SmartGrid DependantGrid
+        {
+            get { return dependantGrid; }
+            set
+            {
+                dependantGrid = value;
+                if (dependantGrid != null)
+                    dependantGrid.ObjectDeleted += DependantGrid_ObjectDeleted;
+            }
+        }
 
-		[DefaultValue((int) InterfaceObjects.SimpleJournal)]
-		public InterfaceObjects InterfaceObject
-		{
-			get { return interfaceObject; }
-			set { interfaceObject = value; }
-		}
+        [DefaultValue((int)InterfaceObjects.SimpleJournal)]
+        public InterfaceObjects InterfaceObject
+        {
+            get { return interfaceObject; }
+            set { interfaceObject = value; }
+        }
 
-		[Browsable(false)]
-		public RelationScenario RelationScenario
-		{
-			set { relationScenario = value; }
-		}
+        [Browsable(false)]
+        public RelationScenario RelationScenario
+        {
+            set { relationScenario = value; }
+        }
 
-		[Browsable(false)]
-		public DataGridView InternalGrid
-		{
-			get { return dataGrid; }
-		}
+        [Browsable(false)]
+        public DataGridView InternalGrid
+        {
+            get { return dataGrid; }
+        }
 
-		public bool MenuEnabled
-		{
-			get { return isMenuEnabled; }
-			set { isMenuEnabled = value; }
-		}
+        public bool MenuEnabled
+        {
+            get { return isMenuEnabled; }
+            set { isMenuEnabled = value; }
+        }
 
-		[Browsable(false)]
-		public List<PresentationObject> Added2Checked
-		{
-			get { return added2Checked; }
-		}
+        [Browsable(false)]
+        public List<PresentationObject> Added2Checked
+        {
+            get { return added2Checked; }
+        }
 
-		[Browsable(false)]
-		public List<PresentationObject> RemovedFromChecked
-		{
-			get { return removedFromChecked; }
-		}
+        [Browsable(false)]
+        public List<PresentationObject> RemovedFromChecked
+        {
+            get { return removedFromChecked; }
+        }
 
-		[Browsable(false)]
-		public DataView DataSource
-		{
-			get { return dataGrid.DataSource as DataView; }
-			set
+        [Browsable(false)]
+        public DataView DataSource
+        {
+            get { return dataGrid.DataSource as DataView; }
+            set
             {
                 // Признак первой загрузки: до этого источника данных не было.
                 // В этом случае COL_IsSelected, пришедший с сервера, нужно сохранить.
@@ -202,10 +202,10 @@ namespace FogSoft.WinForm.Controls
                 HashSet<string> checkedKeys = SaveCheckedKeys();
 
                 Clear();
-				if(value == null) return;
+                if (value == null) return;
 
                 if (entity != null)
-				{
+                {
                     if (checkboxes && !value.Table.Columns.Contains(COL_IsSelected))
                     {
                         DataColumn checkColumn = new DataColumn(COL_IsSelected, typeof(bool));
@@ -224,14 +224,14 @@ namespace FogSoft.WinForm.Controls
                         }
                     }
 
-                    SetTablePKColumn(value.Table); 
+                    SetTablePKColumn(value.Table);
                     SetColumnHeaders(value.Table.Columns);
                     dataGrid.DataSource = value;
 
                     bm = BindingContext[dataGrid.DataSource];
-					bm.PositionChanged += new EventHandler(Bm_PositionChanged);
-					if(selectedObject != null)
-						SelectedObject = selectedObject;
+                    bm.PositionChanged += new EventHandler(Bm_PositionChanged);
+                    if (selectedObject != null)
+                        SelectedObject = selectedObject;
                     if (checkboxes && showMultiselectColumn)
                         AddCheckBox2ColumnHeader();
 
@@ -240,43 +240,43 @@ namespace FogSoft.WinForm.Controls
                         RestoreCheckedKeys(value.Table, checkedKeys);
 
                     RefreshDependantGrid();
-					FireObjectSelected();
+                    FireObjectSelected();
                 }
-				else
-				{
-					dataGrid.AutoGenerateColumns = true;
-					dataGrid.DataSource = value;
-				}
-				if (dataGrid.Columns.Count > 0)
-				{
-					currentColumn = CheckCurrentColumnData(dataGrid.Columns[0]);
-					if (currentColumn != null)
-					{
-						txQuickSearch.ReadOnly = false;
-						SelectObject();
-					}
-				}
-				HighlightRows();
+                else
+                {
+                    dataGrid.AutoGenerateColumns = true;
+                    dataGrid.DataSource = value;
+                }
+                if (dataGrid.Columns.Count > 0)
+                {
+                    currentColumn = CheckCurrentColumnData(dataGrid.Columns[0]);
+                    if (currentColumn != null)
+                    {
+                        txQuickSearch.ReadOnly = false;
+                        SelectObject();
+                    }
+                }
+                HighlightRows();
             }
         }
 
-		[Browsable(false)]
-		public string ColumnNameHighlight {get; set;}
+        [Browsable(false)]
+        public string ColumnNameHighlight { get; set; }
 
-		[Browsable(false)]
-		[DefaultValue((int)ColorHighlight.Red)]
-		public ColorHighlight ColorHighlight {get; set;}
+        [Browsable(false)]
+        [DefaultValue((int)ColorHighlight.Red)]
+        public ColorHighlight ColorHighlight { get; set; }
 
-		[Browsable(false)]
-		public bool IsNeedHighlight { get; set; }
+        [Browsable(false)]
+        public bool IsNeedHighlight { get; set; }
 
-		[Browsable(false)]
-		public bool IsHighlightInvertColor { get; set; }
+        [Browsable(false)]
+        public bool IsHighlightInvertColor { get; set; }
 
-		public void HighlightRows()
-		{
-			if (IsNeedHighlight && !string.IsNullOrEmpty(ColumnNameHighlight))
-			{
+        public void HighlightRows()
+        {
+            if (IsNeedHighlight && !string.IsNullOrEmpty(ColumnNameHighlight))
+            {
                 if (dataGrid.DataSource is DataView dataView && dataView.Count > 0)
                 {
                     if (!dataView.Table.Columns.Contains(ColumnNameHighlight))
@@ -321,98 +321,98 @@ namespace FogSoft.WinForm.Controls
                     }
                 }
             }
-		}
+        }
 
-		/// <summary>
-		/// Get Palit Color by find percentage
-		/// </summary>
-		/// <param name="o"></param>
-		/// <param name="min"></param>
-		/// <param name="max"></param>
-		/// <returns></returns>
-		private Color GetColor(object o, object min, object max)
-		{
-			int colorVal;
-			const int maxColor = 255;
-			if (o is float)
-			{
-				float fMin = ParseHelper.GetFloatFromObject(min, float.MinValue);
-				float fMax = ParseHelper.GetFloatFromObject(max, float.MaxValue);
-				float val = ParseHelper.GetFloatFromObject(o, fMin);
-				if (fMax - fMin == 0)
-					return Color.White;
-				colorVal = 255 - (int)((float)maxColor * (val - fMin) / (fMax - fMin));
-			}
-			else if (o is decimal)
-			{
-				decimal dMin = ParseHelper.GetDecimalFromObject(min, decimal.MinValue);
-				decimal dMax = ParseHelper.GetDecimalFromObject(max, decimal.MaxValue);
-				decimal val = ParseHelper.GetDecimalFromObject(o, dMin);
-				if (dMax - dMin == 0)
-					return Color.White;
-				colorVal = 255 - (int)((decimal)maxColor * (val - dMin) / (dMax - dMin));
-			}
-			else if (o is int)
-			{
-				int iMin = ParseHelper.GetInt32FromObject(min, int.MinValue);
-				int iMax = ParseHelper.GetInt32FromObject(max, int.MaxValue);
-				int val = ParseHelper.GetInt32FromObject(o, iMin);
-				if (iMax - iMin == 0)
-					return Color.White;
-				colorVal = 255 - (int)((float)maxColor * ((float)val - (float)iMin) / ((float)iMax - (float)iMin));
-			}
-			else if (o is DateTime)
-			{
-				DateTime dMax = ParseHelper.GetDateTimeFromObject(max, DateTime.MaxValue);
-				DateTime dMin = ParseHelper.GetDateTimeFromObject(min, DateTime.MinValue);
-				DateTime val = ParseHelper.GetDateTimeFromObject(o, dMin);
-				if ((dMax - dMin).TotalMinutes == 0)
-					return Color.White;
-				colorVal = 255 - (int)((float)maxColor * (((float)(val - dMin).TotalMinutes)) / ((float)(dMax - dMin).TotalMinutes));
-			}
-			else if (o is double)
-			{
-				double dMax = ParseHelper.GetDoubleFromObject(max, double.MaxValue);
-				double dMin = ParseHelper.GetDoubleFromObject(min, double.MinValue);
-				double val = ParseHelper.GetDoubleFromObject(o, dMin);
-				if (dMax - dMin == 0)
-					return Color.White;
-				colorVal = 255 - (int)((double)maxColor * ((double)val - (double)dMin) / ((double)dMax - (double)dMin));
-			}
-			else 
-				throw new NotImplementedException();
+        /// <summary>
+        /// Get Palit Color by find percentage
+        /// </summary>
+        /// <param name="o"></param>
+        /// <param name="min"></param>
+        /// <param name="max"></param>
+        /// <returns></returns>
+        private Color GetColor(object o, object min, object max)
+        {
+            int colorVal;
+            const int maxColor = 255;
+            if (o is float)
+            {
+                float fMin = ParseHelper.GetFloatFromObject(min, float.MinValue);
+                float fMax = ParseHelper.GetFloatFromObject(max, float.MaxValue);
+                float val = ParseHelper.GetFloatFromObject(o, fMin);
+                if (fMax - fMin == 0)
+                    return Color.White;
+                colorVal = 255 - (int)((float)maxColor * (val - fMin) / (fMax - fMin));
+            }
+            else if (o is decimal)
+            {
+                decimal dMin = ParseHelper.GetDecimalFromObject(min, decimal.MinValue);
+                decimal dMax = ParseHelper.GetDecimalFromObject(max, decimal.MaxValue);
+                decimal val = ParseHelper.GetDecimalFromObject(o, dMin);
+                if (dMax - dMin == 0)
+                    return Color.White;
+                colorVal = 255 - (int)((decimal)maxColor * (val - dMin) / (dMax - dMin));
+            }
+            else if (o is int)
+            {
+                int iMin = ParseHelper.GetInt32FromObject(min, int.MinValue);
+                int iMax = ParseHelper.GetInt32FromObject(max, int.MaxValue);
+                int val = ParseHelper.GetInt32FromObject(o, iMin);
+                if (iMax - iMin == 0)
+                    return Color.White;
+                colorVal = 255 - (int)((float)maxColor * ((float)val - (float)iMin) / ((float)iMax - (float)iMin));
+            }
+            else if (o is DateTime)
+            {
+                DateTime dMax = ParseHelper.GetDateTimeFromObject(max, DateTime.MaxValue);
+                DateTime dMin = ParseHelper.GetDateTimeFromObject(min, DateTime.MinValue);
+                DateTime val = ParseHelper.GetDateTimeFromObject(o, dMin);
+                if ((dMax - dMin).TotalMinutes == 0)
+                    return Color.White;
+                colorVal = 255 - (int)((float)maxColor * (((float)(val - dMin).TotalMinutes)) / ((float)(dMax - dMin).TotalMinutes));
+            }
+            else if (o is double)
+            {
+                double dMax = ParseHelper.GetDoubleFromObject(max, double.MaxValue);
+                double dMin = ParseHelper.GetDoubleFromObject(min, double.MinValue);
+                double val = ParseHelper.GetDoubleFromObject(o, dMin);
+                if (dMax - dMin == 0)
+                    return Color.White;
+                colorVal = 255 - (int)((double)maxColor * ((double)val - (double)dMin) / ((double)dMax - (double)dMin));
+            }
+            else
+                throw new NotImplementedException();
 
-			if (IsHighlightInvertColor)
-				colorVal = 255 - colorVal;
+            if (IsHighlightInvertColor)
+                colorVal = 255 - colorVal;
 
-			return Color.FromArgb(ColorHighlight != WinForm.Controls.ColorHighlight.Red ? colorVal : maxColor
-			                      , ColorHighlight != WinForm.Controls.ColorHighlight.Green ? colorVal : maxColor
-			                      , ColorHighlight != WinForm.Controls.ColorHighlight.Blue ? colorVal : maxColor);
-		}
+            return Color.FromArgb(ColorHighlight != WinForm.Controls.ColorHighlight.Red ? colorVal : maxColor
+                                  , ColorHighlight != WinForm.Controls.ColorHighlight.Green ? colorVal : maxColor
+                                  , ColorHighlight != WinForm.Controls.ColorHighlight.Blue ? colorVal : maxColor);
+        }
 
-		private DataGridViewColumn CheckCurrentColumnData(DataGridViewColumn column)
-		{
-			if (column == null || string.IsNullOrEmpty(column.DataPropertyName))
-			{
-				if (currentColumn != null)
-					return currentColumn;
-				
-				if (dataGrid.Columns.Count <= 0)
-					return null;
+        private DataGridViewColumn CheckCurrentColumnData(DataGridViewColumn column)
+        {
+            if (column == null || string.IsNullOrEmpty(column.DataPropertyName))
+            {
+                if (currentColumn != null)
+                    return currentColumn;
 
-				column = dataGrid.Columns[0];
-				while (string.IsNullOrEmpty(column.DataPropertyName))
-				{
-					int index = dataGrid.Columns.IndexOf(column);
-					if ((index + 1) < dataGrid.Columns.Count)
-						column = dataGrid.Columns[dataGrid.Columns.IndexOf(column) + 1];
-					else
-						return null;
-				}
-			}
+                if (dataGrid.Columns.Count <= 0)
+                    return null;
 
-			return column;
-		}
+                column = dataGrid.Columns[0];
+                while (string.IsNullOrEmpty(column.DataPropertyName))
+                {
+                    int index = dataGrid.Columns.IndexOf(column);
+                    if ((index + 1) < dataGrid.Columns.Count)
+                        column = dataGrid.Columns[dataGrid.Columns.IndexOf(column) + 1];
+                    else
+                        return null;
+                }
+            }
+
+            return column;
+        }
 
         public void AdjustColumnsWidthExt(int maxAutoColumnWidth = 400)
         {
@@ -457,7 +457,7 @@ namespace FogSoft.WinForm.Controls
                         DataGridViewAutoSizeColumnMode.DisplayedCellsExceptHeader,
                         true);
 
-                    
+
 
                     int width = Math.Max(dataWidth, headerWidth);
 
@@ -617,168 +617,168 @@ namespace FogSoft.WinForm.Controls
         }
 
         public PresentationObject SelectedObject
-		{
-			get
-			{
-				if(dataGrid.DataSource == null) return null;
-				return CreateObject(CurrentRowView);
-			}
-			set
-			{
-				selectedObject = value;
-				SelectObject();
-			}
-		}
+        {
+            get
+            {
+                if (dataGrid.DataSource == null) return null;
+                return CreateObject(CurrentRowView);
+            }
+            set
+            {
+                selectedObject = value;
+                SelectObject();
+            }
+        }
 
-		public void AddRow(PresentationObject presentationObject)
-		{
-			if(entity == null || !IsAllowedEntity(presentationObject.Entity)) return;
+        public void AddRow(PresentationObject presentationObject)
+        {
+            if (entity == null || !IsAllowedEntity(presentationObject.Entity)) return;
 
-			if (dataGrid.DataSource == null)
-			{
-				DataSource = entity.LoadSingleObject(presentationObject).DefaultView;
+            if (dataGrid.DataSource == null)
+            {
+                DataSource = entity.LoadSingleObject(presentationObject).DefaultView;
                 // если объект "фейковый", как выпуск веерного размещения, то из БД он не загрузится
                 if (dataGrid.RowCount == 0) Globals.AddObject2DataTable(GridTable, presentationObject); ;
             }
-			else
-				Globals.AddObject2DataTable(GridTable, presentationObject);
+            else
+                Globals.AddObject2DataTable(GridTable, presentationObject);
 
-			GridTable.AcceptChanges();
+            GridTable.AcceptChanges();
             AdjustColumnsWidthExt();
             SelectedObject = presentationObject;
 
-			FireObjectCreated(presentationObject);
-		}
-
-		public void UpdateRow(PresentationObject presentationObject)
-		{
-			if(dataGrid.DataSource == null || !IsAllowedEntity(presentationObject.Entity)) return;
-
-			try
-			{
-				Cursor = Cursors.WaitCursor;
-				// recognize current object -----------------------------
-				DataRow row = GridTable.Rows.Find(presentationObject.IDs);
-				if (row != null)
-				{
-					foreach (DataColumn column in row.Table.Columns)
-						row[column] = presentationObject[column.Caption] ?? DBNull.Value;
-				}
-
-				//GridTable.AcceptChanges();
-				//SetColumnsWidth();
-				FireObjectChanged(presentationObject);
-			}
-			finally
-			{
-				Cursor = Cursors.Default;
-			}
-		}
-
-		private DataTable GridTable
-		{
-			get
-			{
-				DataView dataView = (DataView)dataGrid.DataSource;
-				return dataView.Table;
-			}
-		}
-
-		private bool IsAllowedEntity(Entity entityCandidate)
-		{
-			return entityCandidate.Equals(entity) ||
-			       (entity.ParentId != null && ParseHelper.ParseToInt32(entityCandidate.ParentId.ToString()) == entity.Id);
-		}
-
-		public void DeleteRow(PresentationObject presentationObject)
-		{
-			if(dataGrid.DataSource == null || !IsAllowedEntity(presentationObject.Entity)) return;
-
-			// recognize current object -----------------------------
-			if (GridTable.PrimaryKey.Length > 0)
-			{
-				DataRow row = GridTable.Rows.Find(presentationObject.IDs);
-				if (row != null)
-				{
-					dependantGrid?.Clear();
-
-					row.Delete();
-					if (added2Checked.Contains(presentationObject))
-						added2Checked.Remove(presentationObject);
-					GridTable.AcceptChanges();
-				}
-			}
-
-            ObjectDeleted?.Invoke(presentationObject);
+            FireObjectCreated(presentationObject);
         }
 
-		public void CalculateColumnSummary()
-		{
+        public void UpdateRow(PresentationObject presentationObject)
+        {
+            if (dataGrid.DataSource == null || !IsAllowedEntity(presentationObject.Entity)) return;
+
+            try
+            {
+                Cursor = Cursors.WaitCursor;
+                // recognize current object -----------------------------
+                DataRow row = GridTable.Rows.Find(presentationObject.IDs);
+                if (row != null)
+                {
+                    foreach (DataColumn column in row.Table.Columns)
+                        row[column] = presentationObject[column.Caption] ?? DBNull.Value;
+                }
+
+                //GridTable.AcceptChanges();
+                //SetColumnsWidth();
+                FireObjectChanged(presentationObject);
+            }
+            finally
+            {
+                Cursor = Cursors.Default;
+            }
+        }
+
+        private DataTable GridTable
+        {
+            get
+            {
+                DataView dataView = (DataView)dataGrid.DataSource;
+                return dataView.Table;
+            }
+        }
+
+        private bool IsAllowedEntity(Entity entityCandidate)
+        {
+            return entityCandidate.Equals(entity) ||
+                   (entity.ParentId != null && ParseHelper.ParseToInt32(entityCandidate.ParentId.ToString()) == entity.Id);
+        }
+
+        public void DeleteRow(PresentationObject presentationObject, bool withFireEvent = true)
+        {
+            if (dataGrid.DataSource == null || !IsAllowedEntity(presentationObject.Entity)) return;
+
+            // recognize current object -----------------------------
+            if (GridTable.PrimaryKey.Length > 0)
+            {
+                DataRow row = GridTable.Rows.Find(presentationObject.IDs);
+                if (row != null)
+                {
+                    dependantGrid?.Clear();
+
+                    row.Delete();
+                    if (added2Checked.Contains(presentationObject))
+                        added2Checked.Remove(presentationObject);
+                    GridTable.AcceptChanges();
+                }
+            }
+            if (withFireEvent)
+                ObjectDeleted?.Invoke(presentationObject);
+        }
+
+        public void CalculateColumnSummary()
+        {
             if (!(dataGrid.DataSource is DataView dataView)) return;
 
             DataTable dataTable = dataView.Table;
-			if (string.IsNullOrEmpty(dataView.Sort) || dataView.Sort.Length < 1)
-				return;
-			Match m = Regex.Match(dataView.Sort, @"\[.+\]");
-			string columnName = m.Value.Substring(1, m.Value.Length - 2);
-			object res = dataTable.Compute(string.Format("Sum([{0}])", columnName), null);
-			MessageBox.ShowInformation(FormatColumnSummary(res, dataTable.Columns[columnName]));
-		}
-
-		private static string FormatColumnSummary(object summa, DataColumn tableColumn)
-		{
-			string res;
-
-			if (tableColumn.DataType == typeof(decimal) || tableColumn.DataType == typeof(double))
-			{
-				res = decimal.Parse(summa.ToString()).ToString("N");
-			}
-			else
-			{
-				res = summa.ToString();
-			}
-
-			return string.Format("Сумма по колонке равна {0}", res);
-		}
-
-		public void Clear()
-		{
-			dataGrid.DataSource = null;
-			dataGrid.Columns.Clear();
-			lbQuickSearch.Text = QuickSearchText;
-			ClearQuickSearch();
-			currentColumn = null;
-			txQuickSearch.ReadOnly = true;
-			added2Checked = new List<PresentationObject>();
-			removedFromChecked = new List<PresentationObject>();
-			
-			CheckBox headerBox = CheckboxHeader;
-			if(headerBox != null) headerBox.Checked = false;
+            if (string.IsNullOrEmpty(dataView.Sort) || dataView.Sort.Length < 1)
+                return;
+            Match m = Regex.Match(dataView.Sort, @"\[.+\]");
+            string columnName = m.Value.Substring(1, m.Value.Length - 2);
+            object res = dataTable.Compute(string.Format("Sum([{0}])", columnName), null);
+            MessageBox.ShowInformation(FormatColumnSummary(res, dataTable.Columns[columnName]));
         }
 
-		private CheckBox CheckboxHeader
-		{
-			get
-			{
-                Control[] res = dataGrid.Controls.Find("checkboxHeader", true);
-				if (res.Length > 0) return (CheckBox)res[0];
-				return null;
+        private static string FormatColumnSummary(object summa, DataColumn tableColumn)
+        {
+            string res;
+
+            if (tableColumn.DataType == typeof(decimal) || tableColumn.DataType == typeof(double))
+            {
+                res = decimal.Parse(summa.ToString()).ToString("N");
             }
-		}
+            else
+            {
+                res = summa.ToString();
+            }
+
+            return string.Format("Сумма по колонке равна {0}", res);
+        }
+
+        public void Clear()
+        {
+            dataGrid.DataSource = null;
+            dataGrid.Columns.Clear();
+            lbQuickSearch.Text = QuickSearchText;
+            ClearQuickSearch();
+            currentColumn = null;
+            txQuickSearch.ReadOnly = true;
+            added2Checked = new List<PresentationObject>();
+            removedFromChecked = new List<PresentationObject>();
+
+            CheckBox headerBox = CheckboxHeader;
+            if (headerBox != null) headerBox.Checked = false;
+        }
+
+        private CheckBox CheckboxHeader
+        {
+            get
+            {
+                Control[] res = dataGrid.Controls.Find("checkboxHeader", true);
+                if (res.Length > 0) return (CheckBox)res[0];
+                return null;
+            }
+        }
 
         private void ClearQuickSearch()
-		{
-			txQuickSearch.TextChanged -= TxQuickSearch_TextChanged;
-			txQuickSearch.Text = string.Empty;
-			txQuickSearch.BackColor = SystemColors.Window;
-			txQuickSearch.TextChanged += TxQuickSearch_TextChanged;
-		}
+        {
+            txQuickSearch.TextChanged -= TxQuickSearch_TextChanged;
+            txQuickSearch.Text = string.Empty;
+            txQuickSearch.BackColor = SystemColors.Window;
+            txQuickSearch.TextChanged += TxQuickSearch_TextChanged;
+        }
 
-		private PresentationObject CreateObject(DataRowView drv)
-		{
-			if(drv == null) return null;
+        private PresentationObject CreateObject(DataRowView drv)
+        {
+            if (drv == null) return null;
 
-			PresentationObject presentationObject = ResolveEntityForSelectedRow(drv).CreateObject(drv.Row);
+            PresentationObject presentationObject = ResolveEntityForSelectedRow(drv).CreateObject(drv.Row);
             if (presentationObject is IObjectContainer objectContainer)
             {
                 if (relationScenario != null)
@@ -787,26 +787,26 @@ namespace FogSoft.WinForm.Controls
                     objectContainer.ChildEntity = dependantGrid.Entity;
             }
             return presentationObject;
-		}
+        }
 
-		private Entity ResolveEntityForSelectedRow(DataRowView drv)
-		{
-			if(drv.DataView.Table.Columns.Contains(Constants.ParamNames.EntityId))
-				return EntityManager.GetEntity(ParseHelper.ParseToInt32(drv[Constants.ParamNames.EntityId].ToString()));
-			return entity;
-		}
+        private Entity ResolveEntityForSelectedRow(DataRowView drv)
+        {
+            if (drv.DataView.Table.Columns.Contains(Constants.ParamNames.EntityId))
+                return EntityManager.GetEntity(ParseHelper.ParseToInt32(drv[Constants.ParamNames.EntityId].ToString()));
+            return entity;
+        }
 
-		private void SetTablePKColumn(DataTable table)
-		{
-			// Set PK columns in the DataTable to find necessary row quickly
-			if(entity.PKColumns.Length > 0)
-			{
-				DataColumn[] pkColumns = new DataColumn[entity.PKColumns.Length];
-				for(int i = 0; i < entity.PKColumns.Length; i++)
-					pkColumns[i] = table.Columns[entity.PKColumns[i]];
-				table.PrimaryKey = pkColumns;
-			}
-		}
+        private void SetTablePKColumn(DataTable table)
+        {
+            // Set PK columns in the DataTable to find necessary row quickly
+            if (entity.PKColumns.Length > 0)
+            {
+                DataColumn[] pkColumns = new DataColumn[entity.PKColumns.Length];
+                for (int i = 0; i < entity.PKColumns.Length; i++)
+                    pkColumns[i] = table.Columns[entity.PKColumns[i]];
+                table.PrimaryKey = pkColumns;
+            }
+        }
 
         private HashSet<string> SaveCheckedKeys()
         {
@@ -847,34 +847,34 @@ namespace FogSoft.WinForm.Controls
         }
 
         private void SetColumnHeaders(DataColumnCollection columns)
-		{
-			if(checkboxes) AddMultiSelectColumn();
+        {
+            if (checkboxes) AddMultiSelectColumn();
 
-			Image icon = null;
-			if(Globals.IconLoader != null) icon = Globals.IconLoader(entity.IconName);
+            Image icon = null;
+            if (Globals.IconLoader != null) icon = Globals.IconLoader(entity.IconName);
 
-			if(icon != null) AddImageColumn(icon);
+            if (icon != null) AddImageColumn(icon);
 
-			foreach (Entity.Attribute entityAttribute in entity.SortedAttributes)
-			{
-				if(columns.Contains(entityAttribute.Name))
-					AddColumn(entityAttribute);
-			}
+            foreach (Entity.Attribute entityAttribute in entity.SortedAttributes)
+            {
+                if (columns.Contains(entityAttribute.Name))
+                    AddColumn(entityAttribute);
+            }
 
-			//dataGrid.Columns[dataGrid.Columns.Count-1].AutoSizeMode = DataGridViewAutoSizeColumnMode.Fill;
+            //dataGrid.Columns[dataGrid.Columns.Count-1].AutoSizeMode = DataGridViewAutoSizeColumnMode.Fill;
         }
 
-		private DataRowView CurrentRowView
-		{
-			get
-			{
-				if(bm == null || bm.Position < 0) return null;
-				return bm.Current as DataRowView;
-			}
-		}
+        private DataRowView CurrentRowView
+        {
+            get
+            {
+                if (bm == null || bm.Position < 0) return null;
+                return bm.Current as DataRowView;
+            }
+        }
 
-		private void AddImageColumn(Image icon)
-		{
+        private void AddImageColumn(Image icon)
+        {
             Bitmap resized = new Bitmap(16, 16);
 
             using (Graphics g = Graphics.FromImage(resized))
@@ -883,45 +883,45 @@ namespace FogSoft.WinForm.Controls
             }
 
             DataGridViewImageColumn column = new DataGridViewImageColumn(true)
-			                                 	{
-			                                 		Image = resized,
-			                                 		ValuesAreIcons = false,
-			                                 		Resizable = DataGridViewTriState.False,
-													
-			                                 	};
-			dataGrid.Columns.Add(column);
-		}
+            {
+                Image = resized,
+                ValuesAreIcons = false,
+                Resizable = DataGridViewTriState.False,
 
-		private void AddColumn(Entity.Attribute entityAttribute)
-		{
-			DataGridViewColumn column = CreateDataGridColumn(entityAttribute);
-			column.DataPropertyName = entityAttribute.Name;
-			column.HeaderText = entityAttribute.Alias;
-			if (!(column is DataGridViewComboBoxColumn))
-			{
-				column.ReadOnly = true;
-			}
+            };
+            dataGrid.Columns.Add(column);
+        }
 
-			dataGrid.Columns.Add(column);
-		}
+        private void AddColumn(Entity.Attribute entityAttribute)
+        {
+            DataGridViewColumn column = CreateDataGridColumn(entityAttribute);
+            column.DataPropertyName = entityAttribute.Name;
+            column.HeaderText = entityAttribute.Alias;
+            if (!(column is DataGridViewComboBoxColumn))
+            {
+                column.ReadOnly = true;
+            }
 
-		private void AddMultiSelectColumn()
-		{
-			DataGridViewCheckBoxColumn column = new DataGridViewCheckBoxColumn
-			                                    	{
-			                                    		DataPropertyName = COL_IsSelected,
-			                                    		ReadOnly = false
-			                                    	};
-			
-			dataGrid.Columns.Add(column);
+            dataGrid.Columns.Add(column);
+        }
+
+        private void AddMultiSelectColumn()
+        {
+            DataGridViewCheckBoxColumn column = new DataGridViewCheckBoxColumn
+            {
+                DataPropertyName = COL_IsSelected,
+                ReadOnly = false
+            };
+
+            dataGrid.Columns.Add(column);
         }
 
         protected override void OnLoad(EventArgs e)
         {
             base.OnLoad(e);
 
-			if (checkboxes && showMultiselectColumn)
-				AddCheckBox2ColumnHeader();
+            if (checkboxes && showMultiselectColumn)
+                AddCheckBox2ColumnHeader();
         }
 
         private void AddCheckBox2ColumnHeader()
@@ -1023,100 +1023,100 @@ namespace FogSoft.WinForm.Controls
 
 
         private void CheckboxHeader_CheckedChanged(object sender, EventArgs e)
-		{
-			MultiSelectCheckAll(CheckboxHeader.Checked);
+        {
+            MultiSelectCheckAll(CheckboxHeader.Checked);
         }
 
         private DataGridViewColumn CreateDataGridColumn(Entity.Attribute attribute)
-		{
+        {
             entity.ColumnsInfo.TryGetValue(attribute.Name, out ColumnInfo columnInfo);
 
             if (ColumnInfo.IsBooleanData(columnInfo, attribute))
-			{
-				DataGridViewImageColumn column = new DataGridViewImageColumn
-				                                 	{
-				                                 		CellTemplate = new DataGridViewExBooleanCell(),
-				                                 		SortMode = DataGridViewColumnSortMode.Automatic,
-				                                 		Resizable = DataGridViewTriState.False
-				                                 	};
-				return column;
-			}
+            {
+                DataGridViewImageColumn column = new DataGridViewImageColumn
+                {
+                    CellTemplate = new DataGridViewExBooleanCell(),
+                    SortMode = DataGridViewColumnSortMode.Automatic,
+                    Resizable = DataGridViewTriState.False
+                };
+                return column;
+            }
 
-			if(ColumnInfo.IsMoneyData(columnInfo, attribute))
-			{
-				DataGridViewTextBoxColumn column = new DataGridViewTextBoxColumn();
-				column.CellTemplate.Style.Format = "c";
-				column.CellTemplate.Style.Alignment = DataGridViewContentAlignment.MiddleRight;
-				return column;
-			}
+            if (ColumnInfo.IsMoneyData(columnInfo, attribute))
+            {
+                DataGridViewTextBoxColumn column = new DataGridViewTextBoxColumn();
+                column.CellTemplate.Style.Format = "c";
+                column.CellTemplate.Style.Alignment = DataGridViewContentAlignment.MiddleRight;
+                return column;
+            }
 
-			if (ColumnInfo.IsFloatData(columnInfo, attribute))
-			{
-				DataGridViewTextBoxColumn column = new DataGridViewTextBoxColumn();
-				column.CellTemplate.Style.Format = "f";
-				column.CellTemplate.Style.Alignment = DataGridViewContentAlignment.MiddleRight;
-				return column;
-			}
+            if (ColumnInfo.IsFloatData(columnInfo, attribute))
+            {
+                DataGridViewTextBoxColumn column = new DataGridViewTextBoxColumn();
+                column.CellTemplate.Style.Format = "f";
+                column.CellTemplate.Style.Alignment = DataGridViewContentAlignment.MiddleRight;
+                return column;
+            }
 
-			return new DataGridViewTextBoxColumn();
-		}
+            return new DataGridViewTextBoxColumn();
+        }
 
         private void DataGrid_MouseDown(object sender, MouseEventArgs e)
-		{
-			try
-			{
-				if(e.Button == MouseButtons.Right && isMenuEnabled)
-				{
-					PresentationObject currentObject = SelectedObject;
-					if(currentObject != null) DisplayPopUpMenu(currentObject);
-				}
-			}
-			catch(Exception ex)
-			{
-				ErrorManager.PublishError(ex);
-			}
-			finally
-			{
-				Cursor = Cursors.Default;
-			}
-		}
+        {
+            try
+            {
+                if (e.Button == MouseButtons.Right && isMenuEnabled)
+                {
+                    PresentationObject currentObject = SelectedObject;
+                    if (currentObject != null) DisplayPopUpMenu(currentObject);
+                }
+            }
+            catch (Exception ex)
+            {
+                ErrorManager.PublishError(ex);
+            }
+            finally
+            {
+                Cursor = Cursors.Default;
+            }
+        }
 
-		private void DisplayPopUpMenu(IActionHandler currentObject)
-		{
-			dataGrid.ContextMenuStrip =
-				MenuManager.CreatePopupMenu(currentObject, MenuItemClick, ViewType.Journal);
-		}
+        private void DisplayPopUpMenu(IActionHandler currentObject)
+        {
+            dataGrid.ContextMenuStrip =
+                MenuManager.CreatePopupMenu(currentObject, MenuItemClick, ViewType.Journal);
+        }
 
-		private void MenuItemClick(object sender, EventArgs e)
-		{
-			try
-			{
-				ToolStripMenuItem menuItem = (ToolStripMenuItem)sender;
-				PresentationObject currentObject = SelectedObject;
+        private void MenuItemClick(object sender, EventArgs e)
+        {
+            try
+            {
+                ToolStripMenuItem menuItem = (ToolStripMenuItem)sender;
+                PresentationObject currentObject = SelectedObject;
 
-				IActionHandler actionHandler = currentObject;
-				actionHandler.ObjectCreated -= OnObjectCreated;
-				actionHandler.ObjectCreated += OnObjectCreated;
+                IActionHandler actionHandler = currentObject;
+                actionHandler.ObjectCreated -= OnObjectCreated;
+                actionHandler.ObjectCreated += OnObjectCreated;
 
-				currentObject.ObjectDeleted -= OnObjectDeleted;
-				currentObject.ObjectChanged -= OnObjectChanged;
+                currentObject.ObjectDeleted -= OnObjectDeleted;
+                currentObject.ObjectChanged -= OnObjectChanged;
 
-				currentObject.ObjectDeleted += OnObjectDeleted;
-				currentObject.ObjectChanged += OnObjectChanged;
+                currentObject.ObjectDeleted += OnObjectDeleted;
+                currentObject.ObjectChanged += OnObjectChanged;
 
-				currentObject.ObjectCloned -= OnObjectCreated;
-				currentObject.ObjectCloned -= OnObjectCloned;
-				currentObject.ObjectCloned += OnObjectCreated;
-				currentObject.ObjectCloned += OnObjectCloned;
+                currentObject.ObjectCloned -= OnObjectCreated;
+                currentObject.ObjectCloned -= OnObjectCloned;
+                currentObject.ObjectCloned += OnObjectCreated;
+                currentObject.ObjectCloned += OnObjectCloned;
 
-				currentObject.ParentChanged -= OnParentChanged;
-				currentObject.ParentChanged += OnParentChanged;
+                currentObject.ParentChanged -= OnParentChanged;
+                currentObject.ParentChanged += OnParentChanged;
 
                 currentObject.ParentChanged2 -= OnObjectParentChange2;
                 currentObject.ParentChanged2 += OnObjectParentChange2;
 
-				currentObject.RefreshAllData -= RefreshAll;
-				currentObject.RefreshAllData += RefreshAll;
+                currentObject.RefreshAllData -= RefreshAll;
+                currentObject.RefreshAllData += RefreshAll;
 
                 if (currentObject is IVisualContainer objectContainer)
                 {
@@ -1125,282 +1125,282 @@ namespace FogSoft.WinForm.Controls
                 }
 
                 currentObject.DoAction(menuItem.Name, ParentForm, interfaceObject);
-			}
-			catch(Exception ex)
-			{
-				ErrorManager.PublishError(ex);
-			}
-			finally
-			{
-				dataGrid.ContextMenuStrip = null;
-			}
-		}
+            }
+            catch (Exception ex)
+            {
+                ErrorManager.PublishError(ex);
+            }
+            finally
+            {
+                dataGrid.ContextMenuStrip = null;
+            }
+        }
 
-		private void OnParentChanged(PresentationObject presentationObject, int i)
-		{
+        private void OnParentChanged(PresentationObject presentationObject, int i)
+        {
             EntityParentChanged?.Invoke(presentationObject, i);
         }
 
-		private void OnObjectParentChange2(PresentationObject presentationObject, Entity parentEntity)
-		{
-			RebuildTree?.Invoke(presentationObject, parentEntity);
-		}
+        private void OnObjectParentChange2(PresentationObject presentationObject, Entity parentEntity)
+        {
+            RebuildTree?.Invoke(presentationObject, parentEntity);
+        }
 
         private void OnObjectCreated(PresentationObject presentationObject)
-		{
-			try
-			{
-				dependantGrid?.AddRow(presentationObject);
-				RefreshDependantGrid();
-			}
-			catch(Exception ex)
-			{
-				ErrorManager.PublishError(ex);
-			}
-		}
+        {
+            try
+            {
+                dependantGrid?.AddRow(presentationObject);
+                RefreshDependantGrid();
+            }
+            catch (Exception ex)
+            {
+                ErrorManager.PublishError(ex);
+            }
+        }
 
-		private void OnObjectCloned(PresentationObject presentationObject)
-		{
-			try
-			{
-				AddRow(presentationObject);
+        private void OnObjectCloned(PresentationObject presentationObject)
+        {
+            try
+            {
+                AddRow(presentationObject);
 
-				RefreshDependantGrid();
-			}
-			catch(Exception ex)
-			{
-				ErrorManager.PublishError(ex);
-			}
-		}
+                RefreshDependantGrid();
+            }
+            catch (Exception ex)
+            {
+                ErrorManager.PublishError(ex);
+            }
+        }
 
-		private void OnObjectDeleted(PresentationObject presentationObject)
-		{
-			try
-			{
-				DeleteRow(presentationObject);
-				RefreshDependantGrid();
+        private void OnObjectDeleted(PresentationObject presentationObject)
+        {
+            try
+            {
+                DeleteRow(presentationObject);
+                RefreshDependantGrid();
                 RebuildCurrentNode?.Invoke(presentationObject);
             }
-			catch(Exception ex)
-			{
-				ErrorManager.PublishError(ex);
-			}
-		}
+            catch (Exception ex)
+            {
+                ErrorManager.PublishError(ex);
+            }
+        }
 
-		private void OnObjectChanged(PresentationObject presentationObject)
-		{
-			try
-			{
-				UpdateRow(presentationObject);
-				ObjectChanged?.Invoke(presentationObject);
+        private void OnObjectChanged(PresentationObject presentationObject)
+        {
+            try
+            {
+                UpdateRow(presentationObject);
+                ObjectChanged?.Invoke(presentationObject);
 
-				RefreshDependantGrid();
-				RebuildCurrentNode?.Invoke(presentationObject);
-			}
-			catch(Exception ex)
-			{
-				ErrorManager.PublishError(ex);
-			}
-		}
+                RefreshDependantGrid();
+                RebuildCurrentNode?.Invoke(presentationObject);
+            }
+            catch (Exception ex)
+            {
+                ErrorManager.PublishError(ex);
+            }
+        }
 
-		private void OnContainerRefreshed(IObjectContainer container)
-		{
-			try
-			{
+        private void OnContainerRefreshed(IObjectContainer container)
+        {
+            try
+            {
                 ContainerRefreshed?.Invoke(container);
                 if (RebuildCurrentNode != null && container is PresentationObject po) RebuildCurrentNode(po);
 
             }
-			catch(Exception ex)
-			{
-				ErrorManager.PublishError(ex);
-			}
-		}
+            catch (Exception ex)
+            {
+                ErrorManager.PublishError(ex);
+            }
+        }
 
-		private void Bm_PositionChanged(object sender, EventArgs e)
-		{
-			PresentationObject po = SelectedObject;
-			if (po != null && po.Equal(selectedObject)) return;
-			selectedObject = po;
-			FireObjectSelected();
-			RefreshDependantGrid();
-		}
+        private void Bm_PositionChanged(object sender, EventArgs e)
+        {
+            PresentationObject po = SelectedObject;
+            if (po != null && po.Equal(selectedObject)) return;
+            selectedObject = po;
+            FireObjectSelected();
+            RefreshDependantGrid();
+        }
 
-		private void RefreshDependantGrid()
-		{
-			if(dependantGrid != null)
-			{
-				if (SelectedObject is IObjectContainer objectContainer)
-				{
-					SetDependantGridCaption(objectContainer);
-					dependantGrid.DataSource = objectContainer.GetContent().DefaultView;
-				}
-				else
-				{
+        private void RefreshDependantGrid()
+        {
+            if (dependantGrid != null)
+            {
+                if (SelectedObject is IObjectContainer objectContainer)
+                {
+                    SetDependantGridCaption(objectContainer);
+                    dependantGrid.DataSource = objectContainer.GetContent().DefaultView;
+                }
+                else
+                {
                     SetDependantGridCaption(null);
                     dependantGrid.DataSource = null;
-				}
+                }
             }
-		}
+        }
 
-		private void SetDependantGridCaption(IObjectContainer objectContainer)
-		{
-			dependantGrid.Caption = objectContainer == null ? string.Empty : string.Format("{0} / {1}", SelectedObject.Name, objectContainer.ChildEntity.Name);
-		}
+        private void SetDependantGridCaption(IObjectContainer objectContainer)
+        {
+            dependantGrid.Caption = objectContainer == null ? string.Empty : string.Format("{0} / {1}", SelectedObject.Name, objectContainer.ChildEntity.Name);
+        }
 
-		private void FireGridDblClicked()
-		{
+        private void FireGridDblClicked()
+        {
             DblClick?.Invoke();
         }
 
-		private void FireObjectSelected()
-		{
-			if(ObjectSelected != null && SelectedObject != null)
-				ObjectSelected(SelectedObject);
-		}
+        private void FireObjectSelected()
+        {
+            if (ObjectSelected != null && SelectedObject != null)
+                ObjectSelected(SelectedObject);
+        }
 
-		private void FireObjectChecked(PresentationObject po, bool state)
-		{
-			ObjectChecked?.Invoke(po, state);
-		}
+        private void FireObjectChecked(PresentationObject po, bool state)
+        {
+            ObjectChecked?.Invoke(po, state);
+        }
 
-		private void FireObjectDeleted(PresentationObject presentationObject)
-		{
+        private void FireObjectDeleted(PresentationObject presentationObject)
+        {
             ObjectDeleted?.Invoke(presentationObject);
         }
 
-		private void FireObjectsDeleted(IList<PresentationObject> presentationObjects)
-		{
-			if (presentationObjects != null && presentationObjects.Count > 0)
-				ObjectsDeleted?.Invoke(presentationObjects);
-		}
+        private void FireObjectsDeleted(IList<PresentationObject> presentationObjects)
+        {
+            if (presentationObjects != null && presentationObjects.Count > 0)
+                ObjectsDeleted?.Invoke(presentationObjects);
+        }
 
-		private void FireObjectChanged(PresentationObject presentationObject)
-		{
+        private void FireObjectChanged(PresentationObject presentationObject)
+        {
             ObjectChanged?.Invoke(presentationObject);
         }
 
-		private void FireObjectCreated(PresentationObject presentationObject)
-		{
-			ObjectCreated?.Invoke(presentationObject);
-		}
+        private void FireObjectCreated(PresentationObject presentationObject)
+        {
+            ObjectCreated?.Invoke(presentationObject);
+        }
 
-		private void DataGrid_DoubleClick(object sender, EventArgs e)
-		{
-			Point pnt = dataGrid.PointToClient(Cursor.Position);
-			DataGridView.HitTestInfo hti = dataGrid.HitTest(pnt.X, pnt.Y);
-			if(hti.Type != DataGridViewHitTestType.Cell && hti.Type != DataGridViewHitTestType.RowHeader)
-				return;
+        private void DataGrid_DoubleClick(object sender, EventArgs e)
+        {
+            Point pnt = dataGrid.PointToClient(Cursor.Position);
+            DataGridView.HitTestInfo hti = dataGrid.HitTest(pnt.X, pnt.Y);
+            if (hti.Type != DataGridViewHitTestType.Cell && hti.Type != DataGridViewHitTestType.RowHeader)
+                return;
 
-			PresentationObject presentationObject = SelectedObject;
-			if(presentationObject != null && presentationObject.IsActionEnabled(Constants.EntityActions.ShowPassport, ViewType.Journal) &&
-			   isMenuEnabled &&
-			   presentationObject.ShowPassport(this))
-			{
-				UpdateRow(presentationObject);
-			}
+            PresentationObject presentationObject = SelectedObject;
+            if (presentationObject != null && presentationObject.IsActionEnabled(Constants.EntityActions.ShowPassport, ViewType.Journal) &&
+               isMenuEnabled &&
+               presentationObject.ShowPassport(this))
+            {
+                UpdateRow(presentationObject);
+            }
 
-			FireGridDblClicked();
-		}
+            FireGridDblClicked();
+        }
 
-		private void DataGrid_ColumnHeaderMouseClick(object sender, DataGridViewCellMouseEventArgs e)
-		{
-			try
-			{
-				currentColumn = CheckCurrentColumnData(dataGrid.Columns[e.ColumnIndex]);
-				txQuickSearch.ReadOnly = (currentColumn == null);
+        private void DataGrid_ColumnHeaderMouseClick(object sender, DataGridViewCellMouseEventArgs e)
+        {
+            try
+            {
+                currentColumn = CheckCurrentColumnData(dataGrid.Columns[e.ColumnIndex]);
+                txQuickSearch.ReadOnly = (currentColumn == null);
 
-				if (currentColumn != null)
-				{
-					if (ColumnSelected != null)
-					{
-						string columnName = currentColumn.DataPropertyName;
-						DataView dv = (DataView) dataGrid.DataSource;
+                if (currentColumn != null)
+                {
+                    if (ColumnSelected != null)
+                    {
+                        string columnName = currentColumn.DataPropertyName;
+                        DataView dv = (DataView)dataGrid.DataSource;
                         DataColumn dataColumn = dv.Table.Columns[columnName];
                         if (dataColumn != null)
                         {
                             ColumnSelected(dataColumn.DataType);
                         }
-					}
-					SelectObject();
-				}
+                    }
+                    SelectObject();
+                }
 
-				HighlightRows();
-			}
-			catch(Exception ex)
-			{
-				ErrorManager.PublishError(ex);
-			}
-		}
+                HighlightRows();
+            }
+            catch (Exception ex)
+            {
+                ErrorManager.PublishError(ex);
+            }
+        }
 
-		private void TxQuickSearch_TextChanged(object sender, EventArgs e)
-		{
-			try
-			{
-				int recordsCount = QuickSearch();
+        private void TxQuickSearch_TextChanged(object sender, EventArgs e)
+        {
+            try
+            {
+                int recordsCount = QuickSearch();
 
-				if (txQuickSearch.Text.Length > 0)
-				{
-					txQuickSearch.BackColor = recordsCount == 0 ? Color.LightPink : Color.LightYellow;
-				}
-				else
-				{
-					txQuickSearch.BackColor = SystemColors.Window;
-				}
+                if (txQuickSearch.Text.Length > 0)
+                {
+                    txQuickSearch.BackColor = recordsCount == 0 ? Color.LightPink : Color.LightYellow;
+                }
+                else
+                {
+                    txQuickSearch.BackColor = SystemColors.Window;
+                }
                 RecordCountChanged?.Invoke(this, recordsCount);
             }
-			catch(Exception ex)
-			{
-				ErrorManager.PublishError(ex);
-			}
-		}
+            catch (Exception ex)
+            {
+                ErrorManager.PublishError(ex);
+            }
+        }
 
-		private int QuickSearch()
-		{
-			if(currentColumn == null || currentColumn is DataGridViewCheckBoxColumn) 
-				return 0;
+        private int QuickSearch()
+        {
+            if (currentColumn == null || currentColumn is DataGridViewCheckBoxColumn)
+                return 0;
 
-			string searchText = txQuickSearch.Text.ToLower();
+            string searchText = txQuickSearch.Text.ToLower();
             if (string.IsNullOrEmpty(searchText))
             {
                 // Если строка поиска пуста, показываем все данные
                 DataSource.RowFilter = null;
             }
             else
-			{
-				// Фильтруем данные по введенной подстроке
-				if (DataSource.Table.Columns[currentColumn.DataPropertyName].DataType == typeof(string))
-					DataSource.RowFilter = $"{currentColumn.DataPropertyName} LIKE '%{EscapeLikeValue(searchText)}%'";
-				else
-				{
-					txQuickSearch.Text = string.Empty;
-					MessageBox.ShowInformation(Properties.Resources.SearchForTextColumnsOnlyWarning);
-				}
+            {
+                // Фильтруем данные по введенной подстроке
+                if (DataSource.Table.Columns[currentColumn.DataPropertyName].DataType == typeof(string))
+                    DataSource.RowFilter = $"{currentColumn.DataPropertyName} LIKE '%{EscapeLikeValue(searchText)}%'";
+                else
+                {
+                    txQuickSearch.Text = string.Empty;
+                    MessageBox.ShowInformation(Properties.Resources.SearchForTextColumnsOnlyWarning);
+                }
             }
 
-			RefreshDependantGrid();
-			return DataSource.Count;
-			
-		}
+            RefreshDependantGrid();
+            return DataSource.Count;
 
-		private string EscapeLikeValue(string value)
-		{
-			return value.Replace("[", "[[]")
-						//.Replace("]", "[]]")
-						.Replace("%", "[%]")
-						.Replace("_", "[_]");
-		}
+        }
 
-		public bool Contains(PresentationObject presentationObject)
-		{
-			if (dataGrid.DataSource == null || presentationObject == null || !IsAllowedEntity(presentationObject.Entity)) return false;
-			return (GridTable.Rows.Find(presentationObject.IDs) != null);
-		}
+        private string EscapeLikeValue(string value)
+        {
+            return value.Replace("[", "[[]")
+                        //.Replace("]", "[]]")
+                        .Replace("%", "[%]")
+                        .Replace("_", "[_]");
+        }
 
-		private void SelectObject()
-		{
-			if (selectedObject == null) return;
-			if (dataGrid.DataSource == null) return;
+        public bool Contains(PresentationObject presentationObject)
+        {
+            if (dataGrid.DataSource == null || presentationObject == null || !IsAllowedEntity(presentationObject.Entity)) return false;
+            return (GridTable.Rows.Find(presentationObject.IDs) != null);
+        }
+
+        private void SelectObject()
+        {
+            if (selectedObject == null) return;
+            if (dataGrid.DataSource == null) return;
 
             string query = selectedObject.PKWhereClause;
             DataView dataView = (DataView)dataGrid.DataSource;
@@ -1452,73 +1452,73 @@ namespace FogSoft.WinForm.Controls
         }
 
         private void DataGrid_CurrentCellDirtyStateChanged(object sender, EventArgs e)
-		{
-			dataGrid.CommitEdit(DataGridViewDataErrorContexts.Commit);
-		}
+        {
+            dataGrid.CommitEdit(DataGridViewDataErrorContexts.Commit);
+        }
 
-		private void DataGrid_CellValueChanged(object sender, DataGridViewCellEventArgs e)
-		{
-			try
-			{
-				if(IsMultiselectColumn(e.ColumnIndex))
-				{
-					MultiSelectColumnValueChanged(e);
-				}
-			}
-			catch(Exception ex)
-			{
-				ErrorManager.PublishError(ex);
-			}
-		}
+        private void DataGrid_CellValueChanged(object sender, DataGridViewCellEventArgs e)
+        {
+            try
+            {
+                if (IsMultiselectColumn(e.ColumnIndex))
+                {
+                    MultiSelectColumnValueChanged(e);
+                }
+            }
+            catch (Exception ex)
+            {
+                ErrorManager.PublishError(ex);
+            }
+        }
 
-		private void MultiSelectColumnValueChanged(DataGridViewCellEventArgs e)
-		{
-			if (_lockMultiSelect)
-				return;
-			PresentationObject po = CreateObject(DataSource.Table.DefaultView[e.RowIndex]);
+        private void MultiSelectColumnValueChanged(DataGridViewCellEventArgs e)
+        {
+            if (_lockMultiSelect)
+                return;
+            PresentationObject po = CreateObject(DataSource.Table.DefaultView[e.RowIndex]);
 
             //PresentationObject po = CreateObject(bm.Current as DataRowView);
-			CheckedStatusChanged(po, GetCell(e.RowIndex, e.ColumnIndex).Value);
-			FireObjectChecked(po, ParseHelper.GetBooleanFromObject(GetCell(e.RowIndex, e.ColumnIndex).Value, false));
-		}
+            CheckedStatusChanged(po, GetCell(e.RowIndex, e.ColumnIndex).Value);
+            FireObjectChecked(po, ParseHelper.GetBooleanFromObject(GetCell(e.RowIndex, e.ColumnIndex).Value, false));
+        }
 
-		private void CheckedStatusChanged(PresentationObject po, object value)
-		{
-			if (ParseHelper.GetBooleanFromObject(value, false))
-			{
-				if(removedFromChecked.Contains(po))
-					removedFromChecked.Remove(po);
-				else
-					added2Checked.Add(po);
-			}
-			else
-			{
-				if(added2Checked.Contains(po))
-					added2Checked.Remove(po);
-				else
-					removedFromChecked.Add(po);
-			}
-		}
+        private void CheckedStatusChanged(PresentationObject po, object value)
+        {
+            if (ParseHelper.GetBooleanFromObject(value, false))
+            {
+                if (removedFromChecked.Contains(po))
+                    removedFromChecked.Remove(po);
+                else
+                    added2Checked.Add(po);
+            }
+            else
+            {
+                if (added2Checked.Contains(po))
+                    added2Checked.Remove(po);
+                else
+                    removedFromChecked.Add(po);
+            }
+        }
 
-		private DataGridViewCell GetCell(int rowIndex, int columnIndex)
-		{
-			return dataGrid.Rows[rowIndex].Cells[columnIndex];
-		}
+        private DataGridViewCell GetCell(int rowIndex, int columnIndex)
+        {
+            return dataGrid.Rows[rowIndex].Cells[columnIndex];
+        }
 
-		private bool IsMultiselectColumn(int columnIndex)
-		{
-			return dataGrid.Columns[columnIndex].DataPropertyName == COL_IsSelected;
-		}
+        private bool IsMultiselectColumn(int columnIndex)
+        {
+            return dataGrid.Columns[columnIndex].DataPropertyName == COL_IsSelected;
+        }
 
-		private void DependantGrid_ObjectDeleted(PresentationObject presentationObject)
-		{
-			PresentationObject po = SelectedObject;
-			if(po != null)
-			{
-				po.Refresh();
-				UpdateRow(po);
-			}
-		}
+        private void DependantGrid_ObjectDeleted(PresentationObject presentationObject)
+        {
+            PresentationObject po = SelectedObject;
+            if (po != null)
+            {
+                po.Refresh();
+                UpdateRow(po);
+            }
+        }
 
         public void DeleteCurrentObject()
         {
@@ -1535,187 +1535,197 @@ namespace FogSoft.WinForm.Controls
         }
 
         public void DeleteSelectedObjects()
-		{
+        {
             if (dataGrid.SelectedRows.Count <= 1)
-			{
-				DeleteCurrentObject();
-				return;
-			}
+            {
+                DeleteCurrentObject();
+                return;
+            }
 
-			var selectedRows = new DataGridViewRow[dataGrid.SelectedRows.Count];
-			dataGrid.SelectedRows.CopyTo(selectedRows, 0);
+            var selectedRows = new DataGridViewRow[dataGrid.SelectedRows.Count];
+            dataGrid.SelectedRows.CopyTo(selectedRows, 0);
 
-			PresentationObject firstPo = CreateObject(selectedRows[0].DataBoundItem as DataRowView);
-			if (firstPo == null)
-				return;
+            // Сохраняем выбранные объекты ДО первого удаления, чтобы не зависеть от DataBoundItem после изменения DataView.
+            List<Tuple<PresentationObject, string>> selectedItems = new List<Tuple<PresentationObject, string>>();
+            foreach (DataGridViewRow row in selectedRows)
+            {
+                if (row == null || row.IsNewRow)
+                    continue;
 
-			if (!firstPo.IsActionEnabled(Constants.EntityActions.Delete, ViewType.Journal))
-				return;
+                DataRowView drv = row.DataBoundItem as DataRowView;
+                if (drv == null)
+                    continue;
 
-			string msg = string.Format("Вы действительно хотите удалить выбранные объекты? ({0} шт.)", selectedRows.Length);
-			if (Forms.MessageBox.ShowQuestion(msg) != DialogResult.Yes)
-				return;
+                PresentationObject po = CreateObject(drv);
+                if (po == null)
+                    continue;
 
-			List<PresentationObject> deletedObjects = new List<PresentationObject>();
-			DataTable deleteErrors = CreateDeleteErrorsTable();
-			int errorRowNumber = 1;
+                string objectName = ResolveObjectName(po, row);
+                selectedItems.Add(Tuple.Create(po, objectName));
+            }
 
-			try
-			{
-				Cursor = Cursors.WaitCursor;
+            if (selectedItems.Count == 0)
+                return;
 
-				foreach (DataGridViewRow row in selectedRows)
-				{
-					if (row.DataBoundItem == null || row.IsNewRow)
-						continue;
+            PresentationObject firstPo = selectedItems[0].Item1;
+            if (!firstPo.IsActionEnabled(Constants.EntityActions.Delete, ViewType.Journal))
+                return;
 
-					try
-					{
-						PresentationObject po = CreateObject(row.DataBoundItem as DataRowView);
-						if (po == null)
-							continue;
+            string msg = string.Format("Вы действительно хотите удалить выбранные объекты? ({0} шт.)", selectedItems.Count);
+            if (Forms.MessageBox.ShowQuestion(msg) != DialogResult.Yes)
+                return;
 
-						if (!po.IsActionEnabled(Constants.EntityActions.Delete, ViewType.Journal))
-						{
-							string objectName = ResolveObjectName(po, row);
-							if (string.IsNullOrEmpty(objectName))
-								objectName = "<без названия>";
-							AddDeleteError(deleteErrors, errorRowNumber++, objectName, string.Format("Удаление недоступно для объекта '{0}'.", objectName));
-							continue;
-						}
+            List<PresentationObject> deletedObjects = new List<PresentationObject>();
+            DataTable deleteErrors = CreateDeleteErrorsTable();
+            int errorRowNumber = 1;
 
-						if (po.Delete(true))
-						{
-							DeleteRow(po);
-							deletedObjects.Add(po);
-						}
-						else
-						{
-							string objectName = ResolveObjectName(po, row);
-							if (string.IsNullOrEmpty(objectName))
-								objectName = "<без названия>";
-							AddDeleteError(deleteErrors, errorRowNumber++, objectName, string.Format("Не удалось удалить объект '{0}'.", objectName));
-						}
-					}
-					catch (Exception ex)
-					{
-						string objectName = ResolveObjectName(null, row);
-						string errorText = string.Format("Строка #{0}: {1}", row.Index + 1, ex.Message);
-						AddDeleteError(deleteErrors, errorRowNumber++, objectName, errorText);
-					}
-				}
-			}
-			finally
-			{
-				Cursor = Cursors.Default;
-			}
+            try
+            {
+                Cursor = Cursors.WaitCursor;
 
-			FireObjectsDeleted(deletedObjects);
+                foreach (Tuple<PresentationObject, string> item in selectedItems)
+                {
+                    PresentationObject po = item.Item1;
+                    string objectName = string.IsNullOrEmpty(item.Item2) ? "<без названия>" : item.Item2;
 
-			if (deleteErrors.Rows.Count == 0)
-			{
-				MessageBox.ShowInformation(string.Format("Успешно удалено объектов: {0}.", deletedObjects.Count));
-				return;
-			}
+                    try
+                    {
+                        if (!po.IsActionEnabled(Constants.EntityActions.Delete, ViewType.Journal))
+                        {
+                            AddDeleteError(deleteErrors, errorRowNumber++, objectName,
+                                string.Format("Удаление недоступно для объекта '{0}'.", objectName));
+                            continue;
+                        }
 
-			Entity errorEntity = EntityManager.CreateVirtualEntity(
-				MASS_DELETE_ERROR_ENTITY_ID,
-				"Ошибки удаления",
-				"MassDeleteErrors",
-				MASS_DELETE_ERROR_ENTITY_PK,
-				new Entity.Attribute(MASS_DELETE_ERROR_NAME, "Название", "nvarchar"),
-				new Entity.Attribute(MASS_DELETE_ERROR_TEXT, "Ошибка", "nvarchar"));
+                        if (po.Delete(true))
+                        {
+                            DeleteRow(po, false);
+                            deletedObjects.Add(po);
+                        }
+                        else
+                        {
+                            AddDeleteError(deleteErrors, errorRowNumber++, objectName,
+                                string.Format("Не удалось удалить объект '{0}'.", objectName));
+                        }
+                    }
+                    catch (Exception ex)
+                    {
+                        string errorText = string.Format(ErrorManager.GetErrorMessage(ex));
+                        AddDeleteError(deleteErrors, errorRowNumber++, objectName, errorText);
+                    }
+                }
+            }
+            finally
+            {
+                Cursor = Cursors.Default;
+            }
 
-			Globals.ShowSimpleJournal(errorEntity, "Ошибки массового удаления", deleteErrors);
-		}
+            FireObjectsDeleted(deletedObjects);
 
-		private static DataTable CreateDeleteErrorsTable()
-		{
-			DataTable table = new DataTable();
-			table.Columns.Add(MASS_DELETE_ERROR_ENTITY_PK, typeof(int));
-			table.Columns.Add(MASS_DELETE_ERROR_NAME, typeof(string));
-			table.Columns.Add(MASS_DELETE_ERROR_TEXT, typeof(string));
-			return table;
-		}
+            if (deleteErrors.Rows.Count == 0)
+            {
+                MessageBox.ShowInformation(string.Format("Успешно удалено объектов: {0}.", deletedObjects.Count));
+                return;
+            }
 
-		private static void AddDeleteError(DataTable table, int id, string objectName, string errorText)
-		{
-			DataRow row = table.NewRow();
-			row[MASS_DELETE_ERROR_ENTITY_PK] = id;
-			row[MASS_DELETE_ERROR_NAME] = string.IsNullOrEmpty(objectName) ? "<без названия>" : objectName;
-			row[MASS_DELETE_ERROR_TEXT] = errorText;
-			table.Rows.Add(row);
-		}
+            Entity errorEntity = EntityManager.CreateVirtualEntity(
+                MASS_DELETE_ERROR_ENTITY_ID,
+                "Ошибки удаления",
+                "MassDeleteErrors",
+                MASS_DELETE_ERROR_ENTITY_PK,
+                new Entity.Attribute(MASS_DELETE_ERROR_NAME, "Название", "nvarchar"),
+                new Entity.Attribute(MASS_DELETE_ERROR_TEXT, "Ошибка", "nvarchar"));
 
-		private static string ResolveObjectName(PresentationObject po, DataGridViewRow row)
-		{
-			if (po != null && !string.IsNullOrEmpty(po.Name))
-				return po.Name;
+            Globals.ShowSimpleJournal(errorEntity, "Ошибки массового удаления", deleteErrors);
+        }
 
-			if (row?.DataBoundItem is DataRowView dataRowView)
-			{
-				foreach (string candidate in ObjectNameCandidates)
-				{
-					if (!dataRowView.Row.Table.Columns.Contains(candidate))
-						continue;
+        private static DataTable CreateDeleteErrorsTable()
+        {
+            DataTable table = new DataTable();
+            table.Columns.Add(MASS_DELETE_ERROR_ENTITY_PK, typeof(int));
+            table.Columns.Add(MASS_DELETE_ERROR_NAME, typeof(string));
+            table.Columns.Add(MASS_DELETE_ERROR_TEXT, typeof(string));
+            return table;
+        }
 
-					object value = dataRowView.Row[candidate];
-					if (value != DBNull.Value && value != null)
-						return value.ToString();
-				}
+        private static void AddDeleteError(DataTable table, int id, string objectName, string errorText)
+        {
+            DataRow row = table.NewRow();
+            row[MASS_DELETE_ERROR_ENTITY_PK] = id;
+            row[MASS_DELETE_ERROR_NAME] = string.IsNullOrEmpty(objectName) ? "<без названия>" : objectName;
+            row[MASS_DELETE_ERROR_TEXT] = errorText;
+            table.Rows.Add(row);
+        }
 
-				foreach (DataColumn column in dataRowView.Row.Table.Columns
-					         .Cast<DataColumn>()
-					         .Where(c => c.DataType == typeof(string))
-					         .OrderBy(c => c.ColumnName))
-				{
-					if (column.ColumnName == MASS_DELETE_ERROR_ENTITY_PK) continue;
-					object value = dataRowView.Row[column];
-					if (value != DBNull.Value && value != null)
-						return value.ToString();
-				}
-			}
+        private static string ResolveObjectName(PresentationObject po, DataGridViewRow row)
+        {
+            if (po != null && !string.IsNullOrEmpty(po.Name))
+                return po.Name;
 
-			return string.Empty;
-		}
+            if (row?.DataBoundItem is DataRowView dataRowView)
+            {
+                foreach (string candidate in ObjectNameCandidates)
+                {
+                    if (!dataRowView.Row.Table.Columns.Contains(candidate))
+                        continue;
 
-		private void DataGrid_KeyDown(object sender, KeyEventArgs e)
-		{
-			if (e.KeyCode != Keys.Delete)
-				return;
+                    object value = dataRowView.Row[candidate];
+                    if (value != DBNull.Value && value != null)
+                        return value.ToString();
+                }
 
-			e.Handled = true;
-			e.SuppressKeyPress = true;
+                foreach (DataColumn column in dataRowView.Row.Table.Columns
+                             .Cast<DataColumn>()
+                             .Where(c => c.DataType == typeof(string))
+                             .OrderBy(c => c.ColumnName))
+                {
+                    if (column.ColumnName == MASS_DELETE_ERROR_ENTITY_PK) continue;
+                    object value = dataRowView.Row[column];
+                    if (value != DBNull.Value && value != null)
+                        return value.ToString();
+                }
+            }
 
-			try
-			{
-				if (dataGrid.SelectedRows.Count > 1)
-					DeleteSelectedObjects();
-				else
-					DeleteCurrentObject();
-			}
-			catch (Exception ex)
-			{
-				ErrorManager.PublishError(ex);
-			}
-		}
+            return string.Empty;
+        }
 
-		public void EditCurrentObject()
-		{
-			PresentationObject presentationObject = SelectedObject;
-			if(presentationObject != null)
-			{
-				if (presentationObject.IsActionEnabled(Constants.EntityActions.Edit, ViewType.Journal))
-				{
-					presentationObject.DoAction(Constants.EntityActions.Edit, Globals.MdiParent, InterfaceObjects.PropertyPage);
+        private void DataGrid_KeyDown(object sender, KeyEventArgs e)
+        {
+            if (e.KeyCode != Keys.Delete)
+                return;
+
+            e.Handled = true;
+            e.SuppressKeyPress = true;
+
+            try
+            {
+                if (dataGrid.SelectedRows.Count > 1)
+                    DeleteSelectedObjects();
+                else
+                    DeleteCurrentObject();
+            }
+            catch (Exception ex)
+            {
+                ErrorManager.PublishError(ex);
+            }
+        }
+
+        public void EditCurrentObject()
+        {
+            PresentationObject presentationObject = SelectedObject;
+            if (presentationObject != null)
+            {
+                if (presentationObject.IsActionEnabled(Constants.EntityActions.Edit, ViewType.Journal))
+                {
+                    presentationObject.DoAction(Constants.EntityActions.Edit, Globals.MdiParent, InterfaceObjects.PropertyPage);
                     //UpdateRow(presentationObject);
                 }
-				else if (presentationObject.ShowPassport(ParentForm))
-					UpdateRow(presentationObject);
-			}
-		}
+                else if (presentationObject.ShowPassport(ParentForm))
+                    UpdateRow(presentationObject);
+            }
+        }
 
-		private bool _lockMultiSelect = false;
+        private bool _lockMultiSelect = false;
         internal Action<PresentationObject> RebuildCurrentNode { get; set; }
         internal Action<PresentationObject, Entity> RebuildTree { get; set; }
 
@@ -1743,8 +1753,8 @@ namespace FogSoft.WinForm.Controls
                     {
                         for (int i = 0; i < dataGrid.Columns.Count; i++)
                         {
-							if(dataRow[ROW_STYLE].ToString() == "bold")
-								dataGrid.Rows[e.RowIndex].Cells[i].Style.Font = new Font(dataGrid.Font, FontStyle.Bold);
+                            if (dataRow[ROW_STYLE].ToString() == "bold")
+                                dataGrid.Rows[e.RowIndex].Cells[i].Style.Font = new Font(dataGrid.Font, FontStyle.Bold);
                         }
                     }
                 }
@@ -1757,41 +1767,41 @@ namespace FogSoft.WinForm.Controls
         }
 
         private void MultiSelectCheckAll(bool checkFlag)
-		{
+        {
             _suppressAdjustColumnsWidth = true;
             try
-			{
-				dataGrid.SuspendLayout();
-				//_lockMultiSelect = true;
-				foreach (DataGridViewRow row in dataGrid.Rows)
-				{
-					if (row.Cells[0] is DataGridViewCheckBoxCell)
-					{
-						bool isRowChecked = row.Cells[0].Value != null && ((bool)row.Cells[0].Value);
+            {
+                dataGrid.SuspendLayout();
+                //_lockMultiSelect = true;
+                foreach (DataGridViewRow row in dataGrid.Rows)
+                {
+                    if (row.Cells[0] is DataGridViewCheckBoxCell)
+                    {
+                        bool isRowChecked = row.Cells[0].Value != null && ((bool)row.Cells[0].Value);
 
-						if ((checkFlag && !isRowChecked) || (!checkFlag && isRowChecked))
-						{
-							row.Cells[0].Value = checkFlag;
-							//PresentationObject po = CreateObject(row.DataBoundItem as DataRowView);
-							//CheckedStatusChanged(po, checkFlag);
-							if (row.DataBoundItem is DataRowView drv)
-							{
-								drv[COL_IsSelected] = checkFlag;
-							}
+                        if ((checkFlag && !isRowChecked) || (!checkFlag && isRowChecked))
+                        {
+                            row.Cells[0].Value = checkFlag;
+                            //PresentationObject po = CreateObject(row.DataBoundItem as DataRowView);
+                            //CheckedStatusChanged(po, checkFlag);
+                            if (row.DataBoundItem is DataRowView drv)
+                            {
+                                drv[COL_IsSelected] = checkFlag;
+                            }
 
-							dataGrid.RefreshEdit();
-						}
-					}
-				}
-				_lockMultiSelect = false;
-				dataGrid.ResumeLayout(false);
-			}
-			finally
-			{
-				_suppressAdjustColumnsWidth = false;	
-			}
-		}
-	}
+                            dataGrid.RefreshEdit();
+                        }
+                    }
+                }
+                _lockMultiSelect = false;
+                dataGrid.ResumeLayout(false);
+            }
+            finally
+            {
+                _suppressAdjustColumnsWidth = false;
+            }
+        }
+    }
 
     public enum ColorHighlight
     {
@@ -1821,5 +1831,5 @@ namespace FogSoft.WinForm.Controls
         }
     }
 
-	public delegate void ColumnSelectedDelegate(Type columnType);
+    public delegate void ColumnSelectedDelegate(Type columnType);
 }

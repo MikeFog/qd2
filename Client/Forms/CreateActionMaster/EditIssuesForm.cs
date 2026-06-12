@@ -91,7 +91,6 @@ namespace Merlin.Forms.CreateActionMaster
 				rangeGrid.AddedIssues.Rows.Remove(row);
 			_action.Recalculate();
 			rangeGrid.RefreshGrid();
-			//TariffGridRefreshed();
 		}
 	}
 }
