@@ -16,13 +16,35 @@ namespace Merlin.Forms.GridReport
 {
 	public partial class ExportGridForm : Form
 	{
+        private const string SettingPath2SaveTxt  = "ExportGridForm.Path2SaveTxt";
+        private const string SettingPath2SaveWord = "ExportGridForm.Path2SaveWord";
+
         public ExportGridForm()
 		{
 			InitializeComponent();
 			grdRadiostations.Entity = EntityManager.GetEntity((int)Entities.MassMedia);
 			InitMassmediaGroups();
+            LoadSettings();
 			ButtonExportEnabled();
 		}
+
+        private void LoadSettings()
+        {
+            txtPath2SaveTxt.Text  = UserSettings.Load(SettingPath2SaveTxt)  ?? string.Empty;
+            txtPath2SaveWord.Text = UserSettings.Load(SettingPath2SaveWord) ?? string.Empty;
+        }
+
+        private void SaveSettings()
+        {
+            UserSettings.Save(SettingPath2SaveTxt,  txtPath2SaveTxt.Text);
+            UserSettings.Save(SettingPath2SaveWord, txtPath2SaveWord.Text);
+        }
+
+        protected override void OnFormClosed(FormClosedEventArgs e)
+        {
+            SaveSettings();
+            base.OnFormClosed(e);
+        }
 
         private void InitMassmediaGroups()
         {
