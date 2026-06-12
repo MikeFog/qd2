@@ -107,6 +107,7 @@
     <Build Include="dbo\Tables\HeadCompany.sql" />
     <Build Include="dbo\Tables\iCampaignType.sql" />
     <Build Include="dbo\Tables\iInternalVariable.sql" />
+    <Build Include="dbo\Tables\UserSetting.sql" />
     <Build Include="dbo\Tables\SponsorProgramPricelist.sql" />
     <Build Include="dbo\Tables\iEntity.sql" />
     <Build Include="dbo\Tables\iEntityAttribute.sql" />
@@ -426,6 +427,8 @@
     <Build Include="dbo\Stored Procedures\GetRollerIsUsed.sql" />
     <Build Include="dbo\Stored Procedures\CampaignIssuesTransfers.sql" />
     <Build Include="dbo\Stored Procedures\UserIUD.sql" />
+    <Build Include="dbo\Stored Procedures\UserSettingRetrieve.sql" />
+    <Build Include="dbo\Stored Procedures\UserSettingIUD.sql" />
     <Build Include="dbo\Stored Procedures\ActionDeactivate.sql" />
     <Build Include="dbo\Stored Procedures\TransferLogFilter.sql" />
     <Build Include="dbo\Stored Procedures\SpecialActions.sql" />
