@@ -11,10 +11,12 @@ namespace Merlin.Classes
     {
         /// <summary>
         /// Loads a setting value for the currently logged-in user.
-        /// Returns <c>null</c> when the setting does not exist.
+        /// Returns <c>null</c> when the setting does not exist or no user is logged in.
         /// </summary>
         public static string Load(string settingName)
         {
+            if (SecurityManager.LoggedUser == null)
+                return null;
             int userID = SecurityManager.LoggedUser.Id;
             var parameters = new Dictionary<string, object>
             {
@@ -29,9 +31,12 @@ namespace Merlin.Classes
 
         /// <summary>
         /// Saves (inserts or updates) a setting value for the currently logged-in user.
+        /// Does nothing when no user is logged in.
         /// </summary>
         public static void Save(string settingName, string value)
         {
+            if (SecurityManager.LoggedUser == null)
+                return;
             int userID = SecurityManager.LoggedUser.Id;
             var parameters = new Dictionary<string, object>
             {
