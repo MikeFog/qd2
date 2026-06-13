@@ -103,7 +103,13 @@ namespace Merlin.Classes
 							Massmedia massmedia = Massmedia.GetMassmediaByID(mmId);
 							DataSet rs = GetOnAirInquireReport(mmId, CampaignId, (DateTime)dMonths[dm], ((DateTime)dMonths[dm]).AddMonths(1).AddDays(-1));
 							OnAirInquireReport report = new OnAirInquireReport(this, Agency, rs, f.IsOptionChecked, massmedia, (DateTime)dMonths[dm]);
-							report.Show("Эфирная справка");
+							string fileName = string.Format("{0} {1} {2} к акции {3} для {4}.doc",
+								"Эфирная справка",
+								massmedia.Name,
+								((DateTime)dMonths[dm]).ToString("MMMM yyyy"),
+								ActionId,
+								Action.FirmName);
+							report.Show("Эфирная справка", fileName);
 						}
 					}
 					else
@@ -120,7 +126,13 @@ namespace Merlin.Classes
 									Massmedia massmedia = Massmedia.GetMassmediaByID(mmId);
 									DataSet rs = GetOnAirInquireReport(mmId, CampaignId, (DateTime)dMonths[dm], ((DateTime)dMonths[dm]).AddMonths(1).AddDays(-1));
 									OnAirInquireReport report = new OnAirInquireReport(this, Agency, rs, f.IsOptionChecked, massmedia, (DateTime)dMonths[dm]);
-									report.Show("Эфирная справка");
+									string fileName = string.Format("{0} {1} {2} к акции {3} для {4}.doc",
+										"Эфирная справка",
+										massmedia.Name,
+										((DateTime)dMonths[dm]).ToString("MMMM yyyy"),
+										ActionId,
+										Action.FirmName);
+									report.Show("Эфирная справка", fileName);
 								}
 							}
 						}

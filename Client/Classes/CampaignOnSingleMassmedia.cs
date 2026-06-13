@@ -107,12 +107,16 @@ namespace Merlin.Classes
 				FrmMonths f = new FrmMonths(dMonthsToShow);
 				if(f.ShowDialog(owner) == DialogResult.Cancel) return;
 
-
 				foreach (object dm in f.CheckedItems.Keys)
 				{
 					DataSet rs = GetOnAirInquireReport(MassmediaId, CampaignId, (DateTime)dMonths[dm], ((DateTime)dMonths[dm]).AddMonths(1).AddDays(-1));
 					OnAirInquireReport report = new OnAirInquireReport(this, Agency, rs, f.IsOptionChecked, Massmedia, (DateTime)dMonths[dm]);
-					report.Show("Эфирная справка");
+					string fileName = string.Format("{0} для {1} к акции {2} для {3}.doc",
+						"Эфирная справка",
+						MassmediaName,
+						ActionId,
+						Action.FirmName);
+					report.Show("Эфирная справка", fileName);
 				}
 			}
 			finally

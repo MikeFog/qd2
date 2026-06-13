@@ -74,7 +74,12 @@ namespace Merlin.Classes
 						PresentationObject bill = entityBill.CreateObject(parameters);
 
 						ContractReport report = new ContractReport(this, (Agency)item.presentationObject, bill, isSponsor);
-						report.Show(isSponsor ? "Спонсорский договор" : "Договор");
+						string fileName = string.Format("{0} №{1} от {2} для {3}.doc", 
+							isSponsor ? "Спонсорский договор" : "Договор", 
+							bill[TableColumns.Bill.BillNo], 
+							((DateTime)bill[TableColumns.Bill.BillDate]).ToString("dd.MM.yyyy"),
+							Name);
+                        report.Show(isSponsor ? "Спонсорский договор" : "Договор", fileName);
 					}
 				}
 			}

@@ -3,6 +3,8 @@ using System.Collections.Generic;
 using System.Data;
 using System.Diagnostics;
 using System.Drawing;
+using System.IO;
+using System.Linq;
 using System.Windows.Forms;
 using CrystalDecisions.CrystalReports.Engine;
 using FogSoft.WinForm;
@@ -84,9 +86,12 @@ namespace Merlin.Reports
             ProcessReport();
         }
 
-        internal void Show(string caption)
+        internal void Show(string caption, string fileName)
 		{
-			FrmReport fReport = new FrmReport(_report) {Text = caption, MdiParent = Globals.MdiParent};
+            var invalidChars = Path.GetInvalidFileNameChars();
+            fileName = string.Concat(((IEnumerable<char>)fileName).Select(ch => invalidChars.Contains(ch) ? '_' : ch));
+
+            FrmReport fReport = new FrmReport(_report, fileName) {Text = caption, MdiParent = Globals.MdiParent};
 			fReport.Show();
 		}
 
@@ -188,7 +193,7 @@ namespace Merlin.Reports
 			if (heightChange == 0 || string.IsNullOrEmpty(PaintingsSectionName))
 				return;
 
-			foreach (ReportObject reportObject in _report.ReportDefinition.Sections["Section4"].ReportObjects)
+			foreach (ReportObject reportObject in _report.ReportDefinition.Sections[PaintingsSectionName].ReportObjects)
 			{
 				if (reportObject.Top > changedObject.Top)
 					reportObject.Top = Math.Max(reportObject.Top + heightChange, changedObject.Top);
