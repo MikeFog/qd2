@@ -9,12 +9,14 @@ namespace Merlin.Reports
     {
         private readonly bool _isSponsor;
 
-        public ContractReport(Classes.Action action, Agency agency, PresentationObject bill, bool isSponsor = false) : base(action, agency, bill, new Contract())
+        public ContractReport(Classes.Action action, Agency agency, PresentationObject bill, bool isSponsor = false) 
+            : base(action, agency, bill, new Contract())
         {
             _isSponsor = isSponsor;
         }
 
-        public ContractReport(Firm firm, Agency agency, PresentationObject bill, bool isSponsor = false) : base(firm, agency, bill, new Contract())
+        public ContractReport(Firm firm, Agency agency, PresentationObject bill, bool isSponsor = false) 
+            : base(firm, agency, bill, new Contract())
         {
             _isSponsor = isSponsor;
         }

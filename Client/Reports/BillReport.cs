@@ -12,10 +12,12 @@ namespace Merlin.Reports
 	internal class BillReport : GenericReport
 	{
         private readonly DateTime? _month;
+        protected string _sectionName2Hide;
 
         public BillReport(Classes.Action action, Agency agency, PresentationObject bill)
             : this(action, agency, bill, new GenericBill())
         {
+            _sectionName2Hide = "ReportFooterSection2";
         }
 
         public BillReport(Classes.Action action, Agency agency, PresentationObject bill, ReportClass report)
@@ -34,13 +36,15 @@ namespace Merlin.Reports
 		{
             _month = month;
             _firm = action.Firm;
-		}
+            _sectionName2Hide = "ReportFooterSection2";
+        }
 
         protected override void ProcessReport()
         {
 			DataTable dtData = LoadBillData(_agency, _action, _month);
             GenericReport.LoadReportPartTexts();
-            SetPaintings(_agency, dtData);
+            DataTable dt = _agency.LoadPainting();
+            SetPaintings(_agency, dt);
 
 			_report.SetDataSource(dtData);			
 			SetTextObjectText("txtBillNo", _month.HasValue ? string.Format("Счёт № {0} от {1} за месяц {2} {3} года к {5} № {4}", BillNo, BillDate.ToShortDateString()
@@ -77,14 +81,14 @@ namespace Merlin.Reports
         }
 
 
-        private static void SuppressFooters(ReportClass report, bool suppress = true)
+        private void SuppressFooters(ReportClass report, bool suppress = true)
         {
+            if(string.IsNullOrEmpty(_sectionName2Hide))
+                return;
+            
             foreach (Section s in report.ReportDefinition.Sections)
             {
-                // Report Footer: ReportFooterSection1, ReportFooterSection2, ...
-                if (s.Name.StartsWith("ReportFooterSection", StringComparison.OrdinalIgnoreCase) ||
-                    // Page Footer: PageFooterSection1, PageFooterSection2, ...
-                    s.Name.StartsWith("PageFooterSection", StringComparison.OrdinalIgnoreCase))
+                if (s.Name.StartsWith(_sectionName2Hide, StringComparison.OrdinalIgnoreCase))
                 {
                     s.SectionFormat.EnableSuppress = suppress;
                 }
