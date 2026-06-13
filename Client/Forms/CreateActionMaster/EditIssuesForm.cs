@@ -1,8 +1,10 @@
-﻿using System;
-using FogSoft.WinForm.Classes;
+﻿using FogSoft.WinForm.Classes;
 using Merlin.Classes;
 using Merlin.Classes.Domain;
 using Merlin.Controls;
+using System;
+using System.Collections.Generic;
+using System.Windows.Forms;
 
 namespace Merlin.Forms.CreateActionMaster
 {
@@ -82,15 +84,36 @@ namespace Merlin.Forms.CreateActionMaster
             _action.DisplayData(lstStat);
         }
 
-		private void GrdCurrentCampaignIssues_ObjectDeleted(FogSoft.WinForm.Classes.PresentationObject presentationObject)
+		private void GrdCurrentCampaignIssues_ObjectDeleted(PresentationObject presentationObject)
 		{
-			TariffWithRangeGrid rangeGrid = (TariffWithRangeGrid)_tariffGrid;
-			MasterIssue issue = (MasterIssue)presentationObject;
-			foreach (System.Data.DataRow row in rangeGrid.AddedIssues.Select(
-				string.Format("RowNum = '{0}'", issue["RowNum"])))
-				rangeGrid.AddedIssues.Rows.Remove(row);
-			_action.Recalculate();
-			rangeGrid.RefreshGrid();
+            ProcessCurrentCampaignIssuesDelete(new List<PresentationObject> { presentationObject });
 		}
+
+        protected override void ProcessCurrentCampaignIssuesDelete(IList<PresentationObject> presentationObjects)
+        {
+            Cursor = Cursors.WaitCursor;
+            try
+            {
+                foreach (PresentationObject presentationObject in presentationObjects)
+                    RemoveIssuesFromAdded(presentationObject);
+
+                TariffWithRangeGrid rangeGrid = (TariffWithRangeGrid)_tariffGrid;
+                _action.Recalculate();
+                rangeGrid.RefreshGrid();
+            }
+            finally
+            {
+                Cursor = Cursors.Default;
+            }
+        }
+
+        private void RemoveIssuesFromAdded(PresentationObject presentationObject)
+        {
+            MasterIssue issue = (MasterIssue)presentationObject;
+            TariffWithRangeGrid rangeGrid = (TariffWithRangeGrid)_tariffGrid;
+            foreach (System.Data.DataRow row in rangeGrid.AddedIssues.Select(
+                string.Format("RowNum = '{0}'", issue["RowNum"])))
+                rangeGrid.AddedIssues.Rows.Remove(row);
+        }
 	}
 }

@@ -687,7 +687,7 @@ namespace Merlin.Forms
 		{
 			try
 			{
-				ProcessCurrentCampaignIssuesDelete();
+				ProcessCurrentCampaignIssuesDelete(new List<PresentationObject> { presentationObject });
 			}
 			catch(Exception ex)
 			{
@@ -699,7 +699,7 @@ namespace Merlin.Forms
 		{
 			try
 			{
-				ProcessCurrentCampaignIssuesDelete();
+				ProcessCurrentCampaignIssuesDelete(presentationObjects);
 			}
 			catch (Exception ex)
 			{
@@ -707,7 +707,7 @@ namespace Merlin.Forms
 			}
 		}
 
-		private void ProcessCurrentCampaignIssuesDelete()
+		protected virtual void ProcessCurrentCampaignIssuesDelete(IList<PresentationObject> presentationObjects)
 		{
 			if (_campaign == null) return;
 
