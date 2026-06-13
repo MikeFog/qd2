@@ -42,6 +42,12 @@ namespace Merlin.Forms
                 clbWeekDays.Items.Add(DateTimeUtils.WeekDayNames[i], true);
             }
 
+            rbDays.Checked = _template.Day2AddMode == Day2AddMode.WeekDays;
+            rbNumber.Checked = _template.Day2AddMode == Day2AddMode.OddEvenDays;
+            rbOdd.Checked = _template.IsOdd;
+            rbEven.Checked = !_template.IsOdd;
+            SetEnabled();
+
             this.rbDays.Click += new System.EventHandler(this.groupButton_CheckChanged);
             this.rbNumber.Click += new System.EventHandler(this.groupButton_CheckChanged);
         }
@@ -73,6 +79,10 @@ namespace Merlin.Forms
             _template.Quantity = cbSplitPrime.Checked ? 0 : ((int)txtQuantity.Value);
             _template.QuantityPrime = (int)numQuantityPrime.Value;
             _template.QuantityNonPrime = (int)numQuantityNonPrime.Value;
+
+            // FIX: сохраняем выбор чёт/нечёт и режим шаблона при OK
+            _template.IsOdd = rbOdd.Checked;
+            _template.Day2AddMode = rbNumber.Checked ? Day2AddMode.OddEvenDays : Day2AddMode.WeekDays;
 
             _template.TemplateType = IssueTemplateType.TimePeriod;
             _template.IgnoreWindowsWithTheSameFirmIssue = cbIgnoreWindows.Checked;
