@@ -20,6 +20,7 @@ namespace Merlin.Forms
             Settings.PrintWithSignatures = chkPrintWithSignatures.Checked;
             Settings.ShowAdvertisingInfo = chkShowAdvertisingInfo.Checked;
             Settings.HideTariffPrice = chkShowOnlyFinalCost.Checked;
+            Settings.SaveDirectlyToDisk = chkSaveDirectlyToDisk.Checked;
         }
     }
 }

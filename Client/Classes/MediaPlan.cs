@@ -8,10 +8,12 @@ using System.Collections.Generic;
 using System.ComponentModel;
 using System.Data;
 using System.Globalization;
+using System.IO;
 using System.Runtime.InteropServices.ComTypes;
 using System.Text;
 using System.Threading;
 using System.Windows.Forms;
+using MessageBox = FogSoft.WinForm.Forms.MessageBox;
 using DataTable = System.Data.DataTable;
 
 namespace Merlin.Classes
@@ -34,6 +36,7 @@ namespace Merlin.Classes
         private string _selectedRollers = null;
 		private int _columnWithRollerName;
 		private PrintSettings _printSettings = new PrintSettings() { PrintWithSignatures = false };
+		private string _savedFilePath;
 
 		#region Singleton
 
@@ -90,6 +93,7 @@ namespace Merlin.Classes
 		public void Show(bool isFact)
 		{
 			_isFact = isFact;
+			_savedFilePath = null;
             CultureInfo oldCulture = Thread.CurrentThread.CurrentCulture;
             Globals.SetWaitCursor(Globals.MdiParent);
             try
@@ -104,6 +108,11 @@ namespace Merlin.Classes
                 //Thread.CurrentThread.CurrentCulture = new System.Globalization.CultureInfo("en-US");
 
                 ProgressForm.Show(Globals.MdiParent, worker_DoWork, "Экспортируется график размещения...", null);
+
+				if (!string.IsNullOrEmpty(_savedFilePath))
+				{
+					MessageBox.ShowCompleted($"Файл успешно сохранён: {_savedFilePath}");
+				}
 			}
 			catch(Exception e)
 			{
@@ -141,8 +150,48 @@ namespace Merlin.Classes
 			PrintMediaPlan(_isFact);
             if (exportStarted)
             {
-                ExportManager.Application.FinishExport();
+				if (_printSettings.SaveDirectlyToDisk)
+				{
+					string firmName = GetFirmName();
+					string folder = UserSettings.Load("Path2SaveReports") ?? string.Empty;
+					if (string.IsNullOrWhiteSpace(folder) || !Directory.Exists(folder))
+					{
+						folder = Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments);
+					}
+
+					string safeFirm = firmName;
+					foreach (char c in Path.GetInvalidFileNameChars())
+						safeFirm = safeFirm.Replace(c, '_');
+					int actionId = GetActionId();
+					string fileName = $"График размещения для рекламной акции № {actionId} для {safeFirm}.xlsx";
+					string filePath = Path.Combine(folder, fileName);
+
+					ExportManager.Application.SaveToDisk(filePath);
+					_savedFilePath = filePath;
+				}
+				else
+				{
+					ExportManager.Application.FinishExport();
+				}
             }
+		}
+
+		private string GetFirmName()
+		{
+			if (action != null)
+				return action.Firm.PrefixWithName;
+			if (campaigns != null && campaigns.Count > 0)
+				return campaigns[0].Action.Firm.PrefixWithName;
+			return string.Empty;
+		}
+
+		private int GetActionId()
+		{
+			if (action != null)
+				return action.ActionId;
+			if (campaigns != null && campaigns.Count > 0)
+				return campaigns[0].ActionId.Value;
+			return 0;
 		}
 
 		private bool SelectRollers()

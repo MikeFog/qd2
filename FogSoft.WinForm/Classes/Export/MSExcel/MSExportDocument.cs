@@ -114,5 +114,30 @@ namespace FogSoft.WinForm.Classes.Export.MSExcel
 		{
 			return (app != null && (app.Visible || !app.ScreenUpdating));
 		}
+
+		public void SaveToDisk(string filePath)
+		{
+			if (wb == null || app == null) return;
+
+			try
+			{
+				app.Visible = false;
+				app.ScreenUpdating = false;
+
+				object format = 51; // XlFileFormat.xlOpenXMLWorkbook
+				object mis = Type.Missing;
+				wb.SaveAs(filePath, format, mis, mis, mis, mis,
+					XlSaveAsAccessMode.xlNoChange, mis, mis, mis, mis, mis);
+
+				wb.Close(false, mis, mis);
+			}
+			finally
+			{
+				app.Quit();
+				Marshal.ReleaseComObject(app);
+				app = null;
+				wb = null;
+			}
+		}
 	}
 }

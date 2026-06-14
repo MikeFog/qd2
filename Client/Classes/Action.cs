@@ -547,7 +547,7 @@ namespace Merlin.Classes
             owner.Cursor = Cursors.WaitCursor;
 
             ContractReport report = new ContractReport(this, agency, bill);
-            string fileName = string.Format("{0} №{1} к акции {2} для {3}.doc",
+            string fileName = string.Format("{0} №{1} к акции {2} для {3}.rtf",
                 "Договор",
                 bill[TableColumns.Bill.BillNo],
                 ActionId,
@@ -564,7 +564,7 @@ namespace Merlin.Classes
             owner.Cursor = Cursors.WaitCursor;
 
             ContractReport report = new ContractReport(this, agency, bill, true);
-            string fileName = string.Format("{0} №{1} к акции {2} для {3}.doc",
+            string fileName = string.Format("{0} №{1} к акции {2} для {3}.rtf",
                 "Спонсорский договор",
                 bill[TableColumns.Bill.BillNo],
                 ActionId,
@@ -580,7 +580,7 @@ namespace Merlin.Classes
             Application.DoEvents();
             owner.Cursor = Cursors.WaitCursor;
             BillReport report = new BillContractReport(this, agency, bill);
-            string fileName = string.Format("{0} №{1} к акции {2} для {3}.doc",
+            string fileName = string.Format("{0} №{1} к акции {2} для {3}.rtf",
                 "Счёт-договор",
                 bill[TableColumns.Bill.BillNo],
                 ActionId,

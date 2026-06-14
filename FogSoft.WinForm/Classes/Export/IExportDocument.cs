@@ -7,5 +7,6 @@
 		void FinishExport();
 		void OnAppQuit();
 		bool Visible();
+		void SaveToDisk(string filePath);
 	}
 }

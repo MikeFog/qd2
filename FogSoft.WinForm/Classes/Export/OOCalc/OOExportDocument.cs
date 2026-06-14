@@ -194,5 +194,22 @@ namespace FogSoft.WinForm.Classes.Export.OOCalc
 		{
 			return xComponent != null;
 		}
+
+		public void SaveToDisk(string filePath)
+		{
+			if (xComponent == null) return;
+
+			try
+			{
+				((XModel)xComponent).unlockControllers();
+				XStorable storable = (XStorable)xComponent;
+				string url = new System.Uri(filePath).AbsoluteUri;
+				storable.storeToURL(url, new PropertyValue[0]);
+			}
+			finally
+			{
+				xComponent = null;
+			}
+		}
 	}
 }

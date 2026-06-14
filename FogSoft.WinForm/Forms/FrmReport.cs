@@ -155,11 +155,13 @@ namespace FogSoft.WinForm.Forms
                     dialog.InitialDirectory = folder;
                     dialog.FileName = _fileName2SaveDirectly;
                     dialog.Filter =
+                        "RTF files (*.rtf)|*.rtf|" +
                         "PDF files (*.pdf)|*.pdf|" +
                         "Word files (*.doc)|*.doc";
 
-                    dialog.FilterIndex = 2; // 1 = PDF, 2 = Word
-                    dialog.DefaultExt = "doc";
+                    int filterIndex = ResolveFilterIndex(_fileName2SaveDirectly);
+                    dialog.FilterIndex = filterIndex;
+                    dialog.DefaultExt = filterIndex == 2 ? "pdf" : filterIndex == 3 ? "doc" : "rtf";
                     dialog.AddExtension = true;
                     dialog.OverwritePrompt = true;
 
@@ -173,10 +175,14 @@ namespace FogSoft.WinForm.Forms
                     switch (dialog.FilterIndex)
                     {
                         case 1:
-                            exportFormat = ExportFormatType.PortableDocFormat;
+                            exportFormat = ExportFormatType.RichText;
                             break;
 
                         case 2:
+                            exportFormat = ExportFormatType.PortableDocFormat;
+                            break;
+
+                        case 3:
                             exportFormat = ExportFormatType.WordForWindows;
                             break;
 
@@ -220,6 +226,16 @@ namespace FogSoft.WinForm.Forms
             catch (Exception ex)
             {
                 ErrorManager.PublishError(ex);
+            }
+        }
+
+        private static int ResolveFilterIndex(string fileName)
+        {
+            switch (Path.GetExtension(fileName)?.ToLowerInvariant())
+            {
+                case ".pdf": return 2;
+                case ".doc": return 3;
+                default:     return 1; // .rtf по умолчанию
             }
         }
     }

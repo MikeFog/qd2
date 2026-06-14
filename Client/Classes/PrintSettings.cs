@@ -5,5 +5,6 @@
         public bool PrintWithSignatures { get; set; }
         public bool ShowAdvertisingInfo { get; set; }
         public bool HideTariffPrice { get; set; }
+        public bool SaveDirectlyToDisk { get; set; } = true;
     }
 }
