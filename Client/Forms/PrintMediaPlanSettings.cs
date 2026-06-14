@@ -1,4 +1,4 @@
-﻿using Merlin.Classes;
+using Merlin.Classes;
 using System;
 using System.Windows.Forms;
 
@@ -9,9 +9,16 @@ namespace Merlin.Forms
     {
         public readonly PrintSettings Settings = new PrintSettings();
 
-        public PrintMediaPlanSettings()
+        public PrintMediaPlanSettings(bool pathIsSet)
         {
             InitializeComponent();
+
+            if (!pathIsSet)
+            {
+                chkSaveDirectlyToDisk.Checked = false;
+                chkSaveDirectlyToDisk.Enabled = false;
+                lblNoPathWarning.Visible = true;
+            }
         }
 
         private void BtnOK_Click(object sender, EventArgs e)

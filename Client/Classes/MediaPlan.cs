@@ -35,7 +35,9 @@ namespace Merlin.Classes
 
         private string _selectedRollers = null;
 		private int _columnWithRollerName;
-		private PrintSettings _printSettings = new PrintSettings() { PrintWithSignatures = false };
+		private PrintSettings _printSettings = new PrintSettings() { 
+			PrintWithSignatures = false, SaveDirectlyToDisk = !string.IsNullOrEmpty(UserSettings.Load("Path2SaveReports")) 
+		};
 		private string _savedFilePath;
 
 		#region Singleton
@@ -100,7 +102,9 @@ namespace Merlin.Classes
 			{
                 if (action == null)
 				{
-					var frmSettings = new Forms.PrintMediaPlanSettings();
+					string savedPath = UserSettings.Load("Path2SaveReports");
+					bool pathIsSet = !string.IsNullOrWhiteSpace(savedPath) && Directory.Exists(savedPath);
+					var frmSettings = new Forms.PrintMediaPlanSettings(pathIsSet);
 					if(frmSettings.ShowDialog(Globals.MdiParent) == DialogResult.Cancel) return;
 					_printSettings = frmSettings.Settings;
                 }
@@ -154,10 +158,6 @@ namespace Merlin.Classes
 				{
 					string firmName = GetFirmName();
 					string folder = UserSettings.Load("Path2SaveReports") ?? string.Empty;
-					if (string.IsNullOrWhiteSpace(folder) || !Directory.Exists(folder))
-					{
-						folder = Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments);
-					}
 
 					string safeFirm = firmName;
 					foreach (char c in Path.GetInvalidFileNameChars())

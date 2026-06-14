@@ -13,6 +13,7 @@ namespace Merlin.Forms
         private CheckBox chkShowAdvertisingInfo;
         private CheckBox chkShowOnlyFinalCost;
         private CheckBox chkSaveDirectlyToDisk;
+        private Label lblNoPathWarning;
         private Button btnOK;
         private Button btnCancel;
         private TableLayoutPanel tableLayoutPanel1;
@@ -101,6 +102,20 @@ namespace Merlin.Forms
             this.chkSaveDirectlyToDisk.Text = "Сразу сохранять файл на диск";
             this.chkSaveDirectlyToDisk.UseVisualStyleBackColor = true;
             //
+            // lblNoPathWarning
+            //
+            this.lblNoPathWarning = new System.Windows.Forms.Label();
+            this.lblNoPathWarning.AutoSize = true;
+            this.lblNoPathWarning.Font = new System.Drawing.Font("Segoe UI Variable Display", 8F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(204)));
+            this.lblNoPathWarning.ForeColor = System.Drawing.Color.Red;
+            this.lblNoPathWarning.Location = new System.Drawing.Point(10, 140);
+            this.lblNoPathWarning.Margin = new System.Windows.Forms.Padding(3, 2, 3, 2);
+            this.lblNoPathWarning.Name = "lblNoPathWarning";
+            this.lblNoPathWarning.Size = new System.Drawing.Size(320, 20);
+            this.lblNoPathWarning.TabIndex = 7;
+            this.lblNoPathWarning.Text = "Не задан путь для сохранения документов";
+            this.lblNoPathWarning.Visible = false;
+            //
             // btnOK
             // 
             this.btnOK.DialogResult = System.Windows.Forms.DialogResult.OK;
@@ -132,7 +147,7 @@ namespace Merlin.Forms
             this.flowLayoutPanel1.Controls.Add(this.btnOK);
             this.flowLayoutPanel1.Dock = System.Windows.Forms.DockStyle.Fill;
             this.flowLayoutPanel1.FlowDirection = System.Windows.Forms.FlowDirection.RightToLeft;
-            this.flowLayoutPanel1.Location = new System.Drawing.Point(3, 146);
+            this.flowLayoutPanel1.Location = new System.Drawing.Point(3, 174);
             this.flowLayoutPanel1.Name = "flowLayoutPanel1";
             this.flowLayoutPanel1.Size = new System.Drawing.Size(654, 54);
             this.flowLayoutPanel1.TabIndex = 6;
@@ -145,18 +160,20 @@ namespace Merlin.Forms
             this.tableLayoutPanel1.Controls.Add(this.chkShowAdvertisingInfo, 0, 1);
             this.tableLayoutPanel1.Controls.Add(this.chkShowOnlyFinalCost, 0, 2);
             this.tableLayoutPanel1.Controls.Add(this.chkSaveDirectlyToDisk, 0, 3);
-            this.tableLayoutPanel1.Controls.Add(this.flowLayoutPanel1, 0, 4);
+            this.tableLayoutPanel1.Controls.Add(this.lblNoPathWarning, 0, 4);
+            this.tableLayoutPanel1.Controls.Add(this.flowLayoutPanel1, 0, 5);
             this.tableLayoutPanel1.Dock = System.Windows.Forms.DockStyle.Fill;
             this.tableLayoutPanel1.Location = new System.Drawing.Point(0, 0);
             this.tableLayoutPanel1.Name = "tableLayoutPanel1";
             this.tableLayoutPanel1.Padding = new System.Windows.Forms.Padding(3);
-            this.tableLayoutPanel1.RowCount = 5;
+            this.tableLayoutPanel1.RowCount = 6;
             this.tableLayoutPanel1.RowStyles.Add(new System.Windows.Forms.RowStyle());
             this.tableLayoutPanel1.RowStyles.Add(new System.Windows.Forms.RowStyle());
             this.tableLayoutPanel1.RowStyles.Add(new System.Windows.Forms.RowStyle());
             this.tableLayoutPanel1.RowStyles.Add(new System.Windows.Forms.RowStyle());
             this.tableLayoutPanel1.RowStyles.Add(new System.Windows.Forms.RowStyle());
-            this.tableLayoutPanel1.Size = new System.Drawing.Size(660, 203);
+            this.tableLayoutPanel1.RowStyles.Add(new System.Windows.Forms.RowStyle());
+            this.tableLayoutPanel1.Size = new System.Drawing.Size(660, 231);
             this.tableLayoutPanel1.TabIndex = 0;
             // 
             // PrintMediaPlanSettings
@@ -166,7 +183,7 @@ namespace Merlin.Forms
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
             this.AutoSize = true;
             this.CancelButton = this.btnCancel;
-            this.ClientSize = new System.Drawing.Size(660, 203);
+            this.ClientSize = new System.Drawing.Size(660, 231);
             this.Controls.Add(this.tableLayoutPanel1);
             this.Font = new System.Drawing.Font("Segoe UI Variable Display", 9F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(204)));
             this.FormBorderStyle = System.Windows.Forms.FormBorderStyle.FixedDialog;

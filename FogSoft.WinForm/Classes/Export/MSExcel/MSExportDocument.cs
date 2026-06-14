@@ -89,7 +89,7 @@ namespace FogSoft.WinForm.Classes.Export.MSExcel
 					if (worksheet != null)
 						Marshal.ReleaseComObject(worksheet);
 				}
-
+				if (app == null) return;
 				foreach (Workbook workbook in app.Workbooks)
 				{
 					if (workbook != null)
