@@ -65,10 +65,10 @@ namespace Merlin.Forms
                 SetTariffGrid();
                 if (!(_tariffGrid is IRollerGrid))
                     HideGridWithCurrentIssues();
-				
+			
                 InitModulesList();
-				if(IsSponsorPrograEditing)
-					InitSponsorProgramList();
+                if(IsSponsorPrograEditing)
+                    InitSponsorProgramList();
 
                 if (RollerIssuesGrid != null)
                 {
@@ -80,8 +80,9 @@ namespace Merlin.Forms
                 _campaign?.DisplayCampaignData(lstStat);
 
                 grdRollers.ObjectDeleted += GrdRollers_ObjectDeleted;
-				grdCurrentCampaignIssues.ObjectsDeleted += grdCurrentCampaignIssues_ObjectsDeleted;
-                
+                grdCurrentCampaignIssues.ObjectsDeleted += grdCurrentCampaignIssues_ObjectsDeleted;
+
+                grdCurrentCampaignIssues.MultiSelect = true;
             }
             catch (Exception ex)
             {

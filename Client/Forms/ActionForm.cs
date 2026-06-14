@@ -5,6 +5,7 @@ using Merlin.Classes;
 using Merlin.Forms.CreateActionMaster;
 using Merlin.Forms.CreateCampaign;
 using System;
+using System.Collections.Generic;
 using System.Data;
 using System.Diagnostics;
 using System.Windows.Forms;
@@ -58,6 +59,15 @@ namespace Merlin.Forms
 			LoadCampaigns();
 			RefreshActionStats(false);
 		}
+
+        protected override void OnLoad(EventArgs e)
+        {
+            base.OnLoad(e);
+            grdCampaign.ObjectsDeleted += grdCampaign_ObjectsDeleted;
+            grdCampaign.MultiSelect = true;
+        }
+
+
 
         protected override void OnShown(EventArgs e)
         {
@@ -136,7 +146,21 @@ namespace Merlin.Forms
             }
 		}
 
-		private void DeleteCampaign(object sender, EventArgs e)
+		private void grdCampaign_ObjectsDeleted(IList<PresentationObject> presentationObjects)
+		{
+			try
+			{
+				_action.Recalculate();
+				RefreshActionStats(true);
+				EnableToolbarButtons(grdCampaign.SelectedObject as Campaign);
+			}
+			catch (Exception ex)
+			{
+				ErrorManager.PublishError(ex);
+			}
+		}
+
+        private void DeleteCampaign(object sender, EventArgs e)
 		{
 			try
 			{

@@ -1801,6 +1801,13 @@ namespace FogSoft.WinForm.Controls
                 _suppressAdjustColumnsWidth = false;
             }
         }
+
+        [DefaultValue(false)]
+        public bool MultiSelect
+        {
+            get { return dataGrid.MultiSelect; }
+            set { dataGrid.MultiSelect = value; }
+        }
     }
 
     public enum ColorHighlight
