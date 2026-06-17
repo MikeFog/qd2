@@ -799,7 +799,7 @@ namespace Merlin.Forms
                     return;
 				}
 
-                FrmTemplate2 formTemplate = new FrmTemplate2(roller.Name);
+                FrmTemplate2 formTemplate = new FrmTemplate2(roller.Name, _template);
 
 				if (formTemplate.ShowDialog(this) == DialogResult.OK)
 				{
