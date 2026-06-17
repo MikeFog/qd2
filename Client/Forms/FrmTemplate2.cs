@@ -20,6 +20,7 @@ namespace Merlin.Forms
             if (template != null && template.TemplateType == IssueTemplateType.TimePeriod)
                 _template = template;
             else
+            {
                 _template = new IssueTemplate(DateTime.Today.AddDays(1), DateTime.Today.AddDays(1),
                     new DateTime(DateTime.Today.Year, DateTime.Today.Month, DateTime.Today.Day, 12, 0, 0),
                     new DateTime(DateTime.Today.Year, DateTime.Today.Month, DateTime.Today.Day, 15, 0, 0),
@@ -28,6 +29,9 @@ namespace Merlin.Forms
                     IsModeAdd = true,
                     IgnoreWindowsWithTheSameFirmIssue = true
                 };
+                for (int i = 0; i < _template.WeekDays.Length; i++)
+                    _template.WeekDays[i] = true;
+            }
             lblRollerName.Text = rollerName;
         }
 
@@ -38,7 +42,8 @@ namespace Merlin.Forms
             dtFinishDate.Value = _template.FinishDate;
             dtStartTime.Value = _template.StartTime;
             dtFinishTime.Value = _template.FinishTime;
-            txtQuantity.Value = _template.Quantity;
+            if (_template.Quantity > 0)
+                txtQuantity.Value = _template.Quantity;
 
             clbWeekDays.Items.Clear();
             for (int i = 0; i < DateTimeUtils.WeekDayNames.Length; i++)
