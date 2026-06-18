@@ -1,4 +1,4 @@
-using Merlin.Classes;
+﻿using Merlin.Classes;
 using System;
 using System.Windows.Forms;
 
