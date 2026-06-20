@@ -133,10 +133,25 @@ namespace FogSoft.WinForm.Classes.Export.MSExcel
 			}
 			finally
 			{
+				foreach (Worksheet worksheet in worksheets)
+				{
+					if (worksheet != null)
+						Marshal.ReleaseComObject(worksheet);
+				}
+				worksheets.Clear();
+
+				if (wb != null)
+				{
+					Marshal.ReleaseComObject(wb);
+					wb = null;
+				}
+
 				app.Quit();
 				Marshal.ReleaseComObject(app);
 				app = null;
-				wb = null;
+
+				GC.Collect();
+				GC.WaitForPendingFinalizers();
 			}
 		}
 	}

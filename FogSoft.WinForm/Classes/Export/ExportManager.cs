@@ -80,7 +80,10 @@ namespace FogSoft.WinForm.Classes.Export
 		public static void OnAppQuit()
 		{
 			if (doc != null)
+			{
 				doc.OnAppQuit();
+				doc = null;
+			}
 		}
 		
 		private class Column
