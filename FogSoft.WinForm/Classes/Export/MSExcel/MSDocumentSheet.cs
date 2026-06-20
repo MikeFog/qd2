@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Drawing;
 using System.IO;
 using System.Reflection;
@@ -15,6 +15,23 @@ namespace FogSoft.WinForm.Classes.Export.MSExcel
 		public MSDocumentSheet(Worksheet worksheet)
 		{
 			this.worksheet = worksheet;
+		}
+
+		private Range GetRange(int top, int left, int bottom, int right)
+		{
+			Range topLeft = (Range)worksheet.Cells[top, left];
+			Range bottomRight = (Range)worksheet.Cells[bottom, right];
+			Range rg = worksheet.get_Range(topLeft, bottomRight);
+			Marshal.ReleaseComObject(topLeft);
+			Marshal.ReleaseComObject(bottomRight);
+			return rg;
+		}
+
+		private static void SetBorder(Borders borders, XlBordersIndex index, XlLineStyle style)
+		{
+			Border b = borders[index];
+			b.LineStyle = style;
+			Marshal.ReleaseComObject(b);
 		}
 
 		public void SetValuesForRange(int top, int left, int bottom, int right, object[,] data)
@@ -48,7 +65,7 @@ namespace FogSoft.WinForm.Classes.Export.MSExcel
                         }
                     }
 
-            Range rg = worksheet.get_Range(worksheet.Cells[top, left], worksheet.Cells[bottom, right]);
+            Range rg = GetRange(top, left, bottom, right);
             rg.set_Value(XlRangeValueDataType.xlRangeValueDefault, data);
             Marshal.ReleaseComObject(rg);
 
@@ -63,55 +80,77 @@ namespace FogSoft.WinForm.Classes.Export.MSExcel
 
 		public void SetBordersStyles(int top, int left, int bottom, int right, bool fNeedInsideVertical)
 		{
-			Range rg = worksheet.get_Range(worksheet.Cells[top, left], worksheet.Cells[bottom, right]);
-			rg.Borders[XlBordersIndex.xlEdgeTop].LineStyle = XlLineStyle.xlContinuous;
-			rg.Borders[XlBordersIndex.xlEdgeRight].LineStyle = XlLineStyle.xlContinuous;
-			rg.Borders[XlBordersIndex.xlEdgeBottom].LineStyle = XlLineStyle.xlContinuous;
-			rg.Borders[XlBordersIndex.xlEdgeLeft].LineStyle = XlLineStyle.xlContinuous;
+			Range rg = GetRange(top, left, bottom, right);
+			Borders borders = rg.Borders;
+			SetBorder(borders, XlBordersIndex.xlEdgeTop, XlLineStyle.xlContinuous);
+			SetBorder(borders, XlBordersIndex.xlEdgeRight, XlLineStyle.xlContinuous);
+			SetBorder(borders, XlBordersIndex.xlEdgeBottom, XlLineStyle.xlContinuous);
+			SetBorder(borders, XlBordersIndex.xlEdgeLeft, XlLineStyle.xlContinuous);
 			if (fNeedInsideVertical && left != right)
-				rg.Borders[XlBordersIndex.xlInsideVertical].LineStyle = XlLineStyle.xlContinuous;
+				SetBorder(borders, XlBordersIndex.xlInsideVertical, XlLineStyle.xlContinuous);
 			if (top != bottom)
-				rg.Borders[XlBordersIndex.xlInsideHorizontal].LineStyle = XlLineStyle.xlContinuous;
+				SetBorder(borders, XlBordersIndex.xlInsideHorizontal, XlLineStyle.xlContinuous);
+			Marshal.ReleaseComObject(borders);
 			Marshal.ReleaseComObject(rg);
 		}
 
 		public void SetBoldForRange(int top, int left, int bottom, int right)
 		{
-			Range rg = worksheet.get_Range(worksheet.Cells[top, left], worksheet.Cells[bottom, right]);
-			rg.Font.Bold = true;
+			Range rg = GetRange(top, left, bottom, right);
+			var font = rg.Font;
+			font.Bold = true;
+			Marshal.ReleaseComObject(font);
 			Marshal.ReleaseComObject(rg);
 		}
 
 		public void SetCellValue(int y, int x, object val)
 		{
-			worksheet.Cells[y, x] = val;
+			Range cells = worksheet.Cells;
+			Range cell = (Range)cells[y, x];
+			cell.Value2 = val;
+			Marshal.ReleaseComObject(cell);
+			Marshal.ReleaseComObject(cells);
 		}
 
 		public void SetAutoFitCells()
 		{
 			Range range = worksheet.Cells;
-			range.EntireColumn.AutoFit();
+			Range cols = range.EntireColumn;
+			cols.AutoFit();
+			Marshal.ReleaseComObject(cols);
 			Marshal.ReleaseComObject(range);
 		}
 
         public void SetAutoFitRows(int top, int bottom)
         {
-            int lastColumn = worksheet.UsedRange.Columns.Count;
+            Range usedRange = worksheet.UsedRange;
+            Range usedCols = usedRange.Columns;
+            int lastColumn = usedCols.Count;
+            Marshal.ReleaseComObject(usedCols);
+            Marshal.ReleaseComObject(usedRange);
             if (lastColumn < 1) lastColumn = 1;
 
-            Range range = worksheet.get_Range(worksheet.Cells[top, 1], worksheet.Cells[bottom, lastColumn]);
-            range.Rows.AutoFit();
+            Range range = GetRange(top, 1, bottom, lastColumn);
+            Range rows = range.Rows;
+            rows.AutoFit();
+            Marshal.ReleaseComObject(rows);
             Marshal.ReleaseComObject(range);
         }
 
 		public void SetAutoFitCells(int left, int right)
         {
-            int lastRow = worksheet.UsedRange.Rows.Count;
+            Range usedRange = worksheet.UsedRange;
+            Range usedRows = usedRange.Rows;
+            int lastRow = usedRows.Count;
+            Marshal.ReleaseComObject(usedRows);
+            Marshal.ReleaseComObject(usedRange);
             if (lastRow < 1) lastRow = 1;
             int topRow = lastRow > 1 ? 2 : 1;
 
-            Range range = worksheet.get_Range(worksheet.Cells[topRow, left], worksheet.Cells[lastRow, right]);
-            range.EntireColumn.AutoFit();
+            Range range = GetRange(topRow, left, lastRow, right);
+            Range cols = range.EntireColumn;
+            cols.AutoFit();
+            Marshal.ReleaseComObject(cols);
             Marshal.ReleaseComObject(range);
         }
 
@@ -120,8 +159,6 @@ namespace FogSoft.WinForm.Classes.Export.MSExcel
 			if (type == typeof(Int16))
 				SetRangeFormat(top, left, bottom, right, "0");
 			else if (type == typeof(Money))
-				// rg.NumberFormat = "# ##0,00р";
-				//rg.NumberFormat = "#,##0.00 p";
 				SetRangeFormat(top, left, bottom, right, "#,##0.00 p");
 			else if(type == typeof(Time))
                 SetRangeFormat(top, left, bottom, right, "hh:mm:ss");
@@ -147,7 +184,6 @@ namespace FogSoft.WinForm.Classes.Export.MSExcel
         public double GetColumnWidth(int columnIndex)
         {
             Range rg = (Range)worksheet.Columns[columnIndex];
-
             double res = (double)rg.ColumnWidth;
             Marshal.ReleaseComObject(rg);
             return res;
@@ -162,14 +198,14 @@ namespace FogSoft.WinForm.Classes.Export.MSExcel
 
         public void SetWrapText(int top, int left, int bottom, int right, bool wrap)
         {
-            Range rg = worksheet.get_Range(worksheet.Cells[top, left], worksheet.Cells[bottom, right]);
+            Range rg = GetRange(top, left, bottom, right);
             rg.WrapText = wrap;
             Marshal.ReleaseComObject(rg);
         }
 
         private void SetRangeFormat(int top, int left, int bottom, int right, string format)
 		{
-            Range rg = worksheet.get_Range(worksheet.Cells[top, left], worksheet.Cells[bottom, right]);
+            Range rg = GetRange(top, left, bottom, right);
             rg.NumberFormat = format;
             Marshal.ReleaseComObject(rg);
         }
@@ -183,22 +219,28 @@ namespace FogSoft.WinForm.Classes.Export.MSExcel
 
 		public void SetLandscapeOrientation()
 		{
-			worksheet.PageSetup.Orientation = XlPageOrientation.xlLandscape;
+			var pageSetup = worksheet.PageSetup;
+			pageSetup.Orientation = XlPageOrientation.xlLandscape;
+			Marshal.ReleaseComObject(pageSetup);
 		}
 
 		public void SetStyleForRange(int top, int left, int bottom, int right, bool fBold, bool fItalic, int fontSize)
 		{
-			Range rg = worksheet.get_Range(worksheet.Cells[top, left], worksheet.Cells[bottom, right]);
-			rg.Font.Bold = fBold;
-			rg.Font.Italic = fItalic;
-			rg.Font.Size = fontSize;
+			Range rg = GetRange(top, left, bottom, right);
+			var font = rg.Font;
+			font.Bold = fBold;
+			font.Italic = fItalic;
+			font.Size = fontSize;
+			Marshal.ReleaseComObject(font);
 			Marshal.ReleaseComObject(rg);
 		}
 
 		public void SetBackground(int top, int left, int bottom, int right, int r, int g, int b)
 		{
-			Range rg = worksheet.get_Range(worksheet.Cells[top, left], worksheet.Cells[bottom, right]);
-			rg.Interior.Color = b * (int)Math.Pow(16, 4) + g * (int)Math.Pow(16, 2) + r;
+			Range rg = GetRange(top, left, bottom, right);
+			var interior = rg.Interior;
+			interior.Color = b * (int)Math.Pow(16, 4) + g * (int)Math.Pow(16, 2) + r;
+			Marshal.ReleaseComObject(interior);
 			Marshal.ReleaseComObject(rg);
 		}
 
@@ -210,22 +252,22 @@ namespace FogSoft.WinForm.Classes.Export.MSExcel
 
 			Image img = Image.FromFile(fileName);
 
-			Range rg = worksheet.get_Range(worksheet.Cells[top, left], worksheet.Cells[top, left]);
+			Range rg = GetRange(top, left, top, left);
 			object[] args = new object[] { GetPoint(img.Height, img.HorizontalResolution) };
 			rg.GetType().InvokeMember("RowHeight", BindingFlags.SetProperty, null, rg, args);
-			
-			worksheet.Shapes.AddPicture(fileName, MsoTriState.msoFalse, MsoTriState.msoTrue
+
+			var shapes = worksheet.Shapes;
+			var shape = shapes.AddPicture(fileName, MsoTriState.msoFalse, MsoTriState.msoTrue
 				, ParseHelper.GetInt32FromObject(rg.Left, 0), ParseHelper.GetInt32FromObject(rg.Top, 0)
 				, GetPoint(img.Width, img.HorizontalResolution), GetPoint(img.Height, img.HorizontalResolution));
+			Marshal.ReleaseComObject(shape);
+			Marshal.ReleaseComObject(shapes);
 			Marshal.ReleaseComObject(rg);
 		}
 
 		/// <summary>
 		/// Convert Image Pixels with resolution to Office Point (1/72 inch)
 		/// </summary>
-		/// <param name="value"></param>
-		/// <param name="resolution"></param>
-		/// <returns></returns>
 		private static float GetPoint(int value, double resolution)
 		{
 			return (float) (((double) value/resolution)*72);

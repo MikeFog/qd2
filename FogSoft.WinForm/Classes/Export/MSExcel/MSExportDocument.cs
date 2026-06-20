@@ -70,8 +70,12 @@ namespace FogSoft.WinForm.Classes.Export.MSExcel
 					ws.Name = name;
 			}
 			
-			ws.Cells.Font.Name = fontName;
-			ws.Cells.Font.Size = fontSize;
+			Range wsCells = ws.Cells;
+			var wsFont = wsCells.Font;
+			wsFont.Name = fontName;
+			wsFont.Size = fontSize;
+			Marshal.ReleaseComObject(wsFont);
+			Marshal.ReleaseComObject(wsCells);
 
 			worksheets.Add(ws);
 
