@@ -50,6 +50,8 @@ namespace FogSoft.WinForm.Classes.Export
 				if (doc != null && doc.Visible())
 					return doc;
 
+				doc = null;
+
 				try
 				{
 					return GetExApp(ExportOfficeType);

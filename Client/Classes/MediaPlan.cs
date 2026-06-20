@@ -166,7 +166,23 @@ namespace Merlin.Classes
 					string fileName = $"График размещения для рекламной акции № {actionId} для {safeFirm}.xlsx";
 					string filePath = Path.Combine(folder, fileName);
 
-					ExportManager.Application.SaveToDisk(filePath);
+					var save = new System.Action(() => ExportManager.Application.SaveToDisk(filePath));
+					if (Globals.MdiParent.InvokeRequired)
+						Globals.MdiParent.Invoke(save);
+					else
+						save();
+
+					// UI STA поток свободен — теперь безопасно запускать GC на ThreadPool.
+					// Finalizer поток сможет маршалить Release промежуточных COM-объектов
+					// обратно в UI STA без дедлока.
+					System.Threading.ThreadPool.QueueUserWorkItem(_ =>
+					{
+						GC.Collect();
+						GC.WaitForPendingFinalizers();
+						GC.Collect();
+						GC.WaitForPendingFinalizers();
+					});
+
 					_savedFilePath = filePath;
 				}
 				else
