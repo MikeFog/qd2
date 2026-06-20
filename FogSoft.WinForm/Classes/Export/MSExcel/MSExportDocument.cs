@@ -149,9 +149,6 @@ namespace FogSoft.WinForm.Classes.Export.MSExcel
 				app.Quit();
 				Marshal.ReleaseComObject(app);
 				app = null;
-
-				GC.Collect();
-				GC.WaitForPendingFinalizers();
 			}
 		}
 	}

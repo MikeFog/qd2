@@ -5,13 +5,10 @@ using FogSoft.WinForm.DataAccess;
 using FogSoft.WinForm.Forms;
 using System;
 using System.Collections.Generic;
-using System.ComponentModel;
 using System.Data;
-using System.Globalization;
 using System.IO;
 using System.Runtime.InteropServices.ComTypes;
 using System.Text;
-using System.Threading;
 using System.Windows.Forms;
 using MessageBox = FogSoft.WinForm.Forms.MessageBox;
 using DataTable = System.Data.DataTable;
@@ -96,7 +93,6 @@ namespace Merlin.Classes
 		{
 			_isFact = isFact;
 			_savedFilePath = null;
-            CultureInfo oldCulture = Thread.CurrentThread.CurrentCulture;
             Globals.SetWaitCursor(Globals.MdiParent);
             try
 			{
@@ -109,9 +105,7 @@ namespace Merlin.Classes
 					_printSettings = frmSettings.Settings;
                 }
 
-                //Thread.CurrentThread.CurrentCulture = new System.Globalization.CultureInfo("en-US");
-
-                ProgressForm.Show(Globals.MdiParent, worker_DoWork, "Экспортируется график размещения...", null);
+                ExportMediaPlan();
 
 				if (!string.IsNullOrEmpty(_savedFilePath))
 				{
@@ -124,30 +118,9 @@ namespace Merlin.Classes
 			}
 			finally
 			{
-                Thread.CurrentThread.CurrentCulture = oldCulture;
                 Globals.SetDefaultCursor(Globals.MdiParent);
 			}
 		}
-
-		private void worker_DoWork(object sender, DoWorkEventArgs e)
-		{
-            CultureInfo oldCulture = Thread.CurrentThread.CurrentCulture;
-            try
-			{
-                //Thread.CurrentThread.CurrentCulture = new System.Globalization.CultureInfo("en-US");
-
-                ExportMediaPlan();
-			}
-			catch (Exception exp)
-			{
-				ErrorManager.LogError("Error to show media plan", exp);
-			}
-            finally
-            {
-                Thread.CurrentThread.CurrentCulture = oldCulture;
-            }
-
-        }
 
         private void ExportMediaPlan()
 		{
@@ -412,20 +385,7 @@ namespace Merlin.Classes
         {
             if (!exportStarted)
             {
-                var startExport = new System.Action(() =>
-                {
-                    ExportManager.Application.StartExport();
-                });
-
-                if (Globals.MdiParent.InvokeRequired)
-                {
-                    Globals.MdiParent.Invoke(startExport);
-                }
-                else
-                {
-                    startExport();
-                }
-
+                ExportManager.Application.StartExport();
                 exportStarted = true;
             }
         }
