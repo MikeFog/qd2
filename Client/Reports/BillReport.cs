@@ -17,6 +17,10 @@ namespace Merlin.Reports
         private readonly DateTime? _month;
         protected string _sectionName2Hide;
 
+        // Размер QR-кода на странице счёта. 1 см = 567 twips.
+        // Когда заказчик скажет нужный размер — поменять число сантиметров здесь.
+        private const int QrSizeTwips = 3 * 567; // 2 см × 2 см
+
         public BillReport(Classes.Action action, Agency agency, PresentationObject bill)
             : this(action, agency, bill, new GenericBill())
         {
@@ -58,8 +62,8 @@ namespace Merlin.Reports
 						BlobFieldObject qrBlob = GetBlobObject("qrCode1");
 						if (qrBlob != null)
 						{
-							qrBlob.Width  = GetInTwips(qrBitmap.Width,  qrBitmap.HorizontalResolution);
-							qrBlob.Height = GetInTwips(qrBitmap.Height, qrBitmap.VerticalResolution);
+							qrBlob.Width  = QrSizeTwips;
+							qrBlob.Height = QrSizeTwips;
 						}
 						using (var ms = new MemoryStream())
 						{
