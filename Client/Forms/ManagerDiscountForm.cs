@@ -155,7 +155,7 @@ namespace Merlin.Forms
         {
             if (cmbReason.Visible && Convert.ToInt32(cmbReason.SelectedValue) == 0)
             {
-                MessageBox.Show("РќРµРѕР±С…РѕРґРёРјРѕ РІС‹Р±СЂР°С‚СЊ РїСЂРёС‡РёРЅСѓ РІС‹РґР°С‡Рё СЃРєРёРґРєРё.", "РћС€РёР±РєР°", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                MessageBox.Show("Необходимо выбрать причину выдачи скидки.", "Ошибка", MessageBoxButtons.OK, MessageBoxIcon.Error);
                 return false;
             }
             return true;
