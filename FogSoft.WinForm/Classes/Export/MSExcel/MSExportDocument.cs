@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Globalization;
 using System.Reflection;
 using System.Runtime.InteropServices;
@@ -18,6 +19,9 @@ namespace FogSoft.WinForm.Classes.Export.MSExcel
 		private Workbook wb = null;
 
 		private IList<Worksheet> worksheets = new List<Worksheet>();
+
+		[DllImport("user32.dll", SetLastError = true)]
+		private static extern uint GetWindowThreadProcessId(IntPtr hWnd, out uint lpdwProcessId);
 
 		public MSExportDocument()
 		{
@@ -55,21 +59,38 @@ namespace FogSoft.WinForm.Classes.Export.MSExcel
 
             //Log.Info("IDocumentSheet GetNewSheet(string name, string fontName, int fontSize)");
 			if (wb == null)
-				wb = app.Workbooks.Add(XlWBATemplate.xlWBATWorksheet);
+			{
+				Workbooks workbooks = app.Workbooks;
+				wb = workbooks.Add(XlWBATemplate.xlWBATWorksheet);
+				Marshal.ReleaseComObject(workbooks);
+			}
 			else
-				wb.Sheets.Add(Type.Missing, wb.ActiveSheet, 1, XlSheetType.xlWorksheet);
+			{
+				Sheets sheets = wb.Sheets;
+				Worksheet activeForAdd = (Worksheet)wb.ActiveSheet;
+				sheets.Add(Type.Missing, activeForAdd, 1, XlSheetType.xlWorksheet);
+				Marshal.ReleaseComObject(activeForAdd);
+				Marshal.ReleaseComObject(sheets);
+			}
 			Worksheet ws = (Worksheet)wb.ActiveSheet;
-			
+
 			if (!string.IsNullOrEmpty(name))
 			{
 				bool fFind = false;
-				foreach (Worksheet sheet in wb.Sheets)
+				Sheets sheets = wb.Sheets;
+				int count = sheets.Count;
+				for (int i = 1; i <= count; i++)
+				{
+					Worksheet sheet = (Worksheet)sheets[i];
 					if (sheet.Name == name)
 						fFind = true;
+					Marshal.ReleaseComObject(sheet);
+				}
+				Marshal.ReleaseComObject(sheets);
 				if (!fFind)
 					ws.Name = name;
 			}
-			
+
 			Range wsCells = ws.Cells;
 			var wsFont = wsCells.Font;
 			wsFont.Name = fontName;
@@ -123,6 +144,20 @@ namespace FogSoft.WinForm.Classes.Export.MSExcel
 		{
 			if (wb == null || app == null) return;
 
+			// PID процесса EXCEL.EXE снимаем ДО Quit, пока app жив. Это headless-экземпляр
+			// (Visible=false), используемый только для записи файла, поэтому если после Quit
+			// процесс не завершился (висящие COM-ссылки), его можно безопасно убить по PID —
+			// видимый путь (FinishExport) сюда не заходит.
+			uint pid = 0;
+			try
+			{
+				GetWindowThreadProcessId((IntPtr)app.Hwnd, out pid);
+			}
+			catch (Exception e)
+			{
+				Log.Error("SaveToDisk - get Excel PID", e);
+			}
+
 			try
 			{
 				app.Visible = false;
@@ -146,6 +181,37 @@ namespace FogSoft.WinForm.Classes.Export.MSExcel
 				app.Quit();
 				Marshal.ReleaseComObject(app);
 				app = null;
+
+				KillIfAlive(pid);
+			}
+		}
+
+		private static void KillIfAlive(uint pid)
+		{
+			if (pid == 0) return;
+			try
+			{
+				Process proc = Process.GetProcessById((int)pid);
+				try
+				{
+					if (!proc.HasExited)
+					{
+						proc.Kill();
+						proc.WaitForExit(5000);
+					}
+				}
+				finally
+				{
+					proc.Dispose();
+				}
+			}
+			catch (ArgumentException)
+			{
+				// Процесса с таким PID уже нет — Excel завершился штатно, это и есть цель.
+			}
+			catch (Exception e)
+			{
+				Log.Error("SaveToDisk - kill Excel process", e);
 			}
 		}
 	}

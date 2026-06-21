@@ -47,8 +47,12 @@ namespace FogSoft.WinForm.Classes.Export
 		{
 			get
 			{
-				if (doc != null && doc.Visible())
-					return doc;
+				if (doc != null)
+				{
+					bool visible = false;
+					try { visible = doc.Visible(); } catch { }
+					if (visible) return doc;
+				}
 
 				doc = null;
 

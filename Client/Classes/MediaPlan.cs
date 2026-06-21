@@ -109,9 +109,10 @@ namespace Merlin.Classes
 					_printSettings = frmSettings.Settings;
                 }
 
-                //Thread.CurrentThread.CurrentCulture = new System.Globalization.CultureInfo("en-US");
-
-                ProgressForm.Show(Globals.MdiParent, worker_DoWork, "Экспортируется график размещения...", null);
+                // Экспорт идёт синхронно на UI-потоке (STA): Excel создаётся и
+                // освобождается на одном апартаменте — без маршалинга между потоками,
+                // из-за которого процесс EXCEL.EXE раньше зависал в памяти.
+                ExportMediaPlan();
 
 				if (!string.IsNullOrEmpty(_savedFilePath))
 				{
@@ -128,26 +129,6 @@ namespace Merlin.Classes
                 Globals.SetDefaultCursor(Globals.MdiParent);
 			}
 		}
-
-		private void worker_DoWork(object sender, DoWorkEventArgs e)
-		{
-            CultureInfo oldCulture = Thread.CurrentThread.CurrentCulture;
-            try
-			{
-                //Thread.CurrentThread.CurrentCulture = new System.Globalization.CultureInfo("en-US");
-
-                ExportMediaPlan();
-			}
-			catch (Exception exp)
-			{
-				ErrorManager.LogError("Error to show media plan", exp);
-			}
-            finally
-            {
-                Thread.CurrentThread.CurrentCulture = oldCulture;
-            }
-
-        }
 
         private void ExportMediaPlan()
 		{
@@ -166,23 +147,7 @@ namespace Merlin.Classes
 					string fileName = $"График размещения для рекламной акции № {actionId} для {safeFirm}.xlsx";
 					string filePath = Path.Combine(folder, fileName);
 
-					var save = new System.Action(() => ExportManager.Application.SaveToDisk(filePath));
-					if (Globals.MdiParent.InvokeRequired)
-						Globals.MdiParent.Invoke(save);
-					else
-						save();
-
-					// UI STA поток свободен — теперь безопасно запускать GC на ThreadPool.
-					// Finalizer поток сможет маршалить Release промежуточных COM-объектов
-					// обратно в UI STA без дедлока.
-					System.Threading.ThreadPool.QueueUserWorkItem(_ =>
-					{
-						GC.Collect();
-						GC.WaitForPendingFinalizers();
-						GC.Collect();
-						GC.WaitForPendingFinalizers();
-					});
-
+					ExportManager.Application.SaveToDisk(filePath);
 					_savedFilePath = filePath;
 				}
 				else
@@ -428,20 +393,7 @@ namespace Merlin.Classes
         {
             if (!exportStarted)
             {
-                var startExport = new System.Action(() =>
-                {
-                    ExportManager.Application.StartExport();
-                });
-
-                if (Globals.MdiParent.InvokeRequired)
-                {
-                    Globals.MdiParent.Invoke(startExport);
-                }
-                else
-                {
-                    startExport();
-                }
-
+                ExportManager.Application.StartExport();
                 exportStarted = true;
             }
         }

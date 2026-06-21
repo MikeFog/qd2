@@ -250,16 +250,25 @@ namespace FogSoft.WinForm.Classes.Export.MSExcel
 			using (FileStream fs = new FileStream(fileName, FileMode.Create, FileAccess.Write))
 				fs.Write(image, 0, image.Length);
 
-			Image img = Image.FromFile(fileName);
+			// Считываем размеры и освобождаем Image (а с ним GDI+-lock файла) ДО AddPicture,
+			// иначе temp-файл остаётся залоченным и TempFileWorker.Clear() не может его удалить.
+			int imgWidth, imgHeight;
+			float horizRes;
+			using (Image img = Image.FromFile(fileName))
+			{
+				imgWidth = img.Width;
+				imgHeight = img.Height;
+				horizRes = img.HorizontalResolution;
+			}
 
 			Range rg = GetRange(top, left, top, left);
-			object[] args = new object[] { GetPoint(img.Height, img.HorizontalResolution) };
+			object[] args = new object[] { GetPoint(imgHeight, horizRes) };
 			rg.GetType().InvokeMember("RowHeight", BindingFlags.SetProperty, null, rg, args);
 
 			var shapes = worksheet.Shapes;
 			var shape = shapes.AddPicture(fileName, MsoTriState.msoFalse, MsoTriState.msoTrue
 				, ParseHelper.GetInt32FromObject(rg.Left, 0), ParseHelper.GetInt32FromObject(rg.Top, 0)
-				, GetPoint(img.Width, img.HorizontalResolution), GetPoint(img.Height, img.HorizontalResolution));
+				, GetPoint(imgWidth, horizRes), GetPoint(imgHeight, horizRes));
 			Marshal.ReleaseComObject(shape);
 			Marshal.ReleaseComObject(shapes);
 			Marshal.ReleaseComObject(rg);
