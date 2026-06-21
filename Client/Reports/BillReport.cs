@@ -1,7 +1,10 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Data;
+using System.Drawing;
+using System.Drawing.Imaging;
 using System.Globalization;
+using System.IO;
 using CrystalDecisions.CrystalReports.Engine;
 using FogSoft.WinForm.Classes;
 using FogSoft.WinForm.DataAccess;
@@ -46,7 +49,29 @@ namespace Merlin.Reports
             DataTable dt = _agency.LoadPainting();
             SetPaintings(_agency, dt);
 
-			_report.SetDataSource(dtData);			
+			if (_action != null && dtData.Columns.Contains("qrCode"))
+			{
+				using (Bitmap qrBitmap = QrPaymentHelper.GenerateBillQrBitmap(_agency, BillNo, _action.ActionId, CalculateBillTotal(dtData)))
+				{
+					if (qrBitmap != null)
+					{
+						BlobFieldObject qrBlob = GetBlobObject("qrCode1");
+						if (qrBlob != null)
+						{
+							qrBlob.Width  = GetInTwips(qrBitmap.Width,  qrBitmap.HorizontalResolution);
+							qrBlob.Height = GetInTwips(qrBitmap.Height, qrBitmap.VerticalResolution);
+						}
+						using (var ms = new MemoryStream())
+						{
+							qrBitmap.Save(ms, ImageFormat.Bmp);
+							byte[] qrBytes = ms.ToArray();
+							foreach (DataRow row in dtData.Rows)
+								row["qrCode"] = qrBytes;
+						}
+					}
+				}
+			}
+			_report.SetDataSource(dtData);
 			SetTextObjectText("txtBillNo", _month.HasValue ? string.Format("Счёт № {0} от {1} за месяц {2} {3} года к {5} № {4}", BillNo, BillDate.ToShortDateString()
 				, DateTimeFormatInfo.CurrentInfo.MonthNames[_month.Value.Month - 1], _month.Value.Year, _action.ActionId, "акции") :
 							  string.Format("Счёт № {0} от {1} к {3} № {2}", BillNo, BillDate.ToShortDateString(), _action.ActionId, "акции"));

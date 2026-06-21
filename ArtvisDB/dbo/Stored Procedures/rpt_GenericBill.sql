@@ -150,7 +150,8 @@ declare @res2 Table (
 	[quantity] int NOT null,
 	[tax] decimal(18,2) NOT null,
 	[price] decimal(18,2) not null,
-	dirPainting image
+	dirPainting image,
+	qrCode image
 )
 
 -- Result

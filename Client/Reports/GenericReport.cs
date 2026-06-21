@@ -95,11 +95,6 @@ namespace Merlin.Reports
 			fReport.Show();
 		}
 
-        protected FieldObject GetFieldObject(string objectName)
-        {
-            return GetObject<FieldObject>(objectName);
-        }
-
         protected TextObject GetTextObject(string objectName)
 		{
 			return GetObject<TextObject>(objectName);
