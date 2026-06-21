@@ -175,7 +175,7 @@ namespace FogSoft.WinForm.Forms
                     switch (dialog.FilterIndex)
                     {
                         case 1:
-                            exportFormat = ExportFormatType.RichText;
+                            exportFormat = ExportFormatType.EditableRTF;
                             break;
 
                         case 2:
