@@ -77,6 +77,9 @@ namespace Merlin.Forms
                     RollerIssuesGrid.ShowUnconfirmed = tbbShowUnconfirmed.Checked;
                 }
 
+                if (IsSimplelCampaign)
+                    EnableWindowSelectionDelete();
+
                 _campaign?.DisplayCampaignData(lstStat);
 
                 grdRollers.ObjectDeleted += GrdRollers_ObjectDeleted;
@@ -713,9 +716,144 @@ namespace Merlin.Forms
 			if (_campaign == null) return;
 
 			_campaign.RecalculateAction();
-			((IRollerGrid)_tariffGrid).RefreshCurrentCell(grdCurrentCampaignIssues.ItemsCount > 0, TariffGridRefreshMode.WithDelete);
+			// Точечная перерисовка применима только когда есть валидное текущее окно и удаление
+			// одиночное (удаление из списка выпусков). Массовое удаление по выбранным окнам
+			// затрагивает несколько окон и могло не выставить CurrentTariffWindow (выделение
+			// прямоугольником не вызывает FireCellClicked) — тогда делаем полный рефреш, иначе
+			// RefreshCurrentCell упадёт на null-окне.
+			bool canRefreshSingleCell = presentationObjects != null
+				&& presentationObjects.Count == 1
+				&& _tariffGrid.CurrentTariffWindow != null
+				&& _tariffGrid.IsActiveCellSelected;
+			if (canRefreshSingleCell)
+				((IRollerGrid)_tariffGrid).RefreshCurrentCell(grdCurrentCampaignIssues.ItemsCount > 0, TariffGridRefreshMode.WithDelete);
+			else
+				RefreshGrid();
 			ShowWindowIssues(_tariffGrid.CurrentTariffWindow);
 			CampaignStatusChanged();
+		}
+
+		/// <summary>
+		/// Включает множественное выделение ячеек тарифной сетки (прямоугольник + Ctrl) и
+		/// удаление выпусков текущей кампании по клавише Del. Только для простых кампаний
+		/// (RollerIssuesGrid3). Выделять окна следует в режиме просмотра: в режиме
+		/// редактирования клик по ячейке добавляет выпуск.
+		/// </summary>
+		protected void EnableWindowSelectionDelete()
+		{
+			DataGridView grid = _tariffGrid.InternalGrid;
+			grid.MultiSelect = true;
+			grid.SelectionMode = DataGridViewSelectionMode.CellSelect;
+			grid.KeyDown -= TariffGrid_KeyDown;
+			grid.KeyDown += TariffGrid_KeyDown;
+		}
+
+		private void TariffGrid_KeyDown(object sender, KeyEventArgs e)
+		{
+			// Конкретная логика удаления — в DeleteIssuesInSelectedWindows (virtual): базовая
+			// версия для простой кампании, переопределение в EditIssuesForm для веера. Сам
+			// обработчик навешивается только там, где вызван EnableWindowSelectionDelete.
+			if (e.KeyCode != Keys.Delete)
+				return;
+
+			e.Handled = true;
+			e.SuppressKeyPress = true;
+			try
+			{
+				DeleteIssuesInSelectedWindows();
+			}
+			catch (Exception ex)
+			{
+				ErrorManager.PublishError(ex);
+			}
+		}
+
+		/// <summary>
+		/// Массовое удаление выпусков текущей кампании в выбранных окнах тарифной сетки.
+		/// IssueID берём из существующего пути LoadIssues по каждому окну (без правки SQL),
+		/// фильтруем по текущей кампании, удаляем каждый выпуск через IssueIUD
+		/// (PresentationObject.Delete -> DataAccessor.DoAction). Часть выпусков может не
+		/// удалиться (прошлое/дедлайн у подтверждённых) — ошибки собираем и показываем.
+		/// </summary>
+		protected virtual void DeleteIssuesInSelectedWindows()
+		{
+			if (_campaign == null)
+				return;
+
+			System.Collections.Generic.IList<ITariffWindow> windows = _tariffGrid.GetSelectedTariffWindows();
+			if (windows.Count == 0)
+				return;
+
+			Entity issueEntity = _tariffGrid.IssueEntity;
+			if (issueEntity == null || issueEntity.Id != (int)Entities.Issue)
+			{
+				MessageBox.ShowInformation("Массовое удаление поддерживается только для простых кампаний без модулей.");
+				return;
+			}
+
+			// 4. Собираем выпуски текущей кампании по выбранным окнам через существующий LoadIssues.
+			bool showUnconfirmed = _tariffGrid.ShowUnconfirmed;
+			List<PresentationObject> issues = new List<PresentationObject>();
+			foreach (ITariffWindow window in windows)
+			{
+				TariffWindowWithRollerIssues rollerWindow = window as TariffWindowWithRollerIssues;
+				if (rollerWindow == null)
+					continue;
+
+				DataTable dtIssues = rollerWindow.LoadIssues(showUnconfirmed, issueEntity);
+				foreach (DataRow row in dtIssues.Select(string.Format("campaignId = {0}", _campaign.CampaignId)))
+					issues.Add(issueEntity.CreateObject(row));
+			}
+
+			if (issues.Count == 0)
+			{
+				MessageBox.ShowInformation("В выбранных окнах нет выпусков текущей кампании.");
+				return;
+			}
+
+			// 3. Подтверждение.
+			if (MessageBox.ShowQuestion(
+					string.Format("Удалить выпуски текущей кампании в выбранных окнах? ({0} шт.)", issues.Count)) != DialogResult.Yes)
+				return;
+
+			// 5-6. Удаление в цикле с накоплением ошибок (паттерн SmartGrid.DeleteSelectedObjects).
+			List<PresentationObject> deletedObjects = new List<PresentationObject>();
+			DataTable deleteErrors = SmartGrid.CreateDeleteErrorsTable();
+			int errorRowNumber = 1;
+			try
+			{
+				Cursor = Cursors.WaitCursor;
+				foreach (PresentationObject issue in issues)
+				{
+					string objectName = string.IsNullOrEmpty(issue.Name) ? "<без названия>" : issue.Name;
+					try
+					{
+						if (issue.Delete(true))
+							deletedObjects.Add(issue);
+						else
+							SmartGrid.AddDeleteError(deleteErrors, errorRowNumber++, objectName,
+								string.Format("Не удалось удалить выпуск '{0}'.", objectName));
+					}
+					catch (Exception ex)
+					{
+						SmartGrid.AddDeleteError(deleteErrors, errorRowNumber++, objectName, ErrorManager.GetErrorMessage(ex));
+					}
+				}
+			}
+			finally
+			{
+				Cursor = Cursors.Default;
+			}
+
+			// 7. Если удалён хотя бы один выпуск — поднимаем событие (пересчёт/рефреш идут в обработчике).
+			if (deletedObjects.Count > 0)
+				grdCurrentCampaignIssues.RaiseObjectsDeleted(deletedObjects);
+
+			// 6. Показ ошибок либо сообщение об успехе.
+			if (deleteErrors.Rows.Count > 0)
+				SmartGrid.ShowDeleteErrors(deleteErrors);
+			else
+				MessageBox.ShowInformation(string.Format("Удалено выпусков: {0}.", deletedObjects.Count));
 		}
 
 		private void tbbPlay_Click(object sender, EventArgs e)

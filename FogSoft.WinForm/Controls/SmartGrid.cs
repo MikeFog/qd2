@@ -1275,6 +1275,17 @@ namespace FogSoft.WinForm.Controls
                 ObjectsDeleted?.Invoke(presentationObjects);
         }
 
+        /// <summary>
+        /// Публичная обёртка над FireObjectsDeleted для внешних сценариев массового удаления,
+        /// которые формируют список удалённых объектов сами (например, удаление выпусков по
+        /// выбранным окнам тарифной сетки в CampaignForm). Событие поднимается только при
+        /// наличии хотя бы одного удалённого объекта.
+        /// </summary>
+        public void RaiseObjectsDeleted(IList<PresentationObject> presentationObjects)
+        {
+            FireObjectsDeleted(presentationObjects);
+        }
+
         private void FireObjectChanged(PresentationObject presentationObject)
         {
             ObjectChanged?.Invoke(presentationObject);
@@ -1610,7 +1621,7 @@ namespace FogSoft.WinForm.Controls
                     }
                     catch (Exception ex)
                     {
-                        string errorText = string.Format(ErrorManager.GetErrorMessage(ex));
+                        string errorText = ErrorManager.GetErrorMessage(ex);
                         AddDeleteError(deleteErrors, errorRowNumber++, objectName, errorText);
                     }
                 }
@@ -1628,6 +1639,19 @@ namespace FogSoft.WinForm.Controls
                 return;
             }
 
+            ShowDeleteErrors(deleteErrors);
+        }
+
+        /// <summary>
+        /// Показывает накопленные ошибки массового удаления в простом журнале.
+        /// Вынесено из DeleteSelectedObjects для переиспользования внешними сценариями
+        /// (например, удаление выпусков по выбранным окнам тарифной сетки).
+        /// </summary>
+        public static void ShowDeleteErrors(DataTable deleteErrors)
+        {
+            if (deleteErrors == null || deleteErrors.Rows.Count == 0)
+                return;
+
             Entity errorEntity = EntityManager.CreateVirtualEntity(
                 MASS_DELETE_ERROR_ENTITY_ID,
                 "Ошибки удаления",
@@ -1636,10 +1660,10 @@ namespace FogSoft.WinForm.Controls
                 new Entity.Attribute(MASS_DELETE_ERROR_NAME, "Название", "nvarchar"),
                 new Entity.Attribute(MASS_DELETE_ERROR_TEXT, "Ошибка", "nvarchar"));
 
-            Globals.ShowSimpleJournal(errorEntity, "Ошибки массового удаления", deleteErrors);
+            Globals.ShowSimpleJournal(errorEntity, "Ошибки массового удаления", deleteErrors, true);
         }
 
-        private static DataTable CreateDeleteErrorsTable()
+        public static DataTable CreateDeleteErrorsTable()
         {
             DataTable table = new DataTable();
             table.Columns.Add(MASS_DELETE_ERROR_ENTITY_PK, typeof(int));
@@ -1648,7 +1672,7 @@ namespace FogSoft.WinForm.Controls
             return table;
         }
 
-        private static void AddDeleteError(DataTable table, int id, string objectName, string errorText)
+        public static void AddDeleteError(DataTable table, int id, string objectName, string errorText)
         {
             DataRow row = table.NewRow();
             row[MASS_DELETE_ERROR_ENTITY_PK] = id;

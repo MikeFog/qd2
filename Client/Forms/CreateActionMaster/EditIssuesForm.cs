@@ -52,6 +52,7 @@ namespace Merlin.Forms.CreateActionMaster
 				grdCurrentCampaignIssues.Entity = EntityManager.GetEntity((int)Entities.MasterIssues);
 				ShowCurrentIssues(_tariffGrid as TariffWithRangeGrid);
 				grdCurrentCampaignIssues.ObjectDeleted += GrdCurrentCampaignIssues_ObjectDeleted;
+				EnableWindowSelectionDelete();
 
             }
 			catch (Exception ex)
@@ -114,6 +115,82 @@ namespace Merlin.Forms.CreateActionMaster
             foreach (System.Data.DataRow row in rangeGrid.AddedIssues.Select(
                 string.Format("RowNum = '{0}'", issue["RowNum"])))
                 rangeGrid.AddedIssues.Rows.Remove(row);
+        }
+
+        /// <summary>
+        /// Массовое удаление выпусков в выбранных окнах веерного размещения (Del).
+        /// Выпуски (master issues) берём из in-memory AddedIssues по дате окна — тем же
+        /// сопоставлением, что и подсветка в TariffWithRangeGrid.MarkCells. Каждый удаляем через
+        /// MasterIssue.Delete -> MasterIssueDelete (выпуск удаляется на всех радиостанциях акции).
+        /// Часть может не удалиться (прошлое/дедлайн у подтверждённых) — ошибки собираем и
+        /// показываем (паттерн SmartGrid.DeleteSelectedObjects). Очистка AddedIssues + Recalculate
+        /// + RefreshGrid выполняются в ProcessCurrentCampaignIssuesDelete через ObjectsDeleted.
+        /// </summary>
+        protected override void DeleteIssuesInSelectedWindows()
+        {
+            TariffWithRangeGrid rangeGrid = _tariffGrid as TariffWithRangeGrid;
+            if (rangeGrid == null)
+                return;
+
+            IList<ITariffWindow> windows = _tariffGrid.GetSelectedTariffWindows();
+            if (windows.Count == 0)
+                return;
+
+            Entity masterEntity = EntityManager.GetEntity((int)Entities.MasterIssues);
+            List<PresentationObject> issues = new List<PresentationObject>();
+            foreach (ITariffWindow window in windows)
+            {
+                foreach (System.Data.DataRow row in rangeGrid.AddedIssues.Select(
+                    string.Format("[issueDate] = '{0}'", window.WindowDate)))
+                    issues.Add(masterEntity.CreateObject(row));
+            }
+
+            if (issues.Count == 0)
+            {
+                FogSoft.WinForm.Forms.MessageBox.ShowInformation("В выбранных окнах нет добавленных выпусков.");
+                return;
+            }
+
+            if (FogSoft.WinForm.Forms.MessageBox.ShowQuestion(
+                    string.Format("Удалить выпуски в выбранных окнах на всех радиостанциях акции? ({0} шт.)", issues.Count)) != DialogResult.Yes)
+                return;
+
+            List<PresentationObject> deletedObjects = new List<PresentationObject>();
+            System.Data.DataTable deleteErrors = FogSoft.WinForm.Controls.SmartGrid.CreateDeleteErrorsTable();
+            int errorRowNumber = 1;
+            try
+            {
+                Cursor = Cursors.WaitCursor;
+                foreach (PresentationObject issue in issues)
+                {
+                    string objectName = string.IsNullOrEmpty(issue.Name) ? "<без названия>" : issue.Name;
+                    try
+                    {
+                        if (issue.Delete(true))
+                            deletedObjects.Add(issue);
+                        else
+                            FogSoft.WinForm.Controls.SmartGrid.AddDeleteError(deleteErrors, errorRowNumber++, objectName,
+                                string.Format("Не удалось удалить выпуск '{0}'.", objectName));
+                    }
+                    catch (Exception ex)
+                    {
+                        FogSoft.WinForm.Controls.SmartGrid.AddDeleteError(deleteErrors, errorRowNumber++, objectName, ErrorManager.GetErrorMessage(ex));
+                    }
+                }
+            }
+            finally
+            {
+                Cursor = Cursors.Default;
+            }
+
+            // Если удалён хотя бы один — событие чистит AddedIssues, пересчитывает акцию и обновляет сетку.
+            if (deletedObjects.Count > 0)
+                grdCurrentCampaignIssues.RaiseObjectsDeleted(deletedObjects);
+
+            if (deleteErrors.Rows.Count > 0)
+                FogSoft.WinForm.Controls.SmartGrid.ShowDeleteErrors(deleteErrors);
+            else
+                FogSoft.WinForm.Forms.MessageBox.ShowInformation(string.Format("Удалено выпусков: {0}.", deletedObjects.Count));
         }
 	}
 }

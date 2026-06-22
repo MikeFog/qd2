@@ -716,5 +716,24 @@ namespace Merlin.Controls
                 }
             }
         }
+
+        /// <summary>
+        /// Возвращает тарифные окна выбранных ячеек (прямоугольное выделение или Ctrl-выбор),
+        /// исключая фиксированные строки/столбцы и пустые ячейки без окна. Используется для
+        /// массовых операций над выпусками выбранных окон (например, удаление по Del в CampaignForm).
+        /// </summary>
+        public System.Collections.Generic.IList<ITariffWindow> GetSelectedTariffWindows()
+        {
+            System.Collections.Generic.List<ITariffWindow> windows = new System.Collections.Generic.List<ITariffWindow>();
+            foreach (DataGridViewCell cell in RawDataGridView.SelectedCells)
+            {
+                if (cell.RowIndex < FIXED_ROWS || cell.ColumnIndex < FixedCols)
+                    continue;
+                ITariffWindow window = GetTariffWindow(cell.RowIndex, cell.ColumnIndex);
+                if (window != null)
+                    windows.Add(window);
+            }
+            return windows;
+        }
     }
 }
