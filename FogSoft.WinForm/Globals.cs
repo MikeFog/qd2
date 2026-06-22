@@ -152,13 +152,41 @@ namespace FogSoft.WinForm
 		public static void ShowSimpleJournal(Entity entity, string caption, DataTable dt)
 		{
 			JournalForm journal = new JournalForm(entity, caption, dt) {MdiParent = MdiParent, Icon = MdiParent.Icon};
-			
+
             journal.Shown += (s, e) =>
             {
                 journal.Grid?.AdjustColumnsWidth();
             };
             journal.Show();
             journal.BringToFront();
+		}
+
+		/// <summary>
+		/// Показывает простой журнал по DataTable. При showModal = true — модально, owned активной
+		/// формой (нужно, когда вызывающая форма открыта через ShowDialog: немодальный MDI-child
+		/// журнал оказался бы за модальной формой и был бы не виден).
+		/// </summary>
+		public static void ShowSimpleJournal(Entity entity, string caption, DataTable dt, bool showModal)
+		{
+			if (!showModal)
+			{
+				ShowSimpleJournal(entity, caption, dt);
+				return;
+			}
+
+			JournalForm journal = new JournalForm(entity, caption, dt) { StartPosition = FormStartPosition.CenterParent };
+			if (MdiParent != null)
+				journal.Icon = MdiParent.Icon;
+			journal.Shown += (s, e) =>
+			{
+				journal.Grid?.AdjustColumnsWidth();
+			};
+
+			Form owner = Form.ActiveForm ?? MdiParent;
+			if (owner != null)
+				journal.ShowDialog(owner);
+			else
+				journal.ShowDialog();
 		}
 
         public static void ShowSimpleJournal(Entity entity, string caption, Dictionary<string, object> filterValues, bool showModal = false)
