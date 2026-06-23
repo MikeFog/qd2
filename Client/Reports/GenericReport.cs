@@ -176,11 +176,20 @@ namespace Merlin.Reports
                 _report.Refresh();
 				_isSealPrinted = true;
             }
-			else
+			else if (organization.Signature != null)
 			{
+				// Пользователь явно отказался
 				dtData.Columns.Remove("dirPainting");
                 _isSealPrinted = false;
             }
+			else
+			{
+				// Signature не загружена в сущность — проверяем есть ли байты в datasource (из SP)
+				bool hasPainting = dtData.Rows.Count > 0 && dtData.Rows[0]["dirPainting"] != DBNull.Value;
+				_isSealPrinted = hasPainting;
+				if (!hasPainting)
+					dtData.Columns.Remove("dirPainting");
+			}
         }
 
 		private void UpdateTopsOnChange(int heightChange, ReportObject changedObject)

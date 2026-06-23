@@ -19,7 +19,7 @@ namespace Merlin.Reports
 
         // Размер QR-кода на странице счёта. 1 см = 567 twips.
         // Когда заказчик скажет нужный размер — поменять число сантиметров здесь.
-        private const int QrSizeTwips = 3 * 567; // 2 см × 2 см
+        private const int QrSizeTwips = 3 * 567; // 3 см × 3 см
 
         public BillReport(Classes.Action action, Agency agency, PresentationObject bill)
             : this(action, agency, bill, new GenericBill())
@@ -52,10 +52,13 @@ namespace Merlin.Reports
             GenericReport.LoadReportPartTexts();
             DataTable dt = _agency.LoadPainting();
             SetPaintings(_agency, dt);
+            if (!_isSealPrinted && dtData.Columns.Contains("dirPainting"))
+                foreach (DataRow row in dtData.Rows)
+                    row["dirPainting"] = DBNull.Value;
 
 			if (_action != null && dtData.Columns.Contains("qrCode"))
 			{
-				using (Bitmap qrBitmap = QrPaymentHelper.GenerateBillQrBitmap(_agency, BillNo, _action.ActionId, CalculateBillTotal(dtData)))
+				using (Bitmap qrBitmap = QrPaymentHelper.GenerateBillQrBitmap(_agency, BillNo, _action.ActionId, CalculateBillTotal(dtData), CalcTotalTax(dtData), _agency.GetTaxValue(BillDate)))
 				{
 					if (qrBitmap != null)
 					{
