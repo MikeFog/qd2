@@ -111,7 +111,7 @@ namespace Merlin.Classes
 				{
 					DataSet rs = GetOnAirInquireReport(MassmediaId, CampaignId, (DateTime)dMonths[dm], ((DateTime)dMonths[dm]).AddMonths(1).AddDays(-1));
 					OnAirInquireReport report = new OnAirInquireReport(this, Agency, rs, f.IsOptionChecked, Massmedia, (DateTime)dMonths[dm]);
-					string fileName = string.Format("{0} для {1} к акции {2} для {3}.doc",
+					string fileName = string.Format("{0} для {1} к акции {2} для {3}.rtf",
 						"Эфирная справка",
 						MassmediaName,
 						ActionId,

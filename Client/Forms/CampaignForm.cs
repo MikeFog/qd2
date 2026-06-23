@@ -22,6 +22,7 @@ namespace Merlin.Forms
 		private readonly MediaControl mediaControl;
 		protected TariffGrid _tariffGrid;
 		private bool changeFlag;
+		private bool _selectionDeleteEnabled;
 		private IssueTemplate _template;
 		private SmartGrid packDetails;
         protected Firm _firm;
@@ -201,6 +202,8 @@ namespace Merlin.Forms
 		private void SetEditMode()
 		{
 			_tariffGrid.EditMode = tbbTemplate.Checked ? EditMode.Template : (tbbStart.Checked) ? EditMode.Edit : EditMode.View;
+			if (_selectionDeleteEnabled)
+				_tariffGrid.InternalGrid.MultiSelect = (_tariffGrid.EditMode == EditMode.View);
 		}
 
 		protected virtual void ProcessToolbar()
@@ -741,6 +744,7 @@ namespace Merlin.Forms
 		/// </summary>
 		protected void EnableWindowSelectionDelete()
 		{
+			_selectionDeleteEnabled = true;
 			DataGridView grid = _tariffGrid.InternalGrid;
 			grid.MultiSelect = true;
 			grid.SelectionMode = DataGridViewSelectionMode.CellSelect;
