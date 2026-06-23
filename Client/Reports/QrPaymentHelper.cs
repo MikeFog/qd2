@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Drawing;
 using System.Drawing.Imaging;
+using System.Globalization;
 using System.IO;
 using System.Text;
 using FogSoft.WinForm.Classes;
@@ -12,9 +13,9 @@ namespace Merlin.Reports
     internal static class QrPaymentHelper
     {
         // Returns a Bitmap of ST00012 payment QR (caller must dispose), or null if agency has no bank details.
-        internal static Bitmap GenerateBillQrBitmap(Agency agency, string billNo, int actionId, decimal total)
+        internal static Bitmap GenerateBillQrBitmap(Agency agency, string billNo, int actionId, decimal total, decimal tax, decimal taxRate)
         {
-            string payload = BuildSt00012(agency, billNo, actionId, total);
+            string payload = BuildSt00012(agency, billNo, actionId, total, tax, taxRate);
             if (payload == null)
                 return null;
 
@@ -26,7 +27,7 @@ namespace Merlin.Reports
             }
         }
 
-        private static string BuildSt00012(Agency agency, string billNo, int actionId, decimal total)
+        private static string BuildSt00012(Agency agency, string billNo, int actionId, decimal total, decimal tax, decimal taxRate)
         {
             PresentationObject bank = agency.Bank;
             if (bank == null)
@@ -39,7 +40,12 @@ namespace Merlin.Reports
 
             string corrAccount = bank[Organization.ParamNames.BankAccount]?.ToString();
             long   sumKopecks  = (long)Math.Round(total * 100, MidpointRounding.AwayFromZero);
-            string purpose     = $"Счет №{billNo} к акции {actionId}";
+            CultureInfo ruCulture = CultureInfo.GetCultureInfo("ru-RU");
+
+            string taxInfo = taxRate > 0
+                ? $", в т.ч. НДС {taxRate.ToString("0.##", ruCulture)}%, {tax.ToString("F2", ruCulture)} руб."
+                : ", без НДС";
+            string purpose = $"Счет №{billNo} к акции {actionId}{taxInfo}";
 
             var sb = new StringBuilder("ST00012");
             Field(sb, "Name",        agency.PrefixWithName);
