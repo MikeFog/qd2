@@ -162,6 +162,7 @@ namespace FogSoft.WinForm.Classes.Export.MSExcel
 			{
 				app.Visible = false;
 				app.ScreenUpdating = false;
+				app.DisplayAlerts = false;
 
 				object format = 51; // XlFileFormat.xlOpenXMLWorkbook
 				object mis = Type.Missing;
