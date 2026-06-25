@@ -643,6 +643,12 @@ namespace Merlin.Classes
 
 				Cursor.Current = Cursors.WaitCursor;
 				parameters["isTestActivate"] = isTestActivation;
+				if (!parameters.ContainsKey("tryTransferFailedIssues"))
+					parameters["tryTransferFailedIssues"] = false;
+				if (!parameters.ContainsKey("allowDifferentWindowPrice"))
+					parameters["allowDifferentWindowPrice"] = false;
+				if (!parameters.ContainsKey("transferAttemptCount"))
+					parameters["transferAttemptCount"] = 0;
 
 				DataAccessor.PrepareParameters(
 					parameters, entity, InterfaceObjects.FakeModule, Constants.Actions.Activate);
@@ -656,6 +662,19 @@ namespace Merlin.Classes
 							? "Предварительный просмотр результатов активации"
 							: "Результаты активации") + ": активированное"
 						, ds.Tables["activated"]);
+				}
+
+				DataTable transferred = ds.Tables.Contains("transferred")
+					? ds.Tables["transferred"]
+					: (ds.Tables.Count > 3 ? ds.Tables[3] : null);
+				if (transferred != null && transferred.Rows.Count > 0)
+				{
+					Globals.ShowSimpleJournal(
+						EntityManager.GetEntity((int)Entities.RollerIssueActivated),
+						(isTestActivation
+							? "Предварительный просмотр результатов активации"
+							: "Результаты активации") + ": перенесенное"
+						, transferred);
 				}
 
 				if (ds.Tables["notactivated"].Rows.Count > 0)

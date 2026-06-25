@@ -3,7 +3,10 @@ CREATE PROC [dbo].[ActionActivate]
 (
 @actionID int,
 @loggedUserID smallint,
-@isTestActivate bit
+@isTestActivate bit,
+@tryTransferFailedIssues bit = 0,
+@allowDifferentWindowPrice bit = 0,
+@transferAttemptCount int = 0
 )
 WITH EXECUTE AS OWNER
 AS
@@ -23,14 +26,29 @@ declare @issue table (
 	positionID int not null,
 	issueDate datetime not null,
 	issueID int primary key,
+	rollerID int not null,
 	moduleIssueID int,
 	packModuleIssueID int,
 	campaignID int not null,
+	campaignTypeID tinyint not null,
 	massmediaID int not null, 
-	windowId int not null
+	windowId int not null,
+	oldWindowId int not null,
+	oldIssueDate datetime not null,
+	oldWindowPrice decimal(18, 2) not null,
+	grantorID smallint null,
+	isTransferred bit not null default 0,
+	transferStatus nvarchar(64) null
 )
 
 declare @fatalErrors table (name nvarchar(64) not null)
+declare @plannedTransfers table (
+	issueID int primary key,
+	oldWindowID int not null,
+	newWindowID int not null,
+	oldIssueDate datetime not null,
+	newIssueDate datetime not null
+)
 
 declare @tomorrow datetime
 select @tomorrow = dateadd(day, 1, CONVERT(date, getdate()))
@@ -44,7 +62,7 @@ FETCH NEXT FROM cur_issues INTO @issueId
 
 WHILE @@FETCH_STATUS = 0
 BEGIN
-	insert into @issue([name], advertTypeName, statusDescription,duration,positionID,issueDate,issueID,moduleIssueID,packModuleIssueID,campaignID,massmediaID, windowId)
+	insert into @issue([name], advertTypeName, statusDescription,duration,positionID,issueDate,issueID,rollerID,moduleIssueID,packModuleIssueID,campaignID,campaignTypeID,massmediaID, windowId, oldWindowId, oldIssueDate, oldWindowPrice, grantorID)
 	select 
 		r.[name],
 		r.advertTypeName,
@@ -68,7 +86,7 @@ BEGIN
 			when tw.dayOriginal <= mm.deadLine And @isAdmin = 0 And @IsTrafficManager = 0  then 'DeadLineViolation'
 			else 'OK'
 		end,
-		r.duration, i.positionId, tw.windowDateActual, i.issueID, i.moduleIssueID, i.packModuleIssueID, i.campaignID, mm.massmediaID, tw.windowId
+		r.duration, i.positionId, tw.windowDateActual, i.issueID, i.rollerID, i.moduleIssueID, i.packModuleIssueID, i.campaignID, c.campaignTypeID, mm.massmediaID, tw.windowId, tw.windowId, tw.windowDateActual, tw.price, i.grantorID
 	from Issue i 
 		inner join vRoller r on i.rollerID = r.rollerID
 		inner join TariffWindow tw on i.actualWindowID = tw.windowId
@@ -173,6 +191,136 @@ begin
 	Insert Into @fatalErrors(name) values('CannotPerfomActivationSponsor')
 end 
 
+IF @isTestActivate = 0
+	AND @blockActivation = 0
+	AND @tryTransferFailedIssues = 1
+	AND @transferAttemptCount > 0
+BEGIN
+	DECLARE
+		@transferIssueID int,
+		@transferSourceWindowID int,
+		@transferSourceDate datetime,
+		@transferSourcePrice decimal(18, 2),
+		@transferPositionID int,
+		@transferDuration int,
+		@transferGrantorID smallint,
+		@candidateWindowID int,
+		@candidateIssueDate datetime
+
+	DECLARE cur_transfer CURSOR LOCAL FOR
+		SELECT issueID, oldWindowId, oldIssueDate, oldWindowPrice, positionID, duration, grantorID
+		FROM @issue
+		WHERE statusDescription <> 'OK'
+			AND campaignTypeID = 1
+			AND moduleIssueID IS NULL
+			AND packModuleIssueID IS NULL
+
+	OPEN cur_transfer
+	FETCH NEXT FROM cur_transfer INTO @transferIssueID, @transferSourceWindowID, @transferSourceDate,
+		@transferSourcePrice, @transferPositionID, @transferDuration, @transferGrantorID
+
+	WHILE @@FETCH_STATUS = 0
+	BEGIN
+		SET @candidateWindowID = NULL
+		SET @candidateIssueDate = NULL
+
+		;WITH rankedCandidates AS
+		(
+			SELECT
+				tw.windowId,
+				tw.windowDateActual,
+				attemptNo = ROW_NUMBER() OVER (ORDER BY tw.windowDateActual DESC)
+			FROM TariffWindow tw
+			WHERE tw.windowDateActual < @transferSourceDate
+				AND tw.massmediaID = (SELECT massmediaID FROM @issue WHERE issueID = @transferIssueID)
+				AND tw.dayActual = (SELECT dayActual FROM TariffWindow WHERE windowId = @transferSourceWindowID)
+				AND tw.windowId <> @transferSourceWindowID
+				AND (@allowDifferentWindowPrice = 1 OR tw.price = @transferSourcePrice)
+
+			UNION ALL
+
+			SELECT
+				tw.windowId,
+				tw.windowDateActual,
+				attemptNo = ROW_NUMBER() OVER (ORDER BY tw.windowDateActual ASC)
+			FROM TariffWindow tw
+			WHERE tw.windowDateActual > @transferSourceDate
+				AND tw.massmediaID = (SELECT massmediaID FROM @issue WHERE issueID = @transferIssueID)
+				AND tw.dayActual = (SELECT dayActual FROM TariffWindow WHERE windowId = @transferSourceWindowID)
+				AND tw.windowId <> @transferSourceWindowID
+				AND (@allowDifferentWindowPrice = 1 OR tw.price = @transferSourcePrice)
+		),
+		validCandidates AS
+		(
+			SELECT
+				rc.windowId,
+				rc.windowDateActual,
+				rc.attemptNo,
+				freeTime = tw.duration - tw.timeInUseConfirmed
+					- (Select IsNull(sum(it2.duration), 0) From @issue it2 Where it2.windowId = tw.windowId And it2.statusDescription = 'OK')
+			FROM rankedCandidates rc
+				INNER JOIN TariffWindow tw ON tw.windowId = rc.windowId
+				INNER JOIN Issue i ON i.issueID = @transferIssueID
+				INNER JOIN Roller r ON r.rollerID = i.rollerID
+				INNER JOIN Campaign c ON c.campaignID = i.campaignID
+				INNER JOIN MassMedia mm ON mm.massmediaID = tw.massmediaID
+			WHERE rc.attemptNo <= @transferAttemptCount
+				AND NOT (c.finishDate < @tomorrow and c.campaignTypeID <> 2 and @rightToGoBack <> 1)
+				AND tw.isDisabled = 0
+				AND NOT (r.rolActionTypeID = 1 and tw.maxCapacity > 0)
+				AND NOT ((tw.isFirstPositionOccupied = 1 And @transferPositionID = -20)
+					or (tw.isSecondPositionOccupied = 1 And @transferPositionID = -10)
+					or (tw.isLastPositionOccupied = 1 And @transferPositionID = 10))
+				AND NOT EXISTS (
+					SELECT 1
+					FROM @issue it2
+					WHERE it2.windowId = tw.windowId
+						AND it2.statusDescription = 'OK'
+						AND it2.positionID = @transferPositionID
+						AND @transferPositionID IN (-20, -10, 10)
+				)
+				AND NOT ((tw.dayActual < @tomorrow) and @rightToGoBack <> 1 And @IsTrafficManager = 0)
+				AND NOT (@rightForMinus = 0
+					and (tw.[timeInUseConfirmed] + @transferDuration
+						+ (Select IsNull(sum(it2.duration), 0) From @issue it2 Where it2.windowId = tw.windowId And it2.statusDescription = 'OK') > tw.duration)
+					and (@transferGrantorID is null or (dbo.fn_IsRightForMinus(@transferGrantorID) = 0)))
+				AND NOT (@rightForMinus = 0
+					and (tw.[maxCapacity] > 0
+						AND (tw.[maxCapacity] - (tw.[capacityInUseConfirmed] + 1
+							+ (Select count(*) From @issue it2 Where it2.windowId = tw.windowId And it2.statusDescription = 'OK'))) < 0)
+					and (@transferGrantorID is null or (dbo.fn_IsRightForMinus(@transferGrantorID) = 0)))
+				AND r.advertTypeID Is Not Null
+				AND NOT (tw.dayOriginal <= mm.deadLine And @isAdmin = 0 And @IsTrafficManager = 0)
+		)
+		SELECT TOP 1
+			@candidateWindowID = windowId,
+			@candidateIssueDate = windowDateActual
+		FROM validCandidates
+		ORDER BY attemptNo, freeTime DESC, windowDateActual
+
+		IF @candidateWindowID IS NOT NULL
+		BEGIN
+			UPDATE @issue
+			SET
+				statusDescription = 'OK',
+				windowId = @candidateWindowID,
+				issueDate = @candidateIssueDate,
+				isTransferred = 1,
+				transferStatus = 'Transferred'
+			WHERE issueID = @transferIssueID
+
+			INSERT INTO @plannedTransfers(issueID, oldWindowID, newWindowID, oldIssueDate, newIssueDate)
+			VALUES(@transferIssueID, @transferSourceWindowID, @candidateWindowID, @transferSourceDate, @candidateIssueDate)
+		END
+
+		FETCH NEXT FROM cur_transfer INTO @transferIssueID, @transferSourceWindowID, @transferSourceDate,
+			@transferSourcePrice, @transferPositionID, @transferDuration, @transferGrantorID
+	END
+
+	CLOSE cur_transfer
+	DEALLOCATE cur_transfer
+END
+
 SELECT 
 	'i_' + cast(i2.issueID as varchar) as issueID,
 	am.message as statusDescription, 
@@ -189,6 +337,7 @@ FROM
 	Inner Join vMassmedia m On m.massmediaID = i2.massmediaID
 	LEFT JOIN iMessageToActivate am ON i2.statusDescription COLLATE DATABASE_DEFAULT = am.name COLLATE DATABASE_DEFAULT
 WHERE i2.statusDescription like 'OK'
+	and i2.isTransferred = 0
 union all
 select 
 	'pi_' + cast(i.issueID as  varchar) as issueID,
@@ -246,6 +395,27 @@ order by
 
 Select am.message as errorMessage from @fatalErrors fe LEFT JOIN iMessageToActivate am ON fe.name COLLATE DATABASE_DEFAULT = am.name COLLATE DATABASE_DEFAULT
 
+SELECT
+	'i_' + cast(i2.issueID as varchar) as issueID,
+	am.message as statusDescription,
+	i2.[name],
+	i2.advertTypeName,
+	dbo.fn_Int2Time(i2.duration) as duration,
+	ip.[description] as issuePosition,
+	i2.oldIssueDate,
+	i2.issueDate,
+	m.name as radiostationName,
+	m.groupName
+FROM
+	@ISSUE i2
+	INNER JOIN iIssuePosition ip ON ip.positionID = i2.positionID
+	Inner Join vMassmedia m On m.massmediaID = i2.massmediaID
+	LEFT JOIN iMessageToActivate am ON i2.statusDescription COLLATE DATABASE_DEFAULT = am.name COLLATE DATABASE_DEFAULT
+WHERE i2.statusDescription like 'OK'
+	and i2.isTransferred = 1
+ORDER BY
+	i2.issueDate
+
 IF @isTestActivate = 0 AND @blockActivation = 0
 begin
 --	INSERT INTO [LogDeletedIssue] ([userId],actionID,rollerId, issueDate, massmediaID) 
@@ -257,6 +427,103 @@ begin
 	delete from pmi from @issue it inner join PackModuleIssue pmi on it.packModuleIssueID = pmi.packModuleIssueID where it.statusDescription <> 'OK'
 	delete from i from @programmissue it inner join ProgramIssue i on it.issueID = i.issueID where it.statusDescription <> 'OK'
 */
+
+	Update
+		TariffWindow
+	Set
+		timeInUseUnconfirmed =
+			Case
+				When [maxCapacity] = 0
+					Then timeInUseUnconfirmed - r.duration
+				Else timeInUseUnconfirmed
+			End,
+		capacityInUseUnconfirmed =
+			Case
+				When ([maxCapacity] > 0)
+					Then capacityInUseUnconfirmed - 1
+				Else capacityInUseUnconfirmed
+			End,
+		firstPositionsUnconfirmed =
+			Case
+				When i.positionId = -20 Then firstPositionsUnconfirmed - 1
+				Else firstPositionsUnconfirmed
+			End,
+		secondPositionsUnconfirmed =
+			Case
+				When i.positionId = -10 Then secondPositionsUnconfirmed - 1
+				Else secondPositionsUnconfirmed
+			End,
+		lastPositionsUnconfirmed =
+			Case
+				When i.positionId = 10 Then lastPositionsUnconfirmed - 1
+				Else lastPositionsUnconfirmed
+			End
+	From
+		@plannedTransfers pt
+		Inner Join Issue i On i.issueID = pt.issueID
+		Inner Join Roller r On r.rollerID = i.rollerID
+	Where
+		TariffWindow.windowId = pt.oldWindowID
+
+	Update i
+	Set
+		actualWindowID = pt.newWindowID,
+		tariffPrice = dbo.fn_GetIssuePrice(
+			r.duration,
+			twNew.price,
+			i.ratio,
+			i.positionId,
+			IsNull(pl.extraChargeFirstRoller, 0),
+			IsNull(pl.extraChargeSecondRoller, 0),
+			IsNull(pl.extraChargeLastRoller, 0))
+	From
+		Issue i
+		Inner Join @plannedTransfers pt On pt.issueID = i.issueID
+		Inner Join Roller r On r.rollerID = i.rollerID
+		Inner Join TariffWindow twNew On twNew.windowId = pt.newWindowID
+		Left Join Tariff t On t.tariffID = twNew.tariffId
+		Left Join Pricelist pl On pl.pricelistID = t.pricelistID
+
+	Update
+		TariffWindow
+	Set
+		timeInUseUnconfirmed =
+			Case
+				When [maxCapacity] = 0
+					Then timeInUseUnconfirmed + r.duration
+				Else timeInUseUnconfirmed
+			End,
+		capacityInUseUnconfirmed =
+			Case
+				When ([maxCapacity] > 0)
+					Then capacityInUseUnconfirmed + 1
+				Else capacityInUseUnconfirmed
+			End,
+		firstPositionsUnconfirmed =
+			Case
+				When i.positionId = -20 Then firstPositionsUnconfirmed + 1
+				Else firstPositionsUnconfirmed
+			End,
+		secondPositionsUnconfirmed =
+			Case
+				When i.positionId = -10 Then secondPositionsUnconfirmed + 1
+				Else secondPositionsUnconfirmed
+			End,
+		lastPositionsUnconfirmed =
+			Case
+				When i.positionId = 10 Then lastPositionsUnconfirmed + 1
+				Else lastPositionsUnconfirmed
+			End
+	From
+		@plannedTransfers pt
+		Inner Join Issue i On i.issueID = pt.issueID
+		Inner Join Roller r On r.rollerID = i.rollerID
+	Where
+		TariffWindow.windowId = pt.newWindowID
+
+	INSERT INTO [TransferLog]([userID], [oldDate], [newDate], [actionID], [issueID])
+	SELECT @loggedUserID, oldIssueDate, newIssueDate, @actionID, issueID
+	FROM @plannedTransfers
 
 -- 1. Удаление обычных выпусков (Issue)
 	DECLARE @delIssueID int;
