@@ -634,21 +634,31 @@ namespace Merlin.Classes
 
 		private void ActivateAction(bool isTestActivation)
 		{
-			if (!isTestActivation && Globals.ShowQuestion("ConfirmActionActivate", null) != DialogResult.Yes)
-				return;
+			bool tryTransferFailedIssues = false;
+			bool allowDifferentWindowPrice = false;
+			int transferAttemptCount = 0;
 
 			try
 			{
 				if (!isTestActivation && !CheckActionRollersAndProgramIssues()) return;
+				if (!isTestActivation)
+				{
+					using (ActionActivateSettingsForm form = new ActionActivateSettingsForm())
+					{
+						if (form.ShowDialog(Globals.MdiParent) != DialogResult.OK)
+							return;
+
+						tryTransferFailedIssues = form.TryTransferFailedIssues;
+						allowDifferentWindowPrice = form.AllowDifferentWindowPrice;
+						transferAttemptCount = form.TransferAttemptCount;
+					}
+				}
 
 				Cursor.Current = Cursors.WaitCursor;
 				parameters["isTestActivate"] = isTestActivation;
-				if (!parameters.ContainsKey("tryTransferFailedIssues"))
-					parameters["tryTransferFailedIssues"] = false;
-				if (!parameters.ContainsKey("allowDifferentWindowPrice"))
-					parameters["allowDifferentWindowPrice"] = false;
-				if (!parameters.ContainsKey("transferAttemptCount"))
-					parameters["transferAttemptCount"] = 0;
+				parameters["tryTransferFailedIssues"] = tryTransferFailedIssues;
+				parameters["allowDifferentWindowPrice"] = allowDifferentWindowPrice;
+				parameters["transferAttemptCount"] = transferAttemptCount;
 
 				DataAccessor.PrepareParameters(
 					parameters, entity, InterfaceObjects.FakeModule, Constants.Actions.Activate);

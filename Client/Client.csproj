@@ -316,6 +316,9 @@
     <EmbeddedResource Include="Forms\ActionFinalPriceForm.resx">
       <DependentUpon>ActionFinalPriceForm.cs</DependentUpon>
     </EmbeddedResource>
+    <EmbeddedResource Include="Forms\ActionActivateSettingsForm.resx">
+      <DependentUpon>ActionActivateSettingsForm.cs</DependentUpon>
+    </EmbeddedResource>
     <EmbeddedResource Include="Forms\AgencyPassportForm.resx">
       <DependentUpon>AgencyPassportForm.cs</DependentUpon>
     </EmbeddedResource>
@@ -725,6 +728,12 @@
     </Compile>
     <Compile Include="Forms\ActionFinalPriceForm.Designer.cs">
       <DependentUpon>ActionFinalPriceForm.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Forms\ActionActivateSettingsForm.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="Forms\ActionActivateSettingsForm.Designer.cs">
+      <DependentUpon>ActionActivateSettingsForm.cs</DependentUpon>
     </Compile>
     <Compile Include="Forms\ActionForm.cs">
       <SubType>Form</SubType>
