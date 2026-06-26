@@ -719,11 +719,11 @@ namespace Merlin.Forms
 			if (_campaign == null) return;
 
 			_campaign.RecalculateAction();
-			// Точечная перерисовка применима только когда есть валидное текущее окно и удаление
-			// одиночное (удаление из списка выпусков). Массовое удаление по выбранным окнам
-			// затрагивает несколько окон и могло не выставить CurrentTariffWindow (выделение
-			// прямоугольником не вызывает FireCellClicked) — тогда делаем полный рефреш, иначе
-			// RefreshCurrentCell упадёт на null-окне.
+			// Сюда теперь приходит только одиночное удаление выпуска из списка
+			// grdCurrentCampaignIssues: текущее окно валидно, точечная перерисовка корректна и
+			// дешева. Если текущего окна нет / ячейка не выбрана — откат на полный рефреш (иначе
+			// RefreshCurrentCell упадёт на null-окне). Массовое удаление по выделению рефрешит
+			// само (DeleteIssuesInSelectedWindows) и сюда не заходит.
 			bool canRefreshSingleCell = presentationObjects != null
 				&& presentationObjects.Count == 1
 				&& _tariffGrid.CurrentTariffWindow != null
@@ -849,9 +849,16 @@ namespace Merlin.Forms
 				Cursor = Cursors.Default;
 			}
 
-			// 7. Если удалён хотя бы один выпуск — поднимаем событие (пересчёт/рефреш идут в обработчике).
+			// 7. Если удалён хотя бы один выпуск — пересчёт и полный рефреш напрямую (мы на форме).
+			// Событие/точечная перерисовка тут не годятся: массовое удаление по выделению не связано
+			// с CurrentTariffWindow, и RefreshCurrentCell красил окно под курсором, а не удалённое.
 			if (deletedObjects.Count > 0)
-				grdCurrentCampaignIssues.RaiseObjectsDeleted(deletedObjects);
+			{
+				_campaign.RecalculateAction();
+				RefreshGrid();
+				ShowWindowIssues(_tariffGrid.CurrentTariffWindow);
+				CampaignStatusChanged();
+			}
 
 			// 6. Показ ошибок либо сообщение об успехе.
 			if (deleteErrors.Rows.Count > 0)

@@ -51,7 +51,6 @@ namespace Merlin.Forms.CreateActionMaster
 				_action.DisplayData(lstStat);
 				grdCurrentCampaignIssues.Entity = EntityManager.GetEntity((int)Entities.MasterIssues);
 				ShowCurrentIssues(_tariffGrid as TariffWithRangeGrid);
-				grdCurrentCampaignIssues.ObjectDeleted += GrdCurrentCampaignIssues_ObjectDeleted;
 				EnableWindowSelectionDelete();
 
             }
@@ -84,11 +83,6 @@ namespace Merlin.Forms.CreateActionMaster
             ShowCurrentIssues(((TariffWithRangeGrid)_tariffGrid));
             _action.DisplayData(lstStat);
         }
-
-		private void GrdCurrentCampaignIssues_ObjectDeleted(PresentationObject presentationObject)
-		{
-            ProcessCurrentCampaignIssuesDelete(new List<PresentationObject> { presentationObject });
-		}
 
         protected override void ProcessCurrentCampaignIssuesDelete(IList<PresentationObject> presentationObjects)
         {
