@@ -1,7 +1,7 @@
 ﻿-- Created by GitHub Copilot in SSMS - review carefully before executing
 CREATE PROCEDURE [dbo].[TariffWindowWithRange]
 (
-    @actionID int,
+    @actionID  int,
     @dateStart datetime
 )
 AS
@@ -285,7 +285,7 @@ BEGIN
         (CASE
             WHEN DATEPART(hour, @minBroadcast) < DATEPART(hour, r.[date])
               OR (DATEPART(hour, @minBroadcast) = DATEPART(hour, r.[date])
-                  AND DATEPART(minute, @minBroadcast) < DATEPART(minute, r.[date]))
+                  AND DATEPART(minute, @minBroadcast) <= DATEPART(minute, r.[date]))  -- ← исправлено
             THEN 0 ELSE 1 END),
         DATEPART(hour, r.[date]),
         DATEPART(minute, r.[date]);
