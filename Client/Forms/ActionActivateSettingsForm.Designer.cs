@@ -1,4 +1,4 @@
-namespace Merlin.Forms
+﻿namespace Merlin.Forms
 {
     partial class ActionActivateSettingsForm
     {
@@ -47,9 +47,9 @@ namespace Merlin.Forms
             ((System.ComponentModel.ISupportInitialize)(this.numTransferAttemptCount)).BeginInit();
             this.flowLayoutPanelButtons.SuspendLayout();
             this.SuspendLayout();
-            //
+            // 
             // tableLayoutPanelMain
-            //
+            // 
             this.tableLayoutPanelMain.ColumnCount = 1;
             this.tableLayoutPanelMain.ColumnStyles.Add(new System.Windows.Forms.ColumnStyle(System.Windows.Forms.SizeType.Percent, 100F));
             this.tableLayoutPanelMain.Controls.Add(this.lblConfirmation, 0, 0);
@@ -67,9 +67,9 @@ namespace Merlin.Forms
             this.tableLayoutPanelMain.RowStyles.Add(new System.Windows.Forms.RowStyle());
             this.tableLayoutPanelMain.Size = new System.Drawing.Size(640, 315);
             this.tableLayoutPanelMain.TabIndex = 0;
-            //
+            // 
             // lblConfirmation
-            //
+            // 
             this.lblConfirmation.AutoSize = true;
             this.lblConfirmation.Dock = System.Windows.Forms.DockStyle.Fill;
             this.lblConfirmation.Location = new System.Drawing.Point(11, 8);
@@ -78,21 +78,21 @@ namespace Merlin.Forms
             this.lblConfirmation.Size = new System.Drawing.Size(618, 24);
             this.lblConfirmation.TabIndex = 0;
             this.lblConfirmation.Text = "Активировать акцию с выбранными параметрами?";
-            //
+            // 
             // chkTryTransferFailedIssues
-            //
+            // 
             this.chkTryTransferFailedIssues.AutoSize = true;
             this.chkTryTransferFailedIssues.Location = new System.Drawing.Point(11, 43);
             this.chkTryTransferFailedIssues.Margin = new System.Windows.Forms.Padding(3, 3, 3, 8);
             this.chkTryTransferFailedIssues.Name = "chkTryTransferFailedIssues";
-            this.chkTryTransferFailedIssues.Size = new System.Drawing.Size(557, 28);
+            this.chkTryTransferFailedIssues.Size = new System.Drawing.Size(571, 28);
             this.chkTryTransferFailedIssues.TabIndex = 1;
             this.chkTryTransferFailedIssues.Text = "Пытаться переносить выпуски, которые не удалось активировать";
             this.chkTryTransferFailedIssues.UseVisualStyleBackColor = true;
             this.chkTryTransferFailedIssues.CheckedChanged += new System.EventHandler(this.ChkTryTransferFailedIssues_CheckedChanged);
-            //
+            // 
             // grpTransferSettings
-            //
+            // 
             this.grpTransferSettings.Controls.Add(this.tableLayoutPanelTransfer);
             this.grpTransferSettings.Dock = System.Windows.Forms.DockStyle.Fill;
             this.grpTransferSettings.FlatStyle = System.Windows.Forms.FlatStyle.System;
@@ -102,9 +102,9 @@ namespace Merlin.Forms
             this.grpTransferSettings.TabIndex = 2;
             this.grpTransferSettings.TabStop = false;
             this.grpTransferSettings.Text = "Параметры переноса";
-            //
+            // 
             // tableLayoutPanelTransfer
-            //
+            // 
             this.tableLayoutPanelTransfer.ColumnCount = 2;
             this.tableLayoutPanelTransfer.ColumnStyles.Add(new System.Windows.Forms.ColumnStyle(System.Windows.Forms.SizeType.Percent, 70F));
             this.tableLayoutPanelTransfer.ColumnStyles.Add(new System.Windows.Forms.ColumnStyle(System.Windows.Forms.SizeType.Percent, 30F));
@@ -122,19 +122,19 @@ namespace Merlin.Forms
             this.tableLayoutPanelTransfer.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Percent, 100F));
             this.tableLayoutPanelTransfer.Size = new System.Drawing.Size(612, 144);
             this.tableLayoutPanelTransfer.TabIndex = 0;
-            //
+            // 
             // lblTransferAttemptCount
-            //
+            // 
             this.lblTransferAttemptCount.AutoSize = true;
             this.lblTransferAttemptCount.Location = new System.Drawing.Point(9, 11);
             this.lblTransferAttemptCount.Margin = new System.Windows.Forms.Padding(3, 5, 3, 0);
             this.lblTransferAttemptCount.Name = "lblTransferAttemptCount";
-            this.lblTransferAttemptCount.Size = new System.Drawing.Size(274, 24);
+            this.lblTransferAttemptCount.Size = new System.Drawing.Size(290, 24);
             this.lblTransferAttemptCount.TabIndex = 0;
             this.lblTransferAttemptCount.Text = "Количество попыток поиска окна:";
-            //
+            // 
             // numTransferAttemptCount
-            //
+            // 
             this.numTransferAttemptCount.Location = new System.Drawing.Point(429, 9);
             this.numTransferAttemptCount.Maximum = new decimal(new int[] {
             20,
@@ -154,31 +154,32 @@ namespace Merlin.Forms
             0,
             0,
             0});
-            //
+            // 
             // chkAllowDifferentWindowPrice
-            //
+            // 
             this.chkAllowDifferentWindowPrice.AutoSize = true;
             this.tableLayoutPanelTransfer.SetColumnSpan(this.chkAllowDifferentWindowPrice, 2);
             this.chkAllowDifferentWindowPrice.Location = new System.Drawing.Point(9, 46);
             this.chkAllowDifferentWindowPrice.Name = "chkAllowDifferentWindowPrice";
-            this.chkAllowDifferentWindowPrice.Size = new System.Drawing.Size(402, 28);
+            this.chkAllowDifferentWindowPrice.Size = new System.Drawing.Size(384, 28);
             this.chkAllowDifferentWindowPrice.TabIndex = 2;
             this.chkAllowDifferentWindowPrice.Text = "Разрешить перенос в окно с другой ценой";
             this.chkAllowDifferentWindowPrice.UseVisualStyleBackColor = true;
-            //
+            // 
             // lblTransferRules
-            //
+            // 
             this.lblTransferRules.AutoSize = true;
             this.tableLayoutPanelTransfer.SetColumnSpan(this.lblTransferRules, 2);
             this.lblTransferRules.Location = new System.Drawing.Point(9, 80);
             this.lblTransferRules.Margin = new System.Windows.Forms.Padding(3, 3, 3, 0);
             this.lblTransferRules.Name = "lblTransferRules";
-            this.lblTransferRules.Size = new System.Drawing.Size(595, 48);
+            this.lblTransferRules.Size = new System.Drawing.Size(565, 48);
             this.lblTransferRules.TabIndex = 3;
-            this.lblTransferRules.Text = "Поиск выполняется только в рамках того же дня. Позиция выпуска сохраняется.\r\nПри одинаковой свободности выбирается более раннее окно.";
-            //
+            this.lblTransferRules.Text = "Поиск выполняется только в рамках того же дня. Позиция выпуска сохраняется без из" +
+    "менений.";
+            // 
             // flowLayoutPanelButtons
-            //
+            // 
             this.flowLayoutPanelButtons.Controls.Add(this.btnCancel);
             this.flowLayoutPanelButtons.Controls.Add(this.btnOK);
             this.flowLayoutPanelButtons.Dock = System.Windows.Forms.DockStyle.Fill;
@@ -187,9 +188,9 @@ namespace Merlin.Forms
             this.flowLayoutPanelButtons.Name = "flowLayoutPanelButtons";
             this.flowLayoutPanelButtons.Size = new System.Drawing.Size(618, 42);
             this.flowLayoutPanelButtons.TabIndex = 3;
-            //
+            // 
             // btnCancel
-            //
+            // 
             this.btnCancel.DialogResult = System.Windows.Forms.DialogResult.Cancel;
             this.btnCancel.FlatStyle = System.Windows.Forms.FlatStyle.System;
             this.btnCancel.Location = new System.Drawing.Point(515, 3);
@@ -198,9 +199,9 @@ namespace Merlin.Forms
             this.btnCancel.TabIndex = 1;
             this.btnCancel.Text = "Отмена";
             this.btnCancel.UseVisualStyleBackColor = true;
-            //
+            // 
             // btnOK
-            //
+            // 
             this.btnOK.DialogResult = System.Windows.Forms.DialogResult.OK;
             this.btnOK.FlatStyle = System.Windows.Forms.FlatStyle.System;
             this.btnOK.Location = new System.Drawing.Point(409, 3);
@@ -210,9 +211,9 @@ namespace Merlin.Forms
             this.btnOK.Text = "ОК";
             this.btnOK.UseVisualStyleBackColor = true;
             this.btnOK.Click += new System.EventHandler(this.BtnOK_Click);
-            //
+            // 
             // ActionActivateSettingsForm
-            //
+            // 
             this.AcceptButton = this.btnOK;
             this.AutoScaleDimensions = new System.Drawing.SizeF(10F, 24F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
