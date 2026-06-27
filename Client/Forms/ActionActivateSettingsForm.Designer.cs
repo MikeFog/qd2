@@ -11,6 +11,7 @@
         private System.Windows.Forms.Label lblTransferAttemptCount;
         private System.Windows.Forms.NumericUpDown numTransferAttemptCount;
         private System.Windows.Forms.CheckBox chkAllowDifferentWindowPrice;
+        private System.Windows.Forms.CheckBox chkAvoidFirmRollerWindows;
         private System.Windows.Forms.Label lblTransferRules;
         private System.Windows.Forms.FlowLayoutPanel flowLayoutPanelButtons;
         private System.Windows.Forms.Button btnOK;
@@ -37,6 +38,7 @@
             this.lblTransferAttemptCount = new System.Windows.Forms.Label();
             this.numTransferAttemptCount = new System.Windows.Forms.NumericUpDown();
             this.chkAllowDifferentWindowPrice = new System.Windows.Forms.CheckBox();
+            this.chkAvoidFirmRollerWindows = new System.Windows.Forms.CheckBox();
             this.lblTransferRules = new System.Windows.Forms.Label();
             this.flowLayoutPanelButtons = new System.Windows.Forms.FlowLayoutPanel();
             this.btnCancel = new System.Windows.Forms.Button();
@@ -65,7 +67,7 @@
             this.tableLayoutPanelMain.RowStyles.Add(new System.Windows.Forms.RowStyle());
             this.tableLayoutPanelMain.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Percent, 100F));
             this.tableLayoutPanelMain.RowStyles.Add(new System.Windows.Forms.RowStyle());
-            this.tableLayoutPanelMain.Size = new System.Drawing.Size(640, 315);
+            this.tableLayoutPanelMain.Size = new System.Drawing.Size(640, 390);
             this.tableLayoutPanelMain.TabIndex = 0;
             // 
             // lblConfirmation
@@ -98,7 +100,7 @@
             this.grpTransferSettings.FlatStyle = System.Windows.Forms.FlatStyle.System;
             this.grpTransferSettings.Location = new System.Drawing.Point(11, 82);
             this.grpTransferSettings.Name = "grpTransferSettings";
-            this.grpTransferSettings.Size = new System.Drawing.Size(618, 174);
+            this.grpTransferSettings.Size = new System.Drawing.Size(618, 204);
             this.grpTransferSettings.TabIndex = 2;
             this.grpTransferSettings.TabStop = false;
             this.grpTransferSettings.Text = "Параметры переноса";
@@ -111,16 +113,18 @@
             this.tableLayoutPanelTransfer.Controls.Add(this.lblTransferAttemptCount, 0, 0);
             this.tableLayoutPanelTransfer.Controls.Add(this.numTransferAttemptCount, 1, 0);
             this.tableLayoutPanelTransfer.Controls.Add(this.chkAllowDifferentWindowPrice, 0, 1);
-            this.tableLayoutPanelTransfer.Controls.Add(this.lblTransferRules, 0, 2);
+            this.tableLayoutPanelTransfer.Controls.Add(this.chkAvoidFirmRollerWindows, 0, 2);
+            this.tableLayoutPanelTransfer.Controls.Add(this.lblTransferRules, 0, 3);
             this.tableLayoutPanelTransfer.Dock = System.Windows.Forms.DockStyle.Fill;
             this.tableLayoutPanelTransfer.Location = new System.Drawing.Point(3, 27);
             this.tableLayoutPanelTransfer.Name = "tableLayoutPanelTransfer";
             this.tableLayoutPanelTransfer.Padding = new System.Windows.Forms.Padding(6);
-            this.tableLayoutPanelTransfer.RowCount = 3;
+            this.tableLayoutPanelTransfer.RowCount = 4;
+            this.tableLayoutPanelTransfer.RowStyles.Add(new System.Windows.Forms.RowStyle());
             this.tableLayoutPanelTransfer.RowStyles.Add(new System.Windows.Forms.RowStyle());
             this.tableLayoutPanelTransfer.RowStyles.Add(new System.Windows.Forms.RowStyle());
             this.tableLayoutPanelTransfer.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Percent, 100F));
-            this.tableLayoutPanelTransfer.Size = new System.Drawing.Size(612, 144);
+            this.tableLayoutPanelTransfer.Size = new System.Drawing.Size(612, 174);
             this.tableLayoutPanelTransfer.TabIndex = 0;
             // 
             // lblTransferAttemptCount
@@ -165,16 +169,30 @@
             this.chkAllowDifferentWindowPrice.TabIndex = 2;
             this.chkAllowDifferentWindowPrice.Text = "Разрешить перенос в окно с другой ценой";
             this.chkAllowDifferentWindowPrice.UseVisualStyleBackColor = true;
-            // 
+            //
+            // chkAvoidFirmRollerWindows
+            //
+            this.chkAvoidFirmRollerWindows.AutoSize = true;
+            this.tableLayoutPanelTransfer.SetColumnSpan(this.chkAvoidFirmRollerWindows, 2);
+            this.chkAvoidFirmRollerWindows.Checked = true;
+            this.chkAvoidFirmRollerWindows.CheckState = System.Windows.Forms.CheckState.Checked;
+            this.chkAvoidFirmRollerWindows.Location = new System.Drawing.Point(9, 80);
+            this.chkAvoidFirmRollerWindows.Name = "chkAvoidFirmRollerWindows";
+            this.chkAvoidFirmRollerWindows.Size = new System.Drawing.Size(470, 28);
+            this.chkAvoidFirmRollerWindows.TabIndex = 3;
+            this.chkAvoidFirmRollerWindows.Text = "Не использовать окна, где есть ролики данной фирмы";
+            this.chkAvoidFirmRollerWindows.UseVisualStyleBackColor = true;
+            //
             // lblTransferRules
             // 
-            this.lblTransferRules.AutoSize = true;
+            this.lblTransferRules.AutoSize = false;
             this.tableLayoutPanelTransfer.SetColumnSpan(this.lblTransferRules, 2);
-            this.lblTransferRules.Location = new System.Drawing.Point(9, 80);
+            this.lblTransferRules.Dock = System.Windows.Forms.DockStyle.Fill;
+            this.lblTransferRules.Location = new System.Drawing.Point(9, 114);
             this.lblTransferRules.Margin = new System.Windows.Forms.Padding(3, 3, 3, 0);
             this.lblTransferRules.Name = "lblTransferRules";
-            this.lblTransferRules.Size = new System.Drawing.Size(565, 48);
-            this.lblTransferRules.TabIndex = 3;
+            this.lblTransferRules.Size = new System.Drawing.Size(594, 54);
+            this.lblTransferRules.TabIndex = 4;
             this.lblTransferRules.Text = "Поиск выполняется только в рамках того же дня. Позиция выпуска сохраняется без из" +
     "менений.";
             // 
@@ -184,7 +202,7 @@
             this.flowLayoutPanelButtons.Controls.Add(this.btnOK);
             this.flowLayoutPanelButtons.Dock = System.Windows.Forms.DockStyle.Fill;
             this.flowLayoutPanelButtons.FlowDirection = System.Windows.Forms.FlowDirection.RightToLeft;
-            this.flowLayoutPanelButtons.Location = new System.Drawing.Point(11, 262);
+            this.flowLayoutPanelButtons.Location = new System.Drawing.Point(11, 292);
             this.flowLayoutPanelButtons.Name = "flowLayoutPanelButtons";
             this.flowLayoutPanelButtons.Size = new System.Drawing.Size(618, 42);
             this.flowLayoutPanelButtons.TabIndex = 3;
@@ -218,7 +236,7 @@
             this.AutoScaleDimensions = new System.Drawing.SizeF(10F, 24F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
             this.CancelButton = this.btnCancel;
-            this.ClientSize = new System.Drawing.Size(640, 315);
+            this.ClientSize = new System.Drawing.Size(640, 390);
             this.Controls.Add(this.tableLayoutPanelMain);
             this.Font = new System.Drawing.Font("Segoe UI Variable Display", 9F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(204)));
             this.FormBorderStyle = System.Windows.Forms.FormBorderStyle.FixedDialog;

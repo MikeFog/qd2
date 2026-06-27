@@ -409,6 +409,7 @@
     <EmbeddedResource Include="Icons\Action.png" />
     <EmbeddedResource Include="Icons\Day.png" />
     <EmbeddedResource Include="Icons\Issue.png" />
+    <EmbeddedResource Include="Icons\issue_transferred.png" />
     <EmbeddedResource Include="Icons\Massmedia.png" />
     <EmbeddedResource Include="Icons\Message.png" />
     <EmbeddedResource Include="Icons\Module.png" />

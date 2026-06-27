@@ -7,6 +7,7 @@ namespace Merlin.Forms
     {
         public bool TryTransferFailedIssues { get; private set; }
         public bool AllowDifferentWindowPrice { get; private set; }
+        public bool AvoidFirmRollerWindows { get; private set; }
         public int TransferAttemptCount { get; private set; }
 
         public ActionActivateSettingsForm()
@@ -24,6 +25,7 @@ namespace Merlin.Forms
         {
             TryTransferFailedIssues = chkTryTransferFailedIssues.Checked;
             AllowDifferentWindowPrice = TryTransferFailedIssues && chkAllowDifferentWindowPrice.Checked;
+            AvoidFirmRollerWindows = TryTransferFailedIssues && chkAvoidFirmRollerWindows.Checked;
             TransferAttemptCount = TryTransferFailedIssues ? (int)numTransferAttemptCount.Value : 0;
         }
 
