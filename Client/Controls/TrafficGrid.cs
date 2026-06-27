@@ -59,6 +59,11 @@ namespace Merlin.Controls
 			ShowTrafficWindows = showTrafficWindows;
         }
 
+        // Траффик-грид управляет окнами по оригинальному расписанию: операции переноса времени,
+        // изменения длительности и удаления окон ищут в SQL по windowDateOriginal и сверяют тариф-лист
+        // по оригинальному времени. Поэтому сетка должна оставаться на оригинальном времени.
+        protected override bool UseActualTime => false;
+
 		public bool ShowTrafficWindows
 		{
 			get { return showTrafficWindows; }
