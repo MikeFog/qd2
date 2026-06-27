@@ -20,6 +20,7 @@ namespace Merlin.Classes
 			public const string BroadcastStart = "broadcastStart";
             public const string ShowTrafficWindows = "showTrafficWindows";
             public const string ShowDisabledWindows = "showDisabledWindows";
+            public const string UseActualTime = "useActualTime";
         }
 
 		private struct Actions
@@ -139,7 +140,7 @@ namespace Merlin.Classes
 			return ((DataSet) DataAccessor.DoAction(procParameters)).Tables[Constants.TableNames.Data];
 		}
 
-        public DataSet GetTariffWindows(DateTime startDate, DateTime finishDate, Module module, bool showTrafficWindows, bool showDisabledWindows = true)
+        public DataSet GetTariffWindows(DateTime startDate, DateTime finishDate, Module module, bool showTrafficWindows, bool showDisabledWindows = true, bool useActualTime = false)
 		{
 			Dictionary<string, object> procParameters =
 				DataAccessor.PrepareParameters(EntityManager.GetEntity((int) Entities.TariffWindow));
@@ -151,6 +152,7 @@ namespace Merlin.Classes
 			procParameters[ParamNames.ExcludeModuleTariffs] = excludeModuleTariffs;
             procParameters[ParamNames.ShowTrafficWindows] = showTrafficWindows;
             procParameters[ParamNames.ShowDisabledWindows] = showDisabledWindows;
+            procParameters[ParamNames.UseActualTime] = useActualTime;
 			if (module != null)
 				procParameters[Module.ParamNames.ModuleId] = module.ModuleId;
 

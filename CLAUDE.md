@@ -35,6 +35,7 @@ Detailed scenario investigations are stored in:
 - `docs/scenarios/issue-add-click-to-db.md` — adding an advertising issue by clicking a cell in `_tariffGrid` / `RollerIssuesGrid3`, from UI click to `IssueIUD`, `ActionRecalculate`, and UI refresh.
 - `docs/scenarios/range-issue-add-click-to-db.md` — adding issues across all massmedia in one click via `TariffWithRangeGrid` / `AddRangeIssues`.
 - `docs/scenarios/template-issue-generation.md` — bulk issue generation via `FrmTemplate` / `FrmTemplate2` / `FrmGenerator`; covers Simple and TimePeriod templates, prime/non-prime split, linear vs range comparison, and gap analysis for range TimePeriod support.
+- `docs/scenarios/campaign-edit-form-load.md` — data-loading chain when initializing the campaign edit form (`CampaignForm`): pricelist → `TariffWindowRetrieve` grid → `Grid` issue marking → rollers/stats; entry points, SQL procedures, and where original-window time enters the layout.
 Before changing issue creation logic, read the relevant scenario map first.
 
 Communication style:

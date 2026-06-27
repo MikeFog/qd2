@@ -20,6 +20,14 @@ namespace Merlin.Controls
 		protected Module module;
 		protected bool excludeModuleTariffs = false;
         protected bool showTrafficWindows = false;
+
+        /// <summary>
+        /// Раскладывать тарифную сетку по актуальному времени окна (windowDateActual)
+        /// вместо оригинального. По умолчанию false — окна управления тарифами и модульные
+        /// сетки работают по оригинальному времени. Переопределяется в RollerIssuesGrid3.
+        /// Перенос предполагается в пределах того же дня, поэтому день недели/счётчики не меняются.
+        /// </summary>
+        protected virtual bool UseActualTime => false;
         
         protected Point mouseClickPoint;
         private readonly ToolStripMenuItem miChangePrice = new ToolStripMenuItem();
@@ -225,7 +233,7 @@ namespace Merlin.Controls
 				MassmediaPricelist massmediaPriceList = PricelistOnMassmedia;
 				massmediaPriceList.ExcludeModuleTariffs = excludeModuleTariffs;
 
-				DataSet dsWindows = massmediaPriceList.GetTariffWindows(startDate, finishDate, module, showTrafficWindows, ShowDisabledWindows);
+				DataSet dsWindows = massmediaPriceList.GetTariffWindows(startDate, finishDate, module, showTrafficWindows, ShowDisabledWindows, UseActualTime);
 
 				dtTime = dsWindows.Tables["time"];
 				_tariffWindows = new ITariffWindow[dtTime.Rows.Count, 7];

@@ -35,6 +35,12 @@ namespace Merlin.Controls
         {
         }
 
+        // Актуальное время — только для линейной расстановки роликов (module == null).
+        // Модульные кампании (module != null) остаются на оригинальном времени — вне scope.
+        // TrafficGrid (наследник) переопределяет это в false: его операции (перенос/длительность/
+        // удаление окон) ищут в SQL по windowDateOriginal и должны видеть оригинальную подпись.
+        protected override bool UseActualTime => module == null;
+
         [Browsable(false)]
 		public Roller Roller
 		{

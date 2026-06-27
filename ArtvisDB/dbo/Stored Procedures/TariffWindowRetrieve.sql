@@ -14,7 +14,8 @@ CREATE PROC [dbo].[TariffWindowRetrieve]
     @excludeModuleTariffs BIT = 0,
     @massmediaID INT = NULL,
     @showTrafficWindows BIT = 0,
-    @showDisabledWindows bit = 1
+    @showDisabledWindows bit = 1,
+    @useActualTime BIT = 0
 )
 AS
 BEGIN
@@ -133,8 +134,8 @@ BEGIN
                 + CASE WHEN windowDateOriginal != windowDateActual 
                        THEN ' (' + CONVERT(varchar(10), windowDateOriginal, 104) + ' ' + CONVERT(varchar(5), windowDateActual, 108) + ')' 
                        ELSE '' END AS [name],
-            DATEPART(hh, windowDateOriginal) AS [hour],
-            DATEPART(mi, windowDateOriginal) AS [min],
+            DATEPART(hh, CASE WHEN @useActualTime = 1 THEN windowDateActual ELSE windowDateOriginal END) AS [hour],
+            DATEPART(mi, CASE WHEN @useActualTime = 1 THEN windowDateActual ELSE windowDateOriginal END) AS [min],
             dayOriginal AS windowDateBroadcast,
             dayActual  AS windowDateActualBroadcast
         INTO #final1 
@@ -165,8 +166,8 @@ BEGIN
             tw.*,
             'Рекламное окно ' + CONVERT(varchar(10), windowDateOriginal, 104) + ' ' + 
                 CONVERT(varchar(5), windowDateOriginal, 108) AS [name],
-            DATEPART(hh, windowDateOriginal) AS [hour],
-            DATEPART(mi, windowDateOriginal) AS [min],
+            DATEPART(hh, CASE WHEN @useActualTime = 1 THEN windowDateActual ELSE windowDateOriginal END) AS [hour],
+            DATEPART(mi, CASE WHEN @useActualTime = 1 THEN windowDateActual ELSE windowDateOriginal END) AS [min],
             dayOriginal AS windowDateBroadcast,
             dayActual AS windowDateActualBroadcast
         INTO #final2           
