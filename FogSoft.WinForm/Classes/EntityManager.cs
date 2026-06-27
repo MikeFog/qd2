@@ -70,6 +70,12 @@ namespace FogSoft.WinForm.Classes
 		public static Entity CreateVirtualEntity(
 			int entityId, string entityName, string codeName, string pkColumn, params Entity.Attribute[] attributes)
 		{
+			return CreateVirtualEntity(entityId, entityName, codeName, pkColumn, string.Empty, attributes);
+		}
+
+		public static Entity CreateVirtualEntity(
+			int entityId, string entityName, string codeName, string pkColumn, string iconName, params Entity.Attribute[] attributes)
+		{
 			DataTable dtEntity = new DataTable();
 			dtEntity.Columns.Add(Constants.ParamNames.EntityId, typeof(int));
 			dtEntity.Columns.Add("passport", typeof(string));
@@ -91,7 +97,7 @@ namespace FogSoft.WinForm.Classes
 			entityRow["name"] = entityName;
 			entityRow["codeName"] = codeName;
 			entityRow["pkColumn"] = pkColumn;
-			entityRow["iconName"] = string.Empty;
+			entityRow["iconName"] = iconName;
 			entityRow["parentId"] = DBNull.Value;
 			dtEntity.Rows.Add(entityRow);
 

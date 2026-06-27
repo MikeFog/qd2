@@ -6,7 +6,8 @@ CREATE PROC [dbo].[ActionActivate]
 @isTestActivate bit,
 @tryTransferFailedIssues bit = 0,
 @allowDifferentWindowPrice bit = 0,
-@transferAttemptCount int = 0
+@transferAttemptCount int = 0,
+@avoidFirmRollerWindows bit = 1
 )
 WITH EXECUTE AS OWNER
 AS
@@ -52,6 +53,9 @@ declare @plannedTransfers table (
 
 declare @tomorrow datetime
 select @tomorrow = dateadd(day, 1, CONVERT(date, getdate()))
+
+declare @firmID smallint
+select @firmID = firmID from [Action] where actionID = @actionID
 
 DECLARE cur_issues CURSOR FOR
 Select i.issueId From Issue i inner join Campaign c on c.campaignID = i.campaignID  where c.actionID = @actionID and i.isConfirmed = 0
@@ -262,8 +266,20 @@ BEGIN
 				INNER JOIN Roller r ON r.rollerID = i.rollerID
 				INNER JOIN Campaign c ON c.campaignID = i.campaignID
 				INNER JOIN MassMedia mm ON mm.massmediaID = tw.massmediaID
+				LEFT JOIN Tariff trf ON trf.tariffID = tw.tariffId
 			WHERE rc.attemptNo <= @transferAttemptCount
+				AND (tw.tariffId IS NULL OR trf.isForModuleOnly = 0)
 				AND (@allowDifferentWindowPrice = 1 OR tw.price = @transferSourcePrice)
+				AND (@avoidFirmRollerWindows = 0
+					OR NOT EXISTS (
+						SELECT 1
+						FROM Issue fi
+							INNER JOIN Campaign fc ON fc.campaignID = fi.campaignID
+							INNER JOIN [Action] fa ON fa.actionID = fc.actionID
+						WHERE fi.originalWindowID = tw.windowId
+							AND fa.firmID = @firmID
+							AND fa.deleteDate IS NULL
+							AND fi.isConfirmed = 1))
 				AND NOT (c.finishDate < @tomorrow and c.campaignTypeID <> 2 and @rightToGoBack <> 1)
 				AND tw.isDisabled = 0
 				AND NOT (r.rolActionTypeID = 1 and tw.maxCapacity > 0)

@@ -636,6 +636,7 @@ namespace Merlin.Classes
 		{
 			bool tryTransferFailedIssues = false;
 			bool allowDifferentWindowPrice = false;
+			bool avoidFirmRollerWindows = true;
 			int transferAttemptCount = 0;
 
 			try
@@ -650,6 +651,7 @@ namespace Merlin.Classes
 
 						tryTransferFailedIssues = form.TryTransferFailedIssues;
 						allowDifferentWindowPrice = form.AllowDifferentWindowPrice;
+						avoidFirmRollerWindows = form.AvoidFirmRollerWindows;
 						transferAttemptCount = form.TransferAttemptCount;
 					}
 				}
@@ -658,6 +660,7 @@ namespace Merlin.Classes
 				parameters["isTestActivate"] = isTestActivation;
 				parameters["tryTransferFailedIssues"] = tryTransferFailedIssues;
 				parameters["allowDifferentWindowPrice"] = allowDifferentWindowPrice;
+				parameters["avoidFirmRollerWindows"] = avoidFirmRollerWindows;
 				parameters["transferAttemptCount"] = transferAttemptCount;
 
 				DataAccessor.PrepareParameters(
@@ -666,8 +669,22 @@ namespace Merlin.Classes
 
 				if (ds.Tables["activated"].Rows.Count > 0)
 				{
+					Entity activatedEntity = EntityManager.CreateVirtualEntity(
+						-5000,
+						"Активированные выпуски",
+						"ActivatedIssues",
+						"issueID",
+						"Issue.png",
+						new Entity.Attribute("radiostationName", "Радиостанция", "nvarchar"),
+						new Entity.Attribute("groupName", "Группа", "nvarchar"),
+						new Entity.Attribute("name", "Ролик/Программа", "nvarchar"),
+						new Entity.Attribute("advertTypeName", "Предмет рекламы", "nvarchar"),
+						new Entity.Attribute("issueDate", "Дата", "datetime"),
+						new Entity.Attribute("duration", "Пр-ть", "nvarchar"),
+						new Entity.Attribute("issuePosition", "Порядок", "nvarchar"),
+						new Entity.Attribute("statusDescription", "Статус", "nvarchar"));
 					Globals.ShowSimpleJournal(
-						EntityManager.GetEntity((int)Entities.RollerIssueActivated),
+						activatedEntity,
 						(isTestActivation
 							? "Предварительный просмотр результатов активации"
 							: "Результаты активации") + ": активированное"
@@ -684,6 +701,7 @@ namespace Merlin.Classes
 						"Перенесённые выпуски",
 						"TransferredIssues",
 						"issueID",
+						"issue_transferred.png",
 						new Entity.Attribute("radiostationName", "Радиостанция", "nvarchar"),
 						new Entity.Attribute("groupName", "Группа", "nvarchar"),
 						new Entity.Attribute("name", "Ролик/Программа", "nvarchar"),
@@ -704,8 +722,22 @@ namespace Merlin.Classes
 
 				if (ds.Tables["notactivated"].Rows.Count > 0)
 				{
+					Entity notActivatedEntity = EntityManager.CreateVirtualEntity(
+						-5001,
+						"Неактивированные выпуски",
+						"NotActivatedIssues",
+						"issueID",
+						"DeletedIssues.png",
+						new Entity.Attribute("radiostationName", "Радиостанция", "nvarchar"),
+						new Entity.Attribute("groupName", "Группа", "nvarchar"),
+						new Entity.Attribute("name", "Ролик/Программа", "nvarchar"),
+						new Entity.Attribute("advertTypeName", "Предмет рекламы", "nvarchar"),
+						new Entity.Attribute("issueDate", "Дата", "datetime"),
+						new Entity.Attribute("duration", "Пр-ть", "nvarchar"),
+						new Entity.Attribute("issuePosition", "Порядок", "nvarchar"),
+						new Entity.Attribute("statusDescription", "Статус", "nvarchar"));
 					Globals.ShowSimpleJournal(
-						EntityManager.GetEntity((int)Entities.RollerIssueActivated),
+						notActivatedEntity,
 						(isTestActivation
 							? "Предварительный просмотр результатов активации"
 							: "Результаты активации") + ": неактивированное"
