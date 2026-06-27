@@ -235,7 +235,6 @@ BEGIN
 				AND tw.massmediaID = (SELECT massmediaID FROM @issue WHERE issueID = @transferIssueID)
 				AND tw.dayActual = (SELECT dayActual FROM TariffWindow WHERE windowId = @transferSourceWindowID)
 				AND tw.windowId <> @transferSourceWindowID
-				AND (@allowDifferentWindowPrice = 1 OR tw.price = @transferSourcePrice)
 
 			UNION ALL
 
@@ -248,7 +247,6 @@ BEGIN
 				AND tw.massmediaID = (SELECT massmediaID FROM @issue WHERE issueID = @transferIssueID)
 				AND tw.dayActual = (SELECT dayActual FROM TariffWindow WHERE windowId = @transferSourceWindowID)
 				AND tw.windowId <> @transferSourceWindowID
-				AND (@allowDifferentWindowPrice = 1 OR tw.price = @transferSourcePrice)
 		),
 		validCandidates AS
 		(
@@ -265,6 +263,7 @@ BEGIN
 				INNER JOIN Campaign c ON c.campaignID = i.campaignID
 				INNER JOIN MassMedia mm ON mm.massmediaID = tw.massmediaID
 			WHERE rc.attemptNo <= @transferAttemptCount
+				AND (@allowDifferentWindowPrice = 1 OR tw.price = @transferSourcePrice)
 				AND NOT (c.finishDate < @tomorrow and c.campaignTypeID <> 2 and @rightToGoBack <> 1)
 				AND tw.isDisabled = 0
 				AND NOT (r.rolActionTypeID = 1 and tw.maxCapacity > 0)
@@ -467,6 +466,7 @@ begin
 
 	Update i
 	Set
+		originalWindowID = pt.newWindowID,
 		actualWindowID = pt.newWindowID,
 		tariffPrice = dbo.fn_GetIssuePrice(
 			r.duration,
@@ -675,41 +675,7 @@ begin
 		group by i.actualWindowID ) as t1
 	Where
 		TariffWindow.windowId = t1.windowID
-	/*	
-	Update 
-		TariffWindow
-	Set
-		timeInUseUnconfirmed = 
-			Case 
-				When [maxCapacity] = 0
-					Then timeInUseUnconfirmed - t1.duration
-				Else timeInUseUnconfirmed
-			End,
-		capacityInUseUnconfirmed = 
-			Case  
-				When ([maxCapacity] > 0)
-					Then capacityInUseUnconfirmed - t1.countIssues
-				Else capacityInUseUnconfirmed
-			End,
-		firstPositionsUnconfirmed = firstPositionsUnconfirmed - t1.firstCount,
-		secondPositionsUnconfirmed = secondPositionsUnconfirmed - t1.secondCount,
-		lastPositionsUnconfirmed = lastPositionsUnconfirmed - t1.lastCount
-	From
-		(select i.actualWindowID as windowID, 
-			sum(r.duration) as duration, 
-			count(i.issueID) as countIssues,
-			sum(coalesce(case when i.positionId = -20 then 1 else 0 end, 0)) as firstCount,
-			sum(coalesce(case when i.positionId = -10 then 1 else 0 end, 0)) as secondCount,
-			sum(coalesce(case when i.positionId = 10 then 1 else 0 end, 0)) as lastCount
-		 from 
-			@issue i0 
-			inner join Issue i on i0.issueID = i.issueID
-			Inner Join Roller r On r.rollerId = i.rollerId
-		where i0.statusDescription <> 'OK'
-		group by i.actualWindowID ) as t1
-	Where
-		TariffWindow.windowId = t1.windowID
-	*/	
+
 	UPDATE [Action] Set isConfirmed = 1 WHERE actionID = @actionID
 	
 	exec ActionRecalculate

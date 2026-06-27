@@ -577,7 +577,7 @@ namespace FogSoft.WinForm.Controls
                         col.ValueType == typeof(long) ||
                         col.ValueType == typeof(short))
                     {
-                        col.AutoSizeMode = DataGridViewAutoSizeColumnMode.ColumnHeader;
+                        col.AutoSizeMode = DataGridViewAutoSizeColumnMode.AllCells;
                         continue;
                     }
 

@@ -679,8 +679,23 @@ namespace Merlin.Classes
 					: (ds.Tables.Count > 3 ? ds.Tables[3] : null);
 				if (transferred != null && transferred.Rows.Count > 0)
 				{
+					Entity transferredEntity = EntityManager.CreateVirtualEntity(
+						-5002,
+						"Перенесённые выпуски",
+						"TransferredIssues",
+						"issueID",
+						new Entity.Attribute("radiostationName", "Радиостанция", "nvarchar"),
+						new Entity.Attribute("groupName", "Группа", "nvarchar"),
+						new Entity.Attribute("name", "Ролик/Программа", "nvarchar"),
+						new Entity.Attribute("advertTypeName", "Предмет рекламы", "nvarchar"),
+						new Entity.Attribute("oldIssueDate", "Дата (исходная)", "datetime"),
+						new Entity.Attribute("issueDate", "Дата (новая)", "datetime"),
+						new Entity.Attribute("duration", "Пр-ть", "nvarchar"),
+						new Entity.Attribute("issuePosition", "Порядок", "nvarchar"),
+						new Entity.Attribute("statusDescription", "Статус", "nvarchar"));
+
 					Globals.ShowSimpleJournal(
-						EntityManager.GetEntity((int)Entities.RollerIssueActivated),
+						transferredEntity,
 						(isTestActivation
 							? "Предварительный просмотр результатов активации"
 							: "Результаты активации") + ": перенесенное"
