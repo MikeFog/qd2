@@ -556,8 +556,11 @@ namespace Merlin.Forms
 					currentCampaignIssueEntity.AttributeSelector = Issue.AttributeSelectorShort;
 					grdCurrentCampaignIssues.Entity = currentCampaignIssueEntity;
 					DataTable dtIssues = tariffWindow.LoadIssues(RollerIssuesGrid.ShowUnconfirmed, currentCampaignIssueEntity);
-					if (dtIssues.Rows.Count > 0)
-						grdCurrentCampaignIssues.DataSource = GetCurrentCampaignIssues(dtIssues);
+					DataTable dtForCurrentCampaign = RollerIssuesGrid.ShowUnconfirmed
+						? dtIssues
+						: tariffWindow.LoadIssues(true, currentCampaignIssueEntity);
+					if (dtForCurrentCampaign.Rows.Count > 0)
+						grdCurrentCampaignIssues.DataSource = GetCurrentCampaignIssues(dtForCurrentCampaign);
 
 					grdIssues.Entity = (Entity)EntityManager.GetEntity((int)Entities.Issue).Clone();
 					grdIssues.Entity.AttributeSelector = Issue.AttributeSelectorFull;
@@ -796,7 +799,6 @@ namespace Merlin.Forms
 			}
 
 			// 4. Собираем выпуски текущей кампании по выбранным окнам через существующий LoadIssues.
-			bool showUnconfirmed = _tariffGrid.ShowUnconfirmed;
 			List<PresentationObject> issues = new List<PresentationObject>();
 			foreach (ITariffWindow window in windows)
 			{
@@ -804,7 +806,7 @@ namespace Merlin.Forms
 				if (rollerWindow == null)
 					continue;
 
-				DataTable dtIssues = rollerWindow.LoadIssues(showUnconfirmed, issueEntity);
+				DataTable dtIssues = rollerWindow.LoadIssues(true, issueEntity);
 				foreach (DataRow row in dtIssues.Select(string.Format("campaignId = {0}", _campaign.CampaignId)))
 					issues.Add(issueEntity.CreateObject(row));
 			}
