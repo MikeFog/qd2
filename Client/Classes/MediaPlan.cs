@@ -94,6 +94,8 @@ namespace Merlin.Classes
 		
 		public void Show(bool isFact)
 		{
+			isFact = true;
+
 			_isFact = isFact;
 			_savedFilePath = null;
             CultureInfo oldCulture = Thread.CurrentThread.CurrentCulture;

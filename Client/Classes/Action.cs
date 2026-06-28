@@ -368,21 +368,21 @@ namespace Merlin.Classes
             switch (type)
             {
                 case ActionMediaPlanType.Massmedias:
-                    MediaPlan.CreateInstance(this, selectively).Show(false);
+                    MediaPlan.CreateInstance(this, selectively).Show(true);
                     break;
                 case ActionMediaPlanType.Simple:
-                    MediaPlan.CreateInstance(GetCampaigns(Campaigns()), selectively).Show(false);
+                    MediaPlan.CreateInstance(GetCampaigns(Campaigns()), selectively).Show(true);
                     break;
                 case ActionMediaPlanType.Month:
                     IList<DateTime> months = GetSelectedMonths();
                     if (months == null)
                         return;
-                    MediaPlan.CreateInstance(GetCampaigns(Campaigns()), months, selectively).Show(false);
+                    MediaPlan.CreateInstance(GetCampaigns(Campaigns()), months, selectively).Show(true);
                     break;
                 case ActionMediaPlanType.Period:
                     FrmDateSelector selector = new FrmDateSelector(StartDate, FinishDate, "Выбор периода");
                     if (selector.ShowDialog(Globals.MdiParent) == DialogResult.OK)
-                        MediaPlan.CreateInstance(GetCampaigns(Campaigns()), selector.StartDate, selector.FinishDate, selectively).Show(false);
+                        MediaPlan.CreateInstance(GetCampaigns(Campaigns()), selector.StartDate, selector.FinishDate, selectively).Show(true);
                     break;
             }
             //}
