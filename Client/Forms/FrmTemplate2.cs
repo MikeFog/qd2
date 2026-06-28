@@ -44,13 +44,19 @@ namespace Merlin.Forms
             return (tomorrow, endOfWeek);
         }
 
+        private static void SetDateTimeValue(DateTimePicker control, DateTime date)
+        {
+            if (control.MinDate < date && control.MaxDate > date)
+                control.Value = date;
+        }
+
         protected override void OnLoad(EventArgs e)
         {
             base.OnLoad(e);
-            dtStartDate.Value = _template.StartDate;
-            dtFinishDate.Value = _template.FinishDate;
-            dtStartTime.Value = _template.StartTime;
-            dtFinishTime.Value = _template.FinishTime;
+            SetDateTimeValue(dtStartDate, _template.StartDate);
+            SetDateTimeValue(dtFinishDate, _template.FinishDate);
+            SetDateTimeValue(dtStartTime, _template.StartTime);
+            SetDateTimeValue(dtFinishTime, _template.FinishTime);
             if (_template.Quantity > 0)
                 txtQuantity.Value = _template.Quantity;
 
