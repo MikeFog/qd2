@@ -40,7 +40,7 @@ begin
 		from TariffWindow tw
 			inner join dbo.Tariff t on tw.tariffId = t.tariffID
 		where tw.massmediaID = @massmediaID and tw.maxCapacity = 0 and tw.isDisabled = 0 and t.isForModuleOnly = 0
-			and tw.windowDateOriginal between @issueDate and dateadd(second, -1, dateadd(minute, 30, @issueDate))
+			and tw.windowDateActual between @issueDate and dateadd(second, -1, dateadd(minute, 30, @issueDate))
 			and (
 				@ignoreWindowsWithTheSameFirmIssue = 0
 				or not exists
@@ -73,7 +73,7 @@ begin
 						inner join dbo.Campaign c on c.campaignID = i.campaignID
 						inner join dbo.[Action] a on a.actionID = c.actionID
 					where tw.massmediaID = @massmediaID and tw.maxCapacity = 0 and tw.isDisabled = 0 and t.isForModuleOnly = 0
-						and tw.windowDateOriginal between @issueDate and dateadd(second, -1, dateadd(minute, 30, @issueDate))
+						and tw.windowDateActual between @issueDate and dateadd(second, -1, dateadd(minute, 30, @issueDate))
 						and a.firmID = @firmID
 						and (i.isConfirmed = 1 or a.deleteDate is null)
 				)

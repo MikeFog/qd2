@@ -33,8 +33,8 @@ BEGIN
 		from Issue i 
 			inner join TariffWindow tw on i.originalWindowID = tw.windowId
 		where tw.massmediaID = @massmediaID and i.campaignID = @campaignID and i.positionID = @positionID and i.rollerID = @rollerID
-			and tw.windowDateOriginal between @issueDate and dateadd(second, -1, dateadd(minute, 30, @issueDate))
-		order by case when (tw.duration - tw.timeInUseConfirmed) > 0 then 0 else 1 end, tw.windowDateOriginal
+			and tw.windowDateActual between @issueDate and dateadd(second, -1, dateadd(minute, 30, @issueDate))
+		order by case when (tw.duration - tw.timeInUseConfirmed) > 0 then 0 else 1 end, tw.windowDateActual
 	
 		exec dbo.IssueIUD
 			@rollerID = @rollerID,

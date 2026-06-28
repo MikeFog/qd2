@@ -91,8 +91,9 @@ BEGIN
     SELECT
         tw.massmediaID,
         tw.windowId,                  -- ← добавлено
-        tw.windowDateOriginal,
-        windowDay = CONVERT(datetime, CONVERT(varchar(8), tw.windowDateOriginal, 112), 112),
+        -- Раскладка веера — по фактическому времени выхода (windowDateActual).
+        tw.windowDateActual,
+        windowDay = CONVERT(datetime, CONVERT(varchar(8), tw.windowDateActual, 112), 112),
         tw.duration,
         tw.timeInUseConfirmed,
         tw.timeInUseUnconfirmed,
@@ -110,9 +111,9 @@ BEGIN
     JOIN dbo.Tariff t ON t.tariffID = tw.tariffID AND t.isForModuleOnly = 0
     WHERE tw.maxCapacity = 0
       AND tw.isDisabled = 0
-      AND tw.windowDateOriginal >= @minDate
-      AND tw.windowDateOriginal <= @maxEnd;
-    CREATE INDEX IX_tw_mm_date ON #tw(massmediaID, windowDateOriginal);
+      AND tw.windowDateActual >= @minDate
+      AND tw.windowDateActual <= @maxEnd;
+    CREATE INDEX IX_tw_mm_date ON #tw(massmediaID, windowDateActual);
     CREATE INDEX IX_tw_mm_day_price ON #tw(massmediaID, windowDay, price);
     ;WITH max_price AS
     (
@@ -149,7 +150,7 @@ BEGIN
             -- Прайм внутри одного СМИ: все окна, попавшие в получасовой блок, должны быть праймовыми
             isPrime = MIN(CONVERT(int, tw.isPrime))
         FROM #res r
-        JOIN #tw tw ON tw.windowDateOriginal BETWEEN r.[date] AND r.[enddate]
+        JOIN #tw tw ON tw.windowDateActual BETWEEN r.[date] AND r.[enddate]
         GROUP BY r.[date], tw.massmediaID
     ),
     all_mm AS
@@ -199,7 +200,7 @@ BEGIN
             a.deleteDate
         FROM #res r
         JOIN dbo.TariffWindow tw
-            ON tw.windowDateOriginal BETWEEN r.[date] AND r.[enddate]
+            ON tw.windowDateActual BETWEEN r.[date] AND r.[enddate]
         JOIN #mm m
             ON m.massmediaID = tw.massmediaID
         JOIN dbo.Issue i
@@ -247,7 +248,7 @@ BEGIN
         SELECT r.[date]
         FROM #res r
         JOIN #tw tw
-            ON tw.windowDateOriginal BETWEEN r.[date] AND r.[enddate]
+            ON tw.windowDateActual BETWEEN r.[date] AND r.[enddate]
         JOIN dbo.Issue i
             ON i.actualWindowID = tw.windowId
         JOIN dbo.Campaign c

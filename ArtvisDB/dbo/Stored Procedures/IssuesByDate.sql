@@ -1,4 +1,4 @@
-﻿CREATE PROC dbo.IssuesByDate
+﻿CREATE PROC [dbo].[IssuesByDate]
 (
   @massmediaID smallint = NULL,
   @campaignID int = NULL,
@@ -23,7 +23,7 @@ BEGIN
       dbo.fn_Int2Time(r.duration) as durationString,
       c.actionID,
       ip.[description] as issuePosition,
-      tw.windowDateOriginal as issueDate,
+      tw.windowDateActual as issueDate,
       r.advertTypeName,
       a.deleteDate
     FROM dbo.Issue i
@@ -50,7 +50,7 @@ BEGIN
     dbo.fn_Int2Time(r.duration) as durationString,
     c.actionID,
     ip.[description] as issuePosition,
-    tw.windowDateOriginal as issueDate,
+    tw.windowDateActual as issueDate,
     r.advertTypeName,
     a.deleteDate
   FROM dbo.TariffWindow tw
