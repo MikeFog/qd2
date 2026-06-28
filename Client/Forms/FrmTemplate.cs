@@ -46,14 +46,32 @@ namespace Merlin.Forms
 			{
 				clbWeekDays.Items.Add(DateTimeUtils.WeekDayNames[i], _template.WeekDays[i]);
 			}
+			rbModeAdd.Checked = _template.IsModeAdd;
 			rbDays.Checked = _template.Day2AddMode == Day2AddMode.WeekDays;
 			rbOdd.Checked = _template.IsOdd;
 			rbEven.Checked = !_template.IsOdd;
 
-			SetDateTimeValue(dtStartDate, _template.StartDate);
-			SetDateTimeValue(dtFinishDate, _template.FinishDate);
+			if (_template.StartDate == DateTime.MinValue.Date || _template.FinishDate == DateTime.MinValue.Date)
+			{
+				var (startDate, finishDate) = GetDefaultPeriod();
+				SetDateTimeValue(dtStartDate, startDate);
+				SetDateTimeValue(dtFinishDate, finishDate);
+			}
+			else
+			{
+				SetDateTimeValue(dtStartDate, _template.StartDate);
+				SetDateTimeValue(dtFinishDate, _template.FinishDate);
+			}
 
 			SetEnabled();
+		}
+
+		private static (DateTime start, DateTime end) GetDefaultPeriod()
+		{
+			DateTime tomorrow = DateTime.Today.AddDays(1);
+			int daysToSunday = (7 - (int)tomorrow.DayOfWeek) % 7;
+			DateTime endOfWeek = tomorrow.AddDays(daysToSunday);
+			return (tomorrow, endOfWeek);
 		}
 
 		private void clbWeekDays_ItemCheck(object sender, ItemCheckEventArgs e)

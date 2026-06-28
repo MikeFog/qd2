@@ -21,7 +21,8 @@ namespace Merlin.Forms
                 _template = template;
             else
             {
-                _template = new IssueTemplate(DateTime.Today.AddDays(1), DateTime.Today.AddDays(1),
+                var (startDate, finishDate) = GetDefaultPeriod();
+                _template = new IssueTemplate(startDate, finishDate,
                     new DateTime(DateTime.Today.Year, DateTime.Today.Month, DateTime.Today.Day, 12, 0, 0),
                     new DateTime(DateTime.Today.Year, DateTime.Today.Month, DateTime.Today.Day, 15, 0, 0),
                     2)
@@ -33,6 +34,14 @@ namespace Merlin.Forms
                     _template.WeekDays[i] = true;
             }
             lblRollerName.Text = rollerName;
+        }
+
+        private static (DateTime start, DateTime end) GetDefaultPeriod()
+        {
+            DateTime tomorrow = DateTime.Today.AddDays(1);
+            int daysToSunday = (7 - (int)tomorrow.DayOfWeek) % 7;
+            DateTime endOfWeek = tomorrow.AddDays(daysToSunday);
+            return (tomorrow, endOfWeek);
         }
 
         protected override void OnLoad(EventArgs e)
