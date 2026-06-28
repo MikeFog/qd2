@@ -239,6 +239,8 @@ BEGIN
 				AND tw.massmediaID = (SELECT massmediaID FROM @issue WHERE issueID = @transferIssueID)
 				AND tw.dayActual = (SELECT dayActual FROM TariffWindow WHERE windowId = @transferSourceWindowID)
 				AND tw.windowId <> @transferSourceWindowID
+				AND tw.isDisabled = 0
+				AND NOT EXISTS (SELECT 1 FROM Tariff t WHERE t.tariffID = tw.tariffId AND t.isForModuleOnly = 1)
 
 			UNION ALL
 
@@ -251,6 +253,8 @@ BEGIN
 				AND tw.massmediaID = (SELECT massmediaID FROM @issue WHERE issueID = @transferIssueID)
 				AND tw.dayActual = (SELECT dayActual FROM TariffWindow WHERE windowId = @transferSourceWindowID)
 				AND tw.windowId <> @transferSourceWindowID
+				AND tw.isDisabled = 0
+				AND NOT EXISTS (SELECT 1 FROM Tariff t WHERE t.tariffID = tw.tariffId AND t.isForModuleOnly = 1)
 		),
 		validCandidates AS
 		(
@@ -266,22 +270,23 @@ BEGIN
 				INNER JOIN Roller r ON r.rollerID = i.rollerID
 				INNER JOIN Campaign c ON c.campaignID = i.campaignID
 				INNER JOIN MassMedia mm ON mm.massmediaID = tw.massmediaID
-				LEFT JOIN Tariff trf ON trf.tariffID = tw.tariffId
 			WHERE rc.attemptNo <= @transferAttemptCount
-				AND (tw.tariffId IS NULL OR trf.isForModuleOnly = 0)
 				AND (@allowDifferentWindowPrice = 1 OR tw.price = @transferSourcePrice)
 				AND (@avoidFirmRollerWindows = 0
-					OR NOT EXISTS (
-						SELECT 1
-						FROM Issue fi
-							INNER JOIN Campaign fc ON fc.campaignID = fi.campaignID
-							INNER JOIN [Action] fa ON fa.actionID = fc.actionID
-						WHERE fi.originalWindowID = tw.windowId
-							AND fa.firmID = @firmID
-							AND fa.deleteDate IS NULL
-							AND fi.isConfirmed = 1))
+					OR (NOT EXISTS (
+							SELECT 1
+							FROM Issue fi
+								INNER JOIN Campaign fc ON fc.campaignID = fi.campaignID
+								INNER JOIN [Action] fa ON fa.actionID = fc.actionID
+							WHERE fi.originalWindowID = tw.windowId
+								AND fa.firmID = @firmID
+								AND fa.deleteDate IS NULL
+								AND fi.isConfirmed = 1)
+						AND NOT EXISTS (
+							SELECT 1 FROM @issue it2
+							WHERE it2.windowId = tw.windowId
+								AND it2.statusDescription = 'OK')))
 				AND NOT (c.finishDate < @tomorrow and c.campaignTypeID <> 2 and @rightToGoBack <> 1)
-				AND tw.isDisabled = 0
 				AND NOT (r.rolActionTypeID = 1 and tw.maxCapacity > 0)
 				AND NOT ((tw.isFirstPositionOccupied = 1 And @transferPositionID = -20)
 					or (tw.isSecondPositionOccupied = 1 And @transferPositionID = -10)
