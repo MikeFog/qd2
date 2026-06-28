@@ -17,7 +17,7 @@ namespace Merlin.Forms
 
         public FrmTemplate2(string rollerName, IssueTemplate template) : this()
         {
-            if (template != null && template.TemplateType == IssueTemplateType.TimePeriod)
+            if (template != null && template.StartDate != DateTime.MinValue.Date && template.FinishDate != DateTime.MinValue.Date)
                 _template = template;
             else
             {
