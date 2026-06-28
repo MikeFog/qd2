@@ -37,8 +37,10 @@ namespace Merlin.Classes
 		{
             TemplateType = IssueTemplateType.Simple;
             _day2AddMode = Day2AddMode.WeekDays;
-			
+
             weekDays = new bool[DateTimeUtils.WeekDayNames.Length];
+            for (int i = 0; i < weekDays.Length; i++) weekDays[i] = true;
+            IsModeAdd = true;
 			StartDate = FinishDate = DateTime.MinValue.Date;
 			parameters = new Dictionary<string, object>();
 		}
