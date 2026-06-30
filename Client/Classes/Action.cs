@@ -41,7 +41,7 @@ namespace Merlin.Classes
             public const string PrintMediaPlanByPeriod = "PrintMediaPlanByPeriod";
             public const string PrintSelectivelyMediaPlan = "PrintSelectivelyMediaPlan";
             public const string PrintSelectivelyMediaPlanMonth = "PrintSelectivelyMediaPlanMonth";
-            public const string PrintSelectivelyMediaPlanByPeriod = "PrintSelectivelyMediaPlanByPeriod";
+            public const string PrintSelectivelyMediaPlanByPeriod = "PrintSelectivelyMediaPlanPeriod";
             public const string ExportContract = "ExportContract";
 
             public const string PrintAgreement = "PrintAgreement";
