@@ -492,6 +492,11 @@ namespace Merlin.Controls
 			return _tariffWindows[rowIndex - FIXED_ROWS, columnIndex - FixedCols];
 		}
 
+		public ITariffWindow GetTariffWindowAt(int rowIndex, int columnIndex)
+		{
+			return GetTariffWindow(rowIndex, columnIndex);
+		}
+
 		protected DataGridViewCell GetCell(ITariffWindow tariffWindow)
 		{
 			for (int rowIndex = FIXED_ROWS; rowIndex < RawDataGridView.RowCount; rowIndex++)
