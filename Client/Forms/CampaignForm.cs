@@ -24,6 +24,7 @@ namespace Merlin.Forms
 		private bool changeFlag;
 		private bool _selectionDeleteEnabled;
 		private IssueTemplate _template;
+		private List<PresentationObject> _lastTemplateAddedIssues;
 		private RollerIssue _draggingIssue;
 		private TariffWindowWithRollerIssues _dragCandidateWindow;
 		private Point _dragStartPoint;
@@ -519,6 +520,8 @@ namespace Merlin.Forms
 						}
 
 						form.ShowDialog(this);
+						_lastTemplateAddedIssues = form.AddedObjects.Count > 0 ? form.AddedObjects : null;
+						tbbTemplateUndo.Enabled = _lastTemplateAddedIssues != null;
 
 						if (_template.IsDateCovered(_tariffGrid.StartDate, _tariffGrid.FinishDate))
 						{
@@ -875,6 +878,84 @@ namespace Merlin.Forms
 				MessageBox.ShowInformation(string.Format("Удалено выпусков: {0}.", deletedObjects.Count));
 		}
 
+		private void tbbTemplateUndo_Click(object sender, EventArgs e)
+		{
+			try
+			{
+				if (_lastTemplateAddedIssues == null || _lastTemplateAddedIssues.Count == 0)
+					return;
+				if (MessageBox.ShowQuestion(string.Format(
+						"Отменить последнее добавление выпусков по шаблону? ({0} шт.)", _lastTemplateAddedIssues.Count)) != DialogResult.Yes)
+					return;
+				UndoLastTemplateAdd();
+			}
+			catch (Exception ex)
+			{
+				ErrorManager.PublishError(ex);
+			}
+		}
+
+		/// <summary>
+		/// Отмена последнего добавления выпусков по шаблону. Список удаляемых объектов уже
+		/// накоплен в момент добавления (FrmGenerator.AddedObjects) — здесь только удаление по
+		/// одному с накоплением ошибок, тот же паттерн, что и DeleteIssuesInSelectedWindows.
+		/// </summary>
+		private void UndoLastTemplateAdd()
+		{
+			List<PresentationObject> issues = _lastTemplateAddedIssues;
+			_lastTemplateAddedIssues = null;
+			tbbTemplateUndo.Enabled = false;
+
+			List<PresentationObject> deletedObjects = new List<PresentationObject>();
+			DataTable deleteErrors = SmartGrid.CreateDeleteErrorsTable();
+			int errorRowNumber = 1;
+			try
+			{
+				Cursor = Cursors.WaitCursor;
+				foreach (PresentationObject issue in issues)
+				{
+					string objectName = string.IsNullOrEmpty(issue.Name) ? "<без названия>" : issue.Name;
+					try
+					{
+						if (issue.Delete(true))
+							deletedObjects.Add(issue);
+						else
+							SmartGrid.AddDeleteError(deleteErrors, errorRowNumber++, objectName,
+								string.Format("Не удалось удалить выпуск '{0}'.", objectName));
+					}
+					catch (Exception ex)
+					{
+						SmartGrid.AddDeleteError(deleteErrors, errorRowNumber++, objectName, ErrorManager.GetErrorMessage(ex));
+					}
+				}
+			}
+			finally
+			{
+				Cursor = Cursors.Default;
+			}
+
+			if (deletedObjects.Count > 0)
+				OnTemplateUndoCompleted(deletedObjects);
+
+			if (deleteErrors.Rows.Count > 0)
+				SmartGrid.ShowDeleteErrors(deleteErrors);
+			else
+				MessageBox.ShowInformation(string.Format("Отменено выпусков: {0}.", deletedObjects.Count));
+		}
+
+		/// <summary>
+		/// Пересчёт/рефреш после успешной отмены. Переопределяется в EditIssuesForm: веер
+		/// держит отдельную in-memory таблицу AddedIssues и чистит её через событие
+		/// ObjectsDeleted, а не напрямую (см. ProcessCurrentCampaignIssuesDelete).
+		/// </summary>
+		protected virtual void OnTemplateUndoCompleted(List<PresentationObject> deletedObjects)
+		{
+			_campaign.RecalculateAction();
+			RefreshGrid();
+			ShowWindowIssues(_tariffGrid.CurrentTariffWindow);
+			CampaignStatusChanged();
+		}
+
 		/// <summary>
 		/// Груз переноса: откуда (окно-источник) и что именно (список выпусков текущей
 		/// кампании). Единый тип для обоих источников drag — списка внизу формы (1 выпуск)
@@ -1171,6 +1252,8 @@ namespace Merlin.Forms
 							rangeGrid.Action);
 
 						form.ShowDialog(this);
+						_lastTemplateAddedIssues = form.AddedObjects.Count > 0 ? form.AddedObjects : null;
+						tbbTemplateUndo.Enabled = _lastTemplateAddedIssues != null;
 						Application.DoEvents();
 						Cursor = Cursors.WaitCursor;
 
@@ -1184,6 +1267,8 @@ namespace Merlin.Forms
 						_campaign, null, ((IRollerGrid)_tariffGrid).Module, Grantor == null ? null : (int?)Grantor.Id);
 
 						form.ShowDialog(this);
+						_lastTemplateAddedIssues = form.AddedObjects.Count > 0 ? form.AddedObjects : null;
+						tbbTemplateUndo.Enabled = _lastTemplateAddedIssues != null;
 						Application.DoEvents();
 						Cursor = Cursors.WaitCursor;
 

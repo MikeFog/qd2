@@ -3,6 +3,7 @@ using FogSoft.WinForm.Classes;
 using FogSoft.WinForm.Classes.Export;
 using log4net;
 using Merlin.Classes;
+using Merlin.Classes.Domain;
 using Merlin.Controls;
 using System;
 using System.Collections.Generic;
@@ -40,6 +41,10 @@ namespace Merlin.Forms
 		private readonly DeleteDBDelegate _deleteDB;
         private readonly UpdateDBTimePeriodDelegate _updateTimePeriodDB;
         private readonly ActionOnMassmedia _action;
+
+        // Выпуски, добавленные текущим запуском генератора — источник для кнопки "Отменить"
+        // на CampaignForm/EditIssuesForm после закрытия диалога.
+        internal List<PresentationObject> AddedObjects { get; } = new List<PresentationObject>();
 
         // For Simple Issue
         internal FrmGenerator(IssueTemplate template, PresentationObject roller, RollerPositions position,
@@ -261,6 +266,12 @@ namespace Merlin.Forms
                     AddErrorInfo(p);
                 }
 
+                // MasterIssue — реальный удаляемый объект (Delete -> MasterIssueDelete),
+                // в отличие от RollerIssue ниже, который несёт фейковый IssueId и годится
+                // только для отображения в grdSuccess.
+                foreach (DataRow r in result.Rows)
+                    AddedObjects.Add(new MasterIssue(r));
+
                 return result.Rows
                     .Select(r => (PresentationObject)new RollerIssue(r))
                     .ToList();
@@ -270,6 +281,7 @@ namespace Merlin.Forms
             if (_updateDB != null)
 			{
 				DataRow row = _updateDB(_template.CurrentDate);
+				AddedObjects.Add(new MasterIssue(row));
 				return new List<PresentationObject> { new RollerIssue(row) };
 			}
 			else if (_module == null && program == null)
@@ -310,6 +322,7 @@ namespace Merlin.Forms
             else
                 throw new Exception("IssueWithTheSameFirmExists");
             issue.Refresh();
+            AddedObjects.Add(issue);
 			return new List<PresentationObject> { issue };
 		}
 
@@ -391,6 +404,7 @@ namespace Merlin.Forms
                 issues.AddRange(AddIssuesFromWindows(windowsNonPrime, _template.QuantityNonPrime, "Недостаточно рекламных окон офф прайм для размещения всех выпусков. Окон: {0}, выпусков для добавления {1}."));
             }
 
+            AddedObjects.AddRange(issues);
             return issues;
 		}
 

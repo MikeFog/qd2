@@ -44,6 +44,7 @@ namespace Merlin.Forms.CreateActionMaster
 				
 
                 tbbTemplate.Visible = true;
+                tbbTemplateUndo.Visible = true;
                 grdCurrentCampaignIssues.Caption = "Добавленные выпуски";
 
                 RefreshGrid();
@@ -100,6 +101,16 @@ namespace Merlin.Forms.CreateActionMaster
             {
                 Cursor = Cursors.Default;
             }
+        }
+
+        /// <summary>
+        /// Веер держит отдельную in-memory таблицу AddedIssues — чистим её и обновляем через
+        /// уже существующий путь ObjectsDeleted -> ProcessCurrentCampaignIssuesDelete
+        /// (RemoveIssuesFromAdded + Recalculate + RefreshGrid), а не напрямую.
+        /// </summary>
+        protected override void OnTemplateUndoCompleted(List<PresentationObject> deletedObjects)
+        {
+            grdCurrentCampaignIssues.RaiseObjectsDeleted(deletedObjects);
         }
 
         private void RemoveIssuesFromAdded(PresentationObject presentationObject)
