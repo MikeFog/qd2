@@ -157,11 +157,12 @@ namespace FogSoft.WinForm.Forms
                     dialog.Filter =
                         "RTF files (*.rtf)|*.rtf|" +
                         "PDF files (*.pdf)|*.pdf|" +
-                        "Word files (*.doc)|*.doc";
+                        "Word files (*.doc)|*.doc|" +
+                        "Excel files (*.xls)|*.xls";
 
-                    int filterIndex = ResolveFilterIndex(_fileName2SaveDirectly);
+                    int filterIndex = ResolveFilterIndex();
                     dialog.FilterIndex = filterIndex;
-                    dialog.DefaultExt = filterIndex == 2 ? "pdf" : filterIndex == 3 ? "doc" : "rtf";
+                    dialog.DefaultExt = filterIndex == 2 ? "pdf" : filterIndex == 3 ? "doc" : filterIndex == 4 ? "xls" : "rtf";
                     dialog.AddExtension = true;
                     dialog.OverwritePrompt = true;
 
@@ -186,9 +187,13 @@ namespace FogSoft.WinForm.Forms
                             exportFormat = ExportFormatType.WordForWindows;
                             break;
 
+                        case 4:
+                            exportFormat = ExportFormatType.Excel;
+                            break;
+
                         default:
-                            MessageBox.ShowExclamation("Неизвестный формат экспорта.");
-                            return;
+                            exportFormat = ExportFormatType.EditableRTF;
+                            break;
                     }
 
                     UserSettings.Save(Path2SaveReports, Path.GetDirectoryName(fileName));
@@ -220,7 +225,7 @@ namespace FogSoft.WinForm.Forms
                 }
 
                 string fileName = Path.Combine(folder, _fileName2SaveDirectly);
-                report.ExportToDisk(ExportFormatType.WordForWindows, fileName);
+                report.ExportToDisk(ResolveFormatType(), fileName);
                 MessageBox.ShowCompleted($"Файл успено сохранён здесь: {fileName}");
             }
             catch (Exception ex)
@@ -229,12 +234,24 @@ namespace FogSoft.WinForm.Forms
             }
         }
 
-        private static int ResolveFilterIndex(string fileName)
+        private ExportFormatType ResolveFormatType()
         {
-            switch (Path.GetExtension(fileName)?.ToLowerInvariant())
+            switch (Path.GetExtension(_fileName2SaveDirectly)?.ToLowerInvariant())
+            {
+                case ".pdf": return ExportFormatType.PortableDocFormat;
+                case ".doc": return ExportFormatType.WordForWindows;
+                case ".xls": return ExportFormatType.Excel;
+                default: return ExportFormatType.EditableRTF; // .rtf по умолчанию
+            }
+        }
+
+        private int ResolveFilterIndex()
+        {
+            switch (Path.GetExtension(_fileName2SaveDirectly)?.ToLowerInvariant())
             {
                 case ".pdf": return 2;
                 case ".doc": return 3;
+                case ".xls": return 4;
                 default:     return 1; // .rtf по умолчанию
             }
         }
