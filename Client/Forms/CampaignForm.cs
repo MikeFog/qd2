@@ -25,6 +25,7 @@ namespace Merlin.Forms
 		private bool _selectionDeleteEnabled;
 		private IssueTemplate _template;
 		private RollerIssue _draggingIssue;
+		private TariffWindowWithRollerIssues _dragCandidateWindow;
 		private Point _dragStartPoint;
 		private SmartGrid packDetails;
         protected Firm _firm;
@@ -874,6 +875,23 @@ namespace Merlin.Forms
 				MessageBox.ShowInformation(string.Format("Удалено выпусков: {0}.", deletedObjects.Count));
 		}
 
+		/// <summary>
+		/// Груз переноса: откуда (окно-источник) и что именно (список выпусков текущей
+		/// кампании). Единый тип для обоих источников drag — списка внизу формы (1 выпуск)
+		/// и ячейки основной сетки (все выпуски этой кампании в окне).
+		/// </summary>
+		private class IssueDragPayload
+		{
+			public readonly TariffWindowWithRollerIssues SourceWindow;
+			public readonly List<RollerIssue> Issues;
+
+			public IssueDragPayload(TariffWindowWithRollerIssues sourceWindow, List<RollerIssue> issues)
+			{
+				SourceWindow = sourceWindow;
+				Issues = issues;
+			}
+		}
+
 		private void EnableIssueDragDrop()
 		{
 			DataGridView sourceGrid = grdCurrentCampaignIssues.InternalGrid;
@@ -882,6 +900,8 @@ namespace Merlin.Forms
 
 			DataGridView targetGrid = _tariffGrid.InternalGrid;
 			targetGrid.AllowDrop = true;
+			targetGrid.MouseDown += TariffGrid_MouseDown;
+			targetGrid.MouseMove += TariffGrid_MouseMove;
 			targetGrid.DragEnter += TariffGrid_DragEnter;
 			targetGrid.DragOver += TariffGrid_DragOver;
 			targetGrid.DragDrop += TariffGrid_DragDrop;
@@ -902,19 +922,70 @@ namespace Merlin.Forms
 
 		private void GrdIssues_MouseMove(object sender, MouseEventArgs e)
 		{
-			if (e.Button != MouseButtons.Left || _draggingIssue == null) return;
+			if (e.Button != MouseButtons.Left || _draggingIssue == null || !DragThresholdExceeded(e)) return;
+
+			RollerIssue issue = _draggingIssue;
+			_draggingIssue = null;
+			TariffWindowWithRollerIssues sourceWindow = _tariffGrid.CurrentTariffWindow as TariffWindowWithRollerIssues;
+			if (sourceWindow == null) return;
+
+			IssueDragPayload payload = new IssueDragPayload(sourceWindow, new List<RollerIssue> { issue });
+			grdCurrentCampaignIssues.InternalGrid.DoDragDrop(payload, DragDropEffects.Move);
+		}
+
+		/// <summary>
+		/// Старт переноса прямо из ячейки основной сетки ("синие" ячейки — есть выпуски
+		/// текущей кампании). Активно только в режиме просмотра: в режиме редактирования клик
+		/// по ячейке добавляет выпуск, а в просмотре мышь на обычных ячейках нужна для
+		/// прямоугольного выделения (массовое удаление по Del) — трогаем жест только когда
+		/// стартовая ячейка "синяя", иначе выделение работает как раньше.
+		/// </summary>
+		private void TariffGrid_MouseDown(object sender, MouseEventArgs e)
+		{
+			_dragCandidateWindow = null;
+			if (e.Button != MouseButtons.Left || _tariffGrid.EditMode != EditMode.View) return;
+
+			DataGridView grid = (DataGridView)sender;
+			DataGridView.HitTestInfo hit = grid.HitTest(e.X, e.Y);
+			if (!_tariffGrid.CellHasCurrentCampaignIssues(hit.RowIndex, hit.ColumnIndex)) return;
+
+			_dragCandidateWindow = _tariffGrid.GetTariffWindowAt(hit.RowIndex, hit.ColumnIndex) as TariffWindowWithRollerIssues;
+			_dragStartPoint = e.Location;
+		}
+
+		private void TariffGrid_MouseMove(object sender, MouseEventArgs e)
+		{
+			if (e.Button != MouseButtons.Left || _dragCandidateWindow == null || !DragThresholdExceeded(e)) return;
+
+			TariffWindowWithRollerIssues sourceWindow = _dragCandidateWindow;
+			_dragCandidateWindow = null;
+
+			List<RollerIssue> issues = LoadCurrentCampaignIssuesInWindow(sourceWindow);
+			if (issues.Count == 0) return;
+
+			IssueDragPayload payload = new IssueDragPayload(sourceWindow, issues);
+			((DataGridView)sender).DoDragDrop(payload, DragDropEffects.Move);
+		}
+
+		private bool DragThresholdExceeded(MouseEventArgs e)
+		{
 			Size dragSize = SystemInformation.DragSize;
-			if (Math.Abs(e.X - _dragStartPoint.X) > dragSize.Width ||
-			    Math.Abs(e.Y - _dragStartPoint.Y) > dragSize.Height)
-			{
-				grdCurrentCampaignIssues.InternalGrid.DoDragDrop(_draggingIssue, DragDropEffects.Move);
-				_draggingIssue = null;
-			}
+			return Math.Abs(e.X - _dragStartPoint.X) > dragSize.Width ||
+			       Math.Abs(e.Y - _dragStartPoint.Y) > dragSize.Height;
+		}
+
+		private List<RollerIssue> LoadCurrentCampaignIssuesInWindow(TariffWindowWithRollerIssues window)
+		{
+			List<RollerIssue> issues = new List<RollerIssue>();
+			DataTable dtIssues = window.LoadIssues(true, RollerIssue.GetEntity());
+			foreach (DataRow row in dtIssues.Select(string.Format("campaignId = {0}", _campaign.CampaignId)))
+				issues.Add(new RollerIssue(row));
+			return issues;
 		}
 
 		private void TariffGrid_DragEnter(object sender, DragEventArgs e)
 		{
-			e.Effect = e.Data.GetDataPresent(typeof(RollerIssue))
+			e.Effect = e.Data.GetDataPresent(typeof(IssueDragPayload))
 				? DragDropEffects.Move
 				: DragDropEffects.None;
 		}
@@ -922,37 +993,40 @@ namespace Merlin.Forms
 		private void TariffGrid_DragOver(object sender, DragEventArgs e)
 		{
 			e.Effect = DragDropEffects.None;
-			if (!e.Data.GetDataPresent(typeof(RollerIssue))) return;
+			IssueDragPayload payload = e.Data.GetData(typeof(IssueDragPayload)) as IssueDragPayload;
+			if (payload == null) return;
 
 			DataGridView grid = (DataGridView)sender;
 			Point pt = grid.PointToClient(new Point(e.X, e.Y));
 			DataGridView.HitTestInfo hit = grid.HitTest(pt.X, pt.Y);
-			ITariffWindow target = _tariffGrid.GetTariffWindowAt(hit.RowIndex, hit.ColumnIndex);
-			if (target != null && target != _tariffGrid.CurrentTariffWindow)
+			TariffWindowWithRollerIssues target = _tariffGrid.GetTariffWindowAt(hit.RowIndex, hit.ColumnIndex) as TariffWindowWithRollerIssues;
+			if (target != null && target.WindowId != payload.SourceWindow.WindowId)
 				e.Effect = DragDropEffects.Move;
 		}
 
 		private void TariffGrid_DragDrop(object sender, DragEventArgs e)
 		{
-			RollerIssue issue = e.Data.GetData(typeof(RollerIssue)) as RollerIssue;
-			if (issue == null) return;
+			IssueDragPayload payload = e.Data.GetData(typeof(IssueDragPayload)) as IssueDragPayload;
+			if (payload == null) return;
 
 			DataGridView grid = (DataGridView)sender;
 			Point pt = grid.PointToClient(new Point(e.X, e.Y));
 			DataGridView.HitTestInfo hit = grid.HitTest(pt.X, pt.Y);
 			TariffWindowWithRollerIssues targetWindow =
 				_tariffGrid.GetTariffWindowAt(hit.RowIndex, hit.ColumnIndex) as TariffWindowWithRollerIssues;
-			if (targetWindow == null || targetWindow == _tariffGrid.CurrentTariffWindow) return;
+			if (targetWindow == null || targetWindow.WindowId == payload.SourceWindow.WindowId) return;
 
 			string targetDateStr = targetWindow.WindowDate.ToString("dd.MM.yyyy HH:mm");
-			if (MessageBox.ShowQuestion(
-				    string.Format("Перенести выпуск в окно '{0}'?", targetDateStr)) != DialogResult.Yes)
+			string question = payload.Issues.Count == 1
+				? string.Format("Перенести выпуск в окно '{0}'?", targetDateStr)
+				: string.Format("Перенести выпуски ({0} шт.) в окно '{1}'?", payload.Issues.Count, targetDateStr);
+			if (MessageBox.ShowQuestion(question) != DialogResult.Yes)
 				return;
 
 			try
 			{
 				Cursor = Cursors.WaitCursor;
-				MoveIssueToWindow(issue, targetWindow);
+				MoveIssuesToWindow(payload.Issues, targetWindow);
 			}
 			catch (Exception ex)
 			{
@@ -964,15 +1038,18 @@ namespace Merlin.Forms
 			}
 		}
 
-		private void MoveIssueToWindow(RollerIssue sourceIssue, TariffWindowWithRollerIssues targetWindow)
+		private void MoveIssuesToWindow(List<RollerIssue> sourceIssues, TariffWindowWithRollerIssues targetWindow)
 		{
 			int? grantorId = Grantor == null ? (int?)null : Grantor.Id;
 			DataAccessor.BeginTransaction();
 			try
 			{
-				if (!sourceIssue.Delete(true))
-					throw new InvalidOperationException("Не удалось удалить выпуск из исходного окна.");
-				_campaign.AddIssue(sourceIssue.Roller, targetWindow, sourceIssue.Position, grantorId);
+				foreach (RollerIssue sourceIssue in sourceIssues)
+				{
+					if (!sourceIssue.Delete(true))
+						throw new InvalidOperationException("Не удалось удалить выпуск из исходного окна.");
+					_campaign.AddIssue(sourceIssue.Roller, targetWindow, sourceIssue.Position, grantorId);
+				}
 				_campaign.RecalculateAction(false);
 				DataAccessor.CommitTransaction();
 			}

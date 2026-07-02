@@ -497,6 +497,20 @@ namespace Merlin.Controls
 			return GetTariffWindow(rowIndex, columnIndex);
 		}
 
+		/// <summary>
+		/// Дешёвая (без SQL) проверка «есть ли в ячейке выпуски текущей кампании» — читает
+		/// цвет текста, выставленный MarkCellAsHavingCurrentCampaignIssues. Нужна, чтобы
+		/// решить, начинать ли drag прямо с ячейки, не задевая обычное поведение мыши
+		/// (выделение прямоугольником) на прочих ячейках.
+		/// </summary>
+		public bool CellHasCurrentCampaignIssues(int rowIndex, int columnIndex)
+		{
+			if (rowIndex < FIXED_ROWS || columnIndex < FixedCols
+				|| rowIndex >= RawDataGridView.RowCount || columnIndex >= RawDataGridView.ColumnCount)
+				return false;
+			return GetCell(rowIndex, columnIndex).Style.ForeColor == Color.Blue;
+		}
+
 		protected DataGridViewCell GetCell(ITariffWindow tariffWindow)
 		{
 			for (int rowIndex = FIXED_ROWS; rowIndex < RawDataGridView.RowCount; rowIndex++)
