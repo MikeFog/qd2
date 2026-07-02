@@ -15,7 +15,6 @@ namespace Merlin.Forms
 
             if (!pathIsSet)
             {
-                chkSaveDirectlyToDisk.Checked = false;
                 chkSaveDirectlyToDisk.Enabled = false;
                 lblNoPathWarning.Visible = true;
             }

@@ -93,8 +93,6 @@ namespace Merlin.Forms
             // chkSaveDirectlyToDisk
             // 
             this.chkSaveDirectlyToDisk.AutoSize = true;
-            this.chkSaveDirectlyToDisk.Checked = true;
-            this.chkSaveDirectlyToDisk.CheckState = System.Windows.Forms.CheckState.Checked;
             this.chkSaveDirectlyToDisk.Location = new System.Drawing.Point(6, 115);
             this.chkSaveDirectlyToDisk.Margin = new System.Windows.Forms.Padding(3, 4, 3, 4);
             this.chkSaveDirectlyToDisk.Name = "chkSaveDirectlyToDisk";

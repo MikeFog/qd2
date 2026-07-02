@@ -43,6 +43,16 @@ namespace FogSoft.WinForm.Classes.Export
 
 		private static IExportDocument doc;
 
+		/// <summary>
+		/// Сбрасывает ссылку на переиспользуемый Excel, не закрывая его. Следующее
+		/// обращение к Application создаст новый экземпляр вместо добавления листов
+		/// в уже открытый (нужно там, где каждый экспорт обязан идти в отдельный файл).
+		/// </summary>
+		public static void StartNewApplication()
+		{
+			doc = null;
+		}
+
 		public static IExportDocument Application
 		{
 			get

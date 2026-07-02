@@ -102,14 +102,11 @@ namespace Merlin.Classes
             Globals.SetWaitCursor(Globals.MdiParent);
             try
 			{
-                if (action == null)
-				{
-					string savedPath = UserSettings.Load("Path2SaveReports");
-					bool pathIsSet = !string.IsNullOrWhiteSpace(savedPath) && Directory.Exists(savedPath);
-					var frmSettings = new Forms.PrintMediaPlanSettings(pathIsSet);
-					if(frmSettings.ShowDialog(Globals.MdiParent) == DialogResult.Cancel) return;
-					_printSettings = frmSettings.Settings;
-                }
+                string savedPath = UserSettings.Load("Path2SaveReports");
+				bool pathIsSet = !string.IsNullOrWhiteSpace(savedPath) && Directory.Exists(savedPath);
+				var frmSettings = new Forms.PrintMediaPlanSettings(pathIsSet);
+				if(frmSettings.ShowDialog(Globals.MdiParent) == DialogResult.Cancel) return;
+				_printSettings = frmSettings.Settings;
 
                 // Экспорт идёт синхронно на UI-потоке (STA): Excel создаётся и
                 // освобождается на одном апартаменте — без маршалинга между потоками,
@@ -137,11 +134,14 @@ namespace Merlin.Classes
 			PrintMediaPlan(_isFact);
             if (exportStarted)
             {
-				if (_printSettings.SaveDirectlyToDisk)
+				string folder = UserSettings.Load("Path2SaveReports") ?? string.Empty;
+				bool canSaveToDisk = _printSettings.SaveDirectlyToDisk
+					&& !string.IsNullOrEmpty(folder)
+					&& Directory.Exists(folder);
+
+				if (canSaveToDisk)
 				{
 					string firmName = GetFirmName();
-					string folder = UserSettings.Load("Path2SaveReports") ?? string.Empty;
-
 					string safeFirm = firmName;
 					foreach (char c in Path.GetInvalidFileNameChars())
 						safeFirm = safeFirm.Replace(c, '_');
@@ -395,6 +395,7 @@ namespace Merlin.Classes
         {
             if (!exportStarted)
             {
+                ExportManager.StartNewApplication();
                 ExportManager.Application.StartExport();
                 exportStarted = true;
             }
