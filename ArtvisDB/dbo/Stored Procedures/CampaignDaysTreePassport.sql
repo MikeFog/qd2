@@ -18,7 +18,7 @@ if (@campaignTypeID in (1,2))
 	begin 
 	insert into @days(id, issueDate,[image], [name])
 	select distinct
-		convert(varchar, tw.dayActual, 112),
+		convert(varchar, tw.dayActual, 104),
 		tw.dayActual,
 		'Day.png',
 		convert(varchar, tw.dayActual, 104)
@@ -35,7 +35,7 @@ if (@campaignTypeID in (1,2))
 	insert into @days(id, parentID, [image], [name], issueDate)
 	select
 		i.issueID,
-		convert(varchar, tw.dayActual, 112),
+		convert(varchar, tw.dayActual, 104),
 		'Issue.png',
 		dbo.fn_GetTimeString(pl.broadcastStart, tw.windowDateActual) + ' ' + r.name +
 		Case i.positionId
@@ -65,7 +65,7 @@ else if @campaignTypeID = 3
 	Begin
 	insert into @days(id, issueDate,[image], [name])
 	select distinct
-		convert(varchar, mi.issueDate, 112),
+		convert(varchar, mi.issueDate, 104),
 		mi.issueDate,
 		'Day.png',
 		convert(varchar, mi.issueDate, 104)
@@ -81,7 +81,7 @@ else if @campaignTypeID = 3
 	insert into @days(id, parentID, [image], [name], issueDate)
 	select
 		mi.moduleIssueID,
-		convert(varchar, mi.issueDate, 112),
+		convert(varchar, mi.issueDate, 104),
 		'Module.png',
 		m.name + ' - ' + r.name +
 		Case mi.positionId
@@ -107,7 +107,7 @@ else if @campaignTypeID = 4
 	Begin
 	insert into @days(id, issueDate,[image], [name])
 	select distinct
-		convert(varchar, pmi.issueDate, 112),
+		convert(varchar, pmi.issueDate, 104),
 		pmi.issueDate,
 		'Day.png',
 		convert(varchar, pmi.issueDate, 104)
@@ -124,7 +124,7 @@ else if @campaignTypeID = 4
 	insert into @days(id, parentID, [image], [name], issueDate)
 	select
 		pmi.[packModuleIssueID],
-		convert(varchar, pmi.issueDate, 112),
+		convert(varchar, pmi.issueDate, 104),
 		'PackModule.png',
 		pm.name + ' - ' + r.name+
 		Case pmi.positionId
@@ -151,7 +151,7 @@ else if @campaignTypeID = 100 -- такого типа нет, это для в�
 	Begin
 	insert into @days(id, issueDate,[image], [name])
 	select distinct
-		convert(varchar, mi.issueDate, 112),
+		convert(varchar, mi.issueDate, 104),
 		mi.issueDate,
 		'Day.png',
 		convert(varchar, mi.issueDate, 104)
@@ -166,7 +166,7 @@ else if @campaignTypeID = 100 -- такого типа нет, это для в�
 	insert into @days(id, parentID, [image], [name], issueDate)
 	SELECT
 		pi.[issueID],
-		Convert(varchar, pi.issueDate, 112),
+		Convert(varchar, pi.issueDate, 104),
 		'SponsorProgram.png',
 		sp.name + COALESCE(' - ' + adv.name, ''),
 		pi.[issueDate]
