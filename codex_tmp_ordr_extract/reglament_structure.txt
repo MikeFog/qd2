@@ -1,0 +1,14 @@
+STRUCTURE: Регламент_подключения_неотраслевых_организаций_ОРДР_КОД_v2.docx
+  word/comments.xml: no
+  word/footnotes.xml: no
+  word/endnotes.xml: no
+  word/document.xml: yes
+  word/header1.xml: no
+  word/footer1.xml: yes
+  images: 0
+  tracked insertions w:ins: 0
+  tracked deletions w:del: 0
+  hyperlinks: 0
+  bookmarks: 0
+  simple fields: 1
+  field chars: 0
