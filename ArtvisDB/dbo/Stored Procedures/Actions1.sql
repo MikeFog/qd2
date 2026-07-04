@@ -167,11 +167,12 @@ SET NOCOUNT on
 				or (a.deleteDate is not null and @showDeleted = 1)
 				)
 			AND (@withoutActionId IS NULL OR a.[actionID] <> @withoutActionId)
-			and (@withoutActionsSince is null or not exists(select top 1 a1.actionID 
-															from [Action] a1 
-															where a.firmID = a1.firmID  
+			and (@withoutActionsSince is null or not exists(select top 1 a1.actionID
+															from [Action] a1
+																inner join [Firm] f1 on a1.firmID = f1.firmID
+															where f1.headCompanyID = f.headCompanyID
 																and a1.isConfirmed = 1
-																and a1.finishDate >= @withoutActionsSince 
+																and a1.finishDate >= @withoutActionsSince
 																and (@startOfInterval is null or a1.startDate < @startOfInterval)))
 			and (@managerDiscount is null or (c.managerDiscount - @managerDiscount) < -0.005)
 			and f.headCompanyID = COALESCE(@headCompanyID, f.headCompanyID)
@@ -262,11 +263,12 @@ SET NOCOUNT on
 				or (a.deleteDate is not null and @showDeleted = 1)
 				)
 			AND (@withoutActionId IS NULL OR a.[actionID] <> @withoutActionId)
-			and (@withoutActionsSince is null or not exists(select top 1 a1.actionID 
-															from [Action] a1 
-															where a.firmID = a1.firmID  
+			and (@withoutActionsSince is null or not exists(select top 1 a1.actionID
+															from [Action] a1
+																inner join [Firm] f1 on a1.firmID = f1.firmID
+															where f1.headCompanyID = f.headCompanyID
 																and a1.isConfirmed = 1
-																and a1.finishDate >= @withoutActionsSince 
+																and a1.finishDate >= @withoutActionsSince
 																and (@startOfInterval is null or a1.startDate < @startOfInterval)))
 			and (@managerDiscount is null or (c.managerDiscount - @managerDiscount) < -0.005)
 			and f.headCompanyID = COALESCE(@headCompanyID, f.headCompanyID)

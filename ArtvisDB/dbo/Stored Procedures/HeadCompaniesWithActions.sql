@@ -64,10 +64,11 @@ BEGIN
           AND c.finishDate = Coalesce(@campaignFinishDate, c.finishDate)
           AND (@rollerId is null or i.rollerID = coalesce(@rollerId, i.rollerID))
           AND (@moduleID is null or mi.moduleID = @moduleID)
-          AND (@withoutActionsSince is null or not exists(select top 1 a1.actionID 
-												from [Action] a1 
-												where a.firmID = a1.firmID  
-													and a1.finishDate >= @withoutActionsSince 
+          AND (@withoutActionsSince is null or not exists(select top 1 a1.actionID
+												from [Action] a1
+													inner join [Firm] f1 on a1.firmID = f1.firmID
+												where f1.headCompanyID = hc.headCompanyID
+													and a1.finishDate >= @withoutActionsSince
 													and (@startOfInterval is null or a1.startDate < @startOfInterval)))
         and (@managerDiscount is null or (c.managerDiscount - @managerDiscount) < -0.005)
           -- Фильтры дат (SARGable)

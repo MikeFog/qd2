@@ -31,7 +31,7 @@
 @managerDiscount float = null,
 @massmediaGroupID int = null,
 @showDeleted bit = 0,
-@headCompanyId smallint = null
+@headCompanyId int = null
 )
 AS
 SET NOCOUNT on
@@ -117,13 +117,14 @@ SET NOCOUNT on
 			a.[actionID] = COALESCE(@actionID, a.[actionID]) AND
 			a.[firmID] = COALESCE(@firmID, a.[firmID]) 
 			AND ((a.[isConfirmed] = 0 AND @isShowNotActivate = 1 And a.deleteDate is null) OR (a.[isConfirmed] = 1 AND @isShowActivate = 1 And a.deleteDate is null) or (a.deleteDate is not null and @showDeleted = 1))
-			and (@withoutActionsSince is null or not exists(select top 1 a1.actionID 
-															from [Action] a1 
-															where a.firmID = a1.firmID  
-																and a1.finishDate >= @withoutActionsSince 
+			and (@withoutActionsSince is null or not exists(select top 1 a1.actionID
+															from [Action] a1
+																inner join [Firm] f1 on a1.firmID = f1.firmID
+															where f1.headCompanyID = f.headCompanyID
+																and a1.finishDate >= @withoutActionsSince
 																and (@startOfInterval is null or a1.startDate < @startOfInterval)))
 			and (@managerDiscount is null or (c.managerDiscount - @managerDiscount) < -0.005)
-			and f.headCompanyId = COALESCE(@headCompanyId, f.headCompanyId) 
+			and f.headCompanyId = COALESCE(@headCompanyId, f.headCompanyId)
 		order by f.[name]
 	end 
 	else 
@@ -212,13 +213,14 @@ SET NOCOUNT on
 						(a.deleteDate is not null and @showDeleted = 1)
 					)
 				and (
-					@withoutActionsSince is null 
-					or 
+					@withoutActionsSince is null
+					or
 					not exists(
-						select 1 
-						from [Action] a1 
-						where a.firmID = a1.firmID  
-							and a1.finishDate >= @withoutActionsSince 
+						select 1
+						from [Action] a1
+							inner join [Firm] f1 on a1.firmID = f1.firmID
+						where f1.headCompanyID = f.headCompanyID
+							and a1.finishDate >= @withoutActionsSince
 							and (@startOfInterval is null or a1.startDate < @startOfInterval)
 						)
 					)
