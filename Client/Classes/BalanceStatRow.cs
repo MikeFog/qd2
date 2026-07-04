@@ -20,7 +20,10 @@ namespace Merlin.Classes
                 var container = new ActionContainer(RelationManager.GetScenario(RelationScenarios.ConfirmedAction),
                     "Журнал подтверждённых рекламные акции", Entities.FirmWithConfirmedActions, Entities.Action, 
                     Entities.HeadCompanyWithConfirmedActions);
-                container.Filter["firmID2"] = parameters["FirmId"];
+                if(parameters.ContainsKey("FirmId"))
+                    container.Filter["firmID2"] = parameters["FirmId"];
+                else
+                    container.Filter["headCompanyID"] = parameters["headCompanyID"];
                 container.Filter["massmediaGroupID"] = parameters["massmediaGroupID"];
                 container.Filter["userID"] = parameters["userID"];
                 var startDate = parameters["periodStartDate"];
