@@ -55,6 +55,7 @@ namespace Merlin.Forms {
             this.toolStripSeparator3 = new System.Windows.Forms.ToolStripSeparator();
             this.tbbTemplate = new System.Windows.Forms.ToolStripButton();
             this.tbbTemplate2 = new System.Windows.Forms.ToolStripButton();
+            this.tbbTemplate3 = new System.Windows.Forms.ToolStripButton();
             this.tbbTemplateUndo = new System.Windows.Forms.ToolStripButton();
             this.toolStripSeparator2 = new System.Windows.Forms.ToolStripSeparator();
             this.tbSetManagerDiscount = new System.Windows.Forms.ToolStripButton();
@@ -115,6 +116,7 @@ namespace Merlin.Forms {
             this.toolStripSeparator3,
             this.tbbTemplate,
             this.tbbTemplate2,
+            this.tbbTemplate3,
             this.tbbTemplateUndo,
             this.toolStripSeparator2,
             this.tbSetManagerDiscount,
@@ -366,6 +368,15 @@ namespace Merlin.Forms {
             this.tbbTemplate2.Text = "Шаблон для внесения роликов";
             this.tbbTemplate2.ToolTipText = "Шаблон для внесения роликов на интервале времени";
             this.tbbTemplate2.Click += new System.EventHandler(this.tbbTemplate2_Click);
+            //
+            // tbbTemplate3
+            //
+            this.tbbTemplate3.DisplayStyle = System.Windows.Forms.ToolStripItemDisplayStyle.Text;
+            this.tbbTemplate3.Name = "tbbTemplate3";
+            this.tbbTemplate3.Size = new System.Drawing.Size(70, 29);
+            this.tbbTemplate3.Text = "Шаблон 3";
+            this.tbbTemplate3.ToolTipText = "Новый шаблон: внесение роликов фирмы с указанием количества";
+            this.tbbTemplate3.Click += new System.EventHandler(this.tbbTemplate3_Click);
             //
             // tbbTemplateUndo
             //
@@ -684,6 +695,7 @@ namespace Merlin.Forms {
 	private System.Windows.Forms.SplitContainer splitContainer5;
 	protected System.Windows.Forms.ToolStripButton tsbMuteRoller;
     protected System.Windows.Forms.ToolStripButton tbbTemplate2;
+    protected System.Windows.Forms.ToolStripButton tbbTemplate3;
     protected System.Windows.Forms.ToolStripButton tbbTemplateUndo;
     private System.Windows.Forms.ToolStripDropDownButton tbbAdvertType;
     private System.Windows.Forms.ToolStripMenuItem miShowAllAdvertTypes;

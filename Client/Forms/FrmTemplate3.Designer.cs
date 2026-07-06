@@ -1,7 +1,7 @@
 ﻿
 namespace Merlin.Forms
 {
-    partial class FrmTemplate2
+    partial class FrmTemplate3
     {
         /// <summary>
         /// Required designer variable.
@@ -39,8 +39,19 @@ namespace Merlin.Forms
             this.dtStartTime = new System.Windows.Forms.DateTimePicker();
             this.txtQuantity = new System.Windows.Forms.NumericUpDown();
             this.label5 = new System.Windows.Forms.Label();
-            this.label6 = new System.Windows.Forms.Label();
-            this.lblRollerName = new System.Windows.Forms.Label();
+            this.dgvRollers = new System.Windows.Forms.DataGridView();
+            this.gbRollerStats = new System.Windows.Forms.GroupBox();
+            this.lblTotalQuantityValue = new System.Windows.Forms.Label();
+            this.lblTotalQuantityCaption = new System.Windows.Forms.Label();
+            this.lblTotalDurationValue = new System.Windows.Forms.Label();
+            this.lblTotalDurationCaption = new System.Windows.Forms.Label();
+            this.lblCampaignPriceCaption = new System.Windows.Forms.Label();
+            this.lblCampaignPriceValue = new System.Windows.Forms.Label();
+            this.lblCompanyDiscountCaption = new System.Windows.Forms.Label();
+            this.lblCompanyDiscountValue = new System.Windows.Forms.Label();
+            this.lblTotalBeforePackageCaption = new System.Windows.Forms.Label();
+            this.lblTotalBeforePackageValue = new System.Windows.Forms.Label();
+            this.btnEstimatePrice = new System.Windows.Forms.Button();
             this.gbWeekDays = new System.Windows.Forms.GroupBox();
             this.clbWeekDays = new System.Windows.Forms.CheckedListBox();
             this.cbIgnoreWindows = new System.Windows.Forms.CheckBox();
@@ -60,6 +71,8 @@ namespace Merlin.Forms
             this.rbNumber = new System.Windows.Forms.RadioButton();
             this.rbDays = new System.Windows.Forms.RadioButton();
             ((System.ComponentModel.ISupportInitialize)(this.txtQuantity)).BeginInit();
+            ((System.ComponentModel.ISupportInitialize)(this.dgvRollers)).BeginInit();
+            this.gbRollerStats.SuspendLayout();
             this.gbWeekDays.SuspendLayout();
             this.tableLayoutPanel1.SuspendLayout();
             this.groupBox1.SuspendLayout();
@@ -72,7 +85,7 @@ namespace Merlin.Forms
             // dtFinishDate
             // 
             this.dtFinishDate.Format = System.Windows.Forms.DateTimePickerFormat.Short;
-            this.dtFinishDate.Location = new System.Drawing.Point(332, 67);
+            this.dtFinishDate.Location = new System.Drawing.Point(332, 263);
             this.dtFinishDate.Margin = new System.Windows.Forms.Padding(3, 4, 3, 4);
             this.dtFinishDate.Name = "dtFinishDate";
             this.dtFinishDate.Size = new System.Drawing.Size(234, 31);
@@ -81,7 +94,7 @@ namespace Merlin.Forms
             // dtStartDate
             // 
             this.dtStartDate.Format = System.Windows.Forms.DateTimePickerFormat.Short;
-            this.dtStartDate.Location = new System.Drawing.Point(332, 28);
+            this.dtStartDate.Location = new System.Drawing.Point(332, 224);
             this.dtStartDate.Margin = new System.Windows.Forms.Padding(3, 4, 3, 4);
             this.dtStartDate.Name = "dtStartDate";
             this.dtStartDate.Size = new System.Drawing.Size(234, 31);
@@ -90,7 +103,7 @@ namespace Merlin.Forms
             // label2
             // 
             this.label2.AutoSize = true;
-            this.label2.Location = new System.Drawing.Point(3, 63);
+            this.label2.Location = new System.Drawing.Point(3, 259);
             this.label2.Name = "label2";
             this.label2.Size = new System.Drawing.Size(200, 24);
             this.label2.TabIndex = 15;
@@ -99,7 +112,7 @@ namespace Merlin.Forms
             // label1
             // 
             this.label1.AutoSize = true;
-            this.label1.Location = new System.Drawing.Point(3, 24);
+            this.label1.Location = new System.Drawing.Point(3, 220);
             this.label1.Name = "label1";
             this.label1.Size = new System.Drawing.Size(164, 24);
             this.label1.TabIndex = 14;
@@ -108,7 +121,7 @@ namespace Merlin.Forms
             // label3
             // 
             this.label3.AutoSize = true;
-            this.label3.Location = new System.Drawing.Point(3, 141);
+            this.label3.Location = new System.Drawing.Point(3, 337);
             this.label3.Name = "label3";
             this.label3.Size = new System.Drawing.Size(267, 24);
             this.label3.TabIndex = 21;
@@ -117,7 +130,7 @@ namespace Merlin.Forms
             // label4
             // 
             this.label4.AutoSize = true;
-            this.label4.Location = new System.Drawing.Point(3, 102);
+            this.label4.Location = new System.Drawing.Point(3, 298);
             this.label4.Name = "label4";
             this.label4.Size = new System.Drawing.Size(231, 24);
             this.label4.TabIndex = 20;
@@ -127,7 +140,7 @@ namespace Merlin.Forms
             // 
             this.dtFinishTime.CustomFormat = "HH:mm";
             this.dtFinishTime.Format = System.Windows.Forms.DateTimePickerFormat.Custom;
-            this.dtFinishTime.Location = new System.Drawing.Point(332, 145);
+            this.dtFinishTime.Location = new System.Drawing.Point(332, 341);
             this.dtFinishTime.Margin = new System.Windows.Forms.Padding(3, 4, 3, 4);
             this.dtFinishTime.Name = "dtFinishTime";
             this.dtFinishTime.ShowUpDown = true;
@@ -138,7 +151,7 @@ namespace Merlin.Forms
             // 
             this.dtStartTime.CustomFormat = "HH:mm";
             this.dtStartTime.Format = System.Windows.Forms.DateTimePickerFormat.Custom;
-            this.dtStartTime.Location = new System.Drawing.Point(332, 106);
+            this.dtStartTime.Location = new System.Drawing.Point(332, 302);
             this.dtStartTime.Margin = new System.Windows.Forms.Padding(3, 4, 3, 4);
             this.dtStartTime.Name = "dtStartTime";
             this.dtStartTime.ShowUpDown = true;
@@ -147,7 +160,7 @@ namespace Merlin.Forms
             // 
             // txtQuantity
             // 
-            this.txtQuantity.Location = new System.Drawing.Point(332, 184);
+            this.txtQuantity.Location = new System.Drawing.Point(332, 380);
             this.txtQuantity.Margin = new System.Windows.Forms.Padding(3, 4, 3, 4);
             this.txtQuantity.Minimum = new decimal(new int[] {
             1,
@@ -166,40 +179,157 @@ namespace Merlin.Forms
             // label5
             // 
             this.label5.AutoSize = true;
-            this.label5.Location = new System.Drawing.Point(3, 180);
+            this.label5.Location = new System.Drawing.Point(3, 376);
             this.label5.Name = "label5";
             this.label5.Size = new System.Drawing.Size(245, 24);
             this.label5.TabIndex = 25;
             this.label5.Text = "Количество выходов в день:";
             // 
-            // label6
+            // dgvRollers
             // 
-            this.label6.AutoSize = true;
-            this.label6.Location = new System.Drawing.Point(3, 0);
-            this.label6.Name = "label6";
-            this.label6.Size = new System.Drawing.Size(63, 24);
-            this.label6.TabIndex = 30;
-            this.label6.Text = "Ролик:";
+            this.dgvRollers.AllowUserToAddRows = false;
+            this.dgvRollers.AllowUserToDeleteRows = false;
+            this.dgvRollers.AllowUserToResizeRows = false;
+            this.dgvRollers.ColumnHeadersHeight = 34;
+            this.dgvRollers.Dock = System.Windows.Forms.DockStyle.Fill;
+            this.dgvRollers.Location = new System.Drawing.Point(3, 3);
+            this.dgvRollers.Name = "dgvRollers";
+            this.dgvRollers.RowHeadersVisible = false;
+            this.dgvRollers.RowHeadersWidth = 62;
+            this.dgvRollers.Size = new System.Drawing.Size(479, 214);
+            this.dgvRollers.TabIndex = 30;
             // 
-            // lblRollerName
+            // gbRollerStats
             // 
-            this.lblRollerName.AutoSize = true;
-            this.lblRollerName.Location = new System.Drawing.Point(332, 0);
-            this.lblRollerName.Name = "lblRollerName";
-            this.lblRollerName.Size = new System.Drawing.Size(106, 24);
-            this.lblRollerName.TabIndex = 31;
-            this.lblRollerName.Text = "Roller Name";
-            // 
+            this.gbRollerStats.Controls.Add(this.lblTotalQuantityCaption);
+            this.gbRollerStats.Controls.Add(this.lblTotalQuantityValue);
+            this.gbRollerStats.Controls.Add(this.lblTotalDurationCaption);
+            this.gbRollerStats.Controls.Add(this.lblTotalDurationValue);
+            this.gbRollerStats.Controls.Add(this.lblCampaignPriceCaption);
+            this.gbRollerStats.Controls.Add(this.lblCampaignPriceValue);
+            this.gbRollerStats.Controls.Add(this.lblCompanyDiscountCaption);
+            this.gbRollerStats.Controls.Add(this.lblCompanyDiscountValue);
+            this.gbRollerStats.Controls.Add(this.lblTotalBeforePackageCaption);
+            this.gbRollerStats.Controls.Add(this.lblTotalBeforePackageValue);
+            this.gbRollerStats.Controls.Add(this.btnEstimatePrice);
+            this.gbRollerStats.Dock = System.Windows.Forms.DockStyle.Fill;
+            this.gbRollerStats.Location = new System.Drawing.Point(332, 3);
+            this.gbRollerStats.Name = "gbRollerStats";
+            this.gbRollerStats.Size = new System.Drawing.Size(480, 214);
+            this.gbRollerStats.TabIndex = 41;
+            this.gbRollerStats.TabStop = false;
+            this.gbRollerStats.Text = "Статистика";
+            //
+            // lblTotalQuantityCaption
+            //
+            this.lblTotalQuantityCaption.AutoSize = true;
+            this.lblTotalQuantityCaption.Location = new System.Drawing.Point(10, 26);
+            this.lblTotalQuantityCaption.Name = "lblTotalQuantityCaption";
+            this.lblTotalQuantityCaption.Size = new System.Drawing.Size(248, 24);
+            this.lblTotalQuantityCaption.TabIndex = 0;
+            this.lblTotalQuantityCaption.Text = "Общее количество выходов:";
+            //
+            // lblTotalQuantityValue
+            //
+            this.lblTotalQuantityValue.AutoSize = true;
+            this.lblTotalQuantityValue.Location = new System.Drawing.Point(290, 26);
+            this.lblTotalQuantityValue.Name = "lblTotalQuantityValue";
+            this.lblTotalQuantityValue.Size = new System.Drawing.Size(20, 24);
+            this.lblTotalQuantityValue.TabIndex = 1;
+            this.lblTotalQuantityValue.Text = "0";
+            //
+            // lblTotalDurationCaption
+            //
+            this.lblTotalDurationCaption.AutoSize = true;
+            this.lblTotalDurationCaption.Location = new System.Drawing.Point(10, 54);
+            this.lblTotalDurationCaption.Name = "lblTotalDurationCaption";
+            this.lblTotalDurationCaption.Size = new System.Drawing.Size(191, 24);
+            this.lblTotalDurationCaption.TabIndex = 2;
+            this.lblTotalDurationCaption.Text = "Общий хронометраж:";
+            //
+            // lblTotalDurationValue
+            //
+            this.lblTotalDurationValue.AutoSize = true;
+            this.lblTotalDurationValue.Location = new System.Drawing.Point(290, 54);
+            this.lblTotalDurationValue.Name = "lblTotalDurationValue";
+            this.lblTotalDurationValue.Size = new System.Drawing.Size(78, 24);
+            this.lblTotalDurationValue.TabIndex = 3;
+            this.lblTotalDurationValue.Text = "00:00:00";
+            //
+            // lblCampaignPriceCaption
+            //
+            this.lblCampaignPriceCaption.AutoSize = true;
+            this.lblCampaignPriceCaption.Location = new System.Drawing.Point(10, 82);
+            this.lblCampaignPriceCaption.Name = "lblCampaignPriceCaption";
+            this.lblCampaignPriceCaption.Size = new System.Drawing.Size(146, 24);
+            this.lblCampaignPriceCaption.TabIndex = 4;
+            this.lblCampaignPriceCaption.Text = "Цена кампании:";
+            //
+            // lblCampaignPriceValue
+            //
+            this.lblCampaignPriceValue.AutoSize = true;
+            this.lblCampaignPriceValue.Location = new System.Drawing.Point(290, 82);
+            this.lblCampaignPriceValue.Name = "lblCampaignPriceValue";
+            this.lblCampaignPriceValue.Size = new System.Drawing.Size(20, 24);
+            this.lblCampaignPriceValue.TabIndex = 5;
+            this.lblCampaignPriceValue.Text = "—";
+            //
+            // lblCompanyDiscountCaption
+            //
+            this.lblCompanyDiscountCaption.AutoSize = true;
+            this.lblCompanyDiscountCaption.Location = new System.Drawing.Point(10, 110);
+            this.lblCompanyDiscountCaption.Name = "lblCompanyDiscountCaption";
+            this.lblCompanyDiscountCaption.Size = new System.Drawing.Size(168, 24);
+            this.lblCompanyDiscountCaption.TabIndex = 6;
+            this.lblCompanyDiscountCaption.Text = "Объёмная скидка:";
+            //
+            // lblCompanyDiscountValue
+            //
+            this.lblCompanyDiscountValue.AutoSize = true;
+            this.lblCompanyDiscountValue.Location = new System.Drawing.Point(290, 110);
+            this.lblCompanyDiscountValue.Name = "lblCompanyDiscountValue";
+            this.lblCompanyDiscountValue.Size = new System.Drawing.Size(20, 24);
+            this.lblCompanyDiscountValue.TabIndex = 7;
+            this.lblCompanyDiscountValue.Text = "—";
+            //
+            // lblTotalBeforePackageCaption
+            //
+            this.lblTotalBeforePackageCaption.AutoSize = true;
+            this.lblTotalBeforePackageCaption.Location = new System.Drawing.Point(10, 138);
+            this.lblTotalBeforePackageCaption.Name = "lblTotalBeforePackageCaption";
+            this.lblTotalBeforePackageCaption.Size = new System.Drawing.Size(267, 24);
+            this.lblTotalBeforePackageCaption.TabIndex = 8;
+            this.lblTotalBeforePackageCaption.Text = "Цена до пакетной скидки:";
+            //
+            // lblTotalBeforePackageValue
+            //
+            this.lblTotalBeforePackageValue.AutoSize = true;
+            this.lblTotalBeforePackageValue.Location = new System.Drawing.Point(290, 138);
+            this.lblTotalBeforePackageValue.Name = "lblTotalBeforePackageValue";
+            this.lblTotalBeforePackageValue.Size = new System.Drawing.Size(20, 24);
+            this.lblTotalBeforePackageValue.TabIndex = 9;
+            this.lblTotalBeforePackageValue.Text = "—";
+            //
+            // btnEstimatePrice
+            //
+            this.btnEstimatePrice.Location = new System.Drawing.Point(10, 172);
+            this.btnEstimatePrice.Name = "btnEstimatePrice";
+            this.btnEstimatePrice.Size = new System.Drawing.Size(160, 30);
+            this.btnEstimatePrice.TabIndex = 10;
+            this.btnEstimatePrice.Text = "Посчитать";
+            this.btnEstimatePrice.UseVisualStyleBackColor = true;
+            this.btnEstimatePrice.Click += new System.EventHandler(this.btnEstimatePrice_Click);
+            //
             // gbWeekDays
             // 
             this.gbWeekDays.AutoSize = true;
             this.gbWeekDays.Controls.Add(this.clbWeekDays);
             this.gbWeekDays.FlatStyle = System.Windows.Forms.FlatStyle.System;
-            this.gbWeekDays.Location = new System.Drawing.Point(3, 371);
+            this.gbWeekDays.Location = new System.Drawing.Point(3, 567);
             this.gbWeekDays.Margin = new System.Windows.Forms.Padding(3, 4, 3, 4);
             this.gbWeekDays.Name = "gbWeekDays";
             this.gbWeekDays.Padding = new System.Windows.Forms.Padding(3, 4, 3, 4);
-            this.gbWeekDays.Size = new System.Drawing.Size(292, 255);
+            this.gbWeekDays.Size = new System.Drawing.Size(292, 259);
             this.gbWeekDays.TabIndex = 32;
             this.gbWeekDays.TabStop = false;
             // 
@@ -222,7 +352,7 @@ namespace Merlin.Forms
             this.cbIgnoreWindows.Checked = true;
             this.cbIgnoreWindows.CheckState = System.Windows.Forms.CheckState.Checked;
             this.tableLayoutPanel1.SetColumnSpan(this.cbIgnoreWindows, 2);
-            this.cbIgnoreWindows.Location = new System.Drawing.Point(3, 633);
+            this.cbIgnoreWindows.Location = new System.Drawing.Point(3, 833);
             this.cbIgnoreWindows.Name = "cbIgnoreWindows";
             this.cbIgnoreWindows.Size = new System.Drawing.Size(481, 28);
             this.cbIgnoreWindows.TabIndex = 33;
@@ -239,8 +369,8 @@ namespace Merlin.Forms
             this.tableLayoutPanel1.Controls.Add(this.cbIgnoreWindows, 0, 11);
             this.tableLayoutPanel1.Controls.Add(this.groupBox1, 1, 10);
             this.tableLayoutPanel1.Controls.Add(this.dtStartDate, 1, 1);
-            this.tableLayoutPanel1.Controls.Add(this.lblRollerName, 1, 0);
-            this.tableLayoutPanel1.Controls.Add(this.label6, 0, 0);
+            this.tableLayoutPanel1.Controls.Add(this.dgvRollers, 0, 0);
+            this.tableLayoutPanel1.Controls.Add(this.gbRollerStats, 1, 0);
             this.tableLayoutPanel1.Controls.Add(this.label2, 0, 2);
             this.tableLayoutPanel1.Controls.Add(this.dtFinishDate, 1, 2);
             this.tableLayoutPanel1.Controls.Add(this.label4, 0, 3);
@@ -260,7 +390,7 @@ namespace Merlin.Forms
             this.tableLayoutPanel1.Location = new System.Drawing.Point(0, 0);
             this.tableLayoutPanel1.Name = "tableLayoutPanel1";
             this.tableLayoutPanel1.RowCount = 13;
-            this.tableLayoutPanel1.RowStyles.Add(new System.Windows.Forms.RowStyle());
+            this.tableLayoutPanel1.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Absolute, 220F));
             this.tableLayoutPanel1.RowStyles.Add(new System.Windows.Forms.RowStyle());
             this.tableLayoutPanel1.RowStyles.Add(new System.Windows.Forms.RowStyle());
             this.tableLayoutPanel1.RowStyles.Add(new System.Windows.Forms.RowStyle());
@@ -273,7 +403,7 @@ namespace Merlin.Forms
             this.tableLayoutPanel1.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Percent, 100F));
             this.tableLayoutPanel1.RowStyles.Add(new System.Windows.Forms.RowStyle());
             this.tableLayoutPanel1.RowStyles.Add(new System.Windows.Forms.RowStyle());
-            this.tableLayoutPanel1.Size = new System.Drawing.Size(659, 709);
+            this.tableLayoutPanel1.Size = new System.Drawing.Size(980, 909);
             this.tableLayoutPanel1.TabIndex = 34;
             // 
             // groupBox1
@@ -281,9 +411,9 @@ namespace Merlin.Forms
             this.groupBox1.Controls.Add(this.rbOdd);
             this.groupBox1.Controls.Add(this.rbEven);
             this.groupBox1.Dock = System.Windows.Forms.DockStyle.Fill;
-            this.groupBox1.Location = new System.Drawing.Point(332, 370);
+            this.groupBox1.Location = new System.Drawing.Point(332, 566);
             this.groupBox1.Name = "groupBox1";
-            this.groupBox1.Size = new System.Drawing.Size(324, 257);
+            this.groupBox1.Size = new System.Drawing.Size(324, 261);
             this.groupBox1.TabIndex = 9;
             this.groupBox1.TabStop = false;
             // 
@@ -322,7 +452,7 @@ namespace Merlin.Forms
             this.flowLayoutPanel1.Controls.Add(this.btnOk);
             this.flowLayoutPanel1.Dock = System.Windows.Forms.DockStyle.Fill;
             this.flowLayoutPanel1.FlowDirection = System.Windows.Forms.FlowDirection.RightToLeft;
-            this.flowLayoutPanel1.Location = new System.Drawing.Point(3, 667);
+            this.flowLayoutPanel1.Location = new System.Drawing.Point(3, 867);
             this.flowLayoutPanel1.Name = "flowLayoutPanel1";
             this.flowLayoutPanel1.Size = new System.Drawing.Size(653, 39);
             this.flowLayoutPanel1.TabIndex = 34;
@@ -353,7 +483,7 @@ namespace Merlin.Forms
             // label7
             // 
             this.label7.AutoSize = true;
-            this.label7.Location = new System.Drawing.Point(3, 253);
+            this.label7.Location = new System.Drawing.Point(3, 449);
             this.label7.Name = "label7";
             this.label7.Size = new System.Drawing.Size(160, 24);
             this.label7.TabIndex = 35;
@@ -362,7 +492,7 @@ namespace Merlin.Forms
             // label8
             // 
             this.label8.AutoSize = true;
-            this.label8.Location = new System.Drawing.Point(3, 290);
+            this.label8.Location = new System.Drawing.Point(3, 486);
             this.label8.Name = "label8";
             this.label8.Size = new System.Drawing.Size(200, 24);
             this.label8.TabIndex = 36;
@@ -371,7 +501,7 @@ namespace Merlin.Forms
             // numQuantityPrime
             // 
             this.numQuantityPrime.Enabled = false;
-            this.numQuantityPrime.Location = new System.Drawing.Point(332, 256);
+            this.numQuantityPrime.Location = new System.Drawing.Point(332, 452);
             this.numQuantityPrime.Name = "numQuantityPrime";
             this.numQuantityPrime.Size = new System.Drawing.Size(234, 31);
             this.numQuantityPrime.TabIndex = 37;
@@ -379,7 +509,7 @@ namespace Merlin.Forms
             // numQuantityNonPrime
             // 
             this.numQuantityNonPrime.Enabled = false;
-            this.numQuantityNonPrime.Location = new System.Drawing.Point(332, 293);
+            this.numQuantityNonPrime.Location = new System.Drawing.Point(332, 489);
             this.numQuantityNonPrime.Name = "numQuantityNonPrime";
             this.numQuantityNonPrime.Size = new System.Drawing.Size(234, 31);
             this.numQuantityNonPrime.TabIndex = 38;
@@ -388,7 +518,7 @@ namespace Merlin.Forms
             // 
             this.cbSplitPrime.AutoSize = true;
             this.tableLayoutPanel1.SetColumnSpan(this.cbSplitPrime, 2);
-            this.cbSplitPrime.Location = new System.Drawing.Point(3, 222);
+            this.cbSplitPrime.Location = new System.Drawing.Point(3, 418);
             this.cbSplitPrime.Name = "cbSplitPrime";
             this.cbSplitPrime.Size = new System.Drawing.Size(335, 28);
             this.cbSplitPrime.TabIndex = 39;
@@ -401,7 +531,7 @@ namespace Merlin.Forms
             this.tableLayoutPanel1.SetColumnSpan(this.panel1, 2);
             this.panel1.Controls.Add(this.rbNumber);
             this.panel1.Controls.Add(this.rbDays);
-            this.panel1.Location = new System.Drawing.Point(3, 330);
+            this.panel1.Location = new System.Drawing.Point(3, 526);
             this.panel1.Name = "panel1";
             this.panel1.Size = new System.Drawing.Size(632, 34);
             this.panel1.TabIndex = 40;
@@ -434,23 +564,27 @@ namespace Merlin.Forms
             this.rbDays.Text = "Дни недели";
             this.rbDays.UseVisualStyleBackColor = true;
             // 
-            // FrmTemplate2
+            // FrmTemplate3
             // 
             this.AcceptButton = this.btnOk;
             this.AutoScaleDimensions = new System.Drawing.SizeF(10F, 24F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
             this.CancelButton = this.btnCancel;
-            this.ClientSize = new System.Drawing.Size(659, 709);
+            this.ClientSize = new System.Drawing.Size(980, 909);
             this.Controls.Add(this.tableLayoutPanel1);
             this.Font = new System.Drawing.Font("Segoe UI Variable Text", 9F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(204)));
             this.FormBorderStyle = System.Windows.Forms.FormBorderStyle.FixedDialog;
             this.Margin = new System.Windows.Forms.Padding(4, 5, 4, 5);
             this.MaximizeBox = false;
             this.MinimizeBox = false;
-            this.Name = "FrmTemplate2";
+            this.Name = "FrmTemplate3";
             this.ShowInTaskbar = false;
-            this.Text = "Шаблон №2 для внесения роликов";
+            this.Text = "Шаблон №3 для внесения роликов";
+            this.Load += new System.EventHandler(this.FrmTemplate3_Load);
             ((System.ComponentModel.ISupportInitialize)(this.txtQuantity)).EndInit();
+            ((System.ComponentModel.ISupportInitialize)(this.dgvRollers)).EndInit();
+            this.gbRollerStats.ResumeLayout(false);
+            this.gbRollerStats.PerformLayout();
             this.gbWeekDays.ResumeLayout(false);
             this.tableLayoutPanel1.ResumeLayout(false);
             this.tableLayoutPanel1.PerformLayout();
@@ -477,8 +611,19 @@ namespace Merlin.Forms
         private System.Windows.Forms.DateTimePicker dtStartTime;
         private System.Windows.Forms.NumericUpDown txtQuantity;
         private System.Windows.Forms.Label label5;
-        private System.Windows.Forms.Label label6;
-        private System.Windows.Forms.Label lblRollerName;
+        private System.Windows.Forms.DataGridView dgvRollers;
+        private System.Windows.Forms.GroupBox gbRollerStats;
+        private System.Windows.Forms.Label lblTotalQuantityCaption;
+        private System.Windows.Forms.Label lblTotalQuantityValue;
+        private System.Windows.Forms.Label lblTotalDurationCaption;
+        private System.Windows.Forms.Label lblTotalDurationValue;
+        private System.Windows.Forms.Label lblCampaignPriceCaption;
+        private System.Windows.Forms.Label lblCampaignPriceValue;
+        private System.Windows.Forms.Label lblCompanyDiscountCaption;
+        private System.Windows.Forms.Label lblCompanyDiscountValue;
+        private System.Windows.Forms.Label lblTotalBeforePackageCaption;
+        private System.Windows.Forms.Label lblTotalBeforePackageValue;
+        private System.Windows.Forms.Button btnEstimatePrice;
         private System.Windows.Forms.GroupBox gbWeekDays;
         private System.Windows.Forms.CheckedListBox clbWeekDays;
         private System.Windows.Forms.CheckBox cbIgnoreWindows;

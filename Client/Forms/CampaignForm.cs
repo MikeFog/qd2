@@ -414,7 +414,7 @@ namespace Merlin.Forms
 
         private void EnableEditButtons()
 		{
-            tbbTemplate.Enabled = tbbTemplate2.Enabled = tbbPlay.Enabled = tbbStart.Enabled = grdRollers.InternalGrid.RowCount > 0;
+            tbbTemplate.Enabled = tbbTemplate2.Enabled = tbbTemplate3.Enabled = tbbPlay.Enabled = tbbStart.Enabled = grdRollers.InternalGrid.RowCount > 0;
         }
 
 		private void SetRollerDataSource()
@@ -1288,7 +1288,40 @@ namespace Merlin.Forms
 				Cursor = Cursors.Default;
 			}
 		}
-		
+
+		private void tbbTemplate3_Click(object sender, EventArgs e)
+		{
+			try
+			{
+				tbbTemplate.Checked = false;
+				List<int> massmediaIds = GetTemplateMassmediaIds();
+				RollerPositions position = ((IRollerGrid)_tariffGrid).RollerPosition;
+				FrmTemplate3 formTemplate = new FrmTemplate3(Firm, _template, massmediaIds, position);
+				formTemplate.ShowDialog(this);
+			}
+			catch (Exception ex)
+			{
+				ErrorManager.PublishError(ex);
+			}
+		}
+
+		// Для веерной кампании — все СМИ акции (Campaign.actionID), для линейной — одно СМИ кампании
+		private List<int> GetTemplateMassmediaIds()
+		{
+			var massmediaIds = new List<int>();
+			if (IsRangeCampaign)
+			{
+				DataTable campaigns = ((TariffWithRangeGrid)_tariffGrid).Action.Campaigns();
+				foreach (DataRow row in campaigns.Rows)
+					massmediaIds.Add(Convert.ToInt32(row[Campaign.ParamNames.MassmediaId]));
+			}
+			else
+			{
+				massmediaIds.Add(Convert.ToInt32(_campaign[Campaign.ParamNames.MassmediaId]));
+			}
+			return massmediaIds;
+		}
+
 		private void tbbExcel_Click(object sender, EventArgs e)
 		{
 			try
