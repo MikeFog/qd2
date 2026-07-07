@@ -1302,18 +1302,45 @@ namespace Merlin.Forms
 				{
 					_template = formTemplate.Template;
 
-					if (IsRangeCampaign)
-					{
-						// Размещение по нескольким роликам для веерной кампании пока не реализовано —
-						// эта форма для веерной кампании используется только для расчёта цены.
-						FogSoft.WinForm.Forms.MessageBox.ShowInformation(
-							"Размещение выпусков по этому шаблону для веерной кампании пока не реализовано.");
-						return;
-					}
-
 					var rollerQuantities = new List<(Roller Roller, int Quantity)>();
 					foreach (var r in formTemplate.SelectedRollers)
 						rollerQuantities.Add((new Roller(r.RollerId), r.Quantity));
+
+					if (IsRangeCampaign)
+					{
+						TariffWithRangeGrid rangeGrid = (TariffWithRangeGrid)_tariffGrid;
+						var slotsCache = new Dictionary<DateTime, List<TariffWindowWithRange>>();
+						var rollerQueue = new RollerAllocationQueue(rollerQuantities);
+
+						FrmGenerator rangeForm = new FrmGenerator(
+							_template,
+							date => rangeGrid.AddIssuesRangeTimePeriodMultiRoller(
+								date,
+								_template.StartTime,
+								_template.FinishTime,
+								_template.Quantity,
+								_template.QuantityPrime,
+								_template.QuantityNonPrime,
+								_template.IgnoreWindowsWithTheSameFirmIssue,
+								slotsCache,
+								rollerQueue.TakeForToday),
+							rangeGrid.Action);
+
+						rangeForm.ShowDialog(this);
+						_lastTemplateAddedIssues = rangeForm.AddedObjects.Count > 0 ? rangeForm.AddedObjects : null;
+						tbbTemplateUndo.Enabled = _lastTemplateAddedIssues != null;
+						Application.DoEvents();
+						Cursor = Cursors.WaitCursor;
+
+						if (rollerQueue.Count > 0)
+							FogSoft.WinForm.Forms.MessageBox.ShowExclamation(
+								$"Недостаточно окон за весь период шаблона — не удалось разместить {rollerQueue.Count} выход(ов) из выбранных роликов.");
+
+						if (_template.IsDateCovered(_tariffGrid.StartDate, _tariffGrid.FinishDate))
+							RefreshGrid();
+						// CampaignStatusChanged() не вызывается — как и для остальных range-путей
+						return;
+					}
 
 					FrmGenerator form = new FrmGenerator(_template, rollerQuantities, position,
 						_campaign, RollerIssuesGrid.Pricelist, ((IRollerGrid)_tariffGrid).Module, Grantor == null ? null : (int?)Grantor.Id);

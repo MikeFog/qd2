@@ -120,13 +120,21 @@ namespace Merlin.Controls
 		public DataRow AddIssuesRange(DateTime windowDate, bool ignoreWindowsWithTheSameFirmIssue,
 			bool recalculate = true)
 		{
+			return AddIssuesRange(windowDate, Roller, ignoreWindowsWithTheSameFirmIssue, recalculate);
+		}
+
+		// Ролик передаётся явно — для генерации по Шаблону 3, где на разные слоты может
+		// попасть разный ролик (в отличие от свойства Roller — единого выбора на форме).
+		public DataRow AddIssuesRange(DateTime windowDate, Roller roller, bool ignoreWindowsWithTheSameFirmIssue,
+			bool recalculate = true)
+		{
             using (OperationScope.Start($"AddIssuesRange date={windowDate:yyyy-MM-dd HH:mm} recalc={recalculate}"))
             {
                 Dictionary<string, object> parameters = DataAccessor.CreateParametersDictionary();
                 parameters[ActionOnMassmedia.ParamNames.ActionId] = _action.ActionId;
                 parameters["issueDate"] = windowDate;
-                parameters["rollerID"] = Roller.RollerId;
-                parameters["rollerDuration"] = Roller.Duration;
+                parameters["rollerID"] = roller.RollerId;
+                parameters["rollerDuration"] = roller.Duration;
                 parameters["positionId"] = (int)RollerPosition;
                 parameters["considerUnconfirmed"] = ShowUnconfirmed ? 1 : 0;
                 parameters["ignoreWindowsWithTheSameFirmIssue"] = ignoreWindowsWithTheSameFirmIssue ? 1 : 0;
@@ -141,9 +149,9 @@ namespace Merlin.Controls
                 row[Issue.ParamNames.IssueId] = System.Threading.Interlocked.Decrement(ref _tempIssueId);
                 Debug.WriteLine(row[Issue.ParamNames.IssueId]);
                 row["issueDate"] = windowDate;
-                row[Entity.ParamNames.NAME] = Roller.Name;
-                row[Roller.ParamNames.RollerId] = Roller.RollerId;
-                row["durationString"] = Roller.DurationString;
+                row[Entity.ParamNames.NAME] = roller.Name;
+                row[Roller.ParamNames.RollerId] = roller.RollerId;
+                row["durationString"] = roller.DurationString;
                 row["RowNum"] = Guid.NewGuid();
                 row[Issue.ParamNames.PositionName] = Issue.GetPositionDisplayName(RollerPosition);
                 row[Issue.ParamNames.PositionId] = (int)RollerPosition;
@@ -525,6 +533,92 @@ namespace Merlin.Controls
                 }
 
                 return result;
+            }
+        }
+
+        /// <summary>
+        /// Аналог <see cref="AddIssuesRangeTimePeriod"/>, но роликов несколько: вместо единого Roller
+        /// на каждый выбранный слот берёт следующий ролик из <paramref name="takeRollersForToday"/> —
+        /// колбэк получает "сколько слотов реально нашлось" и возвращает столько же роликов
+        /// из общей случайно перемешанной очереди (отсортированных по убыванию длительности,
+        /// см. RollerAllocationQueue). Если слотов сегодня меньше, чем нужно по дневной норме,
+        /// колбэк заберёт из очереди меньше — остаток естественным образом уйдёт на следующий день.
+        /// </summary>
+        public TimePeriodAddResult AddIssuesRangeTimePeriodMultiRoller(
+            DateTime date,
+            DateTime startTime,
+            DateTime finishTime,
+            int quantity,
+            int quantityPrime,
+            int quantityNonPrime,
+            bool ignoreWindowsWithTheSameFirmIssue,
+            Dictionary<DateTime, List<TariffWindowWithRange>> slotsCache,
+            Func<int, List<Roller>> takeRollersForToday)
+        {
+            using (OperationScope.Start(
+                $"AddIssuesRangeTimePeriodMultiRoller date={date:yyyy-MM-dd} " +
+                $"q={quantity}/{quantityPrime}p/{quantityNonPrime}np"))
+            {
+                DateTime weekMonday = GetWeekMonday(date);
+                List<TariffWindowWithRange> weekSlots = GetSlotsForWeek(weekMonday, slotsCache);
+
+                TimeSpan tsStart = startTime.TimeOfDay;
+                TimeSpan tsFinish = finishTime.TimeOfDay;
+
+                var rnd = new Random();
+
+                List<TariffWindowWithRange> slotsForDate = weekSlots
+                    .Where(s => s.WindowDate.Date == date.Date
+                             && s.WindowDate.TimeOfDay >= tsStart
+                             && s.WindowDate.TimeOfDay < tsFinish
+                             && (_rollerPosition == RollerPositions.Undefined || IsPositionAvailable(s))
+                             && (!ignoreWindowsWithTheSameFirmIssue || !HasFirmIssuesFlags(s)))
+                    .Select(s => new { w = s, rand = rnd.Next() })
+                    .OrderBy(x => x.w)
+                    .ThenBy(x => x.rand)
+                    .Select(x => x.w)
+                    .ToList();
+
+                var result = new TimePeriodAddResult();
+
+                if (quantity > 0)
+                {
+                    List<TariffWindowWithRange> selectedSlots = slotsForDate.Take(quantity).ToList();
+                    result.ExpectedCount = quantity;
+                    PlaceRollersInSlots(selectedSlots, takeRollersForToday, ignoreWindowsWithTheSameFirmIssue, result);
+                }
+                else
+                {
+                    List<TariffWindowWithRange> primeSlots = slotsForDate.Where(s => s.IsPrime).Take(quantityPrime).ToList();
+                    List<TariffWindowWithRange> nonPrimeSlots = slotsForDate.Where(s => !s.IsPrime).Take(quantityNonPrime).ToList();
+                    result.ExpectedCount = quantityPrime + quantityNonPrime;
+                    PlaceRollersInSlots(primeSlots, takeRollersForToday, ignoreWindowsWithTheSameFirmIssue, result);
+                    PlaceRollersInSlots(nonPrimeSlots, takeRollersForToday, ignoreWindowsWithTheSameFirmIssue, result);
+                }
+
+                return result;
+            }
+        }
+
+        private void PlaceRollersInSlots(
+            List<TariffWindowWithRange> slots,
+            Func<int, List<Roller>> takeRollersForToday,
+            bool ignoreWindowsWithTheSameFirmIssue,
+            TimePeriodAddResult result)
+        {
+            List<Roller> rollers = takeRollersForToday(slots.Count);
+            for (int i = 0; i < rollers.Count; i++)
+            {
+                try
+                {
+                    DataRow row = AddIssuesRange(slots[i].WindowDate, rollers[i],
+                        ignoreWindowsWithTheSameFirmIssue, recalculate: false);
+                    result.Rows.Add(row);
+                }
+                catch (Exception ex)
+                {
+                    result.Errors.Add(ex);
+                }
             }
         }
 

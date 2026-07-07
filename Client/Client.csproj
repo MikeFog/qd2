@@ -620,6 +620,7 @@
     <Compile Include="Classes\Roller.cs">
       <SubType>Code</SubType>
     </Compile>
+    <Compile Include="Classes\RollerAllocationQueue.cs" />
     <Compile Include="Classes\SponsorPricelist.cs">
       <SubType>Code</SubType>
     </Compile>
