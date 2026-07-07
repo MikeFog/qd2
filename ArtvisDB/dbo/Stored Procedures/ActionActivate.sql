@@ -492,7 +492,7 @@ begin
 		tariffPrice = dbo.fn_GetIssuePrice(
 			r.duration,
 			twNew.price,
-			i.ratio,
+			1,
 			i.positionId,
 			IsNull(pl.extraChargeFirstRoller, 0),
 			IsNull(pl.extraChargeSecondRoller, 0),
