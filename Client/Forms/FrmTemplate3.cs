@@ -5,6 +5,7 @@ using Merlin.Controls;
 using System;
 using System.Collections.Generic;
 using System.Data;
+using System.Drawing;
 using System.Linq;
 using System.Windows.Forms;
 
@@ -14,6 +15,7 @@ namespace Merlin.Forms
     {
         private const string ColSelected = "colSelected";
         private const string ColRollerName = "colRollerName";
+        private const string ColDuration = "colDuration";
         private const string ColQuantity = "colQuantity";
 
         private readonly IssueTemplate _template;
@@ -68,6 +70,14 @@ namespace Merlin.Forms
             });
             dgvRollers.Columns.Add(new DataGridViewTextBoxColumn
             {
+                Name = ColDuration,
+                HeaderText = "Продолжительность",
+                DataPropertyName = "durationString",
+                ReadOnly = true,
+                Width = 130
+            });
+            dgvRollers.Columns.Add(new DataGridViewTextBoxColumn
+            {
                 Name = ColQuantity,
                 HeaderText = "Количество",
                 Width = 110
@@ -91,8 +101,35 @@ namespace Merlin.Forms
 
         private void RecalculateStats()
         {
+            // "Общее количество выходов" — не сумма по гриду, а то, что задают настройки
+            // интервала/дней недели/чёт-нечёт и количества в день (перекочевали из Шаблона 2).
+            // Разбивка по роликам в гриде должна СОВПАСТЬ с этим числом — проверяется при расчёте цены,
+            // а расхождение видно сразу по цвету строки "Сумма по гриду роликов".
+            int expectedTotalQuantity = GetExpectedTotalQuantity();
+            lblTotalQuantityValue.Text = expectedTotalQuantity.ToString();
+
+            var (gridTotalQuantity, totalDurationSeconds) = GetCheckedRollerAggregates();
+            lblGridQuantityValue.Text = gridTotalQuantity.ToString();
+            lblGridQuantityValue.ForeColor = gridTotalQuantity == expectedTotalQuantity ? Color.Green : Color.Red;
+
+            lblTotalDurationValue.Text = FormatDuration(totalDurationSeconds);
+        }
+
+        private int GetExpectedTotalQuantity()
+        {
+            SaveData2Template();
+            _template.Reset();
+            int dailyQuantity = cbSplitPrime.Checked
+                ? (int)numQuantityPrime.Value + (int)numQuantityNonPrime.Value
+                : (int)txtQuantity.Value;
+            return dailyQuantity * _template.DaysCount;
+        }
+
+        // Сумма "Количество" и суммарный хронометраж (duration * quantity) по отмеченным роликам грида
+        private (int TotalQuantity, long TotalDurationSeconds) GetCheckedRollerAggregates()
+        {
             int totalQuantity = 0;
-            long totalSeconds = 0;
+            long totalDurationSeconds = 0;
             foreach (DataGridViewRow row in dgvRollers.Rows)
             {
                 if (row.IsNewRow || row.DataBoundItem == null)
@@ -105,11 +142,9 @@ namespace Merlin.Forms
                 int duration = dataRow["duration"] == DBNull.Value ? 0 : Convert.ToInt32(dataRow["duration"]);
 
                 totalQuantity += quantity;
-                totalSeconds += (long)duration * quantity;
+                totalDurationSeconds += (long)duration * quantity;
             }
-
-            lblTotalQuantityValue.Text = totalQuantity.ToString();
-            lblTotalDurationValue.Text = FormatDuration(totalSeconds);
+            return (totalQuantity, totalDurationSeconds);
         }
 
         private static string FormatDuration(long totalSeconds)
@@ -121,14 +156,15 @@ namespace Merlin.Forms
         }
 
         // Черновая оценка цены до реального размещения: переиспользует PriceCalculatorGrid
-        // (тот же движок, что в калькуляторе цены), длительность ролика — среднее по отмеченным
-        // роликам без учёта веса/количества (веса ещё не определены с заказчиком).
+        // (тот же движок, что в калькуляторе цены). Длительность ролика — среднее по отмеченным
+        // роликам, взвешенное по их количеству выходов (роликов с большим количеством выходов
+        // в среднем учитывается больше).
         private void btnEstimatePrice_Click(object sender, EventArgs e)
         {
-            List<int> durations = GetCheckedRollerDurations();
-            if (durations.Count == 0)
+            var (gridTotalQuantity, totalDurationSeconds) = GetCheckedRollerAggregates();
+            if (gridTotalQuantity == 0)
             {
-                FogSoft.WinForm.Forms.MessageBox.ShowExclamation("Отметьте хотя бы один ролик");
+                FogSoft.WinForm.Forms.MessageBox.ShowExclamation("Отметьте хотя бы один ролик и укажите для него количество");
                 return;
             }
 
@@ -136,6 +172,14 @@ namespace Merlin.Forms
             if (_template.StartDate > _template.FinishDate || _template.StartTime >= _template.FinishTime)
             {
                 FogSoft.WinForm.Forms.MessageBox.ShowExclamation("Проверьте даты и время интервала перед расчётом");
+                return;
+            }
+
+            int expectedTotalQuantity = GetExpectedTotalQuantity();
+            if (gridTotalQuantity != expectedTotalQuantity)
+            {
+                FogSoft.WinForm.Forms.MessageBox.ShowExclamation(
+                    $"Сумма количества по роликам ({gridTotalQuantity}) не совпадает с общим количеством выходов по настройкам интервала ({expectedTotalQuantity})");
                 return;
             }
 
@@ -147,7 +191,7 @@ namespace Merlin.Forms
                 return;
             }
 
-            int durationSec = (int)Math.Round(durations.Average());
+            int durationSec = (int)Math.Round((decimal)totalDurationSeconds / gridTotalQuantity);
             int primePerDay = cbSplitPrime.Checked ? (int)numQuantityPrime.Value : 0;
             int nonPrimePerDay = cbSplitPrime.Checked ? (int)numQuantityNonPrime.Value : (int)txtQuantity.Value;
 
@@ -179,22 +223,6 @@ namespace Merlin.Forms
                 lblCompanyDiscountValue.Text = companyDiscount.ToString("N2");
                 lblTotalBeforePackageValue.Text = totalBeforePackage.ToString("c");
             }
-        }
-
-        private List<int> GetCheckedRollerDurations()
-        {
-            var result = new List<int>();
-            foreach (DataGridViewRow row in dgvRollers.Rows)
-            {
-                if (row.IsNewRow || row.DataBoundItem == null)
-                    continue;
-                if (!(row.Cells[ColSelected].Value is bool isSelected) || !isSelected)
-                    continue;
-
-                DataRow dataRow = ((DataRowView)row.DataBoundItem).Row;
-                result.Add(dataRow["duration"] == DBNull.Value ? 0 : Convert.ToInt32(dataRow["duration"]));
-            }
-            return result;
         }
 
         private List<DateTime> BuildTemplateDates()
@@ -273,6 +301,17 @@ namespace Merlin.Forms
 
             this.rbDays.Click += new System.EventHandler(this.groupButton_CheckChanged);
             this.rbNumber.Click += new System.EventHandler(this.groupButton_CheckChanged);
+
+            // Пересчёт "Общего количества выходов" при изменении настроек интервала/количества в день
+            dtStartDate.ValueChanged += (s, args) => RecalculateStats();
+            dtFinishDate.ValueChanged += (s, args) => RecalculateStats();
+            txtQuantity.ValueChanged += (s, args) => RecalculateStats();
+            numQuantityPrime.ValueChanged += (s, args) => RecalculateStats();
+            numQuantityNonPrime.ValueChanged += (s, args) => RecalculateStats();
+            rbOdd.CheckedChanged += (s, args) => RecalculateStats();
+            rbEven.CheckedChanged += (s, args) => RecalculateStats();
+
+            RecalculateStats();
         }
 
         private void groupButton_CheckChanged(object sender, EventArgs e)
@@ -286,6 +325,7 @@ namespace Merlin.Forms
             _template.IsOdd = rbOdd.Checked;
             _template.Day2AddMode = (rbNumber.Checked) ? Day2AddMode.OddEvenDays : Day2AddMode.WeekDays;
             SetEnabled();
+            RecalculateStats();
         }
 
         public IssueTemplate Template
@@ -314,6 +354,7 @@ namespace Merlin.Forms
         private void clbWeekDays_ItemCheck(object sender, ItemCheckEventArgs e)
         {
             _template.WeekDays[e.Index] = e.NewValue == CheckState.Checked;
+            RecalculateStats();
         }
 
         private void btnOk_Click(object sender, EventArgs e)
@@ -346,6 +387,7 @@ namespace Merlin.Forms
         {
             numQuantityPrime.Enabled = numQuantityNonPrime.Enabled = cbSplitPrime.Checked;
             txtQuantity.Enabled = !cbSplitPrime.Checked;
+            RecalculateStats();
         }
 
         private void SetEnabled()

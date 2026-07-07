@@ -1297,11 +1297,46 @@ namespace Merlin.Forms
 				List<int> massmediaIds = GetTemplateMassmediaIds();
 				RollerPositions position = ((IRollerGrid)_tariffGrid).RollerPosition;
 				FrmTemplate3 formTemplate = new FrmTemplate3(Firm, _template, massmediaIds, position);
-				formTemplate.ShowDialog(this);
+
+				if (formTemplate.ShowDialog(this) == DialogResult.OK)
+				{
+					_template = formTemplate.Template;
+
+					if (IsRangeCampaign)
+					{
+						// Размещение по нескольким роликам для веерной кампании пока не реализовано —
+						// эта форма для веерной кампании используется только для расчёта цены.
+						FogSoft.WinForm.Forms.MessageBox.ShowInformation(
+							"Размещение выпусков по этому шаблону для веерной кампании пока не реализовано.");
+						return;
+					}
+
+					var rollerQuantities = new List<(Roller Roller, int Quantity)>();
+					foreach (var r in formTemplate.SelectedRollers)
+						rollerQuantities.Add((new Roller(r.RollerId), r.Quantity));
+
+					FrmGenerator form = new FrmGenerator(_template, rollerQuantities, position,
+						_campaign, RollerIssuesGrid.Pricelist, ((IRollerGrid)_tariffGrid).Module, Grantor == null ? null : (int?)Grantor.Id);
+
+					form.ShowDialog(this);
+					_lastTemplateAddedIssues = form.AddedObjects.Count > 0 ? form.AddedObjects : null;
+					tbbTemplateUndo.Enabled = _lastTemplateAddedIssues != null;
+					Application.DoEvents();
+					Cursor = Cursors.WaitCursor;
+
+					if (_template.IsDateCovered(_tariffGrid.StartDate, _tariffGrid.FinishDate))
+						RefreshGrid();
+
+					CampaignStatusChanged();
+				}
 			}
 			catch (Exception ex)
 			{
 				ErrorManager.PublishError(ex);
+			}
+			finally
+			{
+				Cursor = Cursors.Default;
 			}
 		}
 
