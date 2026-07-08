@@ -53,7 +53,12 @@ namespace Merlin.Forms
             this.lblCompanyDiscountValue = new System.Windows.Forms.Label();
             this.lblTotalBeforePackageCaption = new System.Windows.Forms.Label();
             this.lblTotalBeforePackageValue = new System.Windows.Forms.Label();
+            this.lblPackageDiscountCaption = new System.Windows.Forms.Label();
+            this.lblPackageDiscountValue = new System.Windows.Forms.Label();
+            this.lblGrandTotalCaption = new System.Windows.Forms.Label();
+            this.lblGrandTotalValue = new System.Windows.Forms.Label();
             this.btnEstimatePrice = new System.Windows.Forms.Button();
+            this.lblDebugInfo = new System.Windows.Forms.Label();
             this.gbWeekDays = new System.Windows.Forms.GroupBox();
             this.clbWeekDays = new System.Windows.Forms.CheckedListBox();
             this.cbIgnoreWindows = new System.Windows.Forms.CheckBox();
@@ -198,7 +203,7 @@ namespace Merlin.Forms
             this.dgvRollers.Name = "dgvRollers";
             this.dgvRollers.RowHeadersVisible = false;
             this.dgvRollers.RowHeadersWidth = 62;
-            this.dgvRollers.Size = new System.Drawing.Size(479, 240);
+            this.dgvRollers.Size = new System.Drawing.Size(479, 436);
             this.dgvRollers.TabIndex = 30;
             // 
             // gbRollerStats
@@ -215,11 +220,16 @@ namespace Merlin.Forms
             this.gbRollerStats.Controls.Add(this.lblCompanyDiscountValue);
             this.gbRollerStats.Controls.Add(this.lblTotalBeforePackageCaption);
             this.gbRollerStats.Controls.Add(this.lblTotalBeforePackageValue);
+            this.gbRollerStats.Controls.Add(this.lblPackageDiscountCaption);
+            this.gbRollerStats.Controls.Add(this.lblPackageDiscountValue);
+            this.gbRollerStats.Controls.Add(this.lblGrandTotalCaption);
+            this.gbRollerStats.Controls.Add(this.lblGrandTotalValue);
             this.gbRollerStats.Controls.Add(this.btnEstimatePrice);
+            this.gbRollerStats.Controls.Add(this.lblDebugInfo);
             this.gbRollerStats.Dock = System.Windows.Forms.DockStyle.Fill;
             this.gbRollerStats.Location = new System.Drawing.Point(332, 3);
             this.gbRollerStats.Name = "gbRollerStats";
-            this.gbRollerStats.Size = new System.Drawing.Size(480, 240);
+            this.gbRollerStats.Size = new System.Drawing.Size(480, 436);
             this.gbRollerStats.TabIndex = 41;
             this.gbRollerStats.TabStop = false;
             this.gbRollerStats.Text = "Статистика";
@@ -332,15 +342,63 @@ namespace Merlin.Forms
             this.lblTotalBeforePackageValue.TabIndex = 9;
             this.lblTotalBeforePackageValue.Text = "—";
             //
+            // lblPackageDiscountCaption
+            //
+            this.lblPackageDiscountCaption.AutoSize = true;
+            this.lblPackageDiscountCaption.Location = new System.Drawing.Point(10, 194);
+            this.lblPackageDiscountCaption.Name = "lblPackageDiscountCaption";
+            this.lblPackageDiscountCaption.Size = new System.Drawing.Size(150, 24);
+            this.lblPackageDiscountCaption.TabIndex = 10;
+            this.lblPackageDiscountCaption.Text = "Пакетная скидка:";
+            //
+            // lblPackageDiscountValue
+            //
+            this.lblPackageDiscountValue.AutoSize = true;
+            this.lblPackageDiscountValue.Location = new System.Drawing.Point(290, 194);
+            this.lblPackageDiscountValue.Name = "lblPackageDiscountValue";
+            this.lblPackageDiscountValue.Size = new System.Drawing.Size(20, 24);
+            this.lblPackageDiscountValue.TabIndex = 11;
+            this.lblPackageDiscountValue.Text = "—";
+            //
+            // lblGrandTotalCaption
+            //
+            this.lblGrandTotalCaption.AutoSize = true;
+            this.lblGrandTotalCaption.Font = new System.Drawing.Font("Segoe UI Variable Text", 9F, System.Drawing.FontStyle.Bold);
+            this.lblGrandTotalCaption.Location = new System.Drawing.Point(10, 222);
+            this.lblGrandTotalCaption.Name = "lblGrandTotalCaption";
+            this.lblGrandTotalCaption.Size = new System.Drawing.Size(150, 24);
+            this.lblGrandTotalCaption.TabIndex = 12;
+            this.lblGrandTotalCaption.Text = "Итог по акции:";
+            //
+            // lblGrandTotalValue
+            //
+            this.lblGrandTotalValue.AutoSize = true;
+            this.lblGrandTotalValue.Font = new System.Drawing.Font("Segoe UI Variable Text", 9F, System.Drawing.FontStyle.Bold);
+            this.lblGrandTotalValue.Location = new System.Drawing.Point(290, 222);
+            this.lblGrandTotalValue.Name = "lblGrandTotalValue";
+            this.lblGrandTotalValue.Size = new System.Drawing.Size(20, 24);
+            this.lblGrandTotalValue.TabIndex = 13;
+            this.lblGrandTotalValue.Text = "—";
+            //
             // btnEstimatePrice
             //
-            this.btnEstimatePrice.Location = new System.Drawing.Point(10, 200);
+            this.btnEstimatePrice.Location = new System.Drawing.Point(10, 256);
             this.btnEstimatePrice.Name = "btnEstimatePrice";
             this.btnEstimatePrice.Size = new System.Drawing.Size(160, 30);
-            this.btnEstimatePrice.TabIndex = 12;
+            this.btnEstimatePrice.TabIndex = 14;
             this.btnEstimatePrice.Text = "Посчитать";
             this.btnEstimatePrice.UseVisualStyleBackColor = true;
             this.btnEstimatePrice.Click += new System.EventHandler(this.btnEstimatePrice_Click);
+            //
+            // lblDebugInfo
+            //
+            this.lblDebugInfo.AutoSize = true;
+            this.lblDebugInfo.ForeColor = System.Drawing.Color.DarkOrange;
+            this.lblDebugInfo.Location = new System.Drawing.Point(10, 292);
+            this.lblDebugInfo.Name = "lblDebugInfo";
+            this.lblDebugInfo.Size = new System.Drawing.Size(100, 24);
+            this.lblDebugInfo.TabIndex = 15;
+            this.lblDebugInfo.Text = "[Отладка]";
             //
             // gbWeekDays
             // 
@@ -412,7 +470,7 @@ namespace Merlin.Forms
             this.tableLayoutPanel1.Location = new System.Drawing.Point(0, 0);
             this.tableLayoutPanel1.Name = "tableLayoutPanel1";
             this.tableLayoutPanel1.RowCount = 13;
-            this.tableLayoutPanel1.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Absolute, 246F));
+            this.tableLayoutPanel1.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Absolute, 442F));
             this.tableLayoutPanel1.RowStyles.Add(new System.Windows.Forms.RowStyle());
             this.tableLayoutPanel1.RowStyles.Add(new System.Windows.Forms.RowStyle());
             this.tableLayoutPanel1.RowStyles.Add(new System.Windows.Forms.RowStyle());
@@ -425,7 +483,7 @@ namespace Merlin.Forms
             this.tableLayoutPanel1.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Percent, 100F));
             this.tableLayoutPanel1.RowStyles.Add(new System.Windows.Forms.RowStyle());
             this.tableLayoutPanel1.RowStyles.Add(new System.Windows.Forms.RowStyle());
-            this.tableLayoutPanel1.Size = new System.Drawing.Size(980, 935);
+            this.tableLayoutPanel1.Size = new System.Drawing.Size(980, 1131);
             this.tableLayoutPanel1.TabIndex = 34;
             // 
             // groupBox1
@@ -592,7 +650,7 @@ namespace Merlin.Forms
             this.AutoScaleDimensions = new System.Drawing.SizeF(10F, 24F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
             this.CancelButton = this.btnCancel;
-            this.ClientSize = new System.Drawing.Size(980, 935);
+            this.ClientSize = new System.Drawing.Size(980, 1131);
             this.Controls.Add(this.tableLayoutPanel1);
             this.Font = new System.Drawing.Font("Segoe UI Variable Text", 9F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(204)));
             this.FormBorderStyle = System.Windows.Forms.FormBorderStyle.FixedDialog;
@@ -647,7 +705,12 @@ namespace Merlin.Forms
         private System.Windows.Forms.Label lblCompanyDiscountValue;
         private System.Windows.Forms.Label lblTotalBeforePackageCaption;
         private System.Windows.Forms.Label lblTotalBeforePackageValue;
+        private System.Windows.Forms.Label lblPackageDiscountCaption;
+        private System.Windows.Forms.Label lblPackageDiscountValue;
+        private System.Windows.Forms.Label lblGrandTotalCaption;
+        private System.Windows.Forms.Label lblGrandTotalValue;
         private System.Windows.Forms.Button btnEstimatePrice;
+        private System.Windows.Forms.Label lblDebugInfo;
         private System.Windows.Forms.GroupBox gbWeekDays;
         private System.Windows.Forms.CheckedListBox clbWeekDays;
         private System.Windows.Forms.CheckBox cbIgnoreWindows;

@@ -702,7 +702,7 @@ namespace Merlin.Controls
             int massmediaId = Convert.ToInt32(drv["massmediaID"]);
 
             // читаем редактируемые поля из строки
-            int roller = SafeInt(drv[ColumnName(PriceCalculatorColumn.RollerDuration)], 0, 3600);
+            decimal roller = SafeDecimal(drv[ColumnName(PriceCalculatorColumn.RollerDuration)], 0m, 3600m);
 
             int primeWdTotal = SafeInt(drv[ColumnName(PriceCalculatorColumn.PrimeTotalSpotsWeekday)], 0, 1_000_000);
             int nonPrimeWdTotal = SafeInt(drv[ColumnName(PriceCalculatorColumn.NonPrimeTotalSpotsWeekday)], 0, 1_000_000);
@@ -788,7 +788,7 @@ namespace Merlin.Controls
         private decimal CalculateCampaignTariffPrice(
             int stationId,
             DataTable segmentsTable,
-            int durationSec,
+            decimal durationSec,
             int primeWdTotal,
             int nonPrimeWdTotal,
             int primeWeTotal,
@@ -988,7 +988,7 @@ namespace Merlin.Controls
             EnsureColumn<decimal>(PriceCalculatorColumn.TotalAmount);
             EnsureColumn<decimal>(PriceCalculatorColumn.CompanyDiscount);
             EnsureColumn<decimal>(PriceCalculatorColumn.TotalWithDiscount);
-            EnsureColumn<int>(PriceCalculatorColumn.RollerDuration);
+            EnsureColumn<decimal>(PriceCalculatorColumn.RollerDuration);
             EnsureColumn<decimal>(PriceCalculatorColumn.ManagerDiscount);
             EnsureColumn<bool>(PriceCalculatorColumn.IsSelected);
             EnsureColumn<decimal>(PriceCalculatorColumn.PackageDiscount);
@@ -1021,7 +1021,7 @@ namespace Merlin.Controls
 
         public void ApplyCalculation(
             List<DateTime> selectedDates,
-            int durationSec,
+            decimal durationSec,
             int primePerDayWeekday,
             int nonPrimePerDayWeekday,
             int primePerDayWeekend,
@@ -1123,7 +1123,7 @@ namespace Merlin.Controls
 
         public void ApplyCalculationWithManagerDiscountPeriods(
             List<DateTime> selectedDates,
-            int durationSec,
+            decimal durationSec,
             int primePerDayWeekday,
             int nonPrimePerDayWeekday,
             int primePerDayWeekend,
@@ -1291,7 +1291,7 @@ namespace Merlin.Controls
             int stationId,
             DataTable segmentsTable,
             List<ManagerDiscountPeriod> managerPeriods,
-            int durationSec,
+            decimal durationSec,
             int primeWdTotal,
             int nonPrimeWdTotal,
             int primeWeTotal,
@@ -1428,6 +1428,20 @@ namespace Merlin.Controls
                 return min;
 
             if (!int.TryParse(value.ToString(), out int result))
+                return min;
+
+            if (result < min) return min;
+            if (result > max) return max;
+
+            return result;
+        }
+
+        private static decimal SafeDecimal(object value, decimal min, decimal max)
+        {
+            if (value == null || value == DBNull.Value)
+                return min;
+
+            if (!decimal.TryParse(value.ToString(), out decimal result))
                 return min;
 
             if (result < min) return min;
@@ -1915,7 +1929,7 @@ namespace Merlin.Controls
         // Общее время (в секундах) = сумма (кол-во выходов по строке * длительность ролика), опционально только выбранные
         public int GetTotalSeconds(bool onlySelected = true)
         {
-            int totalSeconds = 0;
+            decimal totalSeconds = 0m;
             foreach (DataGridViewRow row in dgvStations.Rows)
             {
                 if (onlySelected && !Convert.ToBoolean(row.Cells["colSelected"].Value ?? false))
@@ -1924,10 +1938,10 @@ namespace Merlin.Controls
                 if (!(row.DataBoundItem is DataRowView drv)) continue;
 
                 int spots = GetRowTotalSpots(drv);
-                int duration = SafeInt(drv["RollerDuration"], 0, 3600);
+                decimal duration = SafeDecimal(drv["RollerDuration"], 0m, 3600m);
                 totalSeconds += spots * duration;
             }
-            return totalSeconds;
+            return (int)Math.Round(totalSeconds);
         }
 
         private sealed class ManagerDiscountPeriod

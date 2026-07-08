@@ -191,7 +191,9 @@ namespace Merlin.Forms
                 return;
             }
 
-            int durationSec = (int)Math.Round((decimal)totalDurationSeconds / gridTotalQuantity);
+            // Точная дробная длительность идёт прямо в PriceCalculatorGrid — она сама теперь считает
+            // с decimal durationSec (единственное место с этой математикой), без ручного пересчёта пропорцией.
+            decimal durationSec = (decimal)totalDurationSeconds / gridTotalQuantity;
             int primePerDay = cbSplitPrime.Checked ? (int)numQuantityPrime.Value : 0;
             int nonPrimePerDay = cbSplitPrime.Checked ? (int)numQuantityNonPrime.Value : (int)txtQuantity.Value;
 
@@ -222,7 +224,73 @@ namespace Merlin.Forms
                 lblCampaignPriceValue.Text = totalAmount.ToString("c");
                 lblCompanyDiscountValue.Text = companyDiscount.ToString("N2");
                 lblTotalBeforePackageValue.Text = totalBeforePackage.ToString("c");
+
+                // Пакетная скидка — актуальна прежде всего для веерной кампании (несколько СМИ разом),
+                // но считаем тем же способом, что и реальный Калькулятор цены, независимо от их числа.
+                decimal packageDiscount = GetPackageDiscount(selectedDates.Min(), totalWithDiscount, targetRows, durationSec);
+                decimal grandTotal = totalBeforePackage * packageDiscount;
+
+                lblPackageDiscountValue.Text = packageDiscount.ToString("N2");
+                lblGrandTotalValue.Text = grandTotal.ToString("c");
+
+                // ВРЕМЕННО: отладка расхождения предварительной цены с реальной после генерации.
+                // Показываем только для линейной кампании (одна СМИ) — для веерной цифр по станциям несколько.
+                if (targetRows.Count == 1)
+                {
+                    DataRow priceRow = targetRows[0];
+                    string mode = cbSplitPrime.Checked
+                        ? "с разбивкой прайм/офф-прайм"
+                        : "БЕЗ разбивки — всё количество считается по цене офф-прайм";
+                    lblDebugInfo.Text =
+                        $"[Отладка] Средняя продолжительность ролика: {durationSec:0.00} сек (без округления)\n" +
+                        $"Режим: {mode}\n" +
+                        $"Будни:    прайм {Convert.ToDecimal(priceRow["PrimePricePerSecWeekday"]):0.####} / " +
+                        $"офф-прайм {Convert.ToDecimal(priceRow["NonPrimePricePerSecWeekday"]):0.####} за сек\n" +
+                        $"Выходные: прайм {Convert.ToDecimal(priceRow["PrimePricePerSecWeekend"]):0.####} / " +
+                        $"офф-прайм {Convert.ToDecimal(priceRow["NonPrimePricePerSecWeekend"]):0.####} за сек";
+                }
+                else
+                {
+                    lblDebugInfo.Text = "[Отладка] доступно только для линейной кампании (одна СМИ)";
+                }
             }
+        }
+
+        // Тот же вызов, что делает PriceCalculatorForm.GetPackageDiscount — берём напрямую по SP,
+        // так как сам метод формы приватный и недоступен отсюда. TVP-тип pc_SelectedMassmedia в SQL
+        // хранит durationSec как INT — округляем только на входе в эту процедуру, это ограничение TVP,
+        // не PriceCalculatorGrid.
+        private static decimal GetPackageDiscount(DateTime startDate, decimal priceTotal, List<DataRow> rows, decimal durationSec)
+        {
+            if (rows.Count == 0)
+                return 1m;
+
+            var tvpTable = new DataTable();
+            tvpTable.Columns.Add("massmediaID", typeof(short));
+            tvpTable.Columns.Add("durationSec", typeof(int));
+            foreach (DataRow row in rows)
+            {
+                int massmediaId = Convert.ToInt32(row["massmediaID"]);
+                int primeWd = Convert.ToInt32(row[nameof(PriceCalculatorGrid.PriceCalculatorColumn.PrimeTotalSpotsWeekday)]);
+                int nonPrimeWd = Convert.ToInt32(row[nameof(PriceCalculatorGrid.PriceCalculatorColumn.NonPrimeTotalSpotsWeekday)]);
+                int primeWe = Convert.ToInt32(row[nameof(PriceCalculatorGrid.PriceCalculatorColumn.PrimeTotalSpotsWeekend)]);
+                int nonPrimeWe = Convert.ToInt32(row[nameof(PriceCalculatorGrid.PriceCalculatorColumn.NonPrimeTotalSpotsWeekend)]);
+                int totalSpots = primeWd + nonPrimeWd + primeWe + nonPrimeWe;
+                tvpTable.Rows.Add((short)massmediaId, (int)Math.Round(durationSec * totalSpots));
+            }
+
+            var p = DataAccessor.CreateParametersDictionary();
+            p["startDate"] = startDate;
+            p["campaignTypeID"] = (byte)1;
+            p["priceTotal"] = priceTotal;
+            p["sel"] = new TvpValue(tvpTable, "dbo.pc_SelectedMassmedia");
+            p["discountValue"] = null;
+            p["packageDiscountPriceListID"] = null;
+
+            DataAccessor.ExecuteNonQuery("pc_PackageDiscountCalculateModel", p, 30, false);
+
+            object dv = p["discountValue"];
+            return (dv == null || dv == DBNull.Value) ? 1m : Convert.ToDecimal(dv);
         }
 
         private List<DateTime> BuildTemplateDates()
