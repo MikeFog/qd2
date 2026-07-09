@@ -48,8 +48,21 @@ SET NOCOUNT on
 		@isRightToViewGroupActions = dbo.fn_IsRightToViewGroupActions(@loggedUserID)
 
 	declare @ugroups table(id int)
-	insert into @ugroups (id) 
+	insert into @ugroups (id)
 	select * from dbo.[fn_GetUserGroups](@loggedUserID)
+
+	declare @headCompaniesWithRecentAction table (headCompanyID int primary key)
+	if @withoutActionsSince is not null
+	begin
+		insert into @headCompaniesWithRecentAction (headCompanyID)
+		select distinct f1.headCompanyID
+		from [Action] a1
+			inner join [Firm] f1 on a1.firmID = f1.firmID
+		where f1.headCompanyID is not null
+			and a1.isConfirmed = 1
+			and a1.finishDate >= @withoutActionsSince
+			and (@startOfInterval is null or a1.startDate < @startOfInterval)
+	end
 
 	if @actionID is not null
 	begin 
@@ -167,17 +180,11 @@ SET NOCOUNT on
 				or (a.deleteDate is not null and @showDeleted = 1)
 				)
 			AND (@withoutActionId IS NULL OR a.[actionID] <> @withoutActionId)
-			and (@withoutActionsSince is null or not exists(select top 1 a1.actionID
-															from [Action] a1
-																inner join [Firm] f1 on a1.firmID = f1.firmID
-															where f1.headCompanyID = f.headCompanyID
-																and a1.isConfirmed = 1
-																and a1.finishDate >= @withoutActionsSince
-																and (@startOfInterval is null or a1.startDate < @startOfInterval)))
+			and (@withoutActionsSince is null or not exists(select 1 from @headCompaniesWithRecentAction h where h.headCompanyID = f.headCompanyID))
 			and (@managerDiscount is null or (c.managerDiscount - @managerDiscount) < -0.005)
 			and f.headCompanyID = COALESCE(@headCompanyID, f.headCompanyID)
 		order by a.actionID desc
-	end 
+	end
 	else 
 		Begin
 		SELECT distinct 
@@ -263,13 +270,7 @@ SET NOCOUNT on
 				or (a.deleteDate is not null and @showDeleted = 1)
 				)
 			AND (@withoutActionId IS NULL OR a.[actionID] <> @withoutActionId)
-			and (@withoutActionsSince is null or not exists(select top 1 a1.actionID
-															from [Action] a1
-																inner join [Firm] f1 on a1.firmID = f1.firmID
-															where f1.headCompanyID = f.headCompanyID
-																and a1.isConfirmed = 1
-																and a1.finishDate >= @withoutActionsSince
-																and (@startOfInterval is null or a1.startDate < @startOfInterval)))
+			and (@withoutActionsSince is null or not exists(select 1 from @headCompaniesWithRecentAction h where h.headCompanyID = f.headCompanyID))
 			and (@managerDiscount is null or (c.managerDiscount - @managerDiscount) < -0.005)
 			and f.headCompanyID = COALESCE(@headCompanyID, f.headCompanyID)
 		order by a.actionID desc
