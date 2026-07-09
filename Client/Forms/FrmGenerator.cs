@@ -42,6 +42,10 @@ namespace Merlin.Forms
         private readonly UpdateDBTimePeriodDelegate _updateTimePeriodDB;
         private readonly ActionOnMassmedia _action;
 
+        // Несколько роликов (Шаблон 3): очередь уже перемешанных случайно roller-слотов,
+        // по одному на каждую единицу "Количество" из грида. День за днём забираем из начала очереди.
+        private readonly LinkedList<Roller> _rollerQueue;
+
         // Выпуски, добавленные текущим запуском генератора — источник для кнопки "Отменить"
         // на CampaignForm/EditIssuesForm после закрытия диалога.
         internal List<PresentationObject> AddedObjects { get; } = new List<PresentationObject>();
@@ -59,6 +63,35 @@ namespace Merlin.Forms
 			this._roller = roller;
 			this.grantorID = grantorID;
             _firmId = _campaign.Action.FirmID;
+        }
+
+        // For multiple rollers with individual quantities (Шаблон 3, линейная кампания):
+        // список "ролик x количество" разворачивается в очередь единичных слотов и перемешивается один раз.
+        internal FrmGenerator(IssueTemplate template, IEnumerable<(Roller Roller, int Quantity)> rollerQuantities, RollerPositions position,
+            Campaign campaign, Pricelist pricelist, PresentationObject module, int? grantorID)
+        {
+            InitializeComponent();
+            this._template = template;
+            this._module = module;
+            this._campaign = campaign;
+            this._position = position;
+            this._pricelist = pricelist;
+            this.grantorID = grantorID;
+            _firmId = _campaign.Action.FirmID;
+
+            var expanded = new List<Roller>();
+            foreach (var (roller, quantity) in rollerQuantities)
+                for (int i = 0; i < quantity; i++)
+                    expanded.Add(roller);
+
+            var rnd = new Random();
+            for (int i = expanded.Count - 1; i > 0; i--)
+            {
+                int j = rnd.Next(i + 1);
+                (expanded[i], expanded[j]) = (expanded[j], expanded[i]);
+            }
+
+            _rollerQueue = new LinkedList<Roller>(expanded);
         }
 
 		// For Sponsors Programs
@@ -196,6 +229,14 @@ namespace Merlin.Forms
                     pbProgress.Value++;
                     Application.DoEvents();
                 }
+
+                // За весь период не хватило окон, чтобы разместить всех оставшихся в очереди роликов
+                if (_rollerQueue != null && _rollerQueue.Count > 0)
+                {
+                    Dictionary<string, object> parameters = CreateMessageParameters();
+                    parameters["description"] = $"Недостаточно рекламных окон за весь период шаблона — не удалось разместить {_rollerQueue.Count} выход(ов) из выбранных роликов.";
+                    AddErrorInfo(parameters);
+                }
 			}
 			finally
 			{
@@ -283,6 +324,13 @@ namespace Merlin.Forms
 				DataRow row = _updateDB(_template.CurrentDate);
 				AddedObjects.Add(new MasterIssue(row));
 				return new List<PresentationObject> { new RollerIssue(row) };
+			}
+			// Несколько роликов с разным количеством выходов (Шаблон 3, линейная кампания, TimePeriod)
+			else if (_rollerQueue != null)
+			{
+				if (_maxPrices == null)
+					_maxPrices = ((CampaignOnSingleMassmedia)_campaign).Massmedia.GetMaxPriceByDay(_template.StartDate, _template.FinishDate);
+				return AddMultiRollerIssues();
 			}
 			else if (_module == null && program == null)
 			{
@@ -406,6 +454,132 @@ namespace Merlin.Forms
 
             AddedObjects.AddRange(issues);
             return issues;
+		}
+
+		// Аналог AddSimpleIssues, но роликов несколько — на каждый день забираем нужное количество
+		// слотов из перемешанной очереди _rollerQueue вместо одного фиксированного _roller.
+		private List<PresentationObject> AddMultiRollerIssues()
+		{
+			Massmedia radioStation = ((CampaignOnSingleMassmedia)_campaign).Massmedia;
+
+			MassmediaPricelist pricelist = radioStation.GetPriceList(_template.CurrentDate) as MassmediaPricelist ?? throw new Exception("PriceListDoesntExist");
+			DataSet dsWindows = pricelist.GetTariffWindows(_template.CurrentDate, _template.CurrentDate, null, false, false);
+			DataTable dtTariffWindow = dsWindows.Tables[Constants.TableNames.Data];
+
+			int startTotal = _template.StartTime.Hour * 60 + _template.StartTime.Minute;
+			int finishTotal = _template.FinishTime.Hour * 60 + _template.FinishTime.Minute;
+			string filter = $"(hour * 60 + min) >= {startTotal} AND (hour * 60 + min) <= {finishTotal}";
+
+			var allWindows = new List<TariffWindowWithRollerIssues>();
+			foreach (DataRow row in dtTariffWindow.Select(filter))
+			{
+				var window = new TariffWindowWithRollerIssues(row, Entities.TariffWindow);
+				if ((!_template.IgnoreWindowsWithTheSameFirmIssue || !window.IsRollerOfTheFirmExist(_firmId, true))
+				    && (_position == RollerPositions.Undefined || !IsPositionOccupied(window, _position)))
+				{
+					allWindows.Add(window);
+				}
+			}
+
+			var rnd = new Random();
+			var issues = new List<PresentationObject>();
+
+			if (_template.Quantity != 0)
+			{
+				var windows = OrderWindowsRandomly(allWindows, rnd);
+				issues.AddRange(AddIssuesForRollers(_template.Quantity, windows,
+					"Недостаточно рекламных окон для размещения всех выпусков. Окон: {0}, выпусков: {1}."));
+			}
+			else
+			{
+				decimal? dayPrimePrice = GetPrimePriceForDate(_template.CurrentDate);
+
+				List<TariffWindowWithRollerIssues> windowsPrime;
+				List<TariffWindowWithRollerIssues> windowsNonPrime;
+
+				if (dayPrimePrice.HasValue)
+				{
+					windowsPrime = allWindows.Where(w => w.Price == dayPrimePrice.Value).ToList();
+					windowsNonPrime = allWindows.Where(w => w.Price != dayPrimePrice.Value).ToList();
+				}
+				else
+				{
+					windowsPrime = new List<TariffWindowWithRollerIssues>();
+					windowsNonPrime = new List<TariffWindowWithRollerIssues>(allWindows);
+				}
+
+				windowsPrime = OrderWindowsRandomly(windowsPrime, rnd);
+				windowsNonPrime = OrderWindowsRandomly(windowsNonPrime, rnd);
+
+				issues.AddRange(AddIssuesForRollers(_template.QuantityPrime, windowsPrime,
+					"Недостаточно рекламных окон прайм для размещения всех выпусков. Окон: {0}, выпусков: {1}."));
+				issues.AddRange(AddIssuesForRollers(_template.QuantityNonPrime, windowsNonPrime,
+					"Недостаточно рекламных окон офф прайм для размещения всех выпусков. Окон: {0}, выпусков: {1}."));
+			}
+
+			AddedObjects.AddRange(issues);
+			return issues;
+		}
+
+		private static List<TariffWindowWithRollerIssues> OrderWindowsRandomly(List<TariffWindowWithRollerIssues> windows, Random rnd)
+		{
+			return windows
+				.Select(w => new { w, rand = rnd.Next() })
+				.OrderBy(x => x.w)
+				.ThenBy(x => x.rand)
+				.Select(x => x.w)
+				.ToList();
+		}
+
+		// Забирает с начала общей очереди до count роликов на сегодня и сортирует их по убыванию
+		// длительности — длинные ролики размещаются первыми, пока в дне больше свободных окон.
+		private List<Roller> TakeRollersForToday(int count)
+		{
+			var batch = new List<Roller>();
+			for (int i = 0; i < count && _rollerQueue.Count > 0; i++)
+			{
+				batch.Add(_rollerQueue.First.Value);
+				_rollerQueue.RemoveFirst();
+			}
+			return batch.OrderByDescending(r => r.Duration).ToList();
+		}
+
+		private List<PresentationObject> AddIssuesForRollers(int targetCount, List<TariffWindowWithRollerIssues> windows, string errorTemplate)
+		{
+			List<Roller> rollers = TakeRollersForToday(targetCount);
+			var issues = new List<PresentationObject>();
+
+			while (rollers.Count > 0 && windows.Count > 0)
+			{
+				Roller roller = rollers[0];
+				rollers.RemoveAt(0);
+				try
+				{
+					Issue issue = _campaign.AddIssue(roller, windows[0], _position, grantorID);
+					issue.Refresh();
+					issues.Add(issue);
+				}
+				catch (Exception ex)
+				{
+					Dictionary<string, object> parameters = CreateMessageParameters();
+					parameters["description"] = Globals.GetMessage(ex.Message, parameters);
+					AddErrorInfo(parameters);
+				}
+				windows.RemoveAt(0);
+			}
+
+			// Не хватило окон сегодня — недостающие ролики возвращаются в начало очереди, попробуем в другой день
+			for (int i = rollers.Count - 1; i >= 0; i--)
+				_rollerQueue.AddFirst(rollers[i]);
+
+			if (issues.Count < targetCount)
+			{
+				Dictionary<string, object> parameters = CreateMessageParameters();
+				parameters["description"] = string.Format(errorTemplate, issues.Count, targetCount);
+				AddErrorInfo(parameters);
+			}
+
+			return issues;
 		}
 
 		private decimal? GetPrimePriceForDate(DateTime date)

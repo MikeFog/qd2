@@ -199,7 +199,7 @@ namespace Merlin.Forms
             this.gbWeekDays.Margin = new System.Windows.Forms.Padding(3, 4, 3, 4);
             this.gbWeekDays.Name = "gbWeekDays";
             this.gbWeekDays.Padding = new System.Windows.Forms.Padding(3, 4, 3, 4);
-            this.gbWeekDays.Size = new System.Drawing.Size(302, 255);
+            this.gbWeekDays.Size = new System.Drawing.Size(292, 255);
             this.gbWeekDays.TabIndex = 32;
             this.gbWeekDays.TabStop = false;
             // 
@@ -209,8 +209,8 @@ namespace Merlin.Forms
             this.clbWeekDays.BorderStyle = System.Windows.Forms.BorderStyle.None;
             this.clbWeekDays.CheckOnClick = true;
             this.clbWeekDays.FormattingEnabled = true;
-            this.clbWeekDays.Location = new System.Drawing.Point(7, 39);
-            this.clbWeekDays.Margin = new System.Windows.Forms.Padding(3, 4, 3, 4);
+            this.clbWeekDays.Location = new System.Drawing.Point(0, 0);
+            this.clbWeekDays.Margin = new System.Windows.Forms.Padding(0);
             this.clbWeekDays.Name = "clbWeekDays";
             this.clbWeekDays.Size = new System.Drawing.Size(289, 252);
             this.clbWeekDays.TabIndex = 10;
@@ -280,19 +280,21 @@ namespace Merlin.Forms
             // 
             this.groupBox1.Controls.Add(this.rbOdd);
             this.groupBox1.Controls.Add(this.rbEven);
+            this.groupBox1.Dock = System.Windows.Forms.DockStyle.Fill;
             this.groupBox1.Location = new System.Drawing.Point(332, 370);
             this.groupBox1.Name = "groupBox1";
-            this.groupBox1.Size = new System.Drawing.Size(260, 257);
+            this.groupBox1.Size = new System.Drawing.Size(324, 257);
             this.groupBox1.TabIndex = 9;
             this.groupBox1.TabStop = false;
             // 
             // rbOdd
             // 
             this.rbOdd.AutoSize = true;
+            this.rbOdd.Dock = System.Windows.Forms.DockStyle.Top;
             this.rbOdd.Enabled = false;
-            this.rbOdd.Location = new System.Drawing.Point(12, 83);
+            this.rbOdd.Location = new System.Drawing.Point(3, 55);
             this.rbOdd.Name = "rbOdd";
-            this.rbOdd.Size = new System.Drawing.Size(150, 28);
+            this.rbOdd.Size = new System.Drawing.Size(318, 28);
             this.rbOdd.TabIndex = 13;
             this.rbOdd.TabStop = true;
             this.rbOdd.Text = "Нечётные дни";
@@ -302,10 +304,11 @@ namespace Merlin.Forms
             // 
             this.rbEven.AutoSize = true;
             this.rbEven.Checked = true;
+            this.rbEven.Dock = System.Windows.Forms.DockStyle.Top;
             this.rbEven.Enabled = false;
-            this.rbEven.Location = new System.Drawing.Point(12, 44);
+            this.rbEven.Location = new System.Drawing.Point(3, 27);
             this.rbEven.Name = "rbEven";
-            this.rbEven.Size = new System.Drawing.Size(130, 28);
+            this.rbEven.Size = new System.Drawing.Size(318, 28);
             this.rbEven.TabIndex = 12;
             this.rbEven.TabStop = true;
             this.rbEven.Text = "Чётные дни";
