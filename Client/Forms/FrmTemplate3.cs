@@ -15,6 +15,7 @@ namespace Merlin.Forms
     {
         private const string ColSelected = "colSelected";
         private const string ColRollerName = "colRollerName";
+        private const string ColAdvertSubject = "colAdvertSubject";
         private const string ColDuration = "colDuration";
         private const string ColQuantity = "colQuantity";
 
@@ -37,8 +38,8 @@ namespace Merlin.Forms
             {
                 var (startDate, finishDate) = GetDefaultPeriod();
                 _template = new IssueTemplate(startDate, finishDate,
-                    new DateTime(DateTime.Today.Year, DateTime.Today.Month, DateTime.Today.Day, 12, 0, 0),
-                    new DateTime(DateTime.Today.Year, DateTime.Today.Month, DateTime.Today.Day, 15, 0, 0),
+                    new DateTime(DateTime.Today.Year, DateTime.Today.Month, DateTime.Today.Day, 6, 0, 0),
+                    new DateTime(DateTime.Today.Year, DateTime.Today.Month, DateTime.Today.Day, 21, 0, 0),
                     2)
                 {
                     IsModeAdd = true,
@@ -65,6 +66,14 @@ namespace Merlin.Forms
                 Name = ColRollerName,
                 HeaderText = "Ролик",
                 DataPropertyName = "name",
+                ReadOnly = true,
+                Width = 250
+            });
+            dgvRollers.Columns.Add(new DataGridViewTextBoxColumn
+            {
+                Name = ColAdvertSubject,
+                HeaderText = "Предмет рекламы",
+                DataPropertyName = "advertTypeName",
                 ReadOnly = true,
                 AutoSizeMode = DataGridViewAutoSizeColumnMode.Fill
             });
@@ -94,6 +103,15 @@ namespace Merlin.Forms
                 if (e.RowIndex < 0)
                     return;
                 string columnName = dgvRollers.Columns[e.ColumnIndex].Name;
+
+                // При вводе количества автоматически отмечаем ролик галочкой
+                if (columnName == ColQuantity)
+                {
+                    DataGridViewRow row = dgvRollers.Rows[e.RowIndex];
+                    if (int.TryParse(row.Cells[ColQuantity].Value?.ToString(), out int quantity) && quantity > 0)
+                        row.Cells[ColSelected].Value = true;
+                }
+
                 if (columnName == ColSelected || columnName == ColQuantity)
                     RecalculateStats();
             };

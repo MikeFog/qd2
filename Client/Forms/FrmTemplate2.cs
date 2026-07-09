@@ -23,8 +23,8 @@ namespace Merlin.Forms
             {
                 var (startDate, finishDate) = GetDefaultPeriod();
                 _template = new IssueTemplate(startDate, finishDate,
-                    new DateTime(DateTime.Today.Year, DateTime.Today.Month, DateTime.Today.Day, 12, 0, 0),
-                    new DateTime(DateTime.Today.Year, DateTime.Today.Month, DateTime.Today.Day, 15, 0, 0),
+                    new DateTime(DateTime.Today.Year, DateTime.Today.Month, DateTime.Today.Day, 6, 0, 0),
+                    new DateTime(DateTime.Today.Year, DateTime.Today.Month, DateTime.Today.Day, 21, 0, 0),
                     2)
                 {
                     IsModeAdd = true,
