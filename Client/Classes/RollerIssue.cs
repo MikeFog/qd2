@@ -5,8 +5,6 @@ using System.Windows.Forms;
 using FogSoft.WinForm;
 using FogSoft.WinForm.Classes;
 using FogSoft.WinForm.DataAccess;
-using FogSoft.WinForm.Forms;
-using Merlin.Properties;
 
 namespace Merlin.Classes
 {
@@ -27,7 +25,9 @@ namespace Merlin.Classes
 			public const string StartDate = "startDate";
 			public const string FinishDate = "finishDate";
 			public const string NewPosition = "newPosition";
-		}
+            public const string IssueDateOriginal = "issueDateOriginal";
+            
+        }
 
 		#region Constructors ----------------------------------
 
@@ -63,7 +63,12 @@ namespace Merlin.Classes
 			get { return DateTime.Parse(parameters[ParamNames.IssueDate].ToString()); }
 		}
 
-		public int Duration
+        public DateTime IssueDateOriginal
+        {
+            get { return DateTime.Parse(parameters[ParamNames.IssueDateOriginal].ToString()); }
+        }
+
+        public int Duration
 		{
 			get { return int.Parse(parameters[Roller.ParamNames.Duration].ToString()); }
 		}

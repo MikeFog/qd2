@@ -24,6 +24,7 @@ BEGIN
       c.actionID,
       ip.[description] as issuePosition,
       tw.windowDateActual as issueDate,
+      tw.windowDateOriginal as issueDateOriginal,
       r.advertTypeName,
       a.deleteDate
     FROM dbo.Issue i
@@ -51,6 +52,7 @@ BEGIN
     c.actionID,
     ip.[description] as issuePosition,
     tw.windowDateActual as issueDate,
+    tw.windowDateOriginal as issueDateOriginal,
     r.advertTypeName,
     a.deleteDate
   FROM dbo.TariffWindow tw

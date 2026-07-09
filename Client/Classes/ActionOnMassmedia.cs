@@ -438,7 +438,7 @@ namespace Merlin.Classes
 			foreach (DataRow item in campaign.GetContent().Rows)
 			{
                 RollerIssue issue = new RollerIssue(item);
-				DateTime newDate = issue.IssueDate.AddDays(shiftInDays);
+				DateTime newDate = issue.IssueDateOriginal.AddDays(shiftInDays);
 
                 TariffWindow window = mm.GetTariffWindow(newDate);
 				if (window != null)
