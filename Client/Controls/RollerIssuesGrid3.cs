@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.ComponentModel;
 using System.Data;
 using System.Drawing;
@@ -17,6 +18,8 @@ namespace Merlin.Controls
 
 		private Roller roller;
 		private DataTable _dtWindowsWithAdvertType;
+		private bool showRollerNumbers;
+		private Dictionary<int, int> rollerNumbers;
 
         public RollerIssuesGrid3()
 			: this(true)
@@ -46,6 +49,24 @@ namespace Merlin.Controls
 		{
 			get { return roller; }
 			set { roller = value; }
+		}
+
+        // Режим ячейки: вместо остатка свободного времени — номера роликов текущей кампании
+        // (см. RollerNumbers), размещённых в этом окне. Карта номеров фиксируется снаружи
+        // (CampaignForm) на момент включения режима, сама повторно не пересчитывается.
+        [Browsable(false)]
+		public bool ShowRollerNumbers
+		{
+			get { return showRollerNumbers; }
+			set { showRollerNumbers = value; }
+		}
+
+        // rollerID -> номер ролика (как в колонке "№" grdRollers на момент включения ShowRollerNumbers)
+        [Browsable(false)]
+		public Dictionary<int, int> RollerNumbers
+		{
+			get { return rollerNumbers; }
+			set { rollerNumbers = value; }
 		}
 
         public override Entity IssueEntity
@@ -173,6 +194,9 @@ namespace Merlin.Controls
 
             if (rollerPosition != RollerPositions.Undefined || _advertTypePresence != AdvertTypePresences.Undefined)
                 MarkCellsWithPositionAndAdvType();
+
+            if (showRollerNumbers)
+                RefreshCellTexts();
 		}
 
         private void MarkCellsWithPositionAndAdvType()
@@ -289,6 +313,13 @@ namespace Merlin.Controls
 
 		private string GetCellContent(PresentationObject obj)
 		{
+			if (showRollerNumbers)
+			{
+				string rollerNumbersText = GetRollerNumbersText(obj);
+				if (rollerNumbersText != null)
+					return rollerNumbersText;
+			}
+
 			DateTime dtOriginal = (DateTime)obj[ColumnNames.WindowDateOriginal];
 			DateTime dtActual = (DateTime)obj[ColumnNames.WindowDateActual];
 			dtOriginal = dtOriginal.Date.AddHours(dtOriginal.Hour).AddMinutes(dtOriginal.Minute);
@@ -310,6 +341,67 @@ namespace Merlin.Controls
 			if (ShowUnconfirmed)
 				capacityLeft -= int.Parse(obj[TariffWindowWithRollerIssues.ParamNames.CapacityInUseUnconfirmed].ToString());
 			return string.Format("{0} [{1}/{2}]{3}", timeString, capacityLeft, maxCapacity, showTrafficWindows ? postfix : string.Empty);
+		}
+
+		// Номера роликов текущей кампании в этом окне (через запятую, в порядке размещения),
+		// или null, если у окна нет выпусков текущей кампании / номер ролика не известен.
+		private string GetRollerNumbersText(PresentationObject obj)
+		{
+			if (_dtIssue == null || rollerNumbers == null) return null;
+
+			int windowId = int.Parse(obj[TariffWindow.ParamNames.WindowId].ToString());
+			DataRow[] issueRows = _dtIssue.Select(TariffWindow.ParamNames.OriginalWindowId + " = " + windowId);
+			if (issueRows.Length == 0) return null;
+
+			List<string> numbers = new List<string>();
+			foreach (DataRow issueRow in issueRows)
+			{
+				int rollerId = ParseHelper.GetInt32FromObject(issueRow[TariffWindow.ParamNames.RollerID], 0);
+				if (rollerNumbers.TryGetValue(rollerId, out int number))
+					numbers.Add(number.ToString());
+			}
+			return numbers.Count > 0 ? string.Join(", ", numbers) : null;
+		}
+
+		// Ручное добавление выпуска (не через шаблон/генератор) не перестраивает _dtIssue
+		// целиком — без этой правки только что добавленный ролик не появлялся бы в номерах
+		// ячейки (GetRollerNumbersText) до следующей полной перезагрузки грида.
+		private void AddIssueToCache(int windowId)
+		{
+			if (_dtIssue == null || roller == null) return;
+
+			DataRow row = _dtIssue.NewRow();
+			row[TariffWindow.ParamNames.OriginalWindowId] = windowId;
+			row[TariffWindow.ParamNames.RollerID] = roller.RollerId;
+			_dtIssue.Rows.Add(row);
+		}
+
+		// Симметрично AddIssueToCache — ручное удаление одного выпуска (не через шаблон)
+		// тоже не перестраивает _dtIssue целиком; без этого удалённый номер держался бы
+		// в ячейке до следующей полной перезагрузки грида. Вызывается снаружи (CampaignForm),
+		// так как только там известно, какой именно выпуск/ролик был удалён.
+		public void RemoveIssueFromCache(int windowId, int rollerId)
+		{
+			if (_dtIssue == null) return;
+
+			DataRow[] rows = _dtIssue.Select(string.Format("{0} = {1} AND {2} = {3}",
+				TariffWindow.ParamNames.OriginalWindowId, windowId,
+				TariffWindow.ParamNames.RollerID, rollerId));
+			if (rows.Length > 0)
+				_dtIssue.Rows.Remove(rows[0]);
+		}
+
+		// Перерисовать текст всех ячеек грида (без похода в БД) — нужно при включении/
+		// выключении ShowRollerNumbers и при перезагрузке недели, пока режим включён.
+		public void RefreshCellTexts()
+		{
+			int rowCount = _tariffWindows.GetLength(0);
+			int columnCount = _tariffWindows.GetLength(1);
+
+			for (int rowIndex = 0; rowIndex < rowCount; rowIndex++)
+				for (int columnIndex = 0; columnIndex < columnCount; columnIndex++)
+					if (_tariffWindows[rowIndex, columnIndex] is TariffWindowWithRollerIssues window)
+						UpdateGridCell(rowIndex + FIXED_ROWS, columnIndex + FixedCols, window);
 		}
 
 		protected void UpdateGridCell(int rowIndex, int columnIndex, TariffWindowWithRollerIssues tariffWindow)
@@ -343,6 +435,10 @@ namespace Merlin.Controls
             TariffGridRefreshMode mode, bool hasCurrentCampaignIssues)
 		{
 			tariffWindow.Refresh();
+
+			if (mode == TariffGridRefreshMode.WithAdd && hasCurrentCampaignIssues)
+				AddIssueToCache(tariffWindow.WindowId);
+
 			UpdateGridCell(rowIndex, columnIndex, tariffWindow);
 			if(mode == TariffGridRefreshMode.WithAdd)
 				ChangeIssuesCounter(columnIndex, 1);

@@ -42,9 +42,9 @@ namespace Merlin.Forms
         private readonly UpdateDBTimePeriodDelegate _updateTimePeriodDB;
         private readonly ActionOnMassmedia _action;
 
-        // Несколько роликов (Шаблон 3): очередь уже перемешанных случайно roller-слотов,
-        // по одному на каждую единицу "Количество" из грида. День за днём забираем из начала очереди.
-        private readonly LinkedList<Roller> _rollerQueue;
+        // Несколько роликов (Шаблон 3): общая очередь (та же, что и для веерной кампании) —
+        // round-robin по раундам с перемешиванием внутри раунда. День за днём забираем через TakeForToday.
+        private readonly RollerAllocationQueue _rollerQueue;
 
         // Выпуски, добавленные текущим запуском генератора — источник для кнопки "Отменить"
         // на CampaignForm/EditIssuesForm после закрытия диалога.
@@ -66,7 +66,7 @@ namespace Merlin.Forms
         }
 
         // For multiple rollers with individual quantities (Шаблон 3, линейная кампания):
-        // список "ролик x количество" разворачивается в очередь единичных слотов и перемешивается один раз.
+        // раскладка "ролик x количество" в очередь делегирована RollerAllocationQueue (той же, что и веерная кампания).
         internal FrmGenerator(IssueTemplate template, IEnumerable<(Roller Roller, int Quantity)> rollerQuantities, RollerPositions position,
             Campaign campaign, Pricelist pricelist, PresentationObject module, int? grantorID)
         {
@@ -79,19 +79,7 @@ namespace Merlin.Forms
             this.grantorID = grantorID;
             _firmId = _campaign.Action.FirmID;
 
-            var expanded = new List<Roller>();
-            foreach (var (roller, quantity) in rollerQuantities)
-                for (int i = 0; i < quantity; i++)
-                    expanded.Add(roller);
-
-            var rnd = new Random();
-            for (int i = expanded.Count - 1; i > 0; i--)
-            {
-                int j = rnd.Next(i + 1);
-                (expanded[i], expanded[j]) = (expanded[j], expanded[i]);
-            }
-
-            _rollerQueue = new LinkedList<Roller>(expanded);
+            _rollerQueue = new RollerAllocationQueue(rollerQuantities);
         }
 
 		// For Sponsors Programs
@@ -531,22 +519,9 @@ namespace Merlin.Forms
 				.ToList();
 		}
 
-		// Забирает с начала общей очереди до count роликов на сегодня и сортирует их по убыванию
-		// длительности — длинные ролики размещаются первыми, пока в дне больше свободных окон.
-		private List<Roller> TakeRollersForToday(int count)
-		{
-			var batch = new List<Roller>();
-			for (int i = 0; i < count && _rollerQueue.Count > 0; i++)
-			{
-				batch.Add(_rollerQueue.First.Value);
-				_rollerQueue.RemoveFirst();
-			}
-			return batch.OrderByDescending(r => r.Duration).ToList();
-		}
-
 		private List<PresentationObject> AddIssuesForRollers(int targetCount, List<TariffWindowWithRollerIssues> windows, string errorTemplate)
 		{
-			List<Roller> rollers = TakeRollersForToday(targetCount);
+			List<Roller> rollers = _rollerQueue.TakeForToday(targetCount);
 			var issues = new List<PresentationObject>();
 
 			while (rollers.Count > 0 && windows.Count > 0)
@@ -569,8 +544,7 @@ namespace Merlin.Forms
 			}
 
 			// Не хватило окон сегодня — недостающие ролики возвращаются в начало очереди, попробуем в другой день
-			for (int i = rollers.Count - 1; i >= 0; i--)
-				_rollerQueue.AddFirst(rollers[i]);
+			_rollerQueue.PutBackToFront(rollers);
 
 			if (issues.Count < targetCount)
 			{

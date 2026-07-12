@@ -901,13 +901,16 @@ namespace Merlin.Forms
 		private void CheckAnnouncements(object sender, EventArgs e)
 		{
             return;
+            Campaign c = new CampaignOnSingleMassmedia(406780);
+            c.Refresh();
+            c.DoAction("Edit", this, InterfaceObjects.SimpleJournal);
+
+
             ActionOnMassmedia a = new ActionOnMassmedia(180412);
             a.Refresh();
             a.DoAction(Constants.EntityActions.Edit, this, InterfaceObjects.SimpleJournal);
             
-            Campaign c = new CampaignOnSingleMassmedia(396882);
-            c.Refresh();
-            c.DoAction("Edit", this, InterfaceObjects.SimpleJournal);
+
             
 
             /*

@@ -49,6 +49,7 @@ namespace Merlin.Forms {
             this.toolStripSeparator4 = new System.Windows.Forms.ToolStripSeparator();
             this.tbbShowUnconfirmed = new System.Windows.Forms.ToolStripButton();
             this.btnShowMarked = new System.Windows.Forms.ToolStripButton();
+            this.btnShowRollerNumbers = new System.Windows.Forms.ToolStripButton();
             this.tbMarkPrimeWindows = new System.Windows.Forms.ToolStripButton();
             this.toolStripSeparator1 = new System.Windows.Forms.ToolStripSeparator();
             this.btnShowDisabled = new System.Windows.Forms.ToolStripButton();
@@ -110,6 +111,7 @@ namespace Merlin.Forms {
             this.toolStripSeparator4,
             this.tbbShowUnconfirmed,
             this.btnShowMarked,
+            this.btnShowRollerNumbers,
             this.tbMarkPrimeWindows,
             this.toolStripSeparator1,
             this.btnShowDisabled,
@@ -312,6 +314,18 @@ namespace Merlin.Forms {
             this.btnShowMarked.ToolTipText = "Показать отмеченные окна";
             this.btnShowMarked.CheckedChanged += new System.EventHandler(this.MarkMarkedWindows);
             // 
+            // btnShowRollerNumbers
+            // 
+            this.btnShowRollerNumbers.CheckOnClick = true;
+            this.btnShowRollerNumbers.DisplayStyle = System.Windows.Forms.ToolStripItemDisplayStyle.Image;
+            this.btnShowRollerNumbers.Image = ((System.Drawing.Image)(resources.GetObject("btnShowRollerNumbers.Image")));
+            this.btnShowRollerNumbers.ImageTransparentColor = System.Drawing.Color.Magenta;
+            this.btnShowRollerNumbers.Name = "btnShowRollerNumbers";
+            this.btnShowRollerNumbers.Size = new System.Drawing.Size(34, 33);
+            this.btnShowRollerNumbers.Text = "Номера роликов";
+            this.btnShowRollerNumbers.ToolTipText = "Показывать в окнах номера роликов текущей кампании вместо остатка времени";
+            this.btnShowRollerNumbers.CheckedChanged += new System.EventHandler(this.MarkRollerNumbers);
+            // 
             // tbMarkPrimeWindows
             // 
             this.tbMarkPrimeWindows.CheckOnClick = true;
@@ -487,6 +501,7 @@ namespace Merlin.Forms {
             this.grdRollers.QuickSearchVisible = false;
             this.grdRollers.SelectedObject = null;
             this.grdRollers.ShowMultiselectColumn = true;
+            this.grdRollers.ShowRowNumbers = true;
             this.grdRollers.Size = new System.Drawing.Size(691, 253);
             this.grdRollers.TabIndex = 0;
             this.grdRollers.ObjectSelected += new FogSoft.WinForm.ObjectDelegate(this.grdRollers_ObjectSelected);
@@ -564,6 +579,7 @@ namespace Merlin.Forms {
             this.grdIssues.QuickSearchVisible = false;
             this.grdIssues.SelectedObject = null;
             this.grdIssues.ShowMultiselectColumn = true;
+            this.grdIssues.ShowRowNumbers = false;
             this.grdIssues.Size = new System.Drawing.Size(691, 282);
             this.grdIssues.TabIndex = 2;
             // 
@@ -587,6 +603,7 @@ namespace Merlin.Forms {
             this.grdCurrentCampaignIssues.QuickSearchVisible = false;
             this.grdCurrentCampaignIssues.SelectedObject = null;
             this.grdCurrentCampaignIssues.ShowMultiselectColumn = true;
+            this.grdCurrentCampaignIssues.ShowRowNumbers = false;
             this.grdCurrentCampaignIssues.Size = new System.Drawing.Size(691, 188);
             this.grdCurrentCampaignIssues.TabIndex = 1;
             this.grdCurrentCampaignIssues.ObjectDeleted += new FogSoft.WinForm.ObjectDelegate(this.grdCurrentCampaignIssues_ObjectDeleted);
@@ -708,5 +725,6 @@ namespace Merlin.Forms {
     private System.Windows.Forms.ToolStripButton tbSetManagerDiscount;
     protected System.Windows.Forms.ToolStripButton tbMarkPrimeWindows;
     private System.Windows.Forms.ToolStripButton btnShowMarked;
+    private System.Windows.Forms.ToolStripButton btnShowRollerNumbers;
     }
 }

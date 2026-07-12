@@ -22,6 +22,8 @@ namespace Merlin.Controls
         private readonly ActionOnMassmedia _action;
         private readonly int _massmediasCount;
 		private Dictionary<string, string> _timeResolver;
+        private bool showRollerNumbers;
+        private Dictionary<int, int> rollerNumbers;
 
         public ActionOnMassmedia Action
         {
@@ -48,6 +50,22 @@ namespace Merlin.Controls
 
 	    private DataTable Data { get; set; }
         public DataTable AddedIssues { get; set; }
+
+        // Режим ячейки: вместо остатка свободного времени — номера роликов текущей акции
+        // (см. RollerNumbers), размещённых в этом слоте. Карта номеров фиксируется снаружи
+        // (CampaignForm) на момент включения режима, сама повторно не пересчитывается.
+        public bool ShowRollerNumbers
+        {
+            get { return showRollerNumbers; }
+            set { showRollerNumbers = value; }
+        }
+
+        // rollerID -> номер ролика (как в колонке "№" grdRollers на момент включения ShowRollerNumbers)
+        public Dictionary<int, int> RollerNumbers
+        {
+            get { return rollerNumbers; }
+            set { rollerNumbers = value; }
+        }
 
 		private DateTime? MinBroadCast { get; set; }
 		private DateTime? MaxBroadCast { get; set; }
@@ -109,6 +127,9 @@ namespace Merlin.Controls
                         }
                     }
                 }
+
+                if (showRollerNumbers)
+                    RefreshCellTexts();
 			};
 		}
 
@@ -363,7 +384,64 @@ namespace Merlin.Controls
 
 		protected virtual string GetCellContent(DataRow row)
 		{
-			return DateTimeUtils.Time2String(ParseHelper.GetInt32FromObject(row[ShowUnconfirmed ? "timeWithUnConfirmed" : "timeWithConfirmed"], 0));
+			DateTime windowDate = ParseHelper.GetDateTimeFromObject(row["date"], DateTime.MinValue);
+			int timeWithConfirmed = ParseHelper.GetInt32FromObject(row["timeWithConfirmed"], 0);
+			int timeWithUnConfirmed = ParseHelper.GetInt32FromObject(row["timeWithUnConfirmed"], 0);
+			return BuildCellContent(windowDate, timeWithConfirmed, timeWithUnConfirmed);
+		}
+
+		private string BuildCellContent(DateTime windowDate, int timeWithConfirmed, int timeWithUnConfirmed)
+		{
+			if (showRollerNumbers)
+			{
+				string rollerNumbersText = GetRollerNumbersText(windowDate);
+				if (rollerNumbersText != null)
+					return rollerNumbersText;
+			}
+
+			return DateTimeUtils.Time2String(ShowUnconfirmed ? timeWithUnConfirmed : timeWithConfirmed);
+		}
+
+		// Номера роликов, размещённых в этом слоте (через запятую, в порядке размещения — как
+		// они лежат в AddedIssues), или null, если слот свободен / номер ролика не известен.
+		// AddedIssues уже фильтрует "свою" акцию и, что важно, один клик AddRangeIssues атомарно
+		// пишет ОДИН И ТОТ ЖЕ ролик на все станции акции сразу (см. AddRangeIssues.sql — @rollerID
+		// один параметр на весь курсор по станциям) — поэтому потеря привязки к конкретной
+		// станции в AddedIssues не теряет сам номер ролика.
+		private string GetRollerNumbersText(DateTime windowDate)
+		{
+			if (AddedIssues == null || rollerNumbers == null || windowDate == DateTime.MinValue) return null;
+
+			DataRow[] issueRows = AddedIssues.Select(string.Format("[issueDate] = '{0}'", windowDate));
+			if (issueRows.Length == 0) return null;
+
+			List<string> numbers = new List<string>();
+			foreach (DataRow issueRow in issueRows)
+			{
+				int rollerId = ParseHelper.GetInt32FromObject(issueRow[Roller.ParamNames.RollerId], 0);
+				if (rollerNumbers.TryGetValue(rollerId, out int number))
+					numbers.Add(number.ToString());
+			}
+			return numbers.Count > 0 ? string.Join(", ", numbers) : null;
+		}
+
+		// Перерисовать текст всех ячеек грида (без похода в БД) — нужно при включении/выключении
+		// ShowRollerNumbers. При обычном RefreshGrid() (после клика добавления/удаления) тоже
+		// вызывается — см. onGridPopulated — но там AddedIssues уже свежий на момент вызова.
+		public void RefreshCellTexts()
+		{
+			int rowCount = _tariffWindows.GetLength(0);
+			int columnCount = _tariffWindows.GetLength(1);
+
+			for (int rowIndex = 0; rowIndex < rowCount; rowIndex++)
+				for (int columnIndex = 0; columnIndex < columnCount; columnIndex++)
+					if (_tariffWindows[rowIndex, columnIndex] is TariffWindowWithRange window)
+						UpdateGridCell(rowIndex + FIXED_ROWS, columnIndex + FixedCols, window);
+		}
+
+		private void UpdateGridCell(int rowIndex, int columnIndex, TariffWindowWithRange window)
+		{
+			dtGrid.Rows[rowIndex][columnIndex] = BuildCellContent(window.WindowDate, window.TimeWithConfirmed, window.TimeWithUnConfirmed);
 		}
 
 		protected override void SetNavigationCaption()

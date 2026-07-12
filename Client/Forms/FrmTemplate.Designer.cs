@@ -302,6 +302,7 @@
             this.MinimizeBox = false;
             this.Name = "FrmTemplate";
             this.ShowInTaskbar = false;
+            this.StartPosition = System.Windows.Forms.FormStartPosition.CenterScreen;
             this.Text = "Шаблон №1 для внесения роликов";
             this.Load += new System.EventHandler(this.FrmTemplate_Load);
             this.gbWeekDays.ResumeLayout(false);

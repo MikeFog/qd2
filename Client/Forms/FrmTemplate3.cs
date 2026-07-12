@@ -22,6 +22,31 @@ namespace Merlin.Forms
         private readonly IssueTemplate _template;
         private readonly IList<int> _massmediaIds;
         private readonly RollerPositions _position;
+        private readonly Campaign _campaign;
+        // Веерная кампания идёт без конкретной _campaign (см. CampaignForm.GetTemplateMassmediaIds) —
+        // акцию в этом случае берёт вызывающий код из TariffWithRangeGrid.Action и передаёт сюда
+        // готовой, а не через _campaign.Action. Для линейной кампании это просто _campaign.Action.
+        private readonly ActionOnMassmedia _action;
+
+        // Существующее (до этого запуска шаблона) состояние кампании, по каждому СМИ отдельно —
+        // и объёмная, и пакетная скидка считаются по-станционно (см. hlp_CompanyDiscountCalculate,
+        // pc_PackageDiscountCalculateModel), поэтому агрегат тут не годится. Заполняется один раз
+        // в OnLoad (см. LoadExistingCampaignState), переиспользуется в btnEstimatePrice_Click.
+        private Dictionary<int, decimal> _existingTariffPriceByMassmedia;
+        private Dictionary<int, int> _existingIssuesDurationByMassmedia;
+
+        // Агрегаты по всем станциям сразу — базис для блока "Статистика": то, что там показано
+        // при открытии формы и после любого сброса (см. DisplayBaselinePrices).
+        private decimal _baselineTariffSum;
+        private decimal _baselineDiscountedSum;
+        private decimal _baselineManagerDiscount;
+        private decimal _baselinePackageDiscount;
+
+        // Признак "есть реальные выпуски хоть у одной кампании акции" и её менеджерский коэффициент —
+        // источник для GetEffectiveManagerDiscount, единый для линейной (сама _campaign) и веерной
+        // (первая кампания акции с выпусками) кампании. Заполняется в LoadExistingCampaignState.
+        private bool _hasExistingIssues;
+        private decimal _existingManagerDiscount;
 
         public FrmTemplate3()
         {
@@ -29,9 +54,11 @@ namespace Merlin.Forms
             InitRollersGrid();
         }
 
-        public FrmTemplate3(Firm firm, IssueTemplate template, IList<int> massmediaIds, RollerPositions position) : this()
+        internal FrmTemplate3(Firm firm, IssueTemplate template, IList<int> massmediaIds, RollerPositions position, Campaign campaign, ActionOnMassmedia action) : this()
         {
             _position = position;
+            _campaign = campaign;
+            _action = action;
             if (template != null && template.StartTime != DateTime.MinValue && template.FinishTime != DateTime.MinValue)
                 _template = template;
             else
@@ -55,11 +82,17 @@ namespace Merlin.Forms
         private void InitRollersGrid()
         {
             dgvRollers.AutoGenerateColumns = false;
+            // DisplayedCells (не None): с фиксированным размером строк/колонок тематический CheckBoxRenderer
+            // иногда не рисует галочку колонки ColSelected над RDP-сессией — глиф не помещается в статично
+            // рассчитанную под локальный DPI ячейку и не рисуется вообще, без ошибки. При DisplayedCells
+            // размер ячейки постоянно подгоняется под фактический контент при любом DPI.
+            dgvRollers.AutoSizeColumnsMode = DataGridViewAutoSizeColumnsMode.DisplayedCells;
+            dgvRollers.AutoSizeRowsMode = DataGridViewAutoSizeRowsMode.DisplayedCells;
             dgvRollers.Columns.Add(new DataGridViewCheckBoxColumn
             {
                 Name = ColSelected,
                 HeaderText = string.Empty,
-                Width = 40
+                Width = 60
             });
             dgvRollers.Columns.Add(new DataGridViewTextBoxColumn
             {
@@ -131,6 +164,62 @@ namespace Merlin.Forms
             lblGridQuantityValue.ForeColor = gridTotalQuantity == expectedTotalQuantity ? Color.Green : Color.Red;
 
             lblTotalDurationValue.Text = FormatDuration(totalDurationSeconds);
+
+            // Любое изменение параметров делает предыдущий расчёт цены неактуальным —
+            // сбрасываем его, чтобы не ввести пользователя в заблуждение устаревшими цифрами.
+            ResetPriceEstimate();
+        }
+
+        // Любое изменение параметров возвращает блок статистики к текущему, реальному состоянию
+        // кампании — пользователю важна финальная сумма, а не то, сколько именно принесёт шаблон,
+        // поэтому отдельной "оценки добавки" не показываем, только конечный результат.
+        private void ResetPriceEstimate()
+        {
+            DisplayBaselinePrices();
+        }
+
+        private void DisplayBaselinePrices()
+        {
+            lblCampaignPriceValue.Text = _baselineTariffSum.ToString("c");
+            lblPackageDiscountValue.Text = _baselinePackageDiscount.ToString("N2");
+
+            if (_massmediaIds.Count == 1)
+            {
+                lblCompanyDiscountValue.Text = (_baselineTariffSum > 0 ? _baselineDiscountedSum / _baselineTariffSum : 1m).ToString("N2");
+                lblTotalBeforePackageValue.Text = _baselineDiscountedSum.ToString("c");
+                lblManagerDiscountValue.Text = _baselineManagerDiscount.ToString("N2");
+                lblGrandTotalValue.Text = (_baselineDiscountedSum * _baselineManagerDiscount * _baselinePackageDiscount).ToString("c");
+            }
+            else
+            {
+                // Объёмная и менеджерская скидка веерной акции — значения по станциям (см.
+                // LoadExistingCampaignState), единого числа на всю акцию нет — не показываем,
+                // как и EditIssuesForm (ActionOnMassmedia.DisplayData). Итого — готовое с Action.
+                lblCompanyDiscountValue.Text = "—";
+                lblTotalBeforePackageValue.Text = "—";
+                lblManagerDiscountValue.Text = "—";
+                lblGrandTotalValue.Text = _action.TotalPrice.ToString("c");
+            }
+        }
+
+        // Campaign.managerDiscount у НОВОЙ кампании (нет ни одного выпуска) — это ещё не реальный
+        // коэффициент, а голый DEFAULT 1 из Campaign.sql: ActionRecalculate вызывает
+        // fn_GetMaxUserDiscount и пишет managerDiscount только на переходе количества выпусков
+        // 0 → не 0 (см. ActionRecalculate.sql, Phase 1E), а для кампании, которая этот переход
+        // ни разу не проходила, поле так и остаётся равно 1. Реальный Калькулятор для такого
+        // гипотетического случая коэффициент из кампании не читает вовсе — считает его через
+        // SecurityManager.User.GetDiscount(startDate, finishDate) на выбранный период, с
+        // исключением для админов (см. TemplateEditorControl.SetManagerDiscount). Для кампании
+        // с реальными выпусками управленческий коэффициент уже корректно посчитан — используем
+        // его (_hasExistingIssues/_existingManagerDiscount, см. LoadExistingCampaignState), без
+        // обращения к SP.
+        private decimal GetEffectiveManagerDiscount(DateTime startDate, DateTime finishDate)
+        {
+            if (_hasExistingIssues)
+                return _existingManagerDiscount;
+
+            SecurityManager.User user = SecurityManager.LoggedUser;
+            return user.IsAdmin ? 1m : user.GetDiscount(startDate, finishDate);
         }
 
         private int GetExpectedTotalQuantity()
@@ -204,8 +293,7 @@ namespace Merlin.Forms
             List<DateTime> selectedDates = BuildTemplateDates();
             if (selectedDates.Count == 0)
             {
-                lblCampaignPriceValue.Text = lblTotalBeforePackageValue.Text = 0m.ToString("c");
-                lblCompanyDiscountValue.Text = 1m.ToString("N2");
+                DisplayBaselinePrices();
                 return;
             }
 
@@ -214,6 +302,10 @@ namespace Merlin.Forms
             decimal durationSec = (decimal)totalDurationSeconds / gridTotalQuantity;
             int primePerDay = cbSplitPrime.Checked ? (int)numQuantityPrime.Value : 0;
             int nonPrimePerDay = cbSplitPrime.Checked ? (int)numQuantityNonPrime.Value : (int)txtQuantity.Value;
+
+            // На реальном периоде шаблона, а не на первоначальном (см. GetEffectiveManagerDiscount) —
+            // пользователь мог поменять даты в диалоге перед нажатием "Рассчитать".
+            decimal managerDiscount = GetEffectiveManagerDiscount(selectedDates.Min(), selectedDates.Max());
 
             using (var calcGrid = new PriceCalculatorGrid())
             {
@@ -228,57 +320,93 @@ namespace Merlin.Forms
                     durationSec,
                     primePerDay, nonPrimePerDay,
                     primePerDay, nonPrimePerDay,
-                    1m, true, 0);
+                    managerDiscount, true, 0);
 
                 var targetRows = calcGrid.SummaryTable.AsEnumerable()
                     .Where(row => _massmediaIds.Contains(Convert.ToInt32(row["massmediaID"])))
                     .ToList();
 
-                decimal totalAmount = targetRows.Sum(row => Convert.ToDecimal(row[nameof(PriceCalculatorGrid.PriceCalculatorColumn.TotalAmount)]));
-                decimal totalWithDiscount = targetRows.Sum(row => Convert.ToDecimal(row[nameof(PriceCalculatorGrid.PriceCalculatorColumn.TotalWithDiscount)]));
-                decimal totalBeforePackage = targetRows.Sum(row => Convert.ToDecimal(row[nameof(PriceCalculatorGrid.PriceCalculatorColumn.TotalBeforePackage)]));
-                decimal companyDiscount = totalAmount > 0 ? totalWithDiscount / totalAmount : 1m;
+                // Показываем не "сколько добавит шаблон", а финальное состояние кампании целиком —
+                // существующее (см. LoadExistingCampaignState) плюс то, что добавляют эти ролики.
+                // Объёмная скидка считается hlp_CompanyDiscountCalculate по ПОЛНОЙ сумме кампании
+                // (см. ActionRecalculate), поэтому к сумме каждой станции прибавляется её существующая
+                // tariffPrice до вызова; наивный TotalWithDiscount/TotalBeforePackage из calcGrid
+                // (посчитанные без учёта существующей суммы) не используются вовсе.
+                decimal combinedTariffSum = 0m;
+                decimal combinedDiscountedSum = 0m;
+                foreach (DataRow row in targetRows)
+                {
+                    int massmediaId = Convert.ToInt32(row["massmediaID"]);
+                    decimal rowAmount = Convert.ToDecimal(row[nameof(PriceCalculatorGrid.PriceCalculatorColumn.TotalAmount)]);
 
-                lblCampaignPriceValue.Text = totalAmount.ToString("c");
-                lblCompanyDiscountValue.Text = companyDiscount.ToString("N2");
-                lblTotalBeforePackageValue.Text = totalBeforePackage.ToString("c");
+                    decimal existingTariffPrice = _existingTariffPriceByMassmedia.TryGetValue(massmediaId, out decimal existing) ? existing : 0m;
+                    decimal newStationTariffSum = existingTariffPrice + rowAmount;
+                    decimal stationDiscount = GetCompanyDiscount(massmediaId, selectedDates.Min(), newStationTariffSum);
+
+                    combinedTariffSum += newStationTariffSum;
+                    combinedDiscountedSum += newStationTariffSum * stationDiscount;
+                }
+
+                lblCampaignPriceValue.Text = combinedTariffSum.ToString("c");
 
                 // Пакетная скидка — актуальна прежде всего для веерной кампании (несколько СМИ разом),
                 // но считаем тем же способом, что и реальный Калькулятор цены, независимо от их числа.
-                decimal packageDiscount = GetPackageDiscount(selectedDates.Min(), totalWithDiscount, targetRows, durationSec);
-                decimal grandTotal = totalBeforePackage * packageDiscount;
+                // priceTotal и durationSec-и в TVP — с учётом уже существующих данных кампании (см. выше),
+                // иначе порог пакета подбирался бы только по добавляемым роликам, без контекста акции.
+                decimal packageDiscount = GetPackageDiscount(selectedDates.Min(), combinedDiscountedSum, targetRows, durationSec, _existingIssuesDurationByMassmedia);
+                decimal grandTotal = combinedDiscountedSum * managerDiscount * packageDiscount;
 
                 lblPackageDiscountValue.Text = packageDiscount.ToString("N2");
                 lblGrandTotalValue.Text = grandTotal.ToString("c");
 
-                // ВРЕМЕННО: отладка расхождения предварительной цены с реальной после генерации.
-                // Показываем только для линейной кампании (одна СМИ) — для веерной цифр по станциям несколько.
-                if (targetRows.Count == 1)
+                if (_massmediaIds.Count == 1)
                 {
-                    DataRow priceRow = targetRows[0];
-                    string mode = cbSplitPrime.Checked
-                        ? "с разбивкой прайм/офф-прайм"
-                        : "БЕЗ разбивки — всё количество считается по цене офф-прайм";
-                    lblDebugInfo.Text =
-                        $"[Отладка] Средняя продолжительность ролика: {durationSec:0.00} сек (без округления)\n" +
-                        $"Режим: {mode}\n" +
-                        $"Будни:    прайм {Convert.ToDecimal(priceRow["PrimePricePerSecWeekday"]):0.####} / " +
-                        $"офф-прайм {Convert.ToDecimal(priceRow["NonPrimePricePerSecWeekday"]):0.####} за сек\n" +
-                        $"Выходные: прайм {Convert.ToDecimal(priceRow["PrimePricePerSecWeekend"]):0.####} / " +
-                        $"офф-прайм {Convert.ToDecimal(priceRow["NonPrimePricePerSecWeekend"]):0.####} за сек";
+                    decimal companyDiscount = combinedTariffSum > 0 ? combinedDiscountedSum / combinedTariffSum : 1m;
+                    lblCompanyDiscountValue.Text = companyDiscount.ToString("N2");
+                    lblTotalBeforePackageValue.Text = combinedDiscountedSum.ToString("c");
+                    lblManagerDiscountValue.Text = managerDiscount.ToString("N2");
                 }
                 else
                 {
-                    lblDebugInfo.Text = "[Отладка] доступно только для линейной кампании (одна СМИ)";
+                    // Объёмная и менеджерская скидка веерной кампании — значения по станциям
+                    // (см. DisplayBaselinePrices), единого числа нет — не показываем. grandTotal
+                    // при этом всё равно корректно учитывает объёмную скидку каждой станции —
+                    // она уже посчитана по отдельности в цикле выше (stationDiscount).
+                    lblCompanyDiscountValue.Text = "—";
+                    lblTotalBeforePackageValue.Text = "—";
+                    lblManagerDiscountValue.Text = "—";
                 }
             }
+        }
+
+        // Тот же вызов, что делает PriceCalculatorGrid.GetCompanyDiscount — недоступен оттуда (private),
+        // дублируем напрямую по SP. В отличие от PriceCalculatorGrid (который вызывает её с tariffPrice
+        // только новых роликов, без контекста кампании), вызывающий код здесь передаёт уже существующую
+        // сумму по тарифам кампании + добавляемую — ровно как считает ActionRecalculate при реальном
+        // пересчёте (hlp_CompanyDiscountCalculate там тоже вызывается с полной, а не только новой, суммой).
+        private static decimal GetCompanyDiscount(int massmediaId, DateTime startDate, decimal tariffPrice)
+        {
+            var p = DataAccessor.CreateParametersDictionary();
+            p["massMediaID"] = (short)massmediaId;
+            p["campaignTypeID"] = (byte)1;
+            p["startDate"] = startDate;
+            p["tariffPrice"] = tariffPrice;
+            p["discountValue"] = null;
+
+            DataAccessor.ExecuteNonQuery("hlp_CompanyDiscountCalculate", p, 30, false);
+
+            object dv = p["discountValue"];
+            return (dv == null || dv == DBNull.Value) ? 1m : Convert.ToDecimal(dv);
         }
 
         // Тот же вызов, что делает PriceCalculatorForm.GetPackageDiscount — берём напрямую по SP,
         // так как сам метод формы приватный и недоступен отсюда. TVP-тип pc_SelectedMassmedia в SQL
         // хранит durationSec как INT — округляем только на входе в эту процедуру, это ограничение TVP,
-        // не PriceCalculatorGrid.
-        private static decimal GetPackageDiscount(DateTime startDate, decimal priceTotal, List<DataRow> rows, decimal durationSec)
+        // не PriceCalculatorGrid. durationSec в TVP — существующий хронометраж станции (Campaign.issuesDuration)
+        // ПЛЮС добавляемый, иначе порог eachVolume сравнивался бы со средней длительностью только по
+        // добавляемым роликам, без остальной акции (см. hlp_ActionDiscountCalculate).
+        private static decimal GetPackageDiscount(DateTime startDate, decimal priceTotal, List<DataRow> rows, decimal durationSec,
+            Dictionary<int, int> existingDurationByMassmedia)
         {
             if (rows.Count == 0)
                 return 1m;
@@ -294,7 +422,9 @@ namespace Merlin.Forms
                 int primeWe = Convert.ToInt32(row[nameof(PriceCalculatorGrid.PriceCalculatorColumn.PrimeTotalSpotsWeekend)]);
                 int nonPrimeWe = Convert.ToInt32(row[nameof(PriceCalculatorGrid.PriceCalculatorColumn.NonPrimeTotalSpotsWeekend)]);
                 int totalSpots = primeWd + nonPrimeWd + primeWe + nonPrimeWe;
-                tvpTable.Rows.Add((short)massmediaId, (int)Math.Round(durationSec * totalSpots));
+                int addedDurationSec = (int)Math.Round(durationSec * totalSpots);
+                int existingDurationSec = existingDurationByMassmedia.TryGetValue(massmediaId, out int existing) ? existing : 0;
+                tvpTable.Rows.Add((short)massmediaId, existingDurationSec + addedDurationSec);
             }
 
             var p = DataAccessor.CreateParametersDictionary();
@@ -319,6 +449,67 @@ namespace Merlin.Forms
                 dates.Add(_template.CurrentDate.Date);
             _template.Reset();
             return dates;
+        }
+
+        // Существующие сумма по тарифам, цена с учётом объёмной скидки и хронометраж кампании до
+        // запуска этого шаблона, по каждому СМИ отдельно. tariffPrice нужен для объёмной скидки
+        // (hlp_CompanyDiscountCalculate), issuesDuration — для порога пакетной скидки (eachVolume
+        // в pc_PackageDiscountCalculateModel сравнивается со средней длительностью по всей акции,
+        // а не только с добавляемой). Campaign.Price — вычисляемая колонка (tariffPrice*discount,
+        // см. Campaign.sql) — уже готовая "цена с учётом объёмной скидки", пересчитывать не нужно.
+        // Для линейной — это просто _campaign.*. Для веерной аналогично GetTemplateMassmediaIds
+        // в CampaignForm: перебираем все кампании акции (Action.Campaigns()).
+        private void LoadExistingCampaignState()
+        {
+            _existingTariffPriceByMassmedia = new Dictionary<int, decimal>();
+            _existingIssuesDurationByMassmedia = new Dictionary<int, int>();
+            _baselineTariffSum = 0m;
+            _baselineDiscountedSum = 0m;
+
+            if (_massmediaIds.Count == 1)
+            {
+                // Линейная — _campaign гарантированно не null (см. CampaignForm.GetTemplateMassmediaIds).
+                _existingTariffPriceByMassmedia[_massmediaIds[0]] = _campaign.TariffPrice;
+                _existingIssuesDurationByMassmedia[_massmediaIds[0]] = _campaign.IssuesDuration;
+                _baselineTariffSum = _campaign.TariffPrice;
+                _baselineDiscountedSum = _campaign.Price;
+                // Одна кампания в акции — ActionRecalculate жёстко пишет discount=1
+                // (@campaignCount<=1, без обращения к hlp_ActionDiscountCalculate).
+                _baselinePackageDiscount = 1m;
+                _hasExistingIssues = _campaign.IssuesCount > 0;
+                _existingManagerDiscount = _campaign.ManagerDiscount;
+                // Показывается только для линейной (см. DisplayBaselinePrices) — для веерной не
+                // считаем, чтобы не тратить лишний вызов GetUserDiscount на то, что не выводится.
+                _baselineManagerDiscount = GetEffectiveManagerDiscount(dtStartDate.Value, dtFinishDate.Value);
+                return;
+            }
+            else
+            {
+                // Веерная — _campaign == null, акция и её кампании берутся через _action
+                // (переданный вызывающим кодом, см. CampaignForm.tbbTemplate3_Click).
+                foreach (DataRow row in _action.Campaigns().Rows)
+                {
+                    int campaignId = Convert.ToInt32(row[Campaign.ParamNames.CampaignId]);
+                    Campaign campaign = Campaign.GetCampaignById(campaignId);
+                    int massmediaId = Convert.ToInt32(campaign[Campaign.ParamNames.MassmediaId]);
+                    _existingTariffPriceByMassmedia[massmediaId] = campaign.TariffPrice;
+                    _existingIssuesDurationByMassmedia[massmediaId] = campaign.IssuesDuration;
+                    _baselineTariffSum += campaign.TariffPrice;
+
+                    // Менеджерский коэффициент общий на всю акцию (один пользователь/период) —
+                    // достаточно найти первую кампанию с реальными выпусками.
+                    if (!_hasExistingIssues && campaign.IssuesCount > 0)
+                    {
+                        _hasExistingIssues = true;
+                        _existingManagerDiscount = campaign.ManagerDiscount;
+                    }
+                }
+
+                // Пакетная скидка веерной акции — то же поле, что показывает EditIssuesForm
+                // (см. ActionOnMassmedia.DisplayData): сервер уже посчитал и хранит его на Action,
+                // пересчитывать самим не нужно.
+                _baselinePackageDiscount = _action.Discount;
+            }
         }
 
         // Пары (rollerID, количество) для роликов, отмеченных в гриде с Quantity > 0.
@@ -396,6 +587,11 @@ namespace Merlin.Forms
             numQuantityNonPrime.ValueChanged += (s, args) => RecalculateStats();
             rbOdd.CheckedChanged += (s, args) => RecalculateStats();
             rbEven.CheckedChanged += (s, args) => RecalculateStats();
+
+            // Состояние кампании на момент открытия формы — до RecalculateStats(), т.к. он вызывает
+            // ResetPriceEstimate(), который показывает именно эти базовые значения (см. DisplayBaselinePrices).
+            _action.Refresh();
+            LoadExistingCampaignState();
 
             RecalculateStats();
         }

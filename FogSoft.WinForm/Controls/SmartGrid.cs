@@ -39,6 +39,7 @@ namespace FogSoft.WinForm.Controls
         private bool isMenuEnabled = true;
         private bool checkboxes = false;
         private bool showMultiselectColumn = true;
+        private bool showRowNumbers = false;
         private DataGridViewColumn currentColumn;
         private List<PresentationObject> added2Checked, removedFromChecked;
         private SmartGrid dependantGrid;
@@ -47,6 +48,7 @@ namespace FogSoft.WinForm.Controls
 
         private const string QuickSearchText = "Поиск по полю";
         public const string COL_IsSelected = "isObjectSelected";
+        private const string COL_RowNumber = "smartGridRowNumber";
         private const string ROW_STYLE = "row_style";
         private const string MASS_DELETE_ERROR_ENTITY_PK = "__id";
         private const string MASS_DELETE_ERROR_NAME = "name";
@@ -79,6 +81,17 @@ namespace FogSoft.WinForm.Controls
             // dataGrid.RowStateChanged -= убрана подписка
             dataGrid.CellContentClick += DataGrid_CellContentClick;
             dataGrid.KeyDown += DataGrid_KeyDown;
+            dataGrid.CellFormatting += DataGrid_RowNumberCellFormatting;
+        }
+
+        private void DataGrid_RowNumberCellFormatting(object sender, DataGridViewCellFormattingEventArgs e)
+        {
+            if (!showRowNumbers) return;
+            if (!dataGrid.Columns.Contains(COL_RowNumber)) return;
+            if (e.ColumnIndex != dataGrid.Columns[COL_RowNumber].Index) return;
+
+            e.Value = (e.RowIndex + 1).ToString();
+            e.FormattingApplied = true;
         }
 
         public new bool Enabled
@@ -119,6 +132,12 @@ namespace FogSoft.WinForm.Controls
         {
             get { return showMultiselectColumn; }
             set { showMultiselectColumn = value; }
+        }
+
+        public bool ShowRowNumbers
+        {
+            get { return showRowNumbers; }
+            set { showRowNumbers = value; }
         }
 
         [Browsable(false)]
@@ -849,6 +868,7 @@ namespace FogSoft.WinForm.Controls
         private void SetColumnHeaders(DataColumnCollection columns)
         {
             if (checkboxes) AddMultiSelectColumn();
+            if (showRowNumbers) AddRowNumberColumn();
 
             Image icon = null;
             if (Globals.IconLoader != null) icon = Globals.IconLoader(entity.IconName);
@@ -912,6 +932,22 @@ namespace FogSoft.WinForm.Controls
                 DataPropertyName = COL_IsSelected,
                 ReadOnly = false
             };
+
+            dataGrid.Columns.Add(column);
+        }
+
+        private void AddRowNumberColumn()
+        {
+            DataGridViewTextBoxColumn column = new DataGridViewTextBoxColumn
+            {
+                Name = COL_RowNumber,
+                HeaderText = "№",
+                ReadOnly = true,
+                SortMode = DataGridViewColumnSortMode.NotSortable,
+                Resizable = DataGridViewTriState.False,
+                Width = 35
+            };
+            column.DefaultCellStyle.Alignment = DataGridViewContentAlignment.MiddleCenter;
 
             dataGrid.Columns.Add(column);
         }

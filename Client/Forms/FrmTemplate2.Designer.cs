@@ -449,6 +449,7 @@ namespace Merlin.Forms
             this.MinimizeBox = false;
             this.Name = "FrmTemplate2";
             this.ShowInTaskbar = false;
+            this.StartPosition = System.Windows.Forms.FormStartPosition.CenterScreen;
             this.Text = "Шаблон №2 для внесения роликов";
             ((System.ComponentModel.ISupportInitialize)(this.txtQuantity)).EndInit();
             this.gbWeekDays.ResumeLayout(false);

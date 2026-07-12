@@ -216,6 +216,7 @@ namespace Merlin.Forms
 		protected virtual void ProcessToolbar()
 		{
             tbMarkPrimeWindows.Visible = btnShowDisabled.Visible = btnShowMarked.Visible = IsSimplelCampaign;
+            btnShowRollerNumbers.Visible = IsSimplelCampaign || IsRangeCampaign;
             tsbMuteRoller.Enabled = IsSimplelCampaign;
 			tsbMuteRoller.Visible = tbbPosition.Visible = tbbPlay.Visible = tsbStop.Visible = toolStripSeparator3.Visible = !(_tariffGrid is ProgramIssuesGrid2);
             tbbAdvertType.Visible = !(_tariffGrid is ProgramIssuesGrid2) && !(_tariffGrid is PackModuleGrid) && !IsRangeCampaign;
@@ -741,7 +742,15 @@ namespace Merlin.Forms
 				&& _tariffGrid.CurrentTariffWindow != null
 				&& _tariffGrid.IsActiveCellSelected;
 			if (canRefreshSingleCell)
+			{
+				if (_tariffGrid is RollerIssuesGrid3 grid && _tariffGrid.CurrentTariffWindow is TariffWindow currentWindow)
+				{
+					int rollerId = ParseHelper.GetInt32FromObject(presentationObjects[0][Roller.ParamNames.RollerId], 0);
+					if (rollerId != 0)
+						grid.RemoveIssueFromCache(currentWindow.WindowId, rollerId);
+				}
 				((IRollerGrid)_tariffGrid).RefreshCurrentCell(grdCurrentCampaignIssues.ItemsCount > 0, TariffGridRefreshMode.WithDelete);
+			}
 			else
 				RefreshGrid();
 			ShowWindowIssues(_tariffGrid.CurrentTariffWindow);
@@ -1296,7 +1305,10 @@ namespace Merlin.Forms
 				tbbTemplate.Checked = false;
 				List<int> massmediaIds = GetTemplateMassmediaIds();
 				RollerPositions position = ((IRollerGrid)_tariffGrid).RollerPosition;
-				FrmTemplate3 formTemplate = new FrmTemplate3(Firm, _template, massmediaIds, position);
+				// Веерная кампания: _campaign == null (см. GetTemplateMassmediaIds) — акция берётся
+				// из TariffWithRangeGrid, а не из кампании.
+				ActionOnMassmedia action = IsRangeCampaign ? ((TariffWithRangeGrid)_tariffGrid).Action : _campaign.Action;
+				FrmTemplate3 formTemplate = new FrmTemplate3(Firm, _template, massmediaIds, position, _campaign, action);
 
 				if (formTemplate.ShowDialog(this) == DialogResult.OK)
 				{
@@ -1555,6 +1567,41 @@ namespace Merlin.Forms
                 grid.ShowMarkedWindows = btnShowMarked.Checked;
 				grid.RefreshWindowsColors();
             }
+        }
+
+        private void MarkRollerNumbers(object sender, EventArgs e)
+        {
+            Dictionary<int, int> map = btnShowRollerNumbers.Checked ? BuildRollerNumbersMap() : null;
+
+            if (_tariffGrid is RollerIssuesGrid3 grid)
+            {
+                grid.ShowRollerNumbers = btnShowRollerNumbers.Checked;
+                grid.RollerNumbers = map;
+                grid.RefreshCellTexts();
+            }
+            else if (_tariffGrid is TariffWithRangeGrid rangeGrid)
+            {
+                rangeGrid.ShowRollerNumbers = btnShowRollerNumbers.Checked;
+                rangeGrid.RollerNumbers = map;
+                rangeGrid.RefreshCellTexts();
+            }
+        }
+
+        // rollerID -> номер ролика, ровно тот, что показывает колонка "№" grdRollers
+        // (SmartGrid.ShowRowNumbers) в её текущем порядке строк на этот момент.
+        private Dictionary<int, int> BuildRollerNumbersMap()
+        {
+            Dictionary<int, int> map = new Dictionary<int, int>();
+            DataView view = grdRollers.DataSource;
+            if (view == null) return map;
+
+            for (int i = 0; i < view.Count; i++)
+            {
+                int rollerId = ParseHelper.GetInt32FromObject(view[i][Roller.ParamNames.RollerId], 0);
+                if (rollerId != 0)
+                    map[rollerId] = i + 1;
+            }
+            return map;
         }
 
         private void MarkDisabledWindows(object sender, EventArgs e)

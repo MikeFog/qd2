@@ -29,6 +29,7 @@ Important project documents:
 - AI workflow/playbook: `docs/AI_AGENT_PLAYBOOK.md`
 - Improvement candidates (non-bugs, future work): `docs/IMPROVEMENTS.md`
 - Logging guide: `docs/LOGGING.md`
+- SmartGrid control reference: `docs/smartgrid.md`
 ## Scenario maps
 
 Detailed scenario investigations are stored in:
@@ -36,6 +37,7 @@ Detailed scenario investigations are stored in:
 - `docs/scenarios/range-issue-add-click-to-db.md` — adding issues across all massmedia in one click via `TariffWithRangeGrid` / `AddRangeIssues`.
 - `docs/scenarios/template-issue-generation.md` — bulk issue generation via `FrmTemplate` / `FrmTemplate2` / `FrmGenerator`; covers Simple and TimePeriod templates, prime/non-prime split, linear vs range comparison, and gap analysis for range TimePeriod support.
 - `docs/scenarios/campaign-edit-form-load.md` — data-loading chain when initializing the campaign edit form (`CampaignForm`): pricelist → `TariffWindowRetrieve` grid → `Grid` issue marking → rollers/stats; entry points, SQL procedures, and where original-window time enters the layout.
+- `docs/scenarios/template3-roller-distribution.md` — Шаблон №3 (`FrmTemplate3`): multiple rollers with individual quotas, price estimate reusing `PriceCalculatorGrid`, and `RollerAllocationQueue` round-robin distribution shared by linear (`FrmGenerator`) and range (`TariffWithRangeGrid`) generation paths.
 Before changing issue creation logic, read the relevant scenario map first.
 
 Communication style:

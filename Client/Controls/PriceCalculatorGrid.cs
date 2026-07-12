@@ -80,7 +80,12 @@ namespace Merlin.Controls
             // ✅ стало: нормальное поведение фокуса при редактировании
             dgvStations.SelectionMode = DataGridViewSelectionMode.CellSelect;
 
-            dgvStations.AutoSizeColumnsMode = DataGridViewAutoSizeColumnsMode.None;
+            // DisplayedCells (не None): с фиксированным размером строк/колонок тематический CheckBoxRenderer
+            // иногда не рисует галочку колонки colSelected над RDP-сессией — глиф не помещается в статично
+            // рассчитанную под локальный DPI ячейку и не рисуется вообще, без ошибки. При DisplayedCells
+            // размер ячейки постоянно подгоняется под фактический контент при любом DPI.
+            dgvStations.AutoSizeColumnsMode = DataGridViewAutoSizeColumnsMode.DisplayedCells;
+            dgvStations.AutoSizeRowsMode = DataGridViewAutoSizeRowsMode.DisplayedCells;
 
             dgvStations.EditingControlShowing += DgvStations_EditingControlShowing;
             dgvStations.DataError += (s, e) => { e.ThrowException = false; };
@@ -216,7 +221,7 @@ namespace Merlin.Controls
             {
                 Name = "colSelected",
                 HeaderText = "",
-                Width = 30,
+                Width = 50,
                 DataPropertyName = ColumnName(PriceCalculatorColumn.IsSelected),
                 TrueValue = true,
                 FalseValue = false,
