@@ -52,7 +52,33 @@ IF @actionName In ('AddItem', 'UpdateItem', 'Clone') And
 	BEGIN
 		RAISERROR('TariffAlreadyExists', 16, 1)
 		RETURN
-	END	
+	END
+
+-- Проверка "на чужой территории": на той же станции в это же время уже есть спонсорский тариф (SponsorTariff живёт в другой таблице/цепочке pricelistID)
+IF @actionName In ('AddItem', 'UpdateItem', 'Clone') And
+	Exists(
+		Select	1
+		From	SponsorTariff st
+		Inner Join SponsorProgramPricelist spl On spl.pricelistID = st.pricelistID
+		Inner Join SponsorProgram sp On sp.sponsorProgramID = spl.sponsorProgramID
+		Inner Join Pricelist p On p.pricelistID = @pricelistID
+		Where	sp.massmediaID = p.massmediaID and
+		spl.startDate <= p.finishDate and spl.finishDate >= p.startDate and
+		st.time = @time and
+		(
+		(st.monday = 1 and @monday = 1) or
+		(st.tuesday = 1 and @tuesday = 1) or
+		(st.wednesday = 1 and @wednesday = 1) or
+		(st.thursday = 1 and @thursday = 1) or
+		(st.friday = 1 and @friday = 1) or
+		(st.saturday = 1 and @saturday = 1) or
+		(st.sunday = 1 and @sunday = 1)
+		)
+	)
+	BEGIN
+		RAISERROR('TariffConflictsWithSponsorTariff', 16, 1)
+		RETURN
+	END
 
 -- проверим, что новый тариф не "разрывает" цепочку. Ищем тариф, который "перед" этим в какой либо из дней, и который начало цепочки 
 IF @actionName In ('AddItem', 'UpdateItem', 'Clone')
