@@ -881,6 +881,15 @@ namespace FogSoft.WinForm.Controls
                     AddColumn(entityAttribute);
             }
 
+            if (showRowNumbers)
+            {
+                // Нумерация строк (e.RowIndex + 1) актуальна только для исходного порядка.
+                // Сортировка любой колонки перемешает строки, но номера останутся 1..N —
+                // видимость упорядоченности теряется, поэтому сортировку целиком отключаем.
+                foreach (DataGridViewColumn column in dataGrid.Columns)
+                    column.SortMode = DataGridViewColumnSortMode.NotSortable;
+            }
+
             //dataGrid.Columns[dataGrid.Columns.Count-1].AutoSizeMode = DataGridViewAutoSizeColumnMode.Fill;
         }
 
