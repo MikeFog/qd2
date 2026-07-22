@@ -790,13 +790,6 @@ namespace Merlin.Classes
 			{
                 // the same for program issues without advert type
                 MessageBox.ShowExclamation(Properties.Resources.ActivationWithProgramIssuesWithoutAdvType);
-                dataSet = DataAccessor.LoadDataSet("RollersWithoutAdvertype", procParameters);
-                dtProgramIssues = dataSet.Tables[1];
-				if (dtProgramIssues.Rows.Count > 0)
-				{
-					MessageBox.ShowExclamation(MessageAccessor.GetMessage("ActivationWithProgramIssuesWithoutAdvType"));
-					return false;
-				}
             }
 			return true;
         }
