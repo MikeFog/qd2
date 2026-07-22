@@ -42,6 +42,13 @@ namespace Merlin.Forms
         private decimal _baselineManagerDiscount;
         private decimal _baselinePackageDiscount;
 
+        // Веерная: объёмная скидка — коэффициент по станциям (единого числа на всю акцию нет),
+        // показываем значением или "разные" (см. FormatPerStationValue). Цена с учётом объёмной
+        // скидки — сумма цен по кампаниям станций (_baselineDiscountedSum), а не по-станционное поле.
+        // Список инициализирован пустым не случайно: из-за порядка в OnLoad DisplayBaselinePrices
+        // может сработать ДО LoadExistingCampaignState (риск #9) — пустой список даёт "—", а не NRE.
+        private List<decimal> _baselineStationCompanyDiscounts = new List<decimal>();
+
         // Признак "есть реальные выпуски хоть у одной кампании акции" и её менеджерский коэффициент —
         // источник для GetEffectiveManagerDiscount, единый для линейной (сама _campaign) и веерной
         // (первая кампания акции с выпусками) кампании. Заполняется в LoadExistingCampaignState.
@@ -104,14 +111,6 @@ namespace Merlin.Forms
             });
             dgvRollers.Columns.Add(new DataGridViewTextBoxColumn
             {
-                Name = ColAdvertSubject,
-                HeaderText = "Предмет рекламы",
-                DataPropertyName = "advertTypeName",
-                ReadOnly = true,
-                AutoSizeMode = DataGridViewAutoSizeColumnMode.Fill
-            });
-            dgvRollers.Columns.Add(new DataGridViewTextBoxColumn
-            {
                 Name = ColDuration,
                 HeaderText = "Продолжительность",
                 DataPropertyName = "durationString",
@@ -123,6 +122,14 @@ namespace Merlin.Forms
                 Name = ColQuantity,
                 HeaderText = "Количество",
                 Width = 110
+            });
+            dgvRollers.Columns.Add(new DataGridViewTextBoxColumn
+            {
+                Name = ColAdvertSubject,
+                HeaderText = "Предмет рекламы",
+                DataPropertyName = "advertTypeName",
+                ReadOnly = true,
+                AutoSizeMode = DataGridViewAutoSizeColumnMode.Fill
             });
 
             // Чекбокс должен коммититься сразу, иначе CellValueChanged сработает только после ухода с ячейки
@@ -156,14 +163,25 @@ namespace Merlin.Forms
             // интервала/дней недели/чёт-нечёт и количества в день (перекочевали из Шаблона 2).
             // Разбивка по роликам в гриде должна СОВПАСТЬ с этим числом — проверяется при расчёте цены,
             // а расхождение видно сразу по цвету строки "Сумма по гриду роликов".
+            // Веерная (несколько СМИ) размещает одни и те же выпуски на КАЖДУЮ станцию — показываем
+            // "на одной станции / суммарно по всем станциям" через слэш. Линейная — одно число.
+            int stationCount = _massmediaIds.Count;
+
             int expectedTotalQuantity = GetExpectedTotalQuantity();
-            lblTotalQuantityValue.Text = expectedTotalQuantity.ToString();
+            lblTotalQuantityValue.Text = stationCount > 1
+                ? $"{expectedTotalQuantity} / {expectedTotalQuantity * stationCount}"
+                : expectedTotalQuantity.ToString();
 
             var (gridTotalQuantity, totalDurationSeconds) = GetCheckedRollerAggregates();
-            lblGridQuantityValue.Text = gridTotalQuantity.ToString();
+            lblGridQuantityValue.Text = stationCount > 1
+                ? $"{gridTotalQuantity} / {gridTotalQuantity * stationCount}"
+                : gridTotalQuantity.ToString();
+            // Цвет сравнивает по-станционную сумму по гриду с ожидаемой (обе — на одну станцию).
             lblGridQuantityValue.ForeColor = gridTotalQuantity == expectedTotalQuantity ? Color.Green : Color.Red;
 
-            lblTotalDurationValue.Text = FormatDuration(totalDurationSeconds);
+            lblTotalDurationValue.Text = stationCount > 1
+                ? $"{FormatDuration(totalDurationSeconds)} / {FormatDuration(totalDurationSeconds * stationCount)}"
+                : FormatDuration(totalDurationSeconds);
 
             // Любое изменение параметров делает предыдущий расчёт цены неактуальным —
             // сбрасываем его, чтобы не ввести пользователя в заблуждение устаревшими цифрами.
@@ -192,14 +210,26 @@ namespace Merlin.Forms
             }
             else
             {
-                // Объёмная и менеджерская скидка веерной акции — значения по станциям (см.
-                // LoadExistingCampaignState), единого числа на всю акцию нет — не показываем,
-                // как и EditIssuesForm (ActionOnMassmedia.DisplayData). Итого — готовое с Action.
-                lblCompanyDiscountValue.Text = "—";
-                lblTotalBeforePackageValue.Text = "—";
-                lblManagerDiscountValue.Text = "—";
+                // Объёмная скидка — коэффициент по станциям: одинаковый → значение, разный → "разные".
+                // Цена с учётом объёмной скидки — сумма цен по кампаниям станций. Менеджерская скидка —
+                // единый коэффициент на акцию (пользователь/период). Итого — готовое с Action.
+                lblCompanyDiscountValue.Text = FormatPerStationValue(_baselineStationCompanyDiscounts, "N2");
+                lblTotalBeforePackageValue.Text = _baselineDiscountedSum.ToString("c");
+                lblManagerDiscountValue.Text = _baselineManagerDiscount.ToString("N2");
                 lblGrandTotalValue.Text = _action.TotalPrice.ToString("c");
             }
+        }
+
+        // Веерная кампания: коэффициент объёмной скидки по станциям. Если во всех станциях значение
+        // совпадает (в том виде, в каком показывается — сравнение по отформатированной строке, чтобы
+        // незначимые разряды не давали ложное "разные"), возвращаем само значение, иначе "разные".
+        // Пустой набор → "—".
+        private static string FormatPerStationValue(IEnumerable<decimal> values, string format)
+        {
+            var distinct = values.Select(v => v.ToString(format)).Distinct().ToList();
+            if (distinct.Count == 0)
+                return "—";
+            return distinct.Count == 1 ? distinct[0] : "разные";
         }
 
         // Campaign.managerDiscount у НОВОЙ кампании (нет ни одного выпуска) — это ещё не реальный
@@ -334,6 +364,7 @@ namespace Merlin.Forms
                 // (посчитанные без учёта существующей суммы) не используются вовсе.
                 decimal combinedTariffSum = 0m;
                 decimal combinedDiscountedSum = 0m;
+                var stationCompanyDiscounts = new List<decimal>();
                 foreach (DataRow row in targetRows)
                 {
                     int massmediaId = Convert.ToInt32(row["massmediaID"]);
@@ -345,6 +376,7 @@ namespace Merlin.Forms
 
                     combinedTariffSum += newStationTariffSum;
                     combinedDiscountedSum += newStationTariffSum * stationDiscount;
+                    stationCompanyDiscounts.Add(stationDiscount);
                 }
 
                 lblCampaignPriceValue.Text = combinedTariffSum.ToString("c");
@@ -368,13 +400,12 @@ namespace Merlin.Forms
                 }
                 else
                 {
-                    // Объёмная и менеджерская скидка веерной кампании — значения по станциям
-                    // (см. DisplayBaselinePrices), единого числа нет — не показываем. grandTotal
-                    // при этом всё равно корректно учитывает объёмную скидку каждой станции —
-                    // она уже посчитана по отдельности в цикле выше (stationDiscount).
-                    lblCompanyDiscountValue.Text = "—";
-                    lblTotalBeforePackageValue.Text = "—";
-                    lblManagerDiscountValue.Text = "—";
+                    // Объёмная скидка — коэффициент по станциям: одинаковый → значение, разный → "разные".
+                    // Цена с учётом объёмной скидки — сумма по станциям (combinedDiscountedSum).
+                    // Менеджерская скидка — единый коэффициент на акцию (managerDiscount выше).
+                    lblCompanyDiscountValue.Text = FormatPerStationValue(stationCompanyDiscounts, "N2");
+                    lblTotalBeforePackageValue.Text = combinedDiscountedSum.ToString("c");
+                    lblManagerDiscountValue.Text = managerDiscount.ToString("N2");
                 }
             }
         }
@@ -465,6 +496,7 @@ namespace Merlin.Forms
             _existingIssuesDurationByMassmedia = new Dictionary<int, int>();
             _baselineTariffSum = 0m;
             _baselineDiscountedSum = 0m;
+            _baselineStationCompanyDiscounts = new List<decimal>();
 
             if (_massmediaIds.Count == 1)
             {
@@ -478,8 +510,6 @@ namespace Merlin.Forms
                 _baselinePackageDiscount = 1m;
                 _hasExistingIssues = _campaign.IssuesCount > 0;
                 _existingManagerDiscount = _campaign.ManagerDiscount;
-                // Показывается только для линейной (см. DisplayBaselinePrices) — для веерной не
-                // считаем, чтобы не тратить лишний вызов GetUserDiscount на то, что не выводится.
                 _baselineManagerDiscount = GetEffectiveManagerDiscount(dtStartDate.Value, dtFinishDate.Value);
                 return;
             }
@@ -495,6 +525,13 @@ namespace Merlin.Forms
                     _existingTariffPriceByMassmedia[massmediaId] = campaign.TariffPrice;
                     _existingIssuesDurationByMassmedia[massmediaId] = campaign.IssuesDuration;
                     _baselineTariffSum += campaign.TariffPrice;
+                    // Цена с учётом объёмной скидки веерной акции — сумма Campaign.Price по станциям
+                    // (Campaign.Price = tariffPrice*discount, уже готовое поле, см. Campaign.sql).
+                    _baselineDiscountedSum += campaign.Price;
+
+                    // Объёмная скидка по станции — коэффициент Price/TariffPrice; выводится значением
+                    // или "разные" в веере (см. DisplayBaselinePrices/FormatPerStationValue).
+                    _baselineStationCompanyDiscounts.Add(campaign.TariffPrice > 0 ? campaign.Price / campaign.TariffPrice : 1m);
 
                     // Менеджерский коэффициент общий на всю акцию (один пользователь/период) —
                     // достаточно найти первую кампанию с реальными выпусками.
@@ -509,6 +546,10 @@ namespace Merlin.Forms
                 // (см. ActionOnMassmedia.DisplayData): сервер уже посчитал и хранит его на Action,
                 // пересчитывать самим не нужно.
                 _baselinePackageDiscount = _action.Discount;
+
+                // Менеджерская скидка веерной акции теперь выводится (единый коэффициент на
+                // пользователя/период) — считаем один раз, как для линейной.
+                _baselineManagerDiscount = GetEffectiveManagerDiscount(dtStartDate.Value, dtFinishDate.Value);
             }
         }
 
