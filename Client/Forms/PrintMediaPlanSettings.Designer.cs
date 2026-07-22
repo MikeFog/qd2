@@ -80,8 +80,6 @@ namespace Merlin.Forms
             // chkShowOnlyFinalCost
             // 
             this.chkShowOnlyFinalCost.AutoSize = true;
-            this.chkShowOnlyFinalCost.Checked = true;
-            this.chkShowOnlyFinalCost.CheckState = System.Windows.Forms.CheckState.Checked;
             this.chkShowOnlyFinalCost.Location = new System.Drawing.Point(6, 79);
             this.chkShowOnlyFinalCost.Margin = new System.Windows.Forms.Padding(3, 4, 3, 4);
             this.chkShowOnlyFinalCost.Name = "chkShowOnlyFinalCost";
