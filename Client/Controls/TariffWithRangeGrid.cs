@@ -149,6 +149,14 @@ namespace Merlin.Controls
 		public DataRow AddIssuesRange(DateTime windowDate, Roller roller, bool ignoreWindowsWithTheSameFirmIssue,
 			bool recalculate = true)
 		{
+			return AddIssuesRange(windowDate, roller, RollerPosition, ignoreWindowsWithTheSameFirmIssue, recalculate);
+		}
+
+		// Позиция передаётся явно — для drag-and-drop переноса, где позиция сохраняется
+		// от исходного выпуска, а не берётся из текущего выбора на форме.
+		public DataRow AddIssuesRange(DateTime windowDate, Roller roller, RollerPositions position,
+			bool ignoreWindowsWithTheSameFirmIssue, bool recalculate = true)
+		{
             using (OperationScope.Start($"AddIssuesRange date={windowDate:yyyy-MM-dd HH:mm} recalc={recalculate}"))
             {
                 Dictionary<string, object> parameters = DataAccessor.CreateParametersDictionary();
@@ -156,7 +164,7 @@ namespace Merlin.Controls
                 parameters["issueDate"] = windowDate;
                 parameters["rollerID"] = roller.RollerId;
                 parameters["rollerDuration"] = roller.Duration;
-                parameters["positionId"] = (int)RollerPosition;
+                parameters["positionId"] = (int)position;
                 parameters["considerUnconfirmed"] = ShowUnconfirmed ? 1 : 0;
                 parameters["ignoreWindowsWithTheSameFirmIssue"] = ignoreWindowsWithTheSameFirmIssue ? 1 : 0;
                 if (Grantor != null)
@@ -174,8 +182,8 @@ namespace Merlin.Controls
                 row[Roller.ParamNames.RollerId] = roller.RollerId;
                 row["durationString"] = roller.DurationString;
                 row["RowNum"] = Guid.NewGuid();
-                row[Issue.ParamNames.PositionName] = Issue.GetPositionDisplayName(RollerPosition);
-                row[Issue.ParamNames.PositionId] = (int)RollerPosition;
+                row[Issue.ParamNames.PositionName] = Issue.GetPositionDisplayName(position);
+                row[Issue.ParamNames.PositionId] = (int)position;
                 row[ActionOnMassmedia.ParamNames.ActionId] = _action.ActionId;
 
                 // replace AddedIssues.Rows.Add(row); with sorted insert
@@ -183,6 +191,16 @@ namespace Merlin.Controls
 
                 return row;
             }
+		}
+
+		/// <summary>
+		/// Пересобирает in-memory таблицу AddedIssues из БД. Нужно после отката транзакции
+		/// переноса: AddIssuesRange успевает дописать строки в AddedIssues до отката, и
+		/// таблица расходится с фактическим состоянием базы.
+		/// </summary>
+		public void RebuildAddedIssues()
+		{
+			InitAddedIssuesData();
 		}
 
 		public List<PresentationObject> DeleteIssuesRange(DateTime windowDate)

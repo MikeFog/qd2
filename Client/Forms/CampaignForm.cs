@@ -27,7 +27,7 @@ namespace Merlin.Forms
 		private List<PresentationObject> _lastTemplateAddedIssues;
 		private RollerIssue _draggingIssue;
 		private TariffWindowWithRollerIssues _dragCandidateWindow;
-		private Point _dragStartPoint;
+		protected Point _dragStartPoint;
 		private SmartGrid packDetails;
         protected Firm _firm;
 
@@ -1057,7 +1057,7 @@ namespace Merlin.Forms
 			((DataGridView)sender).DoDragDrop(payload, DragDropEffects.Move);
 		}
 
-		private bool DragThresholdExceeded(MouseEventArgs e)
+		protected bool DragThresholdExceeded(MouseEventArgs e)
 		{
 			Size dragSize = SystemInformation.DragSize;
 			return Math.Abs(e.X - _dragStartPoint.X) > dragSize.Width ||
