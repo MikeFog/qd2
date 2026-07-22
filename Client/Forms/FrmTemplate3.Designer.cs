@@ -231,7 +231,7 @@ namespace Merlin.Forms
             this.gbRollerStats.Dock = System.Windows.Forms.DockStyle.Fill;
             this.gbRollerStats.Location = new System.Drawing.Point(3, 159);
             this.gbRollerStats.Name = "gbRollerStats";
-            this.gbRollerStats.Size = new System.Drawing.Size(1252, 182);
+            this.gbRollerStats.Size = new System.Drawing.Size(1252, 210);
             this.gbRollerStats.TabIndex = 41;
             this.gbRollerStats.TabStop = false;
             this.gbRollerStats.Text = "Статистика";
@@ -293,7 +293,7 @@ namespace Merlin.Forms
             // lblCampaignPriceCaption
             // 
             this.lblCampaignPriceCaption.AutoSize = true;
-            this.lblCampaignPriceCaption.Location = new System.Drawing.Point(10, 110);
+            this.lblCampaignPriceCaption.Location = new System.Drawing.Point(650, 26);
             this.lblCampaignPriceCaption.Name = "lblCampaignPriceCaption";
             this.lblCampaignPriceCaption.Size = new System.Drawing.Size(140, 24);
             this.lblCampaignPriceCaption.TabIndex = 4;
@@ -302,7 +302,7 @@ namespace Merlin.Forms
             // lblCampaignPriceValue
             // 
             this.lblCampaignPriceValue.AutoSize = true;
-            this.lblCampaignPriceValue.Location = new System.Drawing.Point(290, 110);
+            this.lblCampaignPriceValue.Location = new System.Drawing.Point(930, 26);
             this.lblCampaignPriceValue.Name = "lblCampaignPriceValue";
             this.lblCampaignPriceValue.Size = new System.Drawing.Size(28, 24);
             this.lblCampaignPriceValue.TabIndex = 5;
@@ -311,7 +311,7 @@ namespace Merlin.Forms
             // lblCompanyDiscountCaption
             // 
             this.lblCompanyDiscountCaption.AutoSize = true;
-            this.lblCompanyDiscountCaption.Location = new System.Drawing.Point(650, 26);
+            this.lblCompanyDiscountCaption.Location = new System.Drawing.Point(650, 54);
             this.lblCompanyDiscountCaption.Name = "lblCompanyDiscountCaption";
             this.lblCompanyDiscountCaption.Size = new System.Drawing.Size(159, 24);
             this.lblCompanyDiscountCaption.TabIndex = 6;
@@ -320,7 +320,7 @@ namespace Merlin.Forms
             // lblCompanyDiscountValue
             // 
             this.lblCompanyDiscountValue.AutoSize = true;
-            this.lblCompanyDiscountValue.Location = new System.Drawing.Point(930, 26);
+            this.lblCompanyDiscountValue.Location = new System.Drawing.Point(930, 54);
             this.lblCompanyDiscountValue.Name = "lblCompanyDiscountValue";
             this.lblCompanyDiscountValue.Size = new System.Drawing.Size(28, 24);
             this.lblCompanyDiscountValue.TabIndex = 7;
@@ -329,7 +329,7 @@ namespace Merlin.Forms
             // lblTotalBeforePackageCaption
             // 
             this.lblTotalBeforePackageCaption.AutoSize = true;
-            this.lblTotalBeforePackageCaption.Location = new System.Drawing.Point(650, 54);
+            this.lblTotalBeforePackageCaption.Location = new System.Drawing.Point(650, 82);
             this.lblTotalBeforePackageCaption.Name = "lblTotalBeforePackageCaption";
             this.lblTotalBeforePackageCaption.Size = new System.Drawing.Size(280, 24);
             this.lblTotalBeforePackageCaption.TabIndex = 8;
@@ -338,7 +338,7 @@ namespace Merlin.Forms
             // lblTotalBeforePackageValue
             // 
             this.lblTotalBeforePackageValue.AutoSize = true;
-            this.lblTotalBeforePackageValue.Location = new System.Drawing.Point(930, 54);
+            this.lblTotalBeforePackageValue.Location = new System.Drawing.Point(930, 82);
             this.lblTotalBeforePackageValue.Name = "lblTotalBeforePackageValue";
             this.lblTotalBeforePackageValue.Size = new System.Drawing.Size(28, 24);
             this.lblTotalBeforePackageValue.TabIndex = 9;
@@ -347,7 +347,7 @@ namespace Merlin.Forms
             // lblPackageDiscountCaption
             // 
             this.lblPackageDiscountCaption.AutoSize = true;
-            this.lblPackageDiscountCaption.Location = new System.Drawing.Point(650, 82);
+            this.lblPackageDiscountCaption.Location = new System.Drawing.Point(650, 110);
             this.lblPackageDiscountCaption.Name = "lblPackageDiscountCaption";
             this.lblPackageDiscountCaption.Size = new System.Drawing.Size(149, 24);
             this.lblPackageDiscountCaption.TabIndex = 10;
@@ -356,7 +356,7 @@ namespace Merlin.Forms
             // lblPackageDiscountValue
             // 
             this.lblPackageDiscountValue.AutoSize = true;
-            this.lblPackageDiscountValue.Location = new System.Drawing.Point(930, 82);
+            this.lblPackageDiscountValue.Location = new System.Drawing.Point(930, 110);
             this.lblPackageDiscountValue.Name = "lblPackageDiscountValue";
             this.lblPackageDiscountValue.Size = new System.Drawing.Size(28, 24);
             this.lblPackageDiscountValue.TabIndex = 11;
@@ -366,7 +366,7 @@ namespace Merlin.Forms
             // 
             this.lblGrandTotalCaption.AutoSize = true;
             this.lblGrandTotalCaption.Font = new System.Drawing.Font("Segoe UI Variable Text", 9F, System.Drawing.FontStyle.Bold);
-            this.lblGrandTotalCaption.Location = new System.Drawing.Point(650, 110);
+            this.lblGrandTotalCaption.Location = new System.Drawing.Point(650, 166);
             this.lblGrandTotalCaption.Name = "lblGrandTotalCaption";
             this.lblGrandTotalCaption.Size = new System.Drawing.Size(290, 24);
             this.lblGrandTotalCaption.TabIndex = 12;
@@ -376,7 +376,7 @@ namespace Merlin.Forms
             // 
             this.lblGrandTotalValue.AutoSize = true;
             this.lblGrandTotalValue.Font = new System.Drawing.Font("Segoe UI Variable Text", 9F, System.Drawing.FontStyle.Bold);
-            this.lblGrandTotalValue.Location = new System.Drawing.Point(930, 110);
+            this.lblGrandTotalValue.Location = new System.Drawing.Point(930, 166);
             this.lblGrandTotalValue.Name = "lblGrandTotalValue";
             this.lblGrandTotalValue.Size = new System.Drawing.Size(28, 24);
             this.lblGrandTotalValue.TabIndex = 13;
@@ -385,7 +385,7 @@ namespace Merlin.Forms
             // lblManagerDiscountCaption
             //
             this.lblManagerDiscountCaption.AutoSize = true;
-            this.lblManagerDiscountCaption.Location = new System.Drawing.Point(10, 138);
+            this.lblManagerDiscountCaption.Location = new System.Drawing.Point(650, 138);
             this.lblManagerDiscountCaption.Name = "lblManagerDiscountCaption";
             this.lblManagerDiscountCaption.Size = new System.Drawing.Size(196, 24);
             this.lblManagerDiscountCaption.TabIndex = 16;
@@ -394,7 +394,7 @@ namespace Merlin.Forms
             // lblManagerDiscountValue
             //
             this.lblManagerDiscountValue.AutoSize = true;
-            this.lblManagerDiscountValue.Location = new System.Drawing.Point(290, 138);
+            this.lblManagerDiscountValue.Location = new System.Drawing.Point(930, 138);
             this.lblManagerDiscountValue.Name = "lblManagerDiscountValue";
             this.lblManagerDiscountValue.Size = new System.Drawing.Size(28, 24);
             this.lblManagerDiscountValue.TabIndex = 17;
@@ -402,7 +402,7 @@ namespace Merlin.Forms
             //
             // btnEstimatePrice
             // 
-            this.btnEstimatePrice.Location = new System.Drawing.Point(1050, 62);
+            this.btnEstimatePrice.Location = new System.Drawing.Point(10, 130);
             this.btnEstimatePrice.Name = "btnEstimatePrice";
             this.btnEstimatePrice.Size = new System.Drawing.Size(160, 30);
             this.btnEstimatePrice.TabIndex = 14;
@@ -478,9 +478,9 @@ namespace Merlin.Forms
             this.tableLayoutPanel1.RowStyles.Add(new System.Windows.Forms.RowStyle());
             this.tableLayoutPanel1.RowStyles.Add(new System.Windows.Forms.RowStyle());
             this.tableLayoutPanel1.RowStyles.Add(new System.Windows.Forms.RowStyle());
-            this.tableLayoutPanel1.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Absolute, 188F));
+            this.tableLayoutPanel1.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Absolute, 216F));
             this.tableLayoutPanel1.RowStyles.Add(new System.Windows.Forms.RowStyle());
-            this.tableLayoutPanel1.Size = new System.Drawing.Size(1258, 855);
+            this.tableLayoutPanel1.Size = new System.Drawing.Size(1258, 883);
             this.tableLayoutPanel1.TabIndex = 34;
             // 
             // pnlOddEven
@@ -647,7 +647,7 @@ namespace Merlin.Forms
             this.AutoScaleDimensions = new System.Drawing.SizeF(10F, 24F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
             this.CancelButton = this.btnCancel;
-            this.ClientSize = new System.Drawing.Size(1258, 855);
+            this.ClientSize = new System.Drawing.Size(1258, 883);
             this.Controls.Add(this.tableLayoutPanel1);
             this.Font = new System.Drawing.Font("Segoe UI Variable Text", 9F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(204)));
             this.FormBorderStyle = System.Windows.Forms.FormBorderStyle.FixedDialog;
