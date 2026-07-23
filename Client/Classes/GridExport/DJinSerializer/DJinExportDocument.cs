@@ -42,7 +42,7 @@ namespace Merlin.Classes.GridExport.DJinSerializer
 				
 		protected override void PrintRoller(Stream file, DataRow row, Massmedia mm, DateTime date, int type, Additional additional)
 		{
-			if (string.IsNullOrEmpty(row[ExportParams.name].ToString()) && !additional.IsAlive)
+			if (/*string.IsNullOrEmpty(row[ExportParams.name].ToString()) && */additional.IsAlive)
 				return;
 
 			string typePreffix;
