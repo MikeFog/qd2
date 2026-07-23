@@ -21,6 +21,9 @@ namespace Merlin.Classes.GridExport.DJinSerializer
             foreach (var block in blocks)
             {
                 var processed = ProcessBlock(block);
+                if (processed == null)
+                    continue;
+
                 outputLines.AddRange(processed.Lines);
             }
 
@@ -75,6 +78,12 @@ namespace Merlin.Classes.GridExport.DJinSerializer
 
             // Todas las líneas "intermedias" (entre BT y E, excluyendo BT y E)
             var middle = lines.Skip(btIndex + 1).Take(eIndex - btIndex - 1).ToList();
+
+            // Пустой блок (BT сразу за которым E, без строк между ними) - не включаем в результат
+            if (middle.Count == 0)
+            {
+                return null;
+            }
 
             // Identificar c-type-4, c-type-5 y las demás
             string cType4Line = null;
