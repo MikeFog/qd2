@@ -49,6 +49,15 @@ namespace Merlin.Forms
         // может сработать ДО LoadExistingCampaignState (риск #9) — пустой список даёт "—", а не NRE.
         private List<decimal> _baselineStationCompanyDiscounts = new List<decimal>();
 
+        // Веерная: менеджерская скидка — тоже коэффициент по станциям, а не общий на акцию
+        // (ActionRecalculate пишет managerDiscount отдельно в каждую строку Campaign — на
+        // практике часто различается: у каждой станции своя история 0→не 0 переходов количества
+        // выпусков). Раньше бралось значение ПЕРВОЙ найденной кампании с выпусками как будто
+        // общее — баг, найден тестировщиками (см. LoadExistingCampaignState). Собираются только
+        // кампании с IssuesCount > 0 — у остальных ManagerDiscount голая единица по DEFAULT
+        // (см. GetEffectiveManagerDiscount), сравнивать её было бы бессмысленно.
+        private List<decimal> _baselineStationManagerDiscounts = new List<decimal>();
+
         // Признак "есть реальные выпуски хоть у одной кампании акции" и её менеджерский коэффициент —
         // источник для GetEffectiveManagerDiscount, единый для линейной (сама _campaign) и веерной
         // (первая кампания акции с выпусками) кампании. Заполняется в LoadExistingCampaignState.
@@ -210,12 +219,15 @@ namespace Merlin.Forms
             }
             else
             {
-                // Объёмная скидка — коэффициент по станциям: одинаковый → значение, разный → "разные".
-                // Цена с учётом объёмной скидки — сумма цен по кампаниям станций. Менеджерская скидка —
-                // единый коэффициент на акцию (пользователь/период). Итого — готовое с Action.
+                // Объёмная и менеджерская скидка — коэффициенты по станциям: одинаковые у всех →
+                // значение, иначе → "разные" (см. GetEffectiveManagerDiscount за тем, почему список
+                // менеджерской может быть пуст — все кампании веера новые, без выпусков). Цена с
+                // учётом объёмной скидки — сумма цен по кампаниям станций. Итого — готовое с Action.
                 lblCompanyDiscountValue.Text = FormatPerStationValue(_baselineStationCompanyDiscounts, "N2");
                 lblTotalBeforePackageValue.Text = _baselineDiscountedSum.ToString("c");
-                lblManagerDiscountValue.Text = _baselineManagerDiscount.ToString("N2");
+                lblManagerDiscountValue.Text = _baselineStationManagerDiscounts.Count > 0
+                    ? FormatPerStationValue(_baselineStationManagerDiscounts, "N2")
+                    : _baselineManagerDiscount.ToString("N2");
                 lblGrandTotalValue.Text = _action.TotalPrice.ToString("c");
             }
         }
@@ -402,10 +414,15 @@ namespace Merlin.Forms
                 {
                     // Объёмная скидка — коэффициент по станциям: одинаковый → значение, разный → "разные".
                     // Цена с учётом объёмной скидки — сумма по станциям (combinedDiscountedSum).
-                    // Менеджерская скидка — единый коэффициент на акцию (managerDiscount выше).
+                    // Менеджерская скидка — тоже по станциям; реальные значения (кампании с выпусками)
+                    // не зависят от дат шаблона, поэтому переиспользуем список из LoadExistingCampaignState
+                    // (managerDiscount выше — единственный ПРЕДСТАВИТЕЛЬ для формулы grandTotal, не для
+                    // сравнения на UI).
                     lblCompanyDiscountValue.Text = FormatPerStationValue(stationCompanyDiscounts, "N2");
                     lblTotalBeforePackageValue.Text = combinedDiscountedSum.ToString("c");
-                    lblManagerDiscountValue.Text = managerDiscount.ToString("N2");
+                    lblManagerDiscountValue.Text = _baselineStationManagerDiscounts.Count > 0
+                        ? FormatPerStationValue(_baselineStationManagerDiscounts, "N2")
+                        : managerDiscount.ToString("N2");
                 }
             }
         }
@@ -497,6 +514,7 @@ namespace Merlin.Forms
             _baselineTariffSum = 0m;
             _baselineDiscountedSum = 0m;
             _baselineStationCompanyDiscounts = new List<decimal>();
+            _baselineStationManagerDiscounts = new List<decimal>();
 
             if (_massmediaIds.Count == 1)
             {
@@ -533,12 +551,19 @@ namespace Merlin.Forms
                     // или "разные" в веере (см. DisplayBaselinePrices/FormatPerStationValue).
                     _baselineStationCompanyDiscounts.Add(campaign.TariffPrice > 0 ? campaign.Price / campaign.TariffPrice : 1m);
 
-                    // Менеджерский коэффициент общий на всю акцию (один пользователь/период) —
-                    // достаточно найти первую кампанию с реальными выпусками.
-                    if (!_hasExistingIssues && campaign.IssuesCount > 0)
+                    // Менеджерская скидка станции — реальна только у кампании с выпусками (иначе
+                    // голая единица по DEFAULT, см. GetEffectiveManagerDiscount) — собираем для
+                    // сравнения "значение или разные" в UI (FormatPerStationValue).
+                    if (campaign.IssuesCount > 0)
                     {
-                        _hasExistingIssues = true;
-                        _existingManagerDiscount = campaign.ManagerDiscount;
+                        _baselineStationManagerDiscounts.Add(campaign.ManagerDiscount);
+                        // Представитель для формулы grandTotal — GetEffectiveManagerDiscount должен
+                        // вернуть ОДНО число; первая найденная кампания с выпусками, как и раньше.
+                        if (!_hasExistingIssues)
+                        {
+                            _hasExistingIssues = true;
+                            _existingManagerDiscount = campaign.ManagerDiscount;
+                        }
                     }
                 }
 
