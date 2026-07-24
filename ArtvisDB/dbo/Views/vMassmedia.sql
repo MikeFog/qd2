@@ -3,7 +3,7 @@ AS
 SELECT        mm.massmediaID, mm.roltypeID, mm.nationalBonus, mm.deadLine, mm.isCheckDeadline, mm.isActive, mm.rollerEnterPath, mm.rollerExitPath, mm.rollerEtcPath, mm.rollerPath, mm.rollerEnterMax, mm.rollerExitMax, 
                          mm.rollerEtcMax, mm.massmediaGroupID, mm.exportName, mm.rollerEnterMin, mm.rollerExitMin, mm.rollerEtcMin, mm.mediaPlusMassmediaID, mm.grammofonMistake, mm.name, mm.director, mm.prefix, mm.fullPrefix, 
                          mm.reportString, mmg.name AS groupName, mm.name + CASE WHEN mm.massmediaGroupID IS NULL THEN '' ELSE ' (' + mmg.Name + ')' END AS nameWithGroup, mm.certificateIssued, mm.volume_c, mm.volume_n,
-                         mm.volume_p, mm.volume_m, mm.volume_j, mm.agitationLocalRoller, mm.agitationAnnounceRoller, mm.agitationFederalRoller
+                         mm.volume_p, mm.volume_m, mm.volume_j, mm.agitationLocalRollerID, mm.agitationAnnounceRollerID, mm.agitationFederalRollerID
 FROM            dbo.MassMedia AS mm LEFT OUTER JOIN
                          dbo.MassmediaGroup AS mmg ON mm.massmediaGroupID = mmg.massmediaGroupID
 
