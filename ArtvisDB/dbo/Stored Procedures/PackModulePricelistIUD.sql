@@ -121,14 +121,10 @@ ELSE IF @actionName = 'UpdateItem' BEGIN
 					from PackModuleIssue mi 
 					where mi.pricelistID = @priceListID
 						and (mi.issueDate < @startDate or mi.issueDate > @finishDate) )
-	begin 
-		raiserror('ModulePricelistInUse', 16, 1)
+	begin
+		raiserror('PackModulePriceListInUse', 16, 1)
 		return
-	end 
-			Begin
-			RAISERROR('PackModulePriceListInUse', 16, 1)
-			RETURN
-		End
+	end
 	END
 
 	UPDATE	
