@@ -125,10 +125,10 @@ if @actionName in ('AddItem', 'UpdateItem') and @rolActionTypeID is not null
 				inner join Campaign c on c.campaignID = i.campaignID
 				inner join Roller r on r.rollerID = i.rollerID
 			where c.actionID = @actionID
-				and r.rolActionTypeID not in (6, 44, 55)
+				and r.rolActionTypeID not in (6, 7, 44, 55)
 				and i.issueID != IsNull(@issueID, -1)
 		))
-		or (@rolActionTypeID not in (6, 44, 55) and exists (
+		or (@rolActionTypeID not in (6, 7, 44, 55) and exists (
 			select 1
 			from Issue i
 				inner join Campaign c on c.campaignID = i.campaignID

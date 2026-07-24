@@ -86,8 +86,24 @@ If @rollerActionTypeID In (5, 55) And Exists (
 		RETURN 1
 	End
 
+-- Анонс политической агитации (тип 7) в окне может быть только один
+If @rollerActionTypeID = 7 And Exists (
+	Select 1
+	From
+		Issue i
+		Inner Join Roller r on r.rollerID = i.rollerID
+	Where
+		i.originalWindowID = @windowID
+		And r.rolActionTypeID = 7
+		And i.issueID != IsNull(@issueID, -1)
+	)
+	Begin
+		set @msgError = 'RolType7AlreadyExistInWindow'
+		RETURN 1
+	End
+
 -- Для политической агитации и её авто-обрамления спецпозиционирование не применяется
-If @rollerActionTypeID In (6, 44, 55) And IsNull(@positionId, 0) <> 0
+If @rollerActionTypeID In (6, 7, 44, 55) And IsNull(@positionId, 0) <> 0
 	Begin
 		set @msgError = 'AgitationPositionForbidden'
 		RETURN 1

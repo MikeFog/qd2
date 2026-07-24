@@ -138,8 +138,8 @@ begin
 	set @msgError = null
 
 -- В окне может быть только один открывающий (тип 4 или 44) и один закрывающий (тип 5 или 55)
--- идентификатор СМИ; 44/55 - авто-обрамление политической агитации, пары к ручным 4/5
-	If @newRollerActionTypeID In (4, 44, 5, 55) And Exists (
+-- идентификатор СМИ и один анонс агитации (тип 7); 44/55/7 - авто-обвязка политической агитации
+	If @newRollerActionTypeID In (4, 44, 5, 55, 7) And Exists (
 		Select 1
 		From
 			Issue i
@@ -147,14 +147,17 @@ begin
 		Where
 			i.originalWindowID = @windowID
 			And ((r.rolActionTypeID In (4, 44) And @newRollerActionTypeID In (4, 44))
-				Or (r.rolActionTypeID In (5, 55) And @newRollerActionTypeID In (5, 55)))
+				Or (r.rolActionTypeID In (5, 55) And @newRollerActionTypeID In (5, 55))
+				Or (r.rolActionTypeID = 7 And @newRollerActionTypeID = 7))
 			And i.issueID != @issueID
 		)
 		Begin
 			If @newRollerActionTypeID In (4, 44)
 				RAISERROR('RolType4AlreadyExistInWindow', 16, 1)
-			Else
+			Else If @newRollerActionTypeID In (5, 55)
 				RAISERROR('RolType5AlreadyExistInWindow', 16, 1)
+			Else
+				RAISERROR('RolType7AlreadyExistInWindow', 16, 1)
 			RETURN 1
 		End
 
