@@ -60,6 +60,15 @@ set @diffDuration = @newDuration - @oldDuration
 select @isConfirmed = a.isConfirmed From Action a Inner Join Campaign c On a.actionID = c.actionID Where c.campaignID = @campaignID
 select @newRollerActionTypeID = rolActionTypeID From Roller where rollerID = @newRollerID
 
+-- Заменой нельзя смешать политическую агитацию (тип 6) с другой рекламой в акции:
+-- класс ролика (агитация / не агитация) при замене должен сохраняться
+declare @oldRollerActionTypeID int
+select @oldRollerActionTypeID = rolActionTypeID From Roller where rollerID = @oldRollerID
+If (case when @newRollerActionTypeID = 6 then 1 else 0 end) <> (case when @oldRollerActionTypeID = 6 then 1 else 0 end) Begin
+	RAISERROR('AgitationMixError', 16, 1)
+	RETURN
+End
+
 If @newDuration = 0 Begin
 	RAISERROR('Roller_NullDuration', 16, 1)
 	RETURN 
@@ -128,19 +137,21 @@ while @@fetch_status = 0
 begin
 	set @msgError = null
 
--- В окне может быть только 1 ролик с типом 4 и 1 ролик с типом 5
-	If @newRollerActionTypeID In (4, 5) And Exists (
-		Select 1 
-		From 
-			Issue i 
+-- В окне может быть только один открывающий (тип 4 или 44) и один закрывающий (тип 5 или 55)
+-- идентификатор СМИ; 44/55 - авто-обрамление политической агитации, пары к ручным 4/5
+	If @newRollerActionTypeID In (4, 44, 5, 55) And Exists (
+		Select 1
+		From
+			Issue i
 			Inner Join Roller r on r.rollerID = i.rollerID
 		Where
 			i.originalWindowID = @windowID
-			And r.rolActionTypeID = @newRollerActionTypeID
+			And ((r.rolActionTypeID In (4, 44) And @newRollerActionTypeID In (4, 44))
+				Or (r.rolActionTypeID In (5, 55) And @newRollerActionTypeID In (5, 55)))
 			And i.issueID != @issueID
 		)
 		Begin
-			If @newRollerActionTypeID = 4
+			If @newRollerActionTypeID In (4, 44)
 				RAISERROR('RolType4AlreadyExistInWindow', 16, 1)
 			Else
 				RAISERROR('RolType5AlreadyExistInWindow', 16, 1)

@@ -203,6 +203,30 @@ IF @actionName = 'AddItem' BEGIN
 	declare @rolActionTypeID tinyint
 	SELECT @rolActionTypeID = [rolActionTypeID] FROM [Roller] WHERE [rollerID] = @rollerID
 
+	-- Нельзя смешивать политическую агитацию (тип 6) с другой рекламой в одной акции:
+	-- отчётность перед избиркомом ведётся отдельно по каждому кандидату
+	if @rolActionTypeID is not null
+		and ((@rolActionTypeID = 6 and exists (
+				select 1
+				from Issue i
+					inner join Campaign c on c.campaignID = i.campaignID
+					inner join Roller r on r.rollerID = i.rollerID
+				where c.actionID = @actionID
+					and r.rolActionTypeID not in (6, 44, 55)
+			))
+			or (@rolActionTypeID not in (6, 44, 55) and exists (
+				select 1
+				from Issue i
+					inner join Campaign c on c.campaignID = i.campaignID
+					inner join Roller r on r.rollerID = i.rollerID
+				where c.actionID = @actionID
+					and r.rolActionTypeID = 6
+			)))
+	begin
+		raiserror('AgitationMixError', 16, 1)
+		return
+	end
+
 	exec @res = hlp_IssueVerify
 		Null,
 		@actionName,
