@@ -193,7 +193,32 @@ begin
 
     SET @blockActivation = 1;
 	Insert Into @fatalErrors(name) values('CannotPerfomActivationSponsor')
-end 
+end
+
+-- Политическая агитация: у станций всех активируемых роликов типа 6 должны быть
+-- заполнены три ролика обвязки в карточке, иначе обвязку не из чего создать
+if exists (
+	select 1
+	from @issue it
+		inner join Roller r on r.rollerID = it.rollerID
+		inner join MassMedia mm on mm.massmediaID = it.massmediaID
+	where r.rolActionTypeID = 6
+		and (mm.agitationLocalRollerID is null
+			or mm.agitationAnnounceRollerID is null
+			or mm.agitationFederalRollerID is null))
+begin
+	update it set it.statusDescription = 'AgitationStationRollersNotSet'
+	from @issue it
+		inner join Roller r on r.rollerID = it.rollerID
+		inner join MassMedia mm on mm.massmediaID = it.massmediaID
+	where r.rolActionTypeID = 6
+		and (mm.agitationLocalRollerID is null
+			or mm.agitationAnnounceRollerID is null
+			or mm.agitationFederalRollerID is null)
+
+	SET @blockActivation = 1;
+	Insert Into @fatalErrors(name) values('AgitationStationRollersNotSet')
+end
 
 IF @isTestActivate = 0
 	AND @blockActivation = 0
@@ -697,8 +722,21 @@ begin
 	Where
 		TariffWindow.windowId = t1.windowID
 
+	-- Политическая агитация: авто-вставка обвязки (44/7/55) в окна с подтверждённым
+	-- типом 6; выпуски создаются в служебной акции, минус по времени окна допустим
+	if exists (
+		select 1 from @issue it
+			inner join Roller r on r.rollerID = it.rollerID
+		where it.statusDescription = 'OK' and r.rolActionTypeID = 6)
+	begin
+		exec AgitationFraming
+			@actionName = 'InsertForAction',
+			@actionID = @actionID,
+			@loggedUserID = @loggedUserID
+	end
+
 	UPDATE [Action] Set isConfirmed = 1 WHERE actionID = @actionID
-	
+
 	exec ActionRecalculate
 		@actionID = @actionID
 END

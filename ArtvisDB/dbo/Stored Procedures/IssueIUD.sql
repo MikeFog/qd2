@@ -267,8 +267,15 @@ IF @actionName = 'AddItem' BEGIN
 	SET @issueID = SCOPE_IDENTITY()
 END
 ELSE IF @actionName = 'DeleteItem' BEGIN
+	-- Политическая агитация: до удаления запоминаем тип ролика и окно, чтобы после
+	-- удаления последнего типа 6 снять авто-обвязку (44/7/55) служебной акции
+	DECLARE @delRolActionTypeID tinyint, @delActualWindowID int
+	SELECT @delRolActionTypeID = r.rolActionTypeID, @delActualWindowID = i.actualWindowID
+	FROM Issue i INNER JOIN Roller r ON r.rollerID = i.rollerID
+	WHERE i.issueID = @issueID
+
 	IF (@isConfirmed = 1)
-	BEGIN 
+	BEGIN
 		If @rollerID Is Null
 			Select @rollerID = rollerID From Issue Where issueID = @issueID
 
@@ -284,7 +291,13 @@ ELSE IF @actionName = 'DeleteItem' BEGIN
 		end 
 	END 
 	
-	DELETE FROM [Issue] WHERE IssueID = @IssueID	
+	DELETE FROM [Issue] WHERE IssueID = @IssueID
+
+	IF @delRolActionTypeID = 6
+		EXEC AgitationFraming
+			@actionName = 'CleanupWindow',
+			@windowID = @delActualWindowID,
+			@loggedUserID = @loggedUserId
 END
 ELSE IF @actionName = 'UpdateItem' BEGIN
 	DECLARE @oldPositionID INT 
