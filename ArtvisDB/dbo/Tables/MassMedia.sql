@@ -31,9 +31,15 @@
     [volume_p]             DECIMAL (5, 2)       NULL,
     [volume_m]             DECIMAL (5, 2)       NULL,
     [volume_j]             DECIMAL (5, 2)       NULL,
+    [agitationLocalRollerID]    INT             NULL,
+    [agitationAnnounceRollerID] INT             NULL,
+    [agitationFederalRollerID]  INT             NULL,
     CONSTRAINT [PK_MassMedia] PRIMARY KEY NONCLUSTERED ([massmediaID] ASC),
     CONSTRAINT [FK_MassMedia_MassmediaGroup] FOREIGN KEY ([massmediaGroupID]) REFERENCES [dbo].[MassmediaGroup] ([massmediaGroupID]),
-    CONSTRAINT [FK_MassMedia_RolType] FOREIGN KEY ([roltypeID]) REFERENCES [dbo].[iRolType] ([rolTypeID])
+    CONSTRAINT [FK_MassMedia_RolType] FOREIGN KEY ([roltypeID]) REFERENCES [dbo].[iRolType] ([rolTypeID]),
+    CONSTRAINT [FK_MassMedia_AgitationLocalRoller] FOREIGN KEY ([agitationLocalRollerID]) REFERENCES [dbo].[Roller] ([rollerID]),
+    CONSTRAINT [FK_MassMedia_AgitationAnnounceRoller] FOREIGN KEY ([agitationAnnounceRollerID]) REFERENCES [dbo].[Roller] ([rollerID]),
+    CONSTRAINT [FK_MassMedia_AgitationFederalRoller] FOREIGN KEY ([agitationFederalRollerID]) REFERENCES [dbo].[Roller] ([rollerID])
 );
 
 

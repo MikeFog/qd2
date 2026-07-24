@@ -39,3 +39,27 @@ ORDER BY rt.name
 select *, mg.massmediaGroupID as id
 	from MassmediaGroup mg order by mg.name
 
+-- 5. rollersAgitLocal: ролики "Локальное СМИ (агитация)" (тип 44)
+SELECT r.rollerID, r.rollerID AS id, r.name
+FROM Roller r
+WHERE r.rolActionTypeID = 44
+	AND (r.isEnabled = 1
+		OR r.rollerID = (SELECT agitationLocalRollerID FROM MassMedia WHERE massmediaID = @massmediaID))
+ORDER BY r.name
+
+-- 6. rollersAgitAnnounce: ролики "Анонс политической агитации" (тип 7)
+SELECT r.rollerID, r.rollerID AS id, r.name
+FROM Roller r
+WHERE r.rolActionTypeID = 7
+	AND (r.isEnabled = 1
+		OR r.rollerID = (SELECT agitationAnnounceRollerID FROM MassMedia WHERE massmediaID = @massmediaID))
+ORDER BY r.name
+
+-- 7. rollersAgitFederal: ролики "Федеральное СМИ (агитация)" (тип 55)
+SELECT r.rollerID, r.rollerID AS id, r.name
+FROM Roller r
+WHERE r.rolActionTypeID = 55
+	AND (r.isEnabled = 1
+		OR r.rollerID = (SELECT agitationFederalRollerID FROM MassMedia WHERE massmediaID = @massmediaID))
+ORDER BY r.name
+

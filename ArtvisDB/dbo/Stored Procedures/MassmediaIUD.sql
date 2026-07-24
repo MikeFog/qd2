@@ -30,7 +30,10 @@
 @volume_n decimal(5,2),
 @volume_p decimal(5,2),
 @volume_m decimal(5,2),
-@volume_j decimal(5,2)
+@volume_j decimal(5,2),
+@agitationLocalRollerID int = null,
+@agitationAnnounceRollerID int = null,
+@agitationFederalRollerID int = null
 )
 WITH EXECUTE AS OWNER
 as
@@ -52,11 +55,13 @@ IF @actionName = 'AddItem' BEGIN
 	INSERT INTO [Massmedia](roltypeID, deadLine, isActive, rollerEnterPath, 
 		rollerExitPath, rollerEtcPath, rollerPath, rollerEnterMax, rollerExitMax, rollerEtcMax, rollerEnterMin, rollerExitMin, rollerEtcMin, massmediaGroupID, 
 		exportName,mediaPlusMassmediaID, [name], director, painting, prefix, [fullPrefix], [reportString], certificateIssued,
-		volume_c, volume_n, volume_p, volume_m, volume_j)
-	VALUES(@roltypeID, @deadLine, @isActive, @rollerEnterPath, @rollerExitPath, 
-		@rollerEtcPath, @rollerPath, @rollerEnterMax, @rollerExitMax, @rollerEtcMax, @rollerEnterMin, @rollerExitMin, @rollerEtcMin, @massmediaGroupID, 
+		volume_c, volume_n, volume_p, volume_m, volume_j,
+		agitationLocalRollerID, agitationAnnounceRollerID, agitationFederalRollerID)
+	VALUES(@roltypeID, @deadLine, @isActive, @rollerEnterPath, @rollerExitPath,
+		@rollerEtcPath, @rollerPath, @rollerEnterMax, @rollerExitMax, @rollerEtcMax, @rollerEnterMin, @rollerExitMin, @rollerEtcMin, @massmediaGroupID,
 		@exportName,@mediaPlusMassmediaID, @name, @director, @painting, @prefix, @fullPrefix, @reportString, @certificateIssued,
-		@volume_c, @volume_n, @volume_p, @volume_m, @volume_j)
+		@volume_c, @volume_n, @volume_p, @volume_m, @volume_j,
+		@agitationLocalRollerID, @agitationAnnounceRollerID, @agitationFederalRollerID)
 	
 	if @@rowcount <> 1
 	begin
@@ -103,12 +108,15 @@ ELSE IF @actionName = 'UpdateItem' BEGIN
 		[fullPrefix] = @fullPrefix,
 		[reportString] = @reportString,
 		certificateIssued = @certificateIssued,
-		volume_c = @volume_c, 
-		volume_n = @volume_n, 
-		volume_p = @volume_p, 
-		volume_m = @volume_m, 
-		volume_j = @volume_j
-	WHERE		
+		volume_c = @volume_c,
+		volume_n = @volume_n,
+		volume_p = @volume_p,
+		volume_m = @volume_m,
+		volume_j = @volume_j,
+		agitationLocalRollerID = @agitationLocalRollerID,
+		agitationAnnounceRollerID = @agitationAnnounceRollerID,
+		agitationFederalRollerID = @agitationFederalRollerID
+	WHERE
 		massmediaID = @massmediaID
 
 	Exec massmediaList @massmediaID = @massmediaID, @loggedUserID = @loggedUserID
