@@ -51,49 +51,66 @@ IF NOT EXISTS (SELECT 1 FROM [dbo].[iMessage] WHERE name = 'RolType7AlreadyExist
 	VALUES ('RolType7AlreadyExistInWindow',
 		N'В окне уже есть ролик с типом "Анонс политической агитации". Операция прервана.');
 
--- Ролики авто-обвязки в карточке радиостанции: три необязательные ссылки на Roller
+-- Ролики авто-обвязки в карточке радиостанции: три необязательных текстовых поля
+-- (путь или название ролика), по образцу DJin-путей. Первая редакция делала их
+-- ссылками на Roller с lookup-списками - ниже она откатывается, если встретилась.
 
-IF COL_LENGTH('dbo.MassMedia', 'agitationLocalRollerID') IS NULL
-	ALTER TABLE [dbo].[MassMedia] ADD
-		[agitationLocalRollerID]    INT NULL
-			CONSTRAINT [FK_MassMedia_AgitationLocalRoller] REFERENCES [dbo].[Roller] ([rollerID]),
-		[agitationAnnounceRollerID] INT NULL
-			CONSTRAINT [FK_MassMedia_AgitationAnnounceRoller] REFERENCES [dbo].[Roller] ([rollerID]),
-		[agitationFederalRollerID]  INT NULL
-			CONSTRAINT [FK_MassMedia_AgitationFederalRoller] REFERENCES [dbo].[Roller] ([rollerID]);
-
--- Имена result set'ов massmediaPassport для источников lookup (движок паспорта
--- ищет таблицу DataSet по алиасу из iTableAlias)
-DECLARE @passportProcID int;
-SELECT @passportProcID = storedProcedureID FROM [dbo].[iStoredProcedure] WHERE name = 'massmediaPassport';
-
-IF @passportProcID IS NOT NULL
+-- Откат первой редакции: INT FK колонки, алиасы lookup-источников, старая страница XML
+IF COL_LENGTH('dbo.MassMedia', 'agitationLocalRollerID') IS NOT NULL
 BEGIN
-	IF NOT EXISTS (SELECT 1 FROM [dbo].[iTableAlias] WHERE storedProcedureID = @passportProcID AND position = 5)
-		INSERT INTO [dbo].[iTableAlias] (storedProcedureID, position, name)
-		VALUES (@passportProcID, 5, 'rollersAgitLocal');
-	IF NOT EXISTS (SELECT 1 FROM [dbo].[iTableAlias] WHERE storedProcedureID = @passportProcID AND position = 6)
-		INSERT INTO [dbo].[iTableAlias] (storedProcedureID, position, name)
-		VALUES (@passportProcID, 6, 'rollersAgitAnnounce');
-	IF NOT EXISTS (SELECT 1 FROM [dbo].[iTableAlias] WHERE storedProcedureID = @passportProcID AND position = 7)
-		INSERT INTO [dbo].[iTableAlias] (storedProcedureID, position, name)
-		VALUES (@passportProcID, 7, 'rollersAgitFederal');
+	IF OBJECT_ID('dbo.FK_MassMedia_AgitationLocalRoller', 'F') IS NOT NULL
+		ALTER TABLE [dbo].[MassMedia] DROP CONSTRAINT [FK_MassMedia_AgitationLocalRoller];
+	IF OBJECT_ID('dbo.FK_MassMedia_AgitationAnnounceRoller', 'F') IS NOT NULL
+		ALTER TABLE [dbo].[MassMedia] DROP CONSTRAINT [FK_MassMedia_AgitationAnnounceRoller];
+	IF OBJECT_ID('dbo.FK_MassMedia_AgitationFederalRoller', 'F') IS NOT NULL
+		ALTER TABLE [dbo].[MassMedia] DROP CONSTRAINT [FK_MassMedia_AgitationFederalRoller];
+	ALTER TABLE [dbo].[MassMedia]
+		DROP COLUMN [agitationLocalRollerID], [agitationAnnounceRollerID], [agitationFederalRollerID];
 END
 
--- Новая страница в паспорте радиостанции (iEntity, entityID = 9): три lookup-поля.
+DELETE ta FROM [dbo].[iTableAlias] ta
+	INNER JOIN [dbo].[iStoredProcedure] sp ON sp.storedProcedureID = ta.storedProcedureID
+WHERE sp.name = 'massmediaPassport'
+	AND ta.name IN ('rollersAgitLocal', 'rollersAgitAnnounce', 'rollersAgitFederal');
+
+-- Старая страница удаляется по позиции (от "<page caption=...агитация">" до "</page>"),
+-- чтобы не зависеть от переводов строк внутри блока
+DECLARE @passportXml nvarchar(max) =
+	(SELECT CAST(passport AS nvarchar(max)) FROM [dbo].[iEntity] WHERE entityID = 9);
+
+IF @passportXml LIKE N'%agitationLocalRollerID%'
+BEGIN
+	DECLARE @pageStart int = CHARINDEX(N'<page caption="Политическая агитация">', @passportXml);
+	IF @pageStart > 0
+	BEGIN
+		DECLARE @pageEnd int = CHARINDEX(N'</page>', @passportXml, @pageStart);
+		SET @passportXml = STUFF(@passportXml, @pageStart, @pageEnd + 7 - @pageStart, N'');
+		UPDATE [dbo].[iEntity] SET passport = @passportXml WHERE entityID = 9;
+	END
+END
+
+-- Текущая редакция: текстовые колонки
+IF COL_LENGTH('dbo.MassMedia', 'agitationLocalRoller') IS NULL
+	ALTER TABLE [dbo].[MassMedia] ADD
+		[agitationLocalRoller]    NVARCHAR (255) NULL,
+		[agitationAnnounceRoller] NVARCHAR (255) NULL,
+		[agitationFederalRoller]  NVARCHAR (255) NULL;
+
+-- Страница в паспорте радиостанции (iEntity, entityID = 9): три текстовых поля.
 -- Имена полей = имена колонок vMassmedia = имена параметров MassmediaIUD.
-IF EXISTS (SELECT 1 FROM [dbo].[iEntity]
-	WHERE entityID = 9 AND CAST(passport AS nvarchar(max)) NOT LIKE '%agitationLocalRollerID%')
+SET @passportXml =
+	(SELECT CAST(passport AS nvarchar(max)) FROM [dbo].[iEntity] WHERE entityID = 9);
+
+IF @passportXml NOT LIKE N'%name="agitationLocalRoller"%'
 BEGIN
 	DECLARE @newPage nvarchar(max) = N'	<page caption="Политическая агитация">
-		<label caption="Ролики авто-обвязки блока с политической агитацией"/>
-		<lookup caption="Локальное СМИ (агитация):" name="agitationLocalRollerID" source="rollersAgitLocal" columnWithID="rollerID"/>
-		<lookup caption="Анонс агитации:" name="agitationAnnounceRollerID" source="rollersAgitAnnounce" columnWithID="rollerID"/>
-		<lookup caption="Федеральное СМИ (агитация):" name="agitationFederalRollerID" source="rollersAgitFederal" columnWithID="rollerID"/>
+		<field caption="Локальное СМИ (агитация):" name="agitationLocalRoller"/>
+		<field caption="Анонс агитации:" name="agitationAnnounceRoller"/>
+		<field caption="Федеральное СМИ (агитация):" name="agitationFederalRoller"/>
 	</page>
 </passport>';
 
 	UPDATE [dbo].[iEntity]
-	SET passport = REPLACE(CAST(passport AS nvarchar(max)), N'</passport>', @newPage)
+	SET passport = REPLACE(@passportXml, N'</passport>', @newPage)
 	WHERE entityID = 9;
 END

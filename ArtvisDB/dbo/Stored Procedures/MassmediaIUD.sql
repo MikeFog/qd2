@@ -31,9 +31,9 @@
 @volume_p decimal(5,2),
 @volume_m decimal(5,2),
 @volume_j decimal(5,2),
-@agitationLocalRollerID int = null,
-@agitationAnnounceRollerID int = null,
-@agitationFederalRollerID int = null
+@agitationLocalRoller nvarchar(255) = null,
+@agitationAnnounceRoller nvarchar(255) = null,
+@agitationFederalRoller nvarchar(255) = null
 )
 WITH EXECUTE AS OWNER
 as
@@ -56,12 +56,12 @@ IF @actionName = 'AddItem' BEGIN
 		rollerExitPath, rollerEtcPath, rollerPath, rollerEnterMax, rollerExitMax, rollerEtcMax, rollerEnterMin, rollerExitMin, rollerEtcMin, massmediaGroupID, 
 		exportName,mediaPlusMassmediaID, [name], director, painting, prefix, [fullPrefix], [reportString], certificateIssued,
 		volume_c, volume_n, volume_p, volume_m, volume_j,
-		agitationLocalRollerID, agitationAnnounceRollerID, agitationFederalRollerID)
+		agitationLocalRoller, agitationAnnounceRoller, agitationFederalRoller)
 	VALUES(@roltypeID, @deadLine, @isActive, @rollerEnterPath, @rollerExitPath,
 		@rollerEtcPath, @rollerPath, @rollerEnterMax, @rollerExitMax, @rollerEtcMax, @rollerEnterMin, @rollerExitMin, @rollerEtcMin, @massmediaGroupID,
 		@exportName,@mediaPlusMassmediaID, @name, @director, @painting, @prefix, @fullPrefix, @reportString, @certificateIssued,
 		@volume_c, @volume_n, @volume_p, @volume_m, @volume_j,
-		@agitationLocalRollerID, @agitationAnnounceRollerID, @agitationFederalRollerID)
+		@agitationLocalRoller, @agitationAnnounceRoller, @agitationFederalRoller)
 	
 	if @@rowcount <> 1
 	begin
@@ -113,9 +113,9 @@ ELSE IF @actionName = 'UpdateItem' BEGIN
 		volume_p = @volume_p,
 		volume_m = @volume_m,
 		volume_j = @volume_j,
-		agitationLocalRollerID = @agitationLocalRollerID,
-		agitationAnnounceRollerID = @agitationAnnounceRollerID,
-		agitationFederalRollerID = @agitationFederalRollerID
+		agitationLocalRoller = @agitationLocalRoller,
+		agitationAnnounceRoller = @agitationAnnounceRoller,
+		agitationFederalRoller = @agitationFederalRoller
 	WHERE
 		massmediaID = @massmediaID
 
