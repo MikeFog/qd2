@@ -34,8 +34,11 @@ BEGIN
 
 	IF @serviceActionID IS NULL
 	BEGIN
-		INSERT INTO [Action] (firmID, startDate, finishDate, isConfirmed)
-		VALUES (@serviceFirmID, GETDATE(), '99991231', 1)
+		-- userID обязателен на практике: журналы и гриды (WindowIssuesRetrieve,
+		-- Actions1, SpecialActions, TransferLogRetrieve...) джойнят [User]
+		-- через INNER JOIN, и акция с NULL-создателем в них не видна
+		INSERT INTO [Action] (firmID, userID, startDate, finishDate, isConfirmed)
+		VALUES (@serviceFirmID, @loggedUserID, GETDATE(), '99991231', 1)
 		SET @serviceActionID = SCOPE_IDENTITY()
 	END
 
