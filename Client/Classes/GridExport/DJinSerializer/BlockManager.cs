@@ -151,13 +151,28 @@ namespace Merlin.Classes.GridExport.DJinSerializer
             // Порядок внутри блока:
             // 1) BT (вне этого списка)
             // 2) c-type-4 - ручной идентификатор локального СМИ, если есть
-            // 3) обычные ролики в исходном порядке (позиционирование не трогаем)
-            // 4) политическая часть: локальное СМИ (44) -> анонс (7) -> ролики
+            // 3) джингл влёта
+            // 4) обычные ролики в исходном порядке (позиционирование не трогаем)
+            // 5) политическая часть: локальное СМИ (44) -> анонс (7) -> ролики
             //    агитации (6) -> федеральное СМИ (55).
             //    44/55 обрамляют только агитацию; их не будет, если блок уже
             //    обрамлён ручными 4/5 (тогда агитация идёт перед закрывающим 5)
-            // 5) c-type-5 - ручной идентификатор федерального СМИ, если есть
-            // 6) E (вне этого списка)
+            // 6) джингл аута и музыкальная добивка - остаются в конце блока
+            // 7) c-type-5 - ручной идентификатор федерального СМИ, если есть
+            // 8) E (вне этого списка)
+
+            // Служебные строки (джингл влёта в начале, джингл аута и добивка в
+            // конце) остаются на своих местах: политическая часть встаёт между
+            // обычными роликами и аутом, а не после него.
+            // Хвост - всё, что идёт после последнего обычного ролика.
+            int tailStart = otherLines.Count;
+            while (tailStart > 0 && IsServiceLine(otherLines[tailStart - 1]))
+                tailStart--;
+
+            // Обычных роликов нет совсем (в блоке только джинглы и агитация):
+            // влёт остаётся первым, остальное служебное уходит в хвост
+            if (tailStart == 0 && otherLines.Count > 0)
+                tailStart = 1;
 
             var newMiddle = new List<string>();
 
@@ -165,9 +180,9 @@ namespace Merlin.Classes.GridExport.DJinSerializer
                 newMiddle.Add(cType4Line);
 
             // Mantener orden original en las "otras"
-            foreach (var line in otherLines)
+            for (int i = 0; i < tailStart; i++)
             {
-                newMiddle.Add(line);
+                newMiddle.Add(otherLines[i]);
             }
 
             if (agitLocalLine != null)
@@ -183,6 +198,11 @@ namespace Merlin.Classes.GridExport.DJinSerializer
 
             if (agitFederalLine != null)
                 newMiddle.Add(agitFederalLine);
+
+            for (int i = tailStart; i < otherLines.Count; i++)
+            {
+                newMiddle.Add(otherLines[i]);
+            }
 
             if (cType5Line != null)
                 newMiddle.Add(cType5Line);
@@ -200,6 +220,18 @@ namespace Merlin.Classes.GridExport.DJinSerializer
         {
             var cols = line.Split(',');
             return cols.Length > 1 ? cols[1].Trim('"') : "";
+        }
+
+        /// <summary>
+        /// Джингл (влёт/аут) или музыкальная добивка - строки, обрамляющие блок.
+        /// Рекламные ролики между ними, поэтому политическая часть не должна
+        /// оказаться за аутом.
+        /// </summary>
+        private static bool IsServiceLine(string line)
+        {
+            string marker = GetTypeMarker(line);
+            return marker.StartsWith(DJinParam.strJingle, StringComparison.OrdinalIgnoreCase)
+                   || marker == DJinParam.strEtc;
         }
 
         /// <summary>
