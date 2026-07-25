@@ -145,8 +145,33 @@ ELSE IF @actionName = 'DeleteItem' begin
 		exec SayAdminThatIssuesDelete @loggedUserID, @actionID
 	end 
 
+	-- Политическая агитация: выпуски удаляются массово, минуя IssueIUD, поэтому
+	-- окна с агитацией запоминаем до удаления и снимаем обвязку после
+	DECLARE @agitWindows table (windowID int primary key)
+	INSERT INTO @agitWindows (windowID)
+	SELECT DISTINCT i.actualWindowID
+	FROM Issue i INNER JOIN Roller r ON r.rollerID = i.rollerID
+	WHERE i.campaignID = @CampaignID AND r.rolActionTypeID = 6 AND i.isConfirmed = 1
+
 	DELETE Issue WHERE CampaignID = @CampaignID
 	DELETE FROM [Campaign] WHERE CampaignID = @CampaignID
+
+	DECLARE @agitWindowID int
+	DECLARE cur_agit_camp CURSOR LOCAL FOR SELECT windowID FROM @agitWindows
+
+	OPEN cur_agit_camp
+	FETCH NEXT FROM cur_agit_camp INTO @agitWindowID
+	WHILE @@FETCH_STATUS = 0
+	BEGIN
+		EXEC AgitationFraming
+			@actionName = 'CleanupWindow',
+			@windowID = @agitWindowID,
+			@loggedUserID = @loggedUserID
+
+		FETCH NEXT FROM cur_agit_camp INTO @agitWindowID
+	END
+	CLOSE cur_agit_camp
+	DEALLOCATE cur_agit_camp
 END
 ELSE IF @actionName = 'UpdateItem' BEGIN
 

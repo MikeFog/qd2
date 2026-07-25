@@ -171,13 +171,16 @@ BEGIN
 		SET @cFirst = @cPrev
 	END
 
-	-- если где-то в цепочке ещё осталась агитация (тип 6) - обвязку не трогаем
+	-- Если где-то в цепочке осталась ПОДТВЕРЖДЁННАЯ агитация - обвязку не трогаем.
+	-- Учитываются только подтверждённые выпуски: обвязка существует ради эфира,
+	-- поэтому агитация, вернувшаяся в черновик (деактивация акции), обвязку не
+	-- удерживает - она будет создана заново при повторной активации.
 	SET @cur = @cFirst
 	WHILE @cur IS NOT NULL
 	BEGIN
 		IF EXISTS (SELECT 1 FROM Issue i
 				INNER JOIN Roller r ON r.rollerID = i.rollerID
-			WHERE i.actualWindowID = @cur AND r.rolActionTypeID = 6)
+			WHERE i.actualWindowID = @cur AND r.rolActionTypeID = 6 AND i.isConfirmed = 1)
 			RETURN
 		SELECT @cNext = windowNextId FROM TariffWindow WHERE windowId = @cur
 		SET @cur = @cNext
