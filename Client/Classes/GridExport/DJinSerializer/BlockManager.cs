@@ -203,21 +203,17 @@ namespace Merlin.Classes.GridExport.DJinSerializer
         }
 
         /// <summary>
-        /// Убирает служебные метки политической агитации: они нужны только для
-        /// сортировки выше, а DJin должен получить привычные ему значения.
-        /// 44/55 - те же идентификаторы локального и федерального СМИ, что и ручные
-        /// 4/5 (различаются только для нашей системы); анонс и сам ролик агитации -
-        /// обычные рекламные ролики.
+        /// Убирает служебные метки политической обвязки: они нужны только для
+        /// сортировки выше. В файл все они пишутся как обычные рекламные ролики -
+        /// метки 4/5 не ставим специально, чтобы DJin не принял авто-обвязку за
+        /// ручные идентификаторы СМИ.
         /// </summary>
         private static string NormalizeAgitationMarker(string line)
         {
             string marker = GetTypeMarker(line);
 
-            if (marker == TypeAgitLocalSmi)
-                return ReplaceTypeMarker(line, TypeLocalSmi);
-            if (marker == TypeAgitFederalSmi)
-                return ReplaceTypeMarker(line, TypeFederalSmi);
-            if (marker == TypeAgitAnnounce || marker == TypeAgitation)
+            if (marker == TypeAgitLocalSmi || marker == TypeAgitFederalSmi
+                || marker == TypeAgitAnnounce || marker == TypeAgitation)
                 return ReplaceTypeMarker(line, DJinParam.strRoller);
 
             return line;
