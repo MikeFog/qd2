@@ -115,8 +115,12 @@ namespace FogSoft.WinForm.Passport.Classes
 			if (parameters.ContainsKey(Name) && parameters[Name] != DBNull.Value)
 			{
 				using (MemoryStream stream = new MemoryStream((byte[]) parameters[Name]))
+				using (Image original = Image.FromStream(stream))
 				{
-					Image = Image.FromStream(stream);
+					// GDI+ требует живой поток на всё время жизни Image;
+					// копия в Bitmap отвязывает картинку от потока, иначе
+					// Image.Save в ApplyChanges падает "ошибкой общего вида"
+					Image = new Bitmap(original);
 					SetImage(Image);
 				}
 			}
