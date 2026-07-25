@@ -36,9 +36,12 @@ BEGIN
 	BEGIN
 		-- userID обязателен на практике: журналы и гриды (WindowIssuesRetrieve,
 		-- Actions1, SpecialActions, TransferLogRetrieve...) джойнят [User]
-		-- через INNER JOIN, и акция с NULL-создателем в них не видна
+		-- через INNER JOIN, и акция с NULL-создателем в них не видна.
+		-- Создатель - admin (userID 0), а не активировавший менеджер: акция
+		-- служебная, и её владелец не должен зависеть от того, кто активировал
+		-- агитацию первым (иначе статистика по менеджерам получит чужие выпуски)
 		INSERT INTO [Action] (firmID, userID, startDate, finishDate, isConfirmed)
-		VALUES (@serviceFirmID, @loggedUserID, GETDATE(), '99991231', 1)
+		VALUES (@serviceFirmID, 0, GETDATE(), '99991231', 1)
 		SET @serviceActionID = SCOPE_IDENTITY()
 	END
 
