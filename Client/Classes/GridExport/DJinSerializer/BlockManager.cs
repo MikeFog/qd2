@@ -169,10 +169,19 @@ namespace Merlin.Classes.GridExport.DJinSerializer
             while (tailStart > 0 && IsServiceLine(otherLines[tailStart - 1]))
                 tailStart--;
 
-            // Обычных роликов нет совсем (в блоке только джинглы и агитация):
-            // влёт остаётся первым, остальное служебное уходит в хвост
-            if (tailStart == 0 && otherLines.Count > 0)
-                tailStart = 1;
+            if (tailStart == 0)
+            {
+                // Обычных роликов в блоке нет (окно целиком под агитацию). Голова -
+                // ровно те служебные строки, что стояли в начале блока. Считаем их
+                // по исходному порядку, а не считаем первую строку джинглом влёта:
+                // у блока может не быть влёта (тариф с needInJingle = 0), и тогда
+                // единственная служебная строка - это аут, его место в конце
+                int headCount = 0;
+                while (headCount < middle.Count && IsServiceLine(middle[headCount]))
+                    headCount++;
+
+                tailStart = Math.Min(headCount, otherLines.Count);
+            }
 
             var newMiddle = new List<string>();
 
