@@ -4,11 +4,17 @@
 -- инвариант Issue.campaignID NOT NULL и не попадать в клиентские медиапланы.
 -- Служебные сущности создаются лениво (get-or-create): job_DeleteEmptyActions может
 -- удалить пустую служебную акцию между агитационными периодами - это штатно.
+--
+-- Режимы:
+--   InsertForWindow - ядро: обвязать одно окно (вызывается при добавлении
+--                     подтверждённого ролика типа 6 в уже активированную акцию);
+--   InsertForAction - обвязать все окна акции с подтверждённым типом 6 (активация);
+--   CleanupWindow   - снять обвязку, если в цепочке окон не осталось типа 6.
 CREATE PROCEDURE [dbo].[AgitationFraming]
 (
-@actionName varchar(32),	-- 'InsertForAction' | 'CleanupWindow'
-@actionID int = null,		-- для InsertForAction: акция менеджера, только что активированная
-@windowID int = null,		-- для CleanupWindow: окно, из которого удалили ролик типа 6
+@actionName varchar(32),
+@actionID int = null,
+@windowID int = null,
 @loggedUserID smallint
 )
 WITH EXECUTE AS OWNER
@@ -21,8 +27,20 @@ DECLARE @serviceFirmID smallint, @serviceActionID int
 
 SELECT @serviceFirmID = firmID FROM Firm WHERE [name] = @SERVICE_FIRM_NAME
 
-IF @actionName = 'InsertForAction'
+IF @actionName = 'InsertForWindow'
 BEGIN
+	DECLARE @mmID smallint, @first int, @last int, @prev int, @next int,
+		@rLocal int, @rAnnounce int, @rFederal int, @svcCampaignID int,
+		@insRollerID int, @insWindowID int
+
+	SELECT @mmID = tw.massmediaID FROM TariffWindow tw WHERE tw.windowId = @windowID
+	SELECT @rLocal = agitationLocalRollerID, @rAnnounce = agitationAnnounceRollerID, @rFederal = agitationFederalRollerID
+	FROM MassMedia WHERE massmediaID = @mmID
+
+	-- страховка: вызывающая сторона обязана была это проверить
+	-- (AgitationStationRollersNotSet в ActionActivate / hlp_IssueVerify)
+	IF @rLocal IS NULL OR @rAnnounce IS NULL OR @rFederal IS NULL RETURN
+
 	IF @serviceFirmID IS NULL
 	BEGIN
 		INSERT INTO Firm ([name]) VALUES (@SERVICE_FIRM_NAME)
@@ -45,8 +63,76 @@ BEGIN
 		SET @serviceActionID = SCOPE_IDENTITY()
 	END
 
-	DECLARE @wID int, @mmID smallint, @first int, @last int, @prev int, @next int,
-		@rLocal int, @rAnnounce int, @rFederal int, @svcCampaignID int, @insRollerID int, @insWindowID int
+	-- границы цепочки окон (windowPrevId/windowNextId); в ~99% случаев цепочки нет
+	SET @first = @windowID
+	WHILE 1 = 1
+	BEGIN
+		SELECT @prev = windowPrevId FROM TariffWindow WHERE windowId = @first
+		IF @prev IS NULL BREAK
+		SET @first = @prev
+	END
+	SET @last = @windowID
+	WHILE 1 = 1
+	BEGIN
+		SELECT @next = windowNextId FROM TariffWindow WHERE windowId = @last
+		IF @next IS NULL BREAK
+		SET @last = @next
+	END
+
+	-- служебная кампания станции: get-or-create
+	SELECT @svcCampaignID = campaignID FROM Campaign
+	WHERE actionID = @serviceActionID AND massmediaID = @mmID AND campaignTypeID = 1
+
+	IF @svcCampaignID IS NULL
+	BEGIN
+		-- paymentTypeID/agencyID обязательны, но без FK; для служебной кампании
+		-- содержательного смысла не несут
+		INSERT INTO Campaign (actionID, massmediaID, campaignTypeID, paymentTypeID,
+			agencyID, modUser, startDate, finishDate)
+		VALUES (@serviceActionID, @mmID, 1, 1,
+			(SELECT MIN(agencyID) FROM Agency), @loggedUserID, GETDATE(), '99991231')
+		SET @svcCampaignID = SCOPE_IDENTITY()
+	END
+
+	-- три кандидата на вставку: 44 в первое окно цепочки, 7 в окно агитации,
+	-- 55 в последнее; ручные 4/5 не дублируем (семейства 4/44 и 5/55)
+	DECLARE cur_ins CURSOR LOCAL FOR
+		SELECT v.rollerID, v.windowID
+		FROM (VALUES (@rLocal, @first, 44), (@rAnnounce, @windowID, 7), (@rFederal, @last, 55)) v(rollerID, windowID, slotType)
+		WHERE NOT EXISTS (
+			SELECT 1 FROM Issue i2
+				INNER JOIN Roller r2 ON r2.rollerID = i2.rollerID
+			WHERE i2.actualWindowID = v.windowID
+				AND ((v.slotType = 44 AND r2.rolActionTypeID IN (4, 44))
+					OR (v.slotType = 7 AND r2.rolActionTypeID = 7)
+					OR (v.slotType = 55 AND r2.rolActionTypeID IN (5, 55)))
+		)
+
+	OPEN cur_ins
+	FETCH NEXT FROM cur_ins INTO @insRollerID, @insWindowID
+	WHILE @@FETCH_STATUS = 0
+	BEGIN
+		INSERT INTO Issue (rollerID, originalWindowID, actualWindowID, campaignID,
+			positionId, isConfirmed, activationDate, tariffPrice)
+		VALUES (@insRollerID, @insWindowID, @insWindowID, @svcCampaignID, 0, 1, GETDATE(), 0)
+
+		-- обвязка занимает время окна как обычный выпуск; минус допустим by design
+		UPDATE tw SET
+			timeInUseConfirmed = CASE WHEN tw.maxCapacity = 0
+				THEN tw.timeInUseConfirmed + r.duration ELSE tw.timeInUseConfirmed END,
+			capacityInUseConfirmed = CASE WHEN tw.maxCapacity > 0
+				THEN tw.capacityInUseConfirmed + 1 ELSE tw.capacityInUseConfirmed END
+		FROM TariffWindow tw, Roller r
+		WHERE tw.windowId = @insWindowID AND r.rollerID = @insRollerID
+
+		FETCH NEXT FROM cur_ins INTO @insRollerID, @insWindowID
+	END
+	CLOSE cur_ins
+	DEALLOCATE cur_ins
+END
+ELSE IF @actionName = 'InsertForAction'
+BEGIN
+	DECLARE @wID int
 
 	DECLARE cur_windows CURSOR LOCAL FOR
 		SELECT DISTINCT i.actualWindowID
@@ -59,83 +145,10 @@ BEGIN
 	FETCH NEXT FROM cur_windows INTO @wID
 	WHILE @@FETCH_STATUS = 0
 	BEGIN
-		SELECT @mmID = tw.massmediaID FROM TariffWindow tw WHERE tw.windowId = @wID
-		SELECT @rLocal = agitationLocalRollerID, @rAnnounce = agitationAnnounceRollerID, @rFederal = agitationFederalRollerID
-		FROM MassMedia WHERE massmediaID = @mmID
-
-		-- страховка: активация обязана была это проверить (AgitationStationRollersNotSet)
-		IF @rLocal IS NULL OR @rAnnounce IS NULL OR @rFederal IS NULL
-		BEGIN
-			FETCH NEXT FROM cur_windows INTO @wID
-			CONTINUE
-		END
-
-		-- границы цепочки окон (windowPrevId/windowNextId); в ~99% случаев цепочки нет
-		SET @first = @wID
-		WHILE 1 = 1
-		BEGIN
-			SELECT @prev = windowPrevId FROM TariffWindow WHERE windowId = @first
-			IF @prev IS NULL BREAK
-			SET @first = @prev
-		END
-		SET @last = @wID
-		WHILE 1 = 1
-		BEGIN
-			SELECT @next = windowNextId FROM TariffWindow WHERE windowId = @last
-			IF @next IS NULL BREAK
-			SET @last = @next
-		END
-
-		-- служебная кампания станции: get-or-create
-		SELECT @svcCampaignID = campaignID FROM Campaign
-		WHERE actionID = @serviceActionID AND massmediaID = @mmID AND campaignTypeID = 1
-
-		IF @svcCampaignID IS NULL
-		BEGIN
-			-- paymentTypeID/agencyID обязательны, но без FK; для служебной кампании
-			-- содержательного смысла не несут
-			INSERT INTO Campaign (actionID, massmediaID, campaignTypeID, paymentTypeID,
-				agencyID, modUser, startDate, finishDate)
-			VALUES (@serviceActionID, @mmID, 1, 1,
-				(SELECT MIN(agencyID) FROM Agency), @loggedUserID, GETDATE(), '99991231')
-			SET @svcCampaignID = SCOPE_IDENTITY()
-		END
-
-		-- три кандидата на вставку: 44 в первое окно цепочки, 7 в окно агитации,
-		-- 55 в последнее; ручные 4/5 не дублируем (семейства 4/44 и 5/55)
-		DECLARE cur_ins CURSOR LOCAL FOR
-			SELECT v.rollerID, v.windowID
-			FROM (VALUES (@rLocal, @first, 44), (@rAnnounce, @wID, 7), (@rFederal, @last, 55)) v(rollerID, windowID, slotType)
-			WHERE NOT EXISTS (
-				SELECT 1 FROM Issue i2
-					INNER JOIN Roller r2 ON r2.rollerID = i2.rollerID
-				WHERE i2.actualWindowID = v.windowID
-					AND ((v.slotType = 44 AND r2.rolActionTypeID IN (4, 44))
-						OR (v.slotType = 7 AND r2.rolActionTypeID = 7)
-						OR (v.slotType = 55 AND r2.rolActionTypeID IN (5, 55)))
-			)
-
-		OPEN cur_ins
-		FETCH NEXT FROM cur_ins INTO @insRollerID, @insWindowID
-		WHILE @@FETCH_STATUS = 0
-		BEGIN
-			INSERT INTO Issue (rollerID, originalWindowID, actualWindowID, campaignID,
-				positionId, isConfirmed, activationDate, tariffPrice)
-			VALUES (@insRollerID, @insWindowID, @insWindowID, @svcCampaignID, 0, 1, GETDATE(), 0)
-
-			-- обвязка занимает время окна как обычный выпуск; минус допустим by design
-			UPDATE tw SET
-				timeInUseConfirmed = CASE WHEN tw.maxCapacity = 0
-					THEN tw.timeInUseConfirmed + r.duration ELSE tw.timeInUseConfirmed END,
-				capacityInUseConfirmed = CASE WHEN tw.maxCapacity > 0
-					THEN tw.capacityInUseConfirmed + 1 ELSE tw.capacityInUseConfirmed END
-			FROM TariffWindow tw, Roller r
-			WHERE tw.windowId = @insWindowID AND r.rollerID = @insRollerID
-
-			FETCH NEXT FROM cur_ins INTO @insRollerID, @insWindowID
-		END
-		CLOSE cur_ins
-		DEALLOCATE cur_ins
+		EXEC AgitationFraming
+			@actionName = 'InsertForWindow',
+			@windowID = @wID,
+			@loggedUserID = @loggedUserID
 
 		FETCH NEXT FROM cur_windows INTO @wID
 	END
@@ -181,12 +194,9 @@ BEGIN
 		FROM Issue i
 			INNER JOIN Campaign c ON c.campaignID = i.campaignID
 			INNER JOIN Roller r ON r.rollerID = i.rollerID
-			INNER JOIN TariffWindow tw ON tw.windowId = i.actualWindowID
 		WHERE c.actionID = @serviceActionID
 			AND r.rolActionTypeID IN (7, 44, 55)
-			AND (tw.windowId = @cFirst
-				OR EXISTS (SELECT 1 FROM TariffWindow tw0 WHERE tw0.windowId = @windowID AND tw0.massmediaID = tw.massmediaID)
-					AND dbo.fn_AgitationChainFirst(i.actualWindowID) = @cFirst)
+			AND dbo.fn_AgitationChainFirst(i.actualWindowID) = @cFirst
 
 	OPEN cur_del
 	FETCH NEXT FROM cur_del INTO @delIssueID, @delWindowID, @delDuration

@@ -261,10 +261,19 @@ IF @actionName = 'AddItem' BEGIN
 	if @@rowcount <> 1
 	begin
 		raiserror('InternalError', 16, 1)
-		return 
-	end 
+		return
+	end
 
 	SET @issueID = SCOPE_IDENTITY()
+
+	-- Политическая агитация: размещение в уже активированной акции создаёт сразу
+	-- подтверждённый выпуск минуя ActionActivate - обвязку добавляем здесь.
+	-- В черновике обвязка не нужна: её создаст активация.
+	IF @rolActionTypeID = 6 AND @isConfirmed = 1
+		EXEC AgitationFraming
+			@actionName = 'InsertForWindow',
+			@windowID = @windowID,
+			@loggedUserID = @loggedUserId
 END
 ELSE IF @actionName = 'DeleteItem' BEGIN
 	-- Политическая агитация: до удаления запоминаем тип ролика и окно, чтобы после

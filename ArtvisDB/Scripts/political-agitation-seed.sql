@@ -51,6 +51,11 @@ IF NOT EXISTS (SELECT 1 FROM [dbo].[iMessage] WHERE name = 'RolType7AlreadyExist
 	VALUES ('RolType7AlreadyExistInWindow',
 		N'В окне уже есть ролик с типом "Анонс политической агитации". Операция прервана.');
 
+IF NOT EXISTS (SELECT 1 FROM [dbo].[iMessage] WHERE name = 'AgitationStationRollersNotSet')
+	INSERT INTO [dbo].[iMessage] (name, [message])
+	VALUES ('AgitationStationRollersNotSet',
+		N'У радиостанции не заполнены ролики обвязки политической агитации (карточка радиостанции, вкладка "Политическая агитация"). Операция прервана.');
+
 -- Сообщение для окна результатов активации (ActionActivate читает iMessageToActivate)
 IF NOT EXISTS (SELECT 1 FROM [dbo].[iMessageToActivate] WHERE name = 'AgitationStationRollersNotSet')
 	INSERT INTO [dbo].[iMessageToActivate] (name, [message])

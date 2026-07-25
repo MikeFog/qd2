@@ -86,6 +86,22 @@ If @rollerActionTypeID In (5, 55) And Exists (
 		RETURN 1
 	End
 
+-- Размещение агитации сразу подтверждённым выпуском (в уже активированной акции)
+-- требует заполненных роликов обвязки в карточке станции - иначе обвязку не создать.
+-- В черновике проверка не нужна: её выполнит активация (ActionActivate).
+If @rollerActionTypeID = 6 And @isConfirmed = 1
+	And Exists (
+		Select 1 From MassMedia mm
+		Where mm.massmediaID = @MassMediaId
+			And (mm.agitationLocalRollerID Is Null
+				Or mm.agitationAnnounceRollerID Is Null
+				Or mm.agitationFederalRollerID Is Null)
+	)
+	Begin
+		set @msgError = 'AgitationStationRollersNotSet'
+		RETURN 1
+	End
+
 -- Анонс политической агитации (тип 7) в окне может быть только один
 If @rollerActionTypeID = 7 And Exists (
 	Select 1
