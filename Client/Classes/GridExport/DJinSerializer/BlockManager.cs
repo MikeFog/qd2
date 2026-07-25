@@ -8,6 +8,16 @@ namespace Merlin.Classes.GridExport.DJinSerializer
 {
     public static class BlockManager
     {
+        // Метки типов роликов, которые проставляет DJinExportDocument.PrintRoller.
+        // Нужны только для сортировки внутри блока; в готовый файл метки новых
+        // типов не попадают (см. NormalizeAgitationMarker).
+        private const string TypeLocalSmi = "c-type-4";
+        private const string TypeFederalSmi = "c-type-5";
+        private const string TypeAgitLocalSmi = "c-type-44";
+        private const string TypeAgitFederalSmi = "c-type-55";
+        private const string TypeAgitAnnounce = "c-type-7";
+        private const string TypeAgitation = "c-type-6";
+
         private class Block
         {
             public List<string> Lines = new List<string>();
@@ -88,61 +98,66 @@ namespace Merlin.Classes.GridExport.DJinSerializer
             // Identificar c-type-4, c-type-5 y las demás
             string cType4Line = null;
             string cType5Line = null;
+            string agitLocalLine = null;
+            string agitFederalLine = null;
+            string agitAnnounceLine = null;
+            var agitationLines = new List<string>();
             var otherLines = new List<string>();
 
             foreach (var line in middle)
             {
-                var cols = line.Split(',');
-                string col1 = cols.Length > 1 ? cols[1].Trim('"') : "";
+                string col1 = GetTypeMarker(line);
 
-                if (col1 == "c-type-4")
-                {
+                if (col1 == TypeLocalSmi)
                     cType4Line = line;
-                }
-                else if (col1 == "c-type-5")
-                {
+                else if (col1 == TypeFederalSmi)
                     cType5Line = line;
-                }
+                else if (col1 == TypeAgitLocalSmi)
+                    agitLocalLine = line;
+                else if (col1 == TypeAgitFederalSmi)
+                    agitFederalLine = line;
+                else if (col1 == TypeAgitAnnounce)
+                    agitAnnounceLine = line;
+                else if (col1 == TypeAgitation)
+                    agitationLines.Add(line);
                 else
-                {
                     otherLines.Add(line);
-                }
             }
 
-            // Si el bloque NO tiene c-type-4 ni c-type-5 → dejar todo igual
-            if (cType4Line == null && cType5Line == null)
+            bool hasAgitation = agitLocalLine != null || agitFederalLine != null
+                                || agitAnnounceLine != null || agitationLines.Count > 0;
+
+            // Si el bloque NO tiene c-type-4 ni c-type-5 ni política → dejar todo igual
+            if (cType4Line == null && cType5Line == null && !hasAgitation)
             {
                 return original;
             }
 
             // ¿Hay otras líneas que empiecen con "c" (aparte de c-type-4/5)?
-            bool hasRealRollers = otherLines.Any(line =>
-            {
-                var cols = line.Split(',');
-                string col1 = cols.Length > 1 ? cols[1].Trim('"') : "";
-                return !col1.StartsWith("j", StringComparison.OrdinalIgnoreCase);
-            });
+            // Ролик агитации - обычный рекламный ролик, поэтому тоже считается;
+            // идентификаторы СМИ и анонс - нет, как и ручные 4/5
+            bool hasRealRollers = agitationLines.Count > 0 || otherLines.Any(line =>
+                !GetTypeMarker(line).StartsWith("j", StringComparison.OrdinalIgnoreCase));
 
             // Si no hay otras "c" y sí hay c-type-4 o c-type-5,
             // entonces eliminamos todas las líneas con "j"
-            if (!hasRealRollers && (cType4Line != null || cType5Line != null))
+            if (!hasRealRollers)
             {
                 otherLines = otherLines
-                    .Where(line =>
-                    {
-                        var cols = line.Split(',');
-                        string col1 = cols.Length > 1 ? cols[1].Trim('"') : "";
-                        return col1 != "j";
-                    })
+                    .Where(line => GetTypeMarker(line) != "j")
                     .ToList();
             }
 
-            // Construimos el nuevo "middle" en el orden correcto:
-            // 1) BT (fuera de aquí)
-            // 2) c-type-4 (si existe)
-            // 3) otras líneas (en el orden original, filtradas)
-            // 4) c-type-5 (si existe)
-            // 5) E (fuera de aquí)
+            // Порядок внутри блока:
+            // 1) BT (вне этого списка)
+            // 2) c-type-4 - ручной идентификатор локального СМИ, если есть
+            // 3) обычные ролики в исходном порядке (позиционирование не трогаем)
+            // 4) политическая часть: локальное СМИ (44) -> анонс (7) -> ролики
+            //    агитации (6) -> федеральное СМИ (55).
+            //    44/55 обрамляют только агитацию; их не будет, если блок уже
+            //    обрамлён ручными 4/5 (тогда агитация идёт перед закрывающим 5)
+            // 5) c-type-5 - ручной идентификатор федерального СМИ, если есть
+            // 6) E (вне этого списка)
 
             var newMiddle = new List<string>();
 
@@ -155,16 +170,67 @@ namespace Merlin.Classes.GridExport.DJinSerializer
                 newMiddle.Add(line);
             }
 
+            if (agitLocalLine != null)
+                newMiddle.Add(agitLocalLine);
+
+            if (agitAnnounceLine != null)
+                newMiddle.Add(agitAnnounceLine);
+
+            foreach (var line in agitationLines)
+            {
+                newMiddle.Add(line);
+            }
+
+            if (agitFederalLine != null)
+                newMiddle.Add(agitFederalLine);
+
             if (cType5Line != null)
                 newMiddle.Add(cType5Line);
 
             // Reconstruimos el bloque
             var result = new Block();
             result.Lines.Add(btLine);
-            result.Lines.AddRange(newMiddle);
+            result.Lines.AddRange(newMiddle.Select(NormalizeAgitationMarker));
             result.Lines.Add(eLine);
 
             return result;
+        }
+
+        private static string GetTypeMarker(string line)
+        {
+            var cols = line.Split(',');
+            return cols.Length > 1 ? cols[1].Trim('"') : "";
+        }
+
+        /// <summary>
+        /// Убирает служебные метки политической агитации: они нужны только для
+        /// сортировки выше, а DJin должен получить привычные ему значения.
+        /// 44/55 - те же идентификаторы локального и федерального СМИ, что и ручные
+        /// 4/5 (различаются только для нашей системы); анонс и сам ролик агитации -
+        /// обычные рекламные ролики.
+        /// </summary>
+        private static string NormalizeAgitationMarker(string line)
+        {
+            string marker = GetTypeMarker(line);
+
+            if (marker == TypeAgitLocalSmi)
+                return ReplaceTypeMarker(line, TypeLocalSmi);
+            if (marker == TypeAgitFederalSmi)
+                return ReplaceTypeMarker(line, TypeFederalSmi);
+            if (marker == TypeAgitAnnounce || marker == TypeAgitation)
+                return ReplaceTypeMarker(line, DJinParam.strRoller);
+
+            return line;
+        }
+
+        private static string ReplaceTypeMarker(string line, string newMarker)
+        {
+            var cols = line.Split(',');
+            if (cols.Length < 2)
+                return line;
+
+            cols[1] = string.Format("\"{0}\"", newMarker);
+            return string.Join(",", cols);
         }
     }
 }
