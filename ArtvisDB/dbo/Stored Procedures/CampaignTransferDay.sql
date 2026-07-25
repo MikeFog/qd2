@@ -86,8 +86,15 @@ begin
 	return 
 end
 
+-- Политическая агитация: перенос дня двигает выпуски прямым UPDATE, минуя
+-- IssueIUD/IssueTransfer. Копим пары "откуда -> куда" по подтверждённой агитации
+-- и двигаем обвязку после того, как весь день перенесён (промежуточные состояния
+-- цикла обвязку не дёргают)
+Declare @agitMoves table (oldWindowID int, newWindowID int)
+Declare @agitOldWindowID int
+
 Declare	curIssues cursor local fast_forward
-For	
+For
 Select	
 	i.issueID,
 	Convert(varchar, tw.windowDateOriginal, 108) as issueTimeString,
@@ -247,6 +254,16 @@ WHILE @@fetch_status = 0
 			TariffWindow.windowId = i.actualWindowId
 			and i.issueID = @issueID
 
+		If @rolActionTypeID = 6
+		Begin
+			Set @agitOldWindowID = Null
+			Select @agitOldWindowID = i.actualWindowID
+			From Issue i Where i.issueID = @issueID And i.isConfirmed = 1
+
+			If Not @agitOldWindowID Is Null
+				Insert Into @agitMoves (oldWindowID, newWindowID) Values (@agitOldWindowID, @windowId)
+		End
+
 		Update Issue Set actualWindowId = @windowId, [originalWindowID] = @windowId	Where issueID = @issueID
 		
 		Update 
@@ -332,3 +349,45 @@ IF @campaignTypeID = 4
 
 close curIssues
 deallocate curIssues
+
+-- Политическая агитация: день перенесён - двигаем обвязку. Сначала снимаем со
+-- старых окон (CleanupWindow сам проверит, не осталось ли там подтверждённой
+-- агитации других акций), затем создаём в новых
+If Exists (Select 1 From @agitMoves)
+Begin
+	Declare @agitWindowID int
+	Declare curAgitOld cursor local fast_forward For
+		Select Distinct oldWindowID From @agitMoves
+		Where oldWindowID Not In (Select newWindowID From @agitMoves)
+
+	Open curAgitOld
+	Fetch Next From curAgitOld Into @agitWindowID
+	While @@fetch_status = 0
+	Begin
+		Exec AgitationFraming
+			@actionName = 'CleanupWindow',
+			@windowID = @agitWindowID,
+			@loggedUserID = @loggedUserID
+
+		Fetch Next From curAgitOld Into @agitWindowID
+	End
+	Close curAgitOld
+	Deallocate curAgitOld
+
+	Declare curAgitNew cursor local fast_forward For
+		Select Distinct newWindowID From @agitMoves
+
+	Open curAgitNew
+	Fetch Next From curAgitNew Into @agitWindowID
+	While @@fetch_status = 0
+	Begin
+		Exec AgitationFraming
+			@actionName = 'InsertForWindow',
+			@windowID = @agitWindowID,
+			@loggedUserID = @loggedUserID
+
+		Fetch Next From curAgitNew Into @agitWindowID
+	End
+	Close curAgitNew
+	Deallocate curAgitNew
+End
