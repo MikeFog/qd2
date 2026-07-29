@@ -1,7 +1,15 @@
--- Политическая агитация, этап 1: справочные данные
--- См. docs/tasks/political-agitation-ads.md
--- Скрипт идемпотентен, деплоится вручную:
---   sqlcmd -S <server> -d <база> -E -f 65001 -i political-agitation-seed.sql
+-- Политическая агитация: схема, справочные данные и метаданные форм.
+-- Этот же скрипт используется для обновления продуктивной базы,
+-- порядок деплоя и список программных объектов - в docs/tasks/political-agitation-deploy.md
+--
+-- Скрипт идемпотентен и конвергентен: приводит базу к нужному состоянию из
+-- любого прежнего (чистая база, промежуточные отменённые редакции), повторный
+-- прогон безопасен. В конце выводит отчёт о проверке.
+--
+--   sqlcmd -S <сервер> -d <база> -E -f 65001 -I -i political-agitation-seed.sql
+--
+-- ВНИМАНИЕ: флаг -I (QUOTED_IDENTIFIER ON) обязателен и для этого скрипта,
+-- и для деплоя процедур - без него UPDATE в IssueIUD падает на индексах.
 
 -- Новые типы роликов (iRollerActionType):
 --   6  - ролик политической агитации кандидата (создаётся менеджером);
@@ -135,3 +143,88 @@ DECLARE @newPage nvarchar(max) = N'	<page caption="Политическая аг
 UPDATE [dbo].[iEntity]
 SET passport = REPLACE(@passportXml, N'</passport>', @newPage)
 WHERE entityID = 9;
+
+-- ============================================================================
+-- Отчёт о проверке: все строки должны быть в состоянии OK.
+-- Программные объекты (процедуры, функции, представление) этот скрипт НЕ
+-- деплоит - их список в docs/tasks/political-agitation-deploy.md, здесь только
+-- проверяется, что они уже на месте.
+-- ============================================================================
+
+DECLARE @report table (пункт nvarchar(80), состояние nvarchar(20), деталь nvarchar(200));
+
+INSERT INTO @report
+SELECT N'Типы роликов 6/7/44/55',
+	CASE WHEN COUNT(*) = 4 THEN N'OK' ELSE N'ОШИБКА' END,
+	N'найдено: ' + CAST(COUNT(*) AS nvarchar(10)) + N' из 4'
+FROM [dbo].[iRollerActionType] WHERE rolActionTypeId IN (6, 7, 44, 55);
+
+INSERT INTO @report
+SELECT N'Сообщения в iMessage',
+	CASE WHEN COUNT(*) = 5 THEN N'OK' ELSE N'ОШИБКА' END,
+	N'найдено: ' + CAST(COUNT(*) AS nvarchar(10)) + N' из 5'
+FROM [dbo].[iMessage]
+WHERE name IN ('AgitationPositionForbidden', 'AgitationMixError',
+	'RolType7AlreadyExistInWindow', 'AgitationStationRollersNotSet', 'AgitationIntervalsInvalid');
+
+INSERT INTO @report
+SELECT N'Сообщение в iMessageToActivate',
+	CASE WHEN COUNT(*) = 1 THEN N'OK' ELSE N'ОШИБКА' END,
+	N'AgitationStationRollersNotSet'
+FROM [dbo].[iMessageToActivate] WHERE name = 'AgitationStationRollersNotSet';
+
+INSERT INTO @report
+SELECT N'Колонки MassMedia',
+	CASE WHEN COL_LENGTH('dbo.MassMedia', 'agitationLocalRollerID') IS NOT NULL
+		AND COL_LENGTH('dbo.MassMedia', 'agitationAnnounceRollerID') IS NOT NULL
+		AND COL_LENGTH('dbo.MassMedia', 'agitationFederalRollerID') IS NOT NULL
+		AND COL_LENGTH('dbo.MassMedia', 'agitationExcludeIntervals') IS NOT NULL
+	THEN N'OK' ELSE N'ОШИБКА' END,
+	N'4 колонки агитации';
+
+INSERT INTO @report
+SELECT N'Колонки в vMassmedia',
+	CASE WHEN COL_LENGTH('dbo.vMassmedia', 'agitationExcludeIntervals') IS NOT NULL
+	THEN N'OK' ELSE N'ОШИБКА: задеплойте vMassmedia' END,
+	N'представление должно быть обновлено';
+
+INSERT INTO @report
+SELECT N'Алиасы result set в iTableAlias',
+	CASE WHEN COUNT(*) = 3 THEN N'OK' ELSE N'ОШИБКА' END,
+	N'найдено: ' + CAST(COUNT(*) AS nvarchar(10)) + N' из 3'
+FROM [dbo].[iTableAlias] ta
+	INNER JOIN [dbo].[iStoredProcedure] sp ON sp.storedProcedureID = ta.storedProcedureID
+WHERE sp.name = 'massmediaPassport'
+	AND ta.name IN ('rollersAgitLocal', 'rollersAgitAnnounce', 'rollersAgitFederal');
+
+INSERT INTO @report
+SELECT N'Страница паспорта станции',
+	CASE WHEN x.pageCount = 1 THEN N'OK' ELSE N'ОШИБКА' END,
+	N'страниц "Политическая агитация": ' + CAST(x.pageCount AS nvarchar(10))
+FROM (SELECT (LEN(CAST(passport AS nvarchar(max)))
+		- LEN(REPLACE(CAST(passport AS nvarchar(max)), N'<page caption="Политическая агитация">', N'')))
+		/ LEN(N'<page caption="Политическая агитация">') AS pageCount
+	FROM [dbo].[iEntity] WHERE entityID = 9) x;
+
+INSERT INTO @report
+SELECT N'XML паспорта станции валиден',
+	CASE WHEN TRY_CAST(CAST(passport AS nvarchar(max)) AS xml) IS NOT NULL THEN N'OK' ELSE N'ОШИБКА' END,
+	N'iEntity.entityID = 9'
+FROM [dbo].[iEntity] WHERE entityID = 9;
+
+INSERT INTO @report
+SELECT N'Программный объект: ' + o.name,
+	CASE WHEN OBJECT_ID('dbo.' + o.name) IS NOT NULL THEN N'OK' ELSE N'НЕ ЗАДЕПЛОЕН' END,
+	o.kind
+FROM (VALUES
+	('AgitationFraming', N'новая процедура'),
+	('fn_AgitationChainFirst', N'новая функция'),
+	('fn_AgitationExcludeIntervals', N'новая функция')
+) o(name, kind);
+
+SELECT * FROM @report;
+
+IF EXISTS (SELECT 1 FROM @report WHERE состояние <> N'OK')
+	PRINT 'ВНИМАНИЕ: есть пункты не в состоянии OK - смотрите таблицу выше';
+ELSE
+	PRINT 'Все проверки пройдены. Не забудьте задеплоить процедуры из списка в docs/tasks/political-agitation-deploy.md и перезапустить клиент.';
