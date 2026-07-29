@@ -142,15 +142,16 @@ r.rolActionTypeID = 6 AND i.isConfirmed = 1)` вместо цикла по `wind
 асимметрия с `AddItem`/`DeleteItem` требует либо хука, либо комментария «почему
 не нужен».
 
-### 2.7. ⬜ `AgitationFraming.sql` и `fn_AgitationChainFirst.sql` не включены в `ArtvisDB.sqlproj`
+### 2.7. ✅ СДЕЛАНО. Новые объекты не были включены в `ArtvisDB.sqlproj`
 
 Из 435 файлов процедур и функций в проекте отсутствуют ровно эти два — оба новые.
 При деплое через dacpac они не создадутся, а publish с «drop objects not in
 source» **удалит** их из базы, где они уже есть, — и всё, что зовёт
 `AgitationFraming`, начнёт падать в рантайме.
 
-Проверить, как деплоится прод (dacpac или скрипты вручную). Если dacpac — это
-критично и должно переехать в раздел 1.
+**Исправлено:** в проект добавлены `AgitationFraming`, `fn_AgitationChainFirst` и
+`fn_AgitationExcludeIntervals`. Порядок развёртывания на проде и список всех 18
+программных объектов — в `political-agitation-deploy.md`.
 
 ---
 
