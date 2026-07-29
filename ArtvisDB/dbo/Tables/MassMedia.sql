@@ -34,6 +34,7 @@
     [agitationLocalRollerID]    INT             NULL,
     [agitationAnnounceRollerID] INT             NULL,
     [agitationFederalRollerID]  INT             NULL,
+    [agitationExcludeIntervals] [dbo].[doubleString] NULL,
     CONSTRAINT [PK_MassMedia] PRIMARY KEY NONCLUSTERED ([massmediaID] ASC),
     CONSTRAINT [FK_MassMedia_MassmediaGroup] FOREIGN KEY ([massmediaGroupID]) REFERENCES [dbo].[MassmediaGroup] ([massmediaGroupID]),
     CONSTRAINT [FK_MassMedia_RolType] FOREIGN KEY ([roltypeID]) REFERENCES [dbo].[iRolType] ([rolTypeID]),

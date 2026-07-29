@@ -31,11 +31,24 @@ IF @actionName = 'InsertForWindow'
 BEGIN
 	DECLARE @mmID smallint, @first int, @last int, @prev int, @next int,
 		@rLocal int, @rAnnounce int, @rFederal int, @svcCampaignID int,
-		@insRollerID int, @insWindowID int
+		@insRollerID int, @insWindowID int,
+		@excludeIntervals varchar(256), @windowMinute int, @isExcluded bit = 0
 
 	SELECT @mmID = tw.massmediaID FROM TariffWindow tw WHERE tw.windowId = @windowID
-	SELECT @rLocal = agitationLocalRollerID, @rAnnounce = agitationAnnounceRollerID, @rFederal = agitationFederalRollerID
+	SELECT @rLocal = agitationLocalRollerID, @rAnnounce = agitationAnnounceRollerID, @rFederal = agitationFederalRollerID,
+		@excludeIntervals = agitationExcludeIntervals
 	FROM MassMedia WHERE massmediaID = @mmID
+
+	-- Интервал-исключение: в это время станция и так идентифицирует себя в эфире,
+	-- поэтому идентификаторы СМИ (44/55) не нужны - как если бы в окне уже стояли
+	-- ручные 4/5. Анонс агитации (7) добавляется в любом случае.
+	-- Сравниваем по фактическому времени выхода окна, границы интервала включаются.
+	SELECT @windowMinute = DATEPART(hour, tw.windowDateActual) * 60 + DATEPART(minute, tw.windowDateActual)
+	FROM TariffWindow tw WHERE tw.windowId = @windowID
+
+	IF EXISTS (SELECT 1 FROM dbo.fn_AgitationExcludeIntervals(@excludeIntervals)
+		WHERE @windowMinute BETWEEN startMin AND finishMin)
+		SET @isExcluded = 1
 
 	-- страховка: вызывающая сторона обязана была это проверить
 	-- (AgitationStationRollersNotSet в ActionActivate / hlp_IssueVerify)
@@ -99,7 +112,8 @@ BEGIN
 	DECLARE cur_ins CURSOR LOCAL FOR
 		SELECT v.rollerID, v.windowID
 		FROM (VALUES (@rLocal, @first, 44), (@rAnnounce, @windowID, 7), (@rFederal, @last, 55)) v(rollerID, windowID, slotType)
-		WHERE NOT EXISTS (
+		WHERE (@isExcluded = 0 OR v.slotType = 7)
+			AND NOT EXISTS (
 			SELECT 1 FROM Issue i2
 				INNER JOIN Roller r2 ON r2.rollerID = i2.rollerID
 			WHERE i2.actualWindowID = v.windowID

@@ -56,6 +56,11 @@ IF NOT EXISTS (SELECT 1 FROM [dbo].[iMessage] WHERE name = 'AgitationStationRoll
 	VALUES ('AgitationStationRollersNotSet',
 		N'У радиостанции не заполнены ролики обвязки политической агитации (карточка радиостанции, вкладка "Политическая агитация"). Операция прервана.');
 
+IF NOT EXISTS (SELECT 1 FROM [dbo].[iMessage] WHERE name = 'AgitationIntervalsInvalid')
+	INSERT INTO [dbo].[iMessage] (name, [message])
+	VALUES ('AgitationIntervalsInvalid',
+		N'Интервалы-исключения заданы неверно. Формат: ЧЧ:ММ-ЧЧ:ММ, несколько интервалов разделяются точкой с запятой, например: 16:00-16:55; 18:00-19:00. Начало интервала должно быть раньше конца, переход через полночь не поддерживается.');
+
 -- Сообщение для окна результатов активации (ActionActivate читает iMessageToActivate)
 IF NOT EXISTS (SELECT 1 FROM [dbo].[iMessageToActivate] WHERE name = 'AgitationStationRollersNotSet')
 	INSERT INTO [dbo].[iMessageToActivate] (name, [message])
@@ -80,6 +85,11 @@ IF COL_LENGTH('dbo.MassMedia', 'agitationLocalRollerID') IS NULL
 			CONSTRAINT [FK_MassMedia_AgitationAnnounceRoller] REFERENCES [dbo].[Roller] ([rollerID]),
 		[agitationFederalRollerID]  INT NULL
 			CONSTRAINT [FK_MassMedia_AgitationFederalRoller] REFERENCES [dbo].[Roller] ([rollerID]);
+
+-- Интервалы-исключения: время, когда идентификаторы СМИ (44/55) не добавляются.
+-- Тип doubleString - движок паспорта рисует его многострочным полем
+IF COL_LENGTH('dbo.MassMedia', 'agitationExcludeIntervals') IS NULL
+	ALTER TABLE [dbo].[MassMedia] ADD [agitationExcludeIntervals] [dbo].[doubleString] NULL;
 
 -- Имена result set'ов massmediaPassport для источников lookup (движок паспорта
 -- ищет таблицу DataSet по алиасу из iTableAlias)
@@ -117,6 +127,8 @@ DECLARE @newPage nvarchar(max) = N'	<page caption="Политическая аг
 		<lookup caption="Локальное СМИ (агитация):" name="agitationLocalRollerID" source="rollersAgitLocal" columnWithID="rollerID"/>
 		<lookup caption="Анонс агитации:" name="agitationAnnounceRollerID" source="rollersAgitAnnounce" columnWithID="rollerID"/>
 		<lookup caption="Федеральное СМИ (агитация):" name="agitationFederalRollerID" source="rollersAgitFederal" columnWithID="rollerID"/>
+		<separator />
+		<field caption="Интервалы без идентификаторов СМИ, напр. 16:00-16:55; 18:00-19:00" name="agitationExcludeIntervals"/>
 	</page>
 </passport>';
 

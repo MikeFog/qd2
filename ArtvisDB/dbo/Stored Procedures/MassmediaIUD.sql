@@ -33,14 +33,23 @@
 @volume_j decimal(5,2),
 @agitationLocalRollerID int = null,
 @agitationAnnounceRollerID int = null,
-@agitationFederalRollerID int = null
+@agitationFederalRollerID int = null,
+@agitationExcludeIntervals varchar(256) = null
 )
 WITH EXECUTE AS OWNER
 as
 SET NOCOUNT on
 
-if @mediaPlusMassmediaID = 0 
+if @mediaPlusMassmediaID = 0
 	set @mediaPlusMassmediaID = null
+
+-- Интервалы-исключения политической агитации: проверяем формат (ЧЧ:ММ-ЧЧ:ММ через ';')
+if @actionName in ('AddItem', 'UpdateItem')
+	and exists (select 1 from dbo.fn_AgitationExcludeIntervals(@agitationExcludeIntervals) where startMin is null)
+begin
+	raiserror('AgitationIntervalsInvalid', 16, 1)
+	return
+end
 
 if @actionName in ('AddItem', 'UpdateItem') and @mediaPlusMassmediaID is not null
 begin 
@@ -56,12 +65,12 @@ IF @actionName = 'AddItem' BEGIN
 		rollerExitPath, rollerEtcPath, rollerPath, rollerEnterMax, rollerExitMax, rollerEtcMax, rollerEnterMin, rollerExitMin, rollerEtcMin, massmediaGroupID, 
 		exportName,mediaPlusMassmediaID, [name], director, painting, prefix, [fullPrefix], [reportString], certificateIssued,
 		volume_c, volume_n, volume_p, volume_m, volume_j,
-		agitationLocalRollerID, agitationAnnounceRollerID, agitationFederalRollerID)
+		agitationLocalRollerID, agitationAnnounceRollerID, agitationFederalRollerID, agitationExcludeIntervals)
 	VALUES(@roltypeID, @deadLine, @isActive, @rollerEnterPath, @rollerExitPath,
 		@rollerEtcPath, @rollerPath, @rollerEnterMax, @rollerExitMax, @rollerEtcMax, @rollerEnterMin, @rollerExitMin, @rollerEtcMin, @massmediaGroupID,
 		@exportName,@mediaPlusMassmediaID, @name, @director, @painting, @prefix, @fullPrefix, @reportString, @certificateIssued,
 		@volume_c, @volume_n, @volume_p, @volume_m, @volume_j,
-		@agitationLocalRollerID, @agitationAnnounceRollerID, @agitationFederalRollerID)
+		@agitationLocalRollerID, @agitationAnnounceRollerID, @agitationFederalRollerID, @agitationExcludeIntervals)
 	
 	if @@rowcount <> 1
 	begin
@@ -115,7 +124,8 @@ ELSE IF @actionName = 'UpdateItem' BEGIN
 		volume_j = @volume_j,
 		agitationLocalRollerID = @agitationLocalRollerID,
 		agitationAnnounceRollerID = @agitationAnnounceRollerID,
-		agitationFederalRollerID = @agitationFederalRollerID
+		agitationFederalRollerID = @agitationFederalRollerID,
+		agitationExcludeIntervals = @agitationExcludeIntervals
 	WHERE
 		massmediaID = @massmediaID
 
