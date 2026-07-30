@@ -115,18 +115,22 @@ namespace FogSoft.WinForm.Passport.Classes
 			if (Label != null)
 				Label.ForeColor = isNullable ? SystemColors.ControlText : MANDATORY_COLOR;
 
-			controlInLeftColumn.AutoSize = true;
-			Size size = controlInLeftColumn.PreferredSize;
-			controlInLeftColumn.AutoSize = false;
-			controlInLeftColumn.Width = dimensions.ControlWidthInLeftColumn;
-			controlInLeftColumn.Height = (size.Height)*(size.Width/(dimensions.ControlWidthInLeftColumn + 1) + 1) + 10;
-
+			// сначала добавляем в parent: до этого у контрола Control.DefaultFont, а рисуется он
+			// шрифтом формы. Замер чужим шрифтом занижал число строк, и хвост подписи обрезался.
             Add2Page(controlInLeftColumn, parent, left, top, dimensions);
+			SetLeftColumnSize(dimensions.ControlWidthInLeftColumn);
+
 			controlInRightColumn.Width = dimensions.ControlWidthInRightColumn;
 			Add2Page(controlInRightColumn, parent, dimensions.RightColumnX, top, dimensions);
 
 			if(isLocked)
 				controlInRightColumn.Enabled = controlInLeftColumn.Enabled = false;
+		}
+
+		private void SetLeftColumnSize(int width)
+		{
+			controlInLeftColumn.Height = GetWrappedTextHeight(controlInLeftColumn, width) + 10;
+			controlInLeftColumn.Width = width;
 		}
 
 		public override void SetValue(Dictionary<string, object> parameters)

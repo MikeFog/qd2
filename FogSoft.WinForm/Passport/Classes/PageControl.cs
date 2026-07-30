@@ -142,6 +142,30 @@ namespace FogSoft.WinForm.Passport.Classes
 			return navigator.GetAttribute(Attributes.Name, "");
 		}
 
+		/// <summary>
+		/// Высота, нужная контролу, чтобы показать подпись целиком с переносом по словам.
+		/// Вызывать только после добавления в parent: у неприсоединённого контрола
+		/// Control.DefaultFont, а рисуется он шрифтом формы. Замер чужим шрифтом занижал
+		/// число строк, и хвост подписи обрезался.
+		/// </summary>
+		protected static int GetWrappedTextHeight(Control control, int width)
+		{
+			if(string.IsNullOrEmpty(control.Text)) return control.Font.Height;
+
+			control.AutoSize = true;
+			Size preferred = control.PreferredSize;
+			control.AutoSize = false;
+
+			// разница с плоским замером - глиф чекбокса и отступы: по ширине на текст остаётся
+			// меньше, по высоте нужен запас, иначе последняя строка не влезает
+			Size flat = TextRenderer.MeasureText(control.Text, control.Font);
+			Size textSize = TextRenderer.MeasureText(
+				control.Text, control.Font,
+				new Size(width - (preferred.Width - flat.Width), int.MaxValue), TextFormatFlags.WordBreak);
+
+			return textSize.Height + (preferred.Height - flat.Height);
+		}
+
 		private string GetCaption(XPathNavigator navigator)
 		{
 			return navigator.GetAttribute(Attributes.Caption, "");

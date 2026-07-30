@@ -25,9 +25,12 @@ namespace FogSoft.WinForm.Passport.Classes
 
 		public override void Add2Page(Control parent, int left, int top, PageDimensions dimensions)
 		{
-			control.Width = dimensions.MaximumControlWidth;
 			control.Enabled = !isLocked;
+			// сначала в parent, иначе замер пойдёт по чужому шрифту и длинная подпись обрежется
 			base.Add2Page(parent, left, top, dimensions);
+
+			control.Height = GetWrappedTextHeight(control, dimensions.MaximumControlWidth);
+			control.Width = dimensions.MaximumControlWidth;
 		}
 
 		public override void SetValue(Dictionary<string, object> parameters)
