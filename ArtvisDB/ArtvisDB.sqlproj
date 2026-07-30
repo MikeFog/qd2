@@ -229,6 +229,8 @@
       <QuotedIdentifier>Off</QuotedIdentifier>
     </Build>
     <Build Include="dbo\Functions\fn_IsPositionOk.sql" />
+    <Build Include="dbo\Functions\fn_AgitationChainFirst.sql" />
+    <Build Include="dbo\Functions\fn_AgitationExcludeIntervals.sql" />
     <Build Include="dbo\Functions\fn_IsDisabledWindow.sql">
       <AnsiNulls>Off</AnsiNulls>
       <QuotedIdentifier>Off</QuotedIdentifier>
@@ -440,6 +442,7 @@
     <Build Include="dbo\Stored Procedures\ConfirmationHistoryFilter.sql" />
     <Build Include="dbo\Stored Procedures\TariffPassport.sql" />
     <Build Include="dbo\Stored Procedures\ActionActivate.sql" />
+    <Build Include="dbo\Stored Procedures\AgitationFraming.sql" />
     <Build Include="dbo\Stored Procedures\SponsorPricelists.sql" />
     <Build Include="dbo\Stored Procedures\ActionRollerSetAdvertType.sql" />
     <Build Include="dbo\Stored Procedures\CreateActionMuteRollersAlerts.sql" />

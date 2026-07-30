@@ -162,7 +162,34 @@ BEGIN
 		group by pmi.moduleIssueID 
 		having count(distinct i.issueID) = count(distinct ii.issueID)
 
+	-- Политическая агитация: выпуски удаляются массово, минуя IssueIUD, поэтому
+	-- окна с подтверждённой агитацией запоминаем до удаления и снимаем обвязку после
+	declare @agitWindows table (windowID int primary key)
+	insert into @agitWindows (windowID)
+	select distinct i.actualWindowID
+	from @issues it
+		inner join Issue i on it.issueID = i.issueID
+		inner join Roller r on r.rollerID = i.rollerID
+	where r.rolActionTypeID = 6 and i.isConfirmed = 1
+
 	delete from i from @issues it inner join Issue i on it.issueID = i.issueID
 	delete from i from @missues it inner join ModuleIssue i on it.issueID = i.moduleIssueID
 	delete from i from @pissues it inner join PackModuleIssue i on it.issueID = i.packModuleIssueID
+
+	declare @agitWindowID int
+	declare cur_agit_del cursor local for select windowID from @agitWindows
+
+	open cur_agit_del
+	fetch next from cur_agit_del into @agitWindowID
+	while @@FETCH_STATUS = 0
+	begin
+		exec AgitationFraming
+			@actionName = 'CleanupWindow',
+			@windowID = @agitWindowID,
+			@loggedUserID = @loggedUserId
+
+		fetch next from cur_agit_del into @agitWindowID
+	end
+	close cur_agit_del
+	deallocate cur_agit_del
 end

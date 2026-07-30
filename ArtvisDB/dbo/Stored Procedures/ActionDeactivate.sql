@@ -93,9 +93,19 @@ Update
 	Where
 		TariffWindow.windowId = t1.windowID
 
+-- Политическая агитация: запоминаем окна с агитацией этой акции до снятия
+-- подтверждения, чтобы после снять с них обвязку (см. ниже)
+Declare @agitWindows table (windowID int primary key)
+Insert Into @agitWindows (windowID)
+Select Distinct i.actualWindowID
+From Issue i
+	Inner Join Campaign c On c.campaignID = i.campaignID
+	Inner Join Roller r On r.rollerID = i.rollerID
+Where c.actionID = @actionID And r.rolActionTypeID = 6 And i.isConfirmed = 1
+
 UPDATE Issue
 	SET isConfirmed = 0, activationDate = null
-FROM 
+FROM
 	Campaign c
 WHERE
 	c.actionID = @actionID
@@ -121,14 +131,34 @@ WHERE
 	c.actionID = @actionID
 	AND c.campaignID = PackModuleIssue.campaignID
 
-UPDATE 
+UPDATE
 	ModuleIssue
-SET 
+SET
 	isConfirmed = 0
-FROM 
+FROM
 	Campaign c
 WHERE
 	c.actionID = @actionID
 	AND c.campaignID = ModuleIssue.campaignID
+
+-- Политическая агитация: агитация вернулась в черновик - обвязка в эфире не нужна.
+-- CleanupWindow сам проверит, не осталось ли в окне подтверждённой агитации от
+-- других акций; при повторной активации обвязка будет создана заново.
+Declare @agitWindowID int
+Declare cur_agit_deact Cursor Local For Select windowID From @agitWindows
+
+Open cur_agit_deact
+Fetch Next From cur_agit_deact Into @agitWindowID
+While @@FETCH_STATUS = 0
+Begin
+	Exec AgitationFraming
+		@actionName = 'CleanupWindow',
+		@windowID = @agitWindowID,
+		@loggedUserID = @loggedUserID
+
+	Fetch Next From cur_agit_deact Into @agitWindowID
+End
+Close cur_agit_deact
+Deallocate cur_agit_deact
 
 

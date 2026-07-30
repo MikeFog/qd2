@@ -62,12 +62,22 @@ begin
 	return
 end 
 
-Declare 
+-- Политическая агитация: запоминаем окно и тип ролика до переноса, чтобы после
+-- переноса снять обвязку со старого окна и создать в новом (см. хвост процедуры)
+Declare @agitOldWindowID int, @agitRolActionTypeID tinyint, @agitIsConfirmed bit
+Select
+	@agitOldWindowID = i.actualWindowID,
+	@agitRolActionTypeID = r.rolActionTypeID,
+	@agitIsConfirmed = i.isConfirmed
+From Issue i Inner Join Roller r On r.rollerID = i.rollerID
+Where i.issueID = @issueID
+
+Declare
 	@oldDate datetime
 
-Select 
+Select
 	@oldDate = tw.windowDateActual
-From 
+From
 	Issue i 
 	inner join TariffWindow tw on i.actualWindowID = tw.windowID
 Where 
@@ -213,5 +223,20 @@ select  @actionID = c.actionID from Campaign c where c.campaignID = @campaignID
 -- Write Log
 INSERT INTO [TransferLog]([userID], [oldDate], [newDate], [actionID], [issueID])
 Values(@loggedUserID, @oldDate, @newDate, @actionID, @issueID)
+
+-- Политическая агитация: перенос подтверждённого ролика типа 6 переносит и обвязку -
+-- снимаем её со старого окна (если там больше нет агитации) и создаём в новом
+If @agitRolActionTypeID = 6 And @agitIsConfirmed = 1
+Begin
+	Exec AgitationFraming
+		@actionName = 'CleanupWindow',
+		@windowID = @agitOldWindowID,
+		@loggedUserID = @loggedUserID
+
+	Exec AgitationFraming
+		@actionName = 'InsertForWindow',
+		@windowID = @newWindowId,
+		@loggedUserID = @loggedUserID
+End
 
 

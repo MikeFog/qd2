@@ -34,11 +34,17 @@ namespace Merlin.Forms
 
 			if (!isInit)
 			{
-				foreach (PageControl ctl in pages[pages.Count - 1].PageControls)
+				// страница с подписью не обязана быть последней (после неё может быть
+				// добавлена другая, например "Политическая агитация") - ищем контрол
+				// картинки по всем страницам, а не по последнему индексу
+				foreach (var page in pages)
 				{
-					if (ctl is PageFieldImage ctlImage)
+					foreach (PageControl ctl in page.PageControls)
 					{
-						ctlImage.SetImage(GetImage());
+						if (ctl is PageFieldImage ctlImage)
+						{
+							ctlImage.SetImage(GetImage());
+						}
 					}
 				}
 			}

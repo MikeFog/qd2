@@ -170,6 +170,41 @@ Common UI risks:
 - Event re-entrancy when recalculation triggers multiple handlers.
 - Performance hits when updating large DataTables repeatedly.
 
+## Metadata-driven passport forms (iEntity.passport)
+
+Most entity property cards ("passports") are NOT hand-coded WinForms — they are built
+dynamically at runtime from XML stored in the `iEntity.passport` column (per entity,
+e.g. entityID 9 = Радиостанция, entityID 20 = Рекламный ролик).
+
+Engine location: `FogSoft.WinForm/Passport/Classes/*` (`PageControl.CreateInstance`
+dispatches XML element -> control: `field`, `lookup`, `objectPicker`, `selector`,
+`treeselector`, `image`, `button`, `label`, `separator`; supported attributes are
+listed in `PageControl.Attributes`).
+
+How data flows:
+- The passport stored procedure (e.g. `massmediaPassport`) returns several result
+  sets; they get DataSet table names from `iTableAlias`
+  (`storedProcedureID` + `position` -> `name`). A `<lookup source="X">` resolves `X`
+  against those table names (`PageFieldSelector.GetSourceDataTable`).
+- Lookup binding: ValueMember = `columnWithID` attribute, DisplayMember = column
+  `name`. For an optional lookup the source table must also contain a column `id` —
+  the engine inserts an empty row keyed on it (`LookUp.DataSource` setter).
+  Nullability of the field itself is read from the DB metadata of the entity
+  table/view column with the same name (`PageField` <- `ColumnInfo`).
+- Save path: each control's `ApplyChanges` puts its value into the parameters
+  dictionary under the XML `name` attribute; the dictionary goes metadata-driven
+  into the entity's IUD procedure. Therefore XML field name = view column name =
+  procedure parameter name — all three must match.
+
+Practical consequence: adding a field to an entity card usually requires no C#
+changes at all — only: column in table + view, parameter in IUD proc, result set
+in passport proc (if lookup), `iTableAlias` row, and the XML page/field in
+`iEntity.passport`. Worked example: page «Политическая агитация» in the
+Радиостанция passport (see `docs/tasks/political-agitation-ads.md`, section 7.1).
+
+Caveat: entity metadata (including passport XML) is cached by the client —
+restart the application after changing `iEntity`/`iTableAlias`.
+
 # Business modules
 
 ## Campaigns / actions

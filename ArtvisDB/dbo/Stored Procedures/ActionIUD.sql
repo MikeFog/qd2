@@ -49,10 +49,37 @@ ELSE IF @actionName = 'DeleteItem'
 	If Exists (Select 1 From [Action] WHERE actionID = @actionID And Not deleteDate Is Null)
 		Begin
 
-		DELETE Issue FROM Campaign c 
+		-- Политическая агитация: выпуски удаляются массово, минуя IssueIUD, поэтому
+		-- окна с агитацией запоминаем до удаления и снимаем обвязку после
+		Declare @agitWindows table (windowID int primary key)
+		Insert Into @agitWindows (windowID)
+		Select Distinct i.actualWindowID
+		From Issue i
+			Inner Join Campaign c On c.campaignID = i.campaignID
+			Inner Join Roller r On r.rollerID = i.rollerID
+		Where c.actionID = @actionID And r.rolActionTypeID = 6 And i.isConfirmed = 1
+
+		DELETE Issue FROM Campaign c
 		WHERE c.campaignID = Issue.campaignID AND c.actionID = @actionID
 
 		DELETE FROM [Action] WHERE actionID = @actionID
+
+		Declare @agitWindowID int
+		Declare cur_agit_act Cursor Local For Select windowID From @agitWindows
+
+		Open cur_agit_act
+		Fetch Next From cur_agit_act Into @agitWindowID
+		While @@FETCH_STATUS = 0
+		Begin
+			Exec AgitationFraming
+				@actionName = 'CleanupWindow',
+				@windowID = @agitWindowID,
+				@loggedUserID = @loggedUserID
+
+			Fetch Next From cur_agit_act Into @agitWindowID
+		End
+		Close cur_agit_act
+		Deallocate cur_agit_act
 
 		Return
 

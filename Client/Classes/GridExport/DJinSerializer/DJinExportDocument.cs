@@ -58,10 +58,20 @@ namespace Merlin.Classes.GridExport.DJinSerializer
 				typePreffix = DJinParam.strRollerNews;
                 volume = mm.VolumeNStr;
             }
-            else if (type == 4 || type == 5)
+            else if (type == 4 || type == 5 || type == 44 || type == 55 || type == 7)
             {
-                typePreffix = DJinParam.strRoller + $"-type-{type}"; 
+                // 44/55 - идентификаторы локального/федерального СМИ, автоматически
+                // добавленные к политической агитации, 7 - анонс агитации.
+                // Метка нужна постобработке (BlockManager) для порядка внутри блока
+                typePreffix = DJinParam.strRoller + $"-type-{type}";
                 volume = mm.VolumeNStr;
+            }
+            else if (type == 6)
+            {
+                // Ролик политической агитации - обычный рекламный ролик по звуку,
+                // метка нужна только для сортировки внутри блока
+                typePreffix = DJinParam.strRoller + $"-type-{type}";
+                volume = mm.VolumeCStr;
             }
             else
 			{
@@ -90,7 +100,9 @@ namespace Merlin.Classes.GridExport.DJinSerializer
 			else
 				fileName = Path.GetFileName(row[ExportParams.path].ToString());
 
-			if (type != 1 && type != 4 && type != 5)
+			// 6 - агитация (обычный ролик кампании, как тип 1), 7/44/55 - файлы
+			// станции, как ручные 4/5: суффикс с датой к имени файла не добавляется
+			if (type != 1 && type != 4 && type != 5 && type != 6 && type != 7 && type != 44 && type != 55)
 			{
 				fileName = string.Format("{0}{1}{2}{3}"
 				                         , Path.GetFileNameWithoutExtension(fileName)

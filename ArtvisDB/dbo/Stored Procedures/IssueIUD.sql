@@ -113,8 +113,34 @@ begin
 	 return
 end
 
-if @actionName in ('AddItem', 'UpdateItem') 
+if @actionName in ('AddItem', 'UpdateItem')
 	SELECT @rolActionTypeID = [rolActionTypeID] FROM [Roller] WHERE [rollerID] = @rollerID
+
+-- Нельзя смешивать политическую агитацию (тип 6) с другой рекламой в одной акции:
+-- отчётность перед избиркомом ведётся отдельно по каждому кандидату
+if @actionName in ('AddItem', 'UpdateItem') and @rolActionTypeID is not null
+	and ((@rolActionTypeID = 6 and exists (
+			select 1
+			from Issue i
+				inner join Campaign c on c.campaignID = i.campaignID
+				inner join Roller r on r.rollerID = i.rollerID
+			where c.actionID = @actionID
+				and r.rolActionTypeID not in (6, 7, 44, 55)
+				and i.issueID != IsNull(@issueID, -1)
+		))
+		or (@rolActionTypeID not in (6, 7, 44, 55) and exists (
+			select 1
+			from Issue i
+				inner join Campaign c on c.campaignID = i.campaignID
+				inner join Roller r on r.rollerID = i.rollerID
+			where c.actionID = @actionID
+				and r.rolActionTypeID = 6
+				and i.issueID != IsNull(@issueID, -1)
+		)))
+begin
+	raiserror('AgitationMixError', 16, 1)
+	return
+end
 
 if (@actionName in ('DeleteItem', 'UpdateItem'))
 BEGIN
@@ -235,14 +261,30 @@ IF @actionName = 'AddItem' BEGIN
 	if @@rowcount <> 1
 	begin
 		raiserror('InternalError', 16, 1)
-		return 
-	end 
+		return
+	end
 
 	SET @issueID = SCOPE_IDENTITY()
+
+	-- Политическая агитация: размещение в уже активированной акции создаёт сразу
+	-- подтверждённый выпуск минуя ActionActivate - обвязку добавляем здесь.
+	-- В черновике обвязка не нужна: её создаст активация.
+	IF @rolActionTypeID = 6 AND @isConfirmed = 1
+		EXEC AgitationFraming
+			@actionName = 'InsertForWindow',
+			@windowID = @windowID,
+			@loggedUserID = @loggedUserId
 END
 ELSE IF @actionName = 'DeleteItem' BEGIN
+	-- Политическая агитация: до удаления запоминаем тип ролика и окно, чтобы после
+	-- удаления последнего типа 6 снять авто-обвязку (44/7/55) служебной акции
+	DECLARE @delRolActionTypeID tinyint, @delActualWindowID int
+	SELECT @delRolActionTypeID = r.rolActionTypeID, @delActualWindowID = i.actualWindowID
+	FROM Issue i INNER JOIN Roller r ON r.rollerID = i.rollerID
+	WHERE i.issueID = @issueID
+
 	IF (@isConfirmed = 1)
-	BEGIN 
+	BEGIN
 		If @rollerID Is Null
 			Select @rollerID = rollerID From Issue Where issueID = @issueID
 
@@ -258,7 +300,13 @@ ELSE IF @actionName = 'DeleteItem' BEGIN
 		end 
 	END 
 	
-	DELETE FROM [Issue] WHERE IssueID = @IssueID	
+	DELETE FROM [Issue] WHERE IssueID = @IssueID
+
+	IF @delRolActionTypeID = 6
+		EXEC AgitationFraming
+			@actionName = 'CleanupWindow',
+			@windowID = @delActualWindowID,
+			@loggedUserID = @loggedUserId
 END
 ELSE IF @actionName = 'UpdateItem' BEGIN
 	DECLARE @oldPositionID INT 

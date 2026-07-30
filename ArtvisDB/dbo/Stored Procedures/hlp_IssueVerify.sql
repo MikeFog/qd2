@@ -54,22 +54,74 @@ end
 --set @msgError = @rollerActionTypeID
 --RETURN 1
 
--- В окне может быть только 1 ролик с типом 4 и 1 ролик с типом 5
-If @rollerActionTypeID In (4, 5) And Exists (
-	Select 1 
-	From 
-		Issue i 
+-- В окне может быть только один открывающий (тип 4 или 44) и один закрывающий (тип 5 или 55)
+-- идентификатор СМИ; 44/55 - авто-обрамление политической агитации, пары к ручным 4/5
+If @rollerActionTypeID In (4, 44) And Exists (
+	Select 1
+	From
+		Issue i
 		Inner Join Roller r on r.rollerID = i.rollerID
 	Where
 		i.originalWindowID = @windowID
-		And r.rolActionTypeID = @rollerActionTypeID
+		And r.rolActionTypeID In (4, 44)
 		And i.issueID != IsNull(@issueID, -1)
 	)
 	Begin
-		If @rollerActionTypeID = 4
-			set @msgError = 'RolType4AlreadyExistInWindow'
-		Else
-			set @msgError = 'RolType5AlreadyExistInWindow'
+		set @msgError = 'RolType4AlreadyExistInWindow'
+		RETURN 1
+	End
+
+If @rollerActionTypeID In (5, 55) And Exists (
+	Select 1
+	From
+		Issue i
+		Inner Join Roller r on r.rollerID = i.rollerID
+	Where
+		i.originalWindowID = @windowID
+		And r.rolActionTypeID In (5, 55)
+		And i.issueID != IsNull(@issueID, -1)
+	)
+	Begin
+		set @msgError = 'RolType5AlreadyExistInWindow'
+		RETURN 1
+	End
+
+-- Размещение агитации сразу подтверждённым выпуском (в уже активированной акции)
+-- требует заполненных роликов обвязки в карточке станции - иначе обвязку не создать.
+-- В черновике проверка не нужна: её выполнит активация (ActionActivate).
+If @rollerActionTypeID = 6 And @isConfirmed = 1
+	And Exists (
+		Select 1 From MassMedia mm
+		Where mm.massmediaID = @MassMediaId
+			And (mm.agitationLocalRollerID Is Null
+				Or mm.agitationAnnounceRollerID Is Null
+				Or mm.agitationFederalRollerID Is Null)
+	)
+	Begin
+		set @msgError = 'AgitationStationRollersNotSet'
+		RETURN 1
+	End
+
+-- Анонс политической агитации (тип 7) в окне может быть только один
+If @rollerActionTypeID = 7 And Exists (
+	Select 1
+	From
+		Issue i
+		Inner Join Roller r on r.rollerID = i.rollerID
+	Where
+		i.originalWindowID = @windowID
+		And r.rolActionTypeID = 7
+		And i.issueID != IsNull(@issueID, -1)
+	)
+	Begin
+		set @msgError = 'RolType7AlreadyExistInWindow'
+		RETURN 1
+	End
+
+-- Для политической агитации и её авто-обрамления спецпозиционирование не применяется
+If @rollerActionTypeID In (6, 7, 44, 55) And IsNull(@positionId, 0) <> 0
+	Begin
+		set @msgError = 'AgitationPositionForbidden'
 		RETURN 1
 	End
 
