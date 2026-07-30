@@ -47,23 +47,34 @@ BEGIN
     WHERE (@headCompanyID IS NULL OR hc.headCompanyID = @headCompanyID)
       AND EXISTS (
         -- Начинаем проверку условий "вглубь"
-        SELECT 1 
+        SELECT 1
         FROM Firm f
             INNER JOIN Action a ON f.firmID = a.firmID
             INNER JOIN Campaign c ON a.actionID = c.actionID
             INNER JOIN PaymentType pt ON c.paymentTypeID = pt.paymentTypeID
-            LEFT JOIN Issue i ON c.campaignID = i.campaignID
-			LEFT JOIN TariffWindow tw ON i.originalWindowID = tw.windowId
-            left join ModuleIssue mi on i.moduleIssueID = mi.moduleIssueID
-            left join PackModuleIssue pmi on i.packModuleIssueID = pmi.packModuleIssueID
-			left join PackModulePriceList pmpl on pmi.pricelistID = pmpl.priceListID
         WHERE f.headCompanyID = hc.headCompanyID
-          AND (@issueDate is null or ((datepart(hh, tw.windowDateOriginal) = datepart(hh, @issueDate)) and (datepart(minute, tw.windowDateOriginal) = datepart(minute, @issueDate))) )
-		  AND (@issueDay is null or (@issueDay is not null and (tw.dayOriginal = @issueDay)))
-          and (@packModuleID is null or pmpl.packModuleID = @packModuleID)
-          AND c.finishDate = Coalesce(@campaignFinishDate, c.finishDate)
-          AND (@rollerId is null or i.rollerID = coalesce(@rollerId, i.rollerID))
-          AND (@moduleID is null or mi.moduleID = @moduleID)
+          -- Выпуски/окна/модули подключаются только если задан хотя бы один из этих фильтров.
+          -- Иначе Issue (миллионы строк) и TariffWindow в план не попадают вовсе.
+          AND (
+                (@issueDate IS NULL AND @issueDay IS NULL AND @packModuleID IS NULL
+                 AND @rollerId IS NULL AND @moduleID IS NULL)
+                OR EXISTS (
+                    SELECT 1
+                    FROM Issue i
+                        LEFT JOIN TariffWindow tw ON i.originalWindowID = tw.windowId
+                        LEFT JOIN ModuleIssue mi ON i.moduleIssueID = mi.moduleIssueID
+                        LEFT JOIN PackModuleIssue pmi ON i.packModuleIssueID = pmi.packModuleIssueID
+                        LEFT JOIN PackModulePriceList pmpl ON pmi.pricelistID = pmpl.priceListID
+                    WHERE i.campaignID = c.campaignID
+                      AND (@issueDate is null or ((datepart(hh, tw.windowDateOriginal) = datepart(hh, @issueDate)) and (datepart(minute, tw.windowDateOriginal) = datepart(minute, @issueDate))) )
+                      AND (@issueDay is null or tw.dayOriginal = @issueDay)
+                      AND (@packModuleID is null or pmpl.packModuleID = @packModuleID)
+                      AND (@rollerId is null or i.rollerID = @rollerId)
+                      AND (@moduleID is null or mi.moduleID = @moduleID)
+                )
+          )
+          -- Сохранена исходная семантика: кампании с finishDate IS NULL не проходят фильтр
+          AND ((@campaignFinishDate IS NULL AND c.finishDate IS NOT NULL) OR c.finishDate = @campaignFinishDate)
           AND (@withoutActionsSince is null or not exists(select top 1 a1.actionID
 												from [Action] a1
 													inner join [Firm] f1 on a1.firmID = f1.firmID
@@ -128,5 +139,8 @@ BEGIN
             ))
           )
     )
-    ORDER BY hc.name;
+    ORDER BY hc.name
+    -- Catch-all запрос с 28 необязательными параметрами: без RECOMPILE план кэшируется
+    -- под первый набор фильтров и потом деградирует на других (таймауты на проде).
+    OPTION (RECOMPILE);
 END

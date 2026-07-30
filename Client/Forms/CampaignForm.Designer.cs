@@ -302,9 +302,7 @@ namespace Merlin.Forms {
             // 
             // btnShowMarked
             // 
-            this.btnShowMarked.Checked = true;
             this.btnShowMarked.CheckOnClick = true;
-            this.btnShowMarked.CheckState = System.Windows.Forms.CheckState.Checked;
             this.btnShowMarked.DisplayStyle = System.Windows.Forms.ToolStripItemDisplayStyle.Image;
             this.btnShowMarked.Image = ((System.Drawing.Image)(resources.GetObject("btnShowMarked.Image")));
             this.btnShowMarked.ImageTransparentColor = System.Drawing.Color.Magenta;
