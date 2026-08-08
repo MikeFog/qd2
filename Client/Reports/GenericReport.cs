@@ -11,7 +11,6 @@ using FogSoft.WinForm;
 using FogSoft.WinForm.Classes;
 using FogSoft.WinForm.Forms;
 using Merlin.Classes;
-using MessageBox = FogSoft.WinForm.Forms.MessageBox;
 
 namespace Merlin.Reports
 {
@@ -170,7 +169,7 @@ namespace Merlin.Reports
 
 		protected void SetPaintings(Organization organization, DataTable dtData)
 		{
-			if(organization.Signature != null && MessageBox.ShowQuestion("Распечатать документ с подготовленными подписями?") == DialogResult.Yes)
+			if(organization.Signature != null && UserMessage.ShowQuestion("Распечатать документ с подготовленными подписями?") == DialogResult.Yes)
 			{
                 UpdateTopsOnChange(SetResolution(organization.Signature, DirPainting), DirPainting);
                 _report.Refresh();

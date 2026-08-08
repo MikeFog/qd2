@@ -4,7 +4,7 @@ using System.Windows.Forms;
 using FogSoft.WinForm.Classes;
 using FogSoft.WinForm.Properties;
 using Microsoft.Win32;
-using MessageBox = FogSoft.WinForm.Forms.MessageBox;
+using FogSoft.WinForm.Forms;
 
 namespace FogSoft.WinForm.Controls
 {
@@ -77,7 +77,7 @@ namespace FogSoft.WinForm.Controls
 			}
 			
 			if (!quiet)
-				MessageBox.ShowExclamation(string.Format(Resources.ErrorLogin, Environment.NewLine));
+				UserMessage.ShowExclamation(string.Format(Resources.ErrorLogin, Environment.NewLine));
 
 			loginTries++;
 			return new LoginEventArgs((loginTries < MaxLoginTries) ? LoginRes.Error : LoginRes.MaxTries, string.Format(Resources.ErrorLogin, Environment.NewLine));

@@ -58,7 +58,7 @@ namespace Merlin.Forms.CreateCampaign
 		private void btnLoad_Click(object sender, EventArgs e)
 		{
 			if (!File.Exists(textBoxFilePath.Text))
-				FogSoft.WinForm.Forms.MessageBox.ShowExclamation("Файл не найден.");
+				UserMessage.ShowExclamation("Файл не найден.");
 
 			try
 			{
@@ -76,7 +76,7 @@ namespace Merlin.Forms.CreateCampaign
 				if (!isLoaded)
 				{
 					ImportData = null;
-					FogSoft.WinForm.Forms.MessageBox.ShowExclamation(Resources.CannotReadImportFile);
+					UserMessage.ShowExclamation(Resources.CannotReadImportFile);
 					return;
 				}
 			}

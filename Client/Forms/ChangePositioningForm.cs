@@ -9,6 +9,7 @@ using System;
 using System.Collections.Generic;
 using System.Data;
 using System.Windows.Forms;
+using FogSoft.WinForm.Forms;
 
 namespace Merlin.Forms
 {
@@ -98,7 +99,7 @@ namespace Merlin.Forms
 
                 if(cmbCurrentPosition.SelectedIndex == cmbFuturePosition.SelectedIndex)
                 {
-                    FogSoft.WinForm.Forms.MessageBox.ShowExclamation(MessageAccessor.GetMessage("CurrentAndFuturePositionsSholdBeDifferent"));
+                    UserMessage.ShowExclamation(MessageAccessor.GetMessage("CurrentAndFuturePositionsSholdBeDifferent"));
                     DialogResult = DialogResult.None;
                     return;
                 }
@@ -113,7 +114,7 @@ namespace Merlin.Forms
 
                 if (SelectedIDs.Count == 0)
                 {
-                    FogSoft.WinForm.Forms.MessageBox.ShowExclamation(MessageAccessor.GetMessage("NoIssuesSelected"));
+                    UserMessage.ShowExclamation(MessageAccessor.GetMessage("NoIssuesSelected"));
                     DialogResult = DialogResult.None;
                     return;
                 }

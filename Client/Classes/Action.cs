@@ -9,7 +9,7 @@ using System.Data;
 using System.Globalization;
 using System.Runtime.Remoting.Lifetime;
 using System.Windows.Forms;
-using MessageBox = FogSoft.WinForm.Forms.MessageBox;
+using FogSoft.WinForm.Forms;
 
 namespace Merlin.Classes
 {
@@ -473,11 +473,11 @@ namespace Merlin.Classes
                     Update();
                     Refresh();
                     OnObjectChanged(this);
-                    MessageBox.ShowInformation(Properties.Resources.FirmChangeSuccess);
+                    UserMessage.ShowInformation(Properties.Resources.FirmChangeSuccess);
                 }
             }
             else
-                MessageBox.ShowExclamation(MessageAccessor.GetMessage("ChangeFirmIsForbidden"));
+                UserMessage.ShowExclamation(MessageAccessor.GetMessage("ChangeFirmIsForbidden"));
         }
 
         private bool IsChangeFirmPossible

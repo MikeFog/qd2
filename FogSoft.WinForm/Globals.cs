@@ -15,7 +15,6 @@ using FogSoft.WinForm.Forms;
 using FogSoft.WinForm.Passport.Classes;
 using FogSoft.WinForm.Passport.Forms;
 using FogSoft.WinForm.Properties;
-using MessageBox = FogSoft.WinForm.Forms.MessageBox;
 
 namespace FogSoft.WinForm
 {
@@ -95,7 +94,7 @@ namespace FogSoft.WinForm
 		public static DialogResult ShowQuestion(string msgName, Dictionary<string, object> parameters)
 		{
 			MessageAccessor.Parameters = parameters;
-			return MessageBox.ShowQuestion(MessageAccessor.GetMessage(msgName));
+			return UserMessage.ShowQuestion(MessageAccessor.GetMessage(msgName));
 		}
 
 		public static void ShowInfo(string msgName)
@@ -107,7 +106,7 @@ namespace FogSoft.WinForm
 		{
 			if(parameters != null) MessageAccessor.Parameters = parameters;
 			Control.CheckForIllegalCrossThreadCalls = false;
-			MessageBox.ShowInformation(MessageAccessor.GetMessage(msgName));
+			UserMessage.ShowInformation(MessageAccessor.GetMessage(msgName));
 		}
 
 		public static void ShowCompleted(string msgName)
@@ -119,7 +118,7 @@ namespace FogSoft.WinForm
 		{
 			if (parameters != null) MessageAccessor.Parameters = parameters;
 			Control.CheckForIllegalCrossThreadCalls = false;
-			MessageBox.ShowCompleted(MessageAccessor.GetMessage(msgName));
+			UserMessage.ShowCompleted(MessageAccessor.GetMessage(msgName));
 		}
 
 		public static void ShowExclamation(string msgName)
@@ -133,7 +132,7 @@ namespace FogSoft.WinForm
 			Control.CheckForIllegalCrossThreadCalls = false;
 			string msg = MessageAccessor.GetMessage(msgName);
 
-            MessageBox.ShowExclamation(msg ?? Resources.ApplicationError);
+            UserMessage.ShowExclamation(msg ?? Resources.ApplicationError);
 		}
 
 		public static string GetMessage(string msgName, Dictionary<string, object> parameters)
@@ -410,7 +409,7 @@ namespace FogSoft.WinForm
 			}
 			else
 			{
-				MessageBox.ShowError(msg, exc);
+				UserMessage.ShowError(msg, exc);
 			}
 		}
 

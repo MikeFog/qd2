@@ -9,6 +9,7 @@ using System.ComponentModel;
 using System.Data;
 using System.Drawing;
 using System.Windows.Forms;
+using FogSoft.WinForm.Forms;
 
 namespace Merlin.Controls
 {
@@ -201,25 +202,25 @@ namespace Merlin.Controls
 
 			if(price == newPrice)
 			{
-                FogSoft.WinForm.Forms.MessageBox.ShowExclamation(Properties.Resources.NewPriceShouldBeDifferent);
+                UserMessage.ShowExclamation(Properties.Resources.NewPriceShouldBeDifferent);
                 return false;
             }
 
             if (startDate > finishDate)
             {
-                FogSoft.WinForm.Forms.MessageBox.ShowExclamation(MessageAccessor.GetMessage("StartFinishWindowTimeError"));
+                UserMessage.ShowExclamation(MessageAccessor.GetMessage("StartFinishWindowTimeError"));
                 return false;
             }
 
 			if(startDate < Pricelist.StartDate)
 			{
-                FogSoft.WinForm.Forms.MessageBox.ShowExclamation(string.Format(Properties.Resources.StartDateShouldBeInsidePricelistDates, Pricelist.StartDate.ToShortDateString()));
+                UserMessage.ShowExclamation(string.Format(Properties.Resources.StartDateShouldBeInsidePricelistDates, Pricelist.StartDate.ToShortDateString()));
                 return false;
             }
 
             if (finishDate > Pricelist.FinishDate)
             {
-                FogSoft.WinForm.Forms.MessageBox.ShowExclamation(string.Format(Properties.Resources.FinishDateShouldBeInsidePricelistDates, Pricelist.FinishDate.ToShortDateString()));
+                UserMessage.ShowExclamation(string.Format(Properties.Resources.FinishDateShouldBeInsidePricelistDates, Pricelist.FinishDate.ToShortDateString()));
                 return false;
             }
 
@@ -241,7 +242,7 @@ namespace Merlin.Controls
 				if (dtTime.Rows.Count > 0)
 					PopulateGridTable();
 				else if(ShowMessages)
-					FogSoft.WinForm.Forms.MessageBox.ShowInformation(Properties.Resources.NoTariffWindowForGivenDate);
+					UserMessage.ShowInformation(Properties.Resources.NoTariffWindowForGivenDate);
 			};
 
 			onGridPopulated += delegate 

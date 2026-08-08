@@ -5,9 +5,9 @@ using Merlin.Forms;
 using System.Collections.Generic;
 using System.Data;
 using System.Windows.Forms;
+using FogSoft.WinForm.Forms;
 using static Merlin.Forms.UniversalPassportForm;
 using static System.Windows.Forms.VisualStyles.VisualStyleElement.Window;
-using MessageBox = FogSoft.WinForm.Forms.MessageBox;
 
 namespace Merlin.Classes
 {
@@ -63,13 +63,13 @@ namespace Merlin.Classes
             
             if (!(bool)parameters[ParamNames.isForType1] && !(bool)parameters[ParamNames.isForType2] && !(bool)parameters[ParamNames.isForType3])
             {
-                MessageBox.ShowExclamation(Properties.Resources.NoCampaignTypeSelected);
+                UserMessage.ShowExclamation(Properties.Resources.NoCampaignTypeSelected);
                 return false;
             }
 
             if(SelectedRadioStations.Count == 0)
             {
-                MessageBox.ShowExclamation(Properties.Resources.NoRadiostationSelected);
+                UserMessage.ShowExclamation(Properties.Resources.NoRadiostationSelected);
                 return false;
             }
 

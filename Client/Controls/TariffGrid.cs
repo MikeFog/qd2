@@ -7,6 +7,7 @@ using System.Windows.Forms;
 using FogSoft.WinForm;
 using FogSoft.WinForm.Classes;
 using Merlin.Classes;
+using FogSoft.WinForm.Forms;
 
 namespace Merlin.Controls
 {
@@ -293,7 +294,7 @@ namespace Merlin.Controls
 					RestoreCurrentWindow();
 			}
 			else if(ShowMessages && grid is IRollerGrid) // пока проверка сделана только для обычных тарифов 
-				FogSoft.WinForm.Forms.MessageBox.ShowInformation(Properties.Resources.NoPricelistForGivenDate);
+				UserMessage.ShowInformation(Properties.Resources.NoPricelistForGivenDate);
 		}
 
 		private void RestoreCurrentWindow()

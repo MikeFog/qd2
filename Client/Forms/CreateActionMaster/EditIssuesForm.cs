@@ -6,6 +6,7 @@ using Merlin.Controls;
 using System;
 using System.Collections.Generic;
 using System.Windows.Forms;
+using FogSoft.WinForm.Forms;
 
 namespace Merlin.Forms.CreateActionMaster
 {
@@ -156,11 +157,11 @@ namespace Merlin.Forms.CreateActionMaster
 
             if (issues.Count == 0)
             {
-                FogSoft.WinForm.Forms.MessageBox.ShowInformation("В выбранных окнах нет добавленных выпусков.");
+                UserMessage.ShowInformation("В выбранных окнах нет добавленных выпусков.");
                 return;
             }
 
-            if (FogSoft.WinForm.Forms.MessageBox.ShowQuestion(
+            if (UserMessage.ShowQuestion(
                     string.Format("Удалить выпуски в выбранных окнах на всех радиостанциях акции? ({0} шт.)", issues.Count)) != DialogResult.Yes)
                 return;
 
@@ -199,7 +200,7 @@ namespace Merlin.Forms.CreateActionMaster
             if (deleteErrors.Rows.Count > 0)
                 FogSoft.WinForm.Controls.SmartGrid.ShowDeleteErrors(deleteErrors);
             else
-                FogSoft.WinForm.Forms.MessageBox.ShowInformation(string.Format("Удалено выпусков: {0}.", deletedObjects.Count));
+                UserMessage.ShowInformation(string.Format("Удалено выпусков: {0}.", deletedObjects.Count));
         }
 
         /// <summary>
@@ -339,7 +340,7 @@ namespace Merlin.Forms.CreateActionMaster
                 ? string.Format("Перенести выпуск в окно '{0}' на всех радиостанциях акции?", targetDateStr)
                 : string.Format("Перенести выпуски ({0} шт.) в окно '{1}' на всех радиостанциях акции?",
                     payload.IssueRows.Count, targetDateStr);
-            if (FogSoft.WinForm.Forms.MessageBox.ShowQuestion(question) != DialogResult.Yes)
+            if (UserMessage.ShowQuestion(question) != DialogResult.Yes)
                 return;
 
             try

@@ -212,7 +212,7 @@ from FirmBrand fb
                     }
                 }
 
-                FogSoft.WinForm.Forms.MessageBox.ShowCompleted("Выбранные фирмы сохранены в текущую Базу Данных");
+                UserMessage.ShowCompleted("Выбранные фирмы сохранены в текущую Базу Данных");
             }
             catch (Exception e)
             {

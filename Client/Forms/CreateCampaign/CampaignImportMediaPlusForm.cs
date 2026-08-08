@@ -4,6 +4,7 @@ using FogSoft.WinForm.Classes;
 using Merlin.Classes;
 using Merlin.Classes.Exchange.MediaPlus;
 using Merlin.Properties;
+using FogSoft.WinForm.Forms;
 
 namespace Merlin.Forms.CreateCampaign
 {
@@ -79,7 +80,7 @@ namespace Merlin.Forms.CreateCampaign
 				if (!isLoaded)
 				{
 					ImportData = null;
-					FogSoft.WinForm.Forms.MessageBox.ShowExclamation(Resources.CannotReadImportFile);
+					UserMessage.ShowExclamation(Resources.CannotReadImportFile);
 					return;
 				}
 			}

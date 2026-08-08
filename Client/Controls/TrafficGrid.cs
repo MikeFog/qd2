@@ -10,9 +10,9 @@ using FogSoft.WinForm.Controls;
 using FogSoft.WinForm.DataAccess;
 using Merlin.Classes;
 using Merlin.Forms;
+using FogSoft.WinForm.Forms;
 using static Merlin.Forms.UniversalPassportForm;
 using static System.Windows.Forms.VisualStyles.VisualStyleElement.Window;
-using MessageBox = FogSoft.WinForm.Forms.MessageBox;
 
 namespace Merlin.Controls
 {
@@ -235,11 +235,11 @@ namespace Merlin.Controls
 
             if (window == null)
             {
-                MessageBox.ShowInformation(string.Format("Не могу найти {0} окно для рекламного окна '{1}'. Операция прервана!", isWithPrev ? "предыдущее" : "последующее", CurrentTariffWindow.WindowDate.ToString("g")));
+                UserMessage.ShowInformation(string.Format("Не могу найти {0} окно для рекламного окна '{1}'. Операция прервана!", isWithPrev ? "предыдущее" : "последующее", CurrentTariffWindow.WindowDate.ToString("g")));
                 return null;
             }
 
-            if (MessageBox.ShowQuestion(string.Format("Хотите объединить рекламные окна '{0}' и '{1}'?", CurrentTariffWindow.WindowDate.ToString("g"), window.WindowDate.ToString("g"))) == DialogResult.Yes)
+            if (UserMessage.ShowQuestion(string.Format("Хотите объединить рекламные окна '{0}' и '{1}'?", CurrentTariffWindow.WindowDate.ToString("g"), window.WindowDate.ToString("g"))) == DialogResult.Yes)
 				return window;
 			return null;
 		}
@@ -381,7 +381,7 @@ namespace Merlin.Controls
 			try
 			{
 				Application.DoEvents();
-				if (MessageBox.ShowQuestion(string.Format("Вы действительно хотите пометить день '{0}' как обработанный на радиостанции '{1}'?"
+				if (UserMessage.ShowQuestion(string.Format("Вы действительно хотите пометить день '{0}' как обработанный на радиостанции '{1}'?"
 						, CurrentColumnDate.ToString("dd.MM.yyyy"), Massmedia.Name)) == DialogResult.Yes)
 				{
 					Cursor = Cursors.WaitCursor;
@@ -511,7 +511,7 @@ namespace Merlin.Controls
 				DataRow[] rows = Pricelist.GetTariffList().Select(filter);
 				if (rows.Length == 0)
 				{
-					MessageBox.ShowExclamation(Properties.Resources.TariffNotFound);
+					UserMessage.ShowExclamation(Properties.Resources.TariffNotFound);
 					return;
 				}
 
@@ -571,7 +571,7 @@ namespace Merlin.Controls
 		{
 			if (PassportStartDate(parameters) > PassportFinishDate(parameters))
 			{
-                MessageBox.ShowExclamation(MessageAccessor.GetMessage("StartFinishDateError2"));
+                UserMessage.ShowExclamation(MessageAccessor.GetMessage("StartFinishDateError2"));
                 return false;
 			}
 			return true;
@@ -583,7 +583,7 @@ namespace Merlin.Controls
             int index2 = int.Parse(parameters["finishDate"].ToString());
 			if (index1 > index2)
 			{
-				MessageBox.ShowExclamation(MessageAccessor.GetMessage("StartFinishWindowTimeError"));
+				UserMessage.ShowExclamation(MessageAccessor.GetMessage("StartFinishWindowTimeError"));
 				return false;
 			}
 

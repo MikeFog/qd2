@@ -5,6 +5,7 @@ using System.IO;
 using FogSoft.WinForm.Classes;
 using FogSoft.WinForm.DataAccess;
 using Merlin.Properties;
+using FogSoft.WinForm.Forms;
 
 namespace Merlin.Classes.Exchange.MediaPlus
 {
@@ -39,7 +40,7 @@ namespace Merlin.Classes.Exchange.MediaPlus
 					}
 					else
 					{
-						FogSoft.WinForm.Forms.MessageBox.ShowExclamation(Resources.ExportDifferentMassmedias);
+						UserMessage.ShowExclamation(Resources.ExportDifferentMassmedias);
 						return;
 					}
 				}
@@ -50,9 +51,9 @@ namespace Merlin.Classes.Exchange.MediaPlus
 				
 			}
 			if (!resExport)
-				FogSoft.WinForm.Forms.MessageBox.ShowExclamation(Resources.CannotReadExportFile);
+				UserMessage.ShowExclamation(Resources.CannotReadExportFile);
 			else
-				FogSoft.WinForm.Forms.MessageBox.ShowCompleted(Resources.CampaignExportSuccess);
+				UserMessage.ShowCompleted(Resources.CampaignExportSuccess);
 		}
 	}
 }

@@ -302,7 +302,7 @@
     <Compile Include="Forms\GraphForm.Designer.cs">
       <DependentUpon>GraphForm.cs</DependentUpon>
     </Compile>
-    <Compile Include="Forms\MessageBox.cs" />
+    <Compile Include="Forms\UserMessage.cs" />
     <Compile Include="Forms\ProgressForm.cs">
       <SubType>Form</SubType>
     </Compile>

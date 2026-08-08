@@ -105,7 +105,7 @@ namespace Merlin.Forms.CreateCampaign
         {
             if (selectionForm.SelectedObject == null)
             {
-                FogSoft.WinForm.Forms.MessageBox.ShowExclamation(Properties.Resources.AgencyIsRequied);
+                UserMessage.ShowExclamation(Properties.Resources.AgencyIsRequied);
                 return false;
             }
 

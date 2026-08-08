@@ -9,6 +9,7 @@ using System.Collections.Generic;
 using System.Data;
 using System.Diagnostics;
 using System.Windows.Forms;
+using FogSoft.WinForm.Forms;
 using Action = Merlin.Classes.Action;
 
 namespace Merlin.Forms
@@ -113,7 +114,7 @@ namespace Merlin.Forms
 				// будем считать, что если есть права редактировать обычную компанию, то есть и права создавать компании
 				if(!EntityManager.GetEntity((int)Entities.GeneralCampaign).IsActionEnabled(Constants.EntityActions.Edit, ViewType.Journal))
 				{
-                    FogSoft.WinForm.Forms.MessageBox.ShowExclamation(Properties.Resources.OperationNotAllowed);
+                    UserMessage.ShowExclamation(Properties.Resources.OperationNotAllowed);
                     return;
                 }
 
@@ -167,7 +168,7 @@ namespace Merlin.Forms
 				PresentationObject presentationObject = SelectedCampaign;
 				if (!presentationObject.IsActionEnabled(Constants.EntityActions.Delete, ViewType.Journal))
 				{
-					FogSoft.WinForm.Forms.MessageBox.ShowExclamation(Properties.Resources.OperationNotAllowed); 
+					UserMessage.ShowExclamation(Properties.Resources.OperationNotAllowed); 
 					return;		
 				}
 
@@ -205,7 +206,7 @@ namespace Merlin.Forms
 					(campaign.CampaignType == Campaign.CampaignTypes.Sponsor && !EntityManager.GetEntity((int)Entities.RollerPart).IsActionEnabled(RollerPartOfSponsorCampaign.ActionNames.EditIssues, ViewType.Journal))
 					)
 				{
-					FogSoft.WinForm.Forms.MessageBox.ShowExclamation(Properties.Resources.OperationNotAllowed);
+					UserMessage.ShowExclamation(Properties.Resources.OperationNotAllowed);
 					return;
 				}
                 campaign.DoAction(Constants.EntityActions.Edit, this, InterfaceObjects.SimpleJournal);
@@ -235,7 +236,7 @@ namespace Merlin.Forms
 			{
                 if (!EntityManager.GetEntity((int)Entities.ProgramPart).IsActionEnabled(ProgramPartOfSponsorCampaign.ActionNames.EditIssues, ViewType.Journal))
                 {
-                    FogSoft.WinForm.Forms.MessageBox.ShowExclamation(Properties.Resources.OperationNotAllowed);
+                    UserMessage.ShowExclamation(Properties.Resources.OperationNotAllowed);
                     return;
                 }
                 Campaign campaign = SelectedCampaign;
@@ -257,7 +258,7 @@ namespace Merlin.Forms
 		{
 			if (campaign == null || campaign.TariffPrice == 0)
 			{
-                FogSoft.WinForm.Forms.MessageBox.ShowExclamation("Невозможно установить итоговую стоимость компании и менеджерскую скидку, так как стоимость компании по тарифам равна нулю.");
+                UserMessage.ShowExclamation("Невозможно установить итоговую стоимость компании и менеджерскую скидку, так как стоимость компании по тарифам равна нулю.");
                 return false;
             }
 
@@ -364,7 +365,7 @@ namespace Merlin.Forms
             {
 				if (_action.TariffPrice == 0)
 				{
-					FogSoft.WinForm.Forms.MessageBox.ShowExclamation("Невозможно установить итоговую стоимость акции и менеджерскую скидку, так как стоимость акции по тарифам равна нулю.");
+					UserMessage.ShowExclamation("Невозможно установить итоговую стоимость акции и менеджерскую скидку, так как стоимость акции по тарифам равна нулю.");
                     return;
                 }
 				

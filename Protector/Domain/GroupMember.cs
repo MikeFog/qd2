@@ -1,7 +1,7 @@
 ﻿using System.Data;
 using System.Windows.Forms;
-using MessageBox = FogSoft.WinForm.Forms.MessageBox;
 using FogSoft.WinForm.Classes;
+using FogSoft.WinForm.Forms;
 
 namespace Protector.Domain
 {
@@ -15,7 +15,7 @@ namespace Protector.Domain
 
 		public override void Detach()
 		{
-			if(MessageBox.ShowQuestion(string.Format(DETACH_PROMPT, Name)) == DialogResult.Yes)
+			if(UserMessage.ShowQuestion(string.Format(DETACH_PROMPT, Name)) == DialogResult.Yes)
 				base.Detach(true);
 		}
 	}

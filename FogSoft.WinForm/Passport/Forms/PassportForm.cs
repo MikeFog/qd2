@@ -6,7 +6,7 @@ using System.Xml.XPath;
 using FogSoft.WinForm.Classes;
 using FogSoft.WinForm.Passport.Classes;
 using FogSoft.WinForm.Properties;
-using MessageBox = FogSoft.WinForm.Forms.MessageBox;
+using FogSoft.WinForm.Forms;
 
 namespace FogSoft.WinForm.Passport.Forms
 {
@@ -143,7 +143,7 @@ namespace FogSoft.WinForm.Passport.Forms
 				tabPassport.SelectedIndex = pageIndex;
 				ex.NativeControl.Select();
 				formIsValid = false;
-				MessageBox.ShowExclamation(ex.Message);
+				UserMessage.ShowExclamation(ex.Message);
 			}
 		}
 

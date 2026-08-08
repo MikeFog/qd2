@@ -8,6 +8,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using System.Windows.Forms;
+using FogSoft.WinForm.Forms;
 
 namespace Merlin.Forms
 {
@@ -44,7 +45,7 @@ namespace Merlin.Forms
         {
             if (SelectedItems.Count == 0)
             {
-                FogSoft.WinForm.Forms.MessageBox.ShowExclamation(Properties.Resources.NoRadiostationSelected);
+                UserMessage.ShowExclamation(Properties.Resources.NoRadiostationSelected);
                 this.DialogResult = DialogResult.None;
                 return;
             }

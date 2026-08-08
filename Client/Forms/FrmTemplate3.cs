@@ -8,6 +8,7 @@ using System.Data;
 using System.Drawing;
 using System.Linq;
 using System.Windows.Forms;
+using FogSoft.WinForm.Forms;
 
 namespace Merlin.Forms
 {
@@ -313,21 +314,21 @@ namespace Merlin.Forms
             var (gridTotalQuantity, totalDurationSeconds) = GetCheckedRollerAggregates();
             if (gridTotalQuantity == 0)
             {
-                FogSoft.WinForm.Forms.MessageBox.ShowExclamation("Отметьте хотя бы один ролик и укажите для него количество");
+                UserMessage.ShowExclamation("Отметьте хотя бы один ролик и укажите для него количество");
                 return;
             }
 
             SaveData2Template();
             if (_template.StartDate > _template.FinishDate || _template.StartTime >= _template.FinishTime)
             {
-                FogSoft.WinForm.Forms.MessageBox.ShowExclamation("Проверьте даты и время интервала перед расчётом");
+                UserMessage.ShowExclamation("Проверьте даты и время интервала перед расчётом");
                 return;
             }
 
             int expectedTotalQuantity = GetExpectedTotalQuantity();
             if (gridTotalQuantity != expectedTotalQuantity)
             {
-                FogSoft.WinForm.Forms.MessageBox.ShowExclamation(
+                UserMessage.ShowExclamation(
                     $"Сумма количества по роликам ({gridTotalQuantity}) не совпадает с общим количеством выходов по настройкам интервала ({expectedTotalQuantity})");
                 return;
             }
@@ -712,19 +713,19 @@ namespace Merlin.Forms
 
             if(cbSplitPrime.Checked && _template.QuantityNonPrime + _template.QuantityPrime == 0)
             {
-                FogSoft.WinForm.Forms.MessageBox.ShowExclamation(Properties.Resources.PrimeAndNonPrimeQuantityMissing);
+                UserMessage.ShowExclamation(Properties.Resources.PrimeAndNonPrimeQuantityMissing);
                 errorFlag = true;
             }
 
             
             if(_template.StartDate > _template.FinishDate)
             {
-                FogSoft.WinForm.Forms.MessageBox.ShowExclamation(MessageAccessor.GetMessage("TemplateStartFinishDateError"));
+                UserMessage.ShowExclamation(MessageAccessor.GetMessage("TemplateStartFinishDateError"));
                 errorFlag=true;
             }
             if (_template.StartTime >= _template.FinishTime)
             {
-                FogSoft.WinForm.Forms.MessageBox.ShowExclamation(MessageAccessor.GetMessage("TemplateStartFinishTimeError"));
+                UserMessage.ShowExclamation(MessageAccessor.GetMessage("TemplateStartFinishTimeError"));
                 errorFlag = true;
             }
             if (errorFlag)

@@ -154,7 +154,7 @@ namespace FogSoft.WinForm.Forms
 				if (!tvwStructure.CheckBoxes && tvwStructure.CurrentObject == null)
 				{
 					DialogResult = DialogResult.None;
-					MessageBox.ShowExclamation(MessageAccessor.GetMessage("NoObjectSelected"));
+					UserMessage.ShowExclamation(MessageAccessor.GetMessage("NoObjectSelected"));
 					return;
 				}
 				selectedObject = tvwStructure.CurrentObject;

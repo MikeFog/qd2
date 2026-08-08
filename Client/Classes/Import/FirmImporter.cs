@@ -9,6 +9,7 @@ using FogSoft.WinForm;
 using FogSoft.WinForm.DataAccess;
 using FogSoft.WinForm.Passport.Classes;
 using System.IO;
+using FogSoft.WinForm.Forms;
 
 namespace Merlin.Classes.Import
 {
@@ -57,7 +58,7 @@ namespace Merlin.Classes.Import
 
                 if (_tableErrors.Rows.Count > 0)
                     Globals.ShowSimpleJournal(EntityManager.GetEntity((int)Entities.ErrTmplGen), "Ошибки импорта", _tableErrors);
-                FogSoft.WinForm.Forms.MessageBox.ShowInformation(string.Format(Properties.Resources.FirmImportResult, successCounter));
+                UserMessage.ShowInformation(string.Format(Properties.Resources.FirmImportResult, successCounter));
             }
             catch(Exception ex)
             {

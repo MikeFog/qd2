@@ -11,6 +11,7 @@ using Merlin.Classes.GridExport;
 using Merlin.Reports;
 using System.Data;
 using System.Linq;
+using FogSoft.WinForm.Forms;
 
 namespace Merlin.Forms.GridReport
 {
@@ -83,7 +84,7 @@ namespace Merlin.Forms.GridReport
 				backgroundWorker.RunWorkerAsync(grdRadiostations.Added2Checked);
 			}
 			else
-				FogSoft.WinForm.Forms.MessageBox.ShowExclamation(Resources.ExportProblemTitle, Resources.ExportProblemDirectoryDosntExist);
+				UserMessage.ShowExclamation(Resources.ExportProblemTitle, Resources.ExportProblemDirectoryDosntExist);
 		}
 
 		private void SetControlStatus(bool enabled)
@@ -155,7 +156,7 @@ namespace Merlin.Forms.GridReport
 			if (!result && ExportHelper.OpenFolderOnFinish)
 				Process.Start(txtPath2SaveTxt.Text);
 			if (result)
-				FogSoft.WinForm.Forms.MessageBox.ShowExclamation(Resources.ExportProblemTitle, Resources.ExportProblem);
+				UserMessage.ShowExclamation(Resources.ExportProblemTitle, Resources.ExportProblem);
 		}
 
 		private void textBoxSelectedPath_TextChanged(object sender, EventArgs e)

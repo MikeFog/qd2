@@ -8,7 +8,7 @@ using System.Drawing;
 using System.Linq;
 using System.Text.RegularExpressions;
 using System.Windows.Forms;
-using MessageBox = FogSoft.WinForm.Forms.MessageBox;
+using FogSoft.WinForm.Forms;
 
 namespace FogSoft.WinForm.Controls
 {
@@ -741,7 +741,7 @@ namespace FogSoft.WinForm.Controls
             Match m = Regex.Match(dataView.Sort, @"\[.+\]");
             string columnName = m.Value.Substring(1, m.Value.Length - 2);
             object res = dataTable.Compute(string.Format("Sum([{0}])", columnName), null);
-            MessageBox.ShowInformation(FormatColumnSummary(res, dataTable.Columns[columnName]));
+            UserMessage.ShowInformation(FormatColumnSummary(res, dataTable.Columns[columnName]));
         }
 
         private static string FormatColumnSummary(object summa, DataColumn tableColumn)
@@ -1430,7 +1430,7 @@ namespace FogSoft.WinForm.Controls
                 else
                 {
                     txQuickSearch.Text = string.Empty;
-                    MessageBox.ShowInformation(Properties.Resources.SearchForTextColumnsOnlyWarning);
+                    UserMessage.ShowInformation(Properties.Resources.SearchForTextColumnsOnlyWarning);
                 }
             }
 
@@ -1628,7 +1628,7 @@ namespace FogSoft.WinForm.Controls
                 return;
 
             string msg = string.Format("Вы действительно хотите удалить выбранные объекты? ({0} шт.)", selectedItems.Count);
-            if (Forms.MessageBox.ShowQuestion(msg) != DialogResult.Yes)
+            if (UserMessage.ShowQuestion(msg) != DialogResult.Yes)
                 return;
 
             List<PresentationObject> deletedObjects = new List<PresentationObject>();
@@ -1680,7 +1680,7 @@ namespace FogSoft.WinForm.Controls
 
             if (deleteErrors.Rows.Count == 0)
             {
-                MessageBox.ShowInformation(string.Format("Успешно удалено объектов: {0}.", deletedObjects.Count));
+                UserMessage.ShowInformation(string.Format("Успешно удалено объектов: {0}.", deletedObjects.Count));
                 return;
             }
 

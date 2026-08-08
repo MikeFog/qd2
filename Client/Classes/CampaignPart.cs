@@ -212,7 +212,7 @@ namespace Merlin.Classes
                         DataSet ds = PrepareSubstitutionParametersAndExecute(procParameters);
 
                         if (ds != null && ds.Tables.Count > 0 && ds.Tables[0].Rows.Count > 0)
-                            FogSoft.WinForm.Forms.MessageBox.ShowExclamation(ds.Tables[0].Rows[0]["message"].ToString());
+                            UserMessage.ShowExclamation(ds.Tables[0].Rows[0]["message"].ToString());
                         //Globals.ShowSimpleJournal(EntityManager.GetEntity((int)Entities.RollerUnSubtitude), "Незамененные ролики", ds.Tables[0]);
                         RecalculateAndShowPriceChange(price);
                         //Refresh();

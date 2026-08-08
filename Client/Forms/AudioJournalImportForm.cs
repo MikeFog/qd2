@@ -12,6 +12,7 @@ using Microsoft.ApplicationBlocks.Data;
 using System.Threading;
 using FogSoft.WinForm.DataAccess;
 using Merlin.Classes;
+using FogSoft.WinForm.Forms;
 
 namespace Merlin.Forms
 {
@@ -154,7 +155,7 @@ namespace Merlin.Forms
 
                         if (!hasFirm)
                         {
-                            if (FogSoft.WinForm.Forms.MessageBox.ShowQuestion(
+                            if (UserMessage.ShowQuestion(
                                 string.Format("Ролик '{0}' не может быть проимпортирован, так как Фирма-заказчик ролика не существует в текущей базе данных. Продолжить импортировать оставшиеся ролики?", roller.Name)) == DialogResult.No)
                             {
                                 cancelledByUser = true;
@@ -176,7 +177,7 @@ namespace Merlin.Forms
 
                 if (!cancelledByUser)
                 {
-                    FogSoft.WinForm.Forms.MessageBox.ShowCompleted("Выбранные ролики сохранены в текущую Базу Данных");
+                    UserMessage.ShowCompleted("Выбранные ролики сохранены в текущую Базу Данных");
                 }
             }
             catch (Exception e)

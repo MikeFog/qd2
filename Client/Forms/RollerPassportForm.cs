@@ -10,6 +10,7 @@ using System.Data;
 using System.IO;
 using System.Windows.Forms;
 using NAudio.Wave;
+using FogSoft.WinForm.Forms;
 
 namespace Merlin.Forms
 {
@@ -73,7 +74,7 @@ namespace Merlin.Forms
 			{
 				opAdvertType.ClearSelected();
 				string message = Globals.GetMessage("IncorrectRolTypeSelected", null);
-				FogSoft.WinForm.Forms.MessageBox.ShowExclamation(message);
+				UserMessage.ShowExclamation(message);
 			}
         }
 
@@ -163,7 +164,7 @@ namespace Merlin.Forms
 			else
 			{
 				DialogResult = DialogResult.None;
-				FogSoft.WinForm.Forms.MessageBox.ShowExclamation(MessageAccessor.GetMessage("FirmAndAdvertTypeConstraint"));
+				UserMessage.ShowExclamation(MessageAccessor.GetMessage("FirmAndAdvertTypeConstraint"));
 			}
         }
     }

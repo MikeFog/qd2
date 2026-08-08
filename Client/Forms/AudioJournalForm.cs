@@ -6,7 +6,6 @@ using FogSoft.WinForm.Classes;
 using FogSoft.WinForm.Forms;
 using Merlin.Classes;
 using Merlin.Controls;
-using MessageBox = FogSoft.WinForm.Forms.MessageBox;
 
 namespace Merlin.Forms
 {
@@ -157,7 +156,7 @@ namespace Merlin.Forms
         {
             if (this.Grid.InternalGrid != null && this.Grid.InternalGrid.Rows != null && this.Grid.InternalGrid.Rows.Count > 0)
             {
-                if (MessageBox.ShowQuestion("Удалить все отображаемые ролики вместе с физическими файлами?") == DialogResult.Yes)
+                if (UserMessage.ShowQuestion("Удалить все отображаемые ролики вместе с физическими файлами?") == DialogResult.Yes)
                 {
                     RollersDeleteFrm frm = new RollersDeleteFrm(Grid.DataSource);
                     frm.ShowDialog(this);

@@ -13,7 +13,6 @@ using System.Runtime.InteropServices.ComTypes;
 using System.Text;
 using System.Threading;
 using System.Windows.Forms;
-using MessageBox = FogSoft.WinForm.Forms.MessageBox;
 using DataTable = System.Data.DataTable;
 
 namespace Merlin.Classes
@@ -115,7 +114,7 @@ namespace Merlin.Classes
 
 				if (!string.IsNullOrEmpty(_savedFilePath))
 				{
-					MessageBox.ShowCompleted($"Файл успешно сохранён: {_savedFilePath}");
+					UserMessage.ShowCompleted($"Файл успешно сохранён: {_savedFilePath}");
 				}
 			}
 			catch(Exception e)

@@ -3,6 +3,7 @@ using FogSoft.WinForm.DataAccess;
 using Merlin.Classes;
 using System;
 using System.Windows.Forms;
+using FogSoft.WinForm.Forms;
 
 namespace Merlin.Forms
 {
@@ -129,19 +130,19 @@ namespace Merlin.Forms
 
             if(cbSplitPrime.Checked && _template.QuantityNonPrime + _template.QuantityPrime == 0)
             {
-                FogSoft.WinForm.Forms.MessageBox.ShowExclamation(Properties.Resources.PrimeAndNonPrimeQuantityMissing);
+                UserMessage.ShowExclamation(Properties.Resources.PrimeAndNonPrimeQuantityMissing);
                 errorFlag = true;
             }
 
             
             if(_template.StartDate > _template.FinishDate)
             {
-                FogSoft.WinForm.Forms.MessageBox.ShowExclamation(MessageAccessor.GetMessage("TemplateStartFinishDateError"));
+                UserMessage.ShowExclamation(MessageAccessor.GetMessage("TemplateStartFinishDateError"));
                 errorFlag=true;
             }
             if (_template.StartTime >= _template.FinishTime)
             {
-                FogSoft.WinForm.Forms.MessageBox.ShowExclamation(MessageAccessor.GetMessage("TemplateStartFinishTimeError"));
+                UserMessage.ShowExclamation(MessageAccessor.GetMessage("TemplateStartFinishTimeError"));
                 errorFlag = true;
             }
             if (errorFlag)

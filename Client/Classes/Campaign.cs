@@ -9,7 +9,6 @@ using FogSoft.WinForm.Forms;
 using Merlin.Controls;
 using Merlin.Forms;
 using Merlin.Properties;
-using MessageBox = FogSoft.WinForm.Forms.MessageBox;
 
 namespace Merlin.Classes
 {
@@ -548,11 +547,11 @@ namespace Merlin.Classes
 					this[ParamNames.AgencyID] = selector.SelectedObject.IDs[0];
 					Update();
 					OnObjectChanged(this);
-                    MessageBox.ShowInformation(Resources.AgencyChangeSuccess);
+                    UserMessage.ShowInformation(Resources.AgencyChangeSuccess);
                 }
 			}
             else
-                MessageBox.ShowExclamation(Resources.ChangeAgencyIsForbidden);
+                UserMessage.ShowExclamation(Resources.ChangeAgencyIsForbidden);
         }
 
 		private void ChangePaymentType(IWin32Window owner)
@@ -565,11 +564,11 @@ namespace Merlin.Classes
 					this[ParamNames.PaymentTypeID] = selector.SelectedObject.IDs[0];
 					Update();
 					OnObjectChanged(this);
-					MessageBox.ShowInformation(Resources.PaymentTypeChangeSuccess);
+					UserMessage.ShowInformation(Resources.PaymentTypeChangeSuccess);
 				}
 			}
             else
-                MessageBox.ShowExclamation(Resources.ChangePaymentTypeIsForbidden);
+                UserMessage.ShowExclamation(Resources.ChangePaymentTypeIsForbidden);
         }
 
 		public override bool IsActionHidden(string actionName, ViewType type)

@@ -10,6 +10,7 @@ using FogSoft.WinForm.Passport.Classes;
 using FogSoft.WinForm.Passport.Forms;
 using FogSoft.WinForm.Properties;
 using Merlin.Classes;
+using FogSoft.WinForm.Forms;
 
 namespace Merlin.Forms
 {
@@ -127,7 +128,7 @@ namespace Merlin.Forms
 				if(selectedDays.Rows.Count == 0)
 				{
                     DialogResult = DialogResult.None;
-                    FogSoft.WinForm.Forms.MessageBox.ShowExclamation(Properties.Resources.NoIssueSelected);
+                    UserMessage.ShowExclamation(Properties.Resources.NoIssueSelected);
                     return;
                 }
 
@@ -141,7 +142,7 @@ namespace Merlin.Forms
 				if(!newRoller.HasAdvertType && campaign.Action.IsConfirmed) 
 				{ 
 					DialogResult = DialogResult.None;
-                    FogSoft.WinForm.Forms.MessageBox.ShowExclamation(MessageAccessor.GetMessage("WrongRollerForSubstitution"));
+                    UserMessage.ShowExclamation(MessageAccessor.GetMessage("WrongRollerForSubstitution"));
                     return;
 				}
 			}
@@ -162,13 +163,13 @@ namespace Merlin.Forms
 				// если это активированная акция, то для "пустышки" обязательно надо указать предмет рекламы
 				if(opAdvertType.SelectedObject == null && campaign.Action.IsConfirmed)
 				{
-                    FogSoft.WinForm.Forms.MessageBox.ShowExclamation(Properties.Resources.SubstitutionImpossibleForDummyRoller);
+                    UserMessage.ShowExclamation(Properties.Resources.SubstitutionImpossibleForDummyRoller);
                     return null;
                 }
 
 				if(tdMuteRoller.Value == 0)
 				{
-                    FogSoft.WinForm.Forms.MessageBox.ShowExclamation(Properties.Resources.DummyRollerWithZeroDuration);
+                    UserMessage.ShowExclamation(Properties.Resources.DummyRollerWithZeroDuration);
                     return null;
                 }
 

@@ -7,7 +7,6 @@ using System;
 using System.Collections.Generic;
 using System.Data;
 using System.Windows.Forms;
-using MessageBox = FogSoft.WinForm.Forms.MessageBox;
 
 namespace Merlin.Classes
 {
@@ -148,7 +147,7 @@ namespace Merlin.Classes
             if (SecurityManager.LoggedUser.IsAdmin || SecurityManager.LoggedUser.IsTrafficManager || !IsConfirmed) return true;
 			if(startDate <= DateTime.Today)
 			{
-                MessageBox.ShowExclamation(MessageAccessor.GetMessage("SplitAllowedByAdmin"));
+                UserMessage.ShowExclamation(MessageAccessor.GetMessage("SplitAllowedByAdmin"));
 				return false;
             }
 			return true;
@@ -172,7 +171,7 @@ namespace Merlin.Classes
                 DataTable dt = Campaigns();
 				if (dt.Rows.Count < 2)
 				{
-					MessageBox.ShowInformation(MessageAccessor.GetMessage("CanNotSplitAction"));
+					UserMessage.ShowInformation(MessageAccessor.GetMessage("CanNotSplitAction"));
 					return;
 				}
 
@@ -208,7 +207,7 @@ namespace Merlin.Classes
             DataTable dt = SetCampaignsFilterByType(Campaign.CampaignTypes.Simple);
             if (dt.DefaultView.Count == 0)
             {
-                MessageBox.ShowInformation(MessageAccessor.GetMessage("NoCampaignsForSplit"));
+                UserMessage.ShowInformation(MessageAccessor.GetMessage("NoCampaignsForSplit"));
                 return;
             }
 
@@ -250,12 +249,12 @@ namespace Merlin.Classes
         {
 			if(selectionForm.AddedItems.Count == this.Campaigns().Rows.Count)
 			{
-                MessageBox.ShowExclamation(MessageAccessor.GetMessage("TooManyCampaignsSelected"));
+                UserMessage.ShowExclamation(MessageAccessor.GetMessage("TooManyCampaignsSelected"));
                 return false;
 			}
             if (selectionForm.AddedItems.Count == 0)
             {
-                MessageBox.ShowExclamation(MessageAccessor.GetMessage("NoCampaignSelected"));
+                UserMessage.ShowExclamation(MessageAccessor.GetMessage("NoCampaignSelected"));
                 return false;
             }
             return true;
@@ -512,7 +511,7 @@ namespace Merlin.Classes
                 procParameters.Add("actionID", ActionId);
 				DataAccessor.ExecuteNonQuery("ActionRestore", procParameters);
 				OnObjectDeleted(this);
-				MessageBox.ShowCompleted(MessageAccessor.GetMessage("ActionRestored"));
+				UserMessage.ShowCompleted(MessageAccessor.GetMessage("ActionRestored"));
 			}
 			finally
 			{
@@ -609,7 +608,7 @@ namespace Merlin.Classes
 		{
 			if(!(SecurityManager.LoggedUser.IsAdmin || SecurityManager.LoggedUser.IsTrafficManager) && StartDate < DateTime.Today)
 			{
-				MessageBox.ShowExclamation(Properties.Resources.DeactivationNotAllowed);
+				UserMessage.ShowExclamation(Properties.Resources.DeactivationNotAllowed);
 				return;
 			}
 
@@ -747,7 +746,7 @@ namespace Merlin.Classes
 				bool errorFlag = false;
                 if (ds.Tables["fatal_errors"].Rows.Count > 0)
 				{
-					MessageBox.ShowExclamation(ds.Tables["fatal_errors"].Rows[0]["errorMessage"].ToString());
+					UserMessage.ShowExclamation(ds.Tables["fatal_errors"].Rows[0]["errorMessage"].ToString());
 					errorFlag = true;
                 }
 
@@ -781,7 +780,7 @@ namespace Merlin.Classes
                 dtRollers = dataSet.Tables[0];
 				if (dtRollers.Rows.Count > 0)
 				{
-					MessageBox.ShowExclamation(MessageAccessor.GetMessage("ActivationWithRollersWithoutAdvType"));
+					UserMessage.ShowExclamation(MessageAccessor.GetMessage("ActivationWithRollersWithoutAdvType"));
 					return false;
 				}
             }
@@ -789,7 +788,7 @@ namespace Merlin.Classes
 			if (dtProgramIssues.Rows.Count > 0)
 			{
                 // the same for program issues without advert type
-                MessageBox.ShowExclamation(Properties.Resources.ActivationWithProgramIssuesWithoutAdvType);
+                UserMessage.ShowExclamation(Properties.Resources.ActivationWithProgramIssuesWithoutAdvType);
             }
 			return true;
         }

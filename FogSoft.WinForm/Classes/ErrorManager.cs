@@ -8,6 +8,7 @@ using System.Data.SqlClient;
 using System.Reflection;
 using System.Text.RegularExpressions;
 using System.Windows.Forms;
+using FogSoft.WinForm.Forms;
 
 namespace FogSoft.WinForm.Classes
 {
@@ -47,7 +48,7 @@ namespace FogSoft.WinForm.Classes
                             if (sqlEx.Number == 547)
                             {
                                 // Сообщение о невозможности удаления/изменения объекта
-                                Forms.MessageBox.ShowExclamation(Resources.DefaultCannotDeleteObject);
+                                UserMessage.ShowExclamation(Resources.DefaultCannotDeleteObject);
                             }
                             else
                             {

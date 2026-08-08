@@ -4,7 +4,7 @@ using System.Windows.Forms;
 using FogSoft.WinForm.Classes;
 using FogSoft.WinForm.DataAccess;
 using Protector.Properties;
-using MessageBox = FogSoft.WinForm.Forms.MessageBox;
+using FogSoft.WinForm.Forms;
 
 namespace Protector.Forms
 {
@@ -19,7 +19,7 @@ namespace Protector.Forms
 		{
 			if (string.Compare(textBoxPassword.Text, textBoxConfirm.Text) != 0)
 			{
-				MessageBox.ShowExclamation(Resources.ErrorChangePassword);
+				UserMessage.ShowExclamation(Resources.ErrorChangePassword);
 				DialogResult = DialogResult.None;
 			}
 			else

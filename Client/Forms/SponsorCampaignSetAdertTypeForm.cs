@@ -10,6 +10,7 @@ using FogSoft.WinForm.Passport.Classes;
 using FogSoft.WinForm.Passport.Forms;
 using FogSoft.WinForm.Properties;
 using Merlin.Classes;
+using FogSoft.WinForm.Forms;
 
 namespace Merlin.Forms
 {
@@ -75,7 +76,7 @@ namespace Merlin.Forms
                 if (_opAdvertType.SelectedObject == null)
                 {
                     DialogResult = DialogResult.None;
-                    FogSoft.WinForm.Forms.MessageBox.ShowExclamation(Properties.Resources.AdvertTypeNotSelected);
+                    UserMessage.ShowExclamation(Properties.Resources.AdvertTypeNotSelected);
                     return;
                 }
 
@@ -95,7 +96,7 @@ namespace Merlin.Forms
 
                 if (SelectedIDs.Count == 0)
                 {
-                    FogSoft.WinForm.Forms.MessageBox.ShowExclamation(MessageAccessor.GetMessage("NoIssuesSelected"));
+                    UserMessage.ShowExclamation(MessageAccessor.GetMessage("NoIssuesSelected"));
                     DialogResult = DialogResult.None;
                     return;
                 }

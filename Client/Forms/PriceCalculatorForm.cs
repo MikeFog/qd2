@@ -13,6 +13,7 @@ using System.IO;
 using System.Linq;
 using System.Text;
 using System.Windows.Forms;
+using FogSoft.WinForm.Forms;
 
 namespace Merlin.Forms
 {
@@ -141,13 +142,13 @@ namespace Merlin.Forms
             
             if (!templateEditor.IsDaysOfWeekValid())
             {
-                FogSoft.WinForm.Forms.MessageBox.ShowExclamation("Выберите хотя бы один день недели");
+                UserMessage.ShowExclamation("Выберите хотя бы один день недели");
                 return;
             }
 
             if (templateEditor.DateFrom > templateEditor.DateTo)
             {
-                FogSoft.WinForm.Forms.MessageBox.ShowExclamation("Дата начала периода акции не может быть больше даты окончания");
+                UserMessage.ShowExclamation("Дата начала периода акции не может быть больше даты окончания");
                 return;
             }
 
@@ -326,7 +327,7 @@ namespace Merlin.Forms
             var dt = grdPriceCalculator.BuildSelectedExportTable();
             if (dt == null || dt.Rows.Count == 0)
             {
-                FogSoft.WinForm.Forms.MessageBox.ShowInformation("Нет отмеченных строк для экспорта.");
+                UserMessage.ShowInformation("Нет отмеченных строк для экспорта.");
                 return;
             }
 

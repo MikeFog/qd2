@@ -12,7 +12,6 @@ using FogSoft.WinForm.DataAccess;
 using FogSoft.WinForm.Forms;
 using Merlin.Classes;
 using Merlin.Controls;
-using MessageBox = FogSoft.WinForm.Forms.MessageBox;
 
 namespace Merlin.Forms
 {
@@ -191,7 +190,7 @@ namespace Merlin.Forms
 					}
 					else
 					{
-						MessageBox.ShowExclamation(Properties.Resources.AdvertTypeMastBeSelected);
+						UserMessage.ShowExclamation(Properties.Resources.AdvertTypeMastBeSelected);
 						tbbStart.Checked = false;
 						return;
 					}
@@ -812,7 +811,7 @@ namespace Merlin.Forms
 			Entity issueEntity = _tariffGrid.IssueEntity;
 			if (issueEntity == null || issueEntity.Id != (int)Entities.Issue)
 			{
-				MessageBox.ShowInformation("Массовое удаление поддерживается только для простых кампаний без модулей.");
+				UserMessage.ShowInformation("Массовое удаление поддерживается только для простых кампаний без модулей.");
 				return;
 			}
 
@@ -831,12 +830,12 @@ namespace Merlin.Forms
 
 			if (issues.Count == 0)
 			{
-				MessageBox.ShowInformation("В выбранных окнах нет выпусков текущей кампании.");
+				UserMessage.ShowInformation("В выбранных окнах нет выпусков текущей кампании.");
 				return;
 			}
 
 			// 3. Подтверждение.
-			if (MessageBox.ShowQuestion(
+			if (UserMessage.ShowQuestion(
 					string.Format("Удалить выпуски текущей кампании в выбранных окнах? ({0} шт.)", issues.Count)) != DialogResult.Yes)
 				return;
 
@@ -884,7 +883,7 @@ namespace Merlin.Forms
 			if (deleteErrors.Rows.Count > 0)
 				SmartGrid.ShowDeleteErrors(deleteErrors);
 			else
-				MessageBox.ShowInformation(string.Format("Удалено выпусков: {0}.", deletedObjects.Count));
+				UserMessage.ShowInformation(string.Format("Удалено выпусков: {0}.", deletedObjects.Count));
 		}
 
 		private void tbbTemplateUndo_Click(object sender, EventArgs e)
@@ -893,7 +892,7 @@ namespace Merlin.Forms
 			{
 				if (_lastTemplateAddedIssues == null || _lastTemplateAddedIssues.Count == 0)
 					return;
-				if (MessageBox.ShowQuestion(string.Format(
+				if (UserMessage.ShowQuestion(string.Format(
 						"Отменить последнее добавление выпусков по шаблону? ({0} шт.)", _lastTemplateAddedIssues.Count)) != DialogResult.Yes)
 					return;
 				UndoLastTemplateAdd();
@@ -949,7 +948,7 @@ namespace Merlin.Forms
 			if (deleteErrors.Rows.Count > 0)
 				SmartGrid.ShowDeleteErrors(deleteErrors);
 			else
-				MessageBox.ShowInformation(string.Format("Отменено выпусков: {0}.", deletedObjects.Count));
+				UserMessage.ShowInformation(string.Format("Отменено выпусков: {0}.", deletedObjects.Count));
 		}
 
 		/// <summary>
@@ -1110,7 +1109,7 @@ namespace Merlin.Forms
 			string question = payload.Issues.Count == 1
 				? string.Format("Перенести выпуск в окно '{0}'?", targetDateStr)
 				: string.Format("Перенести выпуски ({0} шт.) в окно '{1}'?", payload.Issues.Count, targetDateStr);
-			if (MessageBox.ShowQuestion(question) != DialogResult.Yes)
+			if (UserMessage.ShowQuestion(question) != DialogResult.Yes)
 				return;
 
 			try
@@ -1231,7 +1230,7 @@ namespace Merlin.Forms
 				Roller roller = ((IRollerGrid)_tariffGrid).Roller;
 				if(roller == null)
 				{
-                    FogSoft.WinForm.Forms.MessageBox.ShowExclamation(MessageAccessor.GetMessage("RollerNotSelected"));
+                    UserMessage.ShowExclamation(MessageAccessor.GetMessage("RollerNotSelected"));
                     return;
 				}
 
@@ -1345,7 +1344,7 @@ namespace Merlin.Forms
 						Cursor = Cursors.WaitCursor;
 
 						if (rollerQueue.Count > 0)
-							FogSoft.WinForm.Forms.MessageBox.ShowExclamation(
+							UserMessage.ShowExclamation(
 								$"Недостаточно окон за весь период шаблона — не удалось разместить {rollerQueue.Count} выход(ов) из выбранных роликов.");
 
 						if (_template.IsDateCovered(_tariffGrid.StartDate, _tariffGrid.FinishDate))

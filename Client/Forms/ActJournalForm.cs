@@ -58,7 +58,7 @@ namespace Merlin.Forms
 				= new Font(Grid.InternalGrid.DefaultCellStyle.Font, FontStyle.Bold);
 
 			if (_dtData.DataSet != null && _dtData.DataSet.Tables.Count > 1 && _dtData.DataSet.Tables[1].Rows.Count > 0)
-				MessageBox.ShowInformation(Resources.ActJournalMassmediaExplamation);
+				UserMessage.ShowInformation(Resources.ActJournalMassmediaExplamation);
 		}
 	}
 }

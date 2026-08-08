@@ -27,7 +27,7 @@ namespace Merlin.Classes
             {
                 if(bool.Parse( parameters[Roller.ParamNames.IsCommon].ToString()) || parameters[Roller.ParamNames.ParentId] != DBNull.Value)
                 {
-                    FogSoft.WinForm.Forms.MessageBox.ShowExclamation(Properties.Resources.ImpossibleSetAdvertType);
+                    UserMessage.ShowExclamation(Properties.Resources.ImpossibleSetAdvertType);
                     return;
                 }
 

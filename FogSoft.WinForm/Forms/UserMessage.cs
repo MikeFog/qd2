@@ -1,6 +1,5 @@
-using System;
+﻿using System;
 using System.Windows.Forms;
-using SysMessageBox = System.Windows.Forms.MessageBox;
 
 namespace FogSoft.WinForm.Forms
 {
@@ -9,7 +8,7 @@ namespace FogSoft.WinForm.Forms
 	/// Даёт единый заголовок окна и общий owner для всех сообщений приложения.
 	/// Детали исключений пользователю не показываются — они пишутся в лог (docs/LOGGING.md).
 	/// </summary>
-	public static class MessageBox
+	public static class UserMessage
 	{
 		private static IWin32Window Owner
 		{
@@ -25,7 +24,7 @@ namespace FogSoft.WinForm.Forms
 
 		private static DialogResult Show(string title, string text, MessageBoxButtons buttons, MessageBoxIcon icon)
 		{
-			return SysMessageBox.Show(Owner, text, title ?? Application.ProductName, buttons, icon);
+			return MessageBox.Show(Owner, text, title ?? Application.ProductName, buttons, icon);
 		}
 
 		/// <param name="e">Не показывается пользователю: исключение уже записано в лог вызывающим кодом.</param>

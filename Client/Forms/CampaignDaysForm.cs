@@ -10,6 +10,7 @@ using FogSoft.WinForm.Passport.Classes;
 using FogSoft.WinForm.Passport.Forms;
 using Merlin.Classes;
 using unoidl.com.sun.star.sheet;
+using FogSoft.WinForm.Forms;
 
 namespace Merlin.Forms
 {
@@ -102,7 +103,7 @@ namespace Merlin.Forms
 
                 if (SelectedIDs.Count == 0)
                 {
-                    FogSoft.WinForm.Forms.MessageBox.ShowExclamation(MessageAccessor.GetMessage("NoIssuesSelected"));
+                    UserMessage.ShowExclamation(MessageAccessor.GetMessage("NoIssuesSelected"));
                     DialogResult = DialogResult.None;
                     return;
                 }

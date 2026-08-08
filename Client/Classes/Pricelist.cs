@@ -7,7 +7,6 @@ using FogSoft.WinForm.Forms;
 using FogSoft.WinForm.Classes;
 using CrystalDecisions.CrystalReports.Engine;
 using FogSoft.WinForm.DataAccess;
-using MessageBox = FogSoft.WinForm.Forms.MessageBox;
 
 namespace Merlin.Classes
 {
@@ -122,7 +121,7 @@ namespace Merlin.Classes
         {
             if (selectionForm.AddedItems.Count == 0)
             {
-                MessageBox.ShowExclamation(Properties.Resources.NoRadiostationSelected);
+                UserMessage.ShowExclamation(Properties.Resources.NoRadiostationSelected);
                 return false;
             }
             return true;

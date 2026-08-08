@@ -22,7 +22,6 @@ using System.Text;
 using System.Threading;
 using System.Windows.Forms;
 using DateTime = System.DateTime;
-using MessageBox = FogSoft.WinForm.Forms.MessageBox;
 using Timer = System.Windows.Forms.Timer;
 
 namespace Merlin.Forms
@@ -288,7 +287,7 @@ namespace Merlin.Forms
         {
 			try
 			{
-				if (MessageBox.ShowQuestion("Вы хотите удалить все неиспользуемые ролики-пустышки?") == DialogResult.Yes)
+				if (UserMessage.ShowQuestion("Вы хотите удалить все неиспользуемые ролики-пустышки?") == DialogResult.Yes)
 				{
 					Cursor.Current = Cursors.WaitCursor;
                     DataAccessor.ExecuteNonQuery("DeleteUnusedDummyRollers", DataAccessor.CreateParametersDictionary());
@@ -301,7 +300,7 @@ namespace Merlin.Forms
         {
             try
             {
-                if (MessageBox.ShowQuestion("Вы хотите окончательно удалить все акции из журнала удалённых акций?") == DialogResult.Yes)
+                if (UserMessage.ShowQuestion("Вы хотите окончательно удалить все акции из журнала удалённых акций?") == DialogResult.Yes)
                 {
                     Cursor.Current = Cursors.WaitCursor;
                     DataAccessor.ExecuteNonQuery("DeleteDeletedActions", DataAccessor.CreateParametersDictionary());
@@ -314,7 +313,7 @@ namespace Merlin.Forms
         {
             try
             {
-                if (MessageBox.ShowQuestion("Вы хотите переместить макеты рекламных акций в журнал удалённых акций?") == DialogResult.Yes)
+                if (UserMessage.ShowQuestion("Вы хотите переместить макеты рекламных акций в журнал удалённых акций?") == DialogResult.Yes)
                 {
                     Cursor.Current = Cursors.WaitCursor;
                     DataAccessor.ExecuteNonQuery("DeleteUnconfirmedActions", DataAccessor.CreateParametersDictionary(), 300, true);
@@ -867,7 +866,7 @@ namespace Merlin.Forms
                     entity = Entities.StatsFactorAnalysis;
                     break;
 				default:
-					MessageBox.ShowInformation(mi.Tag.ToString(), "Menu Item clicked!");
+					UserMessage.ShowInformation(mi.Tag.ToString(), "Menu Item clicked!");
 					break;
 			}
 			if (entity != Entities.ErrTmplGen)

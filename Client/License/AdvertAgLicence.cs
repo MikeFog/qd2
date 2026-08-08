@@ -56,13 +56,13 @@ namespace Merlin.License
 			string checkLicense = licence.Check();
 			if (!string.IsNullOrEmpty(checkLicense))
 			{
-				MessageBox.ShowExclamation(checkLicense);
+				UserMessage.ShowExclamation(checkLicense);
 				return false;
 			}
 
 			if (licence.MassmediasCount.HasValue && licence.GetMassmediasCount() + 1 > licence.MassmediasCount.Value)
 			{
-				MessageBox.ShowExclamation(Resources.LicenseErrorCannotAddMassmedia);
+				UserMessage.ShowExclamation(Resources.LicenseErrorCannotAddMassmedia);
 				return false;
 			}
 
@@ -74,7 +74,7 @@ namespace Merlin.License
 			string errMsg = CheckLicense();
 			if (!string.IsNullOrEmpty(errMsg))
 			{
-				MessageBox.ShowExclamation(errMsg);
+				UserMessage.ShowExclamation(errMsg);
 				Globals.MdiParent.Close();
 			}
 		}

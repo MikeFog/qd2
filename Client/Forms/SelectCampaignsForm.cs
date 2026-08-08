@@ -9,7 +9,6 @@ using System.ComponentModel;
 using System.Data;
 using System.Windows.Forms;
 using static FogSoft.WinForm.Constants;
-using MessageBox = FogSoft.WinForm.Forms.MessageBox;
 
 namespace Merlin.Forms
 {
@@ -136,7 +135,7 @@ namespace Merlin.Forms
                 {
                     if (row[CLONEDATE_COLUMN_NAME] == DBNull.Value)
                     {
-                        MessageBox.ShowExclamation(MessageAccessor.GetMessage("NoCloneDataSelected"));
+                        UserMessage.ShowExclamation(MessageAccessor.GetMessage("NoCloneDataSelected"));
                         DialogResult = DialogResult.None;
                         return;
                     }
@@ -144,7 +143,7 @@ namespace Merlin.Forms
                     DateTime newDate = (DateTime)row[CLONEDATE_COLUMN_NAME];
                     if (newDate < DateTime.Today)
                     {
-                        MessageBox.ShowExclamation(MessageAccessor.GetMessage("NotAllowedDataInThePast"));
+                        UserMessage.ShowExclamation(MessageAccessor.GetMessage("NotAllowedDataInThePast"));
                         DialogResult = DialogResult.None;
                         return;
                     }
@@ -155,7 +154,7 @@ namespace Merlin.Forms
 
             if (_selectedItems.Count == 0)
             {
-                MessageBox.ShowExclamation(MessageAccessor.GetMessage("NoCampaignSelected"));
+                UserMessage.ShowExclamation(MessageAccessor.GetMessage("NoCampaignSelected"));
                 DialogResult = DialogResult.None;
             }
         }
@@ -169,7 +168,7 @@ namespace Merlin.Forms
                 {
                     if (row[SPLITTYPE_COLUMN_NAME] == DBNull.Value)
                     {
-                        MessageBox.ShowExclamation(MessageAccessor.GetMessage("SplitTypeNotSelected"));
+                        UserMessage.ShowExclamation(MessageAccessor.GetMessage("SplitTypeNotSelected"));
                         DialogResult = DialogResult.None;
                         return;
                     }
@@ -181,21 +180,21 @@ namespace Merlin.Forms
                     {
                         if(campaign.StartDate == campaign.FinishDate)
                         {
-                            MessageBox.ShowExclamation(string.Format(MessageAccessor.GetMessage("ImpossibleSplitByPeriod"), campaign.MassmediaNameWithGroup));
+                            UserMessage.ShowExclamation(string.Format(MessageAccessor.GetMessage("ImpossibleSplitByPeriod"), campaign.MassmediaNameWithGroup));
                             DialogResult = DialogResult.None;
                             return;
                         }
 
                         if (row[SPLITDATE_COLUMN_NAME] == DBNull.Value)
                         {
-                            MessageBox.ShowExclamation(MessageAccessor.GetMessage("SplitDateNotEntered"));
+                            UserMessage.ShowExclamation(MessageAccessor.GetMessage("SplitDateNotEntered"));
                             DialogResult = DialogResult.None;
                             return;
                         }
                         DateTime splitDate = (DateTime)row[SPLITDATE_COLUMN_NAME];
                         if(splitDate <= campaign.StartDate || splitDate > campaign.FinishDate)
                         {
-                            MessageBox.ShowExclamation(string.Format(MessageAccessor.GetMessage("SplitDateIncorrect"), campaign.MassmediaNameWithGroup));
+                            UserMessage.ShowExclamation(string.Format(MessageAccessor.GetMessage("SplitDateIncorrect"), campaign.MassmediaNameWithGroup));
                             DialogResult = DialogResult.None;
                             return;
                         }
@@ -207,7 +206,7 @@ namespace Merlin.Forms
                         campaign.ChildEntity = EntityManager.GetEntity((int)Entities.CampaignRoller);
                         if (campaign.GetContent().Rows.Count < 2)
                         {
-                            MessageBox.ShowExclamation(string.Format(MessageAccessor.GetMessage("ActionSplitByRollersImpossible"), campaign.MassmediaNameWithGroup));
+                            UserMessage.ShowExclamation(string.Format(MessageAccessor.GetMessage("ActionSplitByRollersImpossible"), campaign.MassmediaNameWithGroup));
                             DialogResult = DialogResult.None;
                             return;
                         }
@@ -219,7 +218,7 @@ namespace Merlin.Forms
             }
             if (_splitRules.Count == 0)
             {
-                MessageBox.ShowExclamation(MessageAccessor.GetMessage("NoCampaignSelected"));
+                UserMessage.ShowExclamation(MessageAccessor.GetMessage("NoCampaignSelected"));
                 DialogResult = DialogResult.None;
             }
             // все проверки пройдены, теперь надо выбрать ролики для каждой кампании
@@ -244,7 +243,7 @@ namespace Merlin.Forms
                 {
                     if (row[CONTRACTDATE_COLUMN_NAME] == DBNull.Value)
                     {
-                        MessageBox.ShowExclamation(Properties.Resources.NoContractDateSet);
+                        UserMessage.ShowExclamation(Properties.Resources.NoContractDateSet);
                         DialogResult = DialogResult.None;
                         return;
                     }
@@ -259,7 +258,7 @@ namespace Merlin.Forms
 
             if (_selectedItems.Count == 0)
             {
-                MessageBox.ShowExclamation(Properties.Resources.NoAgencySelected);
+                UserMessage.ShowExclamation(Properties.Resources.NoAgencySelected);
                 DialogResult = DialogResult.None;
             }
         }
@@ -288,12 +287,12 @@ namespace Merlin.Forms
         {
             if (selectionForm.AddedItems.Count == 0)
             {
-                MessageBox.ShowExclamation(MessageAccessor.GetMessage("NoRollersChecked"));
+                UserMessage.ShowExclamation(MessageAccessor.GetMessage("NoRollersChecked"));
                 return false;
             }
             else if (selectionForm.AddedItems.Count == selectionForm.ItemsCount)
             {
-                MessageBox.ShowExclamation(MessageAccessor.GetMessage("ActionSplitAllRollersSelected"));
+                UserMessage.ShowExclamation(MessageAccessor.GetMessage("ActionSplitAllRollersSelected"));
                 return false;
             }
             return true;

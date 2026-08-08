@@ -5,7 +5,7 @@ using FogSoft.WinForm.Classes;
 using FogSoft.WinForm.DataAccess;
 using FogSoft.WinForm.License;
 using Protector.Properties;
-using MessageBox = FogSoft.WinForm.Forms.MessageBox;
+using FogSoft.WinForm.Forms;
 
 namespace Protector.License
 {
@@ -57,13 +57,13 @@ namespace Protector.License
 				string checkLicense = licence.Check();
 				if (!string.IsNullOrEmpty(checkLicense))
 				{
-					MessageBox.ShowExclamation(checkLicense);
+					UserMessage.ShowExclamation(checkLicense);
 					return false;
 				}
 
 				if (licence.UsersCount.HasValue && licence.GetUsersCount() + 1 > licence.UsersCount.Value)
 				{
-					MessageBox.ShowExclamation(Resources.LicenseErrorCannotAddUser);
+					UserMessage.ShowExclamation(Resources.LicenseErrorCannotAddUser);
 					return false;
 				}
 				return true;

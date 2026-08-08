@@ -11,7 +11,7 @@ using FogSoft.WinForm.Classes.Export;
 using FogSoft.WinForm.Classes;
 using System.IO;
 using Merlin.Classes;
-using MessageBox = FogSoft.WinForm.Forms.MessageBox;
+using FogSoft.WinForm.Forms;
 
 namespace Merlin.Forms
 {
@@ -97,7 +97,7 @@ namespace Merlin.Forms
             base.OnClosing(e);
             if (bWorking)
             {
-                if (MessageBox.ShowQuestion("Прервать процедуру?") == DialogResult.Yes)
+                if (UserMessage.ShowQuestion("Прервать процедуру?") == DialogResult.Yes)
                 {
                     bCancel = true;
                 }

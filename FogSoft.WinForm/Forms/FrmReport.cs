@@ -139,7 +139,7 @@ namespace FogSoft.WinForm.Forms
 
                 if (report == null)
                 {
-                    MessageBox.ShowExclamation("Отчёт не загружен.");
+                    UserMessage.ShowExclamation("Отчёт не загружен.");
                     return;
                 }
 
@@ -220,13 +220,13 @@ namespace FogSoft.WinForm.Forms
 
                 if (!(_viewer.ReportSource is ReportDocument report))
                 {
-                    MessageBox.ShowExclamation("Отчёт не загружен.");
+                    UserMessage.ShowExclamation("Отчёт не загружен.");
                     return;
                 }
 
                 string fileName = Path.Combine(folder, _fileName2SaveDirectly);
                 report.ExportToDisk(ResolveFormatType(), fileName);
-                MessageBox.ShowCompleted($"Файл успено сохранён здесь: {fileName}");
+                UserMessage.ShowCompleted($"Файл успено сохранён здесь: {fileName}");
             }
             catch (Exception ex)
             {

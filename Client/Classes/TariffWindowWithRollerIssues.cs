@@ -6,8 +6,8 @@ using FogSoft.WinForm;
 using FogSoft.WinForm.Classes;
 using FogSoft.WinForm.DataAccess;
 using Merlin.Forms;
+using FogSoft.WinForm.Forms;
 using static FogSoft.WinForm.Constants;
-using MessageBox = FogSoft.WinForm.Forms.MessageBox;
 
 namespace Merlin.Classes
 {
@@ -268,7 +268,7 @@ namespace Merlin.Classes
 				TariffWindowWithRollerIssues window = CreateTariffWindowById(isWithPrev ? int.Parse(this[ParamNames.WindowPrevId].ToString()) : int.Parse(this[ParamNames.WindowNextId].ToString()));
 				window.Refresh();
 
-				if (MessageBox.ShowQuestion(string.Format("Хотите отменить объединение рекламных окон '{0}' и '{1}'?", WindowDate.ToString("g"), window.WindowDate.ToString("g"))) == DialogResult.Yes)
+				if (UserMessage.ShowQuestion(string.Format("Хотите отменить объединение рекламных окон '{0}' и '{1}'?", WindowDate.ToString("g"), window.WindowDate.ToString("g"))) == DialogResult.Yes)
 				{
                     Cursor.Current = Cursors.WaitCursor;
                     if (isWithPrev)

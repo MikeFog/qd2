@@ -11,6 +11,7 @@ using FogSoft.WinForm.Passport.Classes;
 using FogSoft.WinForm.Passport.Forms;
 using FogSoft.WinForm.Properties;
 using Merlin.Classes;
+using FogSoft.WinForm.Forms;
 
 namespace Merlin.Forms
 {
@@ -93,7 +94,7 @@ namespace Merlin.Forms
                 if (opAdvertType.SelectedObject == null)
                 {
                     DialogResult = DialogResult.None;
-                    FogSoft.WinForm.Forms.MessageBox.ShowExclamation(Properties.Resources.AdvertTypeNotSelected);
+                    UserMessage.ShowExclamation(Properties.Resources.AdvertTypeNotSelected);
 					return;
                 }
 
@@ -114,7 +115,7 @@ namespace Merlin.Forms
                 if (selectedDays.Count == 0)
 				{
                     DialogResult = DialogResult.None;
-                    FogSoft.WinForm.Forms.MessageBox.ShowExclamation(Properties.Resources.NoIssueSelected);
+                    UserMessage.ShowExclamation(Properties.Resources.NoIssueSelected);
                     return;
                 }
 			}

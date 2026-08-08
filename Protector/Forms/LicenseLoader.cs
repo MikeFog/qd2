@@ -5,7 +5,7 @@ using System.Windows.Forms;
 using FogSoft.WinForm;
 using FogSoft.WinForm.Classes;
 using Protector.License;
-using MessageBox = FogSoft.WinForm.Forms.MessageBox;
+using FogSoft.WinForm.Forms;
 
 namespace Protector.Forms
 {
@@ -58,7 +58,7 @@ namespace Protector.Forms
 						string res = licence.Check();
 						if (!string.IsNullOrEmpty(res))
 						{
-							MessageBox.ShowExclamation(res);
+							UserMessage.ShowExclamation(res);
 						}
 						else
 						{

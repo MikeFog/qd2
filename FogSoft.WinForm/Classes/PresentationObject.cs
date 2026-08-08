@@ -3,9 +3,9 @@ using System.Collections.Generic;
 using System.Data;
 using System.Text;
 using System.Windows.Forms;
-using MessageBox = FogSoft.WinForm.Forms.MessageBox;
 using FogSoft.WinForm.DataAccess;
 using FogSoft.WinForm.Passport.Forms;
+using FogSoft.WinForm.Forms;
 
 namespace FogSoft.WinForm.Classes
 {
@@ -275,14 +275,14 @@ namespace FogSoft.WinForm.Classes
 
 		protected virtual bool ConfirmDelete()
 		{
-			bool result = MessageBox.ShowQuestion(DeleteConfirmationText) == DialogResult.Yes;
+			bool result = UserMessage.ShowQuestion(DeleteConfirmationText) == DialogResult.Yes;
 			Application.DoEvents();
 			return result;
 		}
 
 		protected virtual bool ConfirmDetach()
 		{
-			bool result = MessageBox.ShowQuestion(string.Format(DETACH_PROMPT, Name)) == DialogResult.Yes;
+			bool result = UserMessage.ShowQuestion(string.Format(DETACH_PROMPT, Name)) == DialogResult.Yes;
 			Application.DoEvents();
 			return result;
 		}
