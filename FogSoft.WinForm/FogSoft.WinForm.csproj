@@ -302,12 +302,7 @@
     <Compile Include="Forms\GraphForm.Designer.cs">
       <DependentUpon>GraphForm.cs</DependentUpon>
     </Compile>
-    <Compile Include="Forms\MessageBox.cs">
-      <SubType>Form</SubType>
-    </Compile>
-    <Compile Include="Forms\MessageBox.Designer.cs">
-      <DependentUpon>MessageBox.cs</DependentUpon>
-    </Compile>
+    <Compile Include="Forms\MessageBox.cs" />
     <Compile Include="Forms\ProgressForm.cs">
       <SubType>Form</SubType>
     </Compile>
@@ -537,9 +532,6 @@
     </EmbeddedResource>
     <EmbeddedResource Include="Forms\GraphForm.resx">
       <DependentUpon>GraphForm.cs</DependentUpon>
-    </EmbeddedResource>
-    <EmbeddedResource Include="Forms\MessageBox.resx">
-      <DependentUpon>MessageBox.cs</DependentUpon>
     </EmbeddedResource>
     <EmbeddedResource Include="Forms\ExplorerForm.resx">
       <SubType>Designer</SubType>
