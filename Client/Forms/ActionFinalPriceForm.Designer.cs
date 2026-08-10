@@ -24,22 +24,21 @@
             this.dtCurrentDate = new System.Windows.Forms.DateTimePicker();
             this.chkCurrentDate = new System.Windows.Forms.CheckBox();
             this.rbRatio = new System.Windows.Forms.RadioButton();
-            this.buttonPanel = new System.Windows.Forms.Panel();
+            this.flowLayoutPanel1 = new System.Windows.Forms.FlowLayoutPanel();
             this.label5 = new System.Windows.Forms.Label();
             this.cmbReason = new FogSoft.WinForm.LookUp();
             ((System.ComponentModel.ISupportInitialize)(this.txtFinalPrice)).BeginInit();
             ((System.ComponentModel.ISupportInitialize)(this.txtRatio)).BeginInit();
             this.tableLayoutPanelMain.SuspendLayout();
-            this.buttonPanel.SuspendLayout();
+            this.flowLayoutPanel1.SuspendLayout();
             this.SuspendLayout();
             // 
             // btnOK
             // 
-            this.btnOK.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Right)));
             this.btnOK.DialogResult = System.Windows.Forms.DialogResult.OK;
-            this.btnOK.Location = new System.Drawing.Point(369, 8);
+            this.btnOK.Location = new System.Drawing.Point(389, 3);
             this.btnOK.Name = "btnOK";
-            this.btnOK.Size = new System.Drawing.Size(120, 33);
+            this.btnOK.Size = new System.Drawing.Size(100, 33);
             this.btnOK.TabIndex = 0;
             this.btnOK.Text = "Ок";
             this.btnOK.UseVisualStyleBackColor = true;
@@ -47,11 +46,10 @@
             // 
             // btnCancel
             // 
-            this.btnCancel.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Right)));
             this.btnCancel.DialogResult = System.Windows.Forms.DialogResult.Cancel;
-            this.btnCancel.Location = new System.Drawing.Point(497, 8);
+            this.btnCancel.Location = new System.Drawing.Point(495, 3);
             this.btnCancel.Name = "btnCancel";
-            this.btnCancel.Size = new System.Drawing.Size(120, 33);
+            this.btnCancel.Size = new System.Drawing.Size(100, 33);
             this.btnCancel.TabIndex = 1;
             this.btnCancel.Text = "Отмена";
             this.btnCancel.UseVisualStyleBackColor = true;
@@ -107,17 +105,19 @@
             this.tableLayoutPanelMain.Controls.Add(this.dtCurrentDate, 1, 2);
             this.tableLayoutPanelMain.Controls.Add(this.chkCurrentDate, 0, 2);
             this.tableLayoutPanelMain.Controls.Add(this.rbRatio, 0, 0);
+            this.tableLayoutPanelMain.Controls.Add(this.flowLayoutPanel1, 0, 4);
             this.tableLayoutPanelMain.Dock = System.Windows.Forms.DockStyle.Fill;
             this.tableLayoutPanelMain.GrowStyle = System.Windows.Forms.TableLayoutPanelGrowStyle.FixedSize;
             this.tableLayoutPanelMain.Location = new System.Drawing.Point(0, 0);
             this.tableLayoutPanelMain.Name = "tableLayoutPanelMain";
             this.tableLayoutPanelMain.Padding = new System.Windows.Forms.Padding(12);
-            this.tableLayoutPanelMain.RowCount = 4;
+            this.tableLayoutPanelMain.RowCount = 5;
             this.tableLayoutPanelMain.RowStyles.Add(new System.Windows.Forms.RowStyle());
             this.tableLayoutPanelMain.RowStyles.Add(new System.Windows.Forms.RowStyle());
             this.tableLayoutPanelMain.RowStyles.Add(new System.Windows.Forms.RowStyle());
             this.tableLayoutPanelMain.RowStyles.Add(new System.Windows.Forms.RowStyle());
-            this.tableLayoutPanelMain.Size = new System.Drawing.Size(628, 183);
+            this.tableLayoutPanelMain.RowStyles.Add(new System.Windows.Forms.RowStyle());
+            this.tableLayoutPanelMain.Size = new System.Drawing.Size(628, 197);
             this.tableLayoutPanelMain.TabIndex = 23;
             // 
             // radioButton2
@@ -164,16 +164,17 @@
             this.rbRatio.UseVisualStyleBackColor = true;
             this.rbRatio.CheckedChanged += new System.EventHandler(this.CheckedChanged);
             // 
-            // buttonPanel
+            // flowLayoutPanel1
             // 
-            this.buttonPanel.Controls.Add(this.btnCancel);
-            this.buttonPanel.Controls.Add(this.btnOK);
-            this.buttonPanel.Dock = System.Windows.Forms.DockStyle.Bottom;
-            this.buttonPanel.Location = new System.Drawing.Point(0, 183);
-            this.buttonPanel.Name = "buttonPanel";
-            this.buttonPanel.Padding = new System.Windows.Forms.Padding(0, 8, 12, 12);
-            this.buttonPanel.Size = new System.Drawing.Size(628, 52);
-            this.buttonPanel.TabIndex = 24;
+            this.tableLayoutPanelMain.SetColumnSpan(this.flowLayoutPanel1, 2);
+            this.flowLayoutPanel1.Controls.Add(this.btnCancel);
+            this.flowLayoutPanel1.Controls.Add(this.btnOK);
+            this.flowLayoutPanel1.Dock = System.Windows.Forms.DockStyle.Fill;
+            this.flowLayoutPanel1.FlowDirection = System.Windows.Forms.FlowDirection.RightToLeft;
+            this.flowLayoutPanel1.Location = new System.Drawing.Point(15, 143);
+            this.flowLayoutPanel1.Name = "flowLayoutPanel1";
+            this.flowLayoutPanel1.Size = new System.Drawing.Size(598, 39);
+            this.flowLayoutPanel1.TabIndex = 24;
             // 
             // label5
             // 
@@ -200,10 +201,10 @@
             this.AcceptButton = this.btnOK;
             this.AutoScaleDimensions = new System.Drawing.SizeF(10F, 25F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
+            this.AutoSize = true;
             this.CancelButton = this.btnCancel;
-            this.ClientSize = new System.Drawing.Size(628, 235);
+            this.ClientSize = new System.Drawing.Size(628, 197);
             this.Controls.Add(this.tableLayoutPanelMain);
-            this.Controls.Add(this.buttonPanel);
             this.Font = new System.Drawing.Font("Segoe UI", 9F);
             this.FormBorderStyle = System.Windows.Forms.FormBorderStyle.FixedDialog;
             this.MaximizeBox = false;
@@ -215,7 +216,7 @@
             ((System.ComponentModel.ISupportInitialize)(this.txtRatio)).EndInit();
             this.tableLayoutPanelMain.ResumeLayout(false);
             this.tableLayoutPanelMain.PerformLayout();
-            this.buttonPanel.ResumeLayout(false);
+            this.flowLayoutPanel1.ResumeLayout(false);
             this.ResumeLayout(false);
             this.PerformLayout();
 
@@ -228,7 +229,7 @@
         private System.Windows.Forms.NumericUpDown txtFinalPrice;
         private System.Windows.Forms.NumericUpDown txtRatio;
         private System.Windows.Forms.TableLayoutPanel tableLayoutPanelMain;
-        private System.Windows.Forms.Panel buttonPanel;
+        private System.Windows.Forms.FlowLayoutPanel flowLayoutPanel1;
         private System.Windows.Forms.DateTimePicker dtCurrentDate;
         private System.Windows.Forms.CheckBox chkCurrentDate;
         private System.Windows.Forms.RadioButton rbRatio;

@@ -36,38 +36,40 @@
             this.btnOk = new System.Windows.Forms.Button();
             this.lookUpPaymentType = new FogSoft.WinForm.LookUp();
             this.label4 = new System.Windows.Forms.Label();
+            this.tableLayoutPanel1 = new System.Windows.Forms.TableLayoutPanel();
+            this.flowLayoutPanel1 = new System.Windows.Forms.FlowLayoutPanel();
+            this.tableLayoutPanel1.SuspendLayout();
+            this.flowLayoutPanel1.SuspendLayout();
             this.SuspendLayout();
             // 
             // grdMassmedia
             // 
-            this.grdMassmedia.Anchor = ((System.Windows.Forms.AnchorStyles)((((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Bottom) 
-            | System.Windows.Forms.AnchorStyles.Left) 
-            | System.Windows.Forms.AnchorStyles.Right)));
             this.grdMassmedia.Caption = "Радиостанции";
             this.grdMassmedia.CaptionVisible = true;
             this.grdMassmedia.CheckBoxes = true;
             this.grdMassmedia.ColumnNameHighlight = null;
             this.grdMassmedia.DataSource = null;
             this.grdMassmedia.DependantGrid = null;
+            this.grdMassmedia.Dock = System.Windows.Forms.DockStyle.Fill;
             this.grdMassmedia.Entity = null;
             this.grdMassmedia.Font = new System.Drawing.Font("Segoe UI", 9F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(204)));
             this.grdMassmedia.IsHighlightInvertColor = false;
             this.grdMassmedia.IsNeedHighlight = false;
-            this.grdMassmedia.Location = new System.Drawing.Point(14, 184);
+            this.grdMassmedia.Location = new System.Drawing.Point(16, 190);
             this.grdMassmedia.Margin = new System.Windows.Forms.Padding(4, 3, 4, 3);
             this.grdMassmedia.MenuEnabled = false;
             this.grdMassmedia.Name = "grdMassmedia";
             this.grdMassmedia.QuickSearchVisible = false;
             this.grdMassmedia.SelectedObject = null;
             this.grdMassmedia.ShowMultiselectColumn = true;
-            this.grdMassmedia.Size = new System.Drawing.Size(490, 417);
+            this.grdMassmedia.Size = new System.Drawing.Size(491, 351);
             this.grdMassmedia.TabIndex = 13;
             this.grdMassmedia.ObjectChecked += new FogSoft.WinForm.ObjectCheckedDelegate(this.grdMassmedia_ObjectChecked);
             // 
             // label1
             // 
             this.label1.AutoSize = true;
-            this.label1.Location = new System.Drawing.Point(14, 64);
+            this.label1.Location = new System.Drawing.Point(16, 90);
             this.label1.Margin = new System.Windows.Forms.Padding(4, 0, 4, 0);
             this.label1.Name = "label1";
             this.label1.Size = new System.Drawing.Size(73, 25);
@@ -76,23 +78,22 @@
             // 
             // cmbRadioStationGroup
             // 
-            this.cmbRadioStationGroup.Anchor = ((System.Windows.Forms.AnchorStyles)(((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Left) 
-            | System.Windows.Forms.AnchorStyles.Right)));
+            this.cmbRadioStationGroup.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Left | System.Windows.Forms.AnchorStyles.Right)));
             this.cmbRadioStationGroup.Font = new System.Drawing.Font("Tahoma", 8.25F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(204)));
             this.cmbRadioStationGroup.IsNullable = false;
-            this.cmbRadioStationGroup.Location = new System.Drawing.Point(14, 95);
+            this.cmbRadioStationGroup.Location = new System.Drawing.Point(16, 118);
             this.cmbRadioStationGroup.Margin = new System.Windows.Forms.Padding(4, 3, 4, 3);
             this.cmbRadioStationGroup.Name = "cmbRadioStationGroup";
             this.cmbRadioStationGroup.SelectedIndex = -1;
             this.cmbRadioStationGroup.SelectedValue = null;
-            this.cmbRadioStationGroup.Size = new System.Drawing.Size(367, 33);
+            this.cmbRadioStationGroup.Size = new System.Drawing.Size(491, 33);
             this.cmbRadioStationGroup.TabIndex = 15;
             this.cmbRadioStationGroup.SelectedItemChanged += new System.EventHandler(this.SelectedItemChanged);
             // 
             // label2
             // 
             this.label2.AutoSize = true;
-            this.label2.Location = new System.Drawing.Point(14, 149);
+            this.label2.Location = new System.Drawing.Point(16, 157);
             this.label2.Margin = new System.Windows.Forms.Padding(4, 0, 4, 0);
             this.label2.Name = "label2";
             this.label2.Size = new System.Drawing.Size(216, 25);
@@ -101,53 +102,87 @@
             // 
             // btnCancel
             // 
-            this.btnCancel.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Right)));
             this.btnCancel.DialogResult = System.Windows.Forms.DialogResult.Cancel;
             this.btnCancel.FlatStyle = System.Windows.Forms.FlatStyle.System;
-            this.btnCancel.Location = new System.Drawing.Point(389, 64);
+            this.btnCancel.Location = new System.Drawing.Point(387, 3);
             this.btnCancel.Margin = new System.Windows.Forms.Padding(4, 3, 4, 3);
             this.btnCancel.Name = "btnCancel";
-            this.btnCancel.Size = new System.Drawing.Size(115, 40);
+            this.btnCancel.Size = new System.Drawing.Size(100, 33);
             this.btnCancel.TabIndex = 18;
             this.btnCancel.Text = "Отмена";
             // 
             // btnOk
             // 
-            this.btnOk.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Right)));
             this.btnOk.DialogResult = System.Windows.Forms.DialogResult.OK;
             this.btnOk.Enabled = false;
             this.btnOk.FlatStyle = System.Windows.Forms.FlatStyle.System;
-            this.btnOk.Location = new System.Drawing.Point(389, 20);
+            this.btnOk.Location = new System.Drawing.Point(279, 3);
             this.btnOk.Margin = new System.Windows.Forms.Padding(4, 3, 4, 3);
             this.btnOk.Name = "btnOk";
-            this.btnOk.Size = new System.Drawing.Size(115, 38);
+            this.btnOk.Size = new System.Drawing.Size(100, 33);
             this.btnOk.TabIndex = 17;
             this.btnOk.Text = "Ок";
             this.btnOk.Click += new System.EventHandler(this.btnOk_Click);
             // 
             // lookUpPaymentType
             // 
-            this.lookUpPaymentType.Anchor = ((System.Windows.Forms.AnchorStyles)(((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Left) 
-            | System.Windows.Forms.AnchorStyles.Right)));
+            this.lookUpPaymentType.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Left | System.Windows.Forms.AnchorStyles.Right)));
             this.lookUpPaymentType.Font = new System.Drawing.Font("Tahoma", 8.25F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(204)));
             this.lookUpPaymentType.IsNullable = false;
-            this.lookUpPaymentType.Location = new System.Drawing.Point(14, 33);
+            this.lookUpPaymentType.Location = new System.Drawing.Point(16, 46);
             this.lookUpPaymentType.Margin = new System.Windows.Forms.Padding(4, 3, 4, 3);
             this.lookUpPaymentType.Name = "lookUpPaymentType";
             this.lookUpPaymentType.SelectedIndex = -1;
             this.lookUpPaymentType.SelectedValue = null;
-            this.lookUpPaymentType.Size = new System.Drawing.Size(367, 33);
+            this.lookUpPaymentType.Size = new System.Drawing.Size(491, 33);
             this.lookUpPaymentType.TabIndex = 21;
             // 
             // label4
             // 
             this.label4.AutoSize = true;
-            this.label4.Location = new System.Drawing.Point(14, 6);
+            this.label4.Location = new System.Drawing.Point(16, 18);
             this.label4.Margin = new System.Windows.Forms.Padding(4, 0, 4, 0);
             this.label4.Name = "label4";
             this.label4.Size = new System.Drawing.Size(191, 25);
             this.label4.TabIndex = 22;
             this.label4.Text = "Выберите тип оплаты:";
+            // 
+            // tableLayoutPanel1
+            // 
+            this.tableLayoutPanel1.ColumnCount = 1;
+            this.tableLayoutPanel1.ColumnStyles.Add(new System.Windows.Forms.ColumnStyle(System.Windows.Forms.SizeType.Percent, 100F));
+            this.tableLayoutPanel1.Controls.Add(this.label4, 0, 0);
+            this.tableLayoutPanel1.Controls.Add(this.lookUpPaymentType, 0, 1);
+            this.tableLayoutPanel1.Controls.Add(this.label1, 0, 2);
+            this.tableLayoutPanel1.Controls.Add(this.cmbRadioStationGroup, 0, 3);
+            this.tableLayoutPanel1.Controls.Add(this.label2, 0, 4);
+            this.tableLayoutPanel1.Controls.Add(this.grdMassmedia, 0, 5);
+            this.tableLayoutPanel1.Controls.Add(this.flowLayoutPanel1, 0, 6);
+            this.tableLayoutPanel1.Dock = System.Windows.Forms.DockStyle.Fill;
+            this.tableLayoutPanel1.Location = new System.Drawing.Point(0, 0);
+            this.tableLayoutPanel1.Name = "tableLayoutPanel1";
+            this.tableLayoutPanel1.Padding = new System.Windows.Forms.Padding(12);
+            this.tableLayoutPanel1.RowCount = 7;
+            this.tableLayoutPanel1.RowStyles.Add(new System.Windows.Forms.RowStyle());
+            this.tableLayoutPanel1.RowStyles.Add(new System.Windows.Forms.RowStyle());
+            this.tableLayoutPanel1.RowStyles.Add(new System.Windows.Forms.RowStyle());
+            this.tableLayoutPanel1.RowStyles.Add(new System.Windows.Forms.RowStyle());
+            this.tableLayoutPanel1.RowStyles.Add(new System.Windows.Forms.RowStyle());
+            this.tableLayoutPanel1.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Percent, 100F));
+            this.tableLayoutPanel1.RowStyles.Add(new System.Windows.Forms.RowStyle());
+            this.tableLayoutPanel1.Size = new System.Drawing.Size(523, 613);
+            this.tableLayoutPanel1.TabIndex = 23;
+            // 
+            // flowLayoutPanel1
+            // 
+            this.flowLayoutPanel1.Controls.Add(this.btnCancel);
+            this.flowLayoutPanel1.Controls.Add(this.btnOk);
+            this.flowLayoutPanel1.Dock = System.Windows.Forms.DockStyle.Fill;
+            this.flowLayoutPanel1.FlowDirection = System.Windows.Forms.FlowDirection.RightToLeft;
+            this.flowLayoutPanel1.Location = new System.Drawing.Point(15, 559);
+            this.flowLayoutPanel1.Name = "flowLayoutPanel1";
+            this.flowLayoutPanel1.Size = new System.Drawing.Size(493, 39);
+            this.flowLayoutPanel1.TabIndex = 23;
             // 
             // SelectMassmediasStep
             // 
@@ -156,14 +191,7 @@
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
             this.CancelButton = this.btnCancel;
             this.ClientSize = new System.Drawing.Size(523, 613);
-            this.Controls.Add(this.label4);
-            this.Controls.Add(this.lookUpPaymentType);
-            this.Controls.Add(this.btnCancel);
-            this.Controls.Add(this.btnOk);
-            this.Controls.Add(this.label2);
-            this.Controls.Add(this.label1);
-            this.Controls.Add(this.cmbRadioStationGroup);
-            this.Controls.Add(this.grdMassmedia);
+            this.Controls.Add(this.tableLayoutPanel1);
             this.Font = new System.Drawing.Font("Segoe UI", 9F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(204)));
             this.Margin = new System.Windows.Forms.Padding(4, 3, 4, 3);
             this.MaximizeBox = false;
@@ -174,6 +202,9 @@
             this.ShowInTaskbar = false;
             this.StartPosition = System.Windows.Forms.FormStartPosition.CenterScreen;
             this.Text = "Веерное размещение: Выбор радиостанций";
+            this.tableLayoutPanel1.ResumeLayout(false);
+            this.tableLayoutPanel1.PerformLayout();
+            this.flowLayoutPanel1.ResumeLayout(false);
             this.ResumeLayout(false);
             this.PerformLayout();
 
@@ -189,5 +220,7 @@
 		private System.Windows.Forms.Button btnOk;
         private FogSoft.WinForm.LookUp lookUpPaymentType;
         private System.Windows.Forms.Label label4;
+        private System.Windows.Forms.TableLayoutPanel tableLayoutPanel1;
+        private System.Windows.Forms.FlowLayoutPanel flowLayoutPanel1;
     }
 }

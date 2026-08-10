@@ -44,6 +44,10 @@
 			this.openLicenseDialog = new System.Windows.Forms.OpenFileDialog();
 			this.helpGroupBox = new System.Windows.Forms.GroupBox();
 			this.helpLabel = new System.Windows.Forms.Label();
+			this.tableLayoutPanel1 = new System.Windows.Forms.TableLayoutPanel();
+			this.flowLayoutPanel1 = new System.Windows.Forms.FlowLayoutPanel();
+			this.tableLayoutPanel1.SuspendLayout();
+			this.flowLayoutPanel1.SuspendLayout();
 			this.filesGroupBox.SuspendLayout();
 			this.helpGroupBox.SuspendLayout();
 			this.SuspendLayout();
@@ -56,12 +60,11 @@
 			// 
 			// cancelButton
 			// 
-			this.cancelButton.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Right)));
 			this.cancelButton.DialogResult = System.Windows.Forms.DialogResult.Cancel;
-			this.cancelButton.Location = new System.Drawing.Point(408, 262);
+			this.cancelButton.Location = new System.Drawing.Point(2, 2);
 			this.cancelButton.Margin = new System.Windows.Forms.Padding(2, 2, 2, 2);
 			this.cancelButton.Name = "cancelButton";
-			this.cancelButton.Size = new System.Drawing.Size(56, 23);
+			this.cancelButton.Size = new System.Drawing.Size(100, 33);
 			this.cancelButton.TabIndex = 7;
 			this.cancelButton.Text = "Cancel";
 			this.cancelButton.UseVisualStyleBackColor = true;
@@ -69,8 +72,8 @@
 			// 
 			// filesGroupBox
 			// 
-			this.filesGroupBox.Anchor = ((System.Windows.Forms.AnchorStyles)(((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Left)
-						| System.Windows.Forms.AnchorStyles.Right)));
+			this.filesGroupBox.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Left | System.Windows.Forms.AnchorStyles.Right)));
+			this.tableLayoutPanel1.SetColumnSpan(this.filesGroupBox, 2);
 			this.filesGroupBox.Controls.Add(this.restoreTemplate);
 			this.filesGroupBox.Controls.Add(this.generateLicense);
 			this.filesGroupBox.Controls.Add(this.browseLicense);
@@ -79,11 +82,11 @@
 			this.filesGroupBox.Controls.Add(this.licenseLabel);
 			this.filesGroupBox.Controls.Add(this.templatePath);
 			this.filesGroupBox.Controls.Add(this.templateLabel);
-			this.filesGroupBox.Location = new System.Drawing.Point(8, 10);
+			this.filesGroupBox.Location = new System.Drawing.Point(14, 14);
 			this.filesGroupBox.Margin = new System.Windows.Forms.Padding(2, 2, 2, 2);
 			this.filesGroupBox.Name = "filesGroupBox";
 			this.filesGroupBox.Padding = new System.Windows.Forms.Padding(2, 2, 2, 2);
-			this.filesGroupBox.Size = new System.Drawing.Size(456, 125);
+			this.filesGroupBox.Size = new System.Drawing.Size(446, 125);
 			this.filesGroupBox.TabIndex = 7;
 			this.filesGroupBox.TabStop = false;
 			this.filesGroupBox.Text = "Files";
@@ -182,12 +185,11 @@
 			// 
 			// progressBar
 			// 
-			this.progressBar.Anchor = ((System.Windows.Forms.AnchorStyles)(((System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Left)
-						| System.Windows.Forms.AnchorStyles.Right)));
-			this.progressBar.Location = new System.Drawing.Point(9, 263);
+			this.progressBar.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Left | System.Windows.Forms.AnchorStyles.Right)));
+			this.progressBar.Location = new System.Drawing.Point(14, 260);
 			this.progressBar.Margin = new System.Windows.Forms.Padding(2, 2, 2, 2);
 			this.progressBar.Name = "progressBar";
-			this.progressBar.Size = new System.Drawing.Size(394, 19);
+			this.progressBar.Size = new System.Drawing.Size(334, 19);
 			this.progressBar.Step = 1;
 			this.progressBar.TabIndex = 9;
 			// 
@@ -199,15 +201,14 @@
 			// 
 			// helpGroupBox
 			// 
-			this.helpGroupBox.Anchor = ((System.Windows.Forms.AnchorStyles)((((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Bottom)
-						| System.Windows.Forms.AnchorStyles.Left)
-						| System.Windows.Forms.AnchorStyles.Right)));
+			this.tableLayoutPanel1.SetColumnSpan(this.helpGroupBox, 2);
 			this.helpGroupBox.Controls.Add(this.helpLabel);
-			this.helpGroupBox.Location = new System.Drawing.Point(9, 140);
+			this.helpGroupBox.Dock = System.Windows.Forms.DockStyle.Fill;
+			this.helpGroupBox.Location = new System.Drawing.Point(14, 145);
 			this.helpGroupBox.Margin = new System.Windows.Forms.Padding(2, 2, 2, 2);
 			this.helpGroupBox.Name = "helpGroupBox";
 			this.helpGroupBox.Padding = new System.Windows.Forms.Padding(2, 2, 2, 2);
-			this.helpGroupBox.Size = new System.Drawing.Size(455, 119);
+			this.helpGroupBox.Size = new System.Drawing.Size(446, 96);
 			this.helpGroupBox.TabIndex = 10;
 			this.helpGroupBox.TabStop = false;
 			this.helpGroupBox.Text = "Help";
@@ -224,6 +225,39 @@
 			this.helpLabel.TabIndex = 0;
 			this.helpLabel.Text = resources.GetString("helpLabel.Text");
 			// 
+			// tableLayoutPanel1
+			// 
+			this.tableLayoutPanel1.ColumnCount = 2;
+			this.tableLayoutPanel1.ColumnStyles.Add(new System.Windows.Forms.ColumnStyle(System.Windows.Forms.SizeType.Percent, 100F));
+			this.tableLayoutPanel1.ColumnStyles.Add(new System.Windows.Forms.ColumnStyle());
+			this.tableLayoutPanel1.Controls.Add(this.filesGroupBox, 0, 0);
+			this.tableLayoutPanel1.Controls.Add(this.helpGroupBox, 0, 1);
+			this.tableLayoutPanel1.Controls.Add(this.progressBar, 0, 2);
+			this.tableLayoutPanel1.Controls.Add(this.flowLayoutPanel1, 1, 2);
+			this.tableLayoutPanel1.Dock = System.Windows.Forms.DockStyle.Fill;
+			this.tableLayoutPanel1.Location = new System.Drawing.Point(0, 0);
+			this.tableLayoutPanel1.Name = "tableLayoutPanel1";
+			this.tableLayoutPanel1.Padding = new System.Windows.Forms.Padding(12);
+			this.tableLayoutPanel1.RowCount = 3;
+			this.tableLayoutPanel1.RowStyles.Add(new System.Windows.Forms.RowStyle());
+			this.tableLayoutPanel1.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Percent, 100F));
+			this.tableLayoutPanel1.RowStyles.Add(new System.Windows.Forms.RowStyle());
+			this.tableLayoutPanel1.Size = new System.Drawing.Size(474, 294);
+			this.tableLayoutPanel1.TabIndex = 11;
+			// 
+			// flowLayoutPanel1
+			// 
+			this.flowLayoutPanel1.AutoSize = true;
+			this.flowLayoutPanel1.AutoSizeMode = System.Windows.Forms.AutoSizeMode.GrowAndShrink;
+			this.flowLayoutPanel1.Controls.Add(this.cancelButton);
+			this.flowLayoutPanel1.Dock = System.Windows.Forms.DockStyle.Fill;
+			this.flowLayoutPanel1.FlowDirection = System.Windows.Forms.FlowDirection.RightToLeft;
+			this.flowLayoutPanel1.Location = new System.Drawing.Point(351, 247);
+			this.flowLayoutPanel1.Margin = new System.Windows.Forms.Padding(2, 2, 2, 2);
+			this.flowLayoutPanel1.Name = "flowLayoutPanel1";
+			this.flowLayoutPanel1.Size = new System.Drawing.Size(109, 37);
+			this.flowLayoutPanel1.TabIndex = 11;
+			// 
 			// GeneratorForm
 			// 
 			this.AcceptButton = this.generateLicense;
@@ -231,10 +265,7 @@
 			this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
 			this.CancelButton = this.cancelButton;
 			this.ClientSize = new System.Drawing.Size(474, 294);
-			this.Controls.Add(this.helpGroupBox);
-			this.Controls.Add(this.progressBar);
-			this.Controls.Add(this.filesGroupBox);
-			this.Controls.Add(this.cancelButton);
+			this.Controls.Add(this.tableLayoutPanel1);
 			this.Icon = ((System.Drawing.Icon)(resources.GetObject("$this.Icon")));
 			this.MinimizeBox = false;
 			this.MinimumSize = new System.Drawing.Size(452, 307);
@@ -244,6 +275,9 @@
 			this.filesGroupBox.ResumeLayout(false);
 			this.filesGroupBox.PerformLayout();
 			this.helpGroupBox.ResumeLayout(false);
+			this.tableLayoutPanel1.ResumeLayout(false);
+			this.tableLayoutPanel1.PerformLayout();
+			this.flowLayoutPanel1.ResumeLayout(false);
 			this.ResumeLayout(false);
 
 		}
@@ -265,6 +299,8 @@
 		private System.Windows.Forms.Button restoreTemplate;
 		private System.Windows.Forms.GroupBox helpGroupBox;
 		private System.Windows.Forms.Label helpLabel;
+		private System.Windows.Forms.TableLayoutPanel tableLayoutPanel1;
+		private System.Windows.Forms.FlowLayoutPanel flowLayoutPanel1;
 
 	}
 }
