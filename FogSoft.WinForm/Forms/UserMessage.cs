@@ -33,11 +33,6 @@ namespace FogSoft.WinForm.Forms
 			Show(null, text, MessageBoxButtons.OK, MessageBoxIcon.Error);
 		}
 
-		public static void ShowInformation(string title, string text)
-		{
-			Show(title, text, MessageBoxButtons.OK, MessageBoxIcon.Information);
-		}
-
 		public static void ShowInformation(string text)
 		{
 			Show(null, text, MessageBoxButtons.OK, MessageBoxIcon.Information);

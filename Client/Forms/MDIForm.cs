@@ -865,9 +865,6 @@ namespace Merlin.Forms
                 case "miStats.FactorAnalysis":
                     entity = Entities.StatsFactorAnalysis;
                     break;
-				default:
-					UserMessage.ShowInformation(mi.Tag.ToString(), "Menu Item clicked!");
-					break;
 			}
 			if (entity != Entities.ErrTmplGen)
 				Globals.ShowSimpleJournal(EntityManager.GetEntity((int) entity), ManagerFilter.FilterClick, caption == string.Empty ? mi.Text : caption);
