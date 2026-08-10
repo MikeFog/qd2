@@ -32,20 +32,19 @@
             this.dtCurrentDate = new System.Windows.Forms.DateTimePicker();
             this.label5 = new System.Windows.Forms.Label();
             this.cmbReason = new FogSoft.WinForm.LookUp();
-            this.buttonPanel = new System.Windows.Forms.Panel();
+            this.flowLayoutPanel1 = new System.Windows.Forms.FlowLayoutPanel();
             ((System.ComponentModel.ISupportInitialize)(this.txtRatio)).BeginInit();
             ((System.ComponentModel.ISupportInitialize)(this.txtFinalPrice)).BeginInit();
             this.tableLayoutPanelMain.SuspendLayout();
-            this.buttonPanel.SuspendLayout();
+            this.flowLayoutPanel1.SuspendLayout();
             this.SuspendLayout();
             // 
             // btnOK
             // 
-            this.btnOK.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Right)));
             this.btnOK.DialogResult = System.Windows.Forms.DialogResult.OK;
-            this.btnOK.Location = new System.Drawing.Point(413, 8);
+            this.btnOK.Location = new System.Drawing.Point(430, 3);
             this.btnOK.Name = "btnOK";
-            this.btnOK.Size = new System.Drawing.Size(120, 33);
+            this.btnOK.Size = new System.Drawing.Size(100, 33);
             this.btnOK.TabIndex = 0;
             this.btnOK.Text = "Ок";
             this.btnOK.UseVisualStyleBackColor = true;
@@ -53,11 +52,10 @@
             // 
             // btnCancel
             // 
-            this.btnCancel.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Right)));
             this.btnCancel.DialogResult = System.Windows.Forms.DialogResult.Cancel;
-            this.btnCancel.Location = new System.Drawing.Point(540, 8);
+            this.btnCancel.Location = new System.Drawing.Point(536, 3);
             this.btnCancel.Name = "btnCancel";
-            this.btnCancel.Size = new System.Drawing.Size(120, 33);
+            this.btnCancel.Size = new System.Drawing.Size(100, 33);
             this.btnCancel.TabIndex = 1;
             this.btnCancel.Text = "Отмена";
             this.btnCancel.UseVisualStyleBackColor = true;
@@ -211,12 +209,13 @@
             this.tableLayoutPanelMain.Controls.Add(this.dtCurrentDate, 1, 6);
             this.tableLayoutPanelMain.Controls.Add(this.label5, 0, 5);
             this.tableLayoutPanelMain.Controls.Add(this.cmbReason, 1, 5);
-            this.tableLayoutPanelMain.Dock = System.Windows.Forms.DockStyle.Top;
+            this.tableLayoutPanelMain.Controls.Add(this.flowLayoutPanel1, 0, 8);
+            this.tableLayoutPanelMain.Dock = System.Windows.Forms.DockStyle.Fill;
             this.tableLayoutPanelMain.GrowStyle = System.Windows.Forms.TableLayoutPanelGrowStyle.FixedSize;
             this.tableLayoutPanelMain.Location = new System.Drawing.Point(0, 0);
             this.tableLayoutPanelMain.Name = "tableLayoutPanelMain";
             this.tableLayoutPanelMain.Padding = new System.Windows.Forms.Padding(12);
-            this.tableLayoutPanelMain.RowCount = 8;
+            this.tableLayoutPanelMain.RowCount = 9;
             this.tableLayoutPanelMain.RowStyles.Add(new System.Windows.Forms.RowStyle());
             this.tableLayoutPanelMain.RowStyles.Add(new System.Windows.Forms.RowStyle());
             this.tableLayoutPanelMain.RowStyles.Add(new System.Windows.Forms.RowStyle());
@@ -225,7 +224,8 @@
             this.tableLayoutPanelMain.RowStyles.Add(new System.Windows.Forms.RowStyle());
             this.tableLayoutPanelMain.RowStyles.Add(new System.Windows.Forms.RowStyle());
             this.tableLayoutPanelMain.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Absolute, 3F));
-            this.tableLayoutPanelMain.Size = new System.Drawing.Size(669, 298);
+            this.tableLayoutPanelMain.RowStyles.Add(new System.Windows.Forms.RowStyle());
+            this.tableLayoutPanelMain.Size = new System.Drawing.Size(669, 281);
             this.tableLayoutPanelMain.TabIndex = 12;
             // 
             // dtCurrentDate
@@ -257,26 +257,27 @@
             this.cmbReason.Size = new System.Drawing.Size(315, 33);
             this.cmbReason.TabIndex = 13;
             // 
-            // buttonPanel
+            // flowLayoutPanel1
             // 
-            this.buttonPanel.Controls.Add(this.btnCancel);
-            this.buttonPanel.Controls.Add(this.btnOK);
-            this.buttonPanel.Dock = System.Windows.Forms.DockStyle.Bottom;
-            this.buttonPanel.Location = new System.Drawing.Point(0, 303);
-            this.buttonPanel.Name = "buttonPanel";
-            this.buttonPanel.Padding = new System.Windows.Forms.Padding(0, 8, 12, 12);
-            this.buttonPanel.Size = new System.Drawing.Size(669, 52);
-            this.buttonPanel.TabIndex = 13;
+            this.tableLayoutPanelMain.SetColumnSpan(this.flowLayoutPanel1, 2);
+            this.flowLayoutPanel1.Controls.Add(this.btnCancel);
+            this.flowLayoutPanel1.Controls.Add(this.btnOK);
+            this.flowLayoutPanel1.Dock = System.Windows.Forms.DockStyle.Fill;
+            this.flowLayoutPanel1.FlowDirection = System.Windows.Forms.FlowDirection.RightToLeft;
+            this.flowLayoutPanel1.Location = new System.Drawing.Point(15, 227);
+            this.flowLayoutPanel1.Name = "flowLayoutPanel1";
+            this.flowLayoutPanel1.Size = new System.Drawing.Size(639, 39);
+            this.flowLayoutPanel1.TabIndex = 13;
             // 
             // ManagerDiscountForm
             // 
             this.AcceptButton = this.btnOK;
             this.AutoScaleDimensions = new System.Drawing.SizeF(10F, 25F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
+            this.AutoSize = true;
             this.CancelButton = this.btnCancel;
-            this.ClientSize = new System.Drawing.Size(669, 355);
+            this.ClientSize = new System.Drawing.Size(669, 281);
             this.Controls.Add(this.tableLayoutPanelMain);
-            this.Controls.Add(this.buttonPanel);
             this.Font = new System.Drawing.Font("Segoe UI", 9F);
             this.FormBorderStyle = System.Windows.Forms.FormBorderStyle.FixedDialog;
             this.MaximizeBox = false;
@@ -288,7 +289,7 @@
             ((System.ComponentModel.ISupportInitialize)(this.txtFinalPrice)).EndInit();
             this.tableLayoutPanelMain.ResumeLayout(false);
             this.tableLayoutPanelMain.PerformLayout();
-            this.buttonPanel.ResumeLayout(false);
+            this.flowLayoutPanel1.ResumeLayout(false);
             this.ResumeLayout(false);
 
         }
@@ -309,7 +310,7 @@
         private System.Windows.Forms.NumericUpDown txtFinalPrice;
         private System.Windows.Forms.CheckBox chkCurrentDate;
         private System.Windows.Forms.TableLayoutPanel tableLayoutPanelMain;
-        private System.Windows.Forms.Panel buttonPanel;
+        private System.Windows.Forms.FlowLayoutPanel flowLayoutPanel1;
         private System.Windows.Forms.DateTimePicker dtCurrentDate;
         private System.Windows.Forms.Label label5;
         private FogSoft.WinForm.LookUp cmbReason;
