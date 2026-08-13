@@ -28,9 +28,11 @@ namespace FogSoft.WinForm.Classes.Export.MSExcel
 			try
 			{
                 //app = (Application)Marshal.GetActiveObject("Excel.Application");
+                // Окно показываем только в FinishExport: пока идёт заполнение, Excel скрыт
+                // и не перерисовывается на каждый COM-вызов.
                 app = new ApplicationClass
                 {
-                    Visible = true
+                    Visible = false
                 };
             }
 			catch(Exception e)
@@ -42,12 +44,12 @@ namespace FogSoft.WinForm.Classes.Export.MSExcel
 
 		public void StartExport()
 		{
-			//app.ScreenUpdating = false;
+			app.ScreenUpdating = false;
 		}
 
 		public void FinishExport()
 		{
-			//app.ScreenUpdating = true;
+			app.ScreenUpdating = true;
 			app.Visible = true;
 			if(wb != null)
 				wb.Saved = true;
@@ -109,6 +111,14 @@ namespace FogSoft.WinForm.Classes.Export.MSExcel
             Thread.CurrentThread.CurrentCulture = new System.Globalization.CultureInfo("en-US");
             try
 			{
+				// Возвращаем ScreenUpdating: пока он выключен, Visible() отвечает "да" и
+				// незавершённый (упавший) экспорт остался бы скрытым процессом EXCEL.EXE.
+				if (app != null)
+				{
+					try { app.ScreenUpdating = true; }
+					catch (Exception e) { Log.Error("OnAppQuit - restore ScreenUpdating", e); }
+				}
+
 				foreach (Worksheet worksheet in worksheets)
 				{
 					if (worksheet != null)

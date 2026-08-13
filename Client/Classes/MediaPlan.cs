@@ -98,20 +98,30 @@ namespace Merlin.Classes
 			_isFact = isFact;
 			_savedFilePath = null;
             CultureInfo oldCulture = Thread.CurrentThread.CurrentCulture;
-            Globals.SetWaitCursor(Globals.MdiParent);
+            // Проверка пути сохранения может уходить в недоступный сетевой каталог и висеть
+            // несколько секунд, поэтому курсор ожидания ставим до неё.
+            Application.UseWaitCursor = true;
+            Application.DoEvents();
             try
 			{
                 string savedPath = UserSettings.Load("Path2SaveReports");
 				bool pathIsSet = !string.IsNullOrWhiteSpace(savedPath) && Directory.Exists(savedPath);
 				var frmSettings = new Forms.PrintMediaPlanSettings(pathIsSet);
+
+				// В самом диалоге курсор обычный, ожидание возобновляем на время экспорта.
+				Application.UseWaitCursor = false;
 				if(frmSettings.ShowDialog(Globals.MdiParent) == DialogResult.Cancel) return;
 				_printSettings = frmSettings.Settings;
+
+				Application.UseWaitCursor = true;
+				Application.DoEvents();
 
                 // Экспорт идёт синхронно на UI-потоке (STA): Excel создаётся и
                 // освобождается на одном апартаменте — без маршалинга между потоками,
                 // из-за которого процесс EXCEL.EXE раньше зависал в памяти.
                 ExportMediaPlan();
 
+				Application.UseWaitCursor = false;
 				if (!string.IsNullOrEmpty(_savedFilePath))
 				{
 					UserMessage.ShowCompleted($"Файл успешно сохранён: {_savedFilePath}");
@@ -119,12 +129,19 @@ namespace Merlin.Classes
 			}
 			catch(Exception e)
 			{
+				// Экспорт мог упасть на середине, когда Excel ещё скрыт (ScreenUpdating=false).
+				// Показываем то, что успело записаться, чтобы не оставлять окно без владельца.
+				if (exportStarted)
+				{
+					try { ExportManager.Application.FinishExport(); }
+					catch { }
+				}
 				ErrorManager.LogError("Error to show media plan", e);
 			}
 			finally
 			{
                 Thread.CurrentThread.CurrentCulture = oldCulture;
-                Globals.SetDefaultCursor(Globals.MdiParent);
+                Application.UseWaitCursor = false;
 			}
 		}
 
@@ -383,7 +400,7 @@ namespace Merlin.Classes
 						PrintCaption(action.ActionId, 3, currentY);
 						currentY++;
 						PrintHeader(action, agency, mm.Value, mm.Key);
-						PrintContent(ds, null, mm.Key, isFact, null, null);
+						PrintContent(ds, null, agency, mm.Key, isFact, null, null);
 						currentY += 3;
 					}
 				}
@@ -435,7 +452,7 @@ namespace Merlin.Classes
 					currentY++;
                     PrintHeader(campaign.Action, campaign.Agency, mm.Value, mm.Key);
                     currentY++;
-                    PrintContent(ds, campaign, mm.Key, isFact, year, month);
+                    PrintContent(ds, campaign, campaign.Agency, mm.Key, isFact, year, month);
                     currentY += 3;
                 }
             }
@@ -454,7 +471,7 @@ namespace Merlin.Classes
 				return string.Format("{0}{1} ({2})", prefix, campaign.Name, campaign.CampaignId);
 		}
 
-		private void PrintContent(DataSet ds, Campaign campaign, string mmIds, bool isFact, int? year, int? month)
+		private void PrintContent(DataSet ds, Campaign campaign, Agency agency, string mmIds, bool isFact, int? year, int? month)
 		{
 			PrintRollersList(ds.Tables[0], campaign == null ? Campaign.CampaignTypes.Module : campaign.CampaignType);
 			if ((campaign != null && campaign.CampaignType == Campaign.CampaignTypes.Sponsor) || (campaign == null && action != null))
@@ -465,7 +482,7 @@ namespace Merlin.Classes
 				PrintTimeList(ds.Tables[1], campaign == null ? Campaign.CampaignTypes.Module : campaign.CampaignType);
 				PrintIssuesGrid(ds.Tables[1].Rows.Count, ds.Tables[2], ds.Tables[3], campaign == null ? Campaign.CampaignTypes.Module : campaign.CampaignType, year, month);
 			}
-			PrintFooter(campaign, ds.Tables[1], ds.Tables[2], mmIds, year, month);
+			PrintFooter(campaign, agency, ds.Tables[1], ds.Tables[2], mmIds, year, month);
 		}
 
         private bool LoadData(Campaign campaign, string mmIds, bool isFact, int? year, int? month, int? agencyId, out DataSet ds)
@@ -538,7 +555,7 @@ namespace Merlin.Classes
 			}
 		}
 
-		private void PrintFooter(Campaign campaign, DataTable dtTimeList, DataTable dtIssues, string mmIds, int? year, int? month)
+		private void PrintFooter(Campaign campaign, Agency agency, DataTable dtTimeList, DataTable dtIssues, string mmIds, int? year, int? month)
 		{
 			bool isByMounth = year.HasValue && month.HasValue;
 			bool isByPeriod = _dateTo.HasValue && _dateFrom.HasValue;
@@ -608,9 +625,9 @@ namespace Merlin.Classes
             currentY++;
 			SetCellValue(currentY, 3, "Исполнитель:");
 
-			if (campaign != null && _printSettings.PrintWithSignatures && campaign.Agency.SignatureBytes != null)
+			if (agency != null && _printSettings.PrintWithSignatures && agency.SignatureBytes != null)
 			{
-                activeSheet.InsertImage(currentY, 7, campaign.Agency.SignatureBytes);
+                activeSheet.InsertImage(currentY, 7, agency.SignatureBytes);
             }
 
 			currentY += 4;
