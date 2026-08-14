@@ -1,8 +1,13 @@
--- Остаток по модулям комбо-модуля за период.
+-- Остаток по модулям за период - данные ячеек грида размещения комбо-модулями.
 --
--- Одна строка на (модуль, день). Ячейка грида размещения комбо-модулями
--- показывает самое заполненное окно модуля: именно оно ограничивает
--- возможность поставить ролик во весь модуль сразу.
+-- Набор модулей задаётся одним из двух способов:
+--   @comboModuleID - состав комбо-модуля (размещение по мастеру);
+--   @actionID      - модули, уже размещённые в акции (редактирование готовой акции
+--                    из карточки; связь кампании с модулем существует только через
+--                    выпуски, так же её выводит CampaignModulesRetrieve).
+--
+-- Одна строка на (модуль, день). Ячейка показывает самое заполненное окно модуля:
+-- именно оно ограничивает возможность поставить ролик во весь модуль сразу.
 --
 -- freeTime     - минимальный остаток времени по окнам модуля, сек;
 -- freeCapacity - минимальный остаток по количеству среди окон со штучным
@@ -21,7 +26,8 @@
 -- то есть по исходной сетке окон, а не по перенесённой.
 CREATE PROC [dbo].[ComboModuleFreeTimeRetrieve]
 (
-@comboModuleID smallint,
+@comboModuleID smallint = NULL,
+@actionID int = NULL,
 @startDate datetime,
 @finishDate datetime,
 @showUnconfirmed bit = 0
@@ -29,10 +35,22 @@ CREATE PROC [dbo].[ComboModuleFreeTimeRetrieve]
 AS
 SET NOCOUNT ON
 
+DECLARE @modules TABLE (moduleID SMALLINT PRIMARY KEY)
+
+IF @comboModuleID IS NOT NULL
+	INSERT INTO @modules (moduleID)
+	SELECT cmc.moduleID FROM [ComboModuleContent] cmc WHERE cmc.comboModuleID = @comboModuleID
+ELSE
+	INSERT INTO @modules (moduleID)
+	SELECT DISTINCT mi.moduleID
+	FROM [ModuleIssue] mi
+		INNER JOIN [Campaign] c ON c.campaignID = mi.campaignID
+	WHERE c.actionID = @actionID
+
 ;WITH windows AS
 (
 	SELECT
-		cmc.moduleID,
+		mpl.moduleID,
 		mpl.modulePriceListID,
 		mpl.price,
 		tw.dayOriginal AS issueDate,
@@ -46,14 +64,12 @@ SET NOCOUNT ON
 				- CASE WHEN @showUnconfirmed = 1 THEN tw.capacityInUseUnconfirmed ELSE 0 END
 			END AS capacityLeft
 	FROM
-		[ComboModuleContent] cmc
-		INNER JOIN [ModulePriceList] mpl ON mpl.moduleID = cmc.moduleID
+		@modules m
+		INNER JOIN [ModulePriceList] mpl ON mpl.moduleID = m.moduleID
 		INNER JOIN [ModuleTariff] mt ON mt.modulePriceListID = mpl.modulePriceListID
 		INNER JOIN [TariffWindow] tw ON tw.tariffId = mt.tariffID
 			AND tw.dayOriginal BETWEEN @startDate AND @finishDate
 			AND tw.dayOriginal BETWEEN mpl.startDate AND mpl.finishDate
-	WHERE
-		cmc.comboModuleID = @comboModuleID
 ),
 days AS
 (

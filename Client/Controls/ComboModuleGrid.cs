@@ -73,6 +73,7 @@ namespace Merlin.Controls
 		#region Members ---------------------------------------
 
 		private int _comboModuleID;
+		private int _actionID;
 		private DateTime _currentDate = DateTime.Today;
 		private DateTime _startDate, _finishDate;
 		private ComboModulePeriodMode _periodMode = ComboModulePeriodMode.Week;
@@ -112,6 +113,20 @@ namespace Merlin.Controls
 			set
 			{
 				_comboModuleID = value;
+				_modules = null;
+			}
+		}
+
+		/// <summary>
+		/// Акция, модули которой показывать, - режим редактирования готовой акции.
+		/// Используется, когда комбо-модуль не задан.
+		/// </summary>
+		public int ActionID
+		{
+			get { return _actionID; }
+			set
+			{
+				_actionID = value;
 				_modules = null;
 			}
 		}
@@ -251,8 +266,11 @@ namespace Merlin.Controls
 
 		private void LoadModules()
 		{
-			if (_modules == null)
-				_modules = ComboModule.LoadContent(_comboModuleID);
+			if (_modules != null) return;
+
+			_modules = _comboModuleID > 0
+				? ComboModule.LoadContent(_comboModuleID)
+				: ComboModule.LoadActionModules(_actionID);
 		}
 
 		private void CreateColumns()
@@ -317,7 +335,8 @@ namespace Merlin.Controls
 
 		private void FillFreeTime()
 		{
-			DataTable freeTime = ComboModule.LoadFreeTime(_comboModuleID, _startDate, _finishDate, _showUnconfirmed);
+			DataTable freeTime = ComboModule.LoadFreeTime(
+				_comboModuleID, _actionID, _startDate, _finishDate, _showUnconfirmed);
 
 			Dictionary<string, DataRow> byModuleAndDay = new Dictionary<string, DataRow>();
 			foreach (DataRow row in freeTime.Rows)

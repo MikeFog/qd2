@@ -37,14 +37,31 @@ namespace Merlin.Classes
 		}
 
 		/// <summary>
+		/// Модули, уже размещённые в акции, - строки грида при редактировании готовой акции.
+		/// Модульная кампания без выпусков сюда не попадёт: связи кампании с модулем в схеме
+		/// нет, она выводится через выпуски.
+		/// </summary>
+		public static DataTable LoadActionModules(int actionID)
+		{
+			Dictionary<string, object> procParameters = DataAccessor.CreateParametersDictionary();
+			procParameters[Merlin.Classes.Action.ParamNames.ActionId] = actionID;
+			return DataAccessor.LoadDataSet("ComboModuleActionModulesRetrieve", procParameters).Tables[0];
+		}
+
+		/// <summary>
 		/// Остаток времени по модулям за период: строка на (модуль, день), и только для тех
 		/// дней, когда модуль есть целиком. Дни без строки - пустые ячейки грида.
 		/// </summary>
-		public static DataTable LoadFreeTime(int comboModuleID, DateTime startDate, DateTime finishDate,
+		/// <param name="comboModuleID">Состав комбо-модуля; 0 - брать модули акции.</param>
+		/// <param name="actionID">Модули, размещённые в акции; используется, когда комбо-модуля нет.</param>
+		public static DataTable LoadFreeTime(int comboModuleID, int actionID, DateTime startDate, DateTime finishDate,
 											 bool showUnconfirmed)
 		{
 			Dictionary<string, object> procParameters = DataAccessor.CreateParametersDictionary();
-			procParameters[ParamNames.ComboModuleId] = comboModuleID;
+			if (comboModuleID > 0)
+				procParameters[ParamNames.ComboModuleId] = comboModuleID;
+			else
+				procParameters[Merlin.Classes.Action.ParamNames.ActionId] = actionID;
 			procParameters["startDate"] = startDate;
 			procParameters["finishDate"] = finishDate;
 			procParameters["showUnconfirmed"] = showUnconfirmed;

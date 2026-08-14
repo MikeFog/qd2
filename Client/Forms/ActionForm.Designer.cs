@@ -46,6 +46,7 @@
             this.tsbDelete = new System.Windows.Forms.ToolStripButton();
             this.tsbEditRollerIssues = new System.Windows.Forms.ToolStripButton();
             this.tsbEditMass = new System.Windows.Forms.ToolStripButton();
+            this.tsbEditComboModules = new System.Windows.Forms.ToolStripButton();
             this.tsbEditProgIssues = new System.Windows.Forms.ToolStripButton();
             this.tsbPrintMediaPlan = new System.Windows.Forms.ToolStripButton();
             this.toolStripSeparator2 = new System.Windows.Forms.ToolStripSeparator();
@@ -225,6 +226,7 @@
             this.tsbDelete,
             this.tsbEditRollerIssues,
             this.tsbEditMass,
+            this.tsbEditComboModules,
             this.tsbEditProgIssues,
             this.tsbPrintMediaPlan,
             this.toolStripSeparator2,
@@ -283,6 +285,16 @@
             this.tsbEditMass.Text = "tsbEditMass";
             this.tsbEditMass.ToolTipText = "Веерное редактирование";
             this.tsbEditMass.Click += new System.EventHandler(this.MassEdit);
+            //
+            // tsbEditComboModules
+            //
+            this.tsbEditComboModules.DisplayStyle = System.Windows.Forms.ToolStripItemDisplayStyle.Image;
+            this.tsbEditComboModules.ImageTransparentColor = System.Drawing.Color.Magenta;
+            this.tsbEditComboModules.Name = "tsbEditComboModules";
+            this.tsbEditComboModules.Size = new System.Drawing.Size(33, 28);
+            this.tsbEditComboModules.Text = "tsbEditComboModules";
+            this.tsbEditComboModules.ToolTipText = "Размещение модулями";
+            this.tsbEditComboModules.Click += new System.EventHandler(this.EditComboModules);
             // 
             // tsbEditProgIssues
             // 
@@ -480,6 +492,7 @@
         private System.Windows.Forms.ToolStripButton tsbAdd;
         private System.Windows.Forms.ToolStripButton tsbDelete;
         private System.Windows.Forms.ToolStripButton tsbEditRollerIssues;
+        private System.Windows.Forms.ToolStripButton tsbEditComboModules;
         private System.Windows.Forms.ToolStripSeparator toolStripSeparator2;
         private System.Windows.Forms.ToolStripButton tsbSetDiscount;
         private System.Windows.Forms.ToolStripButton tsbEditProgIssues;

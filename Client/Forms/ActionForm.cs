@@ -26,6 +26,7 @@ namespace Merlin.Forms
 			tsbDelete.Image = Globals.GetImage(Constants.ActionsImages.Delete);
 			tsbEditRollerIssues.Image = Globals.GetImage(Constants.ActionsImages.Issue);
 			tsbEditProgIssues.Image = Globals.GetImage(Constants.ActionsImages.SponsorProgram);
+			tsbEditComboModules.Image = Globals.GetImage(Constants.ActionsImages.Module);
 		}
 
 		internal ActionForm(ActionOnMassmedia action)
@@ -427,6 +428,29 @@ namespace Merlin.Forms
                     grdCampaign.DataSource = _action.Campaigns(true).DefaultView;
                     RefreshActionStats(true);
                 }
+            }
+            catch (Exception ex)
+            {
+                ErrorManager.PublishError(ex);
+            }
+            finally
+            {
+                UseWaitCursor = false;
+            }
+        }
+
+        /// <summary>
+        /// Размещение модулями по всей акции: та же форма, что и у мастера комбо-модулей, но
+        /// строки грида - модули, уже размещённые в этой акции. Комбо-модуль для этого не нужен.
+        /// </summary>
+        private void EditComboModules(object sender, EventArgs e)
+        {
+            try
+            {
+                ComboModulePlacementForm form = new ComboModulePlacementForm(_action);
+                form.ShowDialog(this);
+                LoadCampaigns();
+                RefreshActionStats(true);
             }
             catch (Exception ex)
             {

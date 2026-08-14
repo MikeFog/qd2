@@ -15,6 +15,7 @@ SELECT
 	mi.campaignID,
 	mi.moduleID,
 	mi.issueDate,
+	mm.massmediaID,
 	mm.nameWithGroup AS massmediaName,
 	m.[name] AS moduleName,
 	r.[name] AS rollerName,

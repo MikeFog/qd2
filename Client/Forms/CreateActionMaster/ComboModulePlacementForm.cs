@@ -29,6 +29,13 @@ namespace Merlin.Forms.CreateActionMaster
 		private readonly int _paymentTypeID;
 		private readonly Dictionary<int, int> _agencyByMassmedia;
 
+		/// <summary>
+		/// Форма открыта на уже существующей акции (из её карточки), а не из мастера.
+		/// В этом режиме кампании не создаются и не удаляются: их состав - дело акции,
+		/// а не наше, мы правим только выпуски.
+		/// </summary>
+		private readonly bool _isExistingAction;
+
 		private RollerPositions _position = RollerPositions.Undefined;
 
 		/// <summary>
@@ -53,6 +60,7 @@ namespace Merlin.Forms.CreateActionMaster
 			InitializeComponent();
 		}
 
+		/// <summary>Размещение по комбо-модулю: акция и кампании появятся по первому клику.</summary>
 		public ComboModulePlacementForm(Firm firm, SelectComboModuleStep step) : this()
 		{
 			_firm = firm;
@@ -60,6 +68,19 @@ namespace Merlin.Forms.CreateActionMaster
 			_comboModuleName = step.ComboModuleName;
 			_paymentTypeID = step.PaymentTypeID;
 			_agencyByMassmedia = step.AgencyByMassmedia;
+		}
+
+		/// <summary>
+		/// Редактирование готовой акции из её карточки: строки грида - модули, уже
+		/// размещённые в акции, комбо-модуль ни при чём.
+		/// </summary>
+		public ComboModulePlacementForm(ActionOnMassmedia action) : this()
+		{
+			_action = action;
+			_firm = action.Firm;
+			_comboModuleName = string.Format("акция №{0}", action.ActionId);
+			_agencyByMassmedia = new Dictionary<int, int>();
+			_isExistingAction = true;
 		}
 
 		protected override void OnLoad(EventArgs e)
@@ -95,6 +116,7 @@ namespace Merlin.Forms.CreateActionMaster
 		private void InitComboModuleGrid()
 		{
 			comboModuleGrid.ComboModuleID = _comboModuleID;
+			if (_action != null) comboModuleGrid.ActionID = _action.ActionId;
 			comboModuleGrid.PeriodMode = LoadPeriodMode();
 			comboModuleGrid.ShowUnconfirmed = tbbShowUnconfirmed.Checked;
 			comboModuleGrid.CellClicked += OnCellClicked;
@@ -195,6 +217,10 @@ namespace Merlin.Forms.CreateActionMaster
 			if (_campaignByMassmedia.TryGetValue(massmediaID, out campaign))
 				return campaign;
 
+			if (_isExistingAction)
+				throw new InvalidOperationException(
+					"В акции нет модульной кампании на этой радиостанции - выпуск добавить некуда.");
+
 			int agencyID;
 			if (!_agencyByMassmedia.TryGetValue(massmediaID, out agencyID))
 				throw new InvalidOperationException("Для радиостанции модуля не выбрано агентство.");
@@ -265,7 +291,8 @@ namespace Merlin.Forms.CreateActionMaster
 
 		private void DeleteEmptyCampaignsAndAction()
 		{
-			if (_action == null) return;
+			// в готовой акции состав кампаний не наш - чистим только выпуски
+			if (_action == null || _isExistingAction) return;
 
 			DataTable issues = ComboModule.LoadIssues(_action.ActionId);
 
@@ -315,9 +342,29 @@ namespace Merlin.Forms.CreateActionMaster
 		{
 			DataTable issues = _action == null ? null : ComboModule.LoadIssues(_action.ActionId);
 
+			RememberCampaigns(issues);
 			comboModuleGrid.MarkIssues(issues);
 			ShowIssuesCount(issues);
 			ShowAddedIssues(issues);
+		}
+
+		/// <summary>
+		/// Кампании готовой акции запоминаем из её выпусков: там есть и радиостанция, и
+		/// кампания. Так при редактировании выпуск ложится в существующую кампанию, а не
+		/// создаёт новую.
+		/// </summary>
+		private void RememberCampaigns(DataTable issues)
+		{
+			if (issues == null) return;
+
+			foreach (DataRow row in issues.Rows)
+			{
+				int massmediaID = Convert.ToInt32(row[ComboModule.ParamNames.MassmediaId]);
+				if (_campaignByMassmedia.ContainsKey(massmediaID)) continue;
+
+				_campaignByMassmedia[massmediaID] =
+					new Campaign(Convert.ToInt32(row[Campaign.ParamNames.CampaignId]));
+			}
 		}
 
 		private void ShowAddedIssues(DataTable issues)
