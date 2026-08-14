@@ -19,6 +19,8 @@ namespace Merlin.Classes
 			public const string ModulePriceListId = "modulePriceListID";
 			public const string IssueDate = "issueDate";
 			public const string FreeTime = "freeTime";
+			public const string FreeCapacity = "freeCapacity";
+			public const string MaxCapacity = "maxCapacity";
 			public const string Price = "price";
 		}
 

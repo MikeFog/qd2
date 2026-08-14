@@ -1,5 +1,4 @@
 using FogSoft.WinForm;
-using FogSoft.WinForm.Controls;
 
 namespace Merlin.Controls
 {
@@ -24,16 +23,43 @@ namespace Merlin.Controls
 		/// </summary>
 		private void InitializeComponent()
 		{
-			this.grid = new FogSoft.WinForm.Controls.GridWithColumnsAutoResizing();
+			System.Windows.Forms.DataGridViewCellStyle dataGridViewCellStyle1 = new System.Windows.Forms.DataGridViewCellStyle();
+			System.Windows.Forms.DataGridViewCellStyle dataGridViewCellStyle2 = new System.Windows.Forms.DataGridViewCellStyle();
+			this.grid = new System.Windows.Forms.DataGridView();
 			this.Caption = new Merlin.Controls.NavigationCaption();
+			((System.ComponentModel.ISupportInitialize)(this.grid)).BeginInit();
 			this.SuspendLayout();
 			//
 			// grid
 			//
+			this.grid.AllowUserToAddRows = false;
+			this.grid.AllowUserToDeleteRows = false;
+			this.grid.AllowUserToResizeRows = false;
+			this.grid.BackgroundColor = System.Drawing.SystemColors.Window;
+			dataGridViewCellStyle1.Alignment = System.Windows.Forms.DataGridViewContentAlignment.MiddleCenter;
+			dataGridViewCellStyle1.BackColor = System.Drawing.SystemColors.Control;
+			dataGridViewCellStyle1.Font = new System.Drawing.Font("Tahoma", 8.25F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(204)));
+			dataGridViewCellStyle1.ForeColor = System.Drawing.SystemColors.WindowText;
+			dataGridViewCellStyle1.SelectionBackColor = System.Drawing.SystemColors.Control;
+			dataGridViewCellStyle1.SelectionForeColor = System.Drawing.SystemColors.WindowText;
+			dataGridViewCellStyle1.WrapMode = System.Windows.Forms.DataGridViewTriState.True;
+			this.grid.ColumnHeadersDefaultCellStyle = dataGridViewCellStyle1;
+			this.grid.ColumnHeadersHeight = 29;
+			dataGridViewCellStyle2.Alignment = System.Windows.Forms.DataGridViewContentAlignment.MiddleLeft;
+			dataGridViewCellStyle2.BackColor = System.Drawing.SystemColors.Window;
+			dataGridViewCellStyle2.Font = new System.Drawing.Font("Tahoma", 8.25F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(204)));
+			dataGridViewCellStyle2.ForeColor = System.Drawing.SystemColors.ControlText;
+			dataGridViewCellStyle2.SelectionBackColor = System.Drawing.Color.Silver;
+			dataGridViewCellStyle2.SelectionForeColor = System.Drawing.SystemColors.ControlText;
+			dataGridViewCellStyle2.WrapMode = System.Windows.Forms.DataGridViewTriState.False;
+			this.grid.DefaultCellStyle = dataGridViewCellStyle2;
 			this.grid.Dock = System.Windows.Forms.DockStyle.Fill;
-			this.grid.Font = new System.Drawing.Font("Tahoma", 8.25F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(204)));
 			this.grid.Location = new System.Drawing.Point(0, 23);
+			this.grid.MultiSelect = false;
 			this.grid.Name = "grid";
+			this.grid.ReadOnly = true;
+			this.grid.RowHeadersVisible = false;
+			this.grid.ShowEditingIcon = false;
 			this.grid.Size = new System.Drawing.Size(390, 316);
 			this.grid.TabIndex = 2;
 			//
@@ -57,12 +83,19 @@ namespace Merlin.Controls
 			this.Font = new System.Drawing.Font("Tahoma", 8.25F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(204)));
 			this.Name = "ComboModuleGrid";
 			this.Size = new System.Drawing.Size(390, 339);
+			((System.ComponentModel.ISupportInitialize)(this.grid)).EndInit();
 			this.ResumeLayout(false);
 		}
 
 		#endregion
 
 		protected NavigationCaption Caption;
-		protected GridWithColumnsAutoResizing grid;
+
+		/// <summary>
+		/// Обычный DataGridView, а не GridWithColumnsAutoResizing: тот растягивает
+		/// последнюю колонку на всю свободную ширину, а здесь все дни должны быть
+		/// одинаковыми.
+		/// </summary>
+		protected System.Windows.Forms.DataGridView grid;
 	}
 }

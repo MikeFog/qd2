@@ -1,16 +1,21 @@
--- Остаток свободного времени по модулям комбо-модуля за период.
+-- Остаток по модулям комбо-модуля за период.
 --
 -- Одна строка на (модуль, день). Ячейка грида размещения комбо-модулями
--- показывает freeTime - минимальный остаток по окнам модуля за этот день,
--- то есть самое заполненное окно: именно оно ограничивает возможность
--- поставить ролик во весь модуль сразу.
+-- показывает самое заполненное окно модуля: именно оно ограничивает
+-- возможность поставить ролик во весь модуль сразу.
+--
+-- freeTime     - минимальный остаток времени по окнам модуля, сек;
+-- freeCapacity - минимальный остаток по количеству среди окон со штучным
+--                ограничением, maxCapacity - вместимость того самого окна.
+--                Для модуля без штучных окон обе колонки NULL.
+--
+-- Время считается по всем окнам, в том числе штучным: hlp_IssueVerify проверяет
+-- переполнение по времени независимо от maxCapacity, так что ограничение
+-- реально для любого окна.
 --
 -- Строка возвращается только для дней, когда модуль есть целиком: окно есть на
 -- каждый тариф прайс-листа модуля (та же проверка, что в IsModuleExist) и ни
 -- одно из окон не отключено. В остальные дни модуля нет - ячейка пустая.
---
--- Окна со штучным ограничением (maxCapacity > 0) в расчёт остатка не берутся,
--- поэтому у модуля, целиком собранного из таких окон, freeTime = NULL.
 --
 -- День берётся по dayOriginal - так же, как в IsModuleExist и ModuleIssueIUD,
 -- то есть по исходной сетке окон, а не по перенесённой.
@@ -24,34 +29,68 @@ CREATE PROC [dbo].[ComboModuleFreeTimeRetrieve]
 AS
 SET NOCOUNT ON
 
+;WITH windows AS
+(
+	SELECT
+		cmc.moduleID,
+		mpl.modulePriceListID,
+		mpl.price,
+		tw.dayOriginal AS issueDate,
+		mt.tariffID,
+		tw.isDisabled,
+		tw.maxCapacity,
+		tw.duration - tw.timeInUseConfirmed
+			- CASE WHEN @showUnconfirmed = 1 THEN tw.timeInUseUnconfirmed ELSE 0 END AS timeLeft,
+		CASE WHEN tw.maxCapacity > 0
+			THEN tw.maxCapacity - tw.capacityInUseConfirmed
+				- CASE WHEN @showUnconfirmed = 1 THEN tw.capacityInUseUnconfirmed ELSE 0 END
+			END AS capacityLeft
+	FROM
+		[ComboModuleContent] cmc
+		INNER JOIN [ModulePriceList] mpl ON mpl.moduleID = cmc.moduleID
+		INNER JOIN [ModuleTariff] mt ON mt.modulePriceListID = mpl.modulePriceListID
+		INNER JOIN [TariffWindow] tw ON tw.tariffId = mt.tariffID
+			AND tw.dayOriginal BETWEEN @startDate AND @finishDate
+			AND tw.dayOriginal BETWEEN mpl.startDate AND mpl.finishDate
+	WHERE
+		cmc.comboModuleID = @comboModuleID
+),
+days AS
+(
+	SELECT
+		w.moduleID,
+		w.modulePriceListID,
+		w.price,
+		w.issueDate,
+		MIN(w.timeLeft) AS freeTime,
+		MIN(w.capacityLeft) AS freeCapacity
+	FROM
+		windows w
+	GROUP BY
+		w.moduleID,
+		w.modulePriceListID,
+		w.price,
+		w.issueDate
+	HAVING
+		COUNT(DISTINCT w.tariffID) =
+			(SELECT COUNT(*) FROM [ModuleTariff] mtAll
+				WHERE mtAll.modulePriceListID = w.modulePriceListID)
+		AND SUM(CASE WHEN w.isDisabled = 1 THEN 1 ELSE 0 END) = 0
+)
 SELECT
-	cmc.moduleID,
-	mpl.modulePriceListID,
-	mpl.price,
-	tw.dayOriginal AS issueDate,
-	MIN(CASE WHEN tw.maxCapacity = 0
-			THEN tw.duration - tw.timeInUseConfirmed
-				- CASE WHEN @showUnconfirmed = 1 THEN tw.timeInUseUnconfirmed ELSE 0 END
-		END) AS freeTime
+	d.moduleID,
+	d.modulePriceListID,
+	d.price,
+	d.issueDate,
+	d.freeTime,
+	d.freeCapacity,
+	(SELECT MIN(w.maxCapacity)
+		FROM windows w
+		WHERE w.moduleID = d.moduleID
+			AND w.issueDate = d.issueDate
+			AND w.capacityLeft = d.freeCapacity) AS maxCapacity
 FROM
-	[ComboModuleContent] cmc
-	INNER JOIN [ModulePriceList] mpl ON mpl.moduleID = cmc.moduleID
-	INNER JOIN [ModuleTariff] mt ON mt.modulePriceListID = mpl.modulePriceListID
-	INNER JOIN [TariffWindow] tw ON tw.tariffId = mt.tariffID
-		AND tw.dayOriginal BETWEEN @startDate AND @finishDate
-		AND tw.dayOriginal BETWEEN mpl.startDate AND mpl.finishDate
-WHERE
-	cmc.comboModuleID = @comboModuleID
-GROUP BY
-	cmc.moduleID,
-	mpl.modulePriceListID,
-	mpl.price,
-	tw.dayOriginal
-HAVING
-	COUNT(DISTINCT mt.tariffID) =
-		(SELECT COUNT(*) FROM [ModuleTariff] mtAll
-			WHERE mtAll.modulePriceListID = mpl.modulePriceListID)
-	AND SUM(CASE WHEN tw.isDisabled = 1 THEN 1 ELSE 0 END) = 0
+	days d
 ORDER BY
-	cmc.moduleID,
-	tw.dayOriginal
+	d.moduleID,
+	d.issueDate

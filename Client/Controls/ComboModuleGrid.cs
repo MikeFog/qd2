@@ -18,8 +18,24 @@ namespace Merlin.Controls
 		public int ModulePriceListID;
 		public decimal Price;
 		public DateTime Date;
-		/// <summary>Остаток в самом заполненном окне модуля, сек. Null - модуль из штучных окон.</summary>
+		/// <summary>Остаток времени в самом заполненном окне модуля, сек.</summary>
 		public int? FreeTime;
+		/// <summary>Остаток по количеству в самом заполненном штучном окне. Null - штучных окон нет.</summary>
+		public int? FreeCapacity;
+		/// <summary>Вместимость того самого штучного окна.</summary>
+		public int? MaxCapacity;
+
+		/// <summary>Текст ячейки - как в обычном гриде: «02:30» либо «02:30 [3/5]».</summary>
+		public string CellText
+		{
+			get
+			{
+				string text = FreeTime.HasValue ? DateTimeUtils.Time2String(FreeTime.Value) : string.Empty;
+				if (FreeCapacity.HasValue)
+					text = string.Format("{0} [{1}/{2}]", text, FreeCapacity, MaxCapacity).TrimStart();
+				return text;
+			}
+		}
 	}
 
 	internal delegate void ComboModuleDayDelegate(ComboModuleDay day);
@@ -119,7 +135,7 @@ namespace Merlin.Controls
 
 		public DataGridView RawDataGridView
 		{
-			get { return grid.RawDataGridView; }
+			get { return grid; }
 		}
 
 		#endregion
@@ -135,7 +151,7 @@ namespace Merlin.Controls
 
 			RawDataGridView.DataSource = _dtGrid.DefaultView;
 			SetFrozenRowsAndColumns();
-			grid.SetColumnsWidth();
+			SetColumnWidths();
 			SetNavigationCaption();
 		}
 
@@ -294,18 +310,20 @@ namespace Merlin.Controls
 						ModulePriceListID = Convert.ToInt32(row[ComboModule.ParamNames.ModulePriceListId]),
 						Price = Convert.ToDecimal(row[ComboModule.ParamNames.Price]),
 						Date = date,
-						FreeTime = row[ComboModule.ParamNames.FreeTime] == DBNull.Value
-							? (int?)null
-							: Convert.ToInt32(row[ComboModule.ParamNames.FreeTime])
+						FreeTime = GetNullableInt(row, ComboModule.ParamNames.FreeTime),
+						FreeCapacity = GetNullableInt(row, ComboModule.ParamNames.FreeCapacity),
+						MaxCapacity = GetNullableInt(row, ComboModule.ParamNames.MaxCapacity)
 					};
 
 					_days[moduleIndex, dayIndex] = day;
-
-					if (day.FreeTime.HasValue)
-						_dtGrid.Rows[FIXED_ROWS + moduleIndex][FIXED_COLS + dayIndex] =
-							DateTimeUtils.Time2String(day.FreeTime.Value);
+					_dtGrid.Rows[FIXED_ROWS + moduleIndex][FIXED_COLS + dayIndex] = day.CellText;
 				}
 			}
+		}
+
+		private static int? GetNullableInt(DataRow row, string columnName)
+		{
+			return row[columnName] == DBNull.Value ? (int?)null : Convert.ToInt32(row[columnName]);
 		}
 
 		private static string MakeKey(int moduleID, DateTime date)
@@ -330,6 +348,23 @@ namespace Merlin.Controls
 			for (int row = 0; row < RawDataGridView.RowCount; row++)
 				for (int col = 0; col < FIXED_COLS; col++)
 					CopyColumnHeaderCellStyle(GetCell(row, col), DataGridViewContentAlignment.MiddleLeft);
+		}
+
+		/// <summary>Колонки дней делаем одинаковой ширины - по самой широкой из них.</summary>
+		private void SetColumnWidths()
+		{
+			for (int i = 0; i < FIXED_COLS; i++)
+				RawDataGridView.AutoResizeColumn(i);
+
+			int dayWidth = 0;
+			for (int i = FIXED_COLS; i < RawDataGridView.Columns.Count; i++)
+			{
+				RawDataGridView.AutoResizeColumn(i);
+				dayWidth = Math.Max(dayWidth, RawDataGridView.Columns[i].Width);
+			}
+
+			for (int i = FIXED_COLS; i < RawDataGridView.Columns.Count; i++)
+				RawDataGridView.Columns[i].Width = dayWidth;
 		}
 
 		private void CopyColumnHeaderCellStyle(DataGridViewCell cell, DataGridViewContentAlignment alignment)
