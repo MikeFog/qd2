@@ -162,6 +162,8 @@
     <Build Include="dbo\Tables\ModuleTariff.sql" />
     <Build Include="dbo\Tables\DiscountRelease.sql" />
     <Build Include="dbo\Tables\PackModuleContent.sql" />
+    <Build Include="dbo\Tables\ComboModule.sql" />
+    <Build Include="dbo\Tables\ComboModuleContent.sql" />
     <Build Include="dbo\Tables\Studio.sql" />
     <Build Include="dbo\Tables\DiscountValue.sql" />
     <Build Include="dbo\Tables\ReportType.sql" />
@@ -527,6 +529,11 @@
     <Build Include="dbo\Stored Procedures\sponsorPLIUD.sql" />
     <Build Include="dbo\Stored Procedures\pc_PackageDiscountCalculateModel.sql" />
     <Build Include="dbo\Stored Procedures\PackModuleContentRetrieve.sql" />
+    <Build Include="dbo\Stored Procedures\ComboModules.sql" />
+    <Build Include="dbo\Stored Procedures\ComboModuleIUD.sql" />
+    <Build Include="dbo\Stored Procedures\ComboModuleContentRetrieve.sql" />
+    <Build Include="dbo\Stored Procedures\ComboModuleContentIUD.sql" />
+    <Build Include="dbo\Stored Procedures\ComboModuleContentPassport.sql" />
     <Build Include="dbo\Stored Procedures\sl_Firms.sql" />
     <Build Include="dbo\Stored Procedures\statVolumeOfRealizationFilter.sql" />
     <Build Include="dbo\Stored Procedures\GetUserDiscount.sql" />

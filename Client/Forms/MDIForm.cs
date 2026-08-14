@@ -215,6 +215,8 @@ namespace Merlin.Forms
 					ShowPrintGridForm();
 				else if (strMiName == "miPackModules")
 					ShowPackModules(mi);
+				else if (strMiName == "miComboModules")
+					ShowComboModules(mi);
 				else if (strMiName == "miRollerStatistic")
 					ShowRollerStatistic(false);
 				else if (strMiName == "miRollerStatisticWithFilter")
@@ -762,6 +764,19 @@ namespace Merlin.Forms
 
 			FakeContainer container =
 				new FakeContainer("Пакетные модули", menu, RelationManager.GetScenario(RelationScenarios.PackModules));
+			Globals.ShowBrowser(container, mi.Text, this);
+		}
+
+		private void ShowComboModules(ToolStripItem mi)
+		{
+			Entity.Action[] menu = new[]
+			                       	{
+			                       		new Entity.Action(Constants.EntityActions.Refresh, RefreshAlias, Constants.ActionsImages.Refresh),
+			                       		new Entity.Action(Constants.EntityActions.AddNew, "Создать новый комбо-модуль")
+			                       	};
+
+			FakeContainer container =
+				new FakeContainer("Комбо-модули", menu, RelationManager.GetScenario(RelationScenarios.ComboModules));
 			Globals.ShowBrowser(container, mi.Text, this);
 		}
 
