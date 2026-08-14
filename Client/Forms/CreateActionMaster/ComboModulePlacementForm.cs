@@ -98,6 +98,7 @@ namespace Merlin.Forms.CreateActionMaster
 			comboModuleGrid.PeriodMode = LoadPeriodMode();
 			comboModuleGrid.ShowUnconfirmed = tbbShowUnconfirmed.Checked;
 			comboModuleGrid.CellClicked += OnCellClicked;
+			comboModuleGrid.GridRefreshed += OnGridRefreshed;
 			UpdatePeriodModeCaption();
 			comboModuleGrid.RefreshGrid();
 		}
@@ -302,41 +303,39 @@ namespace Merlin.Forms.CreateActionMaster
 
 		private void RefreshAfterChange()
 		{
-			comboModuleGrid.RefreshGrid();
-			ShowAddedIssues();
+			comboModuleGrid.RefreshGrid();   // выпуски раздаст OnGridRefreshed
 			ShowStatistics();
 		}
 
-		private void ShowAddedIssues()
+		/// <summary>
+		/// Грид перестроился - в том числе при листании стрелками. Выпуски акции нужны и
+		/// списку, и самому гриду (подсветка и счётчик по дням), поэтому грузим их один раз.
+		/// </summary>
+		private void OnGridRefreshed()
 		{
-			if (_action == null)
-			{
-				grdAddedIssues.DataSource = null;
-				ClearIssuesCount();
-				return;
-			}
+			DataTable issues = _action == null ? null : ComboModule.LoadIssues(_action.ActionId);
 
-			DataTable issues = ComboModule.LoadIssues(_action.ActionId);
-			grdAddedIssues.DataSource = issues.DefaultView;
+			comboModuleGrid.MarkIssues(issues);
 			ShowIssuesCount(issues);
+			ShowAddedIssues(issues);
 		}
 
-		private void ClearIssuesCount()
+		private void ShowAddedIssues(DataTable issues)
 		{
-			for (DateTime date = comboModuleGrid.StartDate; date <= comboModuleGrid.FinishDate; date = date.AddDays(1))
-				comboModuleGrid.SetIssuesCount(date, 0);
+			grdAddedIssues.DataSource = issues == null ? null : issues.DefaultView;
 		}
 
 		private void ShowIssuesCount(DataTable issues)
 		{
 			Dictionary<DateTime, int> countByDate = new Dictionary<DateTime, int>();
-			foreach (DataRow row in issues.Rows)
-			{
-				DateTime date = Convert.ToDateTime(row[ComboModule.ParamNames.IssueDate]).Date;
-				int count;
-				countByDate.TryGetValue(date, out count);
-				countByDate[date] = count + 1;
-			}
+			if (issues != null)
+				foreach (DataRow row in issues.Rows)
+				{
+					DateTime date = Convert.ToDateTime(row[ComboModule.ParamNames.IssueDate]).Date;
+					int count;
+					countByDate.TryGetValue(date, out count);
+					countByDate[date] = count + 1;
+				}
 
 			for (DateTime date = comboModuleGrid.StartDate; date <= comboModuleGrid.FinishDate; date = date.AddDays(1))
 			{
@@ -388,7 +387,7 @@ namespace Merlin.Forms.CreateActionMaster
 				comboModuleGrid.PeriodMode = mode;
 				UpdatePeriodModeCaption();
 				UserSettings.Save(SETTING_PERIOD_MODE, mode.ToString());
-				comboModuleGrid.RefreshGrid();
+				RefreshAfterChange();
 			}
 			catch (Exception ex)
 			{
@@ -410,7 +409,7 @@ namespace Merlin.Forms.CreateActionMaster
 				Cursor = Cursors.WaitCursor;
 
 				comboModuleGrid.ShowUnconfirmed = tbbShowUnconfirmed.Checked;
-				comboModuleGrid.RefreshGrid();
+				RefreshAfterChange();
 			}
 			catch (Exception ex)
 			{
@@ -419,6 +418,18 @@ namespace Merlin.Forms.CreateActionMaster
 			finally
 			{
 				Cursor = Cursors.Default;
+			}
+		}
+
+		private void tbbStart_CheckedChanged(object sender, EventArgs e)
+		{
+			try
+			{
+				comboModuleGrid.EditMode = tbbStart.Checked;
+			}
+			catch (Exception ex)
+			{
+				ErrorManager.PublishError(ex);
 			}
 		}
 

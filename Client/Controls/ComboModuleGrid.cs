@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Data;
 using System.Drawing;
 using System.Windows.Forms;
+using FogSoft.WinForm;
 using FogSoft.WinForm.Classes;
 using Merlin.Classes;
 
@@ -80,10 +81,18 @@ namespace Merlin.Controls
 		private DataTable _modules;
 		private DataTable _dtGrid;
 		private ComboModuleDay[,] _days;
+		private readonly Dictionary<int, int> _rowByModule = new Dictionary<int, int>();
+		private bool _editMode;
 
 		#endregion
 
 		public event ComboModuleDayDelegate CellClicked;
+
+		/// <summary>
+		/// Грид перестроен - в том числе при листании стрелками. Форма по этому событию
+		/// заново раскрашивает ячейки с выпусками и заполняет счётчик по дням.
+		/// </summary>
+		public event EmptyDelegate GridRefreshed;
 
 		public ComboModuleGrid()
 		{
@@ -116,6 +125,21 @@ namespace Merlin.Controls
 		{
 			get { return _showUnconfirmed; }
 			set { _showUnconfirmed = value; }
+		}
+
+		/// <summary>
+		/// Режим добавления выпусков. Пока выключен, клик по ячейке ничего не создаёт -
+		/// так же ведёт себя тарифная сетка обычной кампании (EditMode.Edit).
+		/// </summary>
+		public bool EditMode
+		{
+			get { return _editMode; }
+			set
+			{
+				_editMode = value;
+				Cursor = _editMode ? Cursors.Hand : Cursors.Default;
+				RawDataGridView.Cursor = Cursor;
+			}
 		}
 
 		public DateTime CurrentDate
@@ -154,6 +178,8 @@ namespace Merlin.Controls
 			SetFrozenRowsAndColumns();
 			SetColumnWidths();
 			SetNavigationCaption();
+
+			if (GridRefreshed != null) GridRefreshed();
 		}
 
 		#region Период ----------------------------------------
@@ -270,12 +296,15 @@ namespace Merlin.Controls
 				row[FIXED_COLS + i] = 0;
 			_dtGrid.Rows.Add(row);
 
-			foreach (DataRow moduleRow in _modules.Rows)
+			_rowByModule.Clear();
+			for (int moduleIndex = 0; moduleIndex < _modules.Rows.Count; moduleIndex++)
 			{
+				DataRow moduleRow = _modules.Rows[moduleIndex];
 				row = _dtGrid.NewRow();
 				row[COLUMN_MASSMEDIA] = moduleRow["massmediaName"];
 				row[COLUMN_MODULE] = moduleRow["moduleName"];
 				_dtGrid.Rows.Add(row);
+				_rowByModule[Convert.ToInt32(moduleRow[ComboModule.ParamNames.ModuleId])] = moduleIndex;
 			}
 
 			_days = new ComboModuleDay[_modules.Rows.Count, DayCount];
@@ -383,6 +412,43 @@ namespace Merlin.Controls
 
 		#endregion
 
+		/// <summary>
+		/// Синим отмечаются ячейки, где у текущей акции уже есть выпуски, - тем же цветом,
+		/// что и в тарифной сетке обычной кампании. Таблица выпусков приходит из
+		/// ComboModuleIssuesRetrieve; null - отмечать нечего.
+		/// </summary>
+		public void MarkIssues(DataTable issues)
+		{
+			ClearIssueMarks();
+			if (issues == null) return;
+
+			foreach (DataRow row in issues.Rows)
+			{
+				int moduleIndex;
+				if (!_rowByModule.TryGetValue(
+						Convert.ToInt32(row[ComboModule.ParamNames.ModuleId]), out moduleIndex))
+					continue;
+
+				int dayIndex = (int)(Convert.ToDateTime(row[ComboModule.ParamNames.IssueDate]).Date - _startDate).TotalDays;
+				if (dayIndex < 0 || dayIndex >= DayCount) continue;
+
+				SetCellForeColor(FIXED_ROWS + moduleIndex, FIXED_COLS + dayIndex, Color.Blue);
+			}
+		}
+
+		private void ClearIssueMarks()
+		{
+			for (int rowIndex = FIXED_ROWS; rowIndex < RawDataGridView.RowCount; rowIndex++)
+				for (int columnIndex = FIXED_COLS; columnIndex < RawDataGridView.Columns.Count; columnIndex++)
+					SetCellForeColor(rowIndex, columnIndex, RawDataGridView.DefaultCellStyle.ForeColor);
+		}
+
+		private void SetCellForeColor(int rowIndex, int columnIndex, Color color)
+		{
+			DataGridViewCell cell = GetCell(rowIndex, columnIndex);
+			cell.Style.ForeColor = cell.Style.SelectionForeColor = color;
+		}
+
 		/// <summary>Число выпусков за день - строка под датами. Заполняет форма размещения.</summary>
 		public void SetIssuesCount(DateTime date, int count)
 		{
@@ -395,6 +461,7 @@ namespace Merlin.Controls
 		{
 			try
 			{
+				if (!_editMode) return;   // режим добавления выключен
 				if (e.RowIndex < FIXED_ROWS || e.ColumnIndex < FIXED_COLS) return;
 
 				ComboModuleDay day = _days[e.RowIndex - FIXED_ROWS, e.ColumnIndex - FIXED_COLS];

@@ -22,6 +22,8 @@ namespace Merlin.Forms.CreateActionMaster
 		private void InitializeComponent()
 		{
 			this.toolStrip1 = new System.Windows.Forms.ToolStrip();
+			this.tbbStart = new System.Windows.Forms.ToolStripButton();
+			this.tbbSeparator0 = new System.Windows.Forms.ToolStripSeparator();
 			this.tbbPosition = new System.Windows.Forms.ToolStripDropDownButton();
 			this.miPositionAny = new System.Windows.Forms.ToolStripMenuItem();
 			this.miPositionFirst = new System.Windows.Forms.ToolStripMenuItem();
@@ -54,6 +56,19 @@ namespace Merlin.Forms.CreateActionMaster
 			this.splitContainer3.Panel2.SuspendLayout();
 			this.splitContainer3.SuspendLayout();
 			this.SuspendLayout();
+			//
+			// tbbStart
+			//
+			this.tbbStart.CheckOnClick = true;
+			this.tbbStart.DisplayStyle = System.Windows.Forms.ToolStripItemDisplayStyle.Text;
+			this.tbbStart.Name = "tbbStart";
+			this.tbbStart.Text = "Режим добавления";
+			this.tbbStart.ToolTipText = "Клик по ячейке добавляет выпуск";
+			this.tbbStart.CheckedChanged += new System.EventHandler(this.tbbStart_CheckedChanged);
+			//
+			// tbbSeparator0
+			//
+			this.tbbSeparator0.Name = "tbbSeparator0";
 			//
 			// tbbPosition
 			//
@@ -136,6 +151,8 @@ namespace Merlin.Forms.CreateActionMaster
 			// toolStrip1
 			//
 			this.toolStrip1.Items.AddRange(new System.Windows.Forms.ToolStripItem[] {
+				this.tbbStart,
+				this.tbbSeparator0,
 				this.tbbPosition,
 				this.tbbSeparator1,
 				this.tbbPeriodMode,
@@ -264,6 +281,8 @@ namespace Merlin.Forms.CreateActionMaster
 		#endregion
 
 		private System.Windows.Forms.ToolStrip toolStrip1;
+		private System.Windows.Forms.ToolStripButton tbbStart;
+		private System.Windows.Forms.ToolStripSeparator tbbSeparator0;
 		private System.Windows.Forms.ToolStripDropDownButton tbbPosition;
 		private System.Windows.Forms.ToolStripMenuItem miPositionAny;
 		private System.Windows.Forms.ToolStripMenuItem miPositionFirst;
