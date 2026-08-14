@@ -199,7 +199,9 @@ IF NOT EXISTS (SELECT 1 FROM [dbo].[iEntityRelation]
 	VALUES (@scenario, @entComboModule, @entComboModuleContent, 0, 0);
 
 -------------------------------------------------------------------------------
--- 6. Пункт меню (Администрация -> Комбо-модули, сразу за Пакетными модулями)
+-- 6. Пункты меню
+--    «Комбо-модули» - администрирование, сразу за Пакетными модулями;
+--    «Размещение комбо-модулями...» - рядом с Веерным размещением.
 -------------------------------------------------------------------------------
 
 DECLARE @menuPackModules SMALLINT = (SELECT menuID FROM [dbo].[iMenu] WHERE codeName = 'miPackModules');
@@ -217,6 +219,22 @@ SELECT gm.groupID, @menuComboModules
 FROM [dbo].[GroupMenu] gm
 WHERE gm.menuID = @menuPackModules
 	AND NOT EXISTS (SELECT 1 FROM [dbo].[GroupMenu] x WHERE x.groupID = gm.groupID AND x.menuID = @menuComboModules);
+
+-- Размещение комбо-модулями - рядом с веерным размещением
+DECLARE @menuMasterActions SMALLINT = (SELECT menuID FROM [dbo].[iMenu] WHERE codeName = 'miMasterCreateActions');
+DECLARE @menuMasterParent SMALLINT = (SELECT parentID FROM [dbo].[iMenu] WHERE codeName = 'miMasterCreateActions');
+
+IF NOT EXISTS (SELECT 1 FROM [dbo].[iMenu] WHERE codeName = 'miComboModulePlacement')
+	INSERT INTO [dbo].[iMenu] (name, parentID, position, codeName, align, isPublic, isObsolete)
+	VALUES (N'Размещение комбо-модулями...', @menuMasterParent, 4, 'miComboModulePlacement', 'Left', 0, 0);
+
+DECLARE @menuComboPlacement SMALLINT = (SELECT menuID FROM [dbo].[iMenu] WHERE codeName = 'miComboModulePlacement');
+
+INSERT INTO [dbo].[GroupMenu] (groupID, menuID)
+SELECT gm.groupID, @menuComboPlacement
+FROM [dbo].[GroupMenu] gm
+WHERE gm.menuID = @menuMasterActions
+	AND NOT EXISTS (SELECT 1 FROM [dbo].[GroupMenu] x WHERE x.groupID = gm.groupID AND x.menuID = @menuComboPlacement);
 
 -- права на действия - тем же группам, у кого есть права на действия пакетного модуля
 INSERT INTO [dbo].[GroupRight] (groupID, entityActionID)
@@ -254,10 +272,12 @@ UNION ALL SELECT 'iTableAlias', COUNT(*), '2'
 FROM [dbo].[iTableAlias] WHERE storedProcedureID = @spContentPassport
 UNION ALL SELECT 'iEntityRelation', COUNT(*), '1'
 FROM [dbo].[iEntityRelation] WHERE relationScenarioID = @scenario
-UNION ALL SELECT 'iMenu', COUNT(*), '1'
-FROM [dbo].[iMenu] WHERE codeName = 'miComboModules'
-UNION ALL SELECT 'GroupMenu', COUNT(*), N'как у miPackModules'
+UNION ALL SELECT 'iMenu', COUNT(*), '2'
+FROM [dbo].[iMenu] WHERE codeName IN ('miComboModules', 'miComboModulePlacement')
+UNION ALL SELECT 'GroupMenu (комбо-модули)', COUNT(*), N'как у miPackModules'
 FROM [dbo].[GroupMenu] WHERE menuID = @menuComboModules
+UNION ALL SELECT 'GroupMenu (размещение)', COUNT(*), N'как у miMasterCreateActions'
+FROM [dbo].[GroupMenu] WHERE menuID = @menuComboPlacement
 UNION ALL SELECT 'GroupRight', COUNT(*), N'как у пакетных модулей'
 FROM [dbo].[GroupRight] gr
 	INNER JOIN [dbo].[iEntityAction] ea ON ea.entityActionID = gr.entityActionID

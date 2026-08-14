@@ -8,7 +8,6 @@ using FogSoft.WinForm.DataAccess;
 using FogSoft.WinForm.Forms;
 using Merlin.Classes;
 using Merlin.Controls;
-using Action = Merlin.Classes.Action;
 
 namespace Merlin.Forms.CreateActionMaster
 {
@@ -39,6 +38,15 @@ namespace Merlin.Forms.CreateActionMaster
 		private ActionOnMassmedia _action;
 
 		private readonly Dictionary<int, Campaign> _campaignByMassmedia = new Dictionary<int, Campaign>();
+
+		/// <summary>
+		/// Созданная в ходе размещения акция или null, если менеджер ничего не разместил.
+		/// По ней мастер открывает карточку акции после закрытия формы.
+		/// </summary>
+		public ActionOnMassmedia Action
+		{
+			get { return _action; }
+		}
 
 		private ComboModulePlacementForm()
 		{
@@ -172,7 +180,7 @@ namespace Merlin.Forms.CreateActionMaster
 			if (_action != null) return false;
 
 			_action = new ActionOnMassmedia(_firm);
-			_action[Action.ParamNames.IsConfirmed] = false;
+			_action[Classes.Action.ParamNames.IsConfirmed] = false;
 			_action.Update();
 			return true;
 		}
