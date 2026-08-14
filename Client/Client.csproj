@@ -506,6 +506,12 @@
     <Compile Include="Classes\CampaignPackDay.cs" />
     <Compile Include="Classes\CampaignPackModule.cs" />
     <Compile Include="Classes\ComboModule.cs" />
+    <Compile Include="Forms\CreateActionMaster\ComboModulePlacementForm.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="Forms\CreateActionMaster\ComboModulePlacementForm.Designer.cs">
+      <DependentUpon>ComboModulePlacementForm.cs</DependentUpon>
+    </Compile>
     <Compile Include="Forms\CreateActionMaster\SelectComboModuleStep.cs">
       <SubType>Form</SubType>
     </Compile>

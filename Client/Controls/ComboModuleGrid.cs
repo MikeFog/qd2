@@ -88,6 +88,7 @@ namespace Merlin.Controls
 		public ComboModuleGrid()
 		{
 			InitializeComponent();
+			Caption.Caption = string.Empty;   // у NavigationCaption по умолчанию текст про прайс-лист
 			RawDataGridView.CellClick += OnGridCellClick;
 			RawDataGridView.AutoGenerateColumns = false;
 		}
