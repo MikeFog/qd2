@@ -98,6 +98,7 @@ namespace Merlin.Controls
 		{
 			InitializeComponent();
 			Caption.Caption = string.Empty;   // у NavigationCaption по умолчанию текст про прайс-лист
+			EditMode = false;                 // заодно красит шапку в цвет режима просмотра
 			RawDataGridView.CellClick += OnGridCellClick;
 			RawDataGridView.AutoGenerateColumns = false;
 		}
@@ -139,6 +140,10 @@ namespace Merlin.Controls
 				_editMode = value;
 				Cursor = _editMode ? Cursors.Hand : Cursors.Default;
 				RawDataGridView.Cursor = Cursor;
+				// шапка синеет в режиме добавления - как у тарифной сетки обычной кампании
+				Caption.CaptionBackColor = _editMode
+					? Color.Blue
+					: Color.FromName(KnownColor.GrayText.ToString());
 			}
 		}
 
