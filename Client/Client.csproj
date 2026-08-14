@@ -505,6 +505,7 @@
     <Compile Include="Classes\CampaignOnSingleMassmedia.cs" />
     <Compile Include="Classes\CampaignPackDay.cs" />
     <Compile Include="Classes\CampaignPackModule.cs" />
+    <Compile Include="Classes\ComboModule.cs" />
     <Compile Include="Classes\Action.cs">
       <SubType>Code</SubType>
     </Compile>
@@ -681,6 +682,12 @@
     </Compile>
     <Compile Include="Controls\RadiostationListWithGroup.Designer.cs">
       <DependentUpon>RadiostationListWithGroup.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Controls\ComboModuleGrid.cs">
+      <SubType>UserControl</SubType>
+    </Compile>
+    <Compile Include="Controls\ComboModuleGrid.Designer.cs">
+      <DependentUpon>ComboModuleGrid.cs</DependentUpon>
     </Compile>
     <Compile Include="Controls\RollerIssuesGrid3.cs">
       <SubType>UserControl</SubType>
