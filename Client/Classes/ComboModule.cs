@@ -46,5 +46,13 @@ namespace Merlin.Classes
 			procParameters["showUnconfirmed"] = showUnconfirmed;
 			return DataAccessor.LoadDataSet("ComboModuleFreeTimeRetrieve", procParameters).Tables[0];
 		}
+
+		/// <summary>Выпуски модулей всей акции - панель «Добавленные выпуски».</summary>
+		public static DataTable LoadIssues(int actionID)
+		{
+			Dictionary<string, object> procParameters = DataAccessor.CreateParametersDictionary();
+			procParameters[Merlin.Classes.Action.ParamNames.ActionId] = actionID;
+			return DataAccessor.LoadDataSet("ComboModuleIssuesRetrieve", procParameters).Tables[0];
+		}
 	}
 }

@@ -185,7 +185,7 @@ namespace Merlin.Forms.CreateActionMaster
 			this.grdAddedIssues.Font = new System.Drawing.Font("Tahoma", 8.25F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(204)));
 			this.grdAddedIssues.IsHighlightInvertColor = false;
 			this.grdAddedIssues.IsNeedHighlight = false;
-			this.grdAddedIssues.MenuEnabled = false;
+			this.grdAddedIssues.MenuEnabled = true;
 			this.grdAddedIssues.Name = "grdAddedIssues";
 			this.grdAddedIssues.QuickSearchVisible = false;
 			this.grdAddedIssues.SelectedObject = null;

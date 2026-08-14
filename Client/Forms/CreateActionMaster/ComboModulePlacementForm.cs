@@ -1,9 +1,14 @@
 using System;
 using System.Collections.Generic;
+using System.Data;
 using System.Windows.Forms;
+using FogSoft.WinForm;
 using FogSoft.WinForm.Classes;
+using FogSoft.WinForm.DataAccess;
+using FogSoft.WinForm.Forms;
 using Merlin.Classes;
 using Merlin.Controls;
+using Action = Merlin.Classes.Action;
 
 namespace Merlin.Forms.CreateActionMaster
 {
@@ -26,6 +31,14 @@ namespace Merlin.Forms.CreateActionMaster
 		private readonly Dictionary<int, int> _agencyByMassmedia;
 
 		private RollerPositions _position = RollerPositions.Undefined;
+
+		/// <summary>
+		/// Акция и кампании создаются лениво, по первому клику: пока менеджер ничего не
+		/// разместил, в базе не должно оставаться пустой акции.
+		/// </summary>
+		private ActionOnMassmedia _action;
+
+		private readonly Dictionary<int, Campaign> _campaignByMassmedia = new Dictionary<int, Campaign>();
 
 		private ComboModulePlacementForm()
 		{
@@ -50,6 +63,7 @@ namespace Merlin.Forms.CreateActionMaster
 				Text = string.Format("Размещение комбо-модулями: {0} - {1}", _firm.Name, _comboModuleName);
 
 				InitRollersList();
+				InitAddedIssuesList();
 				InitComboModuleGrid();
 			}
 			catch (Exception ex)
@@ -64,14 +78,276 @@ namespace Merlin.Forms.CreateActionMaster
 			grdRollers.DataSource = _firm.GetRollers().DefaultView;
 		}
 
+		private void InitAddedIssuesList()
+		{
+			grdAddedIssues.Entity = EntityManager.GetEntity((int) Entities.ComboModuleIssue);
+			grdAddedIssues.ObjectsDeleted += OnIssuesDeleted;
+		}
+
 		private void InitComboModuleGrid()
 		{
 			comboModuleGrid.ComboModuleID = _comboModuleID;
 			comboModuleGrid.PeriodMode = LoadPeriodMode();
 			comboModuleGrid.ShowUnconfirmed = tbbShowUnconfirmed.Checked;
+			comboModuleGrid.CellClicked += OnCellClicked;
 			UpdatePeriodModeCaption();
 			comboModuleGrid.RefreshGrid();
 		}
+
+		#region Добавление выпуска ----------------------------
+
+		private void OnCellClicked(ComboModuleDay day)
+		{
+			try
+			{
+				PresentationObject roller = grdRollers.SelectedObject;
+				if (roller == null)
+				{
+					UserMessage.ShowExclamation("Выберите ролик, который нужно разместить.");
+					return;
+				}
+
+				Application.DoEvents();
+				Cursor = Cursors.WaitCursor;
+
+				AddModuleIssue(day, roller);
+				RefreshAfterChange();
+			}
+			catch (Exception ex)
+			{
+				ErrorManager.PublishError(ex);
+			}
+			finally
+			{
+				Cursor = Cursors.Default;
+			}
+		}
+
+		/// <summary>
+		/// Создание акции, кампании и выпуска - одной транзакцией: если выпуск не встал,
+		/// не должно остаться ни пустой кампании, ни пустой акции.
+		/// </summary>
+		private void AddModuleIssue(ComboModuleDay day, PresentationObject roller)
+		{
+			bool actionCreated = false;
+			bool campaignCreated = false;
+
+			DataAccessor.BeginTransaction();
+			try
+			{
+				actionCreated = EnsureAction();
+				Campaign campaign = EnsureCampaign(day.MassmediaID, out campaignCreated);
+
+				ModuleIssue issue = campaign.AddModuleIssue(
+					GetModule(day), roller, GetModulePricelist(day), day.Date, _position, null);
+
+				if (issue == null)
+					throw new InvalidOperationException(string.Format(
+						"Модуль «{0}» ({1}) не выходит {2:dd.MM.yyyy} целиком, выпуск не создан.",
+						day.ModuleName, day.MassmediaName, day.Date));
+
+				_action.Recalculate();
+				DataAccessor.CommitTransaction();
+			}
+			catch
+			{
+				DataAccessor.RollbackTransaction();
+
+				// созданное внутри откаченной транзакции в базе не осталось - забываем и в памяти
+				if (actionCreated)
+				{
+					_action = null;
+					_campaignByMassmedia.Clear();
+				}
+				else if (campaignCreated)
+					_campaignByMassmedia.Remove(day.MassmediaID);
+
+				throw;
+			}
+		}
+
+		/// <summary>Создаёт акцию, если её ещё нет. Возвращает true, если создана сейчас.</summary>
+		private bool EnsureAction()
+		{
+			if (_action != null) return false;
+
+			_action = new ActionOnMassmedia(_firm);
+			_action[Action.ParamNames.IsConfirmed] = false;
+			_action.Update();
+			return true;
+		}
+
+		/// <summary>Создаёт модульную кампанию на радиостанции модуля, если её ещё нет.</summary>
+		private Campaign EnsureCampaign(int massmediaID, out bool created)
+		{
+			created = false;
+
+			Campaign campaign;
+			if (_campaignByMassmedia.TryGetValue(massmediaID, out campaign))
+				return campaign;
+
+			int agencyID;
+			if (!_agencyByMassmedia.TryGetValue(massmediaID, out agencyID))
+				throw new InvalidOperationException("Для радиостанции модуля не выбрано агентство.");
+
+			campaign = new Campaign(EntityManager.GetEntity((int) Entities.CampaignOnMassmedia));
+			campaign.Action = _action;
+			campaign[Campaign.ParamNames.CampaignTypeId] = (int) Campaign.CampaignTypes.Module;
+			campaign[Campaign.ParamNames.MassmediaId] = massmediaID;
+			campaign[Campaign.ParamNames.PaymentTypeID] = _paymentTypeID;
+			campaign[Campaign.ParamNames.AgencyID] = agencyID;
+			campaign.Update();
+
+			_campaignByMassmedia[massmediaID] = campaign;
+			created = true;
+			return campaign;
+		}
+
+		// Модуль и прайс-лист собираем из данных ячейки: ModuleIssue берёт у них только
+		// идентификаторы и цену, поэтому лишний поход в базу за ними не нужен.
+		private static Module GetModule(ComboModuleDay day)
+		{
+			Module module = new Module();
+			module[Module.ParamNames.ModuleId] = day.ModuleID;
+			module.IsNew = false;
+			return module;
+		}
+
+		private static ModulePricelist GetModulePricelist(ComboModuleDay day)
+		{
+			ModulePricelist pricelist = new ModulePricelist();
+			pricelist[ModulePricelist.ParamNames.ModulePriceListID] = day.ModulePriceListID;
+			pricelist[ModulePricelist.ParamNames.Price] = day.Price;
+			pricelist.IsNew = false;
+			return pricelist;
+		}
+
+		#endregion
+
+		#region Удаление выпуска ------------------------------
+
+		/// <summary>
+		/// Выпуски удаляет сам SmartGrid (ModuleIssue.Delete -> ModuleIssueIUD с пересчётом
+		/// акции). Нам остаётся убрать то, что осталось пустым: кампанию без выпусков, а следом
+		/// и акцию без кампаний - иначе они полезут в счета и статистику с нулём.
+		/// </summary>
+		private void OnIssuesDeleted(IList<PresentationObject> presentationObjects)
+		{
+			try
+			{
+				Application.DoEvents();
+				Cursor = Cursors.WaitCursor;
+
+				DeleteEmptyCampaignsAndAction();
+				RefreshAfterChange();
+			}
+			catch (Exception ex)
+			{
+				ErrorManager.PublishError(ex);
+			}
+			finally
+			{
+				Cursor = Cursors.Default;
+			}
+		}
+
+		private void DeleteEmptyCampaignsAndAction()
+		{
+			if (_action == null) return;
+
+			DataTable issues = ComboModule.LoadIssues(_action.ActionId);
+
+			DataAccessor.BeginTransaction();
+			try
+			{
+				foreach (KeyValuePair<int, Campaign> pair in new List<KeyValuePair<int, Campaign>>(_campaignByMassmedia))
+				{
+					if (issues.Select(string.Format("{0} = {1}",
+							Campaign.ParamNames.CampaignId, pair.Value.CampaignId)).Length > 0)
+						continue;
+
+					pair.Value.Delete(true);
+					_campaignByMassmedia.Remove(pair.Key);
+				}
+
+				if (_campaignByMassmedia.Count == 0)
+				{
+					_action.Delete(true);
+					_action = null;
+				}
+
+				DataAccessor.CommitTransaction();
+			}
+			catch
+			{
+				DataAccessor.RollbackTransaction();
+				throw;
+			}
+		}
+
+		#endregion
+
+		#region Обновление после изменений --------------------
+
+		private void RefreshAfterChange()
+		{
+			comboModuleGrid.RefreshGrid();
+			ShowAddedIssues();
+			ShowStatistics();
+		}
+
+		private void ShowAddedIssues()
+		{
+			if (_action == null)
+			{
+				grdAddedIssues.DataSource = null;
+				ClearIssuesCount();
+				return;
+			}
+
+			DataTable issues = ComboModule.LoadIssues(_action.ActionId);
+			grdAddedIssues.DataSource = issues.DefaultView;
+			ShowIssuesCount(issues);
+		}
+
+		private void ClearIssuesCount()
+		{
+			for (DateTime date = comboModuleGrid.StartDate; date <= comboModuleGrid.FinishDate; date = date.AddDays(1))
+				comboModuleGrid.SetIssuesCount(date, 0);
+		}
+
+		private void ShowIssuesCount(DataTable issues)
+		{
+			Dictionary<DateTime, int> countByDate = new Dictionary<DateTime, int>();
+			foreach (DataRow row in issues.Rows)
+			{
+				DateTime date = Convert.ToDateTime(row[ComboModule.ParamNames.IssueDate]).Date;
+				int count;
+				countByDate.TryGetValue(date, out count);
+				countByDate[date] = count + 1;
+			}
+
+			for (DateTime date = comboModuleGrid.StartDate; date <= comboModuleGrid.FinishDate; date = date.AddDays(1))
+			{
+				int count;
+				countByDate.TryGetValue(date, out count);
+				comboModuleGrid.SetIssuesCount(date, count);
+			}
+		}
+
+		private void ShowStatistics()
+		{
+			if (_action == null)
+			{
+				lstStat.Items.Clear();
+				return;
+			}
+
+			_action.Refresh();
+			_action.DisplayData(lstStat);
+		}
+
+		#endregion
 
 		#region Режим периода ---------------------------------
 
