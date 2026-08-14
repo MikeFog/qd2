@@ -5,9 +5,12 @@
 -- то есть самое заполненное окно: именно оно ограничивает возможность
 -- поставить ролик во весь модуль сразу.
 --
+-- Строка возвращается только для дней, когда модуль есть целиком: окно есть на
+-- каждый тариф прайс-листа модуля (та же проверка, что в IsModuleExist) и ни
+-- одно из окон не отключено. В остальные дни модуля нет - ячейка пустая.
+--
 -- Окна со штучным ограничением (maxCapacity > 0) в расчёт остатка не берутся,
--- поэтому у модуля, целиком собранного из таких окон, isAvailable = 1, а
--- freeTime = NULL.
+-- поэтому у модуля, целиком собранного из таких окон, freeTime = NULL.
 --
 -- День берётся по dayOriginal - так же, как в IsModuleExist и ModuleIssueIUD,
 -- то есть по исходной сетке окон, а не по перенесённой.
@@ -26,25 +29,10 @@ SELECT
 	mpl.modulePriceListID,
 	mpl.price,
 	tw.dayOriginal AS issueDate,
-
-	-- сколько тарифов в прайс-листе модуля и на скольких из них в этот день
-	-- есть окно: выпуск модуля создаётся только когда есть все окна
-	-- (та же проверка, что в IsModuleExist)
-	(SELECT COUNT(*) FROM [ModuleTariff] mtAll
-		WHERE mtAll.modulePriceListID = mpl.modulePriceListID) AS tariffCount,
-	COUNT(DISTINCT mt.tariffID) AS windowCount,
-	SUM(CASE WHEN tw.isDisabled = 1 THEN 1 ELSE 0 END) AS disabledWindowCount,
-
 	MIN(CASE WHEN tw.maxCapacity = 0
 			THEN tw.duration - tw.timeInUseConfirmed
 				- CASE WHEN @showUnconfirmed = 1 THEN tw.timeInUseUnconfirmed ELSE 0 END
-		END) AS freeTime,
-
-	CASE WHEN COUNT(DISTINCT mt.tariffID) =
-			(SELECT COUNT(*) FROM [ModuleTariff] mtAll
-				WHERE mtAll.modulePriceListID = mpl.modulePriceListID)
-		AND SUM(CASE WHEN tw.isDisabled = 1 THEN 1 ELSE 0 END) = 0
-		THEN CAST(1 AS BIT) ELSE CAST(0 AS BIT) END AS isAvailable
+		END) AS freeTime
 FROM
 	[ComboModuleContent] cmc
 	INNER JOIN [ModulePriceList] mpl ON mpl.moduleID = cmc.moduleID
@@ -59,6 +47,11 @@ GROUP BY
 	mpl.modulePriceListID,
 	mpl.price,
 	tw.dayOriginal
+HAVING
+	COUNT(DISTINCT mt.tariffID) =
+		(SELECT COUNT(*) FROM [ModuleTariff] mtAll
+			WHERE mtAll.modulePriceListID = mpl.modulePriceListID)
+	AND SUM(CASE WHEN tw.isDisabled = 1 THEN 1 ELSE 0 END) = 0
 ORDER BY
 	cmc.moduleID,
 	tw.dayOriginal
