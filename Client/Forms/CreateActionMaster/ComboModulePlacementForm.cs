@@ -198,7 +198,10 @@ namespace Merlin.Forms.CreateActionMaster
 			if (!_agencyByMassmedia.TryGetValue(massmediaID, out agencyID))
 				throw new InvalidOperationException("Для радиостанции модуля не выбрано агентство.");
 
-			campaign = new Campaign(EntityManager.GetEntity((int) Entities.CampaignOnMassmedia));
+			// Именно ModuleCampaign, а не общая CampaignOnMassmedia: процедуры CampaignIUD
+			// привязаны к сущностям конкретных типов кампаний (91 линейная, 92 модульная,
+			// 93 спонсорская, 171 пакетная) - так же выбирает сущность Campaign.SelectEntity.
+			campaign = new Campaign(EntityManager.GetEntity((int) Entities.ModuleCampaign));
 			campaign.Action = _action;
 			campaign[Campaign.ParamNames.CampaignTypeId] = (int) Campaign.CampaignTypes.Module;
 			campaign[Campaign.ParamNames.MassmediaId] = massmediaID;
