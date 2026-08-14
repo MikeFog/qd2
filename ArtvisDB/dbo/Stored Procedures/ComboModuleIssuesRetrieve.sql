@@ -15,11 +15,11 @@ SELECT
 	mi.campaignID,
 	mi.moduleID,
 	mi.issueDate,
-	mm.[name] AS massmediaName,
+	mm.nameWithGroup AS massmediaName,
 	m.[name] AS moduleName,
 	r.[name] AS rollerName,
 	ip.[description] AS issuePosition,
-	CONVERT(varchar(10), mi.issueDate, 104) + ' - ' + mm.[name] + ' - ' + r.[name] AS [name]
+	CONVERT(varchar(10), mi.issueDate, 104) + ' - ' + mm.nameWithGroup + ' - ' + r.[name] AS [name]
 FROM
 	[ModuleIssue] mi
 	INNER JOIN [Campaign] c ON c.campaignID = mi.campaignID

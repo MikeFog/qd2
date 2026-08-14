@@ -10,7 +10,7 @@ SELECT
 	cmc.*,
 	m.[name],
 	m.[name] as moduleName,
-	mm.[name] as massmediaName,
+	mm.nameWithGroup as massmediaName,
 	mm.[massmediaID],
 	mm.groupName
 FROM
