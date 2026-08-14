@@ -534,6 +534,7 @@
     <Build Include="dbo\Stored Procedures\ComboModuleContentRetrieve.sql" />
     <Build Include="dbo\Stored Procedures\ComboModuleContentIUD.sql" />
     <Build Include="dbo\Stored Procedures\ComboModuleContentPassport.sql" />
+    <Build Include="dbo\Stored Procedures\ComboModuleFreeTimeRetrieve.sql" />
     <Build Include="dbo\Stored Procedures\sl_Firms.sql" />
     <Build Include="dbo\Stored Procedures\statVolumeOfRealizationFilter.sql" />
     <Build Include="dbo\Stored Procedures\GetUserDiscount.sql" />
