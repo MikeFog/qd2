@@ -10,7 +10,11 @@ SELECT
 	cmc.*,
 	m.[name],
 	m.[name] as moduleName,
-	mm.nameWithGroup as massmediaName,
+	mm.[name] as massmediaName,
+	-- с городом: одна и та же станция вещает в нескольких городах, и в форме
+	-- размещения без города «Авторадио» неразличимо. В администрировании город
+	-- показывается отдельной колонкой «Группа», поэтому там прежнее massmediaName.
+	mm.nameWithGroup as massmediaNameWithGroup,
 	mm.[massmediaID],
 	mm.groupName
 FROM

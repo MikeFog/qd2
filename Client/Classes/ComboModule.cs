@@ -22,6 +22,10 @@ namespace Merlin.Classes
 			public const string FreeCapacity = "freeCapacity";
 			public const string MaxCapacity = "maxCapacity";
 			public const string Price = "price";
+			public const string MassmediaId = "massmediaID";
+			/// <summary>Название радиостанции с городом - в форме размещения города нет отдельной колонкой.</summary>
+			public const string MassmediaName = "massmediaNameWithGroup";
+			public const string ModuleName = "moduleName";
 		}
 
 		/// <summary>Модули комбо-модуля - строки грида размещения.</summary>

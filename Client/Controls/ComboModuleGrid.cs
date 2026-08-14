@@ -301,8 +301,8 @@ namespace Merlin.Controls
 			{
 				DataRow moduleRow = _modules.Rows[moduleIndex];
 				row = _dtGrid.NewRow();
-				row[COLUMN_MASSMEDIA] = moduleRow["massmediaName"];
-				row[COLUMN_MODULE] = moduleRow["moduleName"];
+				row[COLUMN_MASSMEDIA] = moduleRow[ComboModule.ParamNames.MassmediaName];
+				row[COLUMN_MODULE] = moduleRow[ComboModule.ParamNames.ModuleName];
 				_dtGrid.Rows.Add(row);
 				_rowByModule[Convert.ToInt32(moduleRow[ComboModule.ParamNames.ModuleId])] = moduleIndex;
 			}
@@ -334,9 +334,9 @@ namespace Merlin.Controls
 					ComboModuleDay day = new ComboModuleDay
 					{
 						ModuleID = moduleID,
-						MassmediaID = Convert.ToInt32(moduleRow["massmediaID"]),
-						MassmediaName = moduleRow["massmediaName"].ToString(),
-						ModuleName = moduleRow["moduleName"].ToString(),
+						MassmediaID = Convert.ToInt32(moduleRow[ComboModule.ParamNames.MassmediaId]),
+						MassmediaName = moduleRow[ComboModule.ParamNames.MassmediaName].ToString(),
+						ModuleName = moduleRow[ComboModule.ParamNames.ModuleName].ToString(),
 						ModulePriceListID = Convert.ToInt32(row[ComboModule.ParamNames.ModulePriceListId]),
 						Price = Convert.ToDecimal(row[ComboModule.ParamNames.Price]),
 						Date = date,
