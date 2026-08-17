@@ -52,7 +52,7 @@ IF NOT EXISTS (SELECT 1 FROM [dbo].[iEntity] WHERE entityID = @entComboModule)
 		(entityID, name, passport, tableName, className, assemblyName, pkColumn, codeName, isGrantingAllowed, iconName, isObsolete)
 	VALUES
 		(@entComboModule, N'Комбо-модуль', @passportComboModule, 'ComboModule',
-		 'FogSoft.WinForm.Classes.ObjectContainer', NULL, 'comboModuleID', 'comboModule', 1, 'PackModule.png', 0);
+		 'FogSoft.WinForm.Classes.ObjectContainer', NULL, 'comboModuleID', 'comboModule', 1, 'combo-module.png', 0);
 
 IF NOT EXISTS (SELECT 1 FROM [dbo].[iEntity] WHERE entityID = @entComboModuleContent)
 	INSERT INTO [dbo].[iEntity]
@@ -80,6 +80,10 @@ WHERE entityID = @entComboModule AND (passport IS NULL OR CAST(passport AS NVARC
 
 UPDATE [dbo].[iEntity] SET passport = @passportComboModuleContent
 WHERE entityID = @entComboModuleContent AND (passport IS NULL OR CAST(passport AS NVARCHAR(MAX)) <> @passportComboModuleContent);
+
+-- иконка комбо-модуля появилась позже самой сущности, поэтому обновляем всегда
+UPDATE [dbo].[iEntity] SET iconName = 'combo-module.png'
+WHERE entityID = @entComboModule AND ISNULL(iconName, '') <> 'combo-module.png';
 
 -------------------------------------------------------------------------------
 -- 2. Колонки списков (iEntityAttribute)

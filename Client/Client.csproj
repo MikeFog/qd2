@@ -283,6 +283,7 @@
     </Reference>
   </ItemGroup>
   <ItemGroup>
+    <EmbeddedResource Include="Icons\combo-module.png" />
     <Content Include="Resources\erase.png" />
     <Content Include="Resources\Ластик.png" />
     <Content Include="Resources\Ластик1.png" />

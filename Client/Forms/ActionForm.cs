@@ -26,7 +26,7 @@ namespace Merlin.Forms
 			tsbDelete.Image = Globals.GetImage(Constants.ActionsImages.Delete);
 			tsbEditRollerIssues.Image = Globals.GetImage(Constants.ActionsImages.Issue);
 			tsbEditProgIssues.Image = Globals.GetImage(Constants.ActionsImages.SponsorProgram);
-			tsbEditComboModules.Image = Globals.GetImage(Constants.ActionsImages.Module);
+			tsbEditComboModules.Image = Globals.GetIcon("combo-module.png");
 		}
 
 		internal ActionForm(ActionOnMassmedia action)
