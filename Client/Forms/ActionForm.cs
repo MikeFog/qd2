@@ -27,6 +27,7 @@ namespace Merlin.Forms
 			tsbEditRollerIssues.Image = Globals.GetImage(Constants.ActionsImages.Issue);
 			tsbEditProgIssues.Image = Globals.GetImage(Constants.ActionsImages.SponsorProgram);
 			tsbEditComboModules.Image = Globals.GetIcon("combo-module.png");
+			tsbEditComboModules.Enabled = false;
 		}
 
 		internal ActionForm(ActionOnMassmedia action)
@@ -85,7 +86,31 @@ namespace Merlin.Forms
             _action.ClearCache();
             grdCampaign.DataSource = _action.GetContent().DefaultView;
 			grdCampaign.AdjustColumnsWidthExt();
+			EnableComboModulesButton();
         }
+
+		/// <summary>
+		/// Размещение модулями имеет смысл, когда модульных кампаний в акции хотя бы две:
+		/// на одной станции для этого есть обычная форма кампании.
+		/// </summary>
+		private void EnableComboModulesButton()
+		{
+			tsbEditComboModules.Enabled = GetModuleCampaignsCount() >= 2;
+		}
+
+		private int GetModuleCampaignsCount()
+		{
+			DataView campaigns = grdCampaign.DataSource;
+			if (campaigns == null) return 0;
+
+			int count = 0;
+			foreach (DataRowView row in campaigns)
+				if (ParseHelper.GetInt32FromObject(row[Campaign.ParamNames.CampaignTypeId], 0)
+					== (int) Campaign.CampaignTypes.Module)
+					count++;
+
+			return count;
+		}
 
 		private void RefreshActionStats(bool refreshFlag)
 		{
@@ -136,6 +161,8 @@ namespace Merlin.Forms
 						grdCampaign.AddRow(campaign);
                         grdCampaign.AdjustColumnsWidthExt();
                     }
+
+					EnableComboModulesButton();
 				}
 			}
 			catch (Exception ex)
@@ -155,6 +182,7 @@ namespace Merlin.Forms
 				_action.Recalculate();
 				RefreshActionStats(true);
 				EnableToolbarButtons(grdCampaign.SelectedObject as Campaign);
+				EnableComboModulesButton();
 			}
 			catch (Exception ex)
 			{
