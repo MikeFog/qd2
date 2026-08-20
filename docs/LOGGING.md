@@ -24,12 +24,22 @@
 Уровень: `INFO`  
 Порог: `StoredProcExecutionTimeThresholdMS` из `app.config` (сейчас `1` мс — пишет всё)
 
-Покрытие: каждый вызов `DataAccessor.LoadDataSet` / `ExecuteNonQuery` / `DoAction`.  
-Пример записи:
+Покрытие: каждый вызов `DataAccessor.LoadDataSet` / `ExecuteNonQuery` / `ExecuteScalar` / `DoAction`.  
+Пример записи — воспроизводимый скрипт вызова, который можно скопировать в SSMS:
 ```
-INFO  - AddRangeIssues 87ms timeout=30 rows=3
-INFO  - ActionRecalculate 12ms timeout=30
+INFO  - EXEC	[dbo].[stat_Balance]
+		@theDate = N'20.08.2026 00:00:00'  ,
+		@IsGroupByAgency = 1  ,
+		@loggedUserID = 3  
+ 5419ms timeout=1800 rows=513
 ```
+
+Скрипт строится в `DataAccessor.BuildExecScript` **до** обращения к SQL, поэтому пишется и при
+ошибке, и при таймауте. `rows=` появляется только у успешных вызовов. У `OUTPUT`-параметров
+в скрипт попадает имя параметра, у `INPUT`/`INPUT OUTPUT` — входное значение (не результат).
+
+Если в строке вместо `EXEC ...` стоит голое имя процедуры — значит вызов идёт мимо
+`SetExecScript`; это дефект, а не режим работы.
 
 Чтобы видеть только медленные SP, поставить порог:
 ```xml
@@ -109,11 +119,45 @@ using (OperationScope.Start("ИмяОперации param=значение"))
 Log.Info($"Сообщение {переменная}");
 ```
 
+## Диагностика ошибки SQL: что искать в логе
+
+Одна ошибка процедуры даёт **четыре записи подряд**, и параметры вызова лежат не там,
+где их обычно ищут.
+
+```
+INFO  - EXEC	[dbo].[stat_Balance]          ← 1. скрипт вызова + время (DbExecutionScope)
+		@IsGroupByAgency = 1  ...
+ 39534ms timeout=1800
+ERROR - Ошибка в процедуре stat_Balance      ← 2. имя процедуры
+ERROR - System.Data.SqlClient.SqlException…  ← 3. текст ошибки + стек (~50 строк)
+ERROR - {HelpLink.ProdName=…, Parameter: theDate=…, Parameter: IsGroupByAgency=True, …}
+                                             ← 4. параметры, одной длинной строкой
+```
+
+Записи 2–4 пишет `ErrorManager.PublishError` ([ErrorManager.cs](../FogSoft.WinForm/Classes/ErrorManager.cs)).
+Практические особенности:
+
+- **Запись 4 легко пропустить.** Она отделена от заголовка полусотней строк стека, а параметры
+  идут после мусора `HelpLink.*` от SQL Server. Это `Log.Error(ex.Data)`; log4net рендерит
+  `IDictionary` как `{ключ=значение, …}`. Ищи по подстроке `Parameter: `.
+- **Параметры здесь — прикладные, а не SQL-ные.** В `ex.Data` их кладёт `DataAccessor` из
+  входного словаря (`entityid`, `actionname`, имена без `@`), а в записи 1 — реальные
+  `SqlParameter` после `AssignSqlParameters`. Для воспроизведения бери запись 1.
+- **`SqlException.Procedure` пуст**, если ошибка возникла внутри `sp_executesql`
+  (динамический SQL) — имя процедуры тогда берётся из `ex.Data["Procedure"]`, который
+  проставляет `DataAccessor`. Если и его нет, в записи 2 будет `<неизвестна>` — значит вызов
+  шёл мимо `DataAccessor`.
+
+Ошибки нарушения ограничений (`547`, `2627`, `2601`) в лог обычно **не попадают**: они
+разбираются в `ExtractConstraintName` и показываются пользователю через `MessageAccessor`;
+логируются, только если сам показ сообщения упал.
+
 ## Существующие логгеры в проекте
 
 | Логгер | Файл | Уровень |
 |--------|------|---------|
 | `FogSoft.WinForm.DataAccess.DbExecutionScope` | DbExecutionScope.cs | INFO (с порогом) |
+| `FogSoft.WinForm.Classes.ErrorManager` | ErrorManager.cs | ERROR |
 | `FogSoft.WinForm.Classes.ConfigurationUtil` | ConfigurationUtil.cs | ERROR |
 | `Merlin.Forms.FrmGenerator` | FrmGenerator.cs | INFO |
 | `FogSoft.WinForm.Classes.OperationScope` | OperationScope.cs | DEBUG (выключен) |
@@ -128,7 +172,9 @@ Client\
 FogSoft.WinForm\
   DataAccess\
     DbExecutionScope.cs      — SQL-layer timing scope
+    DataAccessor.cs          — BuildExecScript, наполнение ex.Data при ошибке
   Classes\
+    ErrorManager.cs          — разбор SqlException, три ERROR-записи
     ConfigurationUtil.cs     — StoredProcExecutionTimeThresholdMS
     OperationScope.cs        — C#-layer timing scope
 logs\
