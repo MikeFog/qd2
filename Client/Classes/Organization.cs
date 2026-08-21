@@ -3,7 +3,6 @@ using System.Data;
 using FogSoft.WinForm.Classes;
 using System.Collections.Generic;
 using FogSoft.WinForm.DataAccess;
-using System.Drawing;
 using System.IO;
 
 namespace Merlin.Classes
@@ -26,7 +25,9 @@ namespace Merlin.Classes
 		string EGRN { get; }
 	}
 
-	public abstract class Organization : ObjectContainer, IOrganization
+	// Signature (Bitmap) — в Organization.WinForms.cs: не диалог, но UI-тип.
+	// Конвенция — docs/tasks/web-migration-dialogs.md.
+	public abstract partial class Organization : ObjectContainer, IOrganization
 	{
         public struct ParamNames
 		{
@@ -55,8 +56,6 @@ namespace Merlin.Classes
             public const string IsActive = "isActive";
             public const string HeadCompanyID = "headCompanyID";
         }
-		private Bitmap _bitmap;
-
 		private PresentationObject bank;
 
 		public Organization(Entity entity) : base(entity)
@@ -81,21 +80,8 @@ namespace Merlin.Classes
             }
 		}
 
-		public Bitmap Signature
-		{
-			get
-			{
-				if (SignatureBytes == null) return null;
-				if (_bitmap == null)
-				{
-					using (MemoryStream stream = new MemoryStream(SignatureBytes))
-					{
-						_bitmap = new Bitmap(Image.FromStream(stream));
-					}
-				}
-                return _bitmap;
-            }
-		}
+		// Signature (System.Drawing.Bitmap) переехало в Organization.WinForms.cs.
+		// В ядре остаётся байтовый SignatureBytes — им пользуется MediaPlan.
 
 		#region IOrganization Properties
 

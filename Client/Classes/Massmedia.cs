@@ -1,18 +1,18 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Data;
-using System.Windows.Forms;
 using FogSoft.WinForm;
 using FogSoft.WinForm.Classes;
 using FogSoft.WinForm.Controls;
 using FogSoft.WinForm.DataAccess;
 using FogSoft.WinForm.Passport.Forms;
-using Merlin.Forms;
 using Merlin.License;
 
 namespace Merlin.Classes
 {
-    public class Massmedia : Organization
+    // UI-часть (DoAction) — в Massmedia.WinForms.cs.
+    // Конвенция — docs/tasks/web-migration-dialogs.md.
+    public partial class Massmedia : Organization
     {
 		#region Constants -------------------------------------
 
@@ -71,22 +71,7 @@ namespace Merlin.Classes
 
 		#endregion
 
-		public override void DoAction(string actionName, IWin32Window owner, InterfaceObjects interfaceObject)
-		{
-			switch (actionName)
-			{
-				case ActionNames.AddSponsorProgram:
-				case ActionNames.AddDisabledWindow:
-				case ActionNames.AddPriceList:
-				case ActionNames.AddModule:
-                case ActionNames.AssignRelease:
-                    base.DoAction(Constants.EntityActions.AssignNew, owner, interfaceObject);
-					break;
-				default:
-					base.DoAction(actionName, owner, interfaceObject);
-					break;
-			}
-		}
+		// DoAction переехал в Massmedia.WinForms.cs (IWin32Window в сигнатуре).
 
 		public override bool IsActionEnabled(string actionName, ViewType type)
 		{
@@ -369,10 +354,7 @@ namespace Merlin.Classes
 			return EntityManager.GetEntity((int) Entities.MassMedia);
 		}
 
-		public override PassportForm GetPassportForm(DataSet ds)
-		{
-			return new MassmediaPassport(this, ds);
-		}
+		// GetPassportForm переехал в Massmedia.WinForms.cs (возвращает UI-тип PassportForm).
 
 		public string EnterPath
 		{

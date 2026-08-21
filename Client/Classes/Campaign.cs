@@ -1,7 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Data;
-using System.Windows.Forms;
 using FogSoft.WinForm;
 using FogSoft.WinForm.Classes;
 using FogSoft.WinForm.DataAccess;
@@ -13,10 +12,8 @@ namespace Merlin.Classes
     // в Campaign.WinForms.cs. Перед правками читать
     // docs/scenarios/campaign-edit-form-load.md — EditRollerIssues/
     // EditProgramIssues точки входа в CampaignForm.
-    // DisplayCampaignData(ListBox) и виртуальная заглушка PrintOnAirInquire(Form)
-    // остаются здесь — не диалоги, вне области переноса (тот же случай, что
-    // ActionOnMassmedia.DisplayData(ListBox)); из-за них System.Windows.Forms
-    // не уходит из ядра полностью.
+    // DisplayCampaignData(ListBox) и заглушка PrintOnAirInquire(Form) тоже там:
+    // не диалоги, но принимают UI-типы, а ядро должно собираться вне Client.
     // Конвенция — docs/tasks/web-migration-dialogs.md.
     internal partial class Campaign : CampaignPart
     {
@@ -503,34 +500,7 @@ namespace Merlin.Classes
 			return campaign;
 		}
 
-		internal void DisplayCampaignData(ListBox lstStat)
-		{
-			string text;
-			lstStat.Items.Clear();
-			if (StartDate == DateTime.MinValue)
-				text = string.Empty;
-			else
-				text = StartDate.ToShortDateString();
-			lstStat.Items.Add("Начало: " + text);
-
-			if (FinishDate == DateTime.MinValue)
-				text = string.Empty;
-			else
-				text = FinishDate.ToShortDateString();
-			lstStat.Items.Add("Окончание: " + text);
-			lstStat.Items.Add("Выпусков: " + IssuesCount);
-			lstStat.Items.Add("Общее время: " + DateTimeUtils.Time2String(IssuesDuration));
-			lstStat.Items.Add("Цена по тарифам: " + TariffPrice.ToString("c"));
-			lstStat.Items.Add("Объёмная скидка: " + Discount.ToString("0.00"));
-			lstStat.Items.Add("Цена с учётом объёмной скидки: " + Price.ToString("c"));
-
-			if (CampaignType == CampaignTypes.Sponsor)
-			{
-				lstStat.Items.Add("");
-				lstStat.Items.Add("Программ: " + ProgramIssuesCount);
-				lstStat.Items.Add("Бонус: " + DateTimeUtils.Time2String(Bonus - IssuesDuration));
-			}
-		}
+		// DisplayCampaignData(ListBox) переехал в Campaign.WinForms.cs.
 
 		public static Campaign CreateInstance(int campaignTypeId, int paymentTypeId, int? massmediaId, int agencyId)
 		{
@@ -591,7 +561,7 @@ namespace Merlin.Classes
 			return DataAccessor.LoadDataSet("OnAirInquireReport", procParameters);
 		}
 
-		public virtual void PrintOnAirInquire(Form owner) {}
+		// Виртуальная заглушка PrintOnAirInquire(Form) переехала в Campaign.WinForms.cs.
 
         private bool IsChangePossible
 		{

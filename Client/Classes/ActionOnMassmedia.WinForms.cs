@@ -389,5 +389,19 @@ namespace Merlin.Classes
 				Cursor.Current = Cursors.Default;
 			}
 		}
+
+		// Не диалог, но принимает UI-тип (ListBox) — поэтому здесь, иначе ядро
+		// не собирается вне проекта Client (мост, §10 конвенции).
+        internal void DisplayData(ListBox lstStat)
+        {
+            lstStat.Items.Clear();
+            lstStat.Items.Add($"Начало: {(StartDate == DateTime.MinValue ? "" : StartDate.ToShortDateString())}");
+            lstStat.Items.Add($"Окончание: {(FinishDate == DateTime.MinValue ? "" : FinishDate.ToShortDateString())}");
+            lstStat.Items.Add($"Выпусков: {this["iCount"]}");
+            lstStat.Items.Add($"Общее время: {this["duration"]}");
+            lstStat.Items.Add($"Стоимость акции без скидок: {TariffPrice:c}");
+            lstStat.Items.Add($"Стоимость акции со всеми скидками: {TotalPrice:c}");
+            lstStat.Items.Add($"Пакетная скидка: {this[ParamNames.Discount]:F2}");
+        }
 	}
 }

@@ -1,10 +1,8 @@
 ﻿using System;
 using System.Data;
-using System.Windows.Forms;
 using FogSoft.WinForm;
 using FogSoft.WinForm.Classes;
 using FogSoft.WinForm.Passport.Forms;
-using Merlin.Forms;
 
 namespace Merlin.Classes
 {
@@ -20,7 +18,9 @@ namespace Merlin.Classes
 		}
 	}
 
-	public class Tariff : PresentationObject
+	// UI-часть (DoAction) — в Tariff.WinForms.cs.
+	// Конвенция — docs/tasks/web-migration-dialogs.md.
+	public partial class Tariff : PresentationObject
 	{
 		public struct ParamNames
 		{
@@ -158,32 +158,8 @@ namespace Merlin.Classes
 			return tariff;
 		}
 
-		public override void DoAction(string actionName, IWin32Window owner, InterfaceObjects interfaceObject)
-		{
-			switch(actionName)
-			{
-				case Constants.Actions.Clone:
-                    Tariff tariff = new Tariff
-                    {
-                        parameters = Parameters
-                    };
-                    tariff.parameters[ParamNames.TariffId] = null;
-					tariff.parameters[Constants.ParamNames.ActionName] = Constants.Actions.AddItem;
+		// DoAction переехал в Tariff.WinForms.cs (IWin32Window в сигнатуре).
 
-					if (tariff.ShowPassport(owner))
-						//OnObjectCreated(tariff);
-						OnObjectCloned(tariff);
-					break;
-				
-				default:
-					base.DoAction(actionName, owner, interfaceObject);
-					break;
-			}
-		}
-
-		public override PassportForm GetPassportForm(DataSet ds)
-		{
-			return new TariffPassport(this, ds);
-		}
+		// GetPassportForm переехал в Tariff.WinForms.cs (возвращает UI-тип PassportForm).
 	}
 }

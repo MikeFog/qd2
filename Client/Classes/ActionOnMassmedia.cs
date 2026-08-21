@@ -4,7 +4,6 @@ using FogSoft.WinForm.DataAccess;
 using System;
 using System.Collections.Generic;
 using System.Data;
-using System.Windows.Forms;
 
 namespace Merlin.Classes
 {
@@ -567,17 +566,7 @@ namespace Merlin.Classes
 			return action;
 		}
 
-        internal void DisplayData(ListBox lstStat)
-        {
-            lstStat.Items.Clear();
-            lstStat.Items.Add($"Начало: {(StartDate == DateTime.MinValue ? "" : StartDate.ToShortDateString())}");
-            lstStat.Items.Add($"Окончание: {(FinishDate == DateTime.MinValue ? "" : FinishDate.ToShortDateString())}");
-            lstStat.Items.Add($"Выпусков: {this["iCount"]}");
-            lstStat.Items.Add($"Общее время: {this["duration"]}");
-            lstStat.Items.Add($"Стоимость акции без скидок: {TariffPrice:c}");
-            lstStat.Items.Add($"Стоимость акции со всеми скидками: {TotalPrice:c}");
-            lstStat.Items.Add($"Пакетная скидка: {this[ParamNames.Discount]:F2}");
-        }
+        // DisplayData(ListBox) переехал в ActionOnMassmedia.WinForms.cs.
 
         public DataTable Issues
         {

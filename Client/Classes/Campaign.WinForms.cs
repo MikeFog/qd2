@@ -224,5 +224,38 @@ namespace Merlin.Classes
 			else
 				UserMessage.ShowExclamation(Resources.ChangePaymentTypeIsForbidden);
 		}
+
+		// Не диалоги, но принимают UI-типы (ListBox / Form) — поэтому здесь,
+		// иначе ядро не собирается вне проекта Client (мост, §10 конвенции).
+		internal void DisplayCampaignData(ListBox lstStat)
+		{
+			string text;
+			lstStat.Items.Clear();
+			if (StartDate == DateTime.MinValue)
+				text = string.Empty;
+			else
+				text = StartDate.ToShortDateString();
+			lstStat.Items.Add("Начало: " + text);
+
+			if (FinishDate == DateTime.MinValue)
+				text = string.Empty;
+			else
+				text = FinishDate.ToShortDateString();
+			lstStat.Items.Add("Окончание: " + text);
+			lstStat.Items.Add("Выпусков: " + IssuesCount);
+			lstStat.Items.Add("Общее время: " + DateTimeUtils.Time2String(IssuesDuration));
+			lstStat.Items.Add("Цена по тарифам: " + TariffPrice.ToString("c"));
+			lstStat.Items.Add("Объёмная скидка: " + Discount.ToString("0.00"));
+			lstStat.Items.Add("Цена с учётом объёмной скидки: " + Price.ToString("c"));
+
+			if (CampaignType == CampaignTypes.Sponsor)
+			{
+				lstStat.Items.Add("");
+				lstStat.Items.Add("Программ: " + ProgramIssuesCount);
+				lstStat.Items.Add("Бонус: " + DateTimeUtils.Time2String(Bonus - IssuesDuration));
+			}
+		}
+
+		public virtual void PrintOnAirInquire(Form owner) {}
 	}
 }
