@@ -1,8 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Data;
-using System.Drawing;
-using System.Windows.Forms;
 using FogSoft.WinForm.Classes;
 
 namespace FogSoft.WinForm
@@ -36,16 +34,6 @@ namespace FogSoft.WinForm
 		event ContainerDelegate ContainerRefreshed;
 	}
 
-	public interface IActionHandler
-	{
-		event ObjectDelegate ObjectCreated;
-
-		Entity.Action[] ActionList { get; }
-		bool IsActionEnabled(string actionName, ViewType type);
-		bool IsActionHidden(string actionName, ViewType type);
-		void DoAction(string actionName, IWin32Window owner, InterfaceObjects interfaceObject);
-	}
-
 	public interface IDataControl
 	{
 		DataView DataSource { set; }
@@ -56,8 +44,6 @@ namespace FogSoft.WinForm
 		void DeleteCurrentObject();
 		void EditCurrentObject();
 	}
-
-	public delegate Image IconLoaderDelegate(string iconName);
 
 	public delegate void ObjectDelegate(PresentationObject presentationObject);
 	public delegate void ObjectsDelegate(IList<PresentationObject> presentationObjects);

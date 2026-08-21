@@ -254,6 +254,14 @@
       <SubType>Code</SubType>
     </Compile>
     <Compile Include="Classes\ErrorManager.cs" />
+    <Compile Include="Classes\ErrorManager.WinForms.cs" />
+    <Compile Include="Classes\ObjectContainer.WinForms.cs" />
+    <Compile Include="Globals.Core.cs" />
+    <Compile Include="Passport\Classes\PageControl.Constants.cs" />
+    <Compile Include="Classes\Interfaces.WinForms.cs" />
+    <Compile Include="Classes\PresentationObject.WinForms.cs" />
+    <Compile Include="Classes\UserInteraction.cs" />
+    <Compile Include="Classes\ViewType.cs" />
     <Compile Include="Classes\Export\ExportManager.cs">
       <SubType>Code</SubType>
     </Compile>

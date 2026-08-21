@@ -1,5 +1,4 @@
 ﻿using FogSoft.WinForm.DataAccess;
-using FogSoft.WinForm.Properties;
 using log4net;
 using System;
 using System.Collections.Generic;
@@ -7,12 +6,12 @@ using System.Data;
 using System.Data.SqlClient;
 using System.Reflection;
 using System.Text.RegularExpressions;
-using System.Windows.Forms;
-using FogSoft.WinForm.Forms;
 
 namespace FogSoft.WinForm.Classes
 {
-    public static class ErrorManager
+    // Показ ошибок пользователю (PublishError, ShowExclamation) вынесен
+    // в ErrorManager.WinForms.cs — см. docs/tasks/web-migration.md, этап 0.
+    public static partial class ErrorManager
     {
         // ── Удалены 8 locale-зависимых строковых констант (EN+RU ключевые слова).  ──
         // ── Единственная точка знания о "правильных" именах — префиксы ниже.       ──
@@ -21,73 +20,6 @@ namespace FogSoft.WinForm.Classes
 
         public static readonly ILog Log =
             LogManager.GetLogger(MethodBase.GetCurrentMethod().DeclaringType);
-
-        public static void PublishError(Exception ex)
-        {
-            try
-            {
-                SqlException sqlEx = ex as SqlException;
-                if (sqlEx != null)
-                {
-                    // This is an Sql Exception.
-                    if (sqlEx.Number == 547 || sqlEx.Number == 2627 || sqlEx.Number == 2601)
-                    {
-                        string msg = ExtractConstraintName(sqlEx);
-                        try
-                        {
-                            ShowExclamation(msg);
-                        }
-                        catch (Exception exc)
-                        {
-                            Log.Error(string.Format("Ошибка в процедуре {0}", sqlEx.Procedure));
-                            Log.Error(sqlEx);
-                            Log.Error(ex.Data);
-
-                            // ── Заменяем locale-зависимую проверку Contains("REFERENCE")/Contains("DELETE")
-                            //    на прямую проверку по Number — единственный надёжный признак.
-                            if (sqlEx.Number == 547)
-                            {
-                                // Сообщение о невозможности удаления/изменения объекта
-                                UserMessage.ShowExclamation(Resources.DefaultCannotDeleteObject);
-                            }
-                            else
-                            {
-                                Log.Error(string.Format("Error {0} in {1}", sqlEx.Message, sqlEx.Procedure), sqlEx);
-                                Log.Error(exc);
-                                Globals.ShowMessageError(Resources.ApplicationError, ex);
-                            }
-                        }
-                    }
-                    else
-                    {
-                        try
-                        {
-                            if (MessageAccessor.GetMessage(ex.Message) == null)
-                            {
-                                Log.Error(string.Format("Ошибка в процедуре {0}", sqlEx.Procedure));
-                                Log.Error(sqlEx);
-                                Log.Error(ex.Data);
-                            }
-                            ShowExclamation(ex.Message);
-                        }
-                        catch (Exception exc)
-                        {
-                            Log.Error(exc);
-                            Globals.ShowMessageError(Resources.ApplicationError, ex);
-                        }
-                    }
-                }
-                else
-                {
-                    Log.Error(ex);
-                    Globals.ShowMessageError(Resources.ApplicationError, ex);
-                }
-            }
-            finally
-            {
-                Cursor.Current = Cursors.Default;
-            }
-        }
 
         /// <summary>
         /// Возвращает имя ограничения/индекса для использования как ключ в MessageAccessor.
@@ -144,16 +76,6 @@ namespace FogSoft.WinForm.Classes
         {
             TryExtractQuotedObjectName(ex.Message, out string name);
             return name ?? string.Empty;
-        }
-
-        public static void ShowExclamation(string msgName)
-        {
-            Globals.ShowExclamation(msgName, null);
-        }
-
-        public static void ShowExclamation(string msgName, Dictionary<string, object> parameters)
-        {
-            Globals.ShowExclamation(msgName, parameters);
         }
 
         public static void LogError(string messageError, Exception e)

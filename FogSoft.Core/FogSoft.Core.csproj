@@ -1,0 +1,74 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!--
+    Ядро без UI для веб-версии (этап 0 плана docs/tasks/web-migration.md).
+
+    Исходники НЕ копируются и НЕ переносятся: они подключаются ссылками (Link) из
+    существующих проектов. Десктоп продолжает компилировать те же самые файлы сам,
+    в своей сборке, и о существовании этого проекта не знает. Поэтому проект
+    намеренно НЕ добавлен в qd2.sln — собирается отдельно: dotnet build FogSoft.Core
+  -->
+
+  <PropertyGroup>
+    <TargetFramework>net8.0</TargetFramework>
+    <RootNamespace>FogSoft.WinForm</RootNamespace>
+    <AssemblyName>FogSoft.Core</AssemblyName>
+    <LangVersion>latest</LangVersion>
+    <Nullable>disable</Nullable>
+    <ImplicitUsings>disable</ImplicitUsings>
+    <GenerateAssemblyInfo>false</GenerateAssemblyInfo>
+    <NoWarn>$(NoWarn);CS0618;CS0649;CS0162</NoWarn>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="System.Data.SqlClient" Version="4.9.0" />
+    <PackageReference Include="System.Configuration.ConfigurationManager" Version="9.0.0" />
+    <PackageReference Include="Microsoft.Extensions.Caching.Memory" Version="9.0.0" />
+    <PackageReference Include="log4net" Version="2.0.17" />
+  </ItemGroup>
+
+  <!-- Слой доступа к данным -->
+  <ItemGroup>
+    <Compile Include="..\FogSoft.WinForm\DataAccess\DataAccessor.cs" Link="DataAccess\DataAccessor.cs" />
+    <Compile Include="..\FogSoft.WinForm\DataAccess\DbExecutionScope.cs" Link="DataAccess\DbExecutionScope.cs" />
+    <Compile Include="..\FogSoft.WinForm\DataAccess\MessageAccessor.cs" Link="DataAccess\MessageAccessor.cs" />
+    <Compile Include="..\FogSoft.WinForm\DataAccess\SqlBulkCopyHelper.cs" Link="DataAccess\SqlBulkCopyHelper.cs" />
+    <Compile Include="..\FogSoft.WinForm\DataAccess\TvpValue.cs" Link="DataAccess\TvpValue.cs" />
+    <Compile Include="..\Microsoft.ApplicationBlocks.Data\SQLHelper.cs" Link="DataAccess\SQLHelper.cs" />
+  </ItemGroup>
+
+  <!-- Метаданные, безопасность, утилиты (файлы без ссылок на WinForms/Drawing) -->
+  <ItemGroup>
+    <Compile Include="..\FogSoft.WinForm\Classes\ColumnInfo.cs" Link="Classes\ColumnInfo.cs" />
+    <Compile Include="..\FogSoft.WinForm\Classes\ConfigurationUtil.cs" Link="Classes\ConfigurationUtil.cs" />
+    <Compile Include="..\FogSoft.WinForm\Classes\ConnectionCryptor.cs" Link="Classes\ConnectionCryptor.cs" />
+    <Compile Include="..\FogSoft.WinForm\Classes\Constants.cs" Link="Classes\Constants.cs" />
+    <Compile Include="..\FogSoft.WinForm\Classes\DateTimeUtils.cs" Link="Classes\DateTimeUtils.cs" />
+    <Compile Include="..\FogSoft.WinForm\Classes\Entity.cs" Link="Classes\Entity.cs" />
+    <Compile Include="..\FogSoft.WinForm\Classes\ErrorManager.cs" Link="Classes\ErrorManager.cs" />
+    <Compile Include="..\FogSoft.WinForm\Classes\ObjectContainer.cs" Link="Classes\ObjectContainer.cs" />
+    <Compile Include="..\FogSoft.WinForm\Globals.Core.cs" Link="Globals.Core.cs" />
+    <Compile Include="..\FogSoft.WinForm\Passport\Classes\PageControl.Constants.cs" Link="Passport\PageControl.Constants.cs" />
+    <Compile Include="..\FogSoft.WinForm\Classes\EntityManager.cs" Link="Classes\EntityManager.cs" />
+    <Compile Include="..\FogSoft.WinForm\Classes\FieldTypeResolver.cs" Link="Classes\FieldTypeResolver.cs" />
+    <Compile Include="..\FogSoft.WinForm\Classes\Interfaces.cs" Link="Classes\Interfaces.cs" />
+    <Compile Include="..\FogSoft.WinForm\Classes\InternalVariable.cs" Link="Classes\InternalVariable.cs" />
+    <Compile Include="..\FogSoft.WinForm\Classes\PresentationObject.cs" Link="Classes\PresentationObject.cs" />
+    <Compile Include="..\FogSoft.WinForm\Classes\UserInteraction.cs" Link="Classes\UserInteraction.cs" />
+    <Compile Include="..\FogSoft.WinForm\Classes\ViewType.cs" Link="Classes\ViewType.cs" />
+    <Compile Include="..\FogSoft.WinForm\Classes\Money.cs" Link="Classes\Money.cs" />
+    <Compile Include="..\FogSoft.WinForm\Classes\ObjectsIterator.cs" Link="Classes\ObjectsIterator.cs" />
+    <Compile Include="..\FogSoft.WinForm\Classes\OperationScope.cs" Link="Classes\OperationScope.cs" />
+    <Compile Include="..\FogSoft.WinForm\Classes\ParseHelper.cs" Link="Classes\ParseHelper.cs" />
+    <Compile Include="..\FogSoft.WinForm\Classes\PassportLoader.cs" Link="Classes\PassportLoader.cs" />
+    <Compile Include="..\FogSoft.WinForm\Classes\RelationManager.cs" Link="Classes\RelationManager.cs" />
+    <Compile Include="..\FogSoft.WinForm\Classes\ReportGenerator.cs" Link="Classes\ReportGenerator.cs" />
+    <Compile Include="..\FogSoft.WinForm\Classes\SecurityManager.cs" Link="Classes\SecurityManager.cs" />
+    <Compile Include="..\FogSoft.WinForm\Classes\SimpleObject.cs" Link="Classes\SimpleObject.cs" />
+    <Compile Include="..\FogSoft.WinForm\Classes\StringUtil.cs" Link="Classes\StringUtil.cs" />
+    <Compile Include="..\FogSoft.WinForm\Classes\TempFileWorker.cs" Link="Classes\TempFileWorker.cs" />
+    <Compile Include="..\FogSoft.WinForm\Classes\Time.cs" Link="Classes\Time.cs" />
+    <Compile Include="..\FogSoft.WinForm\Classes\UserSettings.cs" Link="Classes\UserSettings.cs" />
+  </ItemGroup>
+
+</Project>
