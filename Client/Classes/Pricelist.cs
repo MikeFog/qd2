@@ -2,7 +2,6 @@
 using System.Collections.Generic;
 using System.Data;
 using FogSoft.WinForm.Classes;
-using CrystalDecisions.CrystalReports.Engine;
 using FogSoft.WinForm.DataAccess;
 
 namespace Merlin.Classes
