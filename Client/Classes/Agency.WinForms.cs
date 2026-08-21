@@ -1,17 +1,38 @@
 using System;
+using System.Collections.Generic;
 using System.Data;
 using System.Windows.Forms;
 using FogSoft.WinForm;
 using FogSoft.WinForm.Classes;
 using FogSoft.WinForm.DataAccess;
+using FogSoft.WinForm.Forms;
 using Merlin.Forms;
 
 namespace Merlin.Classes
 {
-	// UI-часть Agency: показ паспорта. Дословный перенос из Agency.cs, логика не менялась.
+	// UI-часть Agency: показ паспорта, диалог выбора агентства. Дословный
+	// перенос из Agency.cs, логика не менялась.
 	// Конвенция — docs/tasks/web-migration-dialogs.md.
 	public partial class Agency
 	{
+		public static List<PresentationObject> SelectAgencies(PresentationObject presentationObject,
+			Dictionary<string, object> parameters, IWin32Window owner)
+		{
+			List<PresentationObject> result = GetAgenciesForSelection(presentationObject, parameters, out DataTable candidatesForDialog);
+			if (candidatesForDialog == null)
+				return result;
+
+			// If more than one row - display selector with checkboxes
+			SelectionForm selector = new SelectionForm(
+				EntityManager.GetEntity((int)Entities.Agency), candidatesForDialog.DefaultView, "Выбор агентств", true);
+
+			if (selector.ShowDialog(owner) == DialogResult.OK)
+			{
+				return selector.AddedItems;
+			}
+			return null;
+		}
+
 		public override bool ShowPassport(IWin32Window owner)
 		{
 			try
