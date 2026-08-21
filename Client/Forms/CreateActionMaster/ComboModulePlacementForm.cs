@@ -344,10 +344,7 @@ namespace Merlin.Forms.CreateActionMaster
 			}
 
 			if (deletedObjects.Count > 0)
-			{
-				DeleteEmptyCampaignsAndAction();
-				RefreshAfterChange();
-			}
+				AfterIssuesDeleted();
 
 			if (deleteErrors.Rows.Count > 0)
 				SmartGrid.ShowDeleteErrors(deleteErrors);
@@ -396,6 +393,15 @@ namespace Merlin.Forms.CreateActionMaster
 			AfterIssuesDeleted();
 		}
 
+		/// <summary>
+		/// Общий хвост удаления - откуда бы оно ни пришло: контекстное меню, Del по строкам
+		/// панели, Del по ячейкам сетки.
+		///
+		/// Пересчёт вызываем сами, как это делает CampaignForm.ProcessCurrentCampaignIssuesDelete.
+		/// Полагаться на ModuleIssue.Delete нельзя: там переопределён Delete() без параметров,
+		/// а SmartGrid и массовое удаление зовут Delete(true) - другой виртуальный метод, и
+		/// пересчёт в нём не выполняется.
+		/// </summary>
 		private void AfterIssuesDeleted()
 		{
 			try
@@ -403,6 +409,7 @@ namespace Merlin.Forms.CreateActionMaster
 				Application.DoEvents();
 				Cursor = Cursors.WaitCursor;
 
+				if (_action != null) _action.Recalculate();
 				DeleteEmptyCampaignsAndAction();
 				RefreshAfterChange();
 			}
