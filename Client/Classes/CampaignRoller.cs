@@ -1,17 +1,19 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Data;
-using System.Windows.Forms;
 using FogSoft.WinForm;
 using FogSoft.WinForm.Classes;
 using FogSoft.WinForm.DataAccess;
-using Merlin.Controls;
-using Merlin.Forms;
 using static Merlin.Classes.Campaign;
 
 namespace Merlin.Classes
 {
-    internal class CampaignRoller : CampaignPart
+    // UI-часть (DoAction, SubstituteRoller, DeleteIssues, диалог Substitute) —
+	// в CampaignRoller.WinForms.cs. Здесь остаётся точка записи в БД
+	// ApplyRollerSubstitutionForDays: она возвращает таблицу незаменённых
+	// роликов, а показывает её вызывающий UI-код.
+	// Конвенция — docs/tasks/web-migration-dialogs.md, §8 п.4.
+	internal partial class CampaignRoller : CampaignPart
 	{
 		private Roller roller;
 
@@ -30,39 +32,7 @@ namespace Merlin.Classes
 			return base.IsActionEnabled(actionName, type);
 		}
 
-		public override void DoAction(string actionName, IWin32Window owner, InterfaceObjects interfaceObject)
-		{
-			if (actionName == Constants.Actions.Substitute)
-				SubstituteRoller(owner);
-			else if (actionName == Constants.Actions.PlayRoller)
-				MediaControl.Current.Play(this);
-            else if (actionName == Constants.Actions.ChangePositions)
-                ChangePositions((Form)owner);
-            else if (actionName == Campaign.ActionNames.DeleteIssues)
-                DeleteIssues((Form)owner);
-            else
-                base.DoAction(actionName, owner, interfaceObject);
-		}
-
-		protected void SubstituteRoller(IWin32Window owner, int refreshLevel = 1)
-		{
-            Campaign.Action.Refresh();
-            Substitute((Form)owner, Campaign, null, ModuleID, Roller,
-                       delegate
-                       {
-                           RecalculateAndShowPriceChange(Campaign.Action.TotalPrice);
-                           //OnParentChanged(this, refreshLevel);
-                           OnParentChanged(this, EntityManager.GetEntity((int)Entities.GeneralCampaign));
-                       });
-        }
-
-        private void DeleteIssues(Form owner)
-        {
-            Dictionary<string, object> parameters = DataAccessor.CreateParametersDictionary();
-            parameters[CampaignPart.OBJECT_ID] = Roller.RollerId;
-			if (Campaign.DeleteIssues(owner, false, parameters, isFireEvent: false))
-				FireContainerRefreshed();
-        }
+		// DoAction, SubstituteRoller и DeleteIssues переехали в CampaignRoller.WinForms.cs.
 
         public Roller Roller
 		{
@@ -85,31 +55,19 @@ namespace Merlin.Classes
 			get { return ParseHelper.GetBooleanFromObject(this["isMute"], false); }
 		}
 
-		public static void Substitute(Form parentForm, Campaign campaign, int? packModuleId, int? moduleID, Roller roller, Globals.VoidCallback onEnd)
-		{
-			try
-			{
-				RollerSubstitutionForm fSubstitute = new RollerSubstitutionForm(roller, campaign, moduleID, packModuleId);
-				if (fSubstitute.ShowDialog(parentForm) == DialogResult.OK)
-				{
-					Cursor.Current = Cursors.WaitCursor;
-					Application.DoEvents();
+		// Substitute (диалог выбора ролика и дней) переехал в CampaignRoller.WinForms.cs.
 
-                    Subtitute(campaign, roller, fSubstitute.NewRoller, fSubstitute.SelectedDays, moduleID, packModuleId);
-					onEnd?.Invoke();
-				}
-			}
-			catch (Exception ex)
-			{
-				ErrorManager.PublishError(ex);
-			}
-			finally
-			{
-				parentForm.Cursor = Cursors.Default;
-			}
-		}
-
-		public static void Subtitute(Campaign campaign, Roller oldRoller, Roller newRoller,
+		/// <summary>
+		/// Заменяет <paramref name="oldRoller"/> на <paramref name="newRoller"/> в
+		/// кампании <paramref name="campaign"/> по набору дней <paramref name="days"/>,
+		/// опционально в рамках модуля или пакетного модуля.
+		/// Возвращает таблицу незаменённых роликов (null, если процедура ничего не
+		/// вернула) — показать её пользователю решает вызывающий UI-код.
+		///
+		/// Имя отличается от <see cref="CampaignPart.ApplyRollerSubstitution"/> не
+		/// случайно: тот заменяет ролик в одном выпуске, этот — по набору дней.
+		/// </summary>
+		public static DataTable ApplyRollerSubstitutionForDays(Campaign campaign, Roller oldRoller, Roller newRoller,
 								  DataTable days, object moduleID, object packModuleID)
 		{
 			Dictionary<string, object> procParameters = DataAccessor.PrepareParameters(
@@ -128,9 +86,7 @@ namespace Merlin.Classes
 
 			DataSet ds = DataAccessor.LoadDataSet("RollerSubstitute", procParameters, days);
 
-			if (ds != null && ds.Tables.Count > 0 && ds.Tables[0].Rows.Count > 0)
-				Globals.ShowSimpleJournal(EntityManager.GetEntity((int) Entities.RollerUnSubtitude), "Незамененные ролики",
-				                          ds.Tables[0]);
+			return (ds != null && ds.Tables.Count > 0) ? ds.Tables[0] : null;
 		}
 	}
 

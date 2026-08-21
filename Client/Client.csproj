@@ -552,6 +552,7 @@
     <Compile Include="Classes\CampaignRoller.cs">
       <SubType>Code</SubType>
     </Compile>
+    <Compile Include="Classes\CampaignRoller.WinForms.cs" />
     <Compile Include="Classes\EntityCampaign.cs" />
     <Compile Include="Classes\FakeContainers\AdvertTypeContainer.cs" />
     <Compile Include="Classes\FirmWithActions.cs" />

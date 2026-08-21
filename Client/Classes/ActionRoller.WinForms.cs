@@ -43,9 +43,15 @@ namespace Merlin.Classes
 					foreach (DataRow campaignrRow in action.Campaigns().Rows)
 					{
 						CampaignOnSingleMassmedia campaign = new CampaignOnSingleMassmedia(campaignrRow);
+						// Журнал незаменённых роликов показывается внутри цикла, по разу
+						// на каждую кампанию/модуль/пакет — как было, когда показ сидел
+						// внутри самой записи в БД. Поведение сохранено намеренно:
+						// при незаменённых роликах в нескольких кампаниях пользователь
+						// по-прежнему увидит несколько журналов подряд.
 						if (campaign.CampaignType == Campaign.CampaignTypes.Simple ||
 							campaign.CampaignType == Campaign.CampaignTypes.Sponsor)
-							CampaignRoller.Subtitute(campaign, this, new Roller(newRollerId), campaign.Days(this), null, null);
+							CampaignRoller.ShowUnsubstitutedRollers(
+								CampaignRoller.ApplyRollerSubstitutionForDays(campaign, this, new Roller(newRollerId), campaign.Days(this), null, null));
 						else if (campaign.CampaignType == Campaign.CampaignTypes.Module)
 						{
 							CampaignModule campaignModule = new CampaignModule(campaign.CampaignId)
@@ -55,7 +61,8 @@ namespace Merlin.Classes
 							foreach (DataRow moduleRow in campaignModule.GetContent().Rows)
 							{
 								Module module = new Module(moduleRow);
-								CampaignRoller.Subtitute(campaign, this, new Roller(newRollerId), campaign.Days(this), module.ModuleId, null);
+								CampaignRoller.ShowUnsubstitutedRollers(
+									CampaignRoller.ApplyRollerSubstitutionForDays(campaign, this, new Roller(newRollerId), campaign.Days(this), module.ModuleId, null));
 							}
 
 						}
@@ -68,7 +75,8 @@ namespace Merlin.Classes
 							foreach (DataRow packModuleRow in campaignPackModule.GetContent().Rows)
 							{
 								PackModule packModule = new PackModule(packModuleRow);
-								CampaignRoller.Subtitute(campaign, this, new Roller(newRollerId), campaign.Days(this), null, packModule.PackModuleId);
+								CampaignRoller.ShowUnsubstitutedRollers(
+									CampaignRoller.ApplyRollerSubstitutionForDays(campaign, this, new Roller(newRollerId), campaign.Days(this), null, packModule.PackModuleId));
 							}
 						}
 						else

@@ -10,9 +10,10 @@ namespace Merlin.Classes
 	// UI-часть PackModuleIssueInCampaignForm/PackModuleIssue: диспетчеризация
 	// действий и диалог смены предмета рекламы. Бизнес-часть смены предмета
 	// рекламы (ApplyAdvertTypeChange) — в PackModuleIssue.cs.
-	// SubstituteRoller (замена ролика) перенесён целиком, без разреза — общий с
-	// CampaignRoller.cs/ActionRoller.cs/CampaignModule.cs кластер, см.
-	// docs/tasks/web-migration-dialogs.md, §8, п.4.
+	// SubstituteRoller (замена ролика) — тонкая обёртка над диалогом
+	// CampaignRoller.Substitute, он в UI-половине CampaignRoller.WinForms.cs;
+	// запись в БД разведена с показом журнала
+	// (CampaignRoller.ApplyRollerSubstitutionForDays).
 	// Конвенция — docs/tasks/web-migration-dialogs.md.
 	internal partial class PackModuleIssueInCampaignForm
 	{

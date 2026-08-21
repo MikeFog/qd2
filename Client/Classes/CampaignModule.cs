@@ -76,10 +76,10 @@ namespace Merlin.Classes
             return base.IsActionEnabled(actionName, type);
         }
 
-        // DoAction переехал в CampaignModule.WinForms.cs целиком (в том числе ветка
-        // Substitute — общий с ActionRoller.cs/PackModuleIssue.cs кластер вокруг
-        // CampaignRoller.Subtitute, сам SubstituteRoller пока не разрезан, см.
-        // docs/tasks/web-migration-dialogs.md, §8).
+        // DoAction переехал в CampaignModule.WinForms.cs целиком. Ветка Substitute
+        // зовёт унаследованный CampaignRoller.SubstituteRoller — он тоже в
+        // UI-половине (CampaignRoller.WinForms.cs), а запись в БД разведена
+        // с показом журнала (CampaignRoller.ApplyRollerSubstitutionForDays).
 
         private ModulePricelist ModulePricelist
         {
