@@ -1,8 +1,6 @@
 ﻿using FogSoft.WinForm;
 using FogSoft.WinForm.Classes;
 using FogSoft.WinForm.DataAccess;
-using FogSoft.WinForm.Forms;
-using Merlin.Forms;
 using System;
 using System.Collections.Generic;
 using System.Data;
@@ -94,42 +92,7 @@ namespace Merlin.Classes
 
 		// ShowPassport переехал в ActionOnMassmedia.WinForms.cs (открывает ActionForm).
 
-		public override void DoAction(string actionName, IWin32Window owner, InterfaceObjects interfaceObject)
-		{
-			Application.DoEvents();
-
-			if (actionName == Constants.EntityActions.Edit)
-			{
-				if (ShowPassport(owner))
-				{
-                    //FireContainerRefreshed();
-                    OnParentChanged(this, 1);
-                }
-			}
-			else if (actionName == ActionNames.Deactivate)
-				DeactivateAction();
-			else if (actionName == ActionNames.Activate|| string.Compare(actionName, ActionNames.ActivateTest) == 0)
-				ActivateAction(string.Compare(actionName, ActionNames.ActivateTest) == 0);
-			else if (string.Compare(actionName, ActionNames.Merge) == 0)
-				Merge();
-			else if (string.Compare(actionName, ActionNames.ActionRollers) == 0)
-				ShowRollers();
-			else if (string.Compare(actionName, ActionNames.Recalculate) == 0)
-			{
-				Recalculate(true);
-				FireContainerRefreshed();
-			}
-            else if (actionName == ActionNames.Clone)
-                Clone();
-            else if (actionName == ActionNames.SplitCampaigns)
-                SplitCampaign();
-            else if (actionName == ActionNames.SplitAction)
-                SplitAction();
-            else if (actionName == ActionNames.Restore)
-                Restore(owner);
-            else
-                base.DoAction(actionName, owner, interfaceObject);
-		}
+		// DoAction переехал в ActionOnMassmedia.WinForms.cs.
 
         protected override string DeleteConfirmationText 
 		{
@@ -217,49 +180,40 @@ namespace Merlin.Classes
 		// SplitAction, IsSplitOrMergeEnabled и CheckCampaignsSelectionResultForActionSplit
 		// переехали в ActionOnMassmedia.WinForms.cs (диалоги и показ сообщений).
 
-        private void SplitCampaign()
-		{
-            if (!IsSplitOrMergeEnabled(StartDate.Date)) return;
+        // SplitCampaign переехал в ActionOnMassmedia.WinForms.cs.
 
-            DataTable dt = SetCampaignsFilterByType(Campaign.CampaignTypes.Simple);
-            if (dt.DefaultView.Count == 0)
+        /// <summary>Кампании — кандидаты на разделение по кампаниям (тип Simple).</summary>
+        internal bool CanSplitCampaign(out string messageKey)
+        {
+            messageKey = null;
+            if (SetCampaignsFilterByType(Campaign.CampaignTypes.Simple).DefaultView.Count == 0)
             {
-                UserMessage.ShowInformation(MessageAccessor.GetMessage("NoCampaignsForSplit"));
-                return;
+                messageKey = "NoCampaignsForSplit";
+                return false;
             }
+            return true;
+        }
 
-            SelectCampaignsForm fSelector = new SelectCampaignsForm(this, SelectionMode.Split);
+        /// <summary>Делит акцию по правилам <paramref name="splitRules"/> на новую акцию.</summary>
+        internal void ApplySplitCampaign(IEnumerable<SplitRule> splitRules)
+        {
+            ActionOnMassmedia newAction = CreateNewActionForSplit();
 
-            if (fSelector.ShowDialog(Globals.MdiParent) == DialogResult.OK)
-			{
-				// all data has been collected, let's go split
-				try
-				{
-                    Cursor.Current = Cursors.WaitCursor;
-                    // clone action
-                    ActionOnMassmedia newAction = CreateNewActionForSplit();
-
-                    foreach (SplitRule rule in fSelector.SplitRules)
-					{
-						Campaign newCampaign = Campaign.CreateInstance(
-							int.Parse(rule.campaign[Campaign.ParamNames.CampaignTypeId].ToString()),
-							int.Parse(rule.campaign[Campaign.ParamNames.PaymentTypeID].ToString()),
-                            int.Parse(rule.campaign[Campaign.ParamNames.MassmediaId].ToString()),
-                            int.Parse(rule.campaign[Campaign.ParamNames.AgencyID].ToString()));
-                        newCampaign[ParamNames.ActionId] = newAction[ParamNames.ActionId];
-						newCampaign[Campaign.ParamNames.ManagerDiscount] = rule.campaign[Campaign.ParamNames.ManagerDiscount];	
-                        newCampaign.Update();
-						MoveIssues(newCampaign, rule);
-                    }
-                    Recalculate();
-                    newAction.Recalculate();
-					OnParentChanged(this, 1);
-                }
-                finally
-                {
-                    Cursor.Current = Cursors.Default;
-                }
+            foreach (SplitRule rule in splitRules)
+            {
+                Campaign newCampaign = Campaign.CreateInstance(
+                    int.Parse(rule.campaign[Campaign.ParamNames.CampaignTypeId].ToString()),
+                    int.Parse(rule.campaign[Campaign.ParamNames.PaymentTypeID].ToString()),
+                    int.Parse(rule.campaign[Campaign.ParamNames.MassmediaId].ToString()),
+                    int.Parse(rule.campaign[Campaign.ParamNames.AgencyID].ToString()));
+                newCampaign[ParamNames.ActionId] = newAction[ParamNames.ActionId];
+                newCampaign[Campaign.ParamNames.ManagerDiscount] = rule.campaign[Campaign.ParamNames.ManagerDiscount];
+                newCampaign.Update();
+                MoveIssues(newCampaign, rule);
             }
+            Recalculate();
+            newAction.Recalculate();
+            OnParentChanged(this, 1);
         }
 
 		private void MoveIssues(Campaign newCampaign, SplitRule rule)
@@ -294,64 +248,54 @@ namespace Merlin.Classes
             return filteredCampaigns;
         }
 
-        private void Clone()
+        // Clone переехал в ActionOnMassmedia.WinForms.cs.
+
+        /// <summary>
+        /// Клонирует акцию с выбранными кампаниями (<paramref name="selectedItems"/> —
+        /// дата клонирования и исходная кампания). Возвращает новую акцию;
+        /// <paramref name="tableErrors"/> — таблица ошибок по отдельным кампаниям
+        /// (пустая, если ошибок не было).
+        /// </summary>
+        internal ActionOnMassmedia ApplyClone(IEnumerable<(DateTime date, PresentationObject campaign)> selectedItems, out DataTable tableErrors)
         {
-			try
-			{
-				SelectCampaignsForm form = new SelectCampaignsForm(this, SelectionMode.Clone);
-				if (form.ShowDialog(Globals.MdiParent) == DialogResult.OK)
-				{
-					Cursor.Current = Cursors.WaitCursor;
+            ActionOnMassmedia newAction = new ActionOnMassmedia(Firm);
+            newAction.Update();
 
-					// clone action
-					ActionOnMassmedia newAction = new ActionOnMassmedia(Firm);
-					newAction.Update();
+            tableErrors = ErrorManager.CreateErrorsTable();
 
-					DataTable tableErrors = ErrorManager.CreateErrorsTable();
+            foreach (var item in selectedItems)
+            {
+                int campaignTypeId = int.Parse(item.campaign[Campaign.ParamNames.CampaignTypeId].ToString());
 
-					foreach (var item in form.SelectedItems)
-					{
-						int campaignTypeId = int.Parse(item.presentationObject[Campaign.ParamNames.CampaignTypeId].ToString());
+                Campaign newCampaign = Campaign.CreateInstance(
+                    campaignTypeId,
+                    int.Parse(item.campaign[Campaign.ParamNames.PaymentTypeID].ToString()),
+                    campaignTypeId == (int)Campaign.CampaignTypes.PackModule ?
+                        null : (int?)int.Parse(item.campaign[Campaign.ParamNames.MassmediaId].ToString()),
+                    int.Parse(item.campaign[Campaign.ParamNames.AgencyID].ToString()));
+                newCampaign[ParamNames.ActionId] = newAction[ParamNames.ActionId];
+                newCampaign.Update();
+                int shiftInDays = (item.date - DateTime.Parse(item.campaign[Campaign.ParamNames.StartDate].ToString())).Days;
 
-                        Campaign newCampaign = Campaign.CreateInstance(
-							campaignTypeId,
-							int.Parse(item.presentationObject[Campaign.ParamNames.PaymentTypeID].ToString()),
-							campaignTypeId == (int)Campaign.CampaignTypes.PackModule ? 
-								null : (int?)int.Parse(item.presentationObject[Campaign.ParamNames.MassmediaId].ToString()),
-							int.Parse(item.presentationObject[Campaign.ParamNames.AgencyID].ToString()));
-						newCampaign[ParamNames.ActionId] = newAction[ParamNames.ActionId];
-						newCampaign.Update();
-						int shiftInDays = (item.date - DateTime.Parse(item.presentationObject[Campaign.ParamNames.StartDate].ToString())).Days;
+                Campaign selectedCampaign = (Campaign)item.campaign;
 
-						Campaign selectedCampaign = (Campaign)item.presentationObject;
-
-                        if (selectedCampaign.CampaignType == Campaign.CampaignTypes.Simple)
-							CloneRollerIssues(selectedCampaign, newCampaign, shiftInDays, tableErrors);
-						else if (selectedCampaign.CampaignType == Campaign.CampaignTypes.Module)
-							CloneModuleIssues(selectedCampaign, newCampaign, shiftInDays, tableErrors);
-						else if (selectedCampaign.CampaignType == Campaign.CampaignTypes.Sponsor)
-						{
-							CloneProgramIssues(selectedCampaign, newCampaign, shiftInDays, tableErrors);
-							CloneRollerIssues(selectedCampaign, newCampaign, shiftInDays, tableErrors);
-						}
-						else if (selectedCampaign.CampaignType == Campaign.CampaignTypes.PackModule)
-						{
-							ClonePackModuleIssues(selectedCampaign, (CampaignPackModule)newCampaign, shiftInDays, tableErrors);
-						}
-                    }
-					((ActionOnMassmedia)newAction).Recalculate();
-                    OnParentChanged(this, 1);
-                    if (tableErrors.Rows.Count > 0)
-						Globals.ShowSimpleJournal(EntityManager.GetEntity((int)Entities.ErrTmplGen), "Ошибки клонирования", tableErrors);
-
-					Globals.ShowSimpleJournal(EntityManager.GetEntity((int)Entities.Issue), string.Format("Клонированные выходы в эфир новой акции № {0}", newAction.ActionId), newAction.Issues);
-					
-				}
-			}
-			finally
-			{
-				Cursor.Current = Cursors.Default;
-			}
+                if (selectedCampaign.CampaignType == Campaign.CampaignTypes.Simple)
+                    CloneRollerIssues(selectedCampaign, newCampaign, shiftInDays, tableErrors);
+                else if (selectedCampaign.CampaignType == Campaign.CampaignTypes.Module)
+                    CloneModuleIssues(selectedCampaign, newCampaign, shiftInDays, tableErrors);
+                else if (selectedCampaign.CampaignType == Campaign.CampaignTypes.Sponsor)
+                {
+                    CloneProgramIssues(selectedCampaign, newCampaign, shiftInDays, tableErrors);
+                    CloneRollerIssues(selectedCampaign, newCampaign, shiftInDays, tableErrors);
+                }
+                else if (selectedCampaign.CampaignType == Campaign.CampaignTypes.PackModule)
+                {
+                    ClonePackModuleIssues(selectedCampaign, (CampaignPackModule)newCampaign, shiftInDays, tableErrors);
+                }
+            }
+            ((ActionOnMassmedia)newAction).Recalculate();
+            OnParentChanged(this, 1);
+            return newAction;
         }
 
         private void ClonePackModuleIssues(Campaign campaign, CampaignPackModule newCampaign, int shiftInDays, DataTable tableErrors)
@@ -460,12 +404,7 @@ namespace Merlin.Classes
 			}
         }
 
-        private void ShowRollers()
-		{
-			Globals.ShowSimpleJournal(EntityManager.GetEntity((int)Entities.ActionRollersStat), 
-				string.Format("Статистика по роликам для акции №{0}", ActionId), 
-				new Dictionary<string, object>{{"actionID", ActionId}});
-		}
+        // ShowRollers переехал в ActionOnMassmedia.WinForms.cs.
 
 		public static bool CheckLoggedUserRight(string actionName, ActionOnMassmedia action)
 		{
@@ -503,63 +442,48 @@ namespace Merlin.Classes
 			return base.IsActionEnabled(actionName, type);
 		}
 
-		private void Restore(IWin32Window owner)
+		// Restore, Merge и ActivateAction переехали в ActionOnMassmedia.WinForms.cs.
+		// Restore и ActivateAction перенесены целиком без разреза: Restore
+		// использует Globals.SetWaitCursor/SetDefaultCursor (не связано с
+		// ShowDialog, но само по себе UI); ActivateAction слишком плотно
+		// переплетён с отображением трёх журналов результатов через
+		// специально созданные для показа виртуальные сущности — деловая
+		// логика активации и подготовка данных для отображения не разделяются
+		// без переделки самого способа сообщать результат активации.
+
+		/// <summary>Кандидаты на объединение с этой акцией. null, если объединять не с чем.</summary>
+		internal DataTable GetActionsForMerge()
 		{
-			try
-			{
-                Globals.SetWaitCursor((Form)owner);
-
-                Dictionary<string, object> procParameters = DataAccessor.CreateParametersDictionary();
-                procParameters.Add("actionID", ActionId);
-				DataAccessor.ExecuteNonQuery("ActionRestore", procParameters);
-				OnObjectDeleted(this);
-				UserMessage.ShowCompleted(MessageAccessor.GetMessage("ActionRestored"));
-			}
-			finally
-			{
-				Globals.SetDefaultCursor((Form)owner);
-			}
-		}
-
-		public void Merge()
-		{
-            if (!IsSplitOrMergeEnabled(StartDate.Date)) return;
-
-            Entity entityAction = EntityManager.GetEntity((int) Entities.Action);
+			Entity entityAction = EntityManager.GetEntity((int) Entities.Action);
 			Dictionary<string, object> parametersActions =
 				DataAccessor.PrepareParameters(entityAction, InterfaceObjects.SimpleJournal, Constants.Actions.Load);
 			parametersActions[Firm.ParamNames.FirmId] = Firm.FirmId;
 			parametersActions[SecurityManager.ParamNames.UserId] = parameters[SecurityManager.ParamNames.UserId];
-            parametersActions["withoutActionId"] = ActionId;
-            parametersActions["isShowActivate"] = IsConfirmed;
-            parametersActions["isShowNotActivate"] = !IsConfirmed;
-            DataSet ds = DataAccessor.DoAction(parametersActions) as DataSet;
-			if (ds != null)
-			{
-				DataTable table = ds.Tables[Constants.TableNames.Data];
-				SelectionForm selection = new SelectionForm(entityAction, table.DefaultView, "Объдинить с ...");
-				if (selection.ShowDialog() == DialogResult.OK && selection.SelectedObject != null && selection.SelectedObject is ActionOnMassmedia)
-				{
-                    ActionOnMassmedia action2 = (ActionOnMassmedia)selection.SelectedObject;
-                    if (!IsSplitOrMergeEnabled(action2.StartDate.Date)) return;
+			parametersActions["withoutActionId"] = ActionId;
+			parametersActions["isShowActivate"] = IsConfirmed;
+			parametersActions["isShowNotActivate"] = !IsConfirmed;
+			DataSet ds = DataAccessor.DoAction(parametersActions) as DataSet;
+			return ds?.Tables[Constants.TableNames.Data];
+		}
 
-					Dictionary<string, object> parametersMerge = DataAccessor.CreateParametersDictionary();
-					parametersMerge["firstActionID"] = ActionId;
-                    parametersMerge["secondActionID"] = action2.ActionId;
-					parametersMerge["liveActionID"] = 0;
-					DataAccessor.ExecuteNonQuery("MergeActions", parametersMerge);
-                    OnParentChanged(this, 1);
-					/*
-                    int liveActionID = (int) parametersMerge["liveActionID"];
-					if (liveActionID > 0)
-					{
-						ActionOnMassmedia action = GetActionById(liveActionID);
-						action.Recalculate();
-						OnParentChanged(this, 1);
-					}
-					*/
-				}
+		/// <summary>Объединяет эту акцию с <paramref name="action2"/>.</summary>
+		internal void ApplyMerge(ActionOnMassmedia action2)
+		{
+			Dictionary<string, object> parametersMerge = DataAccessor.CreateParametersDictionary();
+			parametersMerge["firstActionID"] = ActionId;
+			parametersMerge["secondActionID"] = action2.ActionId;
+			parametersMerge["liveActionID"] = 0;
+			DataAccessor.ExecuteNonQuery("MergeActions", parametersMerge);
+			OnParentChanged(this, 1);
+			/*
+			int liveActionID = (int) parametersMerge["liveActionID"];
+			if (liveActionID > 0)
+			{
+				ActionOnMassmedia action = GetActionById(liveActionID);
+				action.Recalculate();
+				OnParentChanged(this, 1);
 			}
+			*/
 		}
 
 		public void Recalculate(bool refreshFlag = true, DateTime? todayDate = null)
@@ -606,194 +530,35 @@ namespace Merlin.Classes
 			ChildEntity = EntityManager.GetEntity((int) Entities.CampaignOnMassmedia);
 		}
 
-		private void DeactivateAction()
+		// DeactivateAction переехал в ActionOnMassmedia.WinForms.cs.
+
+		/// <summary>Можно ли деактивировать акцию. false — <paramref name="errorMessage"/> заполнен.</summary>
+		internal bool CanDeactivate(out string errorMessage)
 		{
-			if(!(SecurityManager.LoggedUser.IsAdmin || SecurityManager.LoggedUser.IsTrafficManager) && StartDate < DateTime.Today)
+			if (!(SecurityManager.LoggedUser.IsAdmin || SecurityManager.LoggedUser.IsTrafficManager) && StartDate < DateTime.Today)
 			{
-				UserMessage.ShowExclamation(Properties.Resources.DeactivationNotAllowed);
-				return;
+				errorMessage = Properties.Resources.DeactivationNotAllowed;
+				return false;
 			}
-
-			if (Globals.ShowQuestion("ConfirmActionDeactivate", null) == DialogResult.Yes)
-			{
-				try
-				{
-					Cursor.Current = Cursors.WaitCursor;
-
-					DataAccessor.PrepareParameters(
-						parameters, entity, InterfaceObjects.FakeModule, Constants.Actions.Deactivate);
-					DataAccessor.DoAction(parameters);
-					Refresh();
-					OnObjectDeleted(this);
-				}
-				finally
-				{
-					Cursor.Current = Cursors.Default;
-				}
-			}
-		}
-
-		private void ActivateAction(bool isTestActivation)
-		{
-			bool tryTransferFailedIssues = false;
-			bool allowDifferentWindowPrice = false;
-			bool avoidFirmRollerWindows = true;
-			int transferAttemptCount = 0;
-
-			try
-			{
-				if (!isTestActivation && !CheckActionRollersAndProgramIssues()) return;
-				if (!isTestActivation)
-				{
-					using (ActionActivateSettingsForm form = new ActionActivateSettingsForm())
-					{
-						if (form.ShowDialog(Globals.MdiParent) != DialogResult.OK)
-							return;
-
-						tryTransferFailedIssues = form.TryTransferFailedIssues;
-						allowDifferentWindowPrice = form.AllowDifferentWindowPrice;
-						avoidFirmRollerWindows = form.AvoidFirmRollerWindows;
-						transferAttemptCount = form.TransferAttemptCount;
-					}
-				}
-
-				Cursor.Current = Cursors.WaitCursor;
-				parameters["isTestActivate"] = isTestActivation;
-				parameters["tryTransferFailedIssues"] = tryTransferFailedIssues;
-				parameters["allowDifferentWindowPrice"] = allowDifferentWindowPrice;
-				parameters["avoidFirmRollerWindows"] = avoidFirmRollerWindows;
-				parameters["transferAttemptCount"] = transferAttemptCount;
-
-				DataAccessor.PrepareParameters(
-					parameters, entity, InterfaceObjects.FakeModule, Constants.Actions.Activate);
-				DataSet ds = (DataSet)DataAccessor.DoAction(parameters);
-
-				if (ds.Tables["activated"].Rows.Count > 0)
-				{
-					Entity activatedEntity = EntityManager.CreateVirtualEntity(
-						-5000,
-						"Активированные выпуски",
-						"ActivatedIssues",
-						"issueID",
-						"Issue.png",
-						new Entity.Attribute("radiostationName", "Радиостанция", "nvarchar"),
-						new Entity.Attribute("groupName", "Группа", "nvarchar"),
-						new Entity.Attribute("name", "Ролик/Программа", "nvarchar"),
-						new Entity.Attribute("advertTypeName", "Предмет рекламы", "nvarchar"),
-						new Entity.Attribute("issueDate", "Дата", "datetime"),
-						new Entity.Attribute("duration", "Пр-ть", "nvarchar"),
-						new Entity.Attribute("issuePosition", "Порядок", "nvarchar"),
-						new Entity.Attribute("statusDescription", "Статус", "nvarchar"));
-					Globals.ShowSimpleJournal(
-						activatedEntity,
-						(isTestActivation
-							? "Предварительный просмотр результатов активации"
-							: "Результаты активации") + ": активированное"
-						, ds.Tables["activated"]);
-				}
-
-				DataTable transferred = ds.Tables.Contains("transferred")
-					? ds.Tables["transferred"]
-					: (ds.Tables.Count > 3 ? ds.Tables[3] : null);
-				if (transferred != null && transferred.Rows.Count > 0)
-				{
-					Entity transferredEntity = EntityManager.CreateVirtualEntity(
-						-5002,
-						"Перенесённые выпуски",
-						"TransferredIssues",
-						"issueID",
-						"issue_transferred.png",
-						new Entity.Attribute("radiostationName", "Радиостанция", "nvarchar"),
-						new Entity.Attribute("groupName", "Группа", "nvarchar"),
-						new Entity.Attribute("name", "Ролик/Программа", "nvarchar"),
-						new Entity.Attribute("advertTypeName", "Предмет рекламы", "nvarchar"),
-						new Entity.Attribute("oldIssueDate", "Дата (исходная)", "datetime"),
-						new Entity.Attribute("issueDate", "Дата (новая)", "datetime"),
-						new Entity.Attribute("duration", "Пр-ть", "nvarchar"),
-						new Entity.Attribute("issuePosition", "Порядок", "nvarchar"),
-						new Entity.Attribute("statusDescription", "Статус", "nvarchar"));
-
-					Globals.ShowSimpleJournal(
-						transferredEntity,
-						(isTestActivation
-							? "Предварительный просмотр результатов активации"
-							: "Результаты активации") + ": перенесенное"
-						, transferred);
-				}
-
-				if (ds.Tables["notactivated"].Rows.Count > 0)
-				{
-					Entity notActivatedEntity = EntityManager.CreateVirtualEntity(
-						-5001,
-						"Неактивированные выпуски",
-						"NotActivatedIssues",
-						"issueID",
-						"DeletedIssues.png",
-						new Entity.Attribute("radiostationName", "Радиостанция", "nvarchar"),
-						new Entity.Attribute("groupName", "Группа", "nvarchar"),
-						new Entity.Attribute("name", "Ролик/Программа", "nvarchar"),
-						new Entity.Attribute("advertTypeName", "Предмет рекламы", "nvarchar"),
-						new Entity.Attribute("issueDate", "Дата", "datetime"),
-						new Entity.Attribute("duration", "Пр-ть", "nvarchar"),
-						new Entity.Attribute("issuePosition", "Порядок", "nvarchar"),
-						new Entity.Attribute("statusDescription", "Статус", "nvarchar"));
-					Globals.ShowSimpleJournal(
-						notActivatedEntity,
-						(isTestActivation
-							? "Предварительный просмотр результатов активации"
-							: "Результаты активации") + ": неактивированное"
-						, ds.Tables["notactivated"]);
-				}
-
-				bool errorFlag = false;
-                if (ds.Tables["fatal_errors"].Rows.Count > 0)
-				{
-					UserMessage.ShowExclamation(ds.Tables["fatal_errors"].Rows[0]["errorMessage"].ToString());
-					errorFlag = true;
-                }
-
-				if (!isTestActivation && !errorFlag)
-				{
-					Refresh();
-					Recalculate();
-					OnObjectDeleted(this);
-				}
-			}
-			finally
-			{
-				Cursor.Current = Cursors.Default;
-			}
-		}
-
-        private bool CheckActionRollersAndProgramIssues()
-        {
-			Dictionary<string, object> procParameters = DataAccessor.CreateParametersDictionary();
-			procParameters[ParamNames.ActionId] = ActionId;
-            DataSet dataSet = DataAccessor.LoadDataSet("RollersWithoutAdvertype", procParameters);
-            DataTable dtRollers = dataSet.Tables[0];
-            DataTable dtProgramIssues = dataSet.Tables[1];
-
-            if (dtRollers.Rows.Count > 0)
-			{
-                // allow rhe user assign advert type for rollers without it and then try to activate again without test flag.
-				// If there are still rollers without advert type - show message and do not activate
-                SetAdvertTypeOrSubstituteRoller();
-                dataSet = DataAccessor.LoadDataSet("RollersWithoutAdvertype", procParameters);
-                dtRollers = dataSet.Tables[0];
-				if (dtRollers.Rows.Count > 0)
-				{
-					UserMessage.ShowExclamation(MessageAccessor.GetMessage("ActivationWithRollersWithoutAdvType"));
-					return false;
-				}
-            }
-
-			if (dtProgramIssues.Rows.Count > 0)
-			{
-                // the same for program issues without advert type
-                UserMessage.ShowExclamation(Properties.Resources.ActivationWithProgramIssuesWithoutAdvType);
-            }
+			errorMessage = null;
 			return true;
-        }
+		}
+
+		internal void ApplyDeactivate()
+		{
+			DataAccessor.PrepareParameters(
+				parameters, entity, InterfaceObjects.FakeModule, Constants.Actions.Deactivate);
+			DataAccessor.DoAction(parameters);
+			Refresh();
+			OnObjectDeleted(this);
+		}
+
+        // ActivateAction переехал в ActionOnMassmedia.WinForms.cs (см. комментарий выше).
+
+        // CheckActionRollersAndProgramIssues переехал в
+        // ActionOnMassmedia.WinForms.cs (вызывает UI-метод
+        // SetAdvertTypeOrSubstituteRoller и сам содержит показ сообщений;
+        // используется только из уже перенесённого ActivateAction).
 
         public static ActionOnMassmedia GetActionById(int actionId)
 		{
