@@ -12,9 +12,12 @@ using Merlin.Forms;
 namespace Merlin.Classes
 {
 	// SelectManager (чистый выбор, без применения) переехал в Utils.WinForms.cs.
-	// AskConfirmation не трогается — открытый вопрос №1 конвенции (экран входа
-	// администратора в вебе). HideTableLayoutRow — раскладка layout, не диалог,
-	// вне области этого документа.
+	// AskConfirmation НЕ переносится в веб — решение согласовано с владельцем
+	// продукта 2026-08-21 (см. docs/tasks/web-migration-dialogs.md, §8 п.1):
+	// авторизацией скидки логином админа/грантора прямо в диалоге не
+	// пользуются даже в десктопе. Разрез не нужен — переиспользовать в вебе
+	// нечего. HideTableLayoutRow — раскладка layout, не диалог, вне области
+	// этого документа.
 	// Конвенция — docs/tasks/web-migration-dialogs.md.
 	internal static partial class Utils
 	{
