@@ -9,7 +9,8 @@ using Merlin.Forms;
 
 namespace Merlin.Classes
 {
-	public class PackModulePricelist : Pricelist
+	// EditContent переехал в PackModulePricelist.WinForms.cs. Конвенция — docs/tasks/web-migration-dialogs.md.
+	public partial class PackModulePricelist : Pricelist
 	{
 		private bool _isMaxCapacityChecked = false;
 		private bool _maxCapacityCheckResult;
@@ -74,11 +75,7 @@ namespace Merlin.Classes
 			}
 		}
 
-		public void EditContent(Form owner)
-		{
-			FrmPackModuleContent fContent = new FrmPackModuleContent(this);
-			fContent.ShowDialog(owner);
-		}
+		// EditContent переехал в PackModulePricelist.WinForms.cs.
 
 		protected override void AssignExisting(IWin32Window owner)
 		{

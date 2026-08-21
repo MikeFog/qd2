@@ -5,6 +5,7 @@ using FogSoft.WinForm;
 using FogSoft.WinForm.Classes;
 using FogSoft.WinForm.DataAccess;
 using FogSoft.WinForm.Forms;
+using Merlin.Forms;
 
 namespace Merlin.Classes
 {
@@ -13,6 +14,13 @@ namespace Merlin.Classes
 	// Эталон разреза, конвенция — docs/tasks/web-migration-dialogs.md.
 	public partial class ActionOnMassmedia
 	{
+		public override bool ShowPassport(IWin32Window owner)
+		{
+			ActionForm fAction = new ActionForm(this /*, false*/);
+			fAction.ShowDialog(owner);
+			return true;
+		}
+
 		private bool IsSplitOrMergeEnabled(DateTime startDate)
 		{
 			if (CanSplitOrMerge(startDate, out string messageKey)) return true;

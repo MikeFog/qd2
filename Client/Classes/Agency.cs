@@ -41,7 +41,10 @@ namespace Merlin.Classes
 		}
 	}
 
-	public class Agency : Organization
+	// ShowPassport переехал в Agency.WinForms.cs. Остальные диалоги в этом классе
+	// (строка ~172, поиск/выбор агентства) пока на месте — своя партия позже.
+	// Конвенция — docs/tasks/web-migration-dialogs.md.
+	public partial class Agency : Organization
     {
 		public enum AttributeSelectors
 		{
@@ -181,43 +184,6 @@ namespace Merlin.Classes
 				int agencyId = int.Parse(dtAgency.Rows[0][ParamNames.AgencyId].ToString());
 				items.Add(GetAgencyByID(agencyId));
 				return items;
-			}
-		}
-
-		public override bool ShowPassport(IWin32Window owner)
-		{
-			try
-			{
-				Application.DoEvents();
-				Cursor.Current = Cursors.WaitCursor;
-
-				// load data to display Passport
-				DataAccessor.PrepareParameters(parameters, entity, InterfaceObjects.PropertyPage,
-											   Constants.Actions.Load);
-
-				DataSet ds = null;
-				if (DataAccessor.IsProcedureExist(parameters))
-				{
-					ds = DataAccessor.DoAction(parameters) as DataSet;
-				}
-
-				bool isNewObject = IsNew;
-				AgencyPassportForm passport = new AgencyPassportForm(this, ds);
-				//TODO: !passport.ApplyClicked
-				bool res = (passport.ShowDialog(owner) == DialogResult.OK) /*|| passport.ApplyClicked*/;
-
-				// Fire event only if existing object was changed
-				if (res && !isNewObject) OnObjectChanged(this);
-				return res;
-			}
-			catch (Exception ex)
-			{
-				ErrorManager.PublishError(ex);
-				return false;
-			}
-			finally
-			{
-				Cursor.Current = Cursors.Default;
 			}
 		}
 

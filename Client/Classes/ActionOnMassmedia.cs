@@ -92,12 +92,7 @@ namespace Merlin.Classes
 			return base.Refresh();
 		}
 
-		public override bool ShowPassport(IWin32Window owner)
-		{
-			ActionForm fAction = new ActionForm(this /*, false*/);
-			fAction.ShowDialog(owner);
-			return true;
-		}
+		// ShowPassport переехал в ActionOnMassmedia.WinForms.cs (открывает ActionForm).
 
 		public override void DoAction(string actionName, IWin32Window owner, InterfaceObjects interfaceObject)
 		{
