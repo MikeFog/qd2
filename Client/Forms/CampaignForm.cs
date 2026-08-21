@@ -1504,13 +1504,13 @@ namespace Merlin.Forms
 				AdvertTypePresences presence = (AdvertTypePresences)Enum.Parse(typeof(AdvertTypePresences), e.ClickedItem.Tag.ToString());
 				if (presence != AdvertTypePresences.Undefined)
 				{
-					TreeViewSelector tvSelector = new TreeViewSelector(RelationManager.GetScenario(RelationScenarios.AdvertTypes), "???????? ???????");
+					TreeViewSelector tvSelector = new TreeViewSelector(RelationManager.GetScenario(RelationScenarios.AdvertTypes), "Предметы рекламы");
 					if (tvSelector.ShowDialog(Parent) == DialogResult.OK)
 					{
 						Application.DoEvents();
 						Cursor = Cursors.WaitCursor;
 						rollerGrid.SetAdvertTypePresence(presence, tvSelector.SelectedObject);
-						tbbAdvertType.Text = (presence == AdvertTypePresences.Exist ? "????: " : "???: ") + tvSelector.SelectedObject.Name;
+						tbbAdvertType.Text = (presence == AdvertTypePresences.Exist ? "Есть " : "Нет ") + tvSelector.SelectedObject.Name;
 					}
 				}
 				else

@@ -45,8 +45,9 @@ namespace Merlin.Forms.CreateActionMaster
 			try
 			{
 				base.OnLoad(e);
-				
 
+				// Remove All Issues Grid
+				splitContainer4.Panel1Collapsed = true;
                 tbbTemplate.Visible = true;
                 tbbTemplateUndo.Visible = true;
                 grdCurrentCampaignIssues.Caption = "Добавленные выпуски";
