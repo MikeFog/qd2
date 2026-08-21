@@ -302,81 +302,76 @@ private bool IsSplitOrMergeEnabled(DateTime startDate)
 
 ## 6. Порядок обработки остальных мест
 
-### Статус на конец партии 14 (коммит `73c28f1`)
+### Статус на конец партии 17 (коммит `70ea7c3`) — «обычная» работа завершена
 
-Разобрано 16 файлов, включая полностью закрытые `ActionOnMassmedia`,
-`Agency`, `Firm`, `Pricelist`, `ProgramPartOfSponsorCampaign`,
-`Action.cs` (частично, см. ниже): `ActionOnMassmedia` (полностью),
-`Agency` (полностью), `Roller`, `SponsorTariff`, `PackModulePricelist`,
-`CampaignPart`, `HeadCompany`, `CampaignDay`, `CampaignModule`,
-`CampaignOnSingleMassmedia`, `CampaignPackModule` (+ `CampaignPartPackModule`),
-`PackModuleIssue`, `ModulePricelist`, `PackageDiscountPriceList`,
-`ActionRollerInStatJournal`, `TariffWindowWithRollerIssues`, `PaymentCommon`,
-`PaymentStudioOrder`, `Utils` (частично), `Action` (частично).
+Все места из исходного grep-списка (`ShowDialog` в `Client/Classes`),
+кроме сознательно отложенных, разобраны. Разобрано 20 файлов за 17 партий:
+`ActionOnMassmedia`, `Agency`, `Roller`, `SponsorTariff`,
+`PackModulePricelist`, `CampaignPart`, `HeadCompany`, `CampaignDay`,
+`CampaignModule`, `CampaignOnSingleMassmedia`, `CampaignPackModule`
+(+ `CampaignPartPackModule`), `PackModuleIssue`, `ModulePricelist`,
+`PackageDiscountPriceList`, `ActionRollerInStatJournal`,
+`TariffWindowWithRollerIssues`, `PaymentCommon`, `PaymentStudioOrder`,
+`Firm`, `Utils` (частично), `Action` (частично), `Pricelist`,
+`ProgramPartOfSponsorCampaign`, `Campaign`, `MassmediaPricelist`,
+`ActionRoller` (частично).
 
-**Методологический урок партии 14**: `ShowDialog` в grep — не полный список
-UI-точек. Найдены (и перенесены) два метода без единого `ShowDialog`
-(`ShowRollers`, `CheckActionRollersAndProgramIssues`), но с прямым
-`Globals.ShowSimpleJournal`/`UserMessage.ShowExclamation`. После разреза
-основных мест файла **обязательно** прогонять grep по ядру не только на
-`ShowDialog`, но и на `Globals\.Show|Globals\.Set|UserMessage\.` — именно
-так их и нашли (раздел 7, чек-лист партии).
-
-Разметка по формам:
-
-| Форма | Мест | Статус | Трудоёмкость |
-|---|---|---|---|
-| 3 — переход/чистый выбор, разрез не нужен | ~13 | сделано | тривиально |
-| 3.1 — модальная редактирующая сессия (`CampaignForm`) | 4 | отложено до этапа 3 | не в этом этапе |
-| PrintXxxInquire/PrintContract/PrintMediaPlan — генерация отчёта | 5 | перенесены целиком (не разрезаны) | отдельная область, этап 4 |
-| «глубоко переплетённые» (`ActivateAction`) — деловая логика и подготовка данных для отображения неразделимы без редизайна | 1 | перенесён целиком, сознательно не разрезан | не тиражировать этот случай |
-| 5 — проверка с сообщением | сопутствует остальным | по ходу сделано | тривиально |
-| 4.1 — уведомление (`UserInteraction.Notify`) | 1 базовый + 8 вызывающих мест | базовый метод сделан | — |
-| 1 — ввод параметра | `CampaignDay`, `Action.GetSelectedMonths` (перенесён целиком) | частично | низкая |
-| 2 — выбор и операция | ~20 сделано | большая часть | основная работа |
-| 4 — подтверждение | 2 | 1 решена + 1 переведена на `UserInteraction.Confirm` в партии 14 | — |
-| кластер замены ролика (§8 п.4) | 5+ мест | НЕ разбирается по шаблону | отдельная партия |
-
-### Осталось (24 вхождения `ShowDialog` по grep на конец партии 14)
+**Проверка на конец партии 17**: `grep -rln "ShowDialog" Client/Classes/*.cs`
+(без `*.WinForms.cs`) возвращает 7 файлов, и в каждом — либо только
+комментарии, либо намеренно отложенное место:
 
 ```
-7 Campaign.cs               — 2 формы 3.1 (EditRollerIssues/EditProgramIssues,
-                               отложены), остальные 5 не разобраны
-5 MassmediaPricelist.cs      — не начато
-2 Utils.cs                   — AskConfirmation (открытый вопрос №1), не трогать
-2 ActionRoller.cs             — кластер замены ролика (52) + отдельное
-                               SetAdvertType (110, не начато)
-2 MediaPlan.cs                — НЕ ТРОГАТЬ без отдельного ревью: межпотоковый
-                                Invoke/InvokeRequired, в коде есть прямое
-                                упоминание прошлых зависаний EXCEL.EXE
-1 SponsorPricelist.cs         — мёртвый закомментированный код, не в счёт
-1 RollerPartOfSponsorCampaign.cs — форма 3.1 (отложена)
-1 CampaignRoller.cs           — кластер замены ролика (§8 п.4)
+Action.cs                    — только комментарий, всё разобрано
+ActionOnMassmedia.cs         — только комментарий, всё разобрано
+CampaignRoller.cs:93         — кластер замены ролика (§8 п.4)
+MediaPlan.cs:113,243         — не трогать без отдельного ревью (риск зависания)
+RollerPartOfSponsorCampaign.cs:62 — форма 3.1 (CampaignForm), отложена
+SponsorPricelist.cs:35       — мёртвый закомментированный код
+Utils.cs:36                  — AskConfirmation, открытый вопрос №1
 ```
 
-Плюс два места, закрытых не через `ShowDialog` (`Action.cs`:
-`GetBill`/`CreateBill`, `ActionOnMassmedia.cs`: `ShowRollers`/
-`CheckActionRollersAndProgramIssues`) — см. методологический урок выше:
-при заходе в оставшиеся файлы проверять не только `ShowDialog`.
+**Методологический урок партии 14** (актуален и дальше): `ShowDialog` в
+grep — не полный список UI-точек. Найдены и перенесены методы без единого
+`ShowDialog`, но с `Globals.ShowSimpleJournal`/`UserMessage.` напрямую
+(`ActionOnMassmedia.ShowRollers`/`CheckActionRollersAndProgramIssues`,
+`Campaign.PrintTransfers`). После разреза основных мест файла
+**обязательно** прогонять grep по ядру не только на `ShowDialog`, но и на
+`Globals\.Show|Globals\.Set|UserMessage\.` (раздел 7, чек-лист партии).
 
-### Рекомендации на продолжение
+Разметка по формам (кумулятивно):
 
-1. `MediaPlan.cs` — начинать только с отдельного прочтения всего файла и
-   понимания текущей потоковой модели (`InvokeRequired`/`Invoke`,
-   `Application.UseWaitCursor`). Не тиражировать конвенцию механически —
-   это форма 2, но с реальным риском зависания при ошибке.
-2. Кластер замены ролика (§8 п.4, `CampaignRoller`/`ActionRoller`/
-   `CampaignModuleRollerInsideDay`/`PackModuleIssue`) — отдельная партия,
-   не по шаблону.
-3. `Campaign.cs` — самый большой из оставшихся (7 мест). Перед заходом
-   читать `docs/scenarios/campaign-edit-form-load.md` — это основной класс
-   кампании, риск ошибиться выше среднего.
-4. Остальные файлы (`MassmediaPricelist.cs`, `ActionRoller.cs` (SetAdvertType,
-   не кластерная часть)) — обычные форма 1/2/5, тиражировать по
-   установленной конвенции, партиями с проверкой сборки после каждой.
-5. После завершения `Client/Classes` — переходить к следующему пункту
-   этапа 0 (абстракция конфигурации, `docs/tasks/web-migration.md`, этап 0
-   п.6) либо к вертикальному срезу (раздел 10 `web-migration.md`).
+| Форма | Статус |
+|---|---|
+| 3 — переход/чистый выбор, разрез не нужен | сделано везде, где встретилось |
+| 3.1 — модальная редактирующая сессия (`CampaignForm`) | 4 места (`Campaign.cs` ×2, `ProgramPartOfSponsorCampaign.cs`, `RollerPartOfSponsorCampaign.cs`) — отложено до этапа 3 |
+| Генерация отчёта (`PrintXxxInquire`/`PrintContract`/`PrintMediaPlan`/`PrintTransfers`) | перенесены целиком, не разрезаны — отдельная область, этап 4 |
+| «глубоко переплетённые» с отображением (`ActivateAction`) | 1, перенесён целиком, сознательно не разрезан — не тиражировать этот случай |
+| 5 — проверка с сообщением | сделано везде по ходу |
+| 4.1 — уведомление (`UserInteraction.Notify`) | базовый метод сделан (партия 2) |
+| 1/2 — ввод параметра / выбор и операция | сделано во всех обычных файлах |
+| 4 — подтверждение | `AskConfirmation` — открытый вопрос №1, `UngroupWindows`/`DeactivateAction` переведены на `UserInteraction.Confirm` |
+| кластер замены ролика (§8 п.4) | НЕ разобран по шаблону — отдельная задача |
+
+### Что осталось — три отдельные, не механические задачи
+
+1. **`MediaPlan.cs`** (2 места). Начинать только с отдельного прочтения
+   всего файла и понимания текущей потоковой модели (`InvokeRequired`/
+   `Invoke`, `Application.UseWaitCursor`). Не тиражировать конвенцию
+   механически — форма 2, но с реальным риском зависания при ошибке.
+2. **Кластер замены ролика** (§8 п.4; `CampaignRoller.cs:93`,
+   `ActionRoller.WinForms.cs` — `SubstituteRoller`,
+   `CampaignModuleRollerInsideDay` — `SubstituteRoller`,
+   `PackModuleIssue.WinForms.cs` — `SubstituteRoller`). Общая точка правды
+   (`CampaignRoller.Subtitute`) с четырьмя путями вызова и одной встроенной
+   UI-зависимостью (`Globals.ShowSimpleJournal`, таблица, не сообщение по
+   ключу). Отдельная партия, не по шаблону.
+3. **`Utils.AskConfirmation`** (открытый вопрос №1) — архитектурное решение
+   о том, как экран входа администратора для скидки будет выглядеть в
+   вебе; решать не тиражированием, а обсуждением с владельцем продукта.
+
+Дальше по плану `docs/tasks/web-migration.md`: следующий пункт этапа 0 —
+абстракция конфигурации (этап 0 п.6), либо вертикальный срез (раздел 10),
+либо явный заход на один из трёх пунктов выше.
 
 ## 7. Проверка каждой партии
 
