@@ -1,10 +1,9 @@
-﻿using System.Windows.Forms;
-using FogSoft.WinForm;
+﻿using FogSoft.WinForm;
 using FogSoft.WinForm.Classes;
 
 namespace Merlin.Classes
 {
-	public class MassmediaDiscount : ObjectContainer
+	public partial class MassmediaDiscount : ObjectContainer
 	{
 		private struct Actions
 		{
@@ -16,19 +15,7 @@ namespace Merlin.Classes
 		{
 		}
 
-		public override void DoAction(string actionName, IWin32Window owner, InterfaceObjects interfaceObject)
-		{
-			if (string.Compare(actionName, Actions.AssignRelease) == 0)
-			{
-				Entity child = ChildEntity;
-				ChildEntity = EntityManager.GetEntity((int)Entities.DiscountRelease);
-				base.DoAction(Constants.EntityActions.AssignNew, owner, interfaceObject);
-				ChildEntity = child;
-				FireContainerRefreshed();
-			}
-			else 
-				base.DoAction(actionName, owner, interfaceObject);
-		}
+		// DoAction переехал в MassmediaDiscount.WinForms.cs.
 
         public override string Name
         {

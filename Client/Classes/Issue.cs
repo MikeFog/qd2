@@ -1,14 +1,13 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Data;
-using System.Windows.Forms;
 using FogSoft.WinForm;
 using FogSoft.WinForm.Classes;
 using FogSoft.WinForm.DataAccess;
 
 namespace Merlin.Classes
 {
-	internal abstract class Issue : CampaignPart
+	internal abstract partial class Issue : CampaignPart
 	{
 		internal struct ParamNames
 		{
@@ -48,48 +47,14 @@ namespace Merlin.Classes
 			set { this[ParamNames.TariffPrice] = value; }
 		}
 
-		public override void DoAction(string actionName, IWin32Window owner, InterfaceObjects interfaceObject)
-		{
-			if (string.Compare(actionName, ActionNames.SetFirst) == 0)
-				UpdatePosition(RollerPositions.First);
-			else if (string.Compare(actionName, ActionNames.SetSecond) == 0)
-				UpdatePosition(RollerPositions.Second);
-			else if (string.Compare(actionName, ActionNames.SetLast) == 0)
-				UpdatePosition(RollerPositions.Last);
-			else if (string.Compare(actionName, ActionNames.SetUnknow) == 0)
-				UpdatePosition(RollerPositions.Undefined);
-			else base.DoAction(actionName, owner, interfaceObject);
-		}
+		// DoAction/UpdatePosition переехали в Issue.WinForms.cs (UpdatePosition
+		// использует Application.DoEvents в catch-ветке).
 
 		public RollerPositions Position
 		{
 			get { return (RollerPositions)Enum.Parse(typeof(RollerPositions), this[ParamNames.PositionId].ToString()); }
 		}
 
-		private void UpdatePosition(RollerPositions pos)
-		{
-			decimal price = decimal.Zero;
-            if(Campaign != null && Campaign.Action != null)
-			{
-				Campaign.Action.Refresh();
-                price = Campaign.Action.TotalPrice;
-            }
-			
-			try
-			{
-				SetPosition(pos);
-				Refresh();
-				OnParentChanged(this, 1);
-				RecalculateAndShowPriceChange(price);
-			}
-			catch (Exception exp)
-			{
-				MessageAccessor.Parameters = parameters;
-				ErrorManager.PublishError(exp);
-				Application.DoEvents();
-				Refresh();
-			}
-		}
 
 		public void SetPosition(RollerPositions pos)
 		{

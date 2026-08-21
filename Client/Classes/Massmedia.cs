@@ -3,10 +3,7 @@ using System.Collections.Generic;
 using System.Data;
 using FogSoft.WinForm;
 using FogSoft.WinForm.Classes;
-using FogSoft.WinForm.Controls;
 using FogSoft.WinForm.DataAccess;
-using FogSoft.WinForm.Passport.Forms;
-using Merlin.License;
 
 namespace Merlin.Classes
 {
@@ -270,35 +267,10 @@ namespace Merlin.Classes
 			procParameters[ParamNames.MassmediaId] = MassmediaId;
 		}
 
-		public override bool Update()
-		{
-			if (IsNew && !AdvertAgLicence.CheckLicenseMassmediasCountForAdd())
-				return false;
-
-			if (!base.Update())
-				return false;
-
-			// Submit children changes to database 
-			foreach (ChildrenChanges childrenChanges in childrenChangesList)
-			{
-				foreach (PresentationObject po in childrenChanges.AddedObjects)
-				{
-					MassmediaAgency massmediaAgency =
-						new MassmediaAgency(((Agency) po).AgencyId, MassmediaId);
-					massmediaAgency.Update();
-				}
-
-				foreach (PresentationObject po in childrenChanges.DeletedObjects)
-				{
-					MassmediaAgency massmediaAgency =
-						new MassmediaAgency(((Agency) po).AgencyId, MassmediaId);
-					massmediaAgency.Delete(true);
-				}
-			}
-			childrenChangesList.Clear();
-
-			return true;
-		}
+		// Update() переехал в Massmedia.WinForms.cs — не диалог, но лицензионная
+		// проверка внутри (AdvertAgLicence) сама показывает UserMessage. Модуль
+		// лицензий — отдельная, живая подсистема (см. обсуждение в чате 2026-08-21),
+		// трогать её сейчас не входит в задачу разбора хвостов.
 
 		internal static DataView LoadMassmediaList()
 		{
@@ -320,14 +292,8 @@ namespace Merlin.Classes
             return dataTable.DefaultView;
         }
 
-		public static void LoadRadiostationsByGroup(LookUp cmbRadioStationGroup, SmartGrid grdRadiostations)
-		{
-            Dictionary<string, object> procParameters = DataAccessor.PrepareParameters(grdRadiostations.Entity);
-            int groupId = ParseHelper.GetInt32FromObject(cmbRadioStationGroup.SelectedValue, 0);
-            if (groupId > 0)
-                procParameters.Add(Massmedia.ParamNames.GroupId, groupId);
-            grdRadiostations.DataSource = ((DataSet)DataAccessor.DoAction(procParameters)).Tables[Constants.TableNames.Data].DefaultView;
-        }
+		// LoadRadiostationsByGroup переехал в Massmedia.WinForms.cs — принимает
+		// UI-типы LookUp/SmartGrid параметрами.
 
         internal static DataView LoadMassmediaList(Dictionary<string, object> parameters)
         {

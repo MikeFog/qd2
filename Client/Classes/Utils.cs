@@ -1,23 +1,17 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Drawing;
-using System.IO;
-using System.Reflection;
-using System.Windows.Forms;
 using FogSoft.WinForm;
 using FogSoft.WinForm.Classes;
-using FogSoft.WinForm.Forms;
-using Merlin.Forms;
 
 namespace Merlin.Classes
 {
-	// SelectManager (чистый выбор, без применения) переехал в Utils.WinForms.cs.
-	// AskConfirmation НЕ переносится в веб — решение согласовано с владельцем
-	// продукта 2026-08-21 (см. docs/tasks/web-migration-dialogs.md, §8 п.1):
-	// авторизацией скидки логином админа/грантора прямо в диалоге не
-	// пользуются даже в десктопе. Разрез не нужен — переиспользовать в вебе
-	// нечего. HideTableLayoutRow — раскладка layout, не диалог, вне области
-	// этого документа.
+	// SelectManager, AskConfirmation, HideTableLayoutRow — в Utils.WinForms.cs.
+	// AskConfirmation НЕ переносится в веб как функция (решение согласовано с
+	// владельцем продукта 2026-08-21, см. docs/tasks/web-migration-dialogs.md,
+	// §8 п.1): авторизацией скидки логином админа/грантора прямо в диалоге не
+	// пользуются даже в десктопе. Из ядра метод убран не поэтому, а потому что
+	// принимает IWin32Window — иначе он блокировал мост в FogSoft.Core для
+	// CreateBankById, который остаётся здесь и нужен Organization.cs (§10).
 	// Конвенция — docs/tasks/web-migration-dialogs.md.
 	internal static partial class Utils
 	{
@@ -33,66 +27,9 @@ namespace Merlin.Classes
 		}
 
 
-		public static (SecurityManager.User User, int? ManagerDiscountReasonId) AskConfirmation(IWin32Window owner)
-		{
-			FrmConfirmation fConfirmation = new FrmConfirmation();
-			if (fConfirmation.ShowDialog(owner) == DialogResult.OK)
-			{
-				if (fConfirmation.User == null)
-					Globals.ShowInfo("LoginIncorrect");
-				else if (fConfirmation.User.IsAdmin || fConfirmation.User.IsGrantor)
-					return (fConfirmation.User, fConfirmation.ManagerDiscountReasonId);
-				else
-				{
-					Dictionary<string, object> parameters =
-						new Dictionary<string, object>(2, StringComparer.CurrentCultureIgnoreCase)
-							{
-								{"FirstName", fConfirmation.User.FirstName},
-								{"LastName", fConfirmation.User.LastName}
-							};
-					Globals.ShowInfo("ConfirmationError", parameters);
-				}
-			}
-			return (null, null);
-		}
+		// AskConfirmation и HideTableLayoutRow переехали в Utils.WinForms.cs
+		// (мост в FogSoft.Core, §10 конвенции: CreateBankById здесь понадобился
+		// Organization.cs, а весь файл раньше был исключён из моста целиком).
 
-        public static void HideTableLayoutRow(TableLayoutPanel tableLayoutPanelMain, int rowNum)
-        {
-            if (rowNum < 0 || rowNum >= tableLayoutPanelMain.RowCount)
-                return;
-
-            tableLayoutPanelMain.SuspendLayout();
-            try
-            {
-                // 1. Скрываем контролы
-                foreach (Control control in tableLayoutPanelMain.Controls)
-                {
-                    int controlRow = tableLayoutPanelMain.GetRow(control);
-                    int rowSpan = tableLayoutPanelMain.GetRowSpan(control);
-
-                    if (rowNum >= controlRow && rowNum < controlRow + rowSpan)
-                    {
-                        control.Visible = false;
-                    }
-                }
-
-                // Добавляем недостающие стили, если их меньше, чем строк
-                while (tableLayoutPanelMain.RowStyles.Count <= rowNum)
-                {
-                    // Добавляем дефолтный стиль (например, AutoSize), чтобы не сломать логику остальных строк
-                    tableLayoutPanelMain.RowStyles.Add(new RowStyle(SizeType.AutoSize));
-                }
-
-                // 3. Схлопываем
-                tableLayoutPanelMain.RowStyles[rowNum].SizeType = SizeType.Absolute;
-                tableLayoutPanelMain.RowStyles[rowNum].Height = 0;
-            }
-            finally
-            {
-                tableLayoutPanelMain.ResumeLayout(true);
-                // Дополнительный пинок для перерисовки
-                tableLayoutPanelMain.PerformLayout();
-            }
-        }
     }
 }

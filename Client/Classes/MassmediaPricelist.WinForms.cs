@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.ComponentModel;
 using System.Data;
 using System.Windows.Forms;
 using FogSoft.WinForm;
@@ -158,6 +159,90 @@ namespace Merlin.Classes
 			finally
 			{
 				Cursor.Current = Cursors.Default;
+			}
+		}
+
+        internal SpecialTariffWindow CreateSpecialTariffWindow(DateTime date, Form parentForm)
+		{
+			SpecialTariffWindow tariffwindow = new SpecialTariffWindow(BroadcastStart)
+			{
+				MassmediaID = MassmediaId,
+				WindowDate = date.Date,
+				WindowDateOriginal = date.Date
+			};
+			if (tariffwindow.ShowPassport(parentForm))
+				return tariffwindow;
+			return null;
+		}
+
+        public void GenerateTariffWindows(object sender, DoWorkEventArgs e)
+		{
+			List<object> list = e.Argument as List<object>;
+			DateTime startDate = (DateTime)list[0];
+			DateTime finishDate = (DateTime)list[1];
+
+			BackgroundWorker worker = sender as BackgroundWorker;
+
+			int i = 0;
+
+			while (startDate < finishDate)
+			{
+				if (worker.CancellationPending)
+				{
+					e.Cancel = true;
+					return;
+				}
+
+				DateTime fDate =finishDate > startDate.AddDays(7) ? startDate.AddDays(7) : finishDate;
+
+				Dictionary<string, object> procParameters = DataAccessor.PrepareParameters(
+						EntityManager.GetEntity((int)Entities.TariffWindow),
+						InterfaceObjects.FakeModule, Constants.Actions.Generate);
+				procParameters.Add(Pricelist.ParamNames.PricelistId, PricelistId);
+				procParameters.Add(Pricelist.ParamNames.StartDate, startDate);
+				procParameters.Add(Pricelist.ParamNames.FinishDate, fDate);
+				DataAccessor.DoAction(procParameters);
+
+				startDate = fDate; // One week
+
+				worker.ReportProgress(0, i++);
+
+				Application.DoEvents();
+			}
+			
+		}
+
+		public void DeleteGeneratedTariffWindows(object sender, DoWorkEventArgs e)
+		{
+			List<object> list = e.Argument as List<object>;
+			DateTime startDate = (DateTime)list[0];
+			DateTime finishDate = (DateTime)list[1];
+
+			BackgroundWorker worker = sender as BackgroundWorker;
+
+			int i = 0;
+
+			while (startDate < finishDate)
+			{
+				if (worker.CancellationPending)
+				{
+					e.Cancel = true;
+					return;
+				}
+
+				DateTime fDate = finishDate > startDate.AddDays(1) ? startDate.AddDays(1) : finishDate;
+
+				Dictionary<string, object> procParameters = DataAccessor.CreateParametersDictionary();
+				procParameters.Add(Pricelist.ParamNames.PricelistId, PricelistId);
+				procParameters.Add(Pricelist.ParamNames.StartDate, startDate);
+				procParameters.Add(Pricelist.ParamNames.FinishDate, fDate);
+				procParameters.Add(Massmedia.ParamNames.MassmediaId, MassmediaId);
+				DataAccessor.ExecuteNonQuery("TariffWindowMassDelete", procParameters);
+				
+				startDate = fDate; // One day
+
+				worker.ReportProgress(0, i++);
+				Application.DoEvents();
 			}
 		}
 	}

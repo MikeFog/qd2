@@ -5,8 +5,6 @@ using System.Runtime.InteropServices.ComTypes;
 using FogSoft.WinForm;
 using FogSoft.WinForm.Classes;
 using FogSoft.WinForm.DataAccess;
-using static Merlin.Forms.UniversalPassportForm;
-using static System.Windows.Forms.VisualStyles.VisualStyleElement.Window;
 
 namespace Merlin.Classes
 {

@@ -1,9 +1,13 @@
-﻿using System.Windows.Forms;
+using System.Collections.Generic;
+using System.Data;
+using System.Windows.Forms;
 using FogSoft.WinForm;
 using FogSoft.WinForm.Classes;
+using FogSoft.WinForm.Controls;
+using FogSoft.WinForm.DataAccess;
 using FogSoft.WinForm.Passport.Forms;
-using System.Data;
 using Merlin.Forms;
+using Merlin.License;
 
 namespace Merlin.Classes
 {
@@ -35,5 +39,44 @@ namespace Merlin.Classes
 		{
 			return new MassmediaPassport(this, ds);
 		}
+
+		public override bool Update()
+		{
+			if (IsNew && !AdvertAgLicence.CheckLicenseMassmediasCountForAdd())
+				return false;
+
+			if (!base.Update())
+				return false;
+
+			// Submit children changes to database 
+			foreach (ChildrenChanges childrenChanges in childrenChangesList)
+			{
+				foreach (PresentationObject po in childrenChanges.AddedObjects)
+				{
+					MassmediaAgency massmediaAgency =
+						new MassmediaAgency(((Agency) po).AgencyId, MassmediaId);
+					massmediaAgency.Update();
+				}
+
+				foreach (PresentationObject po in childrenChanges.DeletedObjects)
+				{
+					MassmediaAgency massmediaAgency =
+						new MassmediaAgency(((Agency) po).AgencyId, MassmediaId);
+					massmediaAgency.Delete(true);
+				}
+			}
+			childrenChangesList.Clear();
+
+			return true;
+		}
+
+		public static void LoadRadiostationsByGroup(LookUp cmbRadioStationGroup, SmartGrid grdRadiostations)
+		{
+            Dictionary<string, object> procParameters = DataAccessor.PrepareParameters(grdRadiostations.Entity);
+            int groupId = ParseHelper.GetInt32FromObject(cmbRadioStationGroup.SelectedValue, 0);
+            if (groupId > 0)
+                procParameters.Add(Massmedia.ParamNames.GroupId, groupId);
+            grdRadiostations.DataSource = ((DataSet)DataAccessor.DoAction(procParameters)).Tables[Constants.TableNames.Data].DefaultView;
+        }
 	}
 }

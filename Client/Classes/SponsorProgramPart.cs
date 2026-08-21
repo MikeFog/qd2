@@ -1,11 +1,10 @@
 ﻿using System.Data;
-using System.Windows.Forms;
 using FogSoft.WinForm;
 using FogSoft.WinForm.Classes;
 
 namespace Merlin.Classes
 {
-	internal class SponsorProgramPart : CampaignPart
+	internal partial class SponsorProgramPart : CampaignPart
 	{
 		private ObjectContainer behindClass;
 
@@ -33,20 +32,7 @@ namespace Merlin.Classes
 			base.Init(row);
 		}
 
-		public override void DoAction(string actionName, IWin32Window owner, InterfaceObjects interfaceObject)
-		{
-			if(actionName != Constants.EntityActions.Refresh)
-				behindClass.DoAction(actionName, owner, interfaceObject);
-
-			if (actionName == ProgramPartOfSponsorCampaign.ActionNames.ShowDays ||
-				actionName == ProgramPartOfSponsorCampaign.ActionNames.ShowPrograms ||
-				 actionName == ProgramPartOfSponsorCampaign.ActionNames.ShowRollers ||
-					actionName == Constants.EntityActions.Refresh)
-			{
-				ChildEntity = behindClass.ChildEntity;
-				FireContainerRefreshed();
-			}
-		}
+		// DoAction переехал в SponsorProgramPart.WinForms.cs.
 
 		public override bool IsActionHidden(string actionName, ViewType type)
 		{

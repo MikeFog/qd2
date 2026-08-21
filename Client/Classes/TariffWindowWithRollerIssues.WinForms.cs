@@ -35,5 +35,57 @@ namespace Merlin.Classes
 					TariffExtend(this);
 			}
 		}
+
+        private void GroupWithWindow(bool isWithPrev)
+		{
+			try
+			{
+                TariffWindowWithRollerIssues window = GetTariffWindow2Group(isWithPrev);
+				if (window != null)
+				{
+                    Cursor.Current = Cursors.WaitCursor;
+                    if (isWithPrev)
+						window[ParamNames.WindowNextId] = WindowId;
+					else
+						window[ParamNames.WindowPrevId] = WindowId;
+					window.Update();
+
+					if (isWithPrev)
+						this[ParamNames.WindowPrevId] = window.WindowId;
+					else
+						this[ParamNames.WindowNextId] = window.WindowId;
+					Update();
+                    TariffWindowUngrouped?.Invoke(isWithPrev, false);
+                }
+			}
+			finally { Cursor.Current = Cursors.Default; }
+		}
+
+		private void UngroupWindows(bool isWithPrev)
+		{
+			try
+			{
+				TariffWindowWithRollerIssues window = CreateTariffWindowById(isWithPrev ? int.Parse(this[ParamNames.WindowPrevId].ToString()) : int.Parse(this[ParamNames.WindowNextId].ToString()));
+				window.Refresh();
+
+				if (UserInteraction.Confirm(string.Format("Хотите отменить объединение рекламных окон '{0}' и '{1}'?", WindowDate.ToString("g"), window.WindowDate.ToString("g"))))
+				{
+                    Cursor.Current = Cursors.WaitCursor;
+                    if (isWithPrev)
+						window[ParamNames.WindowNextId] = null;
+					else
+						window[ParamNames.WindowPrevId] = null;
+					window.Update();
+
+					if (isWithPrev)
+						this[ParamNames.WindowPrevId] = null;
+					else
+						this[ParamNames.WindowNextId] = null;
+					Update();
+					TariffWindowUngrouped?.Invoke(window.WindowDate < WindowDate, true);
+				}
+			}
+			finally { Cursor.Current = Cursors.Default; }
+        }
 	}
 }

@@ -1,10 +1,9 @@
 ﻿using FogSoft.WinForm;
 using FogSoft.WinForm.Classes;
-using System.Windows.Forms;
 
 namespace Merlin.Classes.FakeContainers
 {
-    internal class AdvertTypeContainer : FakeContainer
+    internal partial class AdvertTypeContainer : FakeContainer
     {
         private struct ActionNames
         {
@@ -36,19 +35,6 @@ namespace Merlin.Classes.FakeContainers
             return base.IsActionEnabled(actionName, type);
         }
 
-        public override void DoAction(string actionName, IWin32Window owner, InterfaceObjects interfaceObject)
-        {
-            if (actionName == ActionNames.ShowTree)
-            {
-                ChildEntity = EntityManager.GetEntity((int)Entities.AdvertType);
-                FireContainerRefreshed();
-            }
-            else if (actionName == ActionNames.ShowFlat)
-            {
-                ChildEntity = EntityManager.GetEntity((int)Entities.AdvertTypeChild);
-                FireContainerRefreshed();
-            }
-            base.DoAction(actionName, owner, interfaceObject);
-        }
+        // DoAction переехал в AdvertTypeContainer.WinForms.cs.
     }
 }

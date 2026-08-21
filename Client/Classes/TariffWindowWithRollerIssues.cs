@@ -1,7 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Data;
-using System.Windows.Forms;
 using FogSoft.WinForm;
 using FogSoft.WinForm.Classes;
 using FogSoft.WinForm.DataAccess;
@@ -218,57 +217,12 @@ namespace Merlin.Classes
 
 		// Extend переехал в TariffWindowWithRollerIssues.WinForms.cs.
 
-        private void GroupWithWindow(bool isWithPrev)
-		{
-			try
-			{
-                TariffWindowWithRollerIssues window = GetTariffWindow2Group(isWithPrev);
-				if (window != null)
-				{
-                    Cursor.Current = Cursors.WaitCursor;
-                    if (isWithPrev)
-						window[ParamNames.WindowNextId] = WindowId;
-					else
-						window[ParamNames.WindowPrevId] = WindowId;
-					window.Update();
+        // GroupWithWindow/UngroupWindows переехали в
+        // TariffWindowWithRollerIssues.WinForms.cs — обвязка Cursor вокруг
+        // записи, у самих методов диалога выбора нет (кроме UserInteraction.Confirm
+        // внутри UngroupWindows). См. §10 конвенции: их пришлось довести до конца,
+        // когда мост стал полным критерием, а не только диалоговым проходом.
 
-					if (isWithPrev)
-						this[ParamNames.WindowPrevId] = window.WindowId;
-					else
-						this[ParamNames.WindowNextId] = window.WindowId;
-					Update();
-                    TariffWindowUngrouped?.Invoke(isWithPrev, false);
-                }
-			}
-			finally { Cursor.Current = Cursors.Default; }
-		}
-
-		private void UngroupWindows(bool isWithPrev)
-		{
-			try
-			{
-				TariffWindowWithRollerIssues window = CreateTariffWindowById(isWithPrev ? int.Parse(this[ParamNames.WindowPrevId].ToString()) : int.Parse(this[ParamNames.WindowNextId].ToString()));
-				window.Refresh();
-
-				if (UserInteraction.Confirm(string.Format("Хотите отменить объединение рекламных окон '{0}' и '{1}'?", WindowDate.ToString("g"), window.WindowDate.ToString("g"))))
-				{
-                    Cursor.Current = Cursors.WaitCursor;
-                    if (isWithPrev)
-						window[ParamNames.WindowNextId] = null;
-					else
-						window[ParamNames.WindowPrevId] = null;
-					window.Update();
-
-					if (isWithPrev)
-						this[ParamNames.WindowPrevId] = null;
-					else
-						this[ParamNames.WindowNextId] = null;
-					Update();
-					TariffWindowUngrouped?.Invoke(window.WindowDate < WindowDate, true);
-				}
-			}
-			finally { Cursor.Current = Cursors.Default; }
-        }
 
         override public DataTable LoadIssues(bool showUnconfirmed, Entity issueEntity)
 		{

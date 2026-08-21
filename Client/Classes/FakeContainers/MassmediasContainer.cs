@@ -1,12 +1,10 @@
 ﻿using System;
-using System.Windows.Forms;
 using FogSoft.WinForm;
 using FogSoft.WinForm.Classes;
-using FogSoft.WinForm.Passport.Forms;
 
 namespace Merlin.Classes.FakeContainers
 {
-	class MassmediasContainer : FakeContainer
+	partial class MassmediasContainer : FakeContainer
 	{
 		protected MassmediasContainer(Entity.Action[] actions) : base(actions)
 		{
@@ -26,27 +24,7 @@ namespace Merlin.Classes.FakeContainers
 			}
 		}
 
-		public override void ShowFilter(IWin32Window owner)
-		{
-			try
-			{
-				Application.DoEvents();
-				Cursor.Current = Cursors.WaitCursor;
-
-				FilterForm frm = new FilterForm(RootEntity, Globals.PrepareForFilter(RootEntity), _filter);
-
-				if (frm.ShowDialog(owner) == DialogResult.OK)
-					FireContainerRefreshed();
-			}
-			catch (Exception ex)
-			{
-				ErrorManager.PublishError(ex);
-			}
-			finally
-			{
-				Cursor.Current = Cursors.Default;
-			}
-		}
+		// ShowFilter переехал в MassmediasContainer.WinForms.cs.
 
 		public Entity RootEntity
 		{

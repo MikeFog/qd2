@@ -505,8 +505,11 @@
     <Compile Include="Classes\ActionRollerInStatJournal.WinForms.cs" />
     <Compile Include="Classes\AdvertAgUser.cs" />
     <Compile Include="Classes\Announcement.cs" />
+    <Compile Include="Classes\Announcement.WinForms.cs" />
     <Compile Include="Classes\BalanceStatRow.cs" />
+    <Compile Include="Classes\BalanceStatRow.WinForms.cs" />
     <Compile Include="Classes\Bank.cs" />
+    <Compile Include="Classes\Bank.WinForms.cs" />
     <Compile Include="Classes\CampaignModule.cs" />
     <Compile Include="Classes\CampaignModule.WinForms.cs" />
     <Compile Include="Classes\CampaignModuleDay.cs" />
@@ -521,24 +524,29 @@
     <Compile Include="Classes\Action.WinForms.cs" />
     <Compile Include="Classes\Class1.cs" />
     <Compile Include="Classes\CommonRoller.cs" />
+    <Compile Include="Classes\CommonRoller.WinForms.cs" />
     <Compile Include="Classes\CpOneDocGenerator.cs" />
     <Compile Include="Classes\Domain\MasterIssue.cs" />
     <Compile Include="Classes\FakeContainers\ActionContainer.cs">
       <SubType>Code</SubType>
     </Compile>
+    <Compile Include="Classes\FakeContainers\ActionContainer.WinForms.cs" />
     <Compile Include="Classes\ActionOnMassmedia.cs">
       <SubType>Code</SubType>
     </Compile>
     <Compile Include="Classes\ActJournalRow.cs" />
+    <Compile Include="Classes\ActJournalRow.WinForms.cs" />
     <Compile Include="Classes\AdvertType.cs">
       <SubType>Code</SubType>
     </Compile>
+    <Compile Include="Classes\AdvertType.WinForms.cs" />
     <Compile Include="Classes\Agency.cs">
       <SubType>Code</SubType>
     </Compile>
     <Compile Include="Classes\Brand.cs">
       <SubType>Code</SubType>
     </Compile>
+    <Compile Include="Classes\Brand.WinForms.cs" />
     <Compile Include="Classes\Campaign.cs">
       <SubType>Code</SubType>
     </Compile>
@@ -555,6 +563,7 @@
     <Compile Include="Classes\CampaignRoller.WinForms.cs" />
     <Compile Include="Classes\EntityCampaign.cs" />
     <Compile Include="Classes\FakeContainers\AdvertTypeContainer.cs" />
+    <Compile Include="Classes\FakeContainers\AdvertTypeContainer.WinForms.cs" />
     <Compile Include="Classes\FirmWithActions.cs" />
     <Compile Include="Classes\GridExport\DJinSerializer\BlockManager.cs" />
     <Compile Include="Classes\GridExport\DJinSerializer\DJinParam.cs" />
@@ -563,12 +572,15 @@
     <Compile Include="Classes\GridExport\ExportParams.cs" />
     <Compile Include="Classes\FirmBalanceIssues.cs">
     </Compile>
+    <Compile Include="Classes\FirmBalanceIssues.WinForms.cs" />
     <Compile Include="Classes\FirmBalanceStudioOrder.cs" />
+    <Compile Include="Classes\FirmBalanceStudioOrder.WinForms.cs" />
     <Compile Include="Classes\GridExport\ExportType.cs" />
     <Compile Include="Classes\GridExport\ExportHelper.cs" />
     <Compile Include="Classes\HeadCompany.cs" />
     <Compile Include="Classes\HeadCompany.WinForms.cs" />
     <Compile Include="Classes\HeadCompanyWithActions.cs" />
+    <Compile Include="Classes\HeadCompanyWithActions.WinForms.cs" />
     <Compile Include="Classes\Import\FirmImporter.cs" />
     <Compile Include="Classes\InternalConstants.cs" />
     <Compile Include="Classes\Firm.cs">
@@ -578,12 +590,15 @@
     <Compile Include="Classes\FirmBalance.cs">
       <SubType>Code</SubType>
     </Compile>
+    <Compile Include="Classes\FirmBalance.WinForms.cs" />
     <Compile Include="Classes\Issue.cs" />
+    <Compile Include="Classes\Issue.WinForms.cs" />
     <Compile Include="Classes\IssueTemplate.cs" />
     <Compile Include="Classes\ITariffWindow.cs" />
     <Compile Include="Classes\MassmediaPricelist.cs" />
     <Compile Include="Classes\MassmediaPricelist.WinForms.cs" />
     <Compile Include="Classes\MassmediasAndCampaignsContainer.cs" />
+    <Compile Include="Classes\MassmediasAndCampaignsContainer.WinForms.cs" />
     <Compile Include="Classes\MediaPlan.cs" />
     <Compile Include="Classes\MediaPlanCampaignGroups.cs" />
     <Compile Include="Classes\ModuleCampaignDay.cs" />
@@ -591,6 +606,7 @@
     <Compile Include="Classes\Organization.cs" />
     <Compile Include="Classes\Organization.WinForms.cs" />
     <Compile Include="Classes\PackageDiscount.cs" />
+    <Compile Include="Classes\PackageDiscount.WinForms.cs" />
     <Compile Include="Classes\PackageDiscountPriceList.cs" />
     <Compile Include="Classes\PackageDiscountPriceList.WinForms.cs" />
     <Compile Include="Classes\PackModule.cs" />
@@ -606,6 +622,7 @@
     <Compile Include="Classes\RollerIssue.cs">
       <SubType>Code</SubType>
     </Compile>
+    <Compile Include="Classes\RollerIssue.WinForms.cs" />
     <Compile Include="Classes\IssueTransfer.cs" />
     <Compile Include="Classes\Massmedia.cs">
       <SubType>Code</SubType>
@@ -617,13 +634,16 @@
     <Compile Include="Classes\ModuleIssue.cs">
       <SubType>Code</SubType>
     </Compile>
+    <Compile Include="Classes\ModuleIssue.WinForms.cs" />
     <Compile Include="Classes\ModulePricelist.cs">
       <SubType>Code</SubType>
     </Compile>
     <Compile Include="Classes\ModulePricelist.WinForms.cs" />
     <Compile Include="Classes\RollerPartOfSponsorCampaign.cs" />
+    <Compile Include="Classes\RollerPartOfSponsorCampaign.WinForms.cs" />
     <Compile Include="Classes\SpecialTariffWindow.cs" />
     <Compile Include="Classes\SponsorCampaignPart.cs" />
+    <Compile Include="Classes\SponsorCampaignPart.WinForms.cs" />
     <Compile Include="Classes\SponsorTariff.cs" />
     <Compile Include="Classes\PackModulePricelist.cs">
       <SubType>Code</SubType>
@@ -655,6 +675,7 @@
     <Compile Include="Classes\SponsorProgramPart.cs">
       <SubType>Code</SubType>
     </Compile>
+    <Compile Include="Classes\SponsorProgramPart.WinForms.cs" />
     <Compile Include="Classes\StudioPricelist.cs">
       <SubType>Code</SubType>
     </Compile>

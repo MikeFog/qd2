@@ -2,7 +2,6 @@
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.Data;
-using System.Windows.Forms;
 using FogSoft.WinForm;
 using FogSoft.WinForm.Classes;
 using FogSoft.WinForm.DataAccess;
@@ -11,10 +10,13 @@ namespace Merlin.Classes
 {
 	// UI-часть (DoAction, ShowDisabledWindows, ChangeTariffWindowsMarkedStatus,
 	// ChangeTariffWindowsDisabedStatus, диалоговые обёртки GenerateTariffWindows/
-	// DeleteGeneratedWindows) — в MassmediaPricelist.WinForms.cs.
-	// GenerateTariffWindows(object,DoWorkEventArgs)/DeleteGeneratedTariffWindows/
-	// CheckLinkedWindows остаются здесь: BackgroundWorker/DoWorkEventArgs — это
-	// System.ComponentModel, не WinForms, и сами эти методы не показывают диалог.
+	// DeleteGeneratedWindows, CreateSpecialTariffWindow) — в
+	// MassmediaPricelist.WinForms.cs. Туда же ушли и сами колбэки
+	// GenerateTariffWindows(object,DoWorkEventArgs)/DeleteGeneratedTariffWindows:
+	// BackgroundWorker/DoWorkEventArgs — это System.ComponentModel, не WinForms,
+	// но внутри — Application.DoEvents(), а это уже WinForms (находка моста,
+	// §10 конвенции — компилятор поймал то, что предыдущее решение упустило).
+	// CheckLinkedWindows Application не вызывает, остаётся здесь.
 	// Конвенция — docs/tasks/web-migration-dialogs.md.
 	internal partial class MassmediaPricelist : Pricelist
 	{
@@ -150,18 +152,7 @@ namespace Merlin.Classes
             return DataAccessor.LoadDataSet("TariffWindowWithAdvertTypeRetrieve", procParameters);
         }
 
-        internal SpecialTariffWindow CreateSpecialTariffWindow(DateTime date, Form parentForm)
-		{
-			SpecialTariffWindow tariffwindow = new SpecialTariffWindow(BroadcastStart)
-			{
-				MassmediaID = MassmediaId,
-				WindowDate = date.Date,
-				WindowDateOriginal = date.Date
-			};
-			if (tariffwindow.ShowPassport(parentForm))
-				return tariffwindow;
-			return null;
-		}
+        // CreateSpecialTariffWindow переехал в MassmediaPricelist.WinForms.cs.
 
 
 		// ChangeTariffWindowsMarkedStatus, ChangeTariffWindowsDisabedStatus,
@@ -179,78 +170,11 @@ namespace Merlin.Classes
             DataAccessor.ExecuteNonQuery("CheckLinkedWindows", procParameters);
         }
 
-        public void GenerateTariffWindows(object sender, DoWorkEventArgs e)
-		{
-			List<object> list = e.Argument as List<object>;
-			DateTime startDate = (DateTime)list[0];
-			DateTime finishDate = (DateTime)list[1];
-
-			BackgroundWorker worker = sender as BackgroundWorker;
-
-			int i = 0;
-
-			while (startDate < finishDate)
-			{
-				if (worker.CancellationPending)
-				{
-					e.Cancel = true;
-					return;
-				}
-
-				DateTime fDate =finishDate > startDate.AddDays(7) ? startDate.AddDays(7) : finishDate;
-
-				Dictionary<string, object> procParameters = DataAccessor.PrepareParameters(
-						EntityManager.GetEntity((int)Entities.TariffWindow),
-						InterfaceObjects.FakeModule, Constants.Actions.Generate);
-				procParameters.Add(Pricelist.ParamNames.PricelistId, PricelistId);
-				procParameters.Add(Pricelist.ParamNames.StartDate, startDate);
-				procParameters.Add(Pricelist.ParamNames.FinishDate, fDate);
-				DataAccessor.DoAction(procParameters);
-
-				startDate = fDate; // One week
-
-				worker.ReportProgress(0, i++);
-
-				Application.DoEvents();
-			}
-			
-		}
+        // GenerateTariffWindows(object,DoWorkEventArgs)/DeleteGeneratedTariffWindows
+        // переехали в MassmediaPricelist.WinForms.cs — Application.DoEvents внутри.
 
 		// DeleteGeneratedWindows(IWin32Window) переехал в MassmediaPricelist.WinForms.cs.
 
-		public void DeleteGeneratedTariffWindows(object sender, DoWorkEventArgs e)
-		{
-			List<object> list = e.Argument as List<object>;
-			DateTime startDate = (DateTime)list[0];
-			DateTime finishDate = (DateTime)list[1];
-
-			BackgroundWorker worker = sender as BackgroundWorker;
-
-			int i = 0;
-
-			while (startDate < finishDate)
-			{
-				if (worker.CancellationPending)
-				{
-					e.Cancel = true;
-					return;
-				}
-
-				DateTime fDate = finishDate > startDate.AddDays(1) ? startDate.AddDays(1) : finishDate;
-
-				Dictionary<string, object> procParameters = DataAccessor.CreateParametersDictionary();
-				procParameters.Add(Pricelist.ParamNames.PricelistId, PricelistId);
-				procParameters.Add(Pricelist.ParamNames.StartDate, startDate);
-				procParameters.Add(Pricelist.ParamNames.FinishDate, fDate);
-				procParameters.Add(Massmedia.ParamNames.MassmediaId, MassmediaId);
-				DataAccessor.ExecuteNonQuery("TariffWindowMassDelete", procParameters);
-				
-				startDate = fDate; // One day
-
-				worker.ReportProgress(0, i++);
-				Application.DoEvents();
-			}
-		}
 
 		private static Entity GetPriceListEntity()
 		{

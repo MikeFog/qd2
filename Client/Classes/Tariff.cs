@@ -2,7 +2,6 @@
 using System.Data;
 using FogSoft.WinForm;
 using FogSoft.WinForm.Classes;
-using FogSoft.WinForm.Passport.Forms;
 
 namespace Merlin.Classes
 {

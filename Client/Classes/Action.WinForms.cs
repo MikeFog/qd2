@@ -1,11 +1,14 @@
 using System;
 using System.Collections.Generic;
 using System.Data;
+using System.Globalization;
 using System.Windows.Forms;
 using FogSoft.WinForm;
 using FogSoft.WinForm.Classes;
 using FogSoft.WinForm.DataAccess;
+using FogSoft.WinForm.Forms;
 using Merlin.Forms;
+using Merlin.Reports;
 using static Merlin.Classes.TableColumns;
 
 namespace Merlin.Classes
@@ -119,6 +122,217 @@ namespace Merlin.Classes
 
 			FrmBill fBill = new FrmBill(entityBill, billDate, procParameters);
 			return fBill.ShowDialog(owner) == DialogResult.Cancel ? null : fBill.Bill;
+		}
+
+		protected delegate void PrintAgencyDocument(Form owner, Agency agency, bool doExport);
+
+		public void PrintContracts(Form owner, bool doExport)
+		{
+			PrintAgencyDocuments(owner, PrintContract, doExport);
+		}
+
+		public void PrintBillContracts(Form owner, bool doExport)
+		{
+			PrintAgencyDocuments(owner, PrintBillContract, doExport);
+		}
+
+		public void PrintSponsorContracts(Form owner, bool doExport)
+		{
+			PrintAgencyDocuments(owner, PrintSponsorContract, doExport);
+		}
+
+		public void PrintBills(Form owner, bool byMounth, bool doExport)
+		{
+			if (byMounth)
+			{
+				Refresh();
+				Application.DoEvents();
+				List<PresentationObject> agencies = Agency.SelectAgencies(this, Parameters, owner);
+				Application.DoEvents();
+				if (agencies == null) return;
+				Application.DoEvents();
+				owner.Cursor = Cursors.WaitCursor;
+
+				IList<DateTime> months = GetSelectedMonths();
+				if (months == null || months.Count <= 0)
+					return;
+
+				foreach (PresentationObject po in agencies)
+				{
+					PresentationObject bill = GetBill((Agency)po, owner);
+					foreach (DateTime month in months)
+					{
+						Application.DoEvents();
+						Agency agency = (Agency)po;
+						BillReport report = new BillReport(this, agency, bill, month);
+						string caption = string.Format("Счёт на предоплату, агенство '{0}' за месяц {1} {2} года", agency.Name
+							, DateTimeFormatInfo.CurrentInfo.MonthNames[month.Month - 1], month.Year);
+
+						string fileName = string.Format("{0} №{1} к акции {2} для {3}.doc",
+							"Счёт на предоплату",
+							bill[TableColumns.Bill.BillNo],
+							ActionId,
+							FirmName);
+						report.Show(caption, fileName);
+					}
+				}
+			}
+			else
+				PrintAgencyDocuments(owner, PrintBill, false);
+		}
+
+		private void ChangeFirm(Control owner)
+		{
+			if (IsChangeFirmPossible)
+			{
+				Firm newFirm = Firm.SelectFirm(owner);
+				if (newFirm != null)
+				{
+					Application.DoEvents();
+					owner.Cursor = Cursors.WaitCursor;
+
+					this[ParamNames.FirmId] = newFirm.FirmId;
+					Update();
+					Refresh();
+					OnObjectChanged(this);
+					UserMessage.ShowInformation(Properties.Resources.FirmChangeSuccess);
+				}
+			}
+			else
+				UserMessage.ShowExclamation(MessageAccessor.GetMessage("ChangeFirmIsForbidden"));
+		}
+
+		private bool IsChangeFirmPossible
+		{
+			get
+			{
+				if (SecurityManager.LoggedUser.IsAdmin || SecurityManager.LoggedUser.IsBookKeeper || !IsConfirmed) return true;
+				// если акция началась в предыдущем месяце или ранее, то нельзя
+				if (new DateTime(StartDate.Year, StartDate.Month, 1) < new DateTime(DateTime.Today.Year, DateTime.Today.Month, 1)) return false;
+				// если начало в этом месяце, то не должна уже закончиться
+				if (FinishDate < DateTime.Today) return false;
+
+				return true;
+			}
+		}
+
+		private void ChangeCreator(Control owner)
+		{
+			PresentationObject manager = Utils.SelectManager(owner);
+			if (manager != null)
+			{
+				Application.DoEvents();
+				owner.Cursor = Cursors.WaitCursor;
+
+				parameters[ParamNames.NewCreatorId] = manager.IDs[0].ToString();
+				Update();
+				Refresh();
+			}
+		}
+
+		private void PrintAgencyDocuments(Form owner, PrintAgencyDocument doc, bool doExport)
+		{
+			try
+			{
+				Refresh();
+				Application.DoEvents();
+
+				List<PresentationObject> agencies = Agency.SelectAgencies(this, Parameters, owner);
+				Application.DoEvents();
+
+				if (agencies == null) return;
+				Application.DoEvents();
+				owner.Cursor = Cursors.WaitCursor;
+
+				foreach (PresentationObject po in agencies)
+					doc(owner, po as Agency, doExport);
+			}
+			finally
+			{
+				owner.Cursor = Cursors.Default;
+			}
+		}
+
+		protected virtual void PrintContract(Form owner, Agency agency, bool exportReport)
+		{
+			PresentationObject bill = GetBill(agency, owner);
+			if (bill == null) return;
+
+			Application.DoEvents();
+			owner.Cursor = Cursors.WaitCursor;
+
+			ContractReport report = new ContractReport(this, agency, bill);
+			string fileName = string.Format("{0} №{1} к акции {2} для {3}.rtf",
+				"Договор",
+				bill[TableColumns.Bill.BillNo],
+				ActionId,
+				FirmName);
+			report.Show("Договор", fileName);
+		}
+
+		protected virtual void PrintSponsorContract(Form owner, Agency agency, bool exportReport)
+		{
+			PresentationObject bill = GetBill(agency, owner);
+			if (bill == null) return;
+
+			Application.DoEvents();
+			owner.Cursor = Cursors.WaitCursor;
+
+			ContractReport report = new ContractReport(this, agency, bill, true);
+			string fileName = string.Format("{0} №{1} к акции {2} для {3}.rtf",
+				"Спонсорский договор",
+				bill[TableColumns.Bill.BillNo],
+				ActionId,
+				FirmName);
+			report.Show("Спонсорский договор", fileName);
+		}
+
+		private void PrintBillContract(Form owner, Agency agency, bool exportReport)
+		{
+			PresentationObject bill = GetBill(agency, owner);
+			if (bill == null) return;
+
+			Application.DoEvents();
+			owner.Cursor = Cursors.WaitCursor;
+			BillReport report = new BillContractReport(this, agency, bill);
+			string fileName = string.Format("{0} №{1} к акции {2} для {3}.rtf",
+				"Счёт-договор",
+				bill[TableColumns.Bill.BillNo],
+				ActionId,
+				FirmName);
+			report.Show("Счёт-договор", fileName);
+		}
+
+		protected virtual void PrintBill(Form owner, Agency agency, bool exportReport)
+		{
+			// Load Bill data
+			PresentationObject bill = GetBill(agency, owner);
+			if (bill == null) return;
+
+			Application.DoEvents();
+			owner.Cursor = Cursors.WaitCursor;
+			BillReport report = new BillReport(this, agency, bill);
+			string fileName = string.Format("{0} №{1} к акции {2} для {3}.doc",
+				"Счёт",
+				bill[TableColumns.Bill.BillNo],
+				ActionId,
+				FirmName);
+			if (exportReport) report.Export(ReportExportFormat.WordForWindows);
+			else report.Show("Счёт", fileName);
+		}
+
+		protected void SetAdvertTypeOrSubstituteRoller()
+		{
+			try
+			{
+				Dictionary<string, object> procParameters = DataAccessor.CreateParametersDictionary();
+				procParameters.Add(ParamNames.ActionId, ActionId);
+				Globals.ShowSimpleJournal(EntityManager.GetEntity((int)Entities.ActionRollers),
+					string.Format("Ролики рекламной акции № {0}", ActionId),
+					procParameters, showModal: true);
+				FireContainerRefreshed();
+			}
+			finally { Cursor.Current = Cursors.Default; }
 		}
 	}
 }

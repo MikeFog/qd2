@@ -1,10 +1,9 @@
 ﻿using System.Data;
-using System.Windows.Forms;
 using FogSoft.WinForm.Classes;
 
 namespace Merlin.Classes
 {
-	public class Brand : ObjectContainer
+	public partial class Brand : ObjectContainer
 	{
 		public Brand() : base(GetBrandEntity())
 		{
@@ -14,40 +13,9 @@ namespace Merlin.Classes
 		{
 		}
 
-		protected override void AssignExisting(IWin32Window owner)
-		{
-			PresentationObject firm = Firm.SelectFirm(owner);
+		// AssignExisting/AssignNew/AssignFirm(2 арг.) переехали в Brand.WinForms.cs.
 
-			if (firm != null)
-				AssignFirm(firm, owner);
-		}
 
-		protected override void AssignNew(IWin32Window owner)
-		{
-			PresentationObject firm = EntityManager.GetEntity((int) Entities.Firm).NewObject;
-
-			if (firm.ShowPassport(owner))
-			{
-				Application.DoEvents();
-				AssignFirm(firm, owner);
-			}
-		}
-
-		private void AssignFirm(PresentationObject firm, IWin32Window owner)
-		{
-			Form ownerForm = (Form) owner;
-			try
-			{
-				Application.DoEvents();
-				ownerForm.Cursor = Cursors.WaitCursor;
-
-                AssignFirm(firm);
-			}
-			finally
-			{
-				ownerForm.Cursor = Cursors.Default;
-			}
-		}
 
         public void AssignFirm(PresentationObject firm)
         {

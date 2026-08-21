@@ -4,8 +4,6 @@ using System.Reflection;
 using FogSoft.WinForm;
 using FogSoft.WinForm.Classes;
 using FogSoft.WinForm.DataAccess;
-using Merlin.Controls;
-using unoidl.com.sun.star.sheet;
 
 namespace Merlin.Classes
 {

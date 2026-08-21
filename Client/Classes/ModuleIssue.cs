@@ -2,16 +2,14 @@
 using System.Collections.Generic;
 using System.Data;
 using System.Reflection;
-using System.Windows.Forms;
 using FogSoft.WinForm;
 using FogSoft.WinForm.Classes;
 using FogSoft.WinForm.DataAccess;
-using FogSoft.WinForm.Forms;
 using static Merlin.Classes.CampaignOnSingleMassmedia;
 
 namespace Merlin.Classes
 {
-	internal class ModuleInCampaign: CampaignPart
+	internal partial class ModuleInCampaign: CampaignPart
 	{
         public ModuleInCampaign() : base(GetEntity())
 		{
@@ -26,26 +24,12 @@ namespace Merlin.Classes
 			return EntityManager.GetEntity((int)Entities.CampaignModule);
 		}
 
-        public override void DoAction(string actionName, IWin32Window owner, InterfaceObjects interfaceObject)
-        {
-			if (actionName == Campaign.ActionNames.DeleteIssues)
-				DeleteIssues((Form)owner);
-            else if (actionName == Constants.Actions.ChangePositions)
-                ChangePositions((Form)owner);
-            else
-                base.DoAction(actionName, owner, interfaceObject);
-        }
+        // DoAction/DeleteIssues (ModuleInCampaign) и DoAction (ModuleIssue)
+        // переехали в ModuleIssue.WinForms.cs.
 
-        private void DeleteIssues(Form owner)
-        {
-            Dictionary<string, object> parameters = DataAccessor.CreateParametersDictionary();
-            parameters[CampaignPart.OBJECT_ID] = this[Module.ParamNames.ModuleId];
-			if (Campaign.DeleteIssues(owner, false, parameters, isFireEvent: false))
-				FireContainerRefreshed();
-        }
     }
 
-	internal class ModuleIssue : Issue
+	internal partial class ModuleIssue : Issue
 	{
 		private Module _module;
         private Roller _roller;
@@ -141,13 +125,6 @@ namespace Merlin.Classes
             return base.Refresh();
         }
 
-        public override void DoAction(string actionName, IWin32Window owner, InterfaceObjects interfaceObject)
-        {
-			if (string.Compare(actionName, Constants.Actions.Substitute) == 0)
-				SubstituteRollerForSingleIssue(Roller);
-			else
-				base.DoAction(actionName, owner, interfaceObject);
-        }
 
         protected override DataSet PrepareSubstitutionParametersAndExecute(Dictionary<string, object> procParameters)
         {
