@@ -506,6 +506,7 @@
     <Compile Include="Classes\BalanceStatRow.cs" />
     <Compile Include="Classes\Bank.cs" />
     <Compile Include="Classes\CampaignModule.cs" />
+    <Compile Include="Classes\CampaignModule.WinForms.cs" />
     <Compile Include="Classes\CampaignModuleDay.cs" />
     <Compile Include="Classes\CampaignOnSingleMassmedia.cs" />
     <Compile Include="Classes\CampaignPackDay.cs" />
@@ -539,6 +540,7 @@
     <Compile Include="Classes\CampaignDay.cs">
       <SubType>Code</SubType>
     </Compile>
+    <Compile Include="Classes\CampaignDay.WinForms.cs" />
     <Compile Include="Classes\CampaignPart.cs" />
     <Compile Include="Classes\CampaignPart.WinForms.cs" />
     <Compile Include="Classes\CampaignRoller.cs">
@@ -558,6 +560,7 @@
     <Compile Include="Classes\GridExport\ExportType.cs" />
     <Compile Include="Classes\GridExport\ExportHelper.cs" />
     <Compile Include="Classes\HeadCompany.cs" />
+    <Compile Include="Classes\HeadCompany.WinForms.cs" />
     <Compile Include="Classes\HeadCompanyWithActions.cs" />
     <Compile Include="Classes\Import\FirmImporter.cs" />
     <Compile Include="Classes\InternalConstants.cs" />

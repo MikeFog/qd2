@@ -1,10 +1,8 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Windows.Forms;
 using FogSoft.WinForm;
 using FogSoft.WinForm.Classes;
 using FogSoft.WinForm.DataAccess;
-using Merlin.Forms;
 
 namespace Merlin.Classes
 {
@@ -20,7 +18,9 @@ namespace Merlin.Classes
 		}
 	}
 
-	internal class CampaignDay : CampaignPart
+	// UI-часть (DoAction, TransferDay) — в CampaignDay.WinForms.cs.
+	// Конвенция — docs/tasks/web-migration-dialogs.md.
+	internal partial class CampaignDay : CampaignPart
 	{
         public struct ParamNames
         {
@@ -36,12 +36,7 @@ namespace Merlin.Classes
 		}
 
 
-        public override void DoAction(string actionName, IWin32Window owner, InterfaceObjects interfaceObject)
-		{
-			if (actionName == Constants.EntityActions.Transfer)
-				TransferDay((Form) owner);
-			base.DoAction(actionName, owner, interfaceObject);
-		}
+        // DoAction и TransferDay переехали в CampaignDay.WinForms.cs.
 
         public DateTime Day
 		{
@@ -56,40 +51,22 @@ namespace Merlin.Classes
 			return massmedia.GetPriceList(date);
 		}
 
-		private void TransferDay(Form form)
+		/// <summary>Переносит выпуск на новую дату <paramref name="targetDate"/>.</summary>
+		internal void ApplyDayTransfer(DateTime targetDate, decimal priceBeforeTransfer)
 		{
-			decimal price = decimal.Zero;
+			Dictionary<string, object> procParameters = DataAccessor.PrepareParameters(
+				entity, InterfaceObjects.FakeModule, Constants.Actions.Transfer);
 
-			if (Campaign != null && Campaign.Action != null)
-			{
-				Campaign.Action.Refresh();
-				price = Campaign.Action.TotalPrice;
-			}
-
-			DateTime date = DateTime.Parse(this[RollerIssue.ParamNames.IssueDate].ToString());
-			TransferDayForm fTransfer = new TransferDayForm(date, GetPriceList(date));
-			if (fTransfer.ShowDialog(form) == DialogResult.OK)
-			{
-				try
-				{
-                    Cursor.Current = Cursors.WaitCursor;
-					Application.DoEvents();
-                    Dictionary<string, object> procParameters = DataAccessor.PrepareParameters(
-						entity, InterfaceObjects.FakeModule, Constants.Actions.Transfer);
-
-					procParameters[Campaign.ParamNames.CampaignId] = this[Campaign.ParamNames.CampaignId];
-					procParameters["oldDate"] = this[RollerIssue.ParamNames.IssueDate];
-					procParameters["newDate"] = fTransfer.TargetDate;
-					// этот параметр для показа возможного сообщения об ошибке
-                    procParameters[Issue.ParamNames.IssueDate] = fTransfer.TargetDate;
-                    procParameters[Massmedia.ParamNames.MassmediaId] = this[Massmedia.ParamNames.MassmediaId];
-					DataAccessor.DoAction(procParameters);
-					this[RollerIssue.ParamNames.IssueDate] = fTransfer.TargetDate;
-					RecalculateAndShowPriceChange(price);
-					OnParentChanged(this, 1);
-				}
-				finally { Cursor.Current = Cursors.Default; }
-			}
+			procParameters[Campaign.ParamNames.CampaignId] = this[Campaign.ParamNames.CampaignId];
+			procParameters["oldDate"] = this[RollerIssue.ParamNames.IssueDate];
+			procParameters["newDate"] = targetDate;
+			// этот параметр для показа возможного сообщения об ошибке
+			procParameters[Issue.ParamNames.IssueDate] = targetDate;
+			procParameters[Massmedia.ParamNames.MassmediaId] = this[Massmedia.ParamNames.MassmediaId];
+			DataAccessor.DoAction(procParameters);
+			this[RollerIssue.ParamNames.IssueDate] = targetDate;
+			RecalculateAndShowPriceChange(priceBeforeTransfer);
+			OnParentChanged(this, 1);
 		}
 	}
 }

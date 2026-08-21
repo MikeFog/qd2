@@ -1,17 +1,17 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Reflection;
-using System.Windows.Forms;
 using FogSoft.WinForm;
 using FogSoft.WinForm.Classes;
 using FogSoft.WinForm.DataAccess;
 using Merlin.Controls;
-using Merlin.Forms;
 using unoidl.com.sun.star.sheet;
 
 namespace Merlin.Classes
 {
-    internal class CampaignModule : CampaignOnSingleMassmedia
+    // UI-часть (DoAction) — в CampaignModule.WinForms.cs.
+    // Конвенция — docs/tasks/web-migration-dialogs.md.
+    internal partial class CampaignModule : CampaignOnSingleMassmedia
     {
     	public CampaignModule() : base()
     	{
@@ -21,15 +21,7 @@ namespace Merlin.Classes
     	{
     	}
 
-    	public override void DoAction(string actionName, IWin32Window owner, InterfaceObjects interfaceObject)
-        {
-            if (actionName == ActionNames.ShowRollers)
-                ShowModuleRollers();
-            if (actionName == ActionNames.ShowDays)
-                ShowModuleDays();
-            else
-                base.DoAction(actionName, owner, interfaceObject);
-        }
+        // DoAction переехал в CampaignModule.WinForms.cs.
 
         private void ShowModuleDays()
         {
@@ -64,7 +56,8 @@ namespace Merlin.Classes
         }
     }
 
-	internal class CampaignModuleRollerInsideDay : CampaignRoller
+	// UI-часть (DoAction, ChangeAdvertType) — в CampaignModule.WinForms.cs.
+	internal partial class CampaignModuleRollerInsideDay : CampaignRoller
 	{
         private ModulePricelist _pricelist;
 
@@ -83,15 +76,10 @@ namespace Merlin.Classes
             return base.IsActionEnabled(actionName, type);
         }
 
-        public override void DoAction(string actionName, IWin32Window owner, InterfaceObjects interfaceObject)
-        {
-            if (string.Compare(actionName, Roller.ActionNames.ChangeAdvertType, StringComparison.OrdinalIgnoreCase) == 0)
-                ChangeAdvertType((Form)owner);
-            else if (string.Compare(actionName, Constants.Actions.Substitute, StringComparison.OrdinalIgnoreCase) == 0)
-                SubstituteRoller((Form)owner, 2);
-            else
-                base.DoAction(actionName, owner, interfaceObject);
-        }
+        // DoAction переехал в CampaignModule.WinForms.cs целиком (в том числе ветка
+        // Substitute — общий с ActionRoller.cs/PackModuleIssue.cs кластер вокруг
+        // CampaignRoller.Subtitute, сам SubstituteRoller пока не разрезан, см.
+        // docs/tasks/web-migration-dialogs.md, §8).
 
         private ModulePricelist ModulePricelist
         {
@@ -103,38 +91,22 @@ namespace Merlin.Classes
             }
         }
 
-        private void ChangeAdvertType(Form parentForm)
+        /// <summary>Меняет предмет рекламы у ролика на выбранные даты.</summary>
+        internal void ApplyAdvertTypeChange(System.Collections.IEnumerable selectedDays, int advertTypeId)
         {
-            try
+            foreach (var date in selectedDays)
             {
-                RollerChangeAdvertTypeForm form = new RollerChangeAdvertTypeForm(Roller, Campaign, ModulePricelist.ModuleID, null);
-                if (form.ShowDialog(parentForm) == DialogResult.OK)
-                {
-                    Application.DoEvents();
-                    Cursor.Current = Cursors.WaitCursor;
-                    foreach(var date in form.SelectedDays)
-                    {
-                        Dictionary<string, object> procParameters = DataAccessor.CreateParametersDictionary();
+                Dictionary<string, object> procParameters = DataAccessor.CreateParametersDictionary();
 
-                        procParameters[Roller.ParamNames.RollerId] = Roller.RollerId;
-                        procParameters[Campaign.ParamNames.CampaignId] = Campaign.CampaignId;
-                        procParameters[Module.ParamNames.ModuleId] = ModulePricelist.ModuleID;
-                        procParameters[AdvertType.ParamNames.AdvertTypeId] = form.AdvertTypeId;
-                        procParameters[Issue.ParamNames.IssueDate] = date;
+                procParameters[Roller.ParamNames.RollerId] = Roller.RollerId;
+                procParameters[Campaign.ParamNames.CampaignId] = Campaign.CampaignId;
+                procParameters[Module.ParamNames.ModuleId] = ModulePricelist.ModuleID;
+                procParameters[AdvertType.ParamNames.AdvertTypeId] = advertTypeId;
+                procParameters[Issue.ParamNames.IssueDate] = date;
 
-                        DataAccessor.ExecuteNonQuery("SetAdvertTypeForCommmonRoller", procParameters);
-                    }
-                    OnParentChanged(this, 1);
-                }
+                DataAccessor.ExecuteNonQuery("SetAdvertTypeForCommmonRoller", procParameters);
             }
-            catch (Exception ex)
-            {
-                ErrorManager.PublishError(ex);
-            }
-            finally
-            {
-                parentForm.Cursor = Cursors.Default;
-            }
+            OnParentChanged(this, 1);
         }
     }
 
