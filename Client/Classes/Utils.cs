@@ -11,16 +11,13 @@ using Merlin.Forms;
 
 namespace Merlin.Classes
 {
-	internal static class Utils
+	// SelectManager (чистый выбор, без применения) переехал в Utils.WinForms.cs.
+	// AskConfirmation не трогается — открытый вопрос №1 конвенции (экран входа
+	// администратора в вебе). HideTableLayoutRow — раскладка layout, не диалог,
+	// вне области этого документа.
+	// Конвенция — docs/tasks/web-migration-dialogs.md.
+	internal static partial class Utils
 	{
-		public static PresentationObject SelectManager(IWin32Window owner)
-		{
-			SelectionForm fSelector =
-				new SelectionForm(EntityManager.GetEntity((int) Entities.User), "Менеджер");
-			if (fSelector.ShowDialog(owner) == DialogResult.OK) return fSelector.SelectedObject;
-			return null;
-		}
-
 		public static PresentationObject CreateBankById(int bankID)
 		{
 			Entity entity = EntityManager.GetEntity((int) Entities.Bank);

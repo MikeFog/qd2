@@ -662,6 +662,7 @@
     <Compile Include="Classes\Utils.cs">
       <SubType>Code</SubType>
     </Compile>
+    <Compile Include="Classes\Utils.WinForms.cs" />
     <Compile Include="Controls\DataGridViewTextCheckBoxCell.cs" />
     <Compile Include="Controls\GenericGridView.cs">
       <SubType>Component</SubType>
