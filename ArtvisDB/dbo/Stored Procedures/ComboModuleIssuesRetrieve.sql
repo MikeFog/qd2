@@ -1,4 +1,4 @@
--- Выпуски модулей всей акции - панель «Добавленные выпуски» формы размещения
+﻿-- Выпуски модулей всей акции - панель «Добавленные выпуски» формы размещения
 -- комбо-модулями.
 --
 -- Существующие ModuleIssueRetrieve и CampaignModuleIssuesRetrieve работают в разрезе
@@ -20,10 +20,14 @@ SELECT
 	m.[name] AS moduleName,
 	r.[name] AS rollerName,
 	ip.[description] AS issuePosition,
+	-- нужен CampaignPart.IsMarkedAsDeleted: он читает его прямо из параметров
+	-- объекта, без него контекстное меню в списке выпусков падает
+	a.deleteDate,
 	CONVERT(varchar(10), mi.issueDate, 104) + ' - ' + mm.nameWithGroup + ' - ' + r.[name] AS [name]
 FROM
 	[ModuleIssue] mi
 	INNER JOIN [Campaign] c ON c.campaignID = mi.campaignID
+	INNER JOIN [Action] a ON a.actionID = c.actionID
 	INNER JOIN [Module] m ON m.moduleID = mi.moduleID
 	INNER JOIN [vMassmedia] mm ON mm.massmediaID = m.massmediaID
 	INNER JOIN [vRoller] r ON r.rollerID = mi.rollerID
