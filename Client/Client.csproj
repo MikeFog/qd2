@@ -501,6 +501,7 @@
     <Compile Include="Classes\SponsorTariff.WinForms.cs" />
     <Compile Include="Classes\ActionRoller.cs" />
     <Compile Include="Classes\ActionRollerInStatJournal.cs" />
+    <Compile Include="Classes\ActionRollerInStatJournal.WinForms.cs" />
     <Compile Include="Classes\AdvertAgUser.cs" />
     <Compile Include="Classes\Announcement.cs" />
     <Compile Include="Classes\BalanceStatRow.cs" />
@@ -654,6 +655,7 @@
     <Compile Include="Classes\TariffWindowWithProgramIssue.cs" />
     <Compile Include="Classes\TariffWindowWithRange.cs" />
     <Compile Include="Classes\TariffWindowWithRollerIssues.cs" />
+    <Compile Include="Classes\TariffWindowWithRollerIssues.WinForms.cs" />
     <Compile Include="Classes\Utils.cs">
       <SubType>Code</SubType>
     </Compile>
