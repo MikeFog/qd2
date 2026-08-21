@@ -96,6 +96,7 @@ namespace Merlin.Forms.CreateActionMaster
 				InitRollersList();
 				InitAddedIssuesList();
 				InitComboModuleGrid();
+				ShowStatistics();   // у готовой акции она есть сразу, а не после первого клика
 			}
 			catch (Exception ex)
 			{
