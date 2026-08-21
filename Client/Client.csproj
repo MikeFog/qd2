@@ -540,6 +540,7 @@
       <SubType>Code</SubType>
     </Compile>
     <Compile Include="Classes\CampaignPart.cs" />
+    <Compile Include="Classes\CampaignPart.WinForms.cs" />
     <Compile Include="Classes\CampaignRoller.cs">
       <SubType>Code</SubType>
     </Compile>
