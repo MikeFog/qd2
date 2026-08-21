@@ -13,7 +13,14 @@ using FogSoft.WinForm.Forms;
 
 namespace Merlin.Classes
 {
-    public abstract class Action : ObjectContainer
+    // UI-часть (DoAction, PrintMediaPlan, GetBill(Agency,Form), CreateBill) — в
+    // Action.WinForms.cs. PrintMediaPlan перенесён целиком: делегирует в
+    // MediaPlan.Show — отдельная, отложенная область
+    // (docs/tasks/web-migration-dialogs.md, §6). Остальные методы, которые
+    // вызывает DoAction (ChangeFirm, PrintContracts и т.п.), не в этой правке —
+    // они не содержат ShowDialog и вне области этого прохода.
+    // Конвенция — docs/tasks/web-migration-dialogs.md.
+    public abstract partial class Action : ObjectContainer
     {
         public enum ActionMediaPlanType
         {
@@ -129,46 +136,7 @@ namespace Merlin.Classes
         #endregion
 
         #region Public ----------------------------------------
-        public override void DoAction(string actionName, IWin32Window owner, InterfaceObjects interfaceObject)
-        {
-            try
-            {
-                if (actionName == ActionNames.ChangeFirm)
-                    ChangeFirm((Form)owner);
-                else if (actionName == ActionNames.ChangeCreator)
-                    ChangeCreator((Form)owner);
-                else if (actionName == ActionNames.PrintContract || actionName == ActionNames.ExportContract)
-                    PrintContracts((Form)owner, actionName == ActionNames.ExportContract);
-                else if (actionName == ActionNames.PrintSponsorContract)
-                    PrintSponsorContracts((Form)owner, false);
-                else if (actionName == ActionNames.PrintBill)
-                    PrintBills((Form)owner, false, false);
-                else if (actionName == ActionNames.PrintBillByMounth)
-                    PrintBills((Form)owner, true, false);
-                else if (actionName == ActionNames.PrintMediaPlan)
-                    PrintMediaPlan(ActionMediaPlanType.Simple, false);
-                else if (actionName == ActionNames.PrintMediaPlanMonth)
-                    PrintMediaPlan(ActionMediaPlanType.Month, false);
-                else if (actionName == ActionNames.PrintMediaPlanByPeriod)
-                    PrintMediaPlan(ActionMediaPlanType.Period, false);
-                else if (actionName == ActionNames.PrintSelectivelyMediaPlan)
-                    PrintMediaPlan(ActionMediaPlanType.Simple, true);
-                else if (actionName == ActionNames.PrintSelectivelyMediaPlanMonth)
-                    PrintMediaPlan(ActionMediaPlanType.Month, true);
-                else if (actionName == ActionNames.PrintSelectivelyMediaPlanByPeriod)
-                    PrintMediaPlan(ActionMediaPlanType.Period, true);
-                else if (actionName == ActionNames.SetAdvertType)
-                    SetAdvertTypeOrSubstituteRoller();
-                else if (actionName == ActionNames.PrintBillContract)
-                    PrintBillContracts((Form)owner, false);
-                else
-                    base.DoAction(actionName, owner, interfaceObject);
-            }
-            finally
-            {
-                ((Control)owner).Cursor = Cursors.Default;
-            }
-        }
+        // DoAction переехал в Action.WinForms.cs.
 
         public static string CreateNameWithStartDatePeriod(string actionName, DataRow row)
         {
@@ -359,34 +327,7 @@ namespace Merlin.Classes
                 PrintAgencyDocuments(owner, PrintBill, false);
         }
 
-        public void PrintMediaPlan(ActionMediaPlanType type, bool selectively)
-        {
-            Refresh();
-            //DataSet ds = Campaigns;
-            //if (ds.Tables.Count > 0)
-            //{
-            switch (type)
-            {
-                case ActionMediaPlanType.Massmedias:
-                    MediaPlan.CreateInstance(this, selectively).Show(true);
-                    break;
-                case ActionMediaPlanType.Simple:
-                    MediaPlan.CreateInstance(GetCampaigns(Campaigns()), selectively).Show(true);
-                    break;
-                case ActionMediaPlanType.Month:
-                    IList<DateTime> months = GetSelectedMonths();
-                    if (months == null)
-                        return;
-                    MediaPlan.CreateInstance(GetCampaigns(Campaigns()), months, selectively).Show(true);
-                    break;
-                case ActionMediaPlanType.Period:
-                    FrmDateSelector selector = new FrmDateSelector(StartDate, FinishDate, "Выбор периода");
-                    if (selector.ShowDialog(Globals.MdiParent) == DialogResult.OK)
-                        MediaPlan.CreateInstance(GetCampaigns(Campaigns()), selector.StartDate, selector.FinishDate, selectively).Show(true);
-                    break;
-            }
-            //}
-        }
+        // PrintMediaPlan и GetSelectedMonths переехали в Action.WinForms.cs.
 
         private static IList<Campaign> GetCampaigns(DataTable dt)
         {
@@ -395,18 +336,6 @@ namespace Merlin.Classes
             foreach (DataRow dr in dt.Rows)
                 campaigns.Add(Campaign.GetCampaignById(int.Parse(dr[Campaign.ParamNames.CampaignId].ToString())));
             return campaigns;
-        }
-
-        private IList<DateTime> GetSelectedMonths()
-        {
-            Dictionary<object, object> dMonthsToShow = SelectMonthsToShow();
-            FrmMonths f = new FrmMonths(dMonthsToShow, false);
-            if (f.ShowDialog(Globals.MdiParent) == DialogResult.Cancel)
-                return null;
-            IList<DateTime> months = new List<DateTime>();
-            foreach (KeyValuePair<object, object> item in f.CheckedItems)
-                months.Add((DateTime)item.Key);
-            return months;
         }
 
         private Dictionary<object, object> SelectMonthsToShow()
@@ -607,11 +536,7 @@ namespace Merlin.Classes
             else report.Show("Счёт", fileName);
         }
 
-        private PresentationObject GetBill(Agency agency, Form owner)
-        {
-            PresentationObject bill = GetBill(agency.AgencyId, EntityManager.GetEntity((int)Entities.GeneralBill));
-            return CreateBill(agency, owner, EntityManager.GetEntity((int)Entities.GeneralBill), bill);
-        }
+        // GetBill(Agency, Form) и CreateBill переехали в Action.WinForms.cs.
 
         protected PresentationObject GetBill(int agencyId, Entity entityBill)
         {
@@ -623,22 +548,6 @@ namespace Merlin.Classes
             if (ds.Tables[Constants.TableNames.Data].Rows.Count == 0)
                 return null;
             return entity.CreateObject(ds.Tables[Constants.TableNames.Data].Rows[0]);
-        }
-
-        protected PresentationObject CreateBill(Agency agency, Form owner, Entity entityBill, PresentationObject bill)
-        {
-            Dictionary<string, object> procParameters =
-                new Dictionary<string, object>(StringComparer.InvariantCultureIgnoreCase);
-
-            procParameters[ParamNames.ActionId] = ActionId;
-            procParameters[Agency.ParamNames.AgencyId] = agency.AgencyId;
-            if (bill != null)
-                procParameters[TableColumns.Bill.BillNo] = bill[TableColumns.Bill.BillNo];
-
-            DateTime billDate = (bill != null) ? ParseHelper.GetDateTimeFromObject(bill[TableColumns.Bill.BillDate], DateTime.Today) : DateTime.Today;
-
-            FrmBill fBill = new FrmBill(entityBill, billDate, procParameters);
-            return fBill.ShowDialog(owner) == DialogResult.Cancel ? null : fBill.Bill;
         }
 
         #endregion
