@@ -47,6 +47,14 @@ namespace Merlin.Classes
 
 	internal class ModuleIssue : Issue
 	{
+		/// <summary>
+		/// Набор колонок для панели «Добавленные выпуски» формы размещения комбо-модулями:
+		/// дата, радиостанция, модуль, ролик, порядок. Своя сущность там не годится - конструкторы
+		/// ModuleIssue жёстко берут Entities.ModuleIssue, и SmartGrid отказывался удалять строку,
+		/// потому что сущность объекта не совпадала с сущностью грида.
+		/// </summary>
+		public const int AttributeSelectorComboPlacement = 3;
+
 		private Module _module;
         private Roller _roller;
 		private ModulePricelist _pricelist;

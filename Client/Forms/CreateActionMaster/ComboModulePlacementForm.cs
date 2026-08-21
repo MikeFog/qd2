@@ -116,7 +116,9 @@ namespace Merlin.Forms.CreateActionMaster
 
 		private void InitAddedIssuesList()
 		{
-			grdAddedIssues.Entity = EntityManager.GetEntity((int) Entities.ComboModuleIssue);
+			Entity issueEntity = (Entity) ModuleIssue.GetEntity().Clone();
+			issueEntity.AttributeSelector = ModuleIssue.AttributeSelectorComboPlacement;
+			grdAddedIssues.Entity = issueEntity;
 			grdAddedIssues.ObjectDeleted += OnIssueDeleted;     // удалили одну строку
 			grdAddedIssues.ObjectsDeleted += OnIssuesDeleted;   // удалили несколько
 			grdAddedIssues.MultiSelect = true;   // Del по нескольким строкам умеет сам SmartGrid
@@ -358,7 +360,7 @@ namespace Merlin.Forms.CreateActionMaster
 			foreach (ComboModuleDay day in days)
 				selected.Add(MakeDayKey(day.ModuleID, day.Date));
 
-			Entity issueEntity = EntityManager.GetEntity((int) Entities.ComboModuleIssue);
+			Entity issueEntity = ModuleIssue.GetEntity();
 			List<PresentationObject> issues = new List<PresentationObject>();
 			foreach (DataRow row in _issues.Rows)
 			{

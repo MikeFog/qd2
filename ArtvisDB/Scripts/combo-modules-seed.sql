@@ -1,4 +1,4 @@
--- Комбо-модули: схема и метаданные (пункт меню, сущности, действия, дерево).
+﻿-- Комбо-модули: схема и метаданные (пункт меню, сущности, действия, дерево).
 --
 -- Комбо-модуль - объединение нескольких модулей в одну сущность. Устроен как
 -- пакетный модуль (PackModule), но БЕЗ уровня прайс-листа: сразу
@@ -16,15 +16,15 @@ SET NOCOUNT ON;
 
 DECLARE @entComboModule INT = 1270;
 DECLARE @entComboModuleContent INT = 1271;
-DECLARE @entComboModuleIssue INT = 1272;
+DECLARE @entModuleIssue INT = 130;   -- штатный «Выпуск модуля»
 
 -- Идентификаторы сущностей зашиты в C# (Merlin.Classes.Entities), поэтому
 -- должны совпадать во всех базах. Если номера заняты чем-то другим - стоп.
 IF EXISTS (SELECT 1 FROM [dbo].[iEntity]
-           WHERE entityID IN (@entComboModule, @entComboModuleContent, @entComboModuleIssue)
+           WHERE entityID IN (@entComboModule, @entComboModuleContent)
              AND ISNULL(tableName, '') NOT IN ('ComboModule', 'ComboModuleContent', ''))
 BEGIN
-	RAISERROR('entityID 1270-1272 заняты другими сущностями - согласуйте новые номера с Merlin.Classes.Entities', 16, 1);
+	RAISERROR('entityID 1270/1271 заняты другими сущностями - согласуйте новые номера с Merlin.Classes.Entities', 16, 1);
 	RETURN;
 END
 
@@ -61,17 +61,6 @@ IF NOT EXISTS (SELECT 1 FROM [dbo].[iEntity] WHERE entityID = @entComboModuleCon
 		(@entComboModuleContent, N'Модули комбо-модуля', @passportComboModuleContent, 'ComboModuleContent',
 		 'FogSoft.WinForm.Classes.PresentationObject', NULL, 'comboModuleContentID', 'ComboModuleContent', 1, 'module.png', 0);
 
--- Выпуски, добавленные в форме размещения. Отдельная сущность, а не 130
--- «Выпуск модуля»: у той свой набор колонок без даты и радиостанции, и трогать
--- её нельзя - она используется в кампаниях модульного размещения. Тот же приём,
--- что и у веерного размещения с его сущностью 226.
-IF NOT EXISTS (SELECT 1 FROM [dbo].[iEntity] WHERE entityID = @entComboModuleIssue)
-	INSERT INTO [dbo].[iEntity]
-		(entityID, name, passport, tableName, className, assemblyName, pkColumn, codeName, isGrantingAllowed, iconName, isObsolete)
-	VALUES
-		(@entComboModuleIssue, N'Размещение комбо-модулями: выпуски', NULL, NULL,
-		 'Merlin.Classes.ModuleIssue', 'Merlin', 'moduleIssueID', NULL, 1, NULL, 0);
-
 SET IDENTITY_INSERT [dbo].[iEntity] OFF;
 
 -- паспорта обновляем всегда - это единственное место их хранения
@@ -95,11 +84,15 @@ USING (VALUES
 	(@entComboModuleContent, N'Радиостанция',  'massmediaName', 1,  0),
 	(@entComboModuleContent, N'Группа',        'groupName',     2,  0),
 	(@entComboModuleContent, N'Модуль',        'moduleName',    5,  0),
-	(@entComboModuleIssue,   N'Дата',          'issueDate',     10, 0),
-	(@entComboModuleIssue,   N'Радиостанция',  'massmediaName', 20, 0),
-	(@entComboModuleIssue,   N'Модуль',        'moduleName',    30, 0),
-	(@entComboModuleIssue,   N'Ролик',         'rollerName',    40, 0),
-	(@entComboModuleIssue,   N'Порядок',       'issuePosition', 50, 0)
+	-- набор колонок панели «Добавленные выпуски» - отдельный selector у штатной
+	-- сущности «Выпуск модуля» (130). Своя сущность тут не годится: ModuleIssue
+	-- жёстко берёт 130 в конструкторе, и SmartGrid.DeleteRow отказывался удалять
+	-- строку, потому что сущность объекта не совпадала с сущностью грида
+	(@entModuleIssue,        N'Дата',          'issueDate',     10, 3),
+	(@entModuleIssue,        N'Радиостанция',  'massmediaName', 20, 3),
+	(@entModuleIssue,        N'Модуль',        'moduleName',    30, 3),
+	(@entModuleIssue,        N'Ролик',         'rollerName',    40, 3),
+	(@entModuleIssue,        N'Порядок',       'issuePosition', 50, 3)
 ) AS s(entityID, alias, name, ordinal_position, selector)
 	ON t.entityID = s.entityID AND t.alias = s.alias AND t.selector = s.selector
 WHEN MATCHED AND (t.name <> s.name OR t.ordinal_position <> s.ordinal_position) THEN
@@ -126,8 +119,7 @@ INSERT INTO @actions VALUES
 	(@entComboModuleContent, N'Обновить',       'RefreshItem', 1,  0, 0, 'Icons.RefreshItem.png'),
 	(@entComboModuleContent, N'Удалить',        'DeleteItem',  5,  0, 1, 'Icons.DeleteItem.png'),
 	(@entComboModuleContent, N'-',              NULL,          10, 0, 0, NULL),
-	(@entComboModuleContent, N'Свойства',       'Properties',  15, 0, 1, 'Icons.Properties.png'),
-	(@entComboModuleIssue,   N'Удалить',        'DeleteItem',  10, 0, 1, 'Icons.DeleteItem.png');
+	(@entComboModuleContent, N'Свойства',       'Properties',  15, 0, 1, 'Icons.Properties.png');
 
 INSERT INTO [dbo].[iEntityAction] (entityID, alias, name, ordinal_position, isHidden, isGrantingAllowed, imgResourceName)
 SELECT a.entityID, a.alias, a.name, a.ordinal_position, a.isHidden, a.isGrantingAllowed, a.imgResourceName
@@ -154,10 +146,7 @@ INSERT INTO @procs VALUES
 	('ComboModuleContentIUD',       'RECORDSET', 1, @entComboModuleContent, 0,   'DeleteItem'),
 	('ComboModuleContentIUD',       'RECORDSET', 1, @entComboModuleContent, 0,   'UpdateItem'),
 	('ComboModuleContentRetrieve',  'RECORDSET', 0, @entComboModuleContent, 118, 'Load'),
-	('ComboModuleContentPassport',  'RECORDSET', 0, @entComboModuleContent, 119, 'Load'),
-	-- удаление выпуска идёт штатной ModuleIssueIUD, список формы грузится
-	-- ComboModuleIssuesRetrieve явным вызовом, поэтому Load здесь не нужен
-	('ModuleIssueIUD',              'RECORDSET', 1, @entComboModuleIssue,   0,   'DeleteItem');
+	('ComboModuleContentPassport',  'RECORDSET', 0, @entComboModuleContent, 119, 'Load');
 
 INSERT INTO [dbo].[iStoredProcedure] (name, procedureType, isTransactionRequired)
 SELECT DISTINCT p.procName, p.procedureType, p.isTransactionRequired
@@ -245,7 +234,7 @@ INSERT INTO [dbo].[GroupRight] (groupID, entityActionID)
 SELECT DISTINCT gr.groupID, eaNew.entityActionID
 FROM [dbo].[GroupRight] gr
 	INNER JOIN [dbo].[iEntityAction] eaOld ON eaOld.entityActionID = gr.entityActionID AND eaOld.entityID IN (133, 135)
-	INNER JOIN [dbo].[iEntityAction] eaNew ON eaNew.entityID IN (@entComboModule, @entComboModuleContent, @entComboModuleIssue)
+	INNER JOIN [dbo].[iEntityAction] eaNew ON eaNew.entityID IN (@entComboModule, @entComboModuleContent)
 		AND eaNew.name = eaOld.name
 WHERE NOT EXISTS (
 	SELECT 1 FROM [dbo].[GroupRight] x WHERE x.groupID = gr.groupID AND x.entityActionID = eaNew.entityActionID);
@@ -264,14 +253,16 @@ IF NOT EXISTS (SELECT 1 FROM [dbo].[iMessage] WHERE name = 'ComboModuleContentDu
 
 PRINT '--- Комбо-модули: состояние метаданных ---';
 
-SELECT 'iEntity' AS [объект], COUNT(*) AS [строк], '3' AS [ожидается]
-FROM [dbo].[iEntity] WHERE entityID IN (@entComboModule, @entComboModuleContent, @entComboModuleIssue)
-UNION ALL SELECT 'iEntityAttribute', COUNT(*), '9'
-FROM [dbo].[iEntityAttribute] WHERE entityID IN (@entComboModule, @entComboModuleContent, @entComboModuleIssue)
-UNION ALL SELECT 'iEntityAction', COUNT(*), '11'
-FROM [dbo].[iEntityAction] WHERE entityID IN (@entComboModule, @entComboModuleContent, @entComboModuleIssue)
-UNION ALL SELECT 'iModuleProcedure', COUNT(*), '10'
-FROM [dbo].[iModuleProcedure] WHERE entityID IN (@entComboModule, @entComboModuleContent, @entComboModuleIssue)
+SELECT 'iEntity' AS [объект], COUNT(*) AS [строк], '2' AS [ожидается]
+FROM [dbo].[iEntity] WHERE entityID IN (@entComboModule, @entComboModuleContent)
+UNION ALL SELECT 'iEntityAttribute', COUNT(*), '4'
+FROM [dbo].[iEntityAttribute] WHERE entityID IN (@entComboModule, @entComboModuleContent)
+UNION ALL SELECT 'iEntityAttribute (130, selector 3)', COUNT(*), '5'
+FROM [dbo].[iEntityAttribute] WHERE entityID = @entModuleIssue AND selector = 3
+UNION ALL SELECT 'iEntityAction', COUNT(*), '10'
+FROM [dbo].[iEntityAction] WHERE entityID IN (@entComboModule, @entComboModuleContent)
+UNION ALL SELECT 'iModuleProcedure', COUNT(*), '9'
+FROM [dbo].[iModuleProcedure] WHERE entityID IN (@entComboModule, @entComboModuleContent)
 UNION ALL SELECT 'iTableAlias', COUNT(*), '2'
 FROM [dbo].[iTableAlias] WHERE storedProcedureID = @spContentPassport
 UNION ALL SELECT 'iEntityRelation', COUNT(*), '1'
@@ -285,4 +276,4 @@ FROM [dbo].[GroupMenu] WHERE menuID = @menuComboPlacement
 UNION ALL SELECT 'GroupRight', COUNT(*), N'как у пакетных модулей'
 FROM [dbo].[GroupRight] gr
 	INNER JOIN [dbo].[iEntityAction] ea ON ea.entityActionID = gr.entityActionID
-WHERE ea.entityID IN (@entComboModule, @entComboModuleContent, @entComboModuleIssue);
+WHERE ea.entityID IN (@entComboModule, @entComboModuleContent);

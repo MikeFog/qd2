@@ -157,8 +157,7 @@
         ManagerDiscountReason = 1267,
 		StatBonuses = 1269,
 		ComboModule = 1270,
-		ComboModuleContent = 1271,
-		ComboModuleIssue = 1272
+		ComboModuleContent = 1271
     }
 
 	public struct RelationScenarios

@@ -281,10 +281,11 @@ namespace Merlin.Controls
 
 		#region Построение сетки ------------------------------
 
+		// Список модулей перечитываем на каждое обновление, а не кэшируем: в режиме готовой
+		// акции он выводится из выпусков, и после удаления последнего выпуска модуля строка
+		// должна пропасть. Запрос дешёвый - модулей единицы.
 		private void LoadModules()
 		{
-			if (_modules != null) return;
-
 			_modules = _comboModuleID > 0
 				? ComboModule.LoadContent(_comboModuleID)
 				: ComboModule.LoadActionModules(_actionID);
