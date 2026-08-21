@@ -68,15 +68,63 @@ UI-половине и вызывает бизнес-метод.
 
 ### Форма 3. Переход на другой экран
 
-`ShowDialog` без разбора результата: открыли карточку/редактор и всё.
-Пример: `ActionOnMassmedia.cs:96`, `Campaign.cs:486`, `Campaign.cs:499`,
-`PackModulePricelist.cs:80`, `ProgramPartOfSponsorCampaign.cs:89`,
-`RollerPartOfSponsorCampaign.cs:62` — шесть мест.
+`ShowDialog` без разбора результата за пределами возврата `bool`/`void`:
+открыли карточку/редактор и всё, вызывающий код после диалога ничего не
+проверяет. Пример: `ActionOnMassmedia.ShowPassport` (открывает `ActionForm`),
+`PackModulePricelist.EditContent`. Сюда же относятся переопределения
+`ShowPassport` (`Agency.cs:207`, `Roller.cs:101`, `SponsorTariff.cs:51`) —
+базовый `PresentationObject.ShowPassport` уже вынесен в UI-половину на
+этапе 0.1. Все пять перенесены партией 1 (коммит после эталона).
 
 **Разрез не нужен.** Метод целиком переезжает в UI-половину. В вебе это
-навигация, а не диалог. Сюда же относятся переопределения `ShowPassport`
-(`Agency.cs:207`, `Roller.cs:101`, `SponsorTariff.cs:51`) — базовый
-`PresentationObject.ShowPassport` уже вынесен в UI-половину на этапе 0.1.
+навигация, а не диалог.
+
+**Проверять по полному телу метода, не по строке с `ShowDialog`.**
+`Campaign.cs:486` (`EditRollerIssues`), `Campaign.cs:499`
+(`EditProgramIssues`), `ProgramPartOfSponsorCampaign.cs:89`,
+`RollerPartOfSponsorCampaign.cs:62` изначально были размечены сюда по
+однострочному grep — ошибочно: после `ShowDialog` там проверяется
+`campaign.ChangeFlag` и вызывается `Refresh()`/`Recalculate()`, то есть
+результат диалога **используется**. Это форма 3.1, см. ниже.
+
+### Форма 3.1. Модальная редактирующая сессия
+
+Открывает не диалог с результатом-выбором, а целую форму
+редактирования (`CampaignForm`), которая сама делает все нужные вызовы
+процедур во время своей модальной сессии. После закрытия вызывающий код
+не получает данные из формы — он читает флаг `ChangeFlag` и по нему решает,
+обновлять ли себя.
+
+Пример:
+
+```csharp
+protected void EditRollerIssues(IWin32Window owner, TariffGrid tariffGrid)
+{
+    CampaignForm campaign = new CampaignForm(this, tariffGrid);
+    campaign.ShowDialog(owner);
+    Application.DoEvents();
+    if (campaign.ChangeFlag)
+    {
+        Refresh();
+        FireContainerRefreshed();
+    }
+}
+```
+
+Места: `Campaign.cs:486` (`EditRollerIssues`), `Campaign.cs:499`
+(`EditProgramIssues`), `ProgramPartOfSponsorCampaign.cs:89`
+(`EditProgramIssues`), `RollerPartOfSponsorCampaign.cs:62`
+(`EditRollerIssues`).
+
+**Разрез невозможен на этом этапе и не нужен.** Сигнатура сама принимает
+UI-тип (`TariffGrid : UserControl`, `Client/Controls/TariffGrid.cs`) —
+разделить такой метод на «ядро без UI» и «UI-обвязку» нельзя, не
+переделав, чем параметризуется `CampaignForm`. Это не задача этапа 0:
+`CampaignForm` — самый большой и сложный экран (`docs/tasks/web-migration.md`,
+раздел 4.3, этап 3 п. 1). Метод переезжает **целиком, без изменений**, в
+`<Класс>.WinForms.cs`, как форма 3, но не разбирается на составные части.
+Когда до `CampaignForm` дойдёт очередь на этапе 3, эти четыре места
+пересматриваются вместе с ней, не раньше.
 
 ### Форма 4. Вопрос «да/нет» и подтверждение правами
 
@@ -229,24 +277,34 @@ private bool IsSplitOrMergeEnabled(DateTime startDate)
 
 ## 6. Порядок обработки остальных мест
 
-Разметка по формам (уточняется при обработке конкретного файла):
+Статус на конец партии 1 (коммит `06bb7e7`, форма 3, пять мест):
+`ActionOnMassmedia.ShowPassport`, `Agency.ShowPassport`, `Roller.ShowPassport`,
+`SponsorTariff.ShowPassport`, `PackModulePricelist.EditContent` — перенесены.
 
-| Форма | Мест | Трудоёмкость |
-|---|---|---|
-| 3 — переход на экран, разрез не нужен | ~9 | тривиально, только перенос |
-| 5 — проверка с сообщением | сопутствует остальным | тривиально |
-| 1 — ввод параметра | ~8 | низкая |
-| 2 — выбор и операция | ~35 | основная работа |
-| 4 — подтверждение | 2 | `UserInteraction` уже есть |
+Разметка по формам (уточняется при обработке конкретного файла — как
+показала партия 1, доверять надо полному телу метода, не однострочному
+grep):
 
-Рекомендуемый порядок: начать с формы 3 (девять мест закрываются переносом
-без изменения логики, дают привычку к раскладке файлов), затем форма 1, затем
-форма 2 по возрастанию числа мест в файле. Файлы с одним вызовом
-(`HeadCompany`, `CampaignDay`, `CampaignRoller`, `ModulePricelist`,
-`PackageDiscountPriceList`, `PackModuleIssue`, `CampaignModule`,
-`ActionRollerInStatJournal`, `TariffWindowWithRollerIssues`) — раньше, чем
-`Campaign.cs` (7 мест), `ActionOnMassmedia.cs` (осталось 5) и
-`MassmediaPricelist.cs` (5).
+| Форма | Мест | Статус | Трудоёмкость |
+|---|---|---|---|
+| 3 — переход на экран, разрез не нужен | 5 | сделано | тривиально |
+| 3.1 — модальная редактирующая сессия (`CampaignForm`) | 4 | отложено до этапа 3 | не в этом этапе |
+| 5 — проверка с сообщением | сопутствует остальным | — | тривиально |
+| 1 — ввод параметра | ~8 | не начато | низкая |
+| 2 — выбор и операция | ~35 | не начато | основная работа |
+| 4 — подтверждение | 2 | 1 решена (`AskConfirmation` — открытый вопрос) | — |
+
+Рекомендуемый порядок: форма 1, затем форма 2 по возрастанию числа мест в
+файле. Файлы с одним вызовом (`HeadCompany`, `CampaignDay`, `CampaignRoller`,
+`ModulePricelist`, `PackageDiscountPriceList`, `PackModuleIssue`,
+`CampaignModule`, `ActionRollerInStatJournal`, `TariffWindowWithRollerIssues`)
+— раньше, чем `Campaign.cs` (осталось 5 мест из 7 — два формы 3.1 отложены),
+`ActionOnMassmedia.cs` (осталось 5) и `MassmediaPricelist.cs` (5).
+
+Файлы формы 3.1 (`Campaign.cs`, `ProgramPartOfSponsorCampaign.cs`,
+`RollerPartOfSponsorCampaign.cs`) не пропускать целиком — в каждом из них
+есть и другие места (формы 1, 2, 5), не связанные с `CampaignForm`. Пропускать
+нужно только сами четыре метода 3.1.
 
 ## 7. Проверка каждой партии
 
