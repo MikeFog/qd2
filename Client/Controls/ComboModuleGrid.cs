@@ -324,7 +324,7 @@ namespace Merlin.Controls
 			// строка дат
 			DataRow row = _dtGrid.NewRow();
 			for (int i = 0; i < DayCount; i++)
-				row[FIXED_COLS + i] = _startDate.AddDays(i).ToString("dd.MM");
+				row[FIXED_COLS + i] = _startDate.AddDays(i).ToString("dd.MM.yy");
 			_dtGrid.Rows.Add(row);
 
 			// строка количества выпусков - заполняется формой размещения

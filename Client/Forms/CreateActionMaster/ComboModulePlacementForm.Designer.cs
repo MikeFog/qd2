@@ -61,6 +61,7 @@
 			//
 			// tbbRefresh
 			//
+			this.tbbRefresh.AutoToolTip = false;
 			this.tbbRefresh.DisplayStyle = System.Windows.Forms.ToolStripItemDisplayStyle.Image;
 			this.tbbRefresh.ImageTransparentColor = System.Drawing.Color.Magenta;
 			this.tbbRefresh.Name = "tbbRefresh";
@@ -71,23 +72,26 @@
 			//
 			// tbbStart
 			//
+			this.tbbStart.AutoToolTip = false;
 			this.tbbStart.CheckOnClick = true;
 			this.tbbStart.DisplayStyle = System.Windows.Forms.ToolStripItemDisplayStyle.Image;
 			this.tbbStart.ImageTransparentColor = System.Drawing.Color.Magenta;
 			this.tbbStart.Name = "tbbStart";
 			this.tbbStart.Size = new System.Drawing.Size(34, 33);
 			this.tbbStart.Text = "Режим добавления";
-			this.tbbStart.ToolTipText = "Режим добавления: клик по ячейке добавляет выпуск";
+			this.tbbStart.ToolTipText = "Режим добавления";
 			this.tbbStart.CheckedChanged += new System.EventHandler(this.tbbStart_CheckedChanged);
 			//
 			// tbbJump
 			//
+			this.tbbJump.AutoToolTip = false;
 			this.tbbJump.DisplayStyle = System.Windows.Forms.ToolStripItemDisplayStyle.Image;
 			this.tbbJump.Image = global::Merlin.Properties.Resources.calendar;
 			this.tbbJump.ImageTransparentColor = System.Drawing.Color.Magenta;
 			this.tbbJump.Name = "tbbJump";
 			this.tbbJump.Size = new System.Drawing.Size(34, 33);
 			this.tbbJump.Text = "Переход к выбранной дате";
+			this.tbbJump.ToolTipText = "Переход к выбранной дате";
 			this.tbbJump.Click += new System.EventHandler(this.tbbJump_Click);
 			//
 			// tbbSeparator0
