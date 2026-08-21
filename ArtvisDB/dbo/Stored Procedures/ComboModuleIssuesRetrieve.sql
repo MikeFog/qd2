@@ -15,6 +15,12 @@ SELECT
 	mi.campaignID,
 	mi.moduleID,
 	mi.issueDate,
+	-- меню выпуска строится по сущности 130 (ModuleIssue жёстко берёт её в
+	-- конструкторе), поэтому нужны те же колонки, что отдаёт ModuleIssueRetrieve:
+	-- позиционирование читает positionId и modulePriceListID, замена ролика - rollerID
+	mi.positionId,
+	mi.modulePriceListID,
+	mi.rollerID,
 	mm.massmediaID,
 	mm.nameWithGroup AS massmediaName,
 	m.[name] AS moduleName,
