@@ -500,6 +500,7 @@
     <Compile Include="Classes\Roller.WinForms.cs" />
     <Compile Include="Classes\SponsorTariff.WinForms.cs" />
     <Compile Include="Classes\ActionRoller.cs" />
+    <Compile Include="Classes\ActionRoller.WinForms.cs" />
     <Compile Include="Classes\ActionRollerInStatJournal.cs" />
     <Compile Include="Classes\ActionRollerInStatJournal.WinForms.cs" />
     <Compile Include="Classes\AdvertAgUser.cs" />
