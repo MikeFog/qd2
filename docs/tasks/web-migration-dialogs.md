@@ -302,34 +302,66 @@ private bool IsSplitOrMergeEnabled(DateTime startDate)
 
 ## 6. Порядок обработки остальных мест
 
-Статус на конец партии 1 (коммит `06bb7e7`, форма 3, пять мест):
-`ActionOnMassmedia.ShowPassport`, `Agency.ShowPassport`, `Roller.ShowPassport`,
-`SponsorTariff.ShowPassport`, `PackModulePricelist.EditContent` — перенесены.
+### Статус на конец партии 11 (коммит `1ecf177`)
 
-Разметка по формам (уточняется при обработке конкретного файла — как
-показала партия 1, доверять надо полному телу метода, не однострочному
-grep):
+Разобрано 12 файлов (24 диалоговых места из исходных 55 живых, без учёта
+мёртвого кода в `SponsorPricelist.cs`): `ActionOnMassmedia` (частично, форма 3),
+`Agency` (полностью), `Roller`, `SponsorTariff`, `PackModulePricelist`,
+`CampaignPart`, `HeadCompany`, `CampaignDay`, `CampaignModule`,
+`CampaignOnSingleMassmedia`, `CampaignPackModule` (+ `CampaignPartPackModule`),
+`PackModuleIssue`, `ModulePricelist`, `PackageDiscountPriceList`,
+`ActionRollerInStatJournal`, `TariffWindowWithRollerIssues`, `PaymentCommon`,
+`PaymentStudioOrder`, `Firm`, `Utils` (частично).
+
+Разметка по формам:
 
 | Форма | Мест | Статус | Трудоёмкость |
 |---|---|---|---|
-| 3 — переход на экран, разрез не нужен | 5 | сделано | тривиально |
+| 3 — переход/чистый выбор, разрез не нужен | ~13 | сделано | тривиально |
 | 3.1 — модальная редактирующая сессия (`CampaignForm`) | 4 | отложено до этапа 3 | не в этом этапе |
-| 5 — проверка с сообщением | сопутствует остальным | — | тривиально |
-| 1 — ввод параметра | ~8 | не начато | низкая |
-| 2 — выбор и операция | ~35 | не начато | основная работа |
+| PrintXxxInquire/PrintContract — генерация отчёта | 3 | перенесены целиком (не разрезаны) | отдельная область, этап 4 |
+| 5 — проверка с сообщением | сопутствует остальным | по ходу сделано | тривиально |
+| 4.1 — уведомление (`UserInteraction.Notify`) | 1 базовый + 8 вызывающих мест | базовый метод сделан | — |
+| 1 — ввод параметра | часть сделана (`CampaignDay`) | частично | низкая |
+| 2 — выбор и операция | ~15 сделано | частично | основная работа |
 | 4 — подтверждение | 2 | 1 решена (`AskConfirmation` — открытый вопрос) | — |
+| кластер замены ролика (§8 п.4) | 5+ мест | НЕ разбирается по шаблону | отдельная партия |
 
-Рекомендуемый порядок: форма 1, затем форма 2 по возрастанию числа мест в
-файле. Файлы с одним вызовом (`HeadCompany`, `CampaignDay`, `CampaignRoller`,
-`ModulePricelist`, `PackageDiscountPriceList`, `PackModuleIssue`,
-`CampaignModule`, `ActionRollerInStatJournal`, `TariffWindowWithRollerIssues`)
-— раньше, чем `Campaign.cs` (осталось 5 мест из 7 — два формы 3.1 отложены),
-`ActionOnMassmedia.cs` (осталось 5) и `MassmediaPricelist.cs` (5).
+### Осталось (32 вхождения `ShowDialog` по grep на конец партии 11)
 
-Файлы формы 3.1 (`Campaign.cs`, `ProgramPartOfSponsorCampaign.cs`,
-`RollerPartOfSponsorCampaign.cs`) не пропускать целиком — в каждом из них
-есть и другие места (формы 1, 2, 5), не связанные с `CampaignForm`. Пропускать
-нужно только сами четыре метода 3.1.
+```
+7 Campaign.cs               — 2 формы 3.1 (EditRollerIssues/EditProgramIssues,
+                               отложены), остальные 5 не разобраны
+5 MassmediaPricelist.cs      — не начато
+4 ActionOnMassmedia.cs       — SplitCampaign/MergeAction и другие, не начато
+3 Action.cs                  — не начато
+2 Utils.cs                   — AskConfirmation (открытый вопрос №1), не трогать
+2 ProgramPartOfSponsorCampaign.cs — 1 форма 3.1 (отложена), 1 не разобрано
+2 Pricelist.cs                — не начато
+2 MediaPlan.cs                — НЕ ТРОГАТЬ без отдельного ревью: межпотоковый
+                                Invoke/InvokeRequired, в коде есть прямое
+                                упоминание прошлых зависаний EXCEL.EXE
+1 SponsorPricelist.cs         — мёртвый закомментированный код, не в счёт
+1 RollerPartOfSponsorCampaign.cs — форма 3.1 (отложена)
+1 CampaignRoller.cs           — кластер замены ролика (§8 п.4)
+```
+
+### Рекомендации на продолжение
+
+1. `MediaPlan.cs` — начинать только с отдельного прочтения всего файла и
+   понимания текущей потоковой модели (`InvokeRequired`/`Invoke`,
+   `Application.UseWaitCursor`). Не тиражировать конвенцию механически —
+   это форма 2, но с реальным риском зависания при ошибке.
+2. Кластер замены ролика (§8 п.4, `CampaignRoller`/`ActionRoller`/
+   `CampaignModuleRollerInsideDay`/`PackModuleIssue`) — отдельная партия,
+   не по шаблону.
+3. Оставшиеся файлы (`Campaign.cs`, `MassmediaPricelist.cs`,
+   `ActionOnMassmedia.cs` остаток, `Action.cs`, `ProgramPartOfSponsorCampaign.cs`
+   остаток, `Pricelist.cs`) — обычные форма 1/2/5, тиражировать по
+   установленной конвенции, партиями с проверкой сборки после каждой.
+4. После завершения `Client/Classes` — переходить к следующему пункту
+   этапа 0 (абстракция конфигурации, `docs/tasks/web-migration.md`, этап 0
+   п.6) либо к вертикальному срезу (раздел 10 `web-migration.md`).
 
 ## 7. Проверка каждой партии
 
