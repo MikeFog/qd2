@@ -10,7 +10,9 @@ using System.Windows.Forms;
 
 namespace Merlin.Classes
 {
-    public class ActionOnMassmedia : Action
+    // Часть, работающая с диалогами, постепенно переезжает в ActionOnMassmedia.WinForms.cs.
+	// Конвенция разреза — docs/tasks/web-migration-dialogs.md.
+	public partial class ActionOnMassmedia : Action
 	{
 		internal class SplitRule
 		{
@@ -142,16 +144,71 @@ namespace Merlin.Classes
 			}
 		}
 
-        private bool IsSplitOrMergeEnabled(DateTime startDate)
+		/// <summary>
+		/// Разрешено ли делить/объединять акцию. <paramref name="messageKey"/> — ключ
+		/// MessageAccessor с причиной отказа, null если разрешено.
+		/// </summary>
+		internal bool CanSplitOrMerge(DateTime startDate, out string messageKey)
 		{
+			messageKey = null;
             if (SecurityManager.LoggedUser.IsAdmin || SecurityManager.LoggedUser.IsTrafficManager || !IsConfirmed) return true;
 			if(startDate <= DateTime.Today)
 			{
-                UserMessage.ShowExclamation(MessageAccessor.GetMessage("SplitAllowedByAdmin"));
+				messageKey = "SplitAllowedByAdmin";
 				return false;
             }
 			return true;
         }
+
+		/// <summary>
+		/// Кампании — кандидаты на перенос в новую акцию. null, если делить нечего;
+		/// тогда <paramref name="messageKey"/> содержит ключ причины.
+		/// </summary>
+		internal DataTable GetCampaignsForSplit(out string messageKey)
+		{
+			messageKey = null;
+			DataTable dt = Campaigns();
+			if (dt.Rows.Count < 2)
+			{
+				messageKey = "CanNotSplitAction";
+				return null;
+			}
+			return dt;
+		}
+
+		/// <summary>
+		/// Проверяет выбор пользователя для деления акции.
+		/// </summary>
+		internal bool IsSplitSelectionValid(int selectedCount, out string messageKey)
+		{
+			messageKey = null;
+			if (selectedCount == Campaigns().Rows.Count)
+			{
+				messageKey = "TooManyCampaignsSelected";
+				return false;
+			}
+			if (selectedCount == 0)
+			{
+				messageKey = "NoCampaignSelected";
+				return false;
+			}
+			return true;
+		}
+
+		/// <summary>
+		/// Переносит выбранные кампании в новую акцию и пересчитывает обе.
+		/// </summary>
+		internal void ApplySplitAction(IList<PresentationObject> campaignsToMove)
+		{
+			ActionOnMassmedia newAction = CreateNewActionForSplit();
+			foreach (var campaign in campaignsToMove)
+			{
+				campaign[ParamNames.ActionId] = newAction[ParamNames.ActionId];
+				campaign.Update();
+			}
+			Recalculate();
+			newAction.Recalculate();
+		}
 
 		private ActionOnMassmedia CreateNewActionForSplit()
 		{
@@ -162,43 +219,8 @@ namespace Merlin.Classes
 			return newAction;
         }
 
-		private void SplitAction()
-		{
-			try
-			{
-				if (!IsSplitOrMergeEnabled(StartDate.Date)) return;
-						
-                DataTable dt = Campaigns();
-				if (dt.Rows.Count < 2)
-				{
-					UserMessage.ShowInformation(MessageAccessor.GetMessage("CanNotSplitAction"));
-					return;
-				}
-
-                SelectionForm fSelector = new SelectionForm(EntityManager.GetEntity((int)Entities.CampaignOnMassmedia),
-                        dt.DefaultView, "Выберите рекламные компании которые хотите перенести в новую акцию", true,
-                        CheckCampaignsSelectionResultForActionSplit);
-
-                if (fSelector.ShowDialog(Globals.MdiParent) == DialogResult.OK)
-				{
-                    Cursor.Current = Cursors.WaitCursor;
-                    // clone action
-                    ActionOnMassmedia newAction = CreateNewActionForSplit();
-                    foreach (var campaign in fSelector.AddedItems)
-					{
-                        campaign[ParamNames.ActionId] = newAction[ParamNames.ActionId];
-                        campaign.Update();
-                    }
-                    Recalculate();
-                    newAction.Recalculate();
-                    FireContainerRefreshed();
-                }
-            }
-			finally
-			{
-                Cursor.Current = Cursors.Default;
-            }
-		}
+		// SplitAction, IsSplitOrMergeEnabled и CheckCampaignsSelectionResultForActionSplit
+		// переехали в ActionOnMassmedia.WinForms.cs (диалоги и показ сообщений).
 
         private void SplitCampaign()
 		{
@@ -243,21 +265,6 @@ namespace Merlin.Classes
                     Cursor.Current = Cursors.Default;
                 }
             }
-        }
-
-        private bool CheckCampaignsSelectionResultForActionSplit(SelectionForm selectionForm)
-        {
-			if(selectionForm.AddedItems.Count == this.Campaigns().Rows.Count)
-			{
-                UserMessage.ShowExclamation(MessageAccessor.GetMessage("TooManyCampaignsSelected"));
-                return false;
-			}
-            if (selectionForm.AddedItems.Count == 0)
-            {
-                UserMessage.ShowExclamation(MessageAccessor.GetMessage("NoCampaignSelected"));
-                return false;
-            }
-            return true;
         }
 
 		private void MoveIssues(Campaign newCampaign, SplitRule rule)
