@@ -4,6 +4,7 @@ using System.Data;
 using System.Windows.Forms;
 using FogSoft.WinForm;
 using FogSoft.WinForm.Classes;
+using FogSoft.WinForm.Controls;
 using FogSoft.WinForm.DataAccess;
 using FogSoft.WinForm.Forms;
 using Merlin.Classes;
@@ -45,6 +46,9 @@ namespace Merlin.Forms.CreateActionMaster
 		private ActionOnMassmedia _action;
 
 		private readonly Dictionary<int, Campaign> _campaignByMassmedia = new Dictionary<int, Campaign>();
+
+		/// <summary>Выпуски акции, показанные в панели, - из них же берём удаляемые по Del.</summary>
+		private DataTable _issues;
 
 		/// <summary>
 		/// Созданная в ходе размещения акция или null, если менеджер ничего не разместил.
@@ -113,7 +117,9 @@ namespace Merlin.Forms.CreateActionMaster
 		private void InitAddedIssuesList()
 		{
 			grdAddedIssues.Entity = EntityManager.GetEntity((int) Entities.ComboModuleIssue);
-			grdAddedIssues.ObjectsDeleted += OnIssuesDeleted;
+			grdAddedIssues.ObjectDeleted += OnIssueDeleted;     // удалили одну строку
+			grdAddedIssues.ObjectsDeleted += OnIssuesDeleted;   // удалили несколько
+			grdAddedIssues.MultiSelect = true;   // Del по нескольким строкам умеет сам SmartGrid
 		}
 
 		private void InitComboModuleGrid()
@@ -124,6 +130,8 @@ namespace Merlin.Forms.CreateActionMaster
 			comboModuleGrid.ShowUnconfirmed = tbbShowUnconfirmed.Checked;
 			comboModuleGrid.CellClicked += OnCellClicked;
 			comboModuleGrid.GridRefreshed += OnGridRefreshed;
+			comboModuleGrid.RawDataGridView.SelectionMode = DataGridViewSelectionMode.CellSelect;
+			comboModuleGrid.RawDataGridView.KeyDown += ComboModuleGrid_KeyDown;
 			UpdatePeriodModeCaption();
 			comboModuleGrid.RefreshGrid();
 		}
@@ -267,12 +275,128 @@ namespace Merlin.Forms.CreateActionMaster
 
 		#region Удаление выпуска ------------------------------
 
+		private void ComboModuleGrid_KeyDown(object sender, KeyEventArgs e)
+		{
+			if (e.KeyCode != Keys.Delete) return;
+
+			e.Handled = true;
+			e.SuppressKeyPress = true;
+			try
+			{
+				DeleteIssuesInSelectedCells();
+			}
+			catch (Exception ex)
+			{
+				ErrorManager.PublishError(ex);
+			}
+		}
+
+		/// <summary>
+		/// Массовое удаление выпусков в выделенных ячейках сетки - как Del по окнам тарифной
+		/// сетки обычной кампании. Выпуски берём из уже загруженной таблицы панели, удаляем
+		/// по одному (ModuleIssue.Delete пересчитывает акцию сам), ошибки копим и показываем.
+		/// </summary>
+		private void DeleteIssuesInSelectedCells()
+		{
+			if (_action == null) return;
+
+			IList<ComboModuleDay> days = comboModuleGrid.GetSelectedDays();
+			if (days.Count == 0 || _issues == null) return;
+
+			List<PresentationObject> issues = GetIssuesInDays(days);
+			if (issues.Count == 0)
+			{
+				UserMessage.ShowInformation("В выбранных ячейках нет выпусков этой акции.");
+				return;
+			}
+
+			if (UserMessage.ShowQuestion(string.Format(
+					"Удалить выпуски в выбранных ячейках? ({0} шт.)", issues.Count)) != DialogResult.Yes)
+				return;
+
+			List<PresentationObject> deletedObjects = new List<PresentationObject>();
+			DataTable deleteErrors = SmartGrid.CreateDeleteErrorsTable();
+			int errorRowNumber = 1;
+			try
+			{
+				Cursor = Cursors.WaitCursor;
+				foreach (PresentationObject issue in issues)
+				{
+					string objectName = string.IsNullOrEmpty(issue.Name) ? "<без названия>" : issue.Name;
+					try
+					{
+						if (issue.Delete(true))
+							deletedObjects.Add(issue);
+						else
+							SmartGrid.AddDeleteError(deleteErrors, errorRowNumber++, objectName,
+								string.Format("Не удалось удалить выпуск '{0}'.", objectName));
+					}
+					catch (Exception ex)
+					{
+						SmartGrid.AddDeleteError(deleteErrors, errorRowNumber++, objectName,
+							ErrorManager.GetErrorMessage(ex));
+					}
+				}
+			}
+			finally
+			{
+				Cursor = Cursors.Default;
+			}
+
+			if (deletedObjects.Count > 0)
+			{
+				DeleteEmptyCampaignsAndAction();
+				RefreshAfterChange();
+			}
+
+			if (deleteErrors.Rows.Count > 0)
+				SmartGrid.ShowDeleteErrors(deleteErrors);
+			else
+				UserMessage.ShowInformation(string.Format("Удалено выпусков: {0}.", deletedObjects.Count));
+		}
+
+		private List<PresentationObject> GetIssuesInDays(IList<ComboModuleDay> days)
+		{
+			HashSet<string> selected = new HashSet<string>();
+			foreach (ComboModuleDay day in days)
+				selected.Add(MakeDayKey(day.ModuleID, day.Date));
+
+			Entity issueEntity = EntityManager.GetEntity((int) Entities.ComboModuleIssue);
+			List<PresentationObject> issues = new List<PresentationObject>();
+			foreach (DataRow row in _issues.Rows)
+			{
+				string key = MakeDayKey(
+					Convert.ToInt32(row[ComboModule.ParamNames.ModuleId]),
+					Convert.ToDateTime(row[ComboModule.ParamNames.IssueDate]));
+
+				if (selected.Contains(key))
+					issues.Add(issueEntity.CreateObject(row));
+			}
+			return issues;
+		}
+
+		private static string MakeDayKey(int moduleID, DateTime date)
+		{
+			return string.Format("{0}|{1:yyyyMMdd}", moduleID, date.Date);
+		}
+
+
 		/// <summary>
 		/// Выпуски удаляет сам SmartGrid (ModuleIssue.Delete -> ModuleIssueIUD с пересчётом
 		/// акции). Нам остаётся убрать то, что осталось пустым: кампанию без выпусков, а следом
 		/// и акцию без кампаний - иначе они полезут в счета и статистику с нулём.
 		/// </summary>
+		private void OnIssueDeleted(PresentationObject presentationObject)
+		{
+			AfterIssuesDeleted();
+		}
+
 		private void OnIssuesDeleted(IList<PresentationObject> presentationObjects)
+		{
+			AfterIssuesDeleted();
+		}
+
+		private void AfterIssuesDeleted()
 		{
 			try
 			{
@@ -344,6 +468,7 @@ namespace Merlin.Forms.CreateActionMaster
 		private void OnGridRefreshed()
 		{
 			DataTable issues = _action == null ? null : ComboModule.LoadIssues(_action.ActionId);
+			_issues = issues;
 
 			RememberCampaigns(issues);
 			comboModuleGrid.MarkIssues(issues);

@@ -156,6 +156,9 @@ namespace Merlin.Controls
 				_editMode = value;
 				Cursor = _editMode ? Cursors.Hand : Cursors.Default;
 				RawDataGridView.Cursor = Cursor;
+				// выделение прямоугольником нужно для Del по окнам, но в режиме
+				// добавления оно мешает кликать - так же поступает CampaignForm
+				RawDataGridView.MultiSelect = !_editMode;
 				// шапка синеет в режиме добавления - как у тарифной сетки обычной кампании
 				Caption.CaptionBackColor = _editMode
 					? Color.Blue
@@ -485,6 +488,23 @@ namespace Merlin.Controls
 		{
 			DataGridViewCell cell = GetCell(rowIndex, columnIndex);
 			cell.Style.ForeColor = cell.Style.SelectionForeColor = color;
+		}
+
+		/// <summary>
+		/// Модули и дни выделенных ячеек - для массового удаления выпусков по Del.
+		/// Аналог TariffGrid.GetSelectedTariffWindows.
+		/// </summary>
+		public IList<ComboModuleDay> GetSelectedDays()
+		{
+			List<ComboModuleDay> days = new List<ComboModuleDay>();
+			foreach (DataGridViewCell cell in RawDataGridView.SelectedCells)
+			{
+				if (cell.RowIndex < FIXED_ROWS || cell.ColumnIndex < FIXED_COLS) continue;
+
+				ComboModuleDay day = _days[cell.RowIndex - FIXED_ROWS, cell.ColumnIndex - FIXED_COLS];
+				if (day != null) days.Add(day);
+			}
+			return days;
 		}
 
 		/// <summary>Число выпусков за день - строка под датами. Заполняет форма размещения.</summary>
