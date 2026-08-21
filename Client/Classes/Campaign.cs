@@ -5,14 +5,20 @@ using System.Windows.Forms;
 using FogSoft.WinForm;
 using FogSoft.WinForm.Classes;
 using FogSoft.WinForm.DataAccess;
-using FogSoft.WinForm.Forms;
-using Merlin.Controls;
-using Merlin.Forms;
-using Merlin.Properties;
 
 namespace Merlin.Classes
 {
-    internal class Campaign : CampaignPart
+    // UI-часть (DoAction, DeleteIssues-диалог, PrintTransfers, PrintMediaPlan,
+    // EditRollerIssues, EditProgramIssues, ChangeAgency, ChangePaymentType) —
+    // в Campaign.WinForms.cs. Перед правками читать
+    // docs/scenarios/campaign-edit-form-load.md — EditRollerIssues/
+    // EditProgramIssues точки входа в CampaignForm.
+    // DisplayCampaignData(ListBox) и виртуальная заглушка PrintOnAirInquire(Form)
+    // остаются здесь — не диалоги, вне области переноса (тот же случай, что
+    // ActionOnMassmedia.DisplayData(ListBox)); из-за них System.Windows.Forms
+    // не уходит из ядра полностью.
+    // Конвенция — docs/tasks/web-migration-dialogs.md.
+    internal partial class Campaign : CampaignPart
     {
         private Agency _agency;
         protected DataTable _modules;
@@ -293,217 +299,71 @@ namespace Merlin.Classes
 			}
 		}
 
-		public override void DoAction(string actionName, IWin32Window owner, InterfaceObjects interfaceObject)
+		// DoAction переехал в Campaign.WinForms.cs.
+
+		// DeleteIssues (диалог), PrintTransfers переехали в Campaign.WinForms.cs.
+
+		/// <summary>
+		/// Удаляет выбранные выпуски (id — из CampaignDaysForm.SelectedIDs).
+		/// Возвращает таблицу ошибок (пустая — без ошибок); anyDeleted — было ли
+		/// удалено хоть что-то.
+		/// </summary>
+		internal DataTable ApplyIssuesDelete(bool isSponsorProgram, IEnumerable<int> selectedIds, out bool anyDeleted)
 		{
-			if (actionName == ActionNames.ChangePaymentType)
-				ChangePaymentType(owner);
-			else if (actionName == ActionNames.ChangeAgency)
-				ChangeAgency(owner);
-			else if (actionName == ActionNames.ShowRollers)
-				ShowRollers();
-			else if (actionName == ActionNames.ShowDays)
+			anyDeleted = false;
+			DataTable tableErrors = ErrorManager.CreateErrorsTable();
+
+			foreach (var id in selectedIds)
 			{
-				ChildEntity = EntityManager.GetEntity((int)Entities.CampaignDay);
-				FireContainerRefreshed();
-			}
-			else if (actionName == Constants.EntityActions.Edit)
-				EditRollerIssues(owner, new RollerIssuesGrid3());
-			else if (actionName == ActionNames.PrintMediaPlan)
-				PrintMediaPlan(false, false, false, false);
-			else if (actionName == ActionNames.PrintMediaPlanFact)
-				PrintMediaPlan(true, false, false, false);
-			else if (actionName == ActionNames.PrintMediaPlanMonth)
-				PrintMediaPlan(false, true, false, false);
-			else if (actionName == ActionNames.PrintMediaPlanFactMonth)
-				PrintMediaPlan(true, true, false, false);
-			else if (actionName == ActionNames.PrintMediaPlanByPeriod)
-				PrintMediaPlan(false, false, true, false);
-			else if (actionName == ActionNames.PrintMediaPlanFactByPeriod)
-				PrintMediaPlan(true, false, true, false);
-			else if (actionName == ActionNames.PrintSelectivelyMediaPlan)
-				PrintMediaPlan(false, false, false, true);
-			else if (actionName == ActionNames.PrintSelectivelyMediaPlanFact)
-				PrintMediaPlan(true, false, false, true);
-			else if (actionName == ActionNames.PrintSelectivelyMediaPlanMonth)
-				PrintMediaPlan(false, true, false, true);
-			else if (actionName == ActionNames.PrintSelectivelyMediaPlanFactMonth)
-				PrintMediaPlan(true, true, false, true);
-			else if (actionName == ActionNames.PrintSelectivelyMediaPlanByPeriod)
-				PrintMediaPlan(false, false, true, true);
-			else if (actionName == ActionNames.PrintSelectivelyMediaPlanFactByPeriod)
-				PrintMediaPlan(true, false, true, true);
-			else if (actionName == ActionNames.PrintTransfers)
-				PrintTransfers();
-			else if (actionName == ActionNames.DeleteIssues)
-				DeleteIssues(owner);
-			else
-				base.DoAction(actionName, owner, interfaceObject);
-		}
-
-		public bool DeleteIssues(IWin32Window owner, bool isSponsorProgram = false, Dictionary<string, object> extraParameters = null, bool isFireEvent = true)
-		{
-            bool resFlag = false;
-            try
-			{
-				Entity currentChild = null;
-
-                if (ChildEntity != null)
-					currentChild = ChildEntity;
-
-				ChildEntity = EntityManager.GetEntity((int)Entities.CampaignDay);
-				CampaignDaysForm selector = new CampaignDaysForm(this, isSponsorProgram, extraParameters);
-
-				if (selector.ShowDialog(owner) == DialogResult.OK)
+				PresentationObject item = null;
+				try
 				{
-					Application.DoEvents();
-					Cursor.Current = Cursors.WaitCursor;
-
-					Action.Refresh();
-                    decimal price = Action.TotalPrice;
-
-                    DataTable tableErrors = ErrorManager.CreateErrorsTable();
-					
-                    foreach (var id in selector.SelectedIDs)
+					Entity itemEntity = null;
+					Dictionary<string, object> parameters = new Dictionary<string, object>(StringComparer.InvariantCultureIgnoreCase)
 					{
-                        PresentationObject item = null;
-                        try
-						{
-							Entity itemEntity = null;
-                            Dictionary<string, object> parameters = new Dictionary<string, object>(StringComparer.InvariantCultureIgnoreCase)
-                            {
-                                [Campaign.ParamNames.CampaignId] = CampaignId
-                            };
+						[Campaign.ParamNames.CampaignId] = CampaignId
+					};
 
-							// в зависимости от типа кампании создаём разные "issue" и пытаемся их удалить
-							if(isSponsorProgram)
-							{
-                                itemEntity = EntityManager.GetEntity((int)Entities.ProgramIssue);
-                                parameters[Issue.ParamNames.IssueId] = id;
-                            }
-                            else if (CampaignType == CampaignTypes.Simple || CampaignType == CampaignTypes.Sponsor)
-							{
-                                itemEntity = EntityManager.GetEntity((int)Entities.Issue);
-								parameters[Issue.ParamNames.IssueId] = id;
-                            }
-                            else if (CampaignType == CampaignTypes.Module)
-                            {
-                                itemEntity = EntityManager.GetEntity((int)Entities.ModuleIssue);
-                                parameters[ModuleIssue.ParamNames.ModuleIssueId] = id;
-                            }
-                            else if (CampaignType == CampaignTypes.PackModule)
-                            {
-                                itemEntity = EntityManager.GetEntity((int)Entities.PackModuleIssue);
-                                parameters[Issue.ParamNames.PackModuleIssueID] = id;
-                            }
-
-                            item = itemEntity.CreateObject(parameters);
-                            item.Delete(true);
-							resFlag = true;
-						}
-						catch (Exception ex)
-						{
-							item.Refresh();
-							ErrorManager.AddErrorRow(tableErrors, DateTime.Parse(item[CampaignDay.ParamNames.IssueDate].ToString()), MessageAccessor.GetMessage(ex.Message));
-						}
-					}
-					if (tableErrors.Rows.Count > 0)
+					// в зависимости от типа кампании создаём разные "issue" и пытаемся их удалить
+					if(isSponsorProgram)
 					{
-						Globals.ShowSimpleJournal(EntityManager.GetEntity((int)Entities.ErrTmplGen), "Ошибки удаления", tableErrors);
+						itemEntity = EntityManager.GetEntity((int)Entities.ProgramIssue);
+						parameters[Issue.ParamNames.IssueId] = id;
 					}
-                    RecalculateAndShowPriceChange(price);
-                    if (currentChild != null)
-                        ChildEntity = currentChild;
-                    if (isFireEvent)
-						FireContainerRefreshed();
-                }
-                return resFlag;
-            }
-			catch(Exception ex)
-			{
-				ErrorManager.PublishError(ex);
-                return resFlag;
-            }
-            finally
-			{
-				Cursor.Current = Cursors.Default;
-			}
-		}
-
-        private void PrintTransfers()
-		{
-			DataSet ds = DataAccessor.LoadDataSet("CampaignIssuesTransfers", new Dictionary<string, object> { {ParamNames.CampaignId, CampaignId } });
-			if (ds == null  || ds.Tables.Count == 0 || ds.Tables[0].Rows.Count == 0)
-				Globals.ShowInfo("CampaignHaveNotTransfers");
-			else
-				Globals.ShowSimpleJournal(EntityManager.GetEntity((int)Entities.CampaignIssuesTransfers), Resources.CampaignIssuesTransfersTitle, ds.Tables[0]);
-		}
-
-        public void PrintMediaPlan(bool isActual, bool isByMonth, bool isByPeriod, bool selectively)
-		{
-			Application.DoEvents();
-			Refresh();
-
-			if (isByMonth)
-			{
-				Dictionary<string, object> procParameters = new Dictionary<string, object>(StringComparer.CurrentCultureIgnoreCase);
-				procParameters[ParamNames.CampaignId] = CampaignId;
-				procParameters["isFact"] = isActual;
-				DataSet ds = DataAccessor.LoadDataSet("GetMonthes", procParameters);
-
-				Dictionary<object, object> dMonthsToShow = new Dictionary<object, object>();
-
-				foreach (DataRow row in ds.Tables[0].Rows)
-				{
-					int month = ParseHelper.ParseToInt32(row["MonthDate"].ToString(), -1);
-					int year = ParseHelper.ParseToInt32(row["MonthYear"].ToString(), -1);
-					if (month >= 0 && year >= 0)
+					else if (CampaignType == CampaignTypes.Simple || CampaignType == CampaignTypes.Sponsor)
 					{
-						DateTime date = new DateTime(year, month, 1);
-						dMonthsToShow.Add(date, date.ToString("MMMM yyy"));
+						itemEntity = EntityManager.GetEntity((int)Entities.Issue);
+						parameters[Issue.ParamNames.IssueId] = id;
 					}
+					else if (CampaignType == CampaignTypes.Module)
+					{
+						itemEntity = EntityManager.GetEntity((int)Entities.ModuleIssue);
+						parameters[ModuleIssue.ParamNames.ModuleIssueId] = id;
+					}
+					else if (CampaignType == CampaignTypes.PackModule)
+					{
+						itemEntity = EntityManager.GetEntity((int)Entities.PackModuleIssue);
+						parameters[Issue.ParamNames.PackModuleIssueID] = id;
+					}
+
+					item = itemEntity.CreateObject(parameters);
+					item.Delete(true);
+					anyDeleted = true;
 				}
-
-				FrmMonths f = new FrmMonths(dMonthsToShow, false);
-				if (f.ShowDialog(Globals.MdiParent) == DialogResult.Cancel) return;
-				IList<DateTime> months = new List<DateTime>();
-				foreach (KeyValuePair<object, object> item in f.CheckedItems)
-					months.Add((DateTime)item.Key);
-                MediaPlan.CreateInstance(this, months, selectively).Show(isActual);
+				catch (Exception ex)
+				{
+					item.Refresh();
+					ErrorManager.AddErrorRow(tableErrors, DateTime.Parse(item[CampaignDay.ParamNames.IssueDate].ToString()), MessageAccessor.GetMessage(ex.Message));
+				}
 			}
-			else if (isByPeriod)
-			{
-				FrmDateSelector selector = new FrmDateSelector(StartDate, FinishDate, "Выбор периода");
-				if (selector.ShowDialog(Globals.MdiParent) == DialogResult.OK)
-                    MediaPlan.CreateInstance(this, selector.StartDate, selector.FinishDate, selectively).Show(isActual);
-			}
-			else
-                MediaPlan.CreateInstance(this, selectively).Show(isActual);
+			return tableErrors;
 		}
 
-		protected void EditRollerIssues(IWin32Window owner, TariffGrid tariffGrid)
-		{
-			CampaignForm campaign = new CampaignForm(this, tariffGrid);
-			campaign.ShowDialog(owner);
-			Application.DoEvents();
-			if (campaign.ChangeFlag)
-			{
-				//Action.Recalculate();
-				Refresh();
-				FireContainerRefreshed();
-			}
-		}
+		// PrintTransfers, PrintMediaPlan, EditRollerIssues, EditProgramIssues
+		// переехали в Campaign.WinForms.cs.
 
-		public void EditProgramIssues(IWin32Window owner)
-		{
-			CampaignForm campaign = new CampaignForm(this, new ProgramIssuesGrid2());
-			campaign.ShowDialog(owner);
-			Application.DoEvents();
-			if (campaign.ChangeFlag)
-			{
-				Action.Recalculate();
-				Refresh();
-			}
-		}
+		// EditRollerIssues, EditProgramIssues переехали в Campaign.WinForms.cs
+		// (форма 3.1 — модальная сессия CampaignForm, docs/tasks/web-migration-dialogs.md, §8 п.3).
 
 		public void SetFinalPrice(decimal finalPrice, DateTime todayDate, int? grantorId, int? managerDiscountReasonId)
 		{
@@ -530,46 +390,21 @@ namespace Merlin.Classes
 			FireContainerRefreshed();
 		}
 
-		private void ChangeAgency(IWin32Window owner)
-		{
-            if (IsChangePossible)
-			{
-                SelectionForm selector;
-                if (SecurityManager.LoggedUser.IsAdmin || SecurityManager.LoggedUser.IsBookKeeper)
-                    selector = new SelectionForm(EntityManager.GetEntity((int)Entities.Agency), "Рекламное агентство");
-				else
-					selector = new SelectionForm(EntityManager.GetEntity((int)Entities.Agency),
-					(this is CampaignOnSingleMassmedia radioStation) 
-						? radioStation.Massmedia.Agencies.DefaultView : SecurityManager.LoggedUser.Agencies.DefaultView,
-                    "Рекламное агентство");
-				if (selector.ShowDialog(owner) == DialogResult.OK)
-				{
-					this[ParamNames.AgencyID] = selector.SelectedObject.IDs[0];
-					Update();
-					OnObjectChanged(this);
-                    UserMessage.ShowInformation(Resources.AgencyChangeSuccess);
-                }
-			}
-            else
-                UserMessage.ShowExclamation(Resources.ChangeAgencyIsForbidden);
-        }
+		// ChangeAgency и ChangePaymentType переехали в Campaign.WinForms.cs.
 
-		private void ChangePaymentType(IWin32Window owner)
+		internal void ApplyAgencyChange(int agencyId)
 		{
-			if (IsChangePossible)
-			{
-				SelectionForm selector = new SelectionForm(EntityManager.GetEntity((int)Entities.PaymentType), "Типы оплаты");
-				if (selector.ShowDialog(owner) == DialogResult.OK)
-				{
-					this[ParamNames.PaymentTypeID] = selector.SelectedObject.IDs[0];
-					Update();
-					OnObjectChanged(this);
-					UserMessage.ShowInformation(Resources.PaymentTypeChangeSuccess);
-				}
-			}
-            else
-                UserMessage.ShowExclamation(Resources.ChangePaymentTypeIsForbidden);
-        }
+			this[ParamNames.AgencyID] = agencyId;
+			Update();
+			OnObjectChanged(this);
+		}
+
+		internal void ApplyPaymentTypeChange(int paymentTypeId)
+		{
+			this[ParamNames.PaymentTypeID] = paymentTypeId;
+			Update();
+			OnObjectChanged(this);
+		}
 
 		public override bool IsActionHidden(string actionName, ViewType type)
 		{
