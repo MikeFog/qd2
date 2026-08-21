@@ -509,8 +509,10 @@
     <Compile Include="Classes\CampaignModule.WinForms.cs" />
     <Compile Include="Classes\CampaignModuleDay.cs" />
     <Compile Include="Classes\CampaignOnSingleMassmedia.cs" />
+    <Compile Include="Classes\CampaignOnSingleMassmedia.WinForms.cs" />
     <Compile Include="Classes\CampaignPackDay.cs" />
     <Compile Include="Classes\CampaignPackModule.cs" />
+    <Compile Include="Classes\CampaignPackModule.WinForms.cs" />
     <Compile Include="Classes\Action.cs">
       <SubType>Code</SubType>
     </Compile>
