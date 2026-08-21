@@ -580,6 +580,7 @@
     <Compile Include="Classes\IssueTemplate.cs" />
     <Compile Include="Classes\ITariffWindow.cs" />
     <Compile Include="Classes\MassmediaPricelist.cs" />
+    <Compile Include="Classes\MassmediaPricelist.WinForms.cs" />
     <Compile Include="Classes\MassmediasAndCampaignsContainer.cs" />
     <Compile Include="Classes\MediaPlan.cs" />
     <Compile Include="Classes\MediaPlanCampaignGroups.cs" />
