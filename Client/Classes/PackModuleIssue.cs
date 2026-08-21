@@ -1,19 +1,18 @@
 ﻿using FogSoft.WinForm.Classes;
 using FogSoft.WinForm.DataAccess;
 using FogSoft.WinForm;
-using Merlin.Controls;
-using Merlin.Forms;
 using System;
 using System.Collections.Generic;
 using System.Data;
 using System.Linq;
 using System.Text;
-using System.Windows.Forms;
 using System.Reflection;
 
 namespace Merlin.Classes
 {
-    internal class PackModuleIssueInCampaignForm : PackModuleIssue
+    // DoAction переехал в PackModuleIssue.WinForms.cs (форма 3.1, структурно —
+    // IWin32Window в сигнатуре, см. docs/tasks/web-migration-dialogs.md, §8, п.3).
+    internal partial class PackModuleIssueInCampaignForm : PackModuleIssue
     {
         public PackModuleIssueInCampaignForm() : base(EntityManager.GetEntity((int)Entities.PackModuleIssueInCampaignForm))
         {
@@ -22,17 +21,14 @@ namespace Merlin.Classes
         public PackModuleIssueInCampaignForm(DataRow row) : base(EntityManager.GetEntity((int)Entities.PackModuleIssueInCampaignForm), row)
         {
         }
-
-        public override void DoAction(string actionName, IWin32Window owner, InterfaceObjects interfaceObject)
-        {
-            if (actionName == Constants.Actions.Substitute)
-                SubstituteRollerForSingleIssue(Roller);
-            else
-                base.DoAction(actionName, owner, interfaceObject);
-        }
     }
 
-    internal class PackModuleIssue : Issue
+    // UI-часть (DoAction, ChangeAdvertType) — в PackModuleIssue.WinForms.cs.
+    // SubstituteRoller (замена ролика) пока не разрезан — общий с
+    // CampaignRoller.cs/ActionRoller.cs/CampaignModule.cs кластер, см.
+    // docs/tasks/web-migration-dialogs.md, §8, п.4.
+    // Конвенция — docs/tasks/web-migration-dialogs.md.
+    internal partial class PackModuleIssue : Issue
     {
         private PackModule _packModule;
         private Roller _roller;
@@ -69,41 +65,8 @@ namespace Merlin.Classes
             }
         }
 
-        public override void DoAction(string actionName, IWin32Window owner, InterfaceObjects interfaceObject)
-        {
-            if (actionName == Constants.Actions.Substitute)
-            {
-                if (entity.AttributeSelector == Issue.AttributeSelectorShort)
-                    SubstituteRollerForSingleIssue(Roller);
-                else
-                    SubstituteRoller((Form)owner);
-            }
-            else if (actionName == Constants.Actions.PlayRoller)
-                MediaControl.Current.Play(this);
-            else if (string.Compare(actionName, Roller.ActionNames.ChangeAdvertType, StringComparison.OrdinalIgnoreCase) == 0)
-                ChangeAdvertType((Form)owner);
-            else
-                base.DoAction(actionName, owner, interfaceObject);
-        }
-
-        private void SubstituteRoller(Form owner)
-        {
-            decimal price = decimal.Zero;
-
-            if (Campaign != null && Campaign.Action != null)
-            {
-                Campaign.Action.Refresh();
-                price = Campaign.Action.TotalPrice;
-            }
-
-            CampaignRoller.Substitute((Form)owner, Campaign, PackModuleID, null,
-                       new Roller(int.Parse(this[Roller.ParamNames.RollerId].ToString())),
-                       delegate
-                       {
-                           RecalculateAndShowPriceChange(price);
-                           OnParentChanged(this, 1);
-                       });
-        }
+        // DoAction и SubstituteRoller (кластер замены ролика, §8 п.4) переехали
+        // в PackModuleIssue.WinForms.cs целиком, без разреза.
 
         public override bool IsActionEnabled(string actionName, ViewType type)
         {
@@ -116,40 +79,24 @@ namespace Merlin.Classes
             return base.IsActionEnabled(actionName, type);
         }
 
-        private void ChangeAdvertType(Form parentForm)
+        /// <summary>Меняет предмет рекламы у ролика на выбранные даты.</summary>
+        internal void ApplyAdvertTypeChange(System.Collections.IEnumerable selectedDays, int advertTypeId)
         {
-            try
+            foreach (var date in selectedDays)
             {
-                RollerChangeAdvertTypeForm form = new RollerChangeAdvertTypeForm(Roller, Campaign, null, PackModulePricelist.PackModuleId);
-                if (form.ShowDialog(parentForm) == DialogResult.OK)
-                {
-                    Application.DoEvents();
-                    Cursor.Current = Cursors.WaitCursor;
-                    foreach (var date in form.SelectedDays)
-                    {
-                        Dictionary<string, object> procParameters = DataAccessor.CreateParametersDictionary();
+                Dictionary<string, object> procParameters = DataAccessor.CreateParametersDictionary();
 
-                        procParameters[Roller.ParamNames.RollerId] = Roller.RollerId;
-                        procParameters[Campaign.ParamNames.CampaignId] = Campaign.CampaignId;
-                        procParameters[Pricelist.ParamNames.PricelistId] = PackModulePricelist.PricelistId;
-                        procParameters[AdvertType.ParamNames.AdvertTypeId] = form.AdvertTypeId;
-                        procParameters[Issue.ParamNames.IssueDate] = date;
+                procParameters[Roller.ParamNames.RollerId] = Roller.RollerId;
+                procParameters[Campaign.ParamNames.CampaignId] = Campaign.CampaignId;
+                procParameters[Pricelist.ParamNames.PricelistId] = PackModulePricelist.PricelistId;
+                procParameters[AdvertType.ParamNames.AdvertTypeId] = advertTypeId;
+                procParameters[Issue.ParamNames.IssueDate] = date;
 
-                        DataAccessor.ExecuteNonQuery("SetAdvertTypeForCommmonRoller", procParameters);
-                    }
-                    Refresh();
-                    OnObjectChanged(this);
-                    OnParentChanged(this, 1);
-                }
+                DataAccessor.ExecuteNonQuery("SetAdvertTypeForCommmonRoller", procParameters);
             }
-            catch (Exception ex)
-            {
-                ErrorManager.PublishError(ex);
-            }
-            finally
-            {
-                parentForm.Cursor = Cursors.Default;
-            }
+            Refresh();
+            OnObjectChanged(this);
+            OnParentChanged(this, 1);
         }
 
         public int PackModuleID

@@ -584,6 +584,7 @@
     <Compile Include="Classes\PackageDiscountPriceList.cs" />
     <Compile Include="Classes\PackModule.cs" />
     <Compile Include="Classes\PackModuleIssue.cs" />
+    <Compile Include="Classes\PackModuleIssue.WinForms.cs" />
     <Compile Include="Classes\PaintingType.cs" />
     <Compile Include="Classes\PaymentCommon.cs" />
     <Compile Include="Classes\PriceCalculatorClasses.cs" />
