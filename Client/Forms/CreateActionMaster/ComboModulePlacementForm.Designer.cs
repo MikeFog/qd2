@@ -1,4 +1,4 @@
-namespace Merlin.Forms.CreateActionMaster
+﻿namespace Merlin.Forms.CreateActionMaster
 {
 	partial class ComboModulePlacementForm
 	{
@@ -22,7 +22,9 @@ namespace Merlin.Forms.CreateActionMaster
 		private void InitializeComponent()
 		{
 			this.toolStrip1 = new System.Windows.Forms.ToolStrip();
+			this.tbbRefresh = new System.Windows.Forms.ToolStripButton();
 			this.tbbStart = new System.Windows.Forms.ToolStripButton();
+			this.tbbJump = new System.Windows.Forms.ToolStripButton();
 			this.tbbSeparator0 = new System.Windows.Forms.ToolStripSeparator();
 			this.tbbPosition = new System.Windows.Forms.ToolStripDropDownButton();
 			this.miPositionAny = new System.Windows.Forms.ToolStripMenuItem();
@@ -57,14 +59,36 @@ namespace Merlin.Forms.CreateActionMaster
 			this.splitContainer3.SuspendLayout();
 			this.SuspendLayout();
 			//
+			// tbbRefresh
+			//
+			this.tbbRefresh.DisplayStyle = System.Windows.Forms.ToolStripItemDisplayStyle.Image;
+			this.tbbRefresh.ImageTransparentColor = System.Drawing.Color.Magenta;
+			this.tbbRefresh.Name = "tbbRefresh";
+			this.tbbRefresh.Size = new System.Drawing.Size(34, 33);
+			this.tbbRefresh.Text = "Refresh";
+			this.tbbRefresh.ToolTipText = "Обновить информацию";
+			this.tbbRefresh.Click += new System.EventHandler(this.tbbRefresh_Click);
+			//
 			// tbbStart
 			//
 			this.tbbStart.CheckOnClick = true;
-			this.tbbStart.DisplayStyle = System.Windows.Forms.ToolStripItemDisplayStyle.Text;
+			this.tbbStart.DisplayStyle = System.Windows.Forms.ToolStripItemDisplayStyle.Image;
+			this.tbbStart.ImageTransparentColor = System.Drawing.Color.Magenta;
 			this.tbbStart.Name = "tbbStart";
+			this.tbbStart.Size = new System.Drawing.Size(34, 33);
 			this.tbbStart.Text = "Режим добавления";
-			this.tbbStart.ToolTipText = "Клик по ячейке добавляет выпуск";
+			this.tbbStart.ToolTipText = "Режим добавления: клик по ячейке добавляет выпуск";
 			this.tbbStart.CheckedChanged += new System.EventHandler(this.tbbStart_CheckedChanged);
+			//
+			// tbbJump
+			//
+			this.tbbJump.DisplayStyle = System.Windows.Forms.ToolStripItemDisplayStyle.Image;
+			this.tbbJump.Image = global::Merlin.Properties.Resources.calendar;
+			this.tbbJump.ImageTransparentColor = System.Drawing.Color.Magenta;
+			this.tbbJump.Name = "tbbJump";
+			this.tbbJump.Size = new System.Drawing.Size(34, 33);
+			this.tbbJump.Text = "Переход к выбранной дате";
+			this.tbbJump.Click += new System.EventHandler(this.tbbJump_Click);
 			//
 			// tbbSeparator0
 			//
@@ -151,7 +175,9 @@ namespace Merlin.Forms.CreateActionMaster
 			// toolStrip1
 			//
 			this.toolStrip1.Items.AddRange(new System.Windows.Forms.ToolStripItem[] {
+				this.tbbRefresh,
 				this.tbbStart,
+				this.tbbJump,
 				this.tbbSeparator0,
 				this.tbbPosition,
 				this.tbbSeparator1,
@@ -281,7 +307,9 @@ namespace Merlin.Forms.CreateActionMaster
 		#endregion
 
 		private System.Windows.Forms.ToolStrip toolStrip1;
+		private System.Windows.Forms.ToolStripButton tbbRefresh;
 		private System.Windows.Forms.ToolStripButton tbbStart;
+		private System.Windows.Forms.ToolStripButton tbbJump;
 		private System.Windows.Forms.ToolStripSeparator tbbSeparator0;
 		private System.Windows.Forms.ToolStripDropDownButton tbbPosition;
 		private System.Windows.Forms.ToolStripMenuItem miPositionAny;

@@ -1,10 +1,11 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Data;
 using System.Drawing;
 using System.Windows.Forms;
 using FogSoft.WinForm;
 using FogSoft.WinForm.Classes;
+using FogSoft.WinForm.Forms;
 using Merlin.Classes;
 
 namespace Merlin.Controls
@@ -234,6 +235,19 @@ namespace Merlin.Controls
 		private void Caption_GoPrevious()
 		{
 			GoToPeriod(_startDate.AddDays(-1));
+		}
+
+		/// <summary>
+		/// Переход к выбранной дате - тот же диалог, что и у тарифной сетки кампании.
+		/// Грид после этого надо обновить: делает форма, чтобы заодно перечитать выпуски.
+		/// </summary>
+		public bool SelectDate2Jump()
+		{
+			FrmDateSelector fSelector = new FrmDateSelector("Выбор даты") { Mode = FrmDateSelector.SelectorMode.SelectOne };
+			if (fSelector.ShowDialog(this) != DialogResult.OK) return false;
+
+			_currentDate = fSelector.StartDate;
+			return true;
 		}
 
 		private void GoToPeriod(DateTime date)

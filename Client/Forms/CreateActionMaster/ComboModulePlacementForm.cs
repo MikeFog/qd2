@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Data;
 using System.Windows.Forms;
@@ -58,6 +58,8 @@ namespace Merlin.Forms.CreateActionMaster
 		private ComboModulePlacementForm()
 		{
 			InitializeComponent();
+			tbbRefresh.Image = Globals.GetImage(Constants.ActionsImages.Refresh);
+			tbbStart.Image = Globals.GetImage(Constants.ActionsImages.Properties);
 		}
 
 		/// <summary>Размещение по комбо-модулю: акция и кампании появятся по первому клику.</summary>
@@ -456,6 +458,46 @@ namespace Merlin.Forms.CreateActionMaster
 				Cursor = Cursors.WaitCursor;
 
 				comboModuleGrid.ShowUnconfirmed = tbbShowUnconfirmed.Checked;
+				RefreshAfterChange();
+			}
+			catch (Exception ex)
+			{
+				ErrorManager.PublishError(ex);
+			}
+			finally
+			{
+				Cursor = Cursors.Default;
+			}
+		}
+
+		private void tbbRefresh_Click(object sender, EventArgs e)
+		{
+			try
+			{
+				Application.DoEvents();
+				Cursor = Cursors.WaitCursor;
+
+				tbbStart.Checked = false;
+				RefreshAfterChange();
+			}
+			catch (Exception ex)
+			{
+				ErrorManager.PublishError(ex);
+			}
+			finally
+			{
+				Cursor = Cursors.Default;
+			}
+		}
+
+		private void tbbJump_Click(object sender, EventArgs e)
+		{
+			try
+			{
+				if (!comboModuleGrid.SelectDate2Jump()) return;
+
+				Application.DoEvents();
+				Cursor = Cursors.WaitCursor;
 				RefreshAfterChange();
 			}
 			catch (Exception ex)
