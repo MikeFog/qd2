@@ -61,7 +61,6 @@
 			//
 			// tbbRefresh
 			//
-			this.tbbRefresh.AutoToolTip = false;
 			this.tbbRefresh.DisplayStyle = System.Windows.Forms.ToolStripItemDisplayStyle.Image;
 			this.tbbRefresh.ImageTransparentColor = System.Drawing.Color.Magenta;
 			this.tbbRefresh.Name = "tbbRefresh";
@@ -72,7 +71,6 @@
 			//
 			// tbbStart
 			//
-			this.tbbStart.AutoToolTip = false;
 			this.tbbStart.CheckOnClick = true;
 			this.tbbStart.DisplayStyle = System.Windows.Forms.ToolStripItemDisplayStyle.Image;
 			this.tbbStart.ImageTransparentColor = System.Drawing.Color.Magenta;
@@ -84,7 +82,6 @@
 			//
 			// tbbJump
 			//
-			this.tbbJump.AutoToolTip = false;
 			this.tbbJump.DisplayStyle = System.Windows.Forms.ToolStripItemDisplayStyle.Image;
 			this.tbbJump.Image = global::Merlin.Properties.Resources.calendar;
 			this.tbbJump.ImageTransparentColor = System.Drawing.Color.Magenta;
