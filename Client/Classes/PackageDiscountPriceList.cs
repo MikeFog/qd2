@@ -1,17 +1,13 @@
-﻿using FogSoft.WinForm;
-using FogSoft.WinForm.Classes;
-using FogSoft.WinForm.DataAccess;
-using Merlin.Forms;
+﻿using FogSoft.WinForm.Classes;
 using System.Collections.Generic;
 using System.Data;
-using System.Windows.Forms;
-using FogSoft.WinForm.Forms;
-using static Merlin.Forms.UniversalPassportForm;
-using static System.Windows.Forms.VisualStyles.VisualStyleElement.Window;
 
 namespace Merlin.Classes
 {
-    internal class PackageDiscountPriceList : ObjectContainer
+    // UI-часть (AssignNew, AssignMany, ValidatePassportData, ApplyPassportData —
+    // делегаты контракта UniversalPassportForm) — в PackageDiscountPriceList.WinForms.cs.
+    // Конвенция — docs/tasks/web-migration-dialogs.md.
+    internal partial class PackageDiscountPriceList : ObjectContainer
     {
         private struct ParamNames
         {
@@ -37,67 +33,25 @@ namespace Merlin.Classes
         {
         }
 
-        protected override void AssignNew(IWin32Window owner)
-        {
-            if (GetContent().Rows.Count == 0)
-                AssignMany((Form)owner);
-            else
-                base.AssignNew(owner);
-        }
+        // AssignNew, AssignMany, ValidatePassportData переехали в
+        // PackageDiscountPriceList.WinForms.cs. ValidatePassportData показывает
+        // сообщение сама — так устроен делегатный контракт с UniversalPassportForm
+        // (ValidateDataDelegate: bool(Dictionary<string,object>)), развести без
+        // правки самой формы нельзя.
 
-        private void AssignMany(Form owner)
+        /// <summary>Записывает выбранные радиостанции в пакетную скидку.</summary>
+        internal void ApplyRadioStationsAssignment(Dictionary<string, object> parameters)
         {
-            DataTable dt = EntityManager.GetEntity((int)Entities.MassMedia).GetContent();
-            dt.TableName = "massmedia";
-            DataSet ds = new DataSet();
-            ds.Tables.Add(dt.Copy());
-            childrenChangesList.Clear();
-            UniversalPassportForm frm = new UniversalPassportForm(this, "PackDiscountRadiostations", "Радиостанции", EntityManager.GetEntity((int)Entities.PackageDiscountMassmedia), 
-                ds, ValidatePassportData, ApplyPassportData);
-            if(frm.ShowDialog(owner) == DialogResult.OK)
-                FireContainerRefreshed();
-        }
-
-        private bool ValidatePassportData(Dictionary<string, object> parameters)
-        {
-            
-            if (!(bool)parameters[ParamNames.isForType1] && !(bool)parameters[ParamNames.isForType2] && !(bool)parameters[ParamNames.isForType3])
+            foreach (var rs in SelectedRadioStations)
             {
-                UserMessage.ShowExclamation(Properties.Resources.NoCampaignTypeSelected);
-                return false;
-            }
-
-            if(SelectedRadioStations.Count == 0)
-            {
-                UserMessage.ShowExclamation(Properties.Resources.NoRadiostationSelected);
-                return false;
-            }
-
-            return true;
-        }
-
-        private void ApplyPassportData(Dictionary<string, object> parameters)
-        {
-            try
-            {
-                Application.DoEvents();
-                Cursor.Current = Cursors.WaitCursor;
-                 
-                foreach (var rs in SelectedRadioStations)
+                PresentationObject po = new PresentationObject(EntityManager.GetEntity((int)Entities.PackageDiscountMassmedia))
                 {
-                    PresentationObject po = new PresentationObject(EntityManager.GetEntity((int)Entities.PackageDiscountMassmedia))
-                    {
-                        Parameters = parameters
-                    };
-                    po[Massmedia.ParamNames.MassmediaId] = rs.MassmediaId;
-                    po[ParamNames.packageDiscountPriceListID] = this[ParamNames.packageDiscountPriceListID];
-                    po.IsNew = true;
-                    po.Update();
-                }
-            }
-            finally 
-            {
-                Cursor.Current = Cursors.Default; 
+                    Parameters = parameters
+                };
+                po[Massmedia.ParamNames.MassmediaId] = rs.MassmediaId;
+                po[ParamNames.packageDiscountPriceListID] = this[ParamNames.packageDiscountPriceListID];
+                po.IsNew = true;
+                po.Update();
             }
         }
 

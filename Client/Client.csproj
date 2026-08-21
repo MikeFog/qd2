@@ -584,6 +584,7 @@
     <Compile Include="Classes\Organization.cs" />
     <Compile Include="Classes\PackageDiscount.cs" />
     <Compile Include="Classes\PackageDiscountPriceList.cs" />
+    <Compile Include="Classes\PackageDiscountPriceList.WinForms.cs" />
     <Compile Include="Classes\PackModule.cs" />
     <Compile Include="Classes\PackModuleIssue.cs" />
     <Compile Include="Classes\PackModuleIssue.WinForms.cs" />
@@ -609,6 +610,7 @@
     <Compile Include="Classes\ModulePricelist.cs">
       <SubType>Code</SubType>
     </Compile>
+    <Compile Include="Classes\ModulePricelist.WinForms.cs" />
     <Compile Include="Classes\RollerPartOfSponsorCampaign.cs" />
     <Compile Include="Classes\SpecialTariffWindow.cs" />
     <Compile Include="Classes\SponsorCampaignPart.cs" />

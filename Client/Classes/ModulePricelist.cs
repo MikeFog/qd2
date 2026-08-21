@@ -1,15 +1,15 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Data;
-using System.Windows.Forms;
 using FogSoft.WinForm;
 using FogSoft.WinForm.Classes;
 using FogSoft.WinForm.DataAccess;
-using FogSoft.WinForm.Forms;
 
 namespace Merlin.Classes
 {
-	internal class ModulePricelist : MassmediaPricelist
+	// UI-часть (DoAction, CloneTariffList, EditTariffList) — в
+	// ModulePricelist.WinForms.cs. Конвенция — docs/tasks/web-migration-dialogs.md.
+	internal partial class ModulePricelist : MassmediaPricelist
 	{
 		#region Constants -------------------------------------
 
@@ -70,23 +70,7 @@ namespace Merlin.Classes
             return TafiffList.DefaultView.Count > 0;
         }
 
-        public override void DoAction(string actionName, IWin32Window owner, InterfaceObjects interfaceObject)
-		{
-			switch (actionName)
-			{
-				case Constants.EntityActions.Clone:
-					CloneTariffList(owner);
-					break;
-
-				case "EditTariffList":
-					EditTariffList(owner);
-					break;
-
-				default:
-					base.DoAction(actionName, owner, interfaceObject);
-					break;
-			}
-		}
+        // DoAction, CloneTariffList и EditTariffList переехали в ModulePricelist.WinForms.cs.
 
 
 
@@ -100,23 +84,7 @@ namespace Merlin.Classes
 			}
 		}
 
-		private void CloneTariffList(IWin32Window owner)
-		{
-            ModulePricelist lst = new ModulePricelist
-            {
-                parameters = Parameters
-            };
-
-            lst.parameters[Constants.ParamNames.ActionName] = Constants.Actions.Clone;
-            lst.parameters["sourceModulePriceListID"] = this["modulePriceListID"];
-			lst.parameters.Remove(ModulePricelist.ParamNames.ModulePriceListID);
-
-            if (lst.ShowPassport(owner))
-			{
-				FireContainerRefreshed();
-				OnParentChanged(this, 1);
-			}
-		}
+		// CloneTariffList переехал в ModulePricelist.WinForms.cs.
 
 		public override bool IsActionEnabled(string actionName, ViewType type)
 		{
@@ -125,41 +93,34 @@ namespace Merlin.Classes
 			return base.IsActionEnabled(actionName, type);
 		}
 
-		private void EditTariffList(IWin32Window owner)
+		/// <summary>Применяет добавленные/удалённые тарифы модуля.</summary>
+		internal void ApplyTariffListChanges(IEnumerable<PresentationObject> addedTariffs, IEnumerable<PresentationObject> deletedTariffs)
 		{
-			SelectionForm selector = new SelectionForm(
-				EntityManager.GetEntity((int) Entities.Tariff), LoadTariffList().DefaultView, "Тарифы для модуля", true);
-			if (selector.ShowDialog(owner) == DialogResult.OK)
+			Entity moduleTariffEntity = EntityManager.GetEntity((int) Entities.ModuleTariff);
+			Dictionary<string, object> procParameters;
+
+			foreach (PresentationObject po in addedTariffs)
 			{
-				Application.DoEvents();
-				//Form.ActiveForm.Cursor = Cursors.WaitCursor;
-
-				Entity moduleTariffEntity = EntityManager.GetEntity((int) Entities.ModuleTariff);
-				Dictionary<string, object> procParameters;
-
-				foreach (PresentationObject po in selector.AddedItems)
-				{
-					procParameters = new Dictionary<string, object>(StringComparer.InvariantCultureIgnoreCase)
-                    {
-                        [ParamNames.ModulePriceListID] = ModulePriceListID,
-                        [ParamNames.TariffID] = ((Tariff)po).TariffId,
-                        ["isEditTarrifs"] = true
-                    };
-					PresentationObject moduleTariff = moduleTariffEntity.CreateObject(procParameters);
-					moduleTariff.Update();
-				}
-
-				foreach (PresentationObject po in selector.DeletedItems)
-				{
-					procParameters = new Dictionary<string, object>(StringComparer.InvariantCultureIgnoreCase);
-
-					procParameters[ParamNames.ModulePriceListID] = ModulePriceListID;
-					procParameters[ParamNames.TariffID] = ((Tariff) po).TariffId;
-					PresentationObject moduleTariff = moduleTariffEntity.CreateObject(procParameters);
-					moduleTariff.Delete(true);
-				}
-				FireContainerRefreshed();
+				procParameters = new Dictionary<string, object>(StringComparer.InvariantCultureIgnoreCase)
+                {
+                    [ParamNames.ModulePriceListID] = ModulePriceListID,
+                    [ParamNames.TariffID] = ((Tariff)po).TariffId,
+                    ["isEditTarrifs"] = true
+                };
+				PresentationObject moduleTariff = moduleTariffEntity.CreateObject(procParameters);
+				moduleTariff.Update();
 			}
+
+			foreach (PresentationObject po in deletedTariffs)
+			{
+				procParameters = new Dictionary<string, object>(StringComparer.InvariantCultureIgnoreCase);
+
+				procParameters[ParamNames.ModulePriceListID] = ModulePriceListID;
+				procParameters[ParamNames.TariffID] = ((Tariff) po).TariffId;
+				PresentationObject moduleTariff = moduleTariffEntity.CreateObject(procParameters);
+				moduleTariff.Delete(true);
+			}
+			FireContainerRefreshed();
 		}
 
 		/// <summary>
