@@ -1,10 +1,8 @@
 ﻿using System.Collections.Generic;
 using System.Data;
-using System.Windows.Forms;
 using FogSoft.WinForm;
 using FogSoft.WinForm.Classes;
 using FogSoft.WinForm.DataAccess;
-using Merlin.Forms;
 
 namespace Merlin.Classes
 {
@@ -45,7 +43,9 @@ namespace Merlin.Classes
 		public abstract Entity ProfitEntity { get; }
 	}
 
-	public class PaymentStudioOrder : Payment
+	// UI-часть (DoAction, SelectActions) — в PaymentStudioOrder.WinForms.cs.
+	// Конвенция — docs/tasks/web-migration-dialogs.md.
+	public partial class PaymentStudioOrder : Payment
 	{
 		private struct ActionNames
 		{
@@ -65,13 +65,7 @@ namespace Merlin.Classes
 			get { return EntityManager.GetEntity((int) Entities.PaymentStudioOrderAction); }
 		}
 
-		public override void DoAction(string actionName, IWin32Window owner, InterfaceObjects interfaceObject)
-		{
-			if (actionName == ActionNames.SelectActionsToPay)
-				SelectActions(owner);
-			else
-				base.DoAction(actionName, owner, interfaceObject);
-		}
+		// DoAction и SelectActions переехали в PaymentStudioOrder.WinForms.cs.
 
 		public override bool IsActionEnabled(string actionName, ViewType type)
 		{
@@ -81,9 +75,9 @@ namespace Merlin.Classes
 			return base.IsActionEnabled(actionName, type);
 		}
 
-		private void SelectActions(IWin32Window owner)
+		/// <summary>Акции — кандидаты на оплату этим платежом.</summary>
+		internal DataTable GetPaymentCandidates()
 		{
-			// Load Candidates
 			Entity entityPaymentCandidate =
 				EntityManager.GetEntity((int) Entities.StudioOrderActionPaymentCandidate);
 			Dictionary<string, object> procParameters =
@@ -91,15 +85,7 @@ namespace Merlin.Classes
 
 			procParameters[ParamNames.PaymentID] = PaymentId;
 			DataSet ds = DataAccessor.DoAction(procParameters) as DataSet;
-
-			PaymentCandidatesForm candidates =
-				new PaymentCandidatesForm(this, entityPaymentCandidate, ds.Tables[Constants.TableNames.Data],
-				                          "Акции на оплату");
-			if (candidates.ShowDialog(owner) == DialogResult.OK)
-			{
-				Refresh();
-				FireContainerRefreshed();
-			}
+			return ds.Tables[Constants.TableNames.Data];
 		}
 	}
 }

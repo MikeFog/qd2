@@ -591,6 +591,7 @@
     <Compile Include="Classes\PackModuleIssue.WinForms.cs" />
     <Compile Include="Classes\PaintingType.cs" />
     <Compile Include="Classes\PaymentCommon.cs" />
+    <Compile Include="Classes\PaymentCommon.WinForms.cs" />
     <Compile Include="Classes\PriceCalculatorClasses.cs" />
     <Compile Include="Classes\PrintSettings.cs" />
     <Compile Include="Classes\ProgramIssue.cs" />
@@ -622,6 +623,7 @@
     <Compile Include="Classes\PaymentStudioOrder.cs">
       <SubType>Code</SubType>
     </Compile>
+    <Compile Include="Classes\PaymentStudioOrder.WinForms.cs" />
     <Compile Include="Classes\Pricelist.cs">
       <SubType>Code</SubType>
     </Compile>
