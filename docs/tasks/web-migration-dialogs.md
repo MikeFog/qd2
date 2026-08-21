@@ -388,13 +388,20 @@ grep — не полный список UI-точек. Найдены и пер�
    немодальный журнал), `Globals.SetWaitCursor`/`SetDefaultCursor`,
    `UserMessage.` могут быть в методах без единого диалога (найдено на
    партии 14 — `ShowRollers`, `CheckActionRollersAndProgramIssues`).
-   Команда:
+   Команда (**`System.Drawing` обязательно, см. §10**):
    ```bash
-   grep -n "System\.Windows\.Forms\|IWin32Window\|DialogResult\|ShowDialog\|Cursor\.\|Application\.\|Globals\.Show\|Globals\.Set\|UserMessage\.\|SelectionForm\|SelectCampaignsForm\|Merlin\.Forms" Client/Classes/<Файл>.cs
+   grep -n "System\.Windows\.Forms\|System\.Drawing\|Bitmap\|IWin32Window\|DialogResult\|ShowDialog\|Cursor\.\|Application\.\|Globals\.Show\|Globals\.Set\|UserMessage\.\|SelectionForm\|SelectCampaignsForm\|Merlin\.Forms\|Merlin\.Controls\|Merlin\.Reports" Client/Classes/<Файл>.cs
    ```
    Совпадения только в комментариях или в методах, сознательно оставленных
    в ядре с явной причиной (как `DisplayData(ListBox)` в `ActionOnMassmedia.cs`)
    — норма. Любое другое совпадение — недосмотренное место.
+
+6. **Grep — вспомогательный инструмент, а не доказательство.** Настоящая
+   проверка — компиляция файла вне проекта `Client`, см. §10. Grep ошибается
+   в обе стороны: даёт ложные срабатывания на комментариях (`CampaignPart.cs`
+   числился «грязным» из-за двух комментариев, упоминающих `IWin32Window` и
+   `Globals.ShowSimpleJournal`) и ложные пропуски, если шаблон неполон
+   (`Organization.cs` с `System.Drawing.Bitmap` проходил как чистый).
 
 ## 8. Открытые вопросы
 
@@ -544,3 +551,64 @@ Grep по `MediaPlan.cs` на `Thread|Invoke|BackgroundWorker|Task|async|lock`:
   показывает диалог, то есть уезжает в UI-половину целиком вместе со своей
   `Invoke`-обёрткой — она ничего не блокирует. Возвращаться к файлу имеет
   смысл вместе с этапом 4, а не в рамках этапа 0.
+
+## 10. Мост в FogSoft.Core: попытка и её результаты (2026-08-21)
+
+Цель: подключить разрезанные доменные классы `Client/Classes/*.cs` в проект
+`FogSoft.Core` (net8.0) ссылками `Compile`/`Link` — чтобы **компилятор**, а не
+grep, подтвердил, что разрез этапа 0.4 действительно достиг цели.
+
+**Мост пока не закрыт**, но своё дело сделал: нашёл то, что grep пропускал.
+
+### Что нашёл компилятор
+
+1. **`Organization.cs` тянет `System.Drawing.Bitmap`.** Поле `_bitmap`,
+   свойство `Signature` (картинка подписи для отчётов, используется в
+   `AgencyPassportForm`, `MassmediaPassport`, `GenericReport`). По grep файл
+   проходил как чистый: шаблон проверял `System.Windows.Forms`, но не
+   `System.Drawing`. **Дыра в чек-листе, исправлена** — см. §7 п.5.
+   Рядом в том же классе уже есть байтовый `SignatureBytes` (им пользуется
+   `MediaPlan`), то есть `Signature` — надстройка над ним для UI.
+
+2. **Два мёртвых `using`, блокировавших сборку вне `Client`** (убраны,
+   коммит `8fc787d`):
+   - `Pricelist.cs` — `using CrystalDecisions.CrystalReports.Engine`,
+     единственное упоминание Crystal в файле;
+   - `TariffWindowPackModule.cs` — `using System.Runtime.Remoting.Messaging`,
+     ничего из `Messaging` не используется. По тексту ошибки выглядело как
+     несовместимость с .NET 8 — **это не так**, просто мёртвая строка.
+
+3. **Пакет `DocumentFormat.OpenXml`** нужен ядру из-за `CpOneDocGenerator.cs`
+   (20 ошибок из 45 были от него). Версия должна совпадать с
+   `Client/packages.config` — 3.4.1. В `csproj` ядра пока не добавлен:
+   добавлять вместе с закрытием моста.
+
+### Почему мост не закрыт
+
+Упирается не во множество проблем, а в **несколько центральных доменных
+классов, которые до сих пор несут по кусочку UI**. От них зависит почти всё
+остальное, поэтому обрезка «до зелёной сборки» схлопывает мост почти в ноль —
+такой мост коммитить бессмысленно.
+
+Список хвостов (он же — что осталось от этапа 0.4):
+
+| Файл | Что мешает |
+|---|---|
+| `Campaign.cs` | `DisplayCampaignData(ListBox)`, пустая заглушка `PrintOnAirInquire(Form)` |
+| `Massmedia.cs` | `DoAction(IWin32Window)`, `using Merlin.Forms` — файла не было в списке `ShowDialog`, поэтому его не трогали |
+| `ActionOnMassmedia.cs` | `DisplayData(ListBox)` |
+| `Organization.cs` | `Signature` (`System.Drawing.Bitmap`) |
+| `MassmediaPricelist.cs`, `PackModulePricelist.cs`, `SponsorPricelist.cs`, `Tariff.cs`, `PackModuleIssue.cs`, `TariffWindowWithRollerIssues.cs` | проверить тем же расширенным grep-ом, объём не измерен |
+
+Все хвосты однотипны: метод принимает или возвращает UI-тип (`ListBox`,
+`Form`, `Bitmap`, `IWin32Window`) и переезжает в `<Класс>.WinForms.cs`
+целиком, по уже отработанной схеме.
+
+### Предупреждение тому, кто будет доделывать
+
+При обрезке моста скриптом легко зацепить лишнее: путь в `csproj` содержит
+обратные слэши (`..\Client\Classes\X.cs`), и неаккуратный шаблон
+`Classes.X.cs` совпадает **и** с `..\FogSoft.WinForm\Classes\X.cs`. На этом
+из проекта каскадом вылетели `SecurityManager`, `ConfigurationUtil`,
+`EntityManager`. Проверять результат обрезки не только сборкой, но и числом
+записей `<Compile>`.
