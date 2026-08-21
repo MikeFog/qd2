@@ -302,16 +302,25 @@ private bool IsSplitOrMergeEnabled(DateTime startDate)
 
 ## 6. Порядок обработки остальных мест
 
-### Статус на конец партии 11 (коммит `1ecf177`)
+### Статус на конец партии 14 (коммит `73c28f1`)
 
-Разобрано 12 файлов (24 диалоговых места из исходных 55 живых, без учёта
-мёртвого кода в `SponsorPricelist.cs`): `ActionOnMassmedia` (частично, форма 3),
+Разобрано 16 файлов, включая полностью закрытые `ActionOnMassmedia`,
+`Agency`, `Firm`, `Pricelist`, `ProgramPartOfSponsorCampaign`,
+`Action.cs` (частично, см. ниже): `ActionOnMassmedia` (полностью),
 `Agency` (полностью), `Roller`, `SponsorTariff`, `PackModulePricelist`,
 `CampaignPart`, `HeadCompany`, `CampaignDay`, `CampaignModule`,
 `CampaignOnSingleMassmedia`, `CampaignPackModule` (+ `CampaignPartPackModule`),
 `PackModuleIssue`, `ModulePricelist`, `PackageDiscountPriceList`,
 `ActionRollerInStatJournal`, `TariffWindowWithRollerIssues`, `PaymentCommon`,
-`PaymentStudioOrder`, `Firm`, `Utils` (частично).
+`PaymentStudioOrder`, `Utils` (частично), `Action` (частично).
+
+**Методологический урок партии 14**: `ShowDialog` в grep — не полный список
+UI-точек. Найдены (и перенесены) два метода без единого `ShowDialog`
+(`ShowRollers`, `CheckActionRollersAndProgramIssues`), но с прямым
+`Globals.ShowSimpleJournal`/`UserMessage.ShowExclamation`. После разреза
+основных мест файла **обязательно** прогонять grep по ядру не только на
+`ShowDialog`, но и на `Globals\.Show|Globals\.Set|UserMessage\.` — именно
+так их и нашли (раздел 7, чек-лист партии).
 
 Разметка по формам:
 
@@ -319,25 +328,24 @@ private bool IsSplitOrMergeEnabled(DateTime startDate)
 |---|---|---|---|
 | 3 — переход/чистый выбор, разрез не нужен | ~13 | сделано | тривиально |
 | 3.1 — модальная редактирующая сессия (`CampaignForm`) | 4 | отложено до этапа 3 | не в этом этапе |
-| PrintXxxInquire/PrintContract — генерация отчёта | 3 | перенесены целиком (не разрезаны) | отдельная область, этап 4 |
+| PrintXxxInquire/PrintContract/PrintMediaPlan — генерация отчёта | 5 | перенесены целиком (не разрезаны) | отдельная область, этап 4 |
+| «глубоко переплетённые» (`ActivateAction`) — деловая логика и подготовка данных для отображения неразделимы без редизайна | 1 | перенесён целиком, сознательно не разрезан | не тиражировать этот случай |
 | 5 — проверка с сообщением | сопутствует остальным | по ходу сделано | тривиально |
 | 4.1 — уведомление (`UserInteraction.Notify`) | 1 базовый + 8 вызывающих мест | базовый метод сделан | — |
-| 1 — ввод параметра | часть сделана (`CampaignDay`) | частично | низкая |
-| 2 — выбор и операция | ~15 сделано | частично | основная работа |
-| 4 — подтверждение | 2 | 1 решена (`AskConfirmation` — открытый вопрос) | — |
+| 1 — ввод параметра | `CampaignDay`, `Action.GetSelectedMonths` (перенесён целиком) | частично | низкая |
+| 2 — выбор и операция | ~20 сделано | большая часть | основная работа |
+| 4 — подтверждение | 2 | 1 решена + 1 переведена на `UserInteraction.Confirm` в партии 14 | — |
 | кластер замены ролика (§8 п.4) | 5+ мест | НЕ разбирается по шаблону | отдельная партия |
 
-### Осталось (32 вхождения `ShowDialog` по grep на конец партии 11)
+### Осталось (24 вхождения `ShowDialog` по grep на конец партии 14)
 
 ```
 7 Campaign.cs               — 2 формы 3.1 (EditRollerIssues/EditProgramIssues,
                                отложены), остальные 5 не разобраны
 5 MassmediaPricelist.cs      — не начато
-4 ActionOnMassmedia.cs       — SplitCampaign/MergeAction и другие, не начато
-3 Action.cs                  — не начато
 2 Utils.cs                   — AskConfirmation (открытый вопрос №1), не трогать
-2 ProgramPartOfSponsorCampaign.cs — 1 форма 3.1 (отложена), 1 не разобрано
-2 Pricelist.cs                — не начато
+2 ActionRoller.cs             — кластер замены ролика (52) + отдельное
+                               SetAdvertType (110, не начато)
 2 MediaPlan.cs                — НЕ ТРОГАТЬ без отдельного ревью: межпотоковый
                                 Invoke/InvokeRequired, в коде есть прямое
                                 упоминание прошлых зависаний EXCEL.EXE
@@ -345,6 +353,11 @@ private bool IsSplitOrMergeEnabled(DateTime startDate)
 1 RollerPartOfSponsorCampaign.cs — форма 3.1 (отложена)
 1 CampaignRoller.cs           — кластер замены ролика (§8 п.4)
 ```
+
+Плюс два места, закрытых не через `ShowDialog` (`Action.cs`:
+`GetBill`/`CreateBill`, `ActionOnMassmedia.cs`: `ShowRollers`/
+`CheckActionRollersAndProgramIssues`) — см. методологический урок выше:
+при заходе в оставшиеся файлы проверять не только `ShowDialog`.
 
 ### Рекомендации на продолжение
 
@@ -355,11 +368,13 @@ private bool IsSplitOrMergeEnabled(DateTime startDate)
 2. Кластер замены ролика (§8 п.4, `CampaignRoller`/`ActionRoller`/
    `CampaignModuleRollerInsideDay`/`PackModuleIssue`) — отдельная партия,
    не по шаблону.
-3. Оставшиеся файлы (`Campaign.cs`, `MassmediaPricelist.cs`,
-   `ActionOnMassmedia.cs` остаток, `Action.cs`, `ProgramPartOfSponsorCampaign.cs`
-   остаток, `Pricelist.cs`) — обычные форма 1/2/5, тиражировать по
+3. `Campaign.cs` — самый большой из оставшихся (7 мест). Перед заходом
+   читать `docs/scenarios/campaign-edit-form-load.md` — это основной класс
+   кампании, риск ошибиться выше среднего.
+4. Остальные файлы (`MassmediaPricelist.cs`, `ActionRoller.cs` (SetAdvertType,
+   не кластерная часть)) — обычные форма 1/2/5, тиражировать по
    установленной конвенции, партиями с проверкой сборки после каждой.
-4. После завершения `Client/Classes` — переходить к следующему пункту
+5. После завершения `Client/Classes` — переходить к следующему пункту
    этапа 0 (абстракция конфигурации, `docs/tasks/web-migration.md`, этап 0
    п.6) либо к вертикальному срезу (раздел 10 `web-migration.md`).
 
@@ -374,6 +389,18 @@ private bool IsSplitOrMergeEnabled(DateTime startDate)
    переноса и подстановки ключа сообщения.
 4. Запустить приложение и пройти затронутый сценарий руками — сборка не ловит
    перепутанный тип сообщения или потерянный `FireContainerRefreshed`.
+5. **После разреза основных мест — grep по ядру не только на `ShowDialog`.**
+   `ShowDialog` ловит не весь UI: `Globals.ShowSimpleJournal` (модальный и
+   немодальный журнал), `Globals.SetWaitCursor`/`SetDefaultCursor`,
+   `UserMessage.` могут быть в методах без единого диалога (найдено на
+   партии 14 — `ShowRollers`, `CheckActionRollersAndProgramIssues`).
+   Команда:
+   ```bash
+   grep -n "System\.Windows\.Forms\|IWin32Window\|DialogResult\|ShowDialog\|Cursor\.\|Application\.\|Globals\.Show\|Globals\.Set\|UserMessage\.\|SelectionForm\|SelectCampaignsForm\|Merlin\.Forms" Client/Classes/<Файл>.cs
+   ```
+   Совпадения только в комментариях или в методах, сознательно оставленных
+   в ядре с явной причиной (как `DisplayData(ListBox)` в `ActionOnMassmedia.cs`)
+   — норма. Любое другое совпадение — недосмотренное место.
 
 ## 8. Открытые вопросы
 
