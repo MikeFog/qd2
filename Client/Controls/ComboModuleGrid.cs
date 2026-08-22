@@ -26,6 +26,8 @@ namespace Merlin.Controls
 		public int? FreeCapacity;
 		/// <summary>Вместимость того самого штучного окна.</summary>
 		public int? MaxCapacity;
+		/// <summary>Выбранная позиция свободна во всех окнах модуля - ячейка рисуется жирным.</summary>
+		public bool PositionFree;
 
 		/// <summary>Текст ячейки - как в обычном гриде: «02:30» либо «02:30 [3/5]».</summary>
 		public string CellText
@@ -85,6 +87,7 @@ namespace Merlin.Controls
 		private ComboModuleDay[,] _days;
 		private readonly Dictionary<int, int> _rowByModule = new Dictionary<int, int>();
 		private bool _editMode;
+		private RollerPositions _rollerPosition = RollerPositions.Undefined;
 
 		#endregion
 
@@ -166,6 +169,16 @@ namespace Merlin.Controls
 			}
 		}
 
+		/// <summary>
+		/// Выбранное позиционирование. Модули, у которых эта позиция свободна во всех окнах,
+		/// грид рисует жирным - как тарифная сетка обычной кампании помечает свободные окна.
+		/// </summary>
+		public RollerPositions RollerPosition
+		{
+			get { return _rollerPosition; }
+			set { _rollerPosition = value; }
+		}
+
 		public DateTime CurrentDate
 		{
 			get { return _currentDate; }
@@ -200,6 +213,7 @@ namespace Merlin.Controls
 
 			RawDataGridView.DataSource = _dtGrid.DefaultView;
 			SetFrozenRowsAndColumns();
+			MarkFreePositions();
 			SetColumnWidths();
 			SetNavigationCaption();
 
@@ -354,7 +368,7 @@ namespace Merlin.Controls
 		private void FillFreeTime()
 		{
 			DataTable freeTime = ComboModule.LoadFreeTime(
-				_comboModuleID, _actionID, _startDate, _finishDate, _showUnconfirmed);
+				_comboModuleID, _actionID, _startDate, _finishDate, _showUnconfirmed, _rollerPosition);
 
 			Dictionary<string, DataRow> byModuleAndDay = new Dictionary<string, DataRow>();
 			foreach (DataRow row in freeTime.Rows)
@@ -384,7 +398,8 @@ namespace Merlin.Controls
 						Date = date,
 						FreeTime = GetNullableInt(row, ComboModule.ParamNames.FreeTime),
 						FreeCapacity = GetNullableInt(row, ComboModule.ParamNames.FreeCapacity),
-						MaxCapacity = GetNullableInt(row, ComboModule.ParamNames.MaxCapacity)
+						MaxCapacity = GetNullableInt(row, ComboModule.ParamNames.MaxCapacity),
+						PositionFree = Convert.ToInt32(row[ComboModule.ParamNames.PositionFree]) == 1
 					};
 
 					_days[moduleIndex, dayIndex] = day;
@@ -420,6 +435,24 @@ namespace Merlin.Controls
 			for (int row = 0; row < RawDataGridView.RowCount; row++)
 				for (int col = 0; col < FIXED_COLS; col++)
 					CopyColumnHeaderCellStyle(GetCell(row, col), DataGridViewContentAlignment.MiddleLeft);
+		}
+
+		/// <summary>
+		/// Жирным - модули, у которых выбранная позиция свободна во всех окнах. Без выбранного
+		/// позиционирования не помечаем ничего, как и тарифная сетка обычной кампании.
+		/// </summary>
+		private void MarkFreePositions()
+		{
+			for (int rowIndex = FIXED_ROWS; rowIndex < RawDataGridView.RowCount; rowIndex++)
+				for (int columnIndex = FIXED_COLS; columnIndex < RawDataGridView.Columns.Count; columnIndex++)
+				{
+					ComboModuleDay day = _days[rowIndex - FIXED_ROWS, columnIndex - FIXED_COLS];
+					bool bold = _rollerPosition != RollerPositions.Undefined && day != null && day.PositionFree;
+
+					GetCell(rowIndex, columnIndex).Style.Font = bold
+						? new Font(RawDataGridView.DefaultCellStyle.Font, FontStyle.Bold)
+						: RawDataGridView.DefaultCellStyle.Font;
+				}
 		}
 
 		/// <summary>Колонки дней делаем одинаковой ширины - по самой широкой из них.</summary>

@@ -1,4 +1,4 @@
--- Остаток по модулям за период - данные ячеек грида размещения комбо-модулями.
+﻿-- Остаток по модулям за период - данные ячеек грида размещения комбо-модулями.
 --
 -- Набор модулей задаётся одним из двух способов:
 --   @comboModuleID - состав комбо-модуля (размещение по мастеру);
@@ -9,6 +9,10 @@
 -- Одна строка на (модуль, день). Ячейка показывает самое заполненное окно модуля:
 -- именно оно ограничивает возможность поставить ролик во весь модуль сразу.
 --
+-- positionFree - выбранная позиция (первый/второй/последний ролик) свободна во
+--                ВСЕХ окнах модуля. Грид рисует такие ячейки жирным - как
+--                RollerIssuesGrid3.MarkCell для отдельного окна. При включённом
+--                учёте макетов смотрим и на неподтверждённые позиции;
 -- freeTime     - минимальный остаток времени по окнам модуля, сек;
 -- freeCapacity - минимальный остаток по количеству среди окон со штучным
 --                ограничением, maxCapacity - вместимость того самого окна.
@@ -30,7 +34,8 @@ CREATE PROC [dbo].[ComboModuleFreeTimeRetrieve]
 @actionID int = NULL,
 @startDate datetime,
 @finishDate datetime,
-@showUnconfirmed bit = 0
+@showUnconfirmed bit = 0,
+@positionId smallint = 0
 )
 AS
 SET NOCOUNT ON
@@ -62,7 +67,19 @@ ELSE
 		CASE WHEN tw.maxCapacity > 0
 			THEN tw.maxCapacity - tw.capacityInUseConfirmed
 				- CASE WHEN @showUnconfirmed = 1 THEN tw.capacityInUseUnconfirmed ELSE 0 END
-			END AS capacityLeft
+			END AS capacityLeft,
+		CASE
+			WHEN @positionId = -20 THEN   -- первый в блоке
+				CASE WHEN tw.isFirstPositionOccupied = 0
+					AND (@showUnconfirmed = 0 OR tw.firstPositionsUnconfirmed = 0) THEN 1 ELSE 0 END
+			WHEN @positionId = -10 THEN   -- второй в блоке
+				CASE WHEN tw.isSecondPositionOccupied = 0
+					AND (@showUnconfirmed = 0 OR tw.secondPositionsUnconfirmed = 0) THEN 1 ELSE 0 END
+			WHEN @positionId = 10 THEN    -- последний в блоке
+				CASE WHEN tw.isLastPositionOccupied = 0
+					AND (@showUnconfirmed = 0 OR tw.lastPositionsUnconfirmed = 0) THEN 1 ELSE 0 END
+			ELSE 1
+		END AS positionFree
 	FROM
 		@modules m
 		INNER JOIN [ModulePriceList] mpl ON mpl.moduleID = m.moduleID
@@ -79,7 +96,8 @@ days AS
 		w.price,
 		w.issueDate,
 		MIN(w.timeLeft) AS freeTime,
-		MIN(w.capacityLeft) AS freeCapacity
+		MIN(w.capacityLeft) AS freeCapacity,
+		MIN(w.positionFree) AS positionFree
 	FROM
 		windows w
 	GROUP BY
@@ -100,6 +118,7 @@ SELECT
 	d.issueDate,
 	d.freeTime,
 	d.freeCapacity,
+	d.positionFree,
 	(SELECT MIN(w.maxCapacity)
 		FROM windows w
 		WHERE w.moduleID = d.moduleID

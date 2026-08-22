@@ -661,12 +661,23 @@ namespace Merlin.Forms.CreateActionMaster
 		{
 			try
 			{
+				Application.DoEvents();
+				Cursor = Cursors.WaitCursor;
+
 				tbbPosition.Text = e.ClickedItem.Text;
 				_position = (RollerPositions) Enum.Parse(typeof(RollerPositions), e.ClickedItem.Tag.ToString());
+
+				// от позиции зависит подсветка жирным, поэтому грид надо перестроить
+				comboModuleGrid.RollerPosition = _position;
+				RefreshAfterChange();
 			}
 			catch (Exception ex)
 			{
 				ErrorManager.PublishError(ex);
+			}
+			finally
+			{
+				Cursor = Cursors.Default;
 			}
 		}
 	}

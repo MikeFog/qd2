@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Data;
 using FogSoft.WinForm.DataAccess;
@@ -20,6 +20,7 @@ namespace Merlin.Classes
 			public const string IssueDate = "issueDate";
 			public const string FreeTime = "freeTime";
 			public const string FreeCapacity = "freeCapacity";
+			public const string PositionFree = "positionFree";
 			public const string MaxCapacity = "maxCapacity";
 			public const string Price = "price";
 			public const string MassmediaId = "massmediaID";
@@ -55,7 +56,7 @@ namespace Merlin.Classes
 		/// <param name="comboModuleID">Состав комбо-модуля; 0 - брать модули акции.</param>
 		/// <param name="actionID">Модули, размещённые в акции; используется, когда комбо-модуля нет.</param>
 		public static DataTable LoadFreeTime(int comboModuleID, int actionID, DateTime startDate, DateTime finishDate,
-											 bool showUnconfirmed)
+											 bool showUnconfirmed, RollerPositions position)
 		{
 			Dictionary<string, object> procParameters = DataAccessor.CreateParametersDictionary();
 			if (comboModuleID > 0)
@@ -65,6 +66,7 @@ namespace Merlin.Classes
 			procParameters["startDate"] = startDate;
 			procParameters["finishDate"] = finishDate;
 			procParameters["showUnconfirmed"] = showUnconfirmed;
+			procParameters[Issue.ParamNames.PositionId] = (int) position;
 			return DataAccessor.LoadDataSet("ComboModuleFreeTimeRetrieve", procParameters).Tables[0];
 		}
 
