@@ -51,6 +51,13 @@ namespace Merlin.Forms.CreateActionMaster
 		private DataTable _issues;
 
 		/// <summary>
+		/// Выпуски, загруженные при открытии формы для выбора начальной даты. Панель к тому
+		/// моменту ещё пуста - она заполняется внутри того же обновления грида, которому эта
+		/// дата и нужна. Чтобы не читать их дважды, первое обновление берёт эту таблицу.
+		/// </summary>
+		private DataTable _issuesForFirstRefresh;
+
+		/// <summary>
 		/// Созданная в ходе размещения акция или null, если менеджер ничего не разместил.
 		/// По ней мастер открывает карточку акции после закрытия формы.
 		/// </summary>
@@ -152,8 +159,10 @@ namespace Merlin.Forms.CreateActionMaster
 		/// <summary>Самый ранний выпуск модуля в акции - с него открывается грид.</summary>
 		private DateTime? GetFirstModuleIssueDate()
 		{
+			_issuesForFirstRefresh = ComboModule.LoadIssues(_action.ActionId);
+
 			DateTime? first = null;
-			foreach (DataRow row in ComboModule.LoadIssues(_action.ActionId).Rows)
+			foreach (DataRow row in _issuesForFirstRefresh.Rows)
 			{
 				DateTime date = Convert.ToDateTime(row[ComboModule.ParamNames.IssueDate]).Date;
 				if (first == null || date < first.Value) first = date;
@@ -499,7 +508,15 @@ namespace Merlin.Forms.CreateActionMaster
 		/// </summary>
 		private void OnGridRefreshed()
 		{
-			DataTable issues = _action == null ? null : ComboModule.LoadIssues(_action.ActionId);
+			DataTable issues;
+			if (_issuesForFirstRefresh != null)
+			{
+				issues = _issuesForFirstRefresh;
+				_issuesForFirstRefresh = null;
+			}
+			else
+				issues = _action == null ? null : ComboModule.LoadIssues(_action.ActionId);
+
 			_issues = issues;
 
 			RememberCampaigns(issues);
