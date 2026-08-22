@@ -127,7 +127,16 @@ namespace Merlin.Forms.CreateActionMaster
 		private void InitComboModuleGrid()
 		{
 			comboModuleGrid.ComboModuleID = _comboModuleID;
-			if (_action != null) comboModuleGrid.ActionID = _action.ActionId;
+			if (_action != null)
+			{
+				comboModuleGrid.ActionID = _action.ActionId;
+
+				// у готовой акции открываемся на её начале, а не на сегодня - так же
+				// ведёт себя форма кампании. Начало акции поддерживает ActionRecalculate,
+				// это самая ранняя дата размещения по всем её кампаниям
+				if (_action.StartDate != DateTime.MinValue)
+					comboModuleGrid.CurrentDate = _action.StartDate;
+			}
 			comboModuleGrid.PeriodMode = LoadPeriodMode();
 			comboModuleGrid.ShowUnconfirmed = tbbShowUnconfirmed.Checked;
 			comboModuleGrid.CellClicked += OnCellClicked;
