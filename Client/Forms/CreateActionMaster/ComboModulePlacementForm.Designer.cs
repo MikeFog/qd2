@@ -112,25 +112,25 @@
 			//
 			this.miPositionAny.Name = "miPositionAny";
 			this.miPositionAny.Tag = "0";
-			this.miPositionAny.Text = "Без позиционирования";
+			this.miPositionAny.Text = "Показывать всё";
 			//
 			// miPositionFirst
 			//
 			this.miPositionFirst.Name = "miPositionFirst";
 			this.miPositionFirst.Tag = "-20";
-			this.miPositionFirst.Text = "Первый в блоке";
+			this.miPositionFirst.Text = "Показывать первые";
 			//
 			// miPositionSecond
 			//
 			this.miPositionSecond.Name = "miPositionSecond";
 			this.miPositionSecond.Tag = "-10";
-			this.miPositionSecond.Text = "Второй в блоке";
+			this.miPositionSecond.Text = "Показывать вторые";
 			//
 			// miPositionLast
 			//
 			this.miPositionLast.Name = "miPositionLast";
 			this.miPositionLast.Tag = "10";
-			this.miPositionLast.Text = "Последний в блоке";
+			this.miPositionLast.Text = "Показывать последние";
 			//
 			// tbbSeparator1
 			//
