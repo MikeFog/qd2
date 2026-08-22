@@ -131,11 +131,13 @@ namespace Merlin.Forms.CreateActionMaster
 			{
 				comboModuleGrid.ActionID = _action.ActionId;
 
-				// у готовой акции открываемся на её начале, а не на сегодня - так же
-				// ведёт себя форма кампании. Начало акции поддерживает ActionRecalculate,
-				// это самая ранняя дата размещения по всем её кампаниям
-				if (_action.StartDate != DateTime.MinValue)
-					comboModuleGrid.CurrentDate = _action.StartDate;
+				// открываемся на самом раннем выпуске модулей, а не на сегодня.
+				// Action.startDate тут не годится: он считается по всем кампаниям акции,
+				// включая линейные и спонсорские, которых в этой форме нет, и грид мог бы
+				// открыться там, где модульных выпусков вообще не было
+				DateTime? firstIssueDate = GetFirstModuleIssueDate();
+				if (firstIssueDate.HasValue)
+					comboModuleGrid.CurrentDate = firstIssueDate.Value;
 			}
 			comboModuleGrid.PeriodMode = LoadPeriodMode();
 			comboModuleGrid.ShowUnconfirmed = tbbShowUnconfirmed.Checked;
@@ -145,6 +147,18 @@ namespace Merlin.Forms.CreateActionMaster
 			comboModuleGrid.RawDataGridView.KeyDown += ComboModuleGrid_KeyDown;
 			UpdatePeriodModeCaption();
 			comboModuleGrid.RefreshGrid();
+		}
+
+		/// <summary>Самый ранний выпуск модуля в акции - с него открывается грид.</summary>
+		private DateTime? GetFirstModuleIssueDate()
+		{
+			DateTime? first = null;
+			foreach (DataRow row in ComboModule.LoadIssues(_action.ActionId).Rows)
+			{
+				DateTime date = Convert.ToDateTime(row[ComboModule.ParamNames.IssueDate]).Date;
+				if (first == null || date < first.Value) first = date;
+			}
+			return first;
 		}
 
 		#region Добавление выпуска ----------------------------
