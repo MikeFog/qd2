@@ -170,7 +170,7 @@
 			this.tbbShowUnconfirmed.CheckState = System.Windows.Forms.CheckState.Checked;
 			this.tbbShowUnconfirmed.DisplayStyle = System.Windows.Forms.ToolStripItemDisplayStyle.Text;
 			this.tbbShowUnconfirmed.Name = "tbbShowUnconfirmed";
-			this.tbbShowUnconfirmed.Text = "Учитывать неподтверждённые";
+			this.tbbShowUnconfirmed.Text = "Учитывать макеты";
 			this.tbbShowUnconfirmed.Click += new System.EventHandler(this.tbbShowUnconfirmed_Click);
 			//
 			// toolStrip1
