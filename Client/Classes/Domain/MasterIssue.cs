@@ -1,12 +1,12 @@
-using FogSoft.WinForm;
 using FogSoft.WinForm.Classes;
 using FogSoft.WinForm.DataAccess;
 using System.Data;
-using System.Windows.Forms;
 
 namespace Merlin.Classes.Domain
 {
-	public class MasterIssue : PresentationObject
+	// UI-часть (DoAction) — в MasterIssue.WinForms.cs.
+	// Конвенция — docs/tasks/web-migration-dialogs.md.
+	public partial class MasterIssue : PresentationObject
 	{
 		public MasterIssue(DataRow row) : base(GetEntity(), row)
 		{
@@ -21,11 +21,7 @@ namespace Merlin.Classes.Domain
 			return EntityManager.GetEntity((int)Entities.MasterIssues);
 		}
 
-		public override void DoAction(string actionName, IWin32Window owner, InterfaceObjects interfaceObject)
-		{
-			if (actionName == Constants.EntityActions.Delete)
-				Delete();
-		}
+		// DoAction переехал в MasterIssue.WinForms.cs (IWin32Window в сигнатуре).
 
 		public override bool Delete(bool silenceFlag)
 		{

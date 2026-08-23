@@ -541,6 +541,7 @@
     <Compile Include="Classes\CommonRoller.WinForms.cs" />
     <Compile Include="Classes\CpOneDocGenerator.cs" />
     <Compile Include="Classes\Domain\MasterIssue.cs" />
+    <Compile Include="Classes\Domain\MasterIssue.WinForms.cs" />
     <Compile Include="Classes\FakeContainers\ActionContainer.cs">
       <SubType>Code</SubType>
     </Compile>

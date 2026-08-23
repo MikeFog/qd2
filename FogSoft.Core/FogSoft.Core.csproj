@@ -85,6 +85,7 @@
        grep) — компилятор точнее укажет, что реально блокирует сборку.
        См. docs/tasks/web-migration-dialogs.md, §10. -->
   <ItemGroup>
+    <Compile Include="..\Client\Classes\Domain\MasterIssue.cs" Link="Domain\Domain\MasterIssue.cs" />
     <Compile Include="..\Client\Classes\FakeContainers\ActionContainer.cs" Link="Domain\FakeContainers\ActionContainer.cs" />
     <Compile Include="..\Client\Classes\FakeContainers\AdvertTypeContainer.cs" Link="Domain\FakeContainers\AdvertTypeContainer.cs" />
     <Compile Include="..\Client\Classes\ActJournalRow.cs" Link="Domain\ActJournalRow.cs" />
