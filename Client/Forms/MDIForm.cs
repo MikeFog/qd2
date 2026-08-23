@@ -166,6 +166,8 @@ namespace Merlin.Forms
 					CreateMassmediaAction();
 				else if (strMiName == "miMasterCreateActions")
 					MasterCreateAction();
+				else if (strMiName == "miComboModulePlacement")
+					MasterPlaceComboModules();
 				else if (strMiName == "miActionJournalTraffic" || strMiName == "miActionJournalBuh"
 					|| strMiName == "miActionJournal")
 					ShowMassmediaActions(mi, RelationScenarios.ConfirmedAction, "Подтверждённые рекламные акции", 
@@ -215,6 +217,8 @@ namespace Merlin.Forms
 					ShowPrintGridForm();
 				else if (strMiName == "miPackModules")
 					ShowPackModules(mi);
+				else if (strMiName == "miComboModules")
+					ShowComboModules(mi);
 				else if (strMiName == "miRollerStatistic")
 					ShowRollerStatistic(false);
 				else if (strMiName == "miRollerStatisticWithFilter")
@@ -631,6 +635,36 @@ namespace Merlin.Forms
 			}
 		}
 
+		/// <summary>
+		/// Размещение комбо-модулями: фирма -> комбо-модуль, тип оплаты и агентства ->
+		/// форма размещения -> карточка акции. Акция и кампании создаются лениво, уже в форме
+		/// размещения, поэтому карточку показываем только если что-то действительно разместили.
+		/// </summary>
+		private void MasterPlaceComboModules()
+		{
+			try
+			{
+				Cursor.Current = Cursors.WaitCursor;
+				Application.DoEvents();
+
+				Firm firm = Firm.SelectFirm(this);
+				if (firm == null) return;
+
+				SelectComboModuleStep step = new SelectComboModuleStep();
+				if (step.ShowDialog(this) != DialogResult.OK) return;
+
+				ComboModulePlacementForm placement = new ComboModulePlacementForm(firm, step);
+				placement.ShowDialog(this);
+
+				if (placement.Action != null)
+					new ActionForm(placement.Action).ShowDialog(this);
+			}
+			finally
+			{
+				Cursor.Current = Cursors.Default;
+			}
+		}
+
 		private void ShowBrands(ToolStripItem mi)
 		{
 			ShowMasterDetailsJournal(EntityManager.GetEntity((int) Entities.Brand),
@@ -762,6 +796,19 @@ namespace Merlin.Forms
 
 			FakeContainer container =
 				new FakeContainer("Пакетные модули", menu, RelationManager.GetScenario(RelationScenarios.PackModules));
+			Globals.ShowBrowser(container, mi.Text, this);
+		}
+
+		private void ShowComboModules(ToolStripItem mi)
+		{
+			Entity.Action[] menu = new[]
+			                       	{
+			                       		new Entity.Action(Constants.EntityActions.Refresh, RefreshAlias, Constants.ActionsImages.Refresh),
+			                       		new Entity.Action(Constants.EntityActions.AddNew, "Создать новый комбо-модуль")
+			                       	};
+
+			FakeContainer container =
+				new FakeContainer("Комбо-модули", menu, RelationManager.GetScenario(RelationScenarios.ComboModules));
 			Globals.ShowBrowser(container, mi.Text, this);
 		}
 

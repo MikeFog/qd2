@@ -155,7 +155,9 @@
         HeadCompanyWithDeletedActions = 1257,
 		ManagerDiscountHistory = 1266,
         ManagerDiscountReason = 1267,
-		StatBonuses = 1269
+		StatBonuses = 1269,
+		ComboModule = 1270,
+		ComboModuleContent = 1271
     }
 
 	public struct RelationScenarios
@@ -178,6 +180,7 @@
 		public const string Massmedia = "Massmedia";
 		public const string ModuleIssues = "Module Issues";
 		public const string PackModules = "Pack Modules";
+		public const string ComboModules = "Combo Modules";
 		public const string TariffWindows = "Tariff Windows";
 	}
 

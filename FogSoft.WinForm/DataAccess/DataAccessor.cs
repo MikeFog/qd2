@@ -218,7 +218,7 @@ namespace FogSoft.WinForm.DataAccess
 					{
 						connection.Open();
 						_commandParameters = AssignSqlParameters(connection, procedureName, parameters);
-
+						scope.SetExecScript(BuildExecScript(procedureName, _commandParameters));
 
 						if (isTransactionRequired)
 						{
@@ -256,8 +256,9 @@ namespace FogSoft.WinForm.DataAccess
 			{
 				if (parameters != null && exp.Data != null)
 				{
+					exp.Data["Procedure"] = procedureName;
 					foreach (SqlParameter parameter in _commandParameters)
-						exp.Data.Add("Parameter: " + parameter.ParameterName, parameter.Value);
+						exp.Data["Parameter: " + parameter.ParameterName] = parameter.Value;
 				}
 				throw;
 			}
@@ -307,10 +308,9 @@ namespace FogSoft.WinForm.DataAccess
 					using (var scope = DbExecutionScope.Start(procedureName, connectionTimeout, cached: false))
 					{
 						_commandParameters = AssignSqlParameters(_transaction.Connection, procedureName, parameters);
+						scope.SetExecScript(BuildExecScript(procedureName, _commandParameters));
 						ds = SqlHelper.ExecuteDataset(_transaction, CommandType.StoredProcedure, procedureName, connectionTimeout, _commandParameters);
 						scope.SetRows(ds.Tables.Count > 0 ? ds.Tables[0].Rows.Count : 0);
-						string execScript = BuildExecScript(procedureName, _commandParameters);
-						scope.SetExecScript(execScript);
 					}
 				}
 				else
@@ -321,6 +321,7 @@ namespace FogSoft.WinForm.DataAccess
 						{
 							connection.Open();
 							_commandParameters = AssignSqlParameters(connection, procedureName, parameters);
+							scope.SetExecScript(BuildExecScript(procedureName, _commandParameters));
 							if (isTransactionRequired)
 							{
 								if (ConfigurationUtil.IsUseCustomTransaction)
@@ -355,8 +356,6 @@ namespace FogSoft.WinForm.DataAccess
 							}
 
 							scope.SetRows(ds.Tables.Count > 0 ? ds.Tables[0].Rows.Count : 0);
-							string execScript = BuildExecScript(procedureName, _commandParameters);
-							scope.SetExecScript(execScript);
 						}
 					}
 				}
@@ -369,8 +368,9 @@ namespace FogSoft.WinForm.DataAccess
 			{
 				if (parameters != null && exp.Data != null)
 				{
+					exp.Data["Procedure"] = procedureName;
 					foreach (KeyValuePair<string, object> parameter in parameters)
-						exp.Data.Add("Parameter: " + parameter.Key, parameter.Value);
+						exp.Data["Parameter: " + parameter.Key] = parameter.Value;
 				}
 				throw;
 			}
@@ -395,10 +395,8 @@ namespace FogSoft.WinForm.DataAccess
                     using (var scope = DbExecutionScope.Start(procedureName, connectionTimeout, cached: false))
                     {
                         _commandParameters = AssignSqlParameters(_transaction.Connection, procedureName, parameters);
+                        scope.SetExecScript(BuildExecScript(procedureName, _commandParameters));
                         SqlHelper.ExecuteNonQuery(_transaction, CommandType.StoredProcedure, procedureName, connectionTimeout, _commandParameters);
-
-                        string execScript = BuildExecScript(procedureName, _commandParameters);
-                        scope.SetExecScript(execScript);
                     }
 
                     foreach (KeyValuePair<string, object> kvp in GetOutParameters())
@@ -413,6 +411,7 @@ namespace FogSoft.WinForm.DataAccess
                     {
                         connection.Open();
                         _commandParameters = AssignSqlParameters(connection, procedureName, parameters);
+                        scope.SetExecScript(BuildExecScript(procedureName, _commandParameters));
 
                         if (isTransactionRequired)
                         {
@@ -446,8 +445,6 @@ namespace FogSoft.WinForm.DataAccess
                         }
 
                         connection.Close();
-                        string execScript = BuildExecScript(procedureName, _commandParameters);
-                        scope.SetExecScript(execScript);
                     }
                 }
 
@@ -571,6 +568,7 @@ end
 					{
 						connection.Open();
 						_commandParameters = AssignSqlParameters(connection, procedureName, parameters);
+						scope.SetExecScript(BuildExecScript(procedureName, _commandParameters));
 						if (ConfigurationUtil.IsUseCustomTransaction)
 							throw new NotImplementedException();
 
@@ -605,8 +603,9 @@ end
 			{
 				if (parameters != null && exp.Data != null)
 				{
+					exp.Data["Procedure"] = procedureName;
 					foreach (KeyValuePair<string, object> parameter in parameters)
-						exp.Data.Add("Parameter: " + parameter.Key, parameter.Value);
+						exp.Data["Parameter: " + parameter.Key] = parameter.Value;
 				}
 				throw;
 			}

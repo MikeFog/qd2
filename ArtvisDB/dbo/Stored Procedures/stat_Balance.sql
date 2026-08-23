@@ -207,26 +207,27 @@ Else
 	end 
 
 	-- calculate actions till defined date ------------------------
-	Declare cur_Companies Cursor local fast_forward
-	For
-	select distinct	c.campaignID, c.campaignTypeID,
+	select	c.campaignID, c.campaignTypeID,
 		c.startDate, a.firmID,
 		c.agencyID,
 		c.finishDate,
 		c.finalPrice,
 		a.discount
+	into	#campaigns
 	From	campaign c
 			inner join [Action] a on c.actionID = a.actionID
 			inner join Firm f on a.firmID = f.firmID
 			inner join paymenttype pt on c.paymentTypeID = pt.paymenttypeID
 			inner join [#Agency] ag on c.agencyID = ag.agencyID
 			left join @massmedias umm on c.massmediaID = umm.massmediaID
-			left join GroupMember gm on a.userID = gm.userID
-			left join @ugroups ug on gm.groupID = ug.id
 	Where
-			(a.userID = @loggedUserID 
-			 or @isRightToViewForeignActions = 1 
-			 or (@isRightToViewGroupActions = 1 and ug.id is not null)) and
+			(a.userID = @loggedUserID
+			 or @isRightToViewForeignActions = 1
+			 or (@isRightToViewGroupActions = 1
+			     and exists(select 1
+							from GroupMember gm
+								inner join @ugroups ug on gm.groupID = ug.id
+							where gm.userID = a.userID))) and
 			(a.isSpecial = 1 
 			 or (c.campaignTypeID <> 4 
 			     and umm.massmediaID is not null 
@@ -258,6 +259,20 @@ Else
 			@Price decimal(18,2), @Agency int,
 			@FinishDay datetime, @FinalPrice decimal(18,2), @actiondiscount decimal(9,4)
 
+	-- кампании, завершившиеся до @theDate: цена берётся целиком, разбивка по периоду не нужна
+	Insert	Into #tmp1(summa, firmID, agencyID)
+	Select	-(case when campaignTypeID <> 4 then finalPrice * discount else finalPrice end),
+			firmID, agencyID
+	From	#campaigns
+	Where	@theDate IS NULL OR @theDate > finishDate
+
+	-- остальные (ещё идущие на @theDate) считаются по периоду, по одной
+	Declare cur_Companies Cursor local fast_forward
+	For
+	select	campaignID, campaignTypeID, startDate, firmID, agencyID, finishDate, finalPrice, discount
+	from	#campaigns
+	where	@theDate IS NOT NULL and (finishDate IS NULL or @theDate <= finishDate)
+
 	Open	cur_Companies
 
 	Fetch	Next from cur_Companies
@@ -265,10 +280,7 @@ Else
 
 	While	@@fetch_status = 0
 		Begin
-		If	@theDate IS NULL OR @theDate > @FinishDay 
-			Set 	@Price = case when @TypeID <> 4 then @FinalPrice * @actiondiscount else @FinalPrice end 
-		else
-			EXEC GetPriceByPeriod @campaignID, @TypeID, @StartDay, @theDate, @Price output
+		EXEC GetPriceByPeriod @campaignID, @TypeID, @StartDay, @theDate, @Price output
 
 		Insert	Into #tmp1(summa, firmID, agencyID)
 		Values	(-@Price, @FirmID, @Agency)
@@ -280,6 +292,8 @@ Else
 
 	close		cur_Companies
 	Deallocate	cur_Companies
+
+	drop table #campaigns
 
 	End
 
@@ -315,7 +329,7 @@ Else
 	drop table #tmp1
 
 	-- ALTER  table with Agency ID ---------------------------
-	Declare	@SQLString NVARCHAR(2500), @Desc NVARCHAR(64), @Where NVARCHAR(4000), @Select NVARCHAR(4000), @summa decimal(18,2)
+	Declare	@SQLString NVARCHAR(2500), @Desc NVARCHAR(64), @Where NVARCHAR(4000), @Select NVARCHAR(4000), @summa decimal(18,2), @col NVARCHAR(140)
 
 	declare	cur_agency cursor local fast_forward for 
 	Select	agency.agencyID, agency.Name, sum(summa) as summa
@@ -351,14 +365,16 @@ Else
 		 
 		set @addwhere = 1
 		
-		set @sql = @sql + ' + abs([$' + @Desc + '])'
+		set @col = QUOTENAME('$' + @Desc)
 
-		set @SQLString = 'ALTER TABLE #rc ADD [$' + @Desc + '] [decimal(18,2)] default 0 with values;'
+		set @sql = @sql + ' + abs(' + @col + ')'
+
+		set @SQLString = N'ALTER TABLE #rc ADD ' + @col + N' decimal(18,2) default 0 with values;'
 		exec sp_executeSQL @SQLString
-		set @SQLString = N'UPDATE #rc set [$' + @Desc + '] = summa from #rc join #tmp2 on #rc.RowNum = #tmp2.firmID and #tmp2.agencyID = @a'
+		set @SQLString = N'UPDATE #rc set ' + @col + N' = summa from #rc join #tmp2 on #rc.RowNum = #tmp2.firmID and #tmp2.agencyID = @a'
 		exec sp_executeSQL @SQLString, N'@a int', @a = @agencyID
 		-- summary
-		set @SQLString = N'UPDATE #rc set [$' + @desc + '] = @sum, [$Итого] = [$Итого] + @sum where RowNum = -1'
+		set @SQLString = N'UPDATE #rc set ' + @col + N' = @sum, [$Итого] = [$Итого] + @sum where RowNum = -1'
 		exec sp_executeSQL @SQLString, N'@sum decimal(18,2)', @sum = @summa
 	end
 

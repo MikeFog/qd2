@@ -39,7 +39,7 @@ namespace FogSoft.WinForm.Classes
                         }
                         catch (Exception exc)
                         {
-                            Log.Error(string.Format("Ошибка в процедуре {0}", sqlEx.Procedure));
+                            Log.Error(string.Format("Ошибка в процедуре {0}", GetProcedureName(sqlEx)));
                             Log.Error(sqlEx);
                             Log.Error(ex.Data);
 
@@ -52,7 +52,7 @@ namespace FogSoft.WinForm.Classes
                             }
                             else
                             {
-                                Log.Error(string.Format("Error {0} in {1}", sqlEx.Message, sqlEx.Procedure), sqlEx);
+                                Log.Error(string.Format("Error {0} in {1}", sqlEx.Message, GetProcedureName(sqlEx)), sqlEx);
                                 Log.Error(exc);
                                 Globals.ShowMessageError(Resources.ApplicationError, ex);
                             }
@@ -64,7 +64,7 @@ namespace FogSoft.WinForm.Classes
                         {
                             if (MessageAccessor.GetMessage(ex.Message) == null)
                             {
-                                Log.Error(string.Format("Ошибка в процедуре {0}", sqlEx.Procedure));
+                                Log.Error(string.Format("Ошибка в процедуре {0}", GetProcedureName(sqlEx)));
                                 Log.Error(sqlEx);
                                 Log.Error(ex.Data);
                             }
@@ -106,6 +106,20 @@ namespace FogSoft.WinForm.Classes
             // 2627 / 2601: отдаём сырой текст — Globals.ShowExclamation покажет
             // его через GetMessage, а при null — Resources.ApplicationError.
             return ex.Message;
+        }
+
+        /// <summary>
+        /// Имя процедуры для лога. <see cref="SqlException.Procedure"/> пуст, если ошибка
+        /// возникла внутри динамического SQL (sp_executesql), — тогда берём имя,
+        /// положенное в <see cref="Exception.Data"/> слоем доступа к данным.
+        /// </summary>
+        private static string GetProcedureName(SqlException ex)
+        {
+            if (!string.IsNullOrEmpty(ex.Procedure))
+                return ex.Procedure;
+
+            object fromData = ex.Data != null ? ex.Data["Procedure"] : null;
+            return fromData != null ? fromData.ToString() : "<неизвестна>";
         }
 
         /// <summary>

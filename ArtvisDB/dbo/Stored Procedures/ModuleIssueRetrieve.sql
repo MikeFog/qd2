@@ -42,6 +42,7 @@ if @windowID is not null
 		AND i.originalWindowID = @windowID
 	Order By 
 		m.name, r.name
+	OPTION (RECOMPILE)
 else
 	SELECT DISTINCT
 		mi.moduleIssueID,
@@ -75,3 +76,4 @@ else
 		AND (@moduleIssueId is null or mi.[moduleIssueID] = @moduleIssueId)
 	Order By 
 		m.name, r.name
+	OPTION (RECOMPILE)
