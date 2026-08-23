@@ -1,0 +1,173 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!--
+    Ядро без UI для веб-версии (этап 0 плана docs/tasks/web-migration.md).
+
+    Исходники НЕ копируются и НЕ переносятся: они подключаются ссылками (Link) из
+    существующих проектов. Десктоп продолжает компилировать те же самые файлы сам,
+    в своей сборке, и о существовании этого проекта не знает. Поэтому проект
+    намеренно НЕ добавлен в qd2.sln — собирается отдельно: dotnet build FogSoft.Core
+  -->
+
+  <PropertyGroup>
+    <TargetFramework>net8.0</TargetFramework>
+    <RootNamespace>FogSoft.WinForm</RootNamespace>
+    <AssemblyName>FogSoft.Core</AssemblyName>
+    <LangVersion>latest</LangVersion>
+    <Nullable>disable</Nullable>
+    <ImplicitUsings>disable</ImplicitUsings>
+    <GenerateAssemblyInfo>false</GenerateAssemblyInfo>
+    <NoWarn>$(NoWarn);CS0618;CS0649;CS0162</NoWarn>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="System.Data.SqlClient" Version="4.9.0" />
+    <PackageReference Include="System.Configuration.ConfigurationManager" Version="9.0.0" />
+    <PackageReference Include="Microsoft.Extensions.Caching.Memory" Version="9.0.0" />
+    <PackageReference Include="log4net" Version="2.0.17" />
+    <!-- Bitmap-свойства в Resources.Designer.cs (иконки ресурсов) -->
+    <PackageReference Include="System.Drawing.Common" Version="8.0.0" />
+    <!-- Версия совпадает с Client/packages.config (CpOneDocGenerator.cs) -->
+    <PackageReference Include="DocumentFormat.OpenXml" Version="3.4.1" />
+  </ItemGroup>
+
+  <!-- Слой доступа к данным -->
+  <ItemGroup>
+    <Compile Include="..\FogSoft.WinForm\DataAccess\DataAccessor.cs" Link="DataAccess\DataAccessor.cs" />
+    <Compile Include="..\FogSoft.WinForm\DataAccess\DbExecutionScope.cs" Link="DataAccess\DbExecutionScope.cs" />
+    <Compile Include="..\FogSoft.WinForm\DataAccess\MessageAccessor.cs" Link="DataAccess\MessageAccessor.cs" />
+    <Compile Include="..\FogSoft.WinForm\DataAccess\SqlBulkCopyHelper.cs" Link="DataAccess\SqlBulkCopyHelper.cs" />
+    <Compile Include="..\FogSoft.WinForm\DataAccess\TvpValue.cs" Link="DataAccess\TvpValue.cs" />
+    <Compile Include="..\Microsoft.ApplicationBlocks.Data\SQLHelper.cs" Link="DataAccess\SQLHelper.cs" />
+  </ItemGroup>
+
+  <!-- Метаданные, безопасность, утилиты (файлы без ссылок на WinForms/Drawing) -->
+  <ItemGroup>
+    <Compile Include="..\FogSoft.WinForm\Classes\FakeContainer.cs" Link="Classes\FakeContainer.cs" />
+    <Compile Include="..\FogSoft.WinForm\Classes\ColumnInfo.cs" Link="Classes\ColumnInfo.cs" />
+    <Compile Include="..\FogSoft.WinForm\Classes\ConfigurationUtil.cs" Link="Classes\ConfigurationUtil.cs" />
+    <Compile Include="..\FogSoft.WinForm\Classes\ConnectionCryptor.cs" Link="Classes\ConnectionCryptor.cs" />
+    <Compile Include="..\FogSoft.WinForm\Classes\Constants.cs" Link="Classes\Constants.cs" />
+    <Compile Include="..\FogSoft.WinForm\Classes\DateTimeUtils.cs" Link="Classes\DateTimeUtils.cs" />
+    <Compile Include="..\FogSoft.WinForm\Classes\Entity.cs" Link="Classes\Entity.cs" />
+    <Compile Include="..\FogSoft.WinForm\Classes\ErrorManager.cs" Link="Classes\ErrorManager.cs" />
+    <Compile Include="..\FogSoft.WinForm\Classes\ObjectContainer.cs" Link="Classes\ObjectContainer.cs" />
+    <Compile Include="..\FogSoft.WinForm\Globals.Core.cs" Link="Globals.Core.cs" />
+    <Compile Include="..\FogSoft.WinForm\Passport\Classes\PageControl.Constants.cs" Link="Passport\PageControl.Constants.cs" />
+    <Compile Include="..\FogSoft.WinForm\Classes\EntityManager.cs" Link="Classes\EntityManager.cs" />
+    <Compile Include="..\FogSoft.WinForm\Classes\FieldTypeResolver.cs" Link="Classes\FieldTypeResolver.cs" />
+    <Compile Include="..\FogSoft.WinForm\Classes\Interfaces.cs" Link="Classes\Interfaces.cs" />
+    <Compile Include="..\FogSoft.WinForm\Classes\InternalVariable.cs" Link="Classes\InternalVariable.cs" />
+    <Compile Include="..\FogSoft.WinForm\Classes\PresentationObject.cs" Link="Classes\PresentationObject.cs" />
+    <Compile Include="..\FogSoft.WinForm\Classes\UserInteraction.cs" Link="Classes\UserInteraction.cs" />
+    <Compile Include="..\FogSoft.WinForm\Classes\ViewType.cs" Link="Classes\ViewType.cs" />
+    <Compile Include="..\FogSoft.WinForm\Classes\Money.cs" Link="Classes\Money.cs" />
+    <Compile Include="..\FogSoft.WinForm\Classes\ObjectsIterator.cs" Link="Classes\ObjectsIterator.cs" />
+    <Compile Include="..\FogSoft.WinForm\Classes\OperationScope.cs" Link="Classes\OperationScope.cs" />
+    <Compile Include="..\FogSoft.WinForm\Classes\ParseHelper.cs" Link="Classes\ParseHelper.cs" />
+    <Compile Include="..\FogSoft.WinForm\Classes\PassportLoader.cs" Link="Classes\PassportLoader.cs" />
+    <Compile Include="..\FogSoft.WinForm\Classes\RelationManager.cs" Link="Classes\RelationManager.cs" />
+    <Compile Include="..\FogSoft.WinForm\Classes\ReportGenerator.cs" Link="Classes\ReportGenerator.cs" />
+    <Compile Include="..\FogSoft.WinForm\Classes\SecurityManager.cs" Link="Classes\SecurityManager.cs" />
+    <Compile Include="..\FogSoft.WinForm\Classes\SimpleObject.cs" Link="Classes\SimpleObject.cs" />
+    <Compile Include="..\FogSoft.WinForm\Classes\StringUtil.cs" Link="Classes\StringUtil.cs" />
+    <Compile Include="..\FogSoft.WinForm\Classes\TempFileWorker.cs" Link="Classes\TempFileWorker.cs" />
+    <Compile Include="..\FogSoft.WinForm\Classes\Time.cs" Link="Classes\Time.cs" />
+    <Compile Include="..\FogSoft.WinForm\Classes\UserSettings.cs" Link="Classes\UserSettings.cs" />
+  </ItemGroup>
+
+  <!-- Ресурсы (сгенерированный Resources.Designer.cs, без UI-зависимостей) -->
+  <ItemGroup>
+    <Compile Include="..\Client\Properties\Resources.Designer.cs" Link="Properties\Resources.Designer.cs" />
+  </ItemGroup>
+
+  <!-- Доменные классы Client/Classes: подключены ВСЕ (не только "чистые" по
+       grep) — компилятор точнее укажет, что реально блокирует сборку.
+       См. docs/tasks/web-migration-dialogs.md, §10. -->
+  <ItemGroup>
+    <Compile Include="..\Client\Classes\FakeContainers\ActionContainer.cs" Link="Domain\FakeContainers\ActionContainer.cs" />
+    <Compile Include="..\Client\Classes\FakeContainers\AdvertTypeContainer.cs" Link="Domain\FakeContainers\AdvertTypeContainer.cs" />
+    <Compile Include="..\Client\Classes\ActJournalRow.cs" Link="Domain\ActJournalRow.cs" />
+    <Compile Include="..\Client\Classes\Action.cs" Link="Domain\Action.cs" />
+    <Compile Include="..\Client\Classes\ActionDeleted.cs" Link="Domain\ActionDeleted.cs" />
+    <Compile Include="..\Client\Classes\ActionOnMassmedia.cs" Link="Domain\ActionOnMassmedia.cs" />
+    <Compile Include="..\Client\Classes\ActionRoller.cs" Link="Domain\ActionRoller.cs" />
+    <Compile Include="..\Client\Classes\ActionRollerInStatJournal.cs" Link="Domain\ActionRollerInStatJournal.cs" />
+    <Compile Include="..\Client\Classes\AdvertAgUser.cs" Link="Domain\AdvertAgUser.cs" />
+    <Compile Include="..\Client\Classes\AdvertType.cs" Link="Domain\AdvertType.cs" />
+    <Compile Include="..\Client\Classes\Agency.cs" Link="Domain\Agency.cs" />
+    <Compile Include="..\Client\Classes\Announcement.cs" Link="Domain\Announcement.cs" />
+    <Compile Include="..\Client\Classes\BalanceStatRow.cs" Link="Domain\BalanceStatRow.cs" />
+    <Compile Include="..\Client\Classes\Bank.cs" Link="Domain\Bank.cs" />
+    <Compile Include="..\Client\Classes\Brand.cs" Link="Domain\Brand.cs" />
+    <Compile Include="..\Client\Classes\Campaign.cs" Link="Domain\Campaign.cs" />
+    <Compile Include="..\Client\Classes\CampaignDay.cs" Link="Domain\CampaignDay.cs" />
+    <Compile Include="..\Client\Classes\CampaignModule.cs" Link="Domain\CampaignModule.cs" />
+    <Compile Include="..\Client\Classes\CampaignModuleDay.cs" Link="Domain\CampaignModuleDay.cs" />
+    <Compile Include="..\Client\Classes\CampaignOnSingleMassmedia.cs" Link="Domain\CampaignOnSingleMassmedia.cs" />
+    <Compile Include="..\Client\Classes\CampaignPackDay.cs" Link="Domain\CampaignPackDay.cs" />
+    <Compile Include="..\Client\Classes\CampaignPackModule.cs" Link="Domain\CampaignPackModule.cs" />
+    <Compile Include="..\Client\Classes\CampaignPart.cs" Link="Domain\CampaignPart.cs" />
+    <Compile Include="..\Client\Classes\CampaignRoller.cs" Link="Domain\CampaignRoller.cs" />
+    <Compile Include="..\Client\Classes\Class1.cs" Link="Domain\Class1.cs" />
+    <Compile Include="..\Client\Classes\CommonRoller.cs" Link="Domain\CommonRoller.cs" />
+    <Compile Include="..\Client\Classes\CpOneDocGenerator.cs" Link="Domain\CpOneDocGenerator.cs" />
+    <Compile Include="..\Client\Classes\EntityCampaign.cs" Link="Domain\EntityCampaign.cs" />
+    <Compile Include="..\Client\Classes\Firm.cs" Link="Domain\Firm.cs" />
+    <Compile Include="..\Client\Classes\FirmBalance.cs" Link="Domain\FirmBalance.cs" />
+    <Compile Include="..\Client\Classes\FirmBalanceIssues.cs" Link="Domain\FirmBalanceIssues.cs" />
+    <Compile Include="..\Client\Classes\FirmBalanceStudioOrder.cs" Link="Domain\FirmBalanceStudioOrder.cs" />
+    <Compile Include="..\Client\Classes\FirmWithActions.cs" Link="Domain\FirmWithActions.cs" />
+    <Compile Include="..\Client\Classes\HeadCompany.cs" Link="Domain\HeadCompany.cs" />
+    <Compile Include="..\Client\Classes\HeadCompanyWithActions.cs" Link="Domain\HeadCompanyWithActions.cs" />
+    <Compile Include="..\Client\Classes\ITariffWindow.cs" Link="Domain\ITariffWindow.cs" />
+    <Compile Include="..\Client\Classes\InternalConstants.cs" Link="Domain\InternalConstants.cs" />
+    <Compile Include="..\Client\Classes\Issue.cs" Link="Domain\Issue.cs" />
+    <Compile Include="..\Client\Classes\IssueTemplate.cs" Link="Domain\IssueTemplate.cs" />
+    <Compile Include="..\Client\Classes\IssueTransfer.cs" Link="Domain\IssueTransfer.cs" />
+    <Compile Include="..\Client\Classes\Massmedia.cs" Link="Domain\Massmedia.cs" />
+    <Compile Include="..\Client\Classes\Utils.cs" Link="Domain\Utils.cs" />
+    <Compile Include="..\Client\Classes\RollerPartOfSponsorCampaign.cs" Link="Domain\RollerPartOfSponsorCampaign.cs" />
+    <Compile Include="..\Client\Classes\MassmediaPricelist.cs" Link="Domain\MassmediaPricelist.cs" />
+    <Compile Include="..\Client\Classes\MassmediasAndCampaignsContainer.cs" Link="Domain\MassmediasAndCampaignsContainer.cs" />
+    <Compile Include="..\Client\Classes\MediaPlanCampaignGroups.cs" Link="Domain\MediaPlanCampaignGroups.cs" />
+    <Compile Include="..\Client\Classes\Module.cs" Link="Domain\Module.cs" />
+    <Compile Include="..\Client\Classes\ModuleCampaignDay.cs" Link="Domain\ModuleCampaignDay.cs" />
+    <Compile Include="..\Client\Classes\ModuleIssue.cs" Link="Domain\ModuleIssue.cs" />
+    <Compile Include="..\Client\Classes\ModulePricelist.cs" Link="Domain\ModulePricelist.cs" />
+    <Compile Include="..\Client\Classes\MuteRoller.cs" Link="Domain\MuteRoller.cs" />
+    <Compile Include="..\Client\Classes\Organization.cs" Link="Domain\Organization.cs" />
+    <Compile Include="..\Client\Classes\PackModule.cs" Link="Domain\PackModule.cs" />
+    <Compile Include="..\Client\Classes\PackModuleIssue.cs" Link="Domain\PackModuleIssue.cs" />
+    <Compile Include="..\Client\Classes\PackModulePricelist.cs" Link="Domain\PackModulePricelist.cs" />
+    <Compile Include="..\Client\Classes\PackageDiscount.cs" Link="Domain\PackageDiscount.cs" />
+    <Compile Include="..\Client\Classes\PackageDiscountPriceList.cs" Link="Domain\PackageDiscountPriceList.cs" />
+    <Compile Include="..\Client\Classes\PaintingType.cs" Link="Domain\PaintingType.cs" />
+    <Compile Include="..\Client\Classes\PaymentCommon.cs" Link="Domain\PaymentCommon.cs" />
+    <Compile Include="..\Client\Classes\PaymentStudioOrder.cs" Link="Domain\PaymentStudioOrder.cs" />
+    <Compile Include="..\Client\Classes\PriceCalculatorClasses.cs" Link="Domain\PriceCalculatorClasses.cs" />
+    <Compile Include="..\Client\Classes\Pricelist.cs" Link="Domain\Pricelist.cs" />
+    <Compile Include="..\Client\Classes\PrintSettings.cs" Link="Domain\PrintSettings.cs" />
+    <Compile Include="..\Client\Classes\ProductionStudio.cs" Link="Domain\ProductionStudio.cs" />
+    <Compile Include="..\Client\Classes\ProgramIssue.cs" Link="Domain\ProgramIssue.cs" />
+    <Compile Include="..\Client\Classes\ProgramPartOfSponsorCampaign.cs" Link="Domain\ProgramPartOfSponsorCampaign.cs" />
+    <Compile Include="..\Client\Classes\Roller.cs" Link="Domain\Roller.cs" />
+    <Compile Include="..\Client\Classes\RollerAllocationQueue.cs" Link="Domain\RollerAllocationQueue.cs" />
+    <Compile Include="..\Client\Classes\RollerIssue.cs" Link="Domain\RollerIssue.cs" />
+    <Compile Include="..\Client\Classes\SpecialTariffWindow.cs" Link="Domain\SpecialTariffWindow.cs" />
+    <Compile Include="..\Client\Classes\SponsorCampaignPart.cs" Link="Domain\SponsorCampaignPart.cs" />
+    <Compile Include="..\Client\Classes\SponsorPricelist.cs" Link="Domain\SponsorPricelist.cs" />
+    <Compile Include="..\Client\Classes\SponsorProgram.cs" Link="Domain\SponsorProgram.cs" />
+    <Compile Include="..\Client\Classes\SponsorProgramPart.cs" Link="Domain\SponsorProgramPart.cs" />
+    <Compile Include="..\Client\Classes\SponsorTariff.cs" Link="Domain\SponsorTariff.cs" />
+    <Compile Include="..\Client\Classes\StudioPricelist.cs" Link="Domain\StudioPricelist.cs" />
+    <Compile Include="..\Client\Classes\TableColumns.cs" Link="Domain\TableColumns.cs" />
+    <Compile Include="..\Client\Classes\Tariff.cs" Link="Domain\Tariff.cs" />
+    <Compile Include="..\Client\Classes\TariffWindow.cs" Link="Domain\TariffWindow.cs" />
+    <Compile Include="..\Client\Classes\TariffWindowPackModule.cs" Link="Domain\TariffWindowPackModule.cs" />
+    <Compile Include="..\Client\Classes\TariffWindowWithProgramIssue.cs" Link="Domain\TariffWindowWithProgramIssue.cs" />
+    <Compile Include="..\Client\Classes\TariffWindowWithRange.cs" Link="Domain\TariffWindowWithRange.cs" />
+    <Compile Include="..\Client\Classes\TariffWindowWithRollerIssues.cs" Link="Domain\TariffWindowWithRollerIssues.cs" />
+  </ItemGroup>
+
+</Project>

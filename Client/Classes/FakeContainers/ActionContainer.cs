@@ -1,15 +1,11 @@
 ﻿using FogSoft.WinForm;
 using FogSoft.WinForm.Classes;
-using FogSoft.WinForm.Passport.Forms;
-using Merlin.Forms.FilterForm;
 using System;
 using System.Data;
-using System.Windows.Forms;
-using System.Xml.XPath;
 
 namespace Merlin.Classes.FakeContainers
 {
-	public class ActionContainer : FakeContainer
+	public partial class ActionContainer : FakeContainer
 	{
 		#region Constants -------------------------------------
 
@@ -65,59 +61,8 @@ namespace Merlin.Classes.FakeContainers
             return true;
 		}
 
-		public override void DoAction(string actionName, IWin32Window owner, InterfaceObjects interfaceObject)
-		{
-			try
-			{
-				if (actionName == ActionNames.ShowActions)
-				{
-					ChildEntity = _actionEntity;
-					FireContainerRefreshed();
-				}
-				else if (actionName == ActionNames.ShowFirms)
-				{
-					ChildEntity = _firmEntity;
-					FireContainerRefreshed();
-				}
-                else if (actionName == ActionNames.ShowHeadCompanies)
-                {
-                    ChildEntity = _headCompanyEntity;
-                    FireContainerRefreshed();
-                }
-                else if (actionName == Constants.EntityActions.ShowFilters)
-				{
-					ShowFilter(owner);
-				}
+		// DoAction/ShowFilter переехали в ActionContainer.WinForms.cs.
 
-				base.DoAction(actionName, owner, interfaceObject);
-			}
-            catch (Exception e)
-            {
-                ErrorManager.PublishError(e);
-            }
-        }
-
-        public override void ShowFilter(IWin32Window owner)
-        {
-            try
-            {
-                Application.DoEvents();
-                Cursor.Current = Cursors.WaitCursor;
-
-                FilterForm frm = new ActionJournalFilter(relationScenario.StartingEntity, Globals.PrepareForFilter(RootEntity), _filter, relationScenario.XmlFilter);
-
-                if (frm.ShowDialog(owner) == DialogResult.OK)
-                    FireContainerRefreshed();
-            }
-            catch (Exception ex)
-            {
-                ErrorManager.PublishError(ex);
-            }
-            finally
-            {
-                Cursor.Current = Cursors.Default;
-            }
-        }
 
         // NEW: пример использования hook из ObjectsIterator
 		protected override PresentationObject ProcessCreatedChildObject(PresentationObject childObject, DataRow row)

@@ -1,14 +1,13 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Data;
-using System.Windows.Forms;
 using FogSoft.WinForm;
 using FogSoft.WinForm.Classes;
 using FogSoft.WinForm.DataAccess;
 
 namespace Merlin.Classes
 {
-	public class Announcement : PresentationObject
+	public partial class Announcement : PresentationObject
 	{
 		public Announcement() : base(EntityManager.GetEntity((int) Entities.Announcement))
 		{
@@ -42,14 +41,7 @@ namespace Merlin.Classes
 			return base.IsActionEnabled(actionName, type);
 		}
 
-		public override void DoAction(string actionName, IWin32Window owner,
-		                              InterfaceObjects interfaceObject)
-		{
-			if (actionName == ActionNames.MarkAsRead)
-				SetReadMark(true);
-			else
-				base.DoAction(actionName, owner, interfaceObject);
-		}
+		// DoAction переехал в Announcement.WinForms.cs.
 
 		private void SetReadMark(bool mark)
 		{

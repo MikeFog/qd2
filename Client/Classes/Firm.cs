@@ -2,19 +2,18 @@
 using System.Collections.Generic;
 using System.Configuration;
 using System.Data;
-using System.Windows.Forms;
 using FogSoft.WinForm;
 using FogSoft.WinForm.Classes;
 using FogSoft.WinForm.DataAccess;
-using FogSoft.WinForm.Forms;
-using Merlin.Forms;
-using Merlin.Reports;
 using static FogSoft.WinForm.Constants;
-using static Merlin.Classes.TableColumns;
 
 namespace Merlin.Classes
 {
-	public class Firm : Organization
+	// UI-часть (DoAction, PrintContract, AssignNew, AssignExisting, AssignBrand,
+	// SelectFirm) — в Firm.WinForms.cs. PrintContract перенесён целиком:
+	// генерация отчёта — отдельная область (docs/tasks/web-migration.md, этап 4).
+	// Конвенция — docs/tasks/web-migration-dialogs.md.
+	public partial class Firm : Organization
 	{
 		#region Constructors ----------------------------------
 
@@ -44,73 +43,7 @@ namespace Merlin.Classes
 
         #endregion
 
-        public override void DoAction(string actionName, IWin32Window owner, InterfaceObjects interfaceObject)
-        {
-			if (actionName.Equals(Action.ActionNames.PrintContract, StringComparison.InvariantCultureIgnoreCase))
-				PrintContract(owner, false);
-            else if (actionName.Equals(Action.ActionNames.PrintSponsorContract, StringComparison.InvariantCultureIgnoreCase))
-                PrintContract(owner, true);
-            else
-                base.DoAction(actionName, owner, interfaceObject);
-        }
-
-        private void PrintContract(IWin32Window owner, bool isSponsor)
-        {
-			try
-			{
-				SelectCampaignsForm fSelector = new SelectCampaignsForm(EntityManager.GetEntity((int)Entities.Agency));
-				if (fSelector.ShowDialog(owner) == DialogResult.OK)
-				{
-					((Form)owner).UseWaitCursor = true;
-					Application.DoEvents();
-
-					Entity entityBill = EntityManager.GetEntity((int)Entities.GeneralBill);
-					foreach (var item in fSelector.SelectedItems)
-					{
-						Dictionary<string, object> parameters = new Dictionary<string, object>(StringComparer.CurrentCultureIgnoreCase)
-						{
-							[TableColumns.Bill.BillDate] = item.date
-						};
-						PresentationObject bill = entityBill.CreateObject(parameters);
-
-						ContractReport report = new ContractReport(this, (Agency)item.presentationObject, bill, isSponsor);
-						string fileName = string.Format("{0} от {1} для {2}.rtf", 
-							isSponsor ? "Спонсорский договор" : "Договор", 
-							((DateTime)bill[TableColumns.Bill.BillDate]).ToString("dd.MM.yyyy"),
-							Name);
-                        report.Show(isSponsor ? "Спонсорский договор" : "Договор", fileName);
-					}
-				}
-			}
-			finally { ((Form)owner).UseWaitCursor = false; }
-        }
-
-        protected override void AssignNew(IWin32Window owner)
-		{
-			// Create new brand
-			PresentationObject brand = EntityManager.GetEntity((int) Entities.Brand).NewObject;
-
-			// and assign it to the firm
-			if (brand.ShowPassport(owner))
-			{
-				Application.DoEvents();
-				AssignBrand(brand, owner);
-			}
-		}
-
-		protected override void AssignExisting(IWin32Window owner)
-		{
-			// Show existing brands
-			SelectionForm fSelector =
-				new SelectionForm(EntityManager.GetEntity((int) Entities.Brand), "Брэнды");
-
-			// and assign it to the firm
-			if (fSelector.ShowDialog(owner) == DialogResult.OK)
-			{
-				Application.DoEvents();
-				AssignBrand(fSelector.SelectedObject, owner);
-			}
-		}
+        // DoAction, PrintContract, AssignNew, AssignExisting переехали в Firm.WinForms.cs.
 
 		public DataTable GetRollers()
 		{
@@ -120,25 +53,18 @@ namespace Merlin.Classes
 			return ((DataSet) DataAccessor.DoAction(parameters)).Tables[Constants.TableNames.Data];
 		}
 
-		private void AssignBrand(PresentationObject brand, IWin32Window owner)
+		/// <summary>Привязывает бренд <paramref name="brand"/> к этой фирме.</summary>
+		internal PresentationObject ApplyBrandAssignment(PresentationObject brand)
 		{
-			Form ownerForm = (Form) owner;
-			try
-			{
-				ownerForm.Cursor = Cursors.WaitCursor;
-				PresentationObject firmBrand = EntityManager.GetEntity((int) Entities.FirmBrand).NewObject;
+			PresentationObject firmBrand = EntityManager.GetEntity((int) Entities.FirmBrand).NewObject;
 
-				firmBrand.Parameters = brand.Parameters;
-				firmBrand[ParamNames.FirmId] = IDs[0];
-				firmBrand.IsNew = true;
+			firmBrand.Parameters = brand.Parameters;
+			firmBrand[ParamNames.FirmId] = IDs[0];
+			firmBrand.IsNew = true;
 
-				firmBrand.Update();
-				OnObjectCreated(firmBrand);
-			}
-			finally
-			{
-				ownerForm.Cursor = Cursors.Default;
-			}
+			firmBrand.Update();
+			OnObjectCreated(firmBrand);
+			return firmBrand;
 		}
 
 		public int FirmId
@@ -153,30 +79,17 @@ namespace Merlin.Classes
 			return firm;
 		}
 
-		public static Firm SelectFirm(IWin32Window owner)
+		/// <summary>Фирмы-заказчики — кандидаты для выбора.</summary>
+		internal static DataTable GetFirmCandidates()
 		{
-			try
-			{
-                Application.DoEvents();
-                //Cursor.Current = Cursors.WaitCursor;
-
-                Entity entity = EntityManager.GetEntity((int) Entities.Firm);
-				Dictionary<string, object> filterValues =
-					new Dictionary<string, object>(StringComparer.InvariantCultureIgnoreCase);
-				if (entity.IsFilterable)
-					Globals.ResolveFilterInitialValues(filterValues, entity.XmlFilter);
-				SelectionForm fSelector =
-					new SelectionForm(entity, entity.GetContent(filterValues).DefaultView, "Фирма-заказчик");
-
-				if (fSelector.ShowDialog(owner) == DialogResult.OK) 
-					return (Firm) fSelector.SelectedObject;
-
-				return null;
-			}
-			finally
-			{
-				Application.DoEvents();
-			}
+			Entity entity = EntityManager.GetEntity((int) Entities.Firm);
+			Dictionary<string, object> filterValues =
+				new Dictionary<string, object>(StringComparer.InvariantCultureIgnoreCase);
+			if (entity.IsFilterable)
+				Globals.ResolveFilterInitialValues(filterValues, entity.XmlFilter);
+			return entity.GetContent(filterValues);
 		}
+
+		// SelectFirm переехал в Firm.WinForms.cs.
     }
 }

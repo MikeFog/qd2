@@ -9,12 +9,6 @@ using FogSoft.WinForm.Properties;
 
 namespace FogSoft.WinForm.Classes
 {
-	public enum ViewType
-	{
-		Tree,
-		Journal
-	}
-
 	public static class MenuManager
 	{
 		public static ContextMenuStrip CreatePopupMenu(

@@ -1,8 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Windows.Forms;
-using FogSoft.WinForm;
 using FogSoft.WinForm.Classes;
+using FogSoft.WinForm.DataAccess;
 
 namespace Merlin.Classes
 {
@@ -35,7 +34,8 @@ namespace Merlin.Classes
 						{"sourceDate", DateTimeUtils.ToDateTimeString(issue.IssueDate)},
 						{"destinationDate", DateTimeUtils.ToDateTimeString(destinationWindow.WindowDate)}
 					};
-			return Globals.ShowQuestion("IssueTransferConfirmation", msgParameters) == DialogResult.Yes;
+			MessageAccessor.Parameters = msgParameters;
+			return UserInteraction.Confirm(MessageAccessor.GetMessage("IssueTransferConfirmation"));
 		}
 
 		protected static bool IsTransferAllowed(ITariffWindow destinationWindow, Roller roller, RollerIssue issue)
@@ -45,7 +45,8 @@ namespace Merlin.Classes
 			if (((TariffWindowWithRollerIssues) destinationWindow).IsRollerExist(roller.RollerId))
 			{
 				msgParams["rollerName"] = roller.Name;
-				return Globals.ShowQuestion("TransferRollerExists", msgParams) == DialogResult.Yes;
+				MessageAccessor.Parameters = msgParams;
+				return UserInteraction.Confirm(MessageAccessor.GetMessage("TransferRollerExists"));
 			}
 			else
 			{
@@ -54,7 +55,8 @@ namespace Merlin.Classes
 				{
 					msgParams.Clear();
 					msgParams["firmName"] = Firm.GetFirmById(firmId).Name;
-					return Globals.ShowQuestion("TransferFirmExists", msgParams) == DialogResult.Yes;
+					MessageAccessor.Parameters = msgParams;
+					return UserInteraction.Confirm(MessageAccessor.GetMessage("TransferFirmExists"));
 				}
 			}
 			return true;

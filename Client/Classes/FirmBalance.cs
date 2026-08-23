@@ -1,11 +1,10 @@
 ﻿using System.Data;
-using System.Windows.Forms;
 using FogSoft.WinForm;
 using FogSoft.WinForm.Classes;
 
 namespace Merlin.Classes
 {
-	public abstract class FirmBalance : PresentationObject
+	public abstract partial class FirmBalance : PresentationObject
 	{
 		public FirmBalance(Entity entity)
 			: base(entity)
@@ -17,15 +16,9 @@ namespace Merlin.Classes
 		{
 		}
 
-		public override void DoAction(string actionName, IWin32Window owner, InterfaceObjects interfaceObject)
-		{
-			if (actionName == "Jump2FirmBalance")
-				Jump2FirmBalanceJournal(owner);
-			else
-				base.DoAction(actionName, owner, interfaceObject);
-		}
+		// DoAction и объявление Jump2FirmBalanceJournal(IWin32Window) переехали
+		// в FirmBalance.WinForms.cs — оба типизированы на UI.
 
-		protected abstract void Jump2FirmBalanceJournal(IWin32Window owner);
 
 		public int FirmID
 		{

@@ -1,6 +1,5 @@
 ﻿using System.Collections.Generic;
 using System.Data;
-using System.Windows.Forms;
 using FogSoft.WinForm;
 using FogSoft.WinForm.Classes;
 using FogSoft.WinForm.DataAccess;
@@ -52,7 +51,7 @@ namespace Merlin.Classes
         }
     }
 
-	internal class SponsorCampaignProgram : SponsorCampaignPart
+	internal partial class SponsorCampaignProgram : SponsorCampaignPart
 	{
         public struct ParamNames
         {
@@ -69,21 +68,8 @@ namespace Merlin.Classes
 		{
 		}
 
-        public override void DoAction(string actionName, IWin32Window owner, InterfaceObjects interfaceObject)
-        {
-            if (actionName == Campaign.ActionNames.DeleteIssues)
-                DeleteIssues((Form)owner);
-            else
-                base.DoAction(actionName, owner, interfaceObject);
-        }
+        // DoAction/DeleteIssues переехали в SponsorCampaignPart.WinForms.cs.
 
-        private void DeleteIssues(Form owner)
-        {
-            Dictionary<string, object> parameters = DataAccessor.CreateParametersDictionary();
-            parameters[OBJECT_ID] = this[ParamNames.ProgramId];
-            if(Campaign.DeleteIssues(owner, true, parameters, isFireEvent: false))
-				FireContainerRefreshed();	
-        }
     }
 
 	internal class SponsorCampaignProgramInDay : SponsorCampaignPart

@@ -2,14 +2,13 @@
 using System.Collections.Generic;
 using System.Data;
 using System.Text;
-using System.Windows.Forms;
 using FogSoft.WinForm.DataAccess;
-using FogSoft.WinForm.Passport.Forms;
-using FogSoft.WinForm.Forms;
 
 namespace FogSoft.WinForm.Classes
 {
-	public class PresentationObject : IActionHandler
+	// UI-часть класса (ShowPassport, GetPassportForm, DoAction, IActionHandler)
+	// вынесена в PresentationObject.WinForms.cs — см. docs/tasks/web-migration.md, этап 0.
+	public partial class PresentationObject
 	{
 		public event ObjectDelegate ObjectCreated;
 		public event ObjectDelegate ObjectDeleted;
@@ -105,48 +104,6 @@ namespace FogSoft.WinForm.Classes
 			foreach(KeyValuePair<string, object> kvp in parameters)
 				res.Add(kvp.Key, kvp.Value);
 			return res;
-		}
-
-		public virtual bool ShowPassport(IWin32Window parentForm)
-		{
-			try
-			{
-				if(!entity.HasPassport) return false;
-
-				// load data to display Passport
-				Dictionary<string, object> procParameters = Parameters;
-				DataAccessor.PrepareParameters(
-					procParameters, entity, InterfaceObjects.PropertyPage, Constants.Actions.Load);
-
-				DataSet ds = null;
-				if(DataAccessor.IsProcedureExist(procParameters))
-				{
-					ds = DataAccessor.DoAction(procParameters) as DataSet;
-				}
-
-				bool isNewObject = IsNew;
-
-				PassportForm passport = GetPassportForm(ds);
-				bool res = (passport.ShowDialog(parentForm) == DialogResult.OK || passport.IsApplyClicked);
-
-				// Fire event only if existing object was changed
-				if(res && !isNewObject) OnObjectChanged(this);
-				return res;
-			}
-			catch(Exception ex)
-			{
-				ErrorManager.PublishError(ex);
-				return false;
-			}
-			finally
-			{
-				Cursor.Current = Cursors.Default;
-			}
-		}
-
-		public virtual PassportForm GetPassportForm(DataSet ds)
-		{
-			return new PassportForm(this, ds);
 		}
 
 		public virtual bool Update()
@@ -275,16 +232,12 @@ namespace FogSoft.WinForm.Classes
 
 		protected virtual bool ConfirmDelete()
 		{
-			bool result = UserMessage.ShowQuestion(DeleteConfirmationText) == DialogResult.Yes;
-			Application.DoEvents();
-			return result;
+			return UserInteraction.Confirm(DeleteConfirmationText);
 		}
 
 		protected virtual bool ConfirmDetach()
 		{
-			bool result = UserMessage.ShowQuestion(string.Format(DETACH_PROMPT, Name)) == DialogResult.Yes;
-			Application.DoEvents();
-			return result;
+			return UserInteraction.Confirm(string.Format(DETACH_PROMPT, Name));
 		}
 
 		protected virtual string DeleteConfirmationText
@@ -377,26 +330,6 @@ namespace FogSoft.WinForm.Classes
 		public Entity.Action[] ActionList
 		{
 			get { return entity.ActionList; }
-		}
-
-		public virtual void DoAction(
-			string actionName, IWin32Window owner, InterfaceObjects interfaceObject)
-		{
-			switch(actionName)
-			{
-				case Constants.EntityActions.Delete:
-					Delete();
-					break;
-				case Constants.EntityActions.ShowPassport:
-					ShowPassport(owner);
-					break;
-				case Constants.EntityActions.Refresh:
-					Refresh(interfaceObject);
-					break;
-				case Constants.EntityActions.Detach:
-					Detach();
-					break;
-			}
 		}
 
 		public virtual bool IsActionEnabled(string actionName, ViewType type)

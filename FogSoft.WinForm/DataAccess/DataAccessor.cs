@@ -6,6 +6,7 @@ using System.Diagnostics;
 using System.Linq;
 using System.Security.Cryptography;
 using System.Text;
+using System.Threading;
 using System.Xml;
 using FogSoft.WinForm.Classes;
 using Microsoft.ApplicationBlocks.Data;
@@ -85,7 +86,25 @@ namespace FogSoft.WinForm.DataAccess
 		private static readonly Dictionary<string, ProcedureConfig> procedureConfigs = new Dictionary<string, ProcedureConfig>();
         private static readonly Dictionary<string, ProcedureConfig> procedureConfigsByName = new Dictionary<string, ProcedureConfig>();
         private static readonly IMemoryCache _cache = new MemoryCache(new MemoryCacheOptions());
-        [ThreadStatic] private static SqlTransaction _transaction;
+        // Транзакция живёт между отдельными вызовами: BeginTransaction ... DoAction ...
+        // CommitTransaction. Она должна следовать за логическим потоком выполнения,
+        // а не за потоком ОС: в вебе между этими вызовами возможен await и переход на
+        // другой поток пула, при котором [ThreadStatic] потерял бы транзакцию.
+        // Свойство намеренно оставлено с прежним именем, чтобы не менять места использования.
+        // См. docs/tasks/web-migration.md, этап 0.
+        private static readonly AsyncLocal<SqlTransaction> _transactionSlot = new AsyncLocal<SqlTransaction>();
+
+        private static SqlTransaction _transaction
+        {
+            get { return _transactionSlot.Value; }
+            set { _transactionSlot.Value = value; }
+        }
+
+        // В отличие от транзакции, это не состояние потока выполнения, а временный буфер
+        // внутри одного вызова: присваивается и читается в пределах одного синхронного
+        // метода, awaitов между этим нет. Поэтому [ThreadStatic] здесь корректен и дешевле
+        // AsyncLocal (путь горячий — через него идёт каждый вызов процедуры).
+        // Условие остаётся верным, пока методы DataAccessor синхронные.
         [ThreadStatic] private static SqlParameter[] _commandParameters;
 
         public static void ClearHash()

@@ -1,0 +1,85 @@
+using System;
+using System.Collections.Generic;
+using System.Windows.Forms;
+using FogSoft.WinForm;
+using FogSoft.WinForm.Classes;
+using FogSoft.WinForm.Forms;
+using Merlin.Forms;
+
+namespace Merlin.Classes
+{
+	// SelectManager: чистый выбор без применения (форма 3), дословный перенос.
+	// Конвенция — docs/tasks/web-migration-dialogs.md.
+	internal static partial class Utils
+	{
+		public static PresentationObject SelectManager(IWin32Window owner)
+		{
+			SelectionForm fSelector =
+				new SelectionForm(EntityManager.GetEntity((int)Entities.User), "Менеджер");
+			if (fSelector.ShowDialog(owner) == DialogResult.OK) return fSelector.SelectedObject;
+			return null;
+		}
+
+		public static (SecurityManager.User User, int? ManagerDiscountReasonId) AskConfirmation(IWin32Window owner)
+		{
+			FrmConfirmation fConfirmation = new FrmConfirmation();
+			if (fConfirmation.ShowDialog(owner) == DialogResult.OK)
+			{
+				if (fConfirmation.User == null)
+					Globals.ShowInfo("LoginIncorrect");
+				else if (fConfirmation.User.IsAdmin || fConfirmation.User.IsGrantor)
+					return (fConfirmation.User, fConfirmation.ManagerDiscountReasonId);
+				else
+				{
+					Dictionary<string, object> parameters =
+						new Dictionary<string, object>(2, StringComparer.CurrentCultureIgnoreCase)
+							{
+								{"FirstName", fConfirmation.User.FirstName},
+								{"LastName", fConfirmation.User.LastName}
+							};
+					Globals.ShowInfo("ConfirmationError", parameters);
+				}
+			}
+			return (null, null);
+		}
+
+        public static void HideTableLayoutRow(TableLayoutPanel tableLayoutPanelMain, int rowNum)
+        {
+            if (rowNum < 0 || rowNum >= tableLayoutPanelMain.RowCount)
+                return;
+
+            tableLayoutPanelMain.SuspendLayout();
+            try
+            {
+                // 1. Скрываем контролы
+                foreach (Control control in tableLayoutPanelMain.Controls)
+                {
+                    int controlRow = tableLayoutPanelMain.GetRow(control);
+                    int rowSpan = tableLayoutPanelMain.GetRowSpan(control);
+
+                    if (rowNum >= controlRow && rowNum < controlRow + rowSpan)
+                    {
+                        control.Visible = false;
+                    }
+                }
+
+                // Добавляем недостающие стили, если их меньше, чем строк
+                while (tableLayoutPanelMain.RowStyles.Count <= rowNum)
+                {
+                    // Добавляем дефолтный стиль (например, AutoSize), чтобы не сломать логику остальных строк
+                    tableLayoutPanelMain.RowStyles.Add(new RowStyle(SizeType.AutoSize));
+                }
+
+                // 3. Схлопываем
+                tableLayoutPanelMain.RowStyles[rowNum].SizeType = SizeType.Absolute;
+                tableLayoutPanelMain.RowStyles[rowNum].Height = 0;
+            }
+            finally
+            {
+                tableLayoutPanelMain.ResumeLayout(true);
+                // Дополнительный пинок для перерисовки
+                tableLayoutPanelMain.PerformLayout();
+            }
+        }
+	}
+}

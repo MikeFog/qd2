@@ -1,14 +1,13 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Data;
-using System.Windows.Forms;
 using FogSoft.WinForm;
 using FogSoft.WinForm.Classes;
 using FogSoft.WinForm.DataAccess;
 
 namespace Merlin.Classes
 {
-	internal class RollerIssue : Issue
+	internal partial class RollerIssue : Issue
 	{
 		private Roller roller;
 
@@ -139,11 +138,6 @@ namespace Merlin.Classes
 			return EntityManager.GetEntity((int) Entities.Issue);
 		}
 
-		public override void DoAction(string actionName, IWin32Window owner, InterfaceObjects interfaceObject)
-		{
-			if (string.Compare(actionName, Constants.Actions.Substitute) == 0)
-				SubstituteRollerForSingleIssue(Roller);
-			else base.DoAction(actionName, owner, interfaceObject);
-		}
+		// DoAction переехал в RollerIssue.WinForms.cs.
 	}
 }

@@ -1,15 +1,14 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Data;
-using System.Windows.Forms;
 using FogSoft.WinForm;
 using FogSoft.WinForm.Classes;
 using FogSoft.WinForm.DataAccess;
-using Merlin.Forms;
 
 namespace Merlin.Classes
 {
-	public class PackModulePricelist : Pricelist
+	// EditContent переехал в PackModulePricelist.WinForms.cs. Конвенция — docs/tasks/web-migration-dialogs.md.
+	public partial class PackModulePricelist : Pricelist
 	{
 		private bool _isMaxCapacityChecked = false;
 		private bool _maxCapacityCheckResult;
@@ -43,53 +42,10 @@ namespace Merlin.Classes
             get { return int.Parse(parameters[PackModule.ParamNames.PackModuleId].ToString()); }
         }
 
-		public override void DoAction(string actionName, IWin32Window owner, InterfaceObjects interfaceObject)
-		{
-			switch(actionName)
-			{
-				case Constants.EntityActions.Clone:
-					CloneContent(owner);
-					break;
 
-				case Constants.EntityActions.Edit:
-					EditContent((Form) owner);
-					break;
 
-				default:
-					base.DoAction(actionName, owner, interfaceObject);
-					break;
-			}
-		}
+		// EditContent переехал в PackModulePricelist.WinForms.cs.
 
-		private void CloneContent(IWin32Window owner)
-		{
-			PackModulePricelist lst = new PackModulePricelist {parameters = Parameters};
-			lst.parameters["sourcePricelistID"] = parameters["pricelistID"];
-			lst.parameters[Constants.ParamNames.ActionName] = Constants.EntityActions.Clone;
-
-			if (lst.ShowPassport(owner))
-			{
-				FireContainerRefreshed();
-				OnParentChanged(this, 1);
-			}
-		}
-
-		public void EditContent(Form owner)
-		{
-			FrmPackModuleContent fContent = new FrmPackModuleContent(this);
-			fContent.ShowDialog(owner);
-		}
-
-		protected override void AssignExisting(IWin32Window owner)
-		{
-			PresentationObject newObj =
-				EntityManager.GetEntity((int) Entities.PackModuleContent).NewObject;
-			newObj[ParamNames.PricelistId] = PricelistId;
-			if (newObj.ShowPassport(owner))
-			{
-				OnObjectCreated(newObj);
-			}
-		}
 
 		public override DataTable GetTariffList()
 		{

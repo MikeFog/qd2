@@ -1,17 +1,20 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Data;
-using System.Windows.Forms;
 using FogSoft.WinForm;
 using FogSoft.WinForm.Classes;
 using FogSoft.WinForm.DataAccess;
-using Merlin.Forms;
-using FogSoft.WinForm.Forms;
 using static FogSoft.WinForm.Constants;
 
 namespace Merlin.Classes
 {
-    internal class TariffWindowWithRollerIssues : TariffWindow, IComparable<TariffWindowWithRollerIssues>
+    // DoAction и Extend (диалог продления окна) — в
+    // TariffWindowWithRollerIssues.WinForms.cs. GroupWithWindow/UngroupWindows
+    // остаются здесь: своего диалога выбора у них нет, только Cursor вокруг
+    // записи (уборка Cursor — отдельная, не сегодняшняя задача) и, в
+    // UngroupWindows, подтверждение через UserInteraction.Confirm.
+    // Конвенция — docs/tasks/web-migration-dialogs.md.
+    internal partial class TariffWindowWithRollerIssues : TariffWindow, IComparable<TariffWindowWithRollerIssues>
 	{
 		public delegate TariffWindowWithRollerIssues GetTariffWindow2GroupDelegate(bool isWithPrev);
 		public GetTariffWindow2GroupDelegate GetTariffWindow2Group;
@@ -193,20 +196,7 @@ namespace Merlin.Classes
 			return new TariffWindowWithRollerIssues(windowId);
 		}
 
-		public override void DoAction(string actionName, IWin32Window owner, InterfaceObjects interfaceObject)
-		{
-			if (string.Compare(actionName, ActionNames.Extend) == 0)
-				Extend();
-			else if (string.Compare(actionName, ActionNames.GroupWithNext) == 0)
-				GroupWithWindow(false);
-            else if (string.Compare(actionName, ActionNames.GroupWithPrev) == 0)
-                GroupWithWindow(true);
-            else if (string.Compare(actionName, ActionNames.UngroupNext) == 0)
-                UngroupWindows(false);
-            else if (string.Compare(actionName, ActionNames.UngroupPrev) == 0)
-                UngroupWindows(true);
-            else base.DoAction(actionName, owner, interfaceObject);
-		}
+		// DoAction переехал в TariffWindowWithRollerIssues.WinForms.cs.
 
         public override bool IsActionEnabled(string actionName, ViewType type)
         {
@@ -225,68 +215,14 @@ namespace Merlin.Classes
 
         public event ObjectDelegate TariffExtend;
 
-		private void Extend()
-		{
-			int mmId = int.Parse(parameters[Massmedia.ParamNames.MassmediaId].ToString());
-			FrmWindowTariffTemplate frm = new FrmWindowTariffTemplate(WindowDate, Duration, DurationTotal, Massmedia.GetMassmediaByID(mmId));
-			if (frm.ShowDialog(Globals.MdiParent) == DialogResult.OK)
-			{
-				if (TariffExtend != null)
-					TariffExtend(this);
-			}
-		}
+		// Extend переехал в TariffWindowWithRollerIssues.WinForms.cs.
 
-        private void GroupWithWindow(bool isWithPrev)
-		{
-			try
-			{
-                TariffWindowWithRollerIssues window = GetTariffWindow2Group(isWithPrev);
-				if (window != null)
-				{
-                    Cursor.Current = Cursors.WaitCursor;
-                    if (isWithPrev)
-						window[ParamNames.WindowNextId] = WindowId;
-					else
-						window[ParamNames.WindowPrevId] = WindowId;
-					window.Update();
+        // GroupWithWindow/UngroupWindows переехали в
+        // TariffWindowWithRollerIssues.WinForms.cs — обвязка Cursor вокруг
+        // записи, у самих методов диалога выбора нет (кроме UserInteraction.Confirm
+        // внутри UngroupWindows). См. §10 конвенции: их пришлось довести до конца,
+        // когда мост стал полным критерием, а не только диалоговым проходом.
 
-					if (isWithPrev)
-						this[ParamNames.WindowPrevId] = window.WindowId;
-					else
-						this[ParamNames.WindowNextId] = window.WindowId;
-					Update();
-                    TariffWindowUngrouped?.Invoke(isWithPrev, false);
-                }
-			}
-			finally { Cursor.Current = Cursors.Default; }
-		}
-
-		private void UngroupWindows(bool isWithPrev)
-		{
-			try
-			{
-				TariffWindowWithRollerIssues window = CreateTariffWindowById(isWithPrev ? int.Parse(this[ParamNames.WindowPrevId].ToString()) : int.Parse(this[ParamNames.WindowNextId].ToString()));
-				window.Refresh();
-
-				if (UserMessage.ShowQuestion(string.Format("Хотите отменить объединение рекламных окон '{0}' и '{1}'?", WindowDate.ToString("g"), window.WindowDate.ToString("g"))) == DialogResult.Yes)
-				{
-                    Cursor.Current = Cursors.WaitCursor;
-                    if (isWithPrev)
-						window[ParamNames.WindowNextId] = null;
-					else
-						window[ParamNames.WindowPrevId] = null;
-					window.Update();
-
-					if (isWithPrev)
-						this[ParamNames.WindowPrevId] = null;
-					else
-						this[ParamNames.WindowNextId] = null;
-					Update();
-					TariffWindowUngrouped?.Invoke(window.WindowDate < WindowDate, true);
-				}
-			}
-			finally { Cursor.Current = Cursors.Default; }
-        }
 
         override public DataTable LoadIssues(bool showUnconfirmed, Entity issueEntity)
 		{

@@ -1,14 +1,14 @@
 ﻿using FogSoft.WinForm;
 using FogSoft.WinForm.Classes;
 using FogSoft.WinForm.DataAccess;
-using FogSoft.WinForm.Forms;
 using System.Collections.Generic;
 using System.Data;
-using System.Windows.Forms;
 
 namespace Merlin.Classes
 {
-    public class HeadCompany : ObjectContainer
+    // UI-часть (DoAction, EditFirms) — в HeadCompany.WinForms.cs.
+    // Конвенция — docs/tasks/web-migration-dialogs.md.
+    public partial class HeadCompany : ObjectContainer
     {
         public HeadCompany() : base(GetEntity())
         {
@@ -43,34 +43,29 @@ namespace Merlin.Classes
             return ((DataSet)DataAccessor.DoAction(procParameters)).Tables[0];
         }
 
-        public override void DoAction(string actionName, IWin32Window owner, InterfaceObjects interfaceObject)
-        {
-            if(actionName == "EditFirms")
-                EditFirms(owner);
-            else
-                base.DoAction(actionName, owner, interfaceObject);
-        }
+        // DoAction и EditFirms переехали в HeadCompany.WinForms.cs.
 
-        private void EditFirms(IWin32Window owner)
+        /// <summary>Кандидаты на переприкрепление к этой головной компании.</summary>
+        internal DataTable GetFirmsForReassign()
         {
-            Cursor.Current = Cursors.WaitCursor;
             Entity entity = EntityManager.GetEntity((int)Entities.Firm);
             Dictionary<string, object> filterValues = DataAccessor.CreateParametersDictionary();
+            return entity.GetContent(filterValues);
+        }
 
-            SelectionForm fSelector = new SelectionForm(entity, entity.GetContent(filterValues).DefaultView, "Фирмы-заказчики", true);
-            if(fSelector.ShowDialog(owner) == DialogResult.OK)
+        /// <summary>Переприкрепляет выбранные фирмы к этой головной компании.</summary>
+        internal void ApplyFirmsReassign(IList<PresentationObject> items)
+        {
+            foreach (var item in items)
             {
-                foreach (var item in fSelector.AddedItems)
-                {
-                    int oldId = (int)item[Firm.ParamNames.HeadCompanyID];
-                    var hc = HeadCompany.GetObjectById(oldId);
-                    item[Firm.ParamNames.HeadCompanyID] = IDs[0];
-                    item.Update();
-                    
-                    if(HeadCompany.GetObjectById(oldId) == null) OnObjectDeleted(hc);
-                }
-                OnObjectChanged(this);
+                int oldId = (int)item[Firm.ParamNames.HeadCompanyID];
+                var hc = HeadCompany.GetObjectById(oldId);
+                item[Firm.ParamNames.HeadCompanyID] = IDs[0];
+                item.Update();
+
+                if (HeadCompany.GetObjectById(oldId) == null) OnObjectDeleted(hc);
             }
+            OnObjectChanged(this);
         }
 
         private static Entity GetEntity()

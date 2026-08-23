@@ -1,16 +1,14 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Data;
-using System.Windows.Forms;
-using FogSoft.WinForm;
-using FogSoft.WinForm.Forms;
 using FogSoft.WinForm.Classes;
-using CrystalDecisions.CrystalReports.Engine;
 using FogSoft.WinForm.DataAccess;
 
 namespace Merlin.Classes
 {
-	public abstract class Pricelist : ObjectContainer
+	// UI-часть (DoAction, ClonePriceList, CheckSelectionResult) — в
+	// Pricelist.WinForms.cs. Конвенция — docs/tasks/web-migration-dialogs.md.
+	public abstract partial class Pricelist : ObjectContainer
 	{
 		public struct ParamNames
 		{
@@ -49,63 +47,49 @@ namespace Merlin.Classes
 			get { return int.Parse(this[ParamNames.PricelistId].ToString()); }
 		}
 
-		public override void DoAction(string actionName, IWin32Window owner, InterfaceObjects interfaceObject)
+		// DoAction, ClonePriceList и CheckSelectionResult переехали в Pricelist.WinForms.cs.
+
+		/// <summary>Клонирует прайс-лист на новый период.</summary>
+		internal void ApplyClone(DateTime startDate, DateTime finishDate)
 		{
-            if (actionName.Equals(Constants.EntityActions.Clone, StringComparison.InvariantCultureIgnoreCase))
-                    ClonePriceList(owner, false);
-			else if (actionName.Equals(ActionNames.MassClone, StringComparison.InvariantCultureIgnoreCase))
-                ClonePriceList(owner, true);
-            else
-				base.DoAction(actionName, owner, interfaceObject);
+			Dictionary<string, object> newParameters = Parameters;
+			newParameters[ParamNames.FinishDate] = finishDate;
+			newParameters[ParamNames.StartDate] = startDate;
+			Clone(newParameters);
 		}
 
-		private void ClonePriceList(IWin32Window owner, bool massFlag)
+		/// <summary>
+		/// Клонирует прайс-лист на новый период для каждой из выбранных
+		/// радиостанций. Возвращает таблицу ошибок (пустую, если ошибок не было).
+		/// </summary>
+		internal DataTable ApplyMassClone(DateTime startDate, DateTime finishDate, IEnumerable<PresentationObject> radioStations)
 		{
-			try
+			Dictionary<string, object> newParameters = Parameters;
+			newParameters[ParamNames.FinishDate] = finishDate;
+			newParameters[ParamNames.StartDate] = startDate;
+
+			DataTable tableErrors = CreateErrorTable();
+			foreach (var radioStation in radioStations)
 			{
-				FrmDateSelector fSelector = new FrmDateSelector("Даты начала и окончания");
-				if (fSelector.ShowDialog(owner) == DialogResult.OK)
+				newParameters[Massmedia.ParamNames.MassmediaId] = radioStation[Massmedia.ParamNames.MassmediaId];
+				try
 				{
-                    Dictionary<string, object> newParameters = Parameters;
-                    newParameters[ParamNames.FinishDate] = fSelector.FinishDate.Date;
-                    newParameters[ParamNames.StartDate] = fSelector.StartDate.Date;
-					if (!massFlag)
-						Clone(newParameters);
-					else
-					{
-						SelectionForm selector = new SelectionForm(EntityManager.GetEntity((int)Entities.MassMedia), "Радиостанции", true, CheckSelectionResult);
-
-						if (selector.ShowDialog(owner) == DialogResult.OK)
-						{
-							Application.DoEvents();
-							Cursor.Current = Cursors.WaitCursor;
-
-							DataTable tableErrors = CreateErrorTable();
-
-							foreach (var radioStation in selector.AddedItems)
-							{
-								newParameters[Massmedia.ParamNames.MassmediaId] = radioStation[Massmedia.ParamNames.MassmediaId];
-								try
-								{
-									Clone(newParameters);
-								}
-								catch (Exception ex)
-								{
-									DataRow row = tableErrors.NewRow();
-									row["description"] = string.Format("{0}: {1} ", radioStation.Name, MessageAccessor.GetMessage(ex.Message));
-									tableErrors.Rows.Add(row);
-								}
-							}
-							if (tableErrors.Rows.Count > 0)
-								Globals.ShowSimpleJournal(EntityManager.GetEntity((int)Entities.ErrTmplGen), "Ошибки клонирования", tableErrors);
-						}
-					}
+					Clone(newParameters);
+				}
+				catch (Exception ex)
+				{
+					DataRow row = tableErrors.NewRow();
+					row["description"] = string.Format("{0}: {1} ", radioStation.Name, MessageAccessor.GetMessage(ex.Message));
+					tableErrors.Rows.Add(row);
 				}
 			}
-			finally
-			{
-				Cursor.Current = Cursors.Default;
-			}
+			return tableErrors;
+		}
+
+		/// <summary>Проверяет выбор радиостанций для массового клонирования.</summary>
+		internal bool IsMassCloneSelectionValid(int selectedCount)
+		{
+			return selectedCount != 0;
 		}
 
 		private DataTable CreateErrorTable()
@@ -115,16 +99,6 @@ namespace Merlin.Classes
             DataColumn column = new DataColumn("description", System.Type.GetType("System.String"));
             tableErrors.Columns.Add(column);
 			return tableErrors;
-        }
-
-        private bool CheckSelectionResult(SelectionForm selectionForm)
-        {
-            if (selectionForm.AddedItems.Count == 0)
-            {
-                UserMessage.ShowExclamation(Properties.Resources.NoRadiostationSelected);
-                return false;
-            }
-            return true;
         }
 
         internal static Pricelist GetPricelistById(int pricelistId, Entity entity)

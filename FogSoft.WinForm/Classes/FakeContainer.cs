@@ -1,10 +1,8 @@
-﻿using FogSoft.WinForm.Passport.Forms;
-using System;
-using System.Windows.Forms;
+﻿using System;
 
 namespace FogSoft.WinForm.Classes
 {
-	public class FakeContainer : ObjectsIterator, IObjectContainer, IActionHandler, IVisualContainer
+	public partial class FakeContainer : ObjectsIterator, IObjectContainer, IVisualContainer
 	{
 		public event ObjectDelegate ObjectCreated;
 		public event ContainerDelegate ContainerRefreshed;
@@ -72,54 +70,10 @@ namespace FogSoft.WinForm.Classes
 			return false;
 		}
 
-		public virtual void DoAction(
-			string actionName, IWin32Window owner, InterfaceObjects interfaceObject)
-		{
-			switch(actionName)
-			{
-				case Constants.EntityActions.AddNew:
-					PresentationObject newObject = childEntity.NewObject;
-					if(newObject.ShowPassport(owner) && ObjectCreated != null)
-					{
-						IObjectContainer oc = newObject as IObjectContainer;
-						if(oc != null)
-							oc.RelationScenario = relationScenario;
-						ObjectCreated(newObject);
-					}
-					break;
-
-				case Constants.EntityActions.Refresh:
-					FireContainerRefreshed();
-					break;
-			}
-		}
+		// DoAction/ShowFilter переехали в FakeContainer.WinForms.cs.
 
 		#endregion
 
-		public virtual void ShowFilter(IWin32Window owner)
-		{
-            try
-            {
-				if(!IsFilterable)
-					return;
-
-                Cursor.Current = Cursors.WaitCursor;
-                Application.DoEvents();
-
-                FilterForm frm = new FilterForm(relationScenario.StartingEntity, Globals.PrepareForFilter(RootEntity), _filter, relationScenario.XmlFilter);
-					
-                if (frm.ShowDialog(owner) == DialogResult.OK)
-                    FireContainerRefreshed();
-            }
-            catch (Exception ex)
-            {
-                ErrorManager.PublishError(ex);
-            }
-            finally
-            {
-                Cursor.Current = Cursors.Default;
-            }
-        }
 
         protected Entity RootEntity
         {

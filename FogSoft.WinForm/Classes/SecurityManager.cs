@@ -94,23 +94,46 @@ namespace FogSoft.WinForm.Classes
         
 		#region Static
 
-		private static User loggedUser;
+		/// <summary>
+		/// Хранилище текущего пользователя. В десктопе на процесс приходится один
+		/// пользователь, поэтому по умолчанию это обычное статическое поле — как было.
+		/// Веб подставляет своё хранилище, отдельное на запрос, вызовом
+		/// <see cref="SetLoggedUserStorage"/> при старте.
+		/// См. docs/tasks/web-migration.md, этап 0.
+		/// </summary>
+		public interface ILoggedUserStorage
+		{
+			User User { get; set; }
+		}
+
+		private sealed class SingleUserStorage : ILoggedUserStorage
+		{
+			public User User { get; set; }
+		}
+
+		private static ILoggedUserStorage _storage = new SingleUserStorage();
+
+		public static void SetLoggedUserStorage(ILoggedUserStorage storage)
+		{
+			_storage = storage ?? throw new ArgumentNullException(nameof(storage));
+		}
 
 		public static void Login(string login, string password)
 		{
-			loggedUser = GetUser(login, password);
-			if (loggedUser != null)
-                loggedUser.LoginName = login;
+			User user = GetUser(login, password);
+			if (user != null)
+				user.LoginName = login;
+			_storage.User = user;
         }
 
 		public static void Clear()
 		{
-			loggedUser = null;
+			_storage.User = null;
 		}
 
 		public static User LoggedUser
 		{
-			get { return loggedUser; }
+			get { return _storage.User; }
 		}
 
 		public static byte[] GetHash(string text)

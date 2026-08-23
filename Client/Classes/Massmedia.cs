@@ -1,18 +1,15 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Data;
-using System.Windows.Forms;
 using FogSoft.WinForm;
 using FogSoft.WinForm.Classes;
-using FogSoft.WinForm.Controls;
 using FogSoft.WinForm.DataAccess;
-using FogSoft.WinForm.Passport.Forms;
-using Merlin.Forms;
-using Merlin.License;
 
 namespace Merlin.Classes
 {
-    public class Massmedia : Organization
+    // UI-часть (DoAction) — в Massmedia.WinForms.cs.
+    // Конвенция — docs/tasks/web-migration-dialogs.md.
+    public partial class Massmedia : Organization
     {
 		#region Constants -------------------------------------
 
@@ -71,22 +68,7 @@ namespace Merlin.Classes
 
 		#endregion
 
-		public override void DoAction(string actionName, IWin32Window owner, InterfaceObjects interfaceObject)
-		{
-			switch (actionName)
-			{
-				case ActionNames.AddSponsorProgram:
-				case ActionNames.AddDisabledWindow:
-				case ActionNames.AddPriceList:
-				case ActionNames.AddModule:
-                case ActionNames.AssignRelease:
-                    base.DoAction(Constants.EntityActions.AssignNew, owner, interfaceObject);
-					break;
-				default:
-					base.DoAction(actionName, owner, interfaceObject);
-					break;
-			}
-		}
+		// DoAction переехал в Massmedia.WinForms.cs (IWin32Window в сигнатуре).
 
 		public override bool IsActionEnabled(string actionName, ViewType type)
 		{
@@ -285,35 +267,10 @@ namespace Merlin.Classes
 			procParameters[ParamNames.MassmediaId] = MassmediaId;
 		}
 
-		public override bool Update()
-		{
-			if (IsNew && !AdvertAgLicence.CheckLicenseMassmediasCountForAdd())
-				return false;
-
-			if (!base.Update())
-				return false;
-
-			// Submit children changes to database 
-			foreach (ChildrenChanges childrenChanges in childrenChangesList)
-			{
-				foreach (PresentationObject po in childrenChanges.AddedObjects)
-				{
-					MassmediaAgency massmediaAgency =
-						new MassmediaAgency(((Agency) po).AgencyId, MassmediaId);
-					massmediaAgency.Update();
-				}
-
-				foreach (PresentationObject po in childrenChanges.DeletedObjects)
-				{
-					MassmediaAgency massmediaAgency =
-						new MassmediaAgency(((Agency) po).AgencyId, MassmediaId);
-					massmediaAgency.Delete(true);
-				}
-			}
-			childrenChangesList.Clear();
-
-			return true;
-		}
+		// Update() переехал в Massmedia.WinForms.cs — не диалог, но лицензионная
+		// проверка внутри (AdvertAgLicence) сама показывает UserMessage. Модуль
+		// лицензий — отдельная, живая подсистема (см. обсуждение в чате 2026-08-21),
+		// трогать её сейчас не входит в задачу разбора хвостов.
 
 		internal static DataView LoadMassmediaList()
 		{
@@ -335,14 +292,8 @@ namespace Merlin.Classes
             return dataTable.DefaultView;
         }
 
-		public static void LoadRadiostationsByGroup(LookUp cmbRadioStationGroup, SmartGrid grdRadiostations)
-		{
-            Dictionary<string, object> procParameters = DataAccessor.PrepareParameters(grdRadiostations.Entity);
-            int groupId = ParseHelper.GetInt32FromObject(cmbRadioStationGroup.SelectedValue, 0);
-            if (groupId > 0)
-                procParameters.Add(Massmedia.ParamNames.GroupId, groupId);
-            grdRadiostations.DataSource = ((DataSet)DataAccessor.DoAction(procParameters)).Tables[Constants.TableNames.Data].DefaultView;
-        }
+		// LoadRadiostationsByGroup переехал в Massmedia.WinForms.cs — принимает
+		// UI-типы LookUp/SmartGrid параметрами.
 
         internal static DataView LoadMassmediaList(Dictionary<string, object> parameters)
         {
@@ -369,10 +320,7 @@ namespace Merlin.Classes
 			return EntityManager.GetEntity((int) Entities.MassMedia);
 		}
 
-		public override PassportForm GetPassportForm(DataSet ds)
-		{
-			return new MassmediaPassport(this, ds);
-		}
+		// GetPassportForm переехал в Massmedia.WinForms.cs (возвращает UI-тип PassportForm).
 
 		public string EnterPath
 		{
