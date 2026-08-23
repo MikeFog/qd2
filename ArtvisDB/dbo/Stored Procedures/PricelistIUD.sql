@@ -4,7 +4,7 @@
 @massmediaID smallint = NULL, -- в случае Clone тут будет ID радиостанции куда надо клонировать выбранный прайслист
 @startDate datetime = NULL,
 @finishDate datetime = NULL,
-@broadcastStart smalldatetime = NULL,
+@broadcastStart smalldatetime = '19000101',
 @extraChargeFirstRoller tinyint = NULL,
 @extraChargeSecondRoller tinyint = NULL,
 @extraChargeLastRoller tinyint = NULL,
