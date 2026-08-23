@@ -98,7 +98,7 @@ SET NOCOUNT on
             -- Фильтр по дате создания
             AND (@createDateBegin IS NULL OR a.createDate >= @createDateBegin)
             AND (@createDateEnd IS NULL OR a.createDate <= @createDateEnd)
-			and f.headCompanyID = COALESCE(@headCompanyID, f.headCompanyID)
+			and (@headCompanyID is null or f.headCompanyID = @headCompanyID)
 			AND (
 				(a.[isConfirmed] = 0 AND @isShowNotActivate = 1 And a.deleteDate is null) 
 				OR (a.[isConfirmed] = 1 AND @isShowActivate = 1 And a.deleteDate is null) 
@@ -182,7 +182,7 @@ SET NOCOUNT on
 			AND (@withoutActionId IS NULL OR a.[actionID] <> @withoutActionId)
 			and (@withoutActionsSince is null or not exists(select 1 from @headCompaniesWithRecentAction h where h.headCompanyID = f.headCompanyID))
 			and (@managerDiscount is null or (c.managerDiscount - @managerDiscount) < -0.005)
-			and f.headCompanyID = COALESCE(@headCompanyID, f.headCompanyID)
+			and (@headCompanyID is null or f.headCompanyID = @headCompanyID)
 		order by a.actionID desc
 	end
 	else 
@@ -272,6 +272,6 @@ SET NOCOUNT on
 			AND (@withoutActionId IS NULL OR a.[actionID] <> @withoutActionId)
 			and (@withoutActionsSince is null or not exists(select 1 from @headCompaniesWithRecentAction h where h.headCompanyID = f.headCompanyID))
 			and (@managerDiscount is null or (c.managerDiscount - @managerDiscount) < -0.005)
-			and f.headCompanyID = COALESCE(@headCompanyID, f.headCompanyID)
+			and (@headCompanyID is null or f.headCompanyID = @headCompanyID)
 		order by a.actionID desc
 		End
