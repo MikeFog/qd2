@@ -1,0 +1,261 @@
+@page "/journal/{EntityId:int}"
+@rendermode InteractiveServer
+@using System.Data
+@using FogSoft.Web.Infrastructure
+@using FogSoft.WinForm
+@using FogSoft.WinForm.Classes
+
+@*
+    Движок журнала: список объектов сущности, фильтр и карточка — всё по
+    метаданным, без кода на конкретный экран. Это и есть проверка главной
+    ставки плана (раздел 2): один рендерер закрывает большинство из 89 пунктов
+    меню.
+
+    Загрузка данных повторяет канонический путь десктопа (JournalForm.LoadData):
+        entity.ClearCache();
+        entity.GetContent(filterValues);
+    Entity наследует GetContent от ObjectsIterator и сам себе ChildEntity, так
+    что ни своего SQL, ни своей выборки здесь нет.
+
+    Журнал плоский. У сущности 17 в десктопе иерархия (AdvertType.GetContent с
+    parentID), но древовидный журнал — отдельный движок этапа 2; решение и
+    причина записаны в docs/tasks/web-migration.md, раздел 10.
+*@
+
+<PageTitle>@(_entity?.Name ?? "Журнал")</PageTitle>
+
+@if (SecurityManager.LoggedUser == null)
+{
+    <div class="alert alert-warning">
+        Нужно <a href="/">войти в систему</a>.
+    </div>
+}
+else if (_error != null)
+{
+    <div class="alert alert-danger">@_error</div>
+}
+else if (_entity == null)
+{
+    <p>Загрузка…</p>
+}
+else
+{
+    <h3>@_entity.Name</h3>
+
+    @* ---------- Фильтр ---------- *@
+    @if (_filterPages.Count > 0)
+    {
+        <div class="card mb-3" style="max-width: 40rem">
+            <div class="card-body py-2">
+                @foreach (var pg in _filterPages)
+                {
+                    @foreach (var field in pg.Fields)
+                    {
+                        <div class="form-check">
+                            @if (string.Equals(field.XmlType, "boolean", StringComparison.OrdinalIgnoreCase))
+                            {
+                                <input type="checkbox" class="form-check-input" id="@("f_" + field.Name)"
+                                       checked="@GetFilterBool(field.Name)"
+                                       @onchange="e => SetFilterBool(field.Name, e.Value)" />
+                                <label class="form-check-label" for="@("f_" + field.Name)">@field.Caption</label>
+                            }
+                            else
+                            {
+                                <span class="text-muted small">
+                                    Фильтр <code>@(field.XmlType ?? "field")</code> пока не поддержан (этап 2).
+                                </span>
+                            }
+                        </div>
+                    }
+                }
+                <button class="btn btn-sm btn-outline-primary mt-2" @onclick="Load">Применить</button>
+            </div>
+        </div>
+    }
+
+    @* ---------- Список ---------- *@
+    <div class="mb-2">
+        <button class="btn btn-sm btn-primary" @onclick="AddNew">Добавить</button>
+        <span class="text-muted ms-2">Записей: @(_data?.Rows.Count ?? 0)</span>
+    </div>
+
+    @if (_data != null)
+    {
+        <div style="overflow-x:auto">
+            <table class="table table-sm table-hover" style="max-width: 60rem">
+                <thead>
+                    <tr>
+                        @foreach (var a in _columns)
+                        {
+                            <th>@a.Alias</th>
+                        }
+                        <th style="width:7rem"></th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (DataRow row in _data.Rows)
+                    {
+                        <tr>
+                            @foreach (var a in _columns)
+                            {
+                                <td>@Display(row, a.Name)</td>
+                            }
+                            <td>
+                                <button class="btn btn-sm btn-outline-secondary"
+                                        @onclick="() => Edit(row)">Открыть</button>
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    }
+
+    @* ---------- Карточка ---------- *@
+    @if (_editing != null)
+    {
+        <div class="card mt-3" style="max-width: 40rem">
+            <div class="card-header">
+                @(_isNew ? "Новая запись" : "Редактирование")
+            </div>
+            <div class="card-body">
+                <Passport Object="_editing" Xml="@_entity.XmlPassport" />
+
+                @if (_saveError != null)
+                {
+                    <div class="alert alert-danger">@_saveError</div>
+                }
+
+                <button class="btn btn-primary" @onclick="Save" disabled="@_saving">
+                    @(_saving ? "Сохраняю…" : "Сохранить")
+                </button>
+                <button class="btn btn-secondary" @onclick="() => _editing = null">Отмена</button>
+            </div>
+        </div>
+    }
+}
+
+@code {
+    [Parameter] public int EntityId { get; set; }
+
+    private Entity? _entity;
+    private DataTable? _data;
+    private IReadOnlyList<Entity.Attribute> _columns = Array.Empty<Entity.Attribute>();
+    private readonly Dictionary<string, object> _filterValues =
+        new(StringComparer.InvariantCultureIgnoreCase);
+    private IReadOnlyList<PassportPage> _filterPages = Array.Empty<PassportPage>();
+
+    private PresentationObject? _editing;
+    private bool _isNew;
+    private bool _saving;
+    private string? _error;
+    private string? _saveError;
+
+    protected override void OnParametersSet()
+    {
+        if (SecurityManager.LoggedUser == null)
+            return;
+
+        try
+        {
+            _error = null;
+            _entity = EntityManager.GetEntity(EntityId);
+            _columns = _entity.SortedAttributes;
+            _filterPages = PassportSchema.Parse(_entity.XmlFilter);
+
+            // Значения фильтра по умолчанию берутся из самих метаданных —
+            // тем же кодом, что и в десктопе (Globals.ResolveFilterInitialValues).
+            _filterValues.Clear();
+            Globals.ResolveFilterInitialValues(_filterValues, _entity.XmlFilter);
+
+            Load();
+        }
+        catch (Exception ex)
+        {
+            _error = ex.GetType().Name + ": " + ex.Message;
+        }
+    }
+
+    private void Load()
+    {
+        try
+        {
+            _error = null;
+            _entity!.ClearCache();
+            _data = _entity.GetContent(_filterValues);
+        }
+        catch (Exception ex)
+        {
+            _error = ex.GetType().Name + ": " + ex.Message;
+        }
+    }
+
+    /// <summary>
+    /// Значения фильтра хранятся так же, как в десктопе — словарём
+    /// «имя параметра → значение», который уходит прямо в GetContent.
+    /// Своей типизации не вводим: процедура ждёт тот же набор.
+    /// </summary>
+    private bool GetFilterBool(string name) =>
+        _filterValues.TryGetValue(name, out object? v)
+        && v != null
+        && bool.TryParse(v.ToString(), out bool b)
+        && b;
+
+    private void SetFilterBool(string name, object? value)
+    {
+        // ResolveFilterInitialValues кладёт значения строками ("True"),
+        // поэтому и мы пишем строкой — иначе при сравнении фильтров
+        // (ObjectsIterator.IsNewFilter) типы разъедутся.
+        _filterValues[name] = (value is bool b && b).ToString();
+    }
+
+    private string Display(DataRow row, string column)
+    {
+        if (!row.Table.Columns.Contains(column))
+            return "";
+        object v = row[column];
+        return v == DBNull.Value ? "" : v.ToString() ?? "";
+    }
+
+    private void Edit(DataRow row)
+    {
+        _saveError = null;
+        _isNew = false;
+        // CreateObject поднимает тот самый доменный класс, который прописан в
+        // метаданных (для сущности 17 — Merlin.Classes.AdvertType).
+        _editing = _entity!.CreateObject(row);
+    }
+
+    private void AddNew()
+    {
+        _saveError = null;
+        _isNew = true;
+        _editing = _entity!.NewObject;
+    }
+
+    private void Save()
+    {
+        _saving = true;
+        _saveError = null;
+        try
+        {
+            if (_editing!.Update())
+            {
+                _editing = null;
+                Load();
+            }
+            else
+            {
+                _saveError = "Сохранение отклонено.";
+            }
+        }
+        catch (Exception ex)
+        {
+            _saveError = ex.GetType().Name + ": " + ex.Message;
+        }
+        finally
+        {
+            _saving = false;
+        }
+    }
+}
