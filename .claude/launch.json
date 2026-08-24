@@ -1,0 +1,12 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "FogSoft.Web",
+      "runtimeExecutable": "dotnet",
+      "runtimeArgs": ["run", "--project", "FogSoft.Web/FogSoft.Web.csproj", "--launch-profile", "http"],
+      "port": 5051,
+      "url": "http://localhost:5051"
+    }
+  ]
+}
