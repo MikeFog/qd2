@@ -13,6 +13,9 @@ builder.Services.AddRazorComponents()
 // Сеанс живёт столько же, сколько circuit (вкладка браузера). Подробности,
 // почему именно так, — в комментарии к CircuitServicesAccessor.
 builder.Services.AddScoped<UserSession>();
+// Scoped — то есть свой на circuit: диалог одного пользователя не должен
+// быть виден другому.
+builder.Services.AddScoped<DialogService>();
 builder.Services.AddSingleton<CircuitServicesAccessor>();
 builder.Services.AddScoped<CircuitHandler, CircuitServicesHandler>();
 
