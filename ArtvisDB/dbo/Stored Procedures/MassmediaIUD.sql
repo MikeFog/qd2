@@ -43,7 +43,8 @@ SET NOCOUNT on
 if @mediaPlusMassmediaID = 0
 	set @mediaPlusMassmediaID = null
 
--- Интервалы-исключения политической агитации: проверяем формат (ЧЧ:ММ-ЧЧ:ММ через ';')
+-- Интервалы-исключения политической агитации: проверяем формат строки
+-- (необязательные дни недели + ЧЧ:ММ-ЧЧ:ММ через ';'), см. fn_AgitationExcludeIntervals
 if @actionName in ('AddItem', 'UpdateItem')
 	and exists (select 1 from dbo.fn_AgitationExcludeIntervals(@agitationExcludeIntervals) where startMin is null)
 begin
