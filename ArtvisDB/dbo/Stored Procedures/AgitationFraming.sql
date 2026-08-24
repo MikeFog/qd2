@@ -32,7 +32,7 @@ BEGIN
 	DECLARE @mmID smallint, @first int, @last int, @prev int, @next int,
 		@rLocal int, @rAnnounce int, @rFederal int, @svcCampaignID int,
 		@insRollerID int, @insWindowID int,
-		@excludeIntervals varchar(256), @windowMinute int, @isExcluded bit = 0
+		@excludeIntervals varchar(256), @windowMinute int, @windowDayBit int, @isExcluded bit = 0
 
 	SELECT @mmID = tw.massmediaID FROM TariffWindow tw WHERE tw.windowId = @windowID
 	SELECT @rLocal = agitationLocalRollerID, @rAnnounce = agitationAnnounceRollerID, @rFederal = agitationFederalRollerID,
@@ -42,12 +42,17 @@ BEGIN
 	-- Интервал-исключение: в это время станция и так идентифицирует себя в эфире,
 	-- поэтому идентификаторы СМИ (44/55) не нужны - как если бы в окне уже стояли
 	-- ручные 4/5. Анонс агитации (7) добавляется в любом случае.
-	-- Сравниваем по фактическому времени выхода окна, границы интервала включаются.
-	SELECT @windowMinute = DATEPART(hour, tw.windowDateActual) * 60 + DATEPART(minute, tw.windowDateActual)
+	-- Сравниваем по фактическим дате и времени выхода окна, границы интервала
+	-- включаются. dayMask - маска дней недели интервала (бит 0 = пн ... бит 6 = вс);
+	-- строка настройки без указания дней даёт 127, т.е. все дни.
+	SELECT @windowMinute = DATEPART(hour, tw.windowDateActual) * 60 + DATEPART(minute, tw.windowDateActual),
+		-- 0 = пн ... 6 = вс, независимо от текущего SET DATEFIRST
+		@windowDayBit = CAST(POWER(2, (DATEPART(weekday, tw.windowDateActual) + @@DATEFIRST - 2) % 7) AS int)
 	FROM TariffWindow tw WHERE tw.windowId = @windowID
 
 	IF EXISTS (SELECT 1 FROM dbo.fn_AgitationExcludeIntervals(@excludeIntervals)
-		WHERE @windowMinute BETWEEN startMin AND finishMin)
+		WHERE @windowMinute BETWEEN startMin AND finishMin
+			AND dayMask & @windowDayBit <> 0)
 		SET @isExcluded = 1
 
 	-- страховка: вызывающая сторона обязана была это проверить
