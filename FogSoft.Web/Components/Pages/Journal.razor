@@ -217,20 +217,51 @@ else
         return v == DBNull.Value ? "" : v.ToString() ?? "";
     }
 
+    // Открытие и создание карточки поднимают доменный класс по метаданным
+    // (для сущности 17 — Merlin.Classes.AdvertType) и потому могут упасть на
+    // резолвинге типа. Без перехвата исключение убивает circuit, и пользователь
+    // видит безымянную "внутреннюю ошибку" вместо причины.
     private void Edit(DataRow row)
     {
         _saveError = null;
         _isNew = false;
-        // CreateObject поднимает тот самый доменный класс, который прописан в
-        // метаданных (для сущности 17 — Merlin.Classes.AdvertType).
-        _editing = _entity!.CreateObject(row);
+        try
+        {
+            _editing = _entity!.CreateObject(row);
+        }
+        catch (Exception ex)
+        {
+            _editing = null;
+            _error = Describe(ex);
+        }
     }
 
     private void AddNew()
     {
         _saveError = null;
         _isNew = true;
-        _editing = _entity!.NewObject;
+        try
+        {
+            _editing = _entity!.NewObject;
+        }
+        catch (Exception ex)
+        {
+            _editing = null;
+            _error = Describe(ex);
+        }
+    }
+
+    /// <summary>
+    /// Разворачивает вложенные исключения: Activator.CreateInstance заворачивает
+    /// настоящую причину в TargetInvocationException, и без разворачивания на
+    /// экране оказывается бесполезное "Exception has been thrown by the target".
+    /// </summary>
+    private static string Describe(Exception ex)
+    {
+        var parts = new List<string>();
+        for (Exception? e = ex; e != null; e = e.InnerException)
+            parts.Add(e.GetType().Name + ": " + e.Message);
+        return string.Join(" → ", parts);
     }
 
     private void Save()

@@ -25,6 +25,12 @@ log4net.Config.XmlConfigurator.Configure(
     log4net.LogManager.GetRepository(Assembly.GetEntryAssembly()),
     new FileInfo(Path.Combine(AppContext.BaseDirectory, "log4net.config")));
 
+// Метаданные называют сборку доменных классов "Merlin" (это Merlin.exe,
+// десктоп). В вебе те же классы лежат в FogSoft.Core — заявляем соответствие,
+// иначе Entity.CreateObject не поднимет класс сущности. Регистрировать нужно
+// до первого обращения к метаданным.
+DomainAssemblyResolver.Register();
+
 // Подстановка хранилища пользователя — тот самый шов из этапа 0.2.
 // С этого момента весь код ядра, спрашивающий SecurityManager.LoggedUser,
 // получает пользователя текущего circuit, а не общего на всех.
