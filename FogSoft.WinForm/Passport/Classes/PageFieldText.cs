@@ -93,6 +93,7 @@ namespace FogSoft.WinForm.Passport.Classes
 		{
 			TextBox.Height *= 2;
 			TextBox.Multiline = true;
+			TextBox.AcceptsReturn = true;
 		}
 	}
 
