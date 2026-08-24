@@ -1,6 +1,7 @@
 @page "/"
 @rendermode InteractiveServer
 @using System.Data
+@using FogSoft.Web.Infrastructure
 @using FogSoft.WinForm.Classes
 
 <PageTitle>Вход</PageTitle>
@@ -71,9 +72,17 @@ else
         {
             SecurityManager.Login(_login, _password);
             if (SecurityManager.LoggedUser == null)
+            {
                 _error = "Неверный логин или пароль.";
+            }
             else
+            {
                 _password = "";
+                // Словарь процедур обязателен до первого DoAction и не грузится
+                // лениво — см. CoreBootstrap. В десктопе это делает
+                // SplashLogginForm после входа, здесь — мы.
+                CoreBootstrap.EnsureDictionariesLoaded();
+            }
         }
         catch (Exception ex)
         {
