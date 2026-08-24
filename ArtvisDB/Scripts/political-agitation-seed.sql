@@ -67,7 +67,7 @@ IF NOT EXISTS (SELECT 1 FROM [dbo].[iMessage] WHERE name = 'AgitationStationRoll
 IF NOT EXISTS (SELECT 1 FROM [dbo].[iMessage] WHERE name = 'AgitationIntervalsInvalid')
 	INSERT INTO [dbo].[iMessage] (name, [message])
 	VALUES ('AgitationIntervalsInvalid',
-		N'Интервалы-исключения заданы неверно. Формат: ЧЧ:ММ-ЧЧ:ММ, несколько интервалов разделяются точкой с запятой, например: 16:00-16:55; 18:00-19:00. Начало интервала должно быть раньше конца, переход через полночь не поддерживается.');
+		N'Интервалы-исключения заданы неверно. Формат: ЧЧ:ММ-ЧЧ:ММ, несколько интервалов в одной строке разделяются точкой с запятой. Строка может начинаться с дней недели, например: "пн-пт 16:00-16:55; 18:00-19:00", а на следующей строке - другой набор: "сб,вс 10:00-11:00". Дни: пн вт ср чт пт сб вс; допускаются диапазон (пн-пт) и перечисление (пн,ср,пт), строка без дней действует все дни недели. Начало интервала должно быть раньше конца, переход через полночь не поддерживается.');
 
 -- Сообщение для окна результатов активации (ActionActivate читает iMessageToActivate)
 IF NOT EXISTS (SELECT 1 FROM [dbo].[iMessageToActivate] WHERE name = 'AgitationStationRollersNotSet')
@@ -136,7 +136,7 @@ DECLARE @newPage nvarchar(max) = N'	<page caption="Политическая аг
 		<lookup caption="Анонс агитации:" name="agitationAnnounceRollerID" source="rollersAgitAnnounce" columnWithID="rollerID"/>
 		<lookup caption="Федеральное СМИ (агитация):" name="agitationFederalRollerID" source="rollersAgitFederal" columnWithID="rollerID"/>
 		<separator />
-		<field caption="Интервалы без идентификаторов СМИ, напр. 16:00-16:55; 18:00-19:00" name="agitationExcludeIntervals"/>
+		<field caption="Интервалы, напр. пн-пт 16:00-16:55; 18:00-19:00" name="agitationExcludeIntervals"/>
 	</page>
 </passport>';
 
