@@ -343,12 +343,14 @@ namespace Merlin.Forms.CreateActionMaster
 			if (days.Count == 0) return;
 
 			int addedCount = 0;
-			List<string> errors = new List<string>();
+			DataTable addErrors = SmartGrid.CreateDeleteErrorsTable();
+			int errorRowNumber = 1;
 			try
 			{
 				Cursor = Cursors.WaitCursor;
 				foreach (ComboModuleDay day in days)
 				{
+					string objectName = string.Format("{0}, {1:dd.MM.yyyy}", day.ModuleName, day.Date);
 					try
 					{
 						AddModuleIssue(day, roller);
@@ -356,8 +358,8 @@ namespace Merlin.Forms.CreateActionMaster
 					}
 					catch (Exception ex)
 					{
-						errors.Add(string.Format("{0}, {1:dd.MM.yyyy}: {2}",
-							day.ModuleName, day.Date, ErrorManager.GetErrorMessage(ex)));
+						SmartGrid.AddDeleteError(addErrors, errorRowNumber++, objectName,
+							ErrorManager.GetErrorMessage(ex));
 					}
 				}
 			}
@@ -369,9 +371,8 @@ namespace Merlin.Forms.CreateActionMaster
 			if (addedCount > 0)
 				RefreshAfterChange();
 
-			if (errors.Count > 0)
-				UserMessage.ShowExclamation(string.Format(
-					"Добавлено выпусков: {0}.\n\nОшибки:\n{1}", addedCount, string.Join("\n", errors)));
+			if (addErrors.Rows.Count > 0)
+				SmartGrid.ShowDeleteErrors(addErrors, "Ошибки массового добавления");
 			else
 				UserMessage.ShowInformation(string.Format("Добавлено выпусков: {0}.", addedCount));
 		}

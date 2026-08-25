@@ -1688,24 +1688,26 @@ namespace FogSoft.WinForm.Controls
         }
 
         /// <summary>
-        /// Показывает накопленные ошибки массового удаления в простом журнале.
-        /// Вынесено из DeleteSelectedObjects для переиспользования внешними сценариями
-        /// (например, удаление выпусков по выбранным окнам тарифной сетки).
+        /// Показывает накопленные ошибки массовой операции в простом журнале. Вынесено из
+        /// DeleteSelectedObjects для переиспользования внешними сценариями (например, удаление
+        /// выпусков по выбранным окнам тарифной сетки или массовое добавление по Insert) - имя
+        /// осталось от первого сценария (удаления), caption позволяет назвать журнал правильно
+        /// для любой другой массовой операции.
         /// </summary>
-        public static void ShowDeleteErrors(DataTable deleteErrors)
+        public static void ShowDeleteErrors(DataTable deleteErrors, string caption = "Ошибки массового удаления")
         {
             if (deleteErrors == null || deleteErrors.Rows.Count == 0)
                 return;
 
             Entity errorEntity = EntityManager.CreateVirtualEntity(
                 MASS_DELETE_ERROR_ENTITY_ID,
-                "Ошибки удаления",
+                caption,
                 "MassDeleteErrors",
                 MASS_DELETE_ERROR_ENTITY_PK,
                 new Entity.Attribute(MASS_DELETE_ERROR_NAME, "Название", "nvarchar"),
                 new Entity.Attribute(MASS_DELETE_ERROR_TEXT, "Ошибка", "nvarchar"));
 
-            Globals.ShowSimpleJournal(errorEntity, "Ошибки массового удаления", deleteErrors, true);
+            Globals.ShowSimpleJournal(errorEntity, caption, deleteErrors, true);
         }
 
         public static DataTable CreateDeleteErrorsTable()
