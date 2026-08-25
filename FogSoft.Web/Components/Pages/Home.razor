@@ -1,0 +1,123 @@
+@page "/"
+@using System.Data
+@using FogSoft.Web.Infrastructure
+@using FogSoft.WinForm.Classes
+
+<PageTitle>Вход</PageTitle>
+
+<h3>Вход в систему</h3>
+
+<p class="text-muted">
+    Вертикальный срез: вход идёт через ту же процедуру <code>GetUserData</code>,
+    что и в десктопе — <code>SecurityManager.Login</code> из FogSoft.Core вызывается
+    без единой правки.
+</p>
+
+@if (SecurityManager.LoggedUser == null)
+{
+    <div style="max-width: 22rem">
+        <div class="mb-2">
+            <label class="form-label">Пользователь</label>
+            <input class="form-control" @bind="_login" @bind:event="oninput" />
+        </div>
+        <div class="mb-3">
+            <label class="form-label">Пароль</label>
+            <input class="form-control" type="password" @bind="_password" @bind:event="oninput"
+                   @onkeydown="@(e => { if (e.Key == "Enter") DoLogin(); })" />
+        </div>
+        <button class="btn btn-primary" @onclick="DoLogin" disabled="@_busy">
+            @(_busy ? "Проверяю..." : "Войти")
+        </button>
+    </div>
+
+    @if (_error != null)
+    {
+        <div class="alert alert-danger mt-3" style="max-width: 40rem">@_error</div>
+    }
+}
+else
+{
+    <div class="alert alert-success" style="max-width: 40rem">
+        Вошёл: <b>@SecurityManager.LoggedUser.LoginName</b>
+        (@SecurityManager.LoggedUser.FirstName @SecurityManager.LoggedUser.LastName),
+        Id = @SecurityManager.LoggedUser.Id
+    </div>
+
+    <p>
+        <button class="btn btn-outline-secondary btn-sm" @onclick="CheckMetadata">
+            Проверить загрузку метаданных
+        </button>
+        <button class="btn btn-outline-secondary btn-sm" @onclick="Logout">Выйти</button>
+    </p>
+
+    @if (_metadata != null)
+    {
+        <pre class="bg-light p-2" style="max-width: 40rem">@_metadata</pre>
+    }
+}
+
+@code {
+    private string _login = "";
+    private string _password = "";
+    private string? _error;
+    private string? _metadata;
+    private bool _busy;
+
+    private void DoLogin()
+    {
+        _busy = true;
+        _error = null;
+        try
+        {
+            SecurityManager.Login(_login, _password);
+            if (SecurityManager.LoggedUser == null)
+            {
+                _error = "Неверный логин или пароль.";
+            }
+            else
+            {
+                _password = "";
+                // Словарь процедур обязателен до первого DoAction и не грузится
+                // лениво — см. CoreBootstrap. В десктопе это делает
+                // SplashLogginForm после входа, здесь — мы.
+                CoreBootstrap.EnsureDictionariesLoaded();
+            }
+        }
+        catch (Exception ex)
+        {
+            _error = ex.GetType().Name + ": " + ex.Message;
+        }
+        finally
+        {
+            _busy = false;
+        }
+    }
+
+    private void Logout()
+    {
+        SecurityManager.Clear();
+        _metadata = null;
+    }
+
+    /// <summary>
+    /// Метаданные требуют залогиненного пользователя — поэтому это и есть
+    /// проверка того, что пользователь пережил переход между двумя разными
+    /// действиями (вход и этот клик), то есть что контекст circuit работает.
+    /// </summary>
+    private void CheckMetadata()
+    {
+        try
+        {
+            Entity entity = EntityManager.GetEntity(17);
+            _metadata =
+                $"Сущность {entity.Id}: {entity.Name}\n" +
+                $"Атрибутов: {entity.SortedAttributes.Count}\n" +
+                $"Паспорт: {(string.IsNullOrEmpty(entity.XmlPassport) ? "нет" : $"есть, {entity.XmlPassport.Length} симв.")}\n" +
+                $"Фильтр: {(string.IsNullOrEmpty(entity.XmlFilter) ? "нет" : $"есть, {entity.XmlFilter.Length} симв.")}";
+        }
+        catch (Exception ex)
+        {
+            _metadata = ex.GetType().Name + ": " + ex.Message;
+        }
+    }
+}
