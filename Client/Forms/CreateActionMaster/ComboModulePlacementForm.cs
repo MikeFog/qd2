@@ -321,19 +321,77 @@ namespace Merlin.Forms.CreateActionMaster
 			return pricelist;
 		}
 
+		/// <summary>
+		/// Массовое добавление: выбранный ролик расставляется в каждую выделенную ячейку
+		/// сетки - по одному вызову уже существующего AddModuleIssue на ячейку, в цикле,
+		/// как для одиночного клика. Новых хранимых процедур не потребовалось.
+		///
+		/// Выделение доступно только в режиме просмотра (RawDataGridView.MultiSelect
+		/// включается только там, см. ComboModuleGrid.EditMode) - тот же режим, что и у
+		/// массового удаления по Del.
+		/// </summary>
+		private void AddIssuesInSelectedCells()
+		{
+			PresentationObject roller = grdRollers.SelectedObject;
+			if (roller == null)
+			{
+				UserMessage.ShowExclamation("Выберите ролик, который нужно разместить.");
+				return;
+			}
+
+			IList<ComboModuleDay> days = comboModuleGrid.GetSelectedDays();
+			if (days.Count == 0) return;
+
+			int addedCount = 0;
+			List<string> errors = new List<string>();
+			try
+			{
+				Cursor = Cursors.WaitCursor;
+				foreach (ComboModuleDay day in days)
+				{
+					try
+					{
+						AddModuleIssue(day, roller);
+						addedCount++;
+					}
+					catch (Exception ex)
+					{
+						errors.Add(string.Format("{0}, {1:dd.MM.yyyy}: {2}",
+							day.ModuleName, day.Date, ErrorManager.GetErrorMessage(ex)));
+					}
+				}
+			}
+			finally
+			{
+				Cursor = Cursors.Default;
+			}
+
+			if (addedCount > 0)
+				RefreshAfterChange();
+
+			if (errors.Count > 0)
+				UserMessage.ShowExclamation(string.Format(
+					"Добавлено выпусков: {0}.\n\nОшибки:\n{1}", addedCount, string.Join("\n", errors)));
+			else
+				UserMessage.ShowInformation(string.Format("Добавлено выпусков: {0}.", addedCount));
+		}
+
 		#endregion
 
-		#region Удаление выпуска ------------------------------
+		#region Insert/Delete по выделенным ячейкам сетки ------
 
 		private void ComboModuleGrid_KeyDown(object sender, KeyEventArgs e)
 		{
-			if (e.KeyCode != Keys.Delete) return;
+			if (e.KeyCode != Keys.Delete && e.KeyCode != Keys.Insert) return;
 
 			e.Handled = true;
 			e.SuppressKeyPress = true;
 			try
 			{
-				DeleteIssuesInSelectedCells();
+				if (e.KeyCode == Keys.Insert)
+					AddIssuesInSelectedCells();
+				else
+					DeleteIssuesInSelectedCells();
 			}
 			catch (Exception ex)
 			{
