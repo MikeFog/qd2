@@ -91,9 +91,13 @@ namespace FogSoft.WinForm.Passport.Classes
 			XPathNavigator navigator, ColumnInfo columnInfo, PageTypes pageType)
 			: base(navigator, columnInfo, pageType)
 		{
-			TextBox.Height *= 2;
+			TextBox.Height *= 4;
 			TextBox.Multiline = true;
 			TextBox.AcceptsReturn = true;
+			// без полосы прокрутки уезд текста при переполнении выглядит как
+			// пропажа данных, а не как прокрутка (жалоба пользователя на новом
+			// многострочном формате интервалов-исключений агитации)
+			TextBox.ScrollBars = ScrollBars.Vertical;
 		}
 	}
 
