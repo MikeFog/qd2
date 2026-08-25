@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Data;
+using FogSoft.WinForm.Classes;
 using FogSoft.WinForm.DataAccess;
 
 namespace Merlin.Classes
@@ -21,6 +22,7 @@ namespace Merlin.Classes
 			public const string FreeTime = "freeTime";
 			public const string FreeCapacity = "freeCapacity";
 			public const string PositionFree = "positionFree";
+			public const string AdvertTypeFree = "advertTypeFree";
 			public const string MaxCapacity = "maxCapacity";
 			public const string Price = "price";
 			public const string MassmediaId = "massmediaID";
@@ -55,8 +57,11 @@ namespace Merlin.Classes
 		/// </summary>
 		/// <param name="comboModuleID">Состав комбо-модуля; 0 - брать модули акции.</param>
 		/// <param name="actionID">Модули, размещённые в акции; используется, когда комбо-модуля нет.</param>
+		/// <param name="advertType">Выбранный предмет рекламы или null, если фильтр не задан.</param>
+		/// <param name="advertTypePresence">Undefined - не фильтровать, Exist/NotExist - критерий по всем окнам модуля.</param>
 		public static DataTable LoadFreeTime(int comboModuleID, int actionID, DateTime startDate, DateTime finishDate,
-											 bool showUnconfirmed, RollerPositions position)
+											 bool showUnconfirmed, RollerPositions position,
+											 PresentationObject advertType, AdvertTypePresences advertTypePresence)
 		{
 			Dictionary<string, object> procParameters = DataAccessor.CreateParametersDictionary();
 			if (comboModuleID > 0)
@@ -67,6 +72,8 @@ namespace Merlin.Classes
 			procParameters["finishDate"] = finishDate;
 			procParameters["showUnconfirmed"] = showUnconfirmed;
 			procParameters[Issue.ParamNames.PositionId] = (int) position;
+			procParameters["advertTypeId"] = advertType?.IDs[0];
+			procParameters["advertTypePresence"] = (int) advertTypePresence;
 			return DataAccessor.LoadDataSet("ComboModuleFreeTimeRetrieve", procParameters).Tables[0];
 		}
 

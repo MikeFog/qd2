@@ -26,17 +26,27 @@
 			this.tbbStart = new System.Windows.Forms.ToolStripButton();
 			this.tbbJump = new System.Windows.Forms.ToolStripButton();
 			this.tbbSeparator0 = new System.Windows.Forms.ToolStripSeparator();
+			this.tsbMuteRoller = new System.Windows.Forms.ToolStripButton();
+			this.tbbPlay = new System.Windows.Forms.ToolStripButton();
+			this.tsbStop = new System.Windows.Forms.ToolStripButton();
+			this.tbbSeparator0b = new System.Windows.Forms.ToolStripSeparator();
 			this.tbbPosition = new System.Windows.Forms.ToolStripDropDownButton();
 			this.miPositionAny = new System.Windows.Forms.ToolStripMenuItem();
 			this.miPositionFirst = new System.Windows.Forms.ToolStripMenuItem();
 			this.miPositionSecond = new System.Windows.Forms.ToolStripMenuItem();
 			this.miPositionLast = new System.Windows.Forms.ToolStripMenuItem();
+			this.tbbAdvertType = new System.Windows.Forms.ToolStripDropDownButton();
+			this.miShowAllAdvertTypes = new System.Windows.Forms.ToolStripMenuItem();
+			this.miShowAdvertTypeExist = new System.Windows.Forms.ToolStripMenuItem();
+			this.miShowAdvertTypeNotExist = new System.Windows.Forms.ToolStripMenuItem();
 			this.tbbSeparator1 = new System.Windows.Forms.ToolStripSeparator();
 			this.tbbPeriodMode = new System.Windows.Forms.ToolStripDropDownButton();
 			this.miPeriodWeek = new System.Windows.Forms.ToolStripMenuItem();
 			this.miPeriodMonth = new System.Windows.Forms.ToolStripMenuItem();
 			this.tbbSeparator2 = new System.Windows.Forms.ToolStripSeparator();
 			this.tbbShowUnconfirmed = new System.Windows.Forms.ToolStripButton();
+			this.tbbSeparator3 = new System.Windows.Forms.ToolStripSeparator();
+			this.tbbExcel = new System.Windows.Forms.ToolStripButton();
 			this.splitContainer1 = new System.Windows.Forms.SplitContainer();
 			this.splitContainer2 = new System.Windows.Forms.SplitContainer();
 			this.splitContainer3 = new System.Windows.Forms.SplitContainer();
@@ -95,6 +105,42 @@
 			//
 			this.tbbSeparator0.Name = "tbbSeparator0";
 			//
+			// tsbMuteRoller
+			//
+			this.tsbMuteRoller.DisplayStyle = System.Windows.Forms.ToolStripItemDisplayStyle.Image;
+			this.tsbMuteRoller.Image = global::Merlin.Properties.Resources.mute_roller;
+			this.tsbMuteRoller.ImageTransparentColor = System.Drawing.Color.Magenta;
+			this.tsbMuteRoller.Name = "tsbMuteRoller";
+			this.tsbMuteRoller.Size = new System.Drawing.Size(34, 33);
+			this.tsbMuteRoller.Text = "Добавить ролик - пустышку";
+			this.tsbMuteRoller.ToolTipText = "Добавить ролик - пустышку";
+			this.tsbMuteRoller.Click += new System.EventHandler(this.tsbMuteRoller_Click);
+			//
+			// tbbPlay
+			//
+			this.tbbPlay.DisplayStyle = System.Windows.Forms.ToolStripItemDisplayStyle.Image;
+			this.tbbPlay.ImageTransparentColor = System.Drawing.Color.Magenta;
+			this.tbbPlay.Name = "tbbPlay";
+			this.tbbPlay.Size = new System.Drawing.Size(34, 33);
+			this.tbbPlay.Text = "Прослушать ролик";
+			this.tbbPlay.ToolTipText = "Прослушать ролик";
+			this.tbbPlay.Click += new System.EventHandler(this.tbbPlay_Click);
+			//
+			// tsbStop
+			//
+			this.tsbStop.DisplayStyle = System.Windows.Forms.ToolStripItemDisplayStyle.Image;
+			this.tsbStop.Enabled = false;
+			this.tsbStop.ImageTransparentColor = System.Drawing.Color.Magenta;
+			this.tsbStop.Name = "tsbStop";
+			this.tsbStop.Size = new System.Drawing.Size(34, 33);
+			this.tsbStop.Text = "Остановить прослушивание";
+			this.tsbStop.ToolTipText = "Остановить прослушивание";
+			this.tsbStop.Click += new System.EventHandler(this.tsbStop_Click);
+			//
+			// tbbSeparator0b
+			//
+			this.tbbSeparator0b.Name = "tbbSeparator0b";
+			//
 			// tbbPosition
 			//
 			this.tbbPosition.DisplayStyle = System.Windows.Forms.ToolStripItemDisplayStyle.Text;
@@ -131,6 +177,36 @@
 			this.miPositionLast.Name = "miPositionLast";
 			this.miPositionLast.Tag = "10";
 			this.miPositionLast.Text = "Показывать последние";
+			//
+			// tbbAdvertType
+			//
+			this.tbbAdvertType.DisplayStyle = System.Windows.Forms.ToolStripItemDisplayStyle.Text;
+			this.tbbAdvertType.DropDownItems.AddRange(new System.Windows.Forms.ToolStripItem[] {
+				this.miShowAllAdvertTypes,
+				this.miShowAdvertTypeExist,
+				this.miShowAdvertTypeNotExist});
+			this.tbbAdvertType.Name = "tbbAdvertType";
+			this.tbbAdvertType.Text = "Предметы рекламы";
+			this.tbbAdvertType.ToolTipText = "Предметы рекламы";
+			this.tbbAdvertType.DropDownItemClicked += new System.Windows.Forms.ToolStripItemClickedEventHandler(this.tbbAdvertType_DropDownItemClicked);
+			//
+			// miShowAllAdvertTypes
+			//
+			this.miShowAllAdvertTypes.Name = "miShowAllAdvertTypes";
+			this.miShowAllAdvertTypes.Tag = "0";
+			this.miShowAllAdvertTypes.Text = "Показывать всё";
+			//
+			// miShowAdvertTypeExist
+			//
+			this.miShowAdvertTypeExist.Name = "miShowAdvertTypeExist";
+			this.miShowAdvertTypeExist.Tag = "5";
+			this.miShowAdvertTypeExist.Text = "Показывать все где есть предмет рекламы";
+			//
+			// miShowAdvertTypeNotExist
+			//
+			this.miShowAdvertTypeNotExist.Name = "miShowAdvertTypeNotExist";
+			this.miShowAdvertTypeNotExist.Tag = "10";
+			this.miShowAdvertTypeNotExist.Text = "Показывать все где нет предмета рекламы";
 			//
 			// tbbSeparator1
 			//
@@ -173,6 +249,20 @@
 			this.tbbShowUnconfirmed.Text = "Учитывать макеты";
 			this.tbbShowUnconfirmed.Click += new System.EventHandler(this.tbbShowUnconfirmed_Click);
 			//
+			// tbbSeparator3
+			//
+			this.tbbSeparator3.Name = "tbbSeparator3";
+			//
+			// tbbExcel
+			//
+			this.tbbExcel.DisplayStyle = System.Windows.Forms.ToolStripItemDisplayStyle.Image;
+			this.tbbExcel.ImageTransparentColor = System.Drawing.Color.Magenta;
+			this.tbbExcel.Name = "tbbExcel";
+			this.tbbExcel.Size = new System.Drawing.Size(34, 33);
+			this.tbbExcel.Text = "Экспорт";
+			this.tbbExcel.ToolTipText = "Экспорт таблицы";
+			this.tbbExcel.Click += new System.EventHandler(this.tbbExcel_Click);
+			//
 			// toolStrip1
 			//
 			this.toolStrip1.Items.AddRange(new System.Windows.Forms.ToolStripItem[] {
@@ -180,11 +270,18 @@
 				this.tbbStart,
 				this.tbbJump,
 				this.tbbSeparator0,
+				this.tsbMuteRoller,
+				this.tbbPlay,
+				this.tsbStop,
+				this.tbbSeparator0b,
 				this.tbbPosition,
+				this.tbbAdvertType,
 				this.tbbSeparator1,
 				this.tbbPeriodMode,
 				this.tbbSeparator2,
-				this.tbbShowUnconfirmed});
+				this.tbbShowUnconfirmed,
+				this.tbbSeparator3,
+				this.tbbExcel});
 			this.toolStrip1.Location = new System.Drawing.Point(0, 0);
 			this.toolStrip1.Name = "toolStrip1";
 			this.toolStrip1.Size = new System.Drawing.Size(1200, 25);
@@ -312,17 +409,27 @@
 		private System.Windows.Forms.ToolStripButton tbbStart;
 		private System.Windows.Forms.ToolStripButton tbbJump;
 		private System.Windows.Forms.ToolStripSeparator tbbSeparator0;
+		private System.Windows.Forms.ToolStripButton tsbMuteRoller;
+		private System.Windows.Forms.ToolStripButton tbbPlay;
+		private System.Windows.Forms.ToolStripButton tsbStop;
+		private System.Windows.Forms.ToolStripSeparator tbbSeparator0b;
 		private System.Windows.Forms.ToolStripDropDownButton tbbPosition;
 		private System.Windows.Forms.ToolStripMenuItem miPositionAny;
 		private System.Windows.Forms.ToolStripMenuItem miPositionFirst;
 		private System.Windows.Forms.ToolStripMenuItem miPositionSecond;
 		private System.Windows.Forms.ToolStripMenuItem miPositionLast;
+		private System.Windows.Forms.ToolStripDropDownButton tbbAdvertType;
+		private System.Windows.Forms.ToolStripMenuItem miShowAllAdvertTypes;
+		private System.Windows.Forms.ToolStripMenuItem miShowAdvertTypeExist;
+		private System.Windows.Forms.ToolStripMenuItem miShowAdvertTypeNotExist;
 		private System.Windows.Forms.ToolStripSeparator tbbSeparator1;
 		private System.Windows.Forms.ToolStripDropDownButton tbbPeriodMode;
 		private System.Windows.Forms.ToolStripMenuItem miPeriodWeek;
 		private System.Windows.Forms.ToolStripMenuItem miPeriodMonth;
 		private System.Windows.Forms.ToolStripSeparator tbbSeparator2;
 		private System.Windows.Forms.ToolStripButton tbbShowUnconfirmed;
+		private System.Windows.Forms.ToolStripSeparator tbbSeparator3;
+		private System.Windows.Forms.ToolStripButton tbbExcel;
 		private System.Windows.Forms.SplitContainer splitContainer1;
 		private System.Windows.Forms.SplitContainer splitContainer2;
 		private System.Windows.Forms.SplitContainer splitContainer3;

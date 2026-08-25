@@ -4,6 +4,7 @@ using System.Data;
 using System.Windows.Forms;
 using FogSoft.WinForm;
 using FogSoft.WinForm.Classes;
+using FogSoft.WinForm.Classes.Export;
 using FogSoft.WinForm.Controls;
 using FogSoft.WinForm.DataAccess;
 using FogSoft.WinForm.Forms;
@@ -20,7 +21,7 @@ namespace Merlin.Forms.CreateActionMaster
 	/// прайс-листом и тарифной сеткой, а здесь строки - модули разных радиостанций, и кампаний
 	/// столько же, сколько модулей.
 	/// </summary>
-	internal partial class ComboModulePlacementForm : Form
+	internal partial class ComboModulePlacementForm : Form, IMediaControlContainer
 	{
 		private const string SETTING_PERIOD_MODE = "ComboModulePlacementPeriodMode";
 
@@ -38,6 +39,7 @@ namespace Merlin.Forms.CreateActionMaster
 		private readonly bool _isExistingAction;
 
 		private RollerPositions _position = RollerPositions.Undefined;
+		private readonly MediaControl _mediaControl;
 
 		/// <summary>
 		/// Акция и кампании создаются лениво, по первому клику: пока менеджер ничего не
@@ -71,7 +73,21 @@ namespace Merlin.Forms.CreateActionMaster
 			InitializeComponent();
 			tbbRefresh.Image = Globals.GetImage(Constants.ActionsImages.Refresh);
 			tbbStart.Image = Globals.GetImage(Constants.ActionsImages.Properties);
+			tbbPlay.Image = Globals.GetImage(Constants.ActionsImages.Play);
+			tsbStop.Image = Globals.GetImage(Constants.ActionsImages.Stop);
+			tbbExcel.Image = Globals.GetImage(Constants.ActionsImages.ExportExcel);
+			_mediaControl = new MediaControl(this);
+			FormClosing += (s, e) => _mediaControl.Stop();
 		}
+
+		#region IMediaControlContainer Members -----------------
+
+		public bool IsPlaying
+		{
+			set { tsbStop.Enabled = value; }
+		}
+
+		#endregion
 
 		/// <summary>Размещение по комбо-модулю: акция и кампании появятся по первому клику.</summary>
 		public ComboModulePlacementForm(Firm firm, SelectComboModuleStep step) : this()
@@ -720,5 +736,109 @@ namespace Merlin.Forms.CreateActionMaster
 				Cursor = Cursors.Default;
 			}
 		}
+
+		#region Ролики: пустышка, прослушивание, предметы рекламы, экспорт ----
+
+		/// <summary>Логика 1 в 1 с CampaignForm.CreateMuteRoller, только без гейта по типу кампании.</summary>
+		private void tsbMuteRoller_Click(object sender, EventArgs e)
+		{
+			try
+			{
+				RollerMuteSelect frm = new RollerMuteSelect();
+				if (frm.ShowDialog(this) == DialogResult.OK && frm.TimeDuration > 0)
+				{
+					Cursor.Current = Cursors.WaitCursor;
+					PresentationObject newRoller = MuteRoller.GetRoller(frm.TimeDuration, _firm.FirmId, null);
+					ActionRoller roller = new ActionRoller(newRoller);
+
+					grdRollers.AddRow(roller);
+					grdRollers.SelectedObject = roller;
+				}
+			}
+			catch (Exception ex)
+			{
+				ErrorManager.PublishError(ex);
+			}
+			finally
+			{
+				Cursor.Current = Cursors.Default;
+			}
+		}
+
+		private void tbbPlay_Click(object sender, EventArgs e)
+		{
+			_mediaControl.Play(grdRollers.SelectedObject);
+		}
+
+		private void tsbStop_Click(object sender, EventArgs e)
+		{
+			_mediaControl.Stop();
+		}
+
+		/// <summary>
+		/// Логика диалога 1 в 1 с CampaignForm.tbbAdvertType_DropDownItemClicked. Критерий -
+		/// как с позиционированием: предмет рекламы должен выполняться во всех окнах модуля
+		/// (ComboModuleGrid.AdvertType/AdvertTypePresence, MarkFilteredCells).
+		/// </summary>
+		private void tbbAdvertType_DropDownItemClicked(object sender, ToolStripItemClickedEventArgs e)
+		{
+			try
+			{
+				Application.DoEvents();
+				Cursor = Cursors.WaitCursor;
+
+				AdvertTypePresences presence =
+					(AdvertTypePresences) Enum.Parse(typeof(AdvertTypePresences), e.ClickedItem.Tag.ToString());
+
+				if (presence != AdvertTypePresences.Undefined)
+				{
+					TreeViewSelector tvSelector = new TreeViewSelector(
+						RelationManager.GetScenario(RelationScenarios.AdvertTypes), "Предметы рекламы");
+					if (tvSelector.ShowDialog(this) != DialogResult.OK) return;
+
+					comboModuleGrid.AdvertType = tvSelector.SelectedObject;
+					comboModuleGrid.AdvertTypePresence = presence;
+					tbbAdvertType.Text = (presence == AdvertTypePresences.Exist ? "Есть " : "Нет ")
+						+ tvSelector.SelectedObject.Name;
+				}
+				else
+				{
+					comboModuleGrid.AdvertType = null;
+					comboModuleGrid.AdvertTypePresence = AdvertTypePresences.Undefined;
+					tbbAdvertType.Text = e.ClickedItem.Text;
+				}
+
+				RefreshAfterChange();
+			}
+			catch (Exception ex)
+			{
+				ErrorManager.PublishError(ex);
+			}
+			finally
+			{
+				Cursor = Cursors.Default;
+			}
+		}
+
+		private void tbbExcel_Click(object sender, EventArgs e)
+		{
+			try
+			{
+				Application.DoEvents();
+				Cursor = Cursors.WaitCursor;
+
+				ExportManager.ExportExcel(comboModuleGrid.RawDataGridView, null);
+			}
+			catch (Exception ex)
+			{
+				ErrorManager.PublishError(ex);
+			}
+			finally
+			{
+				Cursor = Cursors.Default;
+			}
+		}
+
+		#endregion
 	}
 }

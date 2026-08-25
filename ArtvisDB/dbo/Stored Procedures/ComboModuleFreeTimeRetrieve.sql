@@ -1,4 +1,4 @@
-﻿-- Остаток по модулям за период - данные ячеек грида размещения комбо-модулями.
+-- Остаток по модулям за период - данные ячеек грида размещения комбо-модулями.
 --
 -- Набор модулей задаётся одним из двух способов:
 --   @comboModuleID - состав комбо-модуля (размещение по мастеру);
@@ -9,14 +9,19 @@
 -- Одна строка на (модуль, день). Ячейка показывает самое заполненное окно модуля:
 -- именно оно ограничивает возможность поставить ролик во весь модуль сразу.
 --
--- positionFree - выбранная позиция (первый/второй/последний ролик) свободна во
---                ВСЕХ окнах модуля. Грид рисует такие ячейки жирным - как
---                RollerIssuesGrid3.MarkCell для отдельного окна. При включённом
---                учёте макетов смотрим и на неподтверждённые позиции;
--- freeTime     - минимальный остаток времени по окнам модуля, сек;
--- freeCapacity - минимальный остаток по количеству среди окон со штучным
---                ограничением, maxCapacity - вместимость того самого окна.
---                Для модуля без штучных окон обе колонки NULL.
+-- positionFree   - выбранная позиция (первый/второй/последний ролик) свободна во
+--                  ВСЕХ окнах модуля. При включённом учёте макетов смотрим и на
+--                  неподтверждённые позиции;
+-- advertTypeFree - выбранный предмет рекламы (наличие/отсутствие) выполняется во
+--                  ВСЕХ окнах модуля. Критерий совпадения ролика с предметом
+--                  рекламы - тот же, что в TariffWindowWithAdvertTypeRetrieve
+--                  (advertTypeID ролика или его родитель);
+-- Оба флага грид рисует жирным - как RollerIssuesGrid3.MarkCell для отдельного
+-- окна, только применённым ко всем окнам модуля сразу;
+-- freeTime       - минимальный остаток времени по окнам модуля, сек;
+-- freeCapacity   - минимальный остаток по количеству среди окон со штучным
+--                  ограничением, maxCapacity - вместимость того самого окна.
+--                  Для модуля без штучных окон обе колонки NULL.
 --
 -- Время считается по всем окнам, в том числе штучным: hlp_IssueVerify проверяет
 -- переполнение по времени независимо от maxCapacity, так что ограничение
@@ -35,7 +40,9 @@ CREATE PROC [dbo].[ComboModuleFreeTimeRetrieve]
 @startDate datetime,
 @finishDate datetime,
 @showUnconfirmed bit = 0,
-@positionId smallint = 0
+@positionId smallint = 0,
+@advertTypeId smallint = NULL,
+@advertTypePresence tinyint = 0   -- 0 - не фильтровать, 5 - есть, 10 - нет (AdvertTypePresences)
 )
 AS
 SET NOCOUNT ON
@@ -79,7 +86,29 @@ ELSE
 				CASE WHEN tw.isLastPositionOccupied = 0
 					AND (@showUnconfirmed = 0 OR tw.lastPositionsUnconfirmed = 0) THEN 1 ELSE 0 END
 			ELSE 1
-		END AS positionFree
+		END AS positionFree,
+		CASE
+			WHEN @advertTypePresence = 0 THEN 1
+			WHEN @advertTypePresence = 5 THEN   -- есть предмет рекламы
+				CASE WHEN EXISTS(
+					SELECT 1 FROM [Issue] i
+						INNER JOIN [Roller] r ON r.rollerID = i.rollerID
+						LEFT JOIN [AdvertType] adt ON adt.advertTypeID = r.advertTypeID
+					WHERE i.originalWindowID = tw.windowId
+						AND (@showUnconfirmed = 1 OR i.isConfirmed = 1)
+						AND (r.advertTypeID = @advertTypeId OR adt.parentID = @advertTypeId)
+					) THEN 1 ELSE 0 END
+			WHEN @advertTypePresence = 10 THEN   -- нет предмета рекламы
+				CASE WHEN NOT EXISTS(
+					SELECT 1 FROM [Issue] i
+						INNER JOIN [Roller] r ON r.rollerID = i.rollerID
+						LEFT JOIN [AdvertType] adt ON adt.advertTypeID = r.advertTypeID
+					WHERE i.originalWindowID = tw.windowId
+						AND (@showUnconfirmed = 1 OR i.isConfirmed = 1)
+						AND (r.advertTypeID = @advertTypeId OR adt.parentID = @advertTypeId)
+					) THEN 1 ELSE 0 END
+			ELSE 1
+		END AS advertTypeFree
 	FROM
 		@modules m
 		INNER JOIN [ModulePriceList] mpl ON mpl.moduleID = m.moduleID
@@ -97,7 +126,8 @@ days AS
 		w.issueDate,
 		MIN(w.timeLeft) AS freeTime,
 		MIN(w.capacityLeft) AS freeCapacity,
-		MIN(w.positionFree) AS positionFree
+		MIN(w.positionFree) AS positionFree,
+		MIN(w.advertTypeFree) AS advertTypeFree
 	FROM
 		windows w
 	GROUP BY
@@ -119,6 +149,7 @@ SELECT
 	d.freeTime,
 	d.freeCapacity,
 	d.positionFree,
+	d.advertTypeFree,
 	(SELECT MIN(w.maxCapacity)
 		FROM windows w
 		WHERE w.moduleID = d.moduleID

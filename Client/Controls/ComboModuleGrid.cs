@@ -28,6 +28,8 @@ namespace Merlin.Controls
 		public int? MaxCapacity;
 		/// <summary>Выбранная позиция свободна во всех окнах модуля - ячейка рисуется жирным.</summary>
 		public bool PositionFree;
+		/// <summary>Выбранный предмет рекламы (есть/нет) выполняется во всех окнах модуля.</summary>
+		public bool AdvertTypeFree;
 
 		/// <summary>Текст ячейки - как в обычном гриде: «02:30» либо «02:30 [3/5]».</summary>
 		public string CellText
@@ -88,6 +90,8 @@ namespace Merlin.Controls
 		private readonly Dictionary<int, int> _rowByModule = new Dictionary<int, int>();
 		private bool _editMode;
 		private RollerPositions _rollerPosition = RollerPositions.Undefined;
+		private PresentationObject _advertType;
+		private AdvertTypePresences _advertTypePresence = AdvertTypePresences.Undefined;
 
 		#endregion
 
@@ -179,6 +183,23 @@ namespace Merlin.Controls
 			set { _rollerPosition = value; }
 		}
 
+		/// <summary>
+		/// Выбранный предмет рекламы. Модули, у которых во всех окнах выполняется условие
+		/// «есть»/«нет» этого предмета, грид рисует жирным - тот же принцип, что и у
+		/// позиционирования, оба условия комбинируются (нужно и то, и другое, если выбрано).
+		/// </summary>
+		public PresentationObject AdvertType
+		{
+			get { return _advertType; }
+			set { _advertType = value; }
+		}
+
+		public AdvertTypePresences AdvertTypePresence
+		{
+			get { return _advertTypePresence; }
+			set { _advertTypePresence = value; }
+		}
+
 		public DateTime CurrentDate
 		{
 			get { return _currentDate; }
@@ -213,7 +234,8 @@ namespace Merlin.Controls
 
 			RawDataGridView.DataSource = _dtGrid.DefaultView;
 			SetFrozenRowsAndColumns();
-			MarkFreePositions();
+			ShadeWeekends();
+			MarkFilteredCells();
 			SetColumnWidths();
 			SetNavigationCaption();
 
@@ -368,7 +390,8 @@ namespace Merlin.Controls
 		private void FillFreeTime()
 		{
 			DataTable freeTime = ComboModule.LoadFreeTime(
-				_comboModuleID, _actionID, _startDate, _finishDate, _showUnconfirmed, _rollerPosition);
+				_comboModuleID, _actionID, _startDate, _finishDate, _showUnconfirmed, _rollerPosition,
+				_advertType, _advertTypePresence);
 
 			Dictionary<string, DataRow> byModuleAndDay = new Dictionary<string, DataRow>();
 			foreach (DataRow row in freeTime.Rows)
@@ -399,7 +422,8 @@ namespace Merlin.Controls
 						FreeTime = GetNullableInt(row, ComboModule.ParamNames.FreeTime),
 						FreeCapacity = GetNullableInt(row, ComboModule.ParamNames.FreeCapacity),
 						MaxCapacity = GetNullableInt(row, ComboModule.ParamNames.MaxCapacity),
-						PositionFree = Convert.ToInt32(row[ComboModule.ParamNames.PositionFree]) == 1
+						PositionFree = Convert.ToInt32(row[ComboModule.ParamNames.PositionFree]) == 1,
+						AdvertTypeFree = Convert.ToInt32(row[ComboModule.ParamNames.AdvertTypeFree]) == 1
 					};
 
 					_days[moduleIndex, dayIndex] = day;
@@ -438,21 +462,57 @@ namespace Merlin.Controls
 		}
 
 		/// <summary>
-		/// Жирным - модули, у которых выбранная позиция свободна во всех окнах. Без выбранного
-		/// позиционирования не помечаем ничего, как и тарифная сетка обычной кампании.
+		/// Жирным - модули, у которых во всех окнах выполняются выбранные фильтры
+		/// (позиционирование и/или предмет рекламы). Если выбрано и то, и другое - нужны оба;
+		/// если не выбрано ничего - не помечаем, как и тарифная сетка обычной кампании
+		/// (RollerIssuesGrid3.MarkCell).
 		/// </summary>
-		private void MarkFreePositions()
+		private void MarkFilteredCells()
 		{
+			bool positionSelected = _rollerPosition != RollerPositions.Undefined;
+			bool advertTypeSelected = _advertTypePresence != AdvertTypePresences.Undefined;
+
 			for (int rowIndex = FIXED_ROWS; rowIndex < RawDataGridView.RowCount; rowIndex++)
 				for (int columnIndex = FIXED_COLS; columnIndex < RawDataGridView.Columns.Count; columnIndex++)
 				{
 					ComboModuleDay day = _days[rowIndex - FIXED_ROWS, columnIndex - FIXED_COLS];
-					bool bold = _rollerPosition != RollerPositions.Undefined && day != null && day.PositionFree;
+					bool bold = (positionSelected || advertTypeSelected) && day != null
+						&& (!positionSelected || day.PositionFree)
+						&& (!advertTypeSelected || day.AdvertTypeFree);
 
 					GetCell(rowIndex, columnIndex).Style.Font = bold
 						? new Font(RawDataGridView.DefaultCellStyle.Font, FontStyle.Bold)
 						: RawDataGridView.DefaultCellStyle.Font;
 				}
+		}
+
+		/// <summary>
+		/// Бледно-серым - колонки субботы и воскресенья, но только в месячном режиме: в
+		/// недельном все семь дней и так видны целиком, выделять нечего.
+		/// </summary>
+		private void ShadeWeekends()
+		{
+			if (RawDataGridView.RowCount == 0) return;
+
+			if (_periodMode != ComboModulePeriodMode.Month) return;   // в неделе и так все дни на виду
+
+			for (int dayIndex = 0; dayIndex < DayCount; dayIndex++)
+			{
+				DayOfWeek dayOfWeek = _startDate.AddDays(dayIndex).DayOfWeek;
+				if (dayOfWeek != DayOfWeek.Saturday && dayOfWeek != DayOfWeek.Sunday) continue;
+
+				// колонки только что созданы заново (CreateColumns/CreateRows), поэтому
+				// сбрасывать окраску будних дней не нужно - у них и так цвет по умолчанию
+				for (int rowIndex = 0; rowIndex < RawDataGridView.RowCount; rowIndex++)
+					SetCellBackColor(rowIndex, FIXED_COLS + dayIndex, Color.Gainsboro);
+			}
+		}
+
+		// SelectionBackColor намеренно не трогаем - как в TariffGrid.SetCellBackColor: иначе
+		// выделенная ячейка теряла бы обычную синюю подсветку выбора.
+		private void SetCellBackColor(int rowIndex, int columnIndex, Color color)
+		{
+			GetCell(rowIndex, columnIndex).Style.BackColor = color;
 		}
 
 		/// <summary>Колонки дней делаем одинаковой ширины - по самой широкой из них.</summary>
