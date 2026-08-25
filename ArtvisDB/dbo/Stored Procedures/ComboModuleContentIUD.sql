@@ -41,8 +41,12 @@ IF @actionName = 'AddItem' BEGIN
 	EXEC ComboModuleContentRetrieve @comboModuleContentID = @comboModuleContentID
 END
 ELSE IF @actionName = 'DeleteItem'
+	-- Удаление доступно и по натуральному ключу (comboModuleID, moduleID) - им
+	-- пользуется массовый набор состава галочками (ComboModuleAllModulesSelection):
+	-- там нет comboModuleContentID снятых строк, только moduleID.
 	DELETE FROM [ComboModuleContent]
-	WHERE comboModuleContentID = @comboModuleContentID
+	WHERE (@comboModuleContentID IS NOT NULL AND comboModuleContentID = @comboModuleContentID)
+		OR (@comboModuleContentID IS NULL AND comboModuleID = @comboModuleID AND moduleID = @moduleID)
 ELSE IF @actionName = 'UpdateItem'
 begin
 	UPDATE	[ComboModuleContent]
