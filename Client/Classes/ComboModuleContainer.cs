@@ -55,7 +55,15 @@ namespace Merlin.Classes
 			if (selector.ShowDialog(owner) != DialogResult.OK) return;
 
 			foreach (PresentationObject po in selector.AddedItems)
-				contentEntity.CreateObject(MakeContentParameters(po)).Update();
+			{
+				// Entity.CreateObject(Dictionary) присваивает Parameters, а у этого
+				// свойства побочный эффект isNew = false - без явного сброса Update()
+				// отправил бы UpdateItem с пустым comboModuleContentID, который тихо
+				// не находит ни одной строки (WHERE comboModuleContentID = NULL).
+				PresentationObject content = contentEntity.CreateObject(MakeContentParameters(po));
+				content.IsNew = true;
+				content.Update();
+			}
 
 			foreach (PresentationObject po in selector.DeletedItems)
 				contentEntity.CreateObject(MakeContentParameters(po)).Delete(true);

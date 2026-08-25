@@ -552,3 +552,17 @@ Windows группирует окна одного процесса под од�
 удаление по `(comboModuleID, moduleID)` без `comboModuleContentID` отрабатывает
 (проверено в транзакции с откатом); класс `ComboModuleContainer` и переопределение
 `AssignNew` подтверждены рефлексией на собранной сборке.
+
+**Фикс: добавление тихо не срабатывало.** `Entity.CreateObject(Dictionary)`
+внутри присваивает `PresentationObject.Parameters`, а у этого свойства побочный
+эффект — `isNew = false`. Из-за этого `.Update()` для добавленных модулей
+отправлял не `AddItem`, а `UpdateItem` с пустым `@comboModuleContentID`, и
+`UPDATE ... WHERE comboModuleContentID = NULL` тихо не находил ни одной строки —
+без ошибки, без эффекта. Снятие галочек при этом работало (`Delete(true)` всегда
+шлёт `DeleteItem`, который уже умел падать на естественный ключ).
+
+`ModulePricelist.EditTariffList` с той же схемой (`CreateObject(dict).Update()`)
+эту ловушку обходит по-другому: передаёт `["isEditTarrifs"] = true`, и
+`ModuleTariffID.sql` явно проверяет этот флаг, чтобы завернуть `UpdateItem` в
+`INSERT`. Для `ComboModuleContent` пошли проще — `content.IsNew = true;` перед
+`.Update()`, без флага и без правки процедуры.
