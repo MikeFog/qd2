@@ -136,7 +136,7 @@ DECLARE @newPage nvarchar(max) = N'	<page caption="Политическая аг
 		<lookup caption="Анонс агитации:" name="agitationAnnounceRollerID" source="rollersAgitAnnounce" columnWithID="rollerID"/>
 		<lookup caption="Федеральное СМИ (агитация):" name="agitationFederalRollerID" source="rollersAgitFederal" columnWithID="rollerID"/>
 		<separator />
-		<field caption="Интервалы, напр. пн-пт 16:00-16:55; 18:00-19:00" name="agitationExcludeIntervals"/>
+		<field caption="Интервалы, напр. пн-пт 16:00-16:55; 18:00-19:00" name="agitationExcludeIntervals" height="80"/>
 	</page>
 </passport>';
 

@@ -36,7 +36,7 @@ END
 --    Элемент <field> ищется по имени и заменяется целиком, какой бы ни была
 --    текущая подпись; ничего больше в XML не трогаем.
 -- ----------------------------------------------------------------------------
-DECLARE @newField nvarchar(400) = N'<field caption="Интервалы, напр. пн-пт 16:00-16:55; 18:00-19:00" name="agitationExcludeIntervals"/>';
+DECLARE @newField nvarchar(400) = N'<field caption="Интервалы, напр. пн-пт 16:00-16:55; 18:00-19:00" name="agitationExcludeIntervals" height="80"/>';
 DECLARE @xml nvarchar(max) = (SELECT CAST(passport AS nvarchar(max)) FROM [dbo].[iEntity] WHERE entityID = 9);
 DECLARE @namePos int = CHARINDEX(N'name="agitationExcludeIntervals"', @xml);
 

@@ -91,7 +91,11 @@ namespace FogSoft.WinForm.Passport.Classes
 			XPathNavigator navigator, ColumnInfo columnInfo, PageTypes pageType)
 			: base(navigator, columnInfo, pageType)
 		{
-			TextBox.Height *= 4;
+			// height в XML - явная высота в пикселях для конкретного поля (тот же
+			// атрибут, что у PageFieldImage); без него - прежнее поведение (2 строки),
+			// чтобы не менять раскладку остальных doubleString-полей паспорта
+			string height = navigator.GetAttribute(Attributes.Height, "");
+			TextBox.Height = string.IsNullOrEmpty(height) ? TextBox.Height * 2 : ParseHelper.ParseToInt32(height);
 			TextBox.Multiline = true;
 			TextBox.AcceptsReturn = true;
 			// без полосы прокрутки уезд текста при переполнении выглядит как
