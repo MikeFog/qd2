@@ -276,6 +276,20 @@ namespace Merlin.Controls
 			GoToPeriod(_startDate.AddDays(-1));
 		}
 
+		/// <summary>Тот же переход, что по стрелке "вперёд" в подписи над сеткой -
+		/// нужен снаружи для горячей клавиши (PageDown) на ComboModulePlacementForm.</summary>
+		public void GoToNextPeriod()
+		{
+			Caption_GoNext();
+		}
+
+		/// <summary>Тот же переход, что по стрелке "назад" в подписи над сеткой -
+		/// нужен снаружи для горячей клавиши (PageUp) на ComboModulePlacementForm.</summary>
+		public void GoToPreviousPeriod()
+		{
+			Caption_GoPrevious();
+		}
+
 		/// <summary>
 		/// Переход к выбранной дате - тот же диалог, что и у тарифной сетки кампании.
 		/// Грид после этого надо обновить: делает форма, чтобы заодно перечитать выпуски.

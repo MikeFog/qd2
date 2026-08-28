@@ -379,24 +379,48 @@ namespace Merlin.Forms.CreateActionMaster
 
 		#endregion
 
-		#region Insert/Delete по выделенным ячейкам сетки ------
+		#region Горячие клавиши грида: Insert/Delete по ячейкам, PgUp/PgDown - период
 
 		private void ComboModuleGrid_KeyDown(object sender, KeyEventArgs e)
 		{
-			if (e.KeyCode != Keys.Delete && e.KeyCode != Keys.Insert) return;
+			switch (e.KeyCode)
+			{
+				case Keys.Insert:
+				case Keys.Delete:
+					e.Handled = true;
+					e.SuppressKeyPress = true;
+					try
+					{
+						if (e.KeyCode == Keys.Insert)
+							AddIssuesInSelectedCells();
+						else
+							DeleteIssuesInSelectedCells();
+					}
+					catch (Exception ex)
+					{
+						ErrorManager.PublishError(ex);
+					}
+					break;
 
-			e.Handled = true;
-			e.SuppressKeyPress = true;
-			try
-			{
-				if (e.KeyCode == Keys.Insert)
-					AddIssuesInSelectedCells();
-				else
-					DeleteIssuesInSelectedCells();
-			}
-			catch (Exception ex)
-			{
-				ErrorManager.PublishError(ex);
+				case Keys.PageUp:
+				case Keys.PageDown:
+					// Гасим клавишу, иначе DataGridView вдобавок попробует прокрутить
+					// строки на страницу - уже по новым, пересобранным под другой период
+					// координатам.
+					e.Handled = true;
+					e.SuppressKeyPress = true;
+					try
+					{
+						if (e.KeyCode == Keys.PageUp)
+							comboModuleGrid.GoToPreviousPeriod();
+						else
+							comboModuleGrid.GoToNextPeriod();
+					}
+					catch (Exception ex)
+					{
+						ErrorManager.PublishError(ex);
+					}
+					break;
 			}
 		}
 
