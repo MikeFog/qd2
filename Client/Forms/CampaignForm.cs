@@ -223,7 +223,8 @@ namespace Merlin.Forms
 			if (IsPackModuleCampaign)
 				tbbModules.Text = "Выбор пакета";
 
-            tbbTemplate.Visible = tbbTemplate2.Visible = !(IsModuleCampaign || IsPackModuleCampaign || _tariffGrid is ProgramIssuesGrid2);
+            tbbTemplate.Visible = tbbTemplate2.Visible = tbbTemplate3.Visible = tbbTemplateUndo.Visible = 
+				!(IsModuleCampaign || IsPackModuleCampaign || _tariffGrid is ProgramIssuesGrid2);
 			tbSetManagerDiscount.Enabled = !IsRangeCampaign;
 		}
 
