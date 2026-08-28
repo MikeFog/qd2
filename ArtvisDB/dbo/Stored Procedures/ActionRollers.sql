@@ -1,9 +1,4 @@
-﻿
-
-
-
-
-CREATE PROC [dbo].[ActionRollers]
+﻿CREATE PROC [dbo].[ActionRollers]
 (
 @actionID int = null,
 @rollerID int = null
@@ -35,7 +30,8 @@ Else
 		r.isMute,
 		r.parentID,
 		advt.name as advertTypeName,
-		@actionID as actionID
+		@actionID as actionID,
+		r.rolActionTypeID
 	FROM 
 		[Issue] i
 		inner join TariffWindow tw on i.originalWindowID = tw.windowId
@@ -49,8 +45,7 @@ Else
 	WHERE
 		c.actionID = @actionID
 	GROUP BY 
-		--i.[campaignID], i.[rollerID], c.[massmediaID], r.[name], r.[duration], r.isCommon, r.isMute, advt.name
-		i.[rollerID], r.[name], r.[duration], r.isCommon, r.isMute, r.parentID, advt.name
+		i.[rollerID], r.[name], r.[duration], r.isCommon, r.isMute, r.parentID, r.rolActionTypeID, advt.name
 	ORDER BY
 		r.name
 
