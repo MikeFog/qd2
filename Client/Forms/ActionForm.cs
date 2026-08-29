@@ -468,14 +468,34 @@ namespace Merlin.Forms
         }
 
         /// <summary>
-        /// Размещение модулями по всей акции: та же форма, что и у мастера комбо-модулей, но
-        /// строки грида - модули, уже размещённые в этой акции. Комбо-модуль для этого не нужен.
+        /// Размещение модулями по всей акции. Два режима на выбор:
+        /// - «Только размещённые модули»: строки грида - модули, уже размещённые в акции,
+        ///   комбо-модуль ни при чём (кампании не создаются);
+        /// - «Выбрать комбо-модуль»: строки грида - весь состав выбранного комбо-модуля,
+        ///   недостающие модули достраиваются, по клику в акции создаётся новая модульная
+        ///   кампания. Связи «акция - комбо-модуль» в базе нет, поэтому какой именно
+        ///   комбо-модуль, спрашиваем каждый раз.
         /// </summary>
         private void EditComboModules(object sender, EventArgs e)
         {
             try
             {
-                ComboModulePlacementForm form = new ComboModulePlacementForm(_action);
+                DialogResult choice = UserMessage.ShowYesNoCancel(
+                    "Показать акцию как комбо-модуль и достроить недостающие модули?\r\n\r\n" +
+                    "Да - выбрать комбо-модуль.\r\n" +
+                    "Нет - редактировать только уже размещённые модули.");
+                if (choice == DialogResult.Cancel) return;
+
+                ComboModulePlacementForm form;
+                if (choice == DialogResult.Yes)
+                {
+                    SelectComboModuleStep step = new SelectComboModuleStep();
+                    if (step.ShowDialog(this) != DialogResult.OK) return;
+                    form = new ComboModulePlacementForm(_action, step);
+                }
+                else
+                    form = new ComboModulePlacementForm(_action);
+
                 form.ShowDialog(this);
                 LoadCampaigns();
                 RefreshActionStats(true);

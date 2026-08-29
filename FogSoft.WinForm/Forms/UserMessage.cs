@@ -53,6 +53,11 @@ namespace FogSoft.WinForm.Forms
 			return Show(null, text, MessageBoxButtons.YesNo, MessageBoxIcon.Question);
 		}
 
+		public static DialogResult ShowYesNoCancel(string text)
+		{
+			return Show(null, text, MessageBoxButtons.YesNoCancel, MessageBoxIcon.Question);
+		}
+
 		public static void ShowCompleted(string text)
 		{
 			ShowInformation(text);
