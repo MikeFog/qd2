@@ -191,6 +191,7 @@
             // 
             // tableLayoutPanelMain
             // 
+            this.tableLayoutPanelMain.AutoSize = true;
             this.tableLayoutPanelMain.AutoSizeMode = System.Windows.Forms.AutoSizeMode.GrowAndShrink;
             this.tableLayoutPanelMain.ColumnCount = 2;
             this.tableLayoutPanelMain.ColumnStyles.Add(new System.Windows.Forms.ColumnStyle());
@@ -291,6 +292,7 @@
             this.tableLayoutPanelMain.PerformLayout();
             this.flowLayoutPanel1.ResumeLayout(false);
             this.ResumeLayout(false);
+            this.PerformLayout();
 
         }
 

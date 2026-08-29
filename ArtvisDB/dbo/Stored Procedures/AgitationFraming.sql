@@ -65,8 +65,12 @@ BEGIN
 		SET @serviceFirmID = SCOPE_IDENTITY()
 	END
 
-	SELECT @serviceActionID = actionID FROM [Action]
+	-- Служебных акций фирмы в норме одна. Если руками завели вторую, берём
+	-- самую старую детерминированно, чтобы новые выпуски обвязки кучковались
+	-- в одной акции, а не расползались по нескольким.
+	SELECT TOP 1 @serviceActionID = actionID FROM [Action]
 	WHERE firmID = @serviceFirmID AND deleteDate IS NULL
+	ORDER BY actionID
 
 	IF @serviceActionID IS NULL
 	BEGIN
@@ -177,9 +181,8 @@ END
 ELSE IF @actionName = 'CleanupWindow'
 BEGIN
 	IF @serviceFirmID IS NULL RETURN
-	SELECT @serviceActionID = actionID FROM [Action]
-	WHERE firmID = @serviceFirmID AND deleteDate IS NULL
-	IF @serviceActionID IS NULL RETURN
+	IF NOT EXISTS (SELECT 1 FROM [Action]
+		WHERE firmID = @serviceFirmID AND deleteDate IS NULL) RETURN
 
 	-- границы цепочки
 	DECLARE @cFirst int = @windowID, @cPrev int, @cNext int, @cur int
@@ -209,6 +212,9 @@ BEGIN
 	-- Прямое удаление (не через IssueIUD): проверки PastIssue/DeadLineViolationDelete
 	-- не должны блокировать системную операцию; лог удалений для служебных выпусков
 	-- не ведём. Ручные 4/5 не трогаем - удаляются только выпуски служебной акции.
+	-- Чистим по ВСЕМ живым акциям служебной фирмы, а не по одной: если руками
+	-- завели вторую служебную акцию, обвязка окна могла осесть в любой из них,
+	-- и резолвинг единственной actionID пропустил бы "чужой" ролик в эфире.
 	DECLARE @delIssueID int, @delWindowID int, @delDuration int
 
 	DECLARE cur_del CURSOR LOCAL FOR
@@ -216,7 +222,8 @@ BEGIN
 		FROM Issue i
 			INNER JOIN Campaign c ON c.campaignID = i.campaignID
 			INNER JOIN Roller r ON r.rollerID = i.rollerID
-		WHERE c.actionID = @serviceActionID
+		WHERE c.actionID IN (SELECT actionID FROM [Action]
+				WHERE firmID = @serviceFirmID AND deleteDate IS NULL)
 			AND r.rolActionTypeID IN (7, 44, 55)
 			AND dbo.fn_AgitationChainFirst(i.actualWindowID) = @cFirst
 

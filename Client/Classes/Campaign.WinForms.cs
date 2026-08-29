@@ -202,7 +202,7 @@ namespace Merlin.Classes
 					"Рекламное агентство");
 				if (selector.ShowDialog(owner) == DialogResult.OK)
 				{
-					ApplyAgencyChange((int)selector.SelectedObject.IDs[0]);
+					ApplyAgencyChange(int.Parse(selector.SelectedObject.IDs[0].ToString()));
 					UserMessage.ShowInformation(Resources.AgencyChangeSuccess);
 				}
 			}
@@ -217,7 +217,7 @@ namespace Merlin.Classes
 				SelectionForm selector = new SelectionForm(EntityManager.GetEntity((int)Entities.PaymentType), "Типы оплаты");
 				if (selector.ShowDialog(owner) == DialogResult.OK)
 				{
-					ApplyPaymentTypeChange((int)selector.SelectedObject.IDs[0]);
+					ApplyPaymentTypeChange(int.Parse(selector.SelectedObject.IDs[0].ToString()));
 					UserMessage.ShowInformation(Resources.PaymentTypeChangeSuccess);
 				}
 			}
