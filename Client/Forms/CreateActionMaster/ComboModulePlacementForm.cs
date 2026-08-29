@@ -71,6 +71,12 @@ namespace Merlin.Forms.CreateActionMaster
 		private DataTable _issues;
 
 		/// <summary>
+		/// Выпуски, добавленные последним действием (клик по ячейке или Insert по выделению).
+		/// Кнопка «Отменить» удаляет ровно их; любое удаление выпусков сбрасывает список.
+		/// </summary>
+		private readonly List<PresentationObject> _lastAddedIssues = new List<PresentationObject>();
+
+		/// <summary>
 		/// Выпуски, загруженные при открытии формы для выбора начальной даты. Панель к тому
 		/// моменту ещё пуста - она заполняется внутри того же обновления грида, которому эта
 		/// дата и нужна. Чтобы не читать их дважды, первое обновление берёт эту таблицу.
@@ -279,7 +285,8 @@ namespace Merlin.Forms.CreateActionMaster
 				Application.DoEvents();
 				Cursor = Cursors.WaitCursor;
 
-				AddModuleIssue(day, roller);
+				ModuleIssue added = AddModuleIssue(day, roller);
+				SetLastAdded(new List<PresentationObject> { added });
 				RefreshAfterChange();
 			}
 			catch (Exception ex)
@@ -294,9 +301,10 @@ namespace Merlin.Forms.CreateActionMaster
 
 		/// <summary>
 		/// Создание акции, кампании и выпуска - одной транзакцией: если выпуск не встал,
-		/// не должно остаться ни пустой кампании, ни пустой акции.
+		/// не должно остаться ни пустой кампании, ни пустой акции. Возвращает созданный
+		/// выпуск - его запоминает вызывающий для кнопки «Отменить».
 		/// </summary>
-		private void AddModuleIssue(ComboModuleDay day, PresentationObject roller)
+		private ModuleIssue AddModuleIssue(ComboModuleDay day, PresentationObject roller)
 		{
 			bool actionCreated = false;
 			bool campaignCreated = false;
@@ -317,6 +325,7 @@ namespace Merlin.Forms.CreateActionMaster
 
 				_action.Recalculate();
 				DataAccessor.CommitTransaction();
+				return issue;
 			}
 			catch
 			{
@@ -426,7 +435,7 @@ namespace Merlin.Forms.CreateActionMaster
 			IList<ComboModuleDay> days = comboModuleGrid.GetSelectedDays();
 			if (days.Count == 0) return;
 
-			int addedCount = 0;
+			List<PresentationObject> added = new List<PresentationObject>();
 			DataTable addErrors = SmartGrid.CreateDeleteErrorsTable();
 			int errorRowNumber = 1;
 			try
@@ -437,8 +446,7 @@ namespace Merlin.Forms.CreateActionMaster
 					string objectName = string.Format("{0}, {1:dd.MM.yyyy}", day.ModuleName, day.Date);
 					try
 					{
-						AddModuleIssue(day, roller);
-						addedCount++;
+						added.Add(AddModuleIssue(day, roller));
 					}
 					catch (Exception ex)
 					{
@@ -452,13 +460,93 @@ namespace Merlin.Forms.CreateActionMaster
 				Cursor = Cursors.Default;
 			}
 
-			if (addedCount > 0)
+			if (added.Count > 0)
+			{
+				SetLastAdded(added);
 				RefreshAfterChange();
+			}
 
 			if (addErrors.Rows.Count > 0)
 				SmartGrid.ShowDeleteErrors(addErrors, "Ошибки массового добавления");
 			else
-				UserMessage.ShowInformation(string.Format("Добавлено выпусков: {0}.", addedCount));
+				UserMessage.ShowInformation(string.Format("Добавлено выпусков: {0}.", added.Count));
+		}
+
+		#endregion
+
+		#region Отмена последнего добавления ------------------
+
+		private void SetLastAdded(IEnumerable<PresentationObject> issues)
+		{
+			_lastAddedIssues.Clear();
+			_lastAddedIssues.AddRange(issues);
+			tbbUndo.Enabled = _lastAddedIssues.Count > 0;
+		}
+
+		private void ClearLastAdded()
+		{
+			_lastAddedIssues.Clear();
+			tbbUndo.Enabled = false;
+		}
+
+		/// <summary>
+		/// Отмена последнего добавления: удаляем ровно те выпуски, что запомнили при клике или
+		/// массовом Insert. Дальше - общий хвост удаления (пересчёт акции, чистка пустых
+		/// кампаний), тот же паттерн, что у DeleteIssuesInSelectedCells.
+		/// </summary>
+		private void tbbUndo_Click(object sender, EventArgs e)
+		{
+			try
+			{
+				if (_lastAddedIssues.Count == 0) return;
+
+				if (UserMessage.ShowQuestion(string.Format(
+						"Отменить последнее добавление выпусков? ({0} шт.)", _lastAddedIssues.Count)) != DialogResult.Yes)
+					return;
+
+				List<PresentationObject> issues = new List<PresentationObject>(_lastAddedIssues);
+				ClearLastAdded();
+
+				Application.DoEvents();
+				Cursor = Cursors.WaitCursor;
+
+				List<PresentationObject> deleted = new List<PresentationObject>();
+				DataTable deleteErrors = SmartGrid.CreateDeleteErrorsTable();
+				int errorRowNumber = 1;
+				foreach (PresentationObject issue in issues)
+				{
+					string objectName = string.IsNullOrEmpty(issue.Name) ? "<без названия>" : issue.Name;
+					try
+					{
+						if (issue.Delete(true))
+							deleted.Add(issue);
+						else
+							SmartGrid.AddDeleteError(deleteErrors, errorRowNumber++, objectName,
+								string.Format("Не удалось удалить выпуск '{0}'.", objectName));
+					}
+					catch (Exception ex)
+					{
+						SmartGrid.AddDeleteError(deleteErrors, errorRowNumber++, objectName,
+							ErrorManager.GetErrorMessage(ex));
+					}
+				}
+
+				if (deleted.Count > 0)
+					AfterIssuesDeleted();
+
+				if (deleteErrors.Rows.Count > 0)
+					SmartGrid.ShowDeleteErrors(deleteErrors, "Ошибки отмены добавления");
+				else
+					UserMessage.ShowInformation(string.Format("Отменено выпусков: {0}.", deleted.Count));
+			}
+			catch (Exception ex)
+			{
+				ErrorManager.PublishError(ex);
+			}
+			finally
+			{
+				Cursor = Cursors.Default;
+			}
 		}
 
 		#endregion
@@ -628,6 +716,7 @@ namespace Merlin.Forms.CreateActionMaster
 
 				if (_action != null) _action.Recalculate();
 				DeleteEmptyCampaignsAndAction();
+				ClearLastAdded();   // после любого удаления запомненное «последнее добавление» неактуально
 				RefreshAfterChange();
 			}
 			catch (Exception ex)

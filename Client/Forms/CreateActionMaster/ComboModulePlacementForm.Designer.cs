@@ -25,6 +25,7 @@
 			this.tbbRefresh = new System.Windows.Forms.ToolStripButton();
 			this.tbbStart = new System.Windows.Forms.ToolStripButton();
 			this.tbbJump = new System.Windows.Forms.ToolStripButton();
+			this.tbbUndo = new System.Windows.Forms.ToolStripButton();
 			this.tbbSeparator0 = new System.Windows.Forms.ToolStripSeparator();
 			this.tsbMuteRoller = new System.Windows.Forms.ToolStripButton();
 			this.tbbPlay = new System.Windows.Forms.ToolStripButton();
@@ -100,6 +101,15 @@
 			this.tbbJump.Text = "Переход к выбранной дате";
 			this.tbbJump.ToolTipText = "Переход к выбранной дате";
 			this.tbbJump.Click += new System.EventHandler(this.tbbJump_Click);
+			//
+			// tbbUndo
+			//
+			this.tbbUndo.DisplayStyle = System.Windows.Forms.ToolStripItemDisplayStyle.Text;
+			this.tbbUndo.Enabled = false;
+			this.tbbUndo.Name = "tbbUndo";
+			this.tbbUndo.Text = "Отменить";
+			this.tbbUndo.ToolTipText = "Отменить последнее добавление выпусков";
+			this.tbbUndo.Click += new System.EventHandler(this.tbbUndo_Click);
 			//
 			// tbbSeparator0
 			//
@@ -269,6 +279,7 @@
 				this.tbbRefresh,
 				this.tbbStart,
 				this.tbbJump,
+				this.tbbUndo,
 				this.tbbSeparator0,
 				this.tsbMuteRoller,
 				this.tbbPlay,
@@ -409,6 +420,7 @@
 		private System.Windows.Forms.ToolStripButton tbbRefresh;
 		private System.Windows.Forms.ToolStripButton tbbStart;
 		private System.Windows.Forms.ToolStripButton tbbJump;
+		private System.Windows.Forms.ToolStripButton tbbUndo;
 		private System.Windows.Forms.ToolStripSeparator tbbSeparator0;
 		private System.Windows.Forms.ToolStripButton tsbMuteRoller;
 		private System.Windows.Forms.ToolStripButton tbbPlay;
