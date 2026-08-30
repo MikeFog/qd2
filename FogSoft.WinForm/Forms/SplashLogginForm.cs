@@ -78,7 +78,7 @@ namespace FogSoft.WinForm.Forms
                 textBoxLogin.Text = user;
 				textBoxPassword.Text = password;
 
-				if (autologin)
+				if (autologin && ConfigurationUtil.IsTestMode)
 				{
 					if (!string.IsNullOrEmpty(user)	&& !string.IsNullOrEmpty(password))
 					{
