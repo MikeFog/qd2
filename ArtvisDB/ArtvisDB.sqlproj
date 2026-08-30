@@ -366,6 +366,7 @@
       <QuotedIdentifier>Off</QuotedIdentifier>
     </Build>
     <Build Include="dbo\Stored Procedures\hlp_CompanyDiscountCalculate.sql" />
+    <Build Include="dbo\Stored Procedures\hlp_CampaignRecalc.sql" />
     <Build Include="dbo\Stored Procedures\PaymentStudioOrders.sql" />
     <Build Include="dbo\Stored Procedures\SayTrafficThatWindowLinkDeleted.sql" />
     <Build Include="dbo\Stored Procedures\TariffWindowRetrieve.sql" />
