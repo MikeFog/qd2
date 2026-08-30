@@ -365,7 +365,7 @@ namespace Merlin.Classes
 				{
 					try
 					{
-						newCampaign.AddModuleIssue(module, issue.Roller, pricelist, newDate, issue.Position, null);
+						newCampaign.AddModuleIssue(module, issue.Roller, pricelist, newDate, issue.Position, null, skipCampaignRecalc: true);
 					}
                     catch (Exception ex)
                     {
@@ -389,7 +389,7 @@ namespace Merlin.Classes
                 {
 					try
 					{
-						newCampaign.AddIssue(issue.Roller, window, issue.Position, null);
+						newCampaign.AddIssue(issue.Roller, window, issue.Position, null, skipCampaignRecalc: true);
 					}
 					catch (Exception ex)
 					{

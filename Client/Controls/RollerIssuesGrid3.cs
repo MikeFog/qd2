@@ -133,11 +133,12 @@ namespace Merlin.Controls
 				AddModuleIssue(cell, tariffWindow);
 			}
 
-            campaign.Action.Refresh();
-
-			// Точечная перерисовка затронутых ячеек уже сделана в AddIssue/AddModuleIssue
-			// (RefreshSingleCell). Полный Refresh() здесь — лишняя синхронная перерисовка
-			// всего грида (~300 мс в замере), состояние она не меняет.
+			// campaign.Action.Refresh() убран: тотал акции / finalPrice теперь считаются
+			// один раз при закрытии формы (CampaignForm.FormClosing), а не на каждый клик.
+			// Панель кампании держит FireCampaignStatusChanged -> _campaign.Refresh():
+			// строку Campaign (tariffPrice, объёмная скидка) обновляет hlp_CampaignRecalc
+			// внутри IssueIUD/ModuleIssueIUD. Точечная перерисовка ячеек — в AddIssue/
+			// AddModuleIssue (RefreshSingleCell); полный Refresh() грида здесь был лишним.
 			FireCampaignStatusChanged();
 		}
 		}
@@ -149,7 +150,8 @@ namespace Merlin.Controls
                 DataAccessor.BeginTransaction();
                 CampaignOnSingleMassmedia.AddModuleIssue(module, roller,
 									(ModulePricelist)pricelist, tariffWindow.WindowDateBroadcast, rollerPosition, Grantor == null ? null : (int?)Grantor.Id);
-				CampaignOnSingleMassmedia.RecalculateAction(false);
+                // Пересчёт кампании делает ModuleIssueIUD -> hlp_CampaignRecalc.
+                // Полный ActionRecalculate — один раз при закрытии формы.
                 DataAccessor.CommitTransaction();
             }
             catch
@@ -173,7 +175,8 @@ namespace Merlin.Controls
                 {
                     DataAccessor.BeginTransaction();
                     CampaignOnSingleMassmedia.AddIssue(roller, tariffWindow, rollerPosition, Grantor == null ? null : (int?)Grantor.Id);
-                    CampaignOnSingleMassmedia.RecalculateAction(false);
+                    // Пересчёт кампании делает IssueIUD -> hlp_CampaignRecalc.
+                    // Полный ActionRecalculate — один раз при закрытии формы.
                     DataAccessor.CommitTransaction();
                 }
                 catch

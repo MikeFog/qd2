@@ -1138,7 +1138,7 @@ namespace Merlin.Forms
 				{
 					if (!sourceIssue.Delete(true))
 						throw new InvalidOperationException("Не удалось удалить выпуск из исходного окна.");
-					_campaign.AddIssue(sourceIssue.Roller, targetWindow, sourceIssue.Position, grantorId);
+					_campaign.AddIssue(sourceIssue.Roller, targetWindow, sourceIssue.Position, grantorId, skipCampaignRecalc: true);
 				}
 				_campaign.RecalculateAction(false);
 				DataAccessor.CommitTransaction();
@@ -1418,6 +1418,26 @@ namespace Merlin.Forms
 		private void CampaignForm_FormClosing(object sender, FormClosingEventArgs e)
 		{
 			mediaControl.Stop();
+
+			// Полный пересчёт акции (тотал, finalPrice, ratio, коррекция платежей)
+			// перенесён с пер-кликового на закрытие формы — раньше он гонялся на
+			// КАЖДОЕ добавление выпуска и на многостанционной акции душил сервер
+			// (см. расследование storm ActionRecalculate). Во время расстановки
+			// строку Campaign держит hlp_CampaignRecalc внутри IssueIUD/ModuleIssueIUD;
+			// здесь — один полный ActionRecalculate. На случай, если процесс умрёт
+			// до закрытия, есть server-side флаг Action.needsRecalc (лечится при
+			// открытии акции / джобом).
+			if (!e.Cancel && changeFlag && _campaign != null)
+			{
+				try
+				{
+					_campaign.RecalculateAction(false);
+				}
+				catch (Exception ex)
+				{
+					ErrorManager.PublishError(ex);
+				}
+			}
 		}
 
 		

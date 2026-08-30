@@ -353,7 +353,7 @@ namespace Merlin.Forms
 					Log.Info($"Position {_position} already occupied in window {window.WindowDate}, skipping");
 					throw new Exception("FirstLastIssueError");
 				}
-                issue = _campaign.AddIssue(_roller, window, _position, grantorID);
+                issue = _campaign.AddIssue(_roller, window, _position, grantorID, skipCampaignRecalc: true);
 			}
             else
                 throw new Exception("IssueWithTheSameFirmExists");
@@ -530,7 +530,7 @@ namespace Merlin.Forms
 				rollers.RemoveAt(0);
 				try
 				{
-					Issue issue = _campaign.AddIssue(roller, windows[0], _position, grantorID);
+					Issue issue = _campaign.AddIssue(roller, windows[0], _position, grantorID, skipCampaignRecalc: true);
 					issue.Refresh();
 					issues.Add(issue);
 				}
@@ -582,7 +582,7 @@ namespace Merlin.Forms
 		private List<PresentationObject> AddModuleIssue()
 		{
             ModuleIssue moduleIssue = _campaign.AddModuleIssue((Module)_module, _roller, (ModulePricelist)_pricelist,
-                                                                     _template.CurrentDate, _position, grantorID);
+                                                                     _template.CurrentDate, _position, grantorID, skipCampaignRecalc: true);
 			moduleIssue.Refresh();
             return new List<PresentationObject> { moduleIssue};			
 		}
@@ -628,7 +628,7 @@ namespace Merlin.Forms
 			{
 				try
 				{
-					Issue issue = _campaign.AddIssue(_roller, windows[0], _position, grantorID);
+					Issue issue = _campaign.AddIssue(_roller, windows[0], _position, grantorID, skipCampaignRecalc: true);
 					issue.Refresh();
 					issues.Add(issue);
 				}

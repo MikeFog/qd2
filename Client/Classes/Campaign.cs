@@ -429,11 +429,19 @@ namespace Merlin.Classes
 				return base.IsActionEnabled(actionName, type);
 		}
 
-		public Issue AddIssue(PresentationObject roller, ITariffWindow tariffWindow, RollerPositions rollerPosition, int? grantorID)
+		// skipCampaignRecalc: массовые пути (FrmGenerator, клонирование, drag-and-drop
+		// пачкой) делают один ActionRecalculate после всей пачки — им не нужен
+		// пер-выпусковый hlp_CampaignRecalc внутри IssueIUD/ModuleIssueIUD.
+		// Интерактивное одиночное добавление (грид) оставляет false: панель кампании
+		// держится именно на этом пересчёте.
+		public Issue AddIssue(PresentationObject roller, ITariffWindow tariffWindow, RollerPositions rollerPosition, int? grantorID,
+		                      bool skipCampaignRecalc = false)
 		{
 			using (OperationScope.Start("CampaignAddIssue"))
 			{
 				RollerIssue issue = new RollerIssue(this, roller, (TariffWindowWithRollerIssues) tariffWindow, rollerPosition, Action.IsConfirmed,grantorID);
+				if (skipCampaignRecalc)
+					issue["skipCampaignRecalc"] = 1;
 				issue.Update();
 				return issue;
 			}
@@ -441,13 +449,15 @@ namespace Merlin.Classes
 
 		public ModuleIssue AddModuleIssue(Module module, PresentationObject roller,
 		                                  ModulePricelist modulePriceList, DateTime date, RollerPositions rollerPosition,
-										  int? grantorID)
+										  int? grantorID, bool skipCampaignRecalc = false)
 		{
 			if (IsModuleExists(modulePriceList, date))
 			{
 				ModuleIssue issue =
 					new ModuleIssue(this, module, roller, modulePriceList, date, Action.IsConfirmed, rollerPosition,
 									grantorID);
+				if (skipCampaignRecalc)
+					issue["skipCampaignRecalc"] = 1;
 				issue.Update();
 				return issue;
 			}
