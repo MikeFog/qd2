@@ -213,6 +213,29 @@ namespace FogSoft.WinForm.Classes
 
 		public virtual bool Refresh(InterfaceObjects interfaceObject)
 		{
+			return Refresh(interfaceObject, true);
+		}
+
+		/// <summary>
+		/// Reloads the object's data from the DB without raising <see cref="ObjectChanged"/>.
+		/// Use when only the local view needs freshening and dependent views that are still
+		/// subscribed (e.g. a parent journal grid/tree) must not be forced to repaint.
+		/// <para>
+		/// WARNING: this does NOT go through the virtual <see cref="Refresh()"/>, so subclasses
+		/// that override <c>Refresh()</c> to drop cached child objects (ActionOnMassmedia,
+		/// ModuleIssue, ModulePricelist, PackModuleIssue, PackModulePricelist, StudioOrder,
+		/// StudioOrderAction) will keep a stale cache after this call. Do not use it on those
+		/// types until the cache reset is moved to a hook invoked from the private reload path
+		/// (see IMPROVEMENTS.md).
+		/// </para>
+		/// </summary>
+		public bool ReloadData(InterfaceObjects interfaceObject = InterfaceObjects.SimpleJournal)
+		{
+			return Refresh(interfaceObject, false);
+		}
+
+		private bool Refresh(InterfaceObjects interfaceObject, bool notify)
+		{
 			if(!IsNew)
 			{
 				DataAccessor.PrepareParameters(parameters, entity, interfaceObject, Constants.Actions.Load);
@@ -220,7 +243,8 @@ namespace FogSoft.WinForm.Classes
 				if (ds.Tables[Constants.TableNames.Data].Rows.Count <= 0)
 					return false;
 				Init(ds.Tables[Constants.TableNames.Data].Rows[0]);
-				OnObjectChanged(this);
+				if (notify)
+					OnObjectChanged(this);
 			}
 			return true;
 		}

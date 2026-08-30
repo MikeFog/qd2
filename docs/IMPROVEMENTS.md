@@ -21,6 +21,23 @@
 
 ---
 
+### [UI-02] ~290 мс на клик добавления выпуска уходит в перебиндинг двух SmartGrid деталей окна
+
+**Область:** `CampaignForm.ShowWindowIssues` / `TariffGrid.FireCellClicked`
+**Суть:** После оптимизаций ветки `feature/recalc-join-fix` тёплый клик добавления выпуска в простой линейной акции = ~335 мс, из которых SQL-часть (`IssueIUD` + `ActionRecalculate` + `Campaigns` + `WindowIssuesRetrieve`) — суммарно ~40 мс, а `CampaignStatusChanged` после фикса `ReloadData` — ~25 мс. Оставшиеся ~290 мс — чисто клиентский рендеринг в `FireCellClicked`:
+- `grdIssues.Clear()` + `grdCurrentCampaignIssues.Clear()` + пересоздание `Entity` (Clone) + перебиндинг двух `SmartGrid` в `ShowWindowIssues`;
+- два подряд `Application.DoEvents()` — в `TariffGrid.FireCellClicked` и в `CampaignForm.grid_CellClicked` — прокачивают всю очередь перерисовки грида;
+- в логе видно окном ~260 мс между закрытием `UpdateDB` и первым `WindowIssuesRetrieve`, где нет ни одного вызова БД.
+
+**Почему важно:** Это теперь доминирующая доля клика. При этом окно деталей часто даже не смотрят во время расстановки. Дешёвых и безрисковых вариантов нет — правка лезет в биндинг `SmartGrid` и в порядок `DoEvents`.
+**Где смотреть:**
+- `Client\Controls\TariffGrid.cs` — `FireCellClicked` (стр. ~463), `GetCell(ITariffWindow)` — O(строк×колонок) скан
+- `Client\Forms\CampaignForm.cs` — `grid_CellClicked` (стр. ~491), `ShowWindowIssues` (стр. ~551)
+
+**Возможное направление:** (а) не перестраивать `grdIssues`/`grdCurrentCampaignIssues` на каждый клик добавления, а только когда пользователь реально смотрит панель деталей / по отдельному действию; (б) убрать лишний `Application.DoEvents()`; (в) кэшировать клонированные `Entity`. Браться только если заказчик после отгрузки `feature/recalc-join-fix` всё ещё жалуется на отклик расстановки.
+
+---
+
 ## C# / Domain
 
 ### [ISSUE-01] ModuleIssue переопределяет Delete(), но не Delete(bool) — теряется пересчёт акции
@@ -35,6 +52,19 @@
 - `Client\Forms\CreateActionMaster\ComboModulePlacementForm.cs` — `AfterIssuesDeleted` как пример обхода
 
 **Возможное направление:** Перенести пересчёт из `Delete()` в `Delete(bool)` — тогда он отработает на всех путях, потому что `Delete()` делегирует туда же. Изменение затрагивает все экраны модульных кампаний, поэтому требует проверки, не появится ли двойной пересчёт там, где вызывающий код уже пересчитывает акцию сам.
+
+---
+
+### [ISSUE-02] `ReloadData()` обходит переопределения `Refresh()` — развилка в сбросе кэшей дочерних объектов
+
+**Область:** `FogSoft.WinForm.Classes.PresentationObject`
+**Суть:** `ReloadData()` (добавлен в ветке `feature/recalc-join-fix` для перезагрузки объекта без `ObjectChanged`) зовёт **приватный** `Refresh(InterfaceObjects, bool notify)`, минуя `public virtual bool Refresh()`. А `Refresh()` переопределяют семь классов, и все — чтобы сбросить кэш дочерних объектов: `ActionOnMassmedia` (`user`), `ModuleIssue` (`_roller`), `ModulePricelist`, `PackModuleIssue`, `PackModulePricelist`, `StudioOrder`, `StudioOrderAction`. Для этих типов `ReloadData()` перезагрузит строку данных, но оставит протухший кэш — тихая ошибка.
+**Почему важно:** Сейчас не стреляет (`Campaign` не переопределяет `Refresh()`, единственный вызыватель — `CampaignForm.CampaignStatusChanged`). Но это публичный метод базового класса фреймворка, и его позовут для других типов. Doc-комментарий сейчас предупреждает словами — этого мало.
+**Где смотреть:**
+- `FogSoft.WinForm\Classes\PresentationObject.cs` — `ReloadData()`, приватный `Refresh(InterfaceObjects, bool)`, `public virtual bool Refresh()`
+- семь `override bool Refresh()` (grep по решению)
+
+**Возможное направление:** Вынести сброс кэшей в `protected virtual void OnDataReloaded()`, вызывать его из общего приватного `Refresh` после `Init(...)`, а семь переопределений `Refresh()` заменить на переопределения этого хука. Тогда `ReloadData()` и `Refresh()` идут через одну точку сброса, развилки нет. Проверить, что ни одно из семи переопределений не делает в `Refresh()` ничего, кроме сброса кэша + `base.Refresh()`.
 
 ---
 
