@@ -15,14 +15,25 @@ SET @startDate = dbo.ToShortDate(@startDate)
 SET @finishDate = dbo.ToShortDate(@finishDate)
 	
 If @campaignTypeID = 1	Begin
+	-- CROSS APPLY + TOP 1 вместо inner join: у кампании десятки-сотни выпусков,
+	-- но прямой join оптимизатор строит как Hash Match и в build-фазу вычитывает
+	-- весь срез TariffWindow за период по ВСЕМ СМИ (~165 тыс. строк на месяц),
+	-- чтобы сматчить их с выпусками одной кампании. 30 мс вместо 0.2 мс на вызов,
+	-- а ActionRecalculate зовёт это в курсоре по каждой кампании акции.
+	-- windowId — PK TariffWindow, совпадение не более одного: семантика та же.
 	Select	
 		@price = Sum(i.[tariffPrice])
 	From		
 		Issue i
-		inner join TariffWindow tw on i.originalWindowID = tw.windowId
+		Cross Apply
+		(
+			Select Top 1 1 As matched
+			From TariffWindow tw
+			Where tw.windowId = i.originalWindowID and
+				tw.dayOriginal between @startDate and @finishDate
+		) w
 	Where	
-		i.campaignID = @campaignID	and
-		tw.dayOriginal between @startDate and @finishDate 
+		i.campaignID = @campaignID
 End
 
 Else If @campaignTypeID = 2 Begin

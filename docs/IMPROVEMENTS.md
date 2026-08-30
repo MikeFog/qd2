@@ -54,3 +54,18 @@
 - массовые/отчётные вызыватели (`stat_Bonuses` и подобные) используют `CROSS APPLY` по множеству кампаний за один set-based проход.
 
 Так расчётная математика будет жить в одном месте. Перед тем как браться — надо найти все текущие вызовы `GetPriceByPeriod` в коде и метаданных, оценить масштаб и риски переписывания multi-statement-логики.
+
+---
+
+### [SQL-02] Аудит: тот же паттерн join `Issue` × `TariffWindow` по диапазону дат в других процедурах
+
+**Область:** процедуры, соединяющие выпуски с окнами по `originalWindowID` + фильтр `TariffWindow.dayOriginal BETWEEN ...`
+**Суть:** В `GetIssuesPrice` и `SetIssueRatio` (исправлено в ветке `feature/recalc-join-fix`) прямой `INNER JOIN Issue → TariffWindow` с диапазоном по `dayOriginal` оптимизатор строил как `Hash Match`, вычитывая в build-фазу **весь срез `TariffWindow` за период по всем СМИ** (~165 тыс. строк на месяц, ~2 млн на год), чтобы сматчить его с десятками выпусков одной кампании. Замер на восстановленном проде: 30 мс против 0,2 мс на вызов; на кампании в 4380 выпусков за год — 164 мс против 16 мс. Логических чтений при этом мало (индекс `UX_TariffWindow_dayOriginal_windowID` узкий), поэтому по `STATISTICS IO` проблема не видна — она видна только по CPU. Лечится переписыванием на `CROSS APPLY (SELECT TOP 1 ...)`: `windowId` — PK `TariffWindow`, совпадение не более одного, семантика не меняется, хинты не нужны.
+**Почему важно:** Паттерн почти наверняка повторяется. `GetIssuesPrice` была №2 в топе прода по суммарному времени — то есть цена такой формы плана измеряется часами процессорного времени в месяц. Кандидаты по grep (`dayOriginal` + `originalWindowID` в одном теле), в порядке приоритета по известным жалобам:
+- `ComboModuleFreeTimeRetrieve` — до 21 с в логе 29.08.2026
+- `Grid`, `MediaPlanRetrieve` / `MediaPlanRetrieve_v2`, `IssuesDays`
+- `stat_GetPrice_proc`, `stat_GetPriceByMonth_proc`, `stat_RollerStatistic`, `statFactorAnalysis`
+- `RollerSubstitutionPassport`, `RollerSubstitute`, `CampaignsIssueDelete`, `TariffWindowWithAdvertTypeRetrieve`
+- `ActionRecalculate` (фаза 1A) и `hlp_CampaignRecalc` — там агрегат по всем кампаниям акции сразу, hash может быть и оправдан; 12 мс, низкий приоритет
+
+**Возможное направление:** Не переписывать вслепую. Для каждого кандидата снять фактический план и сравнить оценку строк на стороне `TariffWindow` с реальным числом обрабатываемых выпусков; переписывать только там, где виден `Hash Match` с широким срезом по `dayOriginal` и узкой стороной выпусков. Проверять эквивалентность так же, как в `ArtvisDB/Scripts/issues-join-fix-check.sql`.
