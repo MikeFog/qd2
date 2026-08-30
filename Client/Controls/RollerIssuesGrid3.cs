@@ -135,7 +135,9 @@ namespace Merlin.Controls
 
             campaign.Action.Refresh();
 
-			Refresh();
+			// Точечная перерисовка затронутых ячеек уже сделана в AddIssue/AddModuleIssue
+			// (RefreshSingleCell). Полный Refresh() здесь — лишняя синхронная перерисовка
+			// всего грида (~300 мс в замере), состояние она не меняет.
 			FireCampaignStatusChanged();
 		}
 		}
