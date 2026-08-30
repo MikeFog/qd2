@@ -648,6 +648,7 @@
     <Build Include="dbo\Stored Procedures\DiscountPassport.sql" />
     <Build Include="dbo\Stored Procedures\Stat_AvgDiscount.sql" />
     <Build Include="dbo\Stored Procedures\job_DeleteEmptyActions.sql" />
+    <Build Include="dbo\Stored Procedures\job_RecalcPendingActions.sql" />
     <Build Include="dbo\Stored Procedures\UserMenuItems.sql" />
     <Build Include="dbo\User Defined Types\boolean.sql" />
     <Build Include="dbo\User Defined Types\doubleString.sql" />
