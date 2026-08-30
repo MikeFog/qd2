@@ -30,16 +30,19 @@
       В каждой заменить CREATE на ALTER и развернуть теми же двумя батчами
       SET QUOTED_IDENTIFIER ON; SET ANSI_NULLS ON; GO  ...  GO.
 
-    РЯДОМ
-      roller-agitation-index-deploy.sql — индекс IX_Roller_rolActionTypeID
-      под проверку AgitationMixError в IssueIUD / ModuleIssueIUD.
+    ЧТО ЕЩЁ В ЭТОМ СКРИПТЕ
+      Индекс IX_Roller_rolActionTypeID (Roller(rolActionTypeID) INCLUDE(rollerID))
+      под проверку AgitationMixError в IssueIUD / ModuleIssueIUD — блок в конце.
+      Это ВСЯ схемная часть ветки feature/recalc-join-fix: 2 процедуры + 1 индекс.
+      Отдельный roller-agitation-index-deploy.sql делает то же самое (если индекс
+      уже накатан им — здешний блок это увидит и пропустит).
 
     ПОСЛЕ ДЕПЛОЯ
       Перезапуск клиентов не требуется (сигнатуры процедур не менялись), но
       если разворачивается вместе с другими правками — перезапустить, т.к.
       SqlHelperParameterCache кэширует сигнатуры на время жизни процесса.
 
-    ЗАПУСК
+    ЗАПУСК (разворачивает всё: 2 процедуры + индекс)
       sqlcmd -S <прод-сервер> -d <прод-БД> -E -b -I -i issues-join-fix-deploy.sql
       (-I не обязателен: скрипт сам выставляет QUOTED_IDENTIFIER в нужных батчах;
        -b — чтобы sqlcmd прервался на первой ошибке)
@@ -227,6 +230,30 @@ BEGIN
 END
 GO
 
+/* ── Индекс IX_Roller_rolActionTypeID ─────────────────────────────────────
+   Проверка AgitationMixError в IssueIUD / ModuleIssueIUD спрашивает "есть ли
+   в акции ролик политагитации". Roller кластеризован по firmID, поэтому без
+   индекса на каждый выпуск акции шёл seek в PK_Roller + key lookup за одним
+   rolActionTypeID (~1000 seek'ов на вставку выпуска, 7 из 17 мс всей IssueIUD).
+   С индексом — 2,1 мс. Roller ~21,5 тыс. строк, индекс — сотни КБ.
+   QUOTED_IDENTIFIER ON здесь тоже нужен: в базе есть индекс по вычисляемому
+   TariffWindow.windowTime, и CREATE INDEX под неверными SET-опциями упирается
+   в ту же ошибку 1934. Откат: DROP INDEX [IX_Roller_rolActionTypeID] ON [dbo].[Roller]; */
+SET QUOTED_IDENTIFIER ON;
+SET ANSI_NULLS ON;
+GO
+IF NOT EXISTS (SELECT 1 FROM sys.indexes
+               WHERE object_id = OBJECT_ID('dbo.Roller') AND name = 'IX_Roller_rolActionTypeID')
+BEGIN
+    CREATE NONCLUSTERED INDEX [IX_Roller_rolActionTypeID]
+        ON [dbo].[Roller]([rolActionTypeID] ASC)
+        INCLUDE([rollerID]);
+    PRINT 'IX_Roller_rolActionTypeID — создан.';
+END
+ELSE
+    PRINT 'IX_Roller_rolActionTypeID — уже есть, пропуск.';
+GO
+
 /* ── Проверка ─────────────────────────────────────────────────────────── */
 SET NOEXEC OFF;
 GO
@@ -240,6 +267,14 @@ FROM sys.sql_modules m
 JOIN sys.objects o ON o.object_id = m.object_id
 WHERE o.name IN ('GetIssuesPrice', 'SetIssueRatio')
 ORDER BY o.name;
+
+SELECT
+    [индекс]      = i.name,
+    [таблица]     = 'Roller',
+    [колонки]     = 'rolActionTypeID INCLUDE(rollerID)',
+    [есть]        = CASE WHEN i.name IS NULL THEN 0 ELSE 1 END   -- ожидается 1
+FROM (SELECT 1 x) z
+LEFT JOIN sys.indexes i ON i.object_id = OBJECT_ID('dbo.Roller') AND i.name = 'IX_Roller_rolActionTypeID';
 GO
-PRINT 'Готово. Ожидается: обе строки quoted_identifier=1, ansi_nulls=1, cross_apply_в_теле=1.';
+PRINT 'Готово. Ожидается: обе процедуры quoted_identifier=1, ansi_nulls=1, cross_apply_в_теле=1; индекс есть=1.';
 GO
