@@ -13,6 +13,7 @@
     [isConfirmed]         BIT             CONSTRAINT [DF_Action_isFake] DEFAULT ((0)) NOT NULL,
     [totalPrice]          DECIMAL (18, 2) CONSTRAINT [DF_Action_totalPrice] DEFAULT ((0)) NOT NULL,
     [isAlerted]           BIT             CONSTRAINT [DF_Action_isAlerted] DEFAULT ((0)) NOT NULL,
+    [needsRecalc]         BIT             CONSTRAINT [DF_Action_needsRecalc] DEFAULT ((0)) NOT NULL,
     [deleteDate]          DATETIME        NULL,
     CONSTRAINT [PK_Action] PRIMARY KEY NONCLUSTERED ([actionID] ASC) WITH (FILLFACTOR = 90),
     CONSTRAINT [FK_Action_Firm] FOREIGN KEY ([firmID]) REFERENCES [dbo].[Firm] ([firmID]),

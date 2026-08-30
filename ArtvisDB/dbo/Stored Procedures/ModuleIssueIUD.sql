@@ -13,7 +13,8 @@
 @isConfirmed bit = NULL,
 @loggedUserId smallint,
 @actionName varchar(32),
-@grantorID SMALLINT = NULL
+@grantorID SMALLINT = NULL,
+@skipCampaignRecalc bit = 0
 )
 WITH EXECUTE AS OWNER
 AS
@@ -440,6 +441,19 @@ BEGIN
 		where c.campaignID = @campaignId
 	
 	Exec ConfirmationHistoryID @confirmationTypeID = 2, @userID = @loggedUserId,
-		@grantorID = @grantorID, @description = @msg, 
+		@grantorID = @grantorID, @description = @msg,
 		@actionName = 'AddItem'
+END
+
+-- Пересчёт затронутой кампании (см. IssueIUD). Полный ActionRecalculate акции
+-- отложен на закрытие формы; needsRecalc помечает недосчитанную акцию.
+IF @actionName IN ('AddItem', 'DeleteItem', 'UpdateItem')
+BEGIN
+	IF @actionID IS NULL AND @campaignID IS NOT NULL
+		SELECT @actionID = actionID FROM Campaign WHERE campaignID = @campaignID;
+
+	IF @skipCampaignRecalc = 0
+		EXEC dbo.hlp_CampaignRecalc @campaignID = @campaignID, @loggedUserID = @loggedUserId;
+
+	UPDATE dbo.[Action] SET needsRecalc = 1 WHERE actionID = @actionID AND needsRecalc = 0;
 END

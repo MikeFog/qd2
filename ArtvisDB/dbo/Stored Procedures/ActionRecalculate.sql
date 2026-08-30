@@ -463,7 +463,8 @@ BEGIN
     UPDATE dbo.[Action]
     SET
         priceSumByCampaigns = ISNULL(@priceSumByCampaigns, 0),
-        totalPrice = @totalPrice
+        totalPrice = @totalPrice,
+        needsRecalc = 0                 -- полный пересчёт выполнен целиком
     WHERE actionID = @actionID;
 
 END

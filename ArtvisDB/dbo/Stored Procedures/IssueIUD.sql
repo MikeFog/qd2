@@ -15,7 +15,8 @@
 @loggedUserId smallint,
 @massmediaID SMALLINT = NULL,
 @actionName varchar(32),
-@grantorID SMALLINT = NULL
+@grantorID SMALLINT = NULL,
+@skipCampaignRecalc bit = 0
 )
 WITH EXECUTE AS OWNER
 AS
@@ -442,6 +443,20 @@ BEGIN
 		where c.campaignID = @campaignId
 	
 	Exec ConfirmationHistoryID @confirmationTypeID = 2, @userID = @loggedUserId,
-		@grantorID = @grantorID, @description = @msg, 
+		@grantorID = @grantorID, @description = @msg,
 		@actionName = 'AddItem'
+END
+
+-- Пересчёт затронутой кампании (агрегаты выпусков + объёмная/менеджерская скидка),
+-- чтобы панель кампании в CampaignForm жила без пер-кликового полного ActionRecalculate.
+-- Полный пересчёт акции (тотал, finalPrice, ratio, платежи) отложен на закрытие формы;
+-- needsRecalc = 1 помечает, что он ещё не сделан — лечится при открытии акции / джобом.
+-- @skipCampaignRecalc = 1: массовые пути (FrmGenerator, клонирование) делают один
+-- ActionRecalculate после всей пачки сами.
+IF @actionName IN ('AddItem', 'DeleteItem', 'UpdateItem')
+BEGIN
+	IF @skipCampaignRecalc = 0
+		EXEC dbo.hlp_CampaignRecalc @campaignID = @campaignID, @loggedUserID = @loggedUserId;
+
+	UPDATE dbo.[Action] SET needsRecalc = 1 WHERE actionID = @actionID AND needsRecalc = 0;
 END
