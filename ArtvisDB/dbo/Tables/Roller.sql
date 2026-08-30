@@ -41,3 +41,15 @@ GO
 CREATE NONCLUSTERED INDEX [IX_Roller_Parent_AdvertType]
     ON [dbo].[Roller]([parentID] ASC, [advertTypeID] ASC);
 
+
+GO
+-- Проверка AgitationMixError в IssueIUD/ModuleIssueIUD спрашивает "есть ли
+-- в акции ролик политагитации". Roller кластеризован по firmID, поэтому без
+-- этого индекса на каждый выпуск акции шёл seek в PK_Roller + key lookup в
+-- кластерный индекс за одним rolActionTypeID: ~1000 seek'ов на вставку одного
+-- выпуска, 7 мс из 17 мс всей IssueIUD. С индексом оптимизатор заходит от
+-- десятка роликов типа 6 и полу-соединяет их с выпусками акции: 2,1 мс.
+CREATE NONCLUSTERED INDEX [IX_Roller_rolActionTypeID]
+    ON [dbo].[Roller]([rolActionTypeID] ASC)
+    INCLUDE([rollerID]);
+
