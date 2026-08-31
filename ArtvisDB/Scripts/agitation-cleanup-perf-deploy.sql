@@ -1,16 +1,77 @@
--- Авто-обвязка политической агитации (см. docs/tasks/political-agitation-ads.md).
--- Обвязка (типы 44/7/55) принадлежит окну, а не акции менеджера: выпуски создаются
--- в служебной акции (по одной служебной кампании на радиостанцию), чтобы не менять
--- инвариант Issue.campaignID NOT NULL и не попадать в клиентские медиапланы.
--- Служебные сущности создаются лениво (get-or-create): job_DeleteEmptyActions может
--- удалить пустую служебную акцию между агитационными периодами - это штатно.
---
--- Режимы:
---   InsertForWindow - ядро: обвязать одно окно (вызывается при добавлении
---                     подтверждённого ролика типа 6 в уже активированную акцию);
---   InsertForAction - обвязать все окна акции с подтверждённым типом 6 (активация);
---   CleanupWindow   - снять обвязку, если в цепочке окон не осталось типа 6.
-CREATE PROCEDURE [dbo].[AgitationFraming]
+﻿/*
+    ПРОД-ДЕПЛОЙ: AgitationFraming (ветка CleanupWindow) — убрать скалярную UDF
+    fn_AgitationChainFirst из WHERE курсора удаления обвязки.
+    Ветка hotfix/agitation-cleanup-perf.
+
+    ПОВОД
+      31.08.2026 — ActionDeactivate акции 185985 (280 агит-окон) не укладывался
+      в клиентский таймаут 60 с, 3 попытки sveta подряд по 60 с.
+      ActionDeactivate в конце крутит курсор по всем окнам акции с агитацией и
+      на каждое зовёт AgitationFraming @actionName='CleanupWindow'. Внутри
+      CleanupWindow курсор cur_del имел предикат
+          dbo.fn_AgitationChainFirst(i.actualWindowID) = @cFirst
+      fn_AgitationChainFirst — скалярная функция с циклом WHILE, не встраивается,
+      выполняется построчно по ВСЕМ выпускам обвязки (типы 7/44/55) служебной
+      фирмы. Замер на ArtvisDev: один CleanupWindow — 276 мс; курсор по 244 окнам
+      акции — 41 318 мс. Умножается на число окон акции.
+
+    ПРАВКА
+      Окна цепочки и так перечисляются циклом WHILE @cur IS NOT NULL (проверка
+      "осталась ли подтверждённая агитация"). Собираем их по ходу в табличную
+      переменную @chainWindows и в cur_del меняем предикат на
+          i.actualWindowID IN (SELECT windowID FROM @chainWindows)
+      Семантически то же самое (fn_AgitationChainFirst(x)=@cFirst ⟺ x в цепочке
+      от @cFirst), но индексный seek вместо RBAR-функции.
+
+    ЭКВИВАЛЕНТНОСТЬ (ArtvisDev)
+      300 случайных агит-окон, множество (окно, выпуск) для удаления:
+      848 пар, СТАРАЯ форма == НОВАЯ, 0 расхождений.
+      Бенчмарк: CleanupWindow x 244 окна  41 318 мс -> 410 мс (в 100 раз),
+      итог удаления идентичен.
+
+    QUOTED_IDENTIFIER ON
+      AgitationFraming пишет TariffWindow (индекс по вычисляемому windowTime) —
+      ALTER в отдельном батче с SET QUOTED_IDENTIFIER ON / SET ANSI_NULLS ON.
+
+    ИДЕМПОТЕНТНОСТЬ  повторный запуск перезаливает то же тело.
+    ОТКАТ  git show master:"ArtvisDB/dbo/Stored Procedures/AgitationFraming.sql"
+
+    ПОСЛЕ ДЕПЛОЯ  зависшую акцию 185985 можно деактивировать из клиента штатно.
+      Если нужно снять её ДО деплоя — EXEC dbo.ActionDeactivate прямо в SSMS
+      (там нет 60-секундного таймаута клиента).
+
+    ЗАПУСК
+      sqlcmd -S <прод-сервер> -d <прод-БД> -E -b -I -i agitation-cleanup-perf-deploy.sql
+      либо открыть в SSMS на нужной БД и выполнить целиком.
+*/
+
+-- USE [Artvis];
+-- GO
+
+SET NOCOUNT ON;
+GO
+
+/* ── Преполёт ─────────────────────────────────────────────────────────── */
+IF OBJECT_ID('dbo.AgitationFraming') IS NULL
+   OR OBJECT_ID('dbo.ActionDeactivate') IS NULL
+   OR OBJECT_ID('dbo.fn_AgitationChainFirst') IS NULL
+   OR OBJECT_ID('dbo.TariffWindow') IS NULL
+BEGIN
+    RAISERROR('НЕ ТА БАЗА: нет dbo.AgitationFraming / ActionDeactivate / fn_AgitationChainFirst / TariffWindow. Деплой прерван.', 16, 1);
+    SET NOEXEC ON;
+END
+GO
+PRINT 'БД     : ' + DB_NAME();
+PRINT 'Сервер : ' + CONVERT(sysname, SERVERPROPERTY('ServerName'));
+PRINT 'AgitationFraming до: ' + CASE WHEN OBJECT_DEFINITION(OBJECT_ID('dbo.AgitationFraming')) LIKE '%@chainWindows%'
+                                     THEN 'уже с @chainWindows' ELSE 'старая (UDF в WHERE)' END;
+GO
+
+/* ── ALTER dbo.AgitationFraming ───────────────────────────────────────── */
+SET QUOTED_IDENTIFIER ON;
+SET ANSI_NULLS ON;
+GO
+CREATE OR ALTER PROCEDURE [dbo].[AgitationFraming]
 (
 @actionName varchar(32),
 @actionID int = null,
@@ -252,3 +313,21 @@ BEGIN
 	CLOSE cur_del
 	DEALLOCATE cur_del
 END
+GO
+
+/* ── Проверка ─────────────────────────────────────────────────────────── */
+SET NOEXEC OFF;
+GO
+SELECT
+    [процедура]         = o.name,
+    [quoted_identifier] = m.uses_quoted_identifier,   -- ожидается 1
+    [ansi_nulls]        = m.uses_ansi_nulls,          -- ожидается 1
+    [есть_chainWindows] = CASE WHEN m.definition LIKE '%@chainWindows%' THEN 1 ELSE 0 END,     -- 1
+    [нет_UDF_в_cur_del] = CASE WHEN m.definition LIKE '%fn_AgitationChainFirst(i.actualWindowID)%' THEN 0 ELSE 1 END, -- 1
+    [изменена]          = o.modify_date
+FROM sys.sql_modules m
+JOIN sys.objects o ON o.object_id = m.object_id
+WHERE o.name = 'AgitationFraming';
+GO
+PRINT 'Готово. Ожидается: quoted_identifier=1, ansi_nulls=1, есть_chainWindows=1, нет_UDF_в_cur_del=1.';
+GO
