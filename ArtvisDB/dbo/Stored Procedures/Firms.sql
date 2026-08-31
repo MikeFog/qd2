@@ -1,4 +1,11 @@
-﻿CREATE PROCEDURE [dbo].[Firms]
+﻿-- OPTION (RECOMPILE) на основном SELECT: процедура — «catch-all» с набором
+-- (@param IS NULL OR col = @param) и подзапросом ai, который при @userId IS NULL
+-- ранжирует ВСЕ подтверждённые Action по фирме. Один закэшированный план не
+-- годится для всех комбинаций параметров: 31.08.2026 залипший план дал 7,5 с и
+-- 53 тыс. чтений на вызов (× сотни вызовов), сервер встал. Компиляция этого
+-- запроса — единицы мс, вызывается он редко (открытие диалога выбора фирм),
+-- поэтому per-call recompile дешевле любого риска plan-sniffing.
+CREATE PROCEDURE [dbo].[Firms]
 (
 @firmID           SMALLINT    = NULL,
 @headCompanyID    INT         = NULL,   -- новый параметр
@@ -55,7 +62,8 @@ BEGIN
         AND (@userId IS NULL OR ai.userID = ISNULL(@userId, ai.userID))
 		AND (@name IS NULL OR f.name LIKE '%' + @name + '%') 
     ORDER BY
-        [name];
+        [name]
+    OPTION (RECOMPILE);
 END
 GO
 GRANT EXECUTE
