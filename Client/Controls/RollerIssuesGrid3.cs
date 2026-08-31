@@ -133,9 +133,16 @@ namespace Merlin.Controls
 				AddModuleIssue(cell, tariffWindow);
 			}
 
-            campaign.Action.Refresh();
+			// campaign.Action.Refresh() убран: у ActionOnMassmedia.ObjectChanged нет
+			// подписчиков (SmartGrid слушает только SelectedObject, т.е. кампанию), а
+			// campaign.Action — всегда новый экземпляр (GetActionById → new + Refresh),
+			// не тот, что держит ActionForm. Вызов был чистой тратой одного Load-запроса
+			// акции на каждый клик. TotalPrice в памяти поддерживает Recalculate() из
+			// OUTPUT-параметра, так что CorrectPaymentAction не ломается.
 
-			Refresh();
+			// Точечная перерисовка затронутых ячеек уже сделана в AddIssue/AddModuleIssue
+			// (RefreshSingleCell). Полный Refresh() здесь — лишняя синхронная перерисовка
+			// всего грида (~300 мс в замере), состояние она не меняет.
 			FireCampaignStatusChanged();
 		}
 		}

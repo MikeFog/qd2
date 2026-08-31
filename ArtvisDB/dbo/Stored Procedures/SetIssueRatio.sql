@@ -18,13 +18,20 @@ BEGIN
     SET @startDate  = CONVERT(datetime, CONVERT(varchar(8), @startDate, 112), 112);
     SET @finishDate = CONVERT(datetime, CONVERT(varchar(8), @finishDate, 112), 112);
 
+    -- CROSS APPLY + TOP 1 вместо INNER JOIN — см. комментарий в GetIssuesPrice:
+    -- прямой join читает весь срез TariffWindow за период по всем СМИ.
     INSERT INTO #issue (issueID)
     SELECT i.issueID
     FROM Issue i
-        INNER JOIN TariffWindow tw ON tw.windowId = i.originalWindowID
+        CROSS APPLY
+        (
+            SELECT TOP 1 1 AS matched
+            FROM TariffWindow tw
+            WHERE tw.windowId = i.originalWindowID
+              AND tw.dayOriginal BETWEEN @startDate AND @finishDate
+        ) w
     WHERE
-        i.campaignId = @campaignID
-        AND tw.dayOriginal BETWEEN @startDate AND @finishDate;
+        i.campaignId = @campaignID;
 
     UPDATE i WITH (ROWLOCK)
     SET i.ratio = @ratio

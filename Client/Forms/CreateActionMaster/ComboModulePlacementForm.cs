@@ -71,7 +71,8 @@ namespace Merlin.Forms.CreateActionMaster
 		private DataTable _issues;
 
 		/// <summary>
-		/// Выпуски, добавленные последним действием (клик по ячейке или Insert по выделению).
+		/// Выпуски, добавленные последним действием (клик по ячейке или Insert по выделению) -
+		/// определяются сравнением состава до и после (SnapshotIssueIDs / RememberAdded).
 		/// Кнопка «Отменить» удаляет ровно их; любое удаление выпусков сбрасывает список.
 		/// </summary>
 		private readonly List<PresentationObject> _lastAddedIssues = new List<PresentationObject>();
@@ -285,9 +286,10 @@ namespace Merlin.Forms.CreateActionMaster
 				Application.DoEvents();
 				Cursor = Cursors.WaitCursor;
 
-				ModuleIssue added = AddModuleIssue(day, roller);
-				SetLastAdded(new List<PresentationObject> { added });
+				HashSet<int> before = SnapshotIssueIDs();
+				AddModuleIssue(day, roller);
 				RefreshAfterChange();
+				RememberAdded(before);
 			}
 			catch (Exception ex)
 			{
@@ -301,10 +303,9 @@ namespace Merlin.Forms.CreateActionMaster
 
 		/// <summary>
 		/// Создание акции, кампании и выпуска - одной транзакцией: если выпуск не встал,
-		/// не должно остаться ни пустой кампании, ни пустой акции. Возвращает созданный
-		/// выпуск - его запоминает вызывающий для кнопки «Отменить».
+		/// не должно остаться ни пустой кампании, ни пустой акции.
 		/// </summary>
-		private ModuleIssue AddModuleIssue(ComboModuleDay day, PresentationObject roller)
+		private void AddModuleIssue(ComboModuleDay day, PresentationObject roller)
 		{
 			bool actionCreated = false;
 			bool campaignCreated = false;
@@ -325,7 +326,6 @@ namespace Merlin.Forms.CreateActionMaster
 
 				_action.Recalculate();
 				DataAccessor.CommitTransaction();
-				return issue;
 			}
 			catch
 			{
@@ -435,7 +435,8 @@ namespace Merlin.Forms.CreateActionMaster
 			IList<ComboModuleDay> days = comboModuleGrid.GetSelectedDays();
 			if (days.Count == 0) return;
 
-			List<PresentationObject> added = new List<PresentationObject>();
+			HashSet<int> before = SnapshotIssueIDs();
+			int addedCount = 0;
 			DataTable addErrors = SmartGrid.CreateDeleteErrorsTable();
 			int errorRowNumber = 1;
 			try
@@ -446,7 +447,8 @@ namespace Merlin.Forms.CreateActionMaster
 					string objectName = string.Format("{0}, {1:dd.MM.yyyy}", day.ModuleName, day.Date);
 					try
 					{
-						added.Add(AddModuleIssue(day, roller));
+						AddModuleIssue(day, roller);
+						addedCount++;
 					}
 					catch (Exception ex)
 					{
@@ -460,26 +462,55 @@ namespace Merlin.Forms.CreateActionMaster
 				Cursor = Cursors.Default;
 			}
 
-			if (added.Count > 0)
+			if (addedCount > 0)
 			{
-				SetLastAdded(added);
 				RefreshAfterChange();
+				RememberAdded(before);
 			}
 
 			if (addErrors.Rows.Count > 0)
 				SmartGrid.ShowDeleteErrors(addErrors, "Ошибки массового добавления");
 			else
-				UserMessage.ShowInformation(string.Format("Добавлено выпусков: {0}.", added.Count));
+				UserMessage.ShowInformation(string.Format("Добавлено выпусков: {0}.", addedCount));
 		}
 
 		#endregion
 
 		#region Отмена последнего добавления ------------------
 
-		private void SetLastAdded(IEnumerable<PresentationObject> issues)
+		/// <summary>
+		/// moduleIssueID выпусков акции сейчас. Снимок делается до добавления, а после -
+		/// сравнивается с новым составом: чего не было, то и добавили этим действием.
+		/// Через объект, который возвращает Campaign.AddModuleIssue, не выйдет: процедура
+		/// ModuleIssueIUD настроена как NO_DATA, identity нового ряда в объект не попадает.
+		/// </summary>
+		private HashSet<int> SnapshotIssueIDs()
+		{
+			HashSet<int> ids = new HashSet<int>();
+			if (_issues != null)
+				foreach (DataRow row in _issues.Rows)
+					ids.Add(Convert.ToInt32(row[Issue.ParamNames.ModuleIssueId]));
+			return ids;
+		}
+
+		/// <summary>
+		/// Запоминает для кнопки «Отменить» выпуски, появившиеся после снимка <paramref name="before"/>.
+		/// Объекты строятся из строк уже перечитанной панели (ComboModuleIssuesRetrieve отдаёт
+		/// moduleIssueID) - те же, что удаляет Del по ячейкам, так что Delete(true) на них работает.
+		/// </summary>
+		private void RememberAdded(HashSet<int> before)
 		{
 			_lastAddedIssues.Clear();
-			_lastAddedIssues.AddRange(issues);
+
+			Entity issueEntity = ModuleIssue.GetEntity();
+			if (_issues != null)
+				foreach (DataRow row in _issues.Rows)
+				{
+					int id = Convert.ToInt32(row[Issue.ParamNames.ModuleIssueId]);
+					if (!before.Contains(id))
+						_lastAddedIssues.Add(issueEntity.CreateObject(row));
+				}
+
 			tbbUndo.Enabled = _lastAddedIssues.Count > 0;
 		}
 

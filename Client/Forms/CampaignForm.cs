@@ -459,7 +459,10 @@ namespace Merlin.Forms
 			try
 			{
 				//campaign.RecalculateAction();
-				_campaign.Refresh();
+				// ReloadData вместо Refresh: освежаем только локальную панель кампании.
+				// Refresh() поднимает ObjectChanged, на который подписан грид/дерево
+				// родительской (невидимой) ActionForm — они перерисовывались на каждый клик.
+				_campaign.ReloadData();
 				_campaign.DisplayCampaignData(lstStat);
 				changeFlag = true;
 				HighlightSelectedModule();
