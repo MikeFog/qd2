@@ -44,12 +44,22 @@ WHERE w.session_id IN (
     OUTER APPLY sys.dm_exec_sql_text(r.sql_handle) t
     WHERE t.text LIKE '%' + @proc + '%');
 
-/* Эскалация блокировок Issue/TariffWindow прямо сейчас */
-SELECT resource_type, request_mode, request_status, COUNT(*) AS cnt,
-       obj = OBJECT_NAME(l.resource_associated_entity_id)
+/* Эскалация блокировок Issue/TariffWindow прямо сейчас.
+   resource_associated_entity_id для OBJECT-локов = object_id (int),
+   для KEY/RID/PAGE/HOBT = hobt_id (bigint) — резолвим через sys.partitions,
+   иначе OBJECT_NAME(bigint) даёт arithmetic overflow. */
+SELECT l.resource_type, l.request_mode, l.request_status, COUNT(*) AS cnt,
+       obj = MAX(CASE WHEN l.resource_type = 'OBJECT'
+                      THEN OBJECT_NAME(CONVERT(int, l.resource_associated_entity_id))
+                      ELSE OBJECT_NAME(p.object_id) END)
 FROM sys.dm_tran_locks l
+LEFT JOIN sys.partitions p
+       ON l.resource_type <> 'OBJECT'
+      AND p.hobt_id = l.resource_associated_entity_id
 WHERE l.resource_database_id = DB_ID()
   AND l.resource_type IN ('OBJECT','HOBT','PAGE','KEY','RID')
-GROUP BY resource_type, request_mode, request_status, OBJECT_NAME(l.resource_associated_entity_id)
-HAVING COUNT(*) > 50 OR request_mode IN ('X','IX','SIX','U')
+GROUP BY l.resource_type, l.request_mode, l.request_status,
+         CASE WHEN l.resource_type = 'OBJECT'
+              THEN l.resource_associated_entity_id ELSE p.object_id END
+HAVING COUNT(*) > 50 OR l.request_mode IN ('X','IX','SIX','U')
 ORDER BY cnt DESC;
