@@ -113,3 +113,25 @@
 - `ActionRecalculate` (фаза 1A) и `hlp_CampaignRecalc` — там агрегат по всем кампаниям акции сразу, hash может быть и оправдан; 12 мс, низкий приоритет
 
 **Возможное направление:** Не переписывать вслепую. Для каждого кандидата снять фактический план и сравнить оценку строк на стороне `TariffWindow` с реальным числом обрабатываемых выпусков; переписывать только там, где виден `Hash Match` с широким срезом по `dayOriginal` и узкой стороной выпусков. Проверять эквивалентность так же, как в `ArtvisDB/Scripts/issues-join-fix-check.sql`.
+
+---
+
+### [SQL-03] `ActionDeactivate` снимает обвязку политагитации построчным курсором
+
+**Область:** `dbo.ActionDeactivate`, `dbo.AgitationFraming` (`CleanupWindow`)
+**Суть:** `ActionDeactivate` в конце крутит курсор по всем агит-окнам акции (`@agitWindows`) и на каждое зовёт `EXEC AgitationFraming @actionName='CleanupWindow'` — в одной неявной транзакции, держа X-блокировки на `Issue`/`TariffWindow` весь срок. После `hotfix/agitation-cleanup-perf` один `CleanupWindow` ≈ 2 мс (было ~276), но при сотнях окон это всё равно RBAR под общей блокировкой. Все цепочки окон в данных имеют длину ≤ 2 (ArtvisDev: 414 цепочек, все длины 2, ветвлений/колец 0), поэтому `CleanupWindow` полностью переписывается в set-based: один проход по `@agitWindows` + их цепочкам, групповая проверка «осталась ли подтверждённая агитация» и групповое удаление.
+**Почему важно:** блокировочный след `ActionDeactivate` — та же зона, что в открытой паре дедлоков `Issue`/`stat_GetPrice` ([[project_deadlocks_prod]]). Перф-инцидент 31.08.2026 (таймаут деактивации) закрыт хотфиксом, но архитектурно операция осталась построчной.
+**Где смотреть:**
+- `ArtvisDB\dbo\Stored Procedures\ActionDeactivate.sql` — курсор `cur_agit_deact` (~стр. 148–162)
+- `ArtvisDB\dbo\Stored Procedures\AgitationFraming.sql` — ветка `CleanupWindow`
+- 7 других вызывающих `CleanupWindow` (`ActionIUD`, `CampaignIUD`, `CampaignsIssueDelete`, `CampaignTransferDay`, `IssueIUD`, `IssueTransfer`) — при переписывании проверить все
+
+**Возможное направление:** `CleanupWindow` принимает набор окон (TVP или temp-таблица), обрабатывает их цепочки одним set-based проходом; `ActionDeactivate` зовёт её один раз со всем `@agitWindows`.
+
+---
+
+### [C#-01] Связывание окон трафика — два не-транзакционных `TariffWindowIUD`
+
+**Область:** `Client\Classes\TariffWindowWithRollerIssues.WinForms.cs` (`GroupWithWindow`, `UngroupWindows`)
+**Суть:** линковка/раслинковка окон (`windowPrevId`/`windowNextId`) пишет обе стороны связи двумя отдельными round-trip'ами `window.Update()` без транзакции. Сбой второго оставляет **полусвязь** (`w.windowNextId → v`, но `v.windowPrevId ≠ w`). Уникального ограничения/CHECK нет; существование `dbo.CheckLinkedWindows` (детект+ремонт) — прямое свидетельство, что полусвязи в проде есть. Из-за них расходятся forward/backward обходы цепочки — см. [SQL-03] и `docs/tasks/political-agitation-review-findings.md` §2.2 (осиротевшая обвязка политагитации).
+**Возможное направление:** обернуть `GroupWithWindow`/`UngroupWindows` в `DataAccessor.BeginTransaction()`/`Commit` (или писать обе стороны одним вызовом `TariffWindowIUD`). Тогда полусвязи станут невозможны, `CheckLinkedWindows` можно вывести из регулярного прогона, а эквивалентность forward/backward обхода — безусловной.
