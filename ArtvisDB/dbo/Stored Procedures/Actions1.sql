@@ -38,6 +38,12 @@
 )
 AS
 SET NOCOUNT on
+	-- Проблема
+	-- a.createDate <= @createDateEnd — при @createDateEnd = '2025-05-01 00:00:00' любая акция, созданная 2025-05-01 11:42, 
+	--отсекается, потому что 11:42 > 00:00.
+	-- Решение — сдвиг границы, а не обрезка колонки
+	SET @createDateEnd = DATEADD(DAY, 1, CAST(@createDateEnd AS date));
+
 	declare @massmedias table(massmediaID smallint primary key, myMassmedia bit, foreignMassmedia bit)
 	insert into @massmedias (massmediaID, myMassmedia, foreignMassmedia) 
 	select * from dbo.fn_GetMassmediasForUser(@loggedUserID)
@@ -97,7 +103,7 @@ SET NOCOUNT on
 			a.actionID = @actionID 
             -- Фильтр по дате создания
             AND (@createDateBegin IS NULL OR a.createDate >= @createDateBegin)
-            AND (@createDateEnd IS NULL OR a.createDate <= @createDateEnd)
+            AND (@createDateEnd IS NULL OR a.createDate < @createDateEnd)
 			and (@headCompanyID is null or f.headCompanyID = @headCompanyID)
 			AND (
 				(a.[isConfirmed] = 0 AND @isShowNotActivate = 1 And a.deleteDate is null) 
@@ -158,7 +164,7 @@ SET NOCOUNT on
 			a.startDate <= Coalesce(@endOfInterval, a.startDate) And
             -- Фильтр по дате создания
             (@createDateBegin IS NULL OR a.createDate >= @createDateBegin) AND
-            (@createDateEnd IS NULL OR a.createDate <= @createDateEnd) AND
+            (@createDateEnd IS NULL OR a.createDate < @createDateEnd) AND
 			c.paymentTypeId = Coalesce(@paymentTypeId, c.paymentTypeId) And
 			c.campaignTypeId = Coalesce(@campaignTypeId, c.campaignTypeId) And
 			c.finishDate = Coalesce(@campaignFinishDate, c.finishDate) And
@@ -246,7 +252,7 @@ SET NOCOUNT on
 			(a.startDate <= Coalesce(@endOfInterval, a.startDate) Or (a.startDate Is Null And @endOfInterval Is Null ))  And
             -- Фильтр по дате создания
             (@createDateBegin IS NULL OR a.createDate >= @createDateBegin) AND
-            (@createDateEnd IS NULL OR a.createDate <= @createDateEnd) AND
+            (@createDateEnd IS NULL OR a.createDate < @createDateEnd) AND
 			c.paymentTypeId = Coalesce(@paymentTypeId, c.paymentTypeId) And
 			c.campaignTypeId = Coalesce(@campaignTypeId, c.campaignTypeId) And 
 			c.finishDate = Coalesce(@campaignFinishDate, c.finishDate) And

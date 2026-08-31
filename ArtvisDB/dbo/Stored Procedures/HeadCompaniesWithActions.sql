@@ -33,6 +33,12 @@ BEGIN
     SET NOCOUNT ON;
     SET TRANSACTION ISOLATION LEVEL READ UNCOMMITTED; -- Важно для продакшена
 
+	-- Проблема
+	-- a.createDate <= @createDateEnd — при @createDateEnd = '2025-05-01 00:00:00' любая акция, созданная 2025-05-01 11:42, 
+	--отсекается, потому что 11:42 > 00:00.
+	-- Решение — сдвиг границы, а не обрезка колонки
+	SET @createDateEnd = DATEADD(DAY, 1, CAST(@createDateEnd AS date));
+
     SELECT 
         hc.*,
         @userID AS userID,
@@ -86,7 +92,7 @@ BEGIN
           AND (@startOfInterval IS NULL OR a.finishDate >= @startOfInterval)
           AND (@endOfInterval IS NULL OR a.startDate <= @endOfInterval)
           AND (@createDateBegin IS NULL OR a.createDate >= @createDateBegin)
-          AND (@createDateEnd IS NULL OR a.createDate <= @createDateEnd)
+          AND (@createDateEnd IS NULL OR a.createDate < @createDateEnd)
 		  AND (@changeStartOfInterval IS NULL OR a.modDate >= @changeStartOfInterval)
           AND (@changeEndOfInterval IS NULL OR a.modDate <= @changeEndOfInterval)
           
