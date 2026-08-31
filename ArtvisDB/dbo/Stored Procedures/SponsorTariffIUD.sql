@@ -44,7 +44,34 @@ IF @actionName In ('AddItem', 'UpdateItem') And
 	BEGIN
 	RAISERROR('TariffAlreadyExists', 16, 1)
 	RETURN
-	END	
+	END
+
+-- Проверка "на чужой территории": на той же станции в это же время уже есть обычный тариф (Tariff живёт в другой таблице/цепочке pricelistID)
+IF @actionName In ('AddItem', 'UpdateItem') And
+	Exists(
+		Select	1
+		From	Tariff t
+		Inner Join Pricelist p On p.pricelistID = t.pricelistID
+		Inner Join SponsorProgramPricelist spl On spl.pricelistID = @pricelistID
+		Inner Join SponsorProgram sp On sp.sponsorProgramID = spl.sponsorProgramID
+		Where	p.massmediaID = sp.massmediaID and
+		p.startDate <= spl.finishDate and p.finishDate >= spl.startDate and
+		t.time = @time and
+		(
+		(t.monday = 1 and @monday = 1) or
+		(t.tuesday = 1 and @tuesday = 1) or
+		(t.wednesday = 1 and @wednesday = 1) or
+		(t.thursday = 1 and @thursday = 1) or
+		(t.friday = 1 and @friday = 1) or
+		(t.saturday = 1 and @saturday = 1) or
+		(t.sunday = 1 and @sunday = 1)
+		)
+	)
+	BEGIN
+	RAISERROR('SponsorTariffConflictsWithTariff', 16, 1)
+	RETURN
+	END
+
 IF @actionName = 'AddItem' BEGIN
 	INSERT INTO [SponsorTariff](pricelistID, time, monday, tuesday, wednesday, thursday, friday, saturday, sunday, price, duration, comment, isAlive, needExt, needInJingle, needOutJingle, suffix, path)
 	VALUES(@pricelistID, @time, @monday, @tuesday, @wednesday, @thursday, @friday, @saturday, @sunday, @price, @duration, @comment, @isAlive, @needExt, @needInJingle, @needOutJingle, @suffix, @path)
