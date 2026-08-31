@@ -234,6 +234,7 @@ namespace Merlin.Controls
 
 			RawDataGridView.DataSource = _dtGrid.DefaultView;
 			SetFrozenRowsAndColumns();
+			StripeMassmediaGroups();
 			ShadeWeekends();
 			MarkFilteredCells();
 			SetColumnWidths();
@@ -498,6 +499,36 @@ namespace Merlin.Controls
 						? new Font(RawDataGridView.DefaultCellStyle.Font, FontStyle.Bold)
 						: RawDataGridView.DefaultCellStyle.Font;
 				}
+		}
+
+		/// <summary>
+		/// "Зебра" по радиостанциям: колонки "Радиостанция" и "Модуль" заливаются
+		/// чередующимся фоном - все строки одной станции одним цветом, следующая станция
+		/// другим. У комбо-модулей на проде десятки модулей подряд, и без этого не видно,
+		/// где кончается блок одной станции и начинается следующий. Модули идут группами
+		/// по станции (ComboModuleContentRetrieve / ...ActionModulesRetrieve), поэтому
+		/// достаточно менять цвет при смене massmediaID у соседних строк.
+		/// </summary>
+		private void StripeMassmediaGroups()
+		{
+			if (RawDataGridView.RowCount == 0 || _modules == null) return;
+
+			int lastMassmediaID = -1;
+			bool useAlt = false;
+			for (int moduleIndex = 0; moduleIndex < _modules.Rows.Count; moduleIndex++)
+			{
+				int massmediaID = Convert.ToInt32(_modules.Rows[moduleIndex][ComboModule.ParamNames.MassmediaId]);
+				if (massmediaID != lastMassmediaID)
+				{
+					useAlt = !useAlt;
+					lastMassmediaID = massmediaID;
+				}
+
+				Color color = useAlt ? Color.WhiteSmoke : Color.Gainsboro;
+				int rowIndex = FIXED_ROWS + moduleIndex;
+				for (int columnIndex = 0; columnIndex < FIXED_COLS; columnIndex++)
+					SetCellBackColor(rowIndex, columnIndex, color);
+			}
 		}
 
 		/// <summary>
