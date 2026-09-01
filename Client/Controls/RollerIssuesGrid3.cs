@@ -174,21 +174,34 @@ namespace Merlin.Controls
 		{
             using (OperationScope.Start($"AddIssue date={tariffWindow.WindowDate:yyyy-MM-dd HH:mm}"))
             {
-                try
-                {
-                    DataAccessor.BeginTransaction();
-                    CampaignOnSingleMassmedia.AddIssue(roller, tariffWindow, rollerPosition, Grantor == null ? null : (int?)Grantor.Id);
-                    CampaignOnSingleMassmedia.RecalculateAction(false);
-                    DataAccessor.CommitTransaction();
-                }
-                catch
-                {
-                    DataAccessor.RollbackTransaction();
-                    throw;
-                }
-
+                AddIssueTransaction(tariffWindow);
                 RefreshSingleCell(cell.RowIndex, cell.ColumnIndex, tariffWindow, TariffGridRefreshMode.WithAdd, true);
             }
+		}
+
+		// Добавление выпуска текущего ролика в окно для массового добавления по Insert
+		// (CampaignForm.AddIssuesInSelectedWindows): та же транзакция, что у одиночного клика,
+		// но без точечной перерисовки — форма делает один RefreshGrid после всего пакета.
+		public void AddIssueToWindow(TariffWindowWithRollerIssues tariffWindow)
+		{
+			if (campaign == null || roller == null) return;
+			AddIssueTransaction(tariffWindow);
+		}
+
+		private void AddIssueTransaction(TariffWindowWithRollerIssues tariffWindow)
+		{
+			try
+			{
+				DataAccessor.BeginTransaction();
+				CampaignOnSingleMassmedia.AddIssue(roller, tariffWindow, rollerPosition, Grantor == null ? null : (int?)Grantor.Id);
+				CampaignOnSingleMassmedia.RecalculateAction(false);
+				DataAccessor.CommitTransaction();
+			}
+			catch
+			{
+				DataAccessor.RollbackTransaction();
+				throw;
+			}
 		}
 
 		private void OnGridPopulated()
