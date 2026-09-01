@@ -175,6 +175,17 @@
   <data name="mute_roller" type="System.Resources.ResXFileRef, System.Windows.Forms">
     <value>..\Resources\mute_roller.png;System.Drawing.Bitmap, System.Drawing, Version=2.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
   </data>
+  <data name="roller_numbers" type="System.Drawing.Bitmap, System.Drawing" mimetype="application/x-microsoft.net.object.bytearray.base64">
+    <value>
+        iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAYAAAAf8/9hAAAAAXNSR0IArs4c6QAAAARnQU1BAACxjwv8
+        YQUAAAAJcEhZcwAAFiUAABYlAUlSJPAAAAElSURBVDhPndNNS8MwHMfxvg3XhzTqK/Dkxbvgy1EZDBwM
+        ZeJ0io5UQRCF+Q68eRk7eJAh7OADTNxgSAVhusRDD7Y/6WCtM23JDPwvId8PySGazfgldbhPHYHphvs2
+        43Xtf3GMaPLmdKMELJ4LUMal/Uxg4ewLhYaHlvuNTy+AXmyFV5bOpQIfXoDxGnoBZlavYZTa0k1SgbWr
+        NywdPUZAbr2BXL4Jc+thAkkFaG2Aub1eDOSb0As30DduYZY70XPSAUdg/phHwDg2incwS21Yle4IyQZO
+        RAz8io3Ne5jlJ5DqqzrwN7a2n2FVeupAUkyq/Wxg1hFYuXCxfNpNjMm+mw2MhnFYOy+JsX34HgJqn4ns
+        9qWY1ga+Fn5JNYSDHLgTsc2G9R9nobWE4jxJ5AAAAABJRU5ErkJggg==
+</value>
+  </data>
   <data name="ActJournalMassmediaExplamation" xml:space="preserve">
     <value>В данной распечатке акта выполненных работ присутствуют выпуски на радиостанциях, которые не были отмечены как обработанные трафик-менеджером.</value>
   </data>

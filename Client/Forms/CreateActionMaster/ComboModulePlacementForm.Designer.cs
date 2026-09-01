@@ -46,6 +46,7 @@
 			this.miPeriodMonth = new System.Windows.Forms.ToolStripMenuItem();
 			this.tbbSeparator2 = new System.Windows.Forms.ToolStripSeparator();
 			this.tbbShowUnconfirmed = new System.Windows.Forms.ToolStripButton();
+			this.tbbShowRollerNumbers = new System.Windows.Forms.ToolStripButton();
 			this.tbbSeparator3 = new System.Windows.Forms.ToolStripSeparator();
 			this.tbbExcel = new System.Windows.Forms.ToolStripButton();
 			this.splitContainer1 = new System.Windows.Forms.SplitContainer();
@@ -259,6 +260,18 @@
 			this.tbbShowUnconfirmed.Text = "Учитывать макеты";
 			this.tbbShowUnconfirmed.Click += new System.EventHandler(this.tbbShowUnconfirmed_Click);
 			//
+			// tbbShowRollerNumbers
+			//
+			this.tbbShowRollerNumbers.CheckOnClick = true;
+			this.tbbShowRollerNumbers.DisplayStyle = System.Windows.Forms.ToolStripItemDisplayStyle.Image;
+			this.tbbShowRollerNumbers.Image = global::Merlin.Properties.Resources.roller_numbers;
+			this.tbbShowRollerNumbers.ImageTransparentColor = System.Drawing.Color.Magenta;
+			this.tbbShowRollerNumbers.Name = "tbbShowRollerNumbers";
+			this.tbbShowRollerNumbers.Size = new System.Drawing.Size(34, 33);
+			this.tbbShowRollerNumbers.Text = "Номера роликов";
+			this.tbbShowRollerNumbers.ToolTipText = "Показывать в окнах номера роликов текущей акции вместо остатка времени";
+			this.tbbShowRollerNumbers.CheckedChanged += new System.EventHandler(this.tbbShowRollerNumbers_CheckedChanged);
+			//
 			// tbbSeparator3
 			//
 			this.tbbSeparator3.Name = "tbbSeparator3";
@@ -291,6 +304,7 @@
 				this.tbbPeriodMode,
 				this.tbbSeparator2,
 				this.tbbShowUnconfirmed,
+				this.tbbShowRollerNumbers,
 				this.tbbSeparator3,
 				this.tbbExcel});
 			this.toolStrip1.Location = new System.Drawing.Point(0, 0);
@@ -314,6 +328,7 @@
 			this.grdRollers.Name = "grdRollers";
 			this.grdRollers.QuickSearchVisible = false;
 			this.grdRollers.SelectedObject = null;
+			this.grdRollers.ShowRowNumbers = true;
 			this.grdRollers.TabIndex = 0;
 			//
 			// lstStat
@@ -441,6 +456,7 @@
 		private System.Windows.Forms.ToolStripMenuItem miPeriodMonth;
 		private System.Windows.Forms.ToolStripSeparator tbbSeparator2;
 		private System.Windows.Forms.ToolStripButton tbbShowUnconfirmed;
+		private System.Windows.Forms.ToolStripButton tbbShowRollerNumbers;
 		private System.Windows.Forms.ToolStripSeparator tbbSeparator3;
 		private System.Windows.Forms.ToolStripButton tbbExcel;
 		private System.Windows.Forms.SplitContainer splitContainer1;

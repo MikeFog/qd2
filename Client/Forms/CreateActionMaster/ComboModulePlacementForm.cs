@@ -957,6 +957,43 @@ namespace Merlin.Forms.CreateActionMaster
 			}
 		}
 
+		/// <summary>
+		/// «Номера роликов» — переключает ячейки грида между остатком времени и номерами
+		/// роликов акции, размещённых в модуле. Логика 1 в 1 с CampaignForm: карта строится
+		/// из списка роликов (номер = позиция строки, как в колонке «№»), грид сам
+		/// перерисовывает тексты без похода в БД, поэтому RefreshAfterChange здесь не нужен.
+		/// </summary>
+		private void tbbShowRollerNumbers_CheckedChanged(object sender, EventArgs e)
+		{
+			try
+			{
+				comboModuleGrid.SetRollerNumbersMode(
+					tbbShowRollerNumbers.Checked,
+					tbbShowRollerNumbers.Checked ? BuildRollerNumbersMap() : null);
+			}
+			catch (Exception ex)
+			{
+				ErrorManager.PublishError(ex);
+			}
+		}
+
+		// rollerID -> номер ролика, ровно тот, что показывает колонка «№» grdRollers
+		// (SmartGrid.ShowRowNumbers) в её текущем порядке строк на этот момент.
+		private Dictionary<int, int> BuildRollerNumbersMap()
+		{
+			Dictionary<int, int> map = new Dictionary<int, int>();
+			DataView view = grdRollers.DataSource;
+			if (view == null) return map;
+
+			for (int i = 0; i < view.Count; i++)
+			{
+				int rollerId = ParseHelper.GetInt32FromObject(view[i][Roller.ParamNames.RollerId], 0);
+				if (rollerId != 0)
+					map[rollerId] = i + 1;
+			}
+			return map;
+		}
+
 		private void tbbRefresh_Click(object sender, EventArgs e)
 		{
 			try

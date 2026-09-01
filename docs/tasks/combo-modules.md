@@ -721,3 +721,31 @@ Insert/Delete) стал свитчем по `e.KeyCode`; для PageUp/PageDown 
   выпуска сносит и кампанию, и акцию — как ручное удаление того же выпуска.
 - Любое удаление выпусков (`AfterIssuesDeleted`) сбрасывает `_lastAddedIssues`.
   Листание, refresh, смена недели/месяца и фильтров кнопку не трогают.
+
+## Ветка `feature/combo-modules-feedback`
+
+### Кнопка «Номера роликов»
+
+Перенос одноимённой кнопки `CampaignForm` (`btnShowRollerNumbers`): переключает
+ячейки грида между остатком свободного времени и номерами роликов акции,
+размещённых в этом модуле в этот день. Номер — позиция ролика в списке `grdRollers`
+(колонка «№», `SmartGrid.ShowRowNumbers`, включена и здесь).
+
+- **Форма** — `tbbShowRollerNumbers` (иконка, рядом с «Учитывать макеты»),
+  `CheckOnClick`. Иконка та же, что у `CampaignForm.btnShowRollerNumbers`: 16×16 PNG
+  добавлен в общий `Merlin.Properties.Resources` под именем `roller_numbers`
+  (встроенный bytearray, без файла на диске и правки csproj), `CampaignForm`
+  по-прежнему берёт свою копию из `CampaignForm.resx` — не трогали.
+  `BuildRollerNumbersMap()` — 1 в 1 с `CampaignForm`: `rollerID →
+  номер строки` по `grdRollers.DataSource`. `tbbShowRollerNumbers_CheckedChanged`
+  зовёт `comboModuleGrid.SetRollerNumbersMode(on, map)` — без `RefreshAfterChange`,
+  грид перерисовывает тексты сам, без похода в БД.
+- **Грид** — `SetRollerNumbersMode(on, map)` хранит флаг и карту; `ApplyCellTexts()`
+  проходит по `_days` и пишет в `_dtGrid` либо `ComboModuleDay.CellText` (остаток),
+  либо номера роликов из `GetRollerNumbersText(moduleID, date)`. Выпуски берутся из
+  таблицы, которую форма и так передаёт в `MarkIssues` (сохраняется в
+  `_markedIssues`), поэтому `ApplyCellTexts()` вызывается и за каждым `MarkIssues` —
+  режим переживает листание, смену недели/месяца и фильтров.
+- Карта фиксируется на момент включения (как в `CampaignForm`): ролик-пустышка,
+  добавленный уже при включённом режиме, получит номер только после повторного
+  переключения.
