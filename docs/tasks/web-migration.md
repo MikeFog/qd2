@@ -431,9 +431,20 @@ view» придётся сознательно отложить: в Blazor со�
 - контекст пользователя на запрос (`AsyncLocal`, заполняется из cookie);
 - меню из `UserMenuItems` с теми же правами;
 - оболочка с вкладками — аналог MDI;
-- log4net в тот же файл и формат; заполнить `%property{cid}` идентификатором
+- log4net в тот же файл и формат (на .NET 10 уже подтверждено срезом,
+  `FogSoft.Web/log4net.config`); заполнить `%property{cid}` идентификатором
   запроса (сейчас в паттерне есть, но нигде не присваивается — «Открытые
-  вопросы» №3 в `docs/ARCHITECTURE.md`);
+  вопросы» №3 в `docs/ARCHITECTURE.md`).
+  **Найдено 2026-08-31, при обсуждении: десктоп проставляет `%property{user}`
+  через `GlobalContext.Properties["user"]` (`MDIForm.cs:104`) — это одно
+  значение на весь процесс, в вебе с несколькими пользователями это тот же
+  класс бага, что чинили в этапе 0.2 для `SecurityManager.loggedUser` и
+  `DataAccessor._transaction`. В вебе `user`/`cid` — через
+  `log4net.LogicalThreadContext.Properties` (asynclocal-реализация в
+  netstandard2.0-сборке пакета, `System.Runtime.Remoting.CallContext` на
+  .NET Core недоступен), проставлять в том же месте circuit, что и
+  `WebLoggedUserStorage`. Десктопа не касается — там один пользователь на
+  процесс, `GlobalContext` там корректен, менять не нужно.**
 - обработка ошибок в семантике `ErrorManager`.
 
 **Проверка:** вход под реальным пользователем, меню совпадает с десктопным по
