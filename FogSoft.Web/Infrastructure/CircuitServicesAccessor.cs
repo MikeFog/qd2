@@ -1,3 +1,4 @@
+using log4net;
 using Microsoft.AspNetCore.Components.Server.Circuits;
 
 namespace FogSoft.Web.Infrastructure;
@@ -44,6 +45,23 @@ public sealed class CircuitServicesAccessor
 /// ровно для этой задачи: он оборачивает каждое входящее действие пользователя,
 /// а не только создание circuit, — поэтому ссылка на scope актуальна на каждом
 /// клике, а не только в момент подключения.
+///
+/// Тут же, в этой обёртке над каждой входящей активностью, — единственно
+/// правильное место проставлять и лог-контекст (<c>%property{user}</c>,
+/// <c>%property{cid}</c>): десктоп кладёт <c>user</c> один раз при входе через
+/// <c>GlobalContext.Properties</c> (один процесс — один пользователь на всё
+/// время жизни), в вебе так нельзя — тот же класс бага, что чинили для
+/// <c>SecurityManager.loggedUser</c> в этапе 0.2. Простой <c>AsyncLocal</c>,
+/// выставленный один раз при логине, тоже не подошёл бы: до следующего клика
+/// он не доживёт (см. комментарий класса выше про отдельный
+/// <c>ExecutionContext</c> на каждую порцию работы circuit) — значит,
+/// перечитывать пользователя из <see cref="UserSession"/> нужно на каждую
+/// активность, а не один раз. <c>cid</c> в десктопе объявлен в паттерне, но
+/// нигде не проставлялся (docs/ARCHITECTURE.md, «Открытые вопросы» №3) —
+/// здесь заполняется впервые, как идентификатор одной входящей активности
+/// circuit (один клик/JS-interop-вызов), чтобы в логе можно было отличить
+/// параллельные действия разных пользователей и разных вкладок одного
+/// пользователя друг от друга.
 /// </summary>
 public sealed class CircuitServicesHandler : CircuitHandler
 {
@@ -62,15 +80,20 @@ public sealed class CircuitServicesHandler : CircuitHandler
 		return async context =>
 		{
 			_accessor.Services = _services;
+			LogicalThreadContext.Properties["user"] = _services.GetService<UserSession>()?.User?.LoginName ?? "";
+			LogicalThreadContext.Properties["cid"] = Guid.NewGuid().ToString("N").Substring(0, 8);
 			try
 			{
 				await next(context);
 			}
 			finally
 			{
-				// Снимаем, чтобы ссылка на чужой circuit не утекла в код,
-				// который выполняется вне обработки действия пользователя.
+				// Снимаем, чтобы ссылка на чужой circuit (и его лог-контекст)
+				// не утекла в код, который выполняется вне обработки действия
+				// пользователя.
 				_accessor.Services = null;
+				LogicalThreadContext.Properties.Remove("user");
+				LogicalThreadContext.Properties.Remove("cid");
 			}
 		};
 	}
