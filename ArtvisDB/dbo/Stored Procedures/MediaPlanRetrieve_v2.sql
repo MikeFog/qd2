@@ -12,7 +12,8 @@ CREATE PROCEDURE [dbo].[MediaPlanRetrieve_v2]
     @finishDate datetime = null,
     @onlyRollers bit = 0,
     @rollerIDString VARCHAR(8000) = null,
-    @agencyId int = null                          -- опциональный фильтр по агентству
+    @agencyId int = null,                         -- опциональный фильтр по агентству
+    @actionIDString VARCHAR(8000) = null          -- набор акций для сводного медиаплана
 )
 AS
 BEGIN
@@ -23,6 +24,12 @@ BEGIN
     --------------------------------------------------------------------
     CREATE TABLE #mm (massmediaID int NOT NULL PRIMARY KEY);
     CREATE TABLE #rr (rollerID int NOT NULL PRIMARY KEY);
+    CREATE TABLE #act (actionID int NOT NULL PRIMARY KEY);
+
+    IF @actionIDString IS NOT NULL
+        INSERT INTO #act(actionID)
+        SELECT DISTINCT CAST([ID] AS int)
+        FROM fn_CreateTableFromString(@actionIDString);
 
     IF @massmediaIDString IS NOT NULL
         INSERT INTO #mm(massmediaID)
@@ -105,6 +112,7 @@ BEGIN
         WHERE
             i.campaignId = ISNULL(@campaignId, i.campaignID)
             AND c.actionID = ISNULL(@actionID, c.actionID)
+            AND (@actionIDString IS NULL OR c.actionID IN (SELECT actionID FROM #act))
             AND c.agencyID = ISNULL(@agencyId, c.agencyID)        -- фильтр по агентству
             AND (@rollerIDString IS NULL OR rr.rollerID IS NOT NULL)
             AND (@monthStart IS NULL OR (tw.dayActual >= @monthStart AND tw.dayActual < @monthEndExcl))
@@ -142,6 +150,7 @@ BEGIN
         WHERE
             i.campaignId = ISNULL(@campaignId, i.campaignID)
             AND c.actionID = ISNULL(@actionID, c.actionID)
+            AND (@actionIDString IS NULL OR c.actionID IN (SELECT actionID FROM #act))
             AND c.agencyID = ISNULL(@agencyId, c.agencyID)        -- фильтр по агентству
             AND (@rollerIDString IS NULL OR rr.rollerID IS NOT NULL)
             AND (@monthStart IS NULL OR (tw.dayOriginal >= @monthStart AND tw.dayOriginal < @monthEndExcl))
@@ -303,7 +312,7 @@ BEGIN
     --------------------------------------------------------------------
     -- 5) ProgramIssues
     --------------------------------------------------------------------
-    IF (@campaignTypeId IS NOT NULL AND @campaignTypeId = 2) OR (@actionId IS NOT NULL)
+    IF (@campaignTypeId IS NOT NULL AND @campaignTypeId = 2) OR (@actionId IS NOT NULL) OR (@actionIDString IS NOT NULL)
     BEGIN
         SELECT
             sp.[name],
@@ -314,6 +323,7 @@ BEGIN
         INNER JOIN #mm mm ON c.massmediaID = mm.massmediaID
         WHERE pri.campaignId = COALESCE(@campaignID, pri.campaignID)
           AND c.actionID = COALESCE(@actionID, c.actionID)
+          AND (@actionIDString IS NULL OR c.actionID IN (SELECT actionID FROM #act))
           AND c.agencyID = COALESCE(@agencyId, c.agencyID);      -- фильтр по агентству
     END
 END

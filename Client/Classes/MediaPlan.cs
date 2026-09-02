@@ -9,6 +9,7 @@ using System.ComponentModel;
 using System.Data;
 using System.Globalization;
 using System.IO;
+using System.Linq;
 using System.Runtime.InteropServices.ComTypes;
 using System.Text;
 using System.Threading;
@@ -26,6 +27,9 @@ namespace Merlin.Classes
 		private Dictionary<string, int> colTimeWindows;
 		private readonly IList<DateTime> monthes;
 		private readonly Action action;
+		// Сводный медиаплан по набору акций («График размещения по нескольким
+		// акциям»): выпуски всех этих акций печатаются как одна большая акция.
+		private readonly IList<Action> _actions;
 		private readonly DateTime? _dateFrom;
 		private readonly DateTime? _dateTo;
 		private bool _isFact;
@@ -42,14 +46,41 @@ namespace Merlin.Classes
 		#region Singleton
 
         private MediaPlan(Action action, IList<Campaign> campaigns, IList<DateTime> monthes, DateTime? from, DateTime? to, bool selectively)
+			: this(action, campaigns, monthes, from, to, selectively, null)
+		{
+		}
+
+        private MediaPlan(Action action, IList<Campaign> campaigns, IList<DateTime> monthes, DateTime? from, DateTime? to, bool selectively, IList<Action> actions)
 		{
 			this.campaigns = campaigns;
 			this.monthes = monthes;
 			this.action = action;
+			_actions = actions;
 			_dateFrom = from;
 			_dateTo = to;
             _selectively = selectively;
 		}
+
+        public static MediaPlan CreateInstance(IList<Action> actions, bool selectively)
+		{
+			return new MediaPlan(null, null, null, null, null, selectively, actions);
+		}
+
+		/// <summary>Режим сводного плана по набору акций.</summary>
+		private bool IsMultiActionMode => _actions != null;
+
+		/// <summary>Работаем «от акции» (одиночной или набора), а не от кампаний.</summary>
+		private bool IsActionMode => action != null || _actions != null;
+
+		/// <summary>Список акций через запятую с хвостовой запятой — для @actionIDString.</summary>
+		private string ActionIdString => string.Join(",", _actions.Select(a => a.ActionId)) + ",";
+
+		/// <summary>«123, 456, 789» — для заголовка листа.</summary>
+		private string ActionIdsLabel => string.Join(", ", _actions.Select(a => a.ActionId).OrderBy(id => id));
+
+		/// <summary>Заказчики всех акций, без повторов — «Фирма1, Фирма2».</summary>
+		private string ActionFirmsString =>
+			string.Join(", ", _actions.Select(a => a.Firm.PrefixWithName).Distinct());
 
         public static MediaPlan CreateInstance(Campaign campaign, IList<DateTime> monthes, bool selectively)
 		{
@@ -161,8 +192,9 @@ namespace Merlin.Classes
 					string safeFirm = firmName;
 					foreach (char c in Path.GetInvalidFileNameChars())
 						safeFirm = safeFirm.Replace(c, '_');
-					int actionId = GetActionId();
-					string fileName = $"График размещения для рекламной акции № {actionId} для {safeFirm}.xlsx";
+					string fileName = IsMultiActionMode
+						? $"График размещения по нескольким акциям № {ActionIdsLabel} для {safeFirm}.xlsx"
+						: $"График размещения для рекламной акции № {GetActionId()} для {safeFirm}.xlsx";
 					string filePath = Path.Combine(folder, fileName);
 
 					ExportManager.Application.SaveToDisk(filePath);
@@ -177,6 +209,8 @@ namespace Merlin.Classes
 
 		private string GetFirmName()
 		{
+			if (_actions != null)
+				return ActionFirmsString;
 			if (action != null)
 				return action.Firm.PrefixWithName;
 			if (campaigns != null && campaigns.Count > 0)
@@ -315,7 +349,7 @@ namespace Merlin.Classes
                 }
             }
 
-			if (action != null)
+			if (IsActionMode)
 			{
 				PrintActionInfo(isFact);
 			}
@@ -345,7 +379,10 @@ namespace Merlin.Classes
 		{
 			// Загружаем сырой датасет напрямую, чтобы получить agencyID
 			Dictionary<string, object> parametersMM = new Dictionary<string, object>();
-			parametersMM[Merlin.Classes.Action.ParamNames.ActionId] = action.ActionId;
+			if (IsMultiActionMode)
+				parametersMM["actionIDString"] = ActionIdString;
+			else
+				parametersMM[Merlin.Classes.Action.ParamNames.ActionId] = action.ActionId;
 			parametersMM["isFact"] = isFact;
 			DataSet dsRaw = DataAccessor.LoadDataSet("GetUniqueMMsForAction", parametersMM);
 			DataTable dt = dsRaw.Tables[0];
@@ -397,9 +434,18 @@ namespace Merlin.Classes
 							printedHeader = true;
 						}
 
-						PrintCaption(action.ActionId, 3, currentY);
-						currentY++;
-						PrintHeader(action, agency, mm.Value, mm.Key);
+						if (IsMultiActionMode)
+						{
+							PrintCaption(ActionIdsLabel, 3, currentY);
+							currentY++;
+							PrintHeader(_actions[0], agency, mm.Value, mm.Key, ActionFirmsString);
+						}
+						else
+						{
+							PrintCaption(action.ActionId, 3, currentY);
+							currentY++;
+							PrintHeader(action, agency, mm.Value, mm.Key);
+						}
 						PrintContent(ds, null, agency, mm.Key, isFact, null, null);
 						currentY += 3;
 					}
@@ -474,7 +520,7 @@ namespace Merlin.Classes
 		private void PrintContent(DataSet ds, Campaign campaign, Agency agency, string mmIds, bool isFact, int? year, int? month)
 		{
 			PrintRollersList(ds.Tables[0], campaign == null ? Campaign.CampaignTypes.Module : campaign.CampaignType);
-			if ((campaign != null && campaign.CampaignType == Campaign.CampaignTypes.Sponsor) || (campaign == null && action != null))
+			if ((campaign != null && campaign.CampaignType == Campaign.CampaignTypes.Sponsor) || (campaign == null && IsActionMode))
 				PrintPrograms(ds.Tables[4]);
 			currentY++;
 			if (_columnWithRollerName > 0)
@@ -495,6 +541,10 @@ namespace Merlin.Classes
             {
                 procParameters.Add("campaignId", campaign.CampaignId);
                 procParameters.Add("campaignTypeId", (int)campaign.CampaignType);
+            }
+            else if (IsMultiActionMode)
+            {
+                procParameters.Add("actionIDString", ActionIdString);
             }
             else
             {
@@ -555,6 +605,14 @@ namespace Merlin.Classes
 			}
 		}
 
+		// Кампании всех акций плана (одной или набора) — для подсчёта стоимости.
+		private IEnumerable<DataRow> ActionCampaignRows()
+		{
+			if (_actions != null)
+				return _actions.SelectMany(a => a.Campaigns().Rows.Cast<DataRow>());
+			return action.Campaigns().Rows.Cast<DataRow>();
+		}
+
 		private void PrintFooter(Campaign campaign, Agency agency, DataTable dtTimeList, DataTable dtIssues, string mmIds, int? year, int? month)
 		{
 			bool isByMounth = year.HasValue && month.HasValue;
@@ -579,7 +637,7 @@ namespace Merlin.Classes
 			{
 				foreach (string id in ids)
 				{
-					foreach (DataRow row in action.Campaigns().Rows)
+					foreach (DataRow row in ActionCampaignRows())
 					{
 						Campaign c = Campaign.GetCampaignById(int.Parse(row["campaignID"].ToString()));
 						if (c.CampaignType == Campaign.CampaignTypes.PackModule
@@ -816,11 +874,11 @@ namespace Merlin.Classes
 			}
 		}
 
-		private void PrintHeader(Action a, Agency agency, string mmNames, string mmIds)
+		private void PrintHeader(Action a, Agency agency, string mmNames, string mmIds, string customerNamesOverride = null)
 		{
 			currentY++;
 
-            SetCellValue(currentY++, 1, string.Format("Заказчик: {0}", a.Firm.PrefixWithName));
+            SetCellValue(currentY++, 1, string.Format("Заказчик: {0}", customerNamesOverride ?? a.Firm.PrefixWithName));
 			if (agency != null)
 				SetCellValue(currentY++, 1, string.Format("Исполнитель: {0}", agency.PrefixWithName));
 			else
@@ -862,7 +920,13 @@ namespace Merlin.Classes
                 SetCellValue(y, x, string.Format("График размещения для рекламной акции № {0}", actionID));
             }
 		}
-				
+
+		private void PrintCaption(string actionsLabel, int x, int y)
+		{
+			activeSheet.SetStyleForRange(y, x, y, x, true, true, 12);
+			SetCellValue(y, x, string.Format("График размещения по нескольким акциям № {0}", actionsLabel));
+		}
+
 		private void SetCellValue(int rowIndex, int colIndex, object value)
 		{
 			activeSheet.SetCellValue(rowIndex, colIndex, value);

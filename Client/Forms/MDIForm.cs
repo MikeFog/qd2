@@ -225,6 +225,8 @@ namespace Merlin.Forms
 					ShowRollerStatistic(true);
 				else if (strMiName == "miTrafficManagement")
 					ShowTrafficManagement();
+				else if (strMiName == "miMultiActionMediaPlan")
+					ShowMultiActionMediaPlan();
 				else if (strMiName == "miTransferJournal")
 					ShowTransferJournal(mi);
 				else if (strMiName == "miAgencyTax")
@@ -827,6 +829,24 @@ namespace Merlin.Forms
 		{
 			TrafficManagementForm trafficManagement = new TrafficManagementForm { MdiParent = this, Icon = Icon };
 			trafficManagement.Show();
+		}
+
+		// Сводный «График размещения по нескольким акциям»: пользователь вводит
+		// номера акций через запятую, план печатается как одна большая акция,
+		// объединяющая выпуски всех перечисленных акций. Номера проверяются
+		// внутри формы — сюда приходит уже валидный список.
+		private void ShowMultiActionMediaPlan()
+		{
+			using (FrmMultiActionMediaPlan f = new FrmMultiActionMediaPlan())
+			{
+				if (f.ShowDialog(this) != DialogResult.OK) return;
+
+				List<Merlin.Classes.Action> actions = new List<Merlin.Classes.Action>();
+				foreach (int id in f.ActionIds)
+					actions.Add(ActionOnMassmedia.GetActionById(id));
+
+				MediaPlan.CreateInstance(actions, false).Show(true);
+			}
 		}
 
 		private void ShowAgencyTaxJournal(ToolStripItem mi)
