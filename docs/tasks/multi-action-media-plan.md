@@ -50,10 +50,14 @@
 ## Порядок развёртывания
 
 1. Бэкап продуктивной базы.
-2. Процедуры из репозитория (порядок не важен, зависимостей между ними нет):
-   - `ArtvisDB/dbo/Stored Procedures/MultiActionMediaPlanActions.sql`
-   - `ArtvisDB/dbo/Stored Procedures/GetUniqueMMsForAction.sql`
-   - `ArtvisDB/dbo/Stored Procedures/MediaPlanRetrieve_v2.sql`
+2. Процедуры — один скрипт (`CREATE OR ALTER` ×3, изменения обратно совместимы):
+   ```
+   sqlcmd -S <сервер> -d <база> -E -f 65001 -I -i ArtvisDB\Scripts\multi-action-media-plan-procs-deploy.sql
+   ```
+   Он собран из канонических файлов
+   `MultiActionMediaPlanActions.sql`, `GetUniqueMMsForAction.sql`,
+   `MediaPlanRetrieve_v2.sql` — при их изменении пересобрать скрипт.
+   Альтернатива: развернуть эти три файла по отдельности.
 3. Скрипт метаданных:
    ```
    sqlcmd -S <сервер> -d <база> -E -f 65001 -I -i ArtvisDB\Scripts\multi-action-media-plan-seed.sql
