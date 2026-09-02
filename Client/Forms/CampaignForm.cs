@@ -86,6 +86,8 @@ namespace Merlin.Forms
                     EnableWindowSelectionActions();
                     EnableIssueDragDrop();
                 }
+                else if (IsModuleCampaign)
+                    EnableWeekNavigationKeys();
 
                 _campaign?.DisplayCampaignData(lstStat);
 
@@ -777,25 +779,41 @@ namespace Merlin.Forms
 			grid.KeyDown += TariffGrid_KeyDown;
 		}
 
+		/// <summary>
+		/// Вешает на тарифную сетку только листание недель по PgUp/PgDn — без множественного
+		/// выделения и массовых Insert/Del. Для кампаний, где операции по выделению
+		/// неприменимы (модульная), но пролистывать недели клавиатурой удобно.
+		/// </summary>
+		protected void EnableWeekNavigationKeys()
+		{
+			DataGridView grid = _tariffGrid.InternalGrid;
+			grid.KeyDown -= TariffGrid_KeyDown;
+			grid.KeyDown += TariffGrid_KeyDown;
+		}
+
 		private void TariffGrid_KeyDown(object sender, KeyEventArgs e)
 		{
-			// Конкретная логика добавления/удаления — в AddIssuesInSelectedWindows /
-			// DeleteIssuesInSelectedWindows (virtual): базовые версии для простой кампании,
-			// переопределения в EditIssuesForm для веера. Обработчик навешивается только
-			// там, где вызван EnableWindowSelectionActions. PgUp/PgDn гасим, иначе
-			// DataGridView вдобавок прокрутит строки на страницу.
+			// PgUp/PgDn — листание недель, доступно везде, где навешан обработчик.
+			// Del/Insert — только когда включены операции по выделению
+			// (_selectionActionsEnabled): конкретная логика в DeleteIssuesInSelectedWindows /
+			// AddIssuesInSelectedWindows (virtual, override в EditIssuesForm для веера).
+			// PgUp/PgDn гасим, иначе DataGridView вдобавок прокрутит строки на страницу.
 			switch (e.KeyCode)
 			{
-				case Keys.Delete:
-				case Keys.Insert:
 				case Keys.PageUp:
 				case Keys.PageDown:
-					e.Handled = true;
-					e.SuppressKeyPress = true;
+					break;
+				case Keys.Delete:
+				case Keys.Insert:
+					if (!_selectionActionsEnabled)
+						return;
 					break;
 				default:
 					return;
 			}
+
+			e.Handled = true;
+			e.SuppressKeyPress = true;
 
 			try
 			{
