@@ -70,8 +70,7 @@ namespace Merlin.Forms
 			// lblPrompt
 			//
 			this.lblPrompt.AutoSize = true;
-			this.lblPrompt.Location = new System.Drawing.Point(3, 6);
-			this.lblPrompt.Margin = new System.Windows.Forms.Padding(3, 6, 3, 0);
+			this.lblPrompt.Margin = new System.Windows.Forms.Padding(3, 4, 3, 8);
 			this.lblPrompt.Name = "lblPrompt";
 			this.lblPrompt.TabIndex = 0;
 			this.lblPrompt.Text = "Номера рекламных акций через запятую:";
@@ -79,13 +78,15 @@ namespace Merlin.Forms
 			// txtActionIds
 			//
 			this.txtActionIds.Dock = System.Windows.Forms.DockStyle.Fill;
-			this.txtActionIds.Location = new System.Drawing.Point(3, 30);
+			this.txtActionIds.Margin = new System.Windows.Forms.Padding(3, 4, 3, 12);
 			this.txtActionIds.Name = "txtActionIds";
 			this.txtActionIds.Size = new System.Drawing.Size(414, 31);
 			this.txtActionIds.TabIndex = 1;
 			//
 			// tableLayoutPanel1
 			//
+			this.tableLayoutPanel1.AutoSize = true;
+			this.tableLayoutPanel1.AutoSizeMode = System.Windows.Forms.AutoSizeMode.GrowAndShrink;
 			this.tableLayoutPanel1.ColumnCount = 1;
 			this.tableLayoutPanel1.ColumnStyles.Add(new System.Windows.Forms.ColumnStyle(System.Windows.Forms.SizeType.Percent, 100F));
 			this.tableLayoutPanel1.Controls.Add(this.lblPrompt, 0, 0);
@@ -94,55 +95,65 @@ namespace Merlin.Forms
 			this.tableLayoutPanel1.Dock = System.Windows.Forms.DockStyle.Fill;
 			this.tableLayoutPanel1.Location = new System.Drawing.Point(0, 0);
 			this.tableLayoutPanel1.Name = "tableLayoutPanel1";
-			this.tableLayoutPanel1.Padding = new System.Windows.Forms.Padding(6);
+			this.tableLayoutPanel1.Padding = new System.Windows.Forms.Padding(9);
 			this.tableLayoutPanel1.RowCount = 3;
 			this.tableLayoutPanel1.RowStyles.Add(new System.Windows.Forms.RowStyle());
 			this.tableLayoutPanel1.RowStyles.Add(new System.Windows.Forms.RowStyle());
 			this.tableLayoutPanel1.RowStyles.Add(new System.Windows.Forms.RowStyle());
-			this.tableLayoutPanel1.Size = new System.Drawing.Size(432, 110);
+			this.tableLayoutPanel1.Size = new System.Drawing.Size(432, 118);
 			this.tableLayoutPanel1.TabIndex = 0;
 			//
 			// flowLayoutPanel1
 			//
 			this.flowLayoutPanel1.AutoSize = true;
+			this.flowLayoutPanel1.AutoSizeMode = System.Windows.Forms.AutoSizeMode.GrowAndShrink;
 			this.flowLayoutPanel1.Controls.Add(this.btnCancel);
 			this.flowLayoutPanel1.Controls.Add(this.btnOk);
 			this.flowLayoutPanel1.Dock = System.Windows.Forms.DockStyle.Fill;
 			this.flowLayoutPanel1.FlowDirection = System.Windows.Forms.FlowDirection.RightToLeft;
-			this.flowLayoutPanel1.Location = new System.Drawing.Point(3, 67);
+			this.flowLayoutPanel1.Margin = new System.Windows.Forms.Padding(0);
 			this.flowLayoutPanel1.Name = "flowLayoutPanel1";
-			this.flowLayoutPanel1.Size = new System.Drawing.Size(414, 39);
 			this.flowLayoutPanel1.TabIndex = 2;
 			//
 			// btnOk
 			//
 			this.btnOk.FlatStyle = System.Windows.Forms.FlatStyle.System;
+			this.btnOk.Margin = new System.Windows.Forms.Padding(3, 4, 3, 4);
 			this.btnOk.Name = "btnOk";
 			this.btnOk.Size = new System.Drawing.Size(100, 33);
 			this.btnOk.TabIndex = 0;
 			this.btnOk.Text = "Ок";
+			this.btnOk.UseVisualStyleBackColor = true;
 			this.btnOk.Click += new System.EventHandler(this.btnOk_Click);
 			//
 			// btnCancel
 			//
 			this.btnCancel.DialogResult = System.Windows.Forms.DialogResult.Cancel;
 			this.btnCancel.FlatStyle = System.Windows.Forms.FlatStyle.System;
+			this.btnCancel.Margin = new System.Windows.Forms.Padding(3, 4, 3, 4);
 			this.btnCancel.Name = "btnCancel";
 			this.btnCancel.Size = new System.Drawing.Size(100, 33);
 			this.btnCancel.TabIndex = 1;
 			this.btnCancel.Text = "Отмена";
+			this.btnCancel.UseVisualStyleBackColor = true;
 			//
 			// FrmMultiActionMediaPlan
 			//
 			this.AcceptButton = this.btnOk;
+			this.AutoScaleDimensions = new System.Drawing.SizeF(10F, 24F);
+			this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
 			this.AutoSize = true;
+			this.AutoSizeMode = System.Windows.Forms.AutoSizeMode.GrowAndShrink;
 			this.CancelButton = this.btnCancel;
-			this.ClientSize = new System.Drawing.Size(432, 110);
+			this.ClientSize = new System.Drawing.Size(432, 118);
 			this.Controls.Add(this.tableLayoutPanel1);
-			this.Font = new System.Drawing.Font("Segoe UI Variable Text", 9F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(204)));
-			this.FormBorderStyle = System.Windows.Forms.FormBorderStyle.FixedToolWindow;
-			this.MinimumSize = new System.Drawing.Size(360, 0);
+			this.Font = new System.Drawing.Font("Segoe UI Variable Display", 9F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(204)));
+			this.FormBorderStyle = System.Windows.Forms.FormBorderStyle.FixedDialog;
+			this.MaximizeBox = false;
+			this.MinimizeBox = false;
+			this.MinimumSize = new System.Drawing.Size(380, 0);
 			this.Name = "FrmMultiActionMediaPlan";
+			this.ShowIcon = false;
 			this.ShowInTaskbar = false;
 			this.StartPosition = System.Windows.Forms.FormStartPosition.CenterParent;
 			this.Text = "График размещения по нескольким акциям";
@@ -150,6 +161,7 @@ namespace Merlin.Forms
 			this.tableLayoutPanel1.PerformLayout();
 			this.flowLayoutPanel1.ResumeLayout(false);
 			this.ResumeLayout(false);
+			this.PerformLayout();
 		}
 	}
 }
