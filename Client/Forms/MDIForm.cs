@@ -833,35 +833,16 @@ namespace Merlin.Forms
 
 		// Сводный «График размещения по нескольким акциям»: пользователь вводит
 		// номера акций через запятую, план печатается как одна большая акция,
-		// объединяющая выпуски всех перечисленных акций.
+		// объединяющая выпуски всех перечисленных акций. Номера проверяются
+		// внутри формы — сюда приходит уже валидный список.
 		private void ShowMultiActionMediaPlan()
 		{
 			using (FrmMultiActionMediaPlan f = new FrmMultiActionMediaPlan())
 			{
 				if (f.ShowDialog(this) != DialogResult.OK) return;
 
-				IList<int> ids = f.ActionIds;
-
-				System.Collections.Generic.Dictionary<string, object> ps = DataAccessor.CreateParametersDictionary();
-				ps["actionIDString"] = string.Join(",", ids) + ",";
-				System.Data.DataTable found = DataAccessor.LoadDataSet("MultiActionMediaPlanActions", ps).Tables[0];
-
-				HashSet<int> existing = new HashSet<int>();
-				foreach (System.Data.DataRow row in found.Rows)
-					existing.Add(int.Parse(row["actionID"].ToString()));
-
-				List<int> missing = new List<int>();
-				foreach (int id in ids)
-					if (!existing.Contains(id)) missing.Add(id);
-
-				if (missing.Count > 0)
-				{
-					UserMessage.ShowExclamation("Рекламные акции не найдены: " + string.Join(", ", missing));
-					return;
-				}
-
 				List<Merlin.Classes.Action> actions = new List<Merlin.Classes.Action>();
-				foreach (int id in ids)
+				foreach (int id in f.ActionIds)
 					actions.Add(ActionOnMassmedia.GetActionById(id));
 
 				MediaPlan.CreateInstance(actions, false).Show(true);

@@ -1,7 +1,10 @@
 using System;
 using System.Collections.Generic;
 using System.ComponentModel;
+using System.Data;
 using System.Windows.Forms;
+using FogSoft.WinForm.Classes;
+using FogSoft.WinForm.DataAccess;
 using FogSoft.WinForm.Forms;
 
 namespace Merlin.Forms
@@ -52,7 +55,54 @@ namespace Merlin.Forms
 			}
 
 			_actionIds.Sort();
+
+			// Проверяем существование акций здесь, не закрывая форму: если
+			// пользователь ошибся в одной цифре из десятка, весь ввод остаётся
+			// на месте, он правит номер и повторяет.
+			List<int> missing = FindMissingActions(_actionIds);
+			if (missing == null) return;   // ошибка обращения к БД, форму не закрываем
+			if (missing.Count > 0)
+			{
+				UserMessage.ShowExclamation(
+					"Рекламные акции не найдены: " + string.Join(", ", missing) +
+					".\nИсправьте номера и повторите.");
+				return;
+			}
+
 			DialogResult = DialogResult.OK;
+		}
+
+		/// <summary>
+		/// Номера из <paramref name="ids"/>, которых нет среди существующих
+		/// (не удалённых) акций. null — если запрос к БД не удался.
+		/// </summary>
+		private List<int> FindMissingActions(IList<int> ids)
+		{
+			HashSet<int> existing = new HashSet<int>();
+			try
+			{
+				Cursor = Cursors.WaitCursor;
+				Dictionary<string, object> ps = DataAccessor.CreateParametersDictionary();
+				ps["actionIDString"] = string.Join(",", ids) + ",";
+				DataTable dt = DataAccessor.LoadDataSet("MultiActionMediaPlanActions", ps).Tables[0];
+				foreach (DataRow row in dt.Rows)
+					existing.Add(int.Parse(row["actionID"].ToString()));
+			}
+			catch (Exception ex)
+			{
+				ErrorManager.LogError("MultiActionMediaPlan: проверка номеров акций", ex);
+				UserMessage.ShowExclamation("Не удалось проверить номера акций. Попробуйте ещё раз.");
+				return null;
+			}
+			finally
+			{
+				Cursor = Cursors.Default;
+			}
+
+			List<int> missing = new List<int>();
+			foreach (int id in ids)
+				if (!existing.Contains(id)) missing.Add(id);
+			return missing;
 		}
 
 		private void InitializeComponent()
