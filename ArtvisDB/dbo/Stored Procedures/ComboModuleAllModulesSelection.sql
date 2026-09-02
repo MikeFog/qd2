@@ -29,6 +29,17 @@ FROM
 	LEFT JOIN [ComboModuleContent] cmc ON cmc.moduleID = m.moduleID AND cmc.comboModuleID = @comboModuleID
 WHERE
 	mm.isActive = 1
+	-- только модули с актуальным (действующим или будущим) прайс-листом - тот же
+	-- критерий, что @hideModulePLInThePast в ModuleList. Уже включённые в комбо-модуль
+	-- показываем всегда, иначе снять галочку с "просроченного" модуля будет нечем.
+	AND (
+		cmc.comboModuleContentID IS NOT NULL
+		OR EXISTS (
+			SELECT 1 FROM [ModulePriceList] mpl
+			WHERE mpl.moduleID = m.moduleID
+			AND mpl.finishDate >= CAST(GETDATE() AS DATE)
+		)
+	)
 ORDER BY
 	mm.[name],
 	m.[name]

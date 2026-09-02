@@ -49,6 +49,15 @@ namespace FogSoft.WinForm.Classes.Export.MSExcel
                 { "октябрь", 10 }, { "ноябрь", 11 }, { "декабрь", 12 }
             };
 
+            // Если весь блок - строки, помечаем диапазон текстовым форматом ДО записи:
+            // иначе Excel на машине с другими региональными настройками (прод) коерсит
+            // значения вроде "02:29" в дробное время и показывает "непонятные числа".
+            bool allText = true;
+            for (int r = 0; r < rows && allText; r++)
+                for (int c = 0; c < cols && allText; c++)
+                    if (data[r, c] != null && !(data[r, c] is string) && !System.Convert.IsDBNull(data[r, c]))
+                        allText = false;
+
             for (int r = 0; r < rows; r++)
                 for (int c = 0; c < cols; c++)
                     if (data[r, c] is string str)
@@ -66,6 +75,8 @@ namespace FogSoft.WinForm.Classes.Export.MSExcel
                     }
 
             Range rg = GetRange(top, left, bottom, right);
+            if (allText && monthYearCells.Count == 0)
+                rg.NumberFormat = "@";
             rg.set_Value(XlRangeValueDataType.xlRangeValueDefault, data);
             Marshal.ReleaseComObject(rg);
 

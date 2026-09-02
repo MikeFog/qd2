@@ -534,6 +534,19 @@ namespace Merlin.Controls
 			GoToNextWeek(Directions.Back);
 		}
 
+		/// <summary>То же, что стрелка «вперёд» в подписи над сеткой — для горячей клавиши
+		/// PageDown на форме размещения (аналог ComboModuleGrid.GoToNextPeriod).</summary>
+		public void GoToNextPeriod()
+		{
+			Caption_GoNext();
+		}
+
+		/// <summary>То же, что стрелка «назад» в подписи над сеткой — для горячей клавиши PageUp.</summary>
+		public void GoToPreviousPeriod()
+		{
+			Caption_GoPrevious();
+		}
+
 		private void GoToNextWeek(Directions direction)
 		{
 			try

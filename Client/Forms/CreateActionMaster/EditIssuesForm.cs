@@ -57,7 +57,7 @@ namespace Merlin.Forms.CreateActionMaster
 				_action.DisplayData(lstStat);
 				grdCurrentCampaignIssues.Entity = EntityManager.GetEntity((int)Entities.MasterIssues);
 				ShowCurrentIssues(_tariffGrid as TariffWithRangeGrid);
-				EnableWindowSelectionDelete();
+				EnableWindowSelectionActions();
 				EnableRangeIssueDragDrop();
 
             }
@@ -126,6 +126,69 @@ namespace Merlin.Forms.CreateActionMaster
             foreach (System.Data.DataRow row in rangeGrid.AddedIssues.Select(
                 string.Format("RowNum = '{0}'", issue["RowNum"])))
                 rangeGrid.AddedIssues.Rows.Remove(row);
+        }
+
+        /// <summary>
+        /// Массовое добавление выбранного ролика в выбранные окна веерного размещения (Insert).
+        /// Каждое окно — существующий путь AddIssuesRange (AddRangeIssues пишет ролик на все
+        /// радиостанции акции сразу), пересчёт акции — один после всего пакета. Ошибки
+        /// (переполнение окна и т. п.) собираем и показываем, как при массовом удалении.
+        /// </summary>
+        protected override void AddIssuesInSelectedWindows()
+        {
+            TariffWithRangeGrid rangeGrid = _tariffGrid as TariffWithRangeGrid;
+            if (rangeGrid == null)
+                return;
+
+            if (rangeGrid.Roller == null)
+            {
+                UserMessage.ShowExclamation(MessageAccessor.GetMessage("RollerNotSelected"));
+                return;
+            }
+
+            IList<ITariffWindow> windows = _tariffGrid.GetSelectedTariffWindows();
+            if (windows.Count == 0)
+                return;
+
+            if (UserMessage.ShowQuestion(
+                    string.Format("Разместить ролик в выбранных окнах на всех радиостанциях акции? ({0} шт.)", windows.Count)) != DialogResult.Yes)
+                return;
+
+            int addedCount = 0;
+            System.Data.DataTable addErrors = FogSoft.WinForm.Controls.SmartGrid.CreateDeleteErrorsTable();
+            int errorRowNumber = 1;
+            try
+            {
+                Cursor = Cursors.WaitCursor;
+                foreach (ITariffWindow window in windows)
+                {
+                    try
+                    {
+                        rangeGrid.AddIssuesRange(window.WindowDate, false, recalculate: false);
+                        addedCount++;
+                    }
+                    catch (Exception ex)
+                    {
+                        FogSoft.WinForm.Controls.SmartGrid.AddDeleteError(addErrors, errorRowNumber++,
+                            window.WindowDate.ToString("dd.MM.yyyy HH:mm"), ErrorManager.GetErrorMessage(ex));
+                    }
+                }
+            }
+            finally
+            {
+                Cursor = Cursors.Default;
+            }
+
+            if (addedCount > 0)
+            {
+                _action.Recalculate();
+                RefreshGrid();
+            }
+
+            if (addErrors.Rows.Count > 0)
+                FogSoft.WinForm.Controls.SmartGrid.ShowDeleteErrors(addErrors, "Ошибки массового добавления");
+            else
+                UserMessage.ShowInformation(string.Format("Добавлено выпусков: {0}.", addedCount));
         }
 
         /// <summary>

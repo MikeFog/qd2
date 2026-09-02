@@ -1,0 +1,32 @@
+@page "/todo/{CodeName}/{*Title}"
+@rendermode InteractiveServer
+
+@*
+    Заглушка для пунктов меню, которые ещё не перенесены на веб. Тот же
+    приём, что "Unsupported" в Passport.razor: не падать и не молчать, а
+    честно сказать, чего не хватает — иначе пункт бы либо кидал необработанное
+    исключение, либо (хуже) тихо ничего не делал.
+*@
+
+<PageTitle>Пока не перенесено</PageTitle>
+
+<div class="alert alert-secondary" style="max-width: 40rem">
+    <h5>«@UnescapedTitle»</h5>
+    <p class="mb-1">
+        Этот пункт меню пока не перенесён на веб — он не сводится к простому
+        журналу по метаданным (<code>codeName = @CodeName</code>).
+    </p>
+    <p class="mb-0 text-muted">
+        Относится к этапу 2 (свои движки — FakeContainer/MasterDetail) или
+        этапу 3 (специализированные экраны) плана веб-миграции.
+    </p>
+</div>
+
+<a class="btn btn-outline-secondary btn-sm" href="/">На главную</a>
+
+@code {
+    [Parameter] public string CodeName { get; set; } = "";
+    [Parameter] public string? Title { get; set; }
+
+    private string UnescapedTitle => Uri.UnescapeDataString(Title ?? CodeName);
+}

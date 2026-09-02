@@ -21,7 +21,7 @@ namespace Merlin.Forms
 		private readonly MediaControl mediaControl;
 		protected TariffGrid _tariffGrid;
 		private bool changeFlag;
-		private bool _selectionDeleteEnabled;
+		private bool _selectionActionsEnabled;
 		private IssueTemplate _template;
 		private List<PresentationObject> _lastTemplateAddedIssues;
 		private RollerIssue _draggingIssue;
@@ -83,9 +83,11 @@ namespace Merlin.Forms
 
                 if (IsSimplelCampaign)
                 {
-                    EnableWindowSelectionDelete();
+                    EnableWindowSelectionActions();
                     EnableIssueDragDrop();
                 }
+                else if (IsModuleCampaign)
+                    EnableWeekNavigationKeys();
 
                 _campaign?.DisplayCampaignData(lstStat);
 
@@ -208,7 +210,7 @@ namespace Merlin.Forms
 		private void SetEditMode()
 		{
 			_tariffGrid.EditMode = tbbTemplate.Checked ? EditMode.Template : (tbbStart.Checked) ? EditMode.Edit : EditMode.View;
-			if (_selectionDeleteEnabled)
+			if (_selectionActionsEnabled)
 				_tariffGrid.InternalGrid.MultiSelect = (_tariffGrid.EditMode == EditMode.View);
 		}
 
@@ -762,13 +764,14 @@ namespace Merlin.Forms
 
 		/// <summary>
 		/// Включает множественное выделение ячеек тарифной сетки (прямоугольник + Ctrl) и
-		/// удаление выпусков текущей кампании по клавише Del. Только для простых кампаний
-		/// (RollerIssuesGrid3). Выделять окна следует в режиме просмотра: в режиме
-		/// редактирования клик по ячейке добавляет выпуск.
+		/// горячие клавиши по выделению: Del — удалить выпуски текущей кампании, Insert —
+		/// разместить выбранный ролик, PgUp/PgDn — листать недели. Только для простых
+		/// кампаний (RollerIssuesGrid3) и веера (EditIssuesForm). Выделять окна следует в
+		/// режиме просмотра: в режиме редактирования клик по ячейке добавляет выпуск.
 		/// </summary>
-		protected void EnableWindowSelectionDelete()
+		protected void EnableWindowSelectionActions()
 		{
-			_selectionDeleteEnabled = true;
+			_selectionActionsEnabled = true;
 			DataGridView grid = _tariffGrid.InternalGrid;
 			grid.MultiSelect = true;
 			grid.SelectionMode = DataGridViewSelectionMode.CellSelect;
@@ -776,24 +779,125 @@ namespace Merlin.Forms
 			grid.KeyDown += TariffGrid_KeyDown;
 		}
 
+		/// <summary>
+		/// Вешает на тарифную сетку только листание недель по PgUp/PgDn — без множественного
+		/// выделения и массовых Insert/Del. Для кампаний, где операции по выделению
+		/// неприменимы (модульная), но пролистывать недели клавиатурой удобно.
+		/// </summary>
+		protected void EnableWeekNavigationKeys()
+		{
+			DataGridView grid = _tariffGrid.InternalGrid;
+			grid.KeyDown -= TariffGrid_KeyDown;
+			grid.KeyDown += TariffGrid_KeyDown;
+		}
+
 		private void TariffGrid_KeyDown(object sender, KeyEventArgs e)
 		{
-			// Конкретная логика удаления — в DeleteIssuesInSelectedWindows (virtual): базовая
-			// версия для простой кампании, переопределение в EditIssuesForm для веера. Сам
-			// обработчик навешивается только там, где вызван EnableWindowSelectionDelete.
-			if (e.KeyCode != Keys.Delete)
-				return;
+			// PgUp/PgDn — листание недель, доступно везде, где навешан обработчик.
+			// Del/Insert — только когда включены операции по выделению
+			// (_selectionActionsEnabled): конкретная логика в DeleteIssuesInSelectedWindows /
+			// AddIssuesInSelectedWindows (virtual, override в EditIssuesForm для веера).
+			// PgUp/PgDn гасим, иначе DataGridView вдобавок прокрутит строки на страницу.
+			switch (e.KeyCode)
+			{
+				case Keys.PageUp:
+				case Keys.PageDown:
+					break;
+				case Keys.Delete:
+				case Keys.Insert:
+					if (!_selectionActionsEnabled)
+						return;
+					break;
+				default:
+					return;
+			}
 
 			e.Handled = true;
 			e.SuppressKeyPress = true;
+
 			try
 			{
-				DeleteIssuesInSelectedWindows();
+				switch (e.KeyCode)
+				{
+					case Keys.Delete: DeleteIssuesInSelectedWindows(); break;
+					case Keys.Insert: AddIssuesInSelectedWindows(); break;
+					case Keys.PageUp: _tariffGrid.GoToPreviousPeriod(); break;
+					case Keys.PageDown: _tariffGrid.GoToNextPeriod(); break;
+				}
 			}
 			catch (Exception ex)
 			{
 				ErrorManager.PublishError(ex);
 			}
+		}
+
+		/// <summary>
+		/// Массовое добавление выбранного ролика в выделенные окна тарифной сетки (Insert) —
+		/// симметрично Del. Каждое окно — своя транзакция (как одиночный клик), частичный
+		/// успех возможен; ошибки собираем и показываем, один RefreshGrid + пересчёт после
+		/// всего пакета. Базовая версия — простая линейная кампания (RollerIssuesGrid3),
+		/// переопределение в EditIssuesForm — веер.
+		/// </summary>
+		protected virtual void AddIssuesInSelectedWindows()
+		{
+			if (_campaign == null || !(_tariffGrid is RollerIssuesGrid3 grid))
+				return;
+
+			if (((IRollerGrid)_tariffGrid).Roller == null)
+			{
+				UserMessage.ShowExclamation(MessageAccessor.GetMessage("RollerNotSelected"));
+				return;
+			}
+
+			List<TariffWindowWithRollerIssues> windows = new List<TariffWindowWithRollerIssues>();
+			foreach (ITariffWindow window in _tariffGrid.GetSelectedTariffWindows())
+				if (window is TariffWindowWithRollerIssues rollerWindow)
+					windows.Add(rollerWindow);
+
+			if (windows.Count == 0)
+				return;
+
+			if (UserMessage.ShowQuestion(
+					string.Format("Разместить ролик в выбранных окнах? ({0} шт.)", windows.Count)) != DialogResult.Yes)
+				return;
+
+			int addedCount = 0;
+			DataTable addErrors = SmartGrid.CreateDeleteErrorsTable();
+			int errorRowNumber = 1;
+			try
+			{
+				Cursor = Cursors.WaitCursor;
+				foreach (TariffWindowWithRollerIssues window in windows)
+				{
+					try
+					{
+						grid.AddIssueToWindow(window);
+						addedCount++;
+					}
+					catch (Exception ex)
+					{
+						SmartGrid.AddDeleteError(addErrors, errorRowNumber++,
+							window.WindowDate.ToString("dd.MM.yyyy HH:mm"), ErrorManager.GetErrorMessage(ex));
+					}
+				}
+			}
+			finally
+			{
+				Cursor = Cursors.Default;
+			}
+
+			if (addedCount > 0)
+			{
+				_campaign.RecalculateAction();
+				RefreshGrid();
+				ShowWindowIssues(_tariffGrid.CurrentTariffWindow);
+				CampaignStatusChanged();
+			}
+
+			if (addErrors.Rows.Count > 0)
+				SmartGrid.ShowDeleteErrors(addErrors, "Ошибки массового добавления");
+			else
+				UserMessage.ShowInformation(string.Format("Добавлено выпусков: {0}.", addedCount));
 		}
 
 		/// <summary>

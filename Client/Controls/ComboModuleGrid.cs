@@ -93,6 +93,14 @@ namespace Merlin.Controls
 		private PresentationObject _advertType;
 		private AdvertTypePresences _advertTypePresence = AdvertTypePresences.Undefined;
 
+		// Режим "Номера роликов": в ячейке вместо остатка времени - номера роликов акции,
+		// размещённых в этом модуле в этот день. Карту (rollerID -> номер в списке роликов)
+		// строит форма и передаёт в SetRollerNumbersMode; выпуски берутся из последней
+		// таблицы, переданной в MarkIssues.
+		private bool _showRollerNumbers;
+		private Dictionary<int, int> _rollerNumbers;
+		private DataTable _markedIssues;
+
 		#endregion
 
 		public event ComboModuleDayDelegate CellClicked;
@@ -234,6 +242,7 @@ namespace Merlin.Controls
 
 			RawDataGridView.DataSource = _dtGrid.DefaultView;
 			SetFrozenRowsAndColumns();
+			StripeMassmediaGroups();
 			ShadeWeekends();
 			MarkFilteredCells();
 			SetColumnWidths();
@@ -501,6 +510,36 @@ namespace Merlin.Controls
 		}
 
 		/// <summary>
+		/// "Зебра" по радиостанциям: колонки "Радиостанция" и "Модуль" заливаются
+		/// чередующимся фоном - все строки одной станции одним цветом, следующая станция
+		/// другим. У комбо-модулей на проде десятки модулей подряд, и без этого не видно,
+		/// где кончается блок одной станции и начинается следующий. Модули идут группами
+		/// по станции (ComboModuleContentRetrieve / ...ActionModulesRetrieve), поэтому
+		/// достаточно менять цвет при смене massmediaID у соседних строк.
+		/// </summary>
+		private void StripeMassmediaGroups()
+		{
+			if (RawDataGridView.RowCount == 0 || _modules == null) return;
+
+			int lastMassmediaID = -1;
+			bool useAlt = false;
+			for (int moduleIndex = 0; moduleIndex < _modules.Rows.Count; moduleIndex++)
+			{
+				int massmediaID = Convert.ToInt32(_modules.Rows[moduleIndex][ComboModule.ParamNames.MassmediaId]);
+				if (massmediaID != lastMassmediaID)
+				{
+					useAlt = !useAlt;
+					lastMassmediaID = massmediaID;
+				}
+
+				Color color = useAlt ? Color.WhiteSmoke : Color.Gainsboro;
+				int rowIndex = FIXED_ROWS + moduleIndex;
+				for (int columnIndex = 0; columnIndex < FIXED_COLS; columnIndex++)
+					SetCellBackColor(rowIndex, columnIndex, color);
+			}
+		}
+
+		/// <summary>
 		/// Бледно-серым - колонки субботы и воскресенья, но только в месячном режиме: в
 		/// недельном все семь дней и так видны целиком, выделять нечего.
 		/// </summary>
@@ -568,21 +607,81 @@ namespace Merlin.Controls
 		/// </summary>
 		public void MarkIssues(DataTable issues)
 		{
+			_markedIssues = issues;
 			ClearIssueMarks();
-			if (issues == null) return;
 
-			foreach (DataRow row in issues.Rows)
+			if (issues != null)
+				foreach (DataRow row in issues.Rows)
+				{
+					int moduleIndex;
+					if (!_rowByModule.TryGetValue(
+							Convert.ToInt32(row[ComboModule.ParamNames.ModuleId]), out moduleIndex))
+						continue;
+
+					int dayIndex = (int)(Convert.ToDateTime(row[ComboModule.ParamNames.IssueDate]).Date - _startDate).TotalDays;
+					if (dayIndex < 0 || dayIndex >= DayCount) continue;
+
+					SetCellForeColor(FIXED_ROWS + moduleIndex, FIXED_COLS + dayIndex, Color.Blue);
+				}
+
+			// выпуски только что перечитаны - обновляем тексты ячеек (в режиме "Номера
+			// роликов" они зависят от состава выпусков, поэтому за каждым MarkIssues)
+			ApplyCellTexts();
+		}
+
+		/// <summary>
+		/// Режим ячейки: остаток времени (<see cref="ComboModuleDay.CellText"/>) ↔ номера
+		/// роликов акции, размещённых в модуле. Карту номеров (rollerID → номер строки в
+		/// списке роликов) строит форма; сам грид её не пересчитывает. Тексты
+		/// перерисовываются сразу, без похода в БД.
+		/// </summary>
+		public void SetRollerNumbersMode(bool on, Dictionary<int, int> rollerNumbers)
+		{
+			_showRollerNumbers = on;
+			_rollerNumbers = rollerNumbers;
+			ApplyCellTexts();
+		}
+
+		// Заполняет тексты ячеек модулей: обычно остаток времени, а в режиме "Номера
+		// роликов" - номера роликов из этого модуля в этот день (через запятую).
+		private void ApplyCellTexts()
+		{
+			if (_dtGrid == null || _days == null) return;
+
+			for (int moduleIndex = 0; moduleIndex < _days.GetLength(0); moduleIndex++)
+				for (int dayIndex = 0; dayIndex < _days.GetLength(1); dayIndex++)
+				{
+					ComboModuleDay day = _days[moduleIndex, dayIndex];
+					if (day == null) continue;
+
+					string text = day.CellText;
+					if (_showRollerNumbers)
+					{
+						string numbers = GetRollerNumbersText(day.ModuleID, day.Date);
+						if (numbers != null) text = numbers;
+					}
+
+					_dtGrid.Rows[FIXED_ROWS + moduleIndex][FIXED_COLS + dayIndex] = text;
+				}
+		}
+
+		// Номера роликов акции в этом модуле за этот день (через запятую, в порядке из
+		// таблицы выпусков), или null - выпусков нет / номер ролика не известен.
+		private string GetRollerNumbersText(int moduleID, DateTime date)
+		{
+			if (_markedIssues == null || _rollerNumbers == null) return null;
+
+			List<string> numbers = new List<string>();
+			foreach (DataRow row in _markedIssues.Rows)
 			{
-				int moduleIndex;
-				if (!_rowByModule.TryGetValue(
-						Convert.ToInt32(row[ComboModule.ParamNames.ModuleId]), out moduleIndex))
-					continue;
+				if (Convert.ToInt32(row[ComboModule.ParamNames.ModuleId]) != moduleID) continue;
+				if (Convert.ToDateTime(row[ComboModule.ParamNames.IssueDate]).Date != date.Date) continue;
 
-				int dayIndex = (int)(Convert.ToDateTime(row[ComboModule.ParamNames.IssueDate]).Date - _startDate).TotalDays;
-				if (dayIndex < 0 || dayIndex >= DayCount) continue;
-
-				SetCellForeColor(FIXED_ROWS + moduleIndex, FIXED_COLS + dayIndex, Color.Blue);
+				int rollerId = ParseHelper.GetInt32FromObject(row[Roller.ParamNames.RollerId], 0);
+				if (_rollerNumbers.TryGetValue(rollerId, out int number))
+					numbers.Add(number.ToString());
 			}
+			return numbers.Count > 0 ? string.Join(", ", numbers) : null;
 		}
 
 		private void ClearIssueMarks()
