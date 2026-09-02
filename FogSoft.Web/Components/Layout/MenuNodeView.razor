@@ -1,0 +1,59 @@
+@using FogSoft.Web.Infrastructure
+@inject NavigationManager Nav
+
+@*
+    Один узел дерева меню, рекурсивно рисующий своих детей. Компонент, а не
+    развёрнутый цикл в NavMenu.razor — потому что глубина дерева меню заранее
+    не ограничена (в десктопе это ToolStripMenuItem.DropDownItems, тоже
+    рекурсия, см. MenuManager.CreateChildrenMenus).
+*@
+
+@if (Node.IsSeparator)
+{
+    <hr class="my-1 opacity-25" />
+}
+else if (Node.Children.Count > 0)
+{
+    <div class="nav-item px-3">
+        <button type="button" class="nav-link btn btn-link text-start w-100 d-flex align-items-center"
+                @onclick="() => _expanded = !_expanded">
+            <span class="bi @(_expanded ? "bi-dash-square" : "bi-plus-square") me-2"></span>
+            @Node.Name
+        </button>
+    </div>
+    @if (_expanded)
+    {
+        <div class="ms-3">
+            @foreach (var child in Node.Children)
+            {
+                <MenuNodeView Node="child" />
+            }
+        </div>
+    }
+}
+else
+{
+    <div class="nav-item px-3">
+        <button type="button" class="nav-link btn btn-link text-start w-100 @(Node.Enabled ? "" : "disabled text-muted")"
+                disabled="@(!Node.Enabled)" @onclick="Navigate">
+            @Node.Name
+        </button>
+    </div>
+}
+
+@code {
+    [Parameter, EditorRequired] public MenuNode Node { get; set; } = default!;
+
+    private bool _expanded;
+
+    private void Navigate()
+    {
+        if (string.IsNullOrEmpty(Node.CodeName))
+            return;
+
+        if (MenuRoutes.SimpleJournal.TryGetValue(Node.CodeName, out int entityId))
+            Nav.NavigateTo($"/journal/{entityId}");
+        else
+            Nav.NavigateTo($"/todo/{Uri.EscapeDataString(Node.CodeName)}/{Uri.EscapeDataString(Node.Name)}");
+    }
+}

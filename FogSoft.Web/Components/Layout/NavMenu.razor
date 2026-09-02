@@ -1,4 +1,18 @@
-﻿<div class="top-row ps-3 navbar navbar-dark">
+@using FogSoft.Web.Infrastructure
+@implements IDisposable
+@inject UserSession Session
+
+@*
+    Дерево меню по метаданным — веб-аналог MenuManager.CreateApplicationMenu.
+    Права на видимость пункта уже посчитаны процедурой UserMenuItems
+    (столбец enabled), здесь только отрисовка.
+
+    NavMenu — часть макета и рендерится один раз на весь circuit, поэтому сам
+    по себе не узнаёт о входе, случившемся на странице /: подписывается на
+    UserSession.Changed и перезагружает меню при каждой смене пользователя.
+*@
+
+<div class="top-row ps-3 navbar navbar-dark">
     <div class="container-fluid">
         <a class="navbar-brand" href="">FogSoft.Web</a>
     </div>
@@ -14,11 +28,33 @@
             </NavLink>
         </div>
 
-        <div class="nav-item px-3">
-            <NavLink class="nav-link" href="journal/17">
-                <span class="bi bi-list-nested-nav-menu" aria-hidden="true"></span> Предметы рекламы
-            </NavLink>
-        </div>
+        @foreach (var node in _menu)
+        {
+            <MenuNodeView Node="node" />
+        }
     </nav>
 </div>
 
+@code {
+    private List<MenuNode> _menu = new();
+
+    protected override void OnInitialized()
+    {
+        Session.Changed += OnSessionChanged;
+        if (Session.User != null)
+            LoadMenu();
+    }
+
+    private void OnSessionChanged()
+    {
+        LoadMenu();
+        InvokeAsync(StateHasChanged);
+    }
+
+    private void LoadMenu()
+    {
+        _menu = Session.User != null ? MenuService.Load() : new List<MenuNode>();
+    }
+
+    public void Dispose() => Session.Changed -= OnSessionChanged;
+}

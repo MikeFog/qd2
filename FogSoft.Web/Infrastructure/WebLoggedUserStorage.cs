@@ -5,10 +5,27 @@ namespace FogSoft.Web.Infrastructure;
 /// <summary>
 /// Состояние сеанса одного пользователя. Регистрируется как Scoped, то есть в
 /// Blazor Server живёт ровно столько, сколько живёт circuit — вкладка браузера.
+///
+/// <see cref="Changed"/> — тот же приём, что и в <see cref="DialogService"/>:
+/// компонент меню (<c>NavMenu</c>) рендерится один раз на весь circuit и сам
+/// по себе не узнает о входе пользователя, случившемся на другой странице —
+/// подписывается на это событие и перезагружает меню.
 /// </summary>
 public sealed class UserSession
 {
-	public SecurityManager.User? User { get; set; }
+	private SecurityManager.User? _user;
+
+	public SecurityManager.User? User
+	{
+		get => _user;
+		set
+		{
+			_user = value;
+			Changed?.Invoke();
+		}
+	}
+
+	public event Action? Changed;
 }
 
 /// <summary>
