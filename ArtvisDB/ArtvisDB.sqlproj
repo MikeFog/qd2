@@ -466,6 +466,7 @@
     <Build Include="dbo\Stored Procedures\PaymentTypesLoad.sql" />
     <Build Include="dbo\Stored Procedures\AddRangeIssues.sql" />
     <Build Include="dbo\Stored Procedures\MediaPlanRetrieve_v2.sql" />
+    <Build Include="dbo\Stored Procedures\MultiActionMediaPlanActions.sql" />
     <Build Include="dbo\Stored Procedures\PackModules.sql" />
     <Build Include="dbo\Stored Procedures\rpt_Grid_v3.sql" />
     <Build Include="dbo\Stored Procedures\banks.sql" />
