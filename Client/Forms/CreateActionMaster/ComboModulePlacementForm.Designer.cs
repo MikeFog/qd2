@@ -324,7 +324,7 @@
 			this.grdRollers.Font = new System.Drawing.Font("Tahoma", 8.25F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(204)));
 			this.grdRollers.IsHighlightInvertColor = false;
 			this.grdRollers.IsNeedHighlight = false;
-			this.grdRollers.MenuEnabled = false;
+			this.grdRollers.MenuEnabled = true;
 			this.grdRollers.Name = "grdRollers";
 			this.grdRollers.QuickSearchVisible = false;
 			this.grdRollers.SelectedObject = null;
