@@ -93,8 +93,11 @@ ELSE
 				CASE WHEN EXISTS(
 					SELECT 1 FROM [Issue] i
 						INNER JOIN [Roller] r ON r.rollerID = i.rollerID
+						INNER JOIN [Campaign] c ON c.campaignID = i.campaignID
+						INNER JOIN [Action] a ON a.actionID = c.actionID
 						LEFT JOIN [AdvertType] adt ON adt.advertTypeID = r.advertTypeID
 					WHERE i.originalWindowID = tw.windowId
+						AND a.deleteDate IS NULL   -- выпуски удалённых акций (журнал удалённых) не в счёт
 						AND (@showUnconfirmed = 1 OR i.isConfirmed = 1)
 						AND (r.advertTypeID = @advertTypeId OR adt.parentID = @advertTypeId)
 					) THEN 1 ELSE 0 END
@@ -102,8 +105,11 @@ ELSE
 				CASE WHEN NOT EXISTS(
 					SELECT 1 FROM [Issue] i
 						INNER JOIN [Roller] r ON r.rollerID = i.rollerID
+						INNER JOIN [Campaign] c ON c.campaignID = i.campaignID
+						INNER JOIN [Action] a ON a.actionID = c.actionID
 						LEFT JOIN [AdvertType] adt ON adt.advertTypeID = r.advertTypeID
 					WHERE i.originalWindowID = tw.windowId
+						AND a.deleteDate IS NULL   -- выпуски удалённых акций (журнал удалённых) не в счёт
 						AND (@showUnconfirmed = 1 OR i.isConfirmed = 1)
 						AND (r.advertTypeID = @advertTypeId OR adt.parentID = @advertTypeId)
 					) THEN 1 ELSE 0 END
