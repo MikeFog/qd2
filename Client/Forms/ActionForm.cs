@@ -90,12 +90,12 @@ namespace Merlin.Forms
         }
 
 		/// <summary>
-		/// Размещение модулями имеет смысл, когда модульных кампаний в акции хотя бы две:
-		/// на одной станции для этого есть обычная форма кампании.
+		/// Кнопка доступна всегда: даже без модульных кампаний с неё можно выбрать
+		/// комбо-модуль и разместить его целиком. Ветвление режимов - в EditComboModules.
 		/// </summary>
 		private void EnableComboModulesButton()
 		{
-			tsbEditComboModules.Enabled = GetModuleCampaignsCount() >= 2;
+			tsbEditComboModules.Enabled = true;
 		}
 
 		private int GetModuleCampaignsCount()
@@ -468,26 +468,35 @@ namespace Merlin.Forms
         }
 
         /// <summary>
-        /// Размещение модулями по всей акции. Два режима на выбор:
+        /// Размещение модулями по всей акции. Два режима:
         /// - «Только размещённые модули»: строки грида - модули, уже размещённые в акции,
         ///   комбо-модуль ни при чём (кампании не создаются);
         /// - «Выбрать комбо-модуль»: строки грида - весь состав выбранного комбо-модуля,
         ///   недостающие модули достраиваются, по клику в акции создаётся новая модульная
         ///   кампания. Связи «акция - комбо-модуль» в базе нет, поэтому какой именно
         ///   комбо-модуль, спрашиваем каждый раз.
+        /// Если модульных кампаний в акции нет, редактировать нечего - сразу выбор
+        /// комбо-модуля, без вопроса.
         /// </summary>
         private void EditComboModules(object sender, EventArgs e)
         {
             try
             {
-                DialogResult choice = UserMessage.ShowYesNoCancel(
-                    "Показать акцию как комбо-модуль и достроить недостающие модули?\r\n\r\n" +
-                    "Да - выбрать комбо-модуль.\r\n" +
-                    "Нет - редактировать только уже размещённые модули.");
-                if (choice == DialogResult.Cancel) return;
+                bool selectComboModule;
+                if (GetModuleCampaignsCount() > 0)
+                {
+                    DialogResult choice = UserMessage.ShowYesNoCancel(
+                        "Показать акцию как комбо-модуль и достроить недостающие модули?\r\n\r\n" +
+                        "Да - выбрать комбо-модуль.\r\n" +
+                        "Нет - редактировать только уже размещённые модули.");
+                    if (choice == DialogResult.Cancel) return;
+                    selectComboModule = choice == DialogResult.Yes;
+                }
+                else
+                    selectComboModule = true;
 
                 ComboModulePlacementForm form;
-                if (choice == DialogResult.Yes)
+                if (selectComboModule)
                 {
                     SelectComboModuleStep step = new SelectComboModuleStep();
                     if (step.ShowDialog(this) != DialogResult.OK) return;
