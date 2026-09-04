@@ -41,6 +41,7 @@ namespace Merlin.Forms
 			tbbRefresh.Image = Globals.GetImage(Constants.ActionsImages.Refresh);
 			toolStripButtonGrantor.Image = Globals.GetImage(Constants.ActionsImages.User);
 			tbbStart.Image = Globals.GetImage(Constants.ActionsImages.Properties);
+			tbSetActionPrice.Image = Globals.GetIcon("Money.png");
 			Icon = Globals.MdiParent.Icon;
 			toolStripButtonGrantor.Visible = false;
         }
@@ -90,6 +91,7 @@ namespace Merlin.Forms
                     EnableWeekNavigationKeys();
 
                 _campaign?.DisplayCampaignData(lstStat);
+                tbSetActionPrice.Enabled = CampaignAction != null && CampaignAction.TariffPrice != 0;
 
                 grdRollers.ObjectDeleted += GrdRollers_ObjectDeleted;
                 grdCurrentCampaignIssues.ObjectsDeleted += grdCurrentCampaignIssues_ObjectsDeleted;
@@ -109,6 +111,16 @@ namespace Merlin.Forms
         protected virtual Firm Firm
 		{
 			get { return _firm; }
+		}
+
+		/// <summary>
+		/// Акция текущего грида. У обычной кампании (<see cref="_campaign"/>) берётся из неё;
+		/// у веерного размещения (<see cref="EditIssuesForm"/>) своей кампании нет - форма
+		/// работает сразу со всей акцией, поэтому там переопределяется.
+		/// </summary>
+		protected virtual ActionOnMassmedia CampaignAction
+		{
+			get { return _campaign == null ? null : _campaign.Action; }
 		}
 
 		private bool IsSimplelCampaign
@@ -395,6 +407,7 @@ namespace Merlin.Forms
 												MarkPrimeWindows(null, null);
 												MarkMarkedWindows(null, null);
 											}
+											tbSetActionPrice.Enabled = CampaignAction != null && CampaignAction.TariffPrice != 0;
 										};
 		}
 
@@ -1651,6 +1664,30 @@ namespace Merlin.Forms
             {
                 UseWaitCursor = false;
             }
+        }
+
+        private void tbSetActionPrice_Click(object sender, EventArgs e)
+        {
+            try
+            {
+                if (ActionForm.SetActionPrice(CampaignAction, this))
+                    RefreshAfterActionPriceChange();
+            }
+            catch (Exception ex)
+            {
+                ErrorManager.PublishError(ex);
+            }
+            finally
+            {
+                UseWaitCursor = false;
+            }
+        }
+
+        /// <summary>Обновление после смены цены акции. Переопределяется в EditIssuesForm - там нет своей кампании.</summary>
+        protected virtual void RefreshAfterActionPriceChange()
+        {
+            _campaign.Refresh();
+            _campaign.DisplayCampaignData(lstStat);
         }
 
         private void MarkPrimeWindows(object sender, EventArgs e)

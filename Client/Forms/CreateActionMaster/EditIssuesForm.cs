@@ -35,6 +35,16 @@ namespace Merlin.Forms.CreateActionMaster
 			get { return _firm; }
 		}
 
+		protected override ActionOnMassmedia CampaignAction
+		{
+			get { return _action; }
+		}
+
+		protected override void RefreshAfterActionPriceChange()
+		{
+			_action.DisplayData(lstStat);
+		}
+
 		protected override void SetFormCaption()
 		{
 			//base.SetFormCaption();

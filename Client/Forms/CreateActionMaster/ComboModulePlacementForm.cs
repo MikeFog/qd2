@@ -101,6 +101,7 @@ namespace Merlin.Forms.CreateActionMaster
 			tbbPlay.Image = Globals.GetImage(Constants.ActionsImages.Play);
 			tsbStop.Image = Globals.GetImage(Constants.ActionsImages.Stop);
 			tbbExcel.Image = Globals.GetImage(Constants.ActionsImages.ExportExcel);
+			tbSetActionPrice.Image = Globals.GetIcon("Money.png");
 			_mediaControl = new MediaControl(this);
 			FormClosing += (s, e) => _mediaControl.Stop();
 		}
@@ -886,11 +887,13 @@ namespace Merlin.Forms.CreateActionMaster
 			if (_action == null)
 			{
 				lstStat.Items.Clear();
+				tbSetActionPrice.Enabled = false;
 				return;
 			}
 
 			_action.Refresh();
 			_action.DisplayData(lstStat);
+			tbSetActionPrice.Enabled = _action.TariffPrice != 0;
 		}
 
 		#endregion
@@ -1169,6 +1172,29 @@ namespace Merlin.Forms.CreateActionMaster
 			finally
 			{
 				Cursor = Cursors.Default;
+			}
+		}
+
+		private void tbSetActionPrice_Click(object sender, EventArgs e)
+		{
+			try
+			{
+				if (_action == null)
+				{
+					UserMessage.ShowExclamation("В акции ещё нет ни одного размещённого выпуска.");
+					return;
+				}
+
+				if (ActionForm.SetActionPrice(_action, this))
+					ShowStatistics();
+			}
+			catch (Exception ex)
+			{
+				ErrorManager.PublishError(ex);
+			}
+			finally
+			{
+				UseWaitCursor = false;
 			}
 		}
 

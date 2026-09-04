@@ -60,6 +60,7 @@ namespace Merlin.Forms {
             this.tbbTemplateUndo = new System.Windows.Forms.ToolStripButton();
             this.toolStripSeparator2 = new System.Windows.Forms.ToolStripSeparator();
             this.tbSetManagerDiscount = new System.Windows.Forms.ToolStripButton();
+            this.tbSetActionPrice = new System.Windows.Forms.ToolStripButton();
             this.tbbExcel = new System.Windows.Forms.ToolStripButton();
             this.toolStripButtonGrantor = new System.Windows.Forms.ToolStripButton();
             this.splitContainer1 = new System.Windows.Forms.SplitContainer();
@@ -122,6 +123,7 @@ namespace Merlin.Forms {
             this.tbbTemplateUndo,
             this.toolStripSeparator2,
             this.tbSetManagerDiscount,
+            this.tbSetActionPrice,
             this.tbbExcel,
             this.toolStripButtonGrantor});
             this.tsCampaign.Location = new System.Drawing.Point(0, 0);
@@ -415,7 +417,16 @@ namespace Merlin.Forms {
             this.tbSetManagerDiscount.Size = new System.Drawing.Size(34, 33);
             this.tbSetManagerDiscount.Text = "Установить менеджерский коэффициент";
             this.tbSetManagerDiscount.Click += new System.EventHandler(this.toolStripButton1_Click);
-            // 
+            //
+            // tbSetActionPrice
+            //
+            this.tbSetActionPrice.DisplayStyle = System.Windows.Forms.ToolStripItemDisplayStyle.Image;
+            this.tbSetActionPrice.ImageTransparentColor = System.Drawing.Color.Magenta;
+            this.tbSetActionPrice.Name = "tbSetActionPrice";
+            this.tbSetActionPrice.Size = new System.Drawing.Size(34, 33);
+            this.tbSetActionPrice.Text = "Установить цену рекламной акции";
+            this.tbSetActionPrice.Click += new System.EventHandler(this.tbSetActionPrice_Click);
+            //
             // tbbExcel
             // 
             this.tbbExcel.ImageTransparentColor = System.Drawing.Color.Magenta;
@@ -722,6 +733,7 @@ namespace Merlin.Forms {
     private System.Windows.Forms.ToolStripSeparator toolStripSeparator4;
     private System.Windows.Forms.ToolStripButton btnShowDisabled;
     private System.Windows.Forms.ToolStripButton tbSetManagerDiscount;
+    private System.Windows.Forms.ToolStripButton tbSetActionPrice;
     protected System.Windows.Forms.ToolStripButton tbMarkPrimeWindows;
     private System.Windows.Forms.ToolStripButton btnShowMarked;
     private System.Windows.Forms.ToolStripButton btnShowRollerNumbers;

@@ -49,6 +49,8 @@
 			this.tbbShowRollerNumbers = new System.Windows.Forms.ToolStripButton();
 			this.tbbSeparator3 = new System.Windows.Forms.ToolStripSeparator();
 			this.tbbExcel = new System.Windows.Forms.ToolStripButton();
+			this.tbbSeparator4 = new System.Windows.Forms.ToolStripSeparator();
+			this.tbSetActionPrice = new System.Windows.Forms.ToolStripButton();
 			this.splitContainer1 = new System.Windows.Forms.SplitContainer();
 			this.splitContainer2 = new System.Windows.Forms.SplitContainer();
 			this.splitContainer3 = new System.Windows.Forms.SplitContainer();
@@ -286,6 +288,19 @@
 			this.tbbExcel.ToolTipText = "Экспорт таблицы";
 			this.tbbExcel.Click += new System.EventHandler(this.tbbExcel_Click);
 			//
+			// tbbSeparator4
+			//
+			this.tbbSeparator4.Name = "tbbSeparator4";
+			//
+			// tbSetActionPrice
+			//
+			this.tbSetActionPrice.DisplayStyle = System.Windows.Forms.ToolStripItemDisplayStyle.Image;
+			this.tbSetActionPrice.ImageTransparentColor = System.Drawing.Color.Magenta;
+			this.tbSetActionPrice.Name = "tbSetActionPrice";
+			this.tbSetActionPrice.Size = new System.Drawing.Size(34, 33);
+			this.tbSetActionPrice.Text = "Установить цену рекламной акции";
+			this.tbSetActionPrice.Click += new System.EventHandler(this.tbSetActionPrice_Click);
+			//
 			// toolStrip1
 			//
 			this.toolStrip1.Items.AddRange(new System.Windows.Forms.ToolStripItem[] {
@@ -306,7 +321,9 @@
 				this.tbbShowUnconfirmed,
 				this.tbbShowRollerNumbers,
 				this.tbbSeparator3,
-				this.tbbExcel});
+				this.tbbExcel,
+				this.tbbSeparator4,
+				this.tbSetActionPrice});
 			this.toolStrip1.Location = new System.Drawing.Point(0, 0);
 			this.toolStrip1.Name = "toolStrip1";
 			this.toolStrip1.Size = new System.Drawing.Size(1200, 25);
@@ -459,6 +476,8 @@
 		private System.Windows.Forms.ToolStripButton tbbShowRollerNumbers;
 		private System.Windows.Forms.ToolStripSeparator tbbSeparator3;
 		private System.Windows.Forms.ToolStripButton tbbExcel;
+		private System.Windows.Forms.ToolStripSeparator tbbSeparator4;
+		private System.Windows.Forms.ToolStripButton tbSetActionPrice;
 		private System.Windows.Forms.SplitContainer splitContainer1;
 		private System.Windows.Forms.SplitContainer splitContainer2;
 		private System.Windows.Forms.SplitContainer splitContainer3;

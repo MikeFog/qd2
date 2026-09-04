@@ -392,67 +392,8 @@ namespace Merlin.Forms
         {
             try
             {
-				if (_action.TariffPrice == 0)
-				{
-					UserMessage.ShowExclamation("Невозможно установить итоговую стоимость акции и менеджерскую скидку, так как стоимость акции по тарифам равна нулю.");
-                    return;
-                }
-				
-                ActionFinalPriceForm form = new ActionFinalPriceForm(_action);
-                if (form.ShowDialog(this) == DialogResult.OK)
+                if (SetActionPrice(_action, this))
                 {
-                    UseWaitCursor = true;
-                    Application.DoEvents();
-
-					DataTable dataTable = _action.Campaigns();
-                    // exclude campaigns with zero tariff price, as they won't be affected by discount and caused SQL error
-                    DataRow[] rows = dataTable.Select("TariffPrice <> 0");
-
-                    dataTable = rows.Length > 0
-                        ? rows.CopyToDataTable()
-                        : dataTable.Clone();
-                    try
-                    {
-                        DataAccessor.BeginTransaction();
-                        decimal distributedSoFar = 0m;
-                        int rowCount = dataTable.Rows.Count;
-
-                        for (int i = 0; i < rowCount; i++)
-                        {
-                            DataRow row = dataTable.Rows[i];
-                            Campaign campaign = new Campaign(row);
-							if (campaign.TariffPrice == 0) continue;
-
-                            decimal newP;
-
-                            if (i == rowCount - 1)
-                            {
-                                // ПОСЛЕДНЯЯ СТРОКА: забирает всё, что осталось от целевой суммы
-                                newP = form.FinalPrice - distributedSoFar;
-                            }
-                            else
-                            {
-                                // ОБЫЧНАЯ СТРОКА: считаем долю и жестко округляем до копеек
-                                decimal rawP = form.IsManagerDiscount
-                                    ? form.ManagerDiscount * campaign.Discount * campaign.PackDiscount * campaign.TariffPrice
-                                    : form.FinalPrice * campaign.FullPrice / _action.TotalPrice;
-
-                                newP = Math.Round(rawP, 2, MidpointRounding.AwayFromZero);
-                                distributedSoFar += newP;
-                            }
-
-                            Debug.WriteLine($"Campaign {i}: {newP}");
-                            campaign.SetFinalPrice(newP, form.SelectedDate, SecurityManager.LoggedUser.Id, form.ManagerDiscountReasonId);
-                        }
-                        _action.Recalculate(refreshFlag: true, todayDate: form.SelectedDate	);
-                        DataAccessor.CommitTransaction();
-                    }
-					catch  
-					{
-                        DataAccessor.RollbackTransaction();
-						throw;
-                    }
-                    //action.Refresh();
                     grdCampaign.DataSource = _action.Campaigns(true).DefaultView;
                     RefreshActionStats(true);
                 }
@@ -465,6 +406,82 @@ namespace Merlin.Forms
             {
                 UseWaitCursor = false;
             }
+        }
+
+        /// <summary>
+        /// Открывает диалог итоговой цены акции и распределяет её по всем кампаниям акции
+        /// (последняя кампания в списке забирает остаток, чтобы сумма сходилась до копейки).
+        /// </summary>
+        internal static bool SetActionPrice(ActionOnMassmedia action, IWin32Window owner)
+        {
+            if (action == null || action.TariffPrice == 0)
+            {
+                UserMessage.ShowExclamation("Невозможно установить итоговую стоимость акции и менеджерскую скидку, так как стоимость акции по тарифам равна нулю.");
+                return false;
+            }
+
+            ActionFinalPriceForm form = new ActionFinalPriceForm(action);
+            if (form.ShowDialog(owner) != DialogResult.OK)
+                return false;
+
+            Globals.MdiParent.UseWaitCursor = true;
+            Application.DoEvents();
+
+            try
+            {
+                DataTable dataTable = action.Campaigns();
+                // exclude campaigns with zero tariff price, as they won't be affected by discount and caused SQL error
+                DataRow[] rows = dataTable.Select("TariffPrice <> 0");
+
+                dataTable = rows.Length > 0
+                    ? rows.CopyToDataTable()
+                    : dataTable.Clone();
+
+                DataAccessor.BeginTransaction();
+                decimal distributedSoFar = 0m;
+                int rowCount = dataTable.Rows.Count;
+
+                for (int i = 0; i < rowCount; i++)
+                {
+                    DataRow row = dataTable.Rows[i];
+                    Campaign campaign = new Campaign(row);
+                    if (campaign.TariffPrice == 0) continue;
+
+                    decimal newP;
+
+                    if (i == rowCount - 1)
+                    {
+                        // ПОСЛЕДНЯЯ СТРОКА: забирает всё, что осталось от целевой суммы
+                        newP = form.FinalPrice - distributedSoFar;
+                    }
+                    else
+                    {
+                        // ОБЫЧНАЯ СТРОКА: считаем долю и жестко округляем до копеек
+                        decimal rawP = form.IsManagerDiscount
+                            ? form.ManagerDiscount * campaign.Discount * campaign.PackDiscount * campaign.TariffPrice
+                            : form.FinalPrice * campaign.FullPrice / action.TotalPrice;
+
+                        newP = Math.Round(rawP, 2, MidpointRounding.AwayFromZero);
+                        distributedSoFar += newP;
+                    }
+
+                    Debug.WriteLine($"Campaign {i}: {newP}");
+                    campaign.SetFinalPrice(newP, form.SelectedDate, SecurityManager.LoggedUser.Id, form.ManagerDiscountReasonId);
+                }
+                action.Recalculate(refreshFlag: true, todayDate: form.SelectedDate);
+                DataAccessor.CommitTransaction();
+            }
+            catch
+            {
+                DataAccessor.RollbackTransaction();
+                throw;
+            }
+            finally
+            {
+                Globals.MdiParent.UseWaitCursor = false;
+            }
+
+            return true;
         }
 
         /// <summary>
