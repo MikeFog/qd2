@@ -1,5 +1,143 @@
-﻿-- Created by GitHub Copilot in SSMS - review carefully before executing
-CREATE PROCEDURE [dbo].[MediaPlanRetrieve_v2]
+﻿/*
+    ПРОД-ДЕПЛОЙ: MediaPlanRetrieve_v2 — OPTION (RECOMPILE) на заполнение #issue.
+    Ветка hotfix/mediaplan-v2-perf.
+
+    ЗАЧЕМ
+      Медиаплан — #2 процедура на проде по числу вызовов дольше 100 мс
+      (717 вызовов за 1–4 сентября 2026: 574 в полосе 1–3 с, 24 в 3–6 с,
+      13 дольше 6 с, худший 14,8 с). Уступает только ActionRecalculate.
+
+      Причина — «универсальные» предикаты в отборе #issue:
+          i.campaignId = ISNULL(@campaignId, i.campaignID)
+          c.actionID   = ISNULL(@actionID,   c.actionID)
+          c.agencyID   = ISNULL(@agencyId,   c.agencyID)
+      Оптимизатор не умеет оценивать такое выражение и берёт догадку 10% от
+      таблицы. Один закешированный план обслуживал все три режима вызова
+      (по кампании / по акции / сводный по набору акций), и это всегда был
+      Hash Match поверх ПОЛНОГО скана Issue (3,44 млн строк, 29,7 тыс. страниц)
+      и ПОЛНОГО скана TariffWindow (2,0 млн строк, 23,8 тыс. страниц) —
+      ~425 МБ чтений и ~2,3 с CPU на каждый вызов, сколько бы выпусков в
+      кампании реально ни было. Замер плана на ArtvisDev это подтвердил:
+      Clustered Index Scan(Issue) EstimateRows=344423 — ровно 10% от 3 444 229.
+
+      Процедура НИКОГДА не зовётся без фильтра: Client/Classes/MediaPlan.cs
+      всегда передаёт campaignId, либо actionId, либо actionIDString.
+      RECOMPILE включает parameter embedding — NULL-ветки ISNULL сворачиваются,
+      остаётся sargable `c.actionID = <литерал>`, и план становится
+      seek Campaign(UIX_Campaign) -> seek Issue(IX_Issue_campaignID_originalWindowID)
+      -> seek TariffWindow(UX_TariffWindow_WindowID_DayOriginal).
+
+    ЗАМЕРЫ (ArtvisDev, копия прода, Issue 3,44 млн / TariffWindow 2,01 млн)
+      сценарий                                  было      стало   ускорение
+      кампания тип 1, 4380 выпусков, факт       2896 мс   288 мс     10,1x
+      кампания тип 1, план за месяц              930 мс   106 мс      8,8x
+      кампания тип 2 (спонсорская), 320 вып.    1367 мс    84 мс     16,3x
+      кампания тип 3 (модульная)                1446 мс   209 мс      6,9x
+      кампания тип 4 (пакет модулей)            1759 мс   186 мс      9,5x
+      акция 165676 (13 138 вып.), onlyRollers   3427 мс   490 мс      7,0x
+      акция 165676, полный набор, 3 СМИ         2558 мс   614 мс      4,2x
+      сводный медиаплан, 2 акции / 18 СМИ       2463 мс   726 мс      3,4x
+      акция 172510 (перенесённые выпуски)      31092 мс   109 мс    285,2x
+      кампания в 10 выпусков (пол компиляции)    846 мс    25 мс     33,8x
+      На холодном кеше (DBCC DROPCLEANBUFFERS) худший случай:
+      2584 -> 698 мс, CPU 2281 -> 500 мс, физических чтений 23 762 -> ~900.
+
+    ЦЕНА
+      ~25 мс компиляции на вызов (это пол нового времени: столько стоит
+      кампания в 10 выпусков). Отчёт строится интерактивно при выгрузке в
+      Excel, из цикла не вызывается — окупается на порядок в любом сценарии.
+
+    ЧТО ИМЕННО МЕНЯЕТСЯ
+      Ровно две строки: `OPTION (RECOMPILE)` после GROUP BY в обеих ветках
+      заполнения #issue (@isFact = 1 и @isFact = 0). Больше в теле процедуры
+      не изменено ничего — ни один SELECT результирующих наборов не тронут.
+      RECOMPILE — подсказка плана: логический результат запроса она изменить
+      не может.
+
+    ЧТО НЕ ДЕЛАЛОСЬ И ПОЧЕМУ (замерено, отвергнуто)
+      * Покрывающий индекс Issue(campaignID) INCLUDE(actualWindowID, rollerID,
+        positionId) убирает key lookup: логические чтения Issue 53 126 -> 58.
+        Но физических чтений на холодном кеше он экономит ~900 страниц (~10 мс),
+        а стоит 93 МБ на самой горячей на запись таблице системы (Issue уже
+        несёт ~1,09 ГБ индексов, и по ней идёт шторм ActionRecalculate).
+        Не окупается. Оставлено как возможная доработка.
+      * Переписать OUTER APPLY Pricelist на предрасчёт: 13 138 коррелированных
+        TOP 1 стоят 26 276 логических чтений по таблице в 94 строки, то есть
+        ~50 мс из 339 мс. Не окупает риск.
+      * Убрать GROUP BY (он избыточен: все join'ы 1:1 по PK, i.issueID
+        уникален) — выигрыш 0 мс. Не трогаем.
+      * Убрать join к #mm, когда @massmediaIDString IS NULL: 2 логических
+        чтения. Плюс #mm используется дальше в наборе 3
+        (`SELECT TOP 1 massmediaID FROM #mm ORDER BY massmediaID`) —
+        трогать его семантику нельзя.
+
+    ПОЧЕМУ SET QUOTED_IDENTIFIER ON / SET ANSI_NULLS ON ОБЯЗАТЕЛЬНЫ
+      В базе есть индекс по вычисляемому столбцу TariffWindow.windowTime.
+      Модуль, развёрнутый с QUOTED_IDENTIFIER OFF, ломает планы с участием
+      TariffWindow (ошибка 1934). Настройки SET фиксируются вместе с текстом
+      модуля в момент ALTER, поэтому их надо выставить в ОТДЕЛЬНОМ батче
+      перед ALTER.
+
+    ИДЕМПОТЕНТНОСТЬ
+      Повторный запуск просто перезальёт то же тело с теми же SET-опциями.
+
+    ОТКАТ
+      git show master:"ArtvisDB/dbo/Stored Procedures/MediaPlanRetrieve_v2.sql"
+      Заменить CREATE на ALTER и развернуть тем же батчем
+      SET QUOTED_IDENTIFIER ON; SET ANSI_NULLS ON; GO ... GO.
+      Либо просто удалить из тела две строки `OPTION (RECOMPILE)`.
+
+    ПОСЛЕ ДЕПЛОЯ
+      Перезапуск клиентов не требуется: сигнатура процедуры не менялась.
+      Проверка эквивалентности и замеры — ArtvisDB/Scripts/mediaplan-v2-perf-check.sql
+      (его полезно прогнать и ДО деплоя, чтобы снять базовые цифры).
+
+    ЗАПУСК
+      sqlcmd -S <прод-сервер> -d <прод-БД> -E -b -i mediaplan-v2-perf-deploy.sql
+      либо открыть в SSMS на нужной БД и выполнить целиком.
+*/
+
+-- При необходимости раскомментировать и подставить имя прод-БД:
+-- USE [Artvis];
+-- GO
+
+SET NOCOUNT ON;
+GO
+
+/* -- Преполёт: та ли база ----------------------------------------------- */
+IF OBJECT_ID('dbo.MediaPlanRetrieve_v2') IS NULL
+   OR OBJECT_ID('dbo.TariffWindow') IS NULL
+   OR OBJECT_ID('dbo.fn_CreateTableFromString') IS NULL
+   OR OBJECT_ID('dbo.fn_LastDateOfMonth') IS NULL
+   OR OBJECT_ID('dbo.vRoller') IS NULL
+BEGIN
+    RAISERROR('НЕ ТА БАЗА: не найдены dbo.MediaPlanRetrieve_v2 / dbo.TariffWindow / dbo.fn_CreateTableFromString / dbo.fn_LastDateOfMonth / dbo.vRoller. Деплой прерван.', 16, 1);
+    SET NOEXEC ON;
+END
+GO
+/* Тело, которое разворачивает этот скрипт, содержит @actionIDString (сводный
+   медиаплан по набору акций). Если на базе лежит версия БЕЗ него — значит, не
+   накачен multi-action-media-plan-procs-deploy.sql, и накат этого скрипта
+   изменил бы контракт процедуры. Останавливаемся. */
+IF OBJECT_ID('dbo.MediaPlanRetrieve_v2') IS NOT NULL
+   AND OBJECT_DEFINITION(OBJECT_ID('dbo.MediaPlanRetrieve_v2')) NOT LIKE '%@actionIDString%'
+BEGIN
+    RAISERROR('На базе версия MediaPlanRetrieve_v2 БЕЗ @actionIDString. Сначала накатите multi-action-media-plan-procs-deploy.sql. Деплой прерван.', 16, 1);
+    SET NOEXEC ON;
+END
+GO
+PRINT 'БД      : ' + DB_NAME();
+PRINT 'Сервер  : ' + CONVERT(sysname, SERVERPROPERTY('ServerName'));
+PRINT 'До      : ' + CASE WHEN OBJECT_DEFINITION(OBJECT_ID('dbo.MediaPlanRetrieve_v2')) LIKE '%OPTION (RECOMPILE)%'
+                          THEN 'уже с RECOMPILE' ELSE 'старая версия (один план на все режимы)' END;
+GO
+
+/* -- MediaPlanRetrieve_v2 ----------------------------------------------- */
+SET QUOTED_IDENTIFIER ON;
+SET ANSI_NULLS ON;
+GO
+-- Created by GitHub Copilot in SSMS - review carefully before executing
+ALTER PROCEDURE [dbo].[MediaPlanRetrieve_v2]
 (
     @campaignId int = null,
     @campaignTypeId tinyint = null,
@@ -356,3 +494,48 @@ BEGIN
           AND c.agencyID = COALESCE(@agencyId, c.agencyID);      -- фильтр по агентству
     END
 END
+GO
+
+/* -- Сброс кеша планов именно этой процедуры ------------------------------
+   ALTER и так инвалидирует план; блок оставлен страховкой — старый
+   «сканирующий» план не должен пережить накат ни в каком виде. */
+DECLARE @ph varbinary(64);
+DECLARE plans CURSOR LOCAL FAST_FORWARD FOR
+    SELECT DISTINCT qs.plan_handle
+    FROM sys.dm_exec_query_stats qs
+    CROSS APPLY sys.dm_exec_sql_text(qs.sql_handle) st
+    WHERE st.objectid = OBJECT_ID('dbo.MediaPlanRetrieve_v2')
+      AND st.dbid = DB_ID();
+OPEN plans;
+FETCH NEXT FROM plans INTO @ph;
+WHILE @@FETCH_STATUS = 0
+BEGIN
+    BEGIN TRY
+        DBCC FREEPROCCACHE (@ph) WITH NO_INFOMSGS;
+    END TRY
+    BEGIN CATCH
+    END CATCH
+    FETCH NEXT FROM plans INTO @ph;
+END
+CLOSE plans;
+DEALLOCATE plans;
+GO
+
+/* -- Проверка ------------------------------------------------------------ */
+SET NOEXEC OFF;
+GO
+SELECT
+    [процедура]           = o.name,
+    [quoted_identifier]   = m.uses_quoted_identifier,   -- ожидается 1
+    [ansi_nulls]          = m.uses_ansi_nulls,          -- ожидается 1
+    [recompile_в_теле]    = (LEN(m.definition) - LEN(REPLACE(m.definition, 'OPTION (RECOMPILE)', '')))
+                            / LEN('OPTION (RECOMPILE)'),                                       -- ожидается 2
+    [есть_actionIDString] = CASE WHEN m.definition LIKE '%@actionIDString%' THEN 1 ELSE 0 END, -- ожидается 1
+    [изменена]            = o.modify_date
+FROM sys.sql_modules m
+JOIN sys.objects o ON o.object_id = m.object_id
+WHERE o.name = 'MediaPlanRetrieve_v2';
+GO
+PRINT 'Готово. Ожидается: quoted_identifier=1, ansi_nulls=1, recompile_в_теле=2, есть_actionIDString=1.';
+PRINT 'Дальше: ArtvisDB/Scripts/mediaplan-v2-perf-check.sql — эквивалентность и замеры.';
+GO
