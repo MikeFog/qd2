@@ -38,6 +38,14 @@ namespace Merlin.Classes
 
         private string _selectedRollers = null;
 		private int _columnWithRollerName;
+
+		// Кэши на время одной генерации медиаплана. PrintFooter в сводном режиме
+		// перебирает все кампании всех акций на КАЖДОМ листе станции и раньше
+		// заново грузил их из БД (Campaigns): на 4 акциях / 14 станциях — 544
+		// вызова, ~12 c. Список кампаний и сами объекты Campaign в пределах одного
+		// экспорта не меняются, поэтому грузим один раз.
+		private List<DataRow> _actionCampaignRowsCache;
+		private readonly Dictionary<int, Campaign> _campaignByIdCache = new Dictionary<int, Campaign>();
 		private PrintSettings _printSettings = new PrintSettings() { 
 			PrintWithSignatures = false, SaveDirectlyToDisk = !string.IsNullOrEmpty(UserSettings.Load("Path2SaveReports")) 
 		};
@@ -606,11 +614,27 @@ namespace Merlin.Classes
 		}
 
 		// Кампании всех акций плана (одной или набора) — для подсчёта стоимости.
-		private IEnumerable<DataRow> ActionCampaignRows()
+		// Материализуется один раз за экспорт: PrintFooter зовёт это на каждом
+		// листе станции, а a.Campaigns() каждый раз идёт в БД.
+		private List<DataRow> ActionCampaignRows()
 		{
-			if (_actions != null)
-				return _actions.SelectMany(a => a.Campaigns().Rows.Cast<DataRow>());
-			return action.Campaigns().Rows.Cast<DataRow>();
+			if (_actionCampaignRowsCache == null)
+				_actionCampaignRowsCache = _actions != null
+					? _actions.SelectMany(a => a.Campaigns().Rows.Cast<DataRow>()).ToList()
+					: action.Campaigns().Rows.Cast<DataRow>().ToList();
+			return _actionCampaignRowsCache;
+		}
+
+		// Campaign.GetCampaignById идёт в БД (Refresh, иногда дважды). В пределах
+		// одного медиаплана объект кампании не меняется — кэшируем.
+		private Campaign GetCampaignByIdCached(int campaignId)
+		{
+			if (!_campaignByIdCache.TryGetValue(campaignId, out Campaign campaign))
+			{
+				campaign = Campaign.GetCampaignById(campaignId);
+				_campaignByIdCache[campaignId] = campaign;
+			}
+			return campaign;
 		}
 
 		private void PrintFooter(Campaign campaign, Agency agency, DataTable dtTimeList, DataTable dtIssues, string mmIds, int? year, int? month)
@@ -639,7 +663,7 @@ namespace Merlin.Classes
 				{
 					foreach (DataRow row in ActionCampaignRows())
 					{
-						Campaign c = Campaign.GetCampaignById(int.Parse(row["campaignID"].ToString()));
+						Campaign c = GetCampaignByIdCached(int.Parse(row["campaignID"].ToString()));
 						if (c.CampaignType == Campaign.CampaignTypes.PackModule
 							|| ((CampaignOnSingleMassmedia)c).Massmedia.MassmediaId.ToString() == id)
 						{
