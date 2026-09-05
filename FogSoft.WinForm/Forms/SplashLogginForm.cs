@@ -71,8 +71,8 @@ namespace FogSoft.WinForm.Forms
 
                 lgnCtl.GetRegUserSaves(out string user, out string password, out bool autologin);
 
-				autologin = true;
-                password = "kjnjc0512";
+				autologin = !ConfigurationUtil.IsTestMode;
+				password = ConfigurationUtil.IsTestMode ? "kjnjc0512" : string.Empty;
                 //password = "qwe321";
 				
                 textBoxLogin.Text = user;
