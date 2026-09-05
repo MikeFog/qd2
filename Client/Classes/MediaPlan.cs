@@ -603,14 +603,27 @@ namespace Merlin.Classes
 
 		private void PrintPrograms(DataTable dtProgIssues)
 		{
-			SetCellValue(currentY, 3, "Программы:");
+			int count = dtProgIssues.Rows.Count;
+			if (count == 0)
+			{
+				WriteRow(currentY, 3, new object[] { "Программы:" });
+				return;
+			}
+			// Блок: count строк, колонки [3..6]. Строка 0: "Программы:" + первая
+			// программа; строки 1..N-1: дата / время / название.
+			var block = new object[count, 4];
+			block[0, 0] = "Программы:";
+			int r = 0;
 			foreach (DataRow row in dtProgIssues.Rows)
 			{
 				DateTime issueDate = DateTime.Parse(row["issueDate"].ToString());
-				SetCellValue(currentY, 4, issueDate.ToShortDateString());
-				SetCellValue(currentY, 5, issueDate.ToShortTimeString());
-				SetCellValue(currentY++, 6, row["name"]);
+				block[r, 1] = issueDate.ToShortDateString();
+				block[r, 2] = issueDate.ToShortTimeString();
+				block[r, 3] = row["name"];
+				r++;
 			}
+			activeSheet.SetValuesForRange(currentY, 3, currentY + count - 1, 6, block);
+			currentY += count;
 		}
 
 		// Кампании всех акций плана (одной или набора) — для подсчёта стоимости.
@@ -681,29 +694,34 @@ namespace Merlin.Classes
 				}
 			}
 
-			SetCellValue(currentY++, 3, string.Format("Всего трансляций: {0}", dtIssues.Rows.Count * ids.Length));
-            int totalDuration = dtTimeList.Rows.Count > 0 ? ids.Length * int.Parse(dtTimeList.Compute("sum(totalDuration)", string.Empty).ToString()) : 0;
-            SetCellValue(currentY, 3, string.Format("Время трансляций: {0}", DateTimeUtils.Time2String(totalDuration)));
-			currentY++;
-            decimal discount = 1 - (tariffPriceTotal == 0 ? 1 : (priceTotal / tariffPriceTotal));
-            if (!_printSettings.HideTariffPrice)
+			// Итоговый блок футера — подряд идущие строки столбца 3, пишем одним
+			// SetValuesForRange вместо 3-6 отдельных SetCellValue.
+			int totalDuration = dtTimeList.Rows.Count > 0 ? ids.Length * int.Parse(dtTimeList.Compute("sum(totalDuration)", string.Empty).ToString()) : 0;
+			decimal discount = 1 - (tariffPriceTotal == 0 ? 1 : (priceTotal / tariffPriceTotal));
+			var footLines = new System.Collections.Generic.List<object>
 			{
-                if (discount == decimal.Zero)
-                    SetCellValue(currentY++, 3, $"Стоимость спланированной рекламы: {priceTotal:c}");
-				SetCellValue(currentY++, 3, $"Стоимость спланированной рекламы по тарифам: {tariffPriceTotal:c}");
-
+				string.Format("Всего трансляций: {0}", dtIssues.Rows.Count * ids.Length),
+				string.Format("Время трансляций: {0}", DateTimeUtils.Time2String(totalDuration)),
+			};
+			if (!_printSettings.HideTariffPrice)
+			{
+				if (discount == decimal.Zero)
+					footLines.Add($"Стоимость спланированной рекламы: {priceTotal:c}");
+				footLines.Add($"Стоимость спланированной рекламы по тарифам: {tariffPriceTotal:c}");
 				if (discount != decimal.Zero)
 				{
-					SetCellValue(currentY++, 3, string.Format("Скидка: {0}", discount.ToString("P")));
-					SetCellValue(currentY++, 3, $"Стоимость спланированной рекламы с учетом скидки: {priceTotal:c}");
+					footLines.Add(string.Format("Скидка: {0}", discount.ToString("P")));
+					footLines.Add($"Стоимость спланированной рекламы с учетом скидки: {priceTotal:c}");
 				}
 			}
 			else
 			{
-				SetCellValue(currentY++, 3, $"Стоимость спланированной рекламы: {priceTotal:c}");
-            }
+				footLines.Add($"Стоимость спланированной рекламы: {priceTotal:c}");
+			}
 			if (taxPriceTotal > 0)
-				SetCellValue(currentY++, 3, $"В том числе  НДС  (5%): {taxPriceTotal:c}");
+				footLines.Add($"В том числе  НДС  (5%): {taxPriceTotal:c}");
+			WriteColumn(currentY, 3, footLines);
+			currentY += footLines.Count;
             currentY++;
 			SetCellValue(currentY, 3, "Исполнитель:");
 
@@ -847,12 +865,11 @@ namespace Merlin.Classes
 
 		private void PrintTimeList(DataTable dtTimes, Campaign.CampaignTypes campaignType)
 		{
-			SetCellValue(currentY, 1, "Время");
-			SetCellValue(currentY, 2, "Коммент.");
-            if (campaignType == Campaign.CampaignTypes.Simple)
-                SetCellValue(currentY, 3, "Цена");
-            SetCellValue(currentY, campaignType == Campaign.CampaignTypes.Simple ? 4 : 3, "Прод-ть");
-			activeSheet.SetBoldForRange(currentY, 1, currentY, 3 + (campaignType == Campaign.CampaignTypes.Simple ? 1 : 0));
+			bool simple = campaignType == Campaign.CampaignTypes.Simple;
+			WriteRow(currentY, 1, simple
+				? new object[] { "Время", "Коммент.", "Цена", "Прод-ть" }
+				: new object[] { "Время", "Коммент.", "Прод-ть" });
+			activeSheet.SetBoldForRange(currentY, 1, currentY, 3 + (simple ? 1 : 0));
 			ExportManager.CopyData2WorkSheet(activeSheet, dtTimes, 1, ++currentY);
 			CreateTimeCollection(dtTimes.Rows, campaignType);
             activeSheet.SetFormatForCell(currentY, 1, currentY + dtTimes.Rows.Count, 1, "time");
@@ -878,40 +895,45 @@ namespace Merlin.Classes
 
 		private void PrintRollersList(DataTable dtRollers, Campaign.CampaignTypes type)
 		{
-			int index = 1;
 			colRollers = new Dictionary<int, int>(dtRollers.Rows.Count);
-			int colIndex = type == Campaign.CampaignTypes.Simple ? 4 : 3;
-			SetCellValue(currentY, colIndex, "Ролики:");
+			int labelCol = type == Campaign.CampaignTypes.Simple ? 4 : 3;   // "Ролики:"
+			int dataCol = labelCol + 1;                                     // №, длит., кол-во, имя
+			int rollerCount = dtRollers.Rows.Count;
+
+			if (rollerCount == 0)
+			{
+				WriteRow(currentY, labelCol, new object[] { "Ролики:" });
+				return;
+			}
+
+			// Блок: rollerCount строк, колонки [labelCol .. dataCol+3].
+			// Строка 0: "Ролики:" + данные ролика 0; строки 1..N-1: данные ролика i.
+			var block = new object[rollerCount, 5];
+			block[0, 0] = "Ролики:";
+			int index = 1;
+			int r = 0;
 			foreach (DataRow row in dtRollers.Rows)
 			{
-                colIndex = type == Campaign.CampaignTypes.Simple ? 5 : 4;
 				colRollers.Add(int.Parse(row["rollerId"].ToString()), index);
-				SetCellValue(currentY, colIndex++, string.Format("№{0}", index++));
-				SetCellValue(currentY, colIndex++, DateTimeUtils.Time2String(int.Parse(row["duration"].ToString())));
-				SetCellValue(currentY, colIndex++, row["quantity"].ToString());
-				if (_printSettings.ShowAdvertisingInfo)
-					SetCellValue(currentY, colIndex, $"{row["name"]} - {row["advertTypeName"]}");
-				else
-                    SetCellValue(currentY, colIndex, row["name"].ToString());
-                _columnWithRollerName = colIndex;
-				currentY++;
+				block[r, 1] = string.Format("№{0}", index++);
+				block[r, 2] = DateTimeUtils.Time2String(int.Parse(row["duration"].ToString()));
+				block[r, 3] = row["quantity"].ToString();
+				block[r, 4] = _printSettings.ShowAdvertisingInfo
+					? $"{row["name"]} - {row["advertTypeName"]}"
+					: row["name"].ToString();
+				r++;
 			}
+			_columnWithRollerName = dataCol + 3;
+			activeSheet.SetValuesForRange(currentY, labelCol, currentY + rollerCount - 1, labelCol + 4, block);
+			currentY += rollerCount;
 		}
 
 		private void PrintHeader(Action a, Agency agency, string mmNames, string mmIds, string customerNamesOverride = null)
 		{
 			currentY++;
 
-            SetCellValue(currentY++, 1, string.Format("Заказчик: {0}", customerNamesOverride ?? a.Firm.PrefixWithName));
-			if (agency != null)
-				SetCellValue(currentY++, 1, string.Format("Исполнитель: {0}", agency.PrefixWithName));
-			else
-                // TODO: Тут явно неправильно, так как теперь идентификаторы агентства и радиостанции не совпадают!
-                SetCellValue(currentY++, 1, string.Format("Исполнители: {0}", action.GetAgenciesString(mmIds)));
-
 			StringBuilder massmediaNames = new StringBuilder();
             StringBuilder groupNames = new StringBuilder();
-
 
             string[] radioStationsID = mmIds.Split(',');
 			foreach (string item in radioStationsID)
@@ -927,9 +949,19 @@ namespace Merlin.Classes
 
             }
 
-            SetCellValue(currentY++, 1, string.Format("Радиостанция: {0}", mmNames));
-            SetCellValue(currentY++, 1, string.Format("СМИ: {0}", massmediaNames.ToString()));
-            SetCellValue(currentY++, 1, string.Format("Территория распространения: {0}", groupNames.ToString()));
+            var lines = new System.Collections.Generic.List<object>
+            {
+                string.Format("Заказчик: {0}", customerNamesOverride ?? a.Firm.PrefixWithName),
+                agency != null
+                    ? string.Format("Исполнитель: {0}", agency.PrefixWithName)
+                    // TODO: Тут явно неправильно, так как теперь идентификаторы агентства и радиостанции не совпадают!
+                    : string.Format("Исполнители: {0}", action.GetAgenciesString(mmIds)),
+                string.Format("Радиостанция: {0}", mmNames),
+                string.Format("СМИ: {0}", massmediaNames.ToString()),
+                string.Format("Территория распространения: {0}", groupNames.ToString()),
+            };
+            WriteColumn(currentY, 1, lines);
+            currentY += lines.Count;
         }
 
 		private void PrintCaption(int actionID, int x, int y)
@@ -954,6 +986,29 @@ namespace Merlin.Classes
 		private void SetCellValue(int rowIndex, int colIndex, object value)
 		{
 			activeSheet.SetCellValue(rowIndex, colIndex, value);
+		}
+
+		// Каждый SetCellValue — это 2-3 маршалированных COM-вызова в EXCEL.EXE.
+		// На сводном медиаплане (десятки листов станций, ~50 подписей на лист) это
+		// секунды. Блок соседних ячеек одного столбца/ряда пишется одним
+		// SetValuesForRange. Пропуски в блоке (null) Excel очищает — вызывать
+		// только на диапазонах, которые целиком пишет этот же метод.
+		private void WriteColumn(int top, int col, System.Collections.Generic.IList<object> values)
+		{
+			if (values == null || values.Count == 0) return;
+			if (values.Count == 1) { SetCellValue(top, col, values[0]); return; }
+			var data = new object[values.Count, 1];
+			for (int i = 0; i < values.Count; i++) data[i, 0] = values[i];
+			activeSheet.SetValuesForRange(top, col, top + values.Count - 1, col, data);
+		}
+
+		private void WriteRow(int row, int left, System.Collections.Generic.IList<object> values)
+		{
+			if (values == null || values.Count == 0) return;
+			if (values.Count == 1) { SetCellValue(row, left, values[0]); return; }
+			var data = new object[1, values.Count];
+			for (int i = 0; i < values.Count; i++) data[0, i] = values[i];
+			activeSheet.SetValuesForRange(row, left, row, left + values.Count - 1, data);
 		}
 
 		private void SetPageOrientation()
