@@ -67,6 +67,9 @@ namespace Merlin.Forms.CreateActionMaster
 
 		private readonly Dictionary<int, Campaign> _campaignByMassmedia = new Dictionary<int, Campaign>();
 
+		/// <summary>Модульные кампании готовой акции подгружены в _campaignByMassmedia (один раз).</summary>
+		private bool _existingModuleCampaignsLoaded;
+
 		/// <summary>Выпуски акции, показанные в панели, - из них же берём удаляемые по Del.</summary>
 		private DataTable _issues;
 
@@ -352,9 +355,15 @@ namespace Merlin.Forms.CreateActionMaster
 		/// <summary>Создаёт акцию, если её ещё нет. Возвращает true, если создана сейчас.</summary>
 		private bool EnsureAction()
 		{
-			if (_action != null) return false;
+			// _action != null ещё не значит, что акция есть в БД: из карточки акции
+			// (конструктор с SelectComboModuleStep) может прийти несохранённая новая
+			// акция (IsNew) - её надо вставить здесь, иначе CampaignIUD получит
+			// actionID = -1 и упрётся в FK_Campaign_Action.
+			if (_action != null && !_action.IsNew) return false;
 
-			_action = new ActionOnMassmedia(_firm);
+			if (_action == null)
+				_action = new ActionOnMassmedia(_firm);
+
 			_action[Classes.Action.ParamNames.IsConfirmed] = false;
 			_action.Update();
 			return true;
@@ -364,6 +373,8 @@ namespace Merlin.Forms.CreateActionMaster
 		private Campaign EnsureCampaign(int massmediaID, out bool created)
 		{
 			created = false;
+
+			LoadExistingModuleCampaigns();
 
 			Campaign campaign;
 			if (_campaignByMassmedia.TryGetValue(massmediaID, out campaign))
@@ -394,6 +405,36 @@ namespace Merlin.Forms.CreateActionMaster
 			_campaignsCreatedThisSession.Add(massmediaID);
 			created = true;
 			return campaign;
+		}
+
+		/// <summary>
+		/// Подтягивает уже существующие модульные кампании акции в _campaignByMassmedia.
+		/// RememberCampaigns находит кампанию только по её выпускам, поэтому пустую
+		/// модульную кампанию (заведённую в карточке акции, но ещё без выпусков) не видит -
+		/// и EnsureCampaign пытается создать дубль, упираясь в уникальный индекс
+		/// (campaignTypeID + paymentTypeID + massmediaID). Не помечаем их как созданные
+		/// в этой сессии - удалять пустыми их нельзя.
+		/// </summary>
+		private void LoadExistingModuleCampaigns()
+		{
+			if (_existingModuleCampaignsLoaded) return;
+			_existingModuleCampaignsLoaded = true;
+
+			if (_action == null || _action.IsNew) return;
+
+			foreach (DataRow row in _action.Campaigns(true).Rows)
+			{
+				if (ParseHelper.GetInt32FromObject(row[Campaign.ParamNames.CampaignTypeId], 0)
+					!= (int) Campaign.CampaignTypes.Module)
+					continue;
+
+				int massmediaID = ParseHelper.GetInt32FromObject(row[Campaign.ParamNames.MassmediaId], 0);
+				if (massmediaID == 0 || _campaignByMassmedia.ContainsKey(massmediaID))
+					continue;
+
+				_campaignByMassmedia[massmediaID] =
+					new Campaign(ParseHelper.GetInt32FromObject(row[Campaign.ParamNames.CampaignId], 0));
+			}
 		}
 
 		// Модуль и прайс-лист собираем из данных ячейки: ModuleIssue берёт у них только

@@ -13,9 +13,13 @@ Select @priceByCampaigns = Sum([price]) From Campaign where actionID = @actionID
 
 -- ИСПРАВЛЕНО: COUNT(*) вместо COUNT(DISTINCT c.massmediaID)
 -- Это гарантирует, что каждая кампания (включая тип 3) учитывается отдельно
+-- ИСПРАВЛЕНО: пустые кампании (без единого размещения) в расчёте пакета не участвуют -
+-- иначе они тянут вниз avgDuration и завышают @campaignsCount, срывая пакетную скидку.
+-- Предикат тот же, что ActionRecalculate использует для oldTotalCount.
 SELECT @avgDuration=AVG(CAST(c.issuesDuration AS float)), @campaignsCount=COUNT(*)
 FROM Campaign c
 WHERE c.actionID=@actionID and c.campaignTypeID < 4
+	and (ISNULL(c.issuesCount, 0) + ISNULL(c.programsCount, 0)) > 0
 
 SELECT @avgDuration=COALESCE(@avgDuration,0), @campaignsCount=COALESCE(@campaignsCount,0)
 
@@ -32,9 +36,11 @@ SELECT @discountValue=COALESCE(MIN(pl.discount),1) FROM (
 																OR (c.campaignTypeID=3 AND m.isForType3=1)
 																)
 														AND CAST(c.issuesDuration as float) >= @avgDuration*p.eachVolume/100
-		WHERE 
+		WHERE
 			c.actionID=@actionID
-		GROUP BY 
+			-- пустые кампании исключаем и здесь, чтобы HAVING сравнивал только реальные
+			and (ISNULL(c.issuesCount, 0) + ISNULL(c.programsCount, 0)) > 0
+		GROUP BY
 			m.packageDiscountPriceListID
 		-- ИСПРАВЛЕНО: count(c.massmediaID) вместо count(DISTINCT m.massmediaID)
 		-- Считаем количество сопоставлённых кампаний, а не уникальных massmedia
