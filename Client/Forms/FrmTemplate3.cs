@@ -580,7 +580,8 @@ namespace Merlin.Forms
         }
 
         // Пары (rollerID, количество) для роликов, отмеченных в гриде с Quantity > 0.
-        // Пока не используется генератором выпусков — только UI-заготовка для нового бизнес-процесса.
+        // Используется в CampaignForm.tbbTemplate3_Click для построения rollerQuantities,
+        // передаваемых в генератор выпусков.
         public IList<(int RollerId, string Name, int Quantity)> SelectedRollers
         {
             get
