@@ -25,6 +25,15 @@ namespace FogSoft.WinForm.Classes
 					if (sqlEx.Number == 547 || sqlEx.Number == 2627 || sqlEx.Number == 2601)
 					{
 						string msg = ExtractConstraintName(sqlEx);
+
+						// Нарушение ограничения показывается пользователю и дальше не всплывает,
+						// но без записи в лог жалобу («падает на комбо-модуле пустой акции»)
+						// нечем воспроизвести. Фиксируем всегда — см. docs/LOGGING.md.
+						Log.Warn(string.Format("Нарушение ограничения (SQL {0}) в процедуре {1}: {2}",
+							sqlEx.Number, GetProcedureName(sqlEx), sqlEx.Message));
+						if (ex.Data != null)
+							Log.Warn(ex.Data);
+
 						try
 						{
 							ShowExclamation(msg);

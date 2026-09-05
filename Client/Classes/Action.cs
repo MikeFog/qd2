@@ -229,9 +229,10 @@ namespace Merlin.Classes
             get
             {
                 if (!parameters.ContainsKey(ParamNames.FinishDate)) Refresh();
-                if (this[ParamNames.FinishDate] == DBNull.Value)
+                object value = this[ParamNames.FinishDate];
+                if (value == null || value == DBNull.Value)
                     return DateTime.MinValue;
-                return DateTime.Parse(parameters[ParamNames.FinishDate].ToString());
+                return DateTime.Parse(value.ToString());
             }
         }
 
@@ -240,9 +241,10 @@ namespace Merlin.Classes
             get
             {
                 if (!parameters.ContainsKey(ParamNames.StartDate)) Refresh();
-                if (this[ParamNames.StartDate] == DBNull.Value)
+                object value = this[ParamNames.StartDate];
+                if (value == null || value == DBNull.Value)
                     return DateTime.MinValue;
-                return DateTime.Parse(parameters[ParamNames.StartDate].ToString());
+                return DateTime.Parse(value.ToString());
             }
         }
 
