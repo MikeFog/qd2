@@ -51,35 +51,53 @@ IF @actionName In ('AddItem', 'Clone') BEGIN
 	SET @PricelistID = SCOPE_IDENTITY()
 
 	If @actionName = 'Clone' Begin
-		INSERT INTO [Tariff]([pricelistID], [time], [monday], [tuesday], [wednesday], [thursday], [friday], [saturday], [sunday], [price], [duration], [comment], [isForModuleOnly], [maxCapacity], needExt, needInJingle, needOutJingle, suffix, duration_total)
-		SELECT @PricelistID, [time], [monday], [tuesday], [wednesday], [thursday], [friday], [saturday], [sunday], [price], [duration], [comment], [isForModuleOnly], [maxCapacity], needExt, needInJingle, needOutJingle, suffix, duration_total
-		FROM [Tariff] Where PricelistID = @oldPricelistId
+		-- Соответствие исходный тариф -> тариф-клон (нужно для клонирования
+		-- TariffUnion: время выхода у клона может отличаться от исходного тарифа,
+		-- поэтому сопоставлять по (time + дни недели), как раньше, уже нельзя).
+		DECLARE @tariffMap TABLE (oldTariffID int PRIMARY KEY, newTariffID int NOT NULL)
+
+		-- Клонируем тарифы. Для каждого исходного тарифа ищем самое позднее
+		-- (по windowDateOriginal) рекламное окно, в котором есть отход от данных
+		-- тарифа — по цене, длительности или времени выхода (windowDateActual).
+		-- Если такое окно есть, тариф-клон берёт цену/длительность/время выхода
+		-- из этого окна.
+		MERGE INTO [Tariff] AS tgt
+		USING (
+			SELECT
+				t.tariffID AS oldTariffID,
+				COALESCE(CONVERT(smalldatetime, CONVERT(varchar(8), lw.windowDateActual, 108)), t.[time]) AS [time],
+				t.[monday], t.[tuesday], t.[wednesday], t.[thursday], t.[friday], t.[saturday], t.[sunday],
+				COALESCE(lw.price, t.[price]) AS [price],
+				COALESCE(lw.duration, t.[duration]) AS [duration],
+				t.[comment], t.[isForModuleOnly], t.[maxCapacity],
+				t.needExt, t.needInJingle, t.needOutJingle, t.suffix,
+				COALESCE(lw.duration_total, t.duration_total) AS duration_total
+			FROM [Tariff] t
+				OUTER APPLY (
+					SELECT TOP 1 tw.windowDateActual, tw.price, tw.duration, tw.duration_total
+					FROM [TariffWindow] tw
+					WHERE tw.tariffId = t.tariffID
+						AND (
+							tw.price <> t.[price]
+							OR tw.duration <> t.[duration]
+							OR tw.duration_total <> t.duration_total
+							OR tw.windowDateActual <> tw.windowDateOriginal
+						)
+					ORDER BY tw.windowDateOriginal DESC
+				) lw
+			WHERE t.pricelistID = @oldPricelistId
+		) AS src
+		ON 1 = 0
+		WHEN NOT MATCHED THEN
+			INSERT ([pricelistID], [time], [monday], [tuesday], [wednesday], [thursday], [friday], [saturday], [sunday], [price], [duration], [comment], [isForModuleOnly], [maxCapacity], needExt, needInJingle, needOutJingle, suffix, duration_total)
+			VALUES (@PricelistID, src.[time], src.[monday], src.[tuesday], src.[wednesday], src.[thursday], src.[friday], src.[saturday], src.[sunday], src.[price], src.[duration], src.[comment], src.[isForModuleOnly], src.[maxCapacity], src.needExt, src.needInJingle, src.needOutJingle, src.suffix, src.duration_total)
+		OUTPUT src.oldTariffID, inserted.tariffID INTO @tariffMap (oldTariffID, newTariffID);
 
 		INSERT INTO TariffUnion (tariffID, tariffUnionID)
-		SELECT tn1.tariffID, tn2.tariffID
+		SELECT m1.newTariffID, m2.newTariffID
 		FROM TariffUnion tu
-			JOIN Tariff to1 ON to1.tariffID=tu.tariffID
-			JOIN Tariff tn1 ON tn1.pricelistID=@PricelistID
-								AND tn1.time=to1.time 
-								AND tn1.monday=to1.monday
-								AND tn1.tuesday=to1.tuesday
-								AND tn1.wednesday=to1.wednesday
-								AND tn1.thursday=to1.thursday
-								AND tn1.friday=to1.friday
-								AND tn1.saturday=to1.saturday
-								AND tn1.sunday=to1.sunday
-			JOIN Tariff to2 ON to2.tariffID=tu.tariffUnionID
-			JOIN Tariff tn2 ON tn2.pricelistID=@PricelistID
-								AND tn2.time=to2.time 
-								AND tn2.monday=to2.monday
-								AND tn2.tuesday=to2.tuesday
-								AND tn2.wednesday=to2.wednesday
-								AND tn2.thursday=to2.thursday
-								AND tn2.friday=to2.friday
-								AND tn2.saturday=to2.saturday
-								AND tn2.sunday=to2.sunday
-		WHERE to1.pricelistID=@oldPricelistId 
-				AND to2.pricelistID=@oldPricelistId
+			JOIN @tariffMap m1 ON m1.oldTariffID = tu.tariffID
+			JOIN @tariffMap m2 ON m2.oldTariffID = tu.tariffUnionID
 	End
 	
 	Exec Pricelists @pricelistID = @pricelistID
