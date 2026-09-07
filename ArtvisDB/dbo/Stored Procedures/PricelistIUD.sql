@@ -56,11 +56,13 @@ IF @actionName In ('AddItem', 'Clone') BEGIN
 		-- поэтому сопоставлять по (time + дни недели), как раньше, уже нельзя).
 		DECLARE @tariffMap TABLE (oldTariffID int PRIMARY KEY, newTariffID int NOT NULL)
 
-		-- Клонируем тарифы. Для каждого исходного тарифа ищем самое позднее
-		-- (по windowDateOriginal) рекламное окно, в котором есть отход от данных
-		-- тарифа — по цене, длительности или времени выхода (windowDateActual).
-		-- Если такое окно есть, тариф-клон берёт цену/длительность/время выхода
-		-- из этого окна.
+		-- Клонируем тарифы. Тариф-клон берёт цену, длительность и время выхода
+		-- из ПОСЛЕДНЕГО (по windowDateOriginal) сгенерированного рекламного окна
+		-- исходного тарифа — то есть из фактического состояния тарифа на момент
+		-- окончания прайс-листа, каким бы оно ни было (правки по дороге, откаты
+		-- и т.п. игнорируются). isDisabled не учитывается — отключённое окно
+		-- всё равно выходит в эфир и несёт актуальные цену/время/длительность.
+		-- Если окон у тарифа нет вовсе — значения берутся из самого тарифа.
 		MERGE INTO [Tariff] AS tgt
 		USING (
 			SELECT
@@ -77,12 +79,6 @@ IF @actionName In ('AddItem', 'Clone') BEGIN
 					SELECT TOP 1 tw.windowDateActual, tw.price, tw.duration, tw.duration_total
 					FROM [TariffWindow] tw
 					WHERE tw.tariffId = t.tariffID
-						AND (
-							tw.price <> t.[price]
-							OR tw.duration <> t.[duration]
-							OR tw.duration_total <> t.duration_total
-							OR tw.windowDateActual <> tw.windowDateOriginal
-						)
 					ORDER BY tw.windowDateOriginal DESC
 				) lw
 			WHERE t.pricelistID = @oldPricelistId
