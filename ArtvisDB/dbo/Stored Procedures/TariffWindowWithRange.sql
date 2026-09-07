@@ -1,5 +1,4 @@
-﻿-- Created by GitHub Copilot in SSMS - review carefully before executing
-CREATE PROCEDURE [dbo].[TariffWindowWithRange]
+﻿CREATE PROCEDURE [dbo].[TariffWindowWithRange]
 (
     @actionID  int,
     @dateStart datetime
@@ -103,7 +102,9 @@ BEGIN
         tw.firstPositionsUnconfirmed,
         tw.secondPositionsUnconfirmed,
         tw.lastPositionsUnconfirmed,
-        t.price,
+        -- Цена берётся из самого рекламного окна, а не из тарифа: при генерации
+        -- окон цену конкретного окна могли изменить, и прайм-тайм считается по ней.
+        tw.price,
         isPrime = CONVERT(bit, 0)
     INTO #tw
     FROM dbo.TariffWindow tw
