@@ -32,8 +32,8 @@ If @isCommon = 1 Or Exists (Select 1 From Roller Where rollerID = @rollerID And 
 		Select @newRollerId = rollerID From Roller Where parentID = @rollerID And advertTypeID = @advertTypeID --And firmID = @firmID
 		If @newRollerId Is Null
 			Begin
-			INSERT INTO [Roller]([name],[duration],[rolStyleID],[path],[isEnabled],[rolActionTypeID],[isCommon],[isMute],[advertTypeID],[parentID])
-			Select [name],[duration],[rolStyleID],[path],[isEnabled],[rolActionTypeID],0,0,@advertTypeID,@rollerID From Roller Where rollerID = @rollerID
+			INSERT INTO [Roller]([name],[duration],[path],[isEnabled],[rolActionTypeID],[isCommon],[isMute],[advertTypeID],[parentID])
+			Select [name],[duration],[path],[isEnabled],[rolActionTypeID],0,0,@advertTypeID,@rollerID From Roller Where rollerID = @rollerID
 	
 			Set @newRollerId = @@IDENTITY
 			End
@@ -50,8 +50,8 @@ If @isCommon = 1 Or Exists (Select 1 From Roller Where rollerID = @rollerID And 
 
 		If @newRollerId Is Null
 			Begin
-			INSERT INTO [Roller]([name],[duration],[rolStyleID],[path],[isEnabled],[rolActionTypeID],[isCommon],[isMute],[advertTypeID],[parentID])
-			Select [name],[duration],[rolStyleID],[path],[isEnabled],[rolActionTypeID],0,0,@advertTypeID,parentID From Roller Where rollerID = @rollerID
+			INSERT INTO [Roller]([name],[duration],[path],[isEnabled],[rolActionTypeID],[isCommon],[isMute],[advertTypeID],[parentID])
+			Select [name],[duration],[path],[isEnabled],[rolActionTypeID],0,0,@advertTypeID,parentID From Roller Where rollerID = @rollerID
 	
 			Set @newRollerId = @@IDENTITY
 			End
