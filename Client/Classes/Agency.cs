@@ -28,16 +28,6 @@ namespace Merlin.Classes
         }
     }
 
-	public class StudioAgency : PresentationObject
-	{
-		public StudioAgency(int agencyId, int studioId)
-			: base(EntityManager.GetEntity((int)Entities.StudioAgency))
-		{
-			parameters[ProductionStudio.ParamNames.StudioId] = studioId.ToString();
-			parameters[Agency.ParamNames.AgencyId] = agencyId.ToString();
-		}
-	}
-
 	// ShowPassport переехал в Agency.WinForms.cs. Остальные диалоги в этом классе
 	// (строка ~172, поиск/выбор агентства) пока на месте — своя партия позже.
 	// Конвенция — docs/tasks/web-migration-dialogs.md.
@@ -94,12 +84,6 @@ namespace Merlin.Classes
 						new MassmediaAgency(AgencyId, massmedia.MassmediaId).Update();
 						continue;
 					}
-					ProductionStudio studio = po as ProductionStudio;
-					if(studio != null)
-					{
-						new StudioAgency(AgencyId, studio.StudioID).Update();
-						continue;
-					}
 				}
 
 				foreach(PresentationObject po in childrenChanges.DeletedObjects)
@@ -108,12 +92,6 @@ namespace Merlin.Classes
 					if(massmedia != null)
 					{
 						new MassmediaAgency(AgencyId, massmedia.MassmediaId).Delete(true);
-						continue;
-					}
-					ProductionStudio studio = po as ProductionStudio;
-					if(studio != null)
-					{
-						new StudioAgency(AgencyId, studio.StudioID).Delete(true);
 						continue;
 					}
 				}

@@ -5,12 +5,10 @@
 @duration int = NULL,
 @firmID smallint = NULL,
 @rolTypeID smallint = NULL,
-@rolStyleID smallint = NULL,
 @path nvarchar(1024) = NULL,
 @isEnabled tinyint = NULL,
 @actionName varchar(32),
 @createDate datetime = NULL,
-@studioOrderID INT = NULL,
 @isCommon BIT = NULL,
 @rolActionTypeID TINYINT = NULL,
 @loggedUserID INT = NULL,
@@ -30,10 +28,7 @@ BEGIN
 		RETURN
 	END	
 
-	IF @studioOrderID IS NULL
-		SELECT @studioOrderID = so.[studioOrderID] FROM [StudioOrder] so INNER JOIN [Roller] r ON so.[rollerID] = r.[rollerID] WHERE r.[rollerID] = @rollerID
-		
-	if exists(select * from Roller where [name] = @name and rolActionTypeID = @rolActionTypeID 
+	if exists(select * from Roller where [name] = @name and rolActionTypeID = @rolActionTypeID
 		and (@rollerID is null or rollerID <> @rollerID) and isMute = 0)
 	BEGIN
 		RAISERROR('RollerName_Unique', 16, 1)
@@ -48,19 +43,18 @@ IF @actionName = 'AddItem' BEGIN
 		RETURN
 	END
 
-	INSERT INTO [Roller]([name], duration, firmID, rolTypeID, rolStyleID, path, isEnabled, isCommon, rolActionTypeID, compositionName, compositionAuthor, advertTypeID)
-	VALUES(@name, @duration, @firmID, @rolTypeID, @rolStyleID, @path, @isEnabled, @isCommon, @rolActionTypeID, @compositionName, @compositionAuthor, @advertTypeID)
+	INSERT INTO [Roller]([name], duration, firmID, rolTypeID, path, isEnabled, isCommon, rolActionTypeID, compositionName, compositionAuthor, advertTypeID)
+	VALUES(@name, @duration, @firmID, @rolTypeID, @path, @isEnabled, @isCommon, @rolActionTypeID, @compositionName, @compositionAuthor, @advertTypeID)
 
 	if @@rowcount <> 1
 	begin
 		raiserror('InternalError', 16, 1)
-		return 
-	end 
+		return
+	end
 
 	SET @rollerID = SCOPE_IDENTITY()
-	
-	IF @studioOrderID IS NULL
-		EXEC Rollers @rollerID = @rollerID
+
+	EXEC Rollers @rollerID = @rollerID
 END
 ELSE IF @actionName = 'DeleteItem'
 	Begin
@@ -129,7 +123,6 @@ BEGIN
 		duration = @duration, 
 		firmID = @firmID, 
 		rolTypeID = @rolTypeID, 
-		rolStyleID = @rolStyleID, 
 		path = @path, 
 		isEnabled = @isEnabled,
 		isCommon = @isCommon,

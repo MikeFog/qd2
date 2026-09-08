@@ -15,7 +15,6 @@ FROM
 	[Agency] ag
 	INNER JOIN #Agency ta ON ta.agencyID = ag.agencyID
 	LEFT JOIN bank bn ON bn.bankID = ag.bankID
-	--LEFT JOIN StudioAgency sa on sa.agencyID = ag.[agencyID]
 ORDER BY
 	ag.[name]
 

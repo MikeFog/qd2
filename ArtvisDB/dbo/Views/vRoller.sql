@@ -1,6 +1,6 @@
 ﻿CREATE VIEW [dbo].[vRoller]
 AS
-SELECT   dbo.Roller.rollerID, dbo.Roller.name, dbo.Roller.duration, dbo.Roller.firmID, dbo.Roller.rolTypeID, dbo.Roller.rolStyleID, dbo.Roller.path, dbo.Roller.createDate, dbo.Roller.isEnabled, dbo.Roller.rolActionTypeID, dbo.Roller.isCommon, dbo.Roller.isMute, dbo.Roller.compositionName, dbo.Roller.compositionAuthor, dbo.Roller.advertTypeID, 
+SELECT   dbo.Roller.rollerID, dbo.Roller.name, dbo.Roller.duration, dbo.Roller.firmID, dbo.Roller.rolTypeID, dbo.Roller.path, dbo.Roller.createDate, dbo.Roller.isEnabled, dbo.Roller.rolActionTypeID, dbo.Roller.isCommon, dbo.Roller.isMute, dbo.Roller.compositionName, dbo.Roller.compositionAuthor, dbo.Roller.advertTypeID,
              dbo.Roller.parentID, dbo.AdvertType.name AS advertTypeName
 FROM     dbo.Roller LEFT OUTER JOIN
              dbo.AdvertType ON dbo.Roller.advertTypeID = dbo.AdvertType.advertTypeID

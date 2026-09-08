@@ -11,12 +11,11 @@ SELECT rt.rolTypeID as id, rt.name, rt.isLoadable
 FROM iRolType rt
 ORDER BY rt.name
 
--- 2. roller style
-SELECT rs.[rolStyleID] as id, rs.[name]
-FROM [RolStyle] rs
-	LEFT JOIN Roller r on r.RolStyleID = rs.RolStyleID and r.RollerId = @RollerId
-WHERE	dbo.f_IsActiveChildFilter(r.RolStyleID, rs.isActive, 1) = 1
-ORDER BY rs.name
+-- 2. roller style — справочник «стиль ролика» удалён вместе с модулем
+--    «Производство роликов»; паспорт ролика поле стиля не показывает.
+--    Пустой набор нужной формы, чтобы не сдвигать позиции iTableAlias.
+SELECT CAST(NULL AS smallint) as id, CAST(NULL AS nvarchar(64)) as name
+WHERE 1 = 0
 
 -- 3. firms
 CREATE TABLE #Firm(firmID int)

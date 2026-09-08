@@ -16,7 +16,6 @@
 		BalanceJournal = 4,
 		EditCampaign = 100,
 		SelectForCommon = 200,
-		SelectForStudioOrder = 210,
 		SelectMMForPMCampaign = 220
 	}
 

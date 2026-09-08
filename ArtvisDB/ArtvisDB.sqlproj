@@ -74,8 +74,6 @@
     <Build Include="dbo\Tables\iEntityRelation.sql" />
     <Build Include="dbo\Tables\GroupRight.sql" />
     <Build Include="dbo\Tables\Group.sql" />
-    <Build Include="dbo\Tables\StudioOrderAction.sql" />
-    <Build Include="dbo\Tables\StudioPricelist.sql" />
     <Build Include="dbo\Tables\Brand.sql" />
     <Build Include="dbo\Tables\Pricelist.sql" />
     <Build Include="dbo\Tables\iConfirmationType.sql" />
@@ -83,13 +81,10 @@
     <Build Include="dbo\Tables\ConfirmationHistory.sql" />
     <Build Include="dbo\Tables\Roller.sql" />
     <Build Include="dbo\Tables\MassMedia.sql" />
-    <Build Include="dbo\Tables\PaymentStudioOrder.sql" />
     <Build Include="dbo\Tables\UserAdditionRight.sql" />
     <Build Include="dbo\Tables\Action.sql" />
     <Build Include="dbo\Tables\iRollerActionType.sql" />
     <Build Include="dbo\Tables\iMessage.sql" />
-    <Build Include="dbo\Tables\StudioTariff.sql" />
-    <Build Include="dbo\Tables\iStudioTariffType.sql" />
     <Build Include="dbo\Tables\MassmediaGroup.sql" />
     <Build Include="dbo\Tables\Firm.sql" />
     <Build Include="dbo\Tables\UserMassmedia.sql" />
@@ -98,7 +93,6 @@
     <Build Include="dbo\Tables\DisabledWindow.sql" />
     <Build Include="dbo\Tables\iModules.sql" />
     <Build Include="dbo\Tables\BlockType.sql" />
-    <Build Include="dbo\Tables\RolStyle.sql" />
     <Build Include="dbo\Tables\SponsorProgram.sql" />
     <Build Include="dbo\Tables\iMessageToActivate.sql" />
     <Build Include="dbo\Tables\FirmBrand.sql" />
@@ -114,15 +108,12 @@
     <Build Include="dbo\Tables\TariffUnion.sql" />
     <Build Include="dbo\Tables\iActionName.sql" />
     <Build Include="dbo\Tables\ActionMuteRollerAlert.sql" />
-    <Build Include="dbo\Tables\PaymentStudioOrderAction.sql" />
     <Build Include="dbo\Tables\Campaign.sql" />
     <Build Include="dbo\Tables\iMessageToSubtitute.sql" />
     <Build Include="dbo\Tables\Issue.sql" />
-    <Build Include="dbo\Tables\StudioOrder.sql" />
     <Build Include="dbo\Tables\iStoredProcedure.sql" />
     <Build Include="dbo\Tables\AgencyTax.sql" />
     <Build Include="dbo\Tables\PackModule.sql" />
-    <Build Include="dbo\Tables\StudioAgency.sql" />
     <Build Include="dbo\Tables\Agency.sql" />
     <Build Include="dbo\Tables\PackModulePriceList.sql" />
     <Build Include="dbo\Tables\iPassport.sql" />
@@ -132,7 +123,6 @@
     <Build Include="dbo\Tables\iMessageParameter.sql" />
     <Build Include="dbo\Tables\iIssuePosition.sql" />
     <Build Include="dbo\Tables\SponsorTariff.sql" />
-    <Build Include="dbo\Tables\iStudioOrderActionStatus.sql" />
     <Build Include="dbo\Tables\iEntityAction.sql" />
     <Build Include="dbo\Tables\RollerBrand.sql" />
     <Build Include="dbo\Tables\Bill.sql" />
@@ -148,7 +138,6 @@
     <Build Include="dbo\Tables\TariffWindow.sql" />
     <Build Include="dbo\Tables\iRelationScenario.sql" />
     <Build Include="dbo\Tables\iModuleProcedure.sql" />
-    <Build Include="dbo\Tables\StudioOrderBill.sql" />
     <Build Include="dbo\Tables\GroupMenu.sql" />
     <Build Include="dbo\Tables\AgencyMassmedia.sql" />
     <Build Include="dbo\Tables\PackageDiscountMassmedia.sql" />
@@ -164,11 +153,9 @@
     <Build Include="dbo\Tables\PackModuleContent.sql" />
     <Build Include="dbo\Tables\ComboModule.sql" />
     <Build Include="dbo\Tables\ComboModuleContent.sql" />
-    <Build Include="dbo\Tables\Studio.sql" />
     <Build Include="dbo\Tables\DiscountValue.sql" />
     <Build Include="dbo\Tables\ReportType.sql" />
     <Build Include="dbo\Tables\ReportPartText.sql" />
-    <Build Include="dbo\Views\vStudio.sql" />
     <Build Include="dbo\Views\vUser.sql" />
     <Build Include="dbo\Views\vMassmedia.sql" />
     <Build Include="dbo\Views\vRoller.sql" />
@@ -238,8 +225,6 @@
       <QuotedIdentifier>Off</QuotedIdentifier>
     </Build>
     <Build Include="dbo\Functions\fn_BrandListByRollerId.sql" />
-    <Build Include="dbo\Functions\f_GetStudioTariffId.sql" />
-    <Build Include="dbo\Functions\f_OrderPrice.sql" />
     <Build Include="dbo\Functions\fn_ProductListByRollerId.sql" />
     <Build Include="dbo\Functions\fn_IsAcceptRatioForUser.sql" />
     <Build Include="dbo\Functions\f_SysParamsDaysLog.sql" />
@@ -299,7 +284,6 @@
     <Build Include="dbo\Stored Procedures\ModuleIUD.sql" />
     <Build Include="dbo\Stored Procedures\PackageDiscountPriceListIUD.sql" />
     <Build Include="dbo\Stored Procedures\ModuleTariffSelection.sql" />
-    <Build Include="dbo\Stored Procedures\RollerStyles.sql" />
     <Build Include="dbo\Stored Procedures\PackModulesInCampaignRetrieve.sql" />
     <Build Include="dbo\Stored Procedures\Grid.sql" />
     <Build Include="dbo\Stored Procedures\ModuleTariffID.sql" />
@@ -308,7 +292,6 @@
     <Build Include="dbo\Stored Procedures\UserListByRights.sql" />
     <Build Include="dbo\Stored Procedures\AgencyTaxRetrieve.sql" />
     <Build Include="dbo\Stored Procedures\GroupListByRights.sql" />
-    <Build Include="dbo\Stored Procedures\RolStyleIUD.sql" />
     <Build Include="dbo\Stored Procedures\ShowDisabledWindows.sql" />
     <Build Include="dbo\Stored Procedures\GroupRightID.sql" />
     <Build Include="dbo\Stored Procedures\TaxRetrieve.sql" />
@@ -317,7 +300,6 @@
     <Build Include="dbo\Stored Procedures\AgencyTaxIUD.sql" />
     <Build Include="dbo\Stored Procedures\PaymentByManagerFilter.sql" />
     <Build Include="dbo\Stored Procedures\FirmBalanceIssuesOnLoad.sql" />
-    <Build Include="dbo\Stored Procedures\SpecialSOActionPassport.sql" />
     <Build Include="dbo\Stored Procedures\ActionsForBalance.sql" />
     <Build Include="dbo\Stored Procedures\statManagerFilter.sql" />
     <Build Include="dbo\Stored Procedures\sl_TariffRetrieve.sql" />
@@ -326,7 +308,6 @@
     <Build Include="dbo\Stored Procedures\sp_ChangeTariffWindowDisabledStatus.sql" />
     <Build Include="dbo\Stored Procedures\GetMassmediasForPackModuleCampaign.sql" />
     <Build Include="dbo\Stored Procedures\ActionsFilter.sql" />
-    <Build Include="dbo\Stored Procedures\rpt_OrderActionBill.sql" />
     <Build Include="dbo\Stored Procedures\CampaignTypes.sql" />
     <Build Include="dbo\Stored Procedures\CampaignModulesRetrieve.sql" />
     <Build Include="dbo\Stored Procedures\AgencyMassmediaID.sql" />
@@ -366,7 +347,6 @@
       <QuotedIdentifier>Off</QuotedIdentifier>
     </Build>
     <Build Include="dbo\Stored Procedures\hlp_CompanyDiscountCalculate.sql" />
-    <Build Include="dbo\Stored Procedures\PaymentStudioOrders.sql" />
     <Build Include="dbo\Stored Procedures\SayTrafficThatWindowLinkDeleted.sql" />
     <Build Include="dbo\Stored Procedures\TariffWindowRetrieve.sql" />
     <Build Include="dbo\Stored Procedures\stat_ModuleLoading.sql" />
@@ -392,10 +372,7 @@
     <Build Include="dbo\Stored Procedures\TariffWindowWithAdvertTypeRetrieve.sql" />
     <Build Include="dbo\Stored Procedures\Rollers.sql" />
     <Build Include="dbo\Stored Procedures\UserMassmediaID.sql" />
-    <Build Include="dbo\Stored Procedures\PaymentStudioOrderFilter.sql" />
-    <Build Include="dbo\Stored Procedures\stat_RollerStatisticCreated.sql" />
     <Build Include="dbo\Stored Procedures\UserPassport.sql" />
-    <Build Include="dbo\Stored Procedures\PaymentStudioOrderPassport.sql" />
     <Build Include="dbo\Stored Procedures\statRollersCreatedFilter.sql" />
     <Build Include="dbo\Stored Procedures\ProgramIssueIUD.sql" />
     <Build Include="dbo\Stored Procedures\Users.sql" />
@@ -439,7 +416,6 @@
     <Build Include="dbo\Stored Procedures\SpecialActionIUD.sql" />
     <Build Include="dbo\Stored Procedures\FirmManagers.sql" />
     <Build Include="dbo\Stored Procedures\RollersForModule.sql" />
-    <Build Include="dbo\Stored Procedures\FirmStudioOrderManagers.sql" />
     <Build Include="dbo\Stored Procedures\GetMuteRoller.sql" />
     <Build Include="dbo\Stored Procedures\ConfirmationHistoryFilter.sql" />
     <Build Include="dbo\Stored Procedures\TariffPassport.sql" />
@@ -452,7 +428,6 @@
     <Build Include="dbo\Stored Procedures\CreateNotActivatedActionsAnnouncement.sql" />
     <Build Include="dbo\Stored Procedures\rpt_ActionPrograms.sql" />
     <Build Include="dbo\Stored Procedures\RollerPassport.sql" />
-    <Build Include="dbo\Stored Procedures\PaymentStudioOrderActions.sql" />
     <Build Include="dbo\Stored Procedures\stat_GetPrice_proc.sql" />
     <Build Include="dbo\Stored Procedures\GetMassmedias.sql" />
     <Build Include="dbo\Stored Procedures\TariffWindowWithRange.sql" />
@@ -461,7 +436,6 @@
     <Build Include="dbo\Stored Procedures\stat_VolumeOfRealizationByMonth3.sql" />
     <Build Include="dbo\Stored Procedures\SpecialActionPassport.sql" />
     <Build Include="dbo\Stored Procedures\CreateActionWithRange.sql" />
-    <Build Include="dbo\Stored Procedures\PaymentStudioOrderIUD.sql" />
     <Build Include="dbo\Stored Procedures\stat_GetPriceByMonth_proc.sql" />
     <Build Include="dbo\Stored Procedures\PaymentTypesLoad.sql" />
     <Build Include="dbo\Stored Procedures\AddRangeIssues.sql" />
@@ -478,7 +452,6 @@
     <Build Include="dbo\Stored Procedures\hlp_IssueVerify.sql" />
     <Build Include="dbo\Stored Procedures\GenericBillIUD.sql" />
     <Build Include="dbo\Stored Procedures\GenerateTariffWindowByTemplate.sql" />
-    <Build Include="dbo\Stored Procedures\sl_StudioOrderActions.sql" />
     <Build Include="dbo\Stored Procedures\GenericBills.sql" />
     <Build Include="dbo\Stored Procedures\GetUserData.sql" />
     <Build Include="dbo\Stored Procedures\PaymentCommonActionID.sql" />
@@ -511,7 +484,6 @@
     <Build Include="dbo\Stored Procedures\CampaignRollers.sql" />
     <Build Include="dbo\Stored Procedures\AgencyIUD.sql" />
     <Build Include="dbo\Stored Procedures\LogDeletedIssueInsert.sql" />
-    <Build Include="dbo\Stored Procedures\stat_BalanceStudioOrder.sql" />
     <Build Include="dbo\Stored Procedures\MediaPlanRetrieve.sql" />
     <Build Include="dbo\Stored Procedures\stat_VolumeOfRealization.sql" />
     <Build Include="dbo\Stored Procedures\ModuleCampaignRollers.sql" />
@@ -520,8 +492,6 @@
     <Build Include="dbo\Stored Procedures\AdvertTypes.sql" />
     <Build Include="dbo\Stored Procedures\bankListUpdate.sql" />
     <Build Include="dbo\Stored Procedures\statFactorAnalysisFilter.sql" />
-    <Build Include="dbo\Stored Procedures\BalanceStudioOrderFilter.sql" />
-    <Build Include="dbo\Stored Procedures\stat_VolumeOfRealizationForRollers.sql" />
     <Build Include="dbo\Stored Procedures\pc_GetStationsPriceModel.sql" />
     <Build Include="dbo\Stored Procedures\AdvertTypeIUD.sql" />
     <Build Include="dbo\Stored Procedures\PackModulePricelistByDate.sql">
@@ -541,7 +511,6 @@
     <Build Include="dbo\Stored Procedures\sl_Firms.sql" />
     <Build Include="dbo\Stored Procedures\statVolumeOfRealizationFilter.sql" />
     <Build Include="dbo\Stored Procedures\GetUserDiscount.sql" />
-    <Build Include="dbo\Stored Procedures\FirmBalanceStudioOrderOnLoad.sql" />
     <Build Include="dbo\Stored Procedures\massmediaList_web.sql" />
     <Build Include="dbo\Stored Procedures\Tariffs.sql" />
     <Build Include="dbo\Stored Procedures\ReportPartTexts.sql" />
@@ -555,7 +524,6 @@
     <Build Include="dbo\Stored Procedures\sl_LookupRolType.sql" />
     <Build Include="dbo\Stored Procedures\ActionIUD.sql" />
     <Build Include="dbo\Stored Procedures\agencies.sql" />
-    <Build Include="dbo\Stored Procedures\statVolumeOfRealizationForRollersFilter.sql" />
     <Build Include="dbo\Stored Procedures\TariffWindowIUD.sql" />
     <Build Include="dbo\Stored Procedures\sl_Agencies.sql" />
     <Build Include="dbo\Stored Procedures\agencyPassport.sql" />
@@ -564,13 +532,10 @@
     <Build Include="dbo\Stored Procedures\IssueChangePositioningPassport.sql" />
     <Build Include="dbo\Stored Procedures\LookupUsedAgency.sql" />
     <Build Include="dbo\Stored Procedures\SysParamsUpdate.sql" />
-    <Build Include="dbo\Stored Procedures\PaymentStudioOrderActionID.sql" />
     <Build Include="dbo\Stored Procedures\ActionsForRollerStatistic.sql" />
     <Build Include="dbo\Stored Procedures\PackModuleTariffWindowsRetrieve.sql" />
-    <Build Include="dbo\Stored Procedures\PaymentStudioOrderActionUsers.sql" />
     <Build Include="dbo\Stored Procedures\PackModulePriceListAllowedRolType.sql" />
     <Build Include="dbo\Stored Procedures\stat_RollerStatistic.sql" />
-    <Build Include="dbo\Stored Procedures\PaymentStudioOrderActionFilter.sql" />
     <Build Include="dbo\Stored Procedures\stat_BalanceAgency.sql">
       <AnsiNulls>Off</AnsiNulls>
       <QuotedIdentifier>Off</QuotedIdentifier>
@@ -578,7 +543,6 @@
     <Build Include="dbo\Stored Procedures\UserAdditionalMenuIUD.sql" />
     <Build Include="dbo\Stored Procedures\bankIUD.sql" />
     <Build Include="dbo\Stored Procedures\PackModuleIssueRetrieve.sql" />
-    <Build Include="dbo\Stored Procedures\sl_PaymentStudioOrders.sql" />
     <Build Include="dbo\Stored Procedures\UserAdditionalMenus.sql" />
     <Build Include="dbo\Stored Procedures\CampaignPackDayDelete.sql" />
     <Build Include="dbo\Stored Procedures\PackModuleIssueID.sql" />
@@ -605,11 +569,9 @@
     <Build Include="dbo\Stored Procedures\SponsorCampaignProgramDelete.sql" />
     <Build Include="dbo\Stored Procedures\AdvertTypePassport.sql" />
     <Build Include="dbo\Stored Procedures\sp_GetAgencyPaintings.sql" />
-    <Build Include="dbo\Stored Procedures\SpecialStudioOrderActions.sql" />
     <Build Include="dbo\Stored Procedures\IsModuleExist.sql" />
     <Build Include="dbo\Stored Procedures\TransferLogRetrieve.sql" />
     <Build Include="dbo\Stored Procedures\stat_VolumeOfRealizationByMonth2.sql" />
-    <Build Include="dbo\Stored Procedures\SpecialStudioOrderActionIUD.sql" />
     <Build Include="dbo\Stored Procedures\DiscountValues.sql" />
     <Build Include="dbo\Stored Procedures\sp_ChangeTariffWindowMarkedStatus.sql" />
     <Build Include="dbo\Stored Procedures\CampaignsIssueDelete.sql" />
@@ -620,7 +582,6 @@
     <Build Include="dbo\Stored Procedures\DiscountValueIUD.sql" />
     <Build Include="dbo\Stored Procedures\LicenseGet.sql" />
     <Build Include="dbo\Stored Procedures\job_DeleteHistory.sql" />
-    <Build Include="dbo\Stored Procedures\stat_BalanceManagerOrder.sql" />
     <Build Include="dbo\Stored Procedures\stat_BalanceManager.sql" />
     <Build Include="dbo\Stored Procedures\CampaignImportGrammofon.sql" />
     <Build Include="dbo\Stored Procedures\massmediaList.sql" />
@@ -638,7 +599,6 @@
     <Build Include="dbo\Stored Procedures\SayAdminThatIssuesDelete.sql" />
     <Build Include="dbo\Stored Procedures\RollerIUD.sql" />
     <Build Include="dbo\Stored Procedures\DeleteActionsInPast.sql" />
-    <Build Include="dbo\Stored Procedures\rpt_StudioOrderAct.sql" />
     <Build Include="dbo\Stored Procedures\FirmIUD.sql" />
     <Build Include="dbo\Stored Procedures\sl_LookupSponsorProgram.sql" />
     <Build Include="dbo\Stored Procedures\IssueTransfer.sql" />

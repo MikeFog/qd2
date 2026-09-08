@@ -24,8 +24,6 @@ public static class MenuRoutes
 		{
 			{ "miBalance", (int)Entities.BalanceIssues },
 			{ "miBalanceFromRSection", (int)Entities.BalanceIssues },
-			{ "miBalanceStudioOrder", (int)Entities.BalanceStudioOrder },
-			{ "miBalanceStudioOrderFromRSection", (int)Entities.BalanceStudioOrder },
 			{ "miBank", (int)Entities.Bank },
 			{ "miBonusesStat", (int)Entities.StatBonuses },
 			{ "miConfirmationHistory", (int)Entities.ConfirmationHistory },
@@ -35,14 +33,9 @@ public static class MenuRoutes
 			{ "miManagerDiscountHistory", (int)Entities.ManagerDiscountHistory },
 			{ "miManagerDiscountReason", (int)Entities.ManagerDiscountReason },
 			{ "miPaymentByManagerFromRSection", (int)Entities.PaymentCommonAction },
-			{ "miPaymentStudioOrderByManagerFRS", (int)Entities.PaymentStudioOrderAction },
 			{ "miPaymentType", (int)Entities.PaymentType },
-			{ "miProductionStudio", (int)Entities.ProductionStudio },
 			{ "miReportPartText", (int)Entities.ReportPartText },
-			{ "miRolStyle", (int)Entities.RolStyle },
 			{ "miSpecialActions", (int)Entities.SpecialAction },
-			{ "miSpecialStudioOrderActions", (int)Entities.SpecialStudioOrderAction },
-			{ "miStudioOrderActPrint", (int)Entities.StudioOrderActJournal },
 			{ "miTransferJournal", (int)Entities.TransferLog },
 		};
 }

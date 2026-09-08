@@ -422,8 +422,6 @@
     <EmbeddedResource Include="Icons\PriceList.png" />
     <EmbeddedResource Include="Icons\Roller.png" />
     <EmbeddedResource Include="Icons\SponsorProgram.png" />
-    <EmbeddedResource Include="Icons\StudioOrder.png" />
-    <EmbeddedResource Include="Icons\StudioOrderAction.png" />
     <EmbeddedResource Include="Icons\DeleteItem.png" />
     <EmbeddedResource Include="Icons\ExportExcel.png" />
     <EmbeddedResource Include="Icons\Play.png" />
@@ -434,9 +432,7 @@
     <EmbeddedResource Include="Icons\JournalActions.png" />
     <EmbeddedResource Include="Icons\JournalMassmedia.png" />
     <EmbeddedResource Include="Icons\JournalRoller.png" />
-    <EmbeddedResource Include="Icons\JournalStudioOrder.png" />
     <EmbeddedResource Include="Icons\AddAction.png" />
-    <EmbeddedResource Include="Icons\AddStudioOrder.png" />
     <EmbeddedResource Include="Icons\AddItem.png" />
     <EmbeddedResource Include="Icons\JournalMessages.png" />
     <EmbeddedResource Include="Icons\DeletedIssues.png" />
@@ -589,8 +585,6 @@
     <Compile Include="Classes\FirmBalanceIssues.cs">
     </Compile>
     <Compile Include="Classes\FirmBalanceIssues.WinForms.cs" />
-    <Compile Include="Classes\FirmBalanceStudioOrder.cs" />
-    <Compile Include="Classes\FirmBalanceStudioOrder.WinForms.cs" />
     <Compile Include="Classes\GridExport\ExportType.cs" />
     <Compile Include="Classes\GridExport\ExportHelper.cs" />
     <Compile Include="Classes\HeadCompany.cs" />
@@ -664,17 +658,13 @@
     <Compile Include="Classes\PackModulePricelist.cs">
       <SubType>Code</SubType>
     </Compile>
-    <Compile Include="Classes\PaymentStudioOrder.cs">
+    <Compile Include="Classes\Payment.cs">
       <SubType>Code</SubType>
     </Compile>
-    <Compile Include="Classes\PaymentStudioOrder.WinForms.cs" />
     <Compile Include="Classes\Pricelist.cs">
       <SubType>Code</SubType>
     </Compile>
     <Compile Include="Classes\Pricelist.WinForms.cs" />
-    <Compile Include="Classes\ProductionStudio.cs">
-      <SubType>Code</SubType>
-    </Compile>
     <Compile Include="Classes\Launcher.cs" />
     <Compile Include="Classes\ProgramPartOfSponsorCampaign.cs">
       <SubType>Code</SubType>
@@ -692,9 +682,6 @@
       <SubType>Code</SubType>
     </Compile>
     <Compile Include="Classes\SponsorProgramPart.WinForms.cs" />
-    <Compile Include="Classes\StudioPricelist.cs">
-      <SubType>Code</SubType>
-    </Compile>
     <Compile Include="Classes\TableColumns.cs">
       <SubType>Code</SubType>
     </Compile>
@@ -926,9 +913,6 @@
       <SubType>Form</SubType>
     </Compile>
     <Compile Include="Forms\FrmFirmIssuesBalance.cs">
-      <SubType>Form</SubType>
-    </Compile>
-    <Compile Include="Forms\FrmFirmStudioOrderBalance.cs">
       <SubType>Form</SubType>
     </Compile>
     <Compile Include="Forms\FrmGenerator.cs">

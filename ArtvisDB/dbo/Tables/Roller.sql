@@ -4,7 +4,6 @@
     [duration]          [dbo].[timeDuration] NOT NULL,
     [firmID]            SMALLINT             NULL,
     [rolTypeID]         SMALLINT             NULL,
-    [rolStyleID]        SMALLINT             NULL,
     [path]              NVARCHAR (1024)      NULL,
     [createDate]        DATETIME             CONSTRAINT [DF_Roller_createDate] DEFAULT (getdate()) NOT NULL,
     [isEnabled]         BIT                  CONSTRAINT [DF_Roller_isEnabled] DEFAULT (1) NOT NULL,

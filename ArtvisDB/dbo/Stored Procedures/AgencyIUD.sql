@@ -52,7 +52,6 @@ IF @actionName = 'AddItem' BEGIN
 	IF @withResultset = 1 EXEC agencies @agencyID = @agencyID
 END
 ELSE IF @actionName = 'DeleteItem' BEGIN
-	DELETE FROM [Studio] WHERE StudioID = @agencyID
 	DELETE FROM [Agency] WHERE agencyID = @agencyID
 END
 ELSE IF @actionName = 'UpdateItem' BEGIN

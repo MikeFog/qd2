@@ -138,16 +138,10 @@ namespace Merlin.Forms
 					ApplicationExit();
 				else if (strMiName == "miPrintInquire")
 					ShowPrintInquireJournal(mi);
-				else if (strMiName == "miStudioTariff")
-					ShowStudioTariff(mi);
-				else if (strMiName == "miProductionStudio")
-					ShowStudioJournal(mi);
 				else if (strMiName == "miPaymentType")
 					ShowPaymentTypes(mi);
 				else if (strMiName == "miMassMedia")
 					ShowMassMedia(mi);
-				else if (strMiName == "miRolStyle")
-					ShowRolStyles(mi);
 				else if (strMiName == "miDisabledWindows")
 					ShowDisabledWindows(mi);
 				else if (strMiName == "miSponsorTariff")
@@ -184,29 +178,15 @@ namespace Merlin.Forms
 					ShowBrands(mi);
 				else if (strMiName == "miFirm")
 					ShowFirms(mi);
-				else if (strMiName == "miStudioOrderActPrint")
-					ShowStudioOrders(mi);
-				else if (strMiName == "miPaymentStudioOrder" || strMiName == "miPaymentStudioOrderFRS")
-					ShowPaymentStudioOrders(mi, strMiName == "miPaymentStudioOrderFRS");
 				else if (strMiName == "miPaymentCommon" || strMiName == "miPayment" ||
 						 strMiName == "miPaymentFRS")
 					ShowPaymentCommon(mi, strMiName == "miPaymentFRS");
-				else if (strMiName == "miBalanceStudioOrder")
-					ShowBalanceStudioOrders(mi);
 				else if (strMiName == "miBalance")
 					ShowBalance(mi);
-				else if (strMiName == "miBalanceStudioOrderFromRSection")
-					ShowBalanceStudioOrders(mi);
 				else if (strMiName == "miBalanceFromRSection")
 					ShowBalance(mi);
-				else if (strMiName == "miFirmBalanceStudioOrder")
-					ShowFirmBalanceStudioOrders();
 				else if (strMiName == "miFirmBalance")
 					ShowFirmBalance();
-				else if (strMiName == "miPaymentStudioOrderByManager")
-					ShowPaymentStudioOrderByManager(mi);
-				else if (strMiName == "miPaymentStudioOrderByManagerFRS")
-					ShowPaymentStudioOrderByManagerFromRSection(mi);
 				else if (strMiName == "miPaymentByManager")
 					ShowCommonOrderByManager(mi);
 				else if (strMiName == "miPaymentByManagerFromRSection")
@@ -249,8 +229,6 @@ namespace Merlin.Forms
 					ShowMassmediaGroupJournal(mi);
 				else if (strMiName == "miSpecialActions")
 					ShowSpecialAction(mi);
-				else if (strMiName == "miSpecialStudioOrderActions")
-					ShowSpecialStudioOrderAction(mi);
 				else if (strMiName == "VolumeOfRealizationByManager")
 					ShowGraphVolumeOfRealizationByPerson(mi);
 				else if (mi.Tag.ToString() == "miExportGrid")
@@ -339,11 +317,6 @@ namespace Merlin.Forms
 			Globals.ShowSimpleJournal(EntityManager.GetEntity((int)Entities.SpecialAction), ManagerFilter.FilterClick, mi.Text);
 		}
 
-		private static void ShowSpecialStudioOrderAction(ToolStripMenuItem mi)
-		{
-			Globals.ShowSimpleJournal(EntityManager.GetEntity((int)Entities.SpecialStudioOrderAction), ManagerFilter.FilterClick, mi.Text);
-		}
-
 		private void ShowAbout()
 		{
 			About frm = new About { ImgNameBackground = "Resources.Splash.png", ImgNameBackgroundMain = "Resources.SplashMain.png" };
@@ -413,35 +386,6 @@ namespace Merlin.Forms
 				EntityManager.GetEntity((int) Entities.ConfirmationHistory), mi.Text);
 		}
 
-		private void ShowStudioTariff(ToolStripItem mi)
-		{
-			Entity.Action[] menu = new[]
-			                       	{
-			                       		new Entity.Action(Constants.EntityActions.Refresh, RefreshAlias, Constants.ActionsImages.Refresh),
-			                       		new Entity.Action(Constants.EntityActions.AddNew, "Создать новую студию")
-			                       	};
-
-			FakeContainer container = new FakeContainer("Студии", menu,
-			                                            RelationManager.GetScenario(RelationScenarios.StudioTariff));
-			Globals.ShowBrowser(container, mi.Text, this);
-		}
-
-		private void ShowStudioJournal(ToolStripItem mi)
-		{
-			try
-			{
-				Globals.ShowSimpleJournal(EntityManager.GetEntity((int) Entities.ProductionStudio), mi.Text);
-			}
-			catch (Exception ex)
-			{
-				ErrorManager.PublishError(ex);
-			}
-			finally
-			{
-				Cursor = Cursors.Default;
-			}
-		}
-
 		private static void ShowPaymentTypes(ToolStripItem mi)
 		{
 			Globals.ShowSimpleJournal(
@@ -491,24 +435,9 @@ namespace Merlin.Forms
 			journal.Show();
 		}
 
-		private static void ShowRolStyles(ToolStripItem mi)
-		{
-			Globals.ShowSimpleJournal(EntityManager.GetEntity((int) Entities.RolStyle), mi.Text);
-		}
-
-		private static void ShowBalanceStudioOrders(ToolStripItem mi)
-		{
-			Globals.ShowSimpleJournal(EntityManager.GetEntity((int)Entities.BalanceStudioOrder), ManagerFilter.FilterClick, mi.Text);
-		}
-
 		private static void ShowBalance(ToolStripItem mi)
 		{
 			Globals.ShowSimpleJournal(EntityManager.GetEntity((int)Entities.BalanceIssues), ManagerFilter.FilterClick, mi.Text);
-		}
-
-		private static void ShowStudioOrders(ToolStripItem mi)
-		{
-			Globals.ShowSimpleJournal(EntityManager.GetEntity((int) Entities.StudioOrderActJournal), mi.Text);
 		}
 
 		private static void ShowMassMedia(ToolStripItem mi)
@@ -678,18 +607,6 @@ namespace Merlin.Forms
             Globals.ShowSimpleJournal (EntityManager.GetEntity((int)Entities.Firm), mi.Text);
         }
 
-		private void ShowPaymentStudioOrders(ToolStripItem mi, bool fAgenciesFilter)
-		{
-			Dictionary<string, object> parameters = new Dictionary<string, object>
-            {
-                ["filterAgencies"] = fAgenciesFilter
-            };
-			ShowMasterDetailsJournal(
-				EntityManager.GetEntity((int) Entities.PaymentStudioOrder),
-				EntityManager.GetEntity((int) Entities.PaymentStudioOrderAction),
-				mi.Text, parameters);
-		}
-
         private void ShowHeadCompanies(ToolStripItem mi)
         {
             Dictionary<string, object> parameters = new Dictionary<string, object>
@@ -716,13 +633,6 @@ namespace Merlin.Forms
 				EntityManager.GetEntity((int) Entities.PaymentCommon),
 				EntityManager.GetEntity((int) Entities.PaymentCommonAction),
 				mi.Text, parameters);
-		}
-
-		private void ShowFirmBalanceStudioOrders()
-		{
-			Globals.SetDefaultCursor(this);
-			FrmFirmStudioOrderBalance fBalance = new FrmFirmStudioOrderBalance { MdiParent = this, Icon = Globals.MdiParent.Icon };
-			fBalance.Show();
 		}
 
 		private void ShowFirmBalance()
@@ -755,31 +665,6 @@ namespace Merlin.Forms
 		private static void ShowCommonOrderByManagerFromRSection(ToolStripItem mi)
 		{
 			Globals.ShowSimpleJournal(EntityManager.GetEntity((int)Entities.PaymentCommonAction), ManagerFilter.FilterClick, mi.Text);
-		}
-
-		private void ShowPaymentStudioOrderByManager(ToolStripItem mi)
-		{
-			FrmManagerSelector selector = new FrmManagerSelector(InterfaceObjects.SelectForStudioOrder);
-			if (selector.ShowDialog(this) == DialogResult.OK)
-			{
-				Entity entity = EntityManager.GetEntity((int) Entities.PaymentStudioOrderAction);
-				foreach (PresentationObject user in selector.SelectedUsers)
-				{
-					Dictionary<string, object> filterValues =
-						new Dictionary<string, object>(3, StringComparer.InvariantCultureIgnoreCase);
-					filterValues["startOfInterval"] = selector.StartDate.Date;
-					filterValues["endOfInterval"] = selector.FinishDate.Date;
-					filterValues["managerID"] = user.IDs[0].ToString();
-					if (selector.SelectedAgency != null)
-						filterValues["agencyID"] = selector.SelectedAgency.IDs[0].ToString();
-					Globals.ShowSimpleJournal(entity, string.Format("{0}: {1}", mi.Text, user.Name), filterValues);
-				}
-			}
-		}
-
-		private static void ShowPaymentStudioOrderByManagerFromRSection(ToolStripItem mi)
-		{
-			Globals.ShowSimpleJournal(EntityManager.GetEntity((int)Entities.PaymentStudioOrderAction), ManagerFilter.FilterClick, mi.Text);
 		}
 
 		private void ShowPrintGridForm()
@@ -877,9 +762,6 @@ namespace Merlin.Forms
 					entity = Entities.StatsVolumeofRealization;
 					break;
 
-                case "miStats.VolumeOfRealization4Roll":
-					entity = Entities.StatsVolumeofRealization4Rollers;
-					break;
 				case "miStats.Balance":
 					ShowStatBalance(mi);
 					return;
@@ -893,16 +775,10 @@ namespace Merlin.Forms
 				case "miStats.BalanceManager":
 					entity = Entities.StatsBalanceManager;
 					break;
-				case "miStats.BalanceManagerOrder":
-					entity = Entities.StatsBalanceManagerOrder;
-					break;
 				case "miStats.SponsorBusiness":
 					entity = Entities.StatsSponsorBusiness;
                     caption = "Фактическое размещение спонсорских программ";
                     break;
-				case "miStats.RollersCreated":
-					entity = Entities.StatsRollersCreated;
-					break;
 				case "miStats.VolumeRealizationByMonth":
 					entity = Entities.StatVolumeOfRealiztionByMonth;
 					break;
