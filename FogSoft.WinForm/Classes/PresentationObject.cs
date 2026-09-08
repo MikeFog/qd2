@@ -223,8 +223,8 @@ namespace FogSoft.WinForm.Classes
 		/// <para>
 		/// WARNING: this does NOT go through the virtual <see cref="Refresh()"/>, so subclasses
 		/// that override <c>Refresh()</c> to drop cached child objects (ActionOnMassmedia,
-		/// ModuleIssue, ModulePricelist, PackModuleIssue, PackModulePricelist, StudioOrder,
-		/// StudioOrderAction) will keep a stale cache after this call. Do not use it on those
+		/// ModuleIssue, ModulePricelist, PackModuleIssue, PackModulePricelist) will keep a
+		/// stale cache after this call. Do not use it on those
 		/// types until the cache reset is moved to a hook invoked from the private reload path
 		/// (see IMPROVEMENTS.md).
 		/// </para>

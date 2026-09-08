@@ -117,7 +117,6 @@
     <Compile Include="..\Client\Classes\Firm.cs" Link="Domain\Firm.cs" />
     <Compile Include="..\Client\Classes\FirmBalance.cs" Link="Domain\FirmBalance.cs" />
     <Compile Include="..\Client\Classes\FirmBalanceIssues.cs" Link="Domain\FirmBalanceIssues.cs" />
-    <Compile Include="..\Client\Classes\FirmBalanceStudioOrder.cs" Link="Domain\FirmBalanceStudioOrder.cs" />
     <Compile Include="..\Client\Classes\FirmWithActions.cs" Link="Domain\FirmWithActions.cs" />
     <Compile Include="..\Client\Classes\HeadCompany.cs" Link="Domain\HeadCompany.cs" />
     <Compile Include="..\Client\Classes\HeadCompanyWithActions.cs" Link="Domain\HeadCompanyWithActions.cs" />
@@ -146,11 +145,9 @@
     <Compile Include="..\Client\Classes\PaintingType.cs" Link="Domain\PaintingType.cs" />
     <Compile Include="..\Client\Classes\Payment.cs" Link="Domain\Payment.cs" />
     <Compile Include="..\Client\Classes\PaymentCommon.cs" Link="Domain\PaymentCommon.cs" />
-    <Compile Include="..\Client\Classes\PaymentStudioOrder.cs" Link="Domain\PaymentStudioOrder.cs" />
     <Compile Include="..\Client\Classes\PriceCalculatorClasses.cs" Link="Domain\PriceCalculatorClasses.cs" />
     <Compile Include="..\Client\Classes\Pricelist.cs" Link="Domain\Pricelist.cs" />
     <Compile Include="..\Client\Classes\PrintSettings.cs" Link="Domain\PrintSettings.cs" />
-    <Compile Include="..\Client\Classes\ProductionStudio.cs" Link="Domain\ProductionStudio.cs" />
     <Compile Include="..\Client\Classes\ProgramIssue.cs" Link="Domain\ProgramIssue.cs" />
     <Compile Include="..\Client\Classes\ProgramPartOfSponsorCampaign.cs" Link="Domain\ProgramPartOfSponsorCampaign.cs" />
     <Compile Include="..\Client\Classes\Roller.cs" Link="Domain\Roller.cs" />
@@ -162,7 +159,6 @@
     <Compile Include="..\Client\Classes\SponsorProgram.cs" Link="Domain\SponsorProgram.cs" />
     <Compile Include="..\Client\Classes\SponsorProgramPart.cs" Link="Domain\SponsorProgramPart.cs" />
     <Compile Include="..\Client\Classes\SponsorTariff.cs" Link="Domain\SponsorTariff.cs" />
-    <Compile Include="..\Client\Classes\StudioPricelist.cs" Link="Domain\StudioPricelist.cs" />
     <Compile Include="..\Client\Classes\TableColumns.cs" Link="Domain\TableColumns.cs" />
     <Compile Include="..\Client\Classes\Tariff.cs" Link="Domain\Tariff.cs" />
     <Compile Include="..\Client\Classes\TariffWindow.cs" Link="Domain\TariffWindow.cs" />

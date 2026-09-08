@@ -6,7 +6,7 @@ namespace Merlin.Classes
 {
 	// UI-часть FirmBalance: DoAction и абстрактное объявление
 	// Jump2FirmBalanceJournal(IWin32Window) — оба типизированы на UI, реализации
-	// в наследниках (FirmBalanceIssues.WinForms.cs, FirmBalanceStudioOrder.WinForms.cs).
+	// в наследниках (FirmBalanceIssues.WinForms.cs).
 	// Дословный перенос, логика не менялась.
 	// Конвенция — docs/tasks/web-migration-dialogs.md.
 	public abstract partial class FirmBalance

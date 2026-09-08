@@ -64,7 +64,6 @@ namespace Merlin.Forms
 				Application.DoEvents();
 				Cursor.Current = Cursors.WaitCursor;
 
-				//Entity entity = EntityManager.GetEntity((int)Entities.PaymentStudioOrderAction);
 				Entity entity = payment.ProfitEntity;
 				PresentationObject paymentAction = new PresentationObject(entity);
 				paymentAction[Payment.ParamNames.PaymentID] = payment.PaymentId;

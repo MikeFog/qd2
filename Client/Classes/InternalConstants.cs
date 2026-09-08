@@ -21,7 +21,6 @@
     public enum Entities
 	{
 		Bank = 2,
-		RolStyle = 4,
 		PaymentType = 5,
 		Agency = 8,
 		MassMedia = 9,
@@ -32,7 +31,6 @@
 		Brand = 15,
 		Firm = 16,
 		AdvertType = 17,
-		ProductionStudio = 19,
 		Roller = 20,
 		DiscountRelease = 22,
 		DiscountValue = 23,
@@ -59,19 +57,9 @@
 		Issue = 98,
 		MassmediaAgency = 99,
 		GridCell = 100,
-		StudioPricelist = 113,
-		StudioOrderAction = 116,
-		StudioOrder = 117,
 		FirmWithConfirmedActions = 118,
-		FirmWithOrders = 119,
 		BrandFirm = 120,
 		FirmBrand = 121,
-		StudioAgency = 123,
-		PaymentStudioOrder = 124,
-		PaymentStudioOrderAction = 125,
-		StudioOrderActionPaymentCandidate = 126,
-		BalanceStudioOrder = 127,
-		StudioOrderBill = 128,
 		ConfirmationHistory = 129,
 		ModuleIssue = 130,
 		PackModule = 133,
@@ -92,15 +80,12 @@
 		ActJournalRow = 156,
 		ErrTmplGen = 157,
 		StatsVolumeofRealization = 158,
-		StatsVolumeofRealization4Rollers = 159,
 		StatsBalance = 160,
 		StatsBalanceGroup = 185,
 		StatsBalanceAgency = 161,
 		StatsFillPercentage = 163,
 		StatsBalanceManager = 168,
-		StatsBalanceManagerOrder = 169,
 		StatsSponsorBusiness = 170,
-		StatsRollersCreated = 186,
         StatsFactorAnalysis = 225,
 		PackModuleCampaign = 171,
 		PackModuleIssue = 175,
@@ -121,7 +106,6 @@
 		MassmediaGroup = 195,
 		MassmediaGroupMember = 196,
 		User = 199,
-		StudioOrderActJournal = 200,
 		StatVolumeOfRealiztionByMonth = 201,
 		StatModuleLoading = 202,
 		StatModuleFinancy = 203,
@@ -129,7 +113,6 @@
 		StatPackModuleFinancy = 205,
 		CampaignIssuesTransfers = 206,
 		SpecialAction = 207,
-		SpecialStudioOrderAction = 208,
 		ActionRollersStat = 209,
 		MuteRoller = 211,
 		RollerUnSubtitude = 212,
@@ -174,8 +157,6 @@
         public const string DeletedAction = "DeletedAction";
 		public const string Module = "Module";
 		public const string UsedSponsorPrograms = "Used Sponsor Programs";
-		public const string StudioTariff = "Тарифы на производство роликов";
-		public const string ProductionAction = "ProductionAction";
 		public const string MassmediaAndCampaign = "Massmedia and Campaigns";
 		public const string Massmedia = "Massmedia";
 		public const string ModuleIssues = "Module Issues";
