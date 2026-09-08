@@ -30,6 +30,7 @@ Important project documents:
 - Improvement candidates (non-bugs, future work): `docs/IMPROVEMENTS.md`
 - Logging guide: `docs/LOGGING.md`
 - SmartGrid control reference: `docs/smartgrid.md`
+- Window merging reference: `docs/window-merging.md` — two distinct "склейка" mechanisms: `TariffUnion` (pricelist-level tariff continuation) and `TariffWindow.windowPrevId`/`windowNextId` (per-day window chains); entry points, readers, and known defects.
 ## Scenario maps
 
 Detailed scenario investigations are stored in:
