@@ -1,13 +1,27 @@
-# Зачистка модуля «Производство роликов» (Studio) — исследование
+# Зачистка модуля «Производство роликов» (Studio) — исследование и ход работ
 
-**Статус:** исследование завершено. Ничего не удалено. Скрипты подготовлены в
-`docs/studio-cleanup/drop-plan.sql` — **не запускать до согласования**.
+**Статус на 2026-09-08:**
 
-**Дата:** 2026-09-08. Источник фактов по БД: `localhost\ArtvisDev` — это копия
-боевой базы, снятая с прода ~2026-09-01, поэтому инвентаризация полная. По
-мёртвому модулю расхождений с текущим продом за неделю практически быть не может;
-достаточно один раз сверить РАЗДЕЛ 0 из `drop-plan.sql` непосредственно перед
-применением.
+| Часть | Состояние |
+|---|---|
+| Код C# (§5) | **сделано** — коммиты `5fedee4` (вынос `Payment`), `6c3c372` (удаление). Собрано: qd2.sln + FogSoft.Web (0 ошибок). |
+| SQL-исходники `ArtvisDB/` (§3, §6) | **сделано** — коммит `229ddbd`. 40 `.sql` удалено, 12 поправлено, `.sqlproj` обновлён. |
+| Применение на **ArtvisDev** (схема + метаданные) | **сделано и проверено** — см. §7 и `deploy-notes.md`. 0 «сирот» в `i*`-таблицах, логин/паспорта/`vRoller` работают. |
+| Применение на **проде `Artvis`** | **не сделано.** Скрипт — `drop-plan.sql`. Прод сейчас offline. |
+| RolStyle («стиль ролика», §6) | **включено в зачистку** (по решению заказчика) — тоже сделано в коде/исходниках/на ArtvisDev. |
+
+**Дата:** 2026-09-08. Источник фактов по БД: `localhost\ArtvisDev` — копия боевой
+базы. Инвентаризация полная.
+
+> ⚠ **Инцидент 2026-09-08:** черновой валидационный скрипт с `SET XACT_ABORT ON`
+> внутри `BEGIN TRAN` упал на `ALTER VIEW vRoller` (хвост файла с
+> `sp_addextendedproperty`), транзакция откатилась, но `sqlcmd` продолжил
+> выполнять батчи после `GO` в автокоммите — `DROP`-ы студийной схемы и
+> `ALTER TABLE Roller DROP COLUMN rolStyleID` применились к ArtvisDev досрочно.
+> По решению заказчика зачистку на ArtvisDev **довели до конца** вместо отката.
+> Вывод для прод-деплоя: `drop-plan.sql` держать **одним батчем без `GO`** между
+> `BEGIN TRAN` и `COMMIT`, либо запускать с `-b` и без `XACT_ABORT`-«продолжения».
+> Файлы вью с `sp_addextendedproperty` в хвосте (`vRoller`) деплоить без этого хвоста.
 
 ---
 
@@ -105,30 +119,42 @@ SQL-проект `ArtvisDB` неполон: боевые/dev процедуры 
 > отката и чтобы понять, не тянут ли они что-то ещё (по обратным зависимостям —
 > не тянут, кроме общих процедур из 3c).
 
-### 3c. Общие процедуры/функции с «студийной» примесью — **править, не удалять** (9)
+### 3c. Общие процедуры/функции с «студийной» примесью — **поправлены** (коммит `229ddbd`)
 
-| Объект | Что студийного | Что делать при зачистке |
+| Объект | Что было студийного | Что сделано |
 |---|---|---|
-| `AgencyIUD` | `DELETE FROM [Studio] WHERE StudioID = @agencyID` в ветке `DeleteItem` | убрать строку `DELETE FROM [Studio]` |
-| `agencyPassport` | 2-й результат-сет: список студий (`vStudio` + `StudioAgency`) для селектора на карточке агентства | убрать 2-й SELECT; синхронно убрать `iTableAlias` (proc `agencyPassport`, position 2, alias `studio`) и страницу-селектор студий из паспорта сущности `Agency` (entityID 8) + студийный код в `Client/Classes/Agency.cs` (класс `StudioAgency`, ветки `ProductionStudio` в `Update`/`Delete`) |
-| `agencies` | закомментированный `union … StudioOrder` и `@needStudioID` | почистить мёртвый комментарий (косметика) |
-| `sl_Agencies` | закомментированный `LEFT JOIN StudioAgency` | косметика |
-| `LookupUsedAgency` | `union select distinct o.agencyID from StudioOrder o` — **активно** | убрать `union … StudioOrder` |
-| `UserListByRights` | ветка `@forStudioOrders = 1` → `fn_IsRightТо…SOActions` | убрать параметр `@forStudioOrders` и ветку (сверить всех вызывающих!) |
-| `GroupListByRights` | то же | то же |
-| `RollerIUD` | параметр `@studioOrderID`, `SELECT … FROM StudioOrder` для подстановки | убрать параметр и связанный `SELECT`/`IF` |
-| `RollerPassport` | возвращает результат-сет `RolStyle` | убрать, если решено удалять `RolStyle` (§6) |
+| `AgencyIUD` | `DELETE FROM [Studio] WHERE StudioID = @agencyID` в ветке `DeleteItem` | строка убрана |
+| `agencyPassport` | 2-й результат-сет: список студий (`vStudio` + `StudioAgency`) | 2-й SELECT убран. `iTableAlias` position 2 (`studio`) удалён в метаданных. Паспорт сущности `Agency` (8) страницы-селектора студий не имел (проверено). C# `Agency.cs` — класс `StudioAgency` и ветки `ProductionStudio` в `Update()` убраны |
+| `agencies` | закомментированный `union … StudioOrder`, `@needStudioID` | мёртвые комментарии убраны |
+| `sl_Agencies` | закомментированный `LEFT JOIN StudioAgency` | убран |
+| `LookupUsedAgency` | `union select … from StudioOrder o` — активно | union убран |
+| `RollerIUD` | параметры `@studioOrderID` (+ `SELECT … StudioOrder`) и `@rolStyleID` | оба параметра и их использование убраны |
+| `RollerPassport` | 2-й результат-сет — список `RolStyle` | заменён пустым набором той же формы (`SELECT CAST(NULL…) WHERE 1=0`), чтобы не сдвигать позиции `iTableAlias` |
+| `vRoller`, `Roller` | колонка `Roller.rolStyleID` (без FK) | колонка удалена, `vRoller` пересоздан без неё |
+| `ActionRollerSetAdvertType`, `SetAdvertTypeForCommmonRoller` | `rolStyleID` в `INSERT … SELECT` при клонировании ролика | убран из обоих (INSERT и SELECT симметрично) |
 
-### 3d. Отчётные/статистические процедуры, целиком про студию, но на общих сущностях (3 + фильтры)
+### 3f. Оставлено намеренно — безвредный мёртвый код (не трогаем)
 
-`stat_VolumeOfRealizationForRollers` (+ `statVolumeOfRealizationForRollersFilter`) —
-сущность 159 «Статистика::Объём реализации по роликам».
-`stat_RollerStatisticCreated` — сущность 186 «Статистика::Созданные ролики».
-`stat_BalanceManagerOrder` — сущность 169.
+Плумбинг прав «студийных акций» завязан на путь логина; выигрыш от удаления
+нулевой, риск — «никто не войдёт». Оставлено как есть:
 
-Читают только `StudioOrder*`/`PaymentStudioOrder*`. Меню (91, 116, 104) —
-`isObsolete = 1`. Сущности 159 и 186 при этом `isObsolete = 0` (недочистили).
-Удаляются вместе с модулем.
+- `fn_IsRightToViewForeignSOActions`, `fn_IsRightToEditForeignSOActions`,
+  `fn_IsRightToViewGroupSOActions`, `fn_IsRightToEditGroupSOActions` — хардкодят
+  `entityID = 116`; после удаления строк `iEntityAction` возвращают `0` (проверено
+  на ArtvisDev, ошибки нет).
+- `UserListByRights` / `GroupListByRights` — параметр `@forStudioOrders` (default 0)
+  и ветка с этими функциями. Единственные вызовы с `= 1` были из удалённых
+  студийных фильтров.
+- `GetUserData` — 4 столбца `isRight*SOActions` в результате.
+- `Client/Classes/AdvertAgUser.cs` — 4 метода-расширения `IsRight*SOActions`
+  (после удаления мёртвых файлов у них 0 вызовов, но компилируются).
+
+### 3d. Отчётные/статистические процедуры, целиком про студию — **удалены**
+
+`stat_VolumeOfRealizationForRollers` (+ `statVolumeOfRealizationForRollersFilter`,
+сущность 159), `stat_RollerStatisticCreated` (186), `stat_BalanceManagerOrder`
+(169), `rpt_StudioOrderAct`, `rpt_OrderActionBill`. Читали только
+`StudioOrder*`/`PaymentStudioOrder*`.
 
 ### 3e. Функции с зависимостями
 
@@ -297,52 +323,51 @@ Merlin.Classes.Domain.StudioOrder.*`, которого **нет в сборке*
 
 ---
 
-## 6. `RolStyle` («стиль ролика») — отдельное решение
+## 6. `RolStyle` («стиль ролика») — **включено в зачистку** (решение заказчика 2026-09-08)
 
-Сейчас `RolStyle` используется:
+`RolStyle` использовался:
 
-- FK от `StudioTariff`, `StudioOrder` (уходят вместе с модулем);
-- колонка `Roller.rolStyleID` — **без FK**, заполнена у 2845 из 21523 роликов,
-  но в паспорте ролика (entity 20) поля стиля **нет** — не редактируется и не
-  показывается;
-- `RollerPassport` возвращает мёртвый результат-сет со списком `RolStyle`;
-- entity 4, меню `miRolStyle` (`isObsolete = 1`), процедуры `RollerStyles`,
-  `RolStyleIUD`, форма — `MDIForm.ShowRolStyles`.
+- FK от `StudioTariff`, `StudioOrder` (ушли вместе с модулем);
+- колонка `Roller.rolStyleID` — **без FK**, была заполнена у 2845 из 21523 роликов,
+  но в паспорте ролика (entity 20) поля стиля нет — не редактировалась;
+- `RollerPassport` возвращал мёртвый результат-сет со списком `RolStyle`;
+- entity 4, меню `miRolStyle` (`isObsolete = 1`), процедуры `RollerStyles`/`RolStyleIUD`,
+  `MDIForm.ShowRolStyles`.
 
-**Вывод:** `RolStyle` — часть того же мёртвого модуля, просто «протекла» в `Roller`.
-Удаление возможно, но это чуть больший объём правок (`Roller.rolStyleID`, `vRoller`,
-`RollerIUD`, `RollerPassport`, enum, меню). Вынесено в **отдельный необязательный
-шаг** — приоритет ниже, чем у основной зачистки `Studio*`.
+**Сделано:** таблица `RolStyle` и колонка `Roller.rolStyleID` удалены; `vRoller`,
+`RollerIUD`, `RollerPassport`, `ActionRollerSetAdvertType`,
+`SetAdvertTypeForCommmonRoller` поправлены (§3c); `RollerStyles`/`RolStyleIUD`
+удалены; `Entities.RolStyle`, `MenuRoutes[miRolStyle]`, `MDIForm.ShowRolStyles`
+убраны; метаданные entity 4 + меню 25 вычищены.
 
 ---
 
-## 7. Порядок зачистки (когда согласуем)
+## 7. Ход зачистки
 
-1. **Бэкап**: `BACKUP DATABASE` + выгрузка определений всех db-only процедур (§3b) и
-   студийных строк метаданных.
-2. **БД, схема**:
-   1. поправить общие процедуры §3c (`AgencyIUD`, `agencyPassport`, `LookupUsedAgency`,
-      `UserListByRights`, `GroupListByRights`, `RollerIUD`, при желании `RollerPassport`);
-   2. `DROP PROCEDURE` — все из §3a + §3b + §3d;
-   3. `DROP FUNCTION f_OrderPrice, f_GetStudioTariffId`;
-   4. `DROP VIEW vStudio`;
-   5. `DROP TABLE` в порядке §2 (1→11; `RolStyle` — отдельно, §6).
-3. **БД, метаданные** (§4): удалить строки `GroupRight` → `GroupMenu` → `iMenu` →
-   `iModuleProcedure` → `iTableAlias` → `iEntityAction` → `iEntityAttribute` →
-   `iEntityRelation` → `iRelationScenario` → `iStoredProcedure` → `iEntity` →
-   `iModules` (210). Порядок — по FK между `i*` таблицами (проверить на конкретной БД).
-4. **Код** (§5):
-   1. ~~вынести `abstract class Payment` из `PaymentStudioOrder.cs` в
-      `Client/Classes/Payment.cs`~~ — **сделано 2026-09-08** (§5e);
-   2. удалить файлы 5a + 5c + иконки 5d; вычистить вставки 5b;
-   3. убрать `<Compile>`/`<EmbeddedResource>` из `Client.csproj` и `FogSoft.Core.csproj`;
-   4. собрать `qd2.sln` и веб (`FogSoft.Core`/`FogSoft.Web`).
-5. **Регрессия**: логин; карточка агентства (селектор студий должен исчезнуть без
-   ошибок); журнал роликов + паспорт ролика; журнал платежей (общий);
-   `LookupUsedAgency` дергается из фильтров платежей/баланса — проверить эти формы;
-   права/меню у не-админа.
-6. **`ArtvisDB` sqlproj**: удалить `.sql`-файлы студийных объектов из проекта,
-   чтобы сравнение схемы не пыталось их воссоздать.
+### Сделано (2026-09-08)
+
+1. ✅ **Код C#** (§5) — коммиты `5fedee4`, `6c3c372`. Собрано: qd2.sln + FogSoft.Web.
+2. ✅ **SQL-исходники `ArtvisDB/`** (§3, §6) — коммит `229ddbd`. 40 `.sql` удалено,
+   12 поправлено, `.sqlproj` обновлён.
+3. ✅ **ArtvisDev — схема**: студийные объекты + `RolStyle` + `Roller.rolStyleID`
+   удалены (частично инцидентом, добито вручную); 10 общих процедур + `vRoller`
+   передеплоены из исходников; проверено — `agencyPassport`, `RollerPassport`,
+   `vRoller`, `LookupUsedAgency` работают.
+4. ✅ **ArtvisDev — метаданные**: удалены строки `GroupRight` (76), `GroupMenu` (14),
+   `iMenu` (156/110 + дети, 21), `iModuleProcedure` (73), `iTableAlias` (43),
+   `iEntityRelation` (4) + `iRelationScenario` 16/17, `iEntityAttribute` (89),
+   `iEntityAction` (71), `iEntity` (18), `iStoredProcedure` (43), `iModules` 210.
+   Проверка: **0 «сирот»** в `i*`-таблицах, логин (`GetUserData`) и
+   `ProcedureConfigurationRetrieve` работают.
+
+### Осталось
+
+5. **Прод `Artvis`**: `BACKUP DATABASE`, затем `drop-plan.sql` (приведён к реально
+   выполненной на dev последовательности). Прод сейчас offline.
+6. **Регрессия в интерфейсе** (заказчик): логин; карточка агентства (страницы
+   «студии» больше нет); журнал роликов + паспорт ролика; журнал платежей (общий);
+   меню без ветки «Производство роликов»/«Бухгалтерия»(obsolete); права у не-админа.
+7. **Метадата-кеш клиента** — после правок `iEntity` нужен рестарт приложения.
 
 ## 8. Риски
 

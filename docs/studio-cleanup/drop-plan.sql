@@ -1,103 +1,54 @@
 /***************************************************************************************************
-  Зачистка модуля «Производство роликов» (Studio) — ЧЕРНОВИК
+  Зачистка модуля «Производство роликов» (Studio) + RolStyle — деплой на ПРОД (Artvis)
 
-  НЕ ЗАПУСКАТЬ НА ПРОДЕ БЕЗ РЕВЬЮ. Скрипт целиком обёрнут в
-      BEGIN TRAN ... ROLLBACK
-  то есть в текущем виде это «сухой прогон»: он печатает, сколько строк/объектов
-  затронул бы, и откатывается. Чтобы применить по-настоящему — заменить
-  финальный ROLLBACK на COMMIT (после бэкапа БД!).
+  Эта последовательность уже выполнена и проверена на ArtvisDev (копия прода) 2026-09-08.
+  См. docs/studio-cleanup/investigation.md.
 
-  Составлено 2026-09-08 по localhost\ArtvisDev (копия прода от ~2026-09-01).
-  Перед применением на проде выполнить РАЗДЕЛ 0 и сверить списки.
+  ── ПОРЯДОК ДЕПЛОЯ ────────────────────────────────────────────────────────────────────────────
+  0. BACKUP DATABASE Artvis TO DISK='...' WITH COPY_ONLY, INIT;
+  1. Выкатить изменённые процедуры/вью из репозитория (коммит 229ddbd):
+       ArtvisDB/dbo/Stored Procedures/{agencies,AgencyIUD,agencyPassport,LookupUsedAgency,
+         sl_Agencies,RollerIUD,RollerPassport,ActionRollerSetAdvertType,SetAdvertTypeForCommmonRoller}.sql
+       ArtvisDB/dbo/Views/vRoller.sql   ← БЕЗ хвоста с EXECUTE sp_addextendedproperty (иначе Msg 15233)
+     Все как ALTER. Порядок между собой не важен, но ВСЕ до раздела 2 этого скрипта.
+  2. Запустить ЭТОТ скрипт ЦЕЛИКОМ (он одним батчем, без GO, в транзакции).
+     Для проверки — оставить ROLLBACK в конце; для применения — заменить на COMMIT.
+  3. Рестарт клиентского приложения (сброс кеша метаданных iEntity).
 
-  Порядок разделов:
-    0. Инвентаризация и бэкап определений (только SELECT/печать).
-    1. Правка общих процедур (студийная примесь).            <-- см. investigation.md §3c
-    2. DROP студийных процедур / функций / вью.
-    3. DROP студийных таблиц.
-    4. Очистка метаданных (i*, права, меню).
-    5. (опция) RolStyle.
+  ⚠ НЕ разбивать раздел 2 на батчи через GO с `SET XACT_ABORT ON`: при ошибке транзакция
+     откатится, а sqlcmd продолжит следующие батчи в автокоммите (так уже сломали dev).
 ***************************************************************************************************/
 
 SET NOCOUNT ON;
 SET XACT_ABORT ON;
-BEGIN TRAN;
+BEGIN TRANSACTION;
 
 -------------------------------------------------------------------------------------------------
--- РАЗДЕЛ 0. ИНВЕНТАРИЗАЦИЯ (сверить с investigation.md; на проде — обязательно)
+-- РАЗДЕЛ 1. Списки
 -------------------------------------------------------------------------------------------------
-PRINT '--- 0.1 Программные объекты модуля, реально существующие в этой БД ---';
-SELECT o.type_desc, o.name
-FROM sys.objects o
-WHERE o.type IN ('P','FN','IF','TF','V')
-  AND ( o.name LIKE 'Studio%' OR o.name LIKE '%StudioOrder%' OR o.name LIKE 'PaymentStudioOrder%'
-     OR o.name LIKE 'SpecialStudio%' OR o.name LIKE 'SpecialSO%' OR o.name LIKE '%BalanceStudioOrder%'
-     OR o.name IN ('f_GetStudioTariffId','f_OrderPrice','vStudio','rpt_StudioOrderAct','rpt_OrderActionBill',
-                   'sl_StudioOrderActions','FirmStudioOrderManagers','sl_PaymentStudioOrders','FirmWithOrder',
-                   'stat_BalanceManagerOrder','stat_VolumeOfRealizationForRollers',
-                   'statVolumeOfRealizationForRollersFilter','stat_RollerStatisticCreated') )
-ORDER BY o.type_desc, o.name;
+DECLARE @ent TABLE(id INT PRIMARY KEY);
+INSERT INTO @ent VALUES (4),(19),(113),(115),(116),(117),(119),(123),(124),(125),(126),(127),(128),(159),(169),(186),(200),(208);
 
-PRINT '--- 0.2 Определения db-only процедур — СКОПИРОВАТЬ ВЫВОД В ФАЙЛ перед удалением ---';
-SELECT o.name, m.definition
-FROM sys.sql_modules m JOIN sys.objects o ON o.object_id = m.object_id
-WHERE o.name IN (
-  'Studios','StudioIUD','StudioPassport','StudioAgencyID',
-  'StudioPricelists','StudioPricelistIUD',
-  'StudioTariffList','StudioTariffPassport','StudioTariffIUD',
-  'StudioOrders','StudioOrderIUD','StudioOrderPassport','StudioOrderFilter','StudioOrderAgencies',
-  'StudioOrderActions','StudioOrderActionIUD','StudioOrderActionPassport','StudioOrderActionsFilter',
-  'StudioOrderActionsForPayment','StudioOrderActionPriceForAgency',
-  'StudioOrderBills','StudioOrderBillIUD','FirmWithOrder')
-ORDER BY o.name;
-
-PRINT '--- 0.3 Строки метаданных под удаление (перед удалением можно выгрузить в *.sql INSERT-ами) ---';
-DECLARE @ent TABLE(entityID INT PRIMARY KEY);
-INSERT INTO @ent VALUES (19),(113),(115),(116),(117),(119),(123),(124),(125),(126),(127),(128),(159),(169),(186),(200),(208);
--- (RolStyle = 4 — отдельно, РАЗДЕЛ 5)
-
-DECLARE @sp TABLE(storedProcedureID INT PRIMARY KEY);
+DECLARE @sp TABLE(id INT PRIMARY KEY);
 INSERT INTO @sp
 SELECT storedProcedureID FROM dbo.iStoredProcedure
 WHERE name LIKE '%Studio%' OR name LIKE 'SpecialSO%' OR name LIKE 'SpecialStudio%'
    OR name IN ('rpt_OrderActionBill','rpt_StudioOrderAct','sl_StudioOrderActions','sl_PaymentStudioOrders',
                'FirmStudioOrderManagers','FirmWithOrder','stat_BalanceStudioOrder','stat_BalanceManagerOrder',
                'stat_VolumeOfRealizationForRollers','statVolumeOfRealizationForRollersFilter',
-               'stat_RollerStatisticCreated','BalanceStudioOrderFilter','FirmBalanceStudioOrderOnLoad');
+               'stat_RollerStatisticCreated','BalanceStudioOrderFilter','FirmBalanceStudioOrderOnLoad',
+               'RollerStyles','RolStyleIUD');
 
-SELECT 'iEntity'          AS meta, COUNT(*) AS rows FROM dbo.iEntity          WHERE entityID IN (SELECT entityID FROM @ent)
-UNION ALL SELECT 'iEntityAction',     COUNT(*) FROM dbo.iEntityAction     WHERE entityID IN (SELECT entityID FROM @ent)
-UNION ALL SELECT 'iEntityAttribute',  COUNT(*) FROM dbo.iEntityAttribute  WHERE entityID IN (SELECT entityID FROM @ent)
-UNION ALL SELECT 'iEntityRelation',   COUNT(*) FROM dbo.iEntityRelation   WHERE parentEntityID IN (SELECT entityID FROM @ent) OR childEntityID IN (SELECT entityID FROM @ent)
-UNION ALL SELECT 'iModuleProcedure(byProc)', COUNT(*) FROM dbo.iModuleProcedure WHERE storedProcedureID IN (SELECT storedProcedureID FROM @sp)
-UNION ALL SELECT 'iModuleProcedure(byEnt)',  COUNT(*) FROM dbo.iModuleProcedure WHERE entityID IN (SELECT entityID FROM @ent)
-UNION ALL SELECT 'iTableAlias',       COUNT(*) FROM dbo.iTableAlias       WHERE storedProcedureID IN (SELECT storedProcedureID FROM @sp)
-UNION ALL SELECT 'iStoredProcedure',  COUNT(*) FROM dbo.iStoredProcedure  WHERE storedProcedureID IN (SELECT storedProcedureID FROM @sp)
-UNION ALL SELECT 'GroupRight',        COUNT(*) FROM dbo.GroupRight        WHERE entityActionID IN (SELECT entityActionID FROM dbo.iEntityAction WHERE entityID IN (SELECT entityID FROM @ent))
-UNION ALL SELECT 'iMenu(studio)',     COUNT(*) FROM dbo.iMenu             WHERE menuID IN (SELECT menuID FROM dbo.iMenu WHERE isObsolete = 1 AND (codeName LIKE '%Studio%' OR codeName LIKE '%ProductionStudio%' OR codeName LIKE '%RolStyle%' OR codeName IN ('miCreateProductionAction','miProductionActionsStudio','miStudioOrderActPrint','miStats.VolumeOfRealization4Roll','miStats.RollersCreated','miStats.BalanceManagerOrder','miSpecialStudioOrderActions')))
-;
+DECLARE @mnu TABLE(id INT PRIMARY KEY);
+INSERT INTO @mnu SELECT menuID FROM dbo.iMenu WHERE menuID IN (156,110) OR parentID IN (156,110);
 
 -------------------------------------------------------------------------------------------------
--- РАЗДЕЛ 1. ПРАВКА ОБЩИХ ПРОЦЕДУР  (расписано в investigation.md §3c; здесь — заглушки-напоминания)
+-- РАЗДЕЛ 2. DROP программных объектов (процедуры/функции/вью модуля)
 -------------------------------------------------------------------------------------------------
---  ALTER PROCEDURE dbo.AgencyIUD ...        -- убрать «DELETE FROM [Studio] WHERE StudioID = @agencyID»
---  ALTER PROCEDURE dbo.agencyPassport ...   -- убрать 2-й result-set (vStudio/StudioAgency)
---  ALTER PROCEDURE dbo.LookupUsedAgency ... -- убрать «union select distinct o.agencyID from StudioOrder o»
---  ALTER PROCEDURE dbo.UserListByRights ... -- убрать @forStudioOrders + ветку (сверить вызовы!)
---  ALTER PROCEDURE dbo.GroupListByRights ...-- то же
---  ALTER PROCEDURE dbo.RollerIUD ...        -- убрать @studioOrderID + связанный SELECT/IF
---  ALTER PROCEDURE dbo.RollerPassport ...   -- (если удаляем RolStyle) убрать result-set RolStyle
---  косметика: agencies, sl_Agencies — вычистить мёртвые комментарии про Studio
-PRINT '--- 1. Правки общих процедур — выполнить вручную по investigation.md §3c ---';
-
--------------------------------------------------------------------------------------------------
--- РАЗДЕЛ 2. DROP ПРОЦЕДУР / ФУНКЦИЙ / ВЬЮ
--------------------------------------------------------------------------------------------------
-PRINT '--- 2. DROP программных объектов ---';
 DECLARE @drop NVARCHAR(MAX) = N'';
 SELECT @drop = @drop + N'DROP ' +
        CASE o.type WHEN 'V' THEN N'VIEW ' WHEN 'P' THEN N'PROCEDURE ' ELSE N'FUNCTION ' END +
-       QUOTENAME(SCHEMA_NAME(o.schema_id)) + N'.' + QUOTENAME(o.name) + N';' + CHAR(13)+CHAR(10)
+       QUOTENAME(SCHEMA_NAME(o.schema_id)) + N'.' + QUOTENAME(o.name) + N';' + CHAR(10)
 FROM sys.objects o
 WHERE o.type IN ('P','FN','IF','TF','V')
   AND ( o.name LIKE 'Studio%' OR o.name LIKE '%StudioOrder%' OR o.name LIKE 'PaymentStudioOrder%'
@@ -105,14 +56,14 @@ WHERE o.type IN ('P','FN','IF','TF','V')
      OR o.name IN ('f_GetStudioTariffId','f_OrderPrice','vStudio','rpt_StudioOrderAct','rpt_OrderActionBill',
                    'sl_StudioOrderActions','FirmStudioOrderManagers','sl_PaymentStudioOrders','FirmWithOrder',
                    'stat_BalanceManagerOrder','stat_VolumeOfRealizationForRollers',
-                   'statVolumeOfRealizationForRollersFilter','stat_RollerStatisticCreated') );
-PRINT @drop;                 -- посмотреть, что удалится
+                   'statVolumeOfRealizationForRollersFilter','stat_RollerStatisticCreated',
+                   'RollerStyles','RolStyleIUD') );
+PRINT @drop;
 EXEC sys.sp_executesql @drop;
 
 -------------------------------------------------------------------------------------------------
--- РАЗДЕЛ 3. DROP ТАБЛИЦ (листья -> корень)
+-- РАЗДЕЛ 3. DROP таблиц (листья -> корень), затем колонка Roller.rolStyleID, затем RolStyle
 -------------------------------------------------------------------------------------------------
-PRINT '--- 3. DROP таблиц ---';
 DROP TABLE IF EXISTS dbo.PaymentStudioOrderAction;
 DROP TABLE IF EXISTS dbo.PaymentStudioOrder;
 DROP TABLE IF EXISTS dbo.StudioOrderBill;
@@ -124,70 +75,47 @@ DROP TABLE IF EXISTS dbo.StudioPricelist;
 DROP TABLE IF EXISTS dbo.Studio;
 DROP TABLE IF EXISTS dbo.iStudioOrderActionStatus;
 DROP TABLE IF EXISTS dbo.iStudioTariffType;
+IF COL_LENGTH('dbo.Roller','rolStyleID') IS NOT NULL
+    ALTER TABLE dbo.Roller DROP COLUMN rolStyleID;   -- раздел 1 деплоя должен был убрать все ссылки
+DROP TABLE IF EXISTS dbo.RolStyle;
 
 -------------------------------------------------------------------------------------------------
--- РАЗДЕЛ 4. ОЧИСТКА МЕТАДАННЫХ
---   Порядок: сначала «детей», потом «родителей». Между i*-таблицами есть свои FK —
---   при ошибке FK переставить строки.
+-- РАЗДЕЛ 4. Очистка метаданных
 -------------------------------------------------------------------------------------------------
-PRINT '--- 4. Метаданные ---';
+DELETE FROM dbo.GroupRight       WHERE entityActionID IN (SELECT entityActionID FROM dbo.iEntityAction WHERE entityID IN (SELECT id FROM @ent));
+DELETE FROM dbo.GroupMenu        WHERE menuID IN (SELECT id FROM @mnu);
+DELETE FROM dbo.UserAdditionMenu WHERE menuID IN (SELECT id FROM @mnu);
+DELETE FROM dbo.UserAdditionRight WHERE entityActionID IN (SELECT entityActionID FROM dbo.iEntityAction WHERE entityID IN (SELECT id FROM @ent));
 
-DELETE gr FROM dbo.GroupRight gr
-WHERE gr.entityActionID IN (SELECT entityActionID FROM dbo.iEntityAction WHERE entityID IN (SELECT entityID FROM @ent));
-
-DELETE gm FROM dbo.GroupMenu gm
-WHERE gm.menuID IN (
-  SELECT menuID FROM dbo.iMenu WHERE isObsolete = 1
-    AND (codeName LIKE '%Studio%' OR codeName LIKE '%ProductionStudio%' OR codeName LIKE '%RolStyle%'
-      OR codeName IN ('miCreateProductionAction','miProductionActionsStudio','miStudioOrderActPrint',
-                      'miStats.VolumeOfRealization4Roll','miStats.RollersCreated','miStats.BalanceManagerOrder',
-                      'miSpecialStudioOrderActions','miPaymentStudioOrder','miBalanceStudioOrder',
-                      'miFirmBalanceStudioOrder','miPaymentStudioOrderByManager')));
-
--- дочерние пункты меню -> родительские ветки 156 и 110
-DELETE FROM dbo.iMenu WHERE parentID IN (156,110);
+DELETE FROM dbo.iMenu WHERE menuID IN (SELECT id FROM @mnu) AND parentID IN (156,110);
 DELETE FROM dbo.iMenu WHERE menuID IN (156,110);
-DELETE FROM dbo.iMenu WHERE codeName IN ('miProductionStudio','miRolStyle','miStudioTariff','miCreateProductionAction',
-   'miProductionActionsStudio','miSpecialStudioOrderActions','miStats.VolumeOfRealization4Roll','miStats.RollersCreated');
 
-DELETE FROM dbo.iModuleProcedure WHERE storedProcedureID IN (SELECT storedProcedureID FROM @sp);
-DELETE FROM dbo.iModuleProcedure WHERE entityID IN (SELECT entityID FROM @ent);
--- студийные строки для общих сущностей (модуль 210 «Select For Studio Order»)
-DELETE FROM dbo.iModuleProcedure WHERE moduleID = 210;
+DELETE FROM dbo.iModuleProcedure WHERE storedProcedureID IN (SELECT id FROM @sp) OR entityID IN (SELECT id FROM @ent) OR moduleID = 210;
+DELETE FROM dbo.iTableAlias      WHERE storedProcedureID IN (SELECT id FROM @sp);
 
-DELETE FROM dbo.iTableAlias WHERE storedProcedureID IN (SELECT storedProcedureID FROM @sp);
+DELETE FROM dbo.iEntityRelation  WHERE parentEntityID IN (SELECT id FROM @ent) OR childEntityID IN (SELECT id FROM @ent);
+DELETE FROM dbo.iRelationScenario WHERE relationScenarioID IN (16,17);   -- 16: 19->113, 17: ProductionAction
+DELETE FROM dbo.iEntityAttribute WHERE entityID IN (SELECT id FROM @ent);
+DELETE FROM dbo.iEntityAction    WHERE entityID IN (SELECT id FROM @ent);
+DELETE FROM dbo.iEntity          WHERE entityID IN (SELECT id FROM @ent);
 
-DELETE FROM dbo.iEntityRelation
-WHERE parentEntityID IN (SELECT entityID FROM @ent) OR childEntityID IN (SELECT entityID FROM @ent);
-DELETE FROM dbo.iRelationScenario WHERE relationScenarioID = 17;      -- ProductionAction
--- сценарий 16 (19 -> 113) — проверить, что больше нигде не используется, затем:
--- DELETE FROM dbo.iRelationScenario WHERE relationScenarioID = 16;
-
-DELETE FROM dbo.iEntityAttribute WHERE entityID IN (SELECT entityID FROM @ent);
-DELETE FROM dbo.iEntityAction    WHERE entityID IN (SELECT entityID FROM @ent);
-DELETE FROM dbo.iEntity          WHERE entityID IN (SELECT entityID FROM @ent);
-
-DELETE FROM dbo.iStoredProcedure WHERE storedProcedureID IN (SELECT storedProcedureID FROM @sp);
-
-DELETE FROM dbo.iModules WHERE moduleID = 210;
+DELETE FROM dbo.iStoredProcedure WHERE storedProcedureID IN (SELECT id FROM @sp);
+DELETE FROM dbo.iModules         WHERE moduleID = 210;
 
 -------------------------------------------------------------------------------------------------
--- РАЗДЕЛ 5. (ОПЦИЯ) RolStyle — см. investigation.md §6. Выполнять ТОЛЬКО после раздела 1
---   (правка RollerIUD / RollerPassport / vRoller) и ALTER TABLE Roller DROP COLUMN rolStyleID.
+-- РАЗДЕЛ 5. Проверки (должны быть все нули / OK)
 -------------------------------------------------------------------------------------------------
--- ALTER TABLE dbo.Roller DROP COLUMN rolStyleID;      -- FK нет, но есть в vRoller/RollerIUD
--- DROP VIEW dbo.vRoller; CREATE VIEW dbo.vRoller ...  -- пересоздать без rolStyleID
--- DROP PROCEDURE dbo.RollerStyles;
--- DROP PROCEDURE dbo.RolStyleIUD;
--- DROP TABLE dbo.RolStyle;
--- DELETE FROM dbo.iModuleProcedure WHERE entityID = 4;
--- DELETE FROM dbo.iEntityAction    WHERE entityID = 4;
--- DELETE FROM dbo.iEntityAttribute WHERE entityID = 4;
--- DELETE FROM dbo.iEntity          WHERE entityID = 4;
--- DELETE FROM dbo.iStoredProcedure WHERE name IN ('RollerStyles','RolStyleIUD');
--- DELETE FROM dbo.iMenu WHERE codeName = 'miRolStyle';
+SELECT leftover_studio_objects = COUNT(*) FROM sys.objects
+    WHERE name LIKE '%Studio%' OR name IN ('RolStyle','RollerStyles','RolStyleIUD','f_OrderPrice','f_GetStudioTariffId','vStudio');
+SELECT leftover_iStoredProcedure = COUNT(*) FROM dbo.iStoredProcedure WHERE name LIKE '%Studio%' OR name LIKE '%RolStyle%';
+SELECT leftover_iEntity = COUNT(*) FROM dbo.iEntity WHERE entityID IN (SELECT id FROM @ent);
+SELECT orphan_iModuleProcedure = COUNT(*) FROM dbo.iModuleProcedure mp WHERE NOT EXISTS (SELECT 1 FROM dbo.iStoredProcedure sp WHERE sp.storedProcedureID = mp.storedProcedureID);
+SELECT orphan_iTableAlias = COUNT(*) FROM dbo.iTableAlias ta WHERE NOT EXISTS (SELECT 1 FROM dbo.iStoredProcedure sp WHERE sp.storedProcedureID = ta.storedProcedureID);
+SELECT orphan_GroupRight = COUNT(*) FROM dbo.GroupRight gr WHERE NOT EXISTS (SELECT 1 FROM dbo.iEntityAction ea WHERE ea.entityActionID = gr.entityActionID);
+SELECT orphan_iMenu_parent = COUNT(*) FROM dbo.iMenu m WHERE m.parentID IS NOT NULL AND NOT EXISTS (SELECT 1 FROM dbo.iMenu p WHERE p.menuID = m.parentID);
+-- login + startup metadata proc должны отработать:
+EXEC dbo.ProcedureConfigurationRetrieve;
 
--------------------------------------------------------------------------------------------------
-PRINT '=== СУХОЙ ПРОГОН: откат. Для применения — заменить ROLLBACK на COMMIT (после BACKUP). ===';
-ROLLBACK TRAN;
--- COMMIT TRAN;
+PRINT '=== проверьте вывод выше. Для применения: заменить ROLLBACK на COMMIT ===';
+ROLLBACK TRANSACTION;
+-- COMMIT TRANSACTION;
