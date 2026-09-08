@@ -664,6 +664,9 @@
     <Compile Include="Classes\PackModulePricelist.cs">
       <SubType>Code</SubType>
     </Compile>
+    <Compile Include="Classes\Payment.cs">
+      <SubType>Code</SubType>
+    </Compile>
     <Compile Include="Classes\PaymentStudioOrder.cs">
       <SubType>Code</SubType>
     </Compile>

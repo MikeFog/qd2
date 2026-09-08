@@ -144,6 +144,7 @@
     <Compile Include="..\Client\Classes\PackageDiscount.cs" Link="Domain\PackageDiscount.cs" />
     <Compile Include="..\Client\Classes\PackageDiscountPriceList.cs" Link="Domain\PackageDiscountPriceList.cs" />
     <Compile Include="..\Client\Classes\PaintingType.cs" Link="Domain\PaintingType.cs" />
+    <Compile Include="..\Client\Classes\Payment.cs" Link="Domain\Payment.cs" />
     <Compile Include="..\Client\Classes\PaymentCommon.cs" Link="Domain\PaymentCommon.cs" />
     <Compile Include="..\Client\Classes\PaymentStudioOrder.cs" Link="Domain\PaymentStudioOrder.cs" />
     <Compile Include="..\Client\Classes\PriceCalculatorClasses.cs" Link="Domain\PriceCalculatorClasses.cs" />
