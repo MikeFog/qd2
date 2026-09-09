@@ -405,6 +405,9 @@
     <EmbeddedResource Include="Forms\SelectCampaignsForm.resx">
       <DependentUpon>SelectCampaignsForm.cs</DependentUpon>
     </EmbeddedResource>
+    <EmbeddedResource Include="Forms\ChangePaymentTypeMassForm.resx">
+      <DependentUpon>ChangePaymentTypeMassForm.cs</DependentUpon>
+    </EmbeddedResource>
     <EmbeddedResource Include="Forms\UniversalPassportForm.resx">
       <DependentUpon>UniversalPassportForm.cs</DependentUpon>
     </EmbeddedResource>
@@ -1065,6 +1068,12 @@
     </Compile>
     <Compile Include="Forms\SelectCampaignsForm.Designer.cs">
       <DependentUpon>SelectCampaignsForm.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Forms\ChangePaymentTypeMassForm.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="Forms\ChangePaymentTypeMassForm.Designer.cs">
+      <DependentUpon>ChangePaymentTypeMassForm.cs</DependentUpon>
     </Compile>
     <Compile Include="Forms\SponsorTariffPassport.cs">
       <SubType>Form</SubType>

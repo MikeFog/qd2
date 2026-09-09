@@ -181,6 +181,11 @@ namespace Merlin.Classes
             get { return this[ParamNames.CampaignTypeName].ToString(); }
         }
 
+        public int PaymentTypeId
+        {
+            get { return int.Parse(this[ParamNames.PaymentTypeID].ToString()); }
+        }
+
 		public ActionOnMassmedia Action
 		{
 			set { this[Classes.Action.ParamNames.ActionId] = value.ActionId; }
@@ -563,9 +568,9 @@ namespace Merlin.Classes
 
 		// Виртуальная заглушка PrintOnAirInquire(Form) переехала в Campaign.WinForms.cs.
 
-        private bool IsChangePossible
+        internal bool IsChangePossible
 		{
-			get 
+			get
 			{
                 if (SecurityManager.LoggedUser.IsAdmin || SecurityManager.LoggedUser.IsBookKeeper|| !Action.IsConfirmed) return true;
                 // если акция началась в предыдущем месяце или ранее, то нельзя

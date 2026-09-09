@@ -46,6 +46,8 @@ namespace Merlin.Classes
 				SplitCampaign();
 			else if (actionName == ActionNames.SplitAction)
 				SplitAction();
+			else if (actionName == ActionNames.ChangePaymentTypeMass)
+				ChangePaymentTypeMass(owner);
 			else if (actionName == ActionNames.Restore)
 				Restore(owner);
 			else
@@ -360,6 +362,29 @@ namespace Merlin.Classes
 				{
 					Cursor.Current = Cursors.Default;
 				}
+			}
+		}
+
+		private void ChangePaymentTypeMass(IWin32Window owner)
+		{
+			try
+			{
+				ChangePaymentTypeMassForm form = new ChangePaymentTypeMassForm(this);
+				if (form.ShowDialog(owner) != DialogResult.OK) return;
+
+				Cursor.Current = Cursors.WaitCursor;
+				ApplyPaymentTypeChangeMass(form.SelectedPaymentTypeId, form.SelectedCampaigns, out DataTable tableErrors);
+
+				if (tableErrors.Rows.Count > 0)
+					Globals.ShowSimpleJournal(EntityManager.GetEntity((int)Entities.ErrTmplGen), "Ошибки смены типа оплаты", tableErrors);
+				else
+					UserMessage.ShowInformation(Properties.Resources.PaymentTypeChangeSuccess);
+
+				FireContainerRefreshed();
+			}
+			finally
+			{
+				Cursor.Current = Cursors.Default;
 			}
 		}
 

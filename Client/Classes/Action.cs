@@ -49,6 +49,7 @@ namespace Merlin.Classes
 
             public const string ChangeFirm = "ChangeFirm";
             public const string ChangeCreator = "ChangeCreator";
+            public const string ChangePaymentTypeMass = "ChangePaymentTypeMass";
             public const string ChangeOwner = "ChangeOwner";
             public const string ImportCampaign = "ImportCampaignMediaPlus";
 

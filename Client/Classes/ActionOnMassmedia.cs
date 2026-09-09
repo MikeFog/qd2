@@ -248,6 +248,47 @@ namespace Merlin.Classes
         }
 
         // Clone переехал в ActionOnMassmedia.WinForms.cs.
+        // ChangePaymentTypeMass (диалог) — тоже там; здесь только применение.
+
+        /// <summary>
+        /// Массово меняет тип оплаты у выбранных кампаний акции. Каждая кампания —
+        /// своя транзакция (CampaignIUD), best-effort: сбойные попадают в
+        /// <paramref name="tableErrors"/> (пустая, если ошибок не было), остальные
+        /// применяются. Пересчёт не нужен — тип оплаты на цену не влияет.
+        /// </summary>
+        internal void ApplyPaymentTypeChangeMass(int paymentTypeId, IEnumerable<PresentationObject> campaigns, out DataTable tableErrors)
+        {
+            tableErrors = ErrorManager.CreateErrorsTable();
+
+            foreach (PresentationObject checkedCampaign in campaigns)
+            {
+                int campaignId = int.Parse(checkedCampaign.IDs[0].ToString());
+                string label = string.IsNullOrEmpty(checkedCampaign.Name)
+                    ? checkedCampaign[Campaign.ParamNames.MassmediaName].ToString()
+                    : checkedCampaign.Name;
+
+                try
+                {
+                    Campaign campaign = Campaign.GetCampaignById(campaignId);
+                    if (campaign == null) continue;
+                    if (campaign.PaymentTypeId == paymentTypeId) continue;
+
+                    if (!campaign.IsChangePossible)
+                    {
+                        ErrorManager.AddErrorRow(tableErrors, DateTime.Now,
+                            string.Format("{0}: {1}", label, MessageAccessor.GetMessage("ChangePaymentTypeIsForbidden")));
+                        continue;
+                    }
+
+                    campaign.ApplyPaymentTypeChange(paymentTypeId);
+                }
+                catch (Exception ex)
+                {
+                    ErrorManager.AddErrorRow(tableErrors, DateTime.Now,
+                        string.Format("{0}: {1}", label, ErrorManager.GetErrorMessage(ex)));
+                }
+            }
+        }
 
         /// <summary>
         /// Клонирует акцию с выбранными кампаниями (<paramref name="selectedItems"/> —
@@ -416,7 +457,7 @@ namespace Merlin.Classes
 					Action.ActionNames.ChangeCreator, Issue.ActionNames.SetFirst, Issue.ActionNames.SetSecond,
 					Issue.ActionNames.SetLast, Issue.ActionNames.SetUnknow, Constants.EntityActions.Transfer,
 					Constants.Actions.Substitute, Campaign.ActionNames.ChangePaymentType,
-					Campaign.ActionNames.ChangeAgency}).Contains(actionName))
+					Campaign.ActionNames.ChangeAgency, Action.ActionNames.ChangePaymentTypeMass}).Contains(actionName))
 				return false;
 			return true;
 		}
