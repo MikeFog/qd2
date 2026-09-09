@@ -461,11 +461,25 @@ namespace FogSoft.WinForm.Controls
 
         private void RebuildTree(PresentationObject presentationObject, Entity parentEntity)
 		{
-            if (tvStructure.SelectedNode == null) return;
+            TreeNode originalNode = tvStructure.SelectedNode;
+            if (originalNode == null || parentEntity == null) return;
 
-			while (!CurrentObject.Entity.Equals(parentEntity))
-			{
-				tvStructure.SelectedNode = tvStructure.SelectedNode.Parent;
+            // Поднимаемся по выделению до узла, представляющего parentEntity
+            // (сравнение направленное: EntityCampaign.Equals распознаёт все типы
+            // кампаний). Если такого предка в цепочке нет (замена ролика из контекста
+            // вне поддерева кампании) — исходный while уходил за корень дерева и падал
+            // с NRE на CurrentObject.Entity. Теперь: не перестраиваем, возвращаем
+            // исходное выделение.
+            while (tvStructure.SelectedNode != null
+                   && CurrentObject?.Entity?.Equals(parentEntity) != true)
+            {
+                tvStructure.SelectedNode = tvStructure.SelectedNode.Parent;
+            }
+
+            if (tvStructure.SelectedNode == null)
+            {
+                tvStructure.SelectedNode = originalNode;
+                return;
             }
 
 			RebuildTree(presentationObject);
