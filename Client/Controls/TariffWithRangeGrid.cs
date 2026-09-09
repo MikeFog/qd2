@@ -51,6 +51,13 @@ namespace Merlin.Controls
 	    private DataTable Data { get; set; }
         public DataTable AddedIssues { get; set; }
 
+        /// <summary>
+        /// В сетке есть хотя бы один слот. Пусто, когда в акции нет линейных кампаний
+        /// (веер модульной/спонсорской акции): расставлять и редактировать нечего.
+        /// Заполняется после populateGrid / RefreshGrid.
+        /// </summary>
+        public bool HasSlots => Data != null && Data.Rows.Count > 0;
+
         // Режим ячейки: вместо остатка свободного времени — номера роликов текущей акции
         // (см. RollerNumbers), размещённых в этом слоте. Карта номеров фиксируется снаружи
         // (CampaignForm) на момент включения режима, сама повторно не пересчитывается.

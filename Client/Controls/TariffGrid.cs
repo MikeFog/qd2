@@ -725,6 +725,11 @@ namespace Merlin.Controls
 
         public void RefreshWindowsColors()
         {
+            // Веер модульной/спонсорской акции даёт пустую сетку — _tariffWindows не создаётся
+            // (populateGrid оставляет null при отсутствии окон). Красить нечего.
+            if (_tariffWindows == null)
+                return;
+
             int rowCount = _tariffWindows.GetLength(0);
             int columnCount = _tariffWindows.GetLength(1);
 

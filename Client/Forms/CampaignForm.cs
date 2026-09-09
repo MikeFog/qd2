@@ -242,6 +242,15 @@ namespace Merlin.Forms
 			tbSetManagerDiscount.Enabled = !IsRangeCampaign;
 		}
 
+		/// <summary>
+		/// Полностью гасит панель инструментов формы. Нужно для веера акции без линейных
+		/// кампаний: сетка пустая, любые действия тулбара бессмысленны и часть падает с ошибкой.
+		/// </summary>
+		protected void DisableToolbar()
+		{
+			tsCampaign.Enabled = false;
+		}
+
 		private void InitModulesList()
 		{
 			if(tbbModules.Visible)

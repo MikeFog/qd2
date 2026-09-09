@@ -20,9 +20,12 @@ as
 begin 
 	set nocount on;
 
+	-- Веер ставит точечные выпуски в рекламные окна — это операция только для линейных
+	-- кампаний (campaignTypeID = 1). Модульные/спонсорские/пакетно-модульные кампании акции
+	-- в курсор не берём (иначе линейный Issue уехал бы в кампанию с модульным ценообразованием).
 	declare cur_massmedias cursor local fast_forward for
-	select c.massmediaID, c.campaignID from dbo.Campaign c where c.actionID = @actionID
-	
+	select c.massmediaID, c.campaignID from dbo.Campaign c where c.actionID = @actionID and c.campaignTypeID = 1
+
 	declare @massmediaID smallint, @campaignID int, @windowID int, @price decimal(18,2), @windowDateActual datetime, @firmID int
 	
 	select @firmID = a.firmID

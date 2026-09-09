@@ -70,6 +70,15 @@ namespace Merlin.Forms.CreateActionMaster
 				EnableWindowSelectionActions();
 				EnableRangeIssueDragDrop();
 
+				// Веер работает только с линейными кампаниями. Если в акции их нет (модульная/
+				// спонсорская), сетка пустая — гасим тулбар, чтобы его кнопки не падали на пустоте.
+				if (!((TariffWithRangeGrid)_tariffGrid).HasSlots)
+				{
+					DisableToolbar();
+					UserMessage.ShowInformation(
+						"В акции нет линейных кампаний. Веерное размещение доступно только для линейных кампаний — " +
+						"модульные и спонсорские размещаются отдельно.");
+				}
             }
 			catch (Exception ex)
 			{

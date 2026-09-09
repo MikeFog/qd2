@@ -385,7 +385,10 @@ namespace Merlin.Classes
             List<Campaign> actualCampaigns = new List<Campaign>();
             foreach (Campaign campaign in campaigns)
             {
-                if (campaign != null)
+                // Веер работает только с линейными кампаниями. Выпуски модульных/спонсорских
+                // кампаний акции лежат в тех же таблицах, но в веерных «Добавленных выпусках»
+                // им не место — иначе на пустой сетке появляется список чужих выпусков.
+                if (campaign != null && campaign.CampaignType == Campaign.CampaignTypes.Simple)
                     actualCampaigns.Add(campaign);
             }
 

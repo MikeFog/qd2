@@ -13,11 +13,15 @@ BEGIN
     --------------------------------------------------------------------
     -- 1) Список СМИ в рамках акции (ВАЖНО: DISTINCT!)
     --------------------------------------------------------------------
+    -- Веер работает только с линейными кампаниями (campaignTypeID = 1): выпуск ставится
+    -- точечно в конкретное рекламное окно. Модульные (3), спонсорские (2) и пакетно-модульные (4)
+    -- размещаются по модулям/программам с собственным ценообразованием и в веер попадать не должны.
     SELECT DISTINCT c.massmediaID
     INTO #mm
     FROM dbo.Campaign c
     WHERE c.actionID = @actionID
-      AND c.massmediaID IS NOT NULL;
+      AND c.massmediaID IS NOT NULL
+      AND c.campaignTypeID = 1;
     CREATE UNIQUE CLUSTERED INDEX CX_mm ON #mm(massmediaID);
     DECLARE @mmCnt int = (SELECT COUNT(*) FROM #mm);
     --------------------------------------------------------------------

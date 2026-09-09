@@ -17,9 +17,12 @@ AS
 BEGIN
 	SET NOCOUNT ON;
 
+	-- Симметрично AddRangeIssues: удаление выпусков веера касается только линейных кампаний
+	-- (campaignTypeID = 1). Выпуски модульных/спонсорских кампаний живут в своих таблицах
+	-- (ModuleIssue/ProgramIssue) и этой процедурой не трогаются.
 	declare cur_massmedias cursor local fast_forward for
-	select c.massmediaID, c.campaignID from dbo.Campaign c where c.actionID = @actionID
-	
+	select c.massmediaID, c.campaignID from dbo.Campaign c where c.actionID = @actionID and c.campaignTypeID = 1
+
 	declare @massmediaID smallint, @campaignID int, @issueID int
 	
 	open cur_massmedias
