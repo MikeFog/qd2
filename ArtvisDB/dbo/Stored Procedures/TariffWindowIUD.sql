@@ -60,6 +60,39 @@ begin
 end
 ELSE IF @actionName = 'UpdateItem'
 begin
+	-- Объединённое окно (windowPrevId/windowNextId): перенос времени выхода не
+	-- должен ломать порядок окон в эфире (окно-«хвост» не может выйти раньше
+	-- окна-«головы»). См. docs/window-merging.md §3 (#1). Проверяем, только если
+	-- реально меняется время выхода ИЛИ впервые ставится связь (объединение);
+	-- правки isDisabled / price / продолжительности сюда не попадают.
+	if (@windowPrevId is not null or @windowNextId is not null)
+	begin
+		declare @oldActual datetime, @oldPrevId int, @oldNextId int
+		select @oldActual = windowDateActual, @oldPrevId = windowPrevId, @oldNextId = windowNextId
+		from [TariffWindow] where windowId = @windowId
+
+		if @windowDateActual <> @oldActual
+			or isnull(@windowPrevId, 0) <> isnull(@oldPrevId, 0)
+			or isnull(@windowNextId, 0) <> isnull(@oldNextId, 0)
+		begin
+			if @windowPrevId is not null
+				and exists (select 1 from [TariffWindow]
+					where windowId = @windowPrevId and windowDateActual >= @windowDateActual)
+			begin
+				raiserror('LinkedWindowsWrongOrder', 16, 1)
+				return
+			end
+
+			if @windowNextId is not null
+				and exists (select 1 from [TariffWindow]
+					where windowId = @windowNextId and windowDateActual <= @windowDateActual)
+			begin
+				raiserror('LinkedWindowsWrongOrder', 16, 1)
+				return
+			end
+		end
+	end
+
 	UPDATE	
 		tw
 	SET			
