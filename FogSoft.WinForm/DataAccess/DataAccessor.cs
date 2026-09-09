@@ -86,6 +86,12 @@ namespace FogSoft.WinForm.DataAccess
 		private static readonly Dictionary<string, ProcedureConfig> procedureConfigs = new Dictionary<string, ProcedureConfig>();
         private static readonly Dictionary<string, ProcedureConfig> procedureConfigsByName = new Dictionary<string, ProcedureConfig>();
         private static readonly IMemoryCache _cache = new MemoryCache(new MemoryCacheOptions());
+
+        // Ключи из iMessage, которые показываются пользователю, но означают реальный
+        // сбой, а не отказ по бизнес-правилу, — их запись остаётся уровнем ERROR
+        // (со стеком и execScript). См. docs/LOGGING.md.
+        private static readonly HashSet<string> _businessMessagesKeptAsError =
+            new HashSet<string>(StringComparer.OrdinalIgnoreCase) { "InternalError", "TransactionError" };
         // Транзакция живёт между отдельными вызовами: BeginTransaction ... DoAction ...
         // CommitTransaction. Она должна следовать за логическим потоком выполнения,
         // а не за потоком ОС: в вебе между этими вызовами возможен await и переход на
@@ -499,16 +505,48 @@ namespace FogSoft.WinForm.DataAccess
                     // ignore logging preparation errors
                 }
 
-                // Всегда логируем вызов процедуры с параметрами при ошибке
-                ErrorManager.Log.Error(
-                    string.Format("ExecuteNonQuery failed. Procedure: {0}{1}{2}",
-                        procedureName,
-                        Environment.NewLine,
-                        execScript ?? "<ExecScript unavailable>"),
-                    exp);
+                // Отказ по бизнес-правилу (RAISERROR('Ключ', 16, 1), известный
+                // MessageAccessor) — это нормальный отказ пользователю, а не сбой.
+                // Пишем компактный WARN без стека и execScript, чтобы не забивать лог.
+                // Настоящие ошибки (таймаут, дедлок, нарушение ограничения, InternalError
+                // и т.п.) — прежний ERROR со стеком. См. docs/LOGGING.md.
+                if (IsHandledBusinessMessage(exp))
+                {
+                    ErrorManager.Log.Warn(
+                        string.Format("Отклонено бизнес-правилом. Процедура: {0} — {1}",
+                            procedureName, exp.Message));
+                }
+                else
+                {
+                    // Всегда логируем вызов процедуры с параметрами при ошибке
+                    ErrorManager.Log.Error(
+                        string.Format("ExecuteNonQuery failed. Procedure: {0}{1}{2}",
+                            procedureName,
+                            Environment.NewLine,
+                            execScript ?? "<ExecScript unavailable>"),
+                        exp);
+                }
 
                 throw;
             }
+        }
+
+        /// <summary>
+        /// True, если исключение — это отказ по бизнес-правилу: RAISERROR('Ключ', 16, 1)
+        /// с известным MessageAccessor ключом, который UI показывает пользователю и не
+        /// логирует (см. <see cref="Classes.ErrorManager.PublishError"/>). Ключи из
+        /// <see cref="_businessMessagesKeptAsError"/> исключены — это реальные сбои.
+        /// </summary>
+        private static bool IsHandledBusinessMessage(Exception exp)
+        {
+            if (!(exp is SqlException sqlEx) || sqlEx.Number != 50000 || sqlEx.Class != 16)
+                return false; // не прикладной RAISERROR: таймаут (-2), дедлок (1205), FK (547) и т.п.
+
+            if (_businessMessagesKeptAsError.Contains(sqlEx.Message))
+                return false;
+
+            try { return MessageAccessor.GetMessage(sqlEx.Message) != null; }
+            catch { return false; } // не смогли проверить словарь — оставляем ERROR
         }
 
 		private static string CreateSQLwithTransaction(string procedureName)
