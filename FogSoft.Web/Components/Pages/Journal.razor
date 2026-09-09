@@ -150,7 +150,7 @@ else
         }
         catch (Exception ex)
         {
-            _error = ex.GetType().Name + ": " + ex.Message;
+            _error = ErrorPresenter.Describe(ex);
         }
     }
 
@@ -164,7 +164,7 @@ else
         }
         catch (Exception ex)
         {
-            _error = ex.GetType().Name + ": " + ex.Message;
+            _error = ErrorPresenter.Describe(ex);
         }
     }
 
@@ -208,7 +208,7 @@ else
         }
         catch (Exception ex)
         {
-            _error = Describe(ex);
+            _error = ErrorPresenter.Describe(ex);
         }
     }
 
@@ -220,7 +220,7 @@ else
         }
         catch (Exception ex)
         {
-            _error = Describe(ex);
+            _error = ErrorPresenter.Describe(ex);
         }
     }
 
@@ -288,17 +288,9 @@ else
         }
         catch (Exception ex)
         {
-            _saveError = Describe(ex);
+            _saveError = ErrorPresenter.Describe(ex);
             return false;
         }
-    }
-
-    private static string Describe(Exception ex)
-    {
-        var parts = new List<string>();
-        for (Exception? e = ex; e != null; e = e.InnerException)
-            parts.Add(e.GetType().Name + ": " + e.Message);
-        return string.Join(" → ", parts);
     }
 
 }
