@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Data;
+using System.Drawing;
 using System.Windows.Forms;
 using FogSoft.WinForm;
 using FogSoft.WinForm.Classes;
@@ -175,6 +176,7 @@ namespace Merlin.Forms.CreateActionMaster
 				InitRollersList();
 				InitAddedIssuesList();
 				InitComboModuleGrid();
+				EnableIssueDragDrop();
 				ShowStatistics();   // у готовой акции она есть сразу, а не после первого клика
 			}
 			catch (Exception ex)
@@ -844,6 +846,270 @@ namespace Merlin.Forms.CreateActionMaster
 				DataAccessor.RollbackTransaction();
 				throw;
 			}
+		}
+
+		#endregion
+
+		#region Drag-and-drop переноса выпуска между ячейками -
+
+		/// <summary>
+		/// Груз переноса: модуль и день ячейки-источника + строки выпусков акции из неё.
+		/// Единый тип для обоих источников drag - строки панели «Добавленные выпуски»
+		/// (один выпуск) и синей ячейки грида (все выпуски акции в этой ячейке).
+		/// </summary>
+		private class IssueDragPayload
+		{
+			public readonly int SourceModuleID;
+			public readonly DateTime SourceDate;
+			public readonly List<DataRow> IssueRows;
+
+			public IssueDragPayload(int sourceModuleID, DateTime sourceDate, List<DataRow> issueRows)
+			{
+				SourceModuleID = sourceModuleID;
+				SourceDate = sourceDate;
+				IssueRows = issueRows;
+			}
+		}
+
+		private DataRow _dragSourceRow;
+		private ComboModuleDay _dragCandidateDay;
+		private Point _dragStartPoint;
+
+		/// <summary>
+		/// Перенос выпуска мышкой в любую ячейку грида (в т.ч. другой модуль/радиостанцию) -
+		/// по образцу тарифной сетки обычной кампании (CampaignForm.EnableIssueDragDrop).
+		/// Тащить можно строку панели «Добавленные выпуски» либо синюю ячейку грида (тогда
+		/// переносятся все выпуски акции в этой ячейке).
+		/// </summary>
+		private void EnableIssueDragDrop()
+		{
+			DataGridView sourceGrid = grdAddedIssues.InternalGrid;
+			sourceGrid.MouseDown += AddedIssues_MouseDown;
+			sourceGrid.MouseMove += AddedIssues_MouseMove;
+
+			DataGridView targetGrid = comboModuleGrid.RawDataGridView;
+			targetGrid.AllowDrop = true;
+			targetGrid.MouseDown += ComboGrid_MouseDown;
+			targetGrid.MouseMove += ComboGrid_MouseMove;
+			targetGrid.DragEnter += ComboGrid_DragEnter;
+			targetGrid.DragOver += ComboGrid_DragOver;
+			targetGrid.DragDrop += ComboGrid_DragDrop;
+		}
+
+		private void AddedIssues_MouseDown(object sender, MouseEventArgs e)
+		{
+			_dragSourceRow = null;
+			if (e.Button != MouseButtons.Left || _issues == null) return;
+
+			DataGridView grid = (DataGridView) sender;
+			DataGridView.HitTestInfo hit = grid.HitTest(e.X, e.Y);
+			if (hit.RowIndex < 0) return;
+
+			DataRowView drv = grid.Rows[hit.RowIndex].DataBoundItem as DataRowView;
+			if (drv == null) return;
+
+			_dragSourceRow = drv.Row;
+			_dragStartPoint = e.Location;
+		}
+
+		private void AddedIssues_MouseMove(object sender, MouseEventArgs e)
+		{
+			if (e.Button != MouseButtons.Left || _dragSourceRow == null || !DragThresholdExceeded(e)) return;
+
+			DataRow row = _dragSourceRow;
+			_dragSourceRow = null;
+
+			IssueDragPayload payload = new IssueDragPayload(
+				Convert.ToInt32(row[ComboModule.ParamNames.ModuleId]),
+				Convert.ToDateTime(row[ComboModule.ParamNames.IssueDate]).Date,
+				new List<DataRow> { row });
+			grdAddedIssues.InternalGrid.DoDragDrop(payload, DragDropEffects.Move);
+		}
+
+		/// <summary>
+		/// Старт переноса прямо из синей ячейки грида (в ней есть выпуски акции). Только в
+		/// режиме просмотра: в режиме добавления клик по ячейке ставит выпуск, а выделение
+		/// прямоугольником нужно для массового Del - трогаем жест лишь на синей ячейке.
+		/// </summary>
+		private void ComboGrid_MouseDown(object sender, MouseEventArgs e)
+		{
+			_dragCandidateDay = null;
+			if (e.Button != MouseButtons.Left || comboModuleGrid.EditMode || _issues == null) return;
+
+			DataGridView grid = (DataGridView) sender;
+			DataGridView.HitTestInfo hit = grid.HitTest(e.X, e.Y);
+			ComboModuleDay day = comboModuleGrid.GetDayAt(hit.RowIndex, hit.ColumnIndex);
+			if (day == null || GetIssueRowsInDay(day).Count == 0) return;
+
+			_dragCandidateDay = day;
+			_dragStartPoint = e.Location;
+		}
+
+		private void ComboGrid_MouseMove(object sender, MouseEventArgs e)
+		{
+			if (e.Button != MouseButtons.Left || _dragCandidateDay == null || !DragThresholdExceeded(e)) return;
+
+			ComboModuleDay day = _dragCandidateDay;
+			_dragCandidateDay = null;
+
+			List<DataRow> rows = GetIssueRowsInDay(day);
+			if (rows.Count == 0) return;
+
+			IssueDragPayload payload = new IssueDragPayload(day.ModuleID, day.Date.Date, rows);
+			((DataGridView) sender).DoDragDrop(payload, DragDropEffects.Move);
+		}
+
+		private bool DragThresholdExceeded(MouseEventArgs e)
+		{
+			Size dragSize = SystemInformation.DragSize;
+			return Math.Abs(e.X - _dragStartPoint.X) > dragSize.Width
+				|| Math.Abs(e.Y - _dragStartPoint.Y) > dragSize.Height;
+		}
+
+		/// <summary>Строки панели с выпусками акции в этой ячейке (тот же модуль и день).</summary>
+		private List<DataRow> GetIssueRowsInDay(ComboModuleDay day)
+		{
+			List<DataRow> rows = new List<DataRow>();
+			if (_issues == null) return rows;
+
+			foreach (DataRow row in _issues.Rows)
+			{
+				if (Convert.ToInt32(row[ComboModule.ParamNames.ModuleId]) != day.ModuleID) continue;
+				if (Convert.ToDateTime(row[ComboModule.ParamNames.IssueDate]).Date != day.Date.Date) continue;
+				rows.Add(row);
+			}
+			return rows;
+		}
+
+		private void ComboGrid_DragEnter(object sender, DragEventArgs e)
+		{
+			e.Effect = e.Data.GetDataPresent(typeof(IssueDragPayload))
+				? DragDropEffects.Move
+				: DragDropEffects.None;
+		}
+
+		private void ComboGrid_DragOver(object sender, DragEventArgs e)
+		{
+			e.Effect = DragDropEffects.None;
+			IssueDragPayload payload = e.Data.GetData(typeof(IssueDragPayload)) as IssueDragPayload;
+			if (payload == null) return;
+
+			if (ResolveDropTarget(payload, e) != null)
+				e.Effect = DragDropEffects.Move;
+		}
+
+		private void ComboGrid_DragDrop(object sender, DragEventArgs e)
+		{
+			try
+			{
+				IssueDragPayload payload = e.Data.GetData(typeof(IssueDragPayload)) as IssueDragPayload;
+				if (payload == null) return;
+
+				ComboModuleDay target = ResolveDropTarget(payload, e);
+				if (target == null) return;
+
+				string where = string.Format("модуль «{0}» ({1}), {2:dd.MM.yyyy}",
+					target.ModuleName, target.MassmediaName, target.Date);
+				string question = payload.IssueRows.Count == 1
+					? string.Format("Перенести выпуск в {0}?", where)
+					: string.Format("Перенести выпуски ({0} шт.) в {1}?", payload.IssueRows.Count, where);
+				if (UserMessage.ShowQuestion(question) != DialogResult.Yes) return;
+
+				Application.DoEvents();
+				Cursor = Cursors.WaitCursor;
+				MoveIssuesToCell(payload, target);
+			}
+			catch (Exception ex)
+			{
+				ErrorManager.PublishError(ex);
+			}
+			finally
+			{
+				Cursor = Cursors.Default;
+			}
+		}
+
+		/// <summary>
+		/// Ячейка под курсором, если на неё можно перенести груз: любой модуль/день, где
+		/// модуль в этот день выходит (ячейка не пустая), кроме самой ячейки-источника.
+		/// Иначе null.
+		/// </summary>
+		private ComboModuleDay ResolveDropTarget(IssueDragPayload payload, DragEventArgs e)
+		{
+			DataGridView grid = comboModuleGrid.RawDataGridView;
+			Point pt = grid.PointToClient(new Point(e.X, e.Y));
+			DataGridView.HitTestInfo hit = grid.HitTest(pt.X, pt.Y);
+
+			ComboModuleDay target = comboModuleGrid.GetDayAt(hit.RowIndex, hit.ColumnIndex);
+			if (target == null) return null;
+
+			// та же ячейка (тот же модуль и день) - переносить некуда
+			if (target.ModuleID == payload.SourceModuleID && target.Date.Date == payload.SourceDate.Date)
+				return null;
+
+			return target;
+		}
+
+		/// <summary>
+		/// Перенос выпусков в любую ячейку - одной транзакцией: удаляем исходные ModuleIssue
+		/// и создаём такие же в целевой ячейке (ролик и позиция - из исходного выпуска,
+		/// модуль/прайс-лист/цена - целевой ячейки), затем пересчёт акции. Паттерн
+		/// BeginTransaction+Delete+AddModuleIssue+Recalculate тот же, что в
+		/// CampaignForm.MoveIssuesToWindow.
+		///
+		/// Целевой модуль может быть на другой радиостанции - тогда это перенос в другую
+		/// модульную кампанию: недостающую кампанию заводит EnsureCampaign (как при клике),
+		/// а опустевшую исходную убирает DeleteEmptyCampaignsAndAction (как после удаления).
+		/// Оба шага уже используются формой, здесь только собраны вместе.
+		/// </summary>
+		private void MoveIssuesToCell(IssueDragPayload payload, ComboModuleDay target)
+		{
+			Entity issueEntity = ModuleIssue.GetEntity();
+			List<int> campaignsCreated = new List<int>();
+
+			DataAccessor.BeginTransaction();
+			try
+			{
+				foreach (DataRow row in payload.IssueRows)
+				{
+					Roller roller = new Roller(Convert.ToInt32(row[Roller.ParamNames.RollerId]));
+					RollerPositions position = (RollerPositions)
+						ParseHelper.GetInt32FromObject(row[Issue.ParamNames.PositionId], 0);
+
+					if (!issueEntity.CreateObject(row).Delete(true))
+						throw new InvalidOperationException("Не удалось удалить выпуск из исходной ячейки.");
+
+					bool campaignCreated;
+					Campaign campaign = EnsureCampaign(target.MassmediaID, out campaignCreated);
+					if (campaignCreated) campaignsCreated.Add(target.MassmediaID);
+
+					ModuleIssue moved = campaign.AddModuleIssue(
+						GetModule(target), roller, GetModulePricelist(target), target.Date, position, null);
+					if (moved == null)
+						throw new InvalidOperationException(string.Format(
+							"Модуль «{0}» ({1}) не выходит {2:dd.MM.yyyy} целиком, выпуск не перенесён.",
+							target.ModuleName, target.MassmediaName, target.Date));
+				}
+
+				_action.Recalculate();
+				DataAccessor.CommitTransaction();
+			}
+			catch
+			{
+				DataAccessor.RollbackTransaction();
+
+				// кампании, заведённые в откаченной транзакции, в базе не остались - забываем и в памяти
+				foreach (int massmediaID in campaignsCreated)
+				{
+					_campaignByMassmedia.Remove(massmediaID);
+					_campaignsCreatedThisSession.Remove(massmediaID);
+				}
+				throw;
+			}
+
+			DeleteEmptyCampaignsAndAction();   // источник мог остаться пустым
+			ClearLastAdded();                  // перенос - не «последнее добавление», кнопка «Отменить» его не касается
+			RefreshAfterChange();
 		}
 
 		#endregion

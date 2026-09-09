@@ -714,6 +714,23 @@ namespace Merlin.Controls
 			return days;
 		}
 
+		/// <summary>
+		/// Модуль и день ячейки по её индексам в гриде, или null - служебная строка/колонка
+		/// либо в этот день модуля нет. Аналог TariffGrid.GetTariffWindowAt: нужен форме для
+		/// drag-and-drop переноса выпуска между ячейками.
+		/// </summary>
+		public ComboModuleDay GetDayAt(int rowIndex, int columnIndex)
+		{
+			if (_days == null) return null;
+			if (rowIndex < FIXED_ROWS || columnIndex < FIXED_COLS) return null;
+
+			int moduleIndex = rowIndex - FIXED_ROWS;
+			int dayIndex = columnIndex - FIXED_COLS;
+			if (moduleIndex >= _days.GetLength(0) || dayIndex >= _days.GetLength(1)) return null;
+
+			return _days[moduleIndex, dayIndex];
+		}
+
 		/// <summary>Число выпусков за день - строка под датами. Заполняет форма размещения.</summary>
 		public void SetIssuesCount(DateTime date, int count)
 		{
