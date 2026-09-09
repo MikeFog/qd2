@@ -13,7 +13,8 @@
 |---------|--------------|---------|
 | `INFO`  | Всегда (root = Info) | Итог генерации по шаблону, медленные SP |
 | `DEBUG` | Только если логгер явно выставлен в Debug | Время C#-операций (OperationScope), DAL-детали |
-| `ERROR` | Всегда | Необработанные исключения через ErrorManager |
+| `WARN`  | Всегда | Нарушение ограничения SQL (`547`/`2627`/`2601`); отказ по бизнес-правилу (`RAISERROR('Ключ', 16, 1)`) |
+| `ERROR` | Всегда | Необработанные исключения, таймауты, дедлоки, `InternalError`/`TransactionError` |
 
 ## Два слоя измерения времени
 
@@ -152,6 +153,31 @@ ERROR - {HelpLink.ProdName=…, Parameter: theDate=…, Parameter: IsGroupByAgen
 `MessageAccessor` и дальше не всплывают, но `ErrorManager.PublishError` пишет по ним
 запись уровня `WARN` (имя процедуры, текст ошибки и `ex.Data` с прикладными параметрами).
 Если сам показ сообщения упал — добавляются обычные `ERROR`-записи.
+
+### Отказ по бизнес-правилу (`RAISERROR('Ключ', 16, 1)`)
+
+`IssueIUD`, `hlp_IssueVerify`, `ModuleIssueIUD` и т.п. отклоняют действие пользователя
+через `RAISERROR` с ключом-сообщением (`WindowOverflow`, `DeadLineViolation`,
+`TimeBonusExceed`, …), который есть в таблице `iMessage`. UI это ловит и просто
+показывает пользователю (`ErrorManager.PublishError` такие не логирует).
+
+`DataAccessor.ExecuteNonQuery` для таких отказов пишет **одну строку `WARN`** без стека
+и без `execScript`:
+```
+WARN  - Отклонено бизнес-правилом. Процедура: IssueIUD — WindowOverflow
+```
+Признак (`DataAccessor.IsHandledBusinessMessage`): `SqlException.Number == 50000`,
+`Class == 16`, ключ есть в `MessageAccessor`. Исключения — `InternalError` и
+`TransactionError` (`_businessMessagesKeptAsError`): они в `iMessage` есть, но означают
+реальный сбой, поэтому остаются `ERROR` со стеком и `execScript`.
+
+Настоящие ошибки IUD-процедуры (таймаут, дедлок, нарушение ограничения, необработанное
+исключение внутри SP) по-прежнему пишутся как `ERROR`:
+```
+ERROR - ExecuteNonQuery failed. Procedure: IssueIUD
+        EXEC	[dbo].[IssueIUD] @issueID = NULL OUTPUT, ...       ← execScript
+        System.Data.SqlClient.SqlException ...                    ← текст + стек
+```
 
 ## Существующие логгеры в проекте
 
