@@ -376,7 +376,7 @@ view» придётся сознательно отложить: в Blazor со�
    | `Launcher.cs`, `MediaPlan.cs` | 3 | сознательно вне моста: точка входа `Main` и отложенный до этапа 4 медиаплан |
    | `Domain/MasterIssue.cs` | 1 | закрыто, коммит `cbadf78` |
    | `GridExport/`, `Import/FirmImporter`, `Exchange/MediaPlus/Export` | 15 | выгрузки/импорт — этап 4 по п. 5 ниже |
-   | `Domain/StudioOrder/*` | 9 | мёртвый код, см. ниже |
+   | `Domain/StudioOrder/*` | 9 | мёртвый код — удалён целиком, см. ниже |
    | десктоп: `Forms/`, `Controls/`, `*.WinForms.cs` | 536 | в веб не едет, чистить незачем |
 
    **Чего делать НЕ надо:** сносить `DoEvents`/`Cursor` из 536 десктопных
@@ -396,6 +396,22 @@ view» придётся сознательно отложить: в Blazor со�
    правки в некомпилируемом коде компилятор не проверяет, а значит
    непроверяемы. Судьба этого кода и метаданных — отдельное решение
    владельца продукта (удалить, вернуть в эксплуатацию или оставить как есть).
+
+   **Решено и сделано (2026-09-08, ветка `cleanup/remove-studio-module`,
+   влита `d51e10e`).** Весь модуль «Производство роликов» — доменные
+   классы (в т.ч. `Domain/StudioOrder/*` выше), формы, отчёты, C# в
+   `FogSoft.Core`/`FogSoft.Web`, SQL-объекты `ArtvisDB/` и метаданные на
+   `ArtvisDev` — удалён владельцем продукта, включая `RolStyle`
+   («стиль ролика»). На проде (`Artvis`) удаление пока не выполнено —
+   сервер офлайн, план `docs/studio-cleanup/drop-plan.sql`. Подробности —
+   `docs/studio-cleanup/investigation.md`.
+   **Для веб-миграции это значит:** пункт 4.4 (NAudio-стриминг роликов)
+   и коммит меню (`FogSoft.Web/Infrastructure/MenuRoutes.cs`) этого
+   модуля не касаются — соответствующие пункты меню (`miBalanceStudioOrder*`,
+   `miProductionStudio`, `miSpecialStudioOrderActions`,
+   `miStudioOrderActPrint`, `miPaymentStudioOrderByManagerFRS`) были удалены
+   из карты роутинга заодно с C# в том же коммите (`6c3c372`); этапы 2/3
+   переносить для этого модуля больше нечего.
 4. ✅ **Сделано** (18 партий). Разрезать `ShowDialog` внутри `Client/Classes`
    на «подготовить варианты» и «выполнить с выбором». Конвенция и полный
    отчёт — `docs/tasks/web-migration-dialogs.md`. Осталось только то, что
