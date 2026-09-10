@@ -276,7 +276,7 @@ namespace Merlin.Forms.CreateActionMaster
                 return;
 
             if (UserMessage.ShowQuestion(
-                    string.Format("Разместить ролик в выбранных окнах на всех радиостанциях акции? ({0} шт.)", windows.Count)) != DialogResult.Yes)
+                    string.Format("Разместить ролик в выбранных окнах по выбранным кампаниям? ({0} шт.)", windows.Count)) != DialogResult.Yes)
                 return;
 
             int addedCount = 0;
