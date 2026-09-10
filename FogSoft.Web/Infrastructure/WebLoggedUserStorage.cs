@@ -55,8 +55,17 @@ public sealed class WebLoggedUserStorage : SecurityManager.ILoggedUserStorage
 		set
 		{
 			UserSession? session = Session;
-			if (session != null)
-				session.User = value;
+			if (session == null)
+				return;
+
+			// Кэш метаданных сущностей персональный: в нём лежат права
+			// (dbo.IsActionEnabled по @userID). При смене пользователя внутри
+			// одной вкладки — выход и вход под другим логином — его надо
+			// сбросить, иначе новый пользователь получит права предыдущего.
+			// Это единственная точка, где в вебе меняется текущий пользователь.
+			_accessor.Services?.GetService<CircuitEntityCacheState>()?.Clear();
+
+			session.User = value;
 		}
 	}
 

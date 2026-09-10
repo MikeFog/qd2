@@ -100,6 +100,43 @@ namespace FogSoft.WinForm.DataAccess
         // См. docs/tasks/web-migration.md, этап 0.
         private static readonly AsyncLocal<SqlTransaction> _transactionSlot = new AsyncLocal<SqlTransaction>();
 
+        /// <summary>
+        /// Проверка права на действие. Подставляется при старте тем же приёмом, что
+        /// и <see cref="SecurityManager.ILoggedUserStorage"/>: десктоп ничего не
+        /// подставляет и работает как раньше, веб подставляет свою.
+        ///
+        /// Почему проверка стоит именно здесь. <see cref="DoAction"/> — единственное
+        /// место, через которое проходят ВСЕ операции по метаданным: и чтение
+        /// (<c>ObjectsIterator.GetContent</c>), и сохранение
+        /// (<c>PresentationObject.Update</c>), и удаление
+        /// (<c>PresentationObject.Delete</c>). В десктопе права только гасят кнопки
+        /// в интерфейсе (<c>IsActionEnabled</c> зовут формы и гриды), то есть защиты
+        /// на исполнении нет вообще; в вебе адрес вызывается напрямую, минуя меню и
+        /// тулбар. См. docs/tasks/web-migration.md, раздел 7 п.1.
+        /// </summary>
+        public interface IActionAuthorization
+        {
+            /// <summary>
+            /// Бросает исключение, если пользователю нельзя выполнять это действие.
+            /// Молчит, если можно.
+            /// </summary>
+            void EnsureAllowed(int entityId, string actionName, int interfaceObjectId);
+        }
+
+        private sealed class AllowAllAuthorization : IActionAuthorization
+        {
+            public void EnsureAllowed(int entityId, string actionName, int interfaceObjectId)
+            {
+            }
+        }
+
+        private static IActionAuthorization _authorization = new AllowAllAuthorization();
+
+        public static void SetActionAuthorization(IActionAuthorization authorization)
+        {
+            _authorization = authorization ?? throw new ArgumentNullException(nameof(authorization));
+        }
+
         private static SqlTransaction _transaction
         {
             get { return _transactionSlot.Value; }
@@ -169,6 +206,8 @@ namespace FogSoft.WinForm.DataAccess
 			parameters[ParamNames.LoggedUserID] = SecurityManager.LoggedUser.Id;
 			MessageAccessor.Parameters = parameters;
 
+			Authorize(parameters);
+
 			// find stored procedure by name
 			string key = GetProcKey(parameters);
 			ProcedureConfig config = procedureConfigs[key];
@@ -188,6 +227,27 @@ namespace FogSoft.WinForm.DataAccess
 			object result = DoAction(parameters);
 			outputValues = GetOutParameters();
 			return result;
+		}
+
+		/// <summary>
+		/// Достаёт из параметров ту же тройку, по которой <see cref="GetProcKey"/>
+		/// резолвит процедуру, и отдаёт её проверке прав. Значения кладутся сюда
+		/// строками (<see cref="PrepareParameters"/>), отсюда разбор.
+		/// </summary>
+		private static void Authorize(Dictionary<string, object> parameters)
+		{
+			object entityId, actionName, moduleId;
+			if (!parameters.TryGetValue(Constants.ParamNames.EntityId, out entityId)
+				|| !parameters.TryGetValue(Constants.ParamNames.ActionName, out actionName)
+				|| !parameters.TryGetValue(Constants.ParamNames.ModuleId, out moduleId))
+				return; // не вызов по метаданным — резолвинг процедуры и так упадёт ниже
+
+			int entity, module;
+			if (!int.TryParse(Convert.ToString(entityId), out entity)
+				|| !int.TryParse(Convert.ToString(moduleId), out module))
+				return;
+
+			_authorization.EnsureAllowed(entity, Convert.ToString(actionName), module);
 		}
 
 		public static bool IsProcedureExist(Dictionary<string, object> parameters)

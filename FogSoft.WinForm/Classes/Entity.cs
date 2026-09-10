@@ -231,6 +231,25 @@ namespace FogSoft.WinForm.Classes
             return (action != null) && action.IsEnabled;
 		}
 
+		/// <summary>
+		/// То же право, но с разделением двух случаев, которые
+		/// <see cref="IsActionEnabled"/> склеивает в один false: «действие есть, но
+		/// пользователю не разрешено» и «такого действия у сущности вообще нет».
+		///
+		/// Для гашения кнопки разницы нет, а для проверки прав на исполнении есть:
+		/// отсутствие строки в <c>iEntityAction</c> означает, что действие не под
+		/// контролем прав (в десктопе у него просто нет кнопки на тулбаре), а не
+		/// запрет. Например, <c>UpdateItem</c> и <c>Load</c> не встречаются в
+		/// <c>iEntityAction</c> ни разу.
+		/// </summary>
+		/// <returns>false, если сущность такого действия не объявляет.</returns>
+		public bool TryGetActionRight(string actionName, out bool isEnabled)
+		{
+			colActions.TryGetValue(actionName, out Action action);
+			isEnabled = (action != null) && action.IsEnabled;
+			return action != null;
+		}
+
 		public int AttributeSelector
 		{
 			set { attributeSelector = value; }

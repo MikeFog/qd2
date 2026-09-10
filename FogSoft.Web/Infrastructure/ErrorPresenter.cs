@@ -23,6 +23,13 @@ public static class ErrorPresenter
 {
 	public static string Describe(Exception ex)
 	{
+		// Отказ по правам — нормальный отказ пользователю, а не сбой: он уже
+		// записан одной строкой WARN в WebActionAuthorization, повторять его
+		// здесь ERROR-ом со стеком незачем. Та же логика, что и для отказов по
+		// бизнес-правилам (docs/LOGGING.md).
+		if (ex is ActionNotAllowedException)
+			return ex.Message;
+
 		if (ex is SqlException sqlEx)
 		{
 			if (sqlEx.Number == 547 || sqlEx.Number == 2627 || sqlEx.Number == 2601)
