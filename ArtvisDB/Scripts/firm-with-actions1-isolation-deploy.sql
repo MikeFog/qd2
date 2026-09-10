@@ -1,4 +1,78 @@
-﻿CREATE PROC [dbo].[FirmWithActions1]
+﻿/*
+    ПРОД-ДЕПЛОЙ: dbo.FirmWithActions1 — SET TRANSACTION ISOLATION LEVEL READ UNCOMMITTED.
+    Разбор: project_deadlocks_prod, пара №3.
+
+    ПОВОД
+      10.09.2026 10:32-10:38 — 3 дедлока подряд на проде. Жертва каждый раз —
+      FirmWithActions1 (журнальный SELECT, logused=0 -> всегда выбирается жертвой),
+      победитель — ActionRecalculate (UPDATE dbo.[Action] SET ... startDate,
+      finishDate, modDate=GETDATE() WHERE actionId=@id), под login sa в явной
+      транзакции, по одному и тому же actionID (акция из шторма ActionRecalculate).
+
+      Цикл по индексам таблицы Action, один ряд:
+        - IX_Action_Firm — это КЛАСТЕРНЫЙ индекс (Action(firmID); PK по actionID
+          нонкластерный). Писатель держит X на кластерном ряду, ждёт X на
+          дате-NC-индексе (IX_Action_FinishDate / IX_Action_isSpecial_modDate__...).
+        - Читатель держит S на строке дате-NC-индекса (seek по isSpecial/modDate),
+          ждёт S на кластерном ряду — key lookup за firmID.
+
+    ПРАВКА (одна строка)
+      Сразу после SET NOCOUNT:
+          SET TRANSACTION ISOLATION LEVEL READ UNCOMMITTED;
+      Читатель перестаёт брать S-локи -> не может быть жертвой дедлока и не
+      блокирует ActionRecalculate. Это ровно то, что уже стоит в родной сестре
+      dbo.HeadCompaniesWithActions ("Важно для продакшена"), а также в
+      rpt_Grid_v3 и TariffWindowRetrieve. Здесь пропустили.
+
+      Грязное чтение на списке фирм безвредно: максимум — на доли секунды видно
+      фирму, у чьей акции прямо сейчас правятся даты. Данные строк Firm при этом
+      не меняются.
+
+    ЧЕГО ЭТОТ СКРИПТ НЕ ДЕЛАЕТ
+      - НЕ трогает ActionRecalculate и шторм (решение заказчика — жить со штормом).
+      - НЕ добавляет firmID в INCLUDE IX_Action_isSpecial_modDate__... (отдельный
+        шаг, снимает key lookup и ускоряет EXISTS).
+      - НЕ включает RCSI (отдельное решение, см. project_deadlocks_prod).
+
+    QUOTED_IDENTIFIER ON / ANSI_NULLS ON
+      FirmWithActions1 развёрнута с QI ON / ANSI_NULLS ON (sys.sql_modules).
+      ALTER идёт в отдельном батче с теми же SET-опциями.
+
+    ИДЕМПОТЕНТНОСТЬ  повторный запуск перезаливает то же тело (CREATE OR ALTER).
+    ОТКАТ
+      git show master:"ArtvisDB/dbo/Stored Procedures/FirmWithActions1.sql"
+      (версия до этого коммита) залить как CREATE OR ALTER.
+
+    ЗАПУСК
+      sqlcmd -S <прод-сервер> -d <прод-БД> -E -b -I -i firm-with-actions1-isolation-deploy.sql
+      либо открыть в SSMS на нужной БД и выполнить целиком.
+*/
+
+-- USE [Artvis];
+-- GO
+
+SET NOCOUNT ON;
+GO
+
+/* -- Преполёт: та ли база ---------------------------------------------- */
+IF OBJECT_ID('dbo.FirmWithActions1') IS NULL OR OBJECT_ID('dbo.Action') IS NULL OR OBJECT_ID('dbo.Firm') IS NULL
+BEGIN
+    RAISERROR('НЕ ТА БАЗА: нет dbo.FirmWithActions1 / dbo.Action / dbo.Firm. Деплой прерван.', 16, 1);
+    SET NOEXEC ON;
+END
+GO
+PRINT 'БД     : ' + DB_NAME();
+PRINT 'Сервер : ' + CONVERT(sysname, SERVERPROPERTY('ServerName'));
+PRINT 'FirmWithActions1 до: ' + CASE
+    WHEN OBJECT_DEFINITION(OBJECT_ID('dbo.FirmWithActions1')) LIKE '%READ UNCOMMITTED%'
+    THEN 'уже с READ UNCOMMITTED' ELSE 'без изоляции (берёт S-локи, ловит дедлок)' END;
+GO
+
+/* -- ALTER dbo.FirmWithActions1 -------------------------------------------- */
+SET QUOTED_IDENTIFIER ON;
+SET ANSI_NULLS ON;
+GO
+CREATE OR ALTER PROC [dbo].[FirmWithActions1]
 (
 @firmId smallint = null,
 @startOfInterval datetime = null,
@@ -234,3 +308,12 @@ SET TRANSACTION ISOLATION LEVEL READ UNCOMMITTED; -- Важно для прод�
 			)
 		AND f.headCompanyId = COALESCE(@headCompanyId, f.headCompanyId) 
 		order by f.[name]
+GO
+
+/* -- Проверка ----------------------------------------------------------- */
+PRINT 'FirmWithActions1 после: ' + CASE
+    WHEN OBJECT_DEFINITION(OBJECT_ID('dbo.FirmWithActions1')) LIKE '%READ UNCOMMITTED%'
+    THEN 'OK — READ UNCOMMITTED на месте' ELSE 'ОШИБКА — изоляции нет' END;
+GO
+SET NOEXEC OFF;
+GO

@@ -213,8 +213,44 @@ namespace FogSoft.WinForm.Passport.Classes
 					return new PageFieldFullDateTime(navigator, columnInfo, context.PageType);
 				if (typeResolver.IsTextArea)
 					return new PageFieldTextAria(navigator, columnInfo, context.PageType);
+
+				// Сюда попадаем, если ни один вид поля не подошёл. Контрол не будет
+				// создан, и поле просто не появится на форме — раньше это происходило
+				// совершенно молча, поэтому опечатка в type или отсутствующая колонка
+				// давали «исчезнувшее поле» без единого следа в логе.
+				// См. docs/tasks/passport-xml-audit.md, раздел 3.
+				LogUnresolvedField(navigator, context, columnInfo);
             }
 			return null;
+		}
+
+		/// <summary>
+		/// Сообщает, что поле паспорта не удалось сопоставить ни с одним видом контрола.
+		/// Уровень WARN, а не ERROR: это дефект метаданных, а не сбой приложения, и он
+		/// повторяется при каждом открытии карточки.
+		/// </summary>
+		private static void LogUnresolvedField(
+			XPathNavigator navigator, PageContext context, ColumnInfo columnInfo)
+		{
+			try
+			{
+				string declaredType = navigator.GetAttribute(Attributes.Type, "");
+				string entityName = context != null && context.Entity != null
+					? string.Format("{0} (id {1})", context.Entity.Name, context.Entity.Id)
+					: "<сущность неизвестна>";
+
+				ErrorManager.Log.Warn(string.Format(
+					"Поле паспорта не отрисовано: сущность {0}, поле '{1}', type='{2}', колонка {3}. "
+					+ "Тип не опознан или у поля нет ни type, ни колонки в таблице.",
+					entityName,
+					navigator.GetAttribute(Attributes.Name, ""),
+					declaredType == string.Empty ? "<не задан>" : declaredType,
+					columnInfo == null ? "не найдена" : "найдена (" + columnInfo.DataType + ")"));
+			}
+			catch
+			{
+				// Диагностика не должна ронять отрисовку формы.
+			}
 		}
 
 		protected static FieldTypeResolver GetTypeResolver(
