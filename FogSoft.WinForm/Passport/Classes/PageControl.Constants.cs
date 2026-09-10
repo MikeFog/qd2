@@ -11,10 +11,8 @@
 			public const string Caption = "caption";
 			public const string Name = "name";
 			public const string Entity = "entity";
-			public const string DestName = "destination";
 			public const string Multiselect = "multiselect";
 			public const string RelationScenario = "relationScenario";
-			public const string ObjectName = "objectName";
 			//public const string ReadOnly = "readonly";
 			public const string Filter = "filter";
 			public const string Type = "type";
@@ -31,11 +29,9 @@
 			public const string PassportChar = "passportchar";
 			public const string Show = "show";
 			public const string DecimalPlaces = "decimalplaces";
-			public const string NeedSavePict = "needsavepict";
 			public const string Required = "required";
 			public const string HashIt = "hashit";
 			public const string Anchor = "anchor";
-			public const string MaxLenght = "maxlenght";
 
 			public const string ColumnName = "columnname";
 			public const string ColumnParentid = "columnparentid";
