@@ -1,7 +1,10 @@
 ﻿CREATE PROCEDURE [dbo].[TariffWindowWithRange]
 (
     @actionID  int,
-    @dateStart datetime
+    @dateStart datetime,
+    -- Список кампаний акции (CSV campaignID), с которыми работает веер. NULL/пусто —
+    -- все линейные кампании акции (прежнее поведение для вызовов без выбора).
+    @campaignIDs varchar(max) = NULL
 )
 AS
 BEGIN
@@ -16,12 +19,23 @@ BEGIN
     -- Веер работает только с линейными кампаниями (campaignTypeID = 1): выпуск ставится
     -- точечно в конкретное рекламное окно. Модульные (3), спонсорские (2) и пакетно-модульные (4)
     -- размещаются по модулям/программам с собственным ценообразованием и в веер попадать не должны.
-    SELECT DISTINCT c.massmediaID
-    INTO #mm
+    -- Пользователь может ограничить веер частью линейных кампаний акции (@campaignIDs):
+    -- сетка, добавление и удаление идут только по ним. #sc — выбранные кампании,
+    -- #mm — их СМИ (по одной станции может идти несколько кампаний, различающихся
+    -- типом оплаты и агентством, — см. UIX_Campaign).
+    SELECT c.campaignID, c.massmediaID
+    INTO #sc
     FROM dbo.Campaign c
     WHERE c.actionID = @actionID
       AND c.massmediaID IS NOT NULL
-      AND c.campaignTypeID = 1;
+      AND c.campaignTypeID = 1
+      AND (@campaignIDs IS NULL
+           OR c.campaignID IN (SELECT CONVERT(int, value) FROM STRING_SPLIT(@campaignIDs, ',')));
+    CREATE UNIQUE CLUSTERED INDEX CX_sc ON #sc(campaignID);
+
+    SELECT DISTINCT sc.massmediaID
+    INTO #mm
+    FROM #sc sc;
     CREATE UNIQUE CLUSTERED INDEX CX_mm ON #mm(massmediaID);
     DECLARE @mmCnt int = (SELECT COUNT(*) FROM #mm);
     --------------------------------------------------------------------
@@ -256,9 +270,8 @@ BEGIN
             ON tw.windowDateActual BETWEEN r.[date] AND r.[enddate]
         JOIN dbo.Issue i
             ON i.actualWindowID = tw.windowId
-        JOIN dbo.Campaign c
-            ON c.campaignID = i.campaignID
-           AND c.actionID   = @actionID
+        JOIN #sc sc
+            ON sc.campaignID = i.campaignID
         GROUP BY r.[date]
     )
     UPDATE r SET

@@ -5,6 +5,7 @@ using System;
 using System.Collections.Generic;
 using System.Data;
 using System.Globalization;
+using System.Linq;
 
 namespace Merlin.Classes
 {
@@ -274,10 +275,23 @@ namespace Merlin.Classes
 
         private static IList<Campaign> GetCampaigns(DataTable dt)
         {
+            return GetCampaigns(dt, null);
+        }
+
+        // campaignIds != null — берём только эти кампании (веер работает с выбранной
+        // пользователем частью линейных кампаний акции). Фильтр стоит до
+        // Campaign.GetCampaignById, чтобы не тянуть из БД невыбранные кампании.
+        private static IList<Campaign> GetCampaigns(DataTable dt, ICollection<int> campaignIds)
+        {
             IList<Campaign> campaigns = new List<Campaign>();
             //DataTable dt = ds.Tables[Constants.TableNames.Data];
             foreach (DataRow dr in dt.Rows)
-                campaigns.Add(Campaign.GetCampaignById(int.Parse(dr[Campaign.ParamNames.CampaignId].ToString())));
+            {
+                int campaignId = int.Parse(dr[Campaign.ParamNames.CampaignId].ToString());
+                if (campaignIds != null && !campaignIds.Contains(campaignId))
+                    continue;
+                campaigns.Add(Campaign.GetCampaignById(campaignId));
+            }
             return campaigns;
         }
 
@@ -372,9 +386,17 @@ namespace Merlin.Classes
 
         #region Added issues calculation
 
-        public DataTable BuildAddedIssuesTable()
+        /// <param name="campaignIds">
+        /// Кампании, в контексте которых работает веер. null — все линейные кампании акции.
+        /// Слоты «Добавленных выпусков» — пересечение по этим кампаниям, а не по всей акции.
+        /// </param>
+        public DataTable BuildAddedIssuesTable(ICollection<int> campaignIds = null)
         {
             DataTable addedIssues = CreateAddedIssuesTable();
+            // Значение по умолчанию колонки, а не заполнение строк: строки в эту таблицу
+            // дописывает ещё и TariffWithRangeGrid.AddIssuesRange, и им фильтр нужен тоже
+            // (MasterIssue создаётся из строки — см. MasterIssue.Delete -> MasterIssueDelete).
+            addedIssues.Columns[Campaign.ParamNames.CampaignIds].DefaultValue = BuildCampaignIdsCsv(campaignIds);
             if (ChildEntity == null)
                 return addedIssues;
 
@@ -382,7 +404,7 @@ namespace Merlin.Classes
             if (campaignsTable == null || campaignsTable.Rows.Count == 0)
                 return addedIssues;
 
-            IList<Campaign> campaigns = GetCampaigns(campaignsTable);
+            IList<Campaign> campaigns = GetCampaigns(campaignsTable, campaignIds);
             List<Campaign> actualCampaigns = new List<Campaign>();
             foreach (Campaign campaign in campaigns)
             {
@@ -445,7 +467,22 @@ namespace Merlin.Classes
             table.Columns.Add("RowNum", typeof(Guid));
             table.Columns.Add(Issue.ParamNames.IssueId, typeof(int));
             table.Columns.Add(Action.ParamNames.ActionId, typeof(int));
+            // Выбранные кампании веера: уезжает параметром в MasterIssueDelete через
+            // parameters создаваемого из строки MasterIssue (PresentationObject.Init).
+            table.Columns.Add(Campaign.ParamNames.CampaignIds, typeof(string));
             return table;
+        }
+
+        // null — веер работает со всеми линейными кампаниями акции (SQL-процедуры трактуют
+        // NULL именно так). Пустой список — это не «все», а «ни одной»: отдаём заведомо
+        // несуществующий campaignID, иначе снятие всех галочек молча вернуло бы всю акцию.
+        internal static string BuildCampaignIdsCsv(ICollection<int> campaignIds)
+        {
+            if (campaignIds == null)
+                return null;
+            if (campaignIds.Count == 0)
+                return "-1";
+            return string.Join(",", campaignIds.Select(id => id.ToString(CultureInfo.InvariantCulture)));
         }
 
         private static Dictionary<IssueSlotKey, List<DataRow>> GroupIssuesBySlot(DataTable issues)

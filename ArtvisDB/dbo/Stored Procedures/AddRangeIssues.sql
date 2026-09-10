@@ -13,7 +13,10 @@ CREATE   procedure [dbo].[AddRangeIssues]
 	@actionID int,
 	@grantorID SMALLINT = NULL,
 	@considerUnconfirmed bit = 0,
-	@ignoreWindowsWithTheSameFirmIssue bit = 0
+	@ignoreWindowsWithTheSameFirmIssue bit = 0,
+	-- Список кампаний акции (CSV campaignID), с которыми работает веер. NULL/пусто —
+	-- все линейные кампании акции (прежнее поведение для вызовов без выбора).
+	@campaignIDs varchar(max) = NULL
 )
 WITH EXECUTE AS OWNER
 as 
@@ -24,7 +27,10 @@ begin
 	-- кампаний (campaignTypeID = 1). Модульные/спонсорские/пакетно-модульные кампании акции
 	-- в курсор не берём (иначе линейный Issue уехал бы в кампанию с модульным ценообразованием).
 	declare cur_massmedias cursor local fast_forward for
-	select c.massmediaID, c.campaignID from dbo.Campaign c where c.actionID = @actionID and c.campaignTypeID = 1
+	select c.massmediaID, c.campaignID from dbo.Campaign c
+	where c.actionID = @actionID and c.campaignTypeID = 1
+		and (@campaignIDs is null
+			or c.campaignID in (select convert(int, value) from string_split(@campaignIDs, ',')))
 
 	declare @massmediaID smallint, @campaignID int, @windowID int, @price decimal(18,2), @windowDateActual datetime, @firmID int
 	

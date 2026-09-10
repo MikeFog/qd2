@@ -248,7 +248,21 @@ namespace Merlin.Forms
 		/// </summary>
 		protected void DisableToolbar()
 		{
-			tsCampaign.Enabled = false;
+			SetToolbarEnabled(false);
+		}
+
+		/// <summary>
+		/// Веер гасит тулбар не только на акции без линейных кампаний, но и когда пользователь
+		/// снял все галочки в чек-листе кампаний, — и включает обратно при новом выборе.
+		/// </summary>
+		protected void SetToolbarEnabled(bool enabled)
+		{
+			tsCampaign.Enabled = enabled;
+		}
+
+		protected bool IsToolbarEnabled
+		{
+			get { return tsCampaign.Enabled; }
 		}
 
 		private void InitModulesList()
@@ -642,7 +656,7 @@ namespace Merlin.Forms
 			return dtCurrentIssues.DefaultView;
 		}
 
-		protected void RefreshGrid()
+		protected virtual void RefreshGrid()
 		{
 			try
 			{
@@ -1508,15 +1522,28 @@ namespace Merlin.Forms
 			}
 		}
 
-		// Для веерной кампании — все СМИ акции (Campaign.actionID), для линейной — одно СМИ кампании
+		// Для веерной кампании — СМИ выбранных кампаний акции (чек-лист на EditIssuesForm;
+		// null — все линейные кампании), для линейной — одно СМИ кампании.
+		// DISTINCT обязателен: на одной радиостанции может идти несколько кампаний акции
+		// (разный тип оплаты/агентство, см. UIX_Campaign), а шаблону нужны именно станции.
 		private List<int> GetTemplateMassmediaIds()
 		{
 			var massmediaIds = new List<int>();
 			if (IsRangeCampaign)
 			{
-				DataTable campaigns = ((TariffWithRangeGrid)_tariffGrid).Action.Campaigns();
+				TariffWithRangeGrid rangeGrid = (TariffWithRangeGrid)_tariffGrid;
+				IList<int> selected = rangeGrid.SelectedCampaignIds;
+				DataTable campaigns = rangeGrid.Action.Campaigns();
 				foreach (DataRow row in campaigns.Rows)
-					massmediaIds.Add(Convert.ToInt32(row[Campaign.ParamNames.MassmediaId]));
+				{
+					if (selected != null
+					    && !selected.Contains(Convert.ToInt32(row[Campaign.ParamNames.CampaignId])))
+						continue;
+
+					int massmediaId = Convert.ToInt32(row[Campaign.ParamNames.MassmediaId]);
+					if (!massmediaIds.Contains(massmediaId))
+						massmediaIds.Add(massmediaId);
+				}
 			}
 			else
 			{

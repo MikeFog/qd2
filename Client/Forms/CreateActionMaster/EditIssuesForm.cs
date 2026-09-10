@@ -12,7 +12,12 @@ namespace Merlin.Forms.CreateActionMaster
 {
 	internal partial class EditIssuesForm : CampaignForm
 	{
+        // Селектор атрибутов сущности 91 для чек-листа кампаний веера
+        // (ArtvisDB/Scripts/veer-campaign-selection-seed.sql): радиостанция, тип оплаты, агентство.
+        private const int VeerCampaignListSelector = 4;
+
         private readonly ActionOnMassmedia _action;
+        private System.Data.DataView _campaignsView;
         private DateTime? _dragSourceSlotDate;
         private System.Data.DataRow _draggingAddedIssueRow;
 
@@ -54,6 +59,10 @@ namespace Merlin.Forms.CreateActionMaster
 		{
 			try
 			{
+				// Чек-лист заполняется до base.OnLoad: базовая форма по ходу загрузки уже
+				// строит сетку, а она должна строиться в контексте выбранных кампаний.
+				InitCampaignsChecklist();
+
 				base.OnLoad(e);
 
 				// Remove All Issues Grid
@@ -72,7 +81,7 @@ namespace Merlin.Forms.CreateActionMaster
 
 				// Веер работает только с линейными кампаниями. Если в акции их нет (модульная/
 				// спонсорская), сетка пустая — гасим тулбар, чтобы его кнопки не падали на пустоте.
-				if (!((TariffWithRangeGrid)_tariffGrid).HasSlots)
+				if (_campaignsView.Count == 0 || !((TariffWithRangeGrid)_tariffGrid).HasSlots)
 				{
 					DisableToolbar();
 					UserMessage.ShowInformation(
@@ -85,6 +94,103 @@ namespace Merlin.Forms.CreateActionMaster
                 ErrorManager.PublishError(ex);
             }
 		}
+
+        /// <summary>
+        /// Чек-лист линейных кампаний акции: с какими из них работает веер. По умолчанию
+        /// отмечены все. Применяется кнопкой «Обновить» на тулбаре (см. RefreshGrid).
+        /// </summary>
+        private void InitCampaignsChecklist()
+        {
+            Entity entity = (Entity)EntityManager.GetEntity((int)Entities.GeneralCampaign).Clone();
+            entity.AttributeSelector = VeerCampaignListSelector;
+            grdCampaigns.Entity = entity;
+
+            _campaignsView = new System.Data.DataView(_action.Campaigns())
+            {
+                RowFilter = string.Format("{0} = {1}",
+                    Campaign.ParamNames.CampaignTypeId, (int)Campaign.CampaignTypes.Simple)
+            };
+            grdCampaigns.DataSource = _campaignsView;
+
+            foreach (System.Data.DataRowView rowView in _campaignsView)
+                rowView[FogSoft.WinForm.Controls.SmartGrid.COL_IsSelected] = true;
+
+            // Слушаем таблицу, а не ObjectChecked грида: «отметить все» в шапке SmartGrid
+            // пишет колонку напрямую и события не поднимает.
+            _campaignsView.Table.ColumnChanged += CampaignSelectionChanged;
+        }
+
+        /// <summary>
+        /// При нуле выбранных кампаний тулбар погашен — вместе с кнопкой «Обновить», которой
+        /// выбор и применяется. Чтобы не получился тупик, первую же поставленную галочку
+        /// применяем сразу. Через BeginInvoke: при «отметить все» событие приходит на каждую
+        /// строку, а перезабросить сетку нужно один раз и уже после всего цикла.
+        /// </summary>
+        private void CampaignSelectionChanged(object sender, System.Data.DataColumnChangeEventArgs e)
+        {
+            try
+            {
+                if (e.Column.ColumnName != FogSoft.WinForm.Controls.SmartGrid.COL_IsSelected)
+                    return;
+                if (IsToolbarEnabled || !(e.ProposedValue is bool) || !(bool)e.ProposedValue)
+                    return;
+
+                BeginInvoke((MethodInvoker)delegate
+                {
+                    try
+                    {
+                        if (!IsToolbarEnabled)
+                            RefreshGrid();
+                    }
+                    catch (Exception ex)
+                    {
+                        ErrorManager.PublishError(ex);
+                    }
+                });
+            }
+            catch (Exception ex)
+            {
+                ErrorManager.PublishError(ex);
+            }
+        }
+
+        /// <summary>
+        /// Отмеченные кампании. Читаем колонку чекбоксов напрямую, а не Added2Checked:
+        /// последний наполняется только кликами пользователя и при предотмеченных строках пуст.
+        /// </summary>
+        private List<int> GetCheckedCampaignIds()
+        {
+            List<int> ids = new List<int>();
+            if (_campaignsView == null)
+                return ids;
+
+            foreach (System.Data.DataRowView rowView in _campaignsView)
+            {
+                object isSelected = rowView[FogSoft.WinForm.Controls.SmartGrid.COL_IsSelected];
+                if (isSelected is bool && (bool)isSelected)
+                    ids.Add(Convert.ToInt32(rowView[Campaign.ParamNames.CampaignId]));
+            }
+            return ids;
+        }
+
+        /// <summary>
+        /// «Обновить» на тулбаре применяет текущий выбор кампаний: пересобирает «Добавленные
+        /// выпуски» (пересечение слотов считается по выбранным кампаниям) и перезабрасывает сетку.
+        /// Выпуски, добавленные ранее по другим кампаниям, остаются в базе, но из веера уходят —
+        /// это ожидаемое поведение.
+        /// </summary>
+        protected override void RefreshGrid()
+        {
+            TariffWithRangeGrid rangeGrid = _tariffGrid as TariffWithRangeGrid;
+            if (rangeGrid != null && _campaignsView != null)
+            {
+                List<int> checkedIds = GetCheckedCampaignIds();
+                rangeGrid.SetSelectedCampaigns(checkedIds, checkedIds.Count);
+                SetToolbarEnabled(checkedIds.Count > 0);
+            }
+
+            base.RefreshGrid();
+        }
 
         protected override void ProcessToolbar()
         {

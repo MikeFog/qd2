@@ -20,7 +20,10 @@ namespace Merlin.Controls
         private const string MinBroadcastColumnName = "minBroadcast";
 		private const string MaxBroadcastColumnName = "maxBroadcast";
         private readonly ActionOnMassmedia _action;
-        private readonly int _massmediasCount;
+        // Число кампаний, по которым сейчас работает веер (счётчик выпусков в шапке дня).
+        // Меняется вместе с SelectedCampaignIds — по одной радиостанции может идти
+        // несколько кампаний акции (разный тип оплаты/агентство, см. UIX_Campaign).
+        private int _massmediasCount;
 		private Dictionary<string, string> _timeResolver;
         private bool showRollerNumbers;
         private Dictionary<int, int> rollerNumbers;
@@ -28,6 +31,45 @@ namespace Merlin.Controls
         public ActionOnMassmedia Action
         {
 			get => _action;
+        }
+
+        /// <summary>
+        /// Линейные кампании акции, в контексте которых работает веер: сетка, добавление,
+        /// удаление и «Добавленные выпуски» — только по ним. null — все линейные кампании
+        /// акции (так же трактуют NULL и SQL-процедуры).
+        /// Задаётся чек-листом кампаний на EditIssuesForm, применяется по «Обновить».
+        /// </summary>
+        public IList<int> SelectedCampaignIds { get; private set; }
+
+        /// <summary>
+        /// Сменить набор кампаний веера. Пересобирает «Добавленные выпуски» (пересечение
+        /// слотов считается уже по выбранным кампаниям); сетку перезабрасывает вызывающий.
+        /// Если выбор не изменился — ничего не делает: метод зовётся на каждом RefreshGrid
+        /// формы, а пересборка AddedIssues ходит в базу за выпусками каждой кампании.
+        /// </summary>
+        public void SetSelectedCampaigns(IList<int> campaignIds, int campaignsCount)
+        {
+            if (IsSameSelection(campaignIds))
+                return;
+
+            SelectedCampaignIds = campaignIds;
+            _massmediasCount = campaignsCount;
+            InitAddedIssuesData();
+        }
+
+        private bool IsSameSelection(IList<int> campaignIds)
+        {
+            if (SelectedCampaignIds == null || campaignIds == null)
+                return SelectedCampaignIds == null && campaignIds == null;
+            if (SelectedCampaignIds.Count != campaignIds.Count)
+                return false;
+            return !campaignIds.Except(SelectedCampaignIds).Any();
+        }
+
+        // CSV для SQL-процедур; null — все линейные кампании акции.
+        private string CampaignIdsParameter
+        {
+            get { return Merlin.Classes.Action.BuildCampaignIdsCsv(SelectedCampaignIds); }
         }
 
         public TariffWithRangeGrid(ActionOnMassmedia action, int massmediasCount)
@@ -45,7 +87,7 @@ namespace Merlin.Controls
 
 	    private void InitAddedIssuesData()
 	    {
-			AddedIssues = _action.BuildAddedIssuesTable();
+			AddedIssues = _action.BuildAddedIssuesTable(SelectedCampaignIds);
         }
 
 	    private DataTable Data { get; set; }
@@ -91,6 +133,7 @@ namespace Merlin.Controls
 				Dictionary<string, object> dictionary = DataAccessor.CreateParametersDictionary();
 				dictionary.Add("dateStart", StartDate);
 				dictionary.Add("actionID", _action.ActionId);
+				dictionary.Add(Campaign.ParamNames.CampaignIds, CampaignIdsParameter);
 				DataSet dataSet = DataAccessor.LoadDataSet("TariffWindowWithRange", dictionary);
 				Data = dataSet.Tables[0];
 
@@ -174,6 +217,7 @@ namespace Merlin.Controls
                 parameters["positionId"] = (int)position;
                 parameters["considerUnconfirmed"] = ShowUnconfirmed ? 1 : 0;
                 parameters["ignoreWindowsWithTheSameFirmIssue"] = ignoreWindowsWithTheSameFirmIssue ? 1 : 0;
+                parameters[Campaign.ParamNames.CampaignIds] = CampaignIdsParameter;
                 if (Grantor != null)
                     parameters["grantorID"] = Grantor.Id;
 
@@ -217,6 +261,7 @@ namespace Merlin.Controls
 			parameters["issueDate"] = windowDate;
 			parameters["rollerID"] = Roller.RollerId;
 			parameters["positionId"] = (int)RollerPosition;
+			parameters[Campaign.ParamNames.CampaignIds] = CampaignIdsParameter;
 			if (Grantor != null)
 				parameters["grantorID"] = Grantor.Id;
 			DataAccessor.ExecuteNonQuery("MasterIssueDelete", parameters);
@@ -546,6 +591,7 @@ namespace Merlin.Controls
                 Dictionary<string, object> dict = DataAccessor.CreateParametersDictionary();
                 dict.Add("dateStart", weekMonday);
                 dict.Add("actionID", _action.ActionId);
+                dict.Add(Campaign.ParamNames.CampaignIds, CampaignIdsParameter);
                 DataSet ds = DataAccessor.LoadDataSet("TariffWindowWithRange", dict);
                 slots = ds.Tables[0].Rows
                           .Cast<DataRow>()
