@@ -245,6 +245,105 @@ namespace Merlin.Controls
 		}
 
 		/// <summary>
+		/// Выпуски одного слота с одинаковым роликом и позицией и кампании, в которых они
+		/// стоят. Единица операции для «частичных» (красных) слотов: там выпуск есть не во
+		/// всех выбранных кампаниях, и удалять/переносить его надо ровно по этим кампаниям,
+		/// иначе перенос размножит рекламу на остальные (AddRangeIssues ставит выпуск во все
+		/// кампании, переданные в @campaignIDs).
+		/// </summary>
+		public class SlotIssueGroup
+		{
+			public int RollerId;
+			public string RollerName;
+			public int Duration;
+			public string DurationString;
+			public RollerPositions Position;
+			public readonly List<int> CampaignIds = new List<int>();
+		}
+
+		/// <summary>
+		/// Фактическое содержимое слота по выбранным кампаниям, сгруппированное по паре
+		/// «ролик + позиция». Ходит в базу: в AddedIssues частичных слотов нет.
+		/// </summary>
+		public IList<SlotIssueGroup> GetSlotIssueGroups(DateTime windowDate)
+		{
+			Dictionary<string, object> parameters = DataAccessor.CreateParametersDictionary();
+			parameters[Merlin.Classes.Action.ParamNames.ActionId] = _action.ActionId;
+			parameters["issueDate"] = windowDate;
+			parameters[Campaign.ParamNames.CampaignIds] = CampaignIdsParameter;
+
+			DataTable table = DataAccessor.LoadDataSet("RangeSlotIssues", parameters).Tables[0];
+			Dictionary<string, SlotIssueGroup> groups = new Dictionary<string, SlotIssueGroup>();
+			List<SlotIssueGroup> result = new List<SlotIssueGroup>();
+
+			foreach (DataRow row in table.Rows)
+			{
+				int rollerId = ParseHelper.GetInt32FromObject(row[Roller.ParamNames.RollerId], 0);
+				int positionId = ParseHelper.GetInt32FromObject(row[Issue.ParamNames.PositionId], 0);
+				string key = rollerId + "/" + positionId;
+
+				if (!groups.TryGetValue(key, out SlotIssueGroup group))
+				{
+					group = new SlotIssueGroup
+					{
+						RollerId = rollerId,
+						RollerName = StringUtil.GetStringOrEmpty(row["rollerName"]),
+						Duration = ParseHelper.GetInt32FromObject(row[Roller.ParamNames.Duration], 0),
+						DurationString = StringUtil.GetStringOrEmpty(row["durationString"]),
+						Position = (RollerPositions)positionId
+					};
+					groups.Add(key, group);
+					result.Add(group);
+				}
+
+				group.CampaignIds.Add(ParseHelper.GetInt32FromObject(row[Campaign.ParamNames.CampaignId], 0));
+			}
+
+			return result;
+		}
+
+		/// <summary>
+		/// Удалить выпуски группы — только в тех кампаниях, где они есть. AddedIssues не
+		/// трогаем: частичного слота там нет по определению.
+		/// </summary>
+		public void DeleteSlotIssueGroup(SlotIssueGroup group, DateTime windowDate)
+		{
+			Dictionary<string, object> parameters = DataAccessor.CreateParametersDictionary();
+			parameters[Merlin.Classes.Action.ParamNames.ActionId] = _action.ActionId;
+			parameters["issueDate"] = windowDate;
+			parameters["rollerID"] = group.RollerId;
+			parameters["positionId"] = (int)group.Position;
+			parameters[Campaign.ParamNames.CampaignIds] =
+				Merlin.Classes.Action.BuildCampaignIdsCsv(group.CampaignIds);
+			if (Grantor != null)
+				parameters["grantorID"] = Grantor.Id;
+
+			DataAccessor.ExecuteNonQuery("MasterIssueDelete", parameters);
+		}
+
+		/// <summary>
+		/// Поставить выпуски группы в другое окно — в том же составе кампаний, что и на
+		/// исходном слоте (см. SlotIssueGroup). Пересчёт акции — на вызывающем.
+		/// </summary>
+		public void AddSlotIssueGroup(SlotIssueGroup group, DateTime windowDate)
+		{
+			Dictionary<string, object> parameters = DataAccessor.CreateParametersDictionary();
+			parameters[Merlin.Classes.Action.ParamNames.ActionId] = _action.ActionId;
+			parameters["issueDate"] = windowDate;
+			parameters["rollerID"] = group.RollerId;
+			parameters["rollerDuration"] = group.Duration;
+			parameters["positionId"] = (int)group.Position;
+			parameters["considerUnconfirmed"] = ShowUnconfirmed ? 1 : 0;
+			parameters["ignoreWindowsWithTheSameFirmIssue"] = 0;
+			parameters[Campaign.ParamNames.CampaignIds] =
+				Merlin.Classes.Action.BuildCampaignIdsCsv(group.CampaignIds);
+			if (Grantor != null)
+				parameters["grantorID"] = Grantor.Id;
+
+			DataAccessor.ExecuteNonQuery("AddRangeIssues", parameters);
+		}
+
+		/// <summary>
 		/// Пересобирает in-memory таблицу AddedIssues из БД. Нужно после отката транзакции
 		/// переноса: AddIssuesRange успевает дописать строки в AddedIssues до отката, и
 		/// таблица расходится с фактическим состоянием базы.

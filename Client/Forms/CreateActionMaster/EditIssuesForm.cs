@@ -337,24 +337,41 @@ namespace Merlin.Forms.CreateActionMaster
 
             Entity masterEntity = EntityManager.GetEntity((int)Entities.MasterIssues);
             List<PresentationObject> issues = new List<PresentationObject>();
+            // Частичные («красные») слоты: выпуск есть не во всех выбранных кампаниях, в
+            // AddedIssues его нет — содержимое читаем из базы и удаляем по тем кампаниям,
+            // где оно реально стоит.
+            List<KeyValuePair<DateTime, TariffWithRangeGrid.SlotIssueGroup>> partialGroups =
+                new List<KeyValuePair<DateTime, TariffWithRangeGrid.SlotIssueGroup>>();
+
             foreach (ITariffWindow window in windows)
             {
-                foreach (System.Data.DataRow row in rangeGrid.AddedIssues.Select(
-                    string.Format("[issueDate] = '{0}'", window.WindowDate)))
-                    issues.Add(masterEntity.CreateObject(row));
+                System.Data.DataRow[] rows = rangeGrid.AddedIssues.Select(
+                    string.Format("[issueDate] = '{0}'", window.WindowDate));
+                if (rows.Length > 0)
+                {
+                    foreach (System.Data.DataRow row in rows)
+                        issues.Add(masterEntity.CreateObject(row));
+                    continue;
+                }
+
+                foreach (TariffWithRangeGrid.SlotIssueGroup group in rangeGrid.GetSlotIssueGroups(window.WindowDate))
+                    partialGroups.Add(
+                        new KeyValuePair<DateTime, TariffWithRangeGrid.SlotIssueGroup>(window.WindowDate, group));
             }
 
-            if (issues.Count == 0)
+            int totalCount = issues.Count + partialGroups.Count;
+            if (totalCount == 0)
             {
-                UserMessage.ShowInformation("В выбранных окнах нет добавленных выпусков.");
+                UserMessage.ShowInformation("В выбранных окнах нет выпусков этой акции.");
                 return;
             }
 
             if (UserMessage.ShowQuestion(
-                    string.Format("Удалить выпуски в выбранных окнах на всех радиостанциях акции? ({0} шт.)", issues.Count)) != DialogResult.Yes)
+                    string.Format("Удалить выпуски в выбранных окнах по выбранным кампаниям? ({0} шт.)", totalCount)) != DialogResult.Yes)
                 return;
 
             List<PresentationObject> deletedObjects = new List<PresentationObject>();
+            int partialDeletedCount = 0;
             System.Data.DataTable deleteErrors = FogSoft.WinForm.Controls.SmartGrid.CreateDeleteErrorsTable();
             int errorRowNumber = 1;
             try
@@ -376,6 +393,21 @@ namespace Merlin.Forms.CreateActionMaster
                         FogSoft.WinForm.Controls.SmartGrid.AddDeleteError(deleteErrors, errorRowNumber++, objectName, ErrorManager.GetErrorMessage(ex));
                     }
                 }
+
+                foreach (KeyValuePair<DateTime, TariffWithRangeGrid.SlotIssueGroup> partial in partialGroups)
+                {
+                    string objectName = string.Format("{0} — {1}",
+                        partial.Key.ToString("dd.MM.yyyy HH:mm"), partial.Value.RollerName);
+                    try
+                    {
+                        rangeGrid.DeleteSlotIssueGroup(partial.Value, partial.Key);
+                        partialDeletedCount++;
+                    }
+                    catch (Exception ex)
+                    {
+                        FogSoft.WinForm.Controls.SmartGrid.AddDeleteError(deleteErrors, errorRowNumber++, objectName, ErrorManager.GetErrorMessage(ex));
+                    }
+                }
             }
             finally
             {
@@ -385,11 +417,19 @@ namespace Merlin.Forms.CreateActionMaster
             // Если удалён хотя бы один — событие чистит AddedIssues, пересчитывает акцию и обновляет сетку.
             if (deletedObjects.Count > 0)
                 grdCurrentCampaignIssues.RaiseObjectsDeleted(deletedObjects);
+            else if (partialDeletedCount > 0)
+            {
+                // Частичные слоты в AddedIssues не лежат — чистить нечего, но пересчитать
+                // акцию и перерисовать сетку всё равно нужно.
+                _action.Recalculate();
+                rangeGrid.RefreshGrid();
+            }
 
             if (deleteErrors.Rows.Count > 0)
                 FogSoft.WinForm.Controls.SmartGrid.ShowDeleteErrors(deleteErrors);
             else
-                UserMessage.ShowInformation(string.Format("Удалено выпусков: {0}.", deletedObjects.Count));
+                UserMessage.ShowInformation(string.Format("Удалено выпусков: {0}.",
+                    deletedObjects.Count + partialDeletedCount));
         }
 
         /// <summary>
@@ -401,11 +441,28 @@ namespace Merlin.Forms.CreateActionMaster
         {
             public readonly DateTime SourceSlotDate;
             public readonly List<System.Data.DataRow> IssueRows;
+            // Частичный («красный») слот: выпуск есть не во всех выбранных кампаниях, в
+            // AddedIssues его нет. Тогда переезжают группы, прочитанные из базы, и ровно в
+            // том составе кампаний, в котором стояли.
+            public readonly IList<TariffWithRangeGrid.SlotIssueGroup> PartialGroups;
 
             public RangeIssueDragPayload(DateTime sourceSlotDate, List<System.Data.DataRow> issueRows)
             {
                 SourceSlotDate = sourceSlotDate;
                 IssueRows = issueRows;
+            }
+
+            public RangeIssueDragPayload(DateTime sourceSlotDate,
+                IList<TariffWithRangeGrid.SlotIssueGroup> partialGroups)
+            {
+                SourceSlotDate = sourceSlotDate;
+                IssueRows = new List<System.Data.DataRow>();
+                PartialGroups = partialGroups;
+            }
+
+            public int Count
+            {
+                get { return PartialGroups != null ? PartialGroups.Count : IssueRows.Count; }
             }
         }
 
@@ -467,7 +524,10 @@ namespace Merlin.Forms.CreateActionMaster
 
             DataGridView grid = (DataGridView)sender;
             DataGridView.HitTestInfo hit = grid.HitTest(e.X, e.Y);
-            if (!_tariffGrid.CellHasCurrentCampaignIssues(hit.RowIndex, hit.ColumnIndex)) return;
+            // Синяя ячейка — выпуск во всех выбранных кампаниях, красная — в части из них.
+            // Переносить можно и то и другое, состав кампаний сохраняется.
+            if (!_tariffGrid.CellHasCurrentCampaignIssues(hit.RowIndex, hit.ColumnIndex)
+                && !_tariffGrid.CellHasCurrentActionIssues(hit.RowIndex, hit.ColumnIndex)) return;
 
             ITariffWindow window = _tariffGrid.GetTariffWindowAt(hit.RowIndex, hit.ColumnIndex);
             if (window == null) return;
@@ -486,9 +546,20 @@ namespace Merlin.Forms.CreateActionMaster
             TariffWithRangeGrid rangeGrid = (TariffWithRangeGrid)_tariffGrid;
             List<System.Data.DataRow> rows = new List<System.Data.DataRow>(
                 rangeGrid.AddedIssues.Select(string.Format("[issueDate] = '{0}'", slotDate)));
-            if (rows.Count == 0) return;
 
-            ((DataGridView)sender).DoDragDrop(new RangeIssueDragPayload(slotDate, rows), DragDropEffects.Move);
+            RangeIssueDragPayload payload;
+            if (rows.Count > 0)
+            {
+                payload = new RangeIssueDragPayload(slotDate, rows);
+            }
+            else
+            {
+                IList<TariffWithRangeGrid.SlotIssueGroup> groups = rangeGrid.GetSlotIssueGroups(slotDate);
+                if (groups.Count == 0) return;
+                payload = new RangeIssueDragPayload(slotDate, groups);
+            }
+
+            ((DataGridView)sender).DoDragDrop(payload, DragDropEffects.Move);
         }
 
         private void RangeGrid_DragEnter(object sender, DragEventArgs e)
@@ -525,10 +596,13 @@ namespace Merlin.Forms.CreateActionMaster
             if (target == null || target.WindowDate == payload.SourceSlotDate) return;
 
             string targetDateStr = target.WindowDate.ToString("dd.MM.yyyy HH:mm");
-            string question = payload.IssueRows.Count == 1
-                ? string.Format("Перенести выпуск в окно '{0}' на всех радиостанциях акции?", targetDateStr)
-                : string.Format("Перенести выпуски ({0} шт.) в окно '{1}' на всех радиостанциях акции?",
-                    payload.IssueRows.Count, targetDateStr);
+            string scope = payload.PartialGroups != null
+                ? "в тех кампаниях, где он есть"
+                : "по выбранным кампаниям";
+            string question = payload.Count == 1
+                ? string.Format("Перенести выпуск в окно '{0}' {1}?", targetDateStr, scope)
+                : string.Format("Перенести выпуски ({0} шт.) в окно '{1}' {2}?",
+                    payload.Count, targetDateStr, scope);
             if (UserMessage.ShowQuestion(question) != DialogResult.Yes)
                 return;
 
@@ -561,19 +635,33 @@ namespace Merlin.Forms.CreateActionMaster
             DataAccessor.BeginTransaction();
             try
             {
-                foreach (System.Data.DataRow row in payload.IssueRows)
+                if (payload.PartialGroups != null)
                 {
-                    PresentationObject issue = masterEntity.CreateObject(row);
-                    if (!issue.Delete(true))
-                        throw new InvalidOperationException("Не удалось удалить выпуск из исходного окна.");
-                }
+                    // Частичный слот: удаляем и ставим ровно в тех кампаниях, где выпуск был.
+                    // Если в целевом окне места нет хотя бы для одной из них, AddRangeIssues
+                    // ругается и вся транзакция откатывается — перенос не состоится.
+                    foreach (TariffWithRangeGrid.SlotIssueGroup group in payload.PartialGroups)
+                        rangeGrid.DeleteSlotIssueGroup(group, payload.SourceSlotDate);
 
-                foreach (System.Data.DataRow row in payload.IssueRows)
+                    foreach (TariffWithRangeGrid.SlotIssueGroup group in payload.PartialGroups)
+                        rangeGrid.AddSlotIssueGroup(group, targetSlotDate);
+                }
+                else
                 {
-                    Roller roller = new Roller(ParseHelper.GetInt32FromObject(row[Roller.ParamNames.RollerId], 0));
-                    RollerPositions position =
-                        (RollerPositions)ParseHelper.GetInt32FromObject(row[Issue.ParamNames.PositionId], 0);
-                    rangeGrid.AddIssuesRange(targetSlotDate, roller, position, false, recalculate: false);
+                    foreach (System.Data.DataRow row in payload.IssueRows)
+                    {
+                        PresentationObject issue = masterEntity.CreateObject(row);
+                        if (!issue.Delete(true))
+                            throw new InvalidOperationException("Не удалось удалить выпуск из исходного окна.");
+                    }
+
+                    foreach (System.Data.DataRow row in payload.IssueRows)
+                    {
+                        Roller roller = new Roller(ParseHelper.GetInt32FromObject(row[Roller.ParamNames.RollerId], 0));
+                        RollerPositions position =
+                            (RollerPositions)ParseHelper.GetInt32FromObject(row[Issue.ParamNames.PositionId], 0);
+                        rangeGrid.AddIssuesRange(targetSlotDate, roller, position, false, recalculate: false);
+                    }
                 }
 
                 _action.Recalculate();
