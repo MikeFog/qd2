@@ -1,6 +1,7 @@
 @using FogSoft.Web.Infrastructure
 @implements IDisposable
 @inject UserSession Session
+@inject MenuAccess Access
 
 @*
     Дерево меню по метаданным — веб-аналог MenuManager.CreateApplicationMenu.
@@ -36,13 +37,15 @@
 </div>
 
 @code {
-    private List<MenuNode> _menu = new();
+    // Меню берётся из MenuAccess, а не грузится здесь своим вызовом: тот же
+    // список нужен серверной проверке доступа к экрану (MenuAccess.CanOpenJournal),
+    // и грузить UserMenuItems дважды на один вход незачем.
+    private IReadOnlyList<MenuNode> _menu = Array.Empty<MenuNode>();
 
     protected override void OnInitialized()
     {
         Session.Changed += OnSessionChanged;
-        if (Session.User != null)
-            LoadMenu();
+        LoadMenu();
     }
 
     private void OnSessionChanged()
@@ -53,7 +56,7 @@
 
     private void LoadMenu()
     {
-        _menu = Session.User != null ? MenuService.Load() : new List<MenuNode>();
+        _menu = Access.Tree;
     }
 
     public void Dispose() => Session.Changed -= OnSessionChanged;

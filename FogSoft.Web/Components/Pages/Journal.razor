@@ -4,6 +4,7 @@
 @using FogSoft.WinForm
 @using FogSoft.WinForm.Classes
 @inject DialogService Dialogs
+@inject MenuAccess Access
 
 @*
     Движок журнала: список объектов сущности, фильтр и карточка — всё по
@@ -29,6 +30,28 @@
     <div class="alert alert-warning">
         Нужно <a href="/">войти в систему</a>.
     </div>
+}
+else if (_access == JournalAccess.Denied)
+{
+    <div class="alert alert-warning" style="max-width: 40rem">
+        <h5>Доступ закрыт</h5>
+        <p class="mb-0">
+            Этот журнал вам не разрешён. Права на экраны выдаются вместе с пунктами
+            меню — обратитесь к администратору системы.
+        </p>
+    </div>
+    <a class="btn btn-outline-secondary btn-sm mt-2" href="/">На главную</a>
+}
+else if (_access == JournalAccess.NotPorted)
+{
+    <div class="alert alert-secondary" style="max-width: 40rem">
+        <h5>Экран не перенесён</h5>
+        <p class="mb-0">
+            Журнала сущности <code>@EntityId</code> в вебе пока нет — на неё не ведёт
+            ни один перенесённый пункт меню. Это не ограничение прав.
+        </p>
+    </div>
+    <a class="btn btn-outline-secondary btn-sm mt-2" href="/">На главную</a>
 }
 else if (_error != null)
 {
@@ -74,8 +97,11 @@ else
     }
 
     @* ---------- Список ---------- *@
+    @* Кнопки гасятся по тем же правам и теми же вызовами, что в десктопном
+       JournalForm (tsbNew/tsbEdit). Это только удобство: настоящая проверка
+       стоит на исполнении, в DataAccessor.DoAction. *@
     <div class="mb-2">
-        <button class="btn btn-sm btn-primary" @onclick="AddNew">Добавить</button>
+        <button class="btn btn-sm btn-primary" disabled="@(!_canAdd)" @onclick="AddNew">Добавить</button>
         <span class="text-muted ms-2">Записей: @(_data?.Rows.Count ?? 0)</span>
     </div>
 
@@ -101,7 +127,7 @@ else
                                 <td>@Display(row, a.Name)</td>
                             }
                             <td>
-                                <button class="btn btn-sm btn-outline-secondary"
+                                <button class="btn btn-sm btn-outline-secondary" disabled="@(!_canOpen)"
                                         @onclick="() => Edit(row)">Открыть</button>
                             </td>
                         </tr>
@@ -128,11 +154,24 @@ else
     private bool _saving;
     private string? _error;
     private string? _saveError;
+    private JournalAccess _access = JournalAccess.Allowed;
+    private bool _canAdd;
+    private bool _canOpen;
 
     protected override void OnParametersSet()
     {
         if (SecurityManager.LoggedUser == null)
             return;
+
+        // Доступ к экрану проверяется на сервере, а не тем, что пункта нет в меню:
+        // адрес /journal/{id} можно набрать руками. Разрешение — то же самое,
+        // что гасит пункт меню (UserMenuItems.enabled), см. MenuAccess.
+        _access = Access.CheckJournal(EntityId);
+        if (_access != JournalAccess.Allowed)
+        {
+            _entity = null;
+            return;
+        }
 
         try
         {
@@ -140,6 +179,9 @@ else
             _entity = EntityManager.GetEntity(EntityId);
             _columns = _entity.SortedAttributes;
             _filterPages = PassportSchema.Parse(_entity.XmlFilter);
+
+            _canAdd = _entity.IsActionEnabled(Constants.EntityActions.AddNew, ViewType.Journal);
+            _canOpen = _entity.IsActionEnabled(Constants.EntityActions.ShowPassport, ViewType.Journal);
 
             // Значения фильтра по умолчанию берутся из самих метаданных —
             // тем же кодом, что и в десктопе (Globals.ResolveFilterInitialValues).

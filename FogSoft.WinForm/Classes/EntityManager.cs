@@ -8,10 +8,57 @@ namespace FogSoft.WinForm.Classes
 {
 	public static class EntityManager
 	{
-		private static readonly Dictionary<int, Entity> entitiesById = new Dictionary<int, Entity>();
+		/// <summary>
+		/// Кэш метаданных сущностей. Вынесен за интерфейс по той же причине и тем
+		/// же приёмом, что и <see cref="SecurityManager.ILoggedUserStorage"/>: в
+		/// десктопе на процесс приходится один пользователь, поэтому обычная
+		/// статика корректна, а в вебе — нет.
+		///
+		/// Почему этот кэш вообще персональный, хотя выглядит как справочник:
+		/// <c>EntityInfoRetrieve</c> принимает <c>@userID</c> и в третьем
+		/// результате отдаёт <c>dbo.IsActionEnabled(@userID, entityActionID)</c> —
+		/// то есть в метаданные сущности вшиты ПРАВА конкретного пользователя
+		/// (<see cref="Entity.Action.IsEnabled"/>). Общий на процесс кэш означает,
+		/// что права первого вошедшего достаются всем остальным.
+		/// См. docs/tasks/web-migration.md, этап 1, «права на действия».
+		/// </summary>
+		public interface IEntityCache
+		{
+			Dictionary<int, Entity> ById { get; }
+			Dictionary<string, Entity> ByName { get; }
+			DataSet FullData { get; set; }
+		}
 
-		private static readonly Dictionary<string, Entity> entitiesByName =
-			new Dictionary<string, Entity>(StringComparer.InvariantCultureIgnoreCase);
+		private sealed class SingleUserEntityCache : IEntityCache
+		{
+			public Dictionary<int, Entity> ById { get; } = new Dictionary<int, Entity>();
+
+			public Dictionary<string, Entity> ByName { get; } =
+				new Dictionary<string, Entity>(StringComparer.InvariantCultureIgnoreCase);
+
+			public DataSet FullData { get; set; }
+		}
+
+		private static IEntityCache _cache = new SingleUserEntityCache();
+
+		/// <summary>
+		/// Подставить своё хранилище кэша (веб — по одному на circuit). Десктоп не
+		/// вызывает и работает на прежнем статическом кэше без изменений.
+		/// </summary>
+		public static void SetEntityCache(IEntityCache cache)
+		{
+			_cache = cache ?? throw new ArgumentNullException(nameof(cache));
+		}
+
+		private static Dictionary<int, Entity> entitiesById
+		{
+			get { return _cache.ById; }
+		}
+
+		private static Dictionary<string, Entity> entitiesByName
+		{
+			get { return _cache.ByName; }
+		}
 
 		#region Constructors ----------------------------------
 
@@ -198,7 +245,13 @@ namespace FogSoft.WinForm.Classes
 
 		#region Full Load
 
-		private static DataSet _dsData = null;
+		// Полный DataSet метаданных лежит в том же хранилище, что и разобранные
+		// сущности: он тоже снят под конкретного @userID (см. IEntityCache).
+		private static DataSet _dsData
+		{
+			get { return _cache.FullData; }
+			set { _cache.FullData = value; }
+		}
 
 		public static void FullLoadDictionaries()
 		{

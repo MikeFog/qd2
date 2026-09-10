@@ -2,6 +2,7 @@ using System.Reflection;
 using FogSoft.Web.Components;
 using FogSoft.Web.Infrastructure;
 using FogSoft.WinForm.Classes;
+using FogSoft.WinForm.DataAccess;
 using Microsoft.AspNetCore.Components.Server.Circuits;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -18,6 +19,11 @@ builder.Services.AddScoped<UserSession>();
 builder.Services.AddScoped<DialogService>();
 builder.Services.AddSingleton<CircuitServicesAccessor>();
 builder.Services.AddScoped<CircuitHandler, CircuitServicesHandler>();
+// Кэш метаданных сущностей — тоже на circuit, и это вопрос не скорости, а прав:
+// в метаданные вшито dbo.IsActionEnabled(@userID, …), см. WebEntityCache.
+builder.Services.AddScoped<CircuitEntityCacheState>();
+// Меню пользователя и вытекающий из него доступ к экранам — тоже на circuit.
+builder.Services.AddScoped<MenuAccess>();
 
 var app = builder.Build();
 
@@ -39,6 +45,17 @@ DomainAssemblyResolver.Register();
 // получает пользователя текущего circuit, а не общего на всех.
 SecurityManager.SetLoggedUserStorage(
     new WebLoggedUserStorage(app.Services.GetRequiredService<CircuitServicesAccessor>()));
+
+// Тот же шов, но для кэша сущностей. Без него проверка прав ниже читала бы
+// права первого вошедшего в процесс пользователя: EntityInfoRetrieve снимает
+// метаданные под конкретный @userID, а кэш в ядре — статический.
+EntityManager.SetEntityCache(
+    new WebEntityCache(app.Services.GetRequiredService<CircuitServicesAccessor>()));
+
+// Права на действия начинают проверяться на исполнении, а не только гасить
+// кнопки, как в десктопе: в вебе адрес вызывается напрямую, минуя меню.
+// docs/tasks/web-migration.md, раздел 7 п.1.
+DataAccessor.SetActionAuthorization(new WebActionAuthorization());
 
 // Configure the HTTP request pipeline.
 if (!app.Environment.IsDevelopment())
