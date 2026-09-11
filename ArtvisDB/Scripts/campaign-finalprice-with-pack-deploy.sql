@@ -64,6 +64,11 @@
       Данные: восстановить из бэкапа. Обратное деление на a.discount
               копейка-в-копейку не гарантировано.
 
+    ПЕРЕСБОРКА
+      Тела процедур в этом файле -- копии из ArtvisDB/dbo/Stored Procedures.
+      Править их здесь нельзя. После правки исходника:
+        python ArtvisDB/Scripts/campaign-finalprice-with-pack-gen.py
+
     ЗАПУСК
       sqlcmd -S <прод-сервер> -d Artvis -E -b -I -i campaign-finalprice-with-pack-deploy.sql
 */
@@ -109,6 +114,7 @@ GO
 
 PRINT '--- процедуры ---';
 GO
+-- @@HEAD-END@@
 SET QUOTED_IDENTIFIER ON;
 SET ANSI_NULLS ON;
 GO
@@ -4191,7 +4197,14 @@ select * from dbo.fn_GetMassmediasForUserMassmedia(@loggedUserID, @massmediaID)
 		
 		while	@@fetch_status = 0
 		begin 
-			if not ((@campaignTypeID <> 4) and (@cStart between @start and @end) and (@cEnd between @start and @end))
+			-- Кампания целиком внутри периода: @campaignPrice = c.finalPrice, а он
+			-- теперь уже со всеми скидками -- брать как есть. Иначе считаем по периоду.
+			-- Условие -- отрицание прежнего if, с явной проверкой NULL: у between
+			-- с NULL результат unknown, и not(unknown) ветку бы не открыл.
+			if @campaignTypeID = 4
+				or @cStart is null or @cEnd is null
+				or @cStart not between @start and @end
+				or @cEnd not between @start and @end
 				exec GetPriceByPeriod @campaignID, @campaignTypeID, @start, @end, @campaignPrice OUTPUT, @mmID
 			
 			if @campaignPrice > 0
@@ -4770,7 +4783,7 @@ end
 GO
 PRINT '  ok: dbo.stat_VolumesByPaymentTypes';
 GO
-
+-- @@TAIL-BEGIN@@
 PRINT '--- данные ---';
 GO
 
