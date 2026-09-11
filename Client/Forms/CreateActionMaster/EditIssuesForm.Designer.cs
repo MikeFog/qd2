@@ -50,6 +50,10 @@
 			this.splitContainerCampaigns.Orientation = System.Windows.Forms.Orientation.Horizontal;
 			this.splitContainerCampaigns.Panel2MinSize = 60;
 			this.splitContainerCampaigns.Size = new System.Drawing.Size(691, 188);
+			// Значение временное: первый же реальный layout (Dock=Fill на реальном размере формы,
+			// а не на фиктивном Size выше) не гарантированно сохраняет высоту Panel2, честную
+			// высоту grdCampaigns выставляем в EditIssuesForm.OnLoad, когда форма уже реально
+			// размещена — см. комментарий там.
 			this.splitContainerCampaigns.SplitterDistance = 110;
 			this.splitContainerCampaigns.TabIndex = 0;
 			// 

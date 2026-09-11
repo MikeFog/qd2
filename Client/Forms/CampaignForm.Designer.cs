@@ -698,7 +698,7 @@ namespace Merlin.Forms {
     private System.Windows.Forms.ToolStripButton tbbRefresh;
     private System.Windows.Forms.ToolStripButton tbbStart;
     private System.Windows.Forms.ToolStripDropDownButton tbbModules;
-    private System.Windows.Forms.SplitContainer splitContainer3;
+    protected System.Windows.Forms.SplitContainer splitContainer3;
     protected System.Windows.Forms.ListBox lstStat;
     private System.Windows.Forms.ToolStripDropDownButton tbbPosition;
     private System.Windows.Forms.ToolStripButton tbbShowUnconfirmed;
