@@ -426,9 +426,12 @@ BEGIN
             EXEC dbo.SetIssueRatio @campaignID, @campaignTypeID, @theDate, @finishDate, @ratio;
         END
 
+        -- finalPrice хранит цену со ВСЕМИ скидками, включая пакетную,
+        -- то есть ровно ту сумму, которая раскидывается по выпускам через @ratio.
+        -- Домножать её на Action.discount при чтении больше не нужно.
         UPDATE dbo.Campaign
         SET
-            finalPrice = @managerDiscountCampaign * @price,
+            finalPrice = @estimatedPrice,
             modTime = GETDATE(),
             modUser = ISNULL(@loggedUserID, modUser)
         WHERE campaignID = @campaignID;
@@ -450,10 +453,13 @@ BEGIN
         @sumPackModules DECIMAL(18,2),
         @sumOther DECIMAL(18,2);
 
+    -- priceSumByCampaigns сохраняет прежний смысл: сумма кампаний со всеми
+    -- скидками, КРОМЕ пакетной. Раньше это была просто SUM(finalPrice);
+    -- теперь, когда finalPrice включает пакетную, формулу пишем явно.
     SELECT
-        @priceSumByCampaigns = ISNULL(SUM(c.finalPrice), 0),
+        @priceSumByCampaigns = ISNULL(SUM(CAST(c.price * c.managerDiscount AS DECIMAL(18,2))), 0),
         @sumPackModules = ISNULL(SUM(CASE WHEN c.campaignTypeID = 4 THEN c.finalPrice ELSE 0 END), 0),
-        @sumOther = ISNULL(SUM(CASE WHEN c.campaignTypeID = 4 THEN 0 ELSE CAST(c.finalPrice * @discountValue as decimal(18,2)) END), 0)
+        @sumOther = ISNULL(SUM(CASE WHEN c.campaignTypeID = 4 THEN 0 ELSE c.finalPrice END), 0)
     FROM dbo.Campaign c
     WHERE c.actionID = @actionID;
 

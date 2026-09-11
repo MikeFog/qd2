@@ -100,7 +100,7 @@ BEGIN
 					c.startDate between @startDay and @finishDay and 
 					c.finishDate between @startDay and @finishDay and 
 					i.cWithCapacity = 0
-				then c.finalPrice * a.discount
+				then c.finalPrice
 				else i.price
 			end as price,
 			c.agencyID,
@@ -148,7 +148,7 @@ BEGIN
 					c.startDate between @startDay and @finishDay and 
 					c.finishDate between @startDay and @finishDay and 
 					i.cWithCapacity = 0
-				then c.finalPrice * a.discount
+				then c.finalPrice
 				else i.price
 			end as price,
 			c.agencyID,
@@ -333,7 +333,7 @@ BEGIN
 					c.startDate between @ComparedStartDay and @ComparedFinishDay and 
 					c.finishDate between @ComparedStartDay and @ComparedFinishDay and 
 					i.cWithCapacity = 0
-				then c.finalPrice * a.discount
+				then c.finalPrice
 				else i.price
 			end as price,
 			c.agencyID,
@@ -380,7 +380,7 @@ BEGIN
 					c.startDate between @ComparedStartDay and @ComparedFinishDay and 
 					c.finishDate between @ComparedStartDay and @ComparedFinishDay and 
 					i.cWithCapacity = 0
-				then c.finalPrice * a.discount
+				then c.finalPrice
 				else i.price
 			end as price,
 			c.agencyID,

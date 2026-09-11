@@ -124,7 +124,7 @@ WHERE
 	Begin
 		If	(@startOfInterval is null and @endOfInterval IS null) OR (@endOfInterval > @finishDate and @startOfInterval < @StartDate)
 		begin 
-			set  @Price = case when @TypeID <> 4 then @FinalPrice * @actiondiscount else @FinalPrice end 
+			set  @Price = @FinalPrice 
 		end 
 		else
 		begin 
