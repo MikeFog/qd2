@@ -98,7 +98,7 @@ while	@@fetch_status = 0
 	begin 
 	
 	If	@theDate IS NULL OR @theDate > @FinishDay
-		Set 	@Price = case when @TypeID <> 4 then @FinalPrice * @actiondiscount else @FinalPrice end 
+		Set 	@Price = @FinalPrice 
 	else
 		EXEC GetPriceByPeriod @campaignID, @TypeID, @StartDay, @theDate, @Price output
 

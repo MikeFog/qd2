@@ -46,7 +46,7 @@ begin
 	select distinct a.actionID, 
 		a.userID, 
 		a.firmID,
-		case when c.campaignTypeID = 4 then c.finalPrice else c.finalPrice * a.discount end,
+		c.finalPrice,
 		pt.paymentTypeID,
 		pt.isHidden,
 		c.startDate,

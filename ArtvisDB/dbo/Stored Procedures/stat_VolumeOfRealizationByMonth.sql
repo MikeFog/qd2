@@ -131,9 +131,7 @@ select * from dbo.fn_GetMassmediasForUserMassmedia(@loggedUserID, @massmediaID)
 		
 		while	@@fetch_status = 0
 		begin 
-			if (@campaignTypeID <> 4) and (@cStart between @start and @end) and (@cEnd between @start and @end)
-				Set @campaignPrice = case when @campaignTypeID <> 4 then @campaignPrice * @aDiscount else @campaignPrice end 
-			else 
+			if not ((@campaignTypeID <> 4) and (@cStart between @start and @end) and (@cEnd between @start and @end))
 				exec GetPriceByPeriod @campaignID, @campaignTypeID, @start, @end, @campaignPrice OUTPUT, @mmID
 			
 			if @campaignPrice > 0

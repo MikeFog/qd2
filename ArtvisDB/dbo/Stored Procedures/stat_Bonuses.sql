@@ -41,42 +41,24 @@ BEGIN
                 ISNULL(vu.[userName], 'Unknown') AS userName,
                 COUNT(c.[campaignID])            AS CampaignCount,
                 SUM(CASE WHEN c.[paymentTypeID] = 26
-                         THEN CASE c.[campaignTypeID]
-                                  WHEN 4 THEN c.[finalPrice]
-                                  ELSE CAST(c.[finalPrice] * a.[discount] AS DECIMAL(9,2))
-                              END
+                         THEN c.[finalPrice]
                          ELSE 0 END)             AS TotalBonusCost,
                 SUM(CASE WHEN c.[paymentTypeID] != 26 AND pt.[isHidden] = 0
-                         THEN CASE c.[campaignTypeID]
-                                  WHEN 4 THEN c.[finalPrice]
-                                  ELSE CAST(c.[finalPrice] * a.[discount] AS DECIMAL(9,2))
-                              END
+                         THEN c.[finalPrice]
                          ELSE 0 END)             AS RegularCost,
                 SUM(CASE WHEN c.[paymentTypeID] != 26 AND pt.[isHidden] = 1
-                         THEN CASE c.[campaignTypeID]
-                                  WHEN 4 THEN c.[finalPrice]
-                                  ELSE CAST(c.[finalPrice] * a.[discount] AS DECIMAL(9,2))
-                              END
+                         THEN c.[finalPrice]
                          ELSE 0 END)             AS HiddenCost,
                 CASE
                     WHEN SUM(CASE WHEN c.[paymentTypeID] != 26 AND pt.[isHidden] = 0
-                                  THEN CASE c.[campaignTypeID]
-                                           WHEN 4 THEN c.[finalPrice]
-                                           ELSE CAST(c.[finalPrice] * a.[discount] AS DECIMAL(9,2))
-                                       END
+                                  THEN c.[finalPrice]
                                   ELSE 0 END) = 0 THEN NULL
                     ELSE ROUND(
                         SUM(CASE WHEN c.[paymentTypeID] = 26
-                                 THEN CASE c.[campaignTypeID]
-                                          WHEN 4 THEN c.[finalPrice]
-                                          ELSE CAST(c.[finalPrice] * a.[discount] AS DECIMAL(9,2))
-                                      END
+                                 THEN c.[finalPrice]
                                  ELSE 0 END)
                         / SUM(CASE WHEN c.[paymentTypeID] != 26 AND pt.[isHidden] = 0
-                                   THEN CASE c.[campaignTypeID]
-                                            WHEN 4 THEN c.[finalPrice]
-                                            ELSE CAST(c.[finalPrice] * a.[discount] AS DECIMAL(9,2))
-                                        END
+                                   THEN c.[finalPrice]
                                    ELSE 0 END) * 100, 2)
                 END                              AS BonusPercentage,
                 @periodStartDate                 AS PeriodStartDate,
@@ -110,24 +92,15 @@ BEGIN
                 (@minBonusPercentage IS NULL
                  OR ROUND(
                     SUM(CASE WHEN c.[paymentTypeID] = 26
-                             THEN CASE c.[campaignTypeID]
-                                      WHEN 4 THEN c.[finalPrice]
-                                      ELSE CAST(c.[finalPrice] * a.[discount] AS DECIMAL(9,2))
-                                  END
+                             THEN c.[finalPrice]
                              ELSE 0 END)
                     / NULLIF(SUM(CASE WHEN c.[paymentTypeID] != 26 AND pt.[isHidden] = 0
-                                      THEN CASE c.[campaignTypeID]
-                                               WHEN 4 THEN c.[finalPrice]
-                                               ELSE CAST(c.[finalPrice] * a.[discount] AS DECIMAL(9,2))
-                                           END
+                                      THEN c.[finalPrice]
                                       ELSE 0 END), 0) * 100, 2
                     ) > @minBonusPercentage)
                 AND (@withZeroRegularCostOnly = 0
                      OR SUM(CASE WHEN c.[paymentTypeID] != 26 AND pt.[isHidden] = 0
-                                 THEN CASE c.[campaignTypeID]
-                                          WHEN 4 THEN c.[finalPrice]
-                                          ELSE CAST(c.[finalPrice] * a.[discount] AS DECIMAL(9,2))
-                                      END
+                                 THEN c.[finalPrice]
                                  ELSE 0 END) = 0)
             ORDER BY
                 f.[name] ASC, mg.[name] ASC, vu.[userName] ASC, RegularCost DESC
@@ -144,42 +117,24 @@ BEGIN
                 ISNULL(vu.[userName], 'Unknown') AS userName,
                 COUNT(c.[campaignID])            AS CampaignCount,
                 SUM(CASE WHEN c.[paymentTypeID] = 26
-                         THEN CASE c.[campaignTypeID]
-                                  WHEN 4 THEN c.[finalPrice]
-                                  ELSE CAST(c.[finalPrice] * a.[discount] AS DECIMAL(9,2))
-                              END
+                         THEN c.[finalPrice]
                          ELSE 0 END)             AS TotalBonusCost,
                 SUM(CASE WHEN c.[paymentTypeID] != 26 AND pt.[isHidden] = 0
-                         THEN CASE c.[campaignTypeID]
-                                  WHEN 4 THEN c.[finalPrice]
-                                  ELSE CAST(c.[finalPrice] * a.[discount] AS DECIMAL(9,2))
-                              END
+                         THEN c.[finalPrice]
                          ELSE 0 END)             AS RegularCost,
                 SUM(CASE WHEN c.[paymentTypeID] != 26 AND pt.[isHidden] = 1
-                         THEN CASE c.[campaignTypeID]
-                                  WHEN 4 THEN c.[finalPrice]
-                                  ELSE CAST(c.[finalPrice] * a.[discount] AS DECIMAL(9,2))
-                              END
+                         THEN c.[finalPrice]
                          ELSE 0 END)             AS HiddenCost,
                 CASE
                     WHEN SUM(CASE WHEN c.[paymentTypeID] != 26 AND pt.[isHidden] = 0
-                                  THEN CASE c.[campaignTypeID]
-                                           WHEN 4 THEN c.[finalPrice]
-                                           ELSE CAST(c.[finalPrice] * a.[discount] AS DECIMAL(9,2))
-                                       END
+                                  THEN c.[finalPrice]
                                   ELSE 0 END) = 0 THEN NULL
                     ELSE ROUND(
                         SUM(CASE WHEN c.[paymentTypeID] = 26
-                                 THEN CASE c.[campaignTypeID]
-                                          WHEN 4 THEN c.[finalPrice]
-                                          ELSE CAST(c.[finalPrice] * a.[discount] AS DECIMAL(9,2))
-                                      END
+                                 THEN c.[finalPrice]
                                  ELSE 0 END)
                         / SUM(CASE WHEN c.[paymentTypeID] != 26 AND pt.[isHidden] = 0
-                                   THEN CASE c.[campaignTypeID]
-                                            WHEN 4 THEN c.[finalPrice]
-                                            ELSE CAST(c.[finalPrice] * a.[discount] AS DECIMAL(9,2))
-                                        END
+                                   THEN c.[finalPrice]
                                    ELSE 0 END) * 100, 2)
                 END                              AS BonusPercentage,
                 @periodStartDate                 AS PeriodStartDate,
@@ -214,24 +169,15 @@ BEGIN
                 (@minBonusPercentage IS NULL
                  OR ROUND(
                     SUM(CASE WHEN c.[paymentTypeID] = 26
-                             THEN CASE c.[campaignTypeID]
-                                      WHEN 4 THEN c.[finalPrice]
-                                      ELSE CAST(c.[finalPrice] * a.[discount] AS DECIMAL(9,2))
-                                  END
+                             THEN c.[finalPrice]
                              ELSE 0 END)
                     / NULLIF(SUM(CASE WHEN c.[paymentTypeID] != 26 AND pt.[isHidden] = 0
-                                      THEN CASE c.[campaignTypeID]
-                                               WHEN 4 THEN c.[finalPrice]
-                                               ELSE CAST(c.[finalPrice] * a.[discount] AS DECIMAL(9,2))
-                                           END
+                                      THEN c.[finalPrice]
                                       ELSE 0 END), 0) * 100, 2
                     ) > @minBonusPercentage)
                 AND (@withZeroRegularCostOnly = 0
                      OR SUM(CASE WHEN c.[paymentTypeID] != 26 AND pt.[isHidden] = 0
-                                 THEN CASE c.[campaignTypeID]
-                                          WHEN 4 THEN c.[finalPrice]
-                                          ELSE CAST(c.[finalPrice] * a.[discount] AS DECIMAL(9,2))
-                                      END
+                                 THEN c.[finalPrice]
                                  ELSE 0 END) = 0)
             ORDER BY
                 hc.[name] ASC, mg.[name] ASC, vu.[userName] ASC, RegularCost DESC
