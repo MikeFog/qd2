@@ -50,6 +50,7 @@ namespace Merlin.Forms {
             this.tbbShowUnconfirmed = new System.Windows.Forms.ToolStripButton();
             this.btnShowMarked = new System.Windows.Forms.ToolStripButton();
             this.btnShowRollerNumbers = new System.Windows.Forms.ToolStripButton();
+            this.tbbReplaceRoller = new System.Windows.Forms.ToolStripButton();
             this.tbMarkPrimeWindows = new System.Windows.Forms.ToolStripButton();
             this.toolStripSeparator1 = new System.Windows.Forms.ToolStripSeparator();
             this.btnShowDisabled = new System.Windows.Forms.ToolStripButton();
@@ -113,6 +114,7 @@ namespace Merlin.Forms {
             this.tbbShowUnconfirmed,
             this.btnShowMarked,
             this.btnShowRollerNumbers,
+            this.tbbReplaceRoller,
             this.tbMarkPrimeWindows,
             this.toolStripSeparator1,
             this.btnShowDisabled,
@@ -325,7 +327,22 @@ namespace Merlin.Forms {
             this.btnShowRollerNumbers.Text = "Номера роликов";
             this.btnShowRollerNumbers.ToolTipText = "Показывать в окнах номера роликов текущей кампании вместо остатка времени";
             this.btnShowRollerNumbers.CheckedChanged += new System.EventHandler(this.MarkRollerNumbers);
-            // 
+            //
+            // tbbReplaceRoller
+            //
+            // Скрыта/недоступна по умолчанию: показывается только на веере (EditIssuesForm.
+            // ProcessToolbar), включается только при btnShowRollerNumbers.Checked — иначе
+            // пользователь заменит ролики, не видя, какие именно стоят в окнах.
+            this.tbbReplaceRoller.DisplayStyle = System.Windows.Forms.ToolStripItemDisplayStyle.Text;
+            this.tbbReplaceRoller.Enabled = false;
+            this.tbbReplaceRoller.Name = "tbbReplaceRoller";
+            this.tbbReplaceRoller.Size = new System.Drawing.Size(90, 33);
+            this.tbbReplaceRoller.Text = "Заменить ролики";
+            this.tbbReplaceRoller.ToolTipText = "Заменить ролики в выделенных окнах на ролик, выбранный в списке \"Ролики\" (Ctrl" +
+    "+R)";
+            this.tbbReplaceRoller.Visible = false;
+            this.tbbReplaceRoller.Click += new System.EventHandler(this.tbbReplaceRoller_Click);
+            //
             // tbMarkPrimeWindows
             // 
             this.tbMarkPrimeWindows.CheckOnClick = true;
@@ -736,6 +753,7 @@ namespace Merlin.Forms {
     private System.Windows.Forms.ToolStripButton tbSetActionPrice;
     protected System.Windows.Forms.ToolStripButton tbMarkPrimeWindows;
     private System.Windows.Forms.ToolStripButton btnShowMarked;
-    private System.Windows.Forms.ToolStripButton btnShowRollerNumbers;
+    protected System.Windows.Forms.ToolStripButton btnShowRollerNumbers;
+    protected System.Windows.Forms.ToolStripButton tbbReplaceRoller;
     }
 }

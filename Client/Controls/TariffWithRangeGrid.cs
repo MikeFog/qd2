@@ -267,12 +267,7 @@ namespace Merlin.Controls
 		/// </summary>
 		public IList<SlotIssueGroup> GetSlotIssueGroups(DateTime windowDate)
 		{
-			Dictionary<string, object> parameters = DataAccessor.CreateParametersDictionary();
-			parameters[Merlin.Classes.Action.ParamNames.ActionId] = _action.ActionId;
-			parameters["issueDate"] = windowDate;
-			parameters[Campaign.ParamNames.CampaignIds] = CampaignIdsParameter;
-
-			DataTable table = DataAccessor.LoadDataSet("RangeSlotIssues", parameters).Tables[0];
+			DataTable table = FetchSlotIssues(windowDate);
 			Dictionary<string, SlotIssueGroup> groups = new Dictionary<string, SlotIssueGroup>();
 			List<SlotIssueGroup> result = new List<SlotIssueGroup>();
 
@@ -297,6 +292,49 @@ namespace Merlin.Controls
 				}
 
 				group.CampaignIds.Add(ParseHelper.GetInt32FromObject(row[Campaign.ParamNames.CampaignId], 0));
+			}
+
+			return result;
+		}
+
+		private DataTable FetchSlotIssues(DateTime windowDate)
+		{
+			Dictionary<string, object> parameters = DataAccessor.CreateParametersDictionary();
+			parameters[Merlin.Classes.Action.ParamNames.ActionId] = _action.ActionId;
+			parameters["issueDate"] = windowDate;
+			parameters[Campaign.ParamNames.CampaignIds] = CampaignIdsParameter;
+
+			return DataAccessor.LoadDataSet("RangeSlotIssues", parameters).Tables[0];
+		}
+
+		/// <summary>
+		/// Одна строка выпуска в слоте (без группировки по ролику/позиции, в отличие от
+		/// <see cref="GetSlotIssueGroups"/>) — для массовой замены ролика
+		/// (EditIssuesForm.ReplaceRollerInSelectedWindows), где нужен именно текущий ролик и
+		/// исходное окно каждого отдельного выпуска, а не агрегат по слоту.
+		/// </summary>
+		public class SlotIssueRow
+		{
+			public int CampaignId;
+			public int RollerId;
+			public int OriginalWindowId;
+			public DateTime WindowDayOriginal;
+		}
+
+		public IList<SlotIssueRow> GetSlotIssueRows(DateTime windowDate)
+		{
+			DataTable table = FetchSlotIssues(windowDate);
+			List<SlotIssueRow> result = new List<SlotIssueRow>();
+
+			foreach (DataRow row in table.Rows)
+			{
+				result.Add(new SlotIssueRow
+				{
+					CampaignId = ParseHelper.GetInt32FromObject(row[Campaign.ParamNames.CampaignId], 0),
+					RollerId = ParseHelper.GetInt32FromObject(row[Roller.ParamNames.RollerId], 0),
+					OriginalWindowId = ParseHelper.GetInt32FromObject(row["originalWindowID"], 0),
+					WindowDayOriginal = ParseHelper.GetDateTimeFromObject(row["windowDayOriginal"], DateTime.MinValue)
+				});
 			}
 
 			return result;

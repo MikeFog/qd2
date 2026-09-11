@@ -6,6 +6,9 @@
 --              (в сетке они красные).
 --              Одна строка на выпуск; группировку «ролик + позиция» и список
 --              кампаний собирает C# (TariffWithRangeGrid.GetSlotIssueGroups).
+--              originalWindowID/windowDayOriginal — для RollerSubstitute (массовая
+--              замена ролика, TariffWithRangeGrid.GetSlotIssueRows): её #days требует
+--              именно windowId + dayOriginal той же строки TariffWindow, а не дату слота.
 -- =============================================
 CREATE PROCEDURE [dbo].[RangeSlotIssues]
 (
@@ -25,7 +28,9 @@ BEGIN
 		r.[name] AS rollerName,
 		r.duration,
 		dbo.fn_Int2Time(r.duration) AS durationString,
-		i.positionId
+		i.positionId,
+		tw.windowId AS originalWindowID,
+		tw.dayOriginal AS windowDayOriginal
 	FROM dbo.Issue i
 		INNER JOIN dbo.Campaign c ON c.campaignID = i.campaignID
 		INNER JOIN dbo.Roller r ON r.rollerID = i.rollerID

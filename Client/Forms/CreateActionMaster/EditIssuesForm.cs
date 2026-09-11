@@ -83,6 +83,12 @@ namespace Merlin.Forms.CreateActionMaster
                 tbbTemplateUndo.Visible = true;
                 grdCurrentCampaignIssues.Caption = "Добавленные выпуски";
 
+				// Страховка: массовая замена роликов доступна только при видимых номерах
+				// роликов в ячейках — иначе пользователь меняет ролики вслепую, не видя,
+				// что стоит в выделенных окнах.
+				tbbReplaceRoller.Enabled = btnShowRollerNumbers.Checked;
+				btnShowRollerNumbers.CheckedChanged += (s, args) => tbbReplaceRoller.Enabled = btnShowRollerNumbers.Checked;
+
                 RefreshGrid();
 				_tariffGrid.GridRefreshed += TariffGridRefreshed;
 				_action.DisplayData(lstStat);
@@ -209,6 +215,7 @@ namespace Merlin.Forms.CreateActionMaster
             base.ProcessToolbar();
 			tsbMuteRoller.Enabled = true;
 			tbMarkPrimeWindows.Visible = true;
+			tbbReplaceRoller.Visible = true;
         }
 
         protected override void ShowWindowIssues(ITariffWindow tariffWindow)
@@ -442,6 +449,155 @@ namespace Merlin.Forms.CreateActionMaster
             else
                 UserMessage.ShowInformation(string.Format("Удалено выпусков: {0}.",
                     deletedObjects.Count + partialDeletedCount));
+        }
+
+        /// <summary>
+        /// Одна пара (кампания, старый ролик) и набор дней/окон, где его нужно заменить —
+        /// единица вызова RollerSubstitute (она принимает ровно одну кампанию и один старый
+        /// ролик за раз).
+        /// </summary>
+        private class ReplaceGroup
+        {
+            public int CampaignId;
+            public int RollerId;
+            public readonly System.Data.DataTable Days = CreateDaysTable();
+
+            private static System.Data.DataTable CreateDaysTable()
+            {
+                // Имя таблицы и имена/типы колонок — контракт с RollerSubstitute.sql
+                // (создаёт #days такой же формы через SqlBulkCopyHelper.CopyToSqlTempTable).
+                System.Data.DataTable table = new System.Data.DataTable("days");
+                table.Columns.Add("windowID", typeof(int));
+                table.Columns.Add("issueDate", typeof(DateTime));
+                return table;
+            }
+        }
+
+        /// <summary>
+        /// Массовая замена ролика в выделенных окнах (Ctrl+R / кнопка "Заменить ролики") на
+        /// ролик, выбранный в списке "Ролики" — во всех кампаниях, отмеченных чек-листом, где
+        /// в этих окнах реально стоят выпуски (включая частичные "красные" слоты). Переиспользует
+        /// готовую RollerSubstitute (проверка дедлайна/прошлого/агитации, пересчёт цены,
+        /// корректировка TariffWindow.timeInUse) через CampaignRoller.ApplyRollerSubstitutionForDays
+        /// — ту же обвязку, что и диалог замены ролика по кампании. Один вызов SP — одна пара
+        /// (кампания, старый ролик); группируем по ней, а не зовём по одному выпуску.
+        /// </summary>
+        protected override void ReplaceRollerInSelectedWindows()
+        {
+            TariffWithRangeGrid rangeGrid = _tariffGrid as TariffWithRangeGrid;
+            if (rangeGrid == null)
+                return;
+
+            // Кнопка тоже гасится по этому условию (см. OnLoad) — здесь то же самое для Ctrl+R,
+            // который её Enabled не учитывает.
+            if (!btnShowRollerNumbers.Checked)
+            {
+                UserMessage.ShowExclamation(
+                    "Замена роликов доступна только при включённом показе номеров роликов " +
+                    "(кнопка \"Номера роликов\") — так видно, что вы меняете.");
+                return;
+            }
+
+            if (rangeGrid.Roller == null)
+            {
+                UserMessage.ShowExclamation(MessageAccessor.GetMessage("RollerNotSelected"));
+                return;
+            }
+
+            Roller newRoller = rangeGrid.Roller;
+
+            IList<ITariffWindow> windows = _tariffGrid.GetSelectedTariffWindows();
+            if (windows.Count == 0)
+                return;
+
+            Dictionary<string, ReplaceGroup> groups = new Dictionary<string, ReplaceGroup>();
+            int totalCount = 0;
+
+            foreach (ITariffWindow window in windows)
+            {
+                foreach (TariffWithRangeGrid.SlotIssueRow row in rangeGrid.GetSlotIssueRows(window.WindowDate))
+                {
+                    // Тот же самый ролик уже стоит — заменять нечего.
+                    if (row.RollerId == newRoller.RollerId)
+                        continue;
+
+                    string key = row.CampaignId + "/" + row.RollerId;
+                    if (!groups.TryGetValue(key, out ReplaceGroup group))
+                    {
+                        group = new ReplaceGroup { CampaignId = row.CampaignId, RollerId = row.RollerId };
+                        groups.Add(key, group);
+                    }
+
+                    if (group.Days.Select(string.Format("windowID = {0}", row.OriginalWindowId)).Length == 0)
+                        group.Days.Rows.Add(row.OriginalWindowId, row.WindowDayOriginal);
+
+                    totalCount++;
+                }
+            }
+
+            if (totalCount == 0)
+            {
+                UserMessage.ShowInformation("В выделенных окнах нечего заменять.");
+                return;
+            }
+
+            if (UserMessage.ShowQuestion(string.Format(
+                    "Заменить ролики на «{0}» ({1}) в выделенных окнах? ({2} шт.)",
+                    newRoller.Name, newRoller.DurationString, totalCount)) != DialogResult.Yes)
+                return;
+
+            System.Data.DataTable unsubstituted = null;
+            System.Data.DataTable groupErrors = FogSoft.WinForm.Controls.SmartGrid.CreateDeleteErrorsTable();
+            int errorRowNumber = 1;
+
+            try
+            {
+                Cursor = Cursors.WaitCursor;
+                foreach (ReplaceGroup group in groups.Values)
+                {
+                    Campaign campaign = Campaign.GetCampaignById(group.CampaignId);
+                    Roller oldRoller = new Roller(group.RollerId);
+                    try
+                    {
+                        System.Data.DataTable unsub = CampaignRoller.ApplyRollerSubstitutionForDays(
+                            campaign, oldRoller, newRoller, group.Days, null, null);
+                        if (unsub != null && unsub.Rows.Count > 0)
+                        {
+                            if (unsubstituted == null)
+                                unsubstituted = unsub.Clone();
+                            foreach (System.Data.DataRow row in unsub.Rows)
+                                unsubstituted.ImportRow(row);
+                        }
+                    }
+                    catch (Exception ex)
+                    {
+                        FogSoft.WinForm.Controls.SmartGrid.AddDeleteError(groupErrors, errorRowNumber++,
+                            string.Format("{0} — {1}", campaign[Campaign.ParamNames.MassmediaName], oldRoller.Name),
+                            ErrorManager.GetErrorMessage(ex));
+                    }
+                }
+            }
+            finally
+            {
+                Cursor = Cursors.Default;
+            }
+
+            // Roller ID у уже отрисованных ячеек (AddedIssues) могли поменяться — пересобираем
+            // из базы, как после отката переноса (см. RebuildAddedIssues).
+            rangeGrid.RebuildAddedIssues();
+            _action.Recalculate();
+            rangeGrid.RefreshGrid();
+
+            // Незаменённые по бизнес-правилам (дедлайн/прошлое/...) — тот же журнал, что и у
+            // одиночной замены ролика по кампании (CampaignRoller.Substitute).
+            if (unsubstituted != null && unsubstituted.Rows.Count > 0)
+                CampaignRoller.ShowUnsubstitutedRollers(unsubstituted);
+
+            // Группы, упавшие целиком (агитация/нулевая длительность/...) — отдельный журнал.
+            if (groupErrors.Rows.Count > 0)
+                FogSoft.WinForm.Controls.SmartGrid.ShowDeleteErrors(groupErrors, "Ошибки массовой замены роликов");
+            else if (unsubstituted == null || unsubstituted.Rows.Count == 0)
+                UserMessage.ShowInformation(string.Format("Заменено роликов: {0}.", totalCount));
         }
 
         /// <summary>

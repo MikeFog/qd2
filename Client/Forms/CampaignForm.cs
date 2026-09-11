@@ -744,6 +744,18 @@ namespace Merlin.Forms
 			}
 		}
 
+		private void tbbReplaceRoller_Click(object sender, EventArgs e)
+		{
+			try
+			{
+				ReplaceRollerInSelectedWindows();
+			}
+			catch (Exception ex)
+			{
+				ErrorManager.PublishError(ex);
+			}
+		}
+
 		private void grdCurrentCampaignIssues_ObjectDeleted(PresentationObject presentationObject)
 		{
 			try
@@ -830,10 +842,11 @@ namespace Merlin.Forms
 		private void TariffGrid_KeyDown(object sender, KeyEventArgs e)
 		{
 			// PgUp/PgDn — листание недель, доступно везде, где навешан обработчик.
-			// Del/Insert — только когда включены операции по выделению
+			// Del/Insert/Ctrl+R — только когда включены операции по выделению
 			// (_selectionActionsEnabled): конкретная логика в DeleteIssuesInSelectedWindows /
-			// AddIssuesInSelectedWindows (virtual, override в EditIssuesForm для веера).
-			// PgUp/PgDn гасим, иначе DataGridView вдобавок прокрутит строки на страницу.
+			// AddIssuesInSelectedWindows / ReplaceRollerInSelectedWindows (virtual, override в
+			// EditIssuesForm для веера). PgUp/PgDn гасим, иначе DataGridView вдобавок
+			// прокрутит строки на страницу.
 			switch (e.KeyCode)
 			{
 				case Keys.PageUp:
@@ -842,6 +855,11 @@ namespace Merlin.Forms
 				case Keys.Delete:
 				case Keys.Insert:
 					if (!_selectionActionsEnabled)
+						return;
+					break;
+				case Keys.R:
+					// Ctrl+R — иначе перехватывали бы обычный ввод буквы "R".
+					if (!_selectionActionsEnabled || !e.Control)
 						return;
 					break;
 				default:
@@ -857,6 +875,7 @@ namespace Merlin.Forms
 				{
 					case Keys.Delete: DeleteIssuesInSelectedWindows(); break;
 					case Keys.Insert: AddIssuesInSelectedWindows(); break;
+					case Keys.R: ReplaceRollerInSelectedWindows(); break;
 					case Keys.PageUp: _tariffGrid.GoToPreviousPeriod(); break;
 					case Keys.PageDown: _tariffGrid.GoToNextPeriod(); break;
 				}
@@ -1028,6 +1047,15 @@ namespace Merlin.Forms
 				SmartGrid.ShowDeleteErrors(deleteErrors);
 			else
 				UserMessage.ShowInformation(string.Format("Удалено выпусков: {0}.", deletedObjects.Count));
+		}
+
+		/// <summary>
+		/// Массовая замена ролика в выделенных окнах (Ctrl+R) на выбранный в списке "Ролики".
+		/// Пока реализована только для веера — см. override в EditIssuesForm.
+		/// </summary>
+		protected virtual void ReplaceRollerInSelectedWindows()
+		{
+			UserMessage.ShowInformation("Массовая замена роликов пока поддерживается только в веерном размещении.");
 		}
 
 		private void tbbTemplateUndo_Click(object sender, EventArgs e)
