@@ -96,6 +96,7 @@ namespace Merlin.Forms.CreateActionMaster
 				ShowCurrentIssues(_tariffGrid as TariffWithRangeGrid);
 				EnableWindowSelectionActions();
 				EnableRangeIssueDragDrop();
+				EnableMissingCampaignsTooltip();
 
 				// Веер работает только с линейными кампаниями. Если в акции их нет (модульная/
 				// спонсорская), сетка пустая — гасим тулбар, чтобы его кнопки не падали на пустоте.
@@ -655,6 +656,78 @@ namespace Merlin.Forms.CreateActionMaster
             grid.DragEnter += RangeGrid_DragEnter;
             grid.DragOver += RangeGrid_DragOver;
             grid.DragDrop += RangeGrid_DragDrop;
+        }
+
+        /// <summary>
+        /// Подсказка при наведении на красную (частичную) ячейку: каких из отмеченных
+        /// галочкой кампаний не хватает в этом слоте. На остальных цветах молчит —
+        /// по итогам обсуждения с заказчиком только у красного есть настоящая
+        /// неопределённость «кого не хватает», у синего/бирюзового/оранжевого ответ либо
+        /// тривиален («везде»), либо не про эту акцию.
+        /// </summary>
+        private void EnableMissingCampaignsTooltip()
+        {
+            DataGridView grid = _tariffGrid.InternalGrid;
+            grid.ShowCellToolTips = true;
+            grid.CellToolTipTextNeeded += RangeGrid_CellToolTipTextNeeded;
+        }
+
+        private void RangeGrid_CellToolTipTextNeeded(object sender, DataGridViewCellToolTipTextNeededEventArgs e)
+        {
+            try
+            {
+                TariffWithRangeGrid rangeGrid = _tariffGrid as TariffWithRangeGrid;
+                if (rangeGrid == null || !_tariffGrid.CellHasCurrentActionIssues(e.RowIndex, e.ColumnIndex))
+                    return;
+
+                ITariffWindow window = _tariffGrid.GetTariffWindowAt(e.RowIndex, e.ColumnIndex);
+                if (window == null)
+                    return;
+
+                e.ToolTipText = BuildMissingCampaignsTooltip(rangeGrid, window.WindowDate);
+            }
+            catch (Exception ex)
+            {
+                ErrorManager.PublishError(ex);
+            }
+        }
+
+        /// <summary>
+        /// «Отсутствуют: Европа+ (безнал), Русское Радио (бартер)» — отмеченные галочкой
+        /// кампании минус те, что реально нашлись в слоте (GetSlotIssueGroups — тот же
+        /// запрос, что и для удаления/переноса/замены ролика в частичных слотах).
+        /// </summary>
+        private string BuildMissingCampaignsTooltip(TariffWithRangeGrid rangeGrid, DateTime windowDate)
+        {
+            IList<int> selected = rangeGrid.SelectedCampaignIds;
+            if (selected == null || selected.Count == 0)
+                return null;
+
+            HashSet<int> present = new HashSet<int>();
+            foreach (TariffWithRangeGrid.SlotIssueGroup group in rangeGrid.GetSlotIssueGroups(windowDate))
+                foreach (int campaignId in group.CampaignIds)
+                    present.Add(campaignId);
+
+            List<string> missing = new List<string>();
+            foreach (int campaignId in selected)
+                if (!present.Contains(campaignId))
+                    missing.Add(FormatMissingCampaign(campaignId));
+
+            return missing.Count == 0 ? null : "Отсутствуют: " + string.Join(", ", missing);
+        }
+
+        // «Станция (тип оплаты)» — тип оплаты в скобках нужен, когда у станции несколько
+        // кампаний акции (см. UIX_Campaign): без него две пропущенные строки выглядели бы
+        // одинаково. Если у станции ещё и разные агентства при одинаковом типе оплаты —
+        // этот текст их не различит; такой случай пока не встречался.
+        private string FormatMissingCampaign(int campaignId)
+        {
+            foreach (System.Data.DataRowView row in _campaignsView)
+            {
+                if (ParseHelper.GetInt32FromObject(row[Campaign.ParamNames.CampaignId], 0) == campaignId)
+                    return string.Format("{0} ({1})", row[Campaign.ParamNames.MassmediaName], row["paymentTypeName"]);
+            }
+            return "#" + campaignId;
         }
 
         private void AddedIssuesGrid_MouseDown(object sender, MouseEventArgs e)
