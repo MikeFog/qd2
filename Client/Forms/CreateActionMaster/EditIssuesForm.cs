@@ -363,6 +363,11 @@ namespace Merlin.Forms.CreateActionMaster
             List<KeyValuePair<DateTime, TariffWithRangeGrid.SlotIssueGroup>> partialGroups =
                 new List<KeyValuePair<DateTime, TariffWithRangeGrid.SlotIssueGroup>>();
 
+            // Красные (частичные) окна собираем в один список и запрашиваем БД одним
+            // батч-вызовом (GetSlotIssueGroups(IEnumerable<DateTime>)), а не по одному
+            // круговому запросу на окно — при выделении в десятки окон это была заметная
+            // пауза перед диалогом подтверждения.
+            List<DateTime> partialWindowDates = new List<DateTime>();
             foreach (ITariffWindow window in windows)
             {
                 System.Data.DataRow[] rows = rangeGrid.AddedIssues.Select(
@@ -374,9 +379,16 @@ namespace Merlin.Forms.CreateActionMaster
                     continue;
                 }
 
-                foreach (TariffWithRangeGrid.SlotIssueGroup group in rangeGrid.GetSlotIssueGroups(window.WindowDate))
-                    partialGroups.Add(
-                        new KeyValuePair<DateTime, TariffWithRangeGrid.SlotIssueGroup>(window.WindowDate, group));
+                partialWindowDates.Add(window.WindowDate);
+            }
+
+            if (partialWindowDates.Count > 0)
+            {
+                foreach (KeyValuePair<DateTime, IList<TariffWithRangeGrid.SlotIssueGroup>> byWindow
+                         in rangeGrid.GetSlotIssueGroups(partialWindowDates))
+                    foreach (TariffWithRangeGrid.SlotIssueGroup group in byWindow.Value)
+                        partialGroups.Add(
+                            new KeyValuePair<DateTime, TariffWithRangeGrid.SlotIssueGroup>(byWindow.Key, group));
             }
 
             int totalCount = issues.Count + partialGroups.Count;
@@ -514,26 +526,30 @@ namespace Merlin.Forms.CreateActionMaster
             Dictionary<string, ReplaceGroup> groups = new Dictionary<string, ReplaceGroup>();
             int totalCount = 0;
 
+            // Один батч-запрос на все выделенные окна сразу (не по одному на окно) — иначе
+            // при выделении в десятки окон это была заметная пауза перед диалогом
+            // подтверждения (см. RangeSlotIssues.sql).
+            List<DateTime> windowDates = new List<DateTime>();
             foreach (ITariffWindow window in windows)
+                windowDates.Add(window.WindowDate);
+
+            foreach (TariffWithRangeGrid.SlotIssueRow row in rangeGrid.GetSlotIssueRows(windowDates))
             {
-                foreach (TariffWithRangeGrid.SlotIssueRow row in rangeGrid.GetSlotIssueRows(window.WindowDate))
+                // Тот же самый ролик уже стоит — заменять нечего.
+                if (row.RollerId == newRoller.RollerId)
+                    continue;
+
+                string key = row.CampaignId + "/" + row.RollerId;
+                if (!groups.TryGetValue(key, out ReplaceGroup group))
                 {
-                    // Тот же самый ролик уже стоит — заменять нечего.
-                    if (row.RollerId == newRoller.RollerId)
-                        continue;
-
-                    string key = row.CampaignId + "/" + row.RollerId;
-                    if (!groups.TryGetValue(key, out ReplaceGroup group))
-                    {
-                        group = new ReplaceGroup { CampaignId = row.CampaignId, RollerId = row.RollerId };
-                        groups.Add(key, group);
-                    }
-
-                    if (group.Days.Select(string.Format("windowID = {0}", row.OriginalWindowId)).Length == 0)
-                        group.Days.Rows.Add(row.OriginalWindowId, row.WindowDayOriginal);
-
-                    totalCount++;
+                    group = new ReplaceGroup { CampaignId = row.CampaignId, RollerId = row.RollerId };
+                    groups.Add(key, group);
                 }
+
+                if (group.Days.Select(string.Format("windowID = {0}", row.OriginalWindowId)).Length == 0)
+                    group.Days.Rows.Add(row.OriginalWindowId, row.WindowDayOriginal);
+
+                totalCount++;
             }
 
             if (totalCount == 0)

@@ -267,12 +267,34 @@ namespace Merlin.Controls
 		/// </summary>
 		public IList<SlotIssueGroup> GetSlotIssueGroups(DateTime windowDate)
 		{
-			DataTable table = FetchSlotIssues(windowDate);
-			Dictionary<string, SlotIssueGroup> groups = new Dictionary<string, SlotIssueGroup>();
-			List<SlotIssueGroup> result = new List<SlotIssueGroup>();
+			IList<SlotIssueGroup> groups;
+			return GetSlotIssueGroups(new[] { windowDate }).TryGetValue(windowDate, out groups)
+				? groups : new List<SlotIssueGroup>();
+		}
+
+		/// <summary>
+		/// То же самое, но сразу по нескольким слотам одним запросом — при массовом
+		/// удалении/замене по выделению в десятки окон раньше это был отдельный
+		/// круговой запрос на каждое окно (заметная пауза перед диалогом подтверждения,
+		/// см. RangeSlotIssues.sql). Ключ результата — тот же DateTime, что был передан.
+		/// </summary>
+		public Dictionary<DateTime, IList<SlotIssueGroup>> GetSlotIssueGroups(IEnumerable<DateTime> windowDates)
+		{
+			DataTable table = FetchSlotIssues(windowDates);
+			Dictionary<DateTime, Dictionary<string, SlotIssueGroup>> groupsByDate =
+				new Dictionary<DateTime, Dictionary<string, SlotIssueGroup>>();
+			Dictionary<DateTime, IList<SlotIssueGroup>> result = new Dictionary<DateTime, IList<SlotIssueGroup>>();
 
 			foreach (DataRow row in table.Rows)
 			{
+				DateTime windowDate = ParseHelper.GetDateTimeFromObject(row["requestedIssueDate"], DateTime.MinValue);
+				if (!groupsByDate.TryGetValue(windowDate, out Dictionary<string, SlotIssueGroup> groups))
+				{
+					groups = new Dictionary<string, SlotIssueGroup>();
+					groupsByDate.Add(windowDate, groups);
+					result.Add(windowDate, new List<SlotIssueGroup>());
+				}
+
 				int rollerId = ParseHelper.GetInt32FromObject(row[Roller.ParamNames.RollerId], 0);
 				int positionId = ParseHelper.GetInt32FromObject(row[Issue.ParamNames.PositionId], 0);
 				string key = rollerId + "/" + positionId;
@@ -288,7 +310,7 @@ namespace Merlin.Controls
 						Position = (RollerPositions)positionId
 					};
 					groups.Add(key, group);
-					result.Add(group);
+					result[windowDate].Add(group);
 				}
 
 				group.CampaignIds.Add(ParseHelper.GetInt32FromObject(row[Campaign.ParamNames.CampaignId], 0));
@@ -297,11 +319,15 @@ namespace Merlin.Controls
 			return result;
 		}
 
-		private DataTable FetchSlotIssues(DateTime windowDate)
+		// ISO 8601 с "T": на сервере с русским @@LANGUAGE 'YYYY-MM-DD HH:MM:SS' парсится
+		// как 'YYYY-DD-MM' (день/месяц переставлены) — с "T" формат однозначен всегда.
+		private const string SqlDateTimeFormat = "yyyy-MM-ddTHH:mm:ss";
+
+		private DataTable FetchSlotIssues(IEnumerable<DateTime> windowDates)
 		{
 			Dictionary<string, object> parameters = DataAccessor.CreateParametersDictionary();
 			parameters[Merlin.Classes.Action.ParamNames.ActionId] = _action.ActionId;
-			parameters["issueDate"] = windowDate;
+			parameters["issueDates"] = string.Join(",", windowDates.Select(d => d.ToString(SqlDateTimeFormat)));
 			parameters[Campaign.ParamNames.CampaignIds] = CampaignIdsParameter;
 
 			return DataAccessor.LoadDataSet("RangeSlotIssues", parameters).Tables[0];
@@ -309,7 +335,7 @@ namespace Merlin.Controls
 
 		/// <summary>
 		/// Одна строка выпуска в слоте (без группировки по ролику/позиции, в отличие от
-		/// <see cref="GetSlotIssueGroups"/>) — для массовой замены ролика
+		/// <see cref="GetSlotIssueGroups(DateTime)"/>) — для массовой замены ролика
 		/// (EditIssuesForm.ReplaceRollerInSelectedWindows), где нужен именно текущий ролик и
 		/// исходное окно каждого отдельного выпуска, а не агрегат по слоту.
 		/// </summary>
@@ -323,7 +349,18 @@ namespace Merlin.Controls
 
 		public IList<SlotIssueRow> GetSlotIssueRows(DateTime windowDate)
 		{
-			DataTable table = FetchSlotIssues(windowDate);
+			return GetSlotIssueRows(new[] { windowDate });
+		}
+
+		/// <summary>
+		/// То же самое сразу по нескольким слотам одним запросом — см. GetSlotIssueGroups
+		/// (IEnumerable&lt;DateTime&gt;) про причину. Строки всех слотов возвращаются одним
+		/// плоским списком: вызывающему (замена ролика) не важно, из какого именно
+		/// выделенного окна взялась строка, только OriginalWindowId/WindowDayOriginal.
+		/// </summary>
+		public IList<SlotIssueRow> GetSlotIssueRows(IEnumerable<DateTime> windowDates)
+		{
+			DataTable table = FetchSlotIssues(windowDates);
 			List<SlotIssueRow> result = new List<SlotIssueRow>();
 
 			foreach (DataRow row in table.Rows)
