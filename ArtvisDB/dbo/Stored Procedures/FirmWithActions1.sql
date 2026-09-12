@@ -127,6 +127,7 @@ SET TRANSACTION ISOLATION LEVEL READ UNCOMMITTED; -- Важно для прод�
 															from [Action] a1
 																inner join [Firm] f1 on a1.firmID = f1.firmID
 															where f1.headCompanyID = f.headCompanyID
+																and a1.isConfirmed = 1
 																and a1.finishDate >= @withoutActionsSince
 																and (@startOfInterval is null or a1.startDate < @startOfInterval)))
 			and (@managerDiscount is null or (c.managerDiscount - @managerDiscount) < -0.005)
@@ -226,6 +227,7 @@ SET TRANSACTION ISOLATION LEVEL READ UNCOMMITTED; -- Важно для прод�
 						from [Action] a1
 							inner join [Firm] f1 on a1.firmID = f1.firmID
 						where f1.headCompanyID = f.headCompanyID
+							and a1.isConfirmed = 1
 							and a1.finishDate >= @withoutActionsSince
 							and (@startOfInterval is null or a1.startDate < @startOfInterval)
 						)
