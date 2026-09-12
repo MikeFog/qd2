@@ -10,6 +10,7 @@ CREATE PROC [dbo].[HeadCompaniesWithActions]
     @actionID int = NULL,
     @headCompanyID int = NULL,
     @userID smallint = NULL,
+    @loggedUserID smallint = NULL,
     @agencyID smallint = NULL,
     @massmediaID smallint = NULL,
     @massmediaGroupID int = NULL,
@@ -39,7 +40,20 @@ BEGIN
 	-- Решение — сдвиг границы, а не обрезка колонки
 	SET @createDateEnd = DATEADD(DAY, 1, CAST(@createDateEnd AS date));
 
-    SELECT 
+	-- Права на просмотр чужих/групповых акций и видимость по СМИ (как в FirmWithActions1/Actions1)
+	declare @massmedias table(massmediaID smallint primary key, myMassmedia bit, foreignMassmedia bit)
+	insert into @massmedias (massmediaID, myMassmedia, foreignMassmedia)
+	select * from dbo.fn_GetMassmediasForUser(@loggedUserID)
+
+	declare @isRightToViewForeignActions bit, @isRightToViewGroupActions bit
+	select @isRightToViewForeignActions = dbo.fn_IsRightToViewForeignActions(@loggedUserID),
+		@isRightToViewGroupActions = dbo.fn_IsRightToViewGroupActions(@loggedUserID)
+
+	declare @ugroups table(id int)
+	insert into @ugroups (id)
+	select * from dbo.[fn_GetUserGroups](@loggedUserID)
+
+    SELECT
         hc.*,
         @userID AS userID,
         @startOfInterval AS startOfInterval,
@@ -59,6 +73,30 @@ BEGIN
             INNER JOIN Campaign c ON a.actionID = c.actionID
             INNER JOIN PaymentType pt ON c.paymentTypeID = pt.paymentTypeID
         WHERE f.headCompanyID = hc.headCompanyID
+          -- Права на чужие/групповые акции (та же логика, что в FirmWithActions1/Actions1)
+          AND (a.userID = @loggedUserID OR @isRightToViewForeignActions = 1
+               OR (@isRightToViewGroupActions = 1 AND EXISTS (
+                     SELECT 1 FROM GroupMember gm
+                     INNER JOIN @ugroups ug ON gm.groupID = ug.id
+                     WHERE a.userID = gm.userID
+                   )))
+          -- Видимость по СМИ пользователя
+          AND (
+                (c.campaignTypeID <> 4 AND EXISTS (
+                    SELECT 1 FROM @massmedias umm
+                    WHERE umm.massmediaID = c.massmediaID
+                      AND ((a.userID = @loggedUserID AND umm.myMassmedia = 1) OR (a.userID <> @loggedUserID AND umm.foreignMassmedia = 1))
+                ))
+                OR (c.campaignTypeID = 4 AND EXISTS (
+                    SELECT 1 FROM PackModuleIssue pmi
+                    INNER JOIN PackModulePriceList pmpl ON pmi.pricelistID = pmpl.priceListID
+                    INNER JOIN PackModuleContent pmc ON pmpl.priceListID = pmc.pricelistID
+                    INNER JOIN Module m ON pmc.moduleID = m.moduleID
+                    INNER JOIN @massmedias umm ON umm.massmediaID = m.massmediaID
+                    WHERE pmi.campaignID = c.campaignID
+                      AND ((a.userID = @loggedUserID AND umm.myMassmedia = 1) OR (a.userID <> @loggedUserID AND umm.foreignMassmedia = 1))
+                ))
+          )
           -- Выпуски/окна/модули подключаются только если задан хотя бы один из этих фильтров.
           -- Иначе Issue (миллионы строк) и TariffWindow в план не попадают вовсе.
           AND (
@@ -85,6 +123,7 @@ BEGIN
 												from [Action] a1
 													inner join [Firm] f1 on a1.firmID = f1.firmID
 												where f1.headCompanyID = hc.headCompanyID
+													and a1.isConfirmed = 1
 													and a1.finishDate >= @withoutActionsSince
 													and (@startOfInterval is null or a1.startDate < @startOfInterval)))
         and (@managerDiscount is null or (c.managerDiscount - @managerDiscount) < -0.005)
