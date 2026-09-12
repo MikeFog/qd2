@@ -34,9 +34,13 @@ namespace Merlin.Classes
 		{
 			Campaign.Action.Refresh();
 			Substitute((Form)owner, Campaign, null, ModuleID, Roller,
-					   delegate
+					   priceMayChange =>
 					   {
-						   RecalculateAndShowPriceChange(Campaign.Action.TotalPrice);
+						   // Пересчёт всей акции нужен, только если новый ролик отличается
+						   // по длине: RollerSubstitute переписывает Issue.tariffPrice через
+						   // fn_GetIssuePrice(@newDuration, ...), при равной длине цена та же.
+						   if (priceMayChange)
+							   RecalculateAndShowPriceChange(Campaign.Action.TotalPrice);
 						   //OnParentChanged(this, refreshLevel);
 						   OnParentChanged(this, EntityManager.GetEntity((int)Entities.GeneralCampaign));
 					   });
@@ -54,7 +58,10 @@ namespace Merlin.Classes
 		/// Показывает диалог выбора нового ролика и дней, применяет замену и
 		/// показывает журнал незаменённых роликов, если они есть.
 		/// </summary>
-		public static void Substitute(Form parentForm, Campaign campaign, int? packModuleId, int? moduleID, Roller roller, Globals.VoidCallback onEnd)
+		/// <param name="onEnd">Аргумент — «цена акции могла измениться»: true, если новый
+		/// ролик отличается по длине от старого. При false вызывающему коду не нужно
+		/// гонять ActionRecalculate — замена на ролик той же длины цену не меняет.</param>
+		public static void Substitute(Form parentForm, Campaign campaign, int? packModuleId, int? moduleID, Roller roller, Action<bool> onEnd)
 		{
 			try
 			{
@@ -64,11 +71,13 @@ namespace Merlin.Classes
 					Cursor.Current = Cursors.WaitCursor;
 					Application.DoEvents();
 
+					bool priceMayChange = roller.Duration != fSubstitute.NewRoller.Duration;
+
 					DataTable unsubstituted = ApplyRollerSubstitutionForDays(
 						campaign, roller, fSubstitute.NewRoller, fSubstitute.SelectedDays, moduleID, packModuleId);
 					ShowUnsubstitutedRollers(unsubstituted);
 
-					onEnd?.Invoke();
+					onEnd?.Invoke(priceMayChange);
 				}
 			}
 			catch (Exception ex)

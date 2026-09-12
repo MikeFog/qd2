@@ -101,7 +101,7 @@ While	@@fetch_status = 0
 	Begin 
 	
 	If	coalesce(@theDate,@FinishDay) >= @FinishDay
-		Set 	@Price = case when @TypeID <> 4 then @FinalPrice * @actiondiscount else @FinalPrice end 
+		Set 	@Price = @FinalPrice 
 	else
 		Exec	GetPriceByPeriod @campaignID, @TypeID, @StartDay, @theDate, @Price output
 

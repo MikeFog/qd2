@@ -71,7 +71,7 @@ GROUP BY
 
 SELECT 
 	a.actionID,
-	SUM(case when c.campaignTypeID = 4 then c.finalPrice else Cast(c.finalPrice * a.discount as decimal(18,2)) end) AS finalPrice,
+	SUM(c.finalPrice) AS finalPrice,
 	pu.paidUp as paidUp
 FROM 
 	[Action] a
@@ -88,4 +88,4 @@ WHERE
 GROUP BY 
 	a.actionID, pu.paidUp
 HAVING
-	cast(SUM(case when c.campaignTypeID = 4 then c.finalPrice else c.finalPrice * a.discount end)*100 as int) - cast(pu.paidUp * 100 as int) > 0
+	cast(SUM(c.finalPrice)*100 as int) - cast(pu.paidUp * 100 as int) > 0

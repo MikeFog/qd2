@@ -261,7 +261,7 @@ Else
 
 	-- кампании, завершившиеся до @theDate: цена берётся целиком, разбивка по периоду не нужна
 	Insert	Into #tmp1(summa, firmID, agencyID)
-	Select	-(case when campaignTypeID <> 4 then finalPrice * discount else finalPrice end),
+	Select	-finalPrice,
 			firmID, agencyID
 	From	#campaigns
 	Where	@theDate IS NULL OR @theDate > finishDate

@@ -1,9 +1,77 @@
 ﻿/*
+    ПРОД-ДЕПЛОЙ: dbo.RollerSubstitute — быстрый путь при @newDuration = @oldDuration.
+
+    ПОВОД
+      Чаще всего ролик меняют на другой той же длины (в секундах). Раньше
+      RollerSubstitute в этом случае всё равно:
+        - пересчитывал Issue.tariffPrice через fn_GetIssuePrice(@newDuration,...)
+          и писал его (то же значение — избыточная запись; плюс скрыто
+          пересинхронизировал цену выпуска со сменившейся ценой окна);
+        - делал UPDATE TariffWindow SET timeInUse... + @diffDuration (при 0 — no-op,
+          но берёт локи на горячей TariffWindow);
+        - то же в курсорах ModuleIssue / PackModuleIssue.
+      Клиент при этом ещё и гонял ActionRecalculate (уже отключено в master:
+      "Замена ролика: не пересчитывать акцию, если длина не изменилась").
+
+    ПРАВКА
+      При @diffDuration = 0 (@newDuration = @oldDuration):
+        - финальный UPDATE Issue ставит только rollerID, tariffPrice не трогает;
+        - UPDATE TariffWindow (timeInUse) пропускается целиком;
+        - в курсорах ModuleIssue / PackModuleIssue — тоже только rollerID.
+      Вся валидация (AgitationMixError, DeadLineViolation, DateInThePast,
+      уникальность обвязки 4/44/5/55/7) и отчёт "незамененные ролики" — без
+      изменений. При @diffDuration <> 0 поведение прежнее.
+
+    ПОЧЕМУ БЕЗОПАСНО
+      fn_GetIssuePrice(duration, windowPrice, 1, position, extraCharge x3) при той
+      же длине и тех же прочих аргументах (окно и позиция выпуска не меняются)
+      даёт ровно то, что уже лежит в Issue.tariffPrice. Занятость окна меняется
+      на @diffDuration, при 0 — не меняется.
+
+    ПРОВЕРЕНО на ArtvisDev (в транзакции с откатом):
+      - замена 16 -> 16: rollerID сменился, tariffPrice 640/1200 без изменений,
+        timeInUse без изменений;
+      - замена 16 -> 10: rollerID сменился, tariffPrice 640->400 / 1200->750,
+        timeInUseUnconfirmed 16 -> 10.
+
+    QUOTED_IDENTIFIER ON / ANSI_NULLS ON — RollerSubstitute развёрнута с ними
+    (sys.sql_modules), ALTER в отдельном батче с теми же SET.
+
+    ИДЕМПОТЕНТНОСТЬ  повторный запуск перезаливает то же тело.
+    ОТКАТ  git show <до этого коммита>:"ArtvisDB/dbo/Stored Procedures/RollerSubstitute.sql"
+
+    ЗАПУСК
+      sqlcmd -S <прод-сервер> -d Artvis -E -b -I -i roller-substitute-same-duration-skip-deploy.sql
+*/
+
+-- USE [Artvis];
+-- GO
+
+SET NOCOUNT ON;
+GO
+
+IF OBJECT_ID('dbo.RollerSubstitute') IS NULL OR OBJECT_ID('dbo.Issue') IS NULL OR OBJECT_ID('dbo.fn_GetIssuePrice') IS NULL
+BEGIN
+    RAISERROR('НЕ ТА БАЗА: нет dbo.RollerSubstitute / dbo.Issue / dbo.fn_GetIssuePrice. Деплой прерван.', 16, 1);
+    SET NOEXEC ON;
+END
+GO
+PRINT 'БД     : ' + DB_NAME();
+PRINT 'Сервер : ' + CONVERT(sysname, SERVERPROPERTY('ServerName'));
+PRINT 'RollerSubstitute до: ' + CASE
+    WHEN OBJECT_DEFINITION(OBJECT_ID('dbo.RollerSubstitute')) LIKE '%@diffDuration = 0%'
+    THEN 'уже с быстрым путём' ELSE 'старая (пересчитывает всегда)' END;
+GO
+
+SET QUOTED_IDENTIFIER ON;
+SET ANSI_NULLS ON;
+GO
+/*
 Modified: Denis Gladkikh (dgladkikh@fogsoft.ru) 17.09.2008 - error resolved
 Modified: Denis Gladkikh (dgladkikh@fogsoft.ru) 18.09.2008 - replace @moduleIssueID and @packModuleIssueID on @moduleID and @packModuleID
 Modified: Denis Gladkikh (dgladkikh@fogsoft.ru) 14.10.2008 - some optimization + add substitude for only one issue
 */
-CREATE  PROC [dbo].[RollerSubstitute]
+CREATE OR ALTER PROC [dbo].[RollerSubstitute]
 (
 @campaignID int,
 @campaignTypeID tinyint,
@@ -342,3 +410,12 @@ from @issues i
 	inner join TariffWindow tw on ii.originalWindowID = tw.windowId
 where i.msgError is not null
 order by tw.windowDateOriginal
+
+GO
+
+PRINT 'RollerSubstitute после: ' + CASE
+    WHEN OBJECT_DEFINITION(OBJECT_ID('dbo.RollerSubstitute')) LIKE '%@diffDuration = 0%'
+    THEN 'OK — быстрый путь на месте' ELSE 'ОШИБКА' END;
+GO
+SET NOEXEC OFF;
+GO

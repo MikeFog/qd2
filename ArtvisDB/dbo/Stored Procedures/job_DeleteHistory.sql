@@ -34,7 +34,7 @@ where a.finishDate < @date and a.isConfirmed = 1 and a.isSpecial = 0
 
 insert into @balance (firmId, agencyId, paymentTypeId, summa, managerId, oldActionID)
 select a.firmID, c.agencyID, c.paymentTypeID, 
-	sum(case when c.campaignTypeID <> 4 then c.finalPrice * a.discount else c.finalPrice end),
+	sum(c.finalPrice),
 	a.userID, a.actionID
 from [Action] a 
 	inner join Campaign c on a.actionID = c.actionID

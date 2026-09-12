@@ -35,7 +35,7 @@ namespace FogSoft.WinForm.Classes
 					return;
 				}
 
-				if(typeName == "password" || typeName == "string")
+				if(typeName == "string")
 				{
 					IsString = true;
 					return;

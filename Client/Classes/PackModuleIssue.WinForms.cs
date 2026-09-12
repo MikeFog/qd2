@@ -57,9 +57,11 @@ namespace Merlin.Classes
 
 			CampaignRoller.Substitute((Form)owner, Campaign, PackModuleID, null,
 					   new Roller(int.Parse(this[Roller.ParamNames.RollerId].ToString())),
-					   delegate
+					   priceMayChange =>
 					   {
-						   RecalculateAndShowPriceChange(price);
+						   // Пересчёт акции — только при смене длины ролика (см. CampaignRoller.Substitute).
+						   if (priceMayChange)
+							   RecalculateAndShowPriceChange(price);
 						   OnParentChanged(this, 1);
 					   });
 		}

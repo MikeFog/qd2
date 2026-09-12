@@ -225,7 +225,7 @@ While @@fetch_status = 0 BEGIN
 	if @campaignFinishDate between @startDate and @currentDate
 	begin 
 		Exec GetPriceByPeriod @campaignId, @typeId, @campaignStartDate, @campaignFinishDate, @total out
-		set @mistake = case when @typeId <> 4 then @campaignFinalPrice * @campaignAdiscount else @campaignFinalPrice end - @total
+		set @mistake = @campaignFinalPrice - @total
 		update @res set mistake = @mistake where campaignId = @campaignID
 	end 
 	

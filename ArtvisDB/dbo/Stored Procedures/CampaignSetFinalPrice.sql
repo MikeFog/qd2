@@ -73,7 +73,9 @@ IF (@grantorUserId IS NULL OR dbo.[fn_IsAcceptRatioForUser](@grantorUserId, @man
 		RETURN
 	END
 
-Update 
+-- @finalPrice приходит уже со всеми скидками, включая пакетную (см. расчёт
+-- @managerDiscount выше) -- ровно в этом виде поле finalPrice и хранится.
+Update
 	Campaign
 Set
 	finalPrice = @finalPrice,

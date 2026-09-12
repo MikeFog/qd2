@@ -126,7 +126,7 @@ begin
 	if @FinishDay < @cfinishDate or @StartDay > @CompStartDate
 		exec GetPriceByPeriod @campaignId, @CampaignTypeID, @StartDay, @FinishDay, @campaignPrice out
 	else 
-		set @campaignPrice = case when @CampaignTypeID = 4 then @finalPrice else @actionDiscount * @finalPrice end
+		set @campaignPrice = @finalPrice
 
 	IF @CampaignTypeID = 4
 	begin
