@@ -341,6 +341,44 @@ namespace Merlin.Controls
 		}
 
 		/// <summary>
+		/// Результат <see cref="CheckFirmConflict"/> — сигнал для диалога подтверждения переноса
+		/// (EditIssuesForm.RangeGrid_DragDrop), не блокирует сам перенос.
+		/// </summary>
+		public class FirmConflictInfo
+		{
+			public bool HasConflict;
+			public bool AnyConfirmed;
+		}
+
+		/// <summary>
+		/// Есть ли в целевом получасе, на станциях переносимых кампаний, уже выпуск этой же
+		/// фирмы — из любой акции (текущей или чужой, подтверждённой или нет). Только для
+		/// подтверждения переноса мышью; реальную проверку при записи по-прежнему делает
+		/// AddRangeIssues (@ignoreWindowsWithTheSameFirmIssue).
+		/// </summary>
+		public FirmConflictInfo CheckFirmConflict(IList<int> campaignIds, DateTime windowDate)
+		{
+			if (campaignIds == null || campaignIds.Count == 0)
+				return new FirmConflictInfo();
+
+			Dictionary<string, object> parameters = DataAccessor.CreateParametersDictionary();
+			parameters[Merlin.Classes.Action.ParamNames.ActionId] = _action.ActionId;
+			parameters["issueDate"] = windowDate;
+			parameters[Campaign.ParamNames.CampaignIds] = Merlin.Classes.Action.BuildCampaignIdsCsv(campaignIds);
+
+			DataTable table = DataAccessor.LoadDataSet("RangeSlotFirmConflict", parameters).Tables[0];
+			if (table.Rows.Count == 0)
+				return new FirmConflictInfo();
+
+			DataRow row = table.Rows[0];
+			return new FirmConflictInfo
+			{
+				HasConflict = ParseHelper.GetBooleanFromObject(row["hasConflict"], false),
+				AnyConfirmed = ParseHelper.GetBooleanFromObject(row["anyConfirmed"], false)
+			};
+		}
+
+		/// <summary>
 		/// Удалить выпуски группы — только в тех кампаниях, где они есть. AddedIssues не
 		/// трогаем: частичного слота там нет по определению.
 		/// </summary>

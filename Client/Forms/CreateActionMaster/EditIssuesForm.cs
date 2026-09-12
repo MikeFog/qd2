@@ -828,6 +828,50 @@ namespace Merlin.Forms.CreateActionMaster
             return _tariffGrid.GetTariffWindowAt(hit.RowIndex, hit.ColumnIndex);
         }
 
+        /// <summary>
+        /// Текст подтверждения переноса. Если в целевом окне уже есть выпуск этой же фирмы
+        /// (из любой акции — см. TariffWithRangeGrid.CheckFirmConflict), предупреждение о
+        /// конфликте идёт первой фразой того же диалога, а не отдельным вторым окном.
+        /// </summary>
+        private string BuildMoveConfirmationQuestion(TariffWithRangeGrid rangeGrid, RangeIssueDragPayload payload, DateTime targetDate)
+        {
+            string targetDateStr = targetDate.ToString("dd.MM.yyyy HH:mm");
+            string scope = payload.PartialGroups != null
+                ? "в тех кампаниях, где он есть"
+                : "по выбранным кампаниям";
+            string question = payload.Count == 1
+                ? string.Format("Перенести выпуск в окно '{0}' {1}?", targetDateStr, scope)
+                : string.Format("Перенести выпуски ({0} шт.) в окно '{1}' {2}?",
+                    payload.Count, targetDateStr, scope);
+
+            TariffWithRangeGrid.FirmConflictInfo conflict =
+                rangeGrid.CheckFirmConflict(GetMovingCampaignIds(rangeGrid, payload), targetDate);
+            if (!conflict.HasConflict)
+                return question;
+
+            string confirmedText = conflict.AnyConfirmed ? "акция подтверждена" : "акция ещё не подтверждена";
+            return string.Format("В этом окне уже есть выпуск фирмы «{0}» ({1}). {2}",
+                _action.FirmName, confirmedText, question);
+        }
+
+        // Кампании — участники переноса: для красного слота это кампании конкретных групп
+        // (только те, где выпуск реально стоит), для синего — весь текущий выбор чек-листа.
+        private List<int> GetMovingCampaignIds(TariffWithRangeGrid rangeGrid, RangeIssueDragPayload payload)
+        {
+            if (payload.PartialGroups != null)
+            {
+                HashSet<int> ids = new HashSet<int>();
+                foreach (TariffWithRangeGrid.SlotIssueGroup group in payload.PartialGroups)
+                    foreach (int campaignId in group.CampaignIds)
+                        ids.Add(campaignId);
+                return new List<int>(ids);
+            }
+
+            return rangeGrid.SelectedCampaignIds != null
+                ? new List<int>(rangeGrid.SelectedCampaignIds)
+                : new List<int>();
+        }
+
         private void RangeGrid_DragDrop(object sender, DragEventArgs e)
         {
             RangeIssueDragPayload payload = e.Data.GetData(typeof(RangeIssueDragPayload)) as RangeIssueDragPayload;
@@ -836,14 +880,8 @@ namespace Merlin.Forms.CreateActionMaster
             ITariffWindow target = GetWindowUnderDrag((DataGridView)sender, e);
             if (target == null || target.WindowDate == payload.SourceSlotDate) return;
 
-            string targetDateStr = target.WindowDate.ToString("dd.MM.yyyy HH:mm");
-            string scope = payload.PartialGroups != null
-                ? "в тех кампаниях, где он есть"
-                : "по выбранным кампаниям";
-            string question = payload.Count == 1
-                ? string.Format("Перенести выпуск в окно '{0}' {1}?", targetDateStr, scope)
-                : string.Format("Перенести выпуски ({0} шт.) в окно '{1}' {2}?",
-                    payload.Count, targetDateStr, scope);
+            TariffWithRangeGrid rangeGrid = (TariffWithRangeGrid)_tariffGrid;
+            string question = BuildMoveConfirmationQuestion(rangeGrid, payload, target.WindowDate);
             if (UserMessage.ShowQuestion(question) != DialogResult.Yes)
                 return;
 

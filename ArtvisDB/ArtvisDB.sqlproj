@@ -467,6 +467,7 @@
     <Build Include="dbo\Stored Procedures\PaymentsCommon.sql" />
     <Build Include="dbo\Stored Procedures\MasterIssueDelete.sql" />
     <Build Include="dbo\Stored Procedures\RangeSlotIssues.sql" />
+    <Build Include="dbo\Stored Procedures\RangeSlotFirmConflict.sql" />
     <Build Include="dbo\Stored Procedures\sl_Rollers.sql" />
     <Build Include="dbo\Stored Procedures\PackModulePricelists.sql" />
     <Build Include="dbo\Stored Procedures\rpt_GenericBill.sql" />
