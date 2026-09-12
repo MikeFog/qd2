@@ -67,10 +67,10 @@ namespace Merlin.Forms.CreateActionMaster
 
 				// Remove All Issues Grid
 				splitContainer4.Panel1Collapsed = true;
-				// Блок статистики (lstStat) стал компактным — 2 строки вместо 7, см.
+				// Блок статистики (lstStat) стал компактным — 3 строки вместо 7, см.
 				// ActionOnMassmedia.DisplayData. Освободившееся место отдаём чек-листу кампаний
 				// (grdCampaigns), которому иначе почти ничего не остаётся.
-				splitContainer3.SplitterDistance = lstStat.ItemHeight * 2 + 12;
+				splitContainer3.SplitterDistance = lstStat.ItemHeight * 3 + 12;
 				// SplitContainer.FixedPanel=Panel2, выставленный в Designer.cs, не переживает
 				// первый реальный layout формы (там Panel2 ужимался до дизайнерского значения
 				// ~74px вместо ожидаемого) — высоту grdCampaigns фиксируем здесь, когда форма

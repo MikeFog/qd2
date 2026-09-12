@@ -424,8 +424,8 @@ namespace Merlin.Classes
             lstStat.Items.Clear();
             string start = StartDate == DateTime.MinValue ? "" : StartDate.ToShortDateString();
             string finish = FinishDate == DateTime.MinValue ? "" : FinishDate.ToShortDateString();
-            lstStat.Items.Add(
-                $"Период: {start} – {finish}   Выпусков: {this["iCount"]}   Общее время: {this["duration"]}");
+            lstStat.Items.Add($"Период: {start} – {finish}");
+            lstStat.Items.Add($"Выпусков: {this["iCount"]}   Общее время: {this["duration"]}");
             lstStat.Items.Add(
                 $"Стоимость: {TariffPrice:c} без скидок → {TotalPrice:c} со скидками (пакетная ×{this[ParamNames.Discount]:F2})");
         }
