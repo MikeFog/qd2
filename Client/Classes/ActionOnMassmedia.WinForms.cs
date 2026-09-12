@@ -417,7 +417,7 @@ namespace Merlin.Classes
 
 		// Не диалог, но принимает UI-тип (ListBox) — поэтому здесь, иначе ядро
 		// не собирается вне проекта Client (мост, §10 конвенции).
-		// 2 строки вместо 7 — веерная форма (EditIssuesForm) отдаёт освободившееся место
+		// 3 строки вместо 7 — веерная форма (EditIssuesForm) отдаёт освободившееся место
 		// под чек-лист кампаний акции. Используется также ComboModulePlacementForm.
         internal void DisplayData(ListBox lstStat)
         {
@@ -427,7 +427,7 @@ namespace Merlin.Classes
             lstStat.Items.Add($"Период: {start} – {finish}");
             lstStat.Items.Add($"Выпусков: {this["iCount"]}   Общее время: {this["duration"]}");
             lstStat.Items.Add(
-                $"Стоимость: {TariffPrice:c} без скидок → {TotalPrice:c} со скидками (пакетная ×{this[ParamNames.Discount]:F2})");
+                $"Стоимость: {TariffPrice:c} без скидок → {TotalPrice:c} со скидками   Пакетная: {this[ParamNames.Discount]:F2}");
         }
 	}
 }
