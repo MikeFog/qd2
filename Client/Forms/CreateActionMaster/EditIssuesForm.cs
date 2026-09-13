@@ -753,16 +753,23 @@ namespace Merlin.Forms.CreateActionMaster
             return missing.Count == 0 ? null : "Отсутствуют: " + string.Join(", ", missing);
         }
 
-        // «Станция (тип оплаты)» — тип оплаты в скобках нужен, когда у станции несколько
-        // кампаний акции (см. UIX_Campaign): без него две пропущенные строки выглядели бы
-        // одинаково. Если у станции ещё и разные агентства при одинаковом типе оплаты —
-        // этот текст их не различит; такой случай пока не встречался.
+        // «Станция (тип оплаты, агентство)» — оба нужны в скобках, когда у станции
+        // несколько кампаний акции (см. UIX_Campaign: различаются paymentTypeID и/или
+        // agencyID) — без них несколько пропущенных строк могли выглядеть одинаково.
+        // Агентство у кампании может быть не заполнено (LEFT JOIN в Campaigns.sql) —
+        // тогда в скобках только тип оплаты, без лишней запятой.
         private string FormatMissingCampaign(int campaignId)
         {
             foreach (System.Data.DataRowView row in _campaignsView)
             {
-                if (ParseHelper.GetInt32FromObject(row[Campaign.ParamNames.CampaignId], 0) == campaignId)
-                    return string.Format("{0} ({1})", row[Campaign.ParamNames.MassmediaName], row["paymentTypeName"]);
+                if (ParseHelper.GetInt32FromObject(row[Campaign.ParamNames.CampaignId], 0) != campaignId)
+                    continue;
+
+                string paymentType = StringUtil.GetStringOrEmpty(row["paymentTypeName"]);
+                string agency = StringUtil.GetStringOrEmpty(row["agencyName"]);
+                string details = string.IsNullOrEmpty(agency) ? paymentType : paymentType + ", " + agency;
+
+                return string.Format("{0} ({1})", row[Campaign.ParamNames.MassmediaName], details);
             }
             return "#" + campaignId;
         }
