@@ -77,12 +77,44 @@ namespace Merlin.Controls
 			InitializeComponent();
 			InitializeDelegates();
 			FixedCols = 1;
-			DateTime date = DateTime.Today.Date;
+			DateTime date = GetInitialDisplayDate(action);
 			monday = startDate = date.AddDays(date.DayOfWeek - DayOfWeek.Monday);
 			finishDate = startDate.AddDays(7);
             _action = action;
             _massmediasCount = massmediasCount;
             InitAddedIssuesData();
+		}
+
+		/// <summary>
+		/// Открывать форму сразу на неделе, где у акции реально есть контент, а не на
+		/// текущей календарной неделе (та вообще может не иметь отношения к акции — тогда
+		/// пользователь видит пустую сетку без единой подсветки и вручную листает назад).
+		/// Берём самое раннее Campaign.startDate среди линейных кампаний акции.
+		/// Campaign.startDate для типа 1 пересчитывается в ActionRecalculate как
+		/// MIN(TariffWindow.dayOriginal) по выпускам кампании — то есть это фактически дата
+		/// самого раннего выпуска, а не отдельно заданная плановая дата. Если выпусков ещё
+		/// нет ни у одной кампании (веер открывают впервые) — startDate у всех NULL,
+		/// откатываемся на сегодня, как и раньше.
+		/// </summary>
+		private static DateTime GetInitialDisplayDate(ActionOnMassmedia action)
+		{
+			DateTime? earliest = null;
+
+			foreach (DataRow row in action.Campaigns().Rows)
+			{
+				if (ParseHelper.GetInt32FromObject(row[Campaign.ParamNames.CampaignTypeId], 0)
+				    != (int)Campaign.CampaignTypes.Simple)
+					continue;
+
+				DateTime start = ParseHelper.GetDateTimeFromObject(row[Campaign.ParamNames.StartDate], DateTime.MinValue);
+				if (start == DateTime.MinValue)
+					continue;
+
+				if (earliest == null || start < earliest.Value)
+					earliest = start;
+			}
+
+			return earliest ?? DateTime.Today.Date;
 		}
 
 	    private void InitAddedIssuesData()
