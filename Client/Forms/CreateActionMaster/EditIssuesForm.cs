@@ -76,7 +76,7 @@ namespace Merlin.Forms.CreateActionMaster
 				// первый реальный layout формы (там Panel2 ужимался до дизайнерского значения
 				// ~74px вместо ожидаемого) — высоту grdCampaigns фиксируем здесь, когда форма
 				// уже реально размещена и splitContainerCampaigns.Height настоящий.
-				const int campaignsHeight = 180;
+				const int campaignsHeight = 360;
 				int available = splitContainerCampaigns.Height - splitContainerCampaigns.SplitterWidth;
 				if (available > campaignsHeight + splitContainerCampaigns.Panel1MinSize)
 					splitContainerCampaigns.SplitterDistance = available - campaignsHeight;
