@@ -349,9 +349,10 @@ namespace Merlin.Forms {
             //
             // Скрыта по умолчанию: показывается только на веере (EditIssuesForm.ProcessToolbar) —
             // смысл цветов завязан на чек-лист кампаний, которого у обычной кампании нет.
-            this.tbbLegend.DisplayStyle = System.Windows.Forms.ToolStripItemDisplayStyle.Text;
+            this.tbbLegend.DisplayStyle = System.Windows.Forms.ToolStripItemDisplayStyle.ImageAndText;
+            this.tbbLegend.ImageTransparentColor = System.Drawing.Color.Magenta;
             this.tbbLegend.Name = "tbbLegend";
-            this.tbbLegend.Size = new System.Drawing.Size(60, 33);
+            this.tbbLegend.Size = new System.Drawing.Size(80, 33);
             this.tbbLegend.Text = "Легенда";
             this.tbbLegend.ToolTipText = "Что означают цвета в сетке";
             this.tbbLegend.Visible = false;

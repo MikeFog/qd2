@@ -42,6 +42,7 @@ namespace Merlin.Forms
 			toolStripButtonGrantor.Image = Globals.GetImage(Constants.ActionsImages.User);
 			tbbStart.Image = Globals.GetImage(Constants.ActionsImages.Properties);
 			tbSetActionPrice.Image = Globals.GetIcon("Money.png");
+			tbbLegend.Image = Globals.GetIcon("about.png");
 			Icon = Globals.MdiParent.Icon;
 			toolStripButtonGrantor.Visible = false;
         }
