@@ -42,7 +42,7 @@ namespace Merlin.Forms
 			toolStripButtonGrantor.Image = Globals.GetImage(Constants.ActionsImages.User);
 			tbbStart.Image = Globals.GetImage(Constants.ActionsImages.Properties);
 			tbSetActionPrice.Image = Globals.GetIcon("Money.png");
-			tbbLegend.Image = Globals.GetIcon("about.png");
+			tbbHelp.Image = Globals.GetIcon("about.png");
 			tbbReplaceRoller.Image = Globals.GetIcon("substitution.png");
 			Icon = Globals.MdiParent.Icon;
 			toolStripButtonGrantor.Visible = false;
@@ -764,23 +764,6 @@ namespace Merlin.Forms
 			{
 				ErrorManager.PublishError(ex);
 			}
-		}
-
-		private void tbbLegend_Click(object sender, EventArgs e)
-		{
-			try
-			{
-				ShowLegend();
-			}
-			catch (Exception ex)
-			{
-				ErrorManager.PublishError(ex);
-			}
-		}
-
-		/// <summary>Показывает справку по цветам сетки. Пока реализована только для веера.</summary>
-		protected virtual void ShowLegend()
-		{
 		}
 
 		private void tbbHelp_Click(object sender, EventArgs e)

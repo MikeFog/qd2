@@ -835,12 +835,6 @@
     <Compile Include="Forms\CreateActionMaster\EditIssuesForm.Designer.cs">
       <DependentUpon>EditIssuesForm.cs</DependentUpon>
     </Compile>
-    <Compile Include="Forms\CreateActionMaster\VeerColorLegendForm.cs">
-      <SubType>Form</SubType>
-    </Compile>
-    <Compile Include="Forms\CreateActionMaster\VeerColorLegendForm.Designer.cs">
-      <DependentUpon>VeerColorLegendForm.cs</DependentUpon>
-    </Compile>
     <Compile Include="Forms\CreateActionMaster\SelectMassmediasStep.cs">
       <SubType>Form</SubType>
     </Compile>
