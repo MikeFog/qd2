@@ -228,8 +228,16 @@ namespace Merlin.Forms
 				_tariffGrid.InternalGrid.MultiSelect = (_tariffGrid.EditMode == EditMode.View);
 		}
 
+		/// <summary>
+		/// Имя файла справки в Client\Help\ (например "veer.html") — экран называет свой файл
+		/// (в конструкторе, до ProcessToolbar), а кнопка "Справка" и её показ/скрытие уже общие,
+		/// см. ShowHelp. Не задано — кнопки нет, справки для этого экрана ещё не написано.
+		/// </summary>
+		protected string HelpFileName { get; set; }
+
 		protected virtual void ProcessToolbar()
 		{
+			tbbHelp.Visible = !string.IsNullOrEmpty(HelpFileName);
             tbMarkPrimeWindows.Visible = btnShowDisabled.Visible = btnShowMarked.Visible = IsSimplelCampaign;
             btnShowRollerNumbers.Visible = IsSimplelCampaign || IsRangeCampaign;
             tsbMuteRoller.Enabled = IsSimplelCampaign;
@@ -773,6 +781,33 @@ namespace Merlin.Forms
 		/// <summary>Показывает справку по цветам сетки. Пока реализована только для веера.</summary>
 		protected virtual void ShowLegend()
 		{
+		}
+
+		private void tbbHelp_Click(object sender, EventArgs e)
+		{
+			try
+			{
+				ShowHelp();
+			}
+			catch (Exception ex)
+			{
+				ErrorManager.PublishError(ex);
+			}
+		}
+
+		/// <summary>
+		/// Открывает HelpFileName из Client\Help\ (обычный файл на диске рядом с exe, не
+		/// EmbeddedResource — правится текстом без пересборки, см. HelpViewerForm). Кнопка
+		/// видна только когда HelpFileName задан (ProcessToolbar), так что null сюда в
+		/// норме не попадает — проверка на всякий случай.
+		/// </summary>
+		private void ShowHelp()
+		{
+			if (string.IsNullOrEmpty(HelpFileName))
+				return;
+
+			string path = System.IO.Path.Combine(Application.StartupPath, "Help", HelpFileName);
+			HelpViewerForm.ShowHelp("Справка — " + Text, path);
 		}
 
 		private void grdCurrentCampaignIssues_ObjectDeleted(PresentationObject presentationObject)

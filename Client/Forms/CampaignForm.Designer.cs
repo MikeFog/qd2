@@ -52,6 +52,7 @@ namespace Merlin.Forms {
             this.btnShowRollerNumbers = new System.Windows.Forms.ToolStripButton();
             this.tbbReplaceRoller = new System.Windows.Forms.ToolStripButton();
             this.tbbLegend = new System.Windows.Forms.ToolStripButton();
+            this.tbbHelp = new System.Windows.Forms.ToolStripButton();
             this.tbMarkPrimeWindows = new System.Windows.Forms.ToolStripButton();
             this.toolStripSeparator1 = new System.Windows.Forms.ToolStripSeparator();
             this.btnShowDisabled = new System.Windows.Forms.ToolStripButton();
@@ -117,6 +118,7 @@ namespace Merlin.Forms {
             this.btnShowRollerNumbers,
             this.tbbReplaceRoller,
             this.tbbLegend,
+            this.tbbHelp,
             this.tbMarkPrimeWindows,
             this.toolStripSeparator1,
             this.btnShowDisabled,
@@ -358,6 +360,19 @@ namespace Merlin.Forms {
             this.tbbLegend.ToolTipText = "Что означают цвета в сетке";
             this.tbbLegend.Visible = false;
             this.tbbLegend.Click += new System.EventHandler(this.tbbLegend_Click);
+            //
+            // tbbHelp
+            //
+            // Скрыта, пока экран не назвал свой файл справки (HelpFileName) — видимость
+            // выставляется в базовом ProcessToolbar от одного этого свойства, отдельным
+            // экранам ничего переопределять не нужно, см. CampaignForm.ShowHelp.
+            this.tbbHelp.DisplayStyle = System.Windows.Forms.ToolStripItemDisplayStyle.Text;
+            this.tbbHelp.Name = "tbbHelp";
+            this.tbbHelp.Size = new System.Drawing.Size(60, 33);
+            this.tbbHelp.Text = "Справка";
+            this.tbbHelp.ToolTipText = "Открыть справку по этому экрану";
+            this.tbbHelp.Visible = false;
+            this.tbbHelp.Click += new System.EventHandler(this.tbbHelp_Click);
             //
             // tbMarkPrimeWindows
             // 
@@ -772,5 +787,6 @@ namespace Merlin.Forms {
     protected System.Windows.Forms.ToolStripButton btnShowRollerNumbers;
     protected System.Windows.Forms.ToolStripButton tbbReplaceRoller;
     protected System.Windows.Forms.ToolStripButton tbbLegend;
+    protected System.Windows.Forms.ToolStripButton tbbHelp;
     }
 }

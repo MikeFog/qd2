@@ -463,6 +463,13 @@
     <Content Include="app.ico">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
+    <!-- Файлы справки (Help/*.html) — обычные файлы на диске, не EmbeddedResource:
+         правятся текстовым редактором прямо в развёрнутой копии, без пересборки.
+         CopyToOutputDirectory тут только чтобы dev-копия в bin\Debug не расходилась
+         с исходником при обычной сборке. -->
+    <Content Include="Help\veer.html">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
     <None Include="packages.config" />
     <None Include="Resources\open.png" />
     <None Include="Resources\import.png" />
@@ -848,6 +855,12 @@
     </Compile>
     <Compile Include="Forms\FirmJournalForm.cs">
       <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="Forms\HelpViewerForm.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="Forms\HelpViewerForm.Designer.cs">
+      <DependentUpon>HelpViewerForm.cs</DependentUpon>
     </Compile>
     <Compile Include="Forms\FrmTemplate2.cs">
       <SubType>Form</SubType>

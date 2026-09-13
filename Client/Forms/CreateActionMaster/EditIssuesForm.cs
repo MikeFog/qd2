@@ -33,6 +33,7 @@ namespace Merlin.Forms.CreateActionMaster
             _action = action;
             _tariffGrid = new TariffWithRangeGrid(action, massmediasCount);
             //SetTariffGrid(new TariffWithRangeGrid(action, massmediasCount));
+            HelpFileName = "veer.html";
 		}
 
 		protected override Firm Firm
