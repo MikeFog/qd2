@@ -453,6 +453,7 @@
     <EmbeddedResource Include="Icons\error.png" />
     <EmbeddedResource Include="Icons\bank.png" />
     <EmbeddedResource Include="Icons\about.png" />
+    <EmbeddedResource Include="Icons\substitution.png" />
     <EmbeddedResource Include="Icons\banks.png" />
     <EmbeddedResource Include="Icons\export.png" />
     <EmbeddedResource Include="Icons\Import.png" />
