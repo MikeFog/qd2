@@ -217,6 +217,27 @@ namespace Merlin.Forms.CreateActionMaster
 			tsbMuteRoller.Enabled = true;
 			tbMarkPrimeWindows.Visible = true;
 			tbbReplaceRoller.Visible = true;
+			tbbLegend.Visible = true;
+        }
+
+        private VeerColorLegendForm _legendForm;
+
+        /// <summary>
+        /// Немодальная справка по цветам сетки — держим одно окно на форму (повторный клик
+        /// просто выводит его на передний план), чтобы можно было открыть один раз и
+        /// сверяться с ним, листая грид, а не открывать заново на каждую клетку.
+        /// </summary>
+        protected override void ShowLegend()
+        {
+            if (_legendForm == null || _legendForm.IsDisposed)
+            {
+                _legendForm = new VeerColorLegendForm();
+                _legendForm.Show(this);
+            }
+            else
+            {
+                _legendForm.Activate();
+            }
         }
 
         protected override void ShowWindowIssues(ITariffWindow tariffWindow)

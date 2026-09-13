@@ -756,6 +756,23 @@ namespace Merlin.Forms
 			}
 		}
 
+		private void tbbLegend_Click(object sender, EventArgs e)
+		{
+			try
+			{
+				ShowLegend();
+			}
+			catch (Exception ex)
+			{
+				ErrorManager.PublishError(ex);
+			}
+		}
+
+		/// <summary>Показывает справку по цветам сетки. Пока реализована только для веера.</summary>
+		protected virtual void ShowLegend()
+		{
+		}
+
 		private void grdCurrentCampaignIssues_ObjectDeleted(PresentationObject presentationObject)
 		{
 			try

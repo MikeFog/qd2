@@ -51,6 +51,7 @@ namespace Merlin.Forms {
             this.btnShowMarked = new System.Windows.Forms.ToolStripButton();
             this.btnShowRollerNumbers = new System.Windows.Forms.ToolStripButton();
             this.tbbReplaceRoller = new System.Windows.Forms.ToolStripButton();
+            this.tbbLegend = new System.Windows.Forms.ToolStripButton();
             this.tbMarkPrimeWindows = new System.Windows.Forms.ToolStripButton();
             this.toolStripSeparator1 = new System.Windows.Forms.ToolStripSeparator();
             this.btnShowDisabled = new System.Windows.Forms.ToolStripButton();
@@ -115,6 +116,7 @@ namespace Merlin.Forms {
             this.btnShowMarked,
             this.btnShowRollerNumbers,
             this.tbbReplaceRoller,
+            this.tbbLegend,
             this.tbMarkPrimeWindows,
             this.toolStripSeparator1,
             this.btnShowDisabled,
@@ -342,6 +344,18 @@ namespace Merlin.Forms {
     "+R)";
             this.tbbReplaceRoller.Visible = false;
             this.tbbReplaceRoller.Click += new System.EventHandler(this.tbbReplaceRoller_Click);
+            //
+            // tbbLegend
+            //
+            // Скрыта по умолчанию: показывается только на веере (EditIssuesForm.ProcessToolbar) —
+            // смысл цветов завязан на чек-лист кампаний, которого у обычной кампании нет.
+            this.tbbLegend.DisplayStyle = System.Windows.Forms.ToolStripItemDisplayStyle.Text;
+            this.tbbLegend.Name = "tbbLegend";
+            this.tbbLegend.Size = new System.Drawing.Size(60, 33);
+            this.tbbLegend.Text = "Легенда";
+            this.tbbLegend.ToolTipText = "Что означают цвета в сетке";
+            this.tbbLegend.Visible = false;
+            this.tbbLegend.Click += new System.EventHandler(this.tbbLegend_Click);
             //
             // tbMarkPrimeWindows
             // 
@@ -755,5 +769,6 @@ namespace Merlin.Forms {
     private System.Windows.Forms.ToolStripButton btnShowMarked;
     protected System.Windows.Forms.ToolStripButton btnShowRollerNumbers;
     protected System.Windows.Forms.ToolStripButton tbbReplaceRoller;
+    protected System.Windows.Forms.ToolStripButton tbbLegend;
     }
 }
