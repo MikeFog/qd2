@@ -27,6 +27,9 @@ namespace Merlin.Controls
 		private Dictionary<string, string> _timeResolver;
         private bool showRollerNumbers;
         private Dictionary<int, int> rollerNumbers;
+        // Частичные (красные) группы текущей недели по датам слотов — батч-кэш для
+        // GetRollerNumbersText, см. RefreshPartialRollerGroups.
+        private Dictionary<DateTime, IList<SlotIssueGroup>> _partialRollerGroupsByDate;
 
         public ActionOnMassmedia Action
         {
@@ -77,9 +80,12 @@ namespace Merlin.Controls
 			InitializeComponent();
 			InitializeDelegates();
 			FixedCols = 1;
-			DateTime date = GetInitialDisplayDate(action);
-			monday = startDate = date.AddDays(date.DayOfWeek - DayOfWeek.Monday);
-			finishDate = startDate.AddDays(7);
+			// Выставлять monday/startDate/finishDate напрямую здесь бесполезно: базовый
+			// TariffGrid.SetGridCaptions() (вызывается позже, из populateGrid) молча
+			// пересчитывает их заново из _currentDate — тем же способом, что и обычная
+			// навигация по неделям (CurrentDate). Поэтому нужную неделю задаём именно через
+			// _currentDate, а не через startDate/monday/finishDate напрямую.
+			_currentDate = GetInitialDisplayDate(action);
             _action = action;
             _massmediasCount = massmediasCount;
             InitAddedIssuesData();
@@ -95,12 +101,20 @@ namespace Merlin.Controls
 		/// самого раннего выпуска, а не отдельно заданная плановая дата. Если выпусков ещё
 		/// нет ни у одной кампании (веер открывают впервые) — startDate у всех NULL,
 		/// откатываемся на сегодня, как и раньше.
+		/// Не action.Campaigns(): тот метод шлёт общий словарь Action.parameters, который
+		/// используется и для других, не всегда action-уровневых, походов на этом же объекте.
+		/// Отдельный запрос с чистым набором параметров — только actionID — снимает любые
+		/// сомнения на этот счёт, независимо от того, задевает это в реальности или нет.
 		/// </summary>
 		private static DateTime GetInitialDisplayDate(ActionOnMassmedia action)
 		{
 			DateTime? earliest = null;
 
-			foreach (DataRow row in action.Campaigns().Rows)
+			Dictionary<string, object> parameters = DataAccessor.CreateParametersDictionary();
+			parameters[Merlin.Classes.Action.ParamNames.ActionId] = action.ActionId;
+			DataTable campaigns = DataAccessor.LoadDataSet("Campaigns", parameters).Tables[0];
+
+			foreach (DataRow row in campaigns.Rows)
 			{
 				if (ParseHelper.GetInt32FromObject(row[Campaign.ParamNames.CampaignTypeId], 0)
 				    != (int)Campaign.CampaignTypes.Simple)
@@ -722,28 +736,60 @@ namespace Merlin.Controls
 		// пишет ОДИН И ТОТ ЖЕ ролик на все станции акции сразу (см. AddRangeIssues.sql — @rollerID
 		// один параметр на весь курсор по станциям) — поэтому потеря привязки к конкретной
 		// станции в AddedIssues не теряет сам номер ролика.
+		// Частичные (красные, не во всех выбранных кампаниях) группы — из батч-кэша
+		// _partialRollerGroupsByDate, номер помечается "*", чтобы отличать от полного совпадения.
 		private string GetRollerNumbersText(DateTime windowDate)
 		{
-			if (AddedIssues == null || rollerNumbers == null || windowDate == DateTime.MinValue) return null;
-
-			DataRow[] issueRows = AddedIssues.Select(string.Format("[issueDate] = '{0}'", windowDate));
-			if (issueRows.Length == 0) return null;
+			if (rollerNumbers == null || windowDate == DateTime.MinValue) return null;
 
 			List<string> numbers = new List<string>();
-			foreach (DataRow issueRow in issueRows)
-			{
-				int rollerId = ParseHelper.GetInt32FromObject(issueRow[Roller.ParamNames.RollerId], 0);
-				if (rollerNumbers.TryGetValue(rollerId, out int number))
-					numbers.Add(number.ToString());
-			}
+			HashSet<string> covered = new HashSet<string>();
+
+			if (AddedIssues != null)
+				foreach (DataRow issueRow in AddedIssues.Select(string.Format("[issueDate] = '{0}'", windowDate)))
+				{
+					int rollerId = ParseHelper.GetInt32FromObject(issueRow[Roller.ParamNames.RollerId], 0);
+					int positionId = ParseHelper.GetInt32FromObject(issueRow[Issue.ParamNames.PositionId], 0);
+					covered.Add(rollerId + "/" + positionId);
+					if (rollerNumbers.TryGetValue(rollerId, out int number))
+						numbers.Add(number.ToString());
+				}
+
+			if (_partialRollerGroupsByDate != null &&
+			    _partialRollerGroupsByDate.TryGetValue(windowDate, out IList<SlotIssueGroup> groups))
+				foreach (SlotIssueGroup group in groups)
+				{
+					if (!covered.Add(group.RollerId + "/" + (int)group.Position))
+						continue; // тот же ролик+позиция уже учтён как синий выше
+
+					if (rollerNumbers.TryGetValue(group.RollerId, out int number))
+						numbers.Add(number + "*");
+				}
+
 			return numbers.Count > 0 ? string.Join(", ", numbers) : null;
 		}
 
-		// Перерисовать текст всех ячеек грида (без похода в БД) — нужно при включении/выключении
-		// ShowRollerNumbers. При обычном RefreshGrid() (после клика добавления/удаления) тоже
-		// вызывается — см. onGridPopulated — но там AddedIssues уже свежий на момент вызова.
+		// Перерисовать текст всех ячеек грида — нужно при включении/выключении ShowRollerNumbers.
+		// При обычном RefreshGrid() (после клика добавления/удаления) тоже вызывается — см.
+		// onGridPopulated — но там AddedIssues уже свежий на момент вызова. При включённом режиме
+		// номеров роликов делает один батч-запрос за частичными группами текущей недели
+		// (RefreshPartialRollerGroups) — без него на каждую красную ячейку был бы отдельный поход
+		// в базу.
 		public void RefreshCellTexts()
 		{
+			// Пустая сетка (0 выбранных кампаний, нет вещания — MinBroadCast/MaxBroadCast не
+			// заданы, см. onGridPopulated) — _tariffWindows не создаётся, обновлять нечего.
+			if (_tariffWindows == null)
+			{
+				_partialRollerGroupsByDate = null;
+				return;
+			}
+
+			if (showRollerNumbers)
+				RefreshPartialRollerGroups();
+			else
+				_partialRollerGroupsByDate = null;
+
 			int rowCount = _tariffWindows.GetLength(0);
 			int columnCount = _tariffWindows.GetLength(1);
 
@@ -751,6 +797,21 @@ namespace Merlin.Controls
 				for (int columnIndex = 0; columnIndex < columnCount; columnIndex++)
 					if (_tariffWindows[rowIndex, columnIndex] is TariffWindowWithRange window)
 						UpdateGridCell(rowIndex + FIXED_ROWS, columnIndex + FixedCols, window);
+		}
+
+		private void RefreshPartialRollerGroups()
+		{
+			List<DateTime> dates = new List<DateTime>();
+			int rowCount = _tariffWindows.GetLength(0);
+			int columnCount = _tariffWindows.GetLength(1);
+			for (int rowIndex = 0; rowIndex < rowCount; rowIndex++)
+				for (int columnIndex = 0; columnIndex < columnCount; columnIndex++)
+					if (_tariffWindows[rowIndex, columnIndex] is TariffWindowWithRange window)
+						dates.Add(window.WindowDate);
+
+			_partialRollerGroupsByDate = dates.Count > 0
+				? GetSlotIssueGroups(dates)
+				: new Dictionary<DateTime, IList<SlotIssueGroup>>();
 		}
 
 		private void UpdateGridCell(int rowIndex, int columnIndex, TariffWindowWithRange window)

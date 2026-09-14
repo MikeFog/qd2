@@ -270,11 +270,6 @@ namespace Merlin.Forms
 			tsCampaign.Enabled = enabled;
 		}
 
-		protected bool IsToolbarEnabled
-		{
-			get { return tsCampaign.Enabled; }
-		}
-
 		private void InitModulesList()
 		{
 			if(tbbModules.Visible)

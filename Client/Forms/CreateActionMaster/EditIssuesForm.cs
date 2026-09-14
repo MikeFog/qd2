@@ -20,6 +20,7 @@ namespace Merlin.Forms.CreateActionMaster
         private System.Data.DataView _campaignsView;
         private DateTime? _dragSourceSlotDate;
         private System.Data.DataRow _draggingAddedIssueRow;
+        private bool _checklistRefreshPending;
 
         private EditIssuesForm()
 		{
@@ -68,15 +69,16 @@ namespace Merlin.Forms.CreateActionMaster
 
 				// Remove All Issues Grid
 				splitContainer4.Panel1Collapsed = true;
-				// Блок статистики (lstStat) стал компактным — 3 строки вместо 7, см.
-				// ActionOnMassmedia.DisplayData. Освободившееся место отдаём чек-листу кампаний
-				// (grdCampaigns), которому иначе почти ничего не остаётся.
-				splitContainer3.SplitterDistance = lstStat.ItemHeight * 3 + 12;
+				// Дизайнерская высота splitContainer3 (285px) рассчитана с запасом; 7 строк
+				// статистики (lstStat.ItemHeight=25) реально занимают ~187px — лишнее место
+				// отдаём вниз, «Добавленным выпускам».
+				splitContainer3.SplitterDistance = lstStat.ItemHeight * 7 + 12;
 				// SplitContainer.FixedPanel=Panel2, выставленный в Designer.cs, не переживает
 				// первый реальный layout формы (там Panel2 ужимался до дизайнерского значения
 				// ~74px вместо ожидаемого) — высоту grdCampaigns фиксируем здесь, когда форма
-				// уже реально размещена и splitContainerCampaigns.Height настоящий.
-				const int campaignsHeight = 360;
+				// уже реально размещена и splitContainerCampaigns.Height настоящий. 220px хватает
+				// на заголовок + 5-6 строк чек-листа без лишнего запаса под «Добавленные выпуски».
+				const int campaignsHeight = 220;
 				int available = splitContainerCampaigns.Height - splitContainerCampaigns.SplitterWidth;
 				if (available > campaignsHeight + splitContainerCampaigns.Panel1MinSize)
 					splitContainerCampaigns.SplitterDistance = available - campaignsHeight;
@@ -117,7 +119,7 @@ namespace Merlin.Forms.CreateActionMaster
 
         /// <summary>
         /// Чек-лист линейных кампаний акции: с какими из них работает веер. По умолчанию
-        /// отмечены все. Применяется кнопкой «Обновить» на тулбаре (см. RefreshGrid).
+        /// отмечены все. Каждое изменение галочки применяется сразу (см. CampaignSelectionChanged).
         /// </summary>
         private void InitCampaignsChecklist()
         {
@@ -141,10 +143,12 @@ namespace Merlin.Forms.CreateActionMaster
         }
 
         /// <summary>
-        /// При нуле выбранных кампаний тулбар погашен — вместе с кнопкой «Обновить», которой
-        /// выбор и применяется. Чтобы не получился тупик, первую же поставленную галочку
-        /// применяем сразу. Через BeginInvoke: при «отметить все» событие приходит на каждую
-        /// строку, а перезабросить сетку нужно один раз и уже после всего цикла.
+        /// Каждая поставленная или снятая галочка сразу применяет выбор кампаний (RefreshGrid),
+        /// без отдельного нажатия «Обновить». «Отметить все»/«снять все» в шапке списка пишет
+        /// колонку напрямую по каждой строке — событие прилетает по разу на строку; чтобы не
+        /// уйти в базу отдельным запросом на каждую, сворачиваем всю пачку в один RefreshGrid
+        /// через BeginInvoke (он выполнится один раз, уже после того как синхронный цикл
+        /// изменений колонки закончится).
         /// </summary>
         private void CampaignSelectionChanged(object sender, System.Data.DataColumnChangeEventArgs e)
         {
@@ -152,15 +156,16 @@ namespace Merlin.Forms.CreateActionMaster
             {
                 if (e.Column.ColumnName != FogSoft.WinForm.Controls.SmartGrid.COL_IsSelected)
                     return;
-                if (IsToolbarEnabled || !(e.ProposedValue is bool) || !(bool)e.ProposedValue)
+                if (_checklistRefreshPending)
                     return;
 
+                _checklistRefreshPending = true;
                 BeginInvoke((MethodInvoker)delegate
                 {
+                    _checklistRefreshPending = false;
                     try
                     {
-                        if (!IsToolbarEnabled)
-                            RefreshGrid();
+                        RefreshGrid();
                     }
                     catch (Exception ex)
                     {
@@ -194,10 +199,11 @@ namespace Merlin.Forms.CreateActionMaster
         }
 
         /// <summary>
-        /// «Обновить» на тулбаре применяет текущий выбор кампаний: пересобирает «Добавленные
-        /// выпуски» (пересечение слотов считается по выбранным кампаниям) и перезабрасывает сетку.
-        /// Выпуски, добавленные ранее по другим кампаниям, остаются в базе, но из веера уходят —
-        /// это ожидаемое поведение.
+        /// Применяет текущий выбор кампаний: пересобирает «Добавленные выпуски» (пересечение
+        /// слотов считается по выбранным кампаниям) и перезабрасывает сетку. Вызывается сама при
+        /// каждом изменении чек-листа (см. CampaignSelectionChanged) и по-прежнему доступна с
+        /// тулбара («Обновить») для обычного обновления сетки. Выпуски, добавленные ранее по
+        /// другим кампаниям, остаются в базе, но из веера уходят — это ожидаемое поведение.
         /// </summary>
         protected override void RefreshGrid()
         {
@@ -339,9 +345,11 @@ namespace Merlin.Forms.CreateActionMaster
 
         /// <summary>
         /// Массовое удаление выпусков в выбранных окнах веерного размещения (Del).
-        /// Выпуски (master issues) берём из in-memory AddedIssues по дате окна — тем же
-        /// сопоставлением, что и подсветка в TariffWithRangeGrid.MarkCells. Каждый удаляем через
-        /// MasterIssue.Delete -> MasterIssueDelete (выпуск удаляется на всех радиостанциях акции).
+        /// Синие выпуски (master issues, полностью по выбранным кампаниям) берём из in-memory
+        /// AddedIssues по дате окна и удаляем через MasterIssue.Delete -> MasterIssueDelete
+        /// (выпуск удаляется на всех радиостанциях акции). Красные (частичные) группы —
+        /// отдельно через DeleteSlotIssueGroup. Одно и то же окно может содержать оба вида
+        /// сразу (разные пары ролик/позиция) — оба удаляются одним нажатием Delete.
         /// Часть может не удалиться (прошлое/дедлайн у подтверждённых) — ошибки собираем и
         /// показываем (паттерн SmartGrid.DeleteSelectedObjects). Очистка AddedIssues + Recalculate
         /// + RefreshGrid выполняются в ProcessCurrentCampaignIssuesDelete через ObjectsDeleted.
@@ -364,47 +372,73 @@ namespace Merlin.Forms.CreateActionMaster
             List<KeyValuePair<DateTime, TariffWithRangeGrid.SlotIssueGroup>> partialGroups =
                 new List<KeyValuePair<DateTime, TariffWithRangeGrid.SlotIssueGroup>>();
 
-            // Красные (частичные) окна собираем в один список и запрашиваем БД одним
-            // батч-вызовом (GetSlotIssueGroups(IEnumerable<DateTime>)), а не по одному
-            // круговому запросу на окно — при выделении в десятки окон это была заметная
-            // пауза перед диалогом подтверждения.
-            List<DateTime> partialWindowDates = new List<DateTime>();
+            // Пары «ролик/позиция», уже покрытые синими (AddedIssues) выпусками на каждую дату —
+            // чтобы не задвоить их же при разборе GetSlotIssueGroups ниже.
+            Dictionary<DateTime, HashSet<string>> coveredByDate = new Dictionary<DateTime, HashSet<string>>();
+            List<DateTime> windowDates = new List<DateTime>();
             foreach (ITariffWindow window in windows)
             {
+                windowDates.Add(window.WindowDate);
+
                 System.Data.DataRow[] rows = rangeGrid.AddedIssues.Select(
                     string.Format("[issueDate] = '{0}'", window.WindowDate));
-                if (rows.Length > 0)
-                {
-                    foreach (System.Data.DataRow row in rows)
-                        issues.Add(masterEntity.CreateObject(row));
+                if (rows.Length == 0)
                     continue;
+
+                HashSet<string> covered = new HashSet<string>();
+                foreach (System.Data.DataRow row in rows)
+                {
+                    issues.Add(masterEntity.CreateObject(row));
+                    int rollerId = ParseHelper.GetInt32FromObject(row[Roller.ParamNames.RollerId], 0);
+                    int positionId = ParseHelper.GetInt32FromObject(row[Issue.ParamNames.PositionId], 0);
+                    covered.Add(rollerId + "/" + positionId);
                 }
-
-                partialWindowDates.Add(window.WindowDate);
+                coveredByDate[window.WindowDate] = covered;
             }
 
-            if (partialWindowDates.Count > 0)
+            // Один и тот же получас может одновременно содержать и полностью пересекающийся
+            // (синий) выпуск, и частичный (красный) — разными парами «ролик/позиция». Поэтому
+            // группы читаем по ВСЕМ выделенным окнам одним батч-запросом (а не только по тем,
+            // где синих не нашлось), и оставляем только те, что ещё не покрыты синими.
+            foreach (KeyValuePair<DateTime, IList<TariffWithRangeGrid.SlotIssueGroup>> byWindow
+                     in rangeGrid.GetSlotIssueGroups(windowDates))
             {
-                foreach (KeyValuePair<DateTime, IList<TariffWithRangeGrid.SlotIssueGroup>> byWindow
-                         in rangeGrid.GetSlotIssueGroups(partialWindowDates))
-                    foreach (TariffWithRangeGrid.SlotIssueGroup group in byWindow.Value)
-                        partialGroups.Add(
-                            new KeyValuePair<DateTime, TariffWithRangeGrid.SlotIssueGroup>(byWindow.Key, group));
+                HashSet<string> covered;
+                coveredByDate.TryGetValue(byWindow.Key, out covered);
+
+                foreach (TariffWithRangeGrid.SlotIssueGroup group in byWindow.Value)
+                {
+                    string key = group.RollerId + "/" + (int)group.Position;
+                    if (covered != null && covered.Contains(key))
+                        continue;
+
+                    partialGroups.Add(
+                        new KeyValuePair<DateTime, TariffWithRangeGrid.SlotIssueGroup>(byWindow.Key, group));
+                }
             }
 
-            int totalCount = issues.Count + partialGroups.Count;
-            if (totalCount == 0)
+            if (issues.Count + partialGroups.Count == 0)
             {
                 UserMessage.ShowInformation("В выбранных окнах нет выпусков этой акции.");
                 return;
             }
 
+            // "Штук" — не групп (issues.Count + partialGroups.Count), а реальных записей Issue
+            // в базе: MasterIssueDelete удаляет по одной записи на каждую станцию из
+            // @campaignIDs (см. ArtvisDB/.../MasterIssueDelete.sql). Синий выпуск бьёт по всем
+            // выбранным кампаниям сразу, частичный — только по кампаниям своей группы.
+            int selectedCampaignsCount = rangeGrid.SelectedCampaignIds != null ? rangeGrid.SelectedCampaignIds.Count : 0;
+            int realTotalCount = issues.Count * selectedCampaignsCount;
+            foreach (KeyValuePair<DateTime, TariffWithRangeGrid.SlotIssueGroup> partial in partialGroups)
+                realTotalCount += partial.Value.CampaignIds.Count;
+
             if (UserMessage.ShowQuestion(
-                    string.Format("Удалить выпуски в выбранных окнах по выбранным кампаниям? ({0} шт.)", totalCount)) != DialogResult.Yes)
+                    string.Format("Удалить выпуски в выбранных окнах по выбранным кампаниям? ({0} шт.)", realTotalCount)) != DialogResult.Yes)
                 return;
 
             List<PresentationObject> deletedObjects = new List<PresentationObject>();
             int partialDeletedCount = 0;
+            int realDeletedCount = 0;
             System.Data.DataTable deleteErrors = FogSoft.WinForm.Controls.SmartGrid.CreateDeleteErrorsTable();
             int errorRowNumber = 1;
             try
@@ -416,7 +450,10 @@ namespace Merlin.Forms.CreateActionMaster
                     try
                     {
                         if (issue.Delete(true))
+                        {
                             deletedObjects.Add(issue);
+                            realDeletedCount += selectedCampaignsCount;
+                        }
                         else
                             FogSoft.WinForm.Controls.SmartGrid.AddDeleteError(deleteErrors, errorRowNumber++, objectName,
                                 string.Format("Не удалось удалить выпуск '{0}'.", objectName));
@@ -435,6 +472,7 @@ namespace Merlin.Forms.CreateActionMaster
                     {
                         rangeGrid.DeleteSlotIssueGroup(partial.Value, partial.Key);
                         partialDeletedCount++;
+                        realDeletedCount += partial.Value.CampaignIds.Count;
                     }
                     catch (Exception ex)
                     {
@@ -461,8 +499,7 @@ namespace Merlin.Forms.CreateActionMaster
             if (deleteErrors.Rows.Count > 0)
                 FogSoft.WinForm.Controls.SmartGrid.ShowDeleteErrors(deleteErrors);
             else
-                UserMessage.ShowInformation(string.Format("Удалено выпусков: {0}.",
-                    deletedObjects.Count + partialDeletedCount));
+                UserMessage.ShowInformation(string.Format("Удалено выпусков: {0}.", realDeletedCount));
         }
 
         /// <summary>
@@ -710,7 +747,7 @@ namespace Merlin.Forms.CreateActionMaster
         }
 
         /// <summary>
-        /// «Отсутствуют: Европа+ (безнал), Русское Радио (бартер)» — отмеченные галочкой
+        /// «Отсутствуют:», дальше каждая кампания с новой строки — отмеченные галочкой
         /// кампании минус те, что реально нашлись в слоте (GetSlotIssueGroups — тот же
         /// запрос, что и для удаления/переноса/замены ролика в частичных слотах).
         /// </summary>
@@ -730,7 +767,7 @@ namespace Merlin.Forms.CreateActionMaster
                 if (!present.Contains(campaignId))
                     missing.Add(FormatMissingCampaign(campaignId));
 
-            return missing.Count == 0 ? null : "Отсутствуют: " + string.Join(", ", missing);
+            return missing.Count == 0 ? null : "Отсутствуют:" + Environment.NewLine + string.Join(Environment.NewLine, missing);
         }
 
         // «Станция (тип оплаты, агентство)» — оба нужны в скобках, когда у станции
@@ -855,9 +892,11 @@ namespace Merlin.Forms.CreateActionMaster
         /// <summary>
         /// Текст подтверждения переноса. Если в целевом окне уже есть выпуск этой же фирмы
         /// (из любой акции — см. TariffWithRangeGrid.CheckFirmConflict), предупреждение о
-        /// конфликте идёт первой фразой того же диалога, а не отдельным вторым окном.
+        /// конфликте идёт первой фразой того же диалога, а не отдельным вторым окном; вызывающий
+        /// код по hasFirmConflict показывает диалог с иконкой предупреждения, а не вопроса.
         /// </summary>
-        private string BuildMoveConfirmationQuestion(TariffWithRangeGrid rangeGrid, RangeIssueDragPayload payload, DateTime targetDate)
+        private string BuildMoveConfirmationQuestion(TariffWithRangeGrid rangeGrid, RangeIssueDragPayload payload,
+            DateTime targetDate, out bool hasFirmConflict)
         {
             string targetDateStr = targetDate.ToString("dd.MM.yyyy HH:mm");
             string scope = payload.PartialGroups != null
@@ -870,6 +909,7 @@ namespace Merlin.Forms.CreateActionMaster
 
             TariffWithRangeGrid.FirmConflictInfo conflict =
                 rangeGrid.CheckFirmConflict(GetMovingCampaignIds(rangeGrid, payload), targetDate);
+            hasFirmConflict = conflict.HasConflict;
             if (!conflict.HasConflict)
                 return question;
 
@@ -905,8 +945,12 @@ namespace Merlin.Forms.CreateActionMaster
             if (target == null || target.WindowDate == payload.SourceSlotDate) return;
 
             TariffWithRangeGrid rangeGrid = (TariffWithRangeGrid)_tariffGrid;
-            string question = BuildMoveConfirmationQuestion(rangeGrid, payload, target.WindowDate);
-            if (UserMessage.ShowQuestion(question) != DialogResult.Yes)
+            bool hasFirmConflict;
+            string question = BuildMoveConfirmationQuestion(rangeGrid, payload, target.WindowDate, out hasFirmConflict);
+            DialogResult confirmResult = hasFirmConflict
+                ? UserMessage.ShowWarningQuestion(question)
+                : UserMessage.ShowQuestion(question);
+            if (confirmResult != DialogResult.Yes)
                 return;
 
             try

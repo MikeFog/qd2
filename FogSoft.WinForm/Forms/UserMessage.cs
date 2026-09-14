@@ -53,6 +53,16 @@ namespace FogSoft.WinForm.Forms
 			return Show(null, text, MessageBoxButtons.YesNo, MessageBoxIcon.Question);
 		}
 
+		/// <summary>
+		/// То же Да/Нет, что ShowQuestion, но с иконкой предупреждения — когда подтверждение
+		/// нужно не для обычного уточнения, а потому что пользователь вот-вот сделает что-то
+		/// потенциально нежелательное (и всё равно может подтвердить).
+		/// </summary>
+		public static DialogResult ShowWarningQuestion(string text)
+		{
+			return Show(null, text, MessageBoxButtons.YesNo, MessageBoxIcon.Warning);
+		}
+
 		public static DialogResult ShowYesNoCancel(string text)
 		{
 			return Show(null, text, MessageBoxButtons.YesNoCancel, MessageBoxIcon.Question);

@@ -116,7 +116,6 @@ namespace Merlin.Forms {
             this.btnShowMarked,
             this.btnShowRollerNumbers,
             this.tbbReplaceRoller,
-            this.tbbHelp,
             this.tbMarkPrimeWindows,
             this.toolStripSeparator1,
             this.btnShowDisabled,
@@ -129,6 +128,7 @@ namespace Merlin.Forms {
             this.tbSetManagerDiscount,
             this.tbSetActionPrice,
             this.tbbExcel,
+            this.tbbHelp,
             this.toolStripButtonGrantor});
             this.tsCampaign.Location = new System.Drawing.Point(0, 0);
             this.tsCampaign.Name = "tsCampaign";
