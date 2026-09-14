@@ -99,7 +99,7 @@ namespace Merlin.Forms.CreateActionMaster
 				ShowCurrentIssues(_tariffGrid as TariffWithRangeGrid);
 				EnableWindowSelectionActions();
 				EnableRangeIssueDragDrop();
-				EnableMissingCampaignsTooltip();
+				EnableCellTooltips();
 
 				// Веер работает только с линейными кампаниями. Если в акции их нет (модульная/
 				// спонсорская), сетка пустая — гасим тулбар, чтобы его кнопки не падали на пустоте.
@@ -713,13 +713,15 @@ namespace Merlin.Forms.CreateActionMaster
         }
 
         /// <summary>
-        /// Подсказка при наведении на красную (частичную) ячейку: каких из отмеченных
-        /// галочкой кампаний не хватает в этом слоте. На остальных цветах молчит —
-        /// по итогам обсуждения с заказчиком только у красного есть настоящая
-        /// неопределённость «кого не хватает», у синего/бирюзового/оранжевого ответ либо
-        /// тривиален («везде»), либо не про эту акцию.
+        /// Подсказки при наведении на цветные ячейки:
+        /// красная (частичная) — каких из отмеченных галочкой кампаний не хватает в этом
+        /// слоте (только у красного есть такая настоящая неопределённость);
+        /// бирюзовая/оранжевая — какие чужие акции той же фирмы стоят в этом слоте (номер и
+        /// статус подтверждения), без похода в базу — данные уже загружены вместе с раскраской
+        /// окон (см. TariffWithRangeGrid.GetOtherFirmActions). На синей молчит — там «везде»
+        /// тривиально верно и без подсказки.
         /// </summary>
-        private void EnableMissingCampaignsTooltip()
+        private void EnableCellTooltips()
         {
             DataGridView grid = _tariffGrid.InternalGrid;
             grid.ShowCellToolTips = true;
@@ -731,19 +733,44 @@ namespace Merlin.Forms.CreateActionMaster
             try
             {
                 TariffWithRangeGrid rangeGrid = _tariffGrid as TariffWithRangeGrid;
-                if (rangeGrid == null || !_tariffGrid.CellHasCurrentActionIssues(e.RowIndex, e.ColumnIndex))
+                if (rangeGrid == null)
                     return;
 
-                ITariffWindow window = _tariffGrid.GetTariffWindowAt(e.RowIndex, e.ColumnIndex);
-                if (window == null)
-                    return;
-
-                e.ToolTipText = BuildMissingCampaignsTooltip(rangeGrid, window.WindowDate);
+                if (_tariffGrid.CellHasCurrentActionIssues(e.RowIndex, e.ColumnIndex))
+                {
+                    ITariffWindow window = _tariffGrid.GetTariffWindowAt(e.RowIndex, e.ColumnIndex);
+                    if (window != null)
+                        e.ToolTipText = BuildMissingCampaignsTooltip(rangeGrid, window.WindowDate);
+                }
+                else if (_tariffGrid.CellHasOtherFirmIssues(e.RowIndex, e.ColumnIndex))
+                {
+                    ITariffWindow window = _tariffGrid.GetTariffWindowAt(e.RowIndex, e.ColumnIndex);
+                    if (window != null)
+                        e.ToolTipText = BuildOtherFirmActionsTooltip(rangeGrid, window.WindowDate);
+                }
             }
             catch (Exception ex)
             {
                 ErrorManager.PublishError(ex);
             }
+        }
+
+        /// <summary>
+        /// «В этом окне:», дальше каждая чужая акция той же фирмы с новой строки — номер и
+        /// статус подтверждения (по аналогии с текстом диалога подтверждения переноса).
+        /// </summary>
+        private string BuildOtherFirmActionsTooltip(TariffWithRangeGrid rangeGrid, DateTime windowDate)
+        {
+            IList<TariffWithRangeGrid.OtherFirmAction> actions = rangeGrid.GetOtherFirmActions(windowDate);
+            if (actions.Count == 0)
+                return null;
+
+            List<string> lines = new List<string>();
+            foreach (TariffWithRangeGrid.OtherFirmAction action in actions)
+                lines.Add(string.Format("Акция №{0} ({1})", action.ActionId,
+                    action.HasConfirmed ? "подтверждена" : "не подтверждена"));
+
+            return "В этом окне:" + Environment.NewLine + string.Join(Environment.NewLine, lines);
         }
 
         /// <summary>

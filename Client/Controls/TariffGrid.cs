@@ -526,6 +526,20 @@ namespace Merlin.Controls
 			return GetCell(rowIndex, columnIndex).Style.ForeColor == Color.Red;
 		}
 
+		/// <summary>
+		/// Та же дешёвая проверка по уже выставленному цвету — бирюзовый/оранжевый
+		/// (MarkCellAsHavingCurrentFirmIssues/MarkCellAsHavingCurrentFirmIssuesAnyMassmedia):
+		/// в ячейке есть выпуск чужой акции той же фирмы.
+		/// </summary>
+		public bool CellHasOtherFirmIssues(int rowIndex, int columnIndex)
+		{
+			if (rowIndex < FIXED_ROWS || columnIndex < FixedCols
+				|| rowIndex >= RawDataGridView.RowCount || columnIndex >= RawDataGridView.ColumnCount)
+				return false;
+			Color color = GetCell(rowIndex, columnIndex).Style.ForeColor;
+			return color == Color.LightSeaGreen || color == Color.Orange;
+		}
+
 		protected DataGridViewCell GetCell(ITariffWindow tariffWindow)
 		{
 			for (int rowIndex = FIXED_ROWS; rowIndex < RawDataGridView.RowCount; rowIndex++)

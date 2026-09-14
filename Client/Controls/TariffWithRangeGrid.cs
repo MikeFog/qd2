@@ -30,6 +30,9 @@ namespace Merlin.Controls
         // Частичные (красные) группы текущей недели по датам слотов — батч-кэш для
         // GetRollerNumbersText, см. RefreshPartialRollerGroups.
         private Dictionary<DateTime, IList<SlotIssueGroup>> _partialRollerGroupsByDate;
+        // Чужие акции той же фирмы по датам слотов — для подсказки бирюзовых/оранжевых
+        // ячеек, см. GetOtherFirmActions. Загружается вместе с раскраской окон (populateGrid).
+        private Dictionary<DateTime, List<OtherFirmAction>> _otherFirmActionsByDate;
 
         public ActionOnMassmedia Action
         {
@@ -196,6 +199,23 @@ namespace Merlin.Controls
 					_tariffWindows = null;
 
                 PopulateGridTable(dataSet.Tables[2]);
+
+                _otherFirmActionsByDate = new Dictionary<DateTime, List<OtherFirmAction>>();
+                foreach (DataRow row in dataSet.Tables[3].Rows)
+                {
+                    DateTime windowDate = ParseHelper.GetDateTimeFromObject(row["date"], DateTime.MinValue);
+                    if (windowDate == DateTime.MinValue)
+                        continue;
+
+                    if (!_otherFirmActionsByDate.TryGetValue(windowDate, out List<OtherFirmAction> actions))
+                        _otherFirmActionsByDate[windowDate] = actions = new List<OtherFirmAction>();
+
+                    actions.Add(new OtherFirmAction
+                    {
+                        ActionId = ParseHelper.GetInt32FromObject(row["actionID"], 0),
+                        HasConfirmed = ParseHelper.GetInt32FromObject(row["hasConfirmed"], 0) == 1
+                    });
+                }
             };
 
 			updateDB = delegate (DataGridViewCell cell)
@@ -459,6 +479,30 @@ namespace Merlin.Controls
 				HasConflict = ParseHelper.GetBooleanFromObject(row["hasConflict"], false),
 				AnyConfirmed = ParseHelper.GetBooleanFromObject(row["anyConfirmed"], false)
 			};
+		}
+
+		/// <summary>
+		/// Чужая акция той же фирмы, у которой в слоте есть выпуск (подсказка бирюзовой/
+		/// оранжевой ячейки). HasConfirmed — есть ли среди её выпусков в этом слоте хотя бы
+		/// один подтверждённый (для текста подсказки, по аналогии с диалогом переноса).
+		/// </summary>
+		public class OtherFirmAction
+		{
+			public int ActionId;
+			public bool HasConfirmed;
+		}
+
+		/// <summary>
+		/// Чужие акции той же фирмы, у которых есть выпуск в этом получасе — для подсказки
+		/// бирюзовых/оранжевых ячеек. Данные уже загружены вместе с раскраской окон
+		/// (см. populateGrid, TariffWindowWithRange.sql, п.9) — похода в базу на ховер нет.
+		/// </summary>
+		public IList<OtherFirmAction> GetOtherFirmActions(DateTime windowDate)
+		{
+			return _otherFirmActionsByDate != null &&
+			       _otherFirmActionsByDate.TryGetValue(windowDate, out List<OtherFirmAction> actions)
+				? actions
+				: (IList<OtherFirmAction>)new List<OtherFirmAction>();
 		}
 
 		/// <summary>

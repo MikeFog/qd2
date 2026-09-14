@@ -280,7 +280,34 @@ BEGIN
     JOIN this_action_issues x ON x.[date] = r.[date];
 
     --------------------------------------------------------------------
-    -- 9) Возвраты  ← только после всех UPDATE
+    -- 9) Чужие акции той же фирмы по датам (подсказка бирюзовых/оранжевых
+    --    ячеек — TariffWithRangeGrid.GetOtherFirmActions). Тот же джойн, что
+    --    и all_issues в п.7 (не тянем ещё раз в базу отдельным запросом на
+    --    ховер), но сгруппирован по ([date], actionID), а не только по [date].
+    --------------------------------------------------------------------
+    SELECT
+        r.[date],
+        a.actionID,
+        hasConfirmed = MAX(CASE WHEN i.isConfirmed = 1 THEN 1 ELSE 0 END)
+    INTO #otherActions
+    FROM #res r
+    JOIN dbo.TariffWindow tw
+        ON tw.windowDateActual BETWEEN r.[date] AND r.[enddate]
+    JOIN #mm m
+        ON m.massmediaID = tw.massmediaID
+    JOIN dbo.Issue i
+        ON i.actualWindowID = tw.windowId
+    JOIN dbo.Campaign c
+        ON c.campaignID = i.campaignID
+    JOIN dbo.Action a
+        ON a.actionID  = c.actionID
+       AND a.firmID    = @firmID
+       AND a.actionID <> @actionID
+    WHERE i.isConfirmed = 1
+       OR a.deleteDate IS NULL
+    GROUP BY r.[date], a.actionID;
+    --------------------------------------------------------------------
+    -- 10) Возвраты  ← только после всех UPDATE
     --------------------------------------------------------------------
     SELECT
         r.[date], r.[enddate], r.[col], r.[row],
@@ -308,4 +335,5 @@ BEGIN
             THEN 0 ELSE 1 END),
         DATEPART(hour, r.[date]),
         DATEPART(minute, r.[date]);
+    SELECT [date], actionID, hasConfirmed FROM #otherActions;
 END
