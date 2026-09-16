@@ -1,7 +1,10 @@
 ﻿CREATE PROCEDURE [dbo].[TariffWindowWithRange]
 (
     @actionID  int,
-    @dateStart datetime
+    @dateStart datetime,
+    -- Список кампаний акции (CSV campaignID), с которыми работает веер. NULL/пусто —
+    -- все линейные кампании акции (прежнее поведение для вызовов без выбора).
+    @campaignIDs varchar(max) = NULL
 )
 AS
 BEGIN
@@ -16,12 +19,23 @@ BEGIN
     -- Веер работает только с линейными кампаниями (campaignTypeID = 1): выпуск ставится
     -- точечно в конкретное рекламное окно. Модульные (3), спонсорские (2) и пакетно-модульные (4)
     -- размещаются по модулям/программам с собственным ценообразованием и в веер попадать не должны.
-    SELECT DISTINCT c.massmediaID
-    INTO #mm
+    -- Пользователь может ограничить веер частью линейных кампаний акции (@campaignIDs):
+    -- сетка, добавление и удаление идут только по ним. #sc — выбранные кампании,
+    -- #mm — их СМИ (по одной станции может идти несколько кампаний, различающихся
+    -- типом оплаты и агентством, — см. UIX_Campaign).
+    SELECT c.campaignID, c.massmediaID
+    INTO #sc
     FROM dbo.Campaign c
     WHERE c.actionID = @actionID
       AND c.massmediaID IS NOT NULL
-      AND c.campaignTypeID = 1;
+      AND c.campaignTypeID = 1
+      AND (@campaignIDs IS NULL
+           OR c.campaignID IN (SELECT CONVERT(int, value) FROM STRING_SPLIT(@campaignIDs, ',')));
+    CREATE UNIQUE CLUSTERED INDEX CX_sc ON #sc(campaignID);
+
+    SELECT DISTINCT sc.massmediaID
+    INTO #mm
+    FROM #sc sc;
     CREATE UNIQUE CLUSTERED INDEX CX_mm ON #mm(massmediaID);
     DECLARE @mmCnt int = (SELECT COUNT(*) FROM #mm);
     --------------------------------------------------------------------
@@ -64,6 +78,7 @@ BEGIN
         HasIssuesUnconfirmed             bit NOT NULL DEFAULT 0,
         HasIssuesUnconfirmedAllMassmedia bit NOT NULL DEFAULT 0,
         HasIssuesThisAction              bit NOT NULL DEFAULT 0,  -- ← новая
+        HasIssuesThisActionAllCampaigns  bit NOT NULL DEFAULT 0,
         CONSTRAINT PK_res PRIMARY KEY CLUSTERED ([date], [enddate])
     );
     INSERT INTO #res([date],[enddate],[col],[row])
@@ -247,27 +262,74 @@ BEGIN
     JOIN slots s ON s.[date] = r.[date];
     --------------------------------------------------------------------
     -- 8) HasIssuesThisAction  ← должен быть ДО финальных SELECT-ов
+    --    HasIssuesThisActionAllCampaigns — выпуск акции есть у КАЖДОЙ выбранной
+    --    кампании (ролик и позиция любые, у каждой кампании свои) — синий цвет в сетке.
     --------------------------------------------------------------------
+    DECLARE @scCnt int = (SELECT COUNT(*) FROM #sc);
     ;WITH this_action_issues AS
     (
-        SELECT r.[date]
+        SELECT r.[date], campaignCnt = COUNT(DISTINCT i.campaignID)
         FROM #res r
         JOIN #tw tw
             ON tw.windowDateActual BETWEEN r.[date] AND r.[enddate]
         JOIN dbo.Issue i
             ON i.actualWindowID = tw.windowId
-        JOIN dbo.Campaign c
-            ON c.campaignID = i.campaignID
-           AND c.actionID   = @actionID
+        JOIN #sc sc
+            ON sc.campaignID = i.campaignID
         GROUP BY r.[date]
     )
     UPDATE r SET
-        r.HasIssuesThisAction = CONVERT(bit, 1)
+        r.HasIssuesThisAction = CONVERT(bit, 1),
+        r.HasIssuesThisActionAllCampaigns = CONVERT(bit, CASE WHEN x.campaignCnt = @scCnt THEN 1 ELSE 0 END)
     FROM #res r
     JOIN this_action_issues x ON x.[date] = r.[date];
 
     --------------------------------------------------------------------
-    -- 9) Возвраты  ← только после всех UPDATE
+    -- 9) Чужие акции той же фирмы по датам (подсказка бирюзовых/оранжевых
+    --    ячеек — TariffWithRangeGrid.GetOtherFirmActions). Тот же джойн, что
+    --    и all_issues в п.7 (не тянем ещё раз в базу отдельным запросом на
+    --    ховер), но сгруппирован по ([date], actionID), а не только по [date].
+    --    Из того же #otherIssues идёт и последний набор (п.10) — ролики чужих
+    --    акций фирмы по слотам: в режиме номеров роликов бирюзовые/оранжевые
+    --    ячейки показывают номера наравне со своими (ролики фирменные, номер берётся
+    --    из той же карты).
+    --------------------------------------------------------------------
+    SELECT
+        r.[date],
+        a.actionID,
+        i.rollerID,
+        i.positionId,
+        ownerName = u.lastName + ' ' + u.firstName,
+        isConfirmed = CONVERT(int, i.isConfirmed)
+    INTO #otherIssues
+    FROM #res r
+    JOIN dbo.TariffWindow tw
+        ON tw.windowDateActual BETWEEN r.[date] AND r.[enddate]
+    JOIN #mm m
+        ON m.massmediaID = tw.massmediaID
+    JOIN dbo.Issue i
+        ON i.actualWindowID = tw.windowId
+    JOIN dbo.Campaign c
+        ON c.campaignID = i.campaignID
+    JOIN dbo.Action a
+        ON a.actionID  = c.actionID
+       AND a.firmID    = @firmID
+       AND a.actionID <> @actionID
+    LEFT JOIN dbo.[User] u
+        ON u.userID = a.userID
+    WHERE i.isConfirmed = 1
+       OR a.deleteDate IS NULL;
+
+    SELECT
+        [date],
+        actionID,
+        ownerName = MAX(ownerName),
+        hasConfirmed = MAX(CASE WHEN isConfirmed = 1 THEN 1 ELSE 0 END)
+    INTO #otherActions
+    FROM #otherIssues
+    GROUP BY [date], actionID;
+    --------------------------------------------------------------------
+    -- 10) Возвраты  ← только после всех UPDATE
     --------------------------------------------------------------------
     SELECT
         r.[date], r.[enddate], r.[col], r.[row],
@@ -278,6 +340,7 @@ BEGIN
         r.HasIssues, r.HasIssuesAllMassmedia,
         r.HasIssuesUnconfirmed, r.HasIssuesUnconfirmedAllMassmedia,
         r.HasIssuesThisAction,  -- ← новая
+        r.HasIssuesThisActionAllCampaigns,
         DATEPART(hour, r.[date]) AS h,
         DATEPART(minute, r.[date]) AS m
     FROM #res r
@@ -295,4 +358,13 @@ BEGIN
             THEN 0 ELSE 1 END),
         DATEPART(hour, r.[date]),
         DATEPART(minute, r.[date]);
+    SELECT [date], actionID, ownerName, hasConfirmed FROM #otherActions;
+    SELECT
+        [date],
+        rollerID,
+        positionId,
+        hasConfirmed = MAX(isConfirmed)
+    FROM #otherIssues
+    GROUP BY [date], rollerID, positionId
+    ORDER BY [date], rollerID, positionId;
 END

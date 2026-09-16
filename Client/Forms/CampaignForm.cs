@@ -42,6 +42,8 @@ namespace Merlin.Forms
 			toolStripButtonGrantor.Image = Globals.GetImage(Constants.ActionsImages.User);
 			tbbStart.Image = Globals.GetImage(Constants.ActionsImages.Properties);
 			tbSetActionPrice.Image = Globals.GetIcon("Money.png");
+			tbbHelp.Image = Globals.GetIcon("about.png");
+			tbbReplaceRoller.Image = Globals.GetIcon("substitution.png");
 			Icon = Globals.MdiParent.Icon;
 			toolStripButtonGrantor.Visible = false;
         }
@@ -226,8 +228,16 @@ namespace Merlin.Forms
 				_tariffGrid.InternalGrid.MultiSelect = (_tariffGrid.EditMode == EditMode.View);
 		}
 
+		/// <summary>
+		/// Имя файла справки в Client\Help\ (например "veer.html") — экран называет свой файл
+		/// (в конструкторе, до ProcessToolbar), а кнопка "Справка" и её показ/скрытие уже общие,
+		/// см. ShowHelp. Не задано — кнопки нет, справки для этого экрана ещё не написано.
+		/// </summary>
+		protected string HelpFileName { get; set; }
+
 		protected virtual void ProcessToolbar()
 		{
+			tbbHelp.Visible = !string.IsNullOrEmpty(HelpFileName);
             tbMarkPrimeWindows.Visible = btnShowDisabled.Visible = btnShowMarked.Visible = IsSimplelCampaign;
             btnShowRollerNumbers.Visible = IsSimplelCampaign || IsRangeCampaign;
             tsbMuteRoller.Enabled = IsSimplelCampaign;
@@ -248,7 +258,16 @@ namespace Merlin.Forms
 		/// </summary>
 		protected void DisableToolbar()
 		{
-			tsCampaign.Enabled = false;
+			SetToolbarEnabled(false);
+		}
+
+		/// <summary>
+		/// Веер гасит тулбар не только на акции без линейных кампаний, но и когда пользователь
+		/// снял все галочки в чек-листе кампаний, — и включает обратно при новом выборе.
+		/// </summary>
+		protected void SetToolbarEnabled(bool enabled)
+		{
+			tsCampaign.Enabled = enabled;
 		}
 
 		private void InitModulesList()
@@ -642,7 +661,7 @@ namespace Merlin.Forms
 			return dtCurrentIssues.DefaultView;
 		}
 
-		protected void RefreshGrid()
+		protected virtual void RefreshGrid()
 		{
 			try
 			{
@@ -728,6 +747,45 @@ namespace Merlin.Forms
 			{
 				ErrorManager.PublishError(ex);
 			}
+		}
+
+		private void tbbReplaceRoller_Click(object sender, EventArgs e)
+		{
+			try
+			{
+				ReplaceRollerInSelectedWindows();
+			}
+			catch (Exception ex)
+			{
+				ErrorManager.PublishError(ex);
+			}
+		}
+
+		private void tbbHelp_Click(object sender, EventArgs e)
+		{
+			try
+			{
+				ShowHelp();
+			}
+			catch (Exception ex)
+			{
+				ErrorManager.PublishError(ex);
+			}
+		}
+
+		/// <summary>
+		/// Открывает HelpFileName из Client\Help\ (обычный файл на диске рядом с exe, не
+		/// EmbeddedResource — правится текстом без пересборки, см. HelpViewerForm). Кнопка
+		/// видна только когда HelpFileName задан (ProcessToolbar), так что null сюда в
+		/// норме не попадает — проверка на всякий случай.
+		/// </summary>
+		private void ShowHelp()
+		{
+			if (string.IsNullOrEmpty(HelpFileName))
+				return;
+
+			string path = System.IO.Path.Combine(Application.StartupPath, "Help", HelpFileName);
+			HelpViewerForm.ShowHelp("Справка — " + Text, path);
 		}
 
 		private void grdCurrentCampaignIssues_ObjectDeleted(PresentationObject presentationObject)
@@ -816,10 +874,11 @@ namespace Merlin.Forms
 		private void TariffGrid_KeyDown(object sender, KeyEventArgs e)
 		{
 			// PgUp/PgDn — листание недель, доступно везде, где навешан обработчик.
-			// Del/Insert — только когда включены операции по выделению
+			// Del/Insert/Ctrl+R — только когда включены операции по выделению
 			// (_selectionActionsEnabled): конкретная логика в DeleteIssuesInSelectedWindows /
-			// AddIssuesInSelectedWindows (virtual, override в EditIssuesForm для веера).
-			// PgUp/PgDn гасим, иначе DataGridView вдобавок прокрутит строки на страницу.
+			// AddIssuesInSelectedWindows / ReplaceRollerInSelectedWindows (virtual, override в
+			// EditIssuesForm для веера). PgUp/PgDn гасим, иначе DataGridView вдобавок
+			// прокрутит строки на страницу.
 			switch (e.KeyCode)
 			{
 				case Keys.PageUp:
@@ -828,6 +887,11 @@ namespace Merlin.Forms
 				case Keys.Delete:
 				case Keys.Insert:
 					if (!_selectionActionsEnabled)
+						return;
+					break;
+				case Keys.R:
+					// Ctrl+R — иначе перехватывали бы обычный ввод буквы "R".
+					if (!_selectionActionsEnabled || !e.Control)
 						return;
 					break;
 				default:
@@ -843,6 +907,7 @@ namespace Merlin.Forms
 				{
 					case Keys.Delete: DeleteIssuesInSelectedWindows(); break;
 					case Keys.Insert: AddIssuesInSelectedWindows(); break;
+					case Keys.R: ReplaceRollerInSelectedWindows(); break;
 					case Keys.PageUp: _tariffGrid.GoToPreviousPeriod(); break;
 					case Keys.PageDown: _tariffGrid.GoToNextPeriod(); break;
 				}
@@ -1014,6 +1079,15 @@ namespace Merlin.Forms
 				SmartGrid.ShowDeleteErrors(deleteErrors);
 			else
 				UserMessage.ShowInformation(string.Format("Удалено выпусков: {0}.", deletedObjects.Count));
+		}
+
+		/// <summary>
+		/// Массовая замена ролика в выделенных окнах (Ctrl+R) на выбранный в списке "Ролики".
+		/// Пока реализована только для веера — см. override в EditIssuesForm.
+		/// </summary>
+		protected virtual void ReplaceRollerInSelectedWindows()
+		{
+			UserMessage.ShowInformation("Массовая замена роликов пока поддерживается только в веерном размещении.");
 		}
 
 		private void tbbTemplateUndo_Click(object sender, EventArgs e)
@@ -1508,15 +1582,28 @@ namespace Merlin.Forms
 			}
 		}
 
-		// Для веерной кампании — все СМИ акции (Campaign.actionID), для линейной — одно СМИ кампании
+		// Для веерной кампании — СМИ выбранных кампаний акции (чек-лист на EditIssuesForm;
+		// null — все линейные кампании), для линейной — одно СМИ кампании.
+		// DISTINCT обязателен: на одной радиостанции может идти несколько кампаний акции
+		// (разный тип оплаты/агентство, см. UIX_Campaign), а шаблону нужны именно станции.
 		private List<int> GetTemplateMassmediaIds()
 		{
 			var massmediaIds = new List<int>();
 			if (IsRangeCampaign)
 			{
-				DataTable campaigns = ((TariffWithRangeGrid)_tariffGrid).Action.Campaigns();
+				TariffWithRangeGrid rangeGrid = (TariffWithRangeGrid)_tariffGrid;
+				IList<int> selected = rangeGrid.SelectedCampaignIds;
+				DataTable campaigns = rangeGrid.Action.Campaigns();
 				foreach (DataRow row in campaigns.Rows)
-					massmediaIds.Add(Convert.ToInt32(row[Campaign.ParamNames.MassmediaId]));
+				{
+					if (selected != null
+					    && !selected.Contains(Convert.ToInt32(row[Campaign.ParamNames.CampaignId])))
+						continue;
+
+					int massmediaId = Convert.ToInt32(row[Campaign.ParamNames.MassmediaId]);
+					if (!massmediaIds.Contains(massmediaId))
+						massmediaIds.Add(massmediaId);
+				}
 			}
 			else
 			{
@@ -1742,7 +1829,7 @@ namespace Merlin.Forms
 
         // rollerID -> номер ролика, ровно тот, что показывает колонка "№" grdRollers
         // (SmartGrid.ShowRowNumbers) в её текущем порядке строк на этот момент.
-        private Dictionary<int, int> BuildRollerNumbersMap()
+        protected Dictionary<int, int> BuildRollerNumbersMap()
         {
             Dictionary<int, int> map = new Dictionary<int, int>();
             DataView view = grdRollers.DataSource;

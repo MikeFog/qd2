@@ -10,7 +10,10 @@ CREATE PROCEDURE [dbo].[MasterIssueDelete]
 	@positionID int,
 	@rollerID int,
 	@grantorID smallint = null,
-	@loggedUserId smallint
+	@loggedUserId smallint,
+	-- Список кампаний акции (CSV campaignID), с которыми работает веер. NULL/пусто —
+	-- все линейные кампании акции (прежнее поведение для вызовов без выбора).
+	@campaignIDs varchar(max) = NULL
 )
 WITH EXECUTE AS OWNER
 AS
@@ -21,7 +24,10 @@ BEGIN
 	-- (campaignTypeID = 1). Выпуски модульных/спонсорских кампаний живут в своих таблицах
 	-- (ModuleIssue/ProgramIssue) и этой процедурой не трогаются.
 	declare cur_massmedias cursor local fast_forward for
-	select c.massmediaID, c.campaignID from dbo.Campaign c where c.actionID = @actionID and c.campaignTypeID = 1
+	select c.massmediaID, c.campaignID from dbo.Campaign c
+	where c.actionID = @actionID and c.campaignTypeID = 1
+		and (@campaignIDs is null
+			or c.campaignID in (select convert(int, value) from string_split(@campaignIDs, ',')))
 
 	declare @massmediaID smallint, @campaignID int, @issueID int
 	

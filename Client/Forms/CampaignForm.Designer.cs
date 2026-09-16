@@ -50,6 +50,8 @@ namespace Merlin.Forms {
             this.tbbShowUnconfirmed = new System.Windows.Forms.ToolStripButton();
             this.btnShowMarked = new System.Windows.Forms.ToolStripButton();
             this.btnShowRollerNumbers = new System.Windows.Forms.ToolStripButton();
+            this.tbbReplaceRoller = new System.Windows.Forms.ToolStripButton();
+            this.tbbHelp = new System.Windows.Forms.ToolStripButton();
             this.tbMarkPrimeWindows = new System.Windows.Forms.ToolStripButton();
             this.toolStripSeparator1 = new System.Windows.Forms.ToolStripSeparator();
             this.btnShowDisabled = new System.Windows.Forms.ToolStripButton();
@@ -113,6 +115,7 @@ namespace Merlin.Forms {
             this.tbbShowUnconfirmed,
             this.btnShowMarked,
             this.btnShowRollerNumbers,
+            this.tbbReplaceRoller,
             this.tbMarkPrimeWindows,
             this.toolStripSeparator1,
             this.btnShowDisabled,
@@ -125,6 +128,7 @@ namespace Merlin.Forms {
             this.tbSetManagerDiscount,
             this.tbSetActionPrice,
             this.tbbExcel,
+            this.tbbHelp,
             this.toolStripButtonGrantor});
             this.tsCampaign.Location = new System.Drawing.Point(0, 0);
             this.tsCampaign.Name = "tsCampaign";
@@ -325,7 +329,37 @@ namespace Merlin.Forms {
             this.btnShowRollerNumbers.Text = "Номера роликов";
             this.btnShowRollerNumbers.ToolTipText = "Показывать в окнах номера роликов текущей кампании вместо остатка времени";
             this.btnShowRollerNumbers.CheckedChanged += new System.EventHandler(this.MarkRollerNumbers);
-            // 
+            //
+            // tbbReplaceRoller
+            //
+            // Скрыта/недоступна по умолчанию: показывается только на веере (EditIssuesForm.
+            // ProcessToolbar), включается только при btnShowRollerNumbers.Checked — иначе
+            // пользователь заменит ролики, не видя, какие именно стоят в окнах.
+            this.tbbReplaceRoller.DisplayStyle = System.Windows.Forms.ToolStripItemDisplayStyle.ImageAndText;
+            this.tbbReplaceRoller.Enabled = false;
+            this.tbbReplaceRoller.ImageTransparentColor = System.Drawing.Color.Magenta;
+            this.tbbReplaceRoller.Name = "tbbReplaceRoller";
+            this.tbbReplaceRoller.Size = new System.Drawing.Size(110, 33);
+            this.tbbReplaceRoller.Text = "Заменить ролики";
+            this.tbbReplaceRoller.ToolTipText = "Заменить ролики в выделенных окнах на ролик, выбранный в списке \"Ролики\" (Ctrl" +
+    "+R)";
+            this.tbbReplaceRoller.Visible = false;
+            this.tbbReplaceRoller.Click += new System.EventHandler(this.tbbReplaceRoller_Click);
+            //
+            // tbbHelp
+            //
+            // Скрыта, пока экран не назвал свой файл справки (HelpFileName) — видимость
+            // выставляется в базовом ProcessToolbar от одного этого свойства, отдельным
+            // экранам ничего переопределять не нужно, см. CampaignForm.ShowHelp.
+            this.tbbHelp.DisplayStyle = System.Windows.Forms.ToolStripItemDisplayStyle.ImageAndText;
+            this.tbbHelp.ImageTransparentColor = System.Drawing.Color.Magenta;
+            this.tbbHelp.Name = "tbbHelp";
+            this.tbbHelp.Size = new System.Drawing.Size(80, 33);
+            this.tbbHelp.Text = "Справка";
+            this.tbbHelp.ToolTipText = "Открыть справку по этому экрану";
+            this.tbbHelp.Visible = false;
+            this.tbbHelp.Click += new System.EventHandler(this.tbbHelp_Click);
+            //
             // tbMarkPrimeWindows
             // 
             this.tbMarkPrimeWindows.CheckOnClick = true;
@@ -698,7 +732,7 @@ namespace Merlin.Forms {
     private System.Windows.Forms.ToolStripButton tbbRefresh;
     private System.Windows.Forms.ToolStripButton tbbStart;
     private System.Windows.Forms.ToolStripDropDownButton tbbModules;
-    private System.Windows.Forms.SplitContainer splitContainer3;
+    protected System.Windows.Forms.SplitContainer splitContainer3;
     protected System.Windows.Forms.ListBox lstStat;
     private System.Windows.Forms.ToolStripDropDownButton tbbPosition;
     private System.Windows.Forms.ToolStripButton tbbShowUnconfirmed;
@@ -736,6 +770,8 @@ namespace Merlin.Forms {
     private System.Windows.Forms.ToolStripButton tbSetActionPrice;
     protected System.Windows.Forms.ToolStripButton tbMarkPrimeWindows;
     private System.Windows.Forms.ToolStripButton btnShowMarked;
-    private System.Windows.Forms.ToolStripButton btnShowRollerNumbers;
+    protected System.Windows.Forms.ToolStripButton btnShowRollerNumbers;
+    protected System.Windows.Forms.ToolStripButton tbbReplaceRoller;
+    protected System.Windows.Forms.ToolStripButton tbbHelp;
     }
 }

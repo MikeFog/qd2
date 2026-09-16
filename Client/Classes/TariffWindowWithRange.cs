@@ -15,6 +15,7 @@ namespace Merlin.Classes
             TimeWithConfirmed = ParseHelper.GetInt32FromObject(row["timeWithConfirmed"], 0);
             TimeWithUnConfirmed = ParseHelper.GetInt32FromObject(row["timeWithUnConfirmed"], 0);
             HasCurrentActionIssues = ParseHelper.GetBooleanFromObject(row["HasIssuesThisAction"], false);
+            HasCurrentActionIssuesAllCampaigns = ParseHelper.GetBooleanFromObject(row["HasIssuesThisActionAllCampaigns"], false);
             HasIssues = ParseHelper.GetBooleanFromObject(row["HasIssues"], false);
             HasIssuesAllMassmedia = ParseHelper.GetBooleanFromObject(row["HasIssuesAllMassmedia"], false);
             HasIssuesUnconfirmed = ParseHelper.GetBooleanFromObject(row["HasIssuesUnconfirmed"], false);
@@ -57,6 +58,8 @@ namespace Merlin.Classes
         }
 
         public bool HasCurrentActionIssues { get; private set; }
+        // Выпуск акции есть у каждой выбранной кампании, ролики могут быть разными.
+        public bool HasCurrentActionIssuesAllCampaigns { get; private set; }
         public bool HasIssues { get; private set; }
         public bool HasIssuesAllMassmedia { get; private set; }
         public bool HasIssuesUnconfirmed { get; private set; }

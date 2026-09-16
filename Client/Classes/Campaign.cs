@@ -56,6 +56,10 @@ namespace Merlin.Classes
 		{
 			public const string AgencyID = "agencyID";
 			public const string CampaignId = "campaignID";
+			// CSV идентификаторов кампаний: подмножество линейных кампаний акции, в контексте
+			// которых работает веерное размещение (AddRangeIssues / MasterIssueDelete /
+			// TariffWindowWithRange). NULL в процедурах = все линейные кампании акции.
+			public const string CampaignIds = "campaignIDs";
 			public const string CampaignTypeId = "campaignTypeID";
             public const string CampaignTypeName = "campaignTypeName";
             public const string Discount = "discount";

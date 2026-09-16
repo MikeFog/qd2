@@ -50,10 +50,14 @@ namespace FogSoft.WinForm.Forms
 			InitForm(entity, dataView, caption);
 		}
 
-		public SelectionForm(Entity entity, DataView dataView, string caption, bool showCheckboxes, IsSelectionCorrect validateSelection = null)
+		/// <param name="rowNumberColumn">Колонка dataView с номерами строк: если задана, слева
+		/// появляется колонка "№" с этими номерами, а не с позиционными 1..N.</param>
+		public SelectionForm(Entity entity, DataView dataView, string caption, bool showCheckboxes, IsSelectionCorrect validateSelection = null, string rowNumberColumn = null)
 			: this()
 		{
 			grid.CheckBoxes = showCheckboxes;
+			grid.ShowRowNumbers = !string.IsNullOrEmpty(rowNumberColumn);
+			grid.RowNumberSource = rowNumberColumn;
 			InitForm(entity, dataView, caption);
 			this.validateSelection = validateSelection;
 		}

@@ -5,6 +5,7 @@ using System;
 using System.Collections.Generic;
 using System.Data;
 using System.Globalization;
+using System.Linq;
 
 namespace Merlin.Classes
 {
@@ -274,10 +275,23 @@ namespace Merlin.Classes
 
         private static IList<Campaign> GetCampaigns(DataTable dt)
         {
+            return GetCampaigns(dt, null);
+        }
+
+        // campaignIds != null — берём только эти кампании (веер работает с выбранной
+        // пользователем частью линейных кампаний акции). Фильтр стоит до
+        // Campaign.GetCampaignById, чтобы не тянуть из БД невыбранные кампании.
+        private static IList<Campaign> GetCampaigns(DataTable dt, ICollection<int> campaignIds)
+        {
             IList<Campaign> campaigns = new List<Campaign>();
             //DataTable dt = ds.Tables[Constants.TableNames.Data];
             foreach (DataRow dr in dt.Rows)
-                campaigns.Add(Campaign.GetCampaignById(int.Parse(dr[Campaign.ParamNames.CampaignId].ToString())));
+            {
+                int campaignId = int.Parse(dr[Campaign.ParamNames.CampaignId].ToString());
+                if (campaignIds != null && !campaignIds.Contains(campaignId))
+                    continue;
+                campaigns.Add(Campaign.GetCampaignById(campaignId));
+            }
             return campaigns;
         }
 
@@ -372,9 +386,17 @@ namespace Merlin.Classes
 
         #region Added issues calculation
 
-        public DataTable BuildAddedIssuesTable()
+        /// <param name="campaignIds">
+        /// Кампании, в контексте которых работает веер. null — все линейные кампании акции.
+        /// Слоты «Добавленных выпусков» — пересечение по этим кампаниям, а не по всей акции.
+        /// </param>
+        public DataTable BuildAddedIssuesTable(ICollection<int> campaignIds = null)
         {
             DataTable addedIssues = CreateAddedIssuesTable();
+            // Значение по умолчанию колонки, а не заполнение строк: строки в эту таблицу
+            // дописывает ещё и TariffWithRangeGrid.AddIssuesRange, и им фильтр нужен тоже
+            // (MasterIssue создаётся из строки — см. MasterIssue.Delete -> MasterIssueDelete).
+            addedIssues.Columns[Campaign.ParamNames.CampaignIds].DefaultValue = BuildCampaignIdsCsv(campaignIds);
             if (ChildEntity == null)
                 return addedIssues;
 
@@ -382,7 +404,7 @@ namespace Merlin.Classes
             if (campaignsTable == null || campaignsTable.Rows.Count == 0)
                 return addedIssues;
 
-            IList<Campaign> campaigns = GetCampaigns(campaignsTable);
+            IList<Campaign> campaigns = GetCampaigns(campaignsTable, campaignIds);
             List<Campaign> actualCampaigns = new List<Campaign>();
             foreach (Campaign campaign in campaigns)
             {
@@ -445,7 +467,22 @@ namespace Merlin.Classes
             table.Columns.Add("RowNum", typeof(Guid));
             table.Columns.Add(Issue.ParamNames.IssueId, typeof(int));
             table.Columns.Add(Action.ParamNames.ActionId, typeof(int));
+            // Выбранные кампании веера: уезжает параметром в MasterIssueDelete через
+            // parameters создаваемого из строки MasterIssue (PresentationObject.Init).
+            table.Columns.Add(Campaign.ParamNames.CampaignIds, typeof(string));
             return table;
+        }
+
+        // null — веер работает со всеми линейными кампаниями акции (SQL-процедуры трактуют
+        // NULL именно так). Пустой список — это не «все», а «ни одной»: отдаём заведомо
+        // несуществующий campaignID, иначе снятие всех галочек молча вернуло бы всю акцию.
+        internal static string BuildCampaignIdsCsv(ICollection<int> campaignIds)
+        {
+            if (campaignIds == null)
+                return null;
+            if (campaignIds.Count == 0)
+                return "-1";
+            return string.Join(",", campaignIds.Select(id => id.ToString(CultureInfo.InvariantCulture)));
         }
 
         private static Dictionary<IssueSlotKey, List<DataRow>> GroupIssuesBySlot(DataTable issues)
@@ -459,7 +496,9 @@ namespace Merlin.Classes
                 if (!TryGetIssueDate(row, out DateTime issueDate))
                     continue;
 
-                IssueSlotKey key = IssueSlotKey.From(issueDate);
+                IssueSlotKey key = IssueSlotKey.From(issueDate,
+                    ParseHelper.ParseToInt32(ResolveString(row, Roller.ParamNames.RollerId), 0),
+                    ResolvePositionId(row));
                 if (!result.TryGetValue(key, out List<DataRow> rows))
                 {
                     rows = new List<DataRow>();
@@ -626,21 +665,29 @@ namespace Merlin.Classes
             return row?.Table?.Columns.Contains(columnName) == true;
         }
 
+        // Слот «Добавленных выпусков» — получас + ролик + позиция: общим для выбранных
+        // кампаний считается только выпуск с тем же роликом и позицией. Без ролика в ключе
+        // получас с разными роликами на разных станциях ложно становился синим, а в список
+        // попадал ролик первой кампании (группировка как в RangeSlotIssues).
         private readonly struct IssueSlotKey : IEquatable<IssueSlotKey>
         {
             private readonly DateTime date;
             private readonly int slotIndex;
+            public readonly int RollerId;
+            public readonly int PositionId;
 
-            private IssueSlotKey(DateTime date, int slotIndex)
+            private IssueSlotKey(DateTime date, int slotIndex, int rollerId, int positionId)
             {
                 this.date = date;
                 this.slotIndex = slotIndex;
+                RollerId = rollerId;
+                PositionId = positionId;
             }
 
-            public static IssueSlotKey From(DateTime dateTime)
+            public static IssueSlotKey From(DateTime dateTime, int rollerId, int positionId)
             {
                 int slot = ((dateTime.Hour * 60) + dateTime.Minute) / 30;
-                return new IssueSlotKey(dateTime.Date, slot);
+                return new IssueSlotKey(dateTime.Date, slot, rollerId, positionId);
             }
 
             public DateTime ToDateTime()
@@ -650,7 +697,8 @@ namespace Merlin.Classes
 
             public bool Equals(IssueSlotKey other)
             {
-                return date == other.date && slotIndex == other.slotIndex;
+                return date == other.date && slotIndex == other.slotIndex
+                    && RollerId == other.RollerId && PositionId == other.PositionId;
             }
 
             public override bool Equals(object obj)
@@ -662,7 +710,9 @@ namespace Merlin.Classes
             {
                 unchecked
                 {
-                    return (date.GetHashCode() * 397) ^ slotIndex;
+                    int hash = (date.GetHashCode() * 397) ^ slotIndex;
+                    hash = (hash * 397) ^ RollerId;
+                    return (hash * 397) ^ PositionId;
                 }
             }
         }
@@ -677,7 +727,10 @@ namespace Merlin.Classes
 
             public int Compare(IssueSlotKey x, IssueSlotKey y)
             {
-                return x.ToDateTime().CompareTo(y.ToDateTime());
+                int result = x.ToDateTime().CompareTo(y.ToDateTime());
+                if (result == 0)
+                    result = x.RollerId.CompareTo(y.RollerId);
+                return result != 0 ? result : x.PositionId.CompareTo(y.PositionId);
             }
         }
     }

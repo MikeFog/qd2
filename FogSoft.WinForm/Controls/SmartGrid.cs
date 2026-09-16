@@ -90,8 +90,21 @@ namespace FogSoft.WinForm.Controls
             if (!dataGrid.Columns.Contains(COL_RowNumber)) return;
             if (e.ColumnIndex != dataGrid.Columns[COL_RowNumber].Index) return;
 
-            e.Value = (e.RowIndex + 1).ToString();
+            e.Value = GetRowNumberText(e.RowIndex);
             e.FormattingApplied = true;
+        }
+
+        private string GetRowNumberText(int rowIndex)
+        {
+            if (string.IsNullOrEmpty(RowNumberSource))
+                return (rowIndex + 1).ToString();
+
+            DataView view = dataGrid.DataSource as DataView;
+            if (view == null || rowIndex < 0 || rowIndex >= view.Count) return string.Empty;
+            if (!view.Table.Columns.Contains(RowNumberSource)) return string.Empty;
+
+            object value = view[rowIndex][RowNumberSource];
+            return value == DBNull.Value ? string.Empty : value.ToString();
         }
 
         public new bool Enabled
@@ -139,6 +152,15 @@ namespace FogSoft.WinForm.Controls
             get { return showRowNumbers; }
             set { showRowNumbers = value; }
         }
+
+        /// <summary>
+        /// Имя колонки источника данных, откуда брать номер для колонки "№". Пусто (по
+        /// умолчанию) - номер позиционный, 1..N. Задаётся, когда номера приходят снаружи и
+        /// в этом гриде показан лишь их поднабор (например, чек-лист замены роликов в веере
+        /// показывает номера из списка "Ролики").
+        /// </summary>
+        [Browsable(false)]
+        public string RowNumberSource { get; set; }
 
         [Browsable(false)]
         public int ItemsCount

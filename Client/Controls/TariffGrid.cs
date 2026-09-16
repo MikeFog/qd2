@@ -512,6 +512,34 @@ namespace Merlin.Controls
 			return GetCell(rowIndex, columnIndex).Style.ForeColor == Color.Blue;
 		}
 
+		/// <summary>
+		/// Такая же дешёвая проверка «в ячейке есть выпуски текущей акции, но не по всем
+		/// выбранным кампаниям» — красный цвет текста (MarkCellAsHavingCurrentActionIssues).
+		/// Такой слот не попадает в «Добавленные выпуски» (там пересечение по кампаниям),
+		/// поэтому его содержимое приходится читать из базы — см. RangeSlotIssues.
+		/// </summary>
+		public bool CellHasCurrentActionIssues(int rowIndex, int columnIndex)
+		{
+			if (rowIndex < FIXED_ROWS || columnIndex < FixedCols
+				|| rowIndex >= RawDataGridView.RowCount || columnIndex >= RawDataGridView.ColumnCount)
+				return false;
+			return GetCell(rowIndex, columnIndex).Style.ForeColor == Color.Red;
+		}
+
+		/// <summary>
+		/// Та же дешёвая проверка по уже выставленному цвету — бирюзовый/оранжевый
+		/// (MarkCellAsHavingCurrentFirmIssues/MarkCellAsHavingCurrentFirmIssuesAnyMassmedia):
+		/// в ячейке есть выпуск чужой акции той же фирмы.
+		/// </summary>
+		public bool CellHasOtherFirmIssues(int rowIndex, int columnIndex)
+		{
+			if (rowIndex < FIXED_ROWS || columnIndex < FixedCols
+				|| rowIndex >= RawDataGridView.RowCount || columnIndex >= RawDataGridView.ColumnCount)
+				return false;
+			Color color = GetCell(rowIndex, columnIndex).Style.ForeColor;
+			return color == Color.LightSeaGreen || color == Color.Orange;
+		}
+
 		protected DataGridViewCell GetCell(ITariffWindow tariffWindow)
 		{
 			for (int rowIndex = FIXED_ROWS; rowIndex < RawDataGridView.RowCount; rowIndex++)
