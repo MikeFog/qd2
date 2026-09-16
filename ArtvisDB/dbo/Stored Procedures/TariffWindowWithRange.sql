@@ -78,6 +78,7 @@ BEGIN
         HasIssuesUnconfirmed             bit NOT NULL DEFAULT 0,
         HasIssuesUnconfirmedAllMassmedia bit NOT NULL DEFAULT 0,
         HasIssuesThisAction              bit NOT NULL DEFAULT 0,  -- ← новая
+        HasIssuesThisActionAllCampaigns  bit NOT NULL DEFAULT 0,
         CONSTRAINT PK_res PRIMARY KEY CLUSTERED ([date], [enddate])
     );
     INSERT INTO #res([date],[enddate],[col],[row])
@@ -261,10 +262,13 @@ BEGIN
     JOIN slots s ON s.[date] = r.[date];
     --------------------------------------------------------------------
     -- 8) HasIssuesThisAction  ← должен быть ДО финальных SELECT-ов
+    --    HasIssuesThisActionAllCampaigns — выпуск акции есть у КАЖДОЙ выбранной
+    --    кампании (ролик и позиция любые, у каждой кампании свои) — синий цвет в сетке.
     --------------------------------------------------------------------
+    DECLARE @scCnt int = (SELECT COUNT(*) FROM #sc);
     ;WITH this_action_issues AS
     (
-        SELECT r.[date]
+        SELECT r.[date], campaignCnt = COUNT(DISTINCT i.campaignID)
         FROM #res r
         JOIN #tw tw
             ON tw.windowDateActual BETWEEN r.[date] AND r.[enddate]
@@ -275,7 +279,8 @@ BEGIN
         GROUP BY r.[date]
     )
     UPDATE r SET
-        r.HasIssuesThisAction = CONVERT(bit, 1)
+        r.HasIssuesThisAction = CONVERT(bit, 1),
+        r.HasIssuesThisActionAllCampaigns = CONVERT(bit, CASE WHEN x.campaignCnt = @scCnt THEN 1 ELSE 0 END)
     FROM #res r
     JOIN this_action_issues x ON x.[date] = r.[date];
 
@@ -284,12 +289,19 @@ BEGIN
     --    ячеек — TariffWithRangeGrid.GetOtherFirmActions). Тот же джойн, что
     --    и all_issues в п.7 (не тянем ещё раз в базу отдельным запросом на
     --    ховер), но сгруппирован по ([date], actionID), а не только по [date].
+    --    Из того же #otherIssues идёт и последний набор (п.10) — ролики чужих
+    --    акций фирмы по слотам: в режиме номеров роликов бирюзовые/оранжевые
+    --    ячейки показывают номера наравне со своими (ролики фирменные, номер берётся
+    --    из той же карты).
     --------------------------------------------------------------------
     SELECT
         r.[date],
         a.actionID,
-        hasConfirmed = MAX(CASE WHEN i.isConfirmed = 1 THEN 1 ELSE 0 END)
-    INTO #otherActions
+        i.rollerID,
+        i.positionId,
+        ownerName = u.lastName + ' ' + u.firstName,
+        isConfirmed = CONVERT(int, i.isConfirmed)
+    INTO #otherIssues
     FROM #res r
     JOIN dbo.TariffWindow tw
         ON tw.windowDateActual BETWEEN r.[date] AND r.[enddate]
@@ -303,9 +315,19 @@ BEGIN
         ON a.actionID  = c.actionID
        AND a.firmID    = @firmID
        AND a.actionID <> @actionID
+    LEFT JOIN dbo.[User] u
+        ON u.userID = a.userID
     WHERE i.isConfirmed = 1
-       OR a.deleteDate IS NULL
-    GROUP BY r.[date], a.actionID;
+       OR a.deleteDate IS NULL;
+
+    SELECT
+        [date],
+        actionID,
+        ownerName = MAX(ownerName),
+        hasConfirmed = MAX(CASE WHEN isConfirmed = 1 THEN 1 ELSE 0 END)
+    INTO #otherActions
+    FROM #otherIssues
+    GROUP BY [date], actionID;
     --------------------------------------------------------------------
     -- 10) Возвраты  ← только после всех UPDATE
     --------------------------------------------------------------------
@@ -318,6 +340,7 @@ BEGIN
         r.HasIssues, r.HasIssuesAllMassmedia,
         r.HasIssuesUnconfirmed, r.HasIssuesUnconfirmedAllMassmedia,
         r.HasIssuesThisAction,  -- ← новая
+        r.HasIssuesThisActionAllCampaigns,
         DATEPART(hour, r.[date]) AS h,
         DATEPART(minute, r.[date]) AS m
     FROM #res r
@@ -335,5 +358,13 @@ BEGIN
             THEN 0 ELSE 1 END),
         DATEPART(hour, r.[date]),
         DATEPART(minute, r.[date]);
-    SELECT [date], actionID, hasConfirmed FROM #otherActions;
+    SELECT [date], actionID, ownerName, hasConfirmed FROM #otherActions;
+    SELECT
+        [date],
+        rollerID,
+        positionId,
+        hasConfirmed = MAX(isConfirmed)
+    FROM #otherIssues
+    GROUP BY [date], rollerID, positionId
+    ORDER BY [date], rollerID, positionId;
 END

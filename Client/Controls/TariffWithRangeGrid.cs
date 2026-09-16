@@ -33,6 +33,10 @@ namespace Merlin.Controls
         // Чужие акции той же фирмы по датам слотов — для подсказки бирюзовых/оранжевых
         // ячеек, см. GetOtherFirmActions. Загружается вместе с раскраской окон (populateGrid).
         private Dictionary<DateTime, List<OtherFirmAction>> _otherFirmActionsByDate;
+        // Ролики чужих акций той же фирмы по датам слотов — для номеров роликов
+        // в бирюзовых/оранжевых ячейках, см. GetRollerNumbersText. Приезжают тем же
+        // запросом, что и раскраска окон (populateGrid).
+        private Dictionary<DateTime, List<OtherFirmRoller>> _otherFirmRollersByDate;
 
         public ActionOnMassmedia Action
         {
@@ -213,6 +217,25 @@ namespace Merlin.Controls
                     actions.Add(new OtherFirmAction
                     {
                         ActionId = ParseHelper.GetInt32FromObject(row["actionID"], 0),
+                        OwnerName = StringUtil.GetStringOrEmpty(row["ownerName"]),
+                        HasConfirmed = ParseHelper.GetInt32FromObject(row["hasConfirmed"], 0) == 1
+                    });
+                }
+
+                _otherFirmRollersByDate = new Dictionary<DateTime, List<OtherFirmRoller>>();
+                foreach (DataRow row in dataSet.Tables[4].Rows)
+                {
+                    DateTime windowDate = ParseHelper.GetDateTimeFromObject(row["date"], DateTime.MinValue);
+                    if (windowDate == DateTime.MinValue)
+                        continue;
+
+                    if (!_otherFirmRollersByDate.TryGetValue(windowDate, out List<OtherFirmRoller> rollers))
+                        _otherFirmRollersByDate[windowDate] = rollers = new List<OtherFirmRoller>();
+
+                    rollers.Add(new OtherFirmRoller
+                    {
+                        RollerId = ParseHelper.GetInt32FromObject(row[Roller.ParamNames.RollerId], 0),
+                        PositionId = ParseHelper.GetInt32FromObject(row[Issue.ParamNames.PositionId], 0),
                         HasConfirmed = ParseHelper.GetInt32FromObject(row["hasConfirmed"], 0) == 1
                     });
                 }
@@ -489,6 +512,20 @@ namespace Merlin.Controls
 		public class OtherFirmAction
 		{
 			public int ActionId;
+			public string OwnerName;
+			public bool HasConfirmed;
+		}
+
+		/// <summary>
+		/// Ролик чужой акции той же фирмы, стоящий в слоте (бирюзовые/оранжевые
+		/// ячейки). В режиме номеров роликов показывается наравне со своими: список
+		/// роликов на форме — фирменный (Firm.GetRollers), так что номер чужого выпуска
+		/// находится в той же карте RollerNumbers.
+		/// </summary>
+		public class OtherFirmRoller
+		{
+			public int RollerId;
+			public int PositionId;
 			public bool HasConfirmed;
 		}
 
@@ -617,7 +654,9 @@ namespace Merlin.Controls
                     if (RollerPosition != RollerPositions.Undefined)
                         MarkCellWithRollerPosition(window, rowIndex, columnIndex);
 
-					if (AddedIssues.Select(string.Format("[issueDate] = '{0}'", window.WindowDate)).Length > 0)
+					// Синий — выпуск акции есть у каждой выбранной кампании, ролики могут быть разными
+					// (требование заказчика). Не по AddedIssues: там только ролики, общие для всех кампаний.
+					if (window.HasCurrentActionIssuesAllCampaigns)
 					{
 						MarkCellAsHavingCurrentCampaignIssues(rowIndex, columnIndex);
                         continue;
@@ -780,8 +819,8 @@ namespace Merlin.Controls
 		// пишет ОДИН И ТОТ ЖЕ ролик на все станции акции сразу (см. AddRangeIssues.sql — @rollerID
 		// один параметр на весь курсор по станциям) — поэтому потеря привязки к конкретной
 		// станции в AddedIssues не теряет сам номер ролика.
-		// Частичные (красные, не во всех выбранных кампаниях) группы — из батч-кэша
-		// _partialRollerGroupsByDate, номер помечается "*", чтобы отличать от полного совпадения.
+		// Частичные (не во всех выбранных кампаниях) группы — из батч-кэша
+		// _partialRollerGroupsByDate. Звёздочек нет (решение заказчика): полноту слота показывает цвет.
 		private string GetRollerNumbersText(DateTime windowDate)
 		{
 			if (rollerNumbers == null || windowDate == DateTime.MinValue) return null;
@@ -807,7 +846,25 @@ namespace Merlin.Controls
 						continue; // тот же ролик+позиция уже учтён как синий выше
 
 					if (rollerNumbers.TryGetValue(group.RollerId, out int number))
-						numbers.Add(number + "*");
+						numbers.Add(number.ToString());
+				}
+
+			// Бирюзовые/оранжевые слоты — чужая акция ТОЙ ЖЕ фирмы, т.е. ролики из того же
+			// фирменного списка, и номера у них те же (требование заказчика). Неподтверждённые
+			// чужие выпуски — только при «Учитывать неподтверждённые», иначе в ячейке без цвета
+			// появился бы номер ролика — см. HasFirmIssuesFlags.
+			if (_otherFirmRollersByDate != null &&
+			    _otherFirmRollersByDate.TryGetValue(windowDate, out List<OtherFirmRoller> firmRollers))
+				foreach (OtherFirmRoller firmRoller in firmRollers)
+				{
+					if (!firmRoller.HasConfirmed && !ShowUnconfirmed)
+						continue;
+
+					if (!covered.Add(firmRoller.RollerId + "/" + firmRoller.PositionId))
+						continue;
+
+					if (rollerNumbers.TryGetValue(firmRoller.RollerId, out int number))
+						numbers.Add(number.ToString());
 				}
 
 			return numbers.Count > 0 ? string.Join(", ", numbers) : null;

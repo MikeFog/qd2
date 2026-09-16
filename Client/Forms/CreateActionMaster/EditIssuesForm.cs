@@ -1,4 +1,5 @@
-﻿using FogSoft.WinForm.Classes;
+﻿using FogSoft.WinForm;
+using FogSoft.WinForm.Classes;
 using FogSoft.WinForm.DataAccess;
 using Merlin.Classes;
 using Merlin.Classes.Domain;
@@ -571,12 +572,39 @@ namespace Merlin.Forms.CreateActionMaster
             foreach (ITariffWindow window in windows)
                 windowDates.Add(window.WindowDate);
 
+            List<TariffWithRangeGrid.SlotIssueRow> slotRows = new List<TariffWithRangeGrid.SlotIssueRow>();
+            List<int> oldRollerIds = new List<int>();
             foreach (TariffWithRangeGrid.SlotIssueRow row in rangeGrid.GetSlotIssueRows(windowDates))
             {
                 // Тот же самый ролик уже стоит — заменять нечего.
                 if (row.RollerId == newRoller.RollerId)
                     continue;
 
+                slotRows.Add(row);
+                if (!oldRollerIds.Contains(row.RollerId))
+                    oldRollerIds.Add(row.RollerId);
+            }
+
+            if (slotRows.Count == 0)
+            {
+                UserMessage.ShowInformation("В выделенных окнах нечего заменять.");
+                return;
+            }
+
+            // Несколько разных роликов на замену — пусть пользователь отметит, какие менять.
+            // Выбор диалога и есть подтверждение, отдельный вопрос тогда не задаём.
+            bool askConfirmation = true;
+            if (oldRollerIds.Count > 1)
+            {
+                List<int> chosenIds = SelectRollersToReplace(oldRollerIds, newRoller);
+                if (chosenIds == null)
+                    return;
+                slotRows.RemoveAll(r => !chosenIds.Contains(r.RollerId));
+                askConfirmation = false;
+            }
+
+            foreach (TariffWithRangeGrid.SlotIssueRow row in slotRows)
+            {
                 string key = row.CampaignId + "/" + row.RollerId;
                 if (!groups.TryGetValue(key, out ReplaceGroup group))
                 {
@@ -590,13 +618,7 @@ namespace Merlin.Forms.CreateActionMaster
                 totalCount++;
             }
 
-            if (totalCount == 0)
-            {
-                UserMessage.ShowInformation("В выделенных окнах нечего заменять.");
-                return;
-            }
-
-            if (UserMessage.ShowQuestion(string.Format(
+            if (askConfirmation && UserMessage.ShowQuestion(string.Format(
                     "Заменить ролики на «{0}» ({1}) в выделенных окнах? ({2} шт.)",
                     newRoller.Name, newRoller.DurationString, totalCount)) != DialogResult.Yes)
                 return;
@@ -653,6 +675,64 @@ namespace Merlin.Forms.CreateActionMaster
                 FogSoft.WinForm.Controls.SmartGrid.ShowDeleteErrors(groupErrors, "Ошибки массовой замены роликов");
             else if (unsubstituted == null || unsubstituted.Rows.Count == 0)
                 UserMessage.ShowInformation(string.Format("Заменено роликов: {0}.", totalCount));
+        }
+
+        /// <summary>
+        /// Чек-лист старых роликов, найденных в выделенных окнах: SelectionForm по сущности
+        /// Roller. Строки грузятся тем же журнальным Load сущности, что и Firm.GetRollers,
+        /// но по конкретному @rollerID — так в таблице ровно те колонки, которые описаны
+        /// атрибутами сущности, а фильтры журнала (неактивные, клоны общих роликов) не
+        /// выкидывают ролики, реально стоящие в выпусках. Возвращает ID отмеченных или
+        /// null, если пользователь отменил.
+        /// </summary>
+        private List<int> SelectRollersToReplace(IList<int> rollerIds, Roller newRoller)
+        {
+            Entity rollerEntity = EntityManager.GetEntity((int)Entities.Roller);
+            System.Data.DataTable table = new System.Data.DataTable();
+            // Клон: AttributeSelector меняет общую кэшированную сущность, если ставить его на оригинал.
+            Entity nameOnlyEntity = (Entity)rollerEntity.Clone();
+            nameOnlyEntity.AttributeSelector = (int)Roller.AttributeSelectors.NameOnly;
+            foreach (int rollerId in rollerIds)
+            {
+                Dictionary<string, object> parameters = new Dictionary<string, object>();
+                DataAccessor.PrepareParameters(parameters, rollerEntity, InterfaceObjects.SimpleJournal, Constants.Actions.Load);
+                parameters[Roller.ParamNames.RollerId] = rollerId;
+                table.Merge(((System.Data.DataSet)DataAccessor.DoAction(parameters)).Tables[Constants.TableNames.Data]);
+            }
+
+            // В ячейках сетки сейчас стоят номера из списка "Ролики" (замена без них
+            // запрещена) — в чек-листе показываем именно их, а не собственную нумерацию 1..N,
+            // и строим строки в том же порядке, что и список роликов.
+            const string numberColumn = "rollerNumber";
+            Dictionary<int, int> rollerNumbers = BuildRollerNumbersMap();
+            table.Columns.Add(numberColumn, typeof(int));
+            foreach (System.Data.DataRow row in table.Rows)
+            {
+                int rollerId = ParseHelper.GetInt32FromObject(row[Roller.ParamNames.RollerId], 0);
+                if (rollerNumbers.TryGetValue(rollerId, out int number))
+                    row[numberColumn] = number;
+            }
+            System.Data.DataView view = table.DefaultView;
+            view.Sort = numberColumn;
+
+            SelectionForm form = new SelectionForm(nameOnlyEntity, view,
+                string.Format("Какие ролики заменить на «{0}» ({1})?", newRoller.Name, newRoller.DurationString), true,
+                f =>
+                {
+                    if (f.AddedItems.Count > 0)
+                        return true;
+                    UserMessage.ShowExclamation("Отметьте хотя бы один ролик.");
+                    return false;
+                },
+                numberColumn);
+
+            if (form.ShowDialog(this) != DialogResult.OK)
+                return null;
+
+            List<int> result = new List<int>();
+            foreach (PresentationObject po in form.AddedItems)
+                result.Add(Convert.ToInt32(po.IDs[0]));
+            return result;
         }
 
         /// <summary>
@@ -756,8 +836,9 @@ namespace Merlin.Forms.CreateActionMaster
         }
 
         /// <summary>
-        /// «В этом окне:», дальше каждая чужая акция той же фирмы с новой строки — номер и
-        /// статус подтверждения (по аналогии с текстом диалога подтверждения переноса).
+        /// «В этом окне:», дальше каждая чужая акция той же фирмы с новой строки — номер,
+        /// статус подтверждения и владелец (по аналогии с текстом диалога подтверждения
+        /// переноса).
         /// </summary>
         private string BuildOtherFirmActionsTooltip(TariffWithRangeGrid rangeGrid, DateTime windowDate)
         {
@@ -767,8 +848,11 @@ namespace Merlin.Forms.CreateActionMaster
 
             List<string> lines = new List<string>();
             foreach (TariffWithRangeGrid.OtherFirmAction action in actions)
-                lines.Add(string.Format("Акция №{0} ({1})", action.ActionId,
-                    action.HasConfirmed ? "подтверждена" : "не подтверждена"));
+            {
+                string status = action.HasConfirmed ? "подтверждена" : "не подтверждена";
+                string details = string.IsNullOrEmpty(action.OwnerName) ? status : status + ", " + action.OwnerName;
+                lines.Add(string.Format("Акция №{0} ({1})", action.ActionId, details));
+            }
 
             return "В этом окне:" + Environment.NewLine + string.Join(Environment.NewLine, lines);
         }
@@ -872,23 +956,14 @@ namespace Merlin.Forms.CreateActionMaster
             DateTime slotDate = _dragSourceSlotDate.Value;
             _dragSourceSlotDate = null;
 
+            // Из ячейки переезжает весь получас: каждая группа «ролик + позиция» в своём составе
+            // кампаний, из базы. Не AddedIssues — там только общие для всех кампаний ролики, и
+            // в смешанном слоте остальные оставались бы на месте.
             TariffWithRangeGrid rangeGrid = (TariffWithRangeGrid)_tariffGrid;
-            List<System.Data.DataRow> rows = new List<System.Data.DataRow>(
-                rangeGrid.AddedIssues.Select(string.Format("[issueDate] = '{0}'", slotDate)));
+            IList<TariffWithRangeGrid.SlotIssueGroup> groups = rangeGrid.GetSlotIssueGroups(slotDate);
+            if (groups.Count == 0) return;
 
-            RangeIssueDragPayload payload;
-            if (rows.Count > 0)
-            {
-                payload = new RangeIssueDragPayload(slotDate, rows);
-            }
-            else
-            {
-                IList<TariffWithRangeGrid.SlotIssueGroup> groups = rangeGrid.GetSlotIssueGroups(slotDate);
-                if (groups.Count == 0) return;
-                payload = new RangeIssueDragPayload(slotDate, groups);
-            }
-
-            ((DataGridView)sender).DoDragDrop(payload, DragDropEffects.Move);
+            ((DataGridView)sender).DoDragDrop(new RangeIssueDragPayload(slotDate, groups), DragDropEffects.Move);
         }
 
         private void RangeGrid_DragEnter(object sender, DragEventArgs e)
@@ -1051,8 +1126,13 @@ namespace Merlin.Forms.CreateActionMaster
                 throw;
             }
 
-            foreach (System.Data.DataRow row in payload.IssueRows)
-                rangeGrid.AddedIssues.Rows.Remove(row);
+            if (payload.PartialGroups != null)
+                // Группы могли включать и общие для всех кампаний ролики — их строки в
+                // AddedIssues теперь на старой дате, пересобираем из базы.
+                rangeGrid.RebuildAddedIssues();
+            else
+                foreach (System.Data.DataRow row in payload.IssueRows)
+                    rangeGrid.AddedIssues.Rows.Remove(row);
             RefreshGrid();
         }
 	}

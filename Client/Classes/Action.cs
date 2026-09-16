@@ -496,7 +496,9 @@ namespace Merlin.Classes
                 if (!TryGetIssueDate(row, out DateTime issueDate))
                     continue;
 
-                IssueSlotKey key = IssueSlotKey.From(issueDate);
+                IssueSlotKey key = IssueSlotKey.From(issueDate,
+                    ParseHelper.ParseToInt32(ResolveString(row, Roller.ParamNames.RollerId), 0),
+                    ResolvePositionId(row));
                 if (!result.TryGetValue(key, out List<DataRow> rows))
                 {
                     rows = new List<DataRow>();
@@ -663,21 +665,29 @@ namespace Merlin.Classes
             return row?.Table?.Columns.Contains(columnName) == true;
         }
 
+        // Слот «Добавленных выпусков» — получас + ролик + позиция: общим для выбранных
+        // кампаний считается только выпуск с тем же роликом и позицией. Без ролика в ключе
+        // получас с разными роликами на разных станциях ложно становился синим, а в список
+        // попадал ролик первой кампании (группировка как в RangeSlotIssues).
         private readonly struct IssueSlotKey : IEquatable<IssueSlotKey>
         {
             private readonly DateTime date;
             private readonly int slotIndex;
+            public readonly int RollerId;
+            public readonly int PositionId;
 
-            private IssueSlotKey(DateTime date, int slotIndex)
+            private IssueSlotKey(DateTime date, int slotIndex, int rollerId, int positionId)
             {
                 this.date = date;
                 this.slotIndex = slotIndex;
+                RollerId = rollerId;
+                PositionId = positionId;
             }
 
-            public static IssueSlotKey From(DateTime dateTime)
+            public static IssueSlotKey From(DateTime dateTime, int rollerId, int positionId)
             {
                 int slot = ((dateTime.Hour * 60) + dateTime.Minute) / 30;
-                return new IssueSlotKey(dateTime.Date, slot);
+                return new IssueSlotKey(dateTime.Date, slot, rollerId, positionId);
             }
 
             public DateTime ToDateTime()
@@ -687,7 +697,8 @@ namespace Merlin.Classes
 
             public bool Equals(IssueSlotKey other)
             {
-                return date == other.date && slotIndex == other.slotIndex;
+                return date == other.date && slotIndex == other.slotIndex
+                    && RollerId == other.RollerId && PositionId == other.PositionId;
             }
 
             public override bool Equals(object obj)
@@ -699,7 +710,9 @@ namespace Merlin.Classes
             {
                 unchecked
                 {
-                    return (date.GetHashCode() * 397) ^ slotIndex;
+                    int hash = (date.GetHashCode() * 397) ^ slotIndex;
+                    hash = (hash * 397) ^ RollerId;
+                    return (hash * 397) ^ PositionId;
                 }
             }
         }
@@ -714,7 +727,10 @@ namespace Merlin.Classes
 
             public int Compare(IssueSlotKey x, IssueSlotKey y)
             {
-                return x.ToDateTime().CompareTo(y.ToDateTime());
+                int result = x.ToDateTime().CompareTo(y.ToDateTime());
+                if (result == 0)
+                    result = x.RollerId.CompareTo(y.RollerId);
+                return result != 0 ? result : x.PositionId.CompareTo(y.PositionId);
             }
         }
     }

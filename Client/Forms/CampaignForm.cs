@@ -1829,7 +1829,7 @@ namespace Merlin.Forms
 
         // rollerID -> номер ролика, ровно тот, что показывает колонка "№" grdRollers
         // (SmartGrid.ShowRowNumbers) в её текущем порядке строк на этот момент.
-        private Dictionary<int, int> BuildRollerNumbersMap()
+        protected Dictionary<int, int> BuildRollerNumbersMap()
         {
             Dictionary<int, int> map = new Dictionary<int, int>();
             DataView view = grdRollers.DataSource;
