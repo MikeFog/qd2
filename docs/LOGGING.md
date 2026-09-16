@@ -1,4 +1,4 @@
-# Логирование в qd2
+﻿# Логирование в qd2
 
 ## Стек
 
@@ -178,6 +178,24 @@ ERROR - ExecuteNonQuery failed. Procedure: IssueIUD
         EXEC	[dbo].[IssueIUD] @issueID = NULL OUTPUT, ...       ← execScript
         System.Data.SqlClient.SqlException ...                    ← текст + стек
 ```
+
+### Ошибки чтения (`LoadDataSet`)
+
+`DataAccessor.LoadDataSet` логирует ошибку по тем же правилам (`WARN` для бизнес-отказа,
+иначе `ERROR` с `execScript` и стеком), только с префиксом `LoadDataSet failed.`:
+```
+ERROR - LoadDataSet failed. Procedure: rpt_GenericBill
+        EXEC	[dbo].[rpt_GenericBill] @actionId = 186260, ...    ← execScript
+        System.Data.SqlClient.SqlException ...                    ← текст + стек
+```
+Логирование сделано **в самом DAL**, потому что до `ErrorManager.PublishError` исключение
+чтения доходит не всегда. Пример: данные отчёта грузятся внутри обработчика события
+Crystal Reports `InitReport` (`GenericReport`), и движок гасит исключение — приложение
+продолжает работать, а в логе остаётся только INFO-строка `DbExecutionScope` **без
+`rows=`**. Отсутствие `rows=` у чтения — сам по себе признак упавшего вызова.
+
+Побочный эффект: ошибка чтения, которая всё-таки доходит до UI, пишется дважды — из DAL
+и из `ErrorManager.PublishError`. Это осознанный размен: у `ExecuteNonQuery` так же.
 
 ## Существующие логгеры в проекте
 
