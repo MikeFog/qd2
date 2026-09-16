@@ -55,6 +55,36 @@ begin
 		select @beginDate = @startDate, @endDate = @finishDate
 	end 
 
+	-- Кампания без единого выпуска в периоде счёта в счёт не попадает (решение заказчика
+	-- от 15.09.2026). Раньше такая кампания давала либо ошибку 515 (GetPriceByPeriod на
+	-- раннем выходе не присваивает @taxPrice, в @res.taxPrice уходил NULL), либо строку с
+	-- нулевой ценой и НДС соседней кампании — переменные цикла между итерациями не сбрасывались.
+	-- Проверяем факт выпусков, а не даты кампании: у части кампаний startDate/finishDate пусты
+	-- при живых выпусках (акция 185835), по датам такие кампании молча исчезли бы из счёта.
+	-- Пустой период (@beginDate is null) здесь означает «вся кампания».
+	-- Типы 2 и 4 не проверяем: там вставка идёт запросом с GROUP BY, при отсутствии выпусков
+	-- он сам не даёт ни одной строки.
+	if @campaignTypeID in (1,3)
+		and not exists (
+			select 1
+			from Issue i
+				inner join TariffWindow tw on i.originalWindowID = tw.windowID
+			where @campaignTypeID = 1 and i.campaignID = @campaignID
+				and (@beginDate is null or tw.dayOriginal between @beginDate and @endDate))
+		and not exists (
+			select 1
+			from ModuleIssue mi
+			where @campaignTypeID = 3 and mi.campaignID = @campaignID
+				and (@beginDate is null or mi.issueDate between @beginDate and @endDate))
+	begin
+		fetch next from cur_campaigns into @campaignID, @campaignTypeID, @startDate, @finishDate
+		continue
+	end
+
+	-- Сбрасываем на каждой кампании: GetPriceByPeriod на ранних выходах присваивает не все
+	-- out-параметры, и без сброса в счёт уходит цена или НДС предыдущей кампании.
+	select @price = null, @taxPrice = null
+
 	if (@campaignTypeID in (1,3))
 	begin 
 		exec GetPriceByPeriod

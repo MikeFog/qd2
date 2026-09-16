@@ -451,12 +451,49 @@ namespace FogSoft.WinForm.DataAccess
 			}
 			catch (Exception exp)
 			{
+				string execScript = null;
+
 				if (parameters != null && exp.Data != null)
 				{
 					exp.Data["Procedure"] = procedureName;
 					foreach (KeyValuePair<string, object> parameter in parameters)
 						exp.Data["Parameter: " + parameter.Key] = parameter.Value;
 				}
+
+				try
+				{
+					if (_commandParameters != null)
+					{
+						execScript = BuildExecScript(procedureName, _commandParameters);
+						if (exp.Data != null)
+							exp.Data["ExecScript"] = execScript;
+					}
+				}
+				catch
+				{
+					// ignore logging preparation errors
+				}
+
+				// Логируем здесь же, как в ExecuteNonQuery: исключение из чтения может быть
+				// проглочено выше и не дойти до ErrorManager.PublishError (например, загрузка
+				// данных отчёта идёт внутри события Crystal Reports InitReport — движок гасит
+				// исключение, и в логе остаётся только INFO-строка без rows=). См. docs/LOGGING.md.
+				if (IsHandledBusinessMessage(exp))
+				{
+					ErrorManager.Log.Warn(
+						string.Format("Отклонено бизнес-правилом. Процедура: {0} — {1}",
+							procedureName, exp.Message));
+				}
+				else
+				{
+					ErrorManager.Log.Error(
+						string.Format("LoadDataSet failed. Procedure: {0}{1}{2}",
+							procedureName,
+							Environment.NewLine,
+							execScript ?? "<ExecScript unavailable>"),
+						exp);
+				}
+
 				throw;
 			}
 		}
