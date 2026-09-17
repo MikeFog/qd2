@@ -169,6 +169,24 @@ namespace FogSoft.WinForm.Classes
 			childrenChangesList.Add(new ChildrenChanges(childEntity, addedItems, deletedItems));
 		}
 
+		/// <summary>
+		/// Записывает в базу то, что накопил <see cref="SetChildrenChanges"/>.
+		/// По умолчанию не делает ничего: связь «родитель-ребёнок» у каждого
+		/// класса своя, и знает о ней только он сам.
+		///
+		/// Существует ради веба. В десктопе накопленное разбирает
+		/// <c>Update()</c> доменного класса, но у части классов этот override
+		/// оказался в UI-половине (разрез этапа 0), и в сборку без UI не
+		/// попадает — тогда изменения набора молча терялись бы. Веб вызывает
+		/// этот метод сам, сразу после <c>Update()</c>; десктоп продолжает
+		/// звать его из своего <c>Update()</c>, то есть порядок действий
+		/// одинаковый. Повторный вызов безвреден: список очищается.
+		/// См. docs/tasks/web-migration.md, этап 2.
+		/// </summary>
+		public virtual void SubmitChildrenChanges()
+		{
+		}
+
 		#endregion
 
 		public override bool IsActionEnabled(string actionName, ViewType type)

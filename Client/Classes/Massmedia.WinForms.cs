@@ -48,24 +48,7 @@ namespace Merlin.Classes
 			if (!base.Update())
 				return false;
 
-			// Submit children changes to database 
-			foreach (ChildrenChanges childrenChanges in childrenChangesList)
-			{
-				foreach (PresentationObject po in childrenChanges.AddedObjects)
-				{
-					MassmediaAgency massmediaAgency =
-						new MassmediaAgency(((Agency) po).AgencyId, MassmediaId);
-					massmediaAgency.Update();
-				}
-
-				foreach (PresentationObject po in childrenChanges.DeletedObjects)
-				{
-					MassmediaAgency massmediaAgency =
-						new MassmediaAgency(((Agency) po).AgencyId, MassmediaId);
-					massmediaAgency.Delete(true);
-				}
-			}
-			childrenChangesList.Clear();
+			SubmitChildrenChanges();
 
 			return true;
 		}

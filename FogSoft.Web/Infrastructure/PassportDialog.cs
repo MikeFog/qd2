@@ -78,8 +78,17 @@ public sealed class PassportDialog
 
 			try
 			{
+				// Наборы дочерних объектов (selector) отдаются объекту до
+				// сохранения, как ApplyChanges в десктопе, а записываются
+				// после него: связь пишется по идентификатору родителя,
+				// которого у нового объекта до Update() ещё нет.
+				passport?.ApplyChanges();
+
 				if (obj.Update())
+				{
+					(obj as ObjectContainer)?.SubmitChildrenChanges();
 					return true;
+				}
 
 				message = "Сохранение отклонено.";
 			}

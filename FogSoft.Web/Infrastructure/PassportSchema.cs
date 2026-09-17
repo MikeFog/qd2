@@ -15,10 +15,10 @@ namespace FogSoft.Web.Infrastructure;
 /// «нарисовать» сделано намеренно: разбор не зависит от фронтенда и переживёт
 /// смену способа отрисовки.
 ///
-/// Поддержаны <c>field</c>, <c>lookup</c> и <c>objectPicker</c>. Остальные типы
-/// контролов (<c>selector</c>, <c>treeselector</c>, <c>image</c>,
-/// <c>button</c>) — продолжение этапа 2, см. docs/tasks/web-migration.md,
-/// раздел 4.2. Неизвестный элемент не молчит, а превращается в
+/// Поддержаны <c>field</c>, <c>lookup</c>, <c>objectPicker</c> и
+/// <c>selector</c>. Остальные типы контролов (<c>treeselector</c>,
+/// <c>image</c>, <c>button</c>) — продолжение этапа 2, см.
+/// docs/tasks/web-migration.md, раздел 4.2. Неизвестный элемент не молчит, а превращается в
 /// <see cref="PassportField"/> с <see cref="PassportField.Unsupported"/> —
 /// иначе поле тихо пропало бы из карточки, а данные так же тихо не сохранились.
 /// </summary>
@@ -72,6 +72,7 @@ public static class PassportSchema
 					Required: IsRequired(child, name, entity, isNew),
 					Lookup: ParseLookup(child),
 					Picker: ParsePicker(child),
+					Selector: ParseSelector(child),
 					Type: ResolveType(child, name, entity)));
 			}
 			pages.Add(page);
@@ -100,6 +101,18 @@ public static class PassportSchema
 			return string.IsNullOrEmpty(Attr(node, PageControl.Attributes.Source))
 				? "lookup с источником по entity"
 				: null;
+
+		if (node.Name == "selector")
+		{
+			// Набор строк selector берёт только готовым, из процедуры паспорта:
+			// в ObjectsSelector запасного пути по entity нет вовсе, в отличие
+			// от objectPicker.
+			if (string.IsNullOrEmpty(Attr(node, PageControl.Attributes.Source)))
+				return "selector без source";
+			return string.IsNullOrEmpty(Attr(node, PageControl.Attributes.Entity))
+				? "selector без entity"
+				: null;
+		}
 
 		if (node.Name == "objectPicker")
 		{
@@ -167,6 +180,25 @@ public static class PassportSchema
 			IsCreateNewAllowed: ParseHelper.ParseToBoolean(
 				Attr(node, PageControl.Attributes.IsCreateNewAllowed) ?? string.Empty, false),
 			Filters: ParseFilters(node));
+	}
+
+	private static PassportSelector? ParseSelector(XmlNode node)
+	{
+		if (node.Name != "selector")
+			return null;
+
+		string? source = Attr(node, PageControl.Attributes.Source);
+		string? entityName = Attr(node, PageControl.Attributes.Entity);
+		if (string.IsNullOrEmpty(source) || string.IsNullOrEmpty(entityName))
+			return null;
+
+		return new PassportSelector(
+			Source: source!,
+			EntityName: entityName!,
+			// Без multiselect грид в десктопе рисуется без колонки с галочками
+			// (ObjectsSelector.HasCheckBox), то есть список только для чтения.
+			Multiselect: ParseHelper.ParseToBoolean(
+				Attr(node, PageControl.Attributes.Multiselect) ?? string.Empty, false));
 	}
 
 	/// <summary>
@@ -242,6 +274,7 @@ public sealed class PassportPage
 /// <param name="Lookup">Описание выпадающего списка; null — это не lookup.</param>
 /// <param name="Picker">Описание выбора объекта; null — это не objectPicker.</param>
 /// <param name="Type">Разрешённый тип значения; null у полей, где он не нужен.</param>
+/// <param name="Selector">Описание набора дочерних объектов; null — это не selector.</param>
 public sealed record PassportField(
 	string Name,
 	string Caption,
@@ -250,7 +283,8 @@ public sealed record PassportField(
 	bool Required = false,
 	PassportLookup? Lookup = null,
 	PassportPicker? Picker = null,
-	FieldTypeResolver? Type = null);
+	FieldTypeResolver? Type = null,
+	PassportSelector? Selector = null);
 
 /// <param name="Source">Псевдоним набора строк из процедуры паспорта (iTableAlias).</param>
 /// <param name="ColumnWithId">Колонка со значением, которое уходит в процедуру.</param>
@@ -276,3 +310,11 @@ public sealed record PassportPicker(
 /// <param name="Value">Значение как записано в XML.</param>
 /// <param name="Type">Тип для FieldTypeResolver либо parameter / parameter_isnew.</param>
 public sealed record PassportFilterValue(string Name, string Value, string Type);
+
+/// <param name="Source">Псевдоним набора строк из процедуры паспорта (iTableAlias).</param>
+/// <param name="EntityName">Сущность строк набора: из неё берутся колонки и объекты.</param>
+/// <param name="Multiselect">Есть ли галочки; без них список только для чтения.</param>
+public sealed record PassportSelector(
+	string Source,
+	string EntityName,
+	bool Multiselect);

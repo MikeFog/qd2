@@ -53,6 +53,44 @@ else
                             (этап 2). Значение не редактируется и не сохраняется.
                         </div>
                     }
+                    else if (field.Selector != null)
+                    {
+                        <div style="max-height:40vh; overflow:auto">
+                            <table class="table table-sm table-hover mb-0">
+                                <thead>
+                                    <tr>
+                                        @if (field.Selector.Multiselect)
+                                        {
+                                            <th style="width:2rem"></th>
+                                        }
+                                        @foreach (var a in SelectorColumns(field))
+                                        {
+                                            <th>@a.Alias</th>
+                                        }
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    @foreach (DataRowView row in SelectorRows(field))
+                                    {
+                                        <tr>
+                                            @if (field.Selector.Multiselect)
+                                            {
+                                                <td>
+                                                    <input type="checkbox" class="form-check-input"
+                                                           checked="@IsSelected(row)"
+                                                           @onchange="e => ToggleSelected(field, row, e.Value)" />
+                                                </td>
+                                            }
+                                            @foreach (var a in SelectorColumns(field))
+                                            {
+                                                <td>@CellText(row, a.Name)</td>
+                                            }
+                                        </tr>
+                                    }
+                                </tbody>
+                            </table>
+                        </div>
+                    }
                     else if (field.Picker != null)
                     {
                         <div class="input-group">
@@ -180,6 +218,9 @@ else
 
     private static string AsText(object? v) =>
         v == null || v == DBNull.Value ? "" : v.ToString() ?? "";
+
+    private static string CellText(DataRowView row, string column) =>
+        row.Row.Table.Columns.Contains(column) ? AsText(row[column]) : "";
 
     // ---------- lookup ----------
 
@@ -343,6 +384,113 @@ else
     {
         _pickerNames.Remove(field.Name);
         _pickerNamesFor.Remove(field.Name);
+    }
+
+    // ---------- selector ----------
+
+    // Колонка с состоянием галочки. Имя то же, что в SmartGrid.COL_IsSelected:
+    // его заполняет процедура паспорта (в massmediaPassport — CASE ... END as
+    // isObjectSelected), и именно по нему открытая карточка показывает, что уже
+    // связано с объектом.
+    private const string SelectedColumn = "isObjectSelected";
+
+    /// <summary>
+    /// Что отметили и что сняли — по одному набору на selector. Ровно та же
+    /// пара списков, что копит SmartGrid.CheckedStatusChanged: повторная
+    /// отметка снятого не добавляет объект, а убирает его из снятых.
+    /// </summary>
+    private sealed class SelectorChanges
+    {
+        public readonly List<PresentationObject> Added = new();
+        public readonly List<PresentationObject> Removed = new();
+    }
+
+    private readonly Dictionary<string, SelectorChanges> _selectorChanges =
+        new(StringComparer.OrdinalIgnoreCase);
+
+    private SelectorChanges ChangesOf(PassportField field)
+    {
+        // Ключ — подпись: у selector-а может не быть имени (в паспорте
+        // радиостанции его нет), а на странице их бывает несколько.
+        string key = field.Name.Length > 0 ? field.Name : field.Caption;
+        if (!_selectorChanges.TryGetValue(key, out SelectorChanges? changes))
+            _selectorChanges[key] = changes = new SelectorChanges();
+        return changes;
+    }
+
+    private IReadOnlyList<Entity.Attribute> SelectorColumns(PassportField field) =>
+        EntityManager.GetEntity(field.Selector!.EntityName).SortedAttributes;
+
+    private DataView SelectorRows(PassportField field)
+    {
+        string source = field.Selector!.Source;
+        if (Data == null || !Data.Tables.Contains(source))
+            return Empty;
+
+        DataTable table = Data.Tables[source]!;
+
+        // Набор может прийти без колонки состояния — тогда не отмечено ничего.
+        // SmartGrid.DataSource делает то же самое.
+        if (!table.Columns.Contains(SelectedColumn))
+            table.Columns.Add(new DataColumn(SelectedColumn, typeof(bool)) { DefaultValue = false });
+
+        return new DataView(table);
+    }
+
+    private static bool IsSelected(DataRowView row)
+    {
+        object value = row[SelectedColumn];
+        return value != DBNull.Value && Convert.ToBoolean(value);
+    }
+
+    private void ToggleSelected(PassportField field, DataRowView row, object? value)
+    {
+        bool on = value is bool b && b;
+        row[SelectedColumn] = on;
+
+        PresentationObject obj = EntityManager.GetEntity(field.Selector!.EntityName).CreateObject(row.Row);
+        SelectorChanges changes = ChangesOf(field);
+
+        if (on)
+        {
+            if (!changes.Removed.Remove(obj))
+                changes.Added.Add(obj);
+        }
+        else
+        {
+            if (!changes.Added.Remove(obj))
+                changes.Removed.Add(obj);
+        }
+    }
+
+    /// <summary>
+    /// Отдаёт накопленное редактируемому объекту — дословно то, что делает
+    /// ObjectsSelector.ApplyChanges. Записывает не здесь: в базу это уйдёт
+    /// вместе с сохранением самого объекта, см. ObjectContainer.SubmitChildrenChanges.
+    /// </summary>
+    public void ApplyChanges()
+    {
+        if (Object is not IParentObject parent)
+            return;
+
+        foreach (var pg in _pages)
+            foreach (var field in pg.Fields)
+            {
+                if (field.Selector == null || field.Unsupported != null)
+                    continue;
+
+                SelectorChanges changes = ChangesOf(field);
+                if (changes.Added.Count == 0 && changes.Removed.Count == 0)
+                    continue;
+
+                parent.SetChildrenChanges(
+                    EntityManager.GetEntity(field.Selector.EntityName),
+                    new List<PresentationObject>(changes.Added),
+                    new List<PresentationObject>(changes.Removed));
+
+                changes.Added.Clear();
+                changes.Removed.Clear();
+            }
     }
 
     /// <summary>
