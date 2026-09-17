@@ -3,6 +3,7 @@
 @using FogSoft.Web.Infrastructure
 @using FogSoft.WinForm
 @using FogSoft.WinForm.Classes
+@using FogSoft.WinForm.Passport.Classes
 @inject PassportDialog Passports
 @inject MenuAccess Access
 
@@ -69,6 +70,8 @@ else
             </div>
         </header>
 
+        <FilterPanel Pages="_filterPages" Values="_root.Container.Filter" FilterData="_filterData" Apply="ApplyFilter" />
+
         <div class="browser-body">
             <nav class="browser-tree">
                 <BrowserNodeView Node="_root" Selected="_selected"
@@ -105,6 +108,13 @@ else
     private bool _canOpen;
     private bool _canDelete;
 
+    // Страницы отбора и набор строк для его lookup/objectPicker — тот же
+    // разрез, что у Journal.razor. У сценария отбор либо есть, либо нет
+    // целиком (IsFilterable), в отличие от журнала здесь нет отдельной
+    // сущности экрана — источник и того, и другого один: RelationScenario.
+    private IReadOnlyList<PassportPage> _filterPages = Array.Empty<PassportPage>();
+    private DataSet? _filterData;
+
     protected override void OnParametersSet()
     {
         if (SecurityManager.LoggedUser == null)
@@ -121,6 +131,7 @@ else
         {
             _error = null;
             BrowserRoute route = MenuRoutes.Browser[Code];
+            RelationScenario scenario = RelationManager.GetScenario(route.Scenario);
 
             // Контейнер строится ровно как в MDIForm: имя корня, набор действий
             // и сценарий связей. Действия в вебе не рисуются панелью, но
@@ -132,7 +143,19 @@ else
                     new Entity.Action(Constants.EntityActions.Refresh, "Обновить"),
                     new Entity.Action(Constants.EntityActions.AddNew, "Добавить"),
                 },
-                RelationManager.GetScenario(route.Scenario));
+                scenario);
+
+            // Фильтруемость — целиком по сценарию (FakeContainer.IsFilterable:
+            // есть ли XmlFilter). У двух сценариев из восьми его нет — тогда
+            // страниц нет, и FilterPanel сама себя не покажет.
+            _filterPages = container.IsFilterable
+                ? PassportSchema.Parse(scenario.XmlFilter, scenario.StartingEntity, pageType: PageTypes.Filter)
+                : Array.Empty<PassportPage>();
+
+            // Та же процедура фильтра, что у журнала (Globals.PrepareForFilter),
+            // только по стартовой сущности сценария — она же читает фильтр в
+            // десктопном FakeContainer.ShowFilter.
+            _filterData = NeedsFilterData(_filterPages) ? Globals.PrepareForFilter(scenario.StartingEntity) : null;
 
             _root = new BrowserNode { Name = container.Name, Container = container, Expandable = true };
             Select(_root);
@@ -142,6 +165,32 @@ else
             _error = ErrorPresenter.Describe(ex);
             _root = null;
         }
+    }
+
+    private static bool NeedsFilterData(IReadOnlyList<PassportPage> pages)
+    {
+        foreach (var pg in pages)
+            foreach (var f in pg.Fields)
+                if (f.Unsupported == null && (f.Lookup != null || f.Picker != null))
+                    return true;
+        return false;
+    }
+
+    /// <summary>
+    /// Применить отбор — перестроить дерево с корня, а не только перечитать
+    /// список. ObjectsIterator.CreateChilObject раздаёт копию фильтра
+    /// (CacheFilterValues) каждому уже созданному дочернему объекту, поэтому
+    /// узлы, раскрытые до применения, помнят старый отбор. Десктоп делает то
+    /// же самое: OnContainerRefreshed очищает узел и раскрывает его заново.
+    /// </summary>
+    private void ApplyFilter()
+    {
+        if (_root == null)
+            return;
+
+        _root.Children = null;
+        _root.Expanded = false;
+        Select(_root);
     }
 
     // ---------- Дерево ----------

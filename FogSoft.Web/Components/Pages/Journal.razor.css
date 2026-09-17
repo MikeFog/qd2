@@ -31,81 +31,6 @@
     gap: var(--s-2);
 }
 
-/* ---------- Отбор ---------- */
-
-.filter {
-    background: var(--c-surface);
-    border: 1px solid var(--c-border);
-    border-radius: 6px;
-    margin-bottom: var(--s-4);
-}
-
-/* Сворачивается: у некоторых сущностей в отборе десять полей, и развёрнутый
-   он съедал бы экран целиком. */
-.filter-toggle {
-    display: flex;
-    align-items: center;
-    gap: var(--s-2);
-    width: 100%;
-    padding: var(--s-2) var(--s-4);
-    border: none;
-    background: none;
-    font-size: 13px;
-    font-weight: 600;
-    color: var(--c-text-muted);
-    text-align: left;
-}
-
-.filter-caret {
-    font-size: 10px;
-}
-
-.filter-body {
-    padding: 0 var(--s-4) var(--s-4);
-    border-top: 1px solid var(--c-border);
-    padding-top: var(--s-4);
-}
-
-/* Три колонки: галочка «использовать», подпись, значение. Подписи и поля
-   выстраиваются друг под другом — это и отличает деловую форму от набора
-   строк, поставленных рядом. */
-.filter-grid {
-    display: grid;
-    grid-template-columns: auto minmax(120px, 240px) minmax(200px, 420px);
-    gap: var(--s-2) var(--s-3);
-    align-items: center;
-}
-
-.filter-label {
-    font-size: 13px;
-    color: var(--c-text);
-    margin: 0;
-}
-
-/* Логическое поле само себе подпись — занимает всю ширину сетки. */
-.filter-check {
-    grid-column: 1 / -1;
-    display: flex;
-    align-items: center;
-    gap: var(--s-2);
-}
-
-.filter-check .form-check-label {
-    font-size: 13px;
-}
-
-.filter-note {
-    grid-column: 1 / -1;
-    font-size: 12px;
-    color: var(--c-text-muted);
-}
-
-.filter-foot {
-    margin-top: var(--s-4);
-    padding-top: var(--s-3);
-    border-top: 1px solid var(--c-border);
-}
-
 /* ---------- Список ---------- */
 
 /* Экран — колонка: шапка и отбор занимают сколько нужно, список забирает
@@ -119,8 +44,13 @@
     min-height: 0;
 }
 
-.journal > .screen-head,
-.journal > .filter {
+.journal > .screen-head {
+    flex: 0 0 auto;
+}
+
+/* Панель отбора — отдельный компонент (FilterPanel), поэтому ::deep: её
+   разметка принадлежит чужой области видимости стилей, как и у списка ниже. */
+.journal ::deep .filter {
     flex: 0 0 auto;
 }
 

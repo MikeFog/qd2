@@ -1,13 +1,11 @@
 @page "/journal/{EntityId:int}"
 @using System.Data
-@using System.Globalization
 @using FogSoft.Web.Infrastructure
 @using FogSoft.WinForm
 @using FogSoft.WinForm.Classes
 @using FogSoft.WinForm.Passport.Classes
 @inject PassportDialog Passports
 @inject MenuAccess Access
-@inject DialogService Dialogs
 
 @*
     Движок журнала: список объектов сущности, фильтр и карточка — всё по
@@ -75,102 +73,7 @@ else
     </header>
 
     @* ---------- Фильтр ---------- *@
-    @if (_filterPages.Count > 0)
-    {
-        <section class="filter">
-            <button type="button" class="filter-toggle" @onclick="() => _filterOpen = !_filterOpen">
-                <span class="filter-caret">@(_filterOpen ? "▾" : "▸")</span>
-                Отбор
-            </button>
-
-            @if (_filterOpen)
-            {
-                <div class="filter-body">
-                    <div class="filter-grid">
-                        @foreach (var pg in _filterPages)
-                        {
-                            @foreach (var field in pg.Fields)
-                            {
-                                @if (field.Unsupported != null)
-                                {
-                                    @* Проверка Unsupported тут обязательна и должна идти первой:
-                                       без неё lookup, у которого источник задан через entity, а
-                                       не через source, молча превратился бы в поле для ввода
-                                       текста — и туда можно было бы написать что угодно вместо
-                                       выбора из списка. *@
-                                    <div class="filter-note">
-                                        @field.Caption — @field.Unsupported в фильтре пока не поддержан (этап 2).
-                                    </div>
-                                }
-                                else if (field.Type is { IsBoolean: true })
-                                {
-                                    <div class="filter-check">
-                                        <input type="checkbox" class="form-check-input" id="@("f_" + field.Name)"
-                                               checked="@GetFilterBool(field.Name)"
-                                               @onchange="e => SetFilterBool(field.Name, e.Value)" />
-                                        <label class="form-check-label" for="@("f_" + field.Name)">@field.Caption</label>
-                                    </div>
-                                }
-                                else
-                                {
-                                    @* Галочка «использовать» — левая колонка десктопного
-                                       PageField: в режиме фильтра там не подпись, а CheckBox,
-                                       и параметр уходит в процедуру только когда он отмечен
-                                       (ValueShouldBeSet). *@
-                                    <input type="checkbox" class="form-check-input"
-                                           checked="@IsFilterUsed(field.Name)"
-                                           @onchange="e => UseFilter(field, e.Value)" />
-                                    <label class="filter-label">@field.Caption</label>
-
-                                    @if (field.Lookup != null)
-                                    {
-                                        @* Пустого пункта в списке нет: в фильтре пустоту
-                                           выражает снятая галочка, а не пустая строка
-                                           (десктопное Lookup.IsNullable = isNullable &&
-                                           PageType == Passport, то есть всегда false в фильтре). *@
-                                        <select class="form-select form-select-sm"
-                                                disabled="@(!IsFilterUsed(field.Name))"
-                                                value="@FilterLookupValue(field)"
-                                                @onchange="e => SetFilterLookup(field, e.Value)">
-                                            @foreach (DataRowView row in FilterLookupRows(field))
-                                            {
-                                                <option value="@AsFilterText(row[field.Lookup.ColumnWithId])">@FilterLookupDisplay(row)</option>
-                                            }
-                                        </select>
-                                    }
-                                    else if (field.Picker != null)
-                                    {
-                                        @* Кнопки «Создать» в фильтре нет — PageFieldObjectPicker
-                                           гасит её при PageTypes.Filter независимо от
-                                           isCreateNewAllowed. *@
-                                        <div class="input-group input-group-sm">
-                                            <input class="form-control" readonly
-                                                   disabled="@(!IsFilterUsed(field.Name))"
-                                                   value="@FilterPickerName(field)" />
-                                            <button type="button" class="btn btn-outline-secondary"
-                                                    disabled="@(!IsFilterUsed(field.Name))"
-                                                    @onclick="() => SelectFilterPicker(field)">Выбрать</button>
-                                        </div>
-                                    }
-                                    else
-                                    {
-                                        <input type="@InputType(field)" class="form-control form-control-sm"
-                                               disabled="@(!IsFilterUsed(field.Name))"
-                                               value="@GetFilterText(field)"
-                                               @onchange="e => SetFilterText(field, e.Value)" />
-                                    }
-                                }
-                            }
-                        }
-                    </div>
-
-                    <div class="filter-foot">
-                        <button class="btn btn-sm btn-outline-secondary" @onclick="Load">Применить</button>
-                    </div>
-                </div>
-            }
-        </section>
-    }
+    <FilterPanel Pages="_filterPages" Values="_filterValues" FilterData="_filterData" Apply="Load" />
 
     @* ---------- Список ---------- *@
     @* Кнопки гасятся по тем же правам и теми же вызовами, что в десктопном
@@ -200,18 +103,7 @@ else
     // нет процедуры фильтра — тогда контролы грузят список сами по entity.
     private DataSet? _filterData;
 
-    // Запасной путь lookup-а по entity и разрешение имени objectPicker бьют в
-    // базу, поэтому кэшируются на время жизни компонента — иначе каждый
-    // перерендер (например, ввод в соседнем поле фильтра) читал бы их заново.
-    private readonly Dictionary<string, DataTable> _filterLookupCache =
-        new(StringComparer.OrdinalIgnoreCase);
-    private readonly Dictionary<string, string> _filterPickerNames =
-        new(StringComparer.OrdinalIgnoreCase);
-    private readonly Dictionary<string, string> _filterPickerNamesFor =
-        new(StringComparer.OrdinalIgnoreCase);
-
     private string? _error;
-    private bool _filterOpen = true;
     private JournalAccess _access = JournalAccess.Allowed;
     private bool _canAdd;
     private bool _canOpen;
@@ -248,9 +140,6 @@ else
             // грузится только если в фильтре реально есть lookup/objectPicker,
             // которым есть куда её девать: большинство журналов обходятся без
             // неё, и незачем лишний раз идти в базу.
-            _filterLookupCache.Clear();
-            _filterPickerNames.Clear();
-            _filterPickerNamesFor.Clear();
             _filterData = NeedsFilterData(_filterPages) ? Globals.PrepareForFilter(_entity) : null;
 
             // Значения фильтра по умолчанию берутся из самих метаданных —
@@ -287,246 +176,6 @@ else
         {
             _error = ErrorPresenter.Describe(ex);
         }
-    }
-
-    /// <summary>
-    /// Значения фильтра хранятся так же, как в десктопе — словарём
-    /// «имя параметра → значение», который уходит прямо в GetContent.
-    /// Своей типизации не вводим: процедура ждёт тот же набор.
-    /// </summary>
-    private bool GetFilterBool(string name) =>
-        _filterValues.TryGetValue(name, out object? v)
-        && v != null
-        && bool.TryParse(v.ToString(), out bool b)
-        && b;
-
-    private void SetFilterBool(string name, object? value)
-    {
-        // ResolveFilterInitialValues кладёт значения строками ("True"),
-        // поэтому и мы пишем строкой — иначе при сравнении фильтров
-        // (ObjectsIterator.IsNewFilter) типы разъедутся.
-        _filterValues[name] = (value is bool b && b).ToString();
-    }
-
-    /// <summary>
-    /// Используется ли параметр. Ровно то же, что делает десктоп: галочка в
-    /// левой колонке фильтра отмечена, когда значение есть
-    /// (PageField.SetValue), а неотмеченное поле из параметров удаляется
-    /// (ApplyChanges при !ValueShouldBeSet).
-    /// </summary>
-    private bool IsFilterUsed(string name) => _filterValues.ContainsKey(name);
-
-    private void UseFilter(PassportField field, object? value)
-    {
-        if (value is bool on && on)
-            _filterValues[field.Name] = InitialFilterValue(field);
-        else
-            _filterValues.Remove(field.Name);
-    }
-
-    /// <summary>
-    /// Значение, которое ставится в момент, когда галочку «использовать»
-    /// только что отметили.
-    ///
-    /// У lookup-а в фильтре нет пустого пункта — список всегда показывает
-    /// первую строку (десктопное Lookup.IsNullable = false в PageTypes.Filter,
-    /// а присвоение DataSource само встаёт на нулевой индекс). Не подставить
-    /// её здесь означало бы разойтись с тем, что видно на экране: список
-    /// показывал бы первую строку, а в процедуру ушло бы пустое значение.
-    ///
-    /// objectPicker пустого выбора не боится (десктопный ApplyChanges при
-    /// SelectedObject == null просто не пишет параметр, даже если галочка
-    /// отмечена) — значение выставляется только после «Выбрать».
-    /// </summary>
-    private object InitialFilterValue(PassportField field)
-    {
-        if (field.Lookup != null)
-        {
-            foreach (DataRowView row in FilterLookupRows(field))
-                return row[field.Lookup.ColumnWithId];
-            return DBNull.Value;
-        }
-
-        if (field.Picker != null)
-            return DBNull.Value;
-
-        return "";
-    }
-
-    private static string InputType(PassportField field) =>
-        field.Type switch
-        {
-            { IsDate: true } => "date",
-            { IsInteger: true } or { IsDecimal: true } or { IsMoney: true } => "number",
-            _ => "text"
-        };
-
-    /// <summary>
-    /// Значение для поля ввода.
-    ///
-    /// В словаре фильтра значения лежат строками в культуре системы — так их
-    /// кладёт ResolveFilterInitialValues, и так их ждёт разбор параметров
-    /// процедуры. HTML-инпуты живут по своим правилам: <c>type="date"</c>
-    /// отдаёт и принимает только ISO, <c>type="number"</c> — только точку как
-    /// разделитель дробной части. Поэтому оба типа переводятся туда и обратно.
-    /// Это тот самый стык из раздела 7 п.5 плана, и он не теоретический:
-    /// без перевода чисел ввод «0.5» падал с «The input string '0.5' was not
-    /// in a correct format».
-    /// </summary>
-    private string GetFilterText(PassportField field)
-    {
-        if (!_filterValues.TryGetValue(field.Name, out object? value) || value == null)
-            return "";
-
-        string text = value.ToString() ?? "";
-        if (text.Length == 0)
-            return text;
-
-        if (field.Type is { IsDate: true })
-            return DateTime.TryParse(text, out DateTime date) ? date.ToString("yyyy-MM-dd") : "";
-
-        if (IsFractional(field))
-            return decimal.TryParse(text, out decimal number)
-                ? number.ToString(CultureInfo.InvariantCulture)
-                : "";
-
-        return text;
-    }
-
-    private void SetFilterText(PassportField field, object? value)
-    {
-        string text = value?.ToString() ?? "";
-
-        // Обратный перевод: в процедуру должна уйти строка того же вида, что у
-        // значений из метаданных, иначе один и тот же фильтр выглядел бы
-        // по-разному в зависимости от того, кто его заполнил.
-        if (text.Length > 0)
-        {
-            if (field.Type is { IsDate: true })
-                text = DateTime.TryParse(text, out DateTime date) ? date.ToString() : "";
-            else if (IsFractional(field))
-                text = decimal.TryParse(text, NumberStyles.Number, CultureInfo.InvariantCulture, out decimal number)
-                    ? number.ToString()
-                    : "";
-        }
-
-        _filterValues[field.Name] = text;
-    }
-
-    // Целые числа разделителя не имеют, переводить нечего.
-    private static bool IsFractional(PassportField field) =>
-        field.Type is { IsDecimal: true } or { IsMoney: true };
-
-    // ---------- lookup фильтра ----------
-
-    private static string AsFilterText(object? v) =>
-        v == null || v == DBNull.Value ? "" : v.ToString() ?? "";
-
-    /// <summary>
-    /// Строки списка. Готовый набор по source, если он есть в _filterData,
-    /// иначе — запасной путь по entity (PickerData.LookupRows), закэшированный
-    /// на время жизни компонента: без кэша каждый перерендер страницы читал бы
-    /// сущность заново.
-    /// </summary>
-    private DataView FilterLookupRows(PassportField field)
-    {
-        if (!_filterLookupCache.TryGetValue(field.Name, out DataTable? table))
-        {
-            table = PickerData.LookupRows(field.Lookup!, _filterData) ?? new DataTable();
-            _filterLookupCache[field.Name] = table;
-        }
-        return new DataView(table);
-    }
-
-    private static string FilterLookupDisplay(DataRowView row) =>
-        row.Row.Table.Columns.Contains(Constants.Parameters.Name)
-            ? AsFilterText(row[Constants.Parameters.Name])
-            : "(в наборе нет колонки name)";
-
-    /// <summary>
-    /// Значение для &lt;select&gt;. Пока галочка не отмечена, ключа в
-    /// _filterValues ещё нет — показываем первую строку списка, ровно то же
-    /// значение, что InitialFilterValue поставит в момент отметки: иначе
-    /// список визуально показывал бы первую строку (так уже ведёт себя HTML
-    /// &lt;select&gt; без пустого пункта), пока подставленное значение с ней
-    /// не совпадало бы.
-    /// </summary>
-    private string FilterLookupValue(PassportField field)
-    {
-        if (_filterValues.TryGetValue(field.Name, out object? v) && v != null && v != DBNull.Value)
-            return AsFilterText(v);
-
-        foreach (DataRowView row in FilterLookupRows(field))
-            return AsFilterText(row[field.Lookup!.ColumnWithId]);
-        return "";
-    }
-
-    private void SetFilterLookup(PassportField field, object? value)
-    {
-        string selected = value?.ToString() ?? "";
-
-        // В процедуру должно уйти значение того же типа, что в наборе строк
-        // (int, а не строка из разметки), поэтому берём его из самой строки —
-        // тот же приём, что и у lookup-а паспорта (Passport.razor.WriteLookup).
-        object result = DBNull.Value;
-        foreach (DataRowView row in FilterLookupRows(field))
-            if (AsFilterText(row[field.Lookup!.ColumnWithId]) == selected)
-            {
-                result = row[field.Lookup!.ColumnWithId];
-                break;
-            }
-
-        _filterValues[field.Name] = result;
-    }
-
-    // ---------- objectPicker фильтра ----------
-
-    /// <summary>
-    /// Имя выбранного объекта. Разрешение стоит обращения к базе
-    /// (PickerData.NameOf), поэтому результат держится, пока не изменится
-    /// сохранённый идентификатор — тот же приём, что у objectPicker паспорта
-    /// (Passport.razor.PickerName).
-    /// </summary>
-    private string FilterPickerName(PassportField field)
-    {
-        _filterValues.TryGetValue(field.Name, out object? raw);
-        string id = AsFilterText(raw);
-
-        if (_filterPickerNamesFor.TryGetValue(field.Name, out string? resolvedFor) && resolvedFor == id)
-            return _filterPickerNames[field.Name];
-
-        string name = PickerData.NameOf(field.Picker!, _filterData, raw);
-        _filterPickerNames[field.Name] = name;
-        _filterPickerNamesFor[field.Name] = id;
-        return name;
-    }
-
-    private async Task SelectFilterPicker(PassportField field)
-    {
-        ObjectSelector? selector = null;
-
-        RenderFragment body = builder =>
-        {
-            builder.OpenComponent<ObjectSelector>(0);
-            builder.AddComponentParameter(1, nameof(ObjectSelector.Picker), field.Picker);
-            builder.AddComponentParameter(2, nameof(ObjectSelector.PassportData), _filterData);
-            builder.AddComponentReferenceCapture(3, c => selector = (ObjectSelector)c);
-            builder.CloseComponent();
-        };
-
-        if (await Dialogs.ShowAsync("Выбрать объект", body, okText: "Выбрать") != DialogOutcome.Ok)
-            return;
-
-        // Пустой выбор — не команда очистить: тот же случай, что и у
-        // objectPicker паспорта (Passport.razor.Select). Очистка — снятие
-        // галочки «использовать».
-        if (selector?.SelectedRow == null)
-            return;
-
-        Entity entity = EntityManager.GetEntity(field.Picker!.EntityName);
-        _filterValues[field.Name] = entity.CreateObject(selector.SelectedRow).IDs[0] ?? (object)DBNull.Value;
-        _filterPickerNames.Remove(field.Name);
-        _filterPickerNamesFor.Remove(field.Name);
     }
 
     private async Task AddNew()
