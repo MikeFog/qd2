@@ -30,31 +30,26 @@
 
 @if (SecurityManager.LoggedUser == null)
 {
-    <div class="alert alert-warning">
-        Нужно <a href="/">войти в систему</a>.
+    <div class="state">
+        <div class="state-title">Вы не вошли в систему</div>
+        <a href="/">Перейти к входу</a>
     </div>
 }
 else if (_access == JournalAccess.Denied)
 {
-    <div class="alert alert-warning" style="max-width: 40rem">
-        <h5>Доступ закрыт</h5>
-        <p class="mb-0">
-            Этот журнал вам не разрешён. Права на экраны выдаются вместе с пунктами
-            меню — обратитесь к администратору системы.
-        </p>
+    <div class="state">
+        <div class="state-title">Доступ закрыт</div>
+        Этот журнал вам не разрешён. Права на экраны выдаются вместе с пунктами
+        меню — обратитесь к администратору системы.
     </div>
-    <a class="btn btn-outline-secondary btn-sm mt-2" href="/">На главную</a>
 }
 else if (_access == JournalAccess.NotPorted)
 {
-    <div class="alert alert-secondary" style="max-width: 40rem">
-        <h5>Экран не перенесён</h5>
-        <p class="mb-0">
-            Журнала сущности <code>@EntityId</code> в вебе пока нет — на неё не ведёт
-            ни один перенесённый пункт меню. Это не ограничение прав.
-        </p>
+    <div class="state">
+        <div class="state-title">Экран не перенесён</div>
+        Журнала сущности @EntityId в вебе пока нет — на неё не ведёт ни один
+        перенесённый пункт меню. Это не ограничение прав.
     </div>
-    <a class="btn btn-outline-secondary btn-sm mt-2" href="/">На главную</a>
 }
 else if (_error != null)
 {
@@ -62,166 +57,165 @@ else if (_error != null)
 }
 else if (_entity == null)
 {
-    <p>Загрузка…</p>
+    <div class="state">Загрузка…</div>
 }
 else
 {
-    <h3>@_entity.Name</h3>
+    <div class="journal">
+
+    @* Шапка экрана: название слева, единственное главное действие справа.
+       Счётчик записей рядом с названием, а не под кнопкой: это свойство
+       списка, а не результат действия. *@
+    <header class="screen-head">
+        <h3>@_entity.Name</h3>
+        <span class="screen-count">@(_data?.Rows.Count ?? 0)</span>
+        <div class="screen-actions">
+            <button class="btn btn-primary btn-sm" disabled="@(!_canAdd)" @onclick="AddNew">Добавить</button>
+        </div>
+    </header>
 
     @* ---------- Фильтр ---------- *@
     @if (_filterPages.Count > 0)
     {
-        <div class="card mb-3" style="max-width: 40rem">
-            <div class="card-body py-2">
-                @foreach (var pg in _filterPages)
-                {
-                    @foreach (var field in pg.Fields)
-                    {
-                        @if (field.Unsupported != null)
+        <section class="filter">
+            <button type="button" class="filter-toggle" @onclick="() => _filterOpen = !_filterOpen">
+                <span class="filter-caret">@(_filterOpen ? "▾" : "▸")</span>
+                Отбор
+            </button>
+
+            @if (_filterOpen)
+            {
+                <div class="filter-body">
+                    <div class="filter-grid">
+                        @foreach (var pg in _filterPages)
                         {
-                            @* Проверка Unsupported тут обязательна и должна идти первой:
-                               без неё lookup, у которого источник задан через entity, а
-                               не через source, молча превратился бы в поле для ввода
-                               текста — и туда можно было бы написать что угодно вместо
-                               выбора из списка. *@
-                            <div class="text-muted small">
-                                @field.Caption — @field.Unsupported в фильтре
-                                пока не поддержан (этап 2).
-                            </div>
-                        }
-                        else if (field.Lookup != null)
-                        {
-                            @* Галочка «использовать» — как у обычных полей. Пустого пункта
-                               в списке нет: в фильтре пустоту выражает снятая галочка, а не
-                               пустая строка (десктопное Lookup.IsNullable = isNullable &&
-                               PageType == Passport, то есть всегда false в фильтре). *@
-                            <div class="row g-2 align-items-center mb-1">
-                                <div class="col-auto">
-                                    <input type="checkbox" class="form-check-input"
-                                           checked="@IsFilterUsed(field.Name)"
-                                           @onchange="e => UseFilter(field, e.Value)" />
-                                </div>
-                                <div class="col-5">
-                                    <label class="form-label mb-0 small">@field.Caption</label>
-                                </div>
-                                <div class="col">
-                                    <select class="form-select form-select-sm"
-                                            disabled="@(!IsFilterUsed(field.Name))"
-                                            value="@FilterLookupValue(field)"
-                                            @onchange="e => SetFilterLookup(field, e.Value)">
-                                        @foreach (DataRowView row in FilterLookupRows(field))
-                                        {
-                                            <option value="@AsFilterText(row[field.Lookup.ColumnWithId])">@FilterLookupDisplay(row)</option>
-                                        }
-                                    </select>
-                                </div>
-                            </div>
-                        }
-                        else if (field.Picker != null)
-                        {
-                            @* Кнопки «Создать» в фильтре нет — PageFieldObjectPicker гасит
-                               её при PageTypes.Filter независимо от isCreateNewAllowed. *@
-                            <div class="row g-2 align-items-center mb-1">
-                                <div class="col-auto">
-                                    <input type="checkbox" class="form-check-input"
-                                           checked="@IsFilterUsed(field.Name)"
-                                           @onchange="e => UseFilter(field, e.Value)" />
-                                </div>
-                                <div class="col-5">
-                                    <label class="form-label mb-0 small">@field.Caption</label>
-                                </div>
-                                <div class="col">
-                                    <div class="input-group input-group-sm">
-                                        <input class="form-control" readonly
-                                               disabled="@(!IsFilterUsed(field.Name))"
-                                               value="@FilterPickerName(field)" />
-                                        <button type="button" class="btn btn-outline-secondary"
-                                                disabled="@(!IsFilterUsed(field.Name))"
-                                                @onclick="() => SelectFilterPicker(field)">Выбрать</button>
+                            @foreach (var field in pg.Fields)
+                            {
+                                @if (field.Unsupported != null)
+                                {
+                                    @* Проверка Unsupported тут обязательна и должна идти первой:
+                                       без неё lookup, у которого источник задан через entity, а
+                                       не через source, молча превратился бы в поле для ввода
+                                       текста — и туда можно было бы написать что угодно вместо
+                                       выбора из списка. *@
+                                    <div class="filter-note">
+                                        @field.Caption — @field.Unsupported в фильтре пока не поддержан (этап 2).
                                     </div>
-                                </div>
-                            </div>
-                        }
-                        else if (field.Type is { IsBoolean: true })
-                        {
-                            <div class="form-check">
-                                <input type="checkbox" class="form-check-input" id="@("f_" + field.Name)"
-                                       checked="@GetFilterBool(field.Name)"
-                                       @onchange="e => SetFilterBool(field.Name, e.Value)" />
-                                <label class="form-check-label" for="@("f_" + field.Name)">@field.Caption</label>
-                            </div>
-                        }
-                        else
-                        {
-                            @* Непустое поле фильтра — галочка «использовать» плюс сам ввод.
-                               Это левая колонка десктопного PageField: в режиме фильтра там
-                               не подпись, а CheckBox, и параметр уходит в процедуру только
-                               когда он отмечен (ValueShouldBeSet). *@
-                            <div class="row g-2 align-items-center mb-1">
-                                <div class="col-auto">
+                                }
+                                else if (field.Type is { IsBoolean: true })
+                                {
+                                    <div class="filter-check">
+                                        <input type="checkbox" class="form-check-input" id="@("f_" + field.Name)"
+                                               checked="@GetFilterBool(field.Name)"
+                                               @onchange="e => SetFilterBool(field.Name, e.Value)" />
+                                        <label class="form-check-label" for="@("f_" + field.Name)">@field.Caption</label>
+                                    </div>
+                                }
+                                else
+                                {
+                                    @* Галочка «использовать» — левая колонка десктопного
+                                       PageField: в режиме фильтра там не подпись, а CheckBox,
+                                       и параметр уходит в процедуру только когда он отмечен
+                                       (ValueShouldBeSet). *@
                                     <input type="checkbox" class="form-check-input"
                                            checked="@IsFilterUsed(field.Name)"
                                            @onchange="e => UseFilter(field, e.Value)" />
-                                </div>
-                                <div class="col-5">
-                                    <label class="form-label mb-0 small">@field.Caption</label>
-                                </div>
-                                <div class="col">
-                                    <input type="@InputType(field)" class="form-control form-control-sm"
-                                           disabled="@(!IsFilterUsed(field.Name))"
-                                           value="@GetFilterText(field)"
-                                           @onchange="e => SetFilterText(field, e.Value)" />
-                                </div>
-                            </div>
+                                    <label class="filter-label">@field.Caption</label>
+
+                                    @if (field.Lookup != null)
+                                    {
+                                        @* Пустого пункта в списке нет: в фильтре пустоту
+                                           выражает снятая галочка, а не пустая строка
+                                           (десктопное Lookup.IsNullable = isNullable &&
+                                           PageType == Passport, то есть всегда false в фильтре). *@
+                                        <select class="form-select form-select-sm"
+                                                disabled="@(!IsFilterUsed(field.Name))"
+                                                value="@FilterLookupValue(field)"
+                                                @onchange="e => SetFilterLookup(field, e.Value)">
+                                            @foreach (DataRowView row in FilterLookupRows(field))
+                                            {
+                                                <option value="@AsFilterText(row[field.Lookup.ColumnWithId])">@FilterLookupDisplay(row)</option>
+                                            }
+                                        </select>
+                                    }
+                                    else if (field.Picker != null)
+                                    {
+                                        @* Кнопки «Создать» в фильтре нет — PageFieldObjectPicker
+                                           гасит её при PageTypes.Filter независимо от
+                                           isCreateNewAllowed. *@
+                                        <div class="input-group input-group-sm">
+                                            <input class="form-control" readonly
+                                                   disabled="@(!IsFilterUsed(field.Name))"
+                                                   value="@FilterPickerName(field)" />
+                                            <button type="button" class="btn btn-outline-secondary"
+                                                    disabled="@(!IsFilterUsed(field.Name))"
+                                                    @onclick="() => SelectFilterPicker(field)">Выбрать</button>
+                                        </div>
+                                    }
+                                    else
+                                    {
+                                        <input type="@InputType(field)" class="form-control form-control-sm"
+                                               disabled="@(!IsFilterUsed(field.Name))"
+                                               value="@GetFilterText(field)"
+                                               @onchange="e => SetFilterText(field, e.Value)" />
+                                    }
+                                }
+                            }
                         }
-                    }
-                }
-                <button class="btn btn-sm btn-outline-primary mt-2" @onclick="Load">Применить</button>
-            </div>
-        </div>
+                    </div>
+
+                    <div class="filter-foot">
+                        <button class="btn btn-sm btn-outline-secondary" @onclick="Load">Применить</button>
+                    </div>
+                </div>
+            }
+        </section>
     }
 
     @* ---------- Список ---------- *@
     @* Кнопки гасятся по тем же правам и теми же вызовами, что в десктопном
        JournalForm (tsbNew/tsbEdit). Это только удобство: настоящая проверка
        стоит на исполнении, в DataAccessor.DoAction. *@
-    <div class="mb-2">
-        <button class="btn btn-sm btn-primary" disabled="@(!_canAdd)" @onclick="AddNew">Добавить</button>
-        <span class="text-muted ms-2">Записей: @(_data?.Rows.Count ?? 0)</span>
-    </div>
-
     @if (_data != null)
     {
-        <div style="overflow-x:auto">
-            <table class="table table-sm table-hover" style="max-width: 60rem">
-                <thead>
-                    <tr>
-                        @foreach (var a in _columns)
-                        {
-                            <th>@a.Alias</th>
-                        }
-                        <th style="width:7rem"></th>
-                    </tr>
-                </thead>
-                <tbody>
-                    @foreach (DataRow row in _data.Rows)
-                    {
+        @if (_data.Rows.Count == 0)
+        {
+            <div class="state">Записей нет. Измените условия отбора.</div>
+        }
+        else
+        {
+            <div class="data-table journal-table">
+                <table class="table table-hover">
+                    <thead>
                         <tr>
                             @foreach (var a in _columns)
                             {
-                                <td>@Display(row, a.Name)</td>
+                                <th>@a.Alias</th>
                             }
-                            <td>
-                                <button class="btn btn-sm btn-outline-secondary" disabled="@(!_canOpen)"
-                                        @onclick="() => Edit(row)">Открыть</button>
-                            </td>
+                            <th class="col-actions"></th>
                         </tr>
-                    }
-                </tbody>
-            </table>
-        </div>
+                    </thead>
+                    <tbody>
+                        @foreach (DataRow row in _data.Rows)
+                        {
+                            <tr>
+                                @foreach (var a in _columns)
+                                {
+                                    <td>@Display(row, a.Name)</td>
+                                }
+                                <td class="col-actions">
+                                    <button class="btn btn-sm btn-outline-secondary" disabled="@(!_canOpen)"
+                                            @onclick="() => Edit(row)">Открыть</button>
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        }
     }
 
+    </div>
 }
 
 @code {
@@ -251,6 +245,7 @@ else
         new(StringComparer.OrdinalIgnoreCase);
 
     private string? _error;
+    private bool _filterOpen = true;
     private JournalAccess _access = JournalAccess.Allowed;
     private bool _canAdd;
     private bool _canOpen;

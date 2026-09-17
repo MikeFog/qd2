@@ -14,20 +14,20 @@
 
 @if (_error != null)
 {
-    <div class="alert alert-danger">@_error</div>
+    <div class="alert alert-danger mb-0">@_error</div>
 }
 else if (_data == null)
 {
-    <p>Загрузка…</p>
+    <div class="state">Загрузка…</div>
 }
 else if (_data.Rows.Count == 0)
 {
-    <div class="alert alert-secondary mb-0">Выбирать не из чего: список пуст.</div>
+    <div class="state">Выбирать не из чего: список пуст.</div>
 }
 else
 {
-    <div style="max-height:50vh; overflow:auto">
-        <table class="table table-sm table-hover">
+    <div class="data-table picker-table">
+        <table class="table table-hover">
             <thead>
                 <tr>
                     @foreach (var a in _columns)

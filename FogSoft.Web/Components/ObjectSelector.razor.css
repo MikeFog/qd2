@@ -1,0 +1,9 @@
+/* Диалог выбора объекта: список во всю ширину окна со своей прокруткой. */
+
+.picker-table {
+    max-height: 55vh;
+}
+
+::deep tbody tr {
+    cursor: pointer;
+}

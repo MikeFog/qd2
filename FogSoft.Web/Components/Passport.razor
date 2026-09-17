@@ -21,154 +21,160 @@
 
 @if (_pages.Count == 0)
 {
-    <div class="alert alert-warning">У сущности нет паспорта в метаданных.</div>
+    <div class="state">У сущности нет паспорта в метаданных.</div>
 }
 else
 {
-    @* Переменная цикла НЕ должна называться page: Razor принимает @page.Caption
-       за директиву @page и падает на разборе (RZ2005). *@
-    @foreach (var pg in _pages)
+    @* Страницы паспорта — вкладками, как tabPassport в десктопной PassportForm.
+       До этого все страницы шли одной колонкой: у радиостанции их шесть, и
+       карточка выходила длиной в три экрана. *@
+    @if (_pages.Count > 1)
     {
-        <fieldset class="mb-3">
-            @if (!string.IsNullOrEmpty(pg.Caption))
+        <div class="tabs" role="tablist">
+            @for (int i = 0; i < _pages.Count; i++)
             {
-                <legend class="fs-6 text-muted">@pg.Caption</legend>
+                int index = i;
+                <button type="button" role="tab"
+                        class="tab @(index == _activePage ? "tab-active" : "")"
+                        @onclick="() => _activePage = index">
+                    @(_pages[index].Caption is { Length: > 0 } c ? c : $"Страница {index + 1}")
+                </button>
             }
+        </div>
+    }
 
-            @foreach (var field in pg.Fields)
-            {
-                <div class="mb-2">
-                    <label class="form-label">
-                        @field.Caption
-                        @if (field.Required)
-                        {
-                            <span class="text-danger">*</span>
-                        }
-                    </label>
+    <div class="passport-grid">
+        @foreach (var field in CurrentPage.Fields)
+        {
+            bool wide = field.Selector != null || field.Image != null || field.Unsupported != null;
 
-                    @if (field.Unsupported != null)
-                    {
-                        <div class="alert alert-secondary py-1 mb-0">
-                            Контрол <code>@field.Unsupported</code> пока не поддержан
-                            (этап 2). Значение не редактируется и не сохраняется.
-                        </div>
-                    }
-                    else if (field.Image != null)
-                    {
-                        <div>
-                            @if (ImageBytes(field) is { Length: > 0 } bytes)
-                            {
-                                <div class="mb-2">
-                                    <img src="@DataUrl(bytes)" alt="@field.Caption"
-                                         style="max-height:@(field.Image.Height)px; max-width:100%" />
-                                </div>
-                            }
-                            else
-                            {
-                                <div class="text-muted small mb-2">Нет изображения.</div>
-                            }
+            <div class="passport-label @(wide ? "passport-label-wide" : "")">
+                @field.Caption
+                @if (field.Required)
+                {
+                    <span class="required">*</span>
+                }
+            </div>
 
-                            <div class="input-group input-group-sm">
-                                <InputFile class="form-control" accept="image/*"
-                                           OnChange="e => LoadImage(field, e)" />
-                                <button type="button" class="btn btn-outline-secondary"
-                                        @onclick="() => ClearImage(field)">Очистить</button>
-                            </div>
-
-                            @if (_imageError != null)
-                            {
-                                <div class="text-danger small mt-1">@_imageError</div>
-                            }
-                        </div>
-                    }
-                    else if (field.Selector != null)
+            <div class="passport-control @(wide ? "passport-control-wide" : "")">
+                @if (field.Unsupported != null)
+                {
+                    <div class="alert alert-secondary mb-0">
+                        Контрол <code>@field.Unsupported</code> пока не поддержан (этап 2).
+                        Значение не редактируется и не сохраняется.
+                    </div>
+                }
+                else if (field.Image != null)
+                {
+                    @if (ImageBytes(field) is { Length: > 0 } bytes)
                     {
-                        <div style="max-height:40vh; overflow:auto">
-                            <table class="table table-sm table-hover mb-0">
-                                <thead>
-                                    <tr>
-                                        @if (field.Selector.Multiselect)
-                                        {
-                                            <th style="width:2rem"></th>
-                                        }
-                                        @foreach (var a in SelectorColumns(field))
-                                        {
-                                            <th>@a.Alias</th>
-                                        }
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    @foreach (DataRowView row in SelectorRows(field))
-                                    {
-                                        <tr>
-                                            @if (field.Selector.Multiselect)
-                                            {
-                                                <td>
-                                                    <input type="checkbox" class="form-check-input"
-                                                           checked="@IsSelected(row)"
-                                                           @onchange="e => ToggleSelected(field, row, e.Value)" />
-                                                </td>
-                                            }
-                                            @foreach (var a in SelectorColumns(field))
-                                            {
-                                                <td>@CellText(row, a.Name)</td>
-                                            }
-                                        </tr>
-                                    }
-                                </tbody>
-                            </table>
-                        </div>
-                    }
-                    else if (field.Picker != null)
-                    {
-                        <div class="input-group">
-                            <input class="form-control" readonly value="@PickerName(field)" />
-                            <button type="button" class="btn btn-outline-secondary"
-                                    @onclick="() => Select(field)">Выбрать</button>
-                            @if (field.Picker.IsCreateNewAllowed)
-                            {
-                                <button type="button" class="btn btn-outline-secondary"
-                                        @onclick="() => CreateNew(field)">Создать</button>
-                            }
-                            <button type="button" class="btn btn-outline-secondary"
-                                    @onclick="() => Clear(field)">Очистить</button>
-                        </div>
-                    }
-                    else if (field.Lookup != null)
-                    {
-                        <select class="form-select"
-                                value="@ReadString(field.Name)"
-                                @onchange="e => WriteLookup(field, e.Value)">
-                            @* Пустой пункт — аналог пустой строки, которую
-                               LookUp.DataSource вставляет при IsNullable. *@
-                            @if (!field.Required)
-                            {
-                                <option value=""></option>
-                            }
-                            @foreach (DataRowView row in RowsFor(field))
-                            {
-                                <option value="@AsText(row[field.Lookup.ColumnWithId])">@DisplayOf(row)</option>
-                            }
-                        </select>
-                    }
-                    else if (IsBoolean(field))
-                    {
-                        <div>
-                            <input type="checkbox" class="form-check-input"
-                                   checked="@ReadBool(field.Name)"
-                                   @onchange="e => WriteBool(field.Name, e.Value)" />
+                        <div class="mb-2">
+                            <img src="@DataUrl(bytes)" alt="@field.Caption"
+                                 style="max-height:@(field.Image.Height)px; max-width:100%" />
                         </div>
                     }
                     else
                     {
-                        <input class="form-control"
-                               value="@ReadString(field.Name)"
-                               @onchange="e => WriteString(field.Name, e.Value)" />
+                        <div class="text-muted small mb-2">Нет изображения.</div>
                     }
-                </div>
-            }
-        </fieldset>
-    }
+
+                    <div class="input-group input-group-sm">
+                        <InputFile class="form-control" accept="image/*"
+                                   OnChange="e => LoadImage(field, e)" />
+                        <button type="button" class="btn btn-outline-secondary"
+                                @onclick="() => ClearImage(field)">Очистить</button>
+                    </div>
+
+                    @if (_imageError != null)
+                    {
+                        <div class="text-danger small mt-1">@_imageError</div>
+                    }
+                }
+                else if (field.Selector != null)
+                {
+                    <div class="data-table selector-table">
+                        <table class="table table-hover">
+                            <thead>
+                                <tr>
+                                    @if (field.Selector.Multiselect)
+                                    {
+                                        <th class="col-check"></th>
+                                    }
+                                    @foreach (var a in SelectorColumns(field))
+                                    {
+                                        <th>@a.Alias</th>
+                                    }
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @foreach (DataRowView row in SelectorRows(field))
+                                {
+                                    <tr>
+                                        @if (field.Selector.Multiselect)
+                                        {
+                                            <td class="col-check">
+                                                <input type="checkbox" class="form-check-input"
+                                                       checked="@IsSelected(row)"
+                                                       @onchange="e => ToggleSelected(field, row, e.Value)" />
+                                            </td>
+                                        }
+                                        @foreach (var a in SelectorColumns(field))
+                                        {
+                                            <td>@CellText(row, a.Name)</td>
+                                        }
+                                    </tr>
+                                }
+                            </tbody>
+                        </table>
+                    </div>
+                }
+                else if (field.Picker != null)
+                {
+                    <div class="input-group input-group-sm">
+                        <input class="form-control" readonly value="@PickerName(field)" />
+                        <button type="button" class="btn btn-outline-secondary"
+                                @onclick="() => Select(field)">Выбрать</button>
+                        @if (field.Picker.IsCreateNewAllowed)
+                        {
+                            <button type="button" class="btn btn-outline-secondary"
+                                    @onclick="() => CreateNew(field)">Создать</button>
+                        }
+                        <button type="button" class="btn btn-outline-secondary"
+                                @onclick="() => Clear(field)">Очистить</button>
+                    </div>
+                }
+                else if (field.Lookup != null)
+                {
+                    <select class="form-select form-select-sm"
+                            value="@ReadString(field.Name)"
+                            @onchange="e => WriteLookup(field, e.Value)">
+                        @* Пустой пункт — аналог пустой строки, которую
+                           LookUp.DataSource вставляет при IsNullable. *@
+                        @if (!field.Required)
+                        {
+                            <option value=""></option>
+                        }
+                        @foreach (DataRowView row in RowsFor(field))
+                        {
+                            <option value="@AsText(row[field.Lookup.ColumnWithId])">@DisplayOf(row)</option>
+                        }
+                    </select>
+                }
+                else if (IsBoolean(field))
+                {
+                    <input type="checkbox" class="form-check-input"
+                           checked="@ReadBool(field.Name)"
+                           @onchange="e => WriteBool(field.Name, e.Value)" />
+                }
+                else
+                {
+                    <input class="form-control form-control-sm"
+                           value="@ReadString(field.Name)"
+                           @onchange="e => WriteString(field.Name, e.Value)" />
+                }
+            </div>
+        }
+    </div>
 }
 
 @code {
@@ -195,9 +201,18 @@ else
 
     private IReadOnlyList<PassportPage> _pages = Array.Empty<PassportPage>();
 
+    /// <summary>Открытая вкладка — аналог tabPassport.SelectedIndex.</summary>
+    private int _activePage;
+
+    // Свойство, а не переменная в разметке: локальную пришлось бы объявлять
+    // через @{ }, а это внутри уже открытого блока кода Razor не разрешает.
+    private PassportPage CurrentPage => _pages[Math.Min(_activePage, _pages.Count - 1)];
+
     protected override void OnParametersSet()
     {
         _pages = PassportSchema.Parse(Xml, Entity, IsNew);
+        if (_activePage >= _pages.Count)
+            _activePage = 0;
         PreselectRequired();
     }
 
@@ -600,8 +615,8 @@ else
     /// </summary>
     public string? Validate()
     {
-        foreach (var pg in _pages)
-            foreach (var field in pg.Fields)
+        for (int i = 0; i < _pages.Count; i++)
+            foreach (var field in _pages[i].Fields)
             {
                 if (field.Unsupported != null || !field.Required)
                     continue;
@@ -610,6 +625,12 @@ else
 
                 if (ReadString(field.Name).Length > 0)
                     continue;
+
+                // Открыть вкладку с незаполненным полем — так же делает
+                // десктоп: PassportForm на PassportException переключает
+                // tabPassport.SelectedIndex на страницу с ошибкой. Иначе
+                // пользователь читает сообщение о поле, которого не видит.
+                _activePage = i;
 
                 MessageAccessor.Parameters = new Dictionary<string, object>(
                     1, StringComparer.InvariantCultureIgnoreCase) { { "controlName", field.Caption } };

@@ -1,0 +1,138 @@
+/*
+    Экран журнала: шапка, панель отбора, список.
+
+    Главная разница с прежним видом — выравнивание. Поля отбора стоят в
+    колонках (галочка, подпись, значение), а не каждое своей строкой, и список
+    занимает всю оставшуюся высоту со своей прокруткой, а не растёт вниз за
+    пределы экрана.
+*/
+
+.screen-head {
+    display: flex;
+    align-items: center;
+    gap: var(--s-3);
+    margin-bottom: var(--s-4);
+}
+
+/* Счётчик записей — свойство списка, поэтому стоит рядом с названием. */
+.screen-count {
+    padding: 2px var(--s-2);
+    border-radius: 10px;
+    background: var(--c-bg);
+    border: 1px solid var(--c-border);
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--c-text-muted);
+}
+
+.screen-actions {
+    margin-left: auto;
+    display: flex;
+    gap: var(--s-2);
+}
+
+/* ---------- Отбор ---------- */
+
+.filter {
+    background: var(--c-surface);
+    border: 1px solid var(--c-border);
+    border-radius: 6px;
+    margin-bottom: var(--s-4);
+}
+
+/* Сворачивается: у некоторых сущностей в отборе десять полей, и развёрнутый
+   он съедал бы экран целиком. */
+.filter-toggle {
+    display: flex;
+    align-items: center;
+    gap: var(--s-2);
+    width: 100%;
+    padding: var(--s-2) var(--s-4);
+    border: none;
+    background: none;
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--c-text-muted);
+    text-align: left;
+}
+
+.filter-caret {
+    font-size: 10px;
+}
+
+.filter-body {
+    padding: 0 var(--s-4) var(--s-4);
+    border-top: 1px solid var(--c-border);
+    padding-top: var(--s-4);
+}
+
+/* Три колонки: галочка «использовать», подпись, значение. Подписи и поля
+   выстраиваются друг под другом — это и отличает деловую форму от набора
+   строк, поставленных рядом. */
+.filter-grid {
+    display: grid;
+    grid-template-columns: auto minmax(120px, 240px) minmax(200px, 420px);
+    gap: var(--s-2) var(--s-3);
+    align-items: center;
+}
+
+.filter-label {
+    font-size: 13px;
+    color: var(--c-text);
+    margin: 0;
+}
+
+/* Логическое поле само себе подпись — занимает всю ширину сетки. */
+.filter-check {
+    grid-column: 1 / -1;
+    display: flex;
+    align-items: center;
+    gap: var(--s-2);
+}
+
+.filter-check .form-check-label {
+    font-size: 13px;
+}
+
+.filter-note {
+    grid-column: 1 / -1;
+    font-size: 12px;
+    color: var(--c-text-muted);
+}
+
+.filter-foot {
+    margin-top: var(--s-4);
+    padding-top: var(--s-3);
+    border-top: 1px solid var(--c-border);
+}
+
+/* ---------- Список ---------- */
+
+/* Экран — колонка: шапка и отбор занимают сколько нужно, список забирает
+   остаток. Сначала высота списка считалась формулой от высоты окна, но панель
+   отбора у разных сущностей разной высоты (у «Фирм» семь полей), и список
+   уезжал за нижний край. */
+.journal {
+    flex: 1 1 auto;
+    display: flex;
+    flex-direction: column;
+    min-height: 0;
+}
+
+.journal > .screen-head,
+.journal > .filter {
+    flex: 0 0 auto;
+}
+
+/* Список прокручивается сам, вместе с липкой шапкой. Иначе на 40 тысячах
+   строк прокручивалась бы вся страница и заголовки колонок уезжали бы наверх. */
+.journal-table {
+    flex: 1 1 auto;
+    min-height: 140px;
+}
+
+::deep .col-actions {
+    width: 1%;
+    white-space: nowrap;
+    text-align: right;
+}
