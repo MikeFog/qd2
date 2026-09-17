@@ -1,5 +1,8 @@
+@using System.Data
 @using FogSoft.Web.Infrastructure
+@using FogSoft.WinForm
 @using FogSoft.WinForm.Classes
+@using FogSoft.WinForm.DataAccess
 
 @*
     Движок паспорта: строит карточку объекта по XML из метаданных.
@@ -8,6 +11,10 @@
     повторён дословно: значения полей кладутся в PresentationObject по имени
     параметра, затем вызывается Update() — та же IUD-процедура, что и в
     десктопе, никакого своего SQL.
+
+    Источник строк для lookup — набор из процедуры паспорта
+    (PresentationObject.LoadPassportData), псевдоним набора берётся из
+    атрибута source. Ровно как в PageFieldLookUp: source → DataSet.Tables[source].
 *@
 
 @if (_pages.Count == 0)
@@ -29,7 +36,13 @@ else
             @foreach (var field in pg.Fields)
             {
                 <div class="mb-2">
-                    <label class="form-label">@field.Caption</label>
+                    <label class="form-label">
+                        @field.Caption
+                        @if (field.Required)
+                        {
+                            <span class="text-danger">*</span>
+                        }
+                    </label>
 
                     @if (field.Unsupported != null)
                     {
@@ -37,6 +50,23 @@ else
                             Контрол <code>@field.Unsupported</code> пока не поддержан
                             (этап 2). Значение не редактируется и не сохраняется.
                         </div>
+                    }
+                    else if (field.Lookup != null)
+                    {
+                        <select class="form-select"
+                                value="@ReadString(field.Name)"
+                                @onchange="e => WriteLookup(field, e.Value)">
+                            @* Пустой пункт — аналог пустой строки, которую
+                               LookUp.DataSource вставляет при IsNullable. *@
+                            @if (!field.Required)
+                            {
+                                <option value=""></option>
+                            }
+                            @foreach (DataRowView row in RowsFor(field))
+                            {
+                                <option value="@AsText(row[field.Lookup.ColumnWithId])">@DisplayOf(row)</option>
+                            }
+                        </select>
                     }
                     else if (IsBoolean(field))
                     {
@@ -65,18 +95,59 @@ else
     /// <summary>XML паспорта из метаданных сущности.</summary>
     [Parameter, EditorRequired] public string? Xml { get; set; }
 
+    /// <summary>
+    /// Сущность — нужна только для обязательности полей: она берётся из
+    /// nullability колонок, как в PageField.
+    /// </summary>
+    [Parameter] public Entity? Entity { get; set; }
+
+    /// <summary>Новый объект: влияет на атрибут isMandatoryOnCreate.</summary>
+    [Parameter] public bool IsNew { get; set; }
+
+    /// <summary>
+    /// Наборы строк для lookup-ов — результат PresentationObject.LoadPassportData().
+    /// null, если у сущности нет процедуры паспорта.
+    /// </summary>
+    [Parameter] public DataSet? Data { get; set; }
+
     private IReadOnlyList<PassportPage> _pages = Array.Empty<PassportPage>();
 
-    protected override void OnParametersSet() => _pages = PassportSchema.Parse(Xml);
+    protected override void OnParametersSet()
+    {
+        _pages = PassportSchema.Parse(Xml, Entity, IsNew);
+        PreselectRequired();
+    }
+
+    /// <summary>
+    /// У обязательного lookup-а пустого пункта нет, поэтому незаполненное
+    /// значение показать нечем. Десктоп в этом случае стоит на первой строке
+    /// списка и сохраняет именно её: присвоение LookUp.DataSource выбирает
+    /// нулевой индекс и поднимает SelectedItemChanged. Повторяем это явно —
+    /// иначе выпадающий список выглядел бы пустым, а сохранение отклонялось
+    /// бы как незаполненное.
+    /// </summary>
+    private void PreselectRequired()
+    {
+        foreach (var pg in _pages)
+            foreach (var field in pg.Fields)
+            {
+                if (field.Lookup == null || field.Unsupported != null || !field.Required)
+                    continue;
+                if (ReadString(field.Name).Length > 0)
+                    continue;
+
+                foreach (DataRowView row in RowsFor(field))
+                {
+                    Object[field.Name] = row[field.Lookup.ColumnWithId];
+                    break;
+                }
+            }
+    }
 
     private bool IsBoolean(PassportField f) =>
         string.Equals(f.XmlType, "boolean", StringComparison.OrdinalIgnoreCase);
 
-    private string ReadString(string name)
-    {
-        object? v = Object[name];
-        return v == null || v == DBNull.Value ? "" : v.ToString() ?? "";
-    }
+    private string ReadString(string name) => AsText(Object[name]);
 
     private void WriteString(string name, object? value) =>
         Object[name] = value?.ToString() ?? "";
@@ -89,4 +160,118 @@ else
 
     private void WriteBool(string name, object? value) =>
         Object[name] = value is bool b ? b : false;
+
+    private static string AsText(object? v) =>
+        v == null || v == DBNull.Value ? "" : v.ToString() ?? "";
+
+    // ---------- lookup ----------
+
+    /// <summary>
+    /// Строки списка. Повторяет PageFieldLookUp / PageFieldDependentLookup:
+    /// независимый lookup показывает весь набор, зависимый — набор,
+    /// отфильтрованный выражением из атрибута filter по значению родителя, а
+    /// при незаполненном родителе не показывает ничего (в десктопе там
+    /// Lookup.DataSource = null).
+    /// </summary>
+    private DataView RowsFor(PassportField field)
+    {
+        PassportLookup lookup = field.Lookup!;
+
+        if (Data == null || !Data.Tables.Contains(lookup.Source))
+            return Empty;
+
+        DataTable table = Data.Tables[lookup.Source]!;
+        if (lookup.ParentLookupName == null)
+            return new DataView(table);
+
+        string parent = AsText(Object[lookup.ParentLookupName]);
+        if (parent.Length == 0)
+            return Empty;
+
+        return new DataView(table) { RowFilter = string.Format(lookup.ParentFilter ?? "", parent) };
+    }
+
+    /// <summary>Пустой список — в десктопе это Lookup.DataSource = null.</summary>
+    private static DataView Empty => new DataTable().DefaultView;
+
+    private string DisplayOf(DataRowView row) =>
+        row.Row.Table.Columns.Contains(Constants.Parameters.Name)
+            ? AsText(row[Constants.Parameters.Name])
+            : "(в наборе нет колонки name)";
+
+    private void WriteLookup(PassportField field, object? value)
+    {
+        PassportLookup lookup = field.Lookup!;
+        string selected = value?.ToString() ?? "";
+
+        // В процедуру должно уйти значение того же типа, что в наборе строк
+        // (int, а не строка из разметки), поэтому берём его из самой строки.
+        object result = DBNull.Value;
+        if (selected.Length > 0)
+            foreach (DataRowView row in RowsFor(field))
+                if (AsText(row[lookup.ColumnWithId]) == selected)
+                {
+                    result = row[lookup.ColumnWithId];
+                    break;
+                }
+
+        Object[field.Name] = result;
+        ResetDependent(field.Name);
+    }
+
+    /// <summary>
+    /// Смена родителя меняет состав зависимого списка, поэтому его значение
+    /// нужно выбрать заново — иначе в процедуру уйдёт значение, которого в
+    /// новом списке нет. Десктоп делает это неявно: присвоение DataSource
+    /// переводит комбо на первый пункт. Зависимости бывают цепочками
+    /// (радиостанция → модуль → прайс-лист), поэтому обход рекурсивный.
+    /// </summary>
+    private void ResetDependent(string parentName)
+    {
+        foreach (var pg in _pages)
+            foreach (var field in pg.Fields)
+            {
+                if (field.Lookup?.ParentLookupName != parentName)
+                    continue;
+
+                object result = DBNull.Value;
+                if (field.Required)
+                    foreach (DataRowView row in RowsFor(field))
+                    {
+                        result = row[field.Lookup.ColumnWithId];
+                        break;
+                    }
+
+                Object[field.Name] = result;
+                ResetDependent(field.Name);
+            }
+    }
+
+    /// <summary>
+    /// Первое нарушение обязательности или null. Аналог ValidateUserInput +
+    /// PassportException: текст берётся из того же ключа iMessage, что и в
+    /// десктопе, с той же подстановкой подписи контрола.
+    ///
+    /// Проверяются только lookup-ы: обязательность обычных полей в вебе пока
+    /// не проверяется вообще, и вводить её здесь — отдельная работа, которая
+    /// начнёт отклонять сохранения, проходящие сегодня.
+    /// </summary>
+    public string? Validate()
+    {
+        foreach (var pg in _pages)
+            foreach (var field in pg.Fields)
+            {
+                if (field.Lookup == null || field.Unsupported != null || !field.Required)
+                    continue;
+
+                if (ReadString(field.Name).Length > 0)
+                    continue;
+
+                MessageAccessor.Parameters = new Dictionary<string, object>(
+                    1, StringComparer.InvariantCultureIgnoreCase) { { "controlName", field.Caption } };
+                return MessageAccessor.GetMessage("MandatoryFieldViolation");
+            }
+
+        return null;
+    }
 }

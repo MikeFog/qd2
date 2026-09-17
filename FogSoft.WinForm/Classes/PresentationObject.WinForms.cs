@@ -1,8 +1,6 @@
 using System;
-using System.Collections.Generic;
 using System.Data;
 using System.Windows.Forms;
-using FogSoft.WinForm.DataAccess;
 using FogSoft.WinForm.Passport.Forms;
 
 namespace FogSoft.WinForm.Classes
@@ -20,15 +18,7 @@ namespace FogSoft.WinForm.Classes
 				if(!entity.HasPassport) return false;
 
 				// load data to display Passport
-				Dictionary<string, object> procParameters = Parameters;
-				DataAccessor.PrepareParameters(
-					procParameters, entity, InterfaceObjects.PropertyPage, Constants.Actions.Load);
-
-				DataSet ds = null;
-				if(DataAccessor.IsProcedureExist(procParameters))
-				{
-					ds = DataAccessor.DoAction(procParameters) as DataSet;
-				}
+				DataSet ds = LoadPassportData();
 
 				bool isNewObject = IsNew;
 

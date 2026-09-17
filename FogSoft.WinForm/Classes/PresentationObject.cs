@@ -106,6 +106,27 @@ namespace FogSoft.WinForm.Classes
 			return res;
 		}
 
+		/// <summary>
+		/// Данные для паспорта: наборы строк для lookup-ов и селекторов
+		/// (процедура с ключом EntityId_Load_PropertyPage, псевдонимы наборов —
+		/// из iTableAlias). null, если процедуры нет: часть паспортов обходится
+		/// без справочников.
+		///
+		/// Вынесено из ShowPassport (PresentationObject.WinForms.cs) без изменений,
+		/// чтобы тем же путём данные брал и веб. См. docs/tasks/web-migration.md,
+		/// этап 2.
+		/// </summary>
+		public DataSet LoadPassportData()
+		{
+			Dictionary<string, object> procParameters = Parameters;
+			DataAccessor.PrepareParameters(
+				procParameters, entity, InterfaceObjects.PropertyPage, Constants.Actions.Load);
+
+			return DataAccessor.IsProcedureExist(procParameters)
+				? DataAccessor.DoAction(procParameters) as DataSet
+				: null;
+		}
+
 		public virtual bool Update()
 		{
 			Dictionary<string, object> procParameters = Parameters;

@@ -151,6 +151,10 @@ else
 
     private PresentationObject? _editing;
     private bool _isNew;
+    // Наборы строк для lookup-ов открытой карточки и ссылка на сам компонент —
+    // через неё проверяется заполненность обязательных полей перед сохранением.
+    private DataSet? _passportData;
+    private Passport? _passport;
     private bool _saving;
     private string? _error;
     private string? _saveError;
@@ -276,6 +280,9 @@ else
         _editing = obj;
         _isNew = isNew;
         _saveError = null;
+        // Справочники для lookup-ов грузятся один раз на открытие карточки —
+        // там же, где их берёт десктоп (PresentationObject.ShowPassport).
+        _passportData = obj.LoadPassportData();
 
         while (true)
         {
@@ -286,8 +293,16 @@ else
             if (outcome != DialogOutcome.Ok)
             {
                 _editing = null;
+                _passportData = null;
                 return;
             }
+
+            // Обязательные поля проверяются до обращения к процедуре — как
+            // ApplyChanges в десктопе, который на PassportException оставляет
+            // форму открытой.
+            _saveError = _passport?.Validate();
+            if (_saveError != null)
+                continue;
 
             // Сохранение может не пройти (проверки в процедуре). Тогда диалог
             // открывается снова с сообщением — как модальная форма десктопа,
@@ -295,6 +310,7 @@ else
             if (TrySave(obj))
             {
                 _editing = null;
+                _passportData = null;
                 Load();
                 return;
             }
@@ -314,6 +330,10 @@ else
         builder.OpenComponent<Passport>(3);
         builder.AddComponentParameter(4, nameof(Passport.Object), obj);
         builder.AddComponentParameter(5, nameof(Passport.Xml), _entity!.XmlPassport);
+        builder.AddComponentParameter(6, nameof(Passport.Entity), _entity);
+        builder.AddComponentParameter(7, nameof(Passport.IsNew), _isNew);
+        builder.AddComponentParameter(8, nameof(Passport.Data), _passportData);
+        builder.AddComponentReferenceCapture(9, c => _passport = (Passport)c);
         builder.CloseComponent();
     };
 
