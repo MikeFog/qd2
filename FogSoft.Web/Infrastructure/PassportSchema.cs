@@ -49,22 +49,30 @@ public static class PassportSchema
 				if (child.NodeType != XmlNodeType.Element)
 					continue;
 
-				string? name = Attr(child, PageControl.Attributes.Name);
-				if (string.IsNullOrEmpty(name))
+				// Разделитель — единственный элемент, который действительно нечего
+				// показывать. Всё остальное без имени пропускать нельзя: у
+				// selector-а в паспорте радиостанции атрибута name нет вовсе
+				// (значение он пишет не по имени поля, а по сущности, см.
+				// ObjectsSelector.ApplyChanges), и страница «Агентства»
+				// получалась пустой — ровно то молчание, которого этот разбор
+				// должен избегать.
+				if (child.Name == "separator")
 					continue;
 
+				string name = Attr(child, PageControl.Attributes.Name) ?? string.Empty;
+
 				page.Fields.Add(new PassportField(
-					Name: name!,
-					Caption: Attr(child, PageControl.Attributes.Caption) ?? name!,
+					Name: name,
+					Caption: Attr(child, PageControl.Attributes.Caption) ?? name,
 					// type в метаданных указан не всегда: у паспорта сущности 17
 					// его нет, тип берётся из атрибутов сущности. Здесь — только
 					// то, что явно записано в XML.
 					XmlType: Attr(child, PageControl.Attributes.Type),
 					Unsupported: Unsupported(child),
-					Required: IsRequired(child, name!, entity, isNew),
+					Required: IsRequired(child, name, entity, isNew),
 					Lookup: ParseLookup(child),
 					Picker: ParsePicker(child),
-					Type: ResolveType(child, name!, entity)));
+					Type: ResolveType(child, name, entity)));
 			}
 			pages.Add(page);
 		}
@@ -73,6 +81,13 @@ public static class PassportSchema
 
 	private static string? Unsupported(XmlNode node)
 	{
+		// Поле, список и выбор объекта пишут значение по имени параметра. Без
+		// имени писать некуда, и рисовать ввод нельзя: он выглядел бы рабочим,
+		// а значение пропадало бы.
+		if ((node.Name == "field" || node.Name == "lookup" || node.Name == "objectPicker")
+			&& string.IsNullOrEmpty(Attr(node, PageControl.Attributes.Name)))
+			return $"{node.Name} без атрибута name";
+
 		if (node.Name == "field")
 			return null;
 

@@ -13,6 +13,16 @@ namespace FogSoft.Web.Infrastructure;
 /// движки, этап 2), либо самостоятельные экраны (этап 3, раздел 3 плана) —
 /// см. решение по объёму этапа 1 в docs/tasks/web-migration.md, раздел 6.
 ///
+/// <c>miMassMedia</c> добавлен отдельно (2026-09-17) и в те 22 ветки не входит:
+/// он ведёт в собственную форму <c>MassmediasJournal</c>. Разбор показал, что
+/// форма — это <c>JournalForm</c> того же вида, что создаёт
+/// <c>ShowSimpleJournal</c>, плюс перерисовка журнала после добавления,
+/// изменения и удаления; своей разметки у неё нет (пустой
+/// <c>InitializeComponent</c>). Веб перечитывает список после сохранения сам,
+/// так что поведение совпадает. Если в эту таблицу попадёт ещё один экран не
+/// из тех 22 — разбирать так же и писать почему, иначе карта перестанет быть
+/// проверяемой.
+///
 /// Ссылки на <c>Entities.X</c> — по имени, а не голым числом: если когда-то
 /// понадобится сменить нумерацию, компилятор укажет на это место, а не
 /// уронит меню в рантайме на непонятной сущности.
@@ -32,6 +42,7 @@ public static class MenuRoutes
 			{ "miLog", (int)Entities.LogDeletedIssue },
 			{ "miManagerDiscountHistory", (int)Entities.ManagerDiscountHistory },
 			{ "miManagerDiscountReason", (int)Entities.ManagerDiscountReason },
+			{ "miMassMedia", (int)Entities.MassMedia },
 			{ "miPaymentByManagerFromRSection", (int)Entities.PaymentCommonAction },
 			{ "miPaymentType", (int)Entities.PaymentType },
 			{ "miReportPartText", (int)Entities.ReportPartText },
