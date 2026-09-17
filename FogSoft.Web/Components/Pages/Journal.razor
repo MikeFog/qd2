@@ -184,31 +184,44 @@ else
         }
         else
         {
+            @* Виртуализация: в разметке живут только видимые строки. Замер на
+               журнале удалённых выпусков (40 521 строка) до неё: первая
+               отрисовка ~30 секунд, 405 409 узлов в DOM и 1,8 секунды на любой
+               следующий клик — Blazor Server считает разницу по всему дереву.
+               Процедура при этом отдаёт те же строки за десятки миллисекунд,
+               то есть узкое место чисто в отрисовке. Раздел 7 п.4 плана.
+
+               Постраничности намеренно нет: в десктопе её тоже нет, прокрутка
+               идёт по всему списку. SpacerElement="tr" обязателен — распорки
+               по умолчанию div, а внутри tbody это недопустимая разметка. *@
             <div class="data-table journal-table">
                 <table class="table table-hover">
                     <thead>
                         <tr>
                             @foreach (var a in _columns)
                             {
-                                <th>@a.Alias</th>
+                                <th class="sortable" @onclick="() => SortBy(a.Name)">
+                                    @a.Alias<span class="sort-mark">@SortMark(a.Name)</span>
+                                </th>
                             }
                             <th class="col-actions"></th>
                         </tr>
                     </thead>
                     <tbody>
-                        @foreach (DataRow row in _data.Rows)
-                        {
+                        <Virtualize TItem="DataRow" Items="_rows" ItemSize="29" SpacerElement="tr" Context="row">
                             <tr>
                                 @foreach (var a in _columns)
                                 {
-                                    <td>@Display(row, a.Name)</td>
+                                    <td title="@Display(row, a.Name)">@Display(row, a.Name)</td>
                                 }
                                 <td class="col-actions">
                                     <button class="btn btn-sm btn-outline-secondary" disabled="@(!_canOpen)"
                                             @onclick="() => Edit(row)">Открыть</button>
+                                    <button class="btn btn-sm btn-outline-secondary" disabled="@(!_canDelete)"
+                                            @onclick="() => Delete(row)">Удалить</button>
                                 </td>
                             </tr>
-                        }
+                        </Virtualize>
                     </tbody>
                 </table>
             </div>
@@ -249,6 +262,17 @@ else
     private JournalAccess _access = JournalAccess.Allowed;
     private bool _canAdd;
     private bool _canOpen;
+    private bool _canDelete;
+
+    /// <summary>
+    /// Строки списка в порядке показа. Отдельный список, а не DataTable.Rows:
+    /// Virtualize требует типизированную коллекцию, а сортировка меняет
+    /// порядок, не трогая сам набор.
+    /// </summary>
+    private List<DataRow> _rows = new();
+
+    private string? _sortColumn;
+    private bool _sortDescending;
 
     protected override void OnParametersSet()
     {
@@ -274,6 +298,7 @@ else
 
             _canAdd = _entity.IsActionEnabled(Constants.EntityActions.AddNew, ViewType.Journal);
             _canOpen = _entity.IsActionEnabled(Constants.EntityActions.ShowPassport, ViewType.Journal);
+            _canDelete = _entity.IsActionEnabled(Constants.EntityActions.Delete, ViewType.Journal);
 
             // Своя процедура фильтра (EntityId_Load_FilterPage), не паспортная —
             // грузится только если в фильтре реально есть lookup/objectPicker,
@@ -313,6 +338,7 @@ else
             _error = null;
             _entity!.ClearCache();
             _data = _entity.GetContent(_filterValues);
+            ApplySort();
         }
         catch (Exception ex)
         {
@@ -606,6 +632,91 @@ else
     {
         if (await Passports.ShowAsync(obj, isNew))
             Load();
+    }
+
+    // ---------- Сортировка ----------
+
+    /// <summary>
+    /// Сортировка на клиенте, как в десктопе: SmartGrid отдаёт её
+    /// DataGridView (SortMode.Automatic) поверх DataView, в процедуру ничего
+    /// не передаётся. Повторный щелчок по той же колонке меняет направление.
+    /// </summary>
+    private void SortBy(string column)
+    {
+        if (string.Equals(_sortColumn, column, StringComparison.OrdinalIgnoreCase))
+            _sortDescending = !_sortDescending;
+        else
+        {
+            _sortColumn = column;
+            _sortDescending = false;
+        }
+
+        ApplySort();
+    }
+
+    private void ApplySort()
+    {
+        if (_data == null)
+        {
+            _rows = new List<DataRow>();
+            return;
+        }
+
+        if (_sortColumn == null || !_data.Columns.Contains(_sortColumn))
+        {
+            _rows = _data.Rows.Cast<DataRow>().ToList();
+            return;
+        }
+
+        // Сортируем через DataView: он сравнивает значения по типу колонки,
+        // а не по их строковому виду — иначе числа и даты выстроились бы
+        // лексикографически.
+        var view = new DataView(_data)
+        {
+            Sort = $"[{_sortColumn.Replace("]", "]]")}] {(_sortDescending ? "DESC" : "ASC")}"
+        };
+        _rows = view.Cast<DataRowView>().Select(v => v.Row).ToList();
+    }
+
+    private string SortMark(string column) =>
+        string.Equals(_sortColumn, column, StringComparison.OrdinalIgnoreCase)
+            ? (_sortDescending ? " ▾" : " ▴")
+            : "";
+
+    // ---------- Удаление ----------
+
+    /// <summary>
+    /// Спрашиваем сами и зовём Delete(silenceFlag: true), а не Delete().
+    ///
+    /// Десктоп спрашивает изнутри Delete() через UserInteraction.Confirm —
+    /// синхронно, потому что модальная форма блокирует поток. В вебе так
+    /// нельзя: circuit нельзя заблокировать в ожидании ответа. Поэтому
+    /// разрез «спросить / сделать», конвенция этапа 0. Текст вопроса тот же
+    /// самый — DeleteConfirmationText доменного класса, включая его
+    /// переопределения.
+    /// </summary>
+    private async Task Delete(DataRow row)
+    {
+        try
+        {
+            PresentationObject obj = _entity!.CreateObject(row);
+
+            if (!obj.IsActionEnabled(Constants.EntityActions.Delete, ViewType.Journal))
+                return;
+
+            if (await Dialogs.ShowAsync(
+                    "Удаление",
+                    builder => builder.AddContent(0, obj.DeleteConfirmationText),
+                    okText: "Удалить") != DialogOutcome.Ok)
+                return;
+
+            obj.Delete(silenceFlag: true);
+            Load();
+        }
+        catch (Exception ex)
+        {
+            _error = ErrorPresenter.Describe(ex);
+        }
     }
 
 }

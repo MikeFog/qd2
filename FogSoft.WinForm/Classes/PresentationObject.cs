@@ -285,7 +285,15 @@ namespace FogSoft.WinForm.Classes
 			return UserInteraction.Confirm(string.Format(DETACH_PROMPT, Name));
 		}
 
-		protected virtual string DeleteConfirmationText
+		/// <summary>
+		/// Текст вопроса перед удалением. Публичный, потому что спрашивать
+		/// пользователя должен тот, кто умеет это делать в своём UI: десктоп
+		/// спрашивает изнутри Delete() через UserInteraction, а веб не может
+		/// заблокировать circuit в ожидании ответа — он спрашивает сам и зовёт
+		/// Delete(silenceFlag: true). Разрез «спросить / сделать» — конвенция
+		/// этапа 0, docs/tasks/web-migration-dialogs.md.
+		/// </summary>
+		public virtual string DeleteConfirmationText
 		{
 			get { return string.Format(DELETE_PROMPT, Name); }
 		}

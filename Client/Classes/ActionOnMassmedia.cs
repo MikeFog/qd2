@@ -93,7 +93,7 @@ namespace Merlin.Classes
 
 		// DoAction переехал в ActionOnMassmedia.WinForms.cs.
 
-        protected override string DeleteConfirmationText 
+        public override string DeleteConfirmationText 
 		{
 			get 
 			{
