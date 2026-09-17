@@ -1,5 +1,6 @@
 @page "/journal/{EntityId:int}"
 @using System.Data
+@using System.Globalization
 @using FogSoft.Web.Infrastructure
 @using FogSoft.WinForm
 @using FogSoft.WinForm.Classes
@@ -74,21 +75,51 @@ else
                 {
                     @foreach (var field in pg.Fields)
                     {
-                        <div class="form-check">
-                            @if (string.Equals(field.XmlType, "boolean", StringComparison.OrdinalIgnoreCase))
-                            {
+                        @if (field.Unsupported != null || field.Lookup != null || field.Picker != null)
+                        {
+                            @* Выпадающий список и выбор объекта в фильтре требуют своей
+                               половины работы: галочки «использовать» и источника по
+                               entity, а не по source. Проверка Unsupported тут обязательна:
+                               без неё lookup, у которого источник задан через entity,
+                               молча превратился бы в поле для ввода текста — и туда можно
+                               было бы написать что угодно вместо выбора из списка. *@
+                            <div class="text-muted small">
+                                @field.Caption — @(field.Unsupported ?? "выбор объекта") в фильтре
+                                пока не поддержан (этап 2).
+                            </div>
+                        }
+                        else if (field.Type is { IsBoolean: true })
+                        {
+                            <div class="form-check">
                                 <input type="checkbox" class="form-check-input" id="@("f_" + field.Name)"
                                        checked="@GetFilterBool(field.Name)"
                                        @onchange="e => SetFilterBool(field.Name, e.Value)" />
                                 <label class="form-check-label" for="@("f_" + field.Name)">@field.Caption</label>
-                            }
-                            else
-                            {
-                                <span class="text-muted small">
-                                    Фильтр <code>@(field.XmlType ?? "field")</code> пока не поддержан (этап 2).
-                                </span>
-                            }
-                        </div>
+                            </div>
+                        }
+                        else
+                        {
+                            @* Непустое поле фильтра — галочка «использовать» плюс сам ввод.
+                               Это левая колонка десктопного PageField: в режиме фильтра там
+                               не подпись, а CheckBox, и параметр уходит в процедуру только
+                               когда он отмечен (ValueShouldBeSet). *@
+                            <div class="row g-2 align-items-center mb-1">
+                                <div class="col-auto">
+                                    <input type="checkbox" class="form-check-input"
+                                           checked="@IsFilterUsed(field.Name)"
+                                           @onchange="e => UseFilter(field, e.Value)" />
+                                </div>
+                                <div class="col-5">
+                                    <label class="form-label mb-0 small">@field.Caption</label>
+                                </div>
+                                <div class="col">
+                                    <input type="@InputType(field)" class="form-control form-control-sm"
+                                           disabled="@(!IsFilterUsed(field.Name))"
+                                           value="@GetFilterText(field)"
+                                           @onchange="e => SetFilterText(field, e.Value)" />
+                                </div>
+                            </div>
+                        }
                     }
                 }
                 <button class="btn btn-sm btn-outline-primary mt-2" @onclick="Load">Применить</button>
@@ -174,7 +205,7 @@ else
             _error = null;
             _entity = EntityManager.GetEntity(EntityId);
             _columns = _entity.SortedAttributes;
-            _filterPages = PassportSchema.Parse(_entity.XmlFilter);
+            _filterPages = PassportSchema.Parse(_entity.XmlFilter, _entity);
 
             _canAdd = _entity.IsActionEnabled(Constants.EntityActions.AddNew, ViewType.Journal);
             _canOpen = _entity.IsActionEnabled(Constants.EntityActions.ShowPassport, ViewType.Journal);
@@ -224,6 +255,86 @@ else
         // (ObjectsIterator.IsNewFilter) типы разъедутся.
         _filterValues[name] = (value is bool b && b).ToString();
     }
+
+    /// <summary>
+    /// Используется ли параметр. Ровно то же, что делает десктоп: галочка в
+    /// левой колонке фильтра отмечена, когда значение есть
+    /// (PageField.SetValue), а неотмеченное поле из параметров удаляется
+    /// (ApplyChanges при !ValueShouldBeSet).
+    /// </summary>
+    private bool IsFilterUsed(string name) => _filterValues.ContainsKey(name);
+
+    private void UseFilter(PassportField field, object? value)
+    {
+        if (value is bool on && on)
+            _filterValues[field.Name] = "";
+        else
+            _filterValues.Remove(field.Name);
+    }
+
+    private static string InputType(PassportField field) =>
+        field.Type switch
+        {
+            { IsDate: true } => "date",
+            { IsInteger: true } or { IsDecimal: true } or { IsMoney: true } => "number",
+            _ => "text"
+        };
+
+    /// <summary>
+    /// Значение для поля ввода.
+    ///
+    /// В словаре фильтра значения лежат строками в культуре системы — так их
+    /// кладёт ResolveFilterInitialValues, и так их ждёт разбор параметров
+    /// процедуры. HTML-инпуты живут по своим правилам: <c>type="date"</c>
+    /// отдаёт и принимает только ISO, <c>type="number"</c> — только точку как
+    /// разделитель дробной части. Поэтому оба типа переводятся туда и обратно.
+    /// Это тот самый стык из раздела 7 п.5 плана, и он не теоретический:
+    /// без перевода чисел ввод «0.5» падал с «The input string '0.5' was not
+    /// in a correct format».
+    /// </summary>
+    private string GetFilterText(PassportField field)
+    {
+        if (!_filterValues.TryGetValue(field.Name, out object? value) || value == null)
+            return "";
+
+        string text = value.ToString() ?? "";
+        if (text.Length == 0)
+            return text;
+
+        if (field.Type is { IsDate: true })
+            return DateTime.TryParse(text, out DateTime date) ? date.ToString("yyyy-MM-dd") : "";
+
+        if (IsFractional(field))
+            return decimal.TryParse(text, out decimal number)
+                ? number.ToString(CultureInfo.InvariantCulture)
+                : "";
+
+        return text;
+    }
+
+    private void SetFilterText(PassportField field, object? value)
+    {
+        string text = value?.ToString() ?? "";
+
+        // Обратный перевод: в процедуру должна уйти строка того же вида, что у
+        // значений из метаданных, иначе один и тот же фильтр выглядел бы
+        // по-разному в зависимости от того, кто его заполнил.
+        if (text.Length > 0)
+        {
+            if (field.Type is { IsDate: true })
+                text = DateTime.TryParse(text, out DateTime date) ? date.ToString() : "";
+            else if (IsFractional(field))
+                text = decimal.TryParse(text, NumberStyles.Number, CultureInfo.InvariantCulture, out decimal number)
+                    ? number.ToString()
+                    : "";
+        }
+
+        _filterValues[field.Name] = text;
+    }
+
+    // Целые числа разделителя не имеют, переводить нечего.
+    private static bool IsFractional(PassportField field) =>
+        field.Type is { IsDecimal: true } or { IsMoney: true };
 
     private string Display(DataRow row, string column)
     {

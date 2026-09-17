@@ -63,7 +63,8 @@ public static class PassportSchema
 					Unsupported: Unsupported(child),
 					Required: IsRequired(child, name!, entity, isNew),
 					Lookup: ParseLookup(child),
-					Picker: ParsePicker(child)));
+					Picker: ParsePicker(child),
+					Type: ResolveType(child, name!, entity)));
 			}
 			pages.Add(page);
 		}
@@ -75,13 +76,14 @@ public static class PassportSchema
 		if (node.Name == "field")
 			return null;
 
-		// lookup без source нарисовать не из чего: данные берутся из набора
-		// строк, который вернула процедура паспорта. Атрибут entity как
-		// запасной источник (PageFieldLookUp) не поддержан — в метаданных
-		// ArtvisDev и прода нет ни одного lookup-а, где source не указан.
+		// Без source список брать неоткуда: строки приходят готовым набором из
+		// процедуры паспорта. Запасной источник по атрибуту entity
+		// (PageFieldLookUp грузит его сам через GetContent) не поддержан — в
+		// паспортах такой формы нет ни одной, она встречается только в
+		// фильтрах, см. docs/tasks/web-migration.md, этап 2.
 		if (node.Name == "lookup")
 			return string.IsNullOrEmpty(Attr(node, PageControl.Attributes.Source))
-				? "lookup без source"
+				? "lookup с источником по entity"
 				: null;
 
 		if (node.Name == "objectPicker")
@@ -118,6 +120,18 @@ public static class PassportSchema
 			ColumnWithId: Attr(node, PageControl.Attributes.ColumnWithId) ?? Constants.Parameters.Id,
 			ParentLookupName: string.IsNullOrEmpty(parentName) ? null : parentName,
 			ParentFilter: Attr(node, PageControl.Attributes.Filter));
+	}
+
+	/// <summary>
+	/// Тип значения — тем же способом, что <c>PageField.CreateInstance</c>:
+	/// сначала атрибут <c>type</c>, затем тип колонки сущности. Разбор отдан
+	/// ядровому <see cref="FieldTypeResolver"/>, чтобы правила не разъехались.
+	/// </summary>
+	private static FieldTypeResolver ResolveType(XmlNode node, string name, Entity? entity)
+	{
+		ColumnInfo? columnInfo = null;
+		entity?.ColumnsInfo.TryGetValue(name, out columnInfo);
+		return new FieldTypeResolver(Attr(node, PageControl.Attributes.Type) ?? string.Empty, columnInfo);
 	}
 
 	private static PassportPicker? ParsePicker(XmlNode node)
@@ -212,6 +226,7 @@ public sealed class PassportPage
 /// <param name="Required">Значение обязательно — пустым сохранять нельзя.</param>
 /// <param name="Lookup">Описание выпадающего списка; null — это не lookup.</param>
 /// <param name="Picker">Описание выбора объекта; null — это не objectPicker.</param>
+/// <param name="Type">Разрешённый тип значения; null у полей, где он не нужен.</param>
 public sealed record PassportField(
 	string Name,
 	string Caption,
@@ -219,7 +234,8 @@ public sealed record PassportField(
 	string? Unsupported,
 	bool Required = false,
 	PassportLookup? Lookup = null,
-	PassportPicker? Picker = null);
+	PassportPicker? Picker = null,
+	FieldTypeResolver? Type = null);
 
 /// <param name="Source">Псевдоним набора строк из процедуры паспорта (iTableAlias).</param>
 /// <param name="ColumnWithId">Колонка со значением, которое уходит в процедуру.</param>
