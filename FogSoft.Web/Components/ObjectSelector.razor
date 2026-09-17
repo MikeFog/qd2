@@ -1,0 +1,93 @@
+@using System.Data
+@using FogSoft.Web.Infrastructure
+@using FogSoft.WinForm.Classes
+
+@*
+    Выбор объекта из списка — веб-аналог SelectionForm.
+
+    Как и в десктопе, это не журнал: ни фильтра, ни карточки, ни действий —
+    только строки сущности и выбор одной из них. Права на экран здесь не
+    проверяются намеренно: в десктопе у выбора объекта нет своего пункта меню,
+    доступ к нему даёт уже открытый паспорт. См. комментарий о границах
+    применимости в MenuAccess.
+*@
+
+@if (_error != null)
+{
+    <div class="alert alert-danger">@_error</div>
+}
+else if (_data == null)
+{
+    <p>Загрузка…</p>
+}
+else if (_data.Rows.Count == 0)
+{
+    <div class="alert alert-secondary mb-0">Выбирать не из чего: список пуст.</div>
+}
+else
+{
+    <div style="max-height:50vh; overflow:auto">
+        <table class="table table-sm table-hover">
+            <thead>
+                <tr>
+                    @foreach (var a in _columns)
+                    {
+                        <th>@a.Alias</th>
+                    }
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (DataRow row in _data.Rows)
+                {
+                    <tr class="@(ReferenceEquals(row, SelectedRow) ? "table-primary" : "")"
+                        style="cursor:pointer" @onclick="() => SelectedRow = row">
+                        @foreach (var a in _columns)
+                        {
+                            <td>@Display(row, a.Name)</td>
+                        }
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+}
+
+@code {
+    /// <summary>Что выбираем и по какому фильтру.</summary>
+    [Parameter, EditorRequired] public PassportPicker Picker { get; set; } = default!;
+
+    /// <summary>Наборы строк паспорта — источник кандидатов, если он там есть.</summary>
+    [Parameter] public DataSet? PassportData { get; set; }
+
+    /// <summary>Редактируемый объект: из него берутся значения фильтров типа parameter.</summary>
+    [Parameter, EditorRequired] public PresentationObject Owner { get; set; } = default!;
+
+    /// <summary>Выбранная строка; null — пользователь ничего не выбрал.</summary>
+    public DataRow? SelectedRow { get; private set; }
+
+    private DataTable? _data;
+    private IReadOnlyList<Entity.Attribute> _columns = Array.Empty<Entity.Attribute>();
+    private string? _error;
+
+    protected override void OnInitialized()
+    {
+        try
+        {
+            Entity entity = EntityManager.GetEntity(Picker.EntityName);
+            _columns = entity.SortedAttributes;
+            _data = PickerData.Candidates(Picker, PassportData, Owner);
+        }
+        catch (Exception ex)
+        {
+            _error = ErrorPresenter.Describe(ex);
+        }
+    }
+
+    private static string Display(DataRow row, string column)
+    {
+        if (!row.Table.Columns.Contains(column))
+            return "";
+        object v = row[column];
+        return v == DBNull.Value ? "" : v.ToString() ?? "";
+    }
+}

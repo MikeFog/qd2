@@ -15,8 +15,8 @@ namespace FogSoft.Web.Infrastructure;
 /// «нарисовать» сделано намеренно: разбор не зависит от фронтенда и переживёт
 /// смену способа отрисовки.
 ///
-/// Поддержаны <c>field</c> и <c>lookup</c>. Остальные типы контролов
-/// (<c>objectPicker</c>, <c>selector</c>, <c>treeselector</c>, <c>image</c>,
+/// Поддержаны <c>field</c>, <c>lookup</c> и <c>objectPicker</c>. Остальные типы
+/// контролов (<c>selector</c>, <c>treeselector</c>, <c>image</c>,
 /// <c>button</c>) — продолжение этапа 2, см. docs/tasks/web-migration.md,
 /// раздел 4.2. Неизвестный элемент не молчит, а превращается в
 /// <see cref="PassportField"/> с <see cref="PassportField.Unsupported"/> —
@@ -62,7 +62,8 @@ public static class PassportSchema
 					XmlType: Attr(child, PageControl.Attributes.Type),
 					Unsupported: Unsupported(child),
 					Required: IsRequired(child, name!, entity, isNew),
-					Lookup: ParseLookup(child)));
+					Lookup: ParseLookup(child),
+					Picker: ParsePicker(child)));
 			}
 			pages.Add(page);
 		}
@@ -82,6 +83,19 @@ public static class PassportSchema
 			return string.IsNullOrEmpty(Attr(node, PageControl.Attributes.Source))
 				? "lookup без source"
 				: null;
+
+		if (node.Name == "objectPicker")
+		{
+			if (string.IsNullOrEmpty(Attr(node, PageControl.Attributes.Entity)))
+				return "objectPicker без entity";
+
+			// relationScenario уводит выбор в TreeViewSelector — отдельный
+			// контрол-дерево. В метаданных ArtvisDev такого objectPicker нет
+			// ни одного, поэтому дерево не переносилось.
+			return string.IsNullOrEmpty(Attr(node, PageControl.Attributes.RelationScenario))
+				? null
+				: "objectPicker с relationScenario";
+		}
 
 		return node.Name;
 	}
@@ -104,6 +118,50 @@ public static class PassportSchema
 			ColumnWithId: Attr(node, PageControl.Attributes.ColumnWithId) ?? Constants.Parameters.Id,
 			ParentLookupName: string.IsNullOrEmpty(parentName) ? null : parentName,
 			ParentFilter: Attr(node, PageControl.Attributes.Filter));
+	}
+
+	private static PassportPicker? ParsePicker(XmlNode node)
+	{
+		if (node.Name != "objectPicker")
+			return null;
+
+		string? entityName = Attr(node, PageControl.Attributes.Entity);
+		if (string.IsNullOrEmpty(entityName))
+			return null;
+
+		string? source = Attr(node, PageControl.Attributes.Source);
+		return new PassportPicker(
+			EntityName: entityName!,
+			Source: string.IsNullOrEmpty(source) ? null : source,
+			// Умолчание то же, что в PageFieldObjectPicker.IsCreateNewAllowed:
+			// нет атрибута — кнопки нет.
+			IsCreateNewAllowed: ParseHelper.ParseToBoolean(
+				Attr(node, PageControl.Attributes.IsCreateNewAllowed) ?? string.Empty, false),
+			Filters: ParseFilters(node));
+	}
+
+	/// <summary>
+	/// Вложенные <c>&lt;filter&gt;</c> — то же, что читает
+	/// <c>PageFieldSelector.GetFilters</c>. Значения без типа там молча
+	/// пропускаются, здесь так же.
+	/// </summary>
+	private static IReadOnlyList<PassportFilterValue> ParseFilters(XmlNode node)
+	{
+		var filters = new List<PassportFilterValue>();
+		foreach (XmlNode child in node.ChildNodes)
+		{
+			if (child.NodeType != XmlNodeType.Element || child.Name != "filter")
+				continue;
+
+			string? type = Attr(child, PageControl.Attributes.Type);
+			string? name = Attr(child, PageControl.Attributes.Name);
+			if (string.IsNullOrEmpty(type) || string.IsNullOrEmpty(name))
+				continue;
+
+			filters.Add(new PassportFilterValue(
+				name!, Attr(child, PageControl.Attributes.Value) ?? string.Empty, type!));
+		}
+		return filters;
 	}
 
 	/// <summary>
@@ -153,13 +211,15 @@ public sealed class PassportPage
 /// <param name="Unsupported">Причина, по которой контрол не рисуется; null — поддержан.</param>
 /// <param name="Required">Значение обязательно — пустым сохранять нельзя.</param>
 /// <param name="Lookup">Описание выпадающего списка; null — это не lookup.</param>
+/// <param name="Picker">Описание выбора объекта; null — это не objectPicker.</param>
 public sealed record PassportField(
 	string Name,
 	string Caption,
 	string? XmlType,
 	string? Unsupported,
 	bool Required = false,
-	PassportLookup? Lookup = null);
+	PassportLookup? Lookup = null,
+	PassportPicker? Picker = null);
 
 /// <param name="Source">Псевдоним набора строк из процедуры паспорта (iTableAlias).</param>
 /// <param name="ColumnWithId">Колонка со значением, которое уходит в процедуру.</param>
@@ -170,3 +230,18 @@ public sealed record PassportLookup(
 	string ColumnWithId,
 	string? ParentLookupName,
 	string? ParentFilter);
+
+/// <param name="EntityName">Имя сущности, из которой выбирают (iEntity.name).</param>
+/// <param name="Source">Псевдоним готового набора строк; null — грузить сущностью по требованию.</param>
+/// <param name="IsCreateNewAllowed">Разрешено ли создавать новый объект прямо из карточки.</param>
+/// <param name="Filters">Значения фильтра из вложенных &lt;filter&gt;.</param>
+public sealed record PassportPicker(
+	string EntityName,
+	string? Source,
+	bool IsCreateNewAllowed,
+	IReadOnlyList<PassportFilterValue> Filters);
+
+/// <param name="Name">Имя параметра процедуры выборки.</param>
+/// <param name="Value">Значение как записано в XML.</param>
+/// <param name="Type">Тип для FieldTypeResolver либо parameter / parameter_isnew.</param>
+public sealed record PassportFilterValue(string Name, string Value, string Type);

@@ -29,49 +29,58 @@ public enum DialogOutcome
 /// возможно в Blazor Server: состояние компонента живёт между действиями, как
 /// жил бы стек WinForms-формы.
 ///
+/// Диалоги складываются в стек: паспорт открывает выбор объекта, выбор объекта
+/// может открыть паспорт нового объекта. В десктопе это те же вложенные
+/// ShowDialog (ObjectPicker2.btnSelect_Click вызывается из уже открытой
+/// PassportForm), поэтому запрет на второй диалог был бы ограничением веба,
+/// которого нет в переносимой системе.
+///
 /// Сервис регистрируется Scoped — то есть свой на circuit: диалог одного
 /// пользователя не должен быть виден другому.
 /// </summary>
 public sealed class DialogService
 {
-	private TaskCompletionSource<DialogOutcome>? _completion;
+	private readonly List<Entry> _stack = new();
 
-	/// <summary>Открытый сейчас диалог; null — открытого нет.</summary>
-	public DialogRequest? Current { get; private set; }
+	/// <summary>Открытые диалоги снизу вверх; последний — верхний.</summary>
+	public IReadOnlyList<DialogRequest> Open =>
+		_stack.Select(e => e.Request).ToList();
+
+	/// <summary>Верхний открытый диалог; null — открытых нет.</summary>
+	public DialogRequest? Current => _stack.Count == 0 ? null : _stack[^1].Request;
 
 	/// <summary>Сообщает хосту, что нужно перерисоваться.</summary>
 	public event Func<Task>? Changed;
 
 	public async Task<DialogOutcome> ShowAsync(string title, RenderFragment body, string okText = "Сохранить")
 	{
-		if (Current != null)
-			throw new InvalidOperationException("Диалог уже открыт.");
-
 		// RunContinuationsAsynchronously обязателен: без него продолжение
 		// вызывающего кода выполнилось бы прямо внутри обработчика нажатия
 		// кнопки, на диспетчере circuit, что легко приводит к взаимной
 		// блокировке при повторном обращении к UI.
-		_completion = new TaskCompletionSource<DialogOutcome>(
+		var completion = new TaskCompletionSource<DialogOutcome>(
 			TaskCreationOptions.RunContinuationsAsynchronously);
 
-		Current = new DialogRequest(title, body, okText);
+		_stack.Add(new Entry(new DialogRequest(title, body, okText), completion));
 		await NotifyAsync();
 
-		return await _completion.Task;
+		return await completion.Task;
 	}
 
-	/// <summary>Закрывает открытый диалог и отдаёт результат тому, кто его ждёт.</summary>
+	/// <summary>
+	/// Закрывает верхний диалог и отдаёт результат тому, кто его ждёт. Нижние
+	/// диалоги закрыть нельзя — кнопки у них погашены, см. DialogHost.
+	/// </summary>
 	public async Task CloseAsync(DialogOutcome outcome)
 	{
-		TaskCompletionSource<DialogOutcome>? completion = _completion;
-		if (completion == null)
+		if (_stack.Count == 0)
 			return;
 
-		_completion = null;
-		Current = null;
+		Entry top = _stack[^1];
+		_stack.RemoveAt(_stack.Count - 1);
 		await NotifyAsync();
 
-		completion.TrySetResult(outcome);
+		top.Completion.TrySetResult(outcome);
 	}
 
 	private async Task NotifyAsync()
@@ -79,6 +88,8 @@ public sealed class DialogService
 		if (Changed != null)
 			await Changed.Invoke();
 	}
+
+	private sealed record Entry(DialogRequest Request, TaskCompletionSource<DialogOutcome> Completion);
 }
 
 /// <param name="Title">Заголовок окна.</param>

@@ -3,6 +3,8 @@
 @using FogSoft.WinForm
 @using FogSoft.WinForm.Classes
 @using FogSoft.WinForm.DataAccess
+@inject DialogService Dialogs
+@inject PassportDialog Passports
 
 @*
     Движок паспорта: строит карточку объекта по XML из метаданных.
@@ -49,6 +51,21 @@ else
                         <div class="alert alert-secondary py-1 mb-0">
                             Контрол <code>@field.Unsupported</code> пока не поддержан
                             (этап 2). Значение не редактируется и не сохраняется.
+                        </div>
+                    }
+                    else if (field.Picker != null)
+                    {
+                        <div class="input-group">
+                            <input class="form-control" readonly value="@PickerName(field)" />
+                            <button type="button" class="btn btn-outline-secondary"
+                                    @onclick="() => Select(field)">Выбрать</button>
+                            @if (field.Picker.IsCreateNewAllowed)
+                            {
+                                <button type="button" class="btn btn-outline-secondary"
+                                        @onclick="() => CreateNew(field)">Создать</button>
+                            }
+                            <button type="button" class="btn btn-outline-secondary"
+                                    @onclick="() => Clear(field)">Очистить</button>
                         </div>
                     }
                     else if (field.Lookup != null)
@@ -247,21 +264,104 @@ else
             }
     }
 
+    // ---------- objectPicker ----------
+
+    // Имя выбранного объекта показывается вместо идентификатора, но само
+    // значение в объекте остаётся идентификатором. Разрешение имени стоит
+    // обращения к базе (ObjectPicker2.SelectObject делает то же самое),
+    // поэтому результат держится до смены значения.
+    private readonly Dictionary<string, string> _pickerNames = new(StringComparer.OrdinalIgnoreCase);
+    private readonly Dictionary<string, string> _pickerNamesFor = new(StringComparer.OrdinalIgnoreCase);
+
+    private string PickerName(PassportField field)
+    {
+        string id = ReadString(field.Name);
+        if (_pickerNamesFor.TryGetValue(field.Name, out string? resolvedFor) && resolvedFor == id)
+            return _pickerNames[field.Name];
+
+        string name = PickerData.NameOf(field.Picker!, Data, Object[field.Name]);
+        _pickerNames[field.Name] = name;
+        _pickerNamesFor[field.Name] = id;
+        return name;
+    }
+
+    private async Task Select(PassportField field)
+    {
+        ObjectSelector? selector = null;
+
+        RenderFragment body = builder =>
+        {
+            builder.OpenComponent<ObjectSelector>(0);
+            builder.AddComponentParameter(1, nameof(ObjectSelector.Picker), field.Picker);
+            builder.AddComponentParameter(2, nameof(ObjectSelector.PassportData), Data);
+            builder.AddComponentParameter(3, nameof(ObjectSelector.Owner), Object);
+            builder.AddComponentReferenceCapture(4, c => selector = (ObjectSelector)c);
+            builder.CloseComponent();
+        };
+
+        if (await Dialogs.ShowAsync("Выбрать объект", body, okText: "Выбрать") != DialogOutcome.Ok)
+            return;
+
+        // Пустой выбор — не команда очистить: десктоп по OK без выделенной
+        // строки оставляет прежнее значение (selector.SelectedObject == null,
+        // ApplyChanges его не пишет). Очистка — отдельная кнопка.
+        if (selector?.SelectedRow == null)
+            return;
+
+        Entity entity = EntityManager.GetEntity(field.Picker!.EntityName);
+        Store(field, entity.CreateObject(selector.SelectedRow));
+    }
+
+    private async Task CreateNew(PassportField field)
+    {
+        Entity entity = EntityManager.GetEntity(field.Picker!.EntityName);
+        PresentationObject created = entity.NewObject;
+
+        if (await Passports.ShowAsync(created, isNew: true))
+            Store(field, created);
+    }
+
+    private void Clear(PassportField field)
+    {
+        // В десктопе это btnClear: очищается показанное имя и снимается выбор,
+        // то есть в процедуру значение не уходит вовсе.
+        Object[field.Name] = DBNull.Value;
+        Forget(field);
+    }
+
+    /// <summary>
+    /// Кладёт выбранный объект так же, как ObjectPicker2 + ApplyChanges:
+    /// в параметры уходит первый столбец первичного ключа, а не весь объект.
+    /// </summary>
+    private void Store(PassportField field, PresentationObject selected)
+    {
+        Object[field.Name] = selected.IDs[0] ?? (object)DBNull.Value;
+        Forget(field);
+    }
+
+    private void Forget(PassportField field)
+    {
+        _pickerNames.Remove(field.Name);
+        _pickerNamesFor.Remove(field.Name);
+    }
+
     /// <summary>
     /// Первое нарушение обязательности или null. Аналог ValidateUserInput +
     /// PassportException: текст берётся из того же ключа iMessage, что и в
     /// десктопе, с той же подстановкой подписи контрола.
     ///
-    /// Проверяются только lookup-ы: обязательность обычных полей в вебе пока
-    /// не проверяется вообще, и вводить её здесь — отдельная работа, которая
-    /// начнёт отклонять сохранения, проходящие сегодня.
+    /// Проверяются только lookup и objectPicker: обязательность обычных полей
+    /// в вебе пока не проверяется вообще, и вводить её здесь — отдельная
+    /// работа, которая начнёт отклонять сохранения, проходящие сегодня.
     /// </summary>
     public string? Validate()
     {
         foreach (var pg in _pages)
             foreach (var field in pg.Fields)
             {
-                if (field.Lookup == null || field.Unsupported != null || !field.Required)
+                if (field.Unsupported != null || !field.Required)
+                    continue;
+                if (field.Lookup == null && field.Picker == null)
                     continue;
 
                 if (ReadString(field.Name).Length > 0)
