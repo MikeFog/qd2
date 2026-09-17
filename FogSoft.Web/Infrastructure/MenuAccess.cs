@@ -40,6 +40,7 @@ public sealed class MenuAccess
 
 	private List<MenuNode>? _tree;
 	private HashSet<int>? _allowedEntities;
+	private HashSet<string>? _allowedBrowsers;
 	private int? _loadedFor;
 
 	public MenuAccess(UserSession session)
@@ -80,6 +81,22 @@ public sealed class MenuAccess
 	}
 
 	/// <summary>
+	/// Разрешён ли пользователю древовидный экран. Правило то же, что у
+	/// журнала: доступ даёт разрешённый пункт меню, а не отдельный список.
+	/// </summary>
+	public JournalAccess CheckBrowser(string codeName)
+	{
+		EnsureLoaded();
+
+		if (_allowedBrowsers!.Contains(codeName))
+			return JournalAccess.Allowed;
+
+		return MenuRoutes.Browser.ContainsKey(codeName)
+			? JournalAccess.Denied
+			: JournalAccess.NotPorted;
+	}
+
+	/// <summary>
 	/// Перезагружает меню, если сменился пользователь. Сверка по id, а не подписка
 	/// на <c>UserSession.Changed</c>, — чтобы результат не зависел от порядка, в
 	/// котором сработают обработчики события (NavMenu подписан на то же самое).
@@ -92,6 +109,7 @@ public sealed class MenuAccess
 
 		_loadedFor = currentUser;
 		_allowedEntities = new HashSet<int>();
+		_allowedBrowsers = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
 
 		if (currentUser == null)
 		{
@@ -109,10 +127,14 @@ public sealed class MenuAccess
 		{
 			// enabled считает сама UserMenuItems (isPublic, админ, персональное
 			// разрешение, группа) — здесь только читаем результат.
-			if (node.Enabled
-				&& !string.IsNullOrEmpty(node.CodeName)
-				&& MenuRoutes.SimpleJournal.TryGetValue(node.CodeName!, out int entityId))
-				_allowedEntities!.Add(entityId);
+			if (node.Enabled && !string.IsNullOrEmpty(node.CodeName))
+			{
+				if (MenuRoutes.SimpleJournal.TryGetValue(node.CodeName!, out int entityId))
+					_allowedEntities!.Add(entityId);
+
+				if (MenuRoutes.Browser.ContainsKey(node.CodeName!))
+					_allowedBrowsers!.Add(node.CodeName!);
+			}
 
 			Collect(node.Children);
 		}

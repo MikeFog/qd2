@@ -51,6 +51,8 @@ else
 
         if (MenuRoutes.SimpleJournal.TryGetValue(Node.CodeName, out int entityId))
             Nav.NavigateTo($"/journal/{entityId}");
+        else if (MenuRoutes.Browser.ContainsKey(Node.CodeName))
+            Nav.NavigateTo($"/browser/{Uri.EscapeDataString(Node.CodeName)}");
         else
             Nav.NavigateTo($"/todo/{Uri.EscapeDataString(Node.CodeName)}/{Uri.EscapeDataString(Node.Name)}");
     }

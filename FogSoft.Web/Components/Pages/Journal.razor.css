@@ -124,38 +124,10 @@
     flex: 0 0 auto;
 }
 
-/* Список прокручивается сам, вместе с липкой шапкой. Иначе на 40 тысячах
-   строк прокручивалась бы вся страница и заголовки колонок уезжали бы наверх. */
-.journal-table {
+/* Список — отдельный компонент (ObjectList), поэтому размер ему задаём
+   отсюда: он должен занять остаток колонки и прокручиваться сам. ::deep —
+   потому что его разметка принадлежит чужой области видимости стилей. */
+.journal ::deep .data-table {
     flex: 1 1 auto;
     min-height: 140px;
-}
-
-::deep .col-actions {
-    width: 1%;
-    white-space: nowrap;
-    text-align: right;
-}
-
-/* Строки виртуализованы, поэтому их высота должна быть одинаковой: длинные
-   значения обрезаются, полный текст — во всплывающей подсказке. Десктопный
-   грид ведёт себя так же, строки в нём тоже не переносятся. */
-::deep .journal-table td {
-    max-width: 320px;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
-}
-
-::deep .sortable {
-    cursor: pointer;
-    user-select: none;
-}
-
-::deep .sortable:hover {
-    color: var(--c-text);
-}
-
-::deep .sort-mark {
-    color: var(--c-accent);
 }

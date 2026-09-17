@@ -1,0 +1,36 @@
+/*
+    Список объектов. Строки виртуализованы, поэтому их высота должна быть
+    одинаковой: длинные значения обрезаются, полный текст — во всплывающей
+    подсказке. Десктопный грид ведёт себя так же, строки в нём тоже не
+    переносятся.
+*/
+
+.object-list {
+    height: 100%;
+}
+
+::deep td {
+    max-width: 320px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+::deep .sortable {
+    cursor: pointer;
+    user-select: none;
+}
+
+::deep .sortable:hover {
+    color: var(--c-text);
+}
+
+::deep .sort-mark {
+    color: var(--c-accent);
+}
+
+::deep .col-actions {
+    width: 1%;
+    white-space: nowrap;
+    text-align: right;
+}

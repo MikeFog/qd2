@@ -1,0 +1,44 @@
+@using FogSoft.Web.Infrastructure
+
+@*
+    Один узел дерева древовидного экрана, рекурсивно рисующий своих детей.
+
+    Компонент, а не построение разметки руками через RenderTreeBuilder: у
+    элементов, созданных билдером, нет атрибута изоляции стилей, который
+    компилятор Razor проставляет разметке, — и .razor.css к ним просто не
+    применяется. Первый вариант был именно таким, и узлы выглядели как
+    обычные кнопки. Тот же приём, что у MenuNodeView.
+*@
+
+<div class="tree-node">
+    <div class="tree-row @(ReferenceEquals(Node, Selected) ? "tree-row-active" : "")">
+        <button type="button" class="tree-caret" disabled="@(!Node.Expandable)"
+                @onclick="() => OnToggle.InvokeAsync(Node)">
+            @(Node.Expandable ? (Node.Expanded ? "▾" : "▸") : "")
+        </button>
+        <button type="button" class="tree-label" title="@Node.Name"
+                @onclick="() => OnSelect.InvokeAsync(Node)">
+            @Node.Name
+        </button>
+    </div>
+
+    @if (Node.Expanded && Node.Children != null)
+    {
+        <div class="tree-children">
+            @foreach (var child in Node.Children)
+            {
+                <BrowserNodeView Node="child" Selected="Selected" OnToggle="OnToggle" OnSelect="OnSelect" />
+            }
+        </div>
+    }
+</div>
+
+@code {
+    [Parameter, EditorRequired] public BrowserNode Node { get; set; } = default!;
+
+    /// <summary>Выбранный узел экрана — чтобы подсветить свой, если это он.</summary>
+    [Parameter] public BrowserNode? Selected { get; set; }
+
+    [Parameter] public EventCallback<BrowserNode> OnToggle { get; set; }
+    [Parameter] public EventCallback<BrowserNode> OnSelect { get; set; }
+}

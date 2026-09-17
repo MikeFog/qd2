@@ -49,4 +49,35 @@ public static class MenuRoutes
 			{ "miSpecialActions", (int)Entities.SpecialAction },
 			{ "miTransferJournal", (int)Entities.TransferLog },
 		};
+
+	/// <summary>
+	/// Соответствие <c>codeName</c> пункта меню → древовидный экран.
+	///
+	/// Извлечено из тех же веток <c>MDIForm.MenuItemClick</c>, что ведут в
+	/// <c>Globals.ShowBrowser(new FakeContainer(имя, действия, сценарий))</c> —
+	/// то есть в дерево по сценарию связей, без единой строки кода на экран.
+	/// Здесь только те восемь веток, где контейнер создаётся «голым»
+	/// <c>FakeContainer</c>. Остальные три (<c>AdvertTypeContainer</c>,
+	/// <c>ActionContainer</c>, <c>MassmediasAndCampaignsContainer</c>) —
+	/// наследники со своей логикой, это этап 3.
+	///
+	/// Имя — подпись корневого узла дерева, тот же первый аргумент
+	/// конструктора, что в десктопе.
+	/// </summary>
+	public static readonly IReadOnlyDictionary<string, BrowserRoute> Browser =
+		new Dictionary<string, BrowserRoute>(StringComparer.OrdinalIgnoreCase)
+		{
+			{ "miTariff", new BrowserRoute(RelationScenarios.Tariff, "Радиостанция") },
+			{ "miModules", new BrowserRoute(RelationScenarios.Module, "Радиостанция") },
+			{ "miSponsorTariff", new BrowserRoute(RelationScenarios.SponsorProgramm, "Радиостанция") },
+			{ "miDisabledWindows", new BrowserRoute(RelationScenarios.DisabledWindows, "Радиостанция") },
+			{ "miDiscount", new BrowserRoute(RelationScenarios.Discount, "Скидки") },
+			{ "miPackageDiscounts", new BrowserRoute(RelationScenarios.PackageDiscount, "Скидки") },
+			{ "miPackModules", new BrowserRoute(RelationScenarios.PackModules, "Пакетные модули") },
+			{ "miComboModules", new BrowserRoute(RelationScenarios.ComboModules, "Комбо-модули") },
+		};
 }
+
+/// <param name="Scenario">Имя сценария связей (as_relationScenarios).</param>
+/// <param name="RootName">Подпись корневого узла дерева.</param>
+public sealed record BrowserRoute(string Scenario, string RootName);

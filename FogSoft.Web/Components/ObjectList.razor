@@ -1,0 +1,228 @@
+@using System.Data
+@using FogSoft.Web.Infrastructure
+@using FogSoft.WinForm
+@using FogSoft.WinForm.Classes
+@inject PassportDialog Passports
+@inject DialogService Dialogs
+
+@*
+    Список объектов: таблица, сортировка, открытие карточки, удаление.
+
+    Выделен из Journal.razor, когда появился второй вызывающий — правая
+    половина древовидного экрана (Browser.razor). В десктопе это ровно тот же
+    случай: и JournalForm, и ExplorerForm показывают один и тот же контрол
+    SmartGrid.
+
+    Виртуализация: в разметке живут только видимые строки. Замер на журнале
+    удалённых выпусков (40 521 строка) до неё — первая отрисовка ~30 секунд,
+    405 409 узлов в DOM и 1,8 секунды на любой следующий клик, потому что
+    Blazor Server считает разницу по всему дереву. Процедура при этом отдаёт
+    те же строки за десятки миллисекунд. Раздел 7 п.4 плана.
+
+    Постраничности намеренно нет: в десктопе её тоже нет, прокрутка идёт по
+    всему списку. SpacerElement="tr" обязателен — распорки по умолчанию div,
+    а внутри tbody это недопустимая разметка.
+*@
+
+@if (Data == null)
+{
+    <div class="state">Загрузка…</div>
+}
+else if (Data.Rows.Count == 0)
+{
+    <div class="state">@EmptyText</div>
+}
+else
+{
+    <div class="data-table object-list">
+        <table class="table table-hover">
+            <thead>
+                <tr>
+                    @foreach (var a in Columns)
+                    {
+                        <th class="sortable" @onclick="() => SortBy(a.Name)">
+                            @a.Alias<span class="sort-mark">@SortMark(a.Name)</span>
+                        </th>
+                    }
+                    <th class="col-actions"></th>
+                </tr>
+            </thead>
+            <tbody>
+                <Virtualize TItem="DataRow" Items="_rows" ItemSize="29" SpacerElement="tr" Context="row">
+                    <tr>
+                        @foreach (var a in Columns)
+                        {
+                            <td title="@Display(row, a.Name)">@Display(row, a.Name)</td>
+                        }
+                        <td class="col-actions">
+                            <button class="btn btn-sm btn-outline-secondary" disabled="@(!CanOpen)"
+                                    @onclick="() => Edit(row)">Открыть</button>
+                            <button class="btn btn-sm btn-outline-secondary" disabled="@(!CanDelete)"
+                                    @onclick="() => Delete(row)">Удалить</button>
+                        </td>
+                    </tr>
+                </Virtualize>
+            </tbody>
+        </table>
+    </div>
+}
+
+@code {
+    /// <summary>Сущность строк: из неё берутся колонки и доменный класс.</summary>
+    [Parameter, EditorRequired] public Entity Entity { get; set; } = default!;
+
+    /// <summary>Строки. null — ещё не загружены.</summary>
+    [Parameter] public DataTable? Data { get; set; }
+
+    [Parameter] public bool CanOpen { get; set; }
+    [Parameter] public bool CanDelete { get; set; }
+
+    /// <summary>Текст, когда строк нет.</summary>
+    [Parameter] public string EmptyText { get; set; } = "Записей нет.";
+
+    /// <summary>
+    /// Список изменился — владелец экрана должен перечитать данные. Сам
+    /// компонент их не грузит: откуда они берутся, знает только он
+    /// (журнал — из сущности, дерево — из выбранного узла).
+    /// </summary>
+    [Parameter] public EventCallback Changed { get; set; }
+
+    /// <summary>Ошибка операции над строкой; показывается владельцем.</summary>
+    [Parameter] public EventCallback<string> Failed { get; set; }
+
+    private IReadOnlyList<Entity.Attribute> Columns => Entity.SortedAttributes;
+
+    /// <summary>
+    /// Строки в порядке показа. Отдельный список, а не DataTable.Rows:
+    /// Virtualize требует типизированную коллекцию, а сортировка меняет
+    /// порядок, не трогая сам набор.
+    /// </summary>
+    private List<DataRow> _rows = new();
+
+    private DataTable? _sorted;
+    private string? _sortColumn;
+    private bool _sortDescending;
+
+    protected override void OnParametersSet()
+    {
+        // Пересобираем порядок, когда пришёл другой набор строк: у дерева это
+        // происходит на каждом выборе узла.
+        if (!ReferenceEquals(_sorted, Data))
+        {
+            _sorted = Data;
+            _sortColumn = null;
+            _sortDescending = false;
+        }
+
+        ApplySort();
+    }
+
+    private static string Display(DataRow row, string column)
+    {
+        if (!row.Table.Columns.Contains(column))
+            return "";
+        object v = row[column];
+        return v == DBNull.Value ? "" : v.ToString() ?? "";
+    }
+
+    // ---------- Сортировка ----------
+
+    /// <summary>
+    /// Сортировка на клиенте, как в десктопе: SmartGrid отдаёт её
+    /// DataGridView (SortMode.Automatic) поверх DataView, в процедуру ничего
+    /// не передаётся. Повторный щелчок по той же колонке меняет направление.
+    /// </summary>
+    private void SortBy(string column)
+    {
+        if (string.Equals(_sortColumn, column, StringComparison.OrdinalIgnoreCase))
+            _sortDescending = !_sortDescending;
+        else
+        {
+            _sortColumn = column;
+            _sortDescending = false;
+        }
+
+        ApplySort();
+    }
+
+    private void ApplySort()
+    {
+        if (Data == null)
+        {
+            _rows = new List<DataRow>();
+            return;
+        }
+
+        if (_sortColumn == null || !Data.Columns.Contains(_sortColumn))
+        {
+            _rows = Data.Rows.Cast<DataRow>().ToList();
+            return;
+        }
+
+        // Сортируем через DataView: он сравнивает значения по типу колонки,
+        // а не по их строковому виду — иначе числа и даты выстроились бы
+        // лексикографически.
+        var view = new DataView(Data)
+        {
+            Sort = $"[{_sortColumn.Replace("]", "]]")}] {(_sortDescending ? "DESC" : "ASC")}"
+        };
+        _rows = view.Cast<DataRowView>().Select(v => v.Row).ToList();
+    }
+
+    private string SortMark(string column) =>
+        string.Equals(_sortColumn, column, StringComparison.OrdinalIgnoreCase)
+            ? (_sortDescending ? " ▾" : " ▴")
+            : "";
+
+    // ---------- Карточка и удаление ----------
+
+    // Поднятие доменного класса по метаданным может упасть на резолвинге типа,
+    // поэтому перехват: без него исключение убивает circuit и пользователь
+    // видит безымянную «внутреннюю ошибку» вместо причины.
+    private async Task Edit(DataRow row)
+    {
+        try
+        {
+            if (await Passports.ShowAsync(Entity.CreateObject(row), isNew: false))
+                await Changed.InvokeAsync();
+        }
+        catch (Exception ex)
+        {
+            await Failed.InvokeAsync(ErrorPresenter.Describe(ex));
+        }
+    }
+
+    /// <summary>
+    /// Спрашиваем сами и зовём Delete(silenceFlag: true), а не Delete().
+    ///
+    /// Десктоп спрашивает изнутри Delete() через UserInteraction.Confirm —
+    /// синхронно, потому что модальная форма блокирует поток. В вебе так
+    /// нельзя: circuit нельзя заблокировать в ожидании ответа. Поэтому
+    /// разрез «спросить / сделать», конвенция этапа 0. Текст вопроса тот же
+    /// самый — DeleteConfirmationText доменного класса, включая его
+    /// переопределения.
+    /// </summary>
+    private async Task Delete(DataRow row)
+    {
+        try
+        {
+            PresentationObject obj = Entity.CreateObject(row);
+
+            if (!obj.IsActionEnabled(Constants.EntityActions.Delete, ViewType.Journal))
+                return;
+
+            if (await Dialogs.ShowAsync(
+                    "Удаление",
+                    builder => builder.AddContent(0, obj.DeleteConfirmationText),
+                    okText: "Удалить") != DialogOutcome.Ok)
+                return;
+
+            obj.Delete(silenceFlag: true);
+            await Changed.InvokeAsync();
+        }
+        catch (Exception ex)
+        {
+            await Failed.InvokeAsync(ErrorPresenter.Describe(ex));
+        }
+    }
+}

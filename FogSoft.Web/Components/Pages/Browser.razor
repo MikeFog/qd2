@@ -1,0 +1,272 @@
+@page "/browser/{Code}"
+@using System.Data
+@using FogSoft.Web.Infrastructure
+@using FogSoft.WinForm
+@using FogSoft.WinForm.Classes
+@inject PassportDialog Passports
+@inject MenuAccess Access
+
+@*
+    Древовидный экран — веб-аналог ExplorerForm: слева дерево, справа список
+    детей выбранного узла.
+
+    Дерево строится по сценарию связей из метаданных (as_relationScenarios):
+    сценарий задаёт стартовую сущность и пары «родитель → ребёнок». Кода на
+    конкретный экран нет вообще, как и у журнала: восемь пунктов меню
+    закрываются одним рендерером, см. MenuRoutes.Browser.
+
+    Механика взята из FakeContainer + TreeView2:
+      - корень — сам FakeContainer, его дети приходят из GetContent();
+      - каждый объект-строка, если он IObjectContainer, получает сценарий и
+        сам знает свою дочернюю сущность (ObjectContainer.RelationScenario);
+      - раскрывается узел или нет — IsExpandableObject: объект является
+        контейнером, у связи стоит isChildNodeExpandable и строка не сказала
+        isHasChilds = 0;
+      - справа показываются те же строки, что стали бы детьми узла
+        (RefreshDependantGrid), поэтому список и дерево всегда согласованы.
+*@
+
+<PageTitle>@(_root?.Name ?? "Экран")</PageTitle>
+
+@if (SecurityManager.LoggedUser == null)
+{
+    <div class="state">
+        <div class="state-title">Вы не вошли в систему</div>
+        <a href="/">Перейти к входу</a>
+    </div>
+}
+else if (_access == JournalAccess.Denied)
+{
+    <div class="state">
+        <div class="state-title">Доступ закрыт</div>
+        Этот экран вам не разрешён. Права на экраны выдаются вместе с пунктами
+        меню — обратитесь к администратору системы.
+    </div>
+}
+else if (_access == JournalAccess.NotPorted)
+{
+    <div class="state">
+        <div class="state-title">Экран не перенесён</div>
+        Пункта меню <code>@Code</code> в вебе пока нет. Это не ограничение прав.
+    </div>
+}
+else if (_error != null)
+{
+    <div class="alert alert-danger">@_error</div>
+}
+else if (_root == null)
+{
+    <div class="state">Загрузка…</div>
+}
+else
+{
+    <div class="browser">
+        <header class="screen-head">
+            <h3>@_caption</h3>
+            <div class="screen-actions">
+                <button class="btn btn-sm btn-outline-secondary" @onclick="RefreshSelected">Обновить</button>
+                <button class="btn btn-primary btn-sm" disabled="@(!_canAdd)" @onclick="AddNew">Добавить</button>
+            </div>
+        </header>
+
+        <div class="browser-body">
+            <nav class="browser-tree">
+                <BrowserNodeView Node="_root" Selected="_selected"
+                                 OnToggle="Toggle" OnSelect="Select" />
+            </nav>
+
+            <div class="browser-list">
+                @if (_selected?.Container.ChildEntity is { } childEntity)
+                {
+                    <ObjectList Entity="childEntity" Data="_data"
+                                CanOpen="_canOpen" CanDelete="_canDelete"
+                                EmptyText="У выбранного узла нет вложенных записей."
+                                Changed="RefreshSelected" Failed="ShowError" />
+                }
+                else
+                {
+                    <div class="state">У этого узла нет вложенного списка.</div>
+                }
+            </div>
+        </div>
+    </div>
+}
+
+@code {
+    [Parameter] public string Code { get; set; } = "";
+
+    private BrowserNode? _root;
+    private BrowserNode? _selected;
+    private DataTable? _data;
+    private string _caption = "";
+    private string? _error;
+    private JournalAccess _access = JournalAccess.Allowed;
+    private bool _canAdd;
+    private bool _canOpen;
+    private bool _canDelete;
+
+    protected override void OnParametersSet()
+    {
+        if (SecurityManager.LoggedUser == null)
+            return;
+
+        _access = Access.CheckBrowser(Code);
+        if (_access != JournalAccess.Allowed)
+        {
+            _root = null;
+            return;
+        }
+
+        try
+        {
+            _error = null;
+            BrowserRoute route = MenuRoutes.Browser[Code];
+
+            // Контейнер строится ровно как в MDIForm: имя корня, набор действий
+            // и сценарий связей. Действия в вебе не рисуются панелью, но
+            // конструктор их требует — передаём те же два, что в десктопе.
+            var container = new FakeContainer(
+                route.RootName,
+                new[]
+                {
+                    new Entity.Action(Constants.EntityActions.Refresh, "Обновить"),
+                    new Entity.Action(Constants.EntityActions.AddNew, "Добавить"),
+                },
+                RelationManager.GetScenario(route.Scenario));
+
+            _root = new BrowserNode { Name = container.Name, Container = container, Expandable = true };
+            Select(_root);
+        }
+        catch (Exception ex)
+        {
+            _error = ErrorPresenter.Describe(ex);
+            _root = null;
+        }
+    }
+
+    // ---------- Дерево ----------
+
+    private void Toggle(BrowserNode node)
+    {
+        try
+        {
+            _error = null;
+
+            if (node.Expanded)
+            {
+                node.Expanded = false;
+                return;
+            }
+
+            node.Children ??= LoadChildren(node);
+            node.Expanded = true;
+        }
+        catch (Exception ex)
+        {
+            _error = ErrorPresenter.Describe(ex);
+        }
+    }
+
+    /// <summary>
+    /// Дети узла — перечисление его контейнера. Перечисление, а не GetContent():
+    /// ObjectsIterator по пути создаёт доменные объекты и передаёт им сценарий,
+    /// из которого объект узнаёт собственную дочернюю сущность.
+    /// </summary>
+    private List<BrowserNode> LoadChildren(BrowserNode node)
+    {
+        var children = new List<BrowserNode>();
+        foreach (PresentationObject obj in node.Container)
+        {
+            var container = obj as IObjectContainer;
+            if (container == null)
+                continue;
+
+            children.Add(new BrowserNode
+            {
+                Name = obj.Name,
+                Container = container,
+                Expandable = IsExpandable(obj, container),
+            });
+        }
+        return children;
+    }
+
+    /// <summary>
+    /// Повторяет TreeView2.IsExpandableObject. Колонка isHasChilds — способ
+    /// процедуры сказать «у этой строки детей нет»; по умолчанию считаем, что
+    /// есть.
+    /// </summary>
+    private static bool IsExpandable(PresentationObject obj, IObjectContainer container) =>
+        container.IsChildNodeExpandable
+        && ParseHelper.GetBooleanFromObject(obj["isHasChilds"], true);
+
+    // ---------- Список справа ----------
+
+    /// <summary>
+    /// Выбор узла наполняет список его детьми — дословно RefreshDependantGrid:
+    /// сущность и строки берутся у контейнера узла, кэш перед этим сбрасывается.
+    /// </summary>
+    private void Select(BrowserNode node)
+    {
+        try
+        {
+            _error = null;
+            _selected = node;
+
+            Entity? childEntity = node.Container.ChildEntity;
+            if (childEntity == null)
+            {
+                _data = null;
+                _caption = node.Name;
+                _canAdd = _canOpen = _canDelete = false;
+                return;
+            }
+
+            _caption = $"{node.Name} / {childEntity.Name}";
+            _canAdd = childEntity.IsActionEnabled(Constants.EntityActions.AddNew, ViewType.Journal);
+            _canOpen = childEntity.IsActionEnabled(Constants.EntityActions.ShowPassport, ViewType.Journal);
+            _canDelete = childEntity.IsActionEnabled(Constants.EntityActions.Delete, ViewType.Journal);
+
+            node.Container.ClearCache();
+            _data = node.Container.GetContent();
+        }
+        catch (Exception ex)
+        {
+            _error = ErrorPresenter.Describe(ex);
+            _data = null;
+        }
+    }
+
+    /// <summary>
+    /// Перечитать выбранный узел. Заодно сбрасываются его уже загруженные
+    /// дети — состав мог измениться, и в десктопе Refresh делает то же самое
+    /// (OnContainerRefreshed очищает узел и раскрывает его заново).
+    /// </summary>
+    private void RefreshSelected()
+    {
+        if (_selected == null)
+            return;
+
+        _selected.Children = null;
+        _selected.Expanded = false;
+        Select(_selected);
+    }
+
+    private async Task AddNew()
+    {
+        try
+        {
+            if (_selected?.Container.ChildEntity is not { } childEntity)
+                return;
+
+            if (await Passports.ShowAsync(childEntity.NewObject, isNew: true))
+                RefreshSelected();
+        }
+        catch (Exception ex)
+        {
+            _error = ErrorPresenter.Describe(ex);
+        }
+    }
+
+    private void ShowError(string message) => _error = message;
+}
