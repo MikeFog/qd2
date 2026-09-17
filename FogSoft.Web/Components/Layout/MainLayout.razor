@@ -1,27 +1,62 @@
-﻿@inherits LayoutComponentBase
+@inherits LayoutComponentBase
+@implements IDisposable
+@using FogSoft.Web.Infrastructure
+@using FogSoft.WinForm.Classes
+@inject UserSession Session
 
-<div class="page">
-    <div class="sidebar">
+@*
+    Оболочка приложения: слева дерево меню, сверху полоса с текущим
+    пользователем, в центре экран.
+
+    Пользователь живёт в верхней полосе, а не на стартовой странице: он нужен
+    виден всегда, на любом экране — это обычное правило делового приложения и
+    заодно ответ на вопрос «под кем я сейчас работаю», важный там, где у
+    сотрудников разные права.
+*@
+
+<div class="shell">
+    <aside class="shell-nav">
         <NavMenu />
-    </div>
+    </aside>
 
-    <main>
-        <div class="top-row px-4">
-            <a href="https://learn.microsoft.com/aspnet/core/" target="_blank">About</a>
-        </div>
+    <div class="shell-main">
+        <header class="shell-top">
+            @if (Session.User is { } user)
+            {
+                <div class="shell-user">
+                    <span class="shell-user-name">@UserName(user)</span>
+                    <button type="button" class="btn btn-sm btn-outline-secondary" @onclick="Logout">Выйти</button>
+                </div>
+            }
+        </header>
 
-        <article class="content px-4">
+        <main class="shell-content">
             @Body
-        </article>
-    </main>
+        </main>
+    </div>
 </div>
 
-@* Один на всё приложение — рисует диалог, открытый через DialogService. *@
+@* Один на всё приложение — рисует диалоги, открытые через DialogService. *@
 <DialogHost />
 
-
 <div id="blazor-error-ui" data-nosnippet>
-    An unhandled error has occurred.
-    <a href="." class="reload">Reload</a>
+    Произошла непредвиденная ошибка.
+    <a href="." class="reload">Перезагрузить</a>
     <span class="dismiss">🗙</span>
 </div>
+
+@code {
+    protected override void OnInitialized() => Session.Changed += OnSessionChanged;
+
+    private void OnSessionChanged() => InvokeAsync(StateHasChanged);
+
+    private static string UserName(SecurityManager.User user)
+    {
+        string full = $"{user.LastName} {user.FirstName}".Trim();
+        return full.Length > 0 ? full : user.LoginName;
+    }
+
+    private void Logout() => SecurityManager.Clear();
+
+    public void Dispose() => Session.Changed -= OnSessionChanged;
+}

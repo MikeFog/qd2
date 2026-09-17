@@ -1,59 +1,70 @@
 @page "/"
-@using System.Data
+@using System.Configuration
 @using FogSoft.Web.Infrastructure
 @using FogSoft.WinForm.Classes
 
-<PageTitle>Вход</PageTitle>
+@*
+    Вход и стартовый экран.
 
-<h3>Вход в систему</h3>
+    Вход идёт через ту же процедуру GetUserData, что и в десктопе:
+    SecurityManager.Login из FogSoft.Core вызывается без единой правки. Раньше
+    это было написано прямо на экране — пояснение из вертикального среза;
+    пользователю оно не адресовано и переехало сюда.
+*@
 
-<p class="text-muted">
-    Вертикальный срез: вход идёт через ту же процедуру <code>GetUserData</code>,
-    что и в десктопе — <code>SecurityManager.Login</code> из FogSoft.Core вызывается
-    без единой правки.
-</p>
+<PageTitle>@(SecurityManager.LoggedUser == null ? "Вход" : "Начало")</PageTitle>
 
 @if (SecurityManager.LoggedUser == null)
 {
-    <div style="max-width: 22rem">
-        <div class="mb-2">
-            <label class="form-label">Пользователь</label>
-            <input class="form-control" @bind="_login" @bind:event="oninput" />
-        </div>
-        <div class="mb-3">
-            <label class="form-label">Пароль</label>
-            <input class="form-control" type="password" @bind="_password" @bind:event="oninput"
-                   @onkeydown="@(e => { if (e.Key == "Enter") DoLogin(); })" />
-        </div>
-        <button class="btn btn-primary" @onclick="DoLogin" disabled="@_busy">
-            @(_busy ? "Проверяю..." : "Войти")
-        </button>
-    </div>
+    <div class="signin">
+        <div class="signin-card">
+            <div class="signin-title">@Title</div>
+            <p class="signin-hint">Введите имя пользователя и пароль</p>
 
-    @if (_error != null)
-    {
-        <div class="alert alert-danger mt-3" style="max-width: 40rem">@_error</div>
-    }
+            <div class="mb-3">
+                <label class="form-label" for="login">Пользователь</label>
+                <input id="login" class="form-control" @bind="_login" @bind:event="oninput"
+                       @onkeydown="@(e => { if (e.Key == "Enter") DoLogin(); })" />
+            </div>
+            <div class="mb-4">
+                <label class="form-label" for="password">Пароль</label>
+                <input id="password" class="form-control" type="password" @bind="_password" @bind:event="oninput"
+                       @onkeydown="@(e => { if (e.Key == "Enter") DoLogin(); })" />
+            </div>
+
+            <button class="btn btn-primary w-100" @onclick="DoLogin" disabled="@_busy">
+                @(_busy ? "Проверяю…" : "Войти")
+            </button>
+
+            @if (_error != null)
+            {
+                <div class="alert alert-danger mt-3 mb-0">@_error</div>
+            }
+        </div>
+    </div>
 }
 else
 {
-    <div class="alert alert-success" style="max-width: 40rem">
-        Вошёл: <b>@SecurityManager.LoggedUser.LoginName</b>
-        (@SecurityManager.LoggedUser.FirstName @SecurityManager.LoggedUser.LastName),
-        Id = @SecurityManager.LoggedUser.Id
+    <h3 class="mb-3">@Title</h3>
+
+    <div class="state">
+        <div class="state-title">Выберите раздел в меню слева</div>
+        Перенесены журналы, карточки объектов и фильтры. Экраны, которых ещё нет,
+        сообщают об этом при открытии.
     </div>
 
-    <p>
-        <button class="btn btn-outline-secondary btn-sm" @onclick="CheckMetadata">
+    @* Диагностика вертикального среза: проверяет, что пользователь пережил
+       переход между двумя действиями, то есть что контекст circuit работает.
+       Кандидат на удаление, когда каркас перестанет быть новым. *@
+    <div class="diagnostics">
+        <button class="btn btn-sm btn-outline-secondary" @onclick="CheckMetadata">
             Проверить загрузку метаданных
         </button>
-        <button class="btn btn-outline-secondary btn-sm" @onclick="Logout">Выйти</button>
-    </p>
-
-    @if (_metadata != null)
-    {
-        <pre class="bg-light p-2" style="max-width: 40rem">@_metadata</pre>
-    }
+        @if (_metadata != null)
+        {
+            <pre class="diagnostics-output">@_metadata</pre>
+        }
+    </div>
 }
 
 @code {
@@ -62,6 +73,9 @@ else
     private string? _error;
     private string? _metadata;
     private bool _busy;
+
+    private static string Title =>
+        ConfigurationManager.AppSettings["Title"] is { Length: > 0 } title ? title : "Система";
 
     private void DoLogin()
     {
@@ -85,18 +99,12 @@ else
         }
         catch (Exception ex)
         {
-            _error = ex.GetType().Name + ": " + ex.Message;
+            _error = ErrorPresenter.Describe(ex);
         }
         finally
         {
             _busy = false;
         }
-    }
-
-    private void Logout()
-    {
-        SecurityManager.Clear();
-        _metadata = null;
     }
 
     /// <summary>
@@ -117,7 +125,7 @@ else
         }
         catch (Exception ex)
         {
-            _metadata = ex.GetType().Name + ": " + ex.Message;
+            _metadata = ErrorPresenter.Describe(ex);
         }
     }
 }
