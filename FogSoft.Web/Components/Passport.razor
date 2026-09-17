@@ -53,6 +53,34 @@ else
                             (этап 2). Значение не редактируется и не сохраняется.
                         </div>
                     }
+                    else if (field.Image != null)
+                    {
+                        <div>
+                            @if (ImageBytes(field) is { Length: > 0 } bytes)
+                            {
+                                <div class="mb-2">
+                                    <img src="@DataUrl(bytes)" alt="@field.Caption"
+                                         style="max-height:@(field.Image.Height)px; max-width:100%" />
+                                </div>
+                            }
+                            else
+                            {
+                                <div class="text-muted small mb-2">Нет изображения.</div>
+                            }
+
+                            <div class="input-group input-group-sm">
+                                <InputFile class="form-control" accept="image/*"
+                                           OnChange="e => LoadImage(field, e)" />
+                                <button type="button" class="btn btn-outline-secondary"
+                                        @onclick="() => ClearImage(field)">Очистить</button>
+                            </div>
+
+                            @if (_imageError != null)
+                            {
+                                <div class="text-danger small mt-1">@_imageError</div>
+                            }
+                        </div>
+                    }
                     else if (field.Selector != null)
                     {
                         <div style="max-height:40vh; overflow:auto">
@@ -491,6 +519,70 @@ else
                 changes.Added.Clear();
                 changes.Removed.Clear();
             }
+    }
+
+    // ---------- image ----------
+
+    // Подпись руководителя и подобные картинки весят килобайты; ограничение
+    // нужно только чтобы отказ был внятным, а не обрывом соединения.
+    private const long MaxImageBytes = 4 * 1024 * 1024;
+
+    private string? _imageError;
+
+    /// <summary>
+    /// Байты картинки лежат в том же параметре, что уходит в процедуру, и
+    /// попадают туда из строки журнала. Важно: пока пользователь ничего не
+    /// делал, значение не трогается вовсе — иначе сохранение карточки стирало
+    /// бы подпись, которую никто не редактировал.
+    /// </summary>
+    private byte[]? ImageBytes(PassportField field) => Object[field.Name] as byte[];
+
+    /// <summary>
+    /// Тип определяется по сигнатуре файла, а не по расширению: в базе лежит
+    /// то, что когда-то сохранил десктоп (он писал BMP), а загрузить могут
+    /// что угодно. Десктоп читает через Image.FromStream, который формат
+    /// тоже определяет сам, так что совместимость не теряется.
+    /// </summary>
+    private static string DataUrl(byte[] bytes) =>
+        $"data:{MediaType(bytes)};base64,{Convert.ToBase64String(bytes)}";
+
+    private static string MediaType(byte[] b)
+    {
+        if (b.Length > 1 && b[0] == 0x42 && b[1] == 0x4D) return "image/bmp";
+        if (b.Length > 3 && b[0] == 0x89 && b[1] == 0x50) return "image/png";
+        if (b.Length > 2 && b[0] == 0xFF && b[1] == 0xD8) return "image/jpeg";
+        if (b.Length > 2 && b[0] == 0x47 && b[1] == 0x49) return "image/gif";
+        return "application/octet-stream";
+    }
+
+    private async Task LoadImage(PassportField field, InputFileChangeEventArgs args)
+    {
+        _imageError = null;
+        try
+        {
+            IBrowserFile file = args.File;
+            using Stream source = file.OpenReadStream(MaxImageBytes);
+            using var memory = new MemoryStream();
+            await source.CopyToAsync(memory);
+
+            // Кладём файл как есть, без перекодирования: десктоп сохранял BMP
+            // (Image.Save(stream, ImageFormat.Bmp)), но читает Image.FromStream,
+            // который разбирает и PNG, и JPEG. Перекодирование потребовало бы
+            // System.Drawing на сервере и ничего бы не дало.
+            Object[field.Name] = memory.ToArray();
+        }
+        catch (Exception ex)
+        {
+            _imageError = ErrorPresenter.Describe(ex);
+        }
+    }
+
+    private void ClearImage(PassportField field)
+    {
+        // Ровно как BtnDelete_Click + ApplyChanges в десктопе: пустая картинка
+        // уходит в процедуру как null, а не как отсутствие параметра.
+        Object[field.Name] = null;
+        _imageError = null;
     }
 
     /// <summary>

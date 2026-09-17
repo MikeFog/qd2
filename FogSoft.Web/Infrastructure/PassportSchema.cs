@@ -15,10 +15,11 @@ namespace FogSoft.Web.Infrastructure;
 /// «нарисовать» сделано намеренно: разбор не зависит от фронтенда и переживёт
 /// смену способа отрисовки.
 ///
-/// Поддержаны <c>field</c>, <c>lookup</c>, <c>objectPicker</c> и
-/// <c>selector</c>. Остальные типы контролов (<c>treeselector</c>,
-/// <c>image</c>, <c>button</c>) — продолжение этапа 2, см.
-/// docs/tasks/web-migration.md, раздел 4.2. Неизвестный элемент не молчит, а превращается в
+/// Поддержаны <c>field</c>, <c>lookup</c>, <c>objectPicker</c>,
+/// <c>selector</c> и <c>image</c>. Не поддержаны <c>treeselector</c> (в данных
+/// не встречается) и <c>button</c> (переносить нечего: сам контрол пустой, а
+/// поведение живёт в форме паспорта ролика — этап 3, см.
+/// docs/tasks/web-migration.md). Неизвестный элемент не молчит, а превращается в
 /// <see cref="PassportField"/> с <see cref="PassportField.Unsupported"/> —
 /// иначе поле тихо пропало бы из карточки, а данные так же тихо не сохранились.
 /// </summary>
@@ -73,6 +74,7 @@ public static class PassportSchema
 					Lookup: ParseLookup(child),
 					Picker: ParsePicker(child),
 					Selector: ParseSelector(child),
+					Image: ParseImage(child),
 					Type: ResolveType(child, name, entity)));
 			}
 			pages.Add(page);
@@ -101,6 +103,9 @@ public static class PassportSchema
 			return string.IsNullOrEmpty(Attr(node, PageControl.Attributes.Source))
 				? "lookup с источником по entity"
 				: null;
+
+		if (node.Name == "image")
+			return null;
 
 		if (node.Name == "selector")
 		{
@@ -180,6 +185,17 @@ public static class PassportSchema
 			IsCreateNewAllowed: ParseHelper.ParseToBoolean(
 				Attr(node, PageControl.Attributes.IsCreateNewAllowed) ?? string.Empty, false),
 			Filters: ParseFilters(node));
+	}
+
+	private static PassportImage? ParseImage(XmlNode node)
+	{
+		if (node.Name != "image")
+			return null;
+
+		// Умолчание то же, что в PageFieldImage: 60 точек, если высота не задана.
+		int height = ParseHelper.ParseToInt32(
+			Attr(node, PageControl.Attributes.Height) ?? string.Empty, 0);
+		return new PassportImage(height > 0 ? height : 60);
 	}
 
 	private static PassportSelector? ParseSelector(XmlNode node)
@@ -275,6 +291,7 @@ public sealed class PassportPage
 /// <param name="Picker">Описание выбора объекта; null — это не objectPicker.</param>
 /// <param name="Type">Разрешённый тип значения; null у полей, где он не нужен.</param>
 /// <param name="Selector">Описание набора дочерних объектов; null — это не selector.</param>
+/// <param name="Image">Описание картинки; null — это не image.</param>
 public sealed record PassportField(
 	string Name,
 	string Caption,
@@ -284,7 +301,8 @@ public sealed record PassportField(
 	PassportLookup? Lookup = null,
 	PassportPicker? Picker = null,
 	FieldTypeResolver? Type = null,
-	PassportSelector? Selector = null);
+	PassportSelector? Selector = null,
+	PassportImage? Image = null);
 
 /// <param name="Source">Псевдоним набора строк из процедуры паспорта (iTableAlias).</param>
 /// <param name="ColumnWithId">Колонка со значением, которое уходит в процедуру.</param>
@@ -318,3 +336,6 @@ public sealed record PassportSelector(
 	string Source,
 	string EntityName,
 	bool Multiselect);
+
+/// <param name="Height">Высота показа в точках; 60, если в метаданных не задана.</param>
+public sealed record PassportImage(int Height);
