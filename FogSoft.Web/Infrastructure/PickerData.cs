@@ -5,22 +5,25 @@ using FogSoft.WinForm.DataAccess;
 namespace FogSoft.Web.Infrastructure;
 
 /// <summary>
-/// Данные для <c>objectPicker</c>: откуда берутся кандидаты на выбор и как по
-/// сохранённому идентификатору получить имя объекта для показа.
+/// Данные для <c>lookup</c> и <c>objectPicker</c>: откуда берутся кандидаты на
+/// выбор и как по сохранённому идентификатору получить имя объекта для показа.
 ///
-/// Веб-аналог той половины <c>ObjectPicker2</c>, что работает с данными
-/// (<c>SetDataSource</c> / <c>LoadData</c> / <c>SelectObject</c>). Отрисовка —
-/// в Passport.razor и ObjectSelector.razor, здесь только данные: так же, как
+/// Веб-аналог той половины <c>ObjectPicker2</c>/<c>PageFieldLookUp</c>, что
+/// работает с данными (<c>SetDataSource</c> / <c>LoadData</c> /
+/// <c>SelectObject</c>). Отрисовка — в Passport.razor, Journal.razor
+/// (фильтр) и ObjectSelector.razor, здесь только данные: так же, как
 /// PassportSchema отделён от разметки.
 /// </summary>
 public static class PickerData
 {
 	/// <summary>
-	/// Кандидаты на выбор. Если паспорт уже принёс готовый набор с таким
-	/// псевдонимом — берётся он (в десктопе это <c>SetDataSource</c>), иначе
-	/// сущность грузит их сама при открытии выбора (<c>LoadData</c>).
+	/// Кандидаты объекта на выбор (<c>objectPicker</c>). Если паспорт/фильтр
+	/// уже принёс готовый набор с таким псевдонимом — берётся он (в десктопе
+	/// это <c>SetDataSource</c>), иначе сущность грузит их сама при открытии
+	/// выбора (<c>LoadData</c>). <paramref name="owner"/> — null в фильтре, где
+	/// нет редактируемого объекта, а значит и значений типа <c>parameter</c>.
 	/// </summary>
-	public static DataTable Candidates(PassportPicker picker, DataSet? passportData, PresentationObject owner)
+	public static DataTable Candidates(PassportPicker picker, DataSet? passportData, PresentationObject? owner)
 	{
 		if (picker.Source != null && passportData != null && passportData.Tables.Contains(picker.Source))
 			return passportData.Tables[picker.Source]!;
@@ -32,20 +35,41 @@ public static class PickerData
 		// filterValues — то есть собранное игнорируется. Повторяем фактическое
 		// поведение, а не намерение: иначе выборка вернула бы другой состав
 		// строк, чем показывает десктоп.
-		return entity.GetContent(Filters(picker, owner));
+		return entity.GetContent(Filters(picker.Filters, owner));
+	}
+
+	/// <summary>
+	/// Строки списка <c>lookup</c>. Готовый набор по source, если он есть в
+	/// переданном наборе (паспортная процедура или, в фильтре,
+	/// <c>Globals.PrepareForFilter</c>), иначе — запасной путь: сущность
+	/// грузит список сама (<c>PageFieldLookUp</c>: <c>GetEntity(...).GetContent(...)</c>).
+	/// null, если нет ни готового набора, ни entity — тогда поле помечено
+	/// Unsupported и сюда не попадает.
+	/// </summary>
+	public static DataTable? LookupRows(PassportLookup lookup, DataSet? sourceData)
+	{
+		if (lookup.Source != null && sourceData != null && sourceData.Tables.Contains(lookup.Source))
+			return sourceData.Tables[lookup.Source];
+
+		if (lookup.EntityName == null)
+			return null;
+
+		Entity entity = EntityManager.GetEntity(lookup.EntityName);
+		return entity.GetContent(Filters(lookup.Filters, null));
 	}
 
 	/// <summary>
 	/// Значения фильтра из вложенных <c>&lt;filter&gt;</c>. Разбор типов тот
 	/// же, что в <c>PageFieldSelector.GetFilters</c>, включая <c>parameter</c>
 	/// (значение берётся из параметров редактируемого объекта) и
-	/// <c>parameter_isnew</c>.
+	/// <c>parameter_isnew</c> — оба доступны только при заданном
+	/// <paramref name="owner"/>, то есть не в фильтре.
 	/// </summary>
-	public static Dictionary<string, object> Filters(PassportPicker picker, PresentationObject owner)
+	public static Dictionary<string, object> Filters(IReadOnlyList<PassportFilterValue> filters, PresentationObject? owner)
 	{
 		Dictionary<string, object> values = DataAccessor.CreateParametersDictionary();
 
-		foreach (PassportFilterValue filter in picker.Filters)
+		foreach (PassportFilterValue filter in filters)
 		{
 			var resolver = new FieldTypeResolver(filter.Type, null);
 			object? value;
@@ -58,9 +82,9 @@ public static class PickerData
 				value = ParseHelper.ParseToInt32(filter.Value);
 			else if (resolver.IsDecimal)
 				value = decimal.Parse(filter.Value);
-			else if (string.Equals(filter.Type, "parameter", StringComparison.Ordinal))
+			else if (owner != null && string.Equals(filter.Type, "parameter", StringComparison.Ordinal))
 				value = owner[filter.Name];
-			else if (string.Equals(filter.Type, "parameter_isnew", StringComparison.Ordinal))
+			else if (owner != null && string.Equals(filter.Type, "parameter_isnew", StringComparison.Ordinal))
 				value = owner.IsNew;
 			else
 				continue;

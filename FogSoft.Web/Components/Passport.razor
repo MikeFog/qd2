@@ -263,7 +263,11 @@ else
     {
         PassportLookup lookup = field.Lookup!;
 
-        if (Data == null || !Data.Tables.Contains(lookup.Source))
+        // lookup.Source может быть null (запасной путь по entity), но в
+        // паспортах он всегда помечен Unsupported — сюда попадает только с
+        // непустым Source, проверка на всякий случай не даёт упасть на
+        // Data.Tables.Contains(null).
+        if (Data == null || lookup.Source == null || !Data.Tables.Contains(lookup.Source))
             return Empty;
 
         DataTable table = Data.Tables[lookup.Source]!;

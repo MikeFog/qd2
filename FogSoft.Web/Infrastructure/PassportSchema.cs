@@ -33,7 +33,17 @@ public static class PassportSchema
 	/// <param name="isNew">
 	/// Новый объект или существующий: влияет на атрибут <c>isMandatoryOnCreate</c>.
 	/// </param>
-	public static IReadOnlyList<PassportPage> Parse(string? xml, Entity? entity = null, bool isNew = false)
+	/// <param name="pageType">
+	/// Passport или Filter — тот же контекст, что <c>PageContext.PageType</c> в
+	/// десктопе. Влияет только на <c>lookup</c> без <c>source</c>: запасной путь
+	/// по атрибуту <c>entity</c> десктоп не различает по контексту (см.
+	/// <c>PageFieldLookUp</c>), но в реальных метаданных он встречается только в
+	/// фильтрах — в паспортах такой lookup не с чем сверить живьём, поэтому там
+	/// он остаётся <see cref="PassportField.Unsupported"/>, а не молча
+	/// притворяется рабочим.
+	/// </param>
+	public static IReadOnlyList<PassportPage> Parse(
+		string? xml, Entity? entity = null, bool isNew = false, PageTypes pageType = PageTypes.Passport)
 	{
 		var pages = new List<PassportPage>();
 		if (string.IsNullOrWhiteSpace(xml))
@@ -69,7 +79,7 @@ public static class PassportSchema
 					// его нет, тип берётся из атрибутов сущности. Здесь — только
 					// то, что явно записано в XML.
 					XmlType: Attr(child, PageControl.Attributes.Type),
-					Unsupported: Unsupported(child),
+					Unsupported: Unsupported(child, pageType),
 					Required: IsRequired(child, name, entity, isNew),
 					Lookup: ParseLookup(child),
 					Picker: ParsePicker(child),
@@ -82,7 +92,7 @@ public static class PassportSchema
 		return pages;
 	}
 
-	private static string? Unsupported(XmlNode node)
+	private static string? Unsupported(XmlNode node, PageTypes pageType)
 	{
 		// Поле, список и выбор объекта пишут значение по имени параметра. Без
 		// имени писать некуда, и рисовать ввод нельзя: он выглядел бы рабочим,
@@ -94,15 +104,23 @@ public static class PassportSchema
 		if (node.Name == "field")
 			return null;
 
-		// Без source список брать неоткуда: строки приходят готовым набором из
-		// процедуры паспорта. Запасной источник по атрибуту entity
-		// (PageFieldLookUp грузит его сам через GetContent) не поддержан — в
-		// паспортах такой формы нет ни одной, она встречается только в
-		// фильтрах, см. docs/tasks/web-migration.md, этап 2.
 		if (node.Name == "lookup")
-			return string.IsNullOrEmpty(Attr(node, PageControl.Attributes.Source))
-				? "lookup с источником по entity"
-				: null;
+		{
+			if (!string.IsNullOrEmpty(Attr(node, PageControl.Attributes.Source)))
+				return null;
+
+			// Без source список брать неоткуда готовым набором из процедуры
+			// паспорта/фильтра. Запасной источник по атрибуту entity
+			// (PageFieldLookUp грузит его сам через GetContent) в десктопе не
+			// различает контекст, но живьём встречается только в фильтрах
+			// (сущности 146, 1266, 1269) — в паспортах ни одного такого lookup
+			// нет, сверить нечем, поэтому там он остаётся непереведённым, а не
+			// молча притворяется рабочим.
+			if (pageType == PageTypes.Filter && !string.IsNullOrEmpty(Attr(node, PageControl.Attributes.Entity)))
+				return null;
+
+			return "lookup без источника";
+		}
 
 		if (node.Name == "image")
 			return null;
@@ -141,18 +159,22 @@ public static class PassportSchema
 			return null;
 
 		string? source = Attr(node, PageControl.Attributes.Source);
-		if (string.IsNullOrEmpty(source))
-			return null;
-
+		string? entityName = Attr(node, PageControl.Attributes.Entity);
 		string? parentName = Attr(node, PageControl.Attributes.ParentLookupName);
 		return new PassportLookup(
-			Source: source!,
+			Source: string.IsNullOrEmpty(source) ? null : source,
+			// Запасной путь: сущность, из которой список грузится сам, когда
+			// готового набора по source нет (PageFieldLookUp.GetEntity).
+			EntityName: string.IsNullOrEmpty(entityName) ? null : entityName,
 			// Умолчания те же, что у контрола LookUp: колонка значения — id,
 			// колонка подписи — name. columnWithName в метаданных не встречается,
 			// такого атрибута нет и в PageControl.Attributes.
 			ColumnWithId: Attr(node, PageControl.Attributes.ColumnWithId) ?? Constants.Parameters.Id,
 			ParentLookupName: string.IsNullOrEmpty(parentName) ? null : parentName,
-			ParentFilter: Attr(node, PageControl.Attributes.Filter));
+			ParentFilter: Attr(node, PageControl.Attributes.Filter),
+			// Вложенные <filter> — параметры для запасного пути по entity, тот
+			// же разбор, что и у objectPicker (PageFieldSelector.GetFilters).
+			Filters: ParseFilters(node));
 	}
 
 	/// <summary>
@@ -304,15 +326,19 @@ public sealed record PassportField(
 	PassportSelector? Selector = null,
 	PassportImage? Image = null);
 
-/// <param name="Source">Псевдоним набора строк из процедуры паспорта (iTableAlias).</param>
+/// <param name="Source">Псевдоним набора строк из процедуры паспорта/фильтра (iTableAlias); null — набора нет, список берётся сущностью по <paramref name="EntityName"/>.</param>
+/// <param name="EntityName">Сущность запасного пути, когда готового набора по source нет; null — запасного пути нет.</param>
 /// <param name="ColumnWithId">Колонка со значением, которое уходит в процедуру.</param>
 /// <param name="ParentLookupName">Имя lookup-а, от которого зависит этот; null — независимый.</param>
 /// <param name="ParentFilter">Выражение RowFilter с {0} вместо значения родителя.</param>
+/// <param name="Filters">Значения вложенного &lt;filter&gt; для запасного пути по entity.</param>
 public sealed record PassportLookup(
-	string Source,
+	string? Source,
+	string? EntityName,
 	string ColumnWithId,
 	string? ParentLookupName,
-	string? ParentFilter);
+	string? ParentFilter,
+	IReadOnlyList<PassportFilterValue> Filters);
 
 /// <param name="EntityName">Имя сущности, из которой выбирают (iEntity.name).</param>
 /// <param name="Source">Псевдоним готового набора строк; null — грузить сущностью по требованию.</param>

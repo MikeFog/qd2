@@ -59,8 +59,12 @@ else
     /// <summary>Наборы строк паспорта — источник кандидатов, если он там есть.</summary>
     [Parameter] public DataSet? PassportData { get; set; }
 
-    /// <summary>Редактируемый объект: из него берутся значения фильтров типа parameter.</summary>
-    [Parameter, EditorRequired] public PresentationObject Owner { get; set; } = default!;
+    /// <summary>
+    /// Редактируемый объект: из него берутся значения фильтров типа parameter.
+    /// null в фильтре журнала — там нет редактируемого объекта, а вложенные
+    /// &lt;filter&gt; в фильтре встречаются только константных типов.
+    /// </summary>
+    [Parameter] public PresentationObject? Owner { get; set; }
 
     /// <summary>Выбранная строка; null — пользователь ничего не выбрал.</summary>
     public DataRow? SelectedRow { get; private set; }

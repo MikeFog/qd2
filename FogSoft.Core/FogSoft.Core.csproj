@@ -54,6 +54,7 @@
     <Compile Include="..\FogSoft.WinForm\Classes\ObjectContainer.cs" Link="Classes\ObjectContainer.cs" />
     <Compile Include="..\FogSoft.WinForm\Globals.Core.cs" Link="Globals.Core.cs" />
     <Compile Include="..\FogSoft.WinForm\Passport\Classes\PageControl.Constants.cs" Link="Passport\PageControl.Constants.cs" />
+    <Compile Include="..\FogSoft.WinForm\Passport\Classes\PageContext.cs" Link="Passport\PageContext.cs" />
     <Compile Include="..\FogSoft.WinForm\Classes\EntityManager.cs" Link="Classes\EntityManager.cs" />
     <Compile Include="..\FogSoft.WinForm\Classes\FieldTypeResolver.cs" Link="Classes\FieldTypeResolver.cs" />
     <Compile Include="..\FogSoft.WinForm\Classes\Interfaces.cs" Link="Classes\Interfaces.cs" />
