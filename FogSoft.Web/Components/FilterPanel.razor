@@ -24,7 +24,7 @@
     GetContent (ObjectsIterator._filter / Entity.GetContent), без копирования.
 *@
 
-@if (Pages.Count > 0)
+@if (VisiblePages.Count > 0)
 {
     <section class="filter">
         <button type="button" class="filter-toggle" @onclick="() => _filterOpen = !_filterOpen">
@@ -35,80 +35,94 @@
         @if (_filterOpen)
         {
             <div class="filter-body">
-                <div class="filter-grid">
-                    @foreach (var pg in Pages)
-                    {
-                        @foreach (var field in pg.Fields)
+                @* Страницы отбора — вкладками, как tabPassport в десктопной FilterForm
+                   (та же TabbedForm, что у паспорта). Одна страница — без вкладок. *@
+                @if (VisiblePages.Count > 1)
+                {
+                    <div class="tabs" role="tablist">
+                        @for (int i = 0; i < VisiblePages.Count; i++)
                         {
-                            @if (field.Unsupported != null)
+                            int index = i;
+                            <button type="button" role="tab"
+                                    class="tab @(index == _activePage ? "tab-active" : "")"
+                                    @onclick="() => _activePage = index">
+                                @(VisiblePages[index].Caption is { Length: > 0 } c ? c : $"Страница {index + 1}")
+                            </button>
+                        }
+                    </div>
+                }
+
+                <div class="filter-grid">
+                    @foreach (var field in CurrentPage.Fields)
+                    {
+                        @if (field.Unsupported != null)
+                        {
+                            @* Проверка Unsupported тут обязательна и должна идти первой:
+                               без неё lookup, у которого источник задан через entity, а
+                               не через source, молча превратился бы в поле для ввода
+                               текста — и туда можно было бы написать что угодно вместо
+                               выбора из списка. *@
+                            <div class="filter-note">
+                                @field.Caption — @field.Unsupported в фильтре пока не поддержан (этап 2).
+                            </div>
+                        }
+                        else if (field.Type is { IsBoolean: true })
+                        {
+                            <div class="filter-check">
+                                <input type="checkbox" class="form-check-input" id="@("f_" + field.Name)"
+                                       checked="@GetFilterBool(field.Name)"
+                                       @onchange="e => SetFilterBool(field.Name, e.Value)" />
+                                <label class="form-check-label" for="@("f_" + field.Name)">@field.Caption</label>
+                            </div>
+                        }
+                        else
+                        {
+                            @* Галочка «использовать» — левая колонка десктопного
+                               PageField: в режиме фильтра там не подпись, а CheckBox,
+                               и параметр уходит в процедуру только когда он отмечен
+                               (ValueShouldBeSet). *@
+                            <input type="checkbox" class="form-check-input"
+                                   disabled="@IsManagerLocked(field)"
+                                   checked="@IsFilterUsed(field.Name)"
+                                   @onchange="e => UseFilter(field, e.Value)" />
+                            <label class="filter-label">@field.Caption</label>
+
+                            @if (field.Lookup != null)
                             {
-                                @* Проверка Unsupported тут обязательна и должна идти первой:
-                                   без неё lookup, у которого источник задан через entity, а
-                                   не через source, молча превратился бы в поле для ввода
-                                   текста — и туда можно было бы написать что угодно вместо
-                                   выбора из списка. *@
-                                <div class="filter-note">
-                                    @field.Caption — @field.Unsupported в фильтре пока не поддержан (этап 2).
-                                </div>
+                                @* Пустого пункта в списке нет: в фильтре пустоту
+                                   выражает снятая галочка, а не пустая строка
+                                   (десктопное Lookup.IsNullable = isNullable &&
+                                   PageType == Passport, то есть всегда false в фильтре). *@
+                                <select class="form-select form-select-sm"
+                                        disabled="@(!IsFilterUsed(field.Name))"
+                                        value="@FilterLookupValue(field)"
+                                        @onchange="e => SetFilterLookup(field, e.Value)">
+                                    @foreach (DataRowView row in FilterLookupRows(field))
+                                    {
+                                        <option value="@AsFilterText(row[field.Lookup.ColumnWithId])">@FilterLookupDisplay(row)</option>
+                                    }
+                                </select>
                             }
-                            else if (field.Type is { IsBoolean: true })
+                            else if (field.Picker != null)
                             {
-                                <div class="filter-check">
-                                    <input type="checkbox" class="form-check-input" id="@("f_" + field.Name)"
-                                           checked="@GetFilterBool(field.Name)"
-                                           @onchange="e => SetFilterBool(field.Name, e.Value)" />
-                                    <label class="form-check-label" for="@("f_" + field.Name)">@field.Caption</label>
+                                @* Кнопки «Создать» в фильтре нет — PageFieldObjectPicker
+                                   гасит её при PageTypes.Filter независимо от
+                                   isCreateNewAllowed. *@
+                                <div class="input-group input-group-sm">
+                                    <input class="form-control" readonly
+                                           disabled="@(!IsFilterUsed(field.Name) || IsManagerLocked(field))"
+                                           value="@FilterPickerName(field)" />
+                                    <button type="button" class="btn btn-outline-secondary"
+                                            disabled="@(!IsFilterUsed(field.Name) || IsManagerLocked(field))"
+                                            @onclick="() => SelectFilterPicker(field)">Выбрать</button>
                                 </div>
                             }
                             else
                             {
-                                @* Галочка «использовать» — левая колонка десктопного
-                                   PageField: в режиме фильтра там не подпись, а CheckBox,
-                                   и параметр уходит в процедуру только когда он отмечен
-                                   (ValueShouldBeSet). *@
-                                <input type="checkbox" class="form-check-input"
-                                       disabled="@IsManagerLocked(field)"
-                                       checked="@IsFilterUsed(field.Name)"
-                                       @onchange="e => UseFilter(field, e.Value)" />
-                                <label class="filter-label">@field.Caption</label>
-
-                                @if (field.Lookup != null)
-                                {
-                                    @* Пустого пункта в списке нет: в фильтре пустоту
-                                       выражает снятая галочка, а не пустая строка
-                                       (десктопное Lookup.IsNullable = isNullable &&
-                                       PageType == Passport, то есть всегда false в фильтре). *@
-                                    <select class="form-select form-select-sm"
-                                            disabled="@(!IsFilterUsed(field.Name))"
-                                            value="@FilterLookupValue(field)"
-                                            @onchange="e => SetFilterLookup(field, e.Value)">
-                                        @foreach (DataRowView row in FilterLookupRows(field))
-                                        {
-                                            <option value="@AsFilterText(row[field.Lookup.ColumnWithId])">@FilterLookupDisplay(row)</option>
-                                        }
-                                    </select>
-                                }
-                                else if (field.Picker != null)
-                                {
-                                    @* Кнопки «Создать» в фильтре нет — PageFieldObjectPicker
-                                       гасит её при PageTypes.Filter независимо от
-                                       isCreateNewAllowed. *@
-                                    <div class="input-group input-group-sm">
-                                        <input class="form-control" readonly
-                                               disabled="@(!IsFilterUsed(field.Name) || IsManagerLocked(field))"
-                                               value="@FilterPickerName(field)" />
-                                        <button type="button" class="btn btn-outline-secondary"
-                                                disabled="@(!IsFilterUsed(field.Name) || IsManagerLocked(field))"
-                                                @onclick="() => SelectFilterPicker(field)">Выбрать</button>
-                                    </div>
-                                }
-                                else
-                                {
-                                    <input type="@InputType(field)" class="form-control form-control-sm"
-                                           disabled="@(!IsFilterUsed(field.Name))"
-                                           value="@GetFilterText(field)"
-                                           @onchange="e => SetFilterText(field, e.Value)" />
-                                }
+                                <input type="@InputType(field)" class="form-control form-control-sm"
+                                       disabled="@(!IsFilterUsed(field.Name))"
+                                       value="@GetFilterText(field)"
+                                       @onchange="e => SetFilterText(field, e.Value)" />
                             }
                         }
                     }
@@ -151,6 +165,23 @@
 
     private bool _filterOpen = true;
 
+    // Открытая вкладка — аналог tabPassport.SelectedIndex. Значения полей
+    // остальных вкладок никуда не деваются: они лежат в общем словаре Values и
+    // уходят в процедуру вместе с открытой (десктопный ApplyChanges обходит
+    // все страницы).
+    private int _activePage;
+
+    /// <summary>
+    /// Страницы, на которых есть что показать. Страница без единого поля
+    /// вкладки не получает (в метаданных сейчас таких нет).
+    /// </summary>
+    private IReadOnlyList<PassportPage> VisiblePages =>
+        _visiblePages ??= Pages.Where(p => p.Fields.Count > 0).ToList();
+
+    private IReadOnlyList<PassportPage>? _visiblePages;
+
+    private PassportPage CurrentPage => VisiblePages[Math.Min(_activePage, VisiblePages.Count - 1)];
+
     // Запасной путь lookup-а по entity и разрешение имени objectPicker бьют в
     // базу, поэтому кэшируются на время жизни компонента — иначе каждый
     // перерендер (например, ввод в соседнем поле фильтра) читал бы их заново.
@@ -173,6 +204,8 @@
             return;
 
         _cachedFor = Pages;
+        _visiblePages = null;
+        _activePage = 0;
         _filterLookupCache.Clear();
         _filterPickerNames.Clear();
         _filterPickerNamesFor.Clear();

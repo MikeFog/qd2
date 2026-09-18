@@ -42,6 +42,10 @@
 .filter-grid {
     display: grid;
     grid-template-columns: auto minmax(120px, 240px) minmax(200px, 420px);
+    /* Без этого «auto»-колонка галочек растягивается на всё свободное место
+       (у остальных потолок задан), и на широком экране подписи уезжают
+       в середину, оставляя галочки у левого края. */
+    justify-content: start;
     gap: var(--s-2) var(--s-3);
     align-items: center;
 }
@@ -74,4 +78,35 @@
     margin-top: var(--s-4);
     padding-top: var(--s-3);
     border-top: 1px solid var(--c-border);
+}
+
+/* Вкладки страниц отбора — те же, что у карточки (Passport.razor.css); стили
+   там изолированы компонентом, поэтому повторены здесь. */
+.tabs {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 2px;
+    margin: calc(var(--s-4) * -1) calc(var(--s-4) * -1) var(--s-4);
+    padding: 0 var(--s-4);
+    border-bottom: 1px solid var(--c-border);
+}
+
+.tab {
+    padding: var(--s-2) var(--s-3);
+    border: none;
+    border-bottom: 2px solid transparent;
+    background: none;
+    font-size: 13px;
+    color: var(--c-text-muted);
+    white-space: nowrap;
+}
+
+.tab:hover {
+    color: var(--c-text);
+}
+
+.tab-active {
+    color: var(--c-accent);
+    border-bottom-color: var(--c-accent);
+    font-weight: 600;
 }
