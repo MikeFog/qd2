@@ -92,7 +92,6 @@ else
 
     private Entity? _entity;
     private DataTable? _data;
-    private IReadOnlyList<Entity.Attribute> _columns = Array.Empty<Entity.Attribute>();
     private readonly Dictionary<string, object> _filterValues =
         new(StringComparer.InvariantCultureIgnoreCase);
     private IReadOnlyList<PassportPage> _filterPages = Array.Empty<PassportPage>();
@@ -129,7 +128,6 @@ else
         {
             _error = null;
             _entity = EntityManager.GetEntity(EntityId);
-            _columns = _entity.SortedAttributes;
             _filterPages = PassportSchema.Parse(_entity.XmlFilter, _entity, pageType: PageTypes.Filter);
 
             _canAdd = _entity.IsActionEnabled(Constants.EntityActions.AddNew, ViewType.Journal);

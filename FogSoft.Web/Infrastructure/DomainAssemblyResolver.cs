@@ -29,14 +29,21 @@ namespace FogSoft.Web.Infrastructure;
 /// - <b>править Entity.CreateObject</b> в ядре — правка общего кода ради
 ///   веба, тогда как достаточно настройки на стороне веба.
 ///
+/// То же самое с именем <c>FogSoft.WinForm</c> (2026-09-18): у сущностей
+/// статистики (161, 163, 168, 170, 201–205, 218, 219, 222, 225) в метаданных
+/// <c>entityClassName = SimpleObjectEntity</c> в сборке <c>FogSoft.WinForm</c>,
+/// а исходники этой сборки в вебе тоже живут в <c>FogSoft.Core.dll</c>.
+/// Раньше упирались в это не все журналы: у сущностей без своего класса
+/// сущности (<c>entityClassName IS NULL</c>) сборка не запрашивается вовсе.
+///
 /// Долгосрочно: когда десктоп будет выведен из эксплуатации, правильным
 /// станет обновить метаданные и убрать это сопоставление. До тех пор оно —
 /// единственное место, где веб знает про имя десктопной сборки.
 /// </summary>
 public static class DomainAssemblyResolver
 {
-	/// <summary>Имя сборки, записанное в метаданных (десктопное приложение).</summary>
-	private const string MetadataAssemblyName = "Merlin";
+	/// <summary>Имена сборок десктопа, записанные в метаданных; в вебе обе — это ядро.</summary>
+	private static readonly string[] MetadataAssemblyNames = { "Merlin", "FogSoft.WinForm" };
 
 	public static void Register()
 	{
@@ -45,7 +52,7 @@ public static class DomainAssemblyResolver
 			// args.Name — полное имя ("Merlin, Version=..."), нам нужна только
 			// простая часть.
 			string requested = new AssemblyName(args.Name).Name ?? "";
-			return string.Equals(requested, MetadataAssemblyName, StringComparison.OrdinalIgnoreCase)
+			return MetadataAssemblyNames.Contains(requested, StringComparer.OrdinalIgnoreCase)
 				? typeof(FogSoft.WinForm.Classes.PresentationObject).Assembly
 				: null;
 		};
