@@ -49,8 +49,11 @@ else
         if (string.IsNullOrEmpty(Node.CodeName))
             return;
 
-        if (MenuRoutes.SimpleJournal.TryGetValue(Node.CodeName, out int entityId))
-            Nav.NavigateTo($"/journal/{entityId}");
+        // Пункт меню едет в адресе параметром: правило ManagerFilter и заголовок
+        // привязаны к пункту, а не к сущности. Точка в codeName (miStats.X) в
+        // значении query-параметра безопасна, в отличие от сегмента пути.
+        if (MenuRoutes.SimpleJournal.TryGetValue(Node.CodeName, out JournalRoute? journal))
+            Nav.NavigateTo($"/journal/{journal.EntityId}?menu={Uri.EscapeDataString(Node.CodeName)}");
         else if (MenuRoutes.Browser.ContainsKey(Node.CodeName))
             Nav.NavigateTo($"/browser/{Uri.EscapeDataString(Node.CodeName)}");
         else

@@ -24,7 +24,7 @@
     причина записаны в docs/tasks/web-migration.md, раздел 10.
 *@
 
-<PageTitle>@(_entity?.Name ?? "Журнал")</PageTitle>
+<PageTitle>@(Title ?? "Журнал")</PageTitle>
 
 @if (SecurityManager.LoggedUser == null)
 {
@@ -65,7 +65,7 @@ else
        Счётчик записей рядом с названием, а не под кнопкой: это свойство
        списка, а не результат действия. *@
     <header class="screen-head">
-        <h3>@_entity.Name</h3>
+        <h3>@Title</h3>
         <span class="screen-count">@(_data?.Rows.Count ?? 0)</span>
         <div class="screen-actions">
             <button class="btn btn-primary btn-sm" disabled="@(!_canAdd)" @onclick="AddNew">Добавить</button>
@@ -73,7 +73,8 @@ else
     </header>
 
     @* ---------- Фильтр ---------- *@
-    <FilterPanel Pages="_filterPages" Values="_filterValues" FilterData="_filterData" Apply="Load" />
+    <FilterPanel Pages="_filterPages" Values="_filterValues" FilterData="_filterData" Apply="Load"
+                 RestrictManager="_route?.ManagerFilter == true" />
 
     @* ---------- Список ---------- *@
     @* Кнопки гасятся по тем же правам и теми же вызовами, что в десктопном
@@ -89,6 +90,18 @@ else
 
 @code {
     [Parameter] public int EntityId { get; set; }
+
+    /// <summary>
+    /// codeName пункта меню, из которого открыт журнал (<c>?menu=</c>). Правило
+    /// ManagerFilter и заголовок привязаны к пункту, а не к сущности
+    /// (<see cref="JournalRoute"/>). Без параметра (адрес набран руками) берётся
+    /// первый маршрут на эту сущность.
+    /// </summary>
+    [SupplyParameterFromQuery(Name = "menu")] public string? Menu { get; set; }
+
+    private JournalRoute? _route;
+    private int? _loadedEntityId;
+    private string? Title => _route?.Caption ?? _entity?.Name;
 
     private Entity? _entity;
     private DataTable? _data;
@@ -118,14 +131,25 @@ else
         // адрес /journal/{id} можно набрать руками. Разрешение — то же самое,
         // что гасит пункт меню (UserMenuItems.enabled), см. MenuAccess.
         _access = Access.CheckJournal(EntityId);
+        _route = ResolveRoute();
         if (_access != JournalAccess.Allowed)
         {
             _entity = null;
+            _loadedEntityId = null;
             return;
         }
 
+        // ?menu= приходит отдельным обновлением параметров уже после смены
+        // EntityId (query-параметр — каскадное значение), поэтому на одну
+        // навигацию между журналами OnParametersSet срабатывает дважды. Данные
+        // от пункта меню не зависят — второй проход только уточняет _route, а
+        // перечитывать не надо: процедуры статистики тяжёлые (секунды).
+        if (_loadedEntityId == EntityId)
+            return;
+
         try
         {
+            _loadedEntityId = null;
             _error = null;
             _entity = EntityManager.GetEntity(EntityId);
             _filterPages = PassportSchema.Parse(_entity.XmlFilter, _entity, pageType: PageTypes.Filter);
@@ -146,11 +170,24 @@ else
             Globals.ResolveFilterInitialValues(_filterValues, _entity.XmlFilter);
 
             Load();
+            _loadedEntityId = EntityId;
         }
         catch (Exception ex)
         {
             _error = ErrorPresenter.Describe(ex);
         }
+    }
+
+    private JournalRoute? ResolveRoute()
+    {
+        // Чужой или устаревший ?menu= (не тот пункт для этой сущности) не должен
+        // менять правило — в таком случае работает запасной путь по сущности.
+        if (Menu != null
+            && MenuRoutes.SimpleJournal.TryGetValue(Menu, out JournalRoute? byMenu)
+            && byMenu.EntityId == EntityId)
+            return byMenu;
+
+        return MenuRoutes.SimpleJournal.Values.FirstOrDefault(r => r.EntityId == EntityId);
     }
 
     private static bool NeedsFilterData(IReadOnlyList<PassportPage> pages)

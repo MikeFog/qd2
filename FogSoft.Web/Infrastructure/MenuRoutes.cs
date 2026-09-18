@@ -23,31 +23,64 @@ namespace FogSoft.Web.Infrastructure;
 /// из тех 22 — разбирать так же и писать почему, иначе карта перестанет быть
 /// проверяемой.
 ///
+/// <c>miStats.*</c> (2026-09-18) — тоже не из тех 22. Инвентаризация считала
+/// ветки верхнего if/else в <c>MenuItemClick</c>, а все пункты
+/// <c>miStats.*</c> уходят туда в одну ветку <c>StartsWith("miStats.")</c> →
+/// <c>ShowStatsJournal</c>, у которой внутри свой switch на 15 пунктов. Из них
+/// 14 — тот же <c>ShowSimpleJournal</c> (см. записи ниже); пятнадцатый,
+/// <c>miStats.Balance</c>, ведёт в собственную форму <c>StatBalanceJournalForm</c>
+/// и остаётся этапом 3. Итого к тем 22 веткам добавляются miMassMedia и 14
+/// пунктов статистики.
+///
+/// Правило <c>ManagerFilter</c> привязано к пункту меню, а не к сущности
+/// (десктоп передаёт <c>ManagerFilter.FilterClick</c> в <c>ShowSimpleJournal</c>
+/// только из части веток), поэтому признак лежит здесь, в
+/// <see cref="JournalRoute.ManagerFilter"/>, рядом с маршрутом.
+///
 /// Ссылки на <c>Entities.X</c> — по имени, а не голым числом: если когда-то
 /// понадобится сменить нумерацию, компилятор укажет на это место, а не
 /// уронит меню в рантайме на непонятной сущности.
 /// </summary>
 public static class MenuRoutes
 {
-	public static readonly IReadOnlyDictionary<string, int> SimpleJournal =
-		new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase)
+	public static readonly IReadOnlyDictionary<string, JournalRoute> SimpleJournal =
+		new Dictionary<string, JournalRoute>(StringComparer.OrdinalIgnoreCase)
 		{
-			{ "miBalance", (int)Entities.BalanceIssues },
-			{ "miBalanceFromRSection", (int)Entities.BalanceIssues },
-			{ "miBank", (int)Entities.Bank },
-			{ "miBonusesStat", (int)Entities.StatBonuses },
-			{ "miConfirmationHistory", (int)Entities.ConfirmationHistory },
-			{ "miFirm", (int)Entities.Firm },
-			{ "miGroupMassmedia", (int)Entities.MassmediaGroup },
-			{ "miLog", (int)Entities.LogDeletedIssue },
-			{ "miManagerDiscountHistory", (int)Entities.ManagerDiscountHistory },
-			{ "miManagerDiscountReason", (int)Entities.ManagerDiscountReason },
-			{ "miMassMedia", (int)Entities.MassMedia },
-			{ "miPaymentByManagerFromRSection", (int)Entities.PaymentCommonAction },
-			{ "miPaymentType", (int)Entities.PaymentType },
-			{ "miReportPartText", (int)Entities.ReportPartText },
-			{ "miSpecialActions", (int)Entities.SpecialAction },
-			{ "miTransferJournal", (int)Entities.TransferLog },
+			{ "miBalance", new JournalRoute(Entities.BalanceIssues, ManagerFilter: true) },
+			{ "miBalanceFromRSection", new JournalRoute(Entities.BalanceIssues, ManagerFilter: true) },
+			{ "miBank", new JournalRoute(Entities.Bank) },
+			{ "miBonusesStat", new JournalRoute(Entities.StatBonuses) },
+			{ "miConfirmationHistory", new JournalRoute(Entities.ConfirmationHistory) },
+			{ "miFirm", new JournalRoute(Entities.Firm) },
+			{ "miGroupMassmedia", new JournalRoute(Entities.MassmediaGroup) },
+			{ "miLog", new JournalRoute(Entities.LogDeletedIssue) },
+			{ "miManagerDiscountHistory", new JournalRoute(Entities.ManagerDiscountHistory) },
+			{ "miManagerDiscountReason", new JournalRoute(Entities.ManagerDiscountReason) },
+			{ "miMassMedia", new JournalRoute(Entities.MassMedia) },
+			{ "miPaymentByManagerFromRSection", new JournalRoute(Entities.PaymentCommonAction, ManagerFilter: true) },
+			{ "miPaymentType", new JournalRoute(Entities.PaymentType) },
+			{ "miReportPartText", new JournalRoute(Entities.ReportPartText) },
+			{ "miSpecialActions", new JournalRoute(Entities.SpecialAction, ManagerFilter: true) },
+			{ "miStats.AvgDiscount", new JournalRoute(Entities.StatAvgDiscount, ManagerFilter: true) },
+			{ "miStats.BalanceAgency", new JournalRoute(Entities.StatsBalanceAgency, ManagerFilter: true) },
+			{ "miStats.BalanceManager", new JournalRoute(Entities.StatsBalanceManager, ManagerFilter: true) },
+			{ "miStats.FactorAnalysis", new JournalRoute(Entities.StatsFactorAnalysis, ManagerFilter: true) },
+			// Единственный из miStats.*, который десктоп открывает без ManagerFilter.
+			{ "miStats.FillPercentage", new JournalRoute(Entities.StatsFillPercentage) },
+			{ "miStats.ModuleFinancy", new JournalRoute(Entities.StatModuleFinancy, ManagerFilter: true) },
+			{ "miStats.ModuleLoading", new JournalRoute(Entities.StatModuleLoading, ManagerFilter: true,
+				Caption: "Фактическое размещение рекламных модулей") },
+			{ "miStats.PackModuleFinancy", new JournalRoute(Entities.StatPackModuleFinancy, ManagerFilter: true) },
+			{ "miStats.PackModuleLoading", new JournalRoute(Entities.StatPackModuleLoading, ManagerFilter: true,
+				Caption: "Фактическое размещение пакетных рекламных модулей") },
+			{ "miStats.SponsorBusiness", new JournalRoute(Entities.StatsSponsorBusiness, ManagerFilter: true,
+				Caption: "Фактическое размещение спонсорских программ") },
+			{ "miStats.VolumeByPaymentType", new JournalRoute(Entities.StatVolumeByPaymentType, ManagerFilter: true) },
+			// Действующий код десктопа — простой журнал; рядом закомментирован вариант с графиком (GraphForm).
+			{ "miStats.VolumeOfRealization", new JournalRoute(Entities.StatsVolumeofRealization, ManagerFilter: true) },
+			{ "miStats.VolumeOfRealizationSec", new JournalRoute(Entities.StatVolumeOfRealizationSec, ManagerFilter: true) },
+			{ "miStats.VolumeRealizationByMonth", new JournalRoute(Entities.StatVolumeOfRealiztionByMonth, ManagerFilter: true) },
+			{ "miTransferJournal", new JournalRoute(Entities.TransferLog) },
 		};
 
 	/// <summary>
@@ -76,6 +109,23 @@ public static class MenuRoutes
 			{ "miPackModules", new BrowserRoute(RelationScenarios.PackModules, "Пакетные модули") },
 			{ "miComboModules", new BrowserRoute(RelationScenarios.ComboModules, "Комбо-модули") },
 		};
+}
+
+/// <summary>Маршрут простого журнала: сущность плюс то, что десктоп задаёт на уровне пункта меню.</summary>
+/// <param name="Entity">Сущность журнала.</param>
+/// <param name="ManagerFilter">
+/// Десктоп открывает журнал через <c>ManagerFilter.FilterClick</c>: поле
+/// «Менеджер» в отборе заблокировано у пользователя без прав на чужие и
+/// групповые акции. Признак пункта меню, а не сущности: одна и та же сущность
+/// может открываться и с этим правилом, и без него.
+/// </param>
+/// <param name="Caption">
+/// Заголовок, который десктоп задаёт в коде вместо текста пункта меню.
+/// <c>null</c> — заголовок по-прежнему имя сущности, как у остальных журналов.
+/// </param>
+public sealed record JournalRoute(Entities Entity, bool ManagerFilter = false, string? Caption = null)
+{
+	public int EntityId => (int)Entity;
 }
 
 /// <param name="Scenario">Имя сценария связей (as_relationScenarios).</param>

@@ -3,6 +3,7 @@
 @using FogSoft.Web.Infrastructure
 @using FogSoft.WinForm
 @using FogSoft.WinForm.Classes
+@using Merlin.Classes
 @inject DialogService Dialogs
 
 @*
@@ -66,6 +67,7 @@
                                    и параметр уходит в процедуру только когда он отмечен
                                    (ValueShouldBeSet). *@
                                 <input type="checkbox" class="form-check-input"
+                                       disabled="@IsManagerLocked(field)"
                                        checked="@IsFilterUsed(field.Name)"
                                        @onchange="e => UseFilter(field, e.Value)" />
                                 <label class="filter-label">@field.Caption</label>
@@ -93,10 +95,10 @@
                                        isCreateNewAllowed. *@
                                     <div class="input-group input-group-sm">
                                         <input class="form-control" readonly
-                                               disabled="@(!IsFilterUsed(field.Name))"
+                                               disabled="@(!IsFilterUsed(field.Name) || IsManagerLocked(field))"
                                                value="@FilterPickerName(field)" />
                                         <button type="button" class="btn btn-outline-secondary"
-                                                disabled="@(!IsFilterUsed(field.Name))"
+                                                disabled="@(!IsFilterUsed(field.Name) || IsManagerLocked(field))"
                                                 @onclick="() => SelectFilterPicker(field)">Выбрать</button>
                                     </div>
                                 }
@@ -139,6 +141,14 @@
     /// </summary>
     [Parameter] public EventCallback Apply { get; set; }
 
+    /// <summary>
+    /// Экран открыт из пункта меню, который десктоп ведёт через
+    /// <c>ManagerFilter.FilterClick</c> (<c>JournalRoute.ManagerFilter</c>).
+    /// Тогда поле «Менеджер» доступно только пользователю с правом на чужие или
+    /// групповые акции — см. <see cref="IsManagerLocked"/>.
+    /// </summary>
+    [Parameter] public bool RestrictManager { get; set; }
+
     private bool _filterOpen = true;
 
     // Запасной путь lookup-а по entity и разрешение имени objectPicker бьют в
@@ -166,6 +176,56 @@
         _filterLookupCache.Clear();
         _filterPickerNames.Clear();
         _filterPickerNamesFor.Clear();
+    }
+
+    /// <summary>
+    /// Правило десктопного <c>ManagerFilter.OnLoad</c>: поле <c>managerID</c>
+    /// (а если его нет — <c>userID</c>) вместе со своей галочкой доступно, только
+    /// если у пользователя есть право смотреть чужие или групповые акции.
+    /// Значение при этом не сбрасывается: у «Баланса» и «Оплат» по умолчанию
+    /// стоит <c>LoggedUser</c>, и заблокированное поле так и остаётся на нём.
+    ///
+    /// Поле ищется по имени, как <c>FindControl</c>, и правило действует, только
+    /// если это objectPicker (десктоп делает <c>as ObjectPicker2</c>: managerID
+    /// другого вида не заменяется userID). Это расхождение интерфейса, а не
+    /// защита: процедуры сами проверяют права по <c>@loggedUserID</c>.
+    /// </summary>
+    private bool IsManagerLocked(PassportField field)
+    {
+        if (!RestrictManager || SecurityManager.LoggedUser is not { } user)
+            return false;
+
+        if (!ReferenceEquals(field, ManagerField))
+            return false;
+
+        return !(user.IsRightToViewForeignActions() || user.IsRightToViewGroupActions());
+    }
+
+    /// <summary>Поле «Менеджер» текущего набора страниц, если оно вообще есть и это objectPicker.</summary>
+    private PassportField? ManagerField
+    {
+        get
+        {
+            if (!ReferenceEquals(_managerFieldFor, Pages))
+            {
+                _managerFieldFor = Pages;
+                PassportField? found = FindField("managerID") ?? FindField("userID");
+                _managerField = found is { Picker: not null, Unsupported: null } ? found : null;
+            }
+            return _managerField;
+        }
+    }
+
+    private IReadOnlyList<PassportPage>? _managerFieldFor;
+    private PassportField? _managerField;
+
+    private PassportField? FindField(string name)
+    {
+        foreach (var pg in Pages)
+            foreach (var f in pg.Fields)
+                if (string.Equals(f.Name, name, StringComparison.OrdinalIgnoreCase))
+                    return f;
+        return null;
     }
 
     /// <summary>

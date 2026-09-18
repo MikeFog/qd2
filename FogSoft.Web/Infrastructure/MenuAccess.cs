@@ -75,7 +75,7 @@ public sealed class MenuAccess
 		if (_allowedEntities!.Contains(entityId))
 			return JournalAccess.Allowed;
 
-		return MenuRoutes.SimpleJournal.Values.Contains(entityId)
+		return MenuRoutes.SimpleJournal.Values.Any(r => r.EntityId == entityId)
 			? JournalAccess.Denied
 			: JournalAccess.NotPorted;
 	}
@@ -129,8 +129,8 @@ public sealed class MenuAccess
 			// разрешение, группа) — здесь только читаем результат.
 			if (node.Enabled && !string.IsNullOrEmpty(node.CodeName))
 			{
-				if (MenuRoutes.SimpleJournal.TryGetValue(node.CodeName!, out int entityId))
-					_allowedEntities!.Add(entityId);
+				if (MenuRoutes.SimpleJournal.TryGetValue(node.CodeName!, out JournalRoute? journal))
+					_allowedEntities!.Add(journal.EntityId);
 
 				if (MenuRoutes.Browser.ContainsKey(node.CodeName!))
 					_allowedBrowsers!.Add(node.CodeName!);
