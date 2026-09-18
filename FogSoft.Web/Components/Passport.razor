@@ -120,7 +120,19 @@ else
                                         }
                                         @foreach (var a in SelectorColumns(field))
                                         {
-                                            <td>@CellText(row, a.Name)</td>
+                                            <td>
+                                                @if (IsBooleanColumn(field, a))
+                                                {
+                                                    @if (CellText(row, field, a) == BoolYes)
+                                                    {
+                                                        <span class="bool-check">✓</span>
+                                                    }
+                                                }
+                                                else
+                                                {
+                                                    @CellText(row, field, a)
+                                                }
+                                            </td>
                                         }
                                     </tr>
                                 }
@@ -262,8 +274,45 @@ else
     private static string AsText(object? v) =>
         v == null || v == DBNull.Value ? "" : v.ToString() ?? "";
 
-    private static string CellText(DataRowView row, string column) =>
-        row.Row.Table.Columns.Contains(column) ? AsText(row[column]) : "";
+    private const string BoolYes = "Да";
+
+    /// <summary>
+    /// Текст ячейки selector-грида. Для boolean-колонки — «Да»/пусто, а не
+    /// «True»/«False» из ToString(): десктопный ObjectsSelector построен на
+    /// SmartGrid, а тот для boolean-колонок текст вообще не рисует
+    /// (DataGridViewExBooleanCell — галочка только при true), см.
+    /// <see cref="IsBooleanColumn"/>. Текст остаётся содержимым для
+    /// не-boolean колонок.
+    /// </summary>
+    private string CellText(DataRowView row, PassportField field, Entity.Attribute attribute)
+    {
+        string column = attribute.Name;
+        if (!row.Row.Table.Columns.Contains(column))
+            return "";
+
+        object v = row[column];
+        if (v == DBNull.Value)
+            return "";
+
+        if (IsBooleanColumn(field, attribute))
+            return ParseHelper.GetBooleanFromObject(v, false) ? BoolYes : "";
+
+        return v.ToString() ?? "";
+    }
+
+    /// <summary>
+    /// Тот же признак, что использует десктопный SmartGrid.CreateDataGridColumn
+    /// (ColumnInfo.IsBooleanData) — сначала тип атрибута из метаданных, потом
+    /// тип колонки БД. Не путать с <see cref="IsBoolean(PassportField)"/> выше:
+    /// та проверяет XML-тип обычного поля паспорта, эта — тип колонки в
+    /// строках selector-грида.
+    /// </summary>
+    private static bool IsBooleanColumn(PassportField field, Entity.Attribute attribute)
+    {
+        Entity entity = EntityManager.GetEntity(field.Selector!.EntityName);
+        entity.ColumnsInfo.TryGetValue(attribute.Name, out ColumnInfo? columnInfo);
+        return ColumnInfo.IsBooleanData(columnInfo, attribute);
+    }
 
     // ---------- lookup ----------
 

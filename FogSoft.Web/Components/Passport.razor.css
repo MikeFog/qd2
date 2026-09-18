@@ -77,3 +77,10 @@
     padding-left: var(--s-3);
     padding-right: 0;
 }
+
+/* Boolean-колонка selector-грида: галочка только при true, как десктопный
+   DataGridViewExBooleanCell — при false ячейка остаётся пустой. */
+::deep .bool-check {
+    color: var(--c-accent);
+    font-weight: 700;
+}
