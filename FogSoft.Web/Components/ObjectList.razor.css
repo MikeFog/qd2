@@ -34,3 +34,10 @@
     white-space: nowrap;
     text-align: right;
 }
+
+/* Boolean-колонка: галочка только при true, как десктопный
+   DataGridViewExBooleanCell — при false ячейка остаётся пустой. */
+::deep .bool-check {
+    color: var(--c-accent);
+    font-weight: 700;
+}

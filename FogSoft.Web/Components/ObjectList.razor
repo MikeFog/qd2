@@ -52,7 +52,19 @@ else
                     <tr>
                         @foreach (var a in Columns)
                         {
-                            <td title="@Display(row, a.Name)">@Display(row, a.Name)</td>
+                            <td title="@Display(row, a)">
+                                @if (IsBoolean(a))
+                                {
+                                    @if (Display(row, a) == BoolYes)
+                                    {
+                                        <span class="bool-check">✓</span>
+                                    }
+                                }
+                                else
+                                {
+                                    @Display(row, a)
+                                }
+                            </td>
                         }
                         <td class="col-actions">
                             <button class="btn btn-sm btn-outline-secondary" disabled="@(!CanOpen)"
@@ -130,12 +142,40 @@ else
         ApplySort();
     }
 
-    private static string Display(DataRow row, string column)
+    private const string BoolYes = "Да";
+
+    /// <summary>
+    /// Текст ячейки. Для boolean-колонок — «Да»/пусто, а не «True»/«False»
+    /// из ToString(): десктоп для таких колонок вообще не показывает текст
+    /// (DataGridViewExBooleanCell рисует галочку только при true, ничего —
+    /// при false), см. <see cref="IsBoolean"/>. Текст здесь остаётся ради
+    /// подсказки (title) и как содержимое для не-boolean колонок.
+    /// </summary>
+    private string Display(DataRow row, Entity.Attribute attribute)
     {
-        if (!row.Table.Columns.Contains(column))
+        if (!row.Table.Columns.Contains(attribute.Name))
             return "";
-        object v = row[column];
-        return v == DBNull.Value ? "" : v.ToString() ?? "";
+
+        object v = row[attribute.Name];
+        if (v == DBNull.Value)
+            return "";
+
+        if (IsBoolean(attribute))
+            return ParseHelper.GetBooleanFromObject(v, false) ? BoolYes : "";
+
+        return v.ToString() ?? "";
+    }
+
+    /// <summary>
+    /// Тот же признак, что решает десктопный SmartGrid.CreateDataGridColumn
+    /// при выборе клетки для колонки (ColumnInfo.IsBooleanData) — сначала
+    /// тип атрибута из метаданных, потом тип колонки БД. Переиспользуем
+    /// готовое правило из FogSoft.Core, а не гадаем по значению в DataRow.
+    /// </summary>
+    private bool IsBoolean(Entity.Attribute attribute)
+    {
+        Entity.ColumnsInfo.TryGetValue(attribute.Name, out ColumnInfo? columnInfo);
+        return ColumnInfo.IsBooleanData(columnInfo, attribute);
     }
 
     // ---------- Сортировка ----------
