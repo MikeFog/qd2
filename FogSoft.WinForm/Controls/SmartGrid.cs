@@ -933,12 +933,14 @@ namespace FogSoft.WinForm.Controls
                 g.DrawImage(icon, new Rectangle(0, 0, 16, 16));
             }
 
+            // MinimumWidth — по той же причине, что у колонки галочек (AddMultiSelectColumn).
+            // Картинка всегда 16x16 px, поэтому без поправки на DPI.
             DataGridViewImageColumn column = new DataGridViewImageColumn(true)
             {
                 Image = resized,
                 ValuesAreIcons = false,
                 Resizable = DataGridViewTriState.False,
-
+                MinimumWidth = 21
             };
             dataGrid.Columns.Add(column);
         }

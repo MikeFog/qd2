@@ -124,6 +124,20 @@ namespace Merlin.Forms.CreateActionMaster
 		}
 
         /// <summary>
+        /// Чек-лист получает данные в OnLoad, до раскладки формы, когда его строк ещё не видно:
+        /// режим DisplayedCells тогда подгоняет служебные колонки (галочки, иконка) под пустые
+        /// заголовки, а сами галочки не прорисовываются до первого клика. Теперь строки видны —
+        /// пересчитываем ширины и перерисовываем.
+        /// </summary>
+        protected override void OnShown(EventArgs e)
+        {
+            base.OnShown(e);
+            DataGridView grid = grdCampaigns.InternalGrid;
+            grid.AutoResizeColumns(DataGridViewAutoSizeColumnsMode.DisplayedCells);
+            grid.Invalidate();
+        }
+
+        /// <summary>
         /// Чек-лист линейных кампаний акции: с какими из них работает веер. По умолчанию
         /// отмечены все. Каждое изменение галочки применяется сразу (см. CampaignSelectionChanged).
         /// </summary>
