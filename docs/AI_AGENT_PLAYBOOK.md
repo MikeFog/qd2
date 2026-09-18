@@ -15,6 +15,21 @@
 6. Validate build capability for environment and run relevant manual scenarios.
 7. Document assumptions and risks explicitly.
 
+## Proposing simplifications (required since 2026-09-18)
+
+"Keep changes minimal" (step 5) governs what you *do* without asking. It does
+**not** mean staying silent about bad design. The product owner changed the
+rule: while reading desktop code — especially code about to be moved to the
+web (`docs/tasks/web-migration.md`), but also along the way in any task — you
+**must propose** fixes of defects and simplifications of the existing desktop
+architecture whenever they would make the web migration easier.
+
+- Propose, don't apply: what gets simpler, what is lost, cost, what it touches
+  in the desktop. The product owner decides.
+- Code already migrated to the web is out of scope.
+- Until a decision is made, migrate as is; record decisions in
+  `docs/tasks/web-migration.md`.
+
 ## Task templates
 
 ### Bug fix task template
