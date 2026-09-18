@@ -57,3 +57,38 @@
     border-left: 1px solid var(--c-border);
 }
 
+
+/* «⋯» — действия узла. Проявляется при наведении или фокусе, как в строке
+   списка; место занято всегда, чтобы подпись не прыгала. */
+.tree-more {
+    flex: 0 0 auto;
+    visibility: hidden;
+    width: 24px;
+    height: 22px;
+    padding: 0;
+    border: none;
+    border-radius: 4px;
+    background: none;
+    color: var(--c-text-muted);
+}
+
+.tree-row:hover .tree-more,
+.tree-row:focus-within .tree-more,
+.tree-row-menu .tree-more {
+    visibility: visible;
+}
+
+.tree-more:hover {
+    background: var(--c-border);
+    color: var(--c-text);
+}
+
+.tree-row-menu {
+    background: var(--c-accent-soft);
+}
+
+@media (hover: none) {
+    .tree-more {
+        visibility: visible;
+    }
+}

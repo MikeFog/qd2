@@ -10,8 +10,20 @@
     min-height: 0;
 }
 
+/* Шапка — как у журнала (Journal.razor.css): стили изолированы по
+   компонентам, поэтому повторены здесь. Без них кнопки падали под заголовок. */
 .browser > .screen-head {
     flex: 0 0 auto;
+    display: flex;
+    align-items: center;
+    gap: var(--s-3);
+    margin-bottom: var(--s-4);
+}
+
+.screen-actions {
+    margin-left: auto;
+    display: flex;
+    gap: var(--s-2);
 }
 
 /* Панель отбора — отдельный компонент (FilterPanel), поэтому ::deep: её

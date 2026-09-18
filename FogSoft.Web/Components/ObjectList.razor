@@ -2,11 +2,16 @@
 @using FogSoft.Web.Infrastructure
 @using FogSoft.WinForm
 @using FogSoft.WinForm.Classes
-@inject PassportDialog Passports
-@inject DialogService Dialogs
+@inject ObjectActions Actions
+@inject ActionMenuService Menu
 
 @*
-    Список объектов: таблица, сортировка, открытие карточки, удаление.
+    Список объектов: таблица, сортировка и действия над строкой.
+
+    Действия — по образцу веб-Outlook (решение владельца продукта 2026-09-18):
+    клик по строке открывает карточку; при наведении в строке проявляются
+    быстрые иконки и «⋯» с полным меню; правая кнопка открывает то же меню.
+    Само меню и выполнение — ObjectActions, по метаданным iEntityAction.
 
     Выделен из Journal.razor, когда появился второй вызывающий — правая
     половина древовидного экрана (Browser.razor). В десктопе это ровно тот же
@@ -49,7 +54,9 @@ else
             </thead>
             <tbody>
                 <Virtualize TItem="DataRow" Items="_rows" ItemSize="29" SpacerElement="tr" Context="row">
-                    <tr>
+                    <tr class="@(ReferenceEquals(row, _menuRow) ? "row-menu-open" : "")"
+                        @onclick="() => Run(row, Constants.EntityActions.ShowPassport)"
+                        @oncontextmenu="e => OpenMenu(row, e, fromButton: false)" @oncontextmenu:preventDefault="true">
                         @foreach (var a in Columns)
                         {
                             <td title="@Display(row, a)">
@@ -67,10 +74,18 @@ else
                             </td>
                         }
                         <td class="col-actions">
-                            <button class="btn btn-sm btn-outline-secondary" disabled="@(!CanOpen)"
-                                    @onclick="() => Edit(row)">Открыть</button>
-                            <button class="btn btn-sm btn-outline-secondary" disabled="@(!CanDelete)"
-                                    @onclick="() => Delete(row)">Удалить</button>
+                            @foreach (var quick in _quick)
+                            {
+                                <button type="button" class="row-btn @(quick.Danger ? "row-btn-danger" : "")"
+                                        title="@quick.Text" aria-label="@quick.Text"
+                                        @onclick="() => Run(row, quick.Name, reportUnavailable: true)" @onclick:stopPropagation="true">
+                                    <i class="bi @quick.Icon" aria-hidden="true"></i>
+                                </button>
+                            }
+                            <button type="button" class="row-btn" title="Действия" aria-label="Действия" aria-haspopup="menu"
+                                    @onclick="e => OpenMenu(row, e, fromButton: true)" @onclick:stopPropagation="true">
+                                <i class="bi bi-three-dots" aria-hidden="true"></i>
+                            </button>
                         </td>
                     </tr>
                 </Virtualize>
@@ -85,9 +100,6 @@ else
 
     /// <summary>Строки. null — ещё не загружены.</summary>
     [Parameter] public DataTable? Data { get; set; }
-
-    [Parameter] public bool CanOpen { get; set; }
-    [Parameter] public bool CanDelete { get; set; }
 
     /// <summary>Текст, когда строк нет.</summary>
     [Parameter] public string EmptyText { get; set; } = "Записей нет.";
@@ -137,6 +149,7 @@ else
             _sorted = Data;
             _sortColumn = null;
             _sortDescending = false;
+            _quick = ResolveQuickActions();
         }
 
         ApplySort();
@@ -244,17 +257,65 @@ else
             ? (_sortDescending ? " ▾" : " ▴")
             : "";
 
-    // ---------- Карточка и удаление ----------
+    // ---------- Действия ----------
+
+    /// <summary>Быстрые иконки строки — одни на весь список, см. ObjectActions.QuickActions.</summary>
+    private IReadOnlyList<ActionMenuItem> _quick = Array.Empty<ActionMenuItem>();
+
+    /// <summary>Строка, у которой открыто меню, — остаётся подсвеченной, пока меню видно.</summary>
+    private DataRow? _menuRow;
+
+    private IReadOnlyList<ActionMenuItem> ResolveQuickActions()
+    {
+        if (Data == null || Data.Rows.Count == 0)
+            return Array.Empty<ActionMenuItem>();
+
+        try
+        {
+            return Actions.QuickActions(Entity, Entity.CreateObject(Data.Rows[0]));
+        }
+        catch
+        {
+            // Иконки — удобство, а не функция: меню «⋯» остаётся.
+            return Array.Empty<ActionMenuItem>();
+        }
+    }
 
     // Поднятие доменного класса по метаданным может упасть на резолвинге типа,
     // поэтому перехват: без него исключение убивает circuit и пользователь
     // видит безымянную «внутреннюю ошибку» вместо причины.
-    private async Task Edit(DataRow row)
+
+    private async Task OpenMenu(DataRow row, MouseEventArgs e, bool fromButton)
     {
         try
         {
-            if (await Passports.ShowAsync(Entity.CreateObject(row), isNew: false))
-                await Changed.InvokeAsync();
+            PresentationObject obj = Entity.CreateObject(row);
+            _menuRow = row;
+            string? picked = await Menu.ShowAsync(
+                Actions.BuildMenu(obj, ViewType.Journal), e.ClientX, e.ClientY, fromButton);
+            _menuRow = null;
+            StateHasChanged();
+
+            if (picked != null)
+                await Execute(obj, picked, reportUnavailable: false);
+        }
+        catch (Exception ex)
+        {
+            _menuRow = null;
+            await Failed.InvokeAsync(ErrorPresenter.Describe(ex));
+        }
+    }
+
+    /// <param name="reportUnavailable">
+    /// Сказать пользователю, что действие недоступно. Нужно быстрым иконкам —
+    /// их доступность заранее не проверяется. Клику по строке не нужно: там,
+    /// где карточки нет, двойной щелчок в десктопе тоже просто ничего не делает.
+    /// </param>
+    private async Task Run(DataRow row, string actionName, bool reportUnavailable = false)
+    {
+        try
+        {
+            await Execute(Entity.CreateObject(row), actionName, reportUnavailable);
         }
         catch (Exception ex)
         {
@@ -262,37 +323,18 @@ else
         }
     }
 
-    /// <summary>
-    /// Спрашиваем сами и зовём Delete(silenceFlag: true), а не Delete().
-    ///
-    /// Десктоп спрашивает изнутри Delete() через UserInteraction.Confirm —
-    /// синхронно, потому что модальная форма блокирует поток. В вебе так
-    /// нельзя: circuit нельзя заблокировать в ожидании ответа. Поэтому
-    /// разрез «спросить / сделать», конвенция этапа 0. Текст вопроса тот же
-    /// самый — DeleteConfirmationText доменного класса, включая его
-    /// переопределения.
-    /// </summary>
-    private async Task Delete(DataRow row)
+    private async Task Execute(PresentationObject obj, string actionName, bool reportUnavailable)
     {
-        try
+        ActionEffect? effect = await Actions.ExecuteAsync(obj, actionName, ViewType.Journal);
+
+        if (effect == null)
         {
-            PresentationObject obj = Entity.CreateObject(row);
+            if (reportUnavailable)
+                await Failed.InvokeAsync("Это действие для записи недоступно.");
+            return;
+        }
 
-            if (!obj.IsActionEnabled(Constants.EntityActions.Delete, ViewType.Journal))
-                return;
-
-            if (await Dialogs.ShowAsync(
-                    "Удаление",
-                    builder => builder.AddContent(0, obj.DeleteConfirmationText),
-                    okText: "Удалить") != DialogOutcome.Ok)
-                return;
-
-            obj.Delete(silenceFlag: true);
+        if (effect != ActionEffect.None)
             await Changed.InvokeAsync();
-        }
-        catch (Exception ex)
-        {
-            await Failed.InvokeAsync(ErrorPresenter.Describe(ex));
-        }
     }
 }

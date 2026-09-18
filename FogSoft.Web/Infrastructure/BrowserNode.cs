@@ -13,12 +13,26 @@ namespace FogSoft.Web.Infrastructure;
 /// </summary>
 public sealed class BrowserNode
 {
-	public required string Name { get; init; }
+	/// <summary>Подпись; меняется, когда объект переименовали в карточке.</summary>
+	public required string Name { get; set; }
+
+	/// <summary>
+	/// Контейнер узла. Он же — объект, над которым выполняются действия меню
+	/// узла: у корня это FakeContainer, у остальных — доменный объект строки.
+	/// </summary>
 	public required IObjectContainer Container { get; init; }
+
 	public bool Expandable { get; init; }
+
+	/// <summary>Узел-родитель; null у корня. Нужен, чтобы перечитать его после удаления узла.</summary>
+	public BrowserNode? Parent { get; init; }
 
 	/// <summary>Дети; null — ещё не грузили. Ленивость как у FAKE_NODE в десктопе.</summary>
 	public List<BrowserNode>? Children { get; set; }
 
 	public bool Expanded { get; set; }
 }
+
+/// <param name="FromButton">Открыто кнопкой «⋯», а не правой кнопкой мыши.</param>
+public sealed record BrowserNodeMenuRequest(
+	BrowserNode Node, Microsoft.AspNetCore.Components.Web.MouseEventArgs Mouse, bool FromButton);

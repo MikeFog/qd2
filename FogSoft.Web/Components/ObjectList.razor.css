@@ -33,6 +33,58 @@
     width: 1%;
     white-space: nowrap;
     text-align: right;
+    padding-top: 0;
+    padding-bottom: 0;
+}
+
+/* Строка открывает карточку по клику. */
+::deep tbody tr {
+    cursor: pointer;
+}
+
+/* Строка, у которой открыто меню, остаётся подсвеченной. */
+::deep tbody tr.row-menu-open > td {
+    background: var(--c-accent-soft);
+}
+
+/*
+    Действия строки проявляются при наведении или фокусе. Место под них занято
+    всегда (visibility, а не display): строка не прыгает, а виртуализация
+    полагается на одинаковую высоту строк.
+*/
+::deep .row-btn {
+    visibility: hidden;
+    width: 26px;
+    height: 24px;
+    padding: 0;
+    border: none;
+    border-radius: 4px;
+    background: none;
+    color: var(--c-text-muted);
+    vertical-align: middle;
+}
+
+::deep tbody tr:hover .row-btn,
+::deep tbody tr:focus-within .row-btn,
+::deep tbody tr.row-menu-open .row-btn {
+    visibility: visible;
+}
+
+::deep .row-btn:hover {
+    background: var(--c-border);
+    color: var(--c-text);
+}
+
+::deep .row-btn-danger:hover {
+    background: var(--c-danger-soft);
+    color: var(--c-danger);
+}
+
+/* Наведения нет (сенсорный экран) — действия видны всегда. */
+@media (hover: none) {
+    ::deep .row-btn {
+        visibility: visible;
+    }
 }
 
 /* Boolean-колонка: галочка только при true, как десктопный

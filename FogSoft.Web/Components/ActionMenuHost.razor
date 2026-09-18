@@ -1,0 +1,115 @@
+@using FogSoft.Web.Infrastructure
+@implements IAsyncDisposable
+@inject ActionMenuService Menu
+@inject IJSRuntime JS
+
+@*
+    Рисует меню действий, открытое через ActionMenuService. Ставится один раз
+    в макет, как DialogHost.
+
+    Прозрачная подложка на всё окно закрывает меню по щелчку мимо — и левой,
+    и правой кнопкой. Меню сначала рисуется невидимым, JS меряет его и ставит
+    на место (actionMenu.js), и только потом показывает — иначе у нижних строк
+    оно на мгновение мелькало бы за краем окна.
+*@
+
+@if (Menu.Current is { } request)
+{
+    <div class="am-backdrop" @onclick="() => Menu.CloseAsync(null)"
+         @oncontextmenu="() => Menu.CloseAsync(null)" @oncontextmenu:preventDefault="true"></div>
+
+    <div class="am-menu" role="menu" tabindex="-1" @ref="_menu" @key="request.Id"
+         @onkeydown="OnKeyDown">
+        @ItemsFragment(request.Items)
+    </div>
+}
+
+@code {
+    private ElementReference _menu;
+    private IJSObjectReference? _module;
+    private Guid _placed;
+
+    private const string NotPortedHint = "В вебе пока нет";
+
+    private RenderFragment ItemsFragment(IReadOnlyList<ActionMenuItem> items) => @<text>
+        @foreach (var item in items)
+        {
+            if (item.IsSeparator)
+            {
+                <div class="am-sep" role="separator"></div>
+                continue;
+            }
+
+            bool off = !item.Enabled || !item.Ported;
+            string css = $"am-item {(off ? "am-off" : "")} {(item.Danger ? "am-danger" : "")}";
+
+            @* Пункт с подменю — div, а не button: пункты подменю сами кнопки,
+               а кнопка внутри кнопки в HTML недопустима. *@
+            if (item.Children.Count > 0)
+            {
+                <div class="@css am-parent" role="menuitem" tabindex="0" aria-haspopup="true"
+                     aria-disabled="@(off ? "true" : "false")" title="@(item.Ported ? null : NotPortedHint)">
+                    @ItemBody(item)
+                    <i class="bi bi-chevron-right am-chevron" aria-hidden="true"></i>
+                    <div class="am-menu am-sub" role="menu">
+                        @ItemsFragment(item.Children)
+                    </div>
+                </div>
+                continue;
+            }
+
+            <button type="button" role="menuitem" class="@css"
+                    aria-disabled="@(off ? "true" : "false")" title="@(item.Ported ? null : NotPortedHint)"
+                    @onclick="() => Pick(item)" @onclick:stopPropagation="true">
+                @ItemBody(item)
+            </button>
+        }
+    </text>;
+
+    private static RenderFragment ItemBody(ActionMenuItem item) => @<text>
+        <i class="bi @(item.Icon ?? "") am-icon" aria-hidden="true"></i>
+        <span class="am-text">@item.Text</span>
+        @if (!item.Ported)
+        {
+            <span class="am-hint">скоро</span>
+        }
+        else if (item.Hint != null)
+        {
+            <span class="am-hint">@item.Hint</span>
+        }
+    </text>;
+
+    protected override void OnInitialized() => Menu.Changed += OnChangedAsync;
+
+    private Task OnChangedAsync() => InvokeAsync(StateHasChanged);
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (Menu.Current is not { } request || request.Id == _placed)
+            return;
+
+        _placed = request.Id;
+        _module ??= await JS.InvokeAsync<IJSObjectReference>("import", "./js/actionMenu.js");
+        await _module.InvokeVoidAsync("place", _menu, request.X, request.Y, request.FromButton);
+    }
+
+    /// <summary>
+    /// Недоступный или неперенесённый пункт, как и пункт с подменю, меню не
+    /// закрывает: в десктопе щелчок по погашенному пункту тоже ничего не делает.
+    /// </summary>
+    private Task Pick(ActionMenuItem item) =>
+        item.Clickable ? Menu.CloseAsync(item.Name) : Task.CompletedTask;
+
+    private Task OnKeyDown(KeyboardEventArgs e) =>
+        e.Key == "Escape" ? Menu.CloseAsync(null) : Task.CompletedTask;
+
+    public async ValueTask DisposeAsync()
+    {
+        Menu.Changed -= OnChangedAsync;
+        if (_module != null)
+        {
+            try { await _module.DisposeAsync(); }
+            catch (JSDisconnectedException) { }
+        }
+    }
+}

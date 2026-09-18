@@ -198,6 +198,45 @@ namespace FogSoft.WinForm.Classes
 			return res;
 		}
 
+		/// <summary>
+		/// Первая половина AssignNew: новый дочерний объект, уже привязанный к
+		/// этому контейнеру — ключи родителя и его имя. Без этой привязки
+		/// процедура сохранения не узнает, к кому относится запись.
+		///
+		/// Вынесено из UI-половины ради веба: там карточку показывает не
+		/// ShowPassport, а веб-диалог, но подготовка объекта обязана быть той же.
+		/// </summary>
+		/// <returns>null, если у контейнера нет дочерней сущности.</returns>
+		public PresentationObject CreateNewChild()
+		{
+			if (iterator.ChildEntity == null)
+				return null;
+
+			PresentationObject newObject = iterator.ChildEntity.NewObject;
+
+			for(int i = 0; i < entity.PKColumns.Length; i++)
+				newObject[entity.PKColumns[i]] = parameters[entity.PKColumns[i]];
+
+			newObject[Constants.Parameters.ParentName] = Name;
+			return newObject;
+		}
+
+		/// <summary>
+		/// Вторая половина AssignNew — после того, как карточка нового объекта
+		/// сохранена: передать ему сценарий и отбор, перечитать и сообщить
+		/// подписчикам.
+		/// </summary>
+		public void CompleteNewChild(PresentationObject newObject)
+		{
+			if (newObject is IObjectContainer objectContainer)
+			{
+				objectContainer.RelationScenario = iterator.RelationScenario;
+				objectContainer.Filter = ObjectsIterator.CacheFilterValues(iterator.Filter);
+			}
+			newObject.Refresh();
+			OnObjectCreated(newObject);
+		}
+
 		protected void FireContainerRefreshed()
 		{
             ContainerRefreshed?.Invoke(this);

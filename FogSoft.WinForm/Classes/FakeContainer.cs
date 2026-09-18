@@ -72,6 +72,28 @@ namespace FogSoft.WinForm.Classes
 
 		// DoAction/ShowFilter переехали в FakeContainer.WinForms.cs.
 
+		/// <summary>
+		/// Первая половина AddNew — новый объект стартовой сущности сценария.
+		/// Разрез тот же, что у ObjectContainer.CreateNewChild: карточку
+		/// показывает вызывающий, в десктопе — ShowPassport, в вебе — диалог.
+		/// </summary>
+		public PresentationObject CreateNewObject()
+		{
+			return childEntity.NewObject;
+		}
+
+		/// <summary>Вторая половина AddNew — после сохранения карточки.</summary>
+		public void CompleteNewObject(PresentationObject newObject)
+		{
+			if(ObjectCreated == null)
+				return;
+
+			IObjectContainer oc = newObject as IObjectContainer;
+			if(oc != null)
+				oc.RelationScenario = relationScenario;
+			ObjectCreated(newObject);
+		}
+
 		#endregion
 
 

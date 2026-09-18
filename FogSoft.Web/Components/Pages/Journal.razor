@@ -77,11 +77,10 @@ else
                  RestrictManager="_route?.ManagerFilter == true" />
 
     @* ---------- Список ---------- *@
-    @* Кнопки гасятся по тем же правам и теми же вызовами, что в десктопном
-       JournalForm (tsbNew/tsbEdit/tsbDelete). Это только удобство: настоящая
+    @* Действия над строками — меню ObjectActions, доступность пунктов по
+       тем же IsActionEnabled, что в десктопе. Это только удобство: настоящая
        проверка стоит на исполнении, в DataAccessor.DoAction. *@
     <ObjectList Entity="_entity" Data="_data"
-                CanOpen="_canOpen" CanDelete="_canDelete"
                 EmptyText="Записей нет. Измените условия отбора."
                 Changed="Load" Failed="ShowError" />
 
@@ -118,8 +117,6 @@ else
     private string? _error;
     private JournalAccess _access = JournalAccess.Allowed;
     private bool _canAdd;
-    private bool _canOpen;
-    private bool _canDelete;
 
 
     protected override void OnParametersSet()
@@ -155,8 +152,6 @@ else
             _filterPages = PassportSchema.Parse(_entity.XmlFilter, _entity, pageType: PageTypes.Filter);
 
             _canAdd = _entity.IsActionEnabled(Constants.EntityActions.AddNew, ViewType.Journal);
-            _canOpen = _entity.IsActionEnabled(Constants.EntityActions.ShowPassport, ViewType.Journal);
-            _canDelete = _entity.IsActionEnabled(Constants.EntityActions.Delete, ViewType.Journal);
 
             // Своя процедура фильтра (EntityId_Load_FilterPage), не паспортная —
             // грузится только если в фильтре реально есть lookup/objectPicker,

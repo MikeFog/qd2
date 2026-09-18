@@ -62,26 +62,12 @@ namespace FogSoft.WinForm.Classes
 		/// Creates object of given entity and assignes it to the current oject
 		protected virtual void AssignNew(IWin32Window owner)
 		{
-			if (iterator.ChildEntity == null)
+			PresentationObject newObject = CreateNewChild();
+			if (newObject == null)
 				return;
 
-			PresentationObject newObject = iterator.ChildEntity.NewObject;
-
-			for(int i = 0; i < entity.PKColumns.Length; i++)
-				newObject[entity.PKColumns[i]] = parameters[entity.PKColumns[i]];
-
-			newObject[Constants.Parameters.ParentName] = Name;
-
 			if(newObject.ShowPassport(owner))
-			{
-                if (newObject is IObjectContainer objectContainer)
-                {
-                    objectContainer.RelationScenario = iterator.RelationScenario;
-                    objectContainer.Filter = ObjectsIterator.CacheFilterValues(iterator.Filter);
-                }
-                newObject.Refresh();
-				OnObjectCreated(newObject);
-			}
+				CompleteNewChild(newObject);
 		}
 
 		// Shows filter form and fire ContainerRefreshed event 
