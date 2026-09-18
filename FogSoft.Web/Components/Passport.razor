@@ -178,6 +178,24 @@ else
                            checked="@ReadBool(field.Name)"
                            @onchange="e => WriteBool(field.Name, e.Value)" />
                 }
+                else if (IsDateField(field))
+                {
+                    @* Десктопный PageFieldDate ставит DateTimePickerFormat.Short —
+                       дата без времени. Обычный textbox с ReadString показывал
+                       "01.01.2026 0:00:00": ToString() у DateTime тянет и время,
+                       которого в этом типе поля нет. *@
+                    <input type="date" class="form-control form-control-sm"
+                           value="@ReadDate(field.Name)"
+                           @onchange="e => WriteDate(field.Name, e.Value)" />
+                }
+                else if (IsTimeField(field))
+                {
+                    @* PageFieldTime — Custom "HH:mm"; хранится как DateTime с
+                       фиктивной датой 01.01.1900, значим только час:минута. *@
+                    <input type="time" class="form-control form-control-sm"
+                           value="@ReadTime(field.Name)"
+                           @onchange="e => WriteTime(field.Name, e.Value)" />
+                }
                 else
                 {
                     <input class="form-control form-control-sm"
@@ -254,8 +272,66 @@ else
             }
     }
 
-    private bool IsBoolean(PassportField f) =>
-        string.Equals(f.XmlType, "boolean", StringComparison.OrdinalIgnoreCase);
+    /// <summary>
+    /// Десктопный PageField.CreateInstance решает вид контрола через
+    /// FieldTypeResolver: сначала атрибут type, а если его нет — тип колонки
+    /// (bit → CheckBox). PassportSchema.ResolveType уже посчитал это в
+    /// field.Type; проверка одного XmlType пропускала bit-колонки без
+    /// явного type="boolean" (например, isActive у радиостанции) — поле
+    /// рисовалось обычным textbox со значением "True"/"False" вместо
+    /// галочки.
+    /// </summary>
+    private bool IsBoolean(PassportField f) => f.Type?.IsBoolean == true;
+
+    private static bool IsDateField(PassportField f) => f.Type?.IsDate == true;
+
+    private static bool IsTimeField(PassportField f) => f.Type?.IsTime == true;
+
+    /// <summary>
+    /// Значение для &lt;input type="date"&gt; — тот же перевод в ISO, что и
+    /// у GetFilterText в FilterPanel: HTML-инпут понимает только yyyy-MM-dd.
+    /// </summary>
+    private string ReadDate(string name)
+    {
+        string text = AsText(Object[name]);
+        return text.Length > 0 && DateTime.TryParse(text, out DateTime date)
+            ? date.ToString("yyyy-MM-dd")
+            : "";
+    }
+
+    /// <summary>
+    /// Обратный перевод. Десктопный PageFieldDate.ApplyChanges кладёт
+    /// Picker.Value.Date — дату без времени; здесь то же самое, но строкой,
+    /// как и остальные поля паспорта хранят значения до сохранения.
+    /// </summary>
+    private void WriteDate(string name, object? value)
+    {
+        string text = value?.ToString() ?? "";
+        Object[name] = text.Length > 0 && DateTime.TryParse(text, out DateTime date)
+            ? date.ToString("dd.MM.yyyy")
+            : "";
+    }
+
+    private string ReadTime(string name)
+    {
+        string text = AsText(Object[name]);
+        return text.Length > 0 && DateTime.TryParse(text, out DateTime time)
+            ? time.ToString("HH:mm")
+            : "";
+    }
+
+    /// <summary>
+    /// Десктопный PageFieldTime.ApplyChanges кладёт
+    /// new DateTime(1900, 1, 1, Picker.Value.Hour, Picker.Value.Minute, 0) —
+    /// фиктивная дата 1 января 1900, значимы только часы и минуты.
+    /// </summary>
+    private void WriteTime(string name, object? value)
+    {
+        string text = value?.ToString() ?? "";
+        Object[name] = TimeSpan.TryParse(text, out TimeSpan t)
+            ? new DateTime(1900, 1, 1, t.Hours, t.Minutes, 0).ToString()
+            : "";
+    }
 
     private string ReadString(string name) => AsText(Object[name]);
 

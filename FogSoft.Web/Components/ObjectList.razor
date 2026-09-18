@@ -163,6 +163,20 @@ else
         if (IsBoolean(attribute))
             return ParseHelper.GetBooleanFromObject(v, false) ? BoolYes : "";
 
+        // Десктопный SmartGrid.CreateDataGridColumn ставит Style.Format "c"
+        // (валюта, с разделителем тысяч и знаком ₽) для money-колонок и "f"
+        // (два знака после запятой, без разделителя тысяч) для decimal/float —
+        // без этого web показывал голый ToString(), например "8000,00" вместо
+        // "8 000,00 ₽". Признак — тот же ColumnInfo.IsMoneyData/IsFloatData.
+        if (v is IConvertible)
+        {
+            ColumnInfoOf(attribute, out ColumnInfo? columnInfo);
+            if (ColumnInfo.IsMoneyData(columnInfo, attribute))
+                return Convert.ToDecimal(v).ToString("C");
+            if (ColumnInfo.IsFloatData(columnInfo, attribute))
+                return Convert.ToDecimal(v).ToString("F");
+        }
+
         return v.ToString() ?? "";
     }
 
@@ -174,9 +188,12 @@ else
     /// </summary>
     private bool IsBoolean(Entity.Attribute attribute)
     {
-        Entity.ColumnsInfo.TryGetValue(attribute.Name, out ColumnInfo? columnInfo);
+        ColumnInfoOf(attribute, out ColumnInfo? columnInfo);
         return ColumnInfo.IsBooleanData(columnInfo, attribute);
     }
+
+    private void ColumnInfoOf(Entity.Attribute attribute, out ColumnInfo? columnInfo) =>
+        Entity.ColumnsInfo.TryGetValue(attribute.Name, out columnInfo);
 
     // ---------- Сортировка ----------
 
