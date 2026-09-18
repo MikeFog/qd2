@@ -958,10 +958,15 @@ namespace FogSoft.WinForm.Controls
 
         private void AddMultiSelectColumn()
         {
+            // MinimumWidth — обычная ширина колонки галочки. Если данные привязаны, пока в гриде
+            // не видно ни одной строки (грид ещё не растянут или строку закрыл горизонтальный
+            // скроллбар), DisplayedCells подгоняет колонку под пустой заголовок (~5 px) и
+            // потом сам не пересчитывает.
             DataGridViewCheckBoxColumn column = new DataGridViewCheckBoxColumn
             {
                 DataPropertyName = COL_IsSelected,
-                ReadOnly = false
+                ReadOnly = false,
+                MinimumWidth = dataGrid.LogicalToDeviceUnits(21)
             };
 
             dataGrid.Columns.Add(column);
