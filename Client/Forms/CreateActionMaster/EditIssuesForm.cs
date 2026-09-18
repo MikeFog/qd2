@@ -6,6 +6,7 @@ using Merlin.Classes.Domain;
 using Merlin.Controls;
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Windows.Forms;
 using FogSoft.WinForm.Forms;
 
@@ -794,8 +795,10 @@ namespace Merlin.Forms.CreateActionMaster
 
         /// <summary>
         /// Подсказки при наведении на цветные ячейки:
-        /// красная (частичная) — каких из отмеченных галочкой кампаний не хватает в этом
-        /// слоте (только у красного есть такая настоящая неопределённость);
+        /// синяя/красная при включённых номерах роликов — расшифровка значков Н/Д: каких
+        /// роликов и сколько не хватает каждой кампании и где стоят дубли (BuildRollerMismatchTooltip);
+        /// красная без номеров роликов — каких из отмеченных галочкой кампаний не хватает в этом
+        /// слоте;
         /// бирюзовая/оранжевая — какие чужие акции той же фирмы стоят в этом слоте (номер и
         /// статус подтверждения), без похода в базу — данные уже загружены вместе с раскраской
         /// окон (см. TariffWithRangeGrid.GetOtherFirmActions). На синей молчит — там «везде»
@@ -813,21 +816,20 @@ namespace Merlin.Forms.CreateActionMaster
             try
             {
                 TariffWithRangeGrid rangeGrid = _tariffGrid as TariffWithRangeGrid;
-                if (rangeGrid == null)
+                if (rangeGrid == null || !rangeGrid.HasSlots)
                     return;
 
-                if (_tariffGrid.CellHasCurrentActionIssues(e.RowIndex, e.ColumnIndex))
-                {
-                    ITariffWindow window = _tariffGrid.GetTariffWindowAt(e.RowIndex, e.ColumnIndex);
-                    if (window != null)
-                        e.ToolTipText = BuildMissingCampaignsTooltip(rangeGrid, window.WindowDate);
-                }
+                ITariffWindow window = _tariffGrid.GetTariffWindowAt(e.RowIndex, e.ColumnIndex);
+                if (window == null)
+                    return;
+
+                string rollersTooltip = BuildRollerMismatchTooltip(rangeGrid, window.WindowDate);
+                if (rollersTooltip != null)
+                    e.ToolTipText = rollersTooltip;
+                else if (_tariffGrid.CellHasCurrentActionIssues(e.RowIndex, e.ColumnIndex))
+                    e.ToolTipText = BuildMissingCampaignsTooltip(rangeGrid, window.WindowDate);
                 else if (_tariffGrid.CellHasOtherFirmIssues(e.RowIndex, e.ColumnIndex))
-                {
-                    ITariffWindow window = _tariffGrid.GetTariffWindowAt(e.RowIndex, e.ColumnIndex);
-                    if (window != null)
-                        e.ToolTipText = BuildOtherFirmActionsTooltip(rangeGrid, window.WindowDate);
-                }
+                    e.ToolTipText = BuildOtherFirmActionsTooltip(rangeGrid, window.WindowDate);
             }
             catch (Exception ex)
             {
@@ -876,30 +878,91 @@ namespace Merlin.Forms.CreateActionMaster
             List<string> missing = new List<string>();
             foreach (int campaignId in selected)
                 if (!present.Contains(campaignId))
-                    missing.Add(FormatMissingCampaign(campaignId));
+                    missing.Add(FormatCampaignTitle(campaignId));
 
             return missing.Count == 0 ? null : "Отсутствуют:" + Environment.NewLine + string.Join(Environment.NewLine, missing);
         }
 
-        // «Станция (тип оплаты, агентство)» — оба нужны в скобках, когда у станции
-        // несколько кампаний акции (см. UIX_Campaign: различаются paymentTypeID и/или
-        // agencyID) — без них несколько пропущенных строк могли выглядеть одинаково.
+        // «Станция Группа (тип оплаты, агентство)» — группа (город) отличает одноимённые станции
+        // разных городов, тип оплаты и агентство — несколько кампаний одной станции в акции
+        // (см. UIX_Campaign: различаются paymentTypeID и/или agencyID) — без них несколько строк
+        // могли выглядеть одинаково.
         // Агентство у кампании может быть не заполнено (LEFT JOIN в Campaigns.sql) —
         // тогда в скобках только тип оплаты, без лишней запятой.
-        private string FormatMissingCampaign(int campaignId)
+        private string FormatCampaignTitle(int campaignId)
         {
             foreach (System.Data.DataRowView row in _campaignsView)
             {
                 if (ParseHelper.GetInt32FromObject(row[Campaign.ParamNames.CampaignId], 0) != campaignId)
                     continue;
 
+                string group = StringUtil.GetStringOrEmpty(row["groupName"]);
                 string paymentType = StringUtil.GetStringOrEmpty(row["paymentTypeName"]);
                 string agency = StringUtil.GetStringOrEmpty(row["agencyName"]);
                 string details = string.IsNullOrEmpty(agency) ? paymentType : paymentType + ", " + agency;
+                string station = string.IsNullOrEmpty(group)
+                    ? StringUtil.GetStringOrEmpty(row[Campaign.ParamNames.MassmediaName])
+                    : row[Campaign.ParamNames.MassmediaName] + " " + group;
 
-                return string.Format("{0} ({1})", row[Campaign.ParamNames.MassmediaName], details);
+                return string.Format("{0} ({1})", station, details);
             }
             return "#" + campaignId;
+        }
+
+        /// <summary>
+        /// Расшифровка значков Н/Д в ячейке. Блок «Отсутствуют:» — по каждой кампании, каких
+        /// роликов и сколько штук не хватает до кампании с наибольшим количеством этого ролика;
+        /// блок «Дубли:» — какие ролики у кампании стоят больше одного раза и сколько. Номера
+        /// роликов по возрастанию; пустые блоки не выводятся, null — показывать нечего
+        /// (номера роликов выключены, слот без выпусков своей акции или всё совпадает и без дублей).
+        /// </summary>
+        private string BuildRollerMismatchTooltip(TariffWithRangeGrid rangeGrid, DateTime windowDate)
+        {
+            SortedDictionary<int, Dictionary<int, int>> countsByNumber = rangeGrid.GetRollerCountsByNumber(windowDate);
+            IList<int> campaignIds = rangeGrid.SelectedCampaignIds;
+            if (countsByNumber == null || campaignIds == null || campaignIds.Count == 0)
+                return null;
+
+            List<string> missingLines = new List<string>();
+            List<string> duplicateLines = new List<string>();
+            foreach (int campaignId in campaignIds)
+            {
+                List<string> missing = new List<string>();
+                List<string> duplicates = new List<string>();
+                foreach (KeyValuePair<int, Dictionary<int, int>> roller in countsByNumber)
+                {
+                    int own = GetRollerCount(roller.Value, campaignId);
+                    int max = campaignIds.Max(id => GetRollerCount(roller.Value, id));
+                    if (own < max)
+                        missing.Add(FormatRollerCount(roller.Key, max - own, missing.Count == 0));
+                    if (own > 1)
+                        duplicates.Add(FormatRollerCount(roller.Key, own, duplicates.Count == 0));
+                }
+
+                if (missing.Count > 0)
+                    missingLines.Add(FormatCampaignTitle(campaignId) + " – " + string.Join(", ", missing));
+                if (duplicates.Count > 0)
+                    duplicateLines.Add(FormatCampaignTitle(campaignId) + " – " + string.Join(", ", duplicates));
+            }
+
+            List<string> sections = new List<string>();
+            if (missingLines.Count > 0)
+                sections.Add("Отсутствуют:" + Environment.NewLine + string.Join(Environment.NewLine, missingLines));
+            if (duplicateLines.Count > 0)
+                sections.Add("Дубли:" + Environment.NewLine + string.Join(Environment.NewLine, duplicateLines));
+
+            return sections.Count == 0 ? null : string.Join(Environment.NewLine + Environment.NewLine, sections);
+        }
+
+        private static int GetRollerCount(Dictionary<int, int> countsByCampaign, int campaignId)
+        {
+            return countsByCampaign.TryGetValue(campaignId, out int count) ? count : 0;
+        }
+
+        // «ролик 5 (3 шт.)» у первого ролика строки, дальше без слова «ролик» — как в ТЗ.
+        private static string FormatRollerCount(int rollerNumber, int count, bool isFirst)
+        {
+            return string.Format("{0}{1} ({2} шт.)", isFirst ? "ролик " : string.Empty, rollerNumber, count);
         }
 
         private void AddedIssuesGrid_MouseDown(object sender, MouseEventArgs e)

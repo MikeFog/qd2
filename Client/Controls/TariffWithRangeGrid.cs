@@ -865,18 +865,22 @@ namespace Merlin.Controls
 			return numbers.Count > 0 ? string.Join(", ", numbers) : null;
 		}
 
-		// Номер ролика + пометки Н/Д для каждого ролика слота, по возрастанию номера.
-		// Количество считается по каждой выбранной кампании отдельно (нет выпусков — 0);
-		// позиция роликов в счёт не идёт: дубль с другой позицией — обычный дубль.
-		private List<string> BuildRollerMarks(IList<SlotIssueGroup> groups)
+		// Сколько выпусков каждого ролика (по номеру, по возрастанию) у каждой кампании слота:
+		// номер -> campaignId -> штук. Кампании без выпусков этого ролика в словаре нет (= 0).
+		// Позиция роликов в счёт не идёт: дубль с другой позицией — обычный дубль.
+		// Ролики без номера (не из списка фирмы) пропускаются.
+		private SortedDictionary<int, Dictionary<int, int>> CountRollersByNumber(IList<SlotIssueGroup> groups)
 		{
-			Dictionary<int, Dictionary<int, int>> countsByRoller = new Dictionary<int, Dictionary<int, int>>();
+			SortedDictionary<int, Dictionary<int, int>> countsByNumber = new SortedDictionary<int, Dictionary<int, int>>();
 			foreach (SlotIssueGroup group in groups)
 			{
-				if (!countsByRoller.TryGetValue(group.RollerId, out Dictionary<int, int> countsByCampaign))
+				if (!rollerNumbers.TryGetValue(group.RollerId, out int number))
+					continue;
+
+				if (!countsByNumber.TryGetValue(number, out Dictionary<int, int> countsByCampaign))
 				{
 					countsByCampaign = new Dictionary<int, int>();
-					countsByRoller.Add(group.RollerId, countsByCampaign);
+					countsByNumber.Add(number, countsByCampaign);
 				}
 
 				foreach (int campaignId in group.CampaignIds)
@@ -886,22 +890,38 @@ namespace Merlin.Controls
 				}
 			}
 
-			List<KeyValuePair<int, string>> marks = new List<KeyValuePair<int, string>>();
-			foreach (KeyValuePair<int, Dictionary<int, int>> roller in countsByRoller)
-			{
-				if (!rollerNumbers.TryGetValue(roller.Key, out int number))
-					continue;
+			return countsByNumber;
+		}
 
+		/// <summary>
+		/// Расклад роликов слота по кампаниям для подсказки к значкам Н/Д (см.
+		/// <see cref="CountRollersByNumber"/>). null — номера роликов не показываются или в слоте
+		/// нет выпусков своей акции.
+		/// </summary>
+		public SortedDictionary<int, Dictionary<int, int>> GetRollerCountsByNumber(DateTime windowDate)
+		{
+			if (!showRollerNumbers || rollerNumbers == null || _partialRollerGroupsByDate == null ||
+			    !_partialRollerGroupsByDate.TryGetValue(windowDate, out IList<SlotIssueGroup> groups))
+				return null;
+
+			return CountRollersByNumber(groups);
+		}
+
+		// Номер ролика + пометки Н/Д для каждого ролика слота, по возрастанию номера.
+		private List<string> BuildRollerMarks(IList<SlotIssueGroup> groups)
+		{
+			List<string> marks = new List<string>();
+			foreach (KeyValuePair<int, Dictionary<int, int>> roller in CountRollersByNumber(groups))
+			{
 				List<int> counts = SelectedCampaignIds
 					.Select(campaignId => roller.Value.TryGetValue(campaignId, out int count) ? count : 0)
 					.ToList();
 				bool incomplete = counts.Any(count => count != counts[0]);
 				bool duplicated = counts.Any(count => count > 1);
-				marks.Add(new KeyValuePair<int, string>(number,
-					number + (incomplete ? "Н" : string.Empty) + (duplicated ? "Д" : string.Empty)));
+				marks.Add(roller.Key + (incomplete ? "Н" : string.Empty) + (duplicated ? "Д" : string.Empty));
 			}
 
-			return marks.OrderBy(mark => mark.Key).Select(mark => mark.Value).ToList();
+			return marks;
 		}
 
 		// Перерисовать текст всех ячеек грида — нужно при включении/выключении ShowRollerNumbers.
