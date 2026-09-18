@@ -16,7 +16,7 @@ namespace FogSoft.Web.Infrastructure;
 /// смену способа отрисовки.
 ///
 /// Поддержаны <c>field</c>, <c>lookup</c>, <c>objectPicker</c>,
-/// <c>selector</c> и <c>image</c>. Не поддержаны <c>treeselector</c> (в данных
+/// <c>selector</c>, <c>image</c> и <c>label</c>. Не поддержаны <c>treeselector</c> (в данных
 /// не встречается) и <c>button</c> (переносить нечего: сам контрол пустой, а
 /// поведение живёт в форме паспорта ролика — этап 3, см.
 /// docs/tasks/web-migration.md). Неизвестный элемент не молчит, а превращается в
@@ -85,7 +85,8 @@ public static class PassportSchema
 					Picker: ParsePicker(child),
 					Selector: ParseSelector(child),
 					Image: ParseImage(child),
-					Type: ResolveType(child, name, entity)));
+					Type: ResolveType(child, name, entity),
+					IsLabel: child.Name == "label"));
 			}
 			pages.Add(page);
 		}
@@ -101,7 +102,7 @@ public static class PassportSchema
 			&& string.IsNullOrEmpty(Attr(node, PageControl.Attributes.Name)))
 			return $"{node.Name} без атрибута name";
 
-		if (node.Name == "field")
+		if (node.Name == "field" || node.Name == "label")
 			return null;
 
 		if (node.Name == "lookup")
@@ -314,6 +315,10 @@ public sealed class PassportPage
 /// <param name="Type">Разрешённый тип значения; null у полей, где он не нужен.</param>
 /// <param name="Selector">Описание набора дочерних объектов; null — это не selector.</param>
 /// <param name="Image">Описание картинки; null — это не image.</param>
+/// <param name="IsLabel">
+/// Элемент &lt;label&gt;: десктопный PageFieldLabel — только показ, WinForms
+/// Label без ApplyChanges. Значение не редактируется и не уходит в процедуру.
+/// </param>
 public sealed record PassportField(
 	string Name,
 	string Caption,
@@ -324,7 +329,8 @@ public sealed record PassportField(
 	PassportPicker? Picker = null,
 	FieldTypeResolver? Type = null,
 	PassportSelector? Selector = null,
-	PassportImage? Image = null);
+	PassportImage? Image = null,
+	bool IsLabel = false);
 
 /// <param name="Source">Псевдоним набора строк из процедуры паспорта/фильтра (iTableAlias); null — набора нет, список берётся сущностью по <paramref name="EntityName"/>.</param>
 /// <param name="EntityName">Сущность запасного пути, когда готового набора по source нет; null — запасного пути нет.</param>

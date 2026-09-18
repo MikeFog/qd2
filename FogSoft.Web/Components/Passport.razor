@@ -64,6 +64,12 @@ else
                         Значение не редактируется и не сохраняется.
                     </div>
                 }
+                else if (field.IsLabel)
+                {
+                    @* Десктопный PageFieldLabel — WinForms Label: только показ,
+                       ApplyChanges пустой, значение никогда не уходит в процедуру. *@
+                    <div class="form-control-plaintext form-control-sm">@LabelText(field)</div>
+                }
                 else if (field.Image != null)
                 {
                     @if (ImageBytes(field) is { Length: > 0 } bytes)
@@ -196,6 +202,22 @@ else
                            value="@ReadTime(field.Name)"
                            @onchange="e => WriteTime(field.Name, e.Value)" />
                 }
+                else if (IsTimeDurationField(field))
+                {
+                    @* Десктопный PageFieldTimeDuration — контрол TimeDuration:
+                       два NumericUpDown (минуты, секунды), значение хранится и
+                       уходит в процедуру одним числом секунд
+                       (TimeDuration.Value: min*60 + sec). *@
+                    <div class="input-group input-group-sm" style="max-width:9rem">
+                        <input type="number" class="form-control" min="0"
+                               value="@DurationMinutes(field.Name)"
+                               @onchange="e => WriteDurationMinutes(field.Name, e.Value)" />
+                        <span class="input-group-text">:</span>
+                        <input type="number" class="form-control" min="0" max="59"
+                               value="@DurationSecondsPart(field.Name)"
+                               @onchange="e => WriteDurationSeconds(field.Name, e.Value)" />
+                    </div>
+                }
                 else
                 {
                     <input class="form-control form-control-sm"
@@ -287,6 +309,27 @@ else
 
     private static bool IsTimeField(PassportField f) => f.Type?.IsTime == true;
 
+    private static bool IsTimeDurationField(PassportField f) => f.Type?.IsTimeDuration == true;
+
+    private int DurationTotalSeconds(string name)
+    {
+        object? v = Object[name];
+        return v == null || v == DBNull.Value ? 0 : Convert.ToInt32(v);
+    }
+
+    private int DurationMinutes(string name) => DurationTotalSeconds(name) / 60;
+
+    private int DurationSecondsPart(string name) => DurationTotalSeconds(name) % 60;
+
+    private static int ParseIntOrZero(object? value) =>
+        int.TryParse(value?.ToString(), out int n) ? n : 0;
+
+    private void WriteDurationMinutes(string name, object? value) =>
+        Object[name] = ParseIntOrZero(value) * 60 + DurationSecondsPart(name);
+
+    private void WriteDurationSeconds(string name, object? value) =>
+        Object[name] = DurationMinutes(name) * 60 + ParseIntOrZero(value);
+
     /// <summary>
     /// Значение для &lt;input type="date"&gt; — тот же перевод в ISO, что и
     /// у GetFilterText в FilterPanel: HTML-инпут понимает только yyyy-MM-dd.
@@ -331,6 +374,21 @@ else
         Object[name] = TimeSpan.TryParse(text, out TimeSpan t)
             ? new DateTime(1900, 1, 1, t.Hours, t.Minutes, 0).ToString()
             : "";
+    }
+
+    /// <summary>
+    /// Десктопный PageFieldLabel.SetValue: обычный ToString(), кроме money —
+    /// там decimal.Parse(...).ToString("c"). Само значение никогда не пишется
+    /// назад (ApplyChanges у PageFieldLabel пустой), поэтому только чтение.
+    /// </summary>
+    private string LabelText(PassportField field)
+    {
+        object? v = Object[field.Name];
+        if (v == null || v == DBNull.Value)
+            return "";
+        return field.Type?.IsMoney == true
+            ? Convert.ToDecimal(v).ToString("C")
+            : v.ToString() ?? "";
     }
 
     private string ReadString(string name) => AsText(Object[name]);
