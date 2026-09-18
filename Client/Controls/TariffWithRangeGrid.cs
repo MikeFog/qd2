@@ -813,14 +813,13 @@ namespace Merlin.Controls
 			return DateTimeUtils.Time2String(ShowUnconfirmed ? timeWithUnConfirmed : timeWithConfirmed);
 		}
 
-		// Номера роликов, размещённых в этом слоте (через запятую, в порядке размещения — как
-		// они лежат в AddedIssues), или null, если слот свободен / номер ролика не известен.
-		// AddedIssues уже фильтрует "свою" акцию и, что важно, один клик AddRangeIssues атомарно
-		// пишет ОДИН И ТОТ ЖЕ ролик на все станции акции сразу (см. AddRangeIssues.sql — @rollerID
-		// один параметр на весь курсор по станциям) — поэтому потеря привязки к конкретной
-		// станции в AddedIssues не теряет сам номер ролика.
-		// Частичные (не во всех выбранных кампаниях) группы — из батч-кэша
-		// _partialRollerGroupsByDate. Звёздочек нет (решение заказчика): полноту слота показывает цвет.
+		// Номера роликов, размещённых в этом слоте (через запятую), или null, если слот свободен /
+		// номер ролика не известен. Ролики "своей" акции — по возрастанию номера, с пометками:
+		// Н — количество ролика не совпадает у всех выбранных кампаний (в т.ч. у кого-то его нет),
+		// Д — хотя бы у одной кампании роликов этого номера больше одного (решение заказчика).
+		// Источник — батч-кэш _partialRollerGroupsByDate (RangeSlotIssues отдаёт весь слот по
+		// выбранным кампаниям, а не только частичный); AddedIssues — запасной путь, пока кэш не
+		// загружен: он хранит пересечение слотов без разбивки по кампаниям, пометок из него не построить.
 		private string GetRollerNumbersText(DateTime windowDate)
 		{
 			if (rollerNumbers == null || windowDate == DateTime.MinValue) return null;
@@ -828,24 +827,20 @@ namespace Merlin.Controls
 			List<string> numbers = new List<string>();
 			HashSet<string> covered = new HashSet<string>();
 
-			if (AddedIssues != null)
+			if (_partialRollerGroupsByDate != null &&
+			    _partialRollerGroupsByDate.TryGetValue(windowDate, out IList<SlotIssueGroup> groups))
+			{
+				numbers.AddRange(BuildRollerMarks(groups));
+				foreach (SlotIssueGroup group in groups)
+					covered.Add(group.RollerId + "/" + (int)group.Position);
+			}
+			else if (AddedIssues != null)
 				foreach (DataRow issueRow in AddedIssues.Select(string.Format("[issueDate] = '{0}'", windowDate)))
 				{
 					int rollerId = ParseHelper.GetInt32FromObject(issueRow[Roller.ParamNames.RollerId], 0);
 					int positionId = ParseHelper.GetInt32FromObject(issueRow[Issue.ParamNames.PositionId], 0);
 					covered.Add(rollerId + "/" + positionId);
 					if (rollerNumbers.TryGetValue(rollerId, out int number))
-						numbers.Add(number.ToString());
-				}
-
-			if (_partialRollerGroupsByDate != null &&
-			    _partialRollerGroupsByDate.TryGetValue(windowDate, out IList<SlotIssueGroup> groups))
-				foreach (SlotIssueGroup group in groups)
-				{
-					if (!covered.Add(group.RollerId + "/" + (int)group.Position))
-						continue; // тот же ролик+позиция уже учтён как синий выше
-
-					if (rollerNumbers.TryGetValue(group.RollerId, out int number))
 						numbers.Add(number.ToString());
 				}
 
@@ -868,6 +863,45 @@ namespace Merlin.Controls
 				}
 
 			return numbers.Count > 0 ? string.Join(", ", numbers) : null;
+		}
+
+		// Номер ролика + пометки Н/Д для каждого ролика слота, по возрастанию номера.
+		// Количество считается по каждой выбранной кампании отдельно (нет выпусков — 0);
+		// позиция роликов в счёт не идёт: дубль с другой позицией — обычный дубль.
+		private List<string> BuildRollerMarks(IList<SlotIssueGroup> groups)
+		{
+			Dictionary<int, Dictionary<int, int>> countsByRoller = new Dictionary<int, Dictionary<int, int>>();
+			foreach (SlotIssueGroup group in groups)
+			{
+				if (!countsByRoller.TryGetValue(group.RollerId, out Dictionary<int, int> countsByCampaign))
+				{
+					countsByCampaign = new Dictionary<int, int>();
+					countsByRoller.Add(group.RollerId, countsByCampaign);
+				}
+
+				foreach (int campaignId in group.CampaignIds)
+				{
+					countsByCampaign.TryGetValue(campaignId, out int count);
+					countsByCampaign[campaignId] = count + 1;
+				}
+			}
+
+			List<KeyValuePair<int, string>> marks = new List<KeyValuePair<int, string>>();
+			foreach (KeyValuePair<int, Dictionary<int, int>> roller in countsByRoller)
+			{
+				if (!rollerNumbers.TryGetValue(roller.Key, out int number))
+					continue;
+
+				List<int> counts = SelectedCampaignIds
+					.Select(campaignId => roller.Value.TryGetValue(campaignId, out int count) ? count : 0)
+					.ToList();
+				bool incomplete = counts.Any(count => count != counts[0]);
+				bool duplicated = counts.Any(count => count > 1);
+				marks.Add(new KeyValuePair<int, string>(number,
+					number + (incomplete ? "Н" : string.Empty) + (duplicated ? "Д" : string.Empty)));
+			}
+
+			return marks.OrderBy(mark => mark.Key).Select(mark => mark.Value).ToList();
 		}
 
 		// Перерисовать текст всех ячеек грида — нужно при включении/выключении ShowRollerNumbers.

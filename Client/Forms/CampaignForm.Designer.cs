@@ -115,7 +115,6 @@ namespace Merlin.Forms {
             this.tbbShowUnconfirmed,
             this.btnShowMarked,
             this.btnShowRollerNumbers,
-            this.tbbReplaceRoller,
             this.tbMarkPrimeWindows,
             this.toolStripSeparator1,
             this.btnShowDisabled,
@@ -123,6 +122,7 @@ namespace Merlin.Forms {
             this.tbbTemplate,
             this.tbbTemplate2,
             this.tbbTemplate3,
+            this.tbbReplaceRoller,
             this.tbbTemplateUndo,
             this.toolStripSeparator2,
             this.tbSetManagerDiscount,
@@ -335,11 +335,11 @@ namespace Merlin.Forms {
             // Скрыта/недоступна по умолчанию: показывается только на веере (EditIssuesForm.
             // ProcessToolbar), включается только при btnShowRollerNumbers.Checked — иначе
             // пользователь заменит ролики, не видя, какие именно стоят в окнах.
-            this.tbbReplaceRoller.DisplayStyle = System.Windows.Forms.ToolStripItemDisplayStyle.ImageAndText;
+            this.tbbReplaceRoller.DisplayStyle = System.Windows.Forms.ToolStripItemDisplayStyle.Image;
             this.tbbReplaceRoller.Enabled = false;
             this.tbbReplaceRoller.ImageTransparentColor = System.Drawing.Color.Magenta;
             this.tbbReplaceRoller.Name = "tbbReplaceRoller";
-            this.tbbReplaceRoller.Size = new System.Drawing.Size(110, 33);
+            this.tbbReplaceRoller.Size = new System.Drawing.Size(34, 33);
             this.tbbReplaceRoller.Text = "Заменить ролики";
             this.tbbReplaceRoller.ToolTipText = "Заменить ролики в выделенных окнах на ролик, выбранный в списке \"Ролики\" (Ctrl" +
     "+R)";
