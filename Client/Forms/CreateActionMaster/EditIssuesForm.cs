@@ -367,9 +367,9 @@ namespace Merlin.Forms.CreateActionMaster
         /// Массовое удаление выпусков в выбранных окнах веерного размещения (Del).
         /// Синие выпуски (master issues, полностью по выбранным кампаниям) берём из in-memory
         /// AddedIssues по дате окна и удаляем через MasterIssue.Delete -> MasterIssueDelete
-        /// (выпуск удаляется на всех радиостанциях акции). Красные (частичные) группы —
-        /// отдельно через DeleteSlotIssueGroup. Одно и то же окно может содержать оба вида
-        /// сразу (разные пары ролик/позиция) — оба удаляются одним нажатием Delete.
+        /// (выпуск удаляется на всех радиостанциях акции). Красные (частичные) группы и всё, что
+        /// осталось сверх синих копий, — отдельно через DeleteSlotIssueGroup (несколько проходов,
+        /// см. SplitIntoDeletePasses). Одно нажатие Delete очищает выбранные окна полностью.
         /// Часть может не удалиться (прошлое/дедлайн у подтверждённых) — ошибки собираем и
         /// показываем (паттерн SmartGrid.DeleteSelectedObjects). Очистка AddedIssues + Recalculate
         /// + RefreshGrid выполняются в ProcessCurrentCampaignIssuesDelete через ObjectsDeleted.
@@ -392,9 +392,9 @@ namespace Merlin.Forms.CreateActionMaster
             List<KeyValuePair<DateTime, TariffWithRangeGrid.SlotIssueGroup>> partialGroups =
                 new List<KeyValuePair<DateTime, TariffWithRangeGrid.SlotIssueGroup>>();
 
-            // Пары «ролик/позиция», уже покрытые синими (AddedIssues) выпусками на каждую дату —
-            // чтобы не задвоить их же при разборе GetSlotIssueGroups ниже.
-            Dictionary<DateTime, HashSet<string>> coveredByDate = new Dictionary<DateTime, HashSet<string>>();
+            // Сколько синих строк (AddedIssues) приходится на пару «ролик/позиция» в каждом окне:
+            // столько копий на каждую кампанию снимет синее удаление, остальное — красным ниже.
+            Dictionary<DateTime, Dictionary<string, int>> blueRowsByDate = new Dictionary<DateTime, Dictionary<string, int>>();
             List<DateTime> windowDates = new List<DateTime>();
             foreach (ITariffWindow window in windows)
             {
@@ -405,35 +405,37 @@ namespace Merlin.Forms.CreateActionMaster
                 if (rows.Length == 0)
                     continue;
 
-                HashSet<string> covered = new HashSet<string>();
+                Dictionary<string, int> blueRowsByKey = new Dictionary<string, int>();
                 foreach (System.Data.DataRow row in rows)
                 {
                     issues.Add(masterEntity.CreateObject(row));
                     int rollerId = ParseHelper.GetInt32FromObject(row[Roller.ParamNames.RollerId], 0);
                     int positionId = ParseHelper.GetInt32FromObject(row[Issue.ParamNames.PositionId], 0);
-                    covered.Add(rollerId + "/" + positionId);
+                    string key = rollerId + "/" + positionId;
+                    blueRowsByKey.TryGetValue(key, out int blueRows);
+                    blueRowsByKey[key] = blueRows + 1;
                 }
-                coveredByDate[window.WindowDate] = covered;
+                blueRowsByDate[window.WindowDate] = blueRowsByKey;
             }
 
             // Один и тот же получас может одновременно содержать и полностью пересекающийся
-            // (синий) выпуск, и частичный (красный) — разными парами «ролик/позиция». Поэтому
-            // группы читаем по ВСЕМ выделенным окнам одним батч-запросом (а не только по тем,
-            // где синих не нашлось), и оставляем только те, что ещё не покрыты синими.
+            // (синий) выпуск, и частичный (красный) — разными парами «ролик/позиция», а у одной
+            // пары — ещё и лишние копии у части кампаний сверх синих. Поэтому группы читаем по
+            // ВСЕМ выделенным окнам одним батч-запросом и из каждой берём то, что не снимут синие.
             foreach (KeyValuePair<DateTime, IList<TariffWithRangeGrid.SlotIssueGroup>> byWindow
                      in rangeGrid.GetSlotIssueGroups(windowDates))
             {
-                HashSet<string> covered;
-                coveredByDate.TryGetValue(byWindow.Key, out covered);
+                blueRowsByDate.TryGetValue(byWindow.Key, out Dictionary<string, int> blueRowsByKey);
 
                 foreach (TariffWithRangeGrid.SlotIssueGroup group in byWindow.Value)
                 {
-                    string key = group.RollerId + "/" + (int)group.Position;
-                    if (covered != null && covered.Contains(key))
-                        continue;
+                    int blueRows = 0;
+                    if (blueRowsByKey != null)
+                        blueRowsByKey.TryGetValue(group.RollerId + "/" + (int)group.Position, out blueRows);
 
-                    partialGroups.Add(
-                        new KeyValuePair<DateTime, TariffWithRangeGrid.SlotIssueGroup>(byWindow.Key, group));
+                    foreach (TariffWithRangeGrid.SlotIssueGroup pass in SplitIntoDeletePasses(group, blueRows))
+                        partialGroups.Add(
+                            new KeyValuePair<DateTime, TariffWithRangeGrid.SlotIssueGroup>(byWindow.Key, pass));
                 }
             }
 
@@ -520,6 +522,39 @@ namespace Merlin.Forms.CreateActionMaster
                 FogSoft.WinForm.Controls.SmartGrid.ShowDeleteErrors(deleteErrors);
             else
                 UserMessage.ShowInformation(string.Format("Удалено выпусков: {0}.", realDeletedCount));
+        }
+
+        // MasterIssueDelete снимает по одному выпуску на кампанию за вызов, поэтому если у
+        // кампании в группе несколько копий, за один вызов группа не очистится. В проход k
+        // входят кампании, у которых после blueRows синих копий остаётся не меньше k штук —
+        // так каждый проход удаляет ровно len(CampaignIds) реальных выпусков (диалог считает по ним).
+        private static IEnumerable<TariffWithRangeGrid.SlotIssueGroup> SplitIntoDeletePasses(
+            TariffWithRangeGrid.SlotIssueGroup group, int blueRows)
+        {
+            Dictionary<int, int> copiesByCampaign = new Dictionary<int, int>();
+            foreach (int campaignId in group.CampaignIds)
+            {
+                copiesByCampaign.TryGetValue(campaignId, out int copies);
+                copiesByCampaign[campaignId] = copies + 1;
+            }
+
+            for (int pass = 1; ; pass++)
+            {
+                TariffWithRangeGrid.SlotIssueGroup part = new TariffWithRangeGrid.SlotIssueGroup
+                {
+                    RollerId = group.RollerId,
+                    RollerName = group.RollerName,
+                    Duration = group.Duration,
+                    DurationString = group.DurationString,
+                    Position = group.Position
+                };
+                part.CampaignIds.AddRange(
+                    copiesByCampaign.Where(pair => pair.Value - blueRows >= pass).Select(pair => pair.Key));
+                if (part.CampaignIds.Count == 0)
+                    yield break;
+
+                yield return part;
+            }
         }
 
         /// <summary>
@@ -755,7 +790,7 @@ namespace Merlin.Forms.CreateActionMaster
         }
 
         /// <summary>
-        /// «Удалить дубли» и «До пересечения» — сразу за «Заменить ролики». Только в веере,
+        /// «Удалить дубли» и «Добавить до полного пересечения» — сразу за «Заменить ролики». Только в веере,
         /// поэтому создаются здесь, а не в дизайнере базовой формы; тулбар приватный у
         /// CampaignForm — берём его через соседнюю кнопку.
         /// </summary>
@@ -769,7 +804,7 @@ namespace Merlin.Forms.CreateActionMaster
             };
             _tbbDeleteDuplicates.Click += (s, e) => RunToolbarAction(DeleteDuplicatesInSelectedWindows);
 
-            _tbbFillToIntersection = new ToolStripButton("До пересечения")
+            _tbbFillToIntersection = new ToolStripButton("Добавить до полного пересечения")
             {
                 DisplayStyle = ToolStripItemDisplayStyle.Text,
                 ToolTipText = "Добавить ролики до полного пересечения: в выделенных окнах довести количество каждого " +
@@ -985,7 +1020,7 @@ namespace Merlin.Forms.CreateActionMaster
             List<int> campaignOrder = GetVeerCampaignOrder(rangeGrid);
             List<SkippedWindow> skipped = new List<SkippedWindow>();
             List<DuplicateRemoval> removals = PlanDuplicateRemovals(
-                rangeGrid.GetSlotIssueRows(windows.Select(w => w.WindowDate)), campaignOrder, skipped);
+                WithWaitCursor(() => rangeGrid.GetSlotIssueRows(windows.Select(w => w.WindowDate))), campaignOrder, skipped);
             int plannedCount = removals.Sum(r => r.ExtraCount);
             Dictionary<int, int> rollerNumbers = rangeGrid.RollerNumbers ?? BuildRollerNumbersMap();
 
@@ -1083,7 +1118,8 @@ namespace Merlin.Forms.CreateActionMaster
             }
 
             List<RollerAddition> additions = PlanRollerAdditions(
-                rangeGrid.GetSlotIssueRows(windows.Select(w => w.WindowDate)), GetVeerCampaignOrder(rangeGrid));
+                WithWaitCursor(() => rangeGrid.GetSlotIssueRows(windows.Select(w => w.WindowDate))),
+                GetVeerCampaignOrder(rangeGrid));
             if (additions.Count == 0)
             {
                 UserMessage.ShowInformation("В выделенных окнах количество роликов уже совпадает у всех выбранных кампаний.");
@@ -1161,9 +1197,32 @@ namespace Merlin.Forms.CreateActionMaster
         // пересобираем из базы, как после массовой замены роликов.
         private void RefreshAfterRollerMismatchFix(TariffWithRangeGrid rangeGrid)
         {
-            rangeGrid.RebuildAddedIssues();
-            _action.Recalculate();
-            rangeGrid.RefreshGrid();
+            Cursor = Cursors.WaitCursor;
+            try
+            {
+                rangeGrid.RebuildAddedIssues();
+                _action.Recalculate();
+                rangeGrid.RefreshGrid();
+            }
+            finally
+            {
+                Cursor = Cursors.Default;
+            }
+        }
+
+        // Чтение слотов перед диалогом подтверждения и пересчёт с обновлением сетки после цикла
+        // заметно долгие — без курсора ожидания окно выглядит зависшим.
+        private T WithWaitCursor<T>(Func<T> read)
+        {
+            Cursor = Cursors.WaitCursor;
+            try
+            {
+                return read();
+            }
+            finally
+            {
+                Cursor = Cursors.Default;
+            }
         }
 
         private static void ReportRollerMismatchFix(string summary, System.Data.DataTable problems, string caption)
@@ -1354,13 +1413,13 @@ namespace Merlin.Forms.CreateActionMaster
                 if (ParseHelper.GetInt32FromObject(row[Campaign.ParamNames.CampaignId], 0) != campaignId)
                     continue;
 
-                string group = StringUtil.GetStringOrEmpty(row["groupName"]);
+                // В базе у названий станций бывает пробел на конце («Русское радио »).
+                string massmedia = StringUtil.GetStringOrEmpty(row[Campaign.ParamNames.MassmediaName]).Trim();
+                string group = StringUtil.GetStringOrEmpty(row["groupName"]).Trim();
                 string paymentType = StringUtil.GetStringOrEmpty(row["paymentTypeName"]);
                 string agency = StringUtil.GetStringOrEmpty(row["agencyName"]);
                 string details = string.IsNullOrEmpty(agency) ? paymentType : paymentType + ", " + agency;
-                string station = string.IsNullOrEmpty(group)
-                    ? StringUtil.GetStringOrEmpty(row[Campaign.ParamNames.MassmediaName])
-                    : row[Campaign.ParamNames.MassmediaName] + " " + group;
+                string station = string.IsNullOrEmpty(group) ? massmedia : massmedia + " " + group;
 
                 return string.Format("{0} ({1})", station, details);
             }
