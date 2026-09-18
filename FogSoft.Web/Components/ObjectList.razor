@@ -90,7 +90,20 @@ else
     /// <summary>Ошибка операции над строкой; показывается владельцем.</summary>
     [Parameter] public EventCallback<string> Failed { get; set; }
 
-    private IReadOnlyList<Entity.Attribute> Columns => Entity.SortedAttributes;
+    /// <summary>
+    /// Колонки — атрибуты сущности, у которых есть соответствующая колонка в
+    /// пришедших строках. Метаданные (iEntityAttribute) могут объявлять
+    /// колонку, которой нет в конкретной процедуре загрузки списка — например,
+    /// massmediaList не отдаёт executorName/extraCharge* сущности 9, хотя они
+    /// есть в selector=0. Десктопный SmartGrid пропускает такие атрибуты
+    /// (SmartGrid.SetColumnHeaders: columns.Contains(entityAttribute.Name)),
+    /// и здесь — тот же фильтр, иначе список рисовал бы заголовок с вечно
+    /// пустой колонкой, которую десктоп молча не показывает.
+    /// </summary>
+    private IReadOnlyList<Entity.Attribute> Columns =>
+        Data == null
+            ? Entity.SortedAttributes
+            : Entity.SortedAttributes.Where(a => Data.Columns.Contains(a.Name)).ToList();
 
     /// <summary>
     /// Строки в порядке показа. Отдельный список, а не DataTable.Rows:
