@@ -1,4 +1,6 @@
+using FogSoft.WinForm.Classes;
 using Merlin;
+using Merlin.Classes.FakeContainers;
 
 namespace FogSoft.Web.Infrastructure;
 
@@ -28,9 +30,10 @@ namespace FogSoft.Web.Infrastructure;
 /// <c>miStats.*</c> уходят туда в одну ветку <c>StartsWith("miStats.")</c> →
 /// <c>ShowStatsJournal</c>, у которой внутри свой switch на 15 пунктов. Из них
 /// 14 — тот же <c>ShowSimpleJournal</c> (см. записи ниже); пятнадцатый,
-/// <c>miStats.Balance</c>, ведёт в собственную форму <c>StatBalanceJournalForm</c>
-/// и остаётся этапом 3. Итого к тем 22 веткам добавляются miMassMedia и 14
-/// пунктов статистики.
+/// <c>miStats.Balance</c>, ведёт в <c>StatBalanceJournalForm</c> — это простой
+/// журнал с одной подменой сущности при включённой группировке
+/// (<see cref="JournalRoute.EntitySwitch"/>). Итого к тем 22 веткам добавляются
+/// miMassMedia и 14 пунктов статистики, плюс miStats.Balance.
 ///
 /// Правило <c>ManagerFilter</c> привязано к пункту меню, а не к сущности
 /// (десктоп передаёт <c>ManagerFilter.FilterClick</c> в <c>ShowSimpleJournal</c>
@@ -43,6 +46,9 @@ namespace FogSoft.Web.Infrastructure;
 /// </summary>
 public static class MenuRoutes
 {
+	/// <summary>Пункт «Выход»: в вебе — выход из сеанса, как кнопка «Выйти» в верхней полосе.</summary>
+	public const string Exit = "miExit";
+
 	public static readonly IReadOnlyDictionary<string, JournalRoute> SimpleJournal =
 		new Dictionary<string, JournalRoute>(StringComparer.OrdinalIgnoreCase)
 		{
@@ -61,6 +67,11 @@ public static class MenuRoutes
 			{ "miPaymentType", new JournalRoute(Entities.PaymentType) },
 			{ "miReportPartText", new JournalRoute(Entities.ReportPartText) },
 			{ "miSpecialActions", new JournalRoute(Entities.SpecialAction, ManagerFilter: true) },
+			// StatBalanceJournalForm: при включённой «С разбивкой по агентствам» таблица
+			// берёт сущность StatsBalanceGroup, иначе StatsBalance; фильтр общий.
+			// Без ManagerFilter (MDIForm.ShowStatBalance открывает форму без него).
+			{ "miStats.Balance", new JournalRoute(Entities.StatsBalance,
+				EntitySwitch: new EntitySwitch("IsGroupByAgency", Entities.StatsBalanceGroup)) },
 			{ "miStats.AvgDiscount", new JournalRoute(Entities.StatAvgDiscount, ManagerFilter: true) },
 			{ "miStats.BalanceAgency", new JournalRoute(Entities.StatsBalanceAgency, ManagerFilter: true) },
 			{ "miStats.BalanceManager", new JournalRoute(Entities.StatsBalanceManager, ManagerFilter: true) },
@@ -89,10 +100,10 @@ public static class MenuRoutes
 	/// Извлечено из тех же веток <c>MDIForm.MenuItemClick</c>, что ведут в
 	/// <c>Globals.ShowBrowser(new FakeContainer(имя, действия, сценарий))</c> —
 	/// то есть в дерево по сценарию связей, без единой строки кода на экран.
-	/// Здесь только те восемь веток, где контейнер создаётся «голым»
-	/// <c>FakeContainer</c>. Остальные три (<c>AdvertTypeContainer</c>,
-	/// <c>ActionContainer</c>, <c>MassmediasAndCampaignsContainer</c>) —
-	/// наследники со своей логикой, это этап 3.
+	/// Восемь веток создают «голый» <c>FakeContainer</c>, девятая
+	/// (<c>miAdvertSubject</c>) — свой <c>AdvertTypeContainer</c> через
+	/// <see cref="BrowserRoute.Factory"/>. Остальные два (<c>ActionContainer</c>,
+	/// <c>MassmediasAndCampaignsContainer</c>) — наследники со своей логикой.
 	///
 	/// Имя — подпись корневого узла дерева, тот же первый аргумент
 	/// конструктора, что в десктопе.
@@ -108,6 +119,8 @@ public static class MenuRoutes
 			{ "miPackageDiscounts", new BrowserRoute(RelationScenarios.PackageDiscount, "Скидки") },
 			{ "miPackModules", new BrowserRoute(RelationScenarios.PackModules, "Пакетные модули") },
 			{ "miComboModules", new BrowserRoute(RelationScenarios.ComboModules, "Комбо-модули") },
+			{ "miAdvertSubject", new BrowserRoute(RelationScenarios.AdvertTypes, "Предметы рекламы",
+				() => new AdvertTypeContainer()) },
 		};
 }
 
@@ -123,11 +136,25 @@ public static class MenuRoutes
 /// Заголовок, который десктоп задаёт в коде вместо текста пункта меню.
 /// <c>null</c> — заголовок по-прежнему имя сущности, как у остальных журналов.
 /// </param>
-public sealed record JournalRoute(Entities Entity, bool ManagerFilter = false, string? Caption = null)
+/// <param name="EntitySwitch">
+/// Подмена сущности, из которой берутся данные, по значению поля отбора
+/// (<c>StatBalanceJournalForm.LoadData</c>). Отбор и добавление остаются за
+/// <paramref name="Entity"/>; сменяется только сущность списка.
+/// </param>
+public sealed record JournalRoute(Entities Entity, bool ManagerFilter = false, string? Caption = null,
+	EntitySwitch? EntitySwitch = null)
 {
 	public int EntityId => (int)Entity;
 }
 
+/// <param name="FilterField">Булево поле отбора.</param>
+/// <param name="WhenTrue">Сущность данных, когда поле включено; иначе — сущность маршрута.</param>
+public sealed record EntitySwitch(string FilterField, Entities WhenTrue);
+
 /// <param name="Scenario">Имя сценария связей (as_relationScenarios).</param>
 /// <param name="RootName">Подпись корневого узла дерева.</param>
-public sealed record BrowserRoute(string Scenario, string RootName);
+/// <param name="Factory">
+/// Свой контейнер корня, если десктоп создаёт не «голый» <c>FakeContainer</c>.
+/// <c>null</c> — «голый» с двумя действиями «Обновить» и «Добавить».
+/// </param>
+public sealed record BrowserRoute(string Scenario, string RootName, Func<FakeContainer>? Factory = null);

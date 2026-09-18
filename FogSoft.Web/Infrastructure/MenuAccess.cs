@@ -97,6 +97,30 @@ public sealed class MenuAccess
 	}
 
 	/// <summary>
+	/// Текст пункта меню по <c>codeName</c> — заголовок журнала, как в десктопе
+	/// (<c>mi.Text</c>). <c>null</c>, если пункта нет в меню пользователя.
+	/// </summary>
+	public string? MenuText(string codeName)
+	{
+		EnsureLoaded();
+		return FindText(_tree!, codeName);
+	}
+
+	private static string? FindText(IEnumerable<MenuNode> nodes, string codeName)
+	{
+		foreach (MenuNode node in nodes)
+		{
+			if (string.Equals(node.CodeName, codeName, StringComparison.OrdinalIgnoreCase))
+				return node.Name;
+
+			string? inChildren = FindText(node.Children, codeName);
+			if (inChildren != null)
+				return inChildren;
+		}
+		return null;
+	}
+
+	/// <summary>
 	/// Перезагружает меню, если сменился пользователь. Сверка по id, а не подписка
 	/// на <c>UserSession.Changed</c>, — чтобы результат не зависел от порядка, в
 	/// котором сработают обработчики события (NavMenu подписан на то же самое).

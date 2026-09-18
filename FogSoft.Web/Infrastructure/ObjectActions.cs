@@ -1,5 +1,6 @@
 using FogSoft.WinForm;
 using FogSoft.WinForm.Classes;
+using Merlin.Classes.FakeContainers;
 using Microsoft.AspNetCore.Components;
 
 namespace FogSoft.Web.Infrastructure;
@@ -95,6 +96,38 @@ public sealed class ObjectActions
 		[Constants.EntityActions.AssignNew] = (s, t) => s.AssignNew(t),
 		[Constants.EntityActions.AddNew] = (s, t) => s.AddNew(t),
 	};
+
+	/// <summary>
+	/// Собственные действия доменного класса: в десктопе это ветки его DoAction,
+	/// которых нет ни у одного базового класса. Ключ — имя класса, затем имя
+	/// действия; действие ищется у самого производного класса и выше, раньше
+	/// общих и раньше <see cref="DesktopOverrides"/>, поэтому этим же способом
+	/// закрывается и переопределённое общее действие.
+	///
+	/// Обработчик вызывает метод, который ядро вынесло из DoAction (по
+	/// конвенции этапа 0 логика — в ядре, форма — в UI-половине), и возвращает
+	/// <see cref="ActionEffect.Changed"/>: владелец экрана перечитывает узел.
+	///
+	/// Механизм общий, не под один класс: следующим клиентом будет журнал
+	/// рекламных акций — ActionContainer (ShowFirms / ShowActions /
+	/// ShowHeadCompanies) переключает ChildEntity корня так же, как
+	/// AdvertTypeContainer.
+	/// </summary>
+	private static readonly Dictionary<string, Dictionary<string, Handler>> ClassActions = new()
+	{
+		// AdvertTypeContainer.DoAction: подмена ChildEntity корня (AdvertType ↔ AdvertTypeChild).
+		["AdvertTypeContainer"] = new()
+		{
+			[AdvertTypeContainer.ActionNames.ShowTree] = (_, t) => Changed(((AdvertTypeContainer)t).ShowTree),
+			[AdvertTypeContainer.ActionNames.ShowFlat] = (_, t) => Changed(((AdvertTypeContainer)t).ShowFlat),
+		},
+	};
+
+	private static Task<ActionEffect> Changed(Action apply)
+	{
+		apply();
+		return Task.FromResult(ActionEffect.Changed);
+	}
 
 	/// <summary>
 	/// Предметные действия, которые десктопный DoAction класса передаёт общему.
@@ -292,6 +325,10 @@ public sealed class ObjectActions
 
 	private static Handler? FindHandler(object target, string actionName)
 	{
+		foreach (string cls in ClassNames(target))
+			if (ClassActions.TryGetValue(cls, out var own) && own.TryGetValue(actionName, out Handler? ownHandler))
+				return ownHandler;
+
 		string effective = actionName;
 		foreach (string cls in ClassNames(target))
 			if (Aliases.TryGetValue(cls, out var map) && map.TryGetValue(actionName, out string? generic))

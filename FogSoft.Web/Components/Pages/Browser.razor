@@ -134,10 +134,11 @@ else
             BrowserRoute route = MenuRoutes.Browser[Code];
             RelationScenario scenario = RelationManager.GetScenario(route.Scenario);
 
-            // Контейнер строится ровно как в MDIForm: имя корня, набор действий
-            // и сценарий связей. Действия в вебе не рисуются панелью, но
+            // Контейнер строится ровно как в MDIForm: свой (route.Factory — там,
+            // где десктоп создаёт наследника) либо «голый»: имя корня, набор
+            // действий и сценарий связей. Действия в вебе не рисуются панелью, но
             // конструктор их требует — передаём те же два, что в десктопе.
-            var container = new FakeContainer(
+            FakeContainer container = route.Factory?.Invoke() ?? new FakeContainer(
                 route.RootName,
                 new[]
                 {

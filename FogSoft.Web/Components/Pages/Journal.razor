@@ -80,7 +80,7 @@ else
     @* Действия над строками — меню ObjectActions, доступность пунктов по
        тем же IsActionEnabled, что в десктопе. Это только удобство: настоящая
        проверка стоит на исполнении, в DataAccessor.DoAction. *@
-    <ObjectList Entity="_entity" Data="_data"
+    <ObjectList Entity="_dataEntity ?? _entity" Data="_data"
                 EmptyText="Записей нет. Измените условия отбора."
                 Changed="Load" Failed="ShowError" />
 
@@ -99,10 +99,21 @@ else
     [SupplyParameterFromQuery(Name = "menu")] public string? Menu { get; set; }
 
     private JournalRoute? _route;
+    private string? _menuCode;
     private int? _loadedEntityId;
-    private string? Title => _route?.Caption ?? _entity?.Name;
+
+    // Заголовок — как в десктопе: свой у маршрута (то, что MDIForm задаёт в коде),
+    // иначе текст пункта меню (mi.Text), иначе имя сущности.
+    private string? Title => _route?.Caption
+        ?? (_menuCode == null ? null : Access.MenuText(_menuCode))
+        ?? _entity?.Name;
 
     private Entity? _entity;
+
+    // Сущность, из которой сейчас показаны данные: у маршрута с EntitySwitch
+    // (miStats.Balance) — не та, по которой открыт пункт. Фильтр и «Добавить»
+    // остаются за _entity.
+    private Entity? _dataEntity;
     private DataTable? _data;
     private readonly Dictionary<string, object> _filterValues =
         new(StringComparer.InvariantCultureIgnoreCase);
@@ -128,7 +139,7 @@ else
         // адрес /journal/{id} можно набрать руками. Разрешение — то же самое,
         // что гасит пункт меню (UserMenuItems.enabled), см. MenuAccess.
         _access = Access.CheckJournal(EntityId);
-        _route = ResolveRoute();
+        (_menuCode, _route) = ResolveRoute();
         if (_access != JournalAccess.Allowed)
         {
             _entity = null;
@@ -173,16 +184,34 @@ else
         }
     }
 
-    private JournalRoute? ResolveRoute()
+    private (string? Code, JournalRoute? Route) ResolveRoute()
     {
         // Чужой или устаревший ?menu= (не тот пункт для этой сущности) не должен
         // менять правило — в таком случае работает запасной путь по сущности.
         if (Menu != null
             && MenuRoutes.SimpleJournal.TryGetValue(Menu, out JournalRoute? byMenu)
             && byMenu.EntityId == EntityId)
-            return byMenu;
+            return (Menu, byMenu);
 
-        return MenuRoutes.SimpleJournal.Values.FirstOrDefault(r => r.EntityId == EntityId);
+        foreach (var (code, route) in MenuRoutes.SimpleJournal)
+            if (route.EntityId == EntityId)
+                return (code, route);
+
+        return (null, null);
+    }
+
+    /// <summary>
+    /// StatBalanceJournalForm.LoadData: если поле отбора включено, данные берутся
+    /// из другой сущности. Разбор значения тот же, что в десктопе.
+    /// </summary>
+    private Entity DataEntityFor()
+    {
+        if (_route?.EntitySwitch is { } sw
+            && _filterValues.TryGetValue(sw.FilterField, out object? flag)
+            && bool.TryParse(flag?.ToString(), out bool on) && on)
+            return EntityManager.GetEntity((int)sw.WhenTrue);
+
+        return _entity!;
     }
 
     private static bool NeedsFilterData(IReadOnlyList<PassportPage> pages)
@@ -199,8 +228,9 @@ else
         try
         {
             _error = null;
-            _entity!.ClearCache();
-            _data = _entity.GetContent(_filterValues);
+            _dataEntity = DataEntityFor();
+            _dataEntity.ClearCache();
+            _data = _dataEntity.GetContent(_filterValues);
         }
         catch (Exception ex)
         {
