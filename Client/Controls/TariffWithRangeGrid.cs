@@ -427,11 +427,17 @@ namespace Merlin.Controls
 		/// <see cref="GetSlotIssueGroups(DateTime)"/>) — для массовой замены ролика
 		/// (EditIssuesForm.ReplaceRollerInSelectedWindows), где нужен именно текущий ролик и
 		/// исходное окно каждого отдельного выпуска, а не агрегат по слоту.
+		/// WindowDate — какому из запрошенных слотов принадлежит строка (удаление дублей и
+		/// выравнивание роликов считают выпуски по каждому окну отдельно).
 		/// </summary>
 		public class SlotIssueRow
 		{
+			public DateTime WindowDate;
 			public int CampaignId;
 			public int RollerId;
+			public string RollerName;
+			public int Duration;
+			public int PositionId;
 			public int OriginalWindowId;
 			public DateTime WindowDayOriginal;
 		}
@@ -456,8 +462,12 @@ namespace Merlin.Controls
 			{
 				result.Add(new SlotIssueRow
 				{
+					WindowDate = ParseHelper.GetDateTimeFromObject(row["requestedIssueDate"], DateTime.MinValue),
 					CampaignId = ParseHelper.GetInt32FromObject(row[Campaign.ParamNames.CampaignId], 0),
 					RollerId = ParseHelper.GetInt32FromObject(row[Roller.ParamNames.RollerId], 0),
+					RollerName = StringUtil.GetStringOrEmpty(row["rollerName"]),
+					Duration = ParseHelper.GetInt32FromObject(row[Roller.ParamNames.Duration], 0),
+					PositionId = ParseHelper.GetInt32FromObject(row[Issue.ParamNames.PositionId], 0),
 					OriginalWindowId = ParseHelper.GetInt32FromObject(row["originalWindowID"], 0),
 					WindowDayOriginal = ParseHelper.GetDateTimeFromObject(row["windowDayOriginal"], DateTime.MinValue)
 				});

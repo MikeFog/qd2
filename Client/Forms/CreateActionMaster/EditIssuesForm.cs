@@ -23,6 +23,8 @@ namespace Merlin.Forms.CreateActionMaster
         private DateTime? _dragSourceSlotDate;
         private System.Data.DataRow _draggingAddedIssueRow;
         private bool _checklistRefreshPending;
+        private ToolStripButton _tbbDeleteDuplicates;
+        private ToolStripButton _tbbFillToIntersection;
 
         private EditIssuesForm()
 		{
@@ -90,9 +92,11 @@ namespace Merlin.Forms.CreateActionMaster
 
 				// Страховка: массовая замена роликов доступна только при видимых номерах
 				// роликов в ячейках — иначе пользователь меняет ролики вслепую, не видя,
-				// что стоит в выделенных окнах.
-				tbbReplaceRoller.Enabled = btnShowRollerNumbers.Checked;
-				btnShowRollerNumbers.CheckedChanged += (s, args) => tbbReplaceRoller.Enabled = btnShowRollerNumbers.Checked;
+				// что стоит в выделенных окнах. Удаление дублей и выравнивание роликов — по той же
+				// причине: они чинят то, что видно только по значкам Н/Д.
+				AddRollerMismatchButtons();
+				SetRollerNumberActionsEnabled();
+				btnShowRollerNumbers.CheckedChanged += (s, args) => SetRollerNumberActionsEnabled();
 
                 RefreshGrid();
 				_tariffGrid.GridRefreshed += TariffGridRefreshed;
@@ -734,6 +738,446 @@ namespace Merlin.Forms.CreateActionMaster
             foreach (PresentationObject po in form.AddedItems)
                 result.Add(Convert.ToInt32(po.IDs[0]));
             return result;
+        }
+
+        /// <summary>
+        /// «Удалить дубли» и «До пересечения» — сразу за «Заменить ролики». Только в веере,
+        /// поэтому создаются здесь, а не в дизайнере базовой формы; тулбар приватный у
+        /// CampaignForm — берём его через соседнюю кнопку.
+        /// </summary>
+        private void AddRollerMismatchButtons()
+        {
+            _tbbDeleteDuplicates = new ToolStripButton("Удалить дубли")
+            {
+                DisplayStyle = ToolStripItemDisplayStyle.Text,
+                ToolTipText = "Удаление дублей: в выделенных окнах оставить у каждой кампании по одному выпуску " +
+                              "каждого ролика. Окна, где дубли одного ролика стоят с разным позиционированием, пропускаются."
+            };
+            _tbbDeleteDuplicates.Click += (s, e) => RunToolbarAction(DeleteDuplicatesInSelectedWindows);
+
+            _tbbFillToIntersection = new ToolStripButton("До пересечения")
+            {
+                DisplayStyle = ToolStripItemDisplayStyle.Text,
+                ToolTipText = "Добавить ролики до полного пересечения: в выделенных окнах довести количество каждого " +
+                              "ролика у всех выбранных кампаний до наибольшего. Позиционирование повторяется по первой " +
+                              "в списке кампании с наибольшим количеством; если позиция занята — выпуск ставится без неё."
+            };
+            _tbbFillToIntersection.Click += (s, e) => RunToolbarAction(FillRollersToIntersectionInSelectedWindows);
+
+            ToolStrip toolbar = tbbReplaceRoller.Owner;
+            int index = toolbar.Items.IndexOf(tbbReplaceRoller);
+            toolbar.Items.Insert(index + 1, _tbbDeleteDuplicates);
+            toolbar.Items.Insert(index + 2, _tbbFillToIntersection);
+        }
+
+        private void SetRollerNumberActionsEnabled()
+        {
+            tbbReplaceRoller.Enabled = _tbbDeleteDuplicates.Enabled = _tbbFillToIntersection.Enabled =
+                btnShowRollerNumbers.Checked;
+        }
+
+        private static void RunToolbarAction(System.Action action)
+        {
+            try
+            {
+                action();
+            }
+            catch (Exception ex)
+            {
+                ErrorManager.PublishError(ex);
+            }
+        }
+
+        /// <summary>Сколько лишних выпусков одного ролика снять у одной кампании в одном окне.</summary>
+        private class DuplicateRemoval
+        {
+            public DateTime WindowDate;
+            public int CampaignId;
+            public int RollerId;
+            public string RollerName;
+            public int PositionId;
+            public int ExtraCount;
+        }
+
+        /// <summary>
+        /// Окно, пропущенное удалением дублей: у дублей ролика в какой-то кампании разное
+        /// позиционирование — неизвестно, какой оставить. Conflicts — по строке на пару
+        /// (кампания, ролик) с таким конфликтом.
+        /// </summary>
+        private class SkippedWindow
+        {
+            public DateTime WindowDate;
+            public readonly List<TariffWithRangeGrid.SlotIssueRow> Conflicts = new List<TariffWithRangeGrid.SlotIssueRow>();
+        }
+
+        /// <summary>Один недостающий выпуск: куда, какой ролик и с какой позицией ставить.</summary>
+        private class RollerAddition
+        {
+            public DateTime WindowDate;
+            public int CampaignId;
+            public int RollerId;
+            public string RollerName;
+            public int Duration;
+            public int PositionId;
+        }
+
+        /// <summary>
+        /// План удаления дублей: в каждом окне у каждой кампании каждый ролик — не больше одного
+        /// выпуска. Окно, где у дублей одного ролика одной кампании разные позиции, не трогается
+        /// целиком и попадает в skipped. Позиции роликов без дублей на решение не влияют.
+        /// </summary>
+        private static List<DuplicateRemoval> PlanDuplicateRemovals(IEnumerable<TariffWithRangeGrid.SlotIssueRow> rows,
+            IList<int> campaignOrder, List<SkippedWindow> skipped)
+        {
+            List<DuplicateRemoval> result = new List<DuplicateRemoval>();
+            foreach (IGrouping<DateTime, TariffWithRangeGrid.SlotIssueRow> window in
+                     rows.GroupBy(r => r.WindowDate).OrderBy(g => g.Key))
+            {
+                List<DuplicateRemoval> windowRemovals = new List<DuplicateRemoval>();
+                SkippedWindow skip = null;
+                foreach (var issues in window
+                             .GroupBy(r => new { r.CampaignId, r.RollerId })
+                             .OrderBy(g => GetCampaignOrderIndex(campaignOrder, g.Key.CampaignId))
+                             .ThenBy(g => g.Key.RollerId))
+                {
+                    List<TariffWithRangeGrid.SlotIssueRow> list = issues.ToList();
+                    if (list.Count < 2)
+                        continue;
+
+                    if (list.Select(r => r.PositionId).Distinct().Count() > 1)
+                    {
+                        if (skip == null)
+                            skip = new SkippedWindow { WindowDate = window.Key };
+                        skip.Conflicts.Add(list[0]);
+                        continue;
+                    }
+
+                    windowRemovals.Add(new DuplicateRemoval
+                    {
+                        WindowDate = window.Key,
+                        CampaignId = list[0].CampaignId,
+                        RollerId = list[0].RollerId,
+                        RollerName = list[0].RollerName,
+                        PositionId = list[0].PositionId,
+                        ExtraCount = list.Count - 1
+                    });
+                }
+
+                if (skip != null)
+                    skipped.Add(skip);
+                else
+                    result.AddRange(windowRemovals);
+            }
+            return result;
+        }
+
+        /// <summary>
+        /// План выравнивания: в каждом окне по каждому ролику цель — наибольшее количество среди
+        /// выбранных кампаний (нуль считается). Лидер — первая по порядку веера кампания с
+        /// наибольшим количеством; недостающим кампаниям достаются позиции лидера за вычетом тех,
+        /// что у них уже есть. Если таких позиций больше дефицита — сначала особые (первая,
+        /// вторая, последняя), потом без позиции (решение владельца).
+        /// </summary>
+        private static List<RollerAddition> PlanRollerAdditions(IEnumerable<TariffWithRangeGrid.SlotIssueRow> rows,
+            IList<int> campaignOrder)
+        {
+            List<RollerAddition> result = new List<RollerAddition>();
+            if (campaignOrder.Count == 0)
+                return result;
+
+            foreach (IGrouping<DateTime, TariffWithRangeGrid.SlotIssueRow> window in
+                     rows.GroupBy(r => r.WindowDate).OrderBy(g => g.Key))
+            {
+                foreach (IGrouping<int, TariffWithRangeGrid.SlotIssueRow> roller in
+                         window.GroupBy(r => r.RollerId).OrderBy(g => g.Key))
+                {
+                    Dictionary<int, List<int>> positionsByCampaign = campaignOrder.ToDictionary(id => id, id => new List<int>());
+                    foreach (TariffWithRangeGrid.SlotIssueRow row in roller)
+                        if (positionsByCampaign.TryGetValue(row.CampaignId, out List<int> positions))
+                            positions.Add(row.PositionId);
+
+                    int max = positionsByCampaign.Values.Max(p => p.Count);
+                    List<int> leaderPositions = positionsByCampaign[campaignOrder.First(id => positionsByCampaign[id].Count == max)];
+                    TariffWithRangeGrid.SlotIssueRow sample = roller.First();
+
+                    foreach (int campaignId in campaignOrder)
+                    {
+                        List<int> own = positionsByCampaign[campaignId];
+                        int deficit = max - own.Count;
+                        if (deficit == 0)
+                            continue;
+
+                        List<int> missing = new List<int>(leaderPositions);
+                        foreach (int position in own)
+                            missing.Remove(position);
+
+                        foreach (int position in missing.OrderBy(p => p == 0 ? 1 : 0).ThenBy(p => p).Take(deficit))
+                            result.Add(new RollerAddition
+                            {
+                                WindowDate = window.Key,
+                                CampaignId = campaignId,
+                                RollerId = roller.Key,
+                                RollerName = sample.RollerName,
+                                Duration = sample.Duration,
+                                PositionId = position
+                            });
+                    }
+                }
+            }
+            return result;
+        }
+
+        // Отказы IssueIUD «позиция в окне занята»: подтверждённым выпуском (hlp_IssueVerify) или
+        // выпуском этой же акции — в черновике занятость своей акцией приходит только вторым ключом.
+        private static readonly HashSet<string> PositionBusyErrors =
+            new HashSet<string> { "FirstLastIssueError", "PositionErrorForTheSameAction" };
+
+        private static int GetCampaignOrderIndex(IList<int> campaignOrder, int campaignId)
+        {
+            int index = campaignOrder.IndexOf(campaignId);
+            return index < 0 ? int.MaxValue : index;
+        }
+
+        /// <summary>
+        /// Порядок кампаний «в веере» — порядок строк чек-листа (с учётом сортировки списка),
+        /// только из применённого выбора, с которым работает сетка и RangeSlotIssues.
+        /// </summary>
+        private List<int> GetVeerCampaignOrder(TariffWithRangeGrid rangeGrid)
+        {
+            List<int> ordered = GetCheckedCampaignIds();
+            if (rangeGrid.SelectedCampaignIds != null)
+                ordered.RemoveAll(id => !rangeGrid.SelectedCampaignIds.Contains(id));
+            return ordered;
+        }
+
+        /// <summary>
+        /// Удаление дублей в выделенных окнах. Каждый лишний выпуск — отдельный вызов
+        /// MasterIssueDelete по одной кампании (своя транзакция): отказ одного (прошлое/дедлайн)
+        /// не откатывает остальные. Пересчёт акции — один в конце.
+        /// </summary>
+        private void DeleteDuplicatesInSelectedWindows()
+        {
+            TariffWithRangeGrid rangeGrid = _tariffGrid as TariffWithRangeGrid;
+            if (rangeGrid == null)
+                return;
+
+            IList<ITariffWindow> windows = _tariffGrid.GetSelectedTariffWindows();
+            if (windows.Count == 0)
+            {
+                UserMessage.ShowInformation("Выделите окна в сетке.");
+                return;
+            }
+
+            List<int> campaignOrder = GetVeerCampaignOrder(rangeGrid);
+            List<SkippedWindow> skipped = new List<SkippedWindow>();
+            List<DuplicateRemoval> removals = PlanDuplicateRemovals(
+                rangeGrid.GetSlotIssueRows(windows.Select(w => w.WindowDate)), campaignOrder, skipped);
+            int plannedCount = removals.Sum(r => r.ExtraCount);
+            Dictionary<int, int> rollerNumbers = rangeGrid.RollerNumbers ?? BuildRollerNumbersMap();
+
+            System.Data.DataTable problems = FogSoft.WinForm.Controls.SmartGrid.CreateDeleteErrorsTable();
+            int problemNumber = 1;
+            foreach (SkippedWindow skip in skipped)
+                FogSoft.WinForm.Controls.SmartGrid.AddDeleteError(problems, problemNumber++,
+                    skip.WindowDate.ToString("dd.MM.yyyy HH:mm"),
+                    "Окно пропущено: у дублей разное позиционирование — " + string.Join("; ", skip.Conflicts.Select(
+                        c => FormatCampaignTitle(c.CampaignId) + " – " + FormatRollerLabel(c.RollerId, c.RollerName, rollerNumbers))));
+
+            if (plannedCount == 0)
+            {
+                ReportRollerMismatchFix(skipped.Count > 0
+                        ? "Удалять нечего: все окна с дублями пропущены."
+                        : "В выделенных окнах дублей нет.",
+                    problems, "Удаление дублей: пропущенные окна");
+                return;
+            }
+
+            string question = string.Format(
+                "Удалить дубли в выделенных окнах, оставив у каждой кампании по одному выпуску каждого ролика? ({0} шт.)",
+                plannedCount);
+            if (skipped.Count > 0)
+                question += Environment.NewLine + string.Format(
+                    "Окон будет пропущено из-за разного позиционирования дублей: {0}.", skipped.Count);
+            if (UserMessage.ShowQuestion(question) != DialogResult.Yes)
+                return;
+
+            int deletedCount = 0;
+            try
+            {
+                Cursor = Cursors.WaitCursor;
+                foreach (DuplicateRemoval removal in removals)
+                {
+                    TariffWithRangeGrid.SlotIssueGroup group = new TariffWithRangeGrid.SlotIssueGroup
+                    {
+                        RollerId = removal.RollerId,
+                        Position = (RollerPositions)removal.PositionId
+                    };
+                    group.CampaignIds.Add(removal.CampaignId);
+
+                    for (int i = 0; i < removal.ExtraCount; i++)
+                    {
+                        try
+                        {
+                            rangeGrid.DeleteSlotIssueGroup(group, removal.WindowDate);
+                            deletedCount++;
+                        }
+                        catch (Exception ex)
+                        {
+                            // MasterIssueDelete при повторе выберет тот же выпуск — ошибка будет той же.
+                            FogSoft.WinForm.Controls.SmartGrid.AddDeleteError(problems, problemNumber++,
+                                FormatIssueTarget(removal.WindowDate, removal.CampaignId, removal.RollerId, removal.RollerName, rollerNumbers),
+                                string.Format("Не удалено {0} шт.: {1}", removal.ExtraCount - i, ErrorManager.GetErrorMessage(ex)));
+                            break;
+                        }
+                    }
+                }
+            }
+            finally
+            {
+                Cursor = Cursors.Default;
+            }
+
+            try
+            {
+                if (deletedCount > 0)
+                    RefreshAfterRollerMismatchFix(rangeGrid);
+            }
+            finally
+            {
+                ReportRollerMismatchFix(string.Format("Удалено лишних выпусков: {0}.", deletedCount),
+                    problems, "Удаление дублей: пропущено и не удалено");
+            }
+        }
+
+        /// <summary>
+        /// Добавление роликов до полного пересечения в выделенных окнах. Best-effort: каждый
+        /// выпуск — отдельный вызов AddRangeIssues по одной кампании (своя транзакция); занятая
+        /// позиция — повтор без позиции; любой другой отказ — выпуск пропускается и попадает в
+        /// итог. Пересчёт акции — один в конце.
+        /// </summary>
+        private void FillRollersToIntersectionInSelectedWindows()
+        {
+            TariffWithRangeGrid rangeGrid = _tariffGrid as TariffWithRangeGrid;
+            if (rangeGrid == null)
+                return;
+
+            IList<ITariffWindow> windows = _tariffGrid.GetSelectedTariffWindows();
+            if (windows.Count == 0)
+            {
+                UserMessage.ShowInformation("Выделите окна в сетке.");
+                return;
+            }
+
+            List<RollerAddition> additions = PlanRollerAdditions(
+                rangeGrid.GetSlotIssueRows(windows.Select(w => w.WindowDate)), GetVeerCampaignOrder(rangeGrid));
+            if (additions.Count == 0)
+            {
+                UserMessage.ShowInformation("В выделенных окнах количество роликов уже совпадает у всех выбранных кампаний.");
+                return;
+            }
+
+            if (UserMessage.ShowQuestion(string.Format(
+                    "Добавить недостающие ролики в выделенных окнах до полного пересечения? ({0} шт.)",
+                    additions.Count)) != DialogResult.Yes)
+                return;
+
+            Dictionary<int, int> rollerNumbers = rangeGrid.RollerNumbers ?? BuildRollerNumbersMap();
+            System.Data.DataTable problems = FogSoft.WinForm.Controls.SmartGrid.CreateDeleteErrorsTable();
+            int problemNumber = 1;
+            int addedCount = 0;
+            int withoutPositionCount = 0;
+            try
+            {
+                Cursor = Cursors.WaitCursor;
+                foreach (RollerAddition addition in additions)
+                {
+                    TariffWithRangeGrid.SlotIssueGroup group = new TariffWithRangeGrid.SlotIssueGroup
+                    {
+                        RollerId = addition.RollerId,
+                        Duration = addition.Duration,
+                        Position = (RollerPositions)addition.PositionId
+                    };
+                    group.CampaignIds.Add(addition.CampaignId);
+
+                    try
+                    {
+                        try
+                        {
+                            rangeGrid.AddSlotIssueGroup(group, addition.WindowDate);
+                        }
+                        catch (Exception ex) when (group.Position != RollerPositions.Undefined
+                                                   && PositionBusyErrors.Contains(ex.Message))
+                        {
+                            group.Position = RollerPositions.Undefined;
+                            rangeGrid.AddSlotIssueGroup(group, addition.WindowDate);
+                            withoutPositionCount++;
+                        }
+                        addedCount++;
+                    }
+                    catch (Exception ex)
+                    {
+                        FogSoft.WinForm.Controls.SmartGrid.AddDeleteError(problems, problemNumber++,
+                            FormatIssueTarget(addition.WindowDate, addition.CampaignId, addition.RollerId, addition.RollerName, rollerNumbers),
+                            ErrorManager.GetErrorMessage(ex));
+                    }
+                }
+            }
+            finally
+            {
+                Cursor = Cursors.Default;
+            }
+
+            string summary = string.Format("Добавлено выпусков: {0} из {1}.", addedCount, additions.Count);
+            if (withoutPositionCount > 0)
+                summary += Environment.NewLine + string.Format(
+                    "Из них без позиционирования (позиция в окне занята): {0}.", withoutPositionCount);
+
+            try
+            {
+                if (addedCount > 0)
+                    RefreshAfterRollerMismatchFix(rangeGrid);
+            }
+            finally
+            {
+                ReportRollerMismatchFix(summary, problems, "Добавление до пересечения: не добавлено");
+            }
+        }
+
+        // Счётчики роликов в слотах поменялись — AddedIssues (пересечение по кампаниям)
+        // пересобираем из базы, как после массовой замены роликов.
+        private void RefreshAfterRollerMismatchFix(TariffWithRangeGrid rangeGrid)
+        {
+            rangeGrid.RebuildAddedIssues();
+            _action.Recalculate();
+            rangeGrid.RefreshGrid();
+        }
+
+        private static void ReportRollerMismatchFix(string summary, System.Data.DataTable problems, string caption)
+        {
+            if (problems.Rows.Count == 0)
+            {
+                UserMessage.ShowInformation(summary);
+                return;
+            }
+
+            UserMessage.ShowInformation(summary + Environment.NewLine + "Что не выполнено и почему — в следующем окне.");
+            FogSoft.WinForm.Controls.SmartGrid.ShowDeleteErrors(problems, caption);
+        }
+
+        // «18.09.2026 10:00 — Станция Группа (тип оплаты) — ролик 5»
+        private string FormatIssueTarget(DateTime windowDate, int campaignId, int rollerId, string rollerName,
+            Dictionary<int, int> rollerNumbers)
+        {
+            return string.Format("{0} — {1} — {2}", windowDate.ToString("dd.MM.yyyy HH:mm"),
+                FormatCampaignTitle(campaignId), FormatRollerLabel(rollerId, rollerName, rollerNumbers));
+        }
+
+        // Номер из списка «Ролики», как в ячейке; ролика в списке нет — по названию.
+        private static string FormatRollerLabel(int rollerId, string rollerName, Dictionary<int, int> rollerNumbers)
+        {
+            return rollerNumbers != null && rollerNumbers.TryGetValue(rollerId, out int number)
+                ? "ролик " + number
+                : string.Format("ролик «{0}»", rollerName);
         }
 
         /// <summary>
