@@ -61,6 +61,10 @@ namespace FogSoft.WinForm.Controls
             InitializeComponent();
             dataGrid.AutoGenerateColumns = false;
             dataGrid.ColumnWidthChanged += (s, e) => RepositionCheckBoxHeader();
+            // Высота заголовков подстраивается сама (AutoSize): до раскладки формы заголовки узких
+            // колонок переносятся и шапка выше — без этого чекбокс «все» остаётся по центру старой
+            // высоты и наезжает на первую строку.
+            dataGrid.ColumnHeadersHeightChanged += (s, e) => RepositionCheckBoxHeader();
             dataGrid.Scroll += (s, e) => RepositionCheckBoxHeader();
             dataGrid.Sorted += (s, e) => RepositionCheckBoxHeader();
             dataGrid.ColumnHeaderMouseClick += (s, e) =>
