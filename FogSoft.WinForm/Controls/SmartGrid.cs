@@ -681,6 +681,8 @@ namespace FogSoft.WinForm.Controls
         {
             if (entity == null || !IsAllowedEntity(presentationObject.Entity)) return;
 
+            bool gridHadRows = dataGrid.DataSource != null && dataGrid.RowCount > 0;
+
             if (dataGrid.DataSource == null)
             {
                 DataSource = entity.LoadSingleObject(presentationObject).DefaultView;
@@ -691,7 +693,9 @@ namespace FogSoft.WinForm.Controls
                 Globals.AddObject2DataTable(GridTable, presentationObject);
 
             GridTable.AcceptChanges();
-            AdjustColumnsWidthExt();
+            // Ширины колонок считаем только при первом заполнении грида: пересчёт по всем колонкам
+            // занимает ~1,2 с на каждое добавление строки и сбрасывает ручные ширины пользователя.
+            if (!gridHadRows) AdjustColumnsWidthExt();
             SelectedObject = presentationObject;
 
             FireObjectCreated(presentationObject);
