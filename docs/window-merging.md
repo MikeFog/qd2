@@ -73,11 +73,14 @@ FK tariffUnionID → Tariff  (без каскада)
 
 ### Клонирование прайс-листа
 
-`PricelistIUD` `@actionName='Clone'` переносит `TariffUnion` через промежуточную
-`@tariffMap (oldTariffID → newTariffID)` — сопоставление по `(time + дни недели)`
-сломалось после доработки клона (см. [[project_pricelist_clone_window_overrides]]),
-поэтому теперь `MERGE … OUTPUT`.
-[PricelistIUD.sql:53-97](../ArtvisDB/dbo/Stored Procedures/PricelistIUD.sql).
+`PricelistIUD` `@actionName='Clone'` берёт состояние каждого тарифа из ПОСЛЕДНЕГО
+окна КАЖДОГО дня недели (по `dayOriginal`) и делит тариф на несколько клонов, если
+дни недели различаются по времени/цене/длительности (см.
+[[project_pricelist_clone_window_overrides]]). Тарифы одной цепочки `TariffUnion`
+обязаны иметь одинаковые наборы дней, поэтому день различается для цепочки целиком:
+разделился тариф — разделяется и его продолжение, клоны связываются 1:1 через
+`@tariffMap (oldTariffID, newTariffID, mask)` по совпадению маски дней.
+[PricelistIUD.sql:53-](../ArtvisDB/dbo/Stored Procedures/PricelistIUD.sql).
 
 ### Кто читает
 

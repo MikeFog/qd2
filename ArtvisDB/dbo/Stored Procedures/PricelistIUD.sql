@@ -52,48 +52,108 @@ IF @actionName In ('AddItem', 'Clone') BEGIN
 
 	If @actionName = 'Clone' Begin
 		-- Соответствие исходный тариф -> тариф-клон (нужно для клонирования
-		-- TariffUnion: время выхода у клона может отличаться от исходного тарифа,
-		-- поэтому сопоставлять по (time + дни недели), как раньше, уже нельзя).
-		DECLARE @tariffMap TABLE (oldTariffID int PRIMARY KEY, newTariffID int NOT NULL)
+		-- TariffUnion). Один исходный тариф может дать несколько клонов (см. ниже),
+		-- mask — набор дней недели клона: бит 0 = понедельник ... бит 6 = воскресенье.
+		DECLARE @tariffMap TABLE (oldTariffID int NOT NULL, newTariffID int PRIMARY KEY, mask int NOT NULL)
 
-		-- Клонируем тарифы. Тариф-клон берёт цену, длительность и время выхода
-		-- из ПОСЛЕДНЕГО (по windowDateOriginal) сгенерированного рекламного окна
-		-- исходного тарифа — то есть из фактического состояния тарифа на момент
-		-- окончания прайс-листа, каким бы оно ни было (правки по дороге, откаты
-		-- и т.п. игнорируются). isDisabled не учитывается — отключённое окно
-		-- всё равно выходит в эфир и несёт актуальные цену/время/длительность.
-		-- Если окон у тарифа нет вовсе — значения берутся из самого тарифа.
+		-- Состояние каждого тарифа по каждому дню недели, на который он действует:
+		-- время выхода, цена, длительность из ПОСЛЕДНЕГО сгенерированного окна ЭТОГО
+		-- дня недели (день недели — по dayOriginal, то есть по эфирным суткам).
+		-- Смотрим на 4 недели назад от последнего окна тарифа: этого хватает, чтобы
+		-- нашлось окно на каждый день недели, а поиск остаётся индексным.
+		-- isDisabled не учитывается — отключённое окно всё равно выходит в эфир.
+		-- Если окон на этот день нет вовсе — значения берутся из самого тарифа.
+		-- rootID — начало цепочки TariffUnion (тариф вне цепочки — сам себе корень).
+		DECLARE @tariffDay TABLE (
+			oldTariffID int NOT NULL, dow tinyint NOT NULL, rootID int NOT NULL,
+			[time] smalldatetime NOT NULL, price decimal(18, 2) NOT NULL,
+			duration [dbo].[timeDuration] NOT NULL, duration_total [dbo].[timeDuration] NOT NULL,
+			PRIMARY KEY (oldTariffID, dow))
+
+		;WITH chain AS (
+			SELECT t.tariffID, t.tariffID AS rootID
+			FROM [Tariff] t
+			WHERE t.pricelistID = @oldPricelistId
+				AND NOT EXISTS (SELECT 1 FROM TariffUnion u WHERE u.tariffUnionID = t.tariffID)
+			UNION ALL
+			SELECT u.tariffUnionID, c.rootID
+			FROM chain c
+				JOIN TariffUnion u ON u.tariffID = c.tariffID
+		)
+		INSERT INTO @tariffDay (oldTariffID, dow, rootID, [time], price, duration, duration_total)
+		SELECT t.tariffID, d.dow, c.rootID,
+			COALESCE(CONVERT(smalldatetime, CONVERT(varchar(8), lw.windowDateActual, 108)), t.[time]),
+			COALESCE(lw.price, t.[price]),
+			COALESCE(lw.duration, t.[duration]),
+			COALESCE(lw.duration_total, t.duration_total)
+		FROM [Tariff] t
+			JOIN chain c ON c.tariffID = t.tariffID
+			CROSS APPLY (VALUES (0, t.[monday]), (1, t.[tuesday]), (2, t.[wednesday]), (3, t.[thursday]),
+				(4, t.[friday]), (5, t.[saturday]), (6, t.[sunday])) d(dow, isOn)
+			LEFT JOIN (
+				SELECT w.tariffId, w.dow, w.windowDateActual, w.price, w.duration, w.duration_total
+				FROM (
+					SELECT tw.tariffId, DATEDIFF(DAY, '19000101', tw.dayOriginal) % 7 AS dow, -- 01.01.1900 — понедельник
+						tw.windowDateActual, tw.price, tw.duration, tw.duration_total,
+						ROW_NUMBER() OVER (PARTITION BY tw.tariffId, DATEDIFF(DAY, '19000101', tw.dayOriginal) % 7
+							ORDER BY tw.dayOriginal DESC, tw.windowDateOriginal DESC) AS rn
+					FROM [Tariff] t2
+						CROSS APPLY (SELECT MAX(x.dayOriginal) AS lastDay FROM [TariffWindow] x WHERE x.tariffId = t2.tariffID) ld
+						JOIN [TariffWindow] tw ON tw.tariffId = t2.tariffID AND tw.dayOriginal >= DATEADD(DAY, -27, ld.lastDay)
+					WHERE t2.pricelistID = @oldPricelistId
+				) w
+				WHERE w.rn = 1
+			) lw ON lw.tariffId = t.tariffID AND lw.dow = d.dow
+		WHERE t.pricelistID = @oldPricelistId AND d.isOn = 1
+
+		-- Клонируем тарифы. Дни недели одного тарифа, у которых состояние совпало,
+		-- образуют ОДИН тариф-клон; если состояние различается — тариф делится на
+		-- несколько клонов с непересекающимися наборами дней.
+		-- Тарифы, связанные через TariffUnion, должны иметь одинаковые наборы дней
+		-- (инвариант цепочки), поэтому день различается для всей цепочки сразу:
+		-- сигнатура дня (sig) склеена из состояний всех тарифов цепочки. Так, если
+		-- разделился тариф, разделяется и его продолжение — и клоны сопоставляются 1:1.
 		MERGE INTO [Tariff] AS tgt
 		USING (
 			SELECT
-				t.tariffID AS oldTariffID,
-				COALESCE(CONVERT(smalldatetime, CONVERT(varchar(8), lw.windowDateActual, 108)), t.[time]) AS [time],
-				t.[monday], t.[tuesday], t.[wednesday], t.[thursday], t.[friday], t.[saturday], t.[sunday],
-				COALESCE(lw.price, t.[price]) AS [price],
-				COALESCE(lw.duration, t.[duration]) AS [duration],
+				g.oldTariffID, g.[time], g.mask, g.[price], g.[duration], g.duration_total,
 				t.[comment], t.[isForModuleOnly], t.[maxCapacity],
-				t.needExt, t.needInJingle, t.needOutJingle, t.suffix,
-				COALESCE(lw.duration_total, t.duration_total) AS duration_total
-			FROM [Tariff] t
-				OUTER APPLY (
-					SELECT TOP 1 tw.windowDateActual, tw.price, tw.duration, tw.duration_total
-					FROM [TariffWindow] tw
-					WHERE tw.tariffId = t.tariffID
-					ORDER BY tw.windowDateOriginal DESC
-				) lw
-			WHERE t.pricelistID = @oldPricelistId
+				t.needExt, t.needInJingle, t.needOutJingle, t.suffix
+			FROM (
+				SELECT s.oldTariffID, s.sig,
+					MAX(s.[time]) AS [time], MAX(s.price) AS price,
+					MAX(s.duration) AS duration, MAX(s.duration_total) AS duration_total,
+					SUM(POWER(2, s.dow)) AS mask
+				FROM (
+					SELECT td.*,
+						(SELECT CONCAT(x.oldTariffID, '/', CONVERT(varchar(8), x.[time], 108), '/', x.price, '/', x.duration, '/', x.duration_total, ';')
+						 FROM @tariffDay x
+						 WHERE x.rootID = td.rootID AND x.dow = td.dow
+						 ORDER BY x.oldTariffID
+						 FOR XML PATH('')) AS sig
+					FROM @tariffDay td
+				) s
+				GROUP BY s.oldTariffID, s.sig
+			) g
+				JOIN [Tariff] t ON t.tariffID = g.oldTariffID
 		) AS src
 		ON 1 = 0
 		WHEN NOT MATCHED THEN
 			INSERT ([pricelistID], [time], [monday], [tuesday], [wednesday], [thursday], [friday], [saturday], [sunday], [price], [duration], [comment], [isForModuleOnly], [maxCapacity], needExt, needInJingle, needOutJingle, suffix, duration_total)
-			VALUES (@PricelistID, src.[time], src.[monday], src.[tuesday], src.[wednesday], src.[thursday], src.[friday], src.[saturday], src.[sunday], src.[price], src.[duration], src.[comment], src.[isForModuleOnly], src.[maxCapacity], src.needExt, src.needInJingle, src.needOutJingle, src.suffix, src.duration_total)
-		OUTPUT src.oldTariffID, inserted.tariffID INTO @tariffMap (oldTariffID, newTariffID);
+			VALUES (@PricelistID, src.[time],
+				CASE WHEN src.mask & 1 <> 0 THEN 1 ELSE 0 END, CASE WHEN src.mask & 2 <> 0 THEN 1 ELSE 0 END,
+				CASE WHEN src.mask & 4 <> 0 THEN 1 ELSE 0 END, CASE WHEN src.mask & 8 <> 0 THEN 1 ELSE 0 END,
+				CASE WHEN src.mask & 16 <> 0 THEN 1 ELSE 0 END, CASE WHEN src.mask & 32 <> 0 THEN 1 ELSE 0 END,
+				CASE WHEN src.mask & 64 <> 0 THEN 1 ELSE 0 END,
+				src.[price], src.[duration], src.[comment], src.[isForModuleOnly], src.[maxCapacity], src.needExt, src.needInJingle, src.needOutJingle, src.suffix, src.duration_total)
+		OUTPUT src.oldTariffID, inserted.tariffID, src.mask INTO @tariffMap (oldTariffID, newTariffID, mask);
 
+		-- Продолжения переносим между клонами с одинаковым набором дней.
 		INSERT INTO TariffUnion (tariffID, tariffUnionID)
 		SELECT m1.newTariffID, m2.newTariffID
 		FROM TariffUnion tu
 			JOIN @tariffMap m1 ON m1.oldTariffID = tu.tariffID
-			JOIN @tariffMap m2 ON m2.oldTariffID = tu.tariffUnionID
+			JOIN @tariffMap m2 ON m2.oldTariffID = tu.tariffUnionID AND m2.mask = m1.mask
 	End
 	
 	Exec Pricelists @pricelistID = @pricelistID

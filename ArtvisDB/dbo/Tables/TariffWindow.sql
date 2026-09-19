@@ -136,10 +136,3 @@ CREATE NONCLUSTERED INDEX [IX_TariffWindow_MassmediaID_DayActual_Price]
     INCLUDE([price]);
 
 
-GO
--- Покрывающий индекс для PricelistIUD @actionName='Clone': поиск последнего
--- (по windowDateOriginal) сгенерированного окна каждого тарифа.
-CREATE NONCLUSTERED INDEX [IX_TariffWindow_TariffID_LastWindow]
-    ON [dbo].[TariffWindow]([tariffId] ASC, [windowDateOriginal] DESC)
-    INCLUDE([price], [duration], [duration_total], [windowDateActual]);
-
