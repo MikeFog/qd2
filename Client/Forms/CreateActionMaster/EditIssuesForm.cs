@@ -830,9 +830,7 @@ namespace Merlin.Forms.CreateActionMaster
             {
                 DisplayStyle = ToolStripItemDisplayStyle.Image,
                 Image = Globals.GetIcon("build.png"),
-                ToolTipText = "Добавить ролики до полного пересечения: в выделенных окнах довести количество каждого " +
-                              "ролика у всех выбранных кампаний до наибольшего. Позиционирование повторяется по первой " +
-                              "в списке кампании с наибольшим количеством; если позиция занята — выпуск ставится без неё."
+                ToolTipText = "Добавить ролики до полного пересечения"
             };
             _tbbFillToIntersection.Click += (s, e) => RunToolbarAction(FillRollersToIntersectionInSelectedWindows);
 
@@ -840,8 +838,7 @@ namespace Merlin.Forms.CreateActionMaster
             {
                 DisplayStyle = ToolStripItemDisplayStyle.Image,
                 Image = Globals.GetIcon("delete2.png"),
-                ToolTipText = "Удаление дублей: в выделенных окнах оставить у каждой кампании по одному выпуску " +
-                              "каждого ролика. Окна, где дубли одного ролика стоят с разным позиционированием, пропускаются."
+                ToolTipText = "Удалить дубли роликов из выделенных окон"
             };
             _tbbDeleteDuplicates.Click += (s, e) => RunToolbarAction(DeleteDuplicatesInSelectedWindows);
 
