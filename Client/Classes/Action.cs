@@ -455,12 +455,19 @@ namespace Merlin.Classes
             return addedIssues;
         }
 
+        /// <summary>
+        /// Номер ролика в списке «Ролики» фирмы («№» в гриде). Колонку заполняет форма веера
+        /// (EditIssuesForm.ShowCurrentIssues): номера считаются на лету по порядку строк того грида.
+        /// </summary>
+        internal const string RollerNumberColumn = "rollerNumber";
+
         private static DataTable CreateAddedIssuesTable()
         {
             DataTable table = new DataTable("AddedIssues");
             table.Columns.Add("issueDate", typeof(DateTime));
             table.Columns.Add(Entity.ParamNames.NAME, typeof(string));
             table.Columns.Add(Roller.ParamNames.RollerId, typeof(string));
+            table.Columns.Add(RollerNumberColumn, typeof(int));
             table.Columns.Add("durationString", typeof(string));
             table.Columns.Add(Issue.ParamNames.PositionName, typeof(string));
             table.Columns.Add(Issue.ParamNames.PositionId, typeof(string));

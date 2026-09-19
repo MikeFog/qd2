@@ -157,7 +157,9 @@ namespace FogSoft.WinForm.Controls
         /// Имя колонки источника данных, откуда брать номер для колонки "№". Пусто (по
         /// умолчанию) - номер позиционный, 1..N. Задаётся, когда номера приходят снаружи и
         /// в этом гриде показан лишь их поднабор (например, чек-лист замены роликов в веере
-        /// показывает номера из списка "Ролики").
+        /// показывает номера из списка "Ролики"). Колонка "№" тогда привязана к этому полю и
+        /// сортируется как обычная, а сортировка остальных колонок не отключается — номера
+        /// ездят вместе со строкой. Задавать до присвоения DataSource.
         /// </summary>
         [Browsable(false)]
         public string RowNumberSource { get; set; }
@@ -890,7 +892,10 @@ namespace FogSoft.WinForm.Controls
         private void SetColumnHeaders(DataColumnCollection columns)
         {
             if (checkboxes) AddMultiSelectColumn();
-            if (showRowNumbers) AddRowNumberColumn();
+            // Номера из данных (RowNumberSource) — колонка привязана к полю, сортировка работает
+            // как у обычных колонок; позиционные 1..N — вычисляются на лету, см. ниже.
+            bool numbersFromData = !string.IsNullOrEmpty(RowNumberSource) && columns.Contains(RowNumberSource);
+            if (showRowNumbers) AddRowNumberColumn(numbersFromData);
 
             Image icon = null;
             if (Globals.IconLoader != null) icon = Globals.IconLoader(entity.IconName);
@@ -903,11 +908,12 @@ namespace FogSoft.WinForm.Controls
                     AddColumn(entityAttribute);
             }
 
-            if (showRowNumbers)
+            if (showRowNumbers && !numbersFromData)
             {
                 // Нумерация строк (e.RowIndex + 1) актуальна только для исходного порядка.
                 // Сортировка любой колонки перемешает строки, но номера останутся 1..N —
                 // видимость упорядоченности теряется, поэтому сортировку целиком отключаем.
+                // Номера из данных (RowNumberSource) ездят вместе со строкой — им это не грозит.
                 foreach (DataGridViewColumn column in dataGrid.Columns)
                     column.SortMode = DataGridViewColumnSortMode.NotSortable;
             }
@@ -974,17 +980,19 @@ namespace FogSoft.WinForm.Controls
             dataGrid.Columns.Add(column);
         }
 
-        private void AddRowNumberColumn()
+        private void AddRowNumberColumn(bool numbersFromData)
         {
             DataGridViewTextBoxColumn column = new DataGridViewTextBoxColumn
             {
                 Name = COL_RowNumber,
                 HeaderText = "№",
                 ReadOnly = true,
-                SortMode = DataGridViewColumnSortMode.NotSortable,
+                SortMode = numbersFromData ? DataGridViewColumnSortMode.Automatic : DataGridViewColumnSortMode.NotSortable,
                 Resizable = DataGridViewTriState.False,
                 Width = 35
             };
+            if (numbersFromData)
+                column.DataPropertyName = RowNumberSource;
             column.DefaultCellStyle.Alignment = DataGridViewContentAlignment.MiddleCenter;
 
             dataGrid.Columns.Add(column);

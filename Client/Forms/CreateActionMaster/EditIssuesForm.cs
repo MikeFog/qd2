@@ -101,6 +101,10 @@ namespace Merlin.Forms.CreateActionMaster
                 RefreshGrid();
 				_tariffGrid.GridRefreshed += TariffGridRefreshed;
 				_action.DisplayData(lstStat);
+				// Колонка «№» — номер ролика из списка «Ролики» (ShowCurrentIssues кладёт его в
+				// колонку таблицы); служебная колонка SmartGrid, метаданные не нужны.
+				grdCurrentCampaignIssues.ShowRowNumbers = true;
+				grdCurrentCampaignIssues.RowNumberSource = ActionOnMassmedia.RollerNumberColumn;
 				grdCurrentCampaignIssues.Entity = EntityManager.GetEntity((int)Entities.MasterIssues);
 				ShowCurrentIssues(_tariffGrid as TariffWithRangeGrid);
 				EnableWindowSelectionActions();
@@ -254,8 +258,30 @@ namespace Merlin.Forms.CreateActionMaster
 
 	    private void ShowCurrentIssues(TariffWithRangeGrid grid)
 	    {
+			FillAddedIssuesRollerNumbers(grid.AddedIssues);
 			grdCurrentCampaignIssues.DataSource = grid.AddedIssues.DefaultView;
 	    }
+
+        /// <summary>
+        /// Колонка «№» в «Добавленных выпусках» — те же номера, что в гриде «Ролики» фирмы (и в
+        /// ячейках при включённых номерах роликов). Считаются на лету при каждом показе списка:
+        /// если пользователь пересортировал «Ролики», список подхватит новые номера при ближайшем
+        /// обновлении. Ролик, которого нет в списке фирмы, остаётся с пустым номером.
+        /// </summary>
+        private void FillAddedIssuesRollerNumbers(System.Data.DataTable addedIssues)
+        {
+            Dictionary<int, int> rollerNumbers = BuildRollerNumbersMap();
+            foreach (System.Data.DataRow row in addedIssues.Rows)
+            {
+                object number = DBNull.Value;
+                if (int.TryParse(row[Roller.ParamNames.RollerId] as string, out int rollerId) &&
+                    rollerNumbers.TryGetValue(rollerId, out int rollerNumber))
+                    number = rollerNumber;
+
+                if (!Equals(row[ActionOnMassmedia.RollerNumberColumn], number))
+                    row[ActionOnMassmedia.RollerNumberColumn] = number;
+            }
+        }
 
 	    private void TariffGridRefreshed()
         {
@@ -790,33 +816,54 @@ namespace Merlin.Forms.CreateActionMaster
         }
 
         /// <summary>
-        /// «Удалить дубли» и «Добавить до полного пересечения» — сразу за «Заменить ролики». Только в веере,
-        /// поэтому создаются здесь, а не в дизайнере базовой формы; тулбар приватный у
-        /// CampaignForm — берём его через соседнюю кнопку.
+        /// «Добавить до полного пересечения» и «Удалить дубли» создаются здесь, а не в дизайнере
+        /// базовой формы, — они есть только в веере; тулбар приватный у CampaignForm — берём его
+        /// через соседнюю кнопку. Заодно раскладывает тулбар на два кластера, каждый с двойной
+        /// разделительной чертой по краям: три шаблона и четыре действия над выделенными окнами
+        /// («Заменить ролики», «Добавить до полного пересечения», «Удалить дубли», «Отменить»).
+        /// «Отменить» в базовой форме стоит сразу за шаблонами (там она относится к ним же) —
+        /// здесь переносится в кластер действий, обычная кампания остаётся как была.
         /// </summary>
         private void AddRollerMismatchButtons()
         {
-            _tbbDeleteDuplicates = new ToolStripButton("Удалить дубли")
-            {
-                DisplayStyle = ToolStripItemDisplayStyle.Text,
-                ToolTipText = "Удаление дублей: в выделенных окнах оставить у каждой кампании по одному выпуску " +
-                              "каждого ролика. Окна, где дубли одного ролика стоят с разным позиционированием, пропускаются."
-            };
-            _tbbDeleteDuplicates.Click += (s, e) => RunToolbarAction(DeleteDuplicatesInSelectedWindows);
-
             _tbbFillToIntersection = new ToolStripButton("Добавить до полного пересечения")
             {
-                DisplayStyle = ToolStripItemDisplayStyle.Text,
+                DisplayStyle = ToolStripItemDisplayStyle.Image,
+                Image = Globals.GetIcon("build.png"),
                 ToolTipText = "Добавить ролики до полного пересечения: в выделенных окнах довести количество каждого " +
                               "ролика у всех выбранных кампаний до наибольшего. Позиционирование повторяется по первой " +
                               "в списке кампании с наибольшим количеством; если позиция занята — выпуск ставится без неё."
             };
             _tbbFillToIntersection.Click += (s, e) => RunToolbarAction(FillRollersToIntersectionInSelectedWindows);
 
+            _tbbDeleteDuplicates = new ToolStripButton("Удалить дубли")
+            {
+                DisplayStyle = ToolStripItemDisplayStyle.Image,
+                Image = Globals.GetIcon("delete2.png"),
+                ToolTipText = "Удаление дублей: в выделенных окнах оставить у каждой кампании по одному выпуску " +
+                              "каждого ролика. Окна, где дубли одного ролика стоят с разным позиционированием, пропускаются."
+            };
+            _tbbDeleteDuplicates.Click += (s, e) => RunToolbarAction(DeleteDuplicatesInSelectedWindows);
+
             ToolStrip toolbar = tbbReplaceRoller.Owner;
+
+            // Слева от шаблонов уже стоит одинарная черта (toolStripSeparator3) — дописываем вторую.
+            toolbar.Items.Insert(toolbar.Items.IndexOf(tbbTemplate), new ToolStripSeparator());
+
+            // Между шаблонами и кластером действий — двойная черта.
+            toolbar.Items.Insert(toolbar.Items.IndexOf(tbbReplaceRoller), new ToolStripSeparator());
+            toolbar.Items.Insert(toolbar.Items.IndexOf(tbbReplaceRoller), new ToolStripSeparator());
+
+            tbbTemplateUndo.DisplayStyle = ToolStripItemDisplayStyle.Image;
+            tbbTemplateUndo.Image = Globals.GetIcon("backward.png");
+            toolbar.Items.Remove(tbbTemplateUndo);
             int index = toolbar.Items.IndexOf(tbbReplaceRoller);
-            toolbar.Items.Insert(index + 1, _tbbDeleteDuplicates);
-            toolbar.Items.Insert(index + 2, _tbbFillToIntersection);
+            toolbar.Items.Insert(index + 1, _tbbFillToIntersection);
+            toolbar.Items.Insert(index + 2, _tbbDeleteDuplicates);
+            toolbar.Items.Insert(index + 3, tbbTemplateUndo);
+
+            // Справа от кластера — одинарная черта (toolStripSeparator2), дописываем перед ней вторую.
+            toolbar.Items.Insert(index + 4, new ToolStripSeparator());
         }
 
         private void SetRollerNumberActionsEnabled()
