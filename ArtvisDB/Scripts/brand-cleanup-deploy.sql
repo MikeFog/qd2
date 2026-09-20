@@ -11,6 +11,8 @@
   1. ALTER PROCEDURE dbo.stat_RollerStatistic из репозитория
        ArtvisDB/dbo/Stored Procedures/stat_RollerStatistic.sql  (убрана колонка brandList,
        которую никто не читал: RollerBrand пуста).
+     Запускать с QUOTED_IDENTIFIER ON (в SSMS так по умолчанию; в sqlcmd — ключ -I): у этой
+     процедуры настройка ON, а sqlcmd без -I молча перезапишет её на OFF.
      Это ДО скрипта: функцию fn_BrandListByRollerId он вызывает. Скрипт проверит и остановится,
      если на функцию или таблицы ещё кто-то ссылается.
   2. Запустить ЭТОТ скрипт ЦЕЛИКОМ, от sysadmin (иначе definition модулей = NULL и проверка
