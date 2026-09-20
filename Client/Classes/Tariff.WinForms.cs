@@ -109,12 +109,12 @@ namespace Merlin.Classes
 
 				if (form.ShowDialog(owner) != DialogResult.OK || tableErrors == null) return;
 
-				// Список обновляем поштучно: у пункта на строке нет ссылки на контейнер, а события объекта
-				// подхватывает та же сетка, что и при клонировании.
-				foreach (Tariff tariff in changed)
-					OnObjectChanged(tariff);
-				foreach (Tariff tariff in added)
-					OnObjectCloned(tariff);
+				// Список перечитываем целиком одним разом (как после массового создания): порядок строк тогда
+				// задаёт процедура (время, потом дни недели). Поштучные события ObjectChanged/ObjectCloned
+				// не годятся - каждое из них перестраивает узел, а новая строка вставляется в начало списка.
+				// У пункта на строке нет ссылки на контейнер, поэтому сообщаем «изменился родитель - прайс-лист».
+				if (changed.Count + added.Count > 0)
+					OnParentChanged(this, EntityManager.GetEntity((int)Entities.Pricelist));
 
 				if (tableErrors.Rows.Count > 0)
 					Globals.ShowSimpleJournal(EntityManager.GetEntity((int)Entities.ErrTmplGen),
