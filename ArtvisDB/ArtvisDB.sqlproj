@@ -290,6 +290,7 @@
     <Build Include="dbo\Stored Procedures\CampaignsForActJournalRetrieve.sql" />
     <Build Include="dbo\Stored Procedures\BalanceFilter.sql" />
     <Build Include="dbo\Stored Procedures\AgencyTaxIUD.sql" />
+    <Build Include="dbo\Stored Procedures\PaymentAction_CorrectByActionTotalPrice.sql" />
     <Build Include="dbo\Stored Procedures\PaymentByManagerFilter.sql" />
     <Build Include="dbo\Stored Procedures\FirmBalanceIssuesOnLoad.sql" />
     <Build Include="dbo\Stored Procedures\ActionsForBalance.sql" />
