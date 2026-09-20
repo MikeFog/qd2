@@ -343,7 +343,7 @@ sed -n '/private void MenuItemClick/,/catch (Exception ex)/p' Client/Forms/MDIFo
 | `codeName` | Ветка | Что делала | В вебе |
 |---|---|---|---|
 | `miBrand` | `:177` → `ShowBrands:599` | `MasterDetail` Brand (15) → BrandFirm (120) | маршрута нет. **Удалена 2026-09-19** вместе со всеми брэндами (ветка `cleanup/brand`, скрипт `ArtvisDB/Scripts/brand-cleanup-deploy.sql`) |
-| `miConfirmationHistory` | `:194` → `:383` | простой журнал ConfirmationHistory (129) | **маршрут есть** (`MenuRoutes.cs:53`). Не удалена: в таблицу пишет режим «грантор» (`IssueIUD`, `ModuleIssueIUD`, `PackModuleIssueID`), решение открыто |
+| `miConfirmationHistory` | `:194` → `:383` | простой журнал ConfirmationHistory (129) | маршрут был (`MenuRoutes.cs:53`). **Удалена 2026-09-20** вместе с журналом, таблицами `ConfirmationHistory` и `iConfirmationType`, сущностью 129 и записью в историю из `IssueIUD`/`ModuleIssueIUD`/`PackModuleIssueID` (ветка `cleanup/confirmation-history`). Режим «грантор» (кнопка, `@grantorID`) не тронут — без журнала |
 | `miDisabledWindows` | `:145` → `:449` | дерево `FakeContainer`, сценарий `DisabledWindows` | маршрут был (`MenuRoutes.cs:106`). **Удалена 2026-09-19** с веб-маршрутом, сущностью 10 «Время профилактики» и действием `AddDisabledWindow` (ветка `cleanup/dead-menu-branches`); таблица `DisabledWindow` и проверки в SQL остались |
 | `miPayment` | `:181` | псевдоним `miPaymentCommon`/`miPaymentFRS` в общей ветке | нет. **Литерал удалён 2026-09-19** |
 | `miPrintInquire` | `:139` → `:378` | `MassmediasAndCampaignsContainer` | нет. **Удалена 2026-09-19** вместе с контейнером, сценарием 18 и сущностью 188 |
@@ -368,7 +368,7 @@ Ctrl+Shift+A. В вебе их нет и не будет: решение вла�
 
 ### Веб ↔ `iMenu`
 
-- Маршрут без пункта: `miConfirmationHistory` (`miDisabledWindows` удалён 2026-09-19).
+- Маршрутов без пункта не осталось: `miDisabledWindows` удалён 2026-09-19, `miConfirmationHistory` — 2026-09-20.
   Безвредны, но если набрать адрес `/journal/129` руками, `MenuAccess`
   вернёт «Доступ закрыт» (маршрут есть, разрешённого пункта нет,
   `MenuAccess.cs:78`–`:80`) — диагностика неверна: к правам это не относится.
@@ -415,8 +415,8 @@ Ctrl+Shift+A. В вебе их нет и не будет: решение вла�
 
 1. **Мёртвые ветки** (§6) — *2026-09-19: dev = прод 1–2-недельной давности,
    на проде пунктов нет тоже. Удалены `miBrand`, `miDisabledWindows`, `miPayment`,
-   `miPrintInquire`, `miUpdateBanksList`; открыта только `miConfirmationHistory`
-   (в таблицу пишет режим «грантор»).* Исходный вопрос: `miBrand`, `miConfirmationHistory`,
+   `miPrintInquire`, `miUpdateBanksList`; 2026-09-20 — и `miConfirmationHistory`.
+   Вопрос закрыт.* Исходный вопрос: `miBrand`, `miConfirmationHistory`,
    `miDisabledWindows`, `miPayment`, `miPrintInquire`, `miUpdateBanksList` — на
    проде их пунктов нет тоже (проверить `iMenu` на `Artvis`)? Удалять ли ветки в
    десктопе и мёртвые маршруты в вебе (`miConfirmationHistory`,

@@ -56,7 +56,6 @@ public static class MenuRoutes
 			{ "miBalanceFromRSection", new JournalRoute(Entities.BalanceIssues, ManagerFilter: true) },
 			{ "miBank", new JournalRoute(Entities.Bank) },
 			{ "miBonusesStat", new JournalRoute(Entities.StatBonuses) },
-			{ "miConfirmationHistory", new JournalRoute(Entities.ConfirmationHistory) },
 			{ "miFirm", new JournalRoute(Entities.Firm) },
 			{ "miGroupMassmedia", new JournalRoute(Entities.MassmediaGroup) },
 			{ "miLog", new JournalRoute(Entities.LogDeletedIssue) },
