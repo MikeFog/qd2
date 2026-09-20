@@ -9,8 +9,7 @@ using static FogSoft.WinForm.Constants;
 
 namespace Merlin.Classes
 {
-	// UI-часть (DoAction, PrintContract, AssignNew, AssignExisting, AssignBrand,
-	// SelectFirm) — в Firm.WinForms.cs. PrintContract перенесён целиком:
+	// UI-часть (DoAction, PrintContract, SelectFirm) — в Firm.WinForms.cs. PrintContract перенесён целиком:
 	// генерация отчёта — отдельная область (docs/tasks/web-migration.md, этап 4).
 	// Конвенция — docs/tasks/web-migration-dialogs.md.
 	public partial class Firm : Organization
@@ -43,7 +42,7 @@ namespace Merlin.Classes
 
         #endregion
 
-        // DoAction, PrintContract, AssignNew, AssignExisting переехали в Firm.WinForms.cs.
+        // DoAction, PrintContract переехали в Firm.WinForms.cs.
 
 		public DataTable GetRollers()
 		{
@@ -51,20 +50,6 @@ namespace Merlin.Classes
 			                               InterfaceObjects.SimpleJournal, Constants.Actions.Load);
 			parameters["ShowInactive"] = false;
 			return ((DataSet) DataAccessor.DoAction(parameters)).Tables[Constants.TableNames.Data];
-		}
-
-		/// <summary>Привязывает бренд <paramref name="brand"/> к этой фирме.</summary>
-		internal PresentationObject ApplyBrandAssignment(PresentationObject brand)
-		{
-			PresentationObject firmBrand = EntityManager.GetEntity((int) Entities.FirmBrand).NewObject;
-
-			firmBrand.Parameters = brand.Parameters;
-			firmBrand[ParamNames.FirmId] = IDs[0];
-			firmBrand.IsNew = true;
-
-			firmBrand.Update();
-			OnObjectCreated(firmBrand);
-			return firmBrand;
 		}
 
 		public int FirmId

@@ -341,12 +341,6 @@
     <EmbeddedResource Include="Forms\CreateActionMaster\SelectMassmediasStep.resx">
       <DependentUpon>SelectMassmediasStep.cs</DependentUpon>
     </EmbeddedResource>
-    <EmbeddedResource Include="Forms\FirmImportJournalForm.resx">
-      <DependentUpon>FirmImportJournalForm.cs</DependentUpon>
-    </EmbeddedResource>
-    <EmbeddedResource Include="Forms\FirmJournalForm.resx">
-      <DependentUpon>FirmJournalForm.cs</DependentUpon>
-    </EmbeddedResource>
     <EmbeddedResource Include="Forms\FrmTemplate2.resx">
       <DependentUpon>FrmTemplate2.cs</DependentUpon>
     </EmbeddedResource>
@@ -454,6 +448,9 @@
     <EmbeddedResource Include="Icons\bank.png" />
     <EmbeddedResource Include="Icons\about.png" />
     <EmbeddedResource Include="Icons\substitution.png" />
+    <EmbeddedResource Include="Icons\build.png" />
+    <EmbeddedResource Include="Icons\delete2.png" />
+    <EmbeddedResource Include="Icons\backward.png" />
     <EmbeddedResource Include="Icons\banks.png" />
     <EmbeddedResource Include="Icons\export.png" />
     <EmbeddedResource Include="Icons\Import.png" />
@@ -517,7 +514,6 @@
     <Compile Include="Classes\BalanceStatRow.cs" />
     <Compile Include="Classes\BalanceStatRow.WinForms.cs" />
     <Compile Include="Classes\Bank.cs" />
-    <Compile Include="Classes\Bank.WinForms.cs" />
     <Compile Include="Classes\CampaignModule.cs" />
     <Compile Include="Classes\CampaignModule.WinForms.cs" />
     <Compile Include="Classes\CampaignModuleDay.cs" />
@@ -567,10 +563,6 @@
     <Compile Include="Classes\Agency.cs">
       <SubType>Code</SubType>
     </Compile>
-    <Compile Include="Classes\Brand.cs">
-      <SubType>Code</SubType>
-    </Compile>
-    <Compile Include="Classes\Brand.WinForms.cs" />
     <Compile Include="Classes\Campaign.cs">
       <SubType>Code</SubType>
     </Compile>
@@ -619,8 +611,6 @@
     <Compile Include="Classes\ITariffWindow.cs" />
     <Compile Include="Classes\MassmediaPricelist.cs" />
     <Compile Include="Classes\MassmediaPricelist.WinForms.cs" />
-    <Compile Include="Classes\MassmediasAndCampaignsContainer.cs" />
-    <Compile Include="Classes\MassmediasAndCampaignsContainer.WinForms.cs" />
     <Compile Include="Classes\MediaPlan.cs" />
     <Compile Include="Classes\MediaPlanCampaignGroups.cs" />
     <Compile Include="Classes\ModuleCampaignDay.cs" />
@@ -841,15 +831,6 @@
     </Compile>
     <Compile Include="Forms\CreateActionMaster\SelectMassmediasStep.Designer.cs">
       <DependentUpon>SelectMassmediasStep.cs</DependentUpon>
-    </Compile>
-    <Compile Include="Forms\FirmImportJournalForm.cs">
-      <SubType>Form</SubType>
-    </Compile>
-    <Compile Include="Forms\FirmImportJournalForm.Designer.cs">
-      <DependentUpon>FirmImportJournalForm.cs</DependentUpon>
-    </Compile>
-    <Compile Include="Forms\FirmJournalForm.cs">
-      <SubType>Form</SubType>
     </Compile>
     <Compile Include="Forms\HelpViewerForm.cs">
       <SubType>Form</SubType>

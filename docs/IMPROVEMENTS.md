@@ -86,6 +86,21 @@
 
 ---
 
+### [GRANT-01] Режим «грантор» не использовался ни в одной базе — кандидат на удаление целиком
+
+**Область:** `CampaignForm` (кнопка `toolStripButtonGrantor`, свойство `Grantor`), `Utils.AskConfirmation` / `FrmConfirmation`, гриды (`IRollerGrid.Grantor`), SQL-параметр `@grantorID`
+**Суть:** режим позволяет менеджеру работать с выпусками под правами грантора или администратора (тот вводит свой логин и пароль): `AskConfirmation` → `Grantor` → `grantorID` в `IssueIUD` / `ModuleIssueIUD` / `PackModuleIssueID` / `AddRangeIssues` / `MasterIssueDelete`; `hlp_GetMainUserCredentials` берёт права (`isAdmin`, `rightToGoBack`, `rightForMinus`) у грантора; выпуск хранит `Issue.grantorID`; `ActionActivate` смотрит `fn_IsRightForMinus(i.grantorID)`. Журнал `ConfirmationHistory` удалён 2026-09-20 (ветка `cleanup/confirmation-history`); след «кто подтвердил» остался только в `Issue.grantorID` самого выпуска.
+**Данные** (копии ArtvisDev, Artvis, Artvis2, Belgorod, Tumen на 2026-09-20): `Issue.grantorID IS NOT NULL` — **0 выпусков из ~10,5 млн** (3,44 / 3,39 / 3,39 / 3,39 / 0,27 млн). Это вся история, а не месячное окно `DeleteHistory`. Значит, режим не использовался никогда или не пережил ни один выпуск. При этом 4 из 40 активных пользователей ArtvisDev помечены `isGrantor = 1`.
+**Живой остаток — это другая ветка «подтверждения»:** `ManagerDiscountForm.cs:132` зовёт `AskConfirmation`, чтобы администратор авторизовал скидку сверх лимита (`ActionForm.cs:303` → `SetFinalPrice(..., grantor, reasonId)`). Её судьба решается отдельно; решение 2026-08-21 — в веб не переносится (`docs/tasks/web-migration-dialogs.md`, §8 п.1).
+**Почему важно:** веб режима не получит, то есть это функция десктопа, которой в вебе не будет. Параметр `@grantorID` и логика прав грантора лежат в самых горячих процедурах выпусков. Это мёртвая (по данным) ветка в критичном коде.
+**Где смотреть:**
+- C#: `Client\Forms\CampaignForm.cs` (~стр. 1336, 1654–1665), `Client\Classes\Utils.WinForms.cs` (`AskConfirmation`), `Client\Forms\FrmConfirmation.cs`, `Client\Controls\{IRollerGrid,RollerIssuesGrid3,PackModuleGrid,TariffWithRangeGrid}.cs`, `Client\Classes\Campaign.cs`, `FogSoft.WinForm\Classes\SecurityManager.cs` (`IsGrantor`)
+- SQL: `hlp_GetMainUserCredentials`, `IssueIUD`, `ModuleIssueIUD`, `PackModuleIssueID`, `AddRangeIssues`, `MasterIssueDelete`, `ActionActivate`, `CampaignImportGrammofon`, `CampaignImportMediaPlus`, `GetUserData`, `UserIUD`, `vUser`, `f_IsGrantor`, колонки `User.isGrantor` и `Issue.grantorID` (с FK)
+
+**Возможное направление:** решение владельца продукта — режим не нужен. Тогда убрать кнопку и `Grantor` в гридах, `@grantorID` из процедур выпусков и импорта, ветку грантора в `hlp_GetMainUserCredentials`, `f_IsGrantor`/`isGrantor`, затем колонку `Issue.grantorID`; `AskConfirmation` для скидок оставить или убрать отдельным решением. Технически дёшево, но задевает горячие процедуры: делать по образцу `cleanup/*` (скрипт правит процедуры из `OBJECT_DEFINITION`, а не из репозитория) и проверять на ArtvisDev и Belgorod. Перед этим стоит спросить у пользователей с `isGrantor = 1`, не нужна ли им эта возможность.
+
+---
+
 ## SQL / Architecture
 
 ### [SQL-01] Дублирование логики расчёта цены за период (GetPriceByPeriod) внутри stat_Bonuses
@@ -138,6 +153,20 @@
 - 7 других вызывающих `CleanupWindow` (`ActionIUD`, `CampaignIUD`, `CampaignsIssueDelete`, `CampaignTransferDay`, `IssueIUD`, `IssueTransfer`) — при переписывании проверить все
 
 **Возможное направление:** `CleanupWindow` принимает набор окон (TVP или temp-таблица), обрабатывает их цепочки одним set-based проходом; `ActionDeactivate` зовёт её один раз со всем `@agitWindows`.
+
+---
+
+### [SQL-04] «Время профилактики» (`DisabledWindow`): таблица пуста, но её читают 9 объектов
+
+**Область:** `dbo.DisabledWindow` и её читатели
+**Суть:** экран ввода «времени профилактики» вырезан 2026-09-19 (ветка `cleanup/dead-menu-branches`: пункт `miDisabledWindows`, сущность 10, действие `AddDisabledWindow`, процедуры `disabledWindows` / `DisabledWindowIUD`). Таблица осталась и **пуста в пяти базах** (ArtvisDev, Artvis, Artvis2, Belgorod, Tumen; в Univer таблицы нет); у действий сущности 10 не было ни одного права у групп — то есть вводить данные было некому. Но читают её:
+- проверки при работе с выпусками и окнами (горячий путь): `hlp_IssueVerify` (сообщение `DisabledWindowInsert`), `IssueTransfer` (`DisabledWindowTransfer`), `ProgramIssueIUD` через `fn_IsDisabledWindow` (`DisabledWindowInsertProgram`), `TariffWindowIUD`;
+- генерация окон: `GenerateTariffWindowByTemplate`, `sl_GenerateTariffWindowsDay`;
+- импорт медиапланов: `CampaignImportGrammofon`, `CampaignImportMediaPlus`;
+
+**Не путать (это живая функция, не трогать):** `TariffWindow.isDisabled` — флаг «запретить вносить выпуски в окна». Он используется массово (на Belgorod ~81 тыс. окон с `isDisabled = 1`). Таблицу `DisabledWindow` он **не** использует: ни `ShowDisabledWindows` (действие «Показать заблокированные окна» у прайс-листа, сущность 80), ни `TariffWindowRetrieve` (параметр `@showDisabledWindows`) её не читают.
+**Почему не удалили сразу:** часть читателей — горячие процедуры проверки выпусков и окон; правка каждой требует аккуратной хирургии и проверки, а веб SQL не переносит, так что выигрыш только в чистоте и в паре лишних запросов на каждую проверку выпуска.
+**Возможное направление:** спросить владельца: «время профилактики» не нужно? Если нет — по образцу `cleanup/*` (правка процедур из `OBJECT_DEFINITION`, проверка формы вырезаемого фрагмента): убрать проверки из перечисленных процедур, затем `fn_IsDisabledWindow`, три сообщения `DisabledWindow*` и таблицу. `ShowDisabledWindows` и действие «Показать заблокированные окна» остаются. Проверять на ArtvisDev и Belgorod.
 
 ---
 

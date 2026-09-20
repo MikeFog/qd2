@@ -29,18 +29,21 @@ END
 -- Колонку галочек SmartGrid добавляет сам при CheckBoxes = true.
 -------------------------------------------------------------------------------
 
-MERGE [dbo].[iEntityAttribute] AS t
-USING (VALUES
-	(@entCampaign, 4, 1, N'Радиостанция', 'massmediaName'),
-	(@entCampaign, 4, 2, N'Тип оплаты',   'paymentTypeName'),
-	(@entCampaign, 4, 3, N'Агентство',    'agencyName')
-) AS s(entityID, selector, ordinal_position, alias, name)
-	ON t.entityID = s.entityID AND t.selector = s.selector AND t.ordinal_position = s.ordinal_position
-WHEN MATCHED AND (t.alias <> s.alias OR t.name <> s.name) THEN
-	UPDATE SET alias = s.alias, name = s.name
-WHEN NOT MATCHED BY TARGET THEN
-	INSERT (entityID, alias, name, ordinal_position, selector)
-	VALUES (s.entityID, s.alias, s.name, s.ordinal_position, s.selector);
+-- «Группа радиостанций» (groupName из процедуры Campaigns) стоит между радиостанцией и
+-- типом оплаты, поэтому строки селектора пересоздаются целиком: MERGE по ordinal_position
+-- при сдвиге позиций упёрся бы в PK (entityID, alias, selector) и UIX (ordinal_position).
+BEGIN TRAN;
+
+DELETE FROM [dbo].[iEntityAttribute] WHERE entityID = @entCampaign AND selector = 4;
+
+INSERT INTO [dbo].[iEntityAttribute] (entityID, alias, name, ordinal_position, selector)
+VALUES
+	(@entCampaign, N'Радиостанция',        'massmediaName',   1, 4),
+	(@entCampaign, N'Группа радиостанций', 'groupName',       2, 4),
+	(@entCampaign, N'Тип оплаты',          'paymentTypeName', 3, 4),
+	(@entCampaign, N'Агентство',           'agencyName',      4, 4);
+
+COMMIT;
 
 -------------------------------------------------------------------------------
 -- Отчёт
@@ -48,5 +51,5 @@ WHEN NOT MATCHED BY TARGET THEN
 
 PRINT '--- Веер: выбор кампаний, состояние метаданных ---';
 
-SELECT 'iEntityAttribute (91, selector 4)' AS [объект], COUNT(*) AS [строк], '3' AS [ожидается]
+SELECT 'iEntityAttribute (91, selector 4)' AS [объект], COUNT(*) AS [строк], '4' AS [ожидается]
 FROM [dbo].[iEntityAttribute] WHERE entityID = @entCampaign AND selector = 4;

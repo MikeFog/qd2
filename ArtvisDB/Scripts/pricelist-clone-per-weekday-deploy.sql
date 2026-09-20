@@ -1,4 +1,61 @@
-﻿CREATE           PROCEDURE [dbo].[PricelistIUD]
+﻿/*
+    ПРОД-ДЕПЛОЙ: dbo.PricelistIUD — клонирование прайс-листа по дням недели.
+    Ветка feature/pricelist-clone-per-weekday. Разбор: project_pricelist_clone_window_overrides (v3).
+
+    ЧТО ДЕЛАЕТ
+      @actionName = 'Clone': состояние каждого тарифа (время выхода, цена, длительность,
+      duration_total) берётся из ПОСЛЕДНЕГО окна КАЖДОГО дня недели (по dayOriginal).
+      Дни с одинаковым состоянием образуют один тариф-клон, различающиеся — отдельные
+      клоны с непересекающимися днями (до 7 на тариф). Тарифы одной цепочки TariffUnion
+      делятся совместно (иначе нарушается инвариант «одинаковые наборы дней»),
+      продолжения связываются 1:1. Дни без окон в последние 4 недели тарифа — значения
+      самого тарифа. Контракт процедуры (параметры, результат) не менялся, C# не трогали.
+
+    ЧТО ЗАЛИВАЕТСЯ
+      1. CREATE OR ALTER PROCEDURE dbo.PricelistIUD.
+      2. DROP INDEX IF EXISTS IX_TariffWindow_TariffID_LastWindow ON dbo.TariffWindow —
+         индекс нужен был только предыдущей версии клона (v2, fb94efd); новая версия
+         ищет окна по IX_TariffWindow_TariffID_DayOriginal. Если индекса на проде нет —
+         шаг ничего не делает. Порядок важен: сначала процедура, потом индекс.
+
+    ТАБЛИЦЫ И ДАННЫЕ НЕ МЕНЯЮТСЯ. Права на процедуру сохраняются (CREATE OR ALTER).
+
+    ИДЕМПОТЕНТНОСТЬ  повторный запуск безопасен.
+
+    ОТКАТ
+      Залить PricelistIUD из master (версия fb94efd) через CREATE OR ALTER и, если нужен
+      быстрый поиск последнего окна, пересоздать индекс:
+        CREATE NONCLUSTERED INDEX [IX_TariffWindow_TariffID_LastWindow]
+            ON [dbo].[TariffWindow]([tariffId] ASC, [windowDateOriginal] DESC)
+            INCLUDE([price], [duration], [duration_total], [windowDateActual]);
+
+    ПРОВЕРКА ПОСЛЕ ДЕПЛОЯ  pricelist-clone-per-weekday-check.sql (клон в транзакции с ROLLBACK).
+*/
+
+-- USE [Artvis];
+-- GO
+
+SET NOCOUNT ON;
+GO
+/* -- Преполёт: та ли база ---------------------------------------------- */
+IF OBJECT_ID('dbo.PricelistIUD') IS NULL OR OBJECT_ID('dbo.Tariff') IS NULL
+   OR OBJECT_ID('dbo.TariffWindow') IS NULL OR OBJECT_ID('dbo.TariffUnion') IS NULL
+BEGIN
+    RAISERROR('НЕ ТА БАЗА: нет dbo.PricelistIUD / Tariff / TariffWindow / TariffUnion. Деплой прерван.', 16, 1);
+    SET NOEXEC ON;
+END
+GO
+PRINT 'БД     : ' + DB_NAME();
+DECLARE @msg nvarchar(200) = 'Индекс IX_TariffWindow_TariffID_LastWindow до: ' + CASE
+    WHEN EXISTS (SELECT 1 FROM sys.indexes WHERE object_id = OBJECT_ID('dbo.TariffWindow') AND name = 'IX_TariffWindow_TariffID_LastWindow')
+    THEN 'есть (будет удалён)' ELSE 'нет' END;
+PRINT @msg;
+GO
+/* -- CREATE OR ALTER dbo.PricelistIUD ---------------------------------------- */
+SET QUOTED_IDENTIFIER ON;
+SET ANSI_NULLS ON;
+GO
+CREATE OR ALTER PROCEDURE [dbo].[PricelistIUD]
 (
 @pricelistID smallint OUT,
 @massmediaID smallint = NULL, -- в случае Clone тут будет ID радиостанции куда надо клонировать выбранный прайслист
@@ -211,3 +268,20 @@ ELSE IF @actionName = 'UpdateItem' BEGIN
 
 	Exec Pricelists @pricelistID = @pricelistID
 END
+GO
+/* -- Индекс предыдущей версии клона больше не нужен ------------------------- */
+DROP INDEX IF EXISTS [IX_TariffWindow_TariffID_LastWindow] ON [dbo].[TariffWindow];
+GO
+
+/* -- Проверка ----------------------------------------------------------- */
+DECLARE @msg nvarchar(200) = 'PricelistIUD после: ' + CASE
+    WHEN OBJECT_DEFINITION(OBJECT_ID('dbo.PricelistIUD')) LIKE '%@tariffDay%'
+    THEN 'OK — новая версия (по дням недели)' ELSE 'ОШИБКА — старая версия' END;
+PRINT @msg;
+SET @msg = 'Индекс IX_TariffWindow_TariffID_LastWindow после: ' + CASE
+    WHEN EXISTS (SELECT 1 FROM sys.indexes WHERE object_id = OBJECT_ID('dbo.TariffWindow') AND name = 'IX_TariffWindow_TariffID_LastWindow')
+    THEN 'ОШИБКА — остался' ELSE 'OK — удалён' END;
+PRINT @msg;
+GO
+SET NOEXEC OFF;
+GO

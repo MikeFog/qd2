@@ -61,6 +61,10 @@ namespace FogSoft.WinForm.Controls
             InitializeComponent();
             dataGrid.AutoGenerateColumns = false;
             dataGrid.ColumnWidthChanged += (s, e) => RepositionCheckBoxHeader();
+            // Высота заголовков подстраивается сама (AutoSize): до раскладки формы заголовки узких
+            // колонок переносятся и шапка выше — без этого чекбокс «все» остаётся по центру старой
+            // высоты и наезжает на первую строку.
+            dataGrid.ColumnHeadersHeightChanged += (s, e) => RepositionCheckBoxHeader();
             dataGrid.Scroll += (s, e) => RepositionCheckBoxHeader();
             dataGrid.Sorted += (s, e) => RepositionCheckBoxHeader();
             dataGrid.ColumnHeaderMouseClick += (s, e) =>
@@ -157,7 +161,9 @@ namespace FogSoft.WinForm.Controls
         /// Имя колонки источника данных, откуда брать номер для колонки "№". Пусто (по
         /// умолчанию) - номер позиционный, 1..N. Задаётся, когда номера приходят снаружи и
         /// в этом гриде показан лишь их поднабор (например, чек-лист замены роликов в веере
-        /// показывает номера из списка "Ролики").
+        /// показывает номера из списка "Ролики"). Колонка "№" тогда привязана к этому полю и
+        /// сортируется как обычная, а сортировка остальных колонок не отключается — номера
+        /// ездят вместе со строкой. Задавать до присвоения DataSource.
         /// </summary>
         [Browsable(false)]
         public string RowNumberSource { get; set; }
@@ -675,6 +681,8 @@ namespace FogSoft.WinForm.Controls
         {
             if (entity == null || !IsAllowedEntity(presentationObject.Entity)) return;
 
+            bool gridHadRows = dataGrid.DataSource != null && dataGrid.RowCount > 0;
+
             if (dataGrid.DataSource == null)
             {
                 DataSource = entity.LoadSingleObject(presentationObject).DefaultView;
@@ -685,7 +693,9 @@ namespace FogSoft.WinForm.Controls
                 Globals.AddObject2DataTable(GridTable, presentationObject);
 
             GridTable.AcceptChanges();
-            AdjustColumnsWidthExt();
+            // Ширины колонок считаем только при первом заполнении грида: пересчёт по всем колонкам
+            // занимает ~1,2 с на каждое добавление строки и сбрасывает ручные ширины пользователя.
+            if (!gridHadRows) AdjustColumnsWidthExt();
             SelectedObject = presentationObject;
 
             FireObjectCreated(presentationObject);
@@ -890,7 +900,10 @@ namespace FogSoft.WinForm.Controls
         private void SetColumnHeaders(DataColumnCollection columns)
         {
             if (checkboxes) AddMultiSelectColumn();
-            if (showRowNumbers) AddRowNumberColumn();
+            // Номера из данных (RowNumberSource) — колонка привязана к полю, сортировка работает
+            // как у обычных колонок; позиционные 1..N — вычисляются на лету, см. ниже.
+            bool numbersFromData = !string.IsNullOrEmpty(RowNumberSource) && columns.Contains(RowNumberSource);
+            if (showRowNumbers) AddRowNumberColumn(numbersFromData);
 
             Image icon = null;
             if (Globals.IconLoader != null) icon = Globals.IconLoader(entity.IconName);
@@ -903,11 +916,12 @@ namespace FogSoft.WinForm.Controls
                     AddColumn(entityAttribute);
             }
 
-            if (showRowNumbers)
+            if (showRowNumbers && !numbersFromData)
             {
                 // Нумерация строк (e.RowIndex + 1) актуальна только для исходного порядка.
                 // Сортировка любой колонки перемешает строки, но номера останутся 1..N —
                 // видимость упорядоченности теряется, поэтому сортировку целиком отключаем.
+                // Номера из данных (RowNumberSource) ездят вместе со строкой — им это не грозит.
                 foreach (DataGridViewColumn column in dataGrid.Columns)
                     column.SortMode = DataGridViewColumnSortMode.NotSortable;
             }
@@ -933,12 +947,14 @@ namespace FogSoft.WinForm.Controls
                 g.DrawImage(icon, new Rectangle(0, 0, 16, 16));
             }
 
+            // MinimumWidth — по той же причине, что у колонки галочек (AddMultiSelectColumn).
+            // Картинка всегда 16x16 px, поэтому без поправки на DPI.
             DataGridViewImageColumn column = new DataGridViewImageColumn(true)
             {
                 Image = resized,
                 ValuesAreIcons = false,
                 Resizable = DataGridViewTriState.False,
-
+                MinimumWidth = 21
             };
             dataGrid.Columns.Add(column);
         }
@@ -958,26 +974,33 @@ namespace FogSoft.WinForm.Controls
 
         private void AddMultiSelectColumn()
         {
+            // MinimumWidth — обычная ширина колонки галочки. Если данные привязаны, пока в гриде
+            // не видно ни одной строки (грид ещё не растянут или строку закрыл горизонтальный
+            // скроллбар), DisplayedCells подгоняет колонку под пустой заголовок (~5 px) и
+            // потом сам не пересчитывает.
             DataGridViewCheckBoxColumn column = new DataGridViewCheckBoxColumn
             {
                 DataPropertyName = COL_IsSelected,
-                ReadOnly = false
+                ReadOnly = false,
+                MinimumWidth = dataGrid.LogicalToDeviceUnits(21)
             };
 
             dataGrid.Columns.Add(column);
         }
 
-        private void AddRowNumberColumn()
+        private void AddRowNumberColumn(bool numbersFromData)
         {
             DataGridViewTextBoxColumn column = new DataGridViewTextBoxColumn
             {
                 Name = COL_RowNumber,
                 HeaderText = "№",
                 ReadOnly = true,
-                SortMode = DataGridViewColumnSortMode.NotSortable,
+                SortMode = numbersFromData ? DataGridViewColumnSortMode.Automatic : DataGridViewColumnSortMode.NotSortable,
                 Resizable = DataGridViewTriState.False,
                 Width = 35
             };
+            if (numbersFromData)
+                column.DataPropertyName = RowNumberSource;
             column.DefaultCellStyle.Alignment = DataGridViewContentAlignment.MiddleCenter;
 
             dataGrid.Columns.Add(column);

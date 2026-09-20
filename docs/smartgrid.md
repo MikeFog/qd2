@@ -44,7 +44,7 @@
 |---|---|---|---|
 | `CheckBoxes` | `checkboxes` | `125` | Колонку `DataGridViewCheckBoxColumn`, привязанную к синтетической `DataColumn COL_IsSelected` (добавляется в таблицу тут же, в сеттере `DataSource`, если её ещё нет) |
 | `ShowMultiselectColumn` | `showMultiselectColumn` | `131` | Не колонку, а чекбокс "выбрать всё" — overlay `CheckBox` поверх заголовка колонки 0 (`AddCheckBox2ColumnHeader`, `963`). Независим от `CheckBoxes`: можно иметь чекбоксы в строках без чекбокса в шапке |
-| `ShowRowNumbers` | `showRowNumbers` | `137` | Колонку `№` (`AddRowNumberColumn`, `939`). Данные НЕ хранятся — номер вычисляется на лету в `DataGrid_RowNumberCellFormatting` (`87`) как `e.RowIndex + 1`, поэтому корректно следует за сортировкой/фильтром |
+| `ShowRowNumbers` | `showRowNumbers` | `137` | Колонку `№` (`AddRowNumberColumn`, `939`). Данные НЕ хранятся — номер вычисляется на лету в `DataGrid_RowNumberCellFormatting` (`87`) как `e.RowIndex + 1`, поэтому корректно следует за сортировкой/фильтром. Если задан `RowNumberSource` (имя колонки данных), колонка привязана к этому полю и сортируется как обычная, а запрет сортировки остальных колонок не включается (до присвоения `DataSource`; пример — «Добавленные выпуски» веера, номер ролика) |
 
 Если понадобится ещё одна такая колонка — добавлять по этой же схеме: поле + свойство рядом с
 существующими (`125-140`), `AddXxxColumn()` рядом с `AddMultiSelectColumn`/`AddRowNumberColumn`

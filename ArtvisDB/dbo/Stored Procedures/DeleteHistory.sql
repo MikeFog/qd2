@@ -21,7 +21,4 @@ begin
 		
 	delete from TransferLog 
 	where transferDate < @lastDate and newDate < @lastDate and oldDate < @lastDate
-	
-	delete from ConfirmationHistory 
-	where dateCreated < @lastDate
 end

@@ -407,17 +407,4 @@ BEGIN
 		group by i.actualWindowID ) as t1
 	Where
 		TariffWindow.windowId = t1.windowID
-end 
-IF @grantorID is not Null and @actionName in ('AddItem', 'UpdateItem')
-BEGIN
-	DECLARE @msg nvarchar(4000), @campaignTypeName nvarchar(200), @rollerName nvarchar(250)
-	select @campaignTypeName = [name] from iCampaignType where campaignTypeID = 4
-	select @rollerName = r.[name] from Roller r where r.rollerID = @rollerID
-	SET @msg = 'Добавлен пакетный модуль ' +  Convert(varchar(10), @issueDate, 104) + ' ' + Convert(varchar(8), @issueDate, 108) 
-		+ ', Ролик: ' + @rollerName
-		+ ', Акция №' + RTRIM(@actionId) + ', Тип кампании: ' + @campaignTypeName
-
-	Exec ConfirmationHistoryID @confirmationTypeID = 2, @userID = @loggedUserId,
-		@grantorID = @grantorID, @description = @msg, 
-		@actionName = 'AddItem'
-END
+end

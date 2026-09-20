@@ -22,17 +22,7 @@ CREATE TABLE #Firm(firmID int)
 INSERT INTO #Firm SELECT firmID FROM Firm
 EXEC sl_Firms
 
--- 4. Firm Brands
-select 	b.*, fb.firmID
-from 	Roller r
-		join FirmBrand fb
-			on r.FirmId = fb.FirmId
-		join Brand b
-			on fb.BrandId = b.BrandId	
-where
-		r.RollerId = @RollerID
-
---5. Roller ActionType
+-- 4. Roller ActionType
 SELECT rat.rolActionTypeID AS id, rat.NAME AS name FROM dbo.iRollerActionType rat
 
 

@@ -24,11 +24,9 @@
 		PaymentType = 5,
 		Agency = 8,
 		MassMedia = 9,
-		DisabledWindow = 10,
 		SponsorProgram = 11,
 		SponsorPricelist = 12,
 		SponsorTariff = 14,
-		Brand = 15,
 		Firm = 16,
 		AdvertType = 17,
 		Roller = 20,
@@ -58,9 +56,6 @@
 		MassmediaAgency = 99,
 		GridCell = 100,
 		FirmWithConfirmedActions = 118,
-		BrandFirm = 120,
-		FirmBrand = 121,
-		ConfirmationHistory = 129,
 		ModuleIssue = 130,
 		PackModule = 133,
 		PackModulePricelist = 134,
@@ -97,7 +92,6 @@
 		SponsorCampaignProgramInDay = 183,
 		BalanceIssues = 184,
 		SpecialTariffWindow = 187,
-		MassmediasWithCampaigns = 188,
 		PackageDiscount = 189,
 		PackageDiscountMassmedia = 190,
 		PackageDiscountPriceLists = 191,
@@ -149,7 +143,6 @@
 		public const string Tariff = "Tariff";
 		public const string SponsorProgramm = "Sponsor programm";
 		public const string AdvertTypes = "Предметы рекламы";
-		public const string DisabledWindows = "Disabled windows";
 		public const string Discount = "Discount";
 		public const string PackageDiscount = "PackageDiscount";
 		public const string ConfirmedAction = "ConfirmedAction";
@@ -157,7 +150,6 @@
         public const string DeletedAction = "DeletedAction";
 		public const string Module = "Module";
 		public const string UsedSponsorPrograms = "Used Sponsor Programs";
-		public const string MassmediaAndCampaign = "Massmedia and Campaigns";
 		public const string Massmedia = "Massmedia";
 		public const string ModuleIssues = "Module Issues";
 		public const string PackModules = "Pack Modules";

@@ -11,9 +11,8 @@ using static Merlin.Classes.TableColumns;
 
 namespace Merlin.Classes
 {
-	// UI-часть Firm: диспетчеризация, генерация договора (отчёт), назначение
-	// бренда, выбор фирмы. Бизнес-часть (ApplyBrandAssignment,
-	// GetFirmCandidates) — в Firm.cs. PrintContract перенесён целиком:
+	// UI-часть Firm: диспетчеризация, генерация договора (отчёт), выбор фирмы.
+	// Бизнес-часть (GetFirmCandidates) — в Firm.cs. PrintContract перенесён целиком:
 	// генерация отчёта — отдельная область (docs/tasks/web-migration.md,
 	// этап 4). Конвенция — docs/tasks/web-migration-dialogs.md.
 	public partial class Firm
@@ -57,47 +56,6 @@ namespace Merlin.Classes
 				}
 			}
 			finally { ((Form)owner).UseWaitCursor = false; }
-		}
-
-		protected override void AssignNew(IWin32Window owner)
-		{
-			// Create new brand
-			PresentationObject brand = EntityManager.GetEntity((int)Entities.Brand).NewObject;
-
-			// and assign it to the firm
-			if (brand.ShowPassport(owner))
-			{
-				Application.DoEvents();
-				AssignBrand(brand, owner);
-			}
-		}
-
-		protected override void AssignExisting(IWin32Window owner)
-		{
-			// Show existing brands
-			SelectionForm fSelector =
-				new SelectionForm(EntityManager.GetEntity((int)Entities.Brand), "Брэнды");
-
-			// and assign it to the firm
-			if (fSelector.ShowDialog(owner) == DialogResult.OK)
-			{
-				Application.DoEvents();
-				AssignBrand(fSelector.SelectedObject, owner);
-			}
-		}
-
-		private void AssignBrand(PresentationObject brand, IWin32Window owner)
-		{
-			Form ownerForm = (Form)owner;
-			try
-			{
-				ownerForm.Cursor = Cursors.WaitCursor;
-				ApplyBrandAssignment(brand);
-			}
-			finally
-			{
-				ownerForm.Cursor = Cursors.Default;
-			}
 		}
 
 		public static Firm SelectFirm(IWin32Window owner)
