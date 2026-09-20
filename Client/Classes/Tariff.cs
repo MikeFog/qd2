@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Data;
 using FogSoft.WinForm;
 using FogSoft.WinForm.Classes;
@@ -155,6 +156,41 @@ namespace Merlin.Classes
 			Tariff tariff = new Tariff(tariffID);
 			tariff.Refresh();
 			return tariff;
+		}
+
+		/// <summary>
+		/// Массово создаёт тарифы: по одному в каждом часе от <paramref name="hourFrom"/> до
+		/// <paramref name="hourTo"/> включительно, в минуту <paramref name="minute"/>. Остальные
+		/// параметры берутся из <paramref name="template"/> (значения паспорта). Каждый тариф —
+		/// отдельный вызов TariffIUD, best-effort: не создавшиеся (дубль, спонсорский тариф,
+		/// разрыв цепочки) попадают в <paramref name="tableErrors"/>, остальные создаются.
+		/// </summary>
+		internal static int CreateMass(Dictionary<string, object> template, int hourFrom, int hourTo, int minute,
+			out DataTable tableErrors)
+		{
+			tableErrors = ErrorManager.CreateErrorsTable();
+			int created = 0;
+
+			for (int hour = hourFrom; hour <= hourTo; hour++)
+			{
+				DateTime time = new DateTime(1900, 1, 1, hour, minute, 0);
+				try
+				{
+					Tariff tariff = new Tariff();
+					foreach (KeyValuePair<string, object> kvp in template)
+						tariff[kvp.Key] = kvp.Value;
+					tariff[ParamNames.Time] = time;
+					tariff.Update();
+					created++;
+				}
+				catch (Exception ex)
+				{
+					ErrorManager.AddErrorRow(tableErrors, DateTime.Now,
+						string.Format("{0:HH:mm}: {1}", time, ErrorManager.GetErrorMessage(ex)));
+				}
+			}
+
+			return created;
 		}
 
 		// DoAction переехал в Tariff.WinForms.cs (IWin32Window в сигнатуре).
