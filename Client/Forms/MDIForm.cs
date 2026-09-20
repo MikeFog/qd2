@@ -174,8 +174,6 @@ namespace Merlin.Forms
 						Entities.FirmWithDeletedActions, Entities.ActionDeleted, Entities.HeadCompanyWithDeletedActions);
 				else if (strMiName == "miBank")
 					ShowBanks(mi);
-				else if (strMiName == "miBrand")
-					ShowBrands(mi);
 				else if (strMiName == "miFirm")
 					ShowFirms(mi);
 				else if (strMiName == "miPaymentCommon" || strMiName == "miPayment" ||
@@ -191,8 +189,6 @@ namespace Merlin.Forms
 					ShowCommonOrderByManager(mi);
 				else if (strMiName == "miPaymentByManagerFromRSection")
 					ShowCommonOrderByManagerFromRSection(mi);
-				else if (strMiName == "miConfirmationHistory")
-					ShowConfirmationHistory(mi);
 				else if (strMiName == "miPrintGrid" || strMiName == "miPrintGridFromRSection")
 					ShowPrintGridForm();
 				else if (strMiName == "miPackModules")
@@ -378,12 +374,6 @@ namespace Merlin.Forms
 		private void ShowPrintInquireJournal(ToolStripItem mi)
 		{
 			Globals.ShowBrowser(new MassmediasAndCampaignsContainer(), mi.Text, this);
-		}
-
-		private static void ShowConfirmationHistory(ToolStripItem mi)
-		{
-			Globals.ShowSimpleJournal(
-				EntityManager.GetEntity((int) Entities.ConfirmationHistory), mi.Text);
 		}
 
 		private static void ShowPaymentTypes(ToolStripItem mi)
@@ -594,12 +584,6 @@ namespace Merlin.Forms
 			{
 				Cursor.Current = Cursors.Default;
 			}
-		}
-
-		private void ShowBrands(ToolStripItem mi)
-		{
-			ShowMasterDetailsJournal(EntityManager.GetEntity((int) Entities.Brand),
-			                         EntityManager.GetEntity((int) Entities.BrandFirm), mi.Text);
 		}
 
 		private void ShowFirms(ToolStripItem mi)
