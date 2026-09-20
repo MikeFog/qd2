@@ -50,22 +50,24 @@ namespace Merlin.Classes
 					finishDate = fSelector.FinishDate.Date;
 				}
 
+				if (!massFlag)
 				{
-					if (!massFlag)
-						ApplyClone(startDate, finishDate, mode);
-					else
+					Application.DoEvents(); // дать диалогу закрыться до долгого вызова
+					Cursor.Current = Cursors.WaitCursor;
+					ApplyClone(startDate, finishDate, mode);
+				}
+				else
+				{
+					SelectionForm selector = new SelectionForm(EntityManager.GetEntity((int)Entities.MassMedia), "Радиостанции", true, CheckSelectionResult);
+
+					if (selector.ShowDialog(owner) == DialogResult.OK)
 					{
-						SelectionForm selector = new SelectionForm(EntityManager.GetEntity((int)Entities.MassMedia), "Радиостанции", true, CheckSelectionResult);
+						Application.DoEvents();
+						Cursor.Current = Cursors.WaitCursor;
 
-						if (selector.ShowDialog(owner) == DialogResult.OK)
-						{
-							Application.DoEvents();
-							Cursor.Current = Cursors.WaitCursor;
-
-							DataTable tableErrors = ApplyMassClone(startDate, finishDate, mode, selector.AddedItems);
-							if (tableErrors.Rows.Count > 0)
-								Globals.ShowSimpleJournal(EntityManager.GetEntity((int)Entities.ErrTmplGen), "Ошибки клонирования", tableErrors);
-						}
+						DataTable tableErrors = ApplyMassClone(startDate, finishDate, mode, selector.AddedItems);
+						if (tableErrors.Rows.Count > 0)
+							Globals.ShowSimpleJournal(EntityManager.GetEntity((int)Entities.ErrTmplGen), "Ошибки клонирования", tableErrors);
 					}
 				}
 			}
