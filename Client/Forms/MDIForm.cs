@@ -136,14 +136,10 @@ namespace Merlin.Forms
 
 				if (strMiName == "miExit")
 					ApplicationExit();
-				else if (strMiName == "miPrintInquire")
-					ShowPrintInquireJournal(mi);
 				else if (strMiName == "miPaymentType")
 					ShowPaymentTypes(mi);
 				else if (strMiName == "miMassMedia")
 					ShowMassMedia(mi);
-				else if (strMiName == "miDisabledWindows")
-					ShowDisabledWindows(mi);
 				else if (strMiName == "miSponsorTariff")
 					ShowSponsorTariff(mi);
 				else if (strMiName == "miTariff")
@@ -178,7 +174,7 @@ namespace Merlin.Forms
 					ShowBrands(mi);
 				else if (strMiName == "miFirm")
 					ShowFirms(mi);
-				else if (strMiName == "miPaymentCommon" || strMiName == "miPayment" ||
+				else if (strMiName == "miPaymentCommon" ||
 						 strMiName == "miPaymentFRS")
 					ShowPaymentCommon(mi, strMiName == "miPaymentFRS");
 				else if (strMiName == "miBalance")
@@ -217,8 +213,6 @@ namespace Merlin.Forms
 					ShowActJournal(mi);
 				else if (strMiName.StartsWith("miStats."))
 					ShowStatsJournal(mi);
-				else if (strMiName == "miUpdateBanksList")
-					UpdateBanks();
 				else if (strMiName == "miAnnouncements")
 					ShowAnnouncements();
 				else if (strMiName == "miPackageDiscounts")
@@ -336,11 +330,6 @@ namespace Merlin.Forms
 			Globals.ShowBrowser(container, mi.Text, this);
 		}
 
-		private void UpdateBanks()
-		{
-			Bank.UpdateBankList(this);
-		}
-
 		private static void ShowMassmediaGroupJournal(ToolStripItem mi)
 		{
 			Globals.ShowSimpleJournal(EntityManager.GetEntity((int) Entities.MassmediaGroup), mi.Text);
@@ -373,11 +362,6 @@ namespace Merlin.Forms
 		private void ShowMasterDetailsJournal(Entity masterEntity, Entity childEntity, string caption)
 		{
 			ShowMasterDetailsJournal(masterEntity, childEntity, caption, null);
-		}
-
-		private void ShowPrintInquireJournal(ToolStripItem mi)
-		{
-			Globals.ShowBrowser(new MassmediasAndCampaignsContainer(), mi.Text, this);
 		}
 
 		private static void ShowConfirmationHistory(ToolStripItem mi)
@@ -444,18 +428,6 @@ namespace Merlin.Forms
 		{
 			MassmediasJournal journal = new MassmediasJournal(mi.Text) { MdiParent = Globals.MdiParent, Icon = Globals.MdiParent.Icon };
 			journal.Show();
-		}
-
-		private void ShowDisabledWindows(ToolStripItem mi)
-		{
-			Entity.Action[] menu = new[]
-			                       	{
-			                       		new Entity.Action(Constants.EntityActions.Refresh, RefreshAlias, Constants.ActionsImages.Refresh),
-			                       		new Entity.Action(Constants.EntityActions.AddNew, "Создать новую радиостанцию")
-			                       	};
-
-			var container = new FakeContainer("Радиостанция", menu, RelationManager.GetScenario(RelationScenarios.DisabledWindows));
-			Globals.ShowBrowser(container, mi.Text, this);
 		}
 
 		private void ShowSponsorTariff(ToolStripItem mi)

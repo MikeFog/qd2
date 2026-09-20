@@ -21,7 +21,6 @@ namespace Merlin.Classes
 			switch (actionName)
 			{
 				case ActionNames.AddSponsorProgram:
-				case ActionNames.AddDisabledWindow:
 				case ActionNames.AddPriceList:
 				case ActionNames.AddModule:
                 case ActionNames.AssignRelease:

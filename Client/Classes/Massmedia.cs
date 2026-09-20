@@ -23,7 +23,6 @@ namespace Merlin.Classes
 		protected struct ActionNames
 		{
 			public const string AddSponsorProgram = "AddSponsorProgram";
-			public const string AddDisabledWindow = "AddDisabledWindow";
 			public const string AddPriceList = "AddPriceList";
 			public const string AddModule = "AddModule";
             public const string AssignRelease = "AssignRelease";
@@ -74,8 +73,6 @@ namespace Merlin.Classes
 		{
 			if (actionName == ActionNames.AddSponsorProgram)
 				return ChildEntity != null && ChildEntity.Id == (int) Entities.SponsorProgram;
-			else if (actionName == ActionNames.AddDisabledWindow)
-				return ChildEntity != null && ChildEntity.Id == (int) Entities.DisabledWindow;
 			else if (actionName == ActionNames.AddPriceList)
 				return ChildEntity != null && ChildEntity.Id == (int) Entities.Pricelist;
 			else if (actionName == ActionNames.AddModule)
