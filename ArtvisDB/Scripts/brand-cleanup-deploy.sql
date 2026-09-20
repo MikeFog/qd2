@@ -8,13 +8,11 @@
 
   ── ПОРЯДОК ДЕПЛОЯ ────────────────────────────────────────────────────────────────────────────
   0. BACKUP DATABASE <база> TO DISK='...' WITH COPY_ONLY, INIT;
-  1. ALTER PROCEDURE dbo.stat_RollerStatistic из репозитория
-       ArtvisDB/dbo/Stored Procedures/stat_RollerStatistic.sql  (убрана колонка brandList,
-       которую никто не читал: RollerBrand пуста).
-     Запускать с QUOTED_IDENTIFIER ON (в SSMS так по умолчанию; в sqlcmd — ключ -I): у этой
-     процедуры настройка ON, а sqlcmd без -I молча перезапишет её на OFF.
-     Это ДО скрипта: функцию fn_BrandListByRollerId он вызывает. Скрипт проверит и остановится,
-     если на функцию или таблицы ещё кто-то ссылается.
+  1. Запустить brand-cleanup-1-stat-RollerStatistic.sql: убирает из dbo.stat_RollerStatistic колонку
+     brandList (её никто не читал: RollerBrand пуста). Процедура правится из развёрнутого
+     определения, а не из репозитория, с сохранением QUOTED_IDENTIFIER/ANSI_NULLS.
+     Это ДО данного скрипта: функцию fn_BrandListByRollerId она вызывает. Данный скрипт проверит
+     и остановится, если на функцию или таблицы ещё кто-то ссылается.
   2. Запустить ЭТОТ скрипт ЦЕЛИКОМ, от sysadmin (иначе definition модулей = NULL и проверка
      ссылок слепая). Он одним батчем, без GO, в транзакции. Для проверки — оставить ROLLBACK
      в конце; для применения — заменить на COMMIT.
