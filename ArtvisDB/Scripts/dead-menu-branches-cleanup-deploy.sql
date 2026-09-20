@@ -18,12 +18,13 @@
                         BanksListUpdateFailed. Справочник банков (Bank) остаётся, ведётся руками.
 
   Что НЕ удаляется (сознательно)
-    Таблица DisabledWindow и всё, что её читает: fn_IsDisabledWindow, ShowDisabledWindows и проверки
-    «времени профилактики» в hlp_IssueVerify, IssueTransfer, ProgramIssueIUD, TariffWindowIUD,
+    Таблица DisabledWindow и всё, что её читает: fn_IsDisabledWindow и проверки «времени
+    профилактики» в hlp_IssueVerify, IssueTransfer, ProgramIssueIUD, TariffWindowIUD,
     GenerateTariffWindowByTemplate, sl_GenerateTariffWindowsDay, CampaignImportGrammofon,
-    CampaignImportMediaPlus (9 объектов + ShowDisabledWindows). Таблица пуста везде, но часть
-    процедур горячие (проверка выпусков и окон), а веб их не касается; решение — отдельно
-    (docs/IMPROVEMENTS.md, [SQL-04]).
+    CampaignImportMediaPlus (9 объектов). Таблица пуста везде, но часть процедур горячие
+    (проверка выпусков и окон), а веб их не касается; решение — отдельно (docs/IMPROVEMENTS.md,
+    [SQL-04]). Процедура ShowDisabledWindows таблицу НЕ читает (это про флаг TariffWindow.isDisabled,
+    живое действие прайс-листа «Показать заблокированные окна») и остаётся.
 
   ── ПОРЯДОК ДЕПЛОЯ ────────────────────────────────────────────────────────────────────────────
   0. BACKUP DATABASE <база> TO DISK='...' WITH COPY_ONLY, INIT;
