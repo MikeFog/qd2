@@ -26,7 +26,6 @@ public static class MenuRoutes
 			{ "miBalanceFromRSection", (int)Entities.BalanceIssues },
 			{ "miBank", (int)Entities.Bank },
 			{ "miBonusesStat", (int)Entities.StatBonuses },
-			{ "miConfirmationHistory", (int)Entities.ConfirmationHistory },
 			{ "miFirm", (int)Entities.Firm },
 			{ "miGroupMassmedia", (int)Entities.MassmediaGroup },
 			{ "miLog", (int)Entities.LogDeletedIssue },

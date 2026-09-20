@@ -86,6 +86,21 @@
 
 ---
 
+### [GRANT-01] Режим «грантор» не использовался ни в одной базе — кандидат на удаление целиком
+
+**Область:** `CampaignForm` (кнопка `toolStripButtonGrantor`, свойство `Grantor`), `Utils.AskConfirmation` / `FrmConfirmation`, гриды (`IRollerGrid.Grantor`), SQL-параметр `@grantorID`
+**Суть:** режим позволяет менеджеру работать с выпусками под правами грантора или администратора (тот вводит свой логин и пароль): `AskConfirmation` → `Grantor` → `grantorID` в `IssueIUD` / `ModuleIssueIUD` / `PackModuleIssueID` / `AddRangeIssues` / `MasterIssueDelete`; `hlp_GetMainUserCredentials` берёт права (`isAdmin`, `rightToGoBack`, `rightForMinus`) у грантора; выпуск хранит `Issue.grantorID`; `ActionActivate` смотрит `fn_IsRightForMinus(i.grantorID)`. Журнал `ConfirmationHistory` удалён 2026-09-20 (ветка `cleanup/confirmation-history`); след «кто подтвердил» остался только в `Issue.grantorID` самого выпуска.
+**Данные** (копии ArtvisDev, Artvis, Artvis2, Belgorod, Tumen на 2026-09-20): `Issue.grantorID IS NOT NULL` — **0 выпусков из ~10,5 млн** (3,44 / 3,39 / 3,39 / 3,39 / 0,27 млн). Это вся история, а не месячное окно `DeleteHistory`. Значит, режим не использовался никогда или не пережил ни один выпуск. При этом 4 из 40 активных пользователей ArtvisDev помечены `isGrantor = 1`.
+**Живой остаток — это другая ветка «подтверждения»:** `ManagerDiscountForm.cs:132` зовёт `AskConfirmation`, чтобы администратор авторизовал скидку сверх лимита (`ActionForm.cs:303` → `SetFinalPrice(..., grantor, reasonId)`). Её судьба решается отдельно; решение 2026-08-21 — в веб не переносится (`docs/tasks/web-migration-dialogs.md`, §8 п.1).
+**Почему важно:** веб режима не получит, то есть это функция десктопа, которой в вебе не будет. Параметр `@grantorID` и логика прав грантора лежат в самых горячих процедурах выпусков. Это мёртвая (по данным) ветка в критичном коде.
+**Где смотреть:**
+- C#: `Client\Forms\CampaignForm.cs` (~стр. 1336, 1654–1665), `Client\Classes\Utils.WinForms.cs` (`AskConfirmation`), `Client\Forms\FrmConfirmation.cs`, `Client\Controls\{IRollerGrid,RollerIssuesGrid3,PackModuleGrid,TariffWithRangeGrid}.cs`, `Client\Classes\Campaign.cs`, `FogSoft.WinForm\Classes\SecurityManager.cs` (`IsGrantor`)
+- SQL: `hlp_GetMainUserCredentials`, `IssueIUD`, `ModuleIssueIUD`, `PackModuleIssueID`, `AddRangeIssues`, `MasterIssueDelete`, `ActionActivate`, `CampaignImportGrammofon`, `CampaignImportMediaPlus`, `GetUserData`, `UserIUD`, `vUser`, `f_IsGrantor`, колонки `User.isGrantor` и `Issue.grantorID` (с FK)
+
+**Возможное направление:** решение владельца продукта — режим не нужен. Тогда убрать кнопку и `Grantor` в гридах, `@grantorID` из процедур выпусков и импорта, ветку грантора в `hlp_GetMainUserCredentials`, `f_IsGrantor`/`isGrantor`, затем колонку `Issue.grantorID`; `AskConfirmation` для скидок оставить или убрать отдельным решением. Технически дёшево, но задевает горячие процедуры: делать по образцу `cleanup/*` (скрипт правит процедуры из `OBJECT_DEFINITION`, а не из репозитория) и проверять на ArtvisDev и Belgorod. Перед этим стоит спросить у пользователей с `isGrantor = 1`, не нужна ли им эта возможность.
+
+---
+
 ## SQL / Architecture
 
 ### [SQL-01] Дублирование логики расчёта цены за период (GetPriceByPeriod) внутри stat_Bonuses

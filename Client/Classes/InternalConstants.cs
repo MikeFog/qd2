@@ -56,7 +56,6 @@
 		MassmediaAgency = 99,
 		GridCell = 100,
 		FirmWithConfirmedActions = 118,
-		ConfirmationHistory = 129,
 		ModuleIssue = 130,
 		PackModule = 133,
 		PackModulePricelist = 134,
