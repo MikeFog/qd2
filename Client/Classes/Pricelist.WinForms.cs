@@ -4,6 +4,7 @@ using System.Windows.Forms;
 using FogSoft.WinForm;
 using FogSoft.WinForm.Classes;
 using FogSoft.WinForm.Forms;
+using Merlin.Forms;
 
 namespace Merlin.Classes
 {
@@ -30,8 +31,17 @@ namespace Merlin.Classes
 				FrmDateSelector fSelector = new FrmDateSelector("Даты начала и окончания");
 				if (fSelector.ShowDialog(owner) == DialogResult.OK)
 				{
+					PricelistCloneMode? mode = null;
+					if (SupportsCloneModes)
+					{
+						PricelistCloneModeForm modeForm = new PricelistCloneModeForm();
+						if (modeForm.ShowDialog(owner) != DialogResult.OK)
+							return;
+						mode = modeForm.SelectedMode;
+					}
+
 					if (!massFlag)
-						ApplyClone(fSelector.StartDate.Date, fSelector.FinishDate.Date);
+						ApplyClone(fSelector.StartDate.Date, fSelector.FinishDate.Date, mode);
 					else
 					{
 						SelectionForm selector = new SelectionForm(EntityManager.GetEntity((int)Entities.MassMedia), "Радиостанции", true, CheckSelectionResult);
@@ -41,7 +51,7 @@ namespace Merlin.Classes
 							Application.DoEvents();
 							Cursor.Current = Cursors.WaitCursor;
 
-							DataTable tableErrors = ApplyMassClone(fSelector.StartDate.Date, fSelector.FinishDate.Date, selector.AddedItems);
+							DataTable tableErrors = ApplyMassClone(fSelector.StartDate.Date, fSelector.FinishDate.Date, mode, selector.AddedItems);
 							if (tableErrors.Rows.Count > 0)
 								Globals.ShowSimpleJournal(EntityManager.GetEntity((int)Entities.ErrTmplGen), "Ошибки клонирования", tableErrors);
 						}
