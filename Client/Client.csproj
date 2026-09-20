@@ -514,7 +514,6 @@
     <Compile Include="Classes\BalanceStatRow.cs" />
     <Compile Include="Classes\BalanceStatRow.WinForms.cs" />
     <Compile Include="Classes\Bank.cs" />
-    <Compile Include="Classes\Bank.WinForms.cs" />
     <Compile Include="Classes\CampaignModule.cs" />
     <Compile Include="Classes\CampaignModule.WinForms.cs" />
     <Compile Include="Classes\CampaignModuleDay.cs" />
@@ -611,8 +610,6 @@
     <Compile Include="Classes\ITariffWindow.cs" />
     <Compile Include="Classes\MassmediaPricelist.cs" />
     <Compile Include="Classes\MassmediaPricelist.WinForms.cs" />
-    <Compile Include="Classes\MassmediasAndCampaignsContainer.cs" />
-    <Compile Include="Classes\MassmediasAndCampaignsContainer.WinForms.cs" />
     <Compile Include="Classes\MediaPlan.cs" />
     <Compile Include="Classes\MediaPlanCampaignGroups.cs" />
     <Compile Include="Classes\ModuleCampaignDay.cs" />

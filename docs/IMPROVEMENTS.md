@@ -141,6 +141,20 @@
 
 ---
 
+### [SQL-04] «Время профилактики» (`DisabledWindow`): таблица пуста, но её читают 9 объектов
+
+**Область:** `dbo.DisabledWindow` и её читатели
+**Суть:** экран ввода «времени профилактики» вырезан 2026-09-19 (ветка `cleanup/dead-menu-branches`: пункт `miDisabledWindows`, сущность 10, действие `AddDisabledWindow`, процедуры `disabledWindows` / `DisabledWindowIUD`). Таблица осталась и **пуста в пяти базах** (ArtvisDev, Artvis, Artvis2, Belgorod, Tumen; в Univer таблицы нет); у действий сущности 10 не было ни одного права у групп — то есть вводить данные было некому. Но читают её:
+- проверки при работе с выпусками и окнами (горячий путь): `hlp_IssueVerify` (сообщение `DisabledWindowInsert`), `IssueTransfer` (`DisabledWindowTransfer`), `ProgramIssueIUD` через `fn_IsDisabledWindow` (`DisabledWindowInsertProgram`), `TariffWindowIUD`;
+- генерация окон: `GenerateTariffWindowByTemplate`, `sl_GenerateTariffWindowsDay`;
+- импорт медиапланов: `CampaignImportGrammofon`, `CampaignImportMediaPlus`;
+
+**Не путать (это живая функция, не трогать):** `TariffWindow.isDisabled` — флаг «запретить вносить выпуски в окна». Он используется массово (на Belgorod ~81 тыс. окон с `isDisabled = 1`). Таблицу `DisabledWindow` он **не** использует: ни `ShowDisabledWindows` (действие «Показать заблокированные окна» у прайс-листа, сущность 80), ни `TariffWindowRetrieve` (параметр `@showDisabledWindows`) её не читают.
+**Почему не удалили сразу:** часть читателей — горячие процедуры проверки выпусков и окон; правка каждой требует аккуратной хирургии и проверки, а веб SQL не переносит, так что выигрыш только в чистоте и в паре лишних запросов на каждую проверку выпуска.
+**Возможное направление:** спросить владельца: «время профилактики» не нужно? Если нет — по образцу `cleanup/*` (правка процедур из `OBJECT_DEFINITION`, проверка формы вырезаемого фрагмента): убрать проверки из перечисленных процедур, затем `fn_IsDisabledWindow`, три сообщения `DisabledWindow*` и таблицу. `ShowDisabledWindows` и действие «Показать заблокированные окна» остаются. Проверять на ArtvisDev и Belgorod.
+
+---
+
 ### [C#-01] Связывание окон трафика — два не-транзакционных `TariffWindowIUD`
 
 **Область:** `Client\Classes\TariffWindowWithRollerIssues.WinForms.cs` (`GroupWithWindow`, `UngroupWindows`)

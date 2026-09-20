@@ -128,7 +128,6 @@
     <Compile Include="..\Client\Classes\Utils.cs" Link="Domain\Utils.cs" />
     <Compile Include="..\Client\Classes\RollerPartOfSponsorCampaign.cs" Link="Domain\RollerPartOfSponsorCampaign.cs" />
     <Compile Include="..\Client\Classes\MassmediaPricelist.cs" Link="Domain\MassmediaPricelist.cs" />
-    <Compile Include="..\Client\Classes\MassmediasAndCampaignsContainer.cs" Link="Domain\MassmediasAndCampaignsContainer.cs" />
     <Compile Include="..\Client\Classes\MediaPlanCampaignGroups.cs" Link="Domain\MediaPlanCampaignGroups.cs" />
     <Compile Include="..\Client\Classes\Module.cs" Link="Domain\Module.cs" />
     <Compile Include="..\Client\Classes\ModuleCampaignDay.cs" Link="Domain\ModuleCampaignDay.cs" />

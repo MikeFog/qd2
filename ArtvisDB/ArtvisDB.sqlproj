@@ -375,7 +375,6 @@
     <Build Include="dbo\Stored Procedures\TariffWindowChangePrice.sql" />
     <Build Include="dbo\Stored Procedures\MergeActions.sql" />
     <Build Include="dbo\Stored Procedures\ProgramIssuesDays.sql" />
-    <Build Include="dbo\Stored Procedures\DisabledWindowIUD.sql" />
     <Build Include="dbo\Stored Procedures\UserDiscountIUD.sql" />
     <Build Include="dbo\Stored Procedures\SponsorCampaignPrograms.sql" />
     <Build Include="dbo\Stored Procedures\Firms.sql" />
@@ -485,7 +484,6 @@
     <Build Include="dbo\Stored Procedures\rpt_Grid_v2.sql" />
     <Build Include="dbo\Stored Procedures\PackIssuesDays.sql" />
     <Build Include="dbo\Stored Procedures\AdvertTypes.sql" />
-    <Build Include="dbo\Stored Procedures\bankListUpdate.sql" />
     <Build Include="dbo\Stored Procedures\statFactorAnalysisFilter.sql" />
     <Build Include="dbo\Stored Procedures\pc_GetStationsPriceModel.sql" />
     <Build Include="dbo\Stored Procedures\AdvertTypeIUD.sql" />
@@ -588,7 +586,6 @@
     <Build Include="dbo\Stored Procedures\MassmediaIUD.sql" />
     <Build Include="dbo\Stored Procedures\PackModuleContentPassport.sql" />
     <Build Include="dbo\Stored Procedures\AgencyPainting.sql" />
-    <Build Include="dbo\Stored Procedures\disabledWindows.sql" />
     <Build Include="dbo\Stored Procedures\SayAdminThatIssuesDelete.sql" />
     <Build Include="dbo\Stored Procedures\RollerIUD.sql" />
     <Build Include="dbo\Stored Procedures\DeleteActionsInPast.sql" />

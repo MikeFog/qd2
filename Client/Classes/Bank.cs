@@ -13,8 +13,6 @@ namespace Merlin.Classes
 {
 	public partial class Bank
 	{
-		// UpdateBankList переехал в Bank.WinForms.cs.
-
 		public static PresentationObject Find(string bik)
 		{
 			Entity bankEntity = EntityManager.GetEntity((int)Entities.Bank);
