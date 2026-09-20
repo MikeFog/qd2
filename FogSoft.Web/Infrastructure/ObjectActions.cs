@@ -135,14 +135,13 @@ public sealed class ObjectActions
 	/// </summary>
 	private static readonly Dictionary<string, Dictionary<string, string>> Aliases = new()
 	{
-		// Massmedia.WinForms.cs, DoAction: пять пунктов «Добавить …» — это
+		// Massmedia.WinForms.cs, DoAction: четыре пункта «Добавить …» — это
 		// base.DoAction(AssignNew). Какую сущность добавлять, решает сценарий
 		// дерева (ChildEntity), и доступен только пункт, совпадающий с ней
 		// (Massmedia.IsActionEnabled).
 		["Massmedia"] = new()
 		{
 			["AddSponsorProgram"] = Constants.EntityActions.AssignNew,
-			["AddDisabledWindow"] = Constants.EntityActions.AssignNew,
 			["AddPriceList"] = Constants.EntityActions.AssignNew,
 			["AddModule"] = Constants.EntityActions.AssignNew,
 			["AssignRelease"] = Constants.EntityActions.AssignNew,

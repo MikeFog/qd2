@@ -343,10 +343,10 @@ sed -n '/private void MenuItemClick/,/catch (Exception ex)/p' Client/Forms/MDIFo
 | `codeName` | Ветка | Что делала | В вебе |
 |---|---|---|---|
 | `miBrand` | `:177` → `ShowBrands:599` | `MasterDetail` Brand (15) → BrandFirm (120) | маршрута нет. **Удалена 2026-09-19** вместе со всеми брэндами (ветка `cleanup/brand`, скрипт `ArtvisDB/Scripts/brand-cleanup-deploy.sql`) |
-| `miConfirmationHistory` | `:194` → `:383` | простой журнал ConfirmationHistory (129) | **маршрут есть** (`MenuRoutes.cs:53`) |
-| `miDisabledWindows` | `:145` → `:449` | дерево `FakeContainer`, сценарий `DisabledWindows` | **маршрут есть** (`MenuRoutes.cs:106`) |
-| `miPayment` | `:181` | псевдоним `miPaymentCommon`/`miPaymentFRS` в общей ветке | нет |
-| `miPrintInquire` | `:139` → `:378` | `MassmediasAndCampaignsContainer` | нет |
+| `miConfirmationHistory` | `:194` → `:383` | простой журнал ConfirmationHistory (129) | **маршрут есть** (`MenuRoutes.cs:53`). Не удалена: в таблицу пишет режим «грантор» (`IssueIUD`, `ModuleIssueIUD`, `PackModuleIssueID`), решение открыто |
+| `miDisabledWindows` | `:145` → `:449` | дерево `FakeContainer`, сценарий `DisabledWindows` | маршрут был (`MenuRoutes.cs:106`). **Удалена 2026-09-19** с веб-маршрутом, сущностью 10 «Время профилактики» и действием `AddDisabledWindow` (ветка `cleanup/dead-menu-branches`); таблица `DisabledWindow` и проверки в SQL остались |
+| `miPayment` | `:181` | псевдоним `miPaymentCommon`/`miPaymentFRS` в общей ветке | нет. **Литерал удалён 2026-09-19** |
+| `miPrintInquire` | `:139` → `:378` | `MassmediasAndCampaignsContainer` | нет. **Удалена 2026-09-19** вместе с контейнером, сценарием 18 и сущностью 188 |
 | `miUpdateBanksList` | `:220` → `Bank.UpdateBankList` | скачивает `bnk.exe` по `http://cbrates.rbc.ru/bnk/bnk.exe`, запускает его локально и читает файлы (`Bank.WinForms.cs:20`–`:60`) | нет |
 
 Пять веток целиком (`miBrand`, `miConfirmationHistory`, `miDisabledWindows`,
@@ -356,7 +356,7 @@ sed -n '/private void MenuItemClick/,/catch (Exception ex)/p' Client/Forms/MDIFo
 
 Наблюдение вне задачи по `miUpdateBanksList`: код скачивает и исполняет чужой
 файл по незащищённому http. Переносить в веб в таком виде нельзя; пункт мёртвый,
-вопрос — удалять ли ветку (§8).
+ветка **удалена 2026-09-19** вместе с `Bank.UpdateBankList` и процедурой `bankListUpdate`: справочник банков ведётся руками (решение владельца).
 
 ### Пункты меню, создаваемые кодом
 
@@ -368,7 +368,7 @@ Ctrl+Shift+A. В вебе их нет и не будет: решение вла�
 
 ### Веб ↔ `iMenu`
 
-- Два маршрута без пункта: `miConfirmationHistory` и `miDisabledWindows`.
+- Маршрут без пункта: `miConfirmationHistory` (`miDisabledWindows` удалён 2026-09-19).
   Безвредны, но если набрать адрес `/journal/129` руками, `MenuAccess`
   вернёт «Доступ закрыт» (маршрут есть, разрешённого пункта нет,
   `MenuAccess.cs:78`–`:80`) — диагностика неверна: к правам это не относится.
@@ -413,14 +413,16 @@ Ctrl+Shift+A. В вебе их нет и не будет: решение вла�
 
 ## 8. Вопросы владельцу продукта
 
-1. **Мёртвые ветки** (§6): `miBrand`, `miConfirmationHistory`,
+1. **Мёртвые ветки** (§6) — *2026-09-19: dev = прод 1–2-недельной давности,
+   на проде пунктов нет тоже. Удалены `miBrand`, `miDisabledWindows`, `miPayment`,
+   `miPrintInquire`, `miUpdateBanksList`; открыта только `miConfirmationHistory`
+   (в таблицу пишет режим «грантор»).* Исходный вопрос: `miBrand`, `miConfirmationHistory`,
    `miDisabledWindows`, `miPayment`, `miPrintInquire`, `miUpdateBanksList` — на
    проде их пунктов нет тоже (проверить `iMenu` на `Artvis`)? Удалять ли ветки в
    десктопе и мёртвые маршруты в вебе (`miConfirmationHistory`,
    `miDisabledWindows`) или вернуть пункты в меню?
-2. **`miUpdateBanksList`**: ветка запускает скачанный по http `bnk.exe`. Если
-   обновление списка банков нужно — как делать это в вебе (справочник БИК
-   другим способом)?
+2. ~~**`miUpdateBanksList`**~~ — **решено 2026-09-19:** справочник банков
+   ведётся руками, ветка удалена (§6).
 3. **`miPaymentByManager`**: в вебе одно окно — одна вкладка браузера. Оставлять
    выбор нескольких менеджеров и журнал на каждого (открытие нескольких вкладок)
    или достаточно `miPaymentByManagerFromRSection` — того же журнала 146 с

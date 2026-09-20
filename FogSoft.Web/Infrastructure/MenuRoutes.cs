@@ -100,10 +100,11 @@ public static class MenuRoutes
 	/// Извлечено из тех же веток <c>MDIForm.MenuItemClick</c>, что ведут в
 	/// <c>Globals.ShowBrowser(new FakeContainer(имя, действия, сценарий))</c> —
 	/// то есть в дерево по сценарию связей, без единой строки кода на экран.
-	/// Восемь веток создают «голый» <c>FakeContainer</c>, девятая
+	/// Семь веток создают «голый» <c>FakeContainer</c>, восьмая
 	/// (<c>miAdvertSubject</c>) — свой <c>AdvertTypeContainer</c> через
-	/// <see cref="BrowserRoute.Factory"/>. Остальные два (<c>ActionContainer</c>,
-	/// <c>MassmediasAndCampaignsContainer</c>) — наследники со своей логикой.
+	/// <see cref="BrowserRoute.Factory"/>. Остальная (<c>ActionContainer</c>) —
+	/// наследник со своей логикой. Ветки <c>miDisabledWindows</c> и
+	/// <c>miPrintInquire</c> удалены как мёртвые (2026-09-19).
 	///
 	/// Имя — подпись корневого узла дерева, тот же первый аргумент
 	/// конструктора, что в десктопе.
@@ -114,7 +115,6 @@ public static class MenuRoutes
 			{ "miTariff", new BrowserRoute(RelationScenarios.Tariff, "Радиостанция") },
 			{ "miModules", new BrowserRoute(RelationScenarios.Module, "Радиостанция") },
 			{ "miSponsorTariff", new BrowserRoute(RelationScenarios.SponsorProgramm, "Радиостанция") },
-			{ "miDisabledWindows", new BrowserRoute(RelationScenarios.DisabledWindows, "Радиостанция") },
 			{ "miDiscount", new BrowserRoute(RelationScenarios.Discount, "Скидки") },
 			{ "miPackageDiscounts", new BrowserRoute(RelationScenarios.PackageDiscount, "Скидки") },
 			{ "miPackModules", new BrowserRoute(RelationScenarios.PackModules, "Пакетные модули") },
