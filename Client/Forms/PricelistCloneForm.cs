@@ -82,7 +82,7 @@ namespace Merlin.Forms
 			this.rbExact = CreateModeButton("rbExact",
 				"Один в один — тарифы копируются без изменений.", 3);
 			this.rbWithWindowChanges = CreateModeButton("rbWithWindowChanges",
-				"С учётом правок окон — цена, длительность и время из последних окон.", 4);
+				"С учётом правок предыдущих тарифов — цена, длительность и время берутся из последних 7 дней", 4);
 			this.rbHybrid = CreateModeButton("rbHybrid",
 				"Гибрид — модульные тарифы один в один, остальные с учётом правок окон.", 5);
 			this.flowLayoutPanel1 = new FlowLayoutPanel();
