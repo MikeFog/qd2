@@ -76,9 +76,7 @@
     <Build Include="dbo\Tables\Group.sql" />
     <Build Include="dbo\Tables\Brand.sql" />
     <Build Include="dbo\Tables\Pricelist.sql" />
-    <Build Include="dbo\Tables\iConfirmationType.sql" />
     <Build Include="dbo\Tables\iRolType.sql" />
-    <Build Include="dbo\Tables\ConfirmationHistory.sql" />
     <Build Include="dbo\Tables\Roller.sql" />
     <Build Include="dbo\Tables\MassMedia.sql" />
     <Build Include="dbo\Tables\UserAdditionRight.sql" />
@@ -316,10 +314,8 @@
     <Build Include="dbo\Stored Procedures\DeleteUnconfirmedActions.sql" />
     <Build Include="dbo\Stored Procedures\sp_CheckFirmINN.sql" />
     <Build Include="dbo\Stored Procedures\AdminChangePassword.sql" />
-    <Build Include="dbo\Stored Procedures\ConfirmationHistoryID.sql" />
     <Build Include="dbo\Stored Procedures\OnAirInquireReport.sql" />
     <Build Include="dbo\Stored Procedures\ModuleIssueIUD.sql" />
-    <Build Include="dbo\Stored Procedures\ConfirmationHistories.sql" />
     <Build Include="dbo\Stored Procedures\RollerFilter.sql" />
     <Build Include="dbo\Stored Procedures\UserAdditionalRightID.sql" />
     <Build Include="dbo\Stored Procedures\ModulePricelistByDate.sql">
@@ -417,7 +413,6 @@
     <Build Include="dbo\Stored Procedures\FirmManagers.sql" />
     <Build Include="dbo\Stored Procedures\RollersForModule.sql" />
     <Build Include="dbo\Stored Procedures\GetMuteRoller.sql" />
-    <Build Include="dbo\Stored Procedures\ConfirmationHistoryFilter.sql" />
     <Build Include="dbo\Stored Procedures\TariffPassport.sql" />
     <Build Include="dbo\Stored Procedures\ActionActivate.sql" />
     <Build Include="dbo\Stored Procedures\AgitationFraming.sql" />

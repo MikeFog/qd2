@@ -191,8 +191,6 @@ namespace Merlin.Forms
 					ShowCommonOrderByManager(mi);
 				else if (strMiName == "miPaymentByManagerFromRSection")
 					ShowCommonOrderByManagerFromRSection(mi);
-				else if (strMiName == "miConfirmationHistory")
-					ShowConfirmationHistory(mi);
 				else if (strMiName == "miPrintGrid" || strMiName == "miPrintGridFromRSection")
 					ShowPrintGridForm();
 				else if (strMiName == "miPackModules")
@@ -378,12 +376,6 @@ namespace Merlin.Forms
 		private void ShowPrintInquireJournal(ToolStripItem mi)
 		{
 			Globals.ShowBrowser(new MassmediasAndCampaignsContainer(), mi.Text, this);
-		}
-
-		private static void ShowConfirmationHistory(ToolStripItem mi)
-		{
-			Globals.ShowSimpleJournal(
-				EntityManager.GetEntity((int) Entities.ConfirmationHistory), mi.Text);
 		}
 
 		private static void ShowPaymentTypes(ToolStripItem mi)

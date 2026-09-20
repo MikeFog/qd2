@@ -60,7 +60,6 @@
 		FirmWithConfirmedActions = 118,
 		BrandFirm = 120,
 		FirmBrand = 121,
-		ConfirmationHistory = 129,
 		ModuleIssue = 130,
 		PackModule = 133,
 		PackModulePricelist = 134,
