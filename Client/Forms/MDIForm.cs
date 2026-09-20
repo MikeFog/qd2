@@ -174,8 +174,6 @@ namespace Merlin.Forms
 						Entities.FirmWithDeletedActions, Entities.ActionDeleted, Entities.HeadCompanyWithDeletedActions);
 				else if (strMiName == "miBank")
 					ShowBanks(mi);
-				else if (strMiName == "miBrand")
-					ShowBrands(mi);
 				else if (strMiName == "miFirm")
 					ShowFirms(mi);
 				else if (strMiName == "miPaymentCommon" || strMiName == "miPayment" ||
@@ -594,12 +592,6 @@ namespace Merlin.Forms
 			{
 				Cursor.Current = Cursors.Default;
 			}
-		}
-
-		private void ShowBrands(ToolStripItem mi)
-		{
-			ShowMasterDetailsJournal(EntityManager.GetEntity((int) Entities.Brand),
-			                         EntityManager.GetEntity((int) Entities.BrandFirm), mi.Text);
 		}
 
 		private void ShowFirms(ToolStripItem mi)

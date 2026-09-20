@@ -100,7 +100,6 @@
     <Compile Include="..\Client\Classes\Announcement.cs" Link="Domain\Announcement.cs" />
     <Compile Include="..\Client\Classes\BalanceStatRow.cs" Link="Domain\BalanceStatRow.cs" />
     <Compile Include="..\Client\Classes\Bank.cs" Link="Domain\Bank.cs" />
-    <Compile Include="..\Client\Classes\Brand.cs" Link="Domain\Brand.cs" />
     <Compile Include="..\Client\Classes\Campaign.cs" Link="Domain\Campaign.cs" />
     <Compile Include="..\Client\Classes\CampaignDay.cs" Link="Domain\CampaignDay.cs" />
     <Compile Include="..\Client\Classes\CampaignModule.cs" Link="Domain\CampaignModule.cs" />

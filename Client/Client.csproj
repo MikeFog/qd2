@@ -341,12 +341,6 @@
     <EmbeddedResource Include="Forms\CreateActionMaster\SelectMassmediasStep.resx">
       <DependentUpon>SelectMassmediasStep.cs</DependentUpon>
     </EmbeddedResource>
-    <EmbeddedResource Include="Forms\FirmImportJournalForm.resx">
-      <DependentUpon>FirmImportJournalForm.cs</DependentUpon>
-    </EmbeddedResource>
-    <EmbeddedResource Include="Forms\FirmJournalForm.resx">
-      <DependentUpon>FirmJournalForm.cs</DependentUpon>
-    </EmbeddedResource>
     <EmbeddedResource Include="Forms\FrmTemplate2.resx">
       <DependentUpon>FrmTemplate2.cs</DependentUpon>
     </EmbeddedResource>
@@ -569,10 +563,6 @@
     <Compile Include="Classes\Agency.cs">
       <SubType>Code</SubType>
     </Compile>
-    <Compile Include="Classes\Brand.cs">
-      <SubType>Code</SubType>
-    </Compile>
-    <Compile Include="Classes\Brand.WinForms.cs" />
     <Compile Include="Classes\Campaign.cs">
       <SubType>Code</SubType>
     </Compile>
@@ -843,15 +833,6 @@
     </Compile>
     <Compile Include="Forms\CreateActionMaster\SelectMassmediasStep.Designer.cs">
       <DependentUpon>SelectMassmediasStep.cs</DependentUpon>
-    </Compile>
-    <Compile Include="Forms\FirmImportJournalForm.cs">
-      <SubType>Form</SubType>
-    </Compile>
-    <Compile Include="Forms\FirmImportJournalForm.Designer.cs">
-      <DependentUpon>FirmImportJournalForm.cs</DependentUpon>
-    </Compile>
-    <Compile Include="Forms\FirmJournalForm.cs">
-      <SubType>Form</SubType>
     </Compile>
     <Compile Include="Forms\HelpViewerForm.cs">
       <SubType>Form</SubType>
