@@ -4,6 +4,7 @@ using System.Windows.Forms;
 using FogSoft.WinForm;
 using FogSoft.WinForm.Classes;
 using FogSoft.WinForm.Forms;
+using Merlin.Forms;
 
 namespace Merlin.Classes
 {
@@ -27,24 +28,46 @@ namespace Merlin.Classes
 		{
 			try
 			{
-				FrmDateSelector fSelector = new FrmDateSelector("Даты начала и окончания");
-				if (fSelector.ShowDialog(owner) == DialogResult.OK)
+				// Даты и режим клонирования — одним диалогом. Виды прайса без режимов
+				// (спонсорский) спрашивают только даты, прежним диалогом.
+				DateTime startDate, finishDate;
+				PricelistCloneMode? mode = null;
+				if (SupportsCloneModes)
 				{
-					if (!massFlag)
-						ApplyClone(fSelector.StartDate.Date, fSelector.FinishDate.Date);
-					else
+					PricelistCloneForm cloneForm = new PricelistCloneForm();
+					if (cloneForm.ShowDialog(owner) != DialogResult.OK)
+						return;
+					startDate = cloneForm.StartDate;
+					finishDate = cloneForm.FinishDate;
+					mode = cloneForm.SelectedMode;
+				}
+				else
+				{
+					FrmDateSelector fSelector = new FrmDateSelector("Даты начала и окончания");
+					if (fSelector.ShowDialog(owner) != DialogResult.OK)
+						return;
+					startDate = fSelector.StartDate.Date;
+					finishDate = fSelector.FinishDate.Date;
+				}
+
+				if (!massFlag)
+				{
+					Application.DoEvents(); // дать диалогу закрыться до долгого вызова
+					Cursor.Current = Cursors.WaitCursor;
+					ApplyClone(startDate, finishDate, mode);
+				}
+				else
+				{
+					SelectionForm selector = new SelectionForm(EntityManager.GetEntity((int)Entities.MassMedia), "Радиостанции", true, CheckSelectionResult);
+
+					if (selector.ShowDialog(owner) == DialogResult.OK)
 					{
-						SelectionForm selector = new SelectionForm(EntityManager.GetEntity((int)Entities.MassMedia), "Радиостанции", true, CheckSelectionResult);
+						Application.DoEvents();
+						Cursor.Current = Cursors.WaitCursor;
 
-						if (selector.ShowDialog(owner) == DialogResult.OK)
-						{
-							Application.DoEvents();
-							Cursor.Current = Cursors.WaitCursor;
-
-							DataTable tableErrors = ApplyMassClone(fSelector.StartDate.Date, fSelector.FinishDate.Date, selector.AddedItems);
-							if (tableErrors.Rows.Count > 0)
-								Globals.ShowSimpleJournal(EntityManager.GetEntity((int)Entities.ErrTmplGen), "Ошибки клонирования", tableErrors);
-						}
+						DataTable tableErrors = ApplyMassClone(startDate, finishDate, mode, selector.AddedItems);
+						if (tableErrors.Rows.Count > 0)
+							Globals.ShowSimpleJournal(EntityManager.GetEntity((int)Entities.ErrTmplGen), "Ошибки клонирования", tableErrors);
 					}
 				}
 			}

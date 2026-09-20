@@ -1,4 +1,40 @@
-﻿CREATE           PROCEDURE [dbo].[PricelistIUD]
+﻿/*
+    ПРОД-ДЕПЛОЙ: dbo.PricelistIUD — выбор режима клонирования тарифов прайс-листа.
+    Ветка feature/pricelist-clone-modes. Продолжение [[project_pricelist_clone_window_overrides]] (v3).
+
+    ЧТО ДЕЛАЕТ
+      Новый необязательный параметр @cloneMode tinyint = 2 (только для @actionName = 'Clone'):
+        1 — тарифы один в один (окна не читаются, значения из самих тарифов);
+        2 — с учётом правок рекламных окон (поведение v3; ЭТО ЗНАЧЕНИЕ ПО УМОЛЧАНИЮ,
+            поэтому старый клиент, не передающий параметр, работает как раньше);
+        3 — гибрид: тарифы «только для модулей» (isForModuleOnly = 1) клонируются как в
+            режиме 1 (из самих тарифов), все остальные — как в режиме 2. Клонируются все тарифы.
+      Любое другое значение — RAISERROR('InternalError'), ничего не создаётся.
+      Клиент qd2 (диалог выбора режима) передаёт параметр — нужен новый Merlin.exe.
+
+    ЧТО ЗАЛИВАЕТСЯ   CREATE OR ALTER PROCEDURE dbo.PricelistIUD. Таблицы и данные не меняются.
+    ИДЕМПОТЕНТНОСТЬ  повторный запуск безопасен. Права на процедуру сохраняются.
+    ОТКАТ            залить PricelistIUD из fff6e0a (v3) через CREATE OR ALTER.
+*/
+
+-- USE [Artvis];
+-- GO
+
+SET NOCOUNT ON;
+GO
+IF OBJECT_ID('dbo.PricelistIUD') IS NULL OR OBJECT_ID('dbo.Tariff') IS NULL
+   OR OBJECT_ID('dbo.TariffWindow') IS NULL OR OBJECT_ID('dbo.TariffUnion') IS NULL
+BEGIN
+    RAISERROR('НЕ ТА БАЗА: нет dbo.PricelistIUD / Tariff / TariffWindow / TariffUnion. Деплой прерван.', 16, 1);
+    SET NOEXEC ON;
+END
+GO
+PRINT 'БД     : ' + DB_NAME();
+GO
+SET QUOTED_IDENTIFIER ON;
+SET ANSI_NULLS ON;
+GO
+CREATE OR ALTER PROCEDURE [dbo].[PricelistIUD]
 (
 @pricelistID smallint OUT,
 @massmediaID smallint = NULL, -- в случае Clone тут будет ID радиостанции куда надо клонировать выбранный прайслист
@@ -223,3 +259,11 @@ ELSE IF @actionName = 'UpdateItem' BEGIN
 
 	Exec Pricelists @pricelistID = @pricelistID
 END
+GO
+DECLARE @msg nvarchar(200) = 'PricelistIUD после: ' + CASE
+    WHEN OBJECT_DEFINITION(OBJECT_ID('dbo.PricelistIUD')) LIKE '%@cloneMode%'
+    THEN 'OK — версия с режимами клонирования' ELSE 'ОШИБКА — старая версия' END;
+PRINT @msg;
+GO
+SET NOEXEC OFF;
+GO
