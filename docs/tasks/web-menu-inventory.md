@@ -342,7 +342,7 @@ sed -n '/private void MenuItemClick/,/catch (Exception ex)/p' Client/Forms/MDIFo
 
 | `codeName` | Ветка | Что делала | В вебе |
 |---|---|---|---|
-| `miBrand` | `:177` → `ShowBrands:599` | `MasterDetail` Brand (15) → BrandFirm (120) | маршрута нет |
+| `miBrand` | `:177` → `ShowBrands:599` | `MasterDetail` Brand (15) → BrandFirm (120) | маршрута нет. **Удалена 2026-09-19** вместе со всеми брэндами (ветка `cleanup/brand`, скрипт `ArtvisDB/Scripts/brand-cleanup-deploy.sql`) |
 | `miConfirmationHistory` | `:194` → `:383` | простой журнал ConfirmationHistory (129) | **маршрут есть** (`MenuRoutes.cs:53`) |
 | `miDisabledWindows` | `:145` → `:449` | дерево `FakeContainer`, сценарий `DisabledWindows` | **маршрут есть** (`MenuRoutes.cs:106`) |
 | `miPayment` | `:181` | псевдоним `miPaymentCommon`/`miPaymentFRS` в общей ветке | нет |

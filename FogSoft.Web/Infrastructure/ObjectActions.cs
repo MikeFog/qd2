@@ -166,9 +166,7 @@ public sealed class ObjectActions
 		["ActionOnMassmedia"] = new[] { Constants.EntityActions.ShowPassport },
 		// Свой AssignNew: выбор из списка, мастер, набор галочками.
 		["AdvertType"] = new[] { Constants.EntityActions.AssignNew },
-		["Brand"] = new[] { Constants.EntityActions.AssignNew },
 		["ComboModuleContainer"] = new[] { Constants.EntityActions.AssignNew },
-		["Firm"] = new[] { Constants.EntityActions.AssignNew },
 		["PackageDiscountPriceList"] = new[] { Constants.EntityActions.AssignNew },
 		// Своё удаление: пересчёт, каскад, подтверждение другим текстом.
 		["MasterIssue"] = new[] { Constants.EntityActions.Delete },
