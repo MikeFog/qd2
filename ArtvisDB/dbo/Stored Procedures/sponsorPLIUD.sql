@@ -68,8 +68,8 @@ IF @actionName In ('AddItem', 'Clone') BEGIN
 	
 	IF @actionName = 'Clone' Begin
 		-- Clone tariff list
-		INSERT INTO [SponsorTariff]([pricelistID], [time], [monday], [tuesday], [wednesday], [thursday], [friday], [saturday], [sunday], [price], [duration], [comment])
-		SELECT @pricelistID, [time], [monday], [tuesday], [wednesday], [thursday], [friday], [saturday], [sunday], [price], [duration], [comment] 
+		INSERT INTO [SponsorTariff]([pricelistID], [time], [monday], [tuesday], [wednesday], [thursday], [friday], [saturday], [sunday], [price], [duration], [comment], [isAlive], [path], [suffix], [needExt], [needInJingle], [needOutJingle])
+		SELECT @pricelistID, [time], [monday], [tuesday], [wednesday], [thursday], [friday], [saturday], [sunday], [price], [duration], [comment], [isAlive], [path], [suffix], [needExt], [needInJingle], [needOutJingle]
 		FROM [SponsorTariff]
 		WHERE pricelistID = @basePricelistID
 
