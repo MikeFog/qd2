@@ -986,7 +986,7 @@
     <Compile Include="Forms\PCSaveVariantQuestion.Designer.cs">
       <DependentUpon>PCSaveVariantQuestion.cs</DependentUpon>
     </Compile>
-    <Compile Include="Forms\PricelistCloneModeForm.cs">
+    <Compile Include="Forms\PricelistCloneForm.cs">
       <SubType>Form</SubType>
     </Compile>
     <Compile Include="Forms\PriceCalculatorForm.cs">

@@ -13,8 +13,8 @@ namespace Merlin.Classes
 		Exact = 1,
 		/// <summary>С учётом правок, сделанных в рекламных окнах.</summary>
 		WithWindowChanges = 2,
-		/// <summary>С учётом правок окон, без тарифов «только для модулей».</summary>
-		WithoutModuleOnlyTariffs = 3
+		/// <summary>Гибрид: тарифы «только для модулей» один в один, остальные — с учётом правок окон.</summary>
+		Hybrid = 3
 	}
 
 	// UI-часть (DoAction, ClonePriceList, CheckSelectionResult) — в

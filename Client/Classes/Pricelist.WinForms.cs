@@ -28,20 +28,31 @@ namespace Merlin.Classes
 		{
 			try
 			{
-				FrmDateSelector fSelector = new FrmDateSelector("Даты начала и окончания");
-				if (fSelector.ShowDialog(owner) == DialogResult.OK)
+				// Даты и режим клонирования — одним диалогом. Виды прайса без режимов
+				// (спонсорский) спрашивают только даты, прежним диалогом.
+				DateTime startDate, finishDate;
+				PricelistCloneMode? mode = null;
+				if (SupportsCloneModes)
 				{
-					PricelistCloneMode? mode = null;
-					if (SupportsCloneModes)
-					{
-						PricelistCloneModeForm modeForm = new PricelistCloneModeForm();
-						if (modeForm.ShowDialog(owner) != DialogResult.OK)
-							return;
-						mode = modeForm.SelectedMode;
-					}
+					PricelistCloneForm cloneForm = new PricelistCloneForm();
+					if (cloneForm.ShowDialog(owner) != DialogResult.OK)
+						return;
+					startDate = cloneForm.StartDate;
+					finishDate = cloneForm.FinishDate;
+					mode = cloneForm.SelectedMode;
+				}
+				else
+				{
+					FrmDateSelector fSelector = new FrmDateSelector("Даты начала и окончания");
+					if (fSelector.ShowDialog(owner) != DialogResult.OK)
+						return;
+					startDate = fSelector.StartDate.Date;
+					finishDate = fSelector.FinishDate.Date;
+				}
 
+				{
 					if (!massFlag)
-						ApplyClone(fSelector.StartDate.Date, fSelector.FinishDate.Date, mode);
+						ApplyClone(startDate, finishDate, mode);
 					else
 					{
 						SelectionForm selector = new SelectionForm(EntityManager.GetEntity((int)Entities.MassMedia), "Радиостанции", true, CheckSelectionResult);
@@ -51,7 +62,7 @@ namespace Merlin.Classes
 							Application.DoEvents();
 							Cursor.Current = Cursors.WaitCursor;
 
-							DataTable tableErrors = ApplyMassClone(fSelector.StartDate.Date, fSelector.FinishDate.Date, mode, selector.AddedItems);
+							DataTable tableErrors = ApplyMassClone(startDate, finishDate, mode, selector.AddedItems);
 							if (tableErrors.Rows.Count > 0)
 								Globals.ShowSimpleJournal(EntityManager.GetEntity((int)Entities.ErrTmplGen), "Ошибки клонирования", tableErrors);
 						}

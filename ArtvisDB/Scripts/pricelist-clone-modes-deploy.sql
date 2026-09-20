@@ -7,8 +7,8 @@
         1 — тарифы один в один (окна не читаются, значения из самих тарифов);
         2 — с учётом правок рекламных окон (поведение v3; ЭТО ЗНАЧЕНИЕ ПО УМОЛЧАНИЮ,
             поэтому старый клиент, не передающий параметр, работает как раньше);
-        3 — как 2, но тарифы «только для модулей» (isForModuleOnly = 1) не клонируются;
-            связи TariffUnion с пропущенным тарифом не переносятся.
+        3 — гибрид: тарифы «только для модулей» (isForModuleOnly = 1) клонируются как в
+            режиме 1 (из самих тарифов), все остальные — как в режиме 2. Клонируются все тарифы.
       Любое другое значение — RAISERROR('InternalError'), ничего не создаётся.
       Клиент qd2 (диалог выбора режима) передаёт параметр — нужен новый Merlin.exe.
 
@@ -45,7 +45,7 @@ CREATE OR ALTER PROCEDURE [dbo].[PricelistIUD]
 @extraChargeSecondRoller tinyint = NULL,
 @extraChargeLastRoller tinyint = NULL,
 @actionName varchar(32),
-@cloneMode tinyint = 2 -- только для Clone: 1 — тарифы один в один, 2 — с учётом правок рекламных окон, 3 — как 2, но без тарифов «только для модулей»
+@cloneMode tinyint = 2 -- только для Clone: 1 — тарифы один в один, 2 — с учётом правок рекламных окон, 3 — гибрид: тарифы «только для модулей» один в один, остальные как в 2
 )
 WITH EXECUTE AS OWNER
 AS
@@ -108,8 +108,8 @@ IF @actionName In ('AddItem', 'Clone') BEGIN
 		-- Режим клонирования (@cloneMode):
 		--   1 — тарифы один в один: окна не читаются, значения берутся из самих тарифов;
 		--   2 — с учётом правок окон (описано выше);
-		--   3 — как 2, но тарифы «только для модулей» (isForModuleOnly) не клонируются.
-		--       Связи TariffUnion с непереносимым тарифом пропадают сами (см. INSERT INTO TariffUnion).
+		--   3 — гибрид: тарифы «только для модулей» (isForModuleOnly = 1) — как в режиме 1,
+		--       все остальные — как в режиме 2. Клонируются все тарифы.
 		-- rootID — начало цепочки TariffUnion (тариф вне цепочки — сам себе корень).
 		DECLARE @tariffDay TABLE (
 			oldTariffID int NOT NULL, dow tinyint NOT NULL, rootID int NOT NULL,
@@ -148,11 +148,11 @@ IF @actionName In ('AddItem', 'Clone') BEGIN
 						CROSS APPLY (SELECT MAX(x.dayOriginal) AS lastDay FROM [TariffWindow] x WHERE x.tariffId = t2.tariffID) ld
 						JOIN [TariffWindow] tw ON tw.tariffId = t2.tariffID AND tw.dayOriginal >= DATEADD(DAY, -27, ld.lastDay)
 					WHERE t2.pricelistID = @oldPricelistId AND @cloneMode <> 1
+						AND NOT (@cloneMode = 3 AND t2.isForModuleOnly = 1)
 				) w
 				WHERE w.rn = 1
 			) lw ON lw.tariffId = t.tariffID AND lw.dow = d.dow
 		WHERE t.pricelistID = @oldPricelistId AND d.isOn = 1
-			AND (@cloneMode <> 3 OR t.isForModuleOnly = 0)
 
 		-- Клонируем тарифы. Дни недели одного тарифа, у которых состояние совпало,
 		-- образуют ОДИН тариф-клон; если состояние различается — тариф делится на
