@@ -183,6 +183,7 @@ namespace FogSoft.WinForm.Controls
                 SelectedObject = null;
                 if (value == null) return;
                 entity = value;
+                ApplyMultiSelect();
             }
         }
 
@@ -1721,6 +1722,9 @@ namespace FogSoft.WinForm.Controls
                 Cursor = Cursors.Default;
             }
 
+            if (UsesEntityFlagMassDelete)
+                RunSingleDeleteTail(deletedObjects);
+
             FireObjectsDeleted(deletedObjects);
 
             if (deleteErrors.Rows.Count == 0)
@@ -1918,11 +1922,63 @@ namespace FogSoft.WinForm.Controls
             }
         }
 
+        // Явное значение формы (MultiSelect = ...) сильнее флага сущности. null — форма ничего не
+        // задавала, тогда множественное выделение включает iEntity.isMassDeleteAllowed.
+        private bool? _multiSelectOverride;
+
         [DefaultValue(false)]
         public bool MultiSelect
         {
             get { return dataGrid.MultiSelect; }
-            set { dataGrid.MultiSelect = value; }
+            set
+            {
+                _multiSelectOverride = value;
+                ApplyMultiSelect();
+            }
+        }
+
+        private void ApplyMultiSelect()
+        {
+            dataGrid.MultiSelect = _multiSelectOverride ?? IsMassDeleteByEntityFlag;
+        }
+
+        /// <summary>
+        /// Массовое удаление включено флагом сущности, а не формой. В этом режиме удаление N строк
+        /// эквивалентно N тихим одиночным удалениям, поэтому после него выполняется хвост одиночного
+        /// пути (см. RunSingleDeleteTail). Форма, включившая MultiSelect сама, отвечает за
+        /// пост-обработку через ObjectsDeleted и хвоста не получает.
+        /// </summary>
+        private bool IsMassDeleteByEntityFlag
+        {
+            get { return entity != null && entity.IsMassDeleteAllowed; }
+        }
+
+        private bool UsesEntityFlagMassDelete
+        {
+            get { return _multiSelectOverride == null && IsMassDeleteByEntityFlag; }
+        }
+
+        /// <summary>
+        /// То, что одиночное удаление делает через OnObjectDeleted (кроме DeleteRow, которое в цикле
+        /// массового удаления уже выполнено): событие ObjectDeleted для каждого объекта (счётчики
+        /// форм, удаление узлов дерева), затем один раз обновление зависимого грида и текущего узла дерева.
+        /// </summary>
+        private void RunSingleDeleteTail(IList<PresentationObject> deletedObjects)
+        {
+            if (deletedObjects.Count == 0)
+                return;
+            try
+            {
+                foreach (PresentationObject po in deletedObjects)
+                    ObjectDeleted?.Invoke(po);
+
+                RefreshDependantGrid();
+                RebuildCurrentNode?.Invoke(deletedObjects[deletedObjects.Count - 1]);
+            }
+            catch (Exception ex)
+            {
+                ErrorManager.PublishError(ex);
+            }
         }
     }
 
