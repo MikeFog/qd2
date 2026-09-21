@@ -139,7 +139,10 @@ else
             _error = null;
             BrowserRoute route = MenuRoutes.Browser[Code];
             _restrictManager = route.ManagerFilter;
-            RelationScenario scenario = RelationManager.GetScenario(route.Scenario);
+            // Сценарий из кода (экраны, которых нет в метаданных) строится заново
+            // на каждое открытие, по имени — общий словарь RelationManager.
+            RelationScenario scenario = route.ScenarioFactory?.Invoke()
+                ?? RelationManager.GetScenario(route.Scenario);
 
             // Контейнер строится ровно как в MDIForm: свой (route.Factory — там,
             // где десктоп создаёт наследника) либо «голый»: имя корня, набор

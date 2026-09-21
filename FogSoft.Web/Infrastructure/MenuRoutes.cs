@@ -143,6 +143,13 @@ public static class MenuRoutes
 			{ "miComboModules", new BrowserRoute(RelationScenarios.ComboModules, "Комбо-модули") },
 			{ "miAdvertSubject", new BrowserRoute(RelationScenarios.AdvertTypes, "Предметы рекламы",
 				() => new AdvertTypeContainer()) },
+			// Десктоп открывает их через MasterDetailForm; веб — деревом по
+			// сценарию из кода (CodeScenario), метаданных сценарий не требует.
+			// Подпись корня — имя мастера, как у соседних маршрутов.
+			{ "miAgencyTax", new BrowserRoute("Агентства и налоги", "Агентство",
+				ScenarioFactory: () => CodeScenario.MasterDetail("Агентства и налоги", Entities.Agency, Entities.AgencyTax)) },
+			{ "miHeadOrganizations", new BrowserRoute("Группа компаний", "Группа компаний",
+				ScenarioFactory: () => CodeScenario.MasterDetail("Группа компаний", Entities.HeadCompany, Entities.Firm)) },
 			{ "miActionJournal", ConfirmedActions },
 			{ "miActionJournalBuh", ConfirmedActions },
 			{ "miActionJournalTraffic", ConfirmedActions },
@@ -182,7 +189,11 @@ public sealed record JournalRoute(Entities Entity, bool ManagerFilter = false, s
 /// <param name="WhenTrue">Сущность данных, когда поле включено; иначе — сущность маршрута.</param>
 public sealed record EntitySwitch(string FilterField, Entities WhenTrue);
 
-/// <param name="Scenario">Имя сценария связей (as_relationScenarios).</param>
+/// <param name="Scenario">
+/// Имя сценария связей (as_relationScenarios). У маршрута с
+/// <paramref name="ScenarioFactory"/> — только имя для людей: сценария в
+/// метаданных нет.
+/// </param>
 /// <param name="RootName">Подпись корневого узла дерева.</param>
 /// <param name="Factory">
 /// Свой контейнер корня, если десктоп создаёт не «голый» <c>FakeContainer</c>.
@@ -193,5 +204,10 @@ public sealed record EntitySwitch(string FilterField, Entities WhenTrue);
 /// групповые акции. У деревьев это даёт не <c>ManagerFilter.FilterClick</c>, а
 /// свой диалог отбора контейнера; правило то же, что у журналов.
 /// </param>
+/// <param name="ScenarioFactory">
+/// Готовый сценарий, объявленный в коде (<see cref="CodeScenario"/>), вместо
+/// поиска по имени в метаданных. Вызывается при каждом открытии экрана и не
+/// кэшируется: сценарий держит сущности из кэша circuit, а они персональные.
+/// </param>
 public sealed record BrowserRoute(string Scenario, string RootName, Func<FakeContainer>? Factory = null,
-	bool ManagerFilter = false);
+	bool ManagerFilter = false, Func<RelationScenario>? ScenarioFactory = null);
