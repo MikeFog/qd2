@@ -88,7 +88,7 @@ else
                         <InputFile class="form-control" accept="image/*"
                                    OnChange="e => LoadImage(field, e)" />
                         <button type="button" class="btn btn-outline-secondary"
-                                @onclick="() => ClearImage(field)">Очистить</button>
+                                @onclick="() => ClearImage(field)"><i class="bi bi-x-lg" aria-hidden="true"></i>Очистить</button>
                     </div>
 
                     @if (_imageError != null)
@@ -151,14 +151,14 @@ else
                     <div class="input-group input-group-sm">
                         <input class="form-control" readonly value="@PickerName(field)" />
                         <button type="button" class="btn btn-outline-secondary"
-                                @onclick="() => Select(field)">Выбрать</button>
+                                @onclick="() => Select(field)"><i class="bi bi-search" aria-hidden="true"></i>Выбрать</button>
                         @if (field.Picker.IsCreateNewAllowed)
                         {
                             <button type="button" class="btn btn-outline-secondary"
-                                    @onclick="() => CreateNew(field)">Создать</button>
+                                    @onclick="() => CreateNew(field)"><i class="bi bi-plus-lg" aria-hidden="true"></i>Создать</button>
                         }
                         <button type="button" class="btn btn-outline-secondary"
-                                @onclick="() => Clear(field)">Очистить</button>
+                                @onclick="() => Clear(field)"><i class="bi bi-x-lg" aria-hidden="true"></i>Очистить</button>
                     </div>
                 }
                 else if (field.Lookup != null)

@@ -114,7 +114,7 @@
                                            value="@FilterPickerName(field)" />
                                     <button type="button" class="btn btn-outline-secondary"
                                             disabled="@(!IsFilterUsed(field.Name) || IsManagerLocked(field))"
-                                            @onclick="() => SelectFilterPicker(field)">Выбрать</button>
+                                            @onclick="() => SelectFilterPicker(field)"><i class="bi bi-search" aria-hidden="true"></i>Выбрать</button>
                                 </div>
                             }
                             else
@@ -129,7 +129,7 @@
                 </div>
 
                 <div class="filter-foot">
-                    <button class="btn btn-sm btn-outline-secondary" @onclick="() => Apply.InvokeAsync()">Применить</button>
+                    <button class="btn btn-sm btn-outline-secondary" @onclick="() => Apply.InvokeAsync()"><i class="bi bi-funnel" aria-hidden="true"></i>Применить</button>
                 </div>
             </div>
         }

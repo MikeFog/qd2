@@ -128,6 +128,12 @@ a:hover {
     --bs-btn-hover-border-color: var(--c-border-strong);
 }
 
+/* Значок в кнопке — того же цвета, что и подпись (currentColor у .bi). */
+.btn .bi {
+    margin-right: 6px;
+    vertical-align: -1px;
+}
+
 /* Видимый фокус обязателен: по деловым экранам ходят с клавиатуры. */
 .btn:focus-visible,
 .form-control:focus,

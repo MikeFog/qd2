@@ -68,7 +68,7 @@ else
         <h3>@Title</h3>
         <span class="screen-count">@(_data?.Rows.Count ?? 0)</span>
         <div class="screen-actions">
-            <button class="btn btn-primary btn-sm" disabled="@(!_canAdd)" @onclick="AddNew">Добавить</button>
+            <button class="btn btn-primary btn-sm" disabled="@(!_canAdd)" @onclick="AddNew"><i class="bi bi-plus-lg" aria-hidden="true"></i>Добавить</button>
         </div>
     </header>
 
