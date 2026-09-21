@@ -183,3 +183,52 @@
 **Область:** `Client\Classes\Action.cs` (`GetCampaigns`, ~стр. 272–279), `Client\Classes\Action.WinForms.cs` (медиаплан по акции), `Client\Classes\MediaPlan.cs`
 **Суть:** `Action.GetCampaigns` строит список `Campaign` через `Campaign.GetCampaignById`, который возвращает `null` для удалённой кампании. `BuildAddedIssuesTable` (`Action.cs:384–388`) эти `null` явно отфильтровывает — но `Action.WinForms.cs` (вызовы `MediaPlan.CreateInstance(IList<Campaign>, ...)`) передаёт список как есть, а `MediaPlan.PrintMediaPlan` / `PrintCampaignInfo` разыменовывают элементы без проверки. NRE, если в акции есть удалённая кампания, попавшая в список. На практике маловероятно (`dbo.Campaigns` перечисляет кампании существующей акции), но контракт «список без `null`» нигде не держится.
 **Возможное направление:** фильтровать `null` в `Action.GetCampaigns` (или в точке передачи в `MediaPlan`), как это уже делает `BuildAddedIssuesTable`. Предсуществующее, к ветке `hotfix/mediaplan-v2-perf` отношения не имеет (её N+1-фикс `null` кэширует и поведение не меняет).
+
+---
+
+## Веб (FogSoft.Web)
+
+### [WEB-01] Сценарии связей кэшируются статически, а метаданные сущности в вебе — персональные
+
+**Область:** `FogSoft.WinForm\Classes\RelationManager.cs`, древовидные экраны веба (`Browser.razor`)
+
+**Суть:** `RelationManager.scenarios` — статический словарь, заполняемый один раз при первом
+`GetScenario` (`Load()` читает `as_relationScenarios`). Каждый `RelationScenario` при построении
+резолвит `StartingEntity = EntityManager.GetEntity(StartingEntityID)` и **держит эту ссылку
+навсегда**. В десктопе это безопасно: один процесс — один пользователь. В вебе один процесс
+обслуживает всех, а объект `Entity` персонален: `EntityInfoRetrieve` вшивает в метаданные права
+конкретного пользователя (`dbo.IsActionEnabled(@userID, …)`), ради чего и сделан кэш сущностей
+на circuit (`FogSoft.Web\Infrastructure\CircuitEntityCache.cs`). Значит `StartingEntity` во всех
+сценариях — это объект того пользователя, чей circuit первым открыл дерево, и он достаётся
+всем остальным до перезапуска приложения.
+
+**Почему важно:** сегодня это **латентно, а не активный дефект**: в вебе `StartingEntity`
+используется только там, где нужны поля отбора, — `PassportSchema.Parse(scenario.XmlFilter,
+scenario.StartingEntity, PageTypes.Filter)` и `Globals.PrepareForFilter(scenario.StartingEntity)`
+в `Browser.razor`, — а состав полей фильтра от прав не зависит. Но `Entity` несёт и
+`Action.IsEnabled`, то есть права. Первое же обращение к правам через `RootEntity` (например,
+если гашение пункта в меню корня начнут решать по нему, а не по контейнеру) молча ответит за
+чужого пользователя. Это ровно тот класс дефекта, который уже ловили дважды: общий кэш
+сущностей на процесс и кэш «на circuit» вместо «на пользователя» (раздел 7 п.1
+`docs/tasks/web-migration.md`).
+
+**Где смотреть:**
+- `FogSoft.WinForm\Classes\RelationManager.cs` — статический `scenarios`, `Load()`, `ClearHash()`;
+  конструктор `RelationScenario` (поле `StartingEntity`)
+- `FogSoft.WinForm\Classes\RelationManager.cs` — для контраста `EntityRelation.ChildEntity`:
+  он резолвит сущность **на каждое обращение**, поэтому этой проблемы не имеет
+- `FogSoft.Web\Infrastructure\CircuitEntityCache.cs` — как в вебе решена та же задача для
+  `EntityManager`
+- `FogSoft.Web\Components\Pages\Browser.razor` — единственные сегодняшние читатели
+  `scenario.StartingEntity`
+
+**Возможное направление:** самое дешёвое и полное — сделать `StartingEntity` вычисляемым
+свойством (`EntityManager.GetEntity(StartingEntityID)` на каждое обращение), как уже устроен
+`EntityRelation.ChildEntity`; тогда замороженной ссылки не останется вовсе, а десктоп не
+заметит разницы (у него кэш сущностей и так один). Более тяжёлый путь — хранилище сценариев на
+circuit по образцу `EntityManager.IEntityCache`. Временной мерой сгодился бы
+`RelationManager.ClearHash()` при смене пользователя в `WebLoggedUserStorage`, но он лечит
+только вход-выход в одной вкладке, а не одновременную работу двух пользователей.
+
+**Когда браться:** до того, как в вебе появится хоть один читатель прав или селектора атрибутов
+через `RelationScenario.StartingEntity`. Правка в ядре, поэтому отдельной задачей, не попутно.
