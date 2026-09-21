@@ -130,6 +130,12 @@ public sealed class ObjectActions
 			[ActionContainer.ActionNames.ShowFirms] = (_, t) => Changed(((ActionContainer)t).ShowFirms),
 			[ActionContainer.ActionNames.ShowActions] = (_, t) => Changed(((ActionContainer)t).ShowActions),
 		},
+		// Announcement.DoAction: «Пометить как прочтенное». Доступность гасит
+		// Announcement.IsActionEnabled (у прочитанного — серый).
+		["Announcement"] = new()
+		{
+			[Merlin.Classes.Announcement.ActionNames.MarkAsRead] = (_, t) => Changed(((Merlin.Classes.Announcement)t).MarkAsRead),
+		},
 	};
 
 	private static Task<ActionEffect> Changed(Action apply)
@@ -325,6 +331,14 @@ public sealed class ObjectActions
 
 		return await handler(this, target);
 	}
+
+	/// <summary>
+	/// Выполнится ли <see cref="ExecuteAsync"/> для этого объекта: то же условие,
+	/// что проверяет само исполнение. Нужно кнопке «для всех строк», чтобы знать
+	/// заранее, есть ли что делать.
+	/// </summary>
+	public bool CanExecute(object target, string actionName, ViewType view) =>
+		IsEnabled(target, actionName, view) && !IsHidden(target, actionName, view) && IsPorted(target, actionName);
 
 	/// <summary>Есть ли у веба обработчик этого действия для этого объекта.</summary>
 	public bool IsPorted(object target, string actionName) => FindHandler(target, actionName) != null;

@@ -6,6 +6,7 @@
 @using FogSoft.WinForm.Passport.Classes
 @inject PassportDialog Passports
 @inject MenuAccess Access
+@inject ObjectActions Actions
 
 @*
     Движок журнала: список объектов сущности, фильтр и карточка — всё по
@@ -66,6 +67,10 @@ else
        панель ниже, поэтому в тулбар они не переносятся. «Обновить» читает
        список тем же путём, что «Применить» в отборе. *@
     <ScreenToolbar Title="@Title" Count="@(_data?.Rows.Count ?? 0)">
+        @if (_route?.BulkAction is { } bulk)
+        {
+            <button class="btn btn-sm btn-outline-secondary" disabled="@(_bulkPending == 0)" @onclick="RunBulkAction"><i class="bi bi-check2-all" aria-hidden="true"></i>@bulk.Caption</button>
+        }
         <button class="btn btn-primary btn-sm" disabled="@(!_canAdd)" @onclick="AddNew"><i class="bi bi-plus-lg" aria-hidden="true"></i>Добавить</button>
         <button class="btn btn-sm btn-outline-secondary" @onclick="Load"><i class="bi bi-arrow-clockwise" aria-hidden="true"></i>Обновить</button>
         <button class="btn btn-sm btn-outline-secondary" disabled="@(_data == null || _data.Rows.Count == 0)" @onclick="ExportExcel"><i class="bi bi-download" aria-hidden="true"></i>Экспорт в Excel</button>
@@ -127,6 +132,10 @@ else
     private string? _error;
     private JournalAccess _access = JournalAccess.Allowed;
     private bool _canAdd;
+
+    // Сколько строк сейчас затронет кнопка маршрута (JournalRoute.BulkAction);
+    // 0 — кнопка неактивна. Считается при каждом чтении списка.
+    private int _bulkPending;
 
 
     protected override void OnParametersSet()
@@ -230,11 +239,54 @@ else
             _dataEntity = DataEntityFor();
             _dataEntity.ClearCache();
             _data = _dataEntity.GetContent(_filterValues);
+            _bulkPending = BulkTargets().Count;
         }
         catch (Exception ex)
         {
             _error = ErrorPresenter.Describe(ex);
         }
+    }
+
+    /// <summary>Строки списка, у которых действие кнопки сейчас доступно.</summary>
+    private List<PresentationObject> BulkTargets()
+    {
+        var result = new List<PresentationObject>();
+        if (_route?.BulkAction is not { } bulk || _data == null)
+            return result;
+
+        Entity entity = _dataEntity ?? _entity!;
+        foreach (DataRow row in _data.Rows)
+        {
+            PresentationObject obj = entity.CreateObject(row);
+            if (Actions.CanExecute(obj, bulk.ActionName, ViewType.Journal))
+                result.Add(obj);
+        }
+        return result;
+    }
+
+    /// <summary>
+    /// AnnouncementJournalForm.DoMarkReadAll: действие — каждой подходящей
+    /// строке, затем список перечитывается. Прогресса и отмены нет: строк единицы.
+    /// Если одна из них упала, остальные не пробуются; ошибка показывается, а
+    /// список всё равно перечитывается — видно, что уже сделано.
+    /// </summary>
+    private async Task RunBulkAction()
+    {
+        string? error = null;
+        try
+        {
+            string actionName = _route!.BulkAction!.ActionName;
+            foreach (PresentationObject obj in BulkTargets())
+                await Actions.ExecuteAsync(obj, actionName, ViewType.Journal);
+        }
+        catch (Exception ex)
+        {
+            error = ErrorPresenter.Describe(ex);
+        }
+
+        Load();
+        if (error != null)
+            _error = error;
     }
 
     private async Task AddNew()

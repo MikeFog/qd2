@@ -54,6 +54,8 @@ public static class MenuRoutes
 		{
 			{ "miBalance", new JournalRoute(Entities.BalanceIssues, ManagerFilter: true) },
 			{ "miBalanceFromRSection", new JournalRoute(Entities.BalanceIssues, ManagerFilter: true) },
+			{ "miAnnouncements", new JournalRoute(Entities.Announcement,
+				BulkAction: new BulkAction("MarkAsRead", "Пометить все как прочтенное")) },
 			{ "miBank", new JournalRoute(Entities.Bank) },
 			{ "miBonusesStat", new JournalRoute(Entities.StatBonuses) },
 			{ "miFirm", new JournalRoute(Entities.Firm) },
@@ -179,11 +181,24 @@ public static class MenuRoutes
 /// (<c>StatBalanceJournalForm.LoadData</c>). Отбор и добавление остаются за
 /// <paramref name="Entity"/>; сменяется только сущность списка.
 /// </param>
+/// <param name="BulkAction">
+/// Кнопка тулбара «сделать действие над всеми строками» (десктопный
+/// <c>AnnouncementJournalForm</c>). <c>null</c> — кнопки на экране нет: она есть
+/// только у журналов, чья форма в десктопе её добавляет.
+/// </param>
 public sealed record JournalRoute(Entities Entity, bool ManagerFilter = false, string? Caption = null,
-	EntitySwitch? EntitySwitch = null)
+	EntitySwitch? EntitySwitch = null, BulkAction? BulkAction = null)
 {
 	public int EntityId => (int)Entity;
 }
+
+/// <param name="ActionName">
+/// Действие сущности (<c>iEntityAction</c>), которое выполняется у каждой строки
+/// списка, где оно доступно: тот же путь, что у пункта меню «⋯», с теми же
+/// проверками доступности и прав.
+/// </param>
+/// <param name="Caption">Подпись кнопки.</param>
+public sealed record BulkAction(string ActionName, string Caption);
 
 /// <param name="FilterField">Булево поле отбора.</param>
 /// <param name="WhenTrue">Сущность данных, когда поле включено; иначе — сущность маршрута.</param>
