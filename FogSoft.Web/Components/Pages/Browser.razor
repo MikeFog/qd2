@@ -243,6 +243,8 @@ else
             {
                 Name = obj.Name,
                 Container = container,
+                // Как в TreeView2: значок — у дочерней сущности контейнера-родителя.
+                Icon = EntityIcons.For((node.Container.ChildEntity ?? obj.Entity)?.IconName),
                 Expandable = IsExpandable(obj, container),
                 Parent = node,
             });

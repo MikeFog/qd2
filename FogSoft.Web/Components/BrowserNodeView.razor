@@ -20,7 +20,7 @@
         </button>
         <button type="button" class="tree-label" title="@Node.Name"
                 @onclick="() => OnSelect.InvokeAsync(Node)">
-            @Node.Name
+            <i class="bi @Node.Icon entity-icon" aria-hidden="true"></i>@Node.Name
         </button>
         <button type="button" class="tree-more" title="Действия" aria-label="Действия" aria-haspopup="menu"
                 @onclick="e => OnMenu.InvokeAsync(new BrowserNodeMenuRequest(Node, e, true))">

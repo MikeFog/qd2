@@ -34,6 +34,14 @@
     color: transparent;
 }
 
+.tree-label .entity-icon {
+    margin-right: var(--s-2);
+}
+
+.tree-row-active .tree-label .entity-icon {
+    color: var(--c-accent);
+}
+
 .tree-label {
     flex: 1 1 auto;
     min-width: 0;

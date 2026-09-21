@@ -29,6 +29,11 @@
     color: var(--c-accent);
 }
 
+::deep .col-icon {
+    width: 1%;
+    padding-right: 0;
+}
+
 ::deep .col-actions {
     width: 1%;
     white-space: nowrap;

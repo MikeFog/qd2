@@ -22,6 +22,9 @@ public sealed class BrowserNode
 	/// </summary>
 	public required IObjectContainer Container { get; init; }
 
+	/// <summary>Класс значка узла (Bootstrap Icons), см. <see cref="EntityIcons"/>.</summary>
+	public string Icon { get; init; } = EntityIcons.Fallback;
+
 	public bool Expandable { get; init; }
 
 	/// <summary>Узел-родитель; null у корня. Нужен, чтобы перечитать его после удаления узла.</summary>
