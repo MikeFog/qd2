@@ -16,21 +16,12 @@ namespace Merlin.Classes.FakeContainers
 			try
 			{
 				if (actionName == ActionNames.ShowActions)
-				{
-					ChildEntity = _actionEntity;
-					FireContainerRefreshed();
-				}
+					ShowActions();
 				else if (actionName == ActionNames.ShowFirms)
-				{
-					ChildEntity = _firmEntity;
-					FireContainerRefreshed();
-				}
-                else if (actionName == ActionNames.ShowHeadCompanies)
-                {
-                    ChildEntity = _headCompanyEntity;
-                    FireContainerRefreshed();
-                }
-                else if (actionName == Constants.EntityActions.ShowFilters)
+					ShowFirms();
+				else if (actionName == ActionNames.ShowHeadCompanies)
+					ShowHeadCompanies();
+				else if (actionName == Constants.EntityActions.ShowFilters)
 				{
 					ShowFilter(owner);
 				}

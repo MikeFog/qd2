@@ -101,13 +101,36 @@ public static class MenuRoutes
 	/// то есть в дерево по сценарию связей, без единой строки кода на экран.
 	/// Семь веток создают «голый» <c>FakeContainer</c>, восьмая
 	/// (<c>miAdvertSubject</c>) — свой <c>AdvertTypeContainer</c> через
-	/// <see cref="BrowserRoute.Factory"/>. Остальная (<c>ActionContainer</c>) —
-	/// наследник со своей логикой. Ветки <c>miDisabledWindows</c> и
+	/// <see cref="BrowserRoute.Factory"/>. Остальные пять пунктов — журналы
+	/// рекламных акций на <c>ActionContainer</c>, тоже через фабрику; экрана там
+	/// три, а пунктов пять, потому что права выдаются на пункт меню
+	/// (инвентаризация, §3). Ветки <c>miDisabledWindows</c> и
 	/// <c>miPrintInquire</c> удалены как мёртвые (2026-09-19).
 	///
 	/// Имя — подпись корневого узла дерева, тот же первый аргумент
 	/// конструктора, что в десктопе.
 	/// </summary>
+	/// <summary>
+	/// Журнал рекламных акций: те же аргументы, что у десктопного
+	/// <c>MDIForm.ShowMassmediaActions</c> — сценарий, подпись корня и три
+	/// сущности разбивки.
+	///
+	/// <c>ManagerFilter</c>: в десктопе поле «Менеджер» гасит не
+	/// <c>ManagerFilter.FilterClick</c>, как у журналов, а собственный диалог
+	/// отбора <c>ActionJournalFilter</c>. Правило в нём то же самое (право на
+	/// чужие или групповые акции), поэтому в вебе это тот же признак.
+	/// </summary>
+	private static BrowserRoute ActionJournal(string scenario, string caption,
+		Entities firm, Entities action, Entities headCompany) =>
+		new(scenario, caption,
+			() => new ActionContainer(RelationManager.GetScenario(scenario), caption, firm, action, headCompany),
+			ManagerFilter: true);
+
+	/// <summary>Подтверждённые акции — один экран за тремя пунктами меню.</summary>
+	private static readonly BrowserRoute ConfirmedActions = ActionJournal(
+		RelationScenarios.ConfirmedAction, "Подтверждённые рекламные акции",
+		Entities.FirmWithConfirmedActions, Entities.Action, Entities.HeadCompanyWithConfirmedActions);
+
 	public static readonly IReadOnlyDictionary<string, BrowserRoute> Browser =
 		new Dictionary<string, BrowserRoute>(StringComparer.OrdinalIgnoreCase)
 		{
@@ -120,6 +143,15 @@ public static class MenuRoutes
 			{ "miComboModules", new BrowserRoute(RelationScenarios.ComboModules, "Комбо-модули") },
 			{ "miAdvertSubject", new BrowserRoute(RelationScenarios.AdvertTypes, "Предметы рекламы",
 				() => new AdvertTypeContainer()) },
+			{ "miActionJournal", ConfirmedActions },
+			{ "miActionJournalBuh", ConfirmedActions },
+			{ "miActionJournalTraffic", ConfirmedActions },
+			{ "miActionJournalUnconfirmed", ActionJournal(
+				RelationScenarios.UnconfirmedAction, "Макеты рекламных акций",
+				Entities.FirmWithUnconfirmedActions, Entities.Action, Entities.HeadCompanyWithUnconfirmedActions) },
+			{ "miActionJournalDeleted", ActionJournal(
+				RelationScenarios.DeletedAction, "Удалённые рекламные акции",
+				Entities.FirmWithDeletedActions, Entities.ActionDeleted, Entities.HeadCompanyWithDeletedActions) },
 		};
 }
 
@@ -156,4 +188,10 @@ public sealed record EntitySwitch(string FilterField, Entities WhenTrue);
 /// Свой контейнер корня, если десктоп создаёт не «голый» <c>FakeContainer</c>.
 /// <c>null</c> — «голый» с двумя действиями «Обновить» и «Добавить».
 /// </param>
-public sealed record BrowserRoute(string Scenario, string RootName, Func<FakeContainer>? Factory = null);
+/// <param name="ManagerFilter">
+/// Поле «Менеджер» в отборе доступно только пользователю с правом на чужие или
+/// групповые акции. У деревьев это даёт не <c>ManagerFilter.FilterClick</c>, а
+/// свой диалог отбора контейнера; правило то же, что у журналов.
+/// </param>
+public sealed record BrowserRoute(string Scenario, string RootName, Func<FakeContainer>? Factory = null,
+	bool ManagerFilter = false);

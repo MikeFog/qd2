@@ -85,7 +85,7 @@ sed -n '/private void MenuItemClick/,/catch (Exception ex)/p' Client/Forms/MDIFo
 | Простой журнал + `ManagerFilter` | 17 | перенесены все |
 | Журнал-наследник, по сути простой (`miMassMedia`) | 1 | перенесён |
 | Дерево на `FakeContainer` | 7 | перенесены все |
-| Дерево на своём контейнере | 6 | «Предмет рекламы» перенесён (2026-09-18); нет: 5 журналов акций |
+| Дерево на своём контейнере | 6 | перенесены все: «Предмет рекламы» (2026-09-18), 5 журналов акций (2026-09-20) |
 | `MasterDetail` | 4 | нет, движка нет |
 | Журнал-наследник со своей логикой | 4 | `miStats.Balance` перенесён (2026-09-18); нет: `miRoller`, `miActPrint`, `miAnnouncements` |
 | Собственная форма | 6 | нет, этап 3 |
@@ -108,10 +108,9 @@ sed -n '/private void MenuItemClick/,/catch (Exception ex)/p' Client/Forms/MDIFo
 
 | Статус | Пунктов |
 |---|---:|
-| перенесён (30 `SimpleJournal` + 8 `Browser`) | 38 |
+| перенесён (30 `SimpleJournal` + 13 `Browser`) | 43 |
 | почти одной строкой (§5) | 1 |
 | нужен движок `MasterDetail` | 4 |
-| нужен свой контейнер (журналы акций) | 5 |
 | этап 3 | 12 |
 | этап 4 (отчёты, выгрузки, импорт) | 5 |
 | решение владельца (удаление данных, график) | 4 |
@@ -236,6 +235,14 @@ sed -n '/private void MenuItemClick/,/catch (Exception ex)/p' Client/Forms/MDIFo
 может его создать. Но смысл экрана — действия по строке акции (редактирование,
 кампании, печать), а не показ дерева: это уже «журнал акций» из плана
 контекстного меню. **Вывод: не дёшево.**
+
+**Сделано (2026-09-20):** само дерево и переключатели обошлись разрезом
+`DoAction` в ядро плюс записью в `ObjectActions.ClassActions` — то же, что у
+`AdvertTypeContainer`; правило менеджера из `ActionJournalFilter` покрыл
+существующий признак отбора (`BrowserRoute.ManagerFilter`). Оценка «не дёшево»
+относилась к действиям по строке акции, и она в силе: «Свойства» ведут в
+`ActionForm` (этап 3), печать — этап 4; в меню они серые. Подробности —
+`web-migration.md`, этап 2.
 
 ### `MassmediasAndCampaignsContainer` — мёртвый
 
@@ -457,9 +464,9 @@ Ctrl+Shift+A. В вебе их нет и не будет: решение вла�
 | 153 | Рекламный отдел → Веерное размещение... | `miMasterCreateActions` | `:161` → MasterCreateAction:543 | Мастер: диалоги → карточка акции | `Firm.SelectFirm` → `SelectMassmediasStep` → `EditIssuesForm` → `ActionForm` | этап 3 (акция, веер) | 5 | +3/−0 | 24 |
 | 180 | Рекламный отдел → Размещение комбо-модулями... | `miComboModulePlacement` | `:163` → MasterPlaceComboModules:574 | Мастер: диалоги → карточка акции | `Firm.SelectFirm` → `SelectComboModuleStep` → `ComboModulePlacementForm` → `ActionForm` | этап 3 (акция, комбо) | 0 | — | 0 |
 | 175 | Рекламный отдел → Калькулятор цены | `miPriceCalculator` | `:251` → ShowPriceCalculator:622 | Собственная форма | `PriceCalculatorForm` (1002 строки) | этап 3 (п.2 плана) | 5 | +26/−0 | 25 |
-| 11 | Рекламный отдел → Журнал подтверждённых рекламных акций | `miActionJournal` | `:165` → ShowMassmediaActions:395 | Дерево на своём контейнере | `ActionContainer(ConfirmedAction)`: 118 / 77 / 1255 | нужен свой контейнер + контекстное меню акций | 6 | +3/−0 | 24 |
-| 158 | Рекламный отдел → Журнал макетов рекламных акций | `miActionJournalUnconfirmed` | `:169` → ShowMassmediaActions:395 | Дерево на своём контейнере | `ActionContainer(UnconfirmedAction)`: 137 / 77 / 1256 | нужен свой контейнер + контекстное меню акций | 5 | +8/−0 | 24 |
-| 157 | Рекламный отдел → Журнал удалённых рекламных акций | `miActionJournalDeleted` | `:172` → ShowMassmediaActions:395 | Дерево на своём контейнере | `ActionContainer(DeletedAction)`: 1229 / 1236 / 1257 | нужен свой контейнер + контекстное меню акций | 5 | +7/−0 | 23 |
+| 11 | Рекламный отдел → Журнал подтверждённых рекламных акций | `miActionJournal` | `:165` → ShowMassmediaActions:395 | Дерево на своём контейнере | `ActionContainer(ConfirmedAction)`: 118 / 77 / 1255 | перенесён (Browser, 2026-09-20); действия по строке — этапы 3-4 | 6 | +3/−0 | 24 |
+| 158 | Рекламный отдел → Журнал макетов рекламных акций | `miActionJournalUnconfirmed` | `:169` → ShowMassmediaActions:395 | Дерево на своём контейнере | `ActionContainer(UnconfirmedAction)`: 137 / 77 / 1256 | перенесён (Browser, 2026-09-20); действия по строке — этапы 3-4 | 5 | +8/−0 | 24 |
+| 157 | Рекламный отдел → Журнал удалённых рекламных акций | `miActionJournalDeleted` | `:172` → ShowMassmediaActions:395 | Дерево на своём контейнере | `ActionContainer(DeletedAction)`: 1229 / 1236 / 1257 | перенесён (Browser, 2026-09-20); действия по строке — этапы 3-4 | 5 | +7/−0 | 23 |
 | 145 | Рекламный отдел → Объем реализации (Сводный) | `VolumeOfRealizationByManager` | `:232` → ShowGraphVolumeOfRealizationByPerson:823 | График | `GraphForm` на данных StatsVolumeofRealization (158), `managerID = LoggedUser` | решение владельца (график) | 5 | +3/−0 | 24 |
 | 112 | Рекламный отдел → Журнал оплат | `miPaymentFRS` | `:181` → ShowPaymentCommon(true):628 | MasterDetail | PaymentCommon (145) → PaymentCommonAction (146), `filterAgencies=true` | нужен движок MasterDetail | 6 | +3/−0 | 24 |
 | 113 | Рекламный отдел → Журнал оплат по менеджерам | `miPaymentByManagerFromRSection` | `:192` → ShowCommonOrderByManagerFromRSection:665 | Простой журнал + ManagerFilter | PaymentCommonAction (146) | перенесён (SimpleJournal) | 6 | +3/−0 | 24 |
@@ -479,7 +486,7 @@ Ctrl+Shift+A. В вебе их нет и не будет: решение вла�
 | 64 | Трафик → Сетка вещания | `miPrintGrid` | `:196` → ShowPrintGridForm:670 | Отчёт / выгрузка | `FrmGridReport` (Crystal-просмотрщик) | этап 4 | 2 | — | 5 |
 | 152 | Трафик → Экспорт сеток вещания | `miExportGrid` | `:234` → ExportGrid:309 | Отчёт / выгрузка | `ExportGridForm` (файлы на диск) | этап 4 | 1 | — | 5 |
 | 73 | Трафик → Журнал переносов | `miTransferJournal` | `:210` → ShowTransferJournal:708 | Простой журнал | TransferLog (141) | перенесён (SimpleJournal) | 2 | — | 5 |
-| 119 | Трафик → Журнал подтверждённых рекламных акций | `miActionJournalTraffic` | `:165` → ShowMassmediaActions:395 | Дерево на своём контейнере | `ActionContainer(ConfirmedAction)`: 118 / 77 / 1255 | нужен свой контейнер + контекстное меню акций | 2 | — | 5 |
+| 119 | Трафик → Журнал подтверждённых рекламных акций | `miActionJournalTraffic` | `:165` → ShowMassmediaActions:395 | Дерево на своём контейнере | `ActionContainer(ConfirmedAction)`: 118 / 77 / 1255 | перенесён (Browser, 2026-09-20); действия по строке — этапы 3-4 | 2 | — | 5 |
 | 181 | Трафик → График размещения по нескольким акциям | `miMultiActionMediaPlan` | `:208` → ShowMultiActionMediaPlan:723 | Отчёт / выгрузка | `FrmMultiActionMediaPlan` → `MediaPlan.CreateInstance(...).Show(true)` (Excel) | этап 4 | 0 | — | 0 |
 | 88 | Статистика → Объем реализации → Сводный (размещение рекламы) | `miStats.VolumeOfRealization` | `:751` → ShowStatsJournal:745 | Простой журнал + ManagerFilter | StatsVolumeofRealization (158) | перенесён (SimpleJournal) | 3 | — | 8 |
 | 127 | Статистика → Объем реализации → За период (с разбивкой по месяцам) | `miStats.VolumeRealizationByMonth` | `:782` → ShowStatsJournal:745 | Простой журнал + ManagerFilter | StatVolumeOfRealiztionByMonth (201) | перенесён (SimpleJournal) | 3 | — | 8 |
@@ -498,7 +505,7 @@ Ctrl+Shift+A. В вебе их нет и не будет: решение вла�
 | 84 | Бухгалтерия → Журнал оплат по менеджерам | `miPaymentByManager` | `:190` → ShowCommonOrderByManager:645 | Диалог → журнал(ы) | `FrmManagerSelector` → по журналу PaymentCommonAction (146) на каждого выбранного менеджера | этап 3 + решение владельца | 3 | — | 8 |
 | 85 | Бухгалтерия → Баланс для конкретной фирмы-заказчика | `miFirmBalance` | `:188` → ShowFirmBalance:638 | Собственная форма | `FrmFirmIssuesBalance` (← `FrmFirmBalance`) | этап 3 (п.3 плана) | 3 | — | 8 |
 | 86 | Бухгалтерия → Баланс для всех фирм-заказчиков | `miBalance` | `:184` → ShowBalance:438 | Простой журнал + ManagerFilter | BalanceIssues (184) | перенесён (SimpleJournal) | 3 | — | 8 |
-| 122 | Бухгалтерия → Журнал подтверждённых рекламных акций | `miActionJournalBuh` | `:165` → ShowMassmediaActions:395 | Дерево на своём контейнере | `ActionContainer(ConfirmedAction)`: 118 / 77 / 1255 | нужен свой контейнер + контекстное меню акций | 2 | — | 8 |
+| 122 | Бухгалтерия → Журнал подтверждённых рекламных акций | `miActionJournalBuh` | `:165` → ShowMassmediaActions:395 | Дерево на своём контейнере | `ActionContainer(ConfirmedAction)`: 118 / 77 / 1255 | перенесён (Browser, 2026-09-20); действия по строке — этапы 3-4 | 2 | — | 8 |
 | 92 | Бухгалтерия → Специальные отчёты → Cальдо расчётов по всем фирмам-заказчикам в разрезе агентств | `miStats.Balance` | `:765` → ShowStatBalance:816 | Журнал-наследник со своей логикой | `StatBalanceJournalForm`: StatsBalance (160) / StatsBalanceGroup (185) | перенесён (SimpleJournal + подмена сущности); проверено вживую 2026-09-18 | 1 | — | 5 |
 | 101 | Бухгалтерия → Специальные отчёты → Развёрнутое итоговое сальдо расчетов в разрезе агентств | `miStats.BalanceAgency` | `:768` → ShowStatsJournal:745 | Простой журнал + ManagerFilter | StatsBalanceAgency (161) | перенесён (SimpleJournal) | 1 | — | 5 |
 | 103 | Бухгалтерия → Специальные отчёты → Сводный журнал долгов фирм-заказчиков (по менеджерам в разрезе агентств) | `miStats.BalanceManager` | `:775` → ShowStatsJournal:745 | Простой журнал + ManagerFilter | StatsBalanceManager (168) | перенесён (SimpleJournal) | 1 | — | 5 |

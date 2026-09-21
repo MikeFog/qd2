@@ -74,7 +74,8 @@ else
             </div>
         </header>
 
-        <FilterPanel Pages="_filterPages" Values="_root.Container.Filter" FilterData="_filterData" Apply="ApplyFilter" />
+        <FilterPanel Pages="_filterPages" Values="_root.Container.Filter" FilterData="_filterData"
+                     RestrictManager="_restrictManager" Apply="ApplyFilter" />
 
         <div class="browser-body">
             <nav class="browser-tree">
@@ -116,6 +117,11 @@ else
     private IReadOnlyList<PassportPage> _filterPages = Array.Empty<PassportPage>();
     private DataSet? _filterData;
 
+    // Правило менеджера в отборе: признак маршрута, как у журнала
+    // (BrowserRoute.ManagerFilter). У деревьев его даёт свой диалог отбора
+    // контейнера — ActionJournalFilter у журналов рекламных акций.
+    private bool _restrictManager;
+
     protected override void OnParametersSet()
     {
         if (SecurityManager.LoggedUser == null)
@@ -132,6 +138,7 @@ else
         {
             _error = null;
             BrowserRoute route = MenuRoutes.Browser[Code];
+            _restrictManager = route.ManagerFilter;
             RelationScenario scenario = RelationManager.GetScenario(route.Scenario);
 
             // Контейнер строится ровно как в MDIForm: свой (route.Factory — там,

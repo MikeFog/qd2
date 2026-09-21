@@ -108,10 +108,9 @@ public sealed class ObjectActions
 	/// конвенции этапа 0 логика — в ядре, форма — в UI-половине), и возвращает
 	/// <see cref="ActionEffect.Changed"/>: владелец экрана перечитывает узел.
 	///
-	/// Механизм общий, не под один класс: следующим клиентом будет журнал
-	/// рекламных акций — ActionContainer (ShowFirms / ShowActions /
-	/// ShowHeadCompanies) переключает ChildEntity корня так же, как
-	/// AdvertTypeContainer.
+	/// Механизм общий, не под один класс: вторым клиентом стал журнал рекламных
+	/// акций — ActionContainer (ShowHeadCompanies / ShowFirms / ShowActions)
+	/// переключает ChildEntity корня так же, как AdvertTypeContainer.
 	/// </summary>
 	private static readonly Dictionary<string, Dictionary<string, Handler>> ClassActions = new()
 	{
@@ -120,6 +119,16 @@ public sealed class ObjectActions
 		{
 			[AdvertTypeContainer.ActionNames.ShowTree] = (_, t) => Changed(((AdvertTypeContainer)t).ShowTree),
 			[AdvertTypeContainer.ActionNames.ShowFlat] = (_, t) => Changed(((AdvertTypeContainer)t).ShowFlat),
+		},
+		// ActionContainer.DoAction: подмена ChildEntity корня — разбивка акций по
+		// группам компаний, по фирмам или без разбивки. Какой пункт сейчас
+		// недоступен, решает сам контейнер (IsActionEnabled): серым гасится
+		// текущий вид, как в десктопе.
+		["ActionContainer"] = new()
+		{
+			[ActionContainer.ActionNames.ShowHeadCompanies] = (_, t) => Changed(((ActionContainer)t).ShowHeadCompanies),
+			[ActionContainer.ActionNames.ShowFirms] = (_, t) => Changed(((ActionContainer)t).ShowFirms),
+			[ActionContainer.ActionNames.ShowActions] = (_, t) => Changed(((ActionContainer)t).ShowActions),
 		},
 	};
 
@@ -440,10 +449,22 @@ public sealed class ObjectActions
 		_ => false
 	};
 
-	private static bool IsHidden(object target, string actionName, ViewType view) => target switch
-	{
-		PresentationObject po => po.IsActionHidden(actionName, view),
-		FakeContainer fc => fc.IsActionHidden(actionName, view),
-		_ => true
-	};
+	/// <summary>
+	/// Действия, которым в вебе отвечает не пункт меню, а элемент экрана. Они
+	/// не «не перенесены» — их серый пункт врал бы, — поэтому прячутся совсем.
+	///
+	/// <c>ShowFilters</c>: в десктопе модальный диалог отбора, в вебе —
+	/// постоянная панель на том же экране (FilterPanel). Объявлен он у корня
+	/// ActionContainer (журналы рекламных акций) и у сущности 9 в метаданных;
+	/// панель есть и там, и там.
+	/// </summary>
+	private static readonly string[] ReplacedByScreen = { "ShowFilters" };
+
+	private static bool IsHidden(object target, string actionName, ViewType view) =>
+		ReplacedByScreen.Contains(actionName) || target switch
+		{
+			PresentationObject po => po.IsActionHidden(actionName, view),
+			FakeContainer fc => fc.IsActionHidden(actionName, view),
+			_ => true
+		};
 }
