@@ -61,16 +61,15 @@ else
 {
     <div class="journal">
 
-    @* Шапка экрана: название слева, единственное главное действие справа.
-       Счётчик записей рядом с названием, а не под кнопкой: это свойство
-       списка, а не результат действия. *@
-    <header class="screen-head">
-        <h3>@Title</h3>
-        <span class="screen-count">@(_data?.Rows.Count ?? 0)</span>
-        <div class="screen-actions">
-            <button class="btn btn-primary btn-sm" disabled="@(!_canAdd)" @onclick="AddNew"><i class="bi bi-plus-lg" aria-hidden="true"></i>Добавить</button>
-        </div>
-    </header>
+    @* Тулбар — как JournalForm: Добавить | Обновить | Экспорт. «Изменить» и
+       «Удалить» десктопа здесь — действия строки («⋯»), «Фильтр» — постоянная
+       панель ниже, поэтому в тулбар они не переносятся. «Обновить» читает
+       список тем же путём, что «Применить» в отборе. *@
+    <ScreenToolbar Title="@Title" Count="@(_data?.Rows.Count ?? 0)">
+        <button class="btn btn-primary btn-sm" disabled="@(!_canAdd)" @onclick="AddNew"><i class="bi bi-plus-lg" aria-hidden="true"></i>Добавить</button>
+        <button class="btn btn-sm btn-outline-secondary" @onclick="Load"><i class="bi bi-arrow-clockwise" aria-hidden="true"></i>Обновить</button>
+        <button class="btn btn-sm btn-outline-secondary" disabled="@(_data == null || _data.Rows.Count == 0)" @onclick="ExportExcel"><i class="bi bi-download" aria-hidden="true"></i>Экспорт в Excel</button>
+    </ScreenToolbar>
 
     @* ---------- Фильтр ---------- *@
     <FilterPanel Pages="_filterPages" Values="_filterValues" FilterData="_filterData" Apply="Load"
@@ -80,7 +79,7 @@ else
     @* Действия над строками — меню ObjectActions, доступность пунктов по
        тем же IsActionEnabled, что в десктопе. Это только удобство: настоящая
        проверка стоит на исполнении, в DataAccessor.DoAction. *@
-    <ObjectList Entity="_dataEntity ?? _entity" Data="_data"
+    <ObjectList @ref="_list" Entity="_dataEntity ?? _entity" Data="_data"
                 EmptyText="Записей нет. Измените условия отбора."
                 Changed="Load" Failed="ShowError" />
 
@@ -260,6 +259,10 @@ else
         if (await Passports.ShowAsync(obj, isNew))
             Load();
     }
+
+    private ObjectList? _list;
+
+    private Task ExportExcel() => _list?.ExportToExcelAsync(Title) ?? Task.CompletedTask;
 
     /// <summary>Ошибка операции над строкой: показываем там же, где свои.</summary>
     private void ShowError(string message) => _error = message;

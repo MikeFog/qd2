@@ -4,6 +4,7 @@
 @using FogSoft.WinForm.Classes
 @inject ObjectActions Actions
 @inject ActionMenuService Menu
+@inject IJSRuntime JS
 
 @*
     Список объектов: таблица, сортировка и действия над строкой.
@@ -261,6 +262,36 @@ else
         string.Equals(_sortColumn, column, StringComparison.OrdinalIgnoreCase)
             ? (_sortDescending ? " ▾" : " ▴")
             : "";
+
+    // ---------- Выгрузка в Excel ----------
+
+    /// <summary>
+    /// Выгружает список файлом на скачивание — кнопка «Экспорт в Excel» тулбара
+    /// экрана-владельца (десктоп: ExplorerForm.tsbExcel_Click). Выгружается то,
+    /// что сейчас в списке: видимые колонки в порядке сетки и строки в текущем
+    /// порядке сортировки, процедура заново не вызывается — иначе файл не
+    /// совпал бы с тем, что видит пользователь (отбор, сортировка). Пустой
+    /// список — ничего не делает, как десктопный ExportExcel.
+    /// </summary>
+    /// <param name="title">Заголовок экрана — из него имя файла.</param>
+    public async Task ExportToExcelAsync(string? title)
+    {
+        if (Data == null || _rows.Count == 0)
+            return;
+
+        try
+        {
+            using MemoryStream file = GridExcelExport.Build(Entity, Columns, _rows);
+            using var reference = new DotNetStreamReference(file);
+            await using IJSObjectReference module = await JS.InvokeAsync<IJSObjectReference>("import", "./js/download.js");
+            await module.InvokeVoidAsync("downloadStream",
+                GridExcelExport.FileName(title, DateTime.Today), GridExcelExport.ContentType, reference);
+        }
+        catch (Exception ex)
+        {
+            await Failed.InvokeAsync(ErrorPresenter.Describe(ex));
+        }
+    }
 
     // ---------- Действия ----------
 

@@ -1,0 +1,30 @@
+@*
+    Шапка экрана: название слева, счётчик записей рядом с ним и группа кнопок
+    справа. Общая для журнала и древовидного экрана — в десктопе это тулбары
+    JournalForm и ExplorerForm.
+
+    Счётчик — свойство списка, а не результат действия, поэтому стоит рядом с
+    названием, а не под кнопками; экран без счётчика просто его не передаёт.
+    Кнопки приходят разметкой (ChildContent): набор и порядок у каждого экрана
+    свой — Добавить | Обновить | Экспорт, — а вид один.
+*@
+
+<header class="screen-head">
+    <h3>@Title</h3>
+    @if (Count is { } count)
+    {
+        <span class="screen-count">@count</span>
+    }
+    <div class="screen-actions">
+        @ChildContent
+    </div>
+</header>
+
+@code {
+    [Parameter, EditorRequired] public string? Title { get; set; }
+
+    /// <summary>Число записей в списке. null — счётчика на экране нет.</summary>
+    [Parameter] public int? Count { get; set; }
+
+    [Parameter] public RenderFragment? ChildContent { get; set; }
+}

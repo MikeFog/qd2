@@ -7,29 +7,7 @@
     пределы экрана.
 */
 
-.screen-head {
-    display: flex;
-    align-items: center;
-    gap: var(--s-3);
-    margin-bottom: var(--s-4);
-}
-
-/* Счётчик записей — свойство списка, поэтому стоит рядом с названием. */
-.screen-count {
-    padding: 2px var(--s-2);
-    border-radius: 10px;
-    background: var(--c-bg);
-    border: 1px solid var(--c-border);
-    font-size: 12px;
-    font-weight: 600;
-    color: var(--c-text-muted);
-}
-
-.screen-actions {
-    margin-left: auto;
-    display: flex;
-    gap: var(--s-2);
-}
+/* Шапка экрана — общий компонент ScreenToolbar, свои стили у него. */
 
 /* ---------- Список ---------- */
 
@@ -42,10 +20,6 @@
     display: flex;
     flex-direction: column;
     min-height: 0;
-}
-
-.journal > .screen-head {
-    flex: 0 0 auto;
 }
 
 /* Панель отбора — отдельный компонент (FilterPanel), поэтому ::deep: её

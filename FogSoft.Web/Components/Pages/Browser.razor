@@ -63,16 +63,15 @@ else if (_root == null)
 else
 {
     <div class="browser">
-        <header class="screen-head">
-            <h3>@_caption</h3>
-            <div class="screen-actions">
-                @* Кнопки «Добавить» здесь нет, как нет её на панели десктопного
-                   ExplorerForm: добавляют через меню узла — «Добавить прайс-лист»,
-                   «Добавить модуль» и т. п. Прежняя веб-кнопка создавала объект
-                   без привязки к родителю (без CreateNewChild). *@
-                <button class="btn btn-sm btn-outline-secondary" @onclick="RefreshSelected"><i class="bi bi-arrow-clockwise" aria-hidden="true"></i>Обновить</button>
-            </div>
-        </header>
+        @* Кнопки «Добавить» здесь нет, как нет её на панели десктопного
+           ExplorerForm: добавляют через меню узла — «Добавить прайс-лист»,
+           «Добавить модуль» и т. п. Прежняя веб-кнопка создавала объект
+           без привязки к родителю (без CreateNewChild). «Изменить», «Удалить» и
+           «Фильтр» десктопа тоже не кнопки: действия строки и постоянная панель. *@
+        <ScreenToolbar Title="@_caption">
+            <button class="btn btn-sm btn-outline-secondary" @onclick="RefreshSelected"><i class="bi bi-arrow-clockwise" aria-hidden="true"></i>Обновить</button>
+            <button class="btn btn-sm btn-outline-secondary" disabled="@(_data == null || _data.Rows.Count == 0)" @onclick="ExportExcel"><i class="bi bi-download" aria-hidden="true"></i>Экспорт в Excel</button>
+        </ScreenToolbar>
 
         <FilterPanel Pages="_filterPages" Values="_root.Container.Filter" FilterData="_filterData"
                      RestrictManager="_restrictManager" Apply="ApplyFilter" />
@@ -86,7 +85,7 @@ else
             <div class="browser-list">
                 @if (_selected?.Container.ChildEntity is { } childEntity)
                 {
-                    <ObjectList Entity="childEntity" Data="_data"
+                    <ObjectList @ref="_list" Entity="childEntity" Data="_data"
                                 EmptyText="У выбранного узла нет вложенных записей."
                                 Changed="RefreshSelected" Failed="ShowError" />
                 }
@@ -390,6 +389,10 @@ else
         if (ReferenceEquals(node, _selected))
             Select(node);
     }
+
+    private ObjectList? _list;
+
+    private Task ExportExcel() => _list?.ExportToExcelAsync(_caption) ?? Task.CompletedTask;
 
     private void ShowError(string message) => _error = message;
 }
