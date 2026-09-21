@@ -15,8 +15,15 @@
 as
 SET NOCOUNT ON
 
-if @actionName in ('UpdateItem', 'AddItem') 
-begin 
+if @actionName in ('UpdateItem', 'AddItem')
+begin
+	-- Продолжительность не может быть больше полной; нулевая полная продолжительность означает «не задана»
+	if @duration_total > 0 and @duration > @duration_total
+	begin
+		raiserror('DurationExceedsTotal', 16,1)
+		return
+	end
+
 	if (not exists (select * from Pricelist pl 
 					where pl.massmediaID = @massmediaID 
 						and @windowDateActual >= pl.startDate and @windowDateActual < finishDate + 1)

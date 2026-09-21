@@ -32,6 +32,13 @@
 WITH EXECUTE AS OWNER
 AS
 SET NOCOUNT ON
+-- Продолжительность не может быть больше полной; нулевая полная продолжительность означает «не задана»
+IF @actionName In ('AddItem', 'UpdateItem', 'Clone') And @duration_total > 0 And @duration > @duration_total
+	BEGIN
+		RAISERROR('DurationExceedsTotal', 16, 1)
+		RETURN
+	END
+
 -- Check, may be tariff with such attributes has been already created
 IF @actionName In ('AddItem', 'UpdateItem', 'Clone') And
 	Exists(
