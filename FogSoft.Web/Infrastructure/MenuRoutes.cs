@@ -1,4 +1,6 @@
+using FogSoft.WinForm;
 using FogSoft.WinForm.Classes;
+using FogSoft.WinForm.Passport.Classes;
 using Merlin;
 using Merlin.Classes.FakeContainers;
 
@@ -93,6 +95,12 @@ public static class MenuRoutes
 			{ "miStats.VolumeOfRealizationSec", new JournalRoute(Entities.StatVolumeOfRealizationSec, ManagerFilter: true) },
 			{ "miStats.VolumeRealizationByMonth", new JournalRoute(Entities.StatVolumeOfRealiztionByMonth, ManagerFilter: true) },
 			{ "miTransferJournal", new JournalRoute(Entities.TransferLog) },
+			// MDIForm.ShowGraphVolumeOfRealizationByPerson: те же данные, что у miStats.VolumeOfRealization,
+			// но менеджер по умолчанию — текущий пользователь. Диаграммы десктопа (GraphForm)
+			// отложены (решение владельца, 2026-09-21), пока показываем таблицу.
+			// Стоит после miStats.VolumeOfRealization: запасной поиск по сущности берёт первый маршрут.
+			{ "VolumeOfRealizationByManager", new JournalRoute(Entities.StatsVolumeofRealization, ManagerFilter: true,
+				FilterDefault: new FilterDefault("managerID", PageControl.InitialValueAbbreviations.LoggedUser)) },
 		};
 
 	/// <summary>
@@ -186,8 +194,16 @@ public static class MenuRoutes
 /// <c>AnnouncementJournalForm</c>). <c>null</c> — кнопки на экране нет: она есть
 /// только у журналов, чья форма в десктопе её добавляет.
 /// </param>
+/// <param name="FilterDefault">
+/// Начальное значение поля отбора, которое пункт меню задаёт поверх метаданных
+/// (<c>MDIForm.ShowGraphVolumeOfRealizationByPerson</c>: <c>managerID</c> = текущий
+/// пользователь). Свойство пункта, а не сущности: у сущности в <c>XmlFilter</c> этого
+/// поля значения по умолчанию нет, и второй пункт на ту же сущность
+/// (<c>miStats.VolumeOfRealization</c>) должен открываться с пустым отбором.
+/// <c>null</c> — отбор только из метаданных.
+/// </param>
 public sealed record JournalRoute(Entities Entity, bool ManagerFilter = false, string? Caption = null,
-	EntitySwitch? EntitySwitch = null, BulkAction? BulkAction = null)
+	EntitySwitch? EntitySwitch = null, BulkAction? BulkAction = null, FilterDefault? FilterDefault = null)
 {
 	public int EntityId => (int)Entity;
 }
@@ -199,6 +215,14 @@ public sealed record JournalRoute(Entities Entity, bool ManagerFilter = false, s
 /// </param>
 /// <param name="Caption">Подпись кнопки.</param>
 public sealed record BulkAction(string ActionName, string Caption);
+
+/// <param name="Field">Поле отбора.</param>
+/// <param name="Value">
+/// Значение в том же виде, что в метаданных фильтра (атрибут <c>value</c>): сокращение из
+/// <see cref="PageControl.InitialValueAbbreviations"/> или готовое значение. Разбирается
+/// <see cref="Globals.ResolveInitialValue"/> — тем же кодом, что и значения из метаданных.
+/// </param>
+public sealed record FilterDefault(string Field, string Value);
 
 /// <param name="FilterField">Булево поле отбора.</param>
 /// <param name="WhenTrue">Сущность данных, когда поле включено; иначе — сущность маршрута.</param>

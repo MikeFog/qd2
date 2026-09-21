@@ -94,7 +94,7 @@ sed -n '/private void MenuItemClick/,/catch (Exception ex)/p' Client/Forms/MDIFo
 | Действие без экрана | 3 | отложено 2026-09-21: пока не делаем (§10) |
 | Импорт из файла (новая) | 1 | нет, этап 4 (`miFirmImport`) |
 | Отчёт / выгрузка | 4 | нет, этап 4 |
-| График (новая) | 1 | решено 2026-09-21: пока таблицей, диаграммы потом |
+| График (новая) | 1 | перенесён таблицей 2026-09-21; диаграммы отложены (§10) |
 | Выход из приложения (новая) | 1 | сделан (2026-09-18): выход из сеанса, как кнопка «Выйти» |
 | Папка с `codeName`, без обработчика (новая) | 1 | папка рисуется как группа (`miAccounting`) |
 | **Итого** | **71** | |
@@ -108,11 +108,10 @@ sed -n '/private void MenuItemClick/,/catch (Exception ex)/p' Client/Forms/MDIFo
 
 | Статус | Пунктов |
 |---|---:|
-| перенесён (31 `SimpleJournal` + 15 `Browser`) | 46 |
+| перенесён (32 `SimpleJournal` + 15 `Browser`) | 47 |
 | журналы оплат: `MasterDetail` в вебе не будет, решение об экране отложено (2026-09-21) | 2 |
 | этап 3 | 11 |
 | этап 4 (отчёты, выгрузки, импорт) | 5 |
-| мелкая задача: график таблицей (`VolumeOfRealizationByManager`) | 1 |
 | отложено (§10) | 4 |
 | не экран: `miExit` (сделан выходом из сеанса), `miAccounting` (папка) | 2 |
 | **Итого** | **71** |
@@ -477,7 +476,7 @@ Ctrl+Shift+A. В вебе их нет и не будет: решение вла�
 | 11 | Рекламный отдел → Журнал подтверждённых рекламных акций | `miActionJournal` | `:165` → ShowMassmediaActions:395 | Дерево на своём контейнере | `ActionContainer(ConfirmedAction)`: 118 / 77 / 1255 | перенесён (Browser, 2026-09-20); действия по строке — этапы 3-4 | 6 | +3/−0 | 24 |
 | 158 | Рекламный отдел → Журнал макетов рекламных акций | `miActionJournalUnconfirmed` | `:169` → ShowMassmediaActions:395 | Дерево на своём контейнере | `ActionContainer(UnconfirmedAction)`: 137 / 77 / 1256 | перенесён (Browser, 2026-09-20); действия по строке — этапы 3-4 | 5 | +8/−0 | 24 |
 | 157 | Рекламный отдел → Журнал удалённых рекламных акций | `miActionJournalDeleted` | `:172` → ShowMassmediaActions:395 | Дерево на своём контейнере | `ActionContainer(DeletedAction)`: 1229 / 1236 / 1257 | перенесён (Browser, 2026-09-20); действия по строке — этапы 3-4 | 5 | +7/−0 | 23 |
-| 145 | Рекламный отдел → Объем реализации (Сводный) | `VolumeOfRealizationByManager` | `:232` → ShowGraphVolumeOfRealizationByPerson:823 | График | `GraphForm` на данных StatsVolumeofRealization (158), `managerID = LoggedUser` | решено 2026-09-21: журнал 158 с менеджером по умолчанию, диаграммы потом | 5 | +3/−0 | 24 |
+| 145 | Рекламный отдел → Объем реализации (Сводный) | `VolumeOfRealizationByManager` | `:232` → ShowGraphVolumeOfRealizationByPerson:823 | График | `GraphForm` на данных StatsVolumeofRealization (158), `managerID = LoggedUser` | перенесён (SimpleJournal) 2026-09-21: журнал 158 с менеджером по умолчанию; диаграммы отложены | 5 | +3/−0 | 24 |
 | 112 | Рекламный отдел → Журнал оплат | `miPaymentFRS` | `:181` → ShowPaymentCommon(true):628 | MasterDetail | PaymentCommon (145) → PaymentCommonAction (146), `filterAgencies=true` | решение отложено (2026-09-21) | 6 | +3/−0 | 24 |
 | 113 | Рекламный отдел → Журнал оплат по менеджерам | `miPaymentByManagerFromRSection` | `:192` → ShowCommonOrderByManagerFromRSection:665 | Простой журнал + ManagerFilter | PaymentCommonAction (146) | перенесён (SimpleJournal) | 6 | +3/−0 | 24 |
 | 114 | Рекламный отдел → Баланс для всех фирм-заказчиков | `miBalanceFromRSection` | `:186` → ShowBalance:438 | Простой журнал + ManagerFilter | BalanceIssues (184) | перенесён (SimpleJournal) | 6 | +3/−0 | 24 |
@@ -601,9 +600,9 @@ Ctrl+Shift+A. В вебе их нет и не будет: решение вла�
 3. Оставить только соседний `miPaymentByManagerFromRSection` — тот же журнал 146
    с правилом менеджера, он уже перенесён, — и признать пункт избыточным.
 
-### «Объём реализации по менеджерам» — диаграммы отложены (2026-09-21)
+### «Объём реализации по менеджерам» — отложены диаграммы (2026-09-21)
 
-Сам пункт не отложен: решено делать **таблицей** — журнал 158 с
+**Сам пункт перенесён 2026-09-21** — таблицей: журнал 158 с
 `managerID = текущий пользователь` и правилом `ManagerFilter`, ровно те данные,
 что показывает десктопный `GraphForm` (`MDIForm.cs:779`–`:792`). Отложены именно
 диаграммы (столбцы и круг): «красоту наведём потом». Когда дойдёт — это новая

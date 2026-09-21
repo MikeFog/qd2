@@ -4,6 +4,8 @@
 @using FogSoft.WinForm
 @using FogSoft.WinForm.Classes
 @using FogSoft.WinForm.Passport.Classes
+@using Microsoft.AspNetCore.WebUtilities
+@inject NavigationManager Nav
 @inject PassportDialog Passports
 @inject MenuAccess Access
 @inject ObjectActions Actions
@@ -98,13 +100,20 @@ else
     /// codeName пункта меню, из которого открыт журнал (<c>?menu=</c>). Правило
     /// ManagerFilter и заголовок привязаны к пункту, а не к сущности
     /// (<see cref="JournalRoute"/>). Без параметра (адрес набран руками) берётся
-    /// первый маршрут на эту сущность.
+    /// первый маршрут на эту сущность. Значение читается из адреса
+    /// (<see cref="ResolveRoute"/>); параметр нужен, чтобы смена пункта меню при той же
+    /// сущности вообще вызывала <c>OnParametersSet</c>.
     /// </summary>
     [SupplyParameterFromQuery(Name = "menu")] public string? Menu { get; set; }
 
     private JournalRoute? _route;
     private string? _menuCode;
     private int? _loadedEntityId;
+
+    // Начальное значение отбора, с которым журнал загружен (JournalRoute.FilterDefault).
+    // Два пункта меню на одну сущность различаются только им, и переход между ними
+    // должен перечитать журнал, хотя EntityId не менялся.
+    private FilterDefault? _loadedFilterDefault;
 
     // Заголовок — как в десктопе: свой у маршрута (то, что MDIForm задаёт в коде),
     // иначе текст пункта меню (mi.Text), иначе имя сущности.
@@ -160,7 +169,7 @@ else
         // навигацию между журналами OnParametersSet срабатывает дважды. Данные
         // от пункта меню не зависят — второй проход только уточняет _route, а
         // перечитывать не надо: процедуры статистики тяжёлые (секунды).
-        if (_loadedEntityId == EntityId)
+        if (_loadedEntityId == EntityId && _loadedFilterDefault == _route?.FilterDefault)
             return;
 
         try
@@ -183,8 +192,15 @@ else
             _filterValues.Clear();
             Globals.ResolveFilterInitialValues(_filterValues, _entity.XmlFilter);
 
+            // Значение пункта меню сильнее метаданных (в десктопе присваивание идёт
+            // следом за ResolveFilterInitialValues). Только здесь, при первой загрузке:
+            // «Применить» зовёт Load(), и выбор пользователя не затирается.
+            if (_route?.FilterDefault is { } def)
+                _filterValues[def.Field] = Globals.ResolveInitialValue(def.Value);
+
             Load();
             _loadedEntityId = EntityId;
+            _loadedFilterDefault = _route?.FilterDefault;
         }
         catch (Exception ex)
         {
@@ -194,18 +210,38 @@ else
 
     private (string? Code, JournalRoute? Route) ResolveRoute()
     {
+        // Пункт меню читается из адреса, а не из параметра Menu: при переходе на другую
+        // сущность параметр обновляется отдельным проходом позже EntityId, и первый
+        // проход увидел бы прежний пункт. Для маршрута с FilterDefault это лишнее
+        // чтение тяжёлой процедуры без менеджера.
+        string? menu = QueryHelpers.ParseQuery(new Uri(Nav.Uri).Query).TryGetValue("menu", out var m)
+            ? m.ToString() : null;
+
         // Чужой или устаревший ?menu= (не тот пункт для этой сущности) не должен
         // менять правило — в таком случае работает запасной путь по сущности.
-        if (Menu != null
-            && MenuRoutes.SimpleJournal.TryGetValue(Menu, out JournalRoute? byMenu)
+        if (menu != null
+            && MenuRoutes.SimpleJournal.TryGetValue(menu, out JournalRoute? byMenu)
             && byMenu.EntityId == EntityId)
-            return (Menu, byMenu);
+            return (menu, byMenu);
 
+        // Запасной путь: маршрут по сущности. На одну сущность их может быть несколько
+        // (158 — «Объем реализации» и тот же журнал с менеджером по умолчанию), и тогда
+        // берётся тот, что НЕ подставляет значений отбора: адрес, набранный руками, не
+        // должен молча показывать чужой срез данных. Именно «без FilterDefault», а не
+        // «первый попавшийся»: порядок перечисления Dictionary не определён, и полагаться
+        // на порядок объявления в MenuRoutes значило бы держать поведение на случайности.
+        (string? Code, JournalRoute? Route) fallback = (null, null);
         foreach (var (code, route) in MenuRoutes.SimpleJournal)
-            if (route.EntityId == EntityId)
+        {
+            if (route.EntityId != EntityId)
+                continue;
+            if (route.FilterDefault == null)
                 return (code, route);
+            if (fallback.Route == null)
+                fallback = (code, route);
+        }
 
-        return (null, null);
+        return fallback;
     }
 
     /// <summary>
