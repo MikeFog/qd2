@@ -13,6 +13,7 @@
     [entityClassName]   VARCHAR (64)  NULL,
     [parentId]          INT           NULL,
     [isObsolete]        BIT           CONSTRAINT [DF_iEntity_isObsolete] DEFAULT ((0)) NOT NULL,
+    [isMassDeleteAllowed] BIT         CONSTRAINT [DF_iEntity_isMassDeleteAllowed] DEFAULT ((0)) NOT NULL,
     CONSTRAINT [PK_entities] PRIMARY KEY CLUSTERED ([entityID] ASC) WITH (FILLFACTOR = 90),
     CONSTRAINT [FK_Entity_Entity] FOREIGN KEY ([parentId]) REFERENCES [dbo].[iEntity] ([entityID])
 );

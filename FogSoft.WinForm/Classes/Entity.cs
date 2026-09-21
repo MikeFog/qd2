@@ -125,6 +125,12 @@ namespace FogSoft.WinForm.Classes
 		public readonly string[] PKColumns;
 		public readonly object ParentId;
 
+		/// <summary>
+		/// iEntity.isMassDeleteAllowed: удаление объекта не требует пост-обработки, поэтому SmartGrid
+		/// может удалять несколько выделенных строк сразу (Del). По умолчанию false.
+		/// </summary>
+		public readonly bool IsMassDeleteAllowed;
+
 		private Action[] actionList;
 		private readonly Dictionary<string, Action> colActions = new Dictionary<string, Action>();
 
@@ -164,6 +170,8 @@ namespace FogSoft.WinForm.Classes
 
 			IconName = entityRow["iconName"].ToString();
 			ParentId = entityRow["parentId"] == DBNull.Value ? null : entityRow["parentId"];
+			IsMassDeleteAllowed = entityRow.Table.Columns.Contains("isMassDeleteAllowed")
+				&& ParseHelper.ParseToBoolean(entityRow["isMassDeleteAllowed"].ToString(), false);
 
 			ProcessColumnsInfo(dtTableInfo);
 			ProcessAttributes(dtAttribute);
@@ -185,6 +193,7 @@ namespace FogSoft.WinForm.Classes
 			PKColumns = baseEntity.PKColumns;
 			ColumnsInfo = baseEntity.ColumnsInfo;
 			ParentId = baseEntity.ParentId;
+			IsMassDeleteAllowed = baseEntity.IsMassDeleteAllowed;
 
 			IconName = baseEntity.IconName;
 

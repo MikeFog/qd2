@@ -84,6 +84,23 @@
 `ShowDeleteErrors(table)` / `CreateDeleteErrorsTable()` / `AddDeleteError(...)` — `1686-1719`,
 `public static`, переиспользуются вне класса для единого UI ошибок.
 
+**Кто включает массовое удаление (Del по нескольким строкам).** По умолчанию у грида `MultiSelect = false`,
+и Del удаляет только текущую строку. Множественное выделение включается двумя способами:
+1. **Флаг сущности** `iEntity.isMassDeleteAllowed = 1` (`Entity.IsMassDeleteAllowed`): «после удаления объекта
+   пост-обработка не нужна». Грид сам включает `MultiSelect` при установке `Entity`. В этом режиме массовое
+   удаление ≡ N тихих одиночных удалений с одним подтверждением, поэтому после цикла выполняется хвост
+   одиночного пути (`RunSingleDeleteTail`): `ObjectDeleted` по каждому удалённому (счётчики форм, узлы дерева),
+   один раз `RefreshDependantGrid` и `RebuildCurrentNode`. Сейчас флаг только у `Tariff` (entityID 81),
+   скрипт `ArtvisDB/Scripts/entity-mass-delete-flag-deploy.sql`.
+2. **Явное `grid.MultiSelect = true/false` на форме** — сильнее флага сущности (в т. ч. `false` его отключает).
+   Форма при этом сама отвечает за пост-обработку через `ObjectsDeleted` (`ActionForm`, `CampaignForm`,
+   `ComboModulePlacementForm`); хвост одиночного пути не выполняется — иначе пересчёт сработал бы дважды.
+
+**Правило проставления флага.** Не ставить сущностям, у которых (а) класс переопределяет `Delete()`
+(`ModuleIssue`, `MasterIssue` — массовый путь зовёт `Delete(true)`, см. `IMPROVEMENTS.md` ISSUE-01) или
+(б) на каком-либо гриде есть подписчик `ObjectDeleted` с бизнес-логикой (пересчёт акции и т. п.) — хвост вызовет
+его N раз. Перед проставлением просмотреть подписчиков `.ObjectDeleted +=` и переопределения `Delete`.
+
 **Прочее** — `Caption`/`CaptionVisible`, `QuickSearchVisible`, `DependantGrid` `162`,
 `AdjustColumnsWidth(maxWidth)` `559` / `AdjustColumnsWidthExt(maxWidth)` `436` (два разных
 алгоритма автоширины — второй новее, с переносом заголовка по словам), `MenuEnabled`,
