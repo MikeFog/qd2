@@ -616,6 +616,8 @@
     <Compile Include="Classes\MuteRoller.cs" />
     <Compile Include="Classes\Organization.cs" />
     <Compile Include="Classes\Organization.WinForms.cs" />
+    <Compile Include="Classes\DiscountRelease.cs" />
+    <Compile Include="Classes\DiscountRelease.WinForms.cs" />
     <Compile Include="Classes\PackageDiscount.cs" />
     <Compile Include="Classes\PackageDiscount.WinForms.cs" />
     <Compile Include="Classes\PackageDiscountPriceList.cs" />

@@ -1,6 +1,7 @@
 using System.Collections.Generic;
 using System.Data;
 using System.Windows.Forms;
+using FogSoft.WinForm;
 using FogSoft.WinForm.Classes;
 using FogSoft.WinForm.Forms;
 using Merlin.Forms;
@@ -15,6 +16,21 @@ namespace Merlin.Classes
 	// Конвенция — docs/tasks/web-migration-dialogs.md.
 	internal partial class PackageDiscountPriceList
 	{
+		public override void DoAction(string actionName, IWin32Window owner, InterfaceObjects interfaceObject)
+		{
+			if (actionName == Constants.EntityActions.Clone)
+				ClonePriceList(owner);
+			else
+				base.DoAction(actionName, owner, interfaceObject);
+		}
+
+		private void ClonePriceList(IWin32Window owner)
+		{
+			PackageDiscountPriceList draft = CreateCloneDraft();
+			if (draft.ShowPassport(owner))
+				OnObjectCloned(draft);
+		}
+
 		protected override void AssignNew(IWin32Window owner)
 		{
 			if (GetContent().Rows.Count == 0)

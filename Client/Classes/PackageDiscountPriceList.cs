@@ -1,4 +1,6 @@
-﻿using FogSoft.WinForm.Classes;
+﻿using FogSoft.WinForm;
+using FogSoft.WinForm.Classes;
+using System;
 using System.Collections.Generic;
 using System.Data;
 
@@ -15,6 +17,9 @@ namespace Merlin.Classes
             public const string isForType2 = "isForType2";
             public const string isForType3 = "isForType3";
             public const string packageDiscountPriceListID = "packageDiscountPriceListID";
+            public const string sourcePackageDiscountPriceListId = "sourcePackageDiscountPriceListId";
+            public const string startDate = "startDate";
+            public const string finishDate = "finishDate";
         }
 
         public PackageDiscountPriceList(int Id) : this()
@@ -38,6 +43,42 @@ namespace Merlin.Classes
         // сообщение сама — так устроен делегатный контракт с UniversalPassportForm
         // (ValidateDataDelegate: bool(Dictionary<string,object>)), развести без
         // правки самой формы нельзя.
+
+        /// <summary>
+        /// Черновик копии прайс-листа: значения исходного, но без ключа, с пометкой Clone и ссылкой на
+        /// источник. Записывается паспортом (Update -> PackageDiscountPriceListIUD 'Clone'); радиостанции
+        /// копирует процедура. Период по умолчанию — следующий за исходным той же длины (см. CalcCloneFinishDate).
+        /// </summary>
+        internal PackageDiscountPriceList CreateCloneDraft()
+        {
+            PackageDiscountPriceList draft = new PackageDiscountPriceList { parameters = Parameters };
+            draft.parameters[Constants.ParamNames.ActionName] = Constants.Actions.Clone;
+            draft.parameters[ParamNames.sourcePackageDiscountPriceListId] = this[ParamNames.packageDiscountPriceListID];
+            draft.parameters.Remove(ParamNames.packageDiscountPriceListID);
+
+            if (this[ParamNames.startDate] is DateTime start && this[ParamNames.finishDate] is DateTime finish)
+            {
+                DateTime newStart = finish.Date.AddDays(1);
+                draft.parameters[ParamNames.startDate] = newStart;
+                draft.parameters[ParamNames.finishDate] = CalcCloneFinishDate(start.Date, finish.Date, newStart);
+            }
+            return draft;
+        }
+
+        /// <summary>
+        /// Окончание копии. Период из целых месяцев (с 1-го числа по последний день месяца) переносится
+        /// на то же число месяцев — полный год даёт полный год, високосность не сбивает границу.
+        /// Любой другой период — на то же число дней.
+        /// </summary>
+        internal static DateTime CalcCloneFinishDate(DateTime start, DateTime finish, DateTime newStart)
+        {
+            bool wholeMonths = start.Day == 1 && finish.AddDays(1).Day == 1;
+            if (!wholeMonths)
+                return newStart.AddDays((finish - start).TotalDays);
+
+            int months = (finish.Year - start.Year) * 12 + finish.Month - start.Month + 1;
+            return newStart.AddMonths(months).AddDays(-1);
+        }
 
         /// <summary>Записывает выбранные радиостанции в пакетную скидку.</summary>
         internal void ApplyRadioStationsAssignment(Dictionary<string, object> parameters)

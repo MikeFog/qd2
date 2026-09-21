@@ -17,6 +17,8 @@ WHERE
 	dr.[massmediaID] = Coalesce(@massmediaID, dr.[massmediaID])
 	AND dr.[discountReleaseID] = Coalesce(@discountReleaseID, dr.[discountReleaseID])
 	And (@hideDiscountsInThePast = 0 or dr.finishDate > GETDATE() or dr.finishDate Is Null)
+ORDER BY
+	dr.startDate DESC
 GO
 GRANT EXECUTE
     ON OBJECT::[dbo].[DiscountReleases] TO PUBLIC
