@@ -84,12 +84,14 @@ public enum ActionEffect
 public sealed class ObjectActions
 {
 	private readonly PassportDialog _passports;
+	private readonly NamedPassportDialog _namedPassports;
 	private readonly DialogService _dialogs;
 	private readonly TableDialog _tables;
 
-	public ObjectActions(PassportDialog passports, DialogService dialogs, TableDialog tables)
+	public ObjectActions(PassportDialog passports, NamedPassportDialog namedPassports, DialogService dialogs, TableDialog tables)
 	{
 		_passports = passports;
+		_namedPassports = namedPassports;
 		_dialogs = dialogs;
 		_tables = tables;
 	}
@@ -183,6 +185,22 @@ public sealed class ObjectActions
 			[Constants.EntityActions.Clone] = (s, t) => s.ClonePricelist((Merlin.Classes.Pricelist)t, massFlag: false),
 			[Merlin.Classes.Pricelist.ActionNames.MassClone] = (s, t) => s.ClonePricelist((Merlin.Classes.Pricelist)t, massFlag: true),
 		},
+		// MassmediaPricelist.WinForms.cs, DoAction: «Добавить тариф массово» — именованный
+		// паспорт TariffMass (см. NamedPassportDialog), не CreateCloneDraft. Класс
+		// MassmediaPricelist сам internal (см. комментарий у ["Pricelist"] выше про
+		// internal-наследников Pricelist), поэтому цель — публичный базовый тип.
+		["MassmediaPricelist"] = new()
+		{
+			["AddTariffsMass"] = (s, t) => s.AddTariffsMass((Merlin.Classes.Pricelist)t),
+		},
+		// Tariff.WinForms.cs, DoAction: «Изменить похожие тарифы» — второй именованный
+		// паспорт (TariffMassEdit). "Clone" у Tariff не задет: ClassActions проверяется по
+		// имени действия, а не класса целиком, поэтому общий Generic[Clone] (CreateCloneDraft)
+		// по-прежнему обслуживает «Клонировать» этого же класса.
+		["Tariff"] = new()
+		{
+			["EditSimilarTariffs"] = (s, t) => s.EditSimilarTariffs((Merlin.Classes.Tariff)t),
+		},
 	};
 
 	private static Task<ActionEffect> Changed(Action apply)
@@ -241,6 +259,17 @@ public sealed class ObjectActions
 
 	/// <summary>Действия, которые выносятся иконкой прямо в строку списка.</summary>
 	public static readonly string[] QuickActionNames = { Constants.EntityActions.Delete };
+
+	// Имена полей паспортов TariffMass/TariffMassEdit (AddTariffsMass/EditSimilarTariffs
+	// ниже) — те же строки, что в десктопных приватных константах
+	// MassmediaPricelist.WinForms.TariffMassHourFromParam и Tariff.WinForms.MassHourFromParam
+	// (и родня); своя копия здесь по той же причине, что и там — UI-половины десктопа
+	// в веб-сборку не попадают.
+	private const string MassMinuteParam = "tariffMinute";
+	private const string MassHourFromParam = "hourFrom";
+	private const string MassHourToParam = "hourTo";
+	private const string MassHintParam = "massEditHint";
+	private const string MassDaysHintParam = "massDaysHint";
 
 	// ---------- Меню ----------
 
@@ -716,6 +745,126 @@ public sealed class ObjectActions
 	private Task ShowCloneErrors(DataTable errors) =>
 		_tables.ShowAsync("Ошибки клонирования", errors,
 			new Entity.Attribute("description", "Ошибка", "nvarchar"));
+
+	/// <summary>
+	/// «Добавить тариф массово» — веб-аналог MassmediaPricelist.WinForms.AddTariffsMass:
+	/// шаблон-тариф с посеянным pricelistID → именованный паспорт TariffMass →
+	/// по «ОК» Tariff.CreateMass ставит по тарифу в каждый час интервала (один
+	/// TariffIUD на час, best-effort). Данные паспорта (справочник типов блока)
+	/// грузятся той же процедурой, что у обычной карточки тарифа — тем же путём,
+	/// каким это делает сам PresentationObject.LoadPassportData() у шаблона.
+	///
+	/// Итог — короткая сводка (счётчики иначе не узнать), в отличие от массового
+	/// удаления, где список сам показывает результат исчезновением строк.
+	/// Ошибки — TableDialog, тот же общий механизм, что у ошибок клонирования
+	/// прайс-листа чуть выше.
+	///
+	/// Эффект — ChildAdded, а не SiblingAdded: действие вызвано на самом
+	/// прайс-листе (контейнере), и десктоп после операции зовёт
+	/// FireContainerRefreshed() — «перечитай СВОИХ детей», а не «перечитай
+	/// родителя», как у «Изменить похожие тарифы» ниже (там действие на тарифе,
+	/// и новый тариф встаёт рядом с ним, братом, а не под ним).
+	/// </summary>
+	private async Task<ActionEffect> AddTariffsMass(Merlin.Classes.Pricelist pricelist)
+	{
+		Entity tariffEntity = EntityManager.GetEntity((int)Merlin.Entities.Tariff);
+		PresentationObject template = tariffEntity.NewObject;
+		template[Merlin.Classes.Pricelist.ParamNames.PricelistId] = pricelist.PricelistId;
+
+		int created = 0;
+		DataTable? tableErrors = null;
+
+		bool ok = await _namedPassports.ShowAsync(template, "TariffMass", "Добавить тариф массово", isNew: true,
+			edited => Merlin.Classes.Tariff.ValidateMassCreateHours(
+				Convert.ToInt32(edited[MassHourFromParam]), Convert.ToInt32(edited[MassHourToParam])),
+			edited => created = Merlin.Classes.Tariff.CreateMass(edited,
+				Convert.ToInt32(edited[MassHourFromParam]), Convert.ToInt32(edited[MassHourToParam]),
+				Convert.ToInt32(edited[MassMinuteParam]), out tableErrors));
+
+		if (!ok || tableErrors == null)
+			return ActionEffect.None;
+
+		if (tableErrors.Rows.Count > 0)
+			await _tables.ShowAsync(
+				string.Format("Создано тарифов: {0}, не создано: {1}", created, tableErrors.Rows.Count),
+				tableErrors, new Entity.Attribute("description", "Ошибка", "nvarchar"));
+		else
+			await ShowInfo("Готово", string.Format("Создано тарифов: {0}", created));
+
+		return ActionEffect.ChildAdded;
+	}
+
+	/// <summary>
+	/// «Изменить похожие тарифы» — веб-аналог Tariff.WinForms.EditSimilarTariffs:
+	/// диапазон часов «похожих» тарифов (Tariff.LoadSimilarTariffs — тот же
+	/// прайс-лист, та же минута, совпадение остальных атрибутов) подсказкой в
+	/// заголовке и в паспорте, дни недели в форме — область применения
+	/// (Tariff.ApplyMassEdit: все дни исходного отмечены — тариф правится на
+	/// месте, часть — делится на два). Именованный паспорт TariffMassEdit,
+	/// шаблон засеян значениями этого тарифа (isNew: false — это не мастер
+	/// создания, а форма редактирования, как и в десктопе).
+	///
+	/// Эффект — SiblingAdded: действие вызвано на самом тарифе, и делёж создаёт
+	/// новый тариф РЯДОМ с ним, а не под ним (десктоп — OnParentChanged(this,
+	/// Pricelist), «перечитать родителя»). Перечитываем только если реально
+	/// что-то изменилось или добавилось — как и десктопный
+	/// `if (changed.Count + added.Count > 0)` перед OnParentChanged.
+	/// </summary>
+	private async Task<ActionEffect> EditSimilarTariffs(Merlin.Classes.Tariff tariff)
+	{
+		DataTable similar = tariff.LoadSimilarTariffs();
+		if (similar.Rows.Count == 0)
+			return ActionEffect.None;
+
+		int minHour = int.MaxValue, maxHour = int.MinValue;
+		foreach (DataRow row in similar.Rows)
+		{
+			int hour = Convert.ToInt32(row["hour"]);
+			minHour = Math.Min(minHour, hour);
+			maxHour = Math.Max(maxHour, hour);
+		}
+
+		Dictionary<string, object> original = tariff.Parameters;
+		int minute = Convert.ToDateTime(original[Merlin.Classes.Tariff.ParamNames.Time]).Minute;
+
+		Merlin.Classes.Tariff template = new() { Parameters = tariff.Parameters };
+		template[MassMinuteParam] = minute;
+		template[MassHourFromParam] = minHour;
+		template[MassHourToParam] = maxHour;
+		template[MassHintParam] = string.Format("{0} шт., минута :{1:00}, часы {2}-{3}",
+			similar.Rows.Count, minute, minHour, maxHour);
+		template[MassDaysHintParam] = "снимите дни, которые менять не нужно";
+
+		DataTable? tableErrors = null;
+		List<Merlin.Classes.Tariff>? changed = null;
+		List<Merlin.Classes.Tariff>? added = null;
+
+		bool ok = await _namedPassports.ShowAsync(template, "TariffMassEdit",
+			string.Format("Изменить похожие тарифы ({0} шт.)", similar.Rows.Count), isNew: false,
+			edited => Merlin.Classes.Tariff.ValidateMassEdit(original, edited,
+				Convert.ToInt32(edited[MassHourFromParam]), Convert.ToInt32(edited[MassHourToParam]), Convert.ToInt32(edited[MassMinuteParam])),
+			edited => Merlin.Classes.Tariff.ApplyMassEdit(original, edited, similar,
+				Convert.ToInt32(edited[MassHourFromParam]), Convert.ToInt32(edited[MassHourToParam]), Convert.ToInt32(edited[MassMinuteParam]),
+				out tableErrors, out changed, out added));
+
+		if (!ok || tableErrors == null)
+			return ActionEffect.None;
+
+		if (tableErrors.Rows.Count > 0)
+			await _tables.ShowAsync(
+				string.Format("Изменено тарифов: {0}, создано новых: {1}, не обработано: {2}",
+					changed!.Count, added!.Count, tableErrors.Rows.Count),
+				tableErrors, new Entity.Attribute("description", "Ошибка", "nvarchar"));
+		else
+			await ShowInfo("Готово", string.Format("Изменено тарифов: {0}, создано новых: {1}", changed!.Count, added!.Count));
+
+		return changed!.Count + added!.Count > 0 ? ActionEffect.SiblingAdded : ActionEffect.None;
+	}
+
+	/// <summary>Простое информационное сообщение — тот же диалог, что и у остальных
+	/// действий (TableDialog, подтверждение удаления), только с текстом вместо списка.</summary>
+	private Task ShowInfo(string caption, string text) =>
+		_dialogs.ShowAsync(caption, builder => builder.AddContent(0, text), okText: "Ок");
 
 	/// <summary>FakeContainer, ветка AddNew — то же для корня древовидного экрана.</summary>
 	private async Task<ActionEffect> AddNew(object target)

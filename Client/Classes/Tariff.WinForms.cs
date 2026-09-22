@@ -131,37 +131,13 @@ namespace Merlin.Classes
 
 		private static bool ValidateEditSimilar(Dictionary<string, object> original, Dictionary<string, object> edited)
 		{
-			if (Convert.ToInt32(edited[MassHourFromParam]) > Convert.ToInt32(edited[MassHourToParam]))
-			{
-				UserMessage.ShowExclamation("Час окончания интервала не может быть меньше часа начала.");
-				return false;
-			}
+			string error = ValidateMassEdit(original, edited,
+				Convert.ToInt32(edited[MassHourFromParam]), Convert.ToInt32(edited[MassHourToParam]),
+				Convert.ToInt32(edited[MassMinuteParam]));
+			if (error == null) return true;
 
-			bool anyDay = false;
-			foreach (string day in DayNames)
-			{
-				bool isOn = bool.Parse(edited[day].ToString());
-				bool wasOn = bool.Parse(original[day].ToString());
-				anyDay |= isOn;
-				if (isOn && !wasOn)
-				{
-					UserMessage.ShowExclamation("Нельзя добавить день недели, которого нет у исходного тарифа: дни задают область применения.");
-					return false;
-				}
-			}
-			if (!anyDay)
-			{
-				UserMessage.ShowExclamation("Отметьте хотя бы один день недели, к которому применить изменения.");
-				return false;
-			}
-
-			if (!HasMassEditChanges(original, edited, Convert.ToInt32(edited[MassMinuteParam])))
-			{
-				UserMessage.ShowExclamation("Ни один параметр не изменён.");
-				return false;
-			}
-
-			return true;
+			UserMessage.ShowExclamation(error);
+			return false;
 		}
 
 		/// <summary>Возвращает UI-тип PassportForm, поэтому здесь, а не в ядре
