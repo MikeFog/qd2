@@ -29,7 +29,7 @@ namespace Merlin.Classes
 			public const string CloneMode = "cloneMode";
 		}
 
-		private struct ActionNames
+		public struct ActionNames
 		{
             public const string MassClone = "MassClone";
         }
@@ -65,13 +65,13 @@ namespace Merlin.Classes
 		/// Есть ли у клонирования выбор режима. Только у обычного прайс-листа: остальные
 		/// виды клонируются своими процедурами, параметра @cloneMode у них нет.
 		/// </summary>
-		internal bool SupportsCloneModes
+		public bool SupportsCloneModes
 		{
 			get { return Entity.Id == (int)Entities.Pricelist; }
 		}
 
 		/// <summary>Клонирует прайс-лист на новый период. mode == null — режим по умолчанию на стороне процедуры.</summary>
-		internal void ApplyClone(DateTime startDate, DateTime finishDate, PricelistCloneMode? mode)
+		public void ApplyClone(DateTime startDate, DateTime finishDate, PricelistCloneMode? mode)
 		{
 			Dictionary<string, object> newParameters = Parameters;
 			newParameters[ParamNames.FinishDate] = finishDate;
@@ -85,7 +85,7 @@ namespace Merlin.Classes
 		/// Клонирует прайс-лист на новый период для каждой из выбранных
 		/// радиостанций. Возвращает таблицу ошибок (пустую, если ошибок не было).
 		/// </summary>
-		internal DataTable ApplyMassClone(DateTime startDate, DateTime finishDate, PricelistCloneMode? mode, IEnumerable<PresentationObject> radioStations)
+		public DataTable ApplyMassClone(DateTime startDate, DateTime finishDate, PricelistCloneMode? mode, IEnumerable<PresentationObject> radioStations)
 		{
 			Dictionary<string, object> newParameters = Parameters;
 			newParameters[ParamNames.FinishDate] = finishDate;
@@ -112,7 +112,7 @@ namespace Merlin.Classes
 		}
 
 		/// <summary>Проверяет выбор радиостанций для массового клонирования.</summary>
-		internal bool IsMassCloneSelectionValid(int selectedCount)
+		public bool IsMassCloneSelectionValid(int selectedCount)
 		{
 			return selectedCount != 0;
 		}

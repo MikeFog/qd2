@@ -30,6 +30,10 @@ else
         <table class="table table-hover">
             <thead>
                 <tr>
+                    @if (Multiselect)
+                    {
+                        <th class="col-check"></th>
+                    }
                     @foreach (var a in _columns)
                     {
                         <th>@a.Alias</th>
@@ -39,8 +43,16 @@ else
             <tbody>
                 @foreach (DataRow row in _data.Rows)
                 {
-                    <tr class="@(ReferenceEquals(row, SelectedRow) ? "table-primary" : "")"
-                        style="cursor:pointer" @onclick="() => SelectedRow = row">
+                    <tr class="@(IsRowSelected(row) ? "table-primary" : "")"
+                        style="cursor:pointer" @onclick="() => RowClicked(row)">
+                        @if (Multiselect)
+                        {
+                            <td class="col-check" @onclick:stopPropagation="true">
+                                <input type="checkbox" class="form-check-input"
+                                       checked="@_selectedRows.Contains(row)"
+                                       @onchange="e => ToggleRow(row, e.Value)" />
+                            </td>
+                        }
                         @foreach (var a in _columns)
                         {
                             <td>@Display(row, a.Name)</td>
@@ -66,9 +78,27 @@ else
     /// </summary>
     [Parameter] public PresentationObject? Owner { get; set; }
 
-    /// <summary>Выбранная строка; null — пользователь ничего не выбрал.</summary>
+    /// <summary>
+    /// Режим множественного выбора — колонка галочек вместо одиночного клика по
+    /// строке. Веб-аналог SelectionForm(..., showCheckboxes: true).
+    /// </summary>
+    [Parameter] public bool Multiselect { get; set; }
+
+    /// <summary>
+    /// Что было отмечено до открытия — переживает повторный показ диалога после
+    /// неудачной проверки выбора (тот же приём, что у PricelistCloneDialog:
+    /// компонент создаётся заново, состояние иначе терялось бы). null — ничего
+    /// не отмечено, обычное открытие.
+    /// </summary>
+    [Parameter] public IReadOnlyList<DataRow>? InitialSelectedRows { get; set; }
+
+    /// <summary>Выбранная строка; null — пользователь ничего не выбрал. Не используется в Multiselect.</summary>
     public DataRow? SelectedRow { get; private set; }
 
+    /// <summary>Отмеченные строки в режиме Multiselect.</summary>
+    public IReadOnlyList<DataRow> SelectedRows => _selectedRows.ToList();
+
+    private readonly HashSet<DataRow> _selectedRows = new();
     private DataTable? _data;
     private IReadOnlyList<Entity.Attribute> _columns = Array.Empty<Entity.Attribute>();
     private string? _error;
@@ -80,11 +110,35 @@ else
             Entity entity = EntityManager.GetEntity(Picker.EntityName);
             _columns = entity.SortedAttributes;
             _data = PickerData.Candidates(Picker, PassportData, Owner);
+
+            if (InitialSelectedRows != null)
+                foreach (DataRow row in InitialSelectedRows)
+                    _selectedRows.Add(row);
         }
         catch (Exception ex)
         {
             _error = ErrorPresenter.Describe(ex);
         }
+    }
+
+    private bool IsRowSelected(DataRow row) =>
+        Multiselect ? _selectedRows.Contains(row) : ReferenceEquals(row, SelectedRow);
+
+    private void RowClicked(DataRow row)
+    {
+        if (Multiselect)
+            ToggleRow(row, !_selectedRows.Contains(row));
+        else
+            SelectedRow = row;
+    }
+
+    private void ToggleRow(DataRow row, object? isChecked)
+    {
+        bool on = isChecked is bool b && b;
+        if (on)
+            _selectedRows.Add(row);
+        else
+            _selectedRows.Remove(row);
     }
 
     private static string Display(DataRow row, string column)

@@ -1,5 +1,8 @@
+using System.Data;
+using FogSoft.Web.Components;
 using FogSoft.WinForm;
 using FogSoft.WinForm.Classes;
+using FogSoft.WinForm.DataAccess;
 using Merlin.Classes.FakeContainers;
 using Microsoft.AspNetCore.Components;
 
@@ -164,6 +167,19 @@ public sealed class ObjectActions
 					discount.ChildEntity = previous;
 				}
 			},
+		},
+		// Pricelist.DoAction: диалог дат/режима, затем ApplyClone/ApplyMassClone —
+		// не тот же жест, что общий Clone (PresentationObject.CreateCloneDraft +
+		// карточка). Регистрация под именем базового класса "Pricelist" ловит и
+		// MassmediaPricelist (80), и SponsorPricelist (12): у обоих в метаданных
+		// объявлен Clone, а MassClone есть только у 80 — второе имя для 12 в
+		// ActionList просто не появится. Перекрывает собой общий Generic[Clone]
+		// (ClassActions проверяется раньше него в FindHandler), CreateCloneDraft
+		// у Pricelist поэтому не трогаем.
+		["Pricelist"] = new()
+		{
+			[Constants.EntityActions.Clone] = (s, t) => s.ClonePricelist((Merlin.Classes.Pricelist)t, massFlag: false),
+			[Merlin.Classes.Pricelist.ActionNames.MassClone] = (s, t) => s.ClonePricelist((Merlin.Classes.Pricelist)t, massFlag: true),
 		},
 	};
 
@@ -481,6 +497,151 @@ public sealed class ObjectActions
 			return ActionEffect.None;
 
 		return ActionEffect.SiblingAdded;
+	}
+
+	/// <summary>
+	/// «Клонировать» / «Клонировать на несколько радиостанций» у прайс-листа —
+	/// не общий жест Clone (CreateCloneDraft + карточка): диалог собирает даты и
+	/// режим клонирования тарифов, ядро зовёт Pricelist.ApplyClone/ApplyMassClone
+	/// напрямую. Веб-аналог Pricelist.WinForms.cs (ClonePriceList): показ
+	/// PricelistCloneForm, затем либо сразу применение, либо SelectionForm по
+	/// радиостанциям. Проверка "начало позже окончания" — как в
+	/// PricelistCloneForm.btnOk_Click, до применения; диалог при ошибке
+	/// показывается заново с сообщением, приём — как в PassportDialog.ShowAsync.
+	/// </summary>
+	private async Task<ActionEffect> ClonePricelist(Merlin.Classes.Pricelist pricelist, bool massFlag)
+	{
+		PricelistCloneDialog? dialog = null;
+		string? message = null;
+
+		// Введённые значения переживают повторный показ диалога (см. комментарий
+		// у PricelistCloneDialog.StartDate) — на каждом обороте цикла заново
+		// засеиваем компонент тем, что пользователь уже ввёл, а не значениями по
+		// умолчанию.
+		DateTime startDate = DateTime.Today;
+		DateTime finishDate = DateTime.Today;
+		Merlin.Classes.PricelistCloneMode mode = Merlin.Classes.PricelistCloneMode.WithWindowChanges;
+
+		while (true)
+		{
+			RenderFragment body = builder =>
+			{
+				if (message != null)
+				{
+					builder.OpenElement(0, "div");
+					builder.AddAttribute(1, "class", "alert alert-danger");
+					builder.AddContent(2, message);
+					builder.CloseElement();
+				}
+
+				builder.OpenComponent<PricelistCloneDialog>(3);
+				builder.AddComponentParameter(4, nameof(PricelistCloneDialog.SupportsCloneModes), pricelist.SupportsCloneModes);
+				builder.AddComponentParameter(5, nameof(PricelistCloneDialog.StartDate), startDate);
+				builder.AddComponentParameter(6, nameof(PricelistCloneDialog.FinishDate), finishDate);
+				builder.AddComponentParameter(7, nameof(PricelistCloneDialog.Mode), mode);
+				builder.AddComponentReferenceCapture(8, c => dialog = (PricelistCloneDialog)c);
+				builder.CloseComponent();
+			};
+
+			if (await _dialogs.ShowAsync("Клонирование прайс-листа", body) != DialogOutcome.Ok)
+				return ActionEffect.None;
+
+			startDate = dialog!.StartDate;
+			finishDate = dialog.FinishDate;
+			mode = dialog.Mode;
+
+			if (startDate > finishDate)
+			{
+				message = MessageAccessor.GetMessage("StartFinishDateError");
+				continue;
+			}
+
+			Merlin.Classes.PricelistCloneMode? appliedMode = pricelist.SupportsCloneModes ? mode : null;
+
+			if (!massFlag)
+			{
+				pricelist.ApplyClone(startDate, finishDate, appliedMode);
+				return ActionEffect.SiblingAdded;
+			}
+
+			return await CloneToSelectedRadioStations(pricelist, startDate, finishDate, appliedMode);
+		}
+	}
+
+	/// <summary>
+	/// Выбор радиостанций для массового клонирования — веб-аналог
+	/// <c>SelectionForm(EntityManager.GetEntity(MassMedia), "Радиостанции", true, CheckSelectionResult)</c>.
+	/// Таблицу ошибок <c>Pricelist.ApplyMassClone</c> десктоп показывает
+	/// <c>Globals.ShowSimpleJournal</c> — у веб-журнала нет режима "готовая
+	/// таблица" (движок строит список сам, не принимает чужой DataTable), поэтому
+	/// здесь просто список ошибок в диалоге, а не журналом.
+	/// </summary>
+	private async Task<ActionEffect> CloneToSelectedRadioStations(Merlin.Classes.Pricelist pricelist, DateTime startDate, DateTime finishDate, Merlin.Classes.PricelistCloneMode? mode)
+	{
+		var picker = new PassportPicker("massmedia", null, false, Array.Empty<PassportFilterValue>());
+		ObjectSelector? selector = null;
+		string? message = null;
+		IReadOnlyList<DataRow>? previouslySelected = null;
+
+		while (true)
+		{
+			RenderFragment body = builder =>
+			{
+				if (message != null)
+				{
+					builder.OpenElement(0, "div");
+					builder.AddAttribute(1, "class", "alert alert-danger");
+					builder.AddContent(2, message);
+					builder.CloseElement();
+				}
+
+				builder.OpenComponent<ObjectSelector>(3);
+				builder.AddComponentParameter(4, nameof(ObjectSelector.Picker), picker);
+				builder.AddComponentParameter(5, nameof(ObjectSelector.Multiselect), true);
+				builder.AddComponentParameter(6, nameof(ObjectSelector.InitialSelectedRows), previouslySelected);
+				builder.AddComponentReferenceCapture(7, c => selector = (ObjectSelector)c);
+				builder.CloseComponent();
+			};
+
+			if (await _dialogs.ShowAsync("Радиостанции", body, okText: "Клонировать") != DialogOutcome.Ok)
+				return ActionEffect.None;
+
+			IReadOnlyList<DataRow> selected = selector!.SelectedRows;
+			previouslySelected = selected;
+			if (!pricelist.IsMassCloneSelectionValid(selected.Count))
+			{
+				// Тот же текст, что десктопный Properties.Resources.NoRadiostationSelected
+				// (CheckSelectionResult) — это не бизнес-ошибка процедуры, MessageAccessor
+				// такого ключа не знает.
+				message = "Необходимо выбрать хотя бы одну радиостанцию.";
+				continue;
+			}
+
+			Entity massmedia = EntityManager.GetEntity((int)Merlin.Entities.MassMedia);
+			List<PresentationObject> radioStations = selected.Select(massmedia.CreateObject).ToList();
+
+			DataTable errors = pricelist.ApplyMassClone(startDate, finishDate, mode, radioStations);
+			if (errors.Rows.Count > 0)
+				await ShowCloneErrors(errors);
+
+			return ActionEffect.SiblingAdded;
+		}
+	}
+
+	/// <summary>Построчный список ошибок массового клонирования вместо десктопного Globals.ShowSimpleJournal.</summary>
+	private async Task ShowCloneErrors(DataTable errors)
+	{
+		string text = string.Join("\n", errors.Rows.Cast<DataRow>().Select(r => r["description"]?.ToString()));
+
+		RenderFragment body = builder =>
+		{
+			builder.OpenElement(0, "pre");
+			builder.AddAttribute(1, "class", "mb-0");
+			builder.AddContent(2, text);
+			builder.CloseElement();
+		};
+
+		await _dialogs.ShowAsync("Ошибки клонирования", body, okText: "Ок");
 	}
 
 	/// <summary>FakeContainer, ветка AddNew — то же для корня древовидного экрана.</summary>

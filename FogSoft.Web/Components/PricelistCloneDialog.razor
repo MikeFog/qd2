@@ -1,0 +1,76 @@
+@using Merlin.Classes
+
+@*
+    Параметры клонирования прайс-листа — веб-аналог PricelistCloneForm.
+
+    Даты — всегда. Выбор режима клонирования тарифов (три варианта) — только
+    если SupportsCloneModes: он верен для обычного прайс-листа (сущность 80),
+    у спонсорского (12) своей процедуры без @cloneMode нет. Тексты вариантов
+    и порядок — дословно из PricelistCloneForm.InitializeComponent, по
+    умолчанию выбран WithWindowChanges.
+
+    Проверку "начало позже окончания" эта карточка не делает — она в
+    ObjectActions, до вызова Pricelist.ApplyClone, как и в десктопе
+    (PricelistCloneForm.btnOk_Click).
+*@
+
+<div class="passport-grid">
+    <div class="passport-label">Дата начала:</div>
+    <div class="passport-control">
+        <input type="date" class="form-control form-control-sm" value="@ToInputDate(StartDate)"
+               @onchange="e => StartDate = FromInputDate(e.Value)" />
+    </div>
+
+    <div class="passport-label">Дата окончания:</div>
+    <div class="passport-control">
+        <input type="date" class="form-control form-control-sm" value="@ToInputDate(FinishDate)"
+               @onchange="e => FinishDate = FromInputDate(e.Value)" />
+    </div>
+</div>
+
+@if (SupportsCloneModes)
+{
+    <div class="mt-3 mb-1">Как клонировать тарифы прайс-листа?</div>
+    <div class="form-check">
+        <input class="form-check-input" type="radio" name="pricelistCloneMode" id="pricelistCloneModeExact"
+               checked="@(Mode == PricelistCloneMode.Exact)"
+               @onchange="() => Mode = PricelistCloneMode.Exact" />
+        <label class="form-check-label" for="pricelistCloneModeExact">Один в один — тарифы копируются без изменений.</label>
+    </div>
+    <div class="form-check">
+        <input class="form-check-input" type="radio" name="pricelistCloneMode" id="pricelistCloneModeWindowChanges"
+               checked="@(Mode == PricelistCloneMode.WithWindowChanges)"
+               @onchange="() => Mode = PricelistCloneMode.WithWindowChanges" />
+        <label class="form-check-label" for="pricelistCloneModeWindowChanges">С учётом правок предыдущих тарифов — цена, длительность и время берутся из последних 7 дней</label>
+    </div>
+    <div class="form-check">
+        <input class="form-check-input" type="radio" name="pricelistCloneMode" id="pricelistCloneModeHybrid"
+               checked="@(Mode == PricelistCloneMode.Hybrid)"
+               @onchange="() => Mode = PricelistCloneMode.Hybrid" />
+        <label class="form-check-label" for="pricelistCloneModeHybrid">Гибрид — модульные тарифы один в один, остальные с учётом правок окон.</label>
+    </div>
+}
+
+@code {
+    [Parameter] public bool SupportsCloneModes { get; set; }
+
+    // Параметры, а не просто поля: при повторном показе диалога после ошибки
+    // проверки дат (см. ObjectActions.ClonePricelist) старый компонент не
+    // переиспользуется — Blazor создаёт новый внутри новой RenderFragment,
+    // а DialogHost полностью закрывает и открывает модальное окно заново.
+    // Без параметров введённые даты и режим терялись бы при каждой ошибке —
+    // в десктопе PricelistCloneForm просто не закрывается и ничего не сбрасывает.
+    [Parameter] public DateTime StartDate { get; set; } = DateTime.Today;
+    [Parameter] public DateTime FinishDate { get; set; } = DateTime.Today;
+    [Parameter] public PricelistCloneMode Mode { get; set; } = PricelistCloneMode.WithWindowChanges;
+
+    // Тот же перевод в ISO, что ReadDate/WriteDate в Passport.razor:
+    // HTML-инпут type="date" понимает только yyyy-MM-dd.
+    private static string ToInputDate(DateTime date) => date.ToString("yyyy-MM-dd");
+
+    private static DateTime FromInputDate(object? value)
+    {
+        string text = value?.ToString() ?? "";
+        return text.Length > 0 && DateTime.TryParse(text, out DateTime date) ? date : DateTime.Today;
+    }
+}
