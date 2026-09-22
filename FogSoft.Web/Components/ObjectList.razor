@@ -41,7 +41,7 @@ else if (Data.Rows.Count == 0)
 else
 {
     <div class="data-table object-list">
-        <table class="table table-hover">
+        <table class="table table-hover @(ReadOnly ? "no-row-click" : "")">
             <thead>
                 <tr>
                     <th class="col-icon"></th>
@@ -51,14 +51,17 @@ else
                             @a.Alias<span class="sort-mark">@SortMark(a.Name)</span>
                         </th>
                     }
-                    <th class="col-actions"></th>
+                    @if (!ReadOnly)
+                    {
+                        <th class="col-actions"></th>
+                    }
                 </tr>
             </thead>
             <tbody>
                 <Virtualize TItem="DataRow" Items="_rows" ItemSize="29" SpacerElement="tr" Context="row">
                     <tr class="@(ReferenceEquals(row, _menuRow) ? "row-menu-open" : "")"
-                        @onclick="() => Run(row, Constants.EntityActions.ShowPassport)"
-                        @oncontextmenu="e => OpenMenu(row, e, fromButton: false)" @oncontextmenu:preventDefault="true">
+                        @onclick="() => OpenPassport(row)"
+                        @oncontextmenu="e => OpenMenu(row, e, fromButton: false)" @oncontextmenu:preventDefault="!ReadOnly">
                         <td class="col-icon"><i class="bi @_icon entity-icon" aria-hidden="true"></i></td>
                         @foreach (var a in Columns)
                         {
@@ -76,20 +79,23 @@ else
                                 }
                             </td>
                         }
-                        <td class="col-actions">
-                            @foreach (var quick in _quick)
-                            {
-                                <button type="button" class="row-btn @(quick.Danger ? "row-btn-danger" : "")"
-                                        title="@quick.Text" aria-label="@quick.Text"
-                                        @onclick="() => Run(row, quick.Name, reportUnavailable: true)" @onclick:stopPropagation="true">
-                                    <i class="bi @quick.Icon" aria-hidden="true"></i>
+                        @if (!ReadOnly)
+                        {
+                            <td class="col-actions">
+                                @foreach (var quick in _quick)
+                                {
+                                    <button type="button" class="row-btn @(quick.Danger ? "row-btn-danger" : "")"
+                                            title="@quick.Text" aria-label="@quick.Text"
+                                            @onclick="() => Run(row, quick.Name, reportUnavailable: true)" @onclick:stopPropagation="true">
+                                        <i class="bi @quick.Icon" aria-hidden="true"></i>
+                                    </button>
+                                }
+                                <button type="button" class="row-btn" title="Действия" aria-label="Действия" aria-haspopup="menu"
+                                        @onclick="e => OpenMenu(row, e, fromButton: true)" @onclick:stopPropagation="true">
+                                    <i class="bi bi-three-dots" aria-hidden="true"></i>
                                 </button>
-                            }
-                            <button type="button" class="row-btn" title="Действия" aria-label="Действия" aria-haspopup="menu"
-                                    @onclick="e => OpenMenu(row, e, fromButton: true)" @onclick:stopPropagation="true">
-                                <i class="bi bi-three-dots" aria-hidden="true"></i>
-                            </button>
-                        </td>
+                            </td>
+                        }
                     </tr>
                 </Virtualize>
             </tbody>
@@ -106,6 +112,14 @@ else
 
     /// <summary>Текст, когда строк нет.</summary>
     [Parameter] public string EmptyText { get; set; } = "Записей нет.";
+
+    /// <summary>
+    /// Только показать: ни действий над строками, ни открытия карточки по клику.
+    /// Нужен для готовых таблиц — итогов массовых операций и прочих технических
+    /// списков (<see cref="TableDialog"/>), где строка не доменный объект, а
+    /// запись результата: открывать у неё нечего, удалять нечего.
+    /// </summary>
+    [Parameter] public bool ReadOnly { get; set; }
 
     /// <summary>
     /// Список изменился — владелец экрана должен перечитать данные. Сам
@@ -323,6 +337,11 @@ else
 
     private async Task OpenMenu(DataRow row, MouseEventArgs e, bool fromButton)
     {
+        // Правая кнопка в режиме показа не должна открывать пустое меню; браузерное
+        // меню при этом не подавляется (oncontextmenu:preventDefault="!ReadOnly").
+        if (ReadOnly)
+            return;
+
         try
         {
             PresentationObject obj = Entity.CreateObject(row);
@@ -347,6 +366,13 @@ else
     /// их доступность заранее не проверяется. Клику по строке не нужно: там,
     /// где карточки нет, двойной щелчок в десктопе тоже просто ничего не делает.
     /// </param>
+    /// <summary>
+    /// Клик по строке открывает карточку — кроме режима показа: там строка не
+    /// доменный объект, а запись результата, открывать у неё нечего.
+    /// </summary>
+    private Task OpenPassport(DataRow row) =>
+        ReadOnly ? Task.CompletedTask : Run(row, Constants.EntityActions.ShowPassport);
+
     private async Task Run(DataRow row, string actionName, bool reportUnavailable = false)
     {
         try

@@ -22,6 +22,7 @@ builder.Services.AddScoped<DialogService>();
 builder.Services.AddScoped<PassportDialog>();
 // Действия над объектами (замена контекстного меню десктопа) и само
 // всплывающее меню — тоже свои на circuit, как диалоги.
+builder.Services.AddScoped<TableDialog>();
 builder.Services.AddScoped<ObjectActions>();
 builder.Services.AddScoped<ActionMenuService>();
 builder.Services.AddSingleton<CircuitServicesAccessor>();

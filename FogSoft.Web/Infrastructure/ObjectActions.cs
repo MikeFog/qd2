@@ -85,11 +85,13 @@ public sealed class ObjectActions
 {
 	private readonly PassportDialog _passports;
 	private readonly DialogService _dialogs;
+	private readonly TableDialog _tables;
 
-	public ObjectActions(PassportDialog passports, DialogService dialogs)
+	public ObjectActions(PassportDialog passports, DialogService dialogs, TableDialog tables)
 	{
 		_passports = passports;
 		_dialogs = dialogs;
+		_tables = tables;
 	}
 
 	private delegate Task<ActionEffect> Handler(ObjectActions self, object target);
@@ -628,21 +630,15 @@ public sealed class ObjectActions
 		}
 	}
 
-	/// <summary>Построчный список ошибок массового клонирования вместо десктопного Globals.ShowSimpleJournal.</summary>
-	private async Task ShowCloneErrors(DataTable errors)
-	{
-		string text = string.Join("\n", errors.Rows.Cast<DataRow>().Select(r => r["description"]?.ToString()));
-
-		RenderFragment body = builder =>
-		{
-			builder.OpenElement(0, "pre");
-			builder.AddAttribute(1, "class", "mb-0");
-			builder.AddContent(2, text);
-			builder.CloseElement();
-		};
-
-		await _dialogs.ShowAsync("Ошибки клонирования", body, okText: "Ок");
-	}
+	/// <summary>
+	/// Итоги массового клонирования — общим показом готовой таблицы
+	/// (<see cref="TableDialog"/>), как это делает десктоп через
+	/// Globals.ShowSimpleJournal. Колонка одна: Pricelist.CreateErrorTable
+	/// складывает имя станции и текст отказа в одну строку description.
+	/// </summary>
+	private Task ShowCloneErrors(DataTable errors) =>
+		_tables.ShowAsync("Ошибки клонирования", errors,
+			new Entity.Attribute("description", "Ошибка", "nvarchar"));
 
 	/// <summary>FakeContainer, ветка AddNew — то же для корня древовидного экрана.</summary>
 	private async Task<ActionEffect> AddNew(object target)

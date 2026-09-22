@@ -47,6 +47,11 @@
     cursor: pointer;
 }
 
+/* В режиме показа (ReadOnly) открывать нечего — и курсор об этом не врёт. */
+::deep table.no-row-click tbody tr {
+    cursor: default;
+}
+
 /* Строка, у которой открыто меню, остаётся подсвеченной. */
 ::deep tbody tr.row-menu-open > td {
     background: var(--c-accent-soft);
