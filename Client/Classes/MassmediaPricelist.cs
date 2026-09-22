@@ -39,6 +39,7 @@ namespace Merlin.Classes
 			public const string ShowDisabledWindows = "ShowDisabledWindows";
             public const string MarkWindows = "MarkWindows";
             public const string UnmarkWindows = "UnmarkWindows";
+			public const string AddTariffsMass = "AddTariffsMass";
         }
 
 		private bool excludeModuleTariffs = true;
@@ -90,6 +91,8 @@ namespace Merlin.Classes
 		{
 			if(actionName == Constants.EntityActions.AssignNew)
 				return ChildEntity != null && (ChildEntity.Id == (int)Entities.Tariff || ChildEntity.Id == (int)Entities.SponsorTariff);
+			else if(actionName == Actions.AddTariffsMass)
+				return ChildEntity != null && ChildEntity.Id == (int)Entities.Tariff;
 			else if(actionName == Actions.GenerateWindows 
 				|| actionName == Actions.DeleteGeneratedWindows
 				|| actionName == Actions.EnabledTariffWindows

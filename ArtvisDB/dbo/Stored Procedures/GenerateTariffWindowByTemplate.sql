@@ -25,6 +25,13 @@ BEGIN
 	
 	SET DATEFIRST 1
 
+	-- Продолжительность не может быть больше полной; нулевая полная продолжительность означает «не задана»
+	if @duration_total > 0 and @duration > @duration_total
+	begin
+		raiserror('DurationExceedsTotal', 16, 1)
+		return
+	end
+
 	declare @isInsideChain bit
 	Declare @currentDate datetime,	@broadcastStart DATETIME, @weekday TINYINT, @actualDate DATETIME 
 	Declare @errors Table (

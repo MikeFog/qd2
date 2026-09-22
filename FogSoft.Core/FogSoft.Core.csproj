@@ -141,6 +141,7 @@
     <Compile Include="..\Client\Classes\PackModule.cs" Link="Domain\PackModule.cs" />
     <Compile Include="..\Client\Classes\PackModuleIssue.cs" Link="Domain\PackModuleIssue.cs" />
     <Compile Include="..\Client\Classes\PackModulePricelist.cs" Link="Domain\PackModulePricelist.cs" />
+    <Compile Include="..\Client\Classes\DiscountRelease.cs" Link="Domain\DiscountRelease.cs" />
     <Compile Include="..\Client\Classes\PackageDiscount.cs" Link="Domain\PackageDiscount.cs" />
     <Compile Include="..\Client\Classes\PackageDiscountPriceList.cs" Link="Domain\PackageDiscountPriceList.cs" />
     <Compile Include="..\Client\Classes\PaintingType.cs" Link="Domain\PaintingType.cs" />

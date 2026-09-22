@@ -39,8 +39,80 @@ namespace Merlin.Classes
 				ChangeTariffWindowsMarkedStatus(owner, true);
 			else if (actionName == Actions.UnmarkWindows)
 				ChangeTariffWindowsMarkedStatus(owner, false);
+			else if (actionName == Actions.AddTariffsMass)
+				AddTariffsMass(owner);
 			else
 				base.DoAction(actionName, owner, interfaceObject);
+		}
+
+		private const string TariffMassPassportName = "TariffMass";
+		private const string TariffMassMinuteParam = "tariffMinute";
+		private const string TariffMassHourFromParam = "hourFrom";
+		private const string TariffMassHourToParam = "hourTo";
+
+		/// <summary>
+		/// «Добавить тариф массово»: паспорт TariffMass (iPassport) — копия паспорта тарифа,
+		/// где вместо времени выхода минута + интервал часов. Значения паспорта применяются
+		/// к тарифу в каждом часе интервала (Tariff.CreateMass, по одному TariffIUD).
+		/// </summary>
+		private void AddTariffsMass(IWin32Window owner)
+		{
+			try
+			{
+				Entity tariffEntity = EntityManager.GetEntity((int)Entities.Tariff);
+				PresentationObject template = tariffEntity.NewObject;
+				template[Pricelist.ParamNames.PricelistId] = PricelistId;
+
+				// Данные паспорта (справочник типов блока) — та же процедура, что у обычной карточки тарифа.
+				Dictionary<string, object> procParameters = template.Parameters;
+				DataAccessor.PrepareParameters(procParameters, tariffEntity, InterfaceObjects.PropertyPage, Constants.Actions.Load);
+				DataSet ds = DataAccessor.IsProcedureExist(procParameters) ? DataAccessor.DoAction(procParameters) as DataSet : null;
+
+				int created = 0;
+				DataTable tableErrors = null;
+
+				UniversalPassportForm form = new UniversalPassportForm(template, TariffMassPassportName,
+					"Добавить тариф массово", tariffEntity, ds,
+					ValidateTariffMass,
+					parameters =>
+					{
+						Application.DoEvents();
+						Cursor.Current = Cursors.WaitCursor;
+						created = Tariff.CreateMass(parameters,
+							Convert.ToInt32(parameters[TariffMassHourFromParam]),
+							Convert.ToInt32(parameters[TariffMassHourToParam]),
+							Convert.ToInt32(parameters[TariffMassMinuteParam]),
+							out tableErrors);
+					});
+
+				if (form.ShowDialog(owner) != DialogResult.OK || tableErrors == null) return;
+
+				if (tableErrors.Rows.Count > 0)
+					Globals.ShowSimpleJournal(EntityManager.GetEntity((int)Entities.ErrTmplGen),
+						string.Format("Создано тарифов: {0}, не создано: {1}", created, tableErrors.Rows.Count), tableErrors);
+				else
+					UserMessage.ShowInformation(string.Format("Создано тарифов: {0}", created));
+
+				FireContainerRefreshed();
+			}
+			catch (Exception e)
+			{
+				ErrorManager.PublishError(e);
+			}
+			finally
+			{
+				Cursor.Current = Cursors.Default;
+			}
+		}
+
+		private static bool ValidateTariffMass(Dictionary<string, object> parameters)
+		{
+			if (Convert.ToInt32(parameters[TariffMassHourFromParam]) > Convert.ToInt32(parameters[TariffMassHourToParam]))
+			{
+				UserMessage.ShowExclamation("Час окончания интервала не может быть меньше часа начала.");
+				return false;
+			}
+			return true;
 		}
 
 		private void ShowDisabledWindows()

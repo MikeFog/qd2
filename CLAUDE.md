@@ -28,6 +28,7 @@ Important project documents:
 - Architecture map: `docs/ARCHITECTURE.md`
 - AI workflow/playbook: `docs/AI_AGENT_PLAYBOOK.md`
 - Improvement candidates (non-bugs, future work): `docs/IMPROVEMENTS.md`
+- Business-rule errors (`RAISERROR('Ключ')` + таблица `iMessage`, как добавить правило): `docs/business-errors.md`
 - Logging guide: `docs/LOGGING.md`
 - SmartGrid control reference: `docs/smartgrid.md`
 - Window merging reference: `docs/window-merging.md` — two distinct "склейка" mechanisms: `TariffUnion` (pricelist-level tariff continuation) and `TariffWindow.windowPrevId`/`windowNextId` (per-day window chains); entry points, readers, and known defects.

@@ -6,6 +6,17 @@ using FogSoft.WinForm.DataAccess;
 
 namespace Merlin.Classes
 {
+	/// <summary>Как клонировать тарифы прайс-листа (параметр @cloneMode процедуры PricelistIUD).</summary>
+	public enum PricelistCloneMode : byte
+	{
+		/// <summary>Тарифы один в один.</summary>
+		Exact = 1,
+		/// <summary>С учётом правок, сделанных в рекламных окнах.</summary>
+		WithWindowChanges = 2,
+		/// <summary>Гибрид: тарифы «только для модулей» один в один, остальные — с учётом правок окон.</summary>
+		Hybrid = 3
+	}
+
 	// UI-часть (DoAction, ClonePriceList, CheckSelectionResult) — в
 	// Pricelist.WinForms.cs. Конвенция — docs/tasks/web-migration-dialogs.md.
 	public abstract partial class Pricelist : ObjectContainer
@@ -15,6 +26,7 @@ namespace Merlin.Classes
 			public const string StartDate = "startDate";
 			public const string FinishDate = "finishDate";
 			public const string PricelistId = "pricelistID";
+			public const string CloneMode = "cloneMode";
 		}
 
 		private struct ActionNames
@@ -49,12 +61,23 @@ namespace Merlin.Classes
 
 		// DoAction, ClonePriceList и CheckSelectionResult переехали в Pricelist.WinForms.cs.
 
-		/// <summary>Клонирует прайс-лист на новый период.</summary>
-		internal void ApplyClone(DateTime startDate, DateTime finishDate)
+		/// <summary>
+		/// Есть ли у клонирования выбор режима. Только у обычного прайс-листа: остальные
+		/// виды клонируются своими процедурами, параметра @cloneMode у них нет.
+		/// </summary>
+		internal bool SupportsCloneModes
+		{
+			get { return Entity.Id == (int)Entities.Pricelist; }
+		}
+
+		/// <summary>Клонирует прайс-лист на новый период. mode == null — режим по умолчанию на стороне процедуры.</summary>
+		internal void ApplyClone(DateTime startDate, DateTime finishDate, PricelistCloneMode? mode)
 		{
 			Dictionary<string, object> newParameters = Parameters;
 			newParameters[ParamNames.FinishDate] = finishDate;
 			newParameters[ParamNames.StartDate] = startDate;
+			if (mode.HasValue)
+				newParameters[ParamNames.CloneMode] = (byte)mode.Value;
 			Clone(newParameters);
 		}
 
@@ -62,11 +85,13 @@ namespace Merlin.Classes
 		/// Клонирует прайс-лист на новый период для каждой из выбранных
 		/// радиостанций. Возвращает таблицу ошибок (пустую, если ошибок не было).
 		/// </summary>
-		internal DataTable ApplyMassClone(DateTime startDate, DateTime finishDate, IEnumerable<PresentationObject> radioStations)
+		internal DataTable ApplyMassClone(DateTime startDate, DateTime finishDate, PricelistCloneMode? mode, IEnumerable<PresentationObject> radioStations)
 		{
 			Dictionary<string, object> newParameters = Parameters;
 			newParameters[ParamNames.FinishDate] = finishDate;
 			newParameters[ParamNames.StartDate] = startDate;
+			if (mode.HasValue)
+				newParameters[ParamNames.CloneMode] = (byte)mode.Value;
 
 			DataTable tableErrors = CreateErrorTable();
 			foreach (var radioStation in radioStations)

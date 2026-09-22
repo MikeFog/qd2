@@ -21,8 +21,15 @@ begin
 set nocount on;
 SET DATEFIRST 1; -- Устанавливает понедельник как первый день недели
 
-declare @needaddday bit 
-	
+-- Продолжительность не может быть больше полной; нулевая полная продолжительность означает «не задана»
+if @newDuration_total > 0 and @newDuration > @newDuration_total
+begin
+	raiserror('DurationExceedsTotal', 16, 1)
+	return
+end
+
+declare @needaddday bit
+
 if exists(select * 
 	from Pricelist pl 
 	where pl.PricelistID = @pricelistID
