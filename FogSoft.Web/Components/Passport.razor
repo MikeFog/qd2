@@ -700,6 +700,8 @@ else
     /// </summary>
     public void ApplyChanges()
     {
+        ApplyUntouchedFields();
+
         if (Object is not IParentObject parent)
             return;
 
@@ -785,6 +787,67 @@ else
         // уходит в процедуру как null, а не как отсутствие параметра.
         Object[field.Name] = null;
         _imageError = null;
+    }
+
+    /// <summary>
+    /// Значения полей, которых пользователь не коснулся.
+    ///
+    /// В десктопе каждый контрол паспорта реализует ApplyChanges(parameters), и
+    /// форма при сохранении обходит ВСЕ контролы: значение уходит в процедуру
+    /// независимо от того, трогали поле или нет (PageControl.ApplyChanges,
+    /// условие ValueShouldBeSet в карточке всегда истинно). В вебе значение
+    /// попадает в параметры только из обработчика @onchange — то есть лишь у
+    /// тронутых полей.
+    ///
+    /// У существующего объекта разницы нет: параметры уже заполнены процедурой
+    /// загрузки. А у нового в словаре оказываются только поля со значением по
+    /// умолчанию в самом паспорте (атрибут value) и то, что заполнил
+    /// пользователь. Остальные до процедуры не доезжают вовсе, и она получает
+    /// NULL: так «Добавить тариф» падало на NOT NULL-колонке duration_total —
+    /// поле «Полная продолжительность» живёт на вкладке DJin и умолчания не
+    /// имеет (docs/tasks/web-passport-new-object-fields.md).
+    ///
+    /// Пишем то же, что показывает контрол, и в том же виде, что десктопные
+    /// ApplyChanges: галочка (снята = false), число и продолжительность
+    /// (пустые = 0, как NumericUpDown и TimeDuration), обычное поле (пустая
+    /// строка, ровно как PageFieldText кладёт TextBox.Text).
+    ///
+    /// Тип берём из FieldTypeResolver, а не «на глаз»: пустая строка у
+    /// числового параметра не доходит даже до SQL — ADO.NET отказывается
+    /// переводить String в Int16 (проверено живьём на maxCapacity тарифа).
+    /// Поэтому числовые — нулём, строковые — пустой строкой.
+    ///
+    /// Дату и время НЕ выдумываем: пустой календарь — это «не выбрано», а не
+    /// 01.01.1900, и SQL привёл бы '' к дате молча. Поле без распознанного
+    /// типа тоже пропускаем: подставлять вслепую нечего.
+    /// Оба пробела описаны в docs/tasks/web-passport-new-object-fields.md.
+    /// </summary>
+    private void ApplyUntouchedFields()
+    {
+        foreach (var pg in _pages)
+            foreach (var field in pg.Fields)
+            {
+                if (field.Unsupported != null || field.IsLabel || field.Name.Length == 0)
+                    continue;
+
+                // У lookup, objectPicker, selector и картинки своя запись значения.
+                if (field.Lookup != null || field.Picker != null || field.Selector != null || field.Image != null)
+                    continue;
+
+                object? current = Object[field.Name];
+                if (current != null && current != DBNull.Value)
+                    continue;
+
+                if (field.Type == null)
+                    continue;
+
+                if (field.Type.IsBoolean)
+                    Object[field.Name] = false;
+                else if (field.Type.IsTimeDuration || field.Type.IsInteger || field.Type.IsDecimal || field.Type.IsMoney)
+                    Object[field.Name] = 0;
+                else if (!field.Type.IsDate && !field.Type.IsDateTime && !field.Type.IsTime)
+                    Object[field.Name] = "";
+            }
     }
 
     /// <summary>
