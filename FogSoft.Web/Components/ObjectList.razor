@@ -5,6 +5,7 @@
 @inject ObjectActions Actions
 @inject ActionMenuService Menu
 @inject IJSRuntime JS
+@implements IAsyncDisposable
 
 @*
     Список объектов: таблица, сортировка и действия над строкой.
@@ -28,6 +29,15 @@
     Постраничности намеренно нет: в десктопе её тоже нет, прокрутка идёт по
     всему списку. SpacerElement="tr" обязателен — распорки по умолчанию div,
     а внутри tbody это недопустимая разметка.
+
+    Выделение чекбоксами (массовое удаление, решение владельца продукта
+    2026-09-22) — только у сущностей с isMassDeleteAllowed. Жест — чекбоксы,
+    а не Ctrl/Shift по строкам десктопа: те заняты браузером (открытие
+    вкладок, встроенное выделение текста) и кликом по строке (открывает
+    карточку), а невидимое выделение при виртуализации для необратимого
+    действия недопустимо. Само удаление и его кнопка — у владельца экрана
+    (Journal.razor/Browser.razor, ScreenToolbar); список только собирает
+    отметки и отдаёт их наружу через SelectedObjects/SelectionChanged.
 *@
 
 @if (Data == null)
@@ -44,6 +54,13 @@ else
         <table class="table table-hover @(ReadOnly ? "no-row-click" : "")">
             <thead>
                 <tr>
+                    @if (SelectionEnabled)
+                    {
+                        <th class="col-check" @onclick:stopPropagation="true">
+                            <input type="checkbox" class="form-check-input" @ref="_headerCheckboxRef"
+                                   checked="@AllSelected" @onchange="ToggleAll" title="Отметить все" />
+                        </th>
+                    }
                     <th class="col-icon"></th>
                     @foreach (var a in Columns)
                     {
@@ -62,6 +79,14 @@ else
                     <tr class="@(ReferenceEquals(row, _menuRow) ? "row-menu-open" : "")"
                         @onclick="() => OpenPassport(row)"
                         @oncontextmenu="e => OpenMenu(row, e, fromButton: false)" @oncontextmenu:preventDefault="!ReadOnly">
+                        @if (SelectionEnabled)
+                        {
+                            <td class="col-check" @onclick:stopPropagation="true">
+                                <input type="checkbox" class="form-check-input"
+                                       checked="@_selectedRows.Contains(row)"
+                                       @onclick="e => ToggleRow(row, e)" />
+                            </td>
+                        }
                         <td class="col-icon"><i class="bi @_icon entity-icon" aria-hidden="true"></i></td>
                         @foreach (var a in Columns)
                         {
@@ -132,6 +157,15 @@ else
     [Parameter] public EventCallback<string> Failed { get; set; }
 
     /// <summary>
+    /// Сколько строк сейчас отмечено чекбоксами — владелец экрана рисует по
+    /// этому числу кнопку массового удаления в своём тулбаре (решение
+    /// владельца продукта 2026-09-22: чекбоксы, не Ctrl/Shift по строкам —
+    /// список виртуализирован, невидимое выделение для необратимого действия
+    /// недопустимо).
+    /// </summary>
+    [Parameter] public EventCallback<int> SelectionChanged { get; set; }
+
+    /// <summary>
     /// Колонки — атрибуты сущности, у которых есть соответствующая колонка в
     /// пришедших строках. Метаданные (iEntityAttribute) могут объявлять
     /// колонку, которой нет в конкретной процедуре загрузки списка — например,
@@ -160,19 +194,41 @@ else
     private string? _sortColumn;
     private bool _sortDescending;
 
+    // Уведомление о сбросе выделения ждёт до OnParametersSetAsync: сам сброс
+    // случается в синхронном OnParametersSet (вместе с пересборкой сортировки),
+    // а SelectionChanged — асинхронный EventCallback, ждать его здесь нечем.
+    private bool _selectionResetPending;
+
     protected override void OnParametersSet()
     {
         // Пересобираем порядок, когда пришёл другой набор строк: у дерева это
-        // происходит на каждом выборе узла.
+        // происходит на каждом выборе узла. Выделение при этом тоже сбрасывается —
+        // строки не те же самые DataRow, по которым оно хранится.
         if (!ReferenceEquals(_sorted, Data))
         {
             _sorted = Data;
             _sortColumn = null;
             _sortDescending = false;
             _quick = ResolveQuickActions();
+
+            if (_selectedRows.Count > 0)
+            {
+                _selectedRows.Clear();
+                _lastCheckedRow = null;
+                _selectionResetPending = true;
+            }
         }
 
         ApplySort();
+    }
+
+    protected override Task OnParametersSetAsync()
+    {
+        if (!_selectionResetPending)
+            return Task.CompletedTask;
+
+        _selectionResetPending = false;
+        return NotifySelectionChangedAsync();
     }
 
     private const string BoolYes = "Да";
@@ -304,6 +360,132 @@ else
         catch (Exception ex)
         {
             await Failed.InvokeAsync(ErrorPresenter.Describe(ex));
+        }
+    }
+
+    // ---------- Выделение чекбоксами (массовое удаление) ----------
+
+    /// <summary>
+    /// Колонка чекбоксов — только у сущностей с флагом массового удаления
+    /// (iEntity.isMassDeleteAllowed, сегодня только сущность 81 «Тариф») и не
+    /// в режиме показа: строка готовой таблицы — не доменный объект, отмечать
+    /// нечего.
+    /// </summary>
+    private bool SelectionEnabled => !ReadOnly && Entity.IsMassDeleteAllowed;
+
+    /// <summary>
+    /// Выделение — по ссылке на DataRow, а не по индексу или ключу: сортировка
+    /// пересобирает _rows из тех же объектов DataRow, поэтому выбор её
+    /// переживает без всякого учёта столбца сортировки.
+    /// </summary>
+    private readonly HashSet<DataRow> _selectedRows = new();
+
+    /// <summary>Строка последнего клика по чекбоксу — опорная точка для Shift-диапазона.</summary>
+    private DataRow? _lastCheckedRow;
+
+    private ElementReference _headerCheckboxRef;
+    private IJSObjectReference? _checkboxModule;
+    private bool? _appliedIndeterminate;
+
+    private bool AllSelected => _rows.Count > 0 && _selectedRows.Count == _rows.Count;
+
+    /// <summary>Объекты, отмеченные чекбоксами, — то, что владелец экрана передаёт в удаление пачкой.</summary>
+    public IReadOnlyList<PresentationObject> SelectedObjects =>
+        _selectedRows.Select(Entity.CreateObject).ToList();
+
+    /// <summary>«Снять выделение» кнопкой тулбара владельца экрана.</summary>
+    public Task ClearSelection()
+    {
+        if (_selectedRows.Count == 0)
+            return Task.CompletedTask;
+
+        _selectedRows.Clear();
+        _lastCheckedRow = null;
+
+        // Метод вызван снаружи через @ref, а не через событие самого компонента —
+        // Blazor не перерисует ObjectList автоматически, как перерисовал бы после
+        // собственного @onclick/@onchange, поэтому явный StateHasChanged.
+        StateHasChanged();
+        return NotifySelectionChangedAsync();
+    }
+
+    /// <summary>Заголовочный чекбокс: отметить/снять весь текущий список (_rows), а не только отрисованные строки — список виртуализирован.</summary>
+    private Task ToggleAll(ChangeEventArgs e)
+    {
+        bool check = e.Value is bool b && b;
+        if (check)
+            foreach (DataRow row in _rows)
+                _selectedRows.Add(row);
+        else
+            _selectedRows.Clear();
+
+        // Якорь Shift-диапазона теряет смысл после «отметить/снять все».
+        _lastCheckedRow = null;
+        return NotifySelectionChangedAsync();
+    }
+
+    /// <summary>
+    /// Клик по чекбоксу строки не должен открывать карточку (stopPropagation в
+    /// разметке, как у быстрых иконок). Shift+клик отмечает диапазон от строки
+    /// последнего клика по чекбоксу до текущей — привычка из десктопного грида,
+    /// без конфликта с Ctrl/Shift на самой строке (те заняты браузером и
+    /// открытием карточки, поэтому выделение строк решили делать только чекбоксами).
+    /// </summary>
+    private Task ToggleRow(DataRow row, MouseEventArgs e)
+    {
+        bool willSelect = !_selectedRows.Contains(row);
+
+        if (e.ShiftKey && _lastCheckedRow != null)
+        {
+            int from = _rows.IndexOf(_lastCheckedRow);
+            int to = _rows.IndexOf(row);
+            if (from >= 0 && to >= 0)
+            {
+                int lo = Math.Min(from, to), hi = Math.Max(from, to);
+                for (int i = lo; i <= hi; i++)
+                {
+                    if (willSelect)
+                        _selectedRows.Add(_rows[i]);
+                    else
+                        _selectedRows.Remove(_rows[i]);
+                }
+            }
+        }
+        else if (willSelect)
+            _selectedRows.Add(row);
+        else
+            _selectedRows.Remove(row);
+
+        _lastCheckedRow = row;
+        return NotifySelectionChangedAsync();
+    }
+
+    private Task NotifySelectionChangedAsync() => SelectionChanged.InvokeAsync(_selectedRows.Count);
+
+    /// <summary>
+    /// «Отмечено частично» — DOM-свойство чекбокса, не HTML-атрибут; Blazor не
+    /// умеет выставить его разметкой, только JS-интероп после отрисовки.
+    /// </summary>
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (!SelectionEnabled)
+            return;
+
+        bool indeterminate = _selectedRows.Count > 0 && !AllSelected;
+        if (_appliedIndeterminate == indeterminate)
+            return;
+
+        _checkboxModule ??= await JS.InvokeAsync<IJSObjectReference>("import", "./js/checkbox.js");
+        await _checkboxModule.InvokeVoidAsync("setIndeterminate", _headerCheckboxRef, indeterminate);
+        _appliedIndeterminate = indeterminate;
+    }
+
+    public async ValueTask DisposeAsync()
+    {
+        if (_checkboxModule != null)
+        {
+            try { await _checkboxModule.DisposeAsync(); }
+            catch (JSDisconnectedException) { }
         }
     }
 

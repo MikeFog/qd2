@@ -69,6 +69,11 @@ else
        панель ниже, поэтому в тулбар они не переносятся. «Обновить» читает
        список тем же путём, что «Применить» в отборе. *@
     <ScreenToolbar Title="@Title" Count="@(_data?.Rows.Count ?? 0)">
+        @if (_selectedCount > 0)
+        {
+            <button class="btn btn-sm btn-danger" @onclick="DeleteSelected"><i class="bi bi-trash3" aria-hidden="true"></i>Удалить (@_selectedCount)</button>
+            <button class="btn btn-sm btn-outline-secondary" @onclick="ClearSelection">Снять выделение</button>
+        }
         @if (_route?.BulkAction is { } bulk)
         {
             <button class="btn btn-sm btn-outline-secondary" disabled="@(_bulkPending == 0)" @onclick="RunBulkAction"><i class="bi bi-check2-all" aria-hidden="true"></i>@bulk.Caption</button>
@@ -88,7 +93,7 @@ else
        проверка стоит на исполнении, в DataAccessor.DoAction. *@
     <ObjectList @ref="_list" Entity="_dataEntity ?? _entity" Data="_data"
                 EmptyText="Записей нет. Измените условия отбора."
-                Changed="Load" Failed="ShowError" />
+                Changed="Load" Failed="ShowError" SelectionChanged="c => _selectedCount = c" />
 
     </div>
 }
@@ -350,9 +355,30 @@ else
 
     private ObjectList? _list;
 
+    /// <summary>Сколько строк отмечено чекбоксами — от ObjectList.SelectionChanged, кнопки «Удалить (N)»/«Снять выделение» видны только при >0.</summary>
+    private int _selectedCount;
+
     private Task ExportExcel() => _list?.ExportToExcelAsync(Title) ?? Task.CompletedTask;
 
     /// <summary>Ошибка операции над строкой: показываем там же, где свои.</summary>
     private void ShowError(string message) => _error = message;
+
+    private Task ClearSelection() => _list?.ClearSelection() ?? Task.CompletedTask;
+
+    /// <summary>
+    /// «Удалить (N)» тулбара — массовое удаление отмеченных строк
+    /// (ObjectActions.DeleteSelectedAsync). Список перечитывается тем же
+    /// путём, что и после одиночного удаления или добавления (Load) — новый
+    /// DataTable сбрасывает выделение сам, отдельно снимать его не нужно.
+    /// </summary>
+    private async Task DeleteSelected()
+    {
+        if (_list == null)
+            return;
+
+        ActionEffect? effect = await Actions.DeleteSelectedAsync(_list.SelectedObjects);
+        if (effect != null)
+            Load();
+    }
 
 }

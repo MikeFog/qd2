@@ -460,6 +460,83 @@ public sealed class ObjectActions
 	}
 
 	/// <summary>
+	/// Массовое удаление отмеченных чекбоксами объектов — веб-аналог
+	/// SmartGrid.DeleteSelectedObjects. Вызывается кнопкой «Удалить (N)»
+	/// тулбара экрана (ObjectList только собирает отметки, само удаление —
+	/// здесь же, где и одиночное).
+	///
+	/// Один вопрос на всю пачку, затем по каждому объекту — ровно десктопная
+	/// логика: IsActionEnabled → Delete(silenceFlag: true) → сбор ошибок,
+	/// исключение тоже уходит строкой в тот же список. <b>Не повторяем</b>
+	/// десктопный дефект: там при недоступном удалении у ПЕРВОГО объекта метод
+	/// молча выходит и не делает ничего (SmartGrid.cs, проверка firstPo перед
+	/// вопросом). Здесь такой объект просто попадает в список ошибок наравне с
+	/// остальными, а доступные всё равно удаляются.
+	///
+	/// Итоги — как и у остальных десяти мест десктопа (сравнение с ошибками
+	/// клонирования): без ошибок ничего не показываем, список у владельца
+	/// экрана просто перечитывается; с ошибками — TableDialog с виртуальной
+	/// сущностью и двумя колонками. Решение владельца продукта 2026-09-22:
+	/// модальное окно про успех в вебе лишнее — строки и так исчезли из списка.
+	/// </summary>
+	/// <returns>
+	/// null — пользователь отменил вопрос или отмеченных объектов нет: ничего
+	/// не делать. ActionEffect.Deleted — операция прошла (возможно, частично, с
+	/// ошибками): владелец экрана перечитывает список, как и после одиночного
+	/// удаления.
+	/// </returns>
+	public async Task<ActionEffect?> DeleteSelectedAsync(IReadOnlyList<PresentationObject> objects)
+	{
+		if (objects.Count == 0)
+			return null;
+
+		string question = string.Format(
+			"Вы действительно хотите удалить выбранные объекты? ({0} шт.)", objects.Count);
+		if (await _dialogs.ShowAsync("Удаление", builder => builder.AddContent(0, question), okText: "Удалить") != DialogOutcome.Ok)
+			return null;
+
+		DataTable errors = new();
+		errors.Columns.Add("objectName", typeof(string));
+		errors.Columns.Add("errorText", typeof(string));
+
+		foreach (PresentationObject obj in objects)
+		{
+			string objectName = string.IsNullOrEmpty(obj.Name) ? "<без названия>" : obj.Name;
+
+			try
+			{
+				if (!obj.IsActionEnabled(Constants.EntityActions.Delete, ViewType.Journal))
+				{
+					AddDeleteError(errors, objectName, string.Format("Удаление недоступно для объекта '{0}'.", objectName));
+					continue;
+				}
+
+				if (!obj.Delete(silenceFlag: true))
+					AddDeleteError(errors, objectName, string.Format("Не удалось удалить объект '{0}'.", objectName));
+			}
+			catch (Exception ex)
+			{
+				AddDeleteError(errors, objectName, ErrorPresenter.Describe(ex));
+			}
+		}
+
+		if (errors.Rows.Count > 0)
+			await _tables.ShowAsync("Ошибки массового удаления", errors,
+				new Entity.Attribute("objectName", "Объект", "nvarchar"),
+				new Entity.Attribute("errorText", "Ошибка", "nvarchar"));
+
+		return ActionEffect.Deleted;
+	}
+
+	private static void AddDeleteError(DataTable table, string objectName, string errorText)
+	{
+		DataRow row = table.NewRow();
+		row["objectName"] = objectName;
+		row["errorText"] = errorText;
+		table.Rows.Add(row);
+	}
+
+	/// <summary>
 	/// Сам перечёт делает владелец экрана — он знает, что показывает. Здесь
 	/// только сброс кэша контейнера, как в ветке Refresh у ObjectContainer.
 	/// </summary>

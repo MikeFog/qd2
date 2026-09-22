@@ -69,6 +69,11 @@ else
            без привязки к родителю (без CreateNewChild). «Изменить», «Удалить» и
            «Фильтр» десктопа тоже не кнопки: действия строки и постоянная панель. *@
         <ScreenToolbar Title="@_caption">
+            @if (_selectedCount > 0)
+            {
+                <button class="btn btn-sm btn-danger" @onclick="DeleteSelected"><i class="bi bi-trash3" aria-hidden="true"></i>Удалить (@_selectedCount)</button>
+                <button class="btn btn-sm btn-outline-secondary" @onclick="ClearSelection">Снять выделение</button>
+            }
             <button class="btn btn-sm btn-outline-secondary" @onclick="RefreshSelected"><i class="bi bi-arrow-clockwise" aria-hidden="true"></i>Обновить</button>
             <button class="btn btn-sm btn-outline-secondary" disabled="@(_data == null || _data.Rows.Count == 0)" @onclick="ExportExcel"><i class="bi bi-download" aria-hidden="true"></i>Экспорт в Excel</button>
         </ScreenToolbar>
@@ -87,7 +92,7 @@ else
                 {
                     <ObjectList @ref="_list" Entity="childEntity" Data="_data"
                                 EmptyText="У выбранного узла нет вложенных записей."
-                                Changed="RefreshSelected" Failed="ShowError" />
+                                Changed="RefreshSelected" Failed="ShowError" SelectionChanged="c => _selectedCount = c" />
                 }
                 else
                 {
@@ -399,7 +404,29 @@ else
 
     private ObjectList? _list;
 
+    /// <summary>Сколько строк отмечено чекбоксами — от ObjectList.SelectionChanged, кнопки «Удалить (N)»/«Снять выделение» видны только при >0.</summary>
+    private int _selectedCount;
+
     private Task ExportExcel() => _list?.ExportToExcelAsync(_caption) ?? Task.CompletedTask;
 
     private void ShowError(string message) => _error = message;
+
+    private Task ClearSelection() => _list?.ClearSelection() ?? Task.CompletedTask;
+
+    /// <summary>
+    /// «Удалить (N)» тулбара — массовое удаление отмеченных строк списка
+    /// справа (ObjectActions.DeleteSelectedAsync). Перечитываем выбранный
+    /// узел тем же путём, что и после одиночного удаления/действия строки
+    /// (Changed="RefreshSelected" у ObjectList) — новый DataTable сбрасывает
+    /// выделение сам.
+    /// </summary>
+    private async Task DeleteSelected()
+    {
+        if (_list == null)
+            return;
+
+        ActionEffect? effect = await Actions.DeleteSelectedAsync(_list.SelectedObjects);
+        if (effect != null)
+            RefreshSelected();
+    }
 }
