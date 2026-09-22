@@ -166,8 +166,27 @@ namespace FogSoft.WinForm.Classes
 			}
 		}
 
+		/// <summary>
+		/// Черновик копии этого объекта: новый, ещё не сохранённый объект с посеянными
+		/// значениями (как правило — параметры исходного без ключа, с пометкой Clone и
+		/// ссылкой на источник). Записывается обычным Update() из карточки.
+		///
+		/// <c>null</c> — класс клонировать не умеет; так отвечает база, и это ответ по
+		/// умолчанию. Вынесено сюда ради веба: сборка черновика — ядро, показ карточки —
+		/// UI-половина (конвенция docs/tasks/web-migration-dialogs.md). Веб-обработчик
+		/// «Клонировать» один на все классы: он спрашивает этот метод и ничего не знает
+		/// о конкретной сущности.
+		///
+		/// Возвращаемый тип строго PresentationObject: Client собирается под
+		/// .NET Framework 4.8, ковариантных возвращаемых типов там нет.
+		/// </summary>
+		public virtual PresentationObject CreateCloneDraft()
+		{
+			return null;
+		}
+
 		public virtual PresentationObject Clone(Dictionary<string, object> newParameters)
-		{			
+		{
 			DataAccessor.PrepareParameters(newParameters, entity, InterfaceObjects.FakeModule, Constants.Actions.Clone);
             DataSet ds = (DataSet)DataAccessor.DoAction(newParameters, out Dictionary<string, object> outParams);
 

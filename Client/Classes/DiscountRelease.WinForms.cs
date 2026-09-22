@@ -19,7 +19,7 @@ namespace Merlin.Classes
 
 		private void CloneRelease(IWin32Window owner)
 		{
-			DiscountRelease draft = CreateCloneDraft();
+			PresentationObject draft = CreateCloneDraft();
 			if (draft.ShowPassport(owner))
 				OnObjectCloned(draft);
 		}

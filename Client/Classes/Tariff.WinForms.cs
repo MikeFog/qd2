@@ -21,12 +21,7 @@ namespace Merlin.Classes
 			switch(actionName)
 			{
 				case Constants.Actions.Clone:
-                    Tariff tariff = new Tariff
-                    {
-                        parameters = Parameters
-                    };
-                    tariff.parameters[ParamNames.TariffId] = null;
-					tariff.parameters[Constants.ParamNames.ActionName] = Constants.Actions.AddItem;
+					PresentationObject tariff = CreateCloneDraft();
 
 					if (tariff.ShowPassport(owner))
 						//OnObjectCreated(tariff);

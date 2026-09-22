@@ -11,7 +11,7 @@ namespace Merlin.Classes
 		public override void DoAction(string actionName, IWin32Window owner, InterfaceObjects interfaceObject)
 		{
 			/*
-			else if (string.Compare(actionName, Actions.AssignMassmedia) == 0)
+			else if (string.Compare(actionName, ActionNames.AssignMassmedia) == 0)
 			{
 				Entity child = ChildEntity;
 				ChildEntity = EntityManager.GetEntity((int)Entities.PackageDiscountMassmedia);
@@ -22,7 +22,7 @@ namespace Merlin.Classes
 			else 
 			*/
 			
-			if (string.Compare(actionName, Actions.AssignPriceList) == 0)
+			if (string.Compare(actionName, ActionNames.AssignPriceList) == 0)
 			{
 				Entity child = ChildEntity;
 				ChildEntity = EntityManager.GetEntity((int)Entities.PackageDiscountPriceLists);

@@ -41,6 +41,13 @@ public enum ActionEffect
 	Changed,
 	/// <summary>У объекта-контейнера появился новый дочерний объект.</summary>
 	ChildAdded,
+	/// <summary>
+	/// Рядом с объектом появился новый объект того же уровня — клон. Перечитывать
+	/// надо родителя, а не сам объект: в дереве новый узел встанет братом.
+	/// Десктоп делает ровно это (TreeView2.OnObjectCloned: встать на родителя и
+	/// перечитать; OnParentChanged(po, 1) — то же самое другим событием).
+	/// </summary>
+	SiblingAdded,
 	/// <summary>Объект удалён.</summary>
 	Deleted
 }
@@ -95,6 +102,7 @@ public sealed class ObjectActions
 		[Constants.EntityActions.Refresh] = (_, t) => Task.FromResult(Refresh(t)),
 		[Constants.EntityActions.AssignNew] = (s, t) => s.AssignNew(t),
 		[Constants.EntityActions.AddNew] = (s, t) => s.AddNew(t),
+		[Constants.EntityActions.Clone] = (s, t) => s.Clone(t),
 	};
 
 	/// <summary>
@@ -135,6 +143,27 @@ public sealed class ObjectActions
 		["Announcement"] = new()
 		{
 			[Merlin.Classes.Announcement.ActionNames.MarkAsRead] = (_, t) => Changed(((Merlin.Classes.Announcement)t).MarkAsRead),
+		},
+		// PackageDiscount.DoAction: «Добавить прайс-лист» — это AssignNew с временно
+		// подменённой дочерней сущностью (у пакетной скидки их две: прайс-листы и
+		// радиостанции). Подмена возвращается назад и при отказе от карточки — в
+		// десктопе это следующая строка после base.DoAction, здесь finally.
+		["PackageDiscount"] = new()
+		{
+			[Merlin.Classes.PackageDiscount.ActionNames.AssignPriceList] = async (s, t) =>
+			{
+				var discount = (Merlin.Classes.PackageDiscount)t;
+				Entity previous = discount.ChildEntity;
+				discount.ChildEntity = EntityManager.GetEntity((int)Merlin.Entities.PackageDiscountPriceLists);
+				try
+				{
+					return await s.AssignNew(discount);
+				}
+				finally
+				{
+					discount.ChildEntity = previous;
+				}
+			},
 		},
 	};
 
@@ -371,6 +400,10 @@ public sealed class ObjectActions
 			Constants.EntityActions.AssignNew => target is ObjectContainer,
 			Constants.EntityActions.AddNew => target is FakeContainer,
 			Constants.EntityActions.Refresh => target is PresentationObject or FakeContainer,
+			// Умеет ли класс клонироваться, отвечает он сам: нет черновика — нет и
+			// веб-обработчика, пункт серый. Черновик — копия словаря параметров, без
+			// обращения к базе, поэтому спросить можно и при построении меню.
+			Constants.EntityActions.Clone => target is PresentationObject clonable && clonable.CreateCloneDraft() != null,
 			_ => target is PresentationObject,
 		};
 		return applicable ? handler : null;
@@ -429,6 +462,25 @@ public sealed class ObjectActions
 
 		container.CompleteNewChild(newObject);
 		return ActionEffect.ChildAdded;
+	}
+
+	/// <summary>
+	/// «Клонировать» — одно на все сущности: черновик со всеми посеянными значениями
+	/// собирает сам класс (PresentationObject.CreateCloneDraft), веб только показывает
+	/// его карточку и сохраняет, как у нового объекта. Шестая сущность с клонированием
+	/// заработает здесь без единой строки веб-кода.
+	///
+	/// Записывает черновик обычный Update() внутри PassportDialog — тот же путь, что у
+	/// десктопного ShowPassport. Доступность пункта решает IsActionEnabled класса
+	/// (например ModulePricelist разрешает администратору) — здесь ничего не проверяем.
+	/// </summary>
+	private async Task<ActionEffect> Clone(object target)
+	{
+		PresentationObject? draft = ((PresentationObject)target).CreateCloneDraft();
+		if (draft == null || !await _passports.ShowAsync(draft, isNew: true))
+			return ActionEffect.None;
+
+		return ActionEffect.SiblingAdded;
 	}
 
 	/// <summary>FakeContainer, ветка AddNew — то же для корня древовидного экрана.</summary>

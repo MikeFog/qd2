@@ -37,9 +37,7 @@ namespace Merlin.Classes
 
 		private void CloneContent(IWin32Window owner)
 		{
-			PackModulePricelist lst = new PackModulePricelist {parameters = Parameters};
-			lst.parameters["sourcePricelistID"] = parameters["pricelistID"];
-			lst.parameters[Constants.ParamNames.ActionName] = Constants.EntityActions.Clone;
+			PresentationObject lst = CreateCloneDraft();
 
 			if (lst.ShowPassport(owner))
 			{

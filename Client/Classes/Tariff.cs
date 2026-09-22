@@ -152,6 +152,19 @@ namespace Merlin.Classes
 			get { return int.Parse(IDs[0].ToString()); }
 		}
 
+		/// <summary>
+		/// Черновик копии тарифа: значения исходного без ключа, обычное добавление
+		/// (AddItem) — тариф копируется целиком карточкой, отдельной процедуры Clone
+		/// у него нет. Сборка перенесена из ветки Clone в DoAction без изменений.
+		/// </summary>
+		public override PresentationObject CreateCloneDraft()
+		{
+			Tariff draft = new Tariff { parameters = Parameters };
+			draft.parameters[ParamNames.TariffId] = null;
+			draft.parameters[Constants.ParamNames.ActionName] = Constants.Actions.AddItem;
+			return draft;
+		}
+
 		internal static Tariff GetTariffByID(int tariffID)
 		{
 			Tariff tariff = new Tariff(tariffID);

@@ -49,7 +49,7 @@ namespace Merlin.Classes
         /// источник. Записывается паспортом (Update -> PackageDiscountPriceListIUD 'Clone'); радиостанции
         /// копирует процедура. Период по умолчанию — следующий за исходным той же длины (см. CalcCloneFinishDate).
         /// </summary>
-        internal PackageDiscountPriceList CreateCloneDraft()
+        public override PresentationObject CreateCloneDraft()
         {
             PackageDiscountPriceList draft = new PackageDiscountPriceList { parameters = Parameters };
             draft.parameters[Constants.ParamNames.ActionName] = Constants.Actions.Clone;

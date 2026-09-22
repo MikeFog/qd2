@@ -366,6 +366,13 @@ else
                 ReloadNode(node);
                 break;
 
+            // Клон — брат узла, а не его ребёнок, поэтому перечитывается родитель, как
+            // и после удаления. Десктоп делает то же самое: TreeView2.OnObjectCloned
+            // встаёт на родителя и перечитывает его, OnParentChanged(po, 1) — тем же
+            // концом. Лишний FireContainerRefreshed по уходящему узлу, который есть у
+            // половины десктопных мест, не повторяем: одно действие — одна перечитка
+            // (IMPROVEMENTS [WEB-02]).
+            case ActionEffect.SiblingAdded:
             case ActionEffect.Deleted:
                 BrowserNode parent = node.Parent ?? node;
                 ReloadNode(parent);

@@ -84,7 +84,21 @@ namespace Merlin.Classes
 			}
 		}
 
-		// CloneTariffList переехал в ModulePricelist.WinForms.cs.
+		/// <summary>
+		/// Черновик копии прайс-листа модуля: значения исходного без ключа, с пометкой
+		/// Clone и ссылкой на источник. Записывается паспортом (Update -> Clone); тарифы
+		/// копирует процедура. Сборка перенесена из CloneTariffList без изменений.
+		/// </summary>
+		public override PresentationObject CreateCloneDraft()
+		{
+			ModulePricelist draft = new ModulePricelist { parameters = Parameters };
+			draft.parameters[Constants.ParamNames.ActionName] = Constants.Actions.Clone;
+			draft.parameters[SourceModulePriceListIdParam] = this[ParamNames.ModulePriceListID];
+			draft.parameters.Remove(ParamNames.ModulePriceListID);
+			return draft;
+		}
+
+		private const string SourceModulePriceListIdParam = "sourceModulePriceListID";
 
 		public override bool IsActionEnabled(string actionName, ViewType type)
 		{
