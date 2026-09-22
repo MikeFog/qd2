@@ -38,6 +38,10 @@
             <label class="tree-label">
                 <input type="checkbox" class="form-check-input" checked="@node.Checked" disabled="@Disabled"
                        @onchange="e => Selection.Toggle(node, e.Value is bool b && b)" />
+                @if (node.Icon != null)
+                {
+                    <i class="bi @node.Icon tree-icon" aria-hidden="true"></i>
+                }
                 <span>@node.Name</span>
             </label>
         </div>

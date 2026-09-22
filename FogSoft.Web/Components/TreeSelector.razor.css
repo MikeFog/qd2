@@ -56,6 +56,10 @@
     margin: 0;
 }
 
+.tree-icon {
+    color: var(--c-text-muted);
+}
+
 .tree-disabled .tree-label {
     color: var(--c-text-muted);
     cursor: default;

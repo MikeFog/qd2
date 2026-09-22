@@ -22,6 +22,13 @@ namespace FogSoft.Web.Infrastructure;
 /// </summary>
 public sealed class TreeSelection
 {
+	/// <summary>
+	/// Колонка с именем картинки узла (Day.png, Issue.png). Имя зашито и в
+	/// десктопе: TreeObjectsSelector ставит SelectedItemsImageColumn = "image",
+	/// в XML его нет.
+	/// </summary>
+	private const string ImageColumn = "image";
+
 	private readonly List<object> _addedIds = new();
 	private readonly List<object> _deletedIds = new();
 
@@ -168,7 +175,13 @@ public sealed class TreeSelection
 		Dictionary<string, List<DataRow>> byParent)
 	{
 		object id = row[tree.ColumnId];
-		var node = new TreeSelectionNode(id, row[tree.ColumnName].ToString() ?? "", parent);
+		var node = new TreeSelectionNode(id, row[tree.ColumnName].ToString() ?? "", parent)
+		{
+			// Картинка десктопа → значок Bootstrap тем же словарём, что у сущностей.
+			Icon = row.Table.Columns.Contains(ImageColumn) && row[ImageColumn] is string image && image.Length > 0
+				? EntityIcons.For(image)
+				: null,
+		};
 
 		if (byParent.TryGetValue(id.ToString() ?? "", out List<DataRow>? children))
 			foreach (DataRow child in children)
@@ -192,6 +205,9 @@ public sealed class TreeSelectionNode
 	public string Name { get; }
 	public TreeSelectionNode? Parent { get; }
 	public List<TreeSelectionNode> Children { get; } = new();
+
+	/// <summary>Класс значка Bootstrap Icons; null — без значка (корень «Все», набор без колонки image).</summary>
+	public string? Icon { get; init; }
 
 	/// <summary>Галочка на экране. Не то же, что «id в AddedIDs», см. <see cref="TreeSelection"/>.</summary>
 	public bool Checked { get; set; }
