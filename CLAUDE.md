@@ -32,6 +32,7 @@ Important project documents:
 - Logging guide: `docs/LOGGING.md`
 - SmartGrid control reference: `docs/smartgrid.md`
 - Window merging reference: `docs/window-merging.md` — two distinct "склейка" mechanisms: `TariffUnion` (pricelist-level tariff continuation) and `TariffWindow.windowPrevId`/`windowNextId` (per-day window chains); entry points, readers, and known defects.
+- `broadcastStart` reference: `docs/broadcast-start.md` — legacy "broadcast day start" field in `Pricelist`/`SponsorProgramPricelist`; full inventory of ~50 dependent DB objects and 7 C# files grouped by removal cost, data-state evidence that the field is dormant, and a staged removal plan. Read before touching anything that shifts `issueDate` by `broadcastStart`.
 ## Scenario maps
 
 Detailed scenario investigations are stored in:
