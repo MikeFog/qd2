@@ -1,4 +1,5 @@
 @using FogSoft.Web.Infrastructure
+@using FogSoft.WinForm.Classes
 @inject NavigationManager Nav
 
 @*
@@ -10,20 +11,19 @@
 
 @if (Node.IsSeparator)
 {
-    <hr class="my-1 opacity-25" />
+    <div class="nav-separator"></div>
 }
 else if (Node.Children.Count > 0)
 {
-    <div class="nav-item px-3">
-        <button type="button" class="nav-link btn btn-link text-start w-100 d-flex align-items-center"
-                @onclick="() => _expanded = !_expanded">
-            <span class="bi @(_expanded ? "bi-dash-square" : "bi-plus-square") me-2"></span>
+    <div class="nav-item nav-group">
+        <button type="button" class="nav-link" @onclick="() => _expanded = !_expanded">
+            <span class="nav-caret">@(_expanded ? "▾" : "▸")</span>
             @Node.Name
         </button>
     </div>
     @if (_expanded)
     {
-        <div class="ms-3">
+        <div class="nav-children">
             @foreach (var child in Node.Children)
             {
                 <MenuNodeView Node="child" />
@@ -33,9 +33,8 @@ else if (Node.Children.Count > 0)
 }
 else
 {
-    <div class="nav-item px-3">
-        <button type="button" class="nav-link btn btn-link text-start w-100 @(Node.Enabled ? "" : "disabled text-muted")"
-                disabled="@(!Node.Enabled)" @onclick="Navigate">
+    <div class="nav-item">
+        <button type="button" class="nav-link" disabled="@(!Node.Enabled)" @onclick="Navigate">
             @Node.Name
         </button>
     </div>
@@ -51,8 +50,20 @@ else
         if (string.IsNullOrEmpty(Node.CodeName))
             return;
 
-        if (MenuRoutes.SimpleJournal.TryGetValue(Node.CodeName, out int entityId))
-            Nav.NavigateTo($"/journal/{entityId}");
+        // «Выход» — выход из сеанса, как кнопка «Выйти» в верхней полосе (MainLayout).
+        if (string.Equals(Node.CodeName, MenuRoutes.Exit, StringComparison.OrdinalIgnoreCase))
+        {
+            SecurityManager.Clear();
+            return;
+        }
+
+        // Пункт меню едет в адресе параметром: правило ManagerFilter и заголовок
+        // привязаны к пункту, а не к сущности. Точка в codeName (miStats.X) в
+        // значении query-параметра безопасна, в отличие от сегмента пути.
+        if (MenuRoutes.SimpleJournal.TryGetValue(Node.CodeName, out JournalRoute? journal))
+            Nav.NavigateTo($"/journal/{journal.EntityId}?menu={Uri.EscapeDataString(Node.CodeName)}");
+        else if (MenuRoutes.Browser.ContainsKey(Node.CodeName))
+            Nav.NavigateTo($"/browser/{Uri.EscapeDataString(Node.CodeName)}");
         else
             Nav.NavigateTo($"/todo/{Uri.EscapeDataString(Node.CodeName)}/{Uri.EscapeDataString(Node.Name)}");
     }

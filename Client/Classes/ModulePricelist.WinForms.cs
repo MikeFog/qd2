@@ -30,14 +30,7 @@ namespace Merlin.Classes
 
 		private void CloneTariffList(IWin32Window owner)
 		{
-			ModulePricelist lst = new ModulePricelist
-			{
-				parameters = Parameters
-			};
-
-			lst.parameters[Constants.ParamNames.ActionName] = Constants.Actions.Clone;
-			lst.parameters["sourceModulePriceListID"] = this["modulePriceListID"];
-			lst.parameters.Remove(ModulePricelist.ParamNames.ModulePriceListID);
+			PresentationObject lst = CreateCloneDraft();
 
 			if (lst.ShowPassport(owner))
 			{

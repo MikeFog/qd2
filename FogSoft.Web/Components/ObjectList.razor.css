@@ -1,0 +1,111 @@
+/*
+    Список объектов. Строки виртуализованы, поэтому их высота должна быть
+    одинаковой: длинные значения обрезаются, полный текст — во всплывающей
+    подсказке. Десктопный грид ведёт себя так же, строки в нём тоже не
+    переносятся.
+*/
+
+.object-list {
+    height: 100%;
+}
+
+::deep td {
+    max-width: 320px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+::deep .sortable {
+    cursor: pointer;
+    user-select: none;
+}
+
+::deep .sortable:hover {
+    color: var(--c-text);
+}
+
+::deep .sort-mark {
+    color: var(--c-accent);
+}
+
+::deep .col-icon {
+    width: 1%;
+    padding-right: 0;
+}
+
+::deep .col-check {
+    width: 1%;
+    padding-right: 0;
+    padding-left: var(--s-3);
+}
+
+::deep .col-actions {
+    width: 1%;
+    white-space: nowrap;
+    text-align: right;
+    padding-top: 0;
+    padding-bottom: 0;
+}
+
+/* Строка открывает карточку по клику. */
+::deep tbody tr {
+    cursor: pointer;
+}
+
+/* В режиме показа (ReadOnly) открывать нечего — и курсор об этом не врёт. */
+::deep table.no-row-click tbody tr {
+    cursor: default;
+}
+
+/* Строка, у которой открыто меню, остаётся подсвеченной. */
+::deep tbody tr.row-menu-open > td {
+    background: var(--c-accent-soft);
+}
+
+/*
+    Действия строки проявляются при наведении или фокусе. Место под них занято
+    всегда (visibility, а не display): строка не прыгает, а виртуализация
+    полагается на одинаковую высоту строк.
+*/
+::deep .row-btn {
+    visibility: hidden;
+    width: 26px;
+    height: 24px;
+    padding: 0;
+    border: none;
+    border-radius: 4px;
+    background: none;
+    color: var(--c-text-muted);
+    vertical-align: middle;
+}
+
+::deep tbody tr:hover .row-btn,
+::deep tbody tr:focus-within .row-btn,
+::deep tbody tr.row-menu-open .row-btn {
+    visibility: visible;
+}
+
+::deep .row-btn:hover {
+    background: var(--c-border);
+    color: var(--c-text);
+}
+
+::deep .row-btn-danger:hover {
+    background: var(--c-danger-soft);
+    color: var(--c-danger);
+}
+
+/* Наведения нет (сенсорный экран) — действия видны всегда. */
+@media (hover: none) {
+    ::deep .row-btn {
+        visibility: visible;
+    }
+}
+
+/* Boolean-колонка: галочка только при true, как десктопный
+   DataGridViewExBooleanCell — при false ячейка остаётся пустой. */
+::deep .bool-check {
+    color: var(--c-accent);
+    font-weight: 700;
+}

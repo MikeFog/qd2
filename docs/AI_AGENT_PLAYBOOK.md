@@ -15,6 +15,21 @@
 6. Validate build capability for environment and run relevant manual scenarios.
 7. Document assumptions and risks explicitly.
 
+## Proposing simplifications (required since 2026-09-18)
+
+"Keep changes minimal" (step 5) governs what you *do* without asking. It does
+**not** mean staying silent about bad design. The product owner changed the
+rule: while reading desktop code — especially code about to be moved to the
+web (`docs/tasks/web-migration.md`), but also along the way in any task — you
+**must propose** fixes of defects and simplifications of the existing desktop
+architecture whenever they would make the web migration easier.
+
+- Propose, don't apply: what gets simpler, what is lost, cost, what it touches
+  in the desktop. The product owner decides.
+- Code already migrated to the web is out of scope.
+- Until a decision is made, migrate as is; record decisions in
+  `docs/tasks/web-migration.md`.
+
 ## Task templates
 
 ### Bug fix task template
@@ -39,6 +54,108 @@
 - Grid behavior (selection, check-all, sorting, width/perf):
 - Manual test scenarios:
 - Risks/assumptions:
+
+### Групповые действия в вебе: чекбоксы, а не выделение строк мышью
+
+В десктопном гриде пачку выбирают Ctrl/Shift-кликом по строкам и жмут Delete. **В вебе
+так не делаем** (решение владельца продукта 2026-09-22): Ctrl+клик и Shift+клик заняты
+самим браузером, а клик по строке у нас открывает карточку — жест вышел бы
+двусмысленным. Кроме того, списки виртуализированы: выделение, которого не видно на
+экране, для необратимого действия недопустимо.
+
+Конвенция:
+
+- колонка чекбоксов в списке, «отметить все» в шапке — по **всему** текущему списку (с
+  учётом отбора и сортировки), а не по отрисованным строкам;
+- Shift-клик по чекбоксу отмечает диапазон — привычка из десктопа без конфликта с кликом
+  по строке;
+- само действие — кнопкой в тулбаре экрана с числом: «Удалить (7)», рядом «Снять
+  выделение»; кнопки видны только при непустом выборе;
+- один вопрос на всю пачку с числом объектов, затем тихое выполнение по каждому
+  (`silenceFlag: true`) со сбором отказов;
+- итоги: при успехе ничего не показывать (строки и так исчезли), при отказах — показ
+  готовой таблицы (см. раздел выше);
+- выделение хранится по ссылкам на строки данных: переживает сортировку, сбрасывается при
+  приходе нового набора.
+
+Образец — массовое удаление: `ObjectList.razor` (выбор), `ObjectActions.DeleteSelectedAsync`
+(выполнение), кнопки в `ScreenToolbar` журнала и древовидного экрана. Включается флагом
+`iEntity.isMassDeleteAllowed`.
+
+### Именованные паспорта (`iPassport`): форма без формы
+
+Кроме паспорта сущности (`iEntity.passport` — карточка объекта) в системе есть **второй,
+независимый набор паспортов**: таблица `iPassport`, ключ `codeName`. Это описания форм,
+не привязанные ни к какой сущности: набор полей для параметров операции. Загружает их
+`PassportLoader.Load(codeName)` (кэш в памяти; процедура `PassportRetrieve` либо общая
+выгрузка словарей).
+
+**Зачем это знать.** Диалог «спросить параметры и выполнить» не нужно верстать руками:
+поля объявляются в метаданных, а код получает готовый словарь значений. На `ArtvisDev`
+таких паспортов **17**.
+
+Два способа применения:
+
+1. **`UniversalPassportForm`** (`Client/Forms/UniversalPassportForm.cs`) — три конструктора:
+   - `(parameters, passportName, procedureName, caption, validate)` — собранные значения
+     уходят прямо в хранимую процедуру (`ExecuteNonQuery`). Форма ради формы не пишется
+     вообще: метаданные + имя процедуры;
+   - `(parameters, passportName, applyChanges, caption, validate)` — вместо процедуры свой
+     обработчик;
+   - `(po, passportName, caption, entity, ds, validate, applyChanges)` — плюс объект-шаблон и
+     набор данных для справочников (так сделаны «Добавить тариф массово» и «Изменить похожие
+     тарифы»).
+   Проверка ввода — делегат `ValidateDataDelegate`, возвращает `false` и форма не закрывается.
+
+2. **Своя форма поверх именованного паспорта**: `PassportForm`-наследник передаёт
+   `PassportLoader.Load("…")` в базовый конструктор и добавляет своё поведение. Так живут
+   `CampaignDaysForm` (`CampaignDaysDelete`), `ChangePositioningForm`
+   (`IssueChangePositioning`), `RollerSubstitutionForm` (`RollerSubstitute`),
+   `FrmWindowTariffTemplate` (`TrafficTemplate`), `TariffWindowsDisabledStatusForm`,
+   `ChartSettingsForm`, `FormGridHighlight` и другие.
+
+**Что это значит для веба.** Компонент `Passport.razor` принимает XML параметром (`Xml`) и
+набор данных (`Data`), то есть умеет нарисовать любой такой паспорт. Значит перенос подобного
+диалога — это не новый экран, а обвязка: взять XML по имени, показать, проверить, вызвать
+ядро. Делая такой диалог, делай его механизмом, а не под один случай: желающих много.
+
+**Ловушки.**
+- `PassportLoader` кэширует XML в статическом словаре. В отличие от `[WEB-01]` в
+  `IMPROVEMENTS.md`, здесь это безопасно: в паспорте нет ничего персонального, права в него
+  не вшиты.
+- Имена — как записаны в базе, включая опечатки: паспорт подсветки журнала называется
+  `JounalHighlight`, без «r». Искать по `iPassport`, а не по догадке.
+- Новый именованный паспорт — это строка метаданных, то есть сид-скрипт и деплой на все базы
+  заказчиков. Прежде чем заводить, проверь, нет ли подходящего среди семнадцати.
+
+### Служебные таблицы в интерфейсе: виртуальная сущность, а не строка в `iEntity`
+
+Любой грид системы — и десктопный `SmartGrid`, и веб-`ObjectList` — рисует колонки
+по `Entity`. Когда надо показать **техническую** таблицу (итоги массовой операции,
+список ошибок, разовый отчёт), соблазн велик завести под неё строку в `iEntity`.
+Так исторически и появилась сущность 157 «Ошибки» (`ErrTmplGen`) с парой колонок
+на все случаи жизни — из-за неё разные операции показывают итоги в одних и тех же
+полях, хотя у ролика и у тарифа они разные.
+
+**Правило: сущность для такой таблицы собирается в коде**, через
+`EntityManager.CreateVirtualEntity(entityId, name, codeName, pkColumn, attributes)`:
+она не пишется в базу, не попадает в кэш сущностей и живёт ровно столько, сколько
+показ. Колонки объявляются под конкретную операцию. Идентификатор — отрицательный,
+по нему сразу видно, что строки в `iEntity` за ним нет.
+
+Где уже так сделано:
+
+- `SmartGrid.ShowDeleteErrors` — ошибки массового удаления (сущность −5001);
+- `ActionOnMassmedia.WinForms.cs` — итоги активации акции (три разные таблицы);
+- веб: `TableDialog` (−5100) — общий показ готовой таблицы, веб-аналог
+  `Globals.ShowSimpleJournal(entity, caption, DataTable)`; список при этом
+  переводится в режим `ObjectList.ReadOnly` (строка результата — не доменный
+  объект: ни карточки по клику, ни меню действий).
+
+Показ готовой таблицы нужен часто: в десктопе таких мест одиннадцать (ошибки
+клонирования, смены типа оплаты, удаления, позиционирования, импорта фирм,
+добавления окон и другие). Появилась двенадцатая — переиспользуй механизм, а не
+заводи очередную строку метаданных.
 
 ### Stored procedure change template
 

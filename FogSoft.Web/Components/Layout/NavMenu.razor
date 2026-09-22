@@ -1,3 +1,4 @@
+@using System.Configuration
 @using FogSoft.Web.Infrastructure
 @implements IDisposable
 @inject UserSession Session
@@ -11,36 +12,40 @@
     NavMenu — часть макета и рендерится один раз на весь circuit, поэтому сам
     по себе не узнаёт о входе, случившемся на странице /: подписывается на
     UserSession.Changed и перезагружает меню при каждой смене пользователя.
+
+    Сворачивающейся «гамбургером» панели больше нет: на узком экране меню
+    становится верхней полосой (см. MainLayout.razor.css). Прежний вариант
+    закрывал меню при любом клике внутри него, из-за чего разворачивание
+    группы тут же его и сворачивало.
 *@
 
-<div class="top-row ps-3 navbar navbar-dark">
-    <div class="container-fluid">
-        <a class="navbar-brand" href="">FogSoft.Web</a>
+<div class="nav-brand">
+    <span class="nav-brand-name">@Title</span>
+</div>
+
+<nav class="nav-tree">
+    <div class="nav-item">
+        <NavLink class="nav-link" href="" Match="NavLinkMatch.All">Начало</NavLink>
     </div>
-</div>
 
-<input type="checkbox" title="Navigation menu" class="navbar-toggler" />
-
-<div class="nav-scrollable" onclick="document.querySelector('.navbar-toggler').click()">
-    <nav class="nav flex-column">
-        <div class="nav-item px-3">
-            <NavLink class="nav-link" href="" Match="NavLinkMatch.All">
-                <span class="bi bi-house-door-fill-nav-menu" aria-hidden="true"></span> Home
-            </NavLink>
-        </div>
-
-        @foreach (var node in _menu)
-        {
-            <MenuNodeView Node="node" />
-        }
-    </nav>
-</div>
+    @foreach (var node in _menu)
+    {
+        <MenuNodeView Node="node" />
+    }
+</nav>
 
 @code {
     // Меню берётся из MenuAccess, а не грузится здесь своим вызовом: тот же
-    // список нужен серверной проверке доступа к экрану (MenuAccess.CanOpenJournal),
+    // список нужен серверной проверке доступа к экрану (MenuAccess.CheckJournal),
     // и грузить UserMenuItems дважды на один вход незачем.
     private IReadOnlyList<MenuNode> _menu = Array.Empty<MenuNode>();
+
+    /// <summary>
+    /// Название системы — из той же настройки, что берёт десктоп
+    /// (appSettings/Title, у заказчика «АРТВИС»).
+    /// </summary>
+    private static string Title =>
+        ConfigurationManager.AppSettings["Title"] is { Length: > 0 } title ? title : "Система";
 
     protected override void OnInitialized()
     {

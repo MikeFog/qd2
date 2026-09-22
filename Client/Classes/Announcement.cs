@@ -43,6 +43,15 @@ namespace Merlin.Classes
 
 		// DoAction переехал в Announcement.WinForms.cs.
 
+		/// <summary>
+		/// Действие MarkAsRead: ядро отдельно от формы (конвенция этапа 0), чтобы
+		/// его звали и десктопный DoAction, и веб-реестр ObjectActions.
+		/// </summary>
+		public void MarkAsRead()
+		{
+			SetReadMark(true);
+		}
+
 		private void SetReadMark(bool mark)
 		{
 			parameters[ParamNames.ConfirmationDate] = mark ? (object)DateTime.Now : null;

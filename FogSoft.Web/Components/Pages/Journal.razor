@@ -3,8 +3,12 @@
 @using FogSoft.Web.Infrastructure
 @using FogSoft.WinForm
 @using FogSoft.WinForm.Classes
-@inject DialogService Dialogs
+@using FogSoft.WinForm.Passport.Classes
+@using Microsoft.AspNetCore.WebUtilities
+@inject NavigationManager Nav
+@inject PassportDialog Passports
 @inject MenuAccess Access
+@inject ObjectActions Actions
 
 @*
     Движок журнала: список объектов сущности, фильтр и карточка — всё по
@@ -23,35 +27,30 @@
     причина записаны в docs/tasks/web-migration.md, раздел 10.
 *@
 
-<PageTitle>@(_entity?.Name ?? "Журнал")</PageTitle>
+<PageTitle>@(Title ?? "Журнал")</PageTitle>
 
 @if (SecurityManager.LoggedUser == null)
 {
-    <div class="alert alert-warning">
-        Нужно <a href="/">войти в систему</a>.
+    <div class="state">
+        <div class="state-title">Вы не вошли в систему</div>
+        <a href="/">Перейти к входу</a>
     </div>
 }
 else if (_access == JournalAccess.Denied)
 {
-    <div class="alert alert-warning" style="max-width: 40rem">
-        <h5>Доступ закрыт</h5>
-        <p class="mb-0">
-            Этот журнал вам не разрешён. Права на экраны выдаются вместе с пунктами
-            меню — обратитесь к администратору системы.
-        </p>
+    <div class="state">
+        <div class="state-title">Доступ закрыт</div>
+        Этот журнал вам не разрешён. Права на экраны выдаются вместе с пунктами
+        меню — обратитесь к администратору системы.
     </div>
-    <a class="btn btn-outline-secondary btn-sm mt-2" href="/">На главную</a>
 }
 else if (_access == JournalAccess.NotPorted)
 {
-    <div class="alert alert-secondary" style="max-width: 40rem">
-        <h5>Экран не перенесён</h5>
-        <p class="mb-0">
-            Журнала сущности <code>@EntityId</code> в вебе пока нет — на неё не ведёт
-            ни один перенесённый пункт меню. Это не ограничение прав.
-        </p>
+    <div class="state">
+        <div class="state-title">Экран не перенесён</div>
+        Журнала сущности @EntityId в вебе пока нет — на неё не ведёт ни один
+        перенесённый пункт меню. Это не ограничение прав.
     </div>
-    <a class="btn btn-outline-secondary btn-sm mt-2" href="/">На главную</a>
 }
 else if (_error != null)
 {
@@ -59,104 +58,99 @@ else if (_error != null)
 }
 else if (_entity == null)
 {
-    <p>Загрузка…</p>
+    <div class="state">Загрузка…</div>
 }
 else
 {
-    <h3>@_entity.Name</h3>
+    <div class="journal">
+
+    @* Тулбар — как JournalForm: Добавить | Обновить | Экспорт. «Изменить» и
+       «Удалить» десктопа здесь — действия строки («⋯»), «Фильтр» — постоянная
+       панель ниже, поэтому в тулбар они не переносятся. «Обновить» читает
+       список тем же путём, что «Применить» в отборе. *@
+    <ScreenToolbar Title="@Title" Count="@(_data?.Rows.Count ?? 0)">
+        @if (_selectedCount > 0)
+        {
+            <button class="btn btn-sm btn-danger" @onclick="DeleteSelected"><i class="bi bi-trash3" aria-hidden="true"></i>Удалить (@_selectedCount)</button>
+            <button class="btn btn-sm btn-outline-secondary" @onclick="ClearSelection">Снять выделение</button>
+        }
+        @if (_route?.BulkAction is { } bulk)
+        {
+            <button class="btn btn-sm btn-outline-secondary" disabled="@(_bulkPending == 0)" @onclick="RunBulkAction"><i class="bi bi-check2-all" aria-hidden="true"></i>@bulk.Caption</button>
+        }
+        <button class="btn btn-primary btn-sm" disabled="@(!_canAdd)" @onclick="AddNew"><i class="bi bi-plus-lg" aria-hidden="true"></i>Добавить</button>
+        <button class="btn btn-sm btn-outline-secondary" @onclick="Load"><i class="bi bi-arrow-clockwise" aria-hidden="true"></i>Обновить</button>
+        <button class="btn btn-sm btn-outline-secondary" disabled="@(_data == null || _data.Rows.Count == 0)" @onclick="ExportExcel"><i class="bi bi-download" aria-hidden="true"></i>Экспорт в Excel</button>
+    </ScreenToolbar>
 
     @* ---------- Фильтр ---------- *@
-    @if (_filterPages.Count > 0)
-    {
-        <div class="card mb-3" style="max-width: 40rem">
-            <div class="card-body py-2">
-                @foreach (var pg in _filterPages)
-                {
-                    @foreach (var field in pg.Fields)
-                    {
-                        <div class="form-check">
-                            @if (string.Equals(field.XmlType, "boolean", StringComparison.OrdinalIgnoreCase))
-                            {
-                                <input type="checkbox" class="form-check-input" id="@("f_" + field.Name)"
-                                       checked="@GetFilterBool(field.Name)"
-                                       @onchange="e => SetFilterBool(field.Name, e.Value)" />
-                                <label class="form-check-label" for="@("f_" + field.Name)">@field.Caption</label>
-                            }
-                            else
-                            {
-                                <span class="text-muted small">
-                                    Фильтр <code>@(field.XmlType ?? "field")</code> пока не поддержан (этап 2).
-                                </span>
-                            }
-                        </div>
-                    }
-                }
-                <button class="btn btn-sm btn-outline-primary mt-2" @onclick="Load">Применить</button>
-            </div>
-        </div>
-    }
+    <FilterPanel Pages="_filterPages" Values="_filterValues" FilterData="_filterData" Apply="Load"
+                 RestrictManager="_route?.ManagerFilter == true" />
 
     @* ---------- Список ---------- *@
-    @* Кнопки гасятся по тем же правам и теми же вызовами, что в десктопном
-       JournalForm (tsbNew/tsbEdit). Это только удобство: настоящая проверка
-       стоит на исполнении, в DataAccessor.DoAction. *@
-    <div class="mb-2">
-        <button class="btn btn-sm btn-primary" disabled="@(!_canAdd)" @onclick="AddNew">Добавить</button>
-        <span class="text-muted ms-2">Записей: @(_data?.Rows.Count ?? 0)</span>
+    @* Действия над строками — меню ObjectActions, доступность пунктов по
+       тем же IsActionEnabled, что в десктопе. Это только удобство: настоящая
+       проверка стоит на исполнении, в DataAccessor.DoAction. *@
+    <ObjectList @ref="_list" Entity="_dataEntity ?? _entity" Data="_data"
+                EmptyText="Записей нет. Измените условия отбора."
+                Changed="Load" Failed="ShowError" SelectionChanged="c => _selectedCount = c" />
+
     </div>
-
-    @if (_data != null)
-    {
-        <div style="overflow-x:auto">
-            <table class="table table-sm table-hover" style="max-width: 60rem">
-                <thead>
-                    <tr>
-                        @foreach (var a in _columns)
-                        {
-                            <th>@a.Alias</th>
-                        }
-                        <th style="width:7rem"></th>
-                    </tr>
-                </thead>
-                <tbody>
-                    @foreach (DataRow row in _data.Rows)
-                    {
-                        <tr>
-                            @foreach (var a in _columns)
-                            {
-                                <td>@Display(row, a.Name)</td>
-                            }
-                            <td>
-                                <button class="btn btn-sm btn-outline-secondary" disabled="@(!_canOpen)"
-                                        @onclick="() => Edit(row)">Открыть</button>
-                            </td>
-                        </tr>
-                    }
-                </tbody>
-            </table>
-        </div>
-    }
-
 }
 
 @code {
     [Parameter] public int EntityId { get; set; }
 
+    /// <summary>
+    /// codeName пункта меню, из которого открыт журнал (<c>?menu=</c>). Правило
+    /// ManagerFilter и заголовок привязаны к пункту, а не к сущности
+    /// (<see cref="JournalRoute"/>). Без параметра (адрес набран руками) берётся
+    /// первый маршрут на эту сущность. Значение читается из адреса
+    /// (<see cref="ResolveRoute"/>); параметр нужен, чтобы смена пункта меню при той же
+    /// сущности вообще вызывала <c>OnParametersSet</c>.
+    /// </summary>
+    [SupplyParameterFromQuery(Name = "menu")] public string? Menu { get; set; }
+
+    private JournalRoute? _route;
+    private string? _menuCode;
+    private int? _loadedEntityId;
+
+    // Начальное значение отбора, с которым журнал загружен (JournalRoute.FilterDefault).
+    // Два пункта меню на одну сущность различаются только им, и переход между ними
+    // должен перечитать журнал, хотя EntityId не менялся.
+    private FilterDefault? _loadedFilterDefault;
+
+    // Заголовок — как в десктопе: свой у маршрута (то, что MDIForm задаёт в коде),
+    // иначе текст пункта меню (mi.Text), иначе имя сущности.
+    private string? Title => _route?.Caption
+        ?? (_menuCode == null ? null : Access.MenuText(_menuCode))
+        ?? _entity?.Name;
+
     private Entity? _entity;
+
+    // Сущность, из которой сейчас показаны данные: у маршрута с EntitySwitch
+    // (miStats.Balance) — не та, по которой открыт пункт. Фильтр и «Добавить»
+    // остаются за _entity.
+    private Entity? _dataEntity;
     private DataTable? _data;
-    private IReadOnlyList<Entity.Attribute> _columns = Array.Empty<Entity.Attribute>();
     private readonly Dictionary<string, object> _filterValues =
         new(StringComparer.InvariantCultureIgnoreCase);
     private IReadOnlyList<PassportPage> _filterPages = Array.Empty<PassportPage>();
 
-    private PresentationObject? _editing;
-    private bool _isNew;
-    private bool _saving;
+    // Наборы строк для lookup/objectPicker фильтра — результат
+    // Globals.PrepareForFilter(_entity), отдельная процедура от паспортной
+    // (EntityId_Load_FilterPage, а не PropertyPage). null, если у сущности
+    // нет процедуры фильтра — тогда контролы грузят список сами по entity.
+    private DataSet? _filterData;
+
     private string? _error;
-    private string? _saveError;
     private JournalAccess _access = JournalAccess.Allowed;
     private bool _canAdd;
-    private bool _canOpen;
+
+    // Сколько строк сейчас затронет кнопка маршрута (JournalRoute.BulkAction);
+    // 0 — кнопка неактивна. Считается при каждом чтении списка.
+    private int _bulkPending;
+
 
     protected override void OnParametersSet()
     {
@@ -167,33 +161,115 @@ else
         // адрес /journal/{id} можно набрать руками. Разрешение — то же самое,
         // что гасит пункт меню (UserMenuItems.enabled), см. MenuAccess.
         _access = Access.CheckJournal(EntityId);
+        (_menuCode, _route) = ResolveRoute();
         if (_access != JournalAccess.Allowed)
         {
             _entity = null;
+            _loadedEntityId = null;
             return;
         }
 
+        // ?menu= приходит отдельным обновлением параметров уже после смены
+        // EntityId (query-параметр — каскадное значение), поэтому на одну
+        // навигацию между журналами OnParametersSet срабатывает дважды. Данные
+        // от пункта меню не зависят — второй проход только уточняет _route, а
+        // перечитывать не надо: процедуры статистики тяжёлые (секунды).
+        if (_loadedEntityId == EntityId && _loadedFilterDefault == _route?.FilterDefault)
+            return;
+
         try
         {
+            _loadedEntityId = null;
             _error = null;
             _entity = EntityManager.GetEntity(EntityId);
-            _columns = _entity.SortedAttributes;
-            _filterPages = PassportSchema.Parse(_entity.XmlFilter);
+            _filterPages = PassportSchema.Parse(_entity.XmlFilter, _entity, pageType: PageTypes.Filter);
 
             _canAdd = _entity.IsActionEnabled(Constants.EntityActions.AddNew, ViewType.Journal);
-            _canOpen = _entity.IsActionEnabled(Constants.EntityActions.ShowPassport, ViewType.Journal);
+
+            // Своя процедура фильтра (EntityId_Load_FilterPage), не паспортная —
+            // грузится только если в фильтре реально есть lookup/objectPicker,
+            // которым есть куда её девать: большинство журналов обходятся без
+            // неё, и незачем лишний раз идти в базу.
+            _filterData = NeedsFilterData(_filterPages) ? Globals.PrepareForFilter(_entity) : null;
 
             // Значения фильтра по умолчанию берутся из самих метаданных —
             // тем же кодом, что и в десктопе (Globals.ResolveFilterInitialValues).
             _filterValues.Clear();
             Globals.ResolveFilterInitialValues(_filterValues, _entity.XmlFilter);
 
+            // Значение пункта меню сильнее метаданных (в десктопе присваивание идёт
+            // следом за ResolveFilterInitialValues). Только здесь, при первой загрузке:
+            // «Применить» зовёт Load(), и выбор пользователя не затирается.
+            if (_route?.FilterDefault is { } def)
+                _filterValues[def.Field] = Globals.ResolveInitialValue(def.Value);
+
             Load();
+            _loadedEntityId = EntityId;
+            _loadedFilterDefault = _route?.FilterDefault;
         }
         catch (Exception ex)
         {
             _error = ErrorPresenter.Describe(ex);
         }
+    }
+
+    private (string? Code, JournalRoute? Route) ResolveRoute()
+    {
+        // Пункт меню читается из адреса, а не из параметра Menu: при переходе на другую
+        // сущность параметр обновляется отдельным проходом позже EntityId, и первый
+        // проход увидел бы прежний пункт. Для маршрута с FilterDefault это лишнее
+        // чтение тяжёлой процедуры без менеджера.
+        string? menu = QueryHelpers.ParseQuery(new Uri(Nav.Uri).Query).TryGetValue("menu", out var m)
+            ? m.ToString() : null;
+
+        // Чужой или устаревший ?menu= (не тот пункт для этой сущности) не должен
+        // менять правило — в таком случае работает запасной путь по сущности.
+        if (menu != null
+            && MenuRoutes.SimpleJournal.TryGetValue(menu, out JournalRoute? byMenu)
+            && byMenu.EntityId == EntityId)
+            return (menu, byMenu);
+
+        // Запасной путь: маршрут по сущности. На одну сущность их может быть несколько
+        // (158 — «Объем реализации» и тот же журнал с менеджером по умолчанию), и тогда
+        // берётся тот, что НЕ подставляет значений отбора: адрес, набранный руками, не
+        // должен молча показывать чужой срез данных. Именно «без FilterDefault», а не
+        // «первый попавшийся»: порядок перечисления Dictionary не определён, и полагаться
+        // на порядок объявления в MenuRoutes значило бы держать поведение на случайности.
+        (string? Code, JournalRoute? Route) fallback = (null, null);
+        foreach (var (code, route) in MenuRoutes.SimpleJournal)
+        {
+            if (route.EntityId != EntityId)
+                continue;
+            if (route.FilterDefault == null)
+                return (code, route);
+            if (fallback.Route == null)
+                fallback = (code, route);
+        }
+
+        return fallback;
+    }
+
+    /// <summary>
+    /// StatBalanceJournalForm.LoadData: если поле отбора включено, данные берутся
+    /// из другой сущности. Разбор значения тот же, что в десктопе.
+    /// </summary>
+    private Entity DataEntityFor()
+    {
+        if (_route?.EntitySwitch is { } sw
+            && _filterValues.TryGetValue(sw.FilterField, out object? flag)
+            && bool.TryParse(flag?.ToString(), out bool on) && on)
+            return EntityManager.GetEntity((int)sw.WhenTrue);
+
+        return _entity!;
+    }
+
+    private static bool NeedsFilterData(IReadOnlyList<PassportPage> pages)
+    {
+        foreach (var pg in pages)
+            foreach (var f in pg.Fields)
+                if (f.Unsupported == null && (f.Lookup != null || f.Picker != null))
+                    return true;
+        return false;
     }
 
     private void Load()
@@ -201,57 +277,57 @@ else
         try
         {
             _error = null;
-            _entity!.ClearCache();
-            _data = _entity.GetContent(_filterValues);
+            _dataEntity = DataEntityFor();
+            _dataEntity.ClearCache();
+            _data = _dataEntity.GetContent(_filterValues);
+            _bulkPending = BulkTargets().Count;
         }
         catch (Exception ex)
         {
             _error = ErrorPresenter.Describe(ex);
         }
+    }
+
+    /// <summary>Строки списка, у которых действие кнопки сейчас доступно.</summary>
+    private List<PresentationObject> BulkTargets()
+    {
+        var result = new List<PresentationObject>();
+        if (_route?.BulkAction is not { } bulk || _data == null)
+            return result;
+
+        Entity entity = _dataEntity ?? _entity!;
+        foreach (DataRow row in _data.Rows)
+        {
+            PresentationObject obj = entity.CreateObject(row);
+            if (Actions.CanExecute(obj, bulk.ActionName, ViewType.Journal))
+                result.Add(obj);
+        }
+        return result;
     }
 
     /// <summary>
-    /// Значения фильтра хранятся так же, как в десктопе — словарём
-    /// «имя параметра → значение», который уходит прямо в GetContent.
-    /// Своей типизации не вводим: процедура ждёт тот же набор.
+    /// AnnouncementJournalForm.DoMarkReadAll: действие — каждой подходящей
+    /// строке, затем список перечитывается. Прогресса и отмены нет: строк единицы.
+    /// Если одна из них упала, остальные не пробуются; ошибка показывается, а
+    /// список всё равно перечитывается — видно, что уже сделано.
     /// </summary>
-    private bool GetFilterBool(string name) =>
-        _filterValues.TryGetValue(name, out object? v)
-        && v != null
-        && bool.TryParse(v.ToString(), out bool b)
-        && b;
-
-    private void SetFilterBool(string name, object? value)
+    private async Task RunBulkAction()
     {
-        // ResolveFilterInitialValues кладёт значения строками ("True"),
-        // поэтому и мы пишем строкой — иначе при сравнении фильтров
-        // (ObjectsIterator.IsNewFilter) типы разъедутся.
-        _filterValues[name] = (value is bool b && b).ToString();
-    }
-
-    private string Display(DataRow row, string column)
-    {
-        if (!row.Table.Columns.Contains(column))
-            return "";
-        object v = row[column];
-        return v == DBNull.Value ? "" : v.ToString() ?? "";
-    }
-
-    // Открытие карточки — дословный аналог десктопного
-    //     if (form.ShowDialog(owner) == DialogResult.OK) { ... }
-    // Поднятие доменного класса по метаданным может упасть на резолвинге типа,
-    // поэтому перехват: без него исключение убивает circuit и пользователь
-    // видит безымянную "внутреннюю ошибку" вместо причины.
-    private async Task Edit(DataRow row)
-    {
+        string? error = null;
         try
         {
-            await EditObject(_entity!.CreateObject(row), isNew: false);
+            string actionName = _route!.BulkAction!.ActionName;
+            foreach (PresentationObject obj in BulkTargets())
+                await Actions.ExecuteAsync(obj, actionName, ViewType.Journal);
         }
         catch (Exception ex)
         {
-            _error = ErrorPresenter.Describe(ex);
+            error = ErrorPresenter.Describe(ex);
         }
+
+        Load();
+        if (error != null)
+            _error = error;
     }
 
     private async Task AddNew()
@@ -267,72 +343,42 @@ else
     }
 
     /// <summary>
-    /// Показывает паспорт модально и, если пользователь подтвердил, сохраняет.
-    /// Ровно та же последовательность, что в десктопе: показать -> проверить
-    /// результат -> Update() -> обновить список.
+    /// Показывает карточку и, если объект сохранён, обновляет список.
+    /// Сам показ и цикл сохранения — в PassportDialog: та же карточка
+    /// открывается ещё и кнопкой «Создать» у objectPicker.
     /// </summary>
     private async Task EditObject(PresentationObject obj, bool isNew)
     {
-        _editing = obj;
-        _isNew = isNew;
-        _saveError = null;
-
-        while (true)
-        {
-            DialogOutcome outcome = await Dialogs.ShowAsync(
-                isNew ? "Новая запись" : "Редактирование",
-                PassportBody(obj));
-
-            if (outcome != DialogOutcome.Ok)
-            {
-                _editing = null;
-                return;
-            }
-
-            // Сохранение может не пройти (проверки в процедуре). Тогда диалог
-            // открывается снова с сообщением — как модальная форма десктопа,
-            // которая не закрывается по неуспешному ApplyChanges.
-            if (TrySave(obj))
-            {
-                _editing = null;
-                Load();
-                return;
-            }
-        }
+        if (await Passports.ShowAsync(obj, isNew))
+            Load();
     }
 
-    private RenderFragment PassportBody(PresentationObject obj) => builder =>
+    private ObjectList? _list;
+
+    /// <summary>Сколько строк отмечено чекбоксами — от ObjectList.SelectionChanged, кнопки «Удалить (N)»/«Снять выделение» видны только при >0.</summary>
+    private int _selectedCount;
+
+    private Task ExportExcel() => _list?.ExportToExcelAsync(Title) ?? Task.CompletedTask;
+
+    /// <summary>Ошибка операции над строкой: показываем там же, где свои.</summary>
+    private void ShowError(string message) => _error = message;
+
+    private Task ClearSelection() => _list?.ClearSelection() ?? Task.CompletedTask;
+
+    /// <summary>
+    /// «Удалить (N)» тулбара — массовое удаление отмеченных строк
+    /// (ObjectActions.DeleteSelectedAsync). Список перечитывается тем же
+    /// путём, что и после одиночного удаления или добавления (Load) — новый
+    /// DataTable сбрасывает выделение сам, отдельно снимать его не нужно.
+    /// </summary>
+    private async Task DeleteSelected()
     {
-        if (_saveError != null)
-        {
-            builder.OpenElement(0, "div");
-            builder.AddAttribute(1, "class", "alert alert-danger");
-            builder.AddContent(2, _saveError);
-            builder.CloseElement();
-        }
+        if (_list == null)
+            return;
 
-        builder.OpenComponent<Passport>(3);
-        builder.AddComponentParameter(4, nameof(Passport.Object), obj);
-        builder.AddComponentParameter(5, nameof(Passport.Xml), _entity!.XmlPassport);
-        builder.CloseComponent();
-    };
-
-    private bool TrySave(PresentationObject obj)
-    {
-        _saveError = null;
-        try
-        {
-            if (obj.Update())
-                return true;
-
-            _saveError = "Сохранение отклонено.";
-            return false;
-        }
-        catch (Exception ex)
-        {
-            _saveError = ErrorPresenter.Describe(ex);
-            return false;
-        }
+        ActionEffect? effect = await Actions.DeleteSelectedAsync(_list.SelectedObjects);
+        if (effect != null)
+            Load();
     }
 
 }

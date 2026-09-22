@@ -16,14 +16,9 @@ namespace FogSoft.WinForm.Classes
 			switch(actionName)
 			{
 				case Constants.EntityActions.AddNew:
-					PresentationObject newObject = childEntity.NewObject;
-					if(newObject.ShowPassport(owner) && ObjectCreated != null)
-					{
-						IObjectContainer oc = newObject as IObjectContainer;
-						if(oc != null)
-							oc.RelationScenario = relationScenario;
-						ObjectCreated(newObject);
-					}
+					PresentationObject newObject = CreateNewObject();
+					if(newObject.ShowPassport(owner))
+						CompleteNewObject(newObject);
 					break;
 
 				case Constants.EntityActions.Refresh:

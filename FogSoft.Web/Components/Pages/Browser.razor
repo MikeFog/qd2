@@ -1,0 +1,432 @@
+@page "/browser/{Code}"
+@using System.Data
+@using FogSoft.Web.Infrastructure
+@using FogSoft.WinForm
+@using FogSoft.WinForm.Classes
+@using FogSoft.WinForm.Passport.Classes
+@inject ObjectActions Actions
+@inject ActionMenuService Menu
+@inject MenuAccess Access
+
+@*
+    Древовидный экран — веб-аналог ExplorerForm: слева дерево, справа список
+    детей выбранного узла.
+
+    Дерево строится по сценарию связей из метаданных (as_relationScenarios):
+    сценарий задаёт стартовую сущность и пары «родитель → ребёнок». Кода на
+    конкретный экран нет вообще, как и у журнала: восемь пунктов меню
+    закрываются одним рендерером, см. MenuRoutes.Browser.
+
+    Механика взята из FakeContainer + TreeView2:
+      - корень — сам FakeContainer, его дети приходят из GetContent();
+      - каждый объект-строка, если он IObjectContainer, получает сценарий и
+        сам знает свою дочернюю сущность (ObjectContainer.RelationScenario);
+      - раскрывается узел или нет — IsExpandableObject: объект является
+        контейнером, у связи стоит isChildNodeExpandable и строка не сказала
+        isHasChilds = 0;
+      - справа показываются те же строки, что стали бы детьми узла
+        (RefreshDependantGrid), поэтому список и дерево всегда согласованы.
+*@
+
+<PageTitle>@(_root?.Name ?? "Экран")</PageTitle>
+
+@if (SecurityManager.LoggedUser == null)
+{
+    <div class="state">
+        <div class="state-title">Вы не вошли в систему</div>
+        <a href="/">Перейти к входу</a>
+    </div>
+}
+else if (_access == JournalAccess.Denied)
+{
+    <div class="state">
+        <div class="state-title">Доступ закрыт</div>
+        Этот экран вам не разрешён. Права на экраны выдаются вместе с пунктами
+        меню — обратитесь к администратору системы.
+    </div>
+}
+else if (_access == JournalAccess.NotPorted)
+{
+    <div class="state">
+        <div class="state-title">Экран не перенесён</div>
+        Пункта меню <code>@Code</code> в вебе пока нет. Это не ограничение прав.
+    </div>
+}
+else if (_error != null)
+{
+    <div class="alert alert-danger">@_error</div>
+}
+else if (_root == null)
+{
+    <div class="state">Загрузка…</div>
+}
+else
+{
+    <div class="browser">
+        @* Кнопки «Добавить» здесь нет, как нет её на панели десктопного
+           ExplorerForm: добавляют через меню узла — «Добавить прайс-лист»,
+           «Добавить модуль» и т. п. Прежняя веб-кнопка создавала объект
+           без привязки к родителю (без CreateNewChild). «Изменить», «Удалить» и
+           «Фильтр» десктопа тоже не кнопки: действия строки и постоянная панель. *@
+        <ScreenToolbar Title="@_caption">
+            @if (_selectedCount > 0)
+            {
+                <button class="btn btn-sm btn-danger" @onclick="DeleteSelected"><i class="bi bi-trash3" aria-hidden="true"></i>Удалить (@_selectedCount)</button>
+                <button class="btn btn-sm btn-outline-secondary" @onclick="ClearSelection">Снять выделение</button>
+            }
+            <button class="btn btn-sm btn-outline-secondary" @onclick="RefreshSelected"><i class="bi bi-arrow-clockwise" aria-hidden="true"></i>Обновить</button>
+            <button class="btn btn-sm btn-outline-secondary" disabled="@(_data == null || _data.Rows.Count == 0)" @onclick="ExportExcel"><i class="bi bi-download" aria-hidden="true"></i>Экспорт в Excel</button>
+        </ScreenToolbar>
+
+        <FilterPanel Pages="_filterPages" Values="_root.Container.Filter" FilterData="_filterData"
+                     RestrictManager="_restrictManager" Apply="ApplyFilter" />
+
+        <div class="browser-body">
+            <nav class="browser-tree">
+                <BrowserNodeView Node="_root" Selected="_selected" MenuNode="_menuNode"
+                                 OnToggle="Toggle" OnSelect="Select" OnMenu="OpenNodeMenu" />
+            </nav>
+
+            <div class="browser-list">
+                @if (_selected?.Container.ChildEntity is { } childEntity)
+                {
+                    <ObjectList @ref="_list" Entity="childEntity" Data="_data"
+                                EmptyText="У выбранного узла нет вложенных записей."
+                                Changed="RefreshSelected" Failed="ShowError" SelectionChanged="c => _selectedCount = c" />
+                }
+                else
+                {
+                    <div class="state">У этого узла нет вложенного списка.</div>
+                }
+            </div>
+        </div>
+    </div>
+}
+
+@code {
+    [Parameter] public string Code { get; set; } = "";
+
+    private BrowserNode? _root;
+    private BrowserNode? _selected;
+    private DataTable? _data;
+    private string _caption = "";
+    private string? _error;
+    private JournalAccess _access = JournalAccess.Allowed;
+    private BrowserNode? _menuNode;
+
+    // Страницы отбора и набор строк для его lookup/objectPicker — тот же
+    // разрез, что у Journal.razor. У сценария отбор либо есть, либо нет
+    // целиком (IsFilterable), в отличие от журнала здесь нет отдельной
+    // сущности экрана — источник и того, и другого один: RelationScenario.
+    private IReadOnlyList<PassportPage> _filterPages = Array.Empty<PassportPage>();
+    private DataSet? _filterData;
+
+    // Правило менеджера в отборе: признак маршрута, как у журнала
+    // (BrowserRoute.ManagerFilter). У деревьев его даёт свой диалог отбора
+    // контейнера — ActionJournalFilter у журналов рекламных акций.
+    private bool _restrictManager;
+
+    protected override void OnParametersSet()
+    {
+        if (SecurityManager.LoggedUser == null)
+            return;
+
+        _access = Access.CheckBrowser(Code);
+        if (_access != JournalAccess.Allowed)
+        {
+            _root = null;
+            return;
+        }
+
+        try
+        {
+            _error = null;
+            BrowserRoute route = MenuRoutes.Browser[Code];
+            _restrictManager = route.ManagerFilter;
+            // Сценарий из кода (экраны, которых нет в метаданных) строится заново
+            // на каждое открытие, по имени — общий словарь RelationManager.
+            RelationScenario scenario = route.ScenarioFactory?.Invoke()
+                ?? RelationManager.GetScenario(route.Scenario);
+
+            // Контейнер строится ровно как в MDIForm: свой (route.Factory — там,
+            // где десктоп создаёт наследника) либо «голый»: имя корня, набор
+            // действий и сценарий связей. Действия в вебе не рисуются панелью, но
+            // конструктор их требует — передаём те же два, что в десктопе.
+            FakeContainer container = route.Factory?.Invoke() ?? new FakeContainer(
+                route.RootName,
+                new[]
+                {
+                    new Entity.Action(Constants.EntityActions.Refresh, "Обновить"),
+                    new Entity.Action(Constants.EntityActions.AddNew, "Добавить"),
+                },
+                scenario);
+
+            // Фильтруемость — целиком по сценарию (FakeContainer.IsFilterable:
+            // есть ли XmlFilter). У двух сценариев из восьми его нет — тогда
+            // страниц нет, и FilterPanel сама себя не покажет.
+            _filterPages = container.IsFilterable
+                ? PassportSchema.Parse(scenario.XmlFilter, scenario.StartingEntity, pageType: PageTypes.Filter)
+                : Array.Empty<PassportPage>();
+
+            // Та же процедура фильтра, что у журнала (Globals.PrepareForFilter),
+            // только по стартовой сущности сценария — она же читает фильтр в
+            // десктопном FakeContainer.ShowFilter.
+            _filterData = NeedsFilterData(_filterPages) ? Globals.PrepareForFilter(scenario.StartingEntity) : null;
+
+            _root = new BrowserNode { Name = container.Name, Container = container, Expandable = true };
+            Select(_root);
+        }
+        catch (Exception ex)
+        {
+            _error = ErrorPresenter.Describe(ex);
+            _root = null;
+        }
+    }
+
+    private static bool NeedsFilterData(IReadOnlyList<PassportPage> pages)
+    {
+        foreach (var pg in pages)
+            foreach (var f in pg.Fields)
+                if (f.Unsupported == null && (f.Lookup != null || f.Picker != null))
+                    return true;
+        return false;
+    }
+
+    /// <summary>
+    /// Применить отбор — перестроить дерево с корня, а не только перечитать
+    /// список. ObjectsIterator.CreateChilObject раздаёт копию фильтра
+    /// (CacheFilterValues) каждому уже созданному дочернему объекту, поэтому
+    /// узлы, раскрытые до применения, помнят старый отбор. Десктоп делает то
+    /// же самое: OnContainerRefreshed очищает узел и раскрывает его заново.
+    /// </summary>
+    private void ApplyFilter()
+    {
+        if (_root == null)
+            return;
+
+        _root.Children = null;
+        _root.Expanded = false;
+        Select(_root);
+    }
+
+    // ---------- Дерево ----------
+
+    private void Toggle(BrowserNode node)
+    {
+        try
+        {
+            _error = null;
+
+            if (node.Expanded)
+            {
+                node.Expanded = false;
+                return;
+            }
+
+            node.Children ??= LoadChildren(node);
+            node.Expanded = true;
+        }
+        catch (Exception ex)
+        {
+            _error = ErrorPresenter.Describe(ex);
+        }
+    }
+
+    /// <summary>
+    /// Дети узла — перечисление его контейнера. Перечисление, а не GetContent():
+    /// ObjectsIterator по пути создаёт доменные объекты и передаёт им сценарий,
+    /// из которого объект узнаёт собственную дочернюю сущность.
+    /// </summary>
+    private List<BrowserNode> LoadChildren(BrowserNode node)
+    {
+        var children = new List<BrowserNode>();
+        foreach (PresentationObject obj in node.Container)
+        {
+            var container = obj as IObjectContainer;
+            if (container == null)
+                continue;
+
+            children.Add(new BrowserNode
+            {
+                Name = obj.Name,
+                Container = container,
+                // Как в TreeView2: значок — у дочерней сущности контейнера-родителя.
+                Icon = EntityIcons.For((node.Container.ChildEntity ?? obj.Entity)?.IconName),
+                Expandable = IsExpandable(obj, container),
+                Parent = node,
+            });
+        }
+        return children;
+    }
+
+    /// <summary>
+    /// Повторяет TreeView2.IsExpandableObject. Колонка isHasChilds — способ
+    /// процедуры сказать «у этой строки детей нет»; по умолчанию считаем, что
+    /// есть.
+    /// </summary>
+    private static bool IsExpandable(PresentationObject obj, IObjectContainer container) =>
+        container.IsChildNodeExpandable
+        && ParseHelper.GetBooleanFromObject(obj["isHasChilds"], true);
+
+    // ---------- Список справа ----------
+
+    /// <summary>
+    /// Выбор узла наполняет список его детьми — дословно RefreshDependantGrid:
+    /// сущность и строки берутся у контейнера узла, кэш перед этим сбрасывается.
+    /// </summary>
+    private void Select(BrowserNode node)
+    {
+        try
+        {
+            _error = null;
+            _selected = node;
+
+            Entity? childEntity = node.Container.ChildEntity;
+            if (childEntity == null)
+            {
+                _data = null;
+                _caption = node.Name;
+                return;
+            }
+
+            _caption = $"{node.Name} / {childEntity.Name}";
+
+            node.Container.ClearCache();
+            _data = node.Container.GetContent();
+        }
+        catch (Exception ex)
+        {
+            _error = ErrorPresenter.Describe(ex);
+            _data = null;
+        }
+    }
+
+    /// <summary>
+    /// Перечитать выбранный узел. Заодно сбрасываются его уже загруженные
+    /// дети — состав мог измениться, и в десктопе Refresh делает то же самое
+    /// (OnContainerRefreshed очищает узел и раскрывает его заново).
+    /// </summary>
+    private void RefreshSelected()
+    {
+        if (_selected == null)
+            return;
+
+        _selected.Children = null;
+        _selected.Expanded = false;
+        Select(_selected);
+    }
+
+    // ---------- Меню узла ----------
+
+    /// <summary>
+    /// Правая кнопка сначала выбирает узел — как TvStructure_MouseDown в
+    /// десктопе, — и уже потом показывает меню: пользователь видит справа то,
+    /// к чему относится меню.
+    /// </summary>
+    private async Task OpenNodeMenu(BrowserNodeMenuRequest request)
+    {
+        BrowserNode node = request.Node;
+        try
+        {
+            if (!ReferenceEquals(node, _selected))
+                Select(node);
+
+            object target = node.Container;
+            _menuNode = node;
+            string? picked = await Menu.ShowAsync(
+                Actions.BuildMenu(target, ViewType.Tree), request.Mouse.ClientX, request.Mouse.ClientY, request.FromButton);
+            _menuNode = null;
+            StateHasChanged();
+
+            if (picked == null)
+                return;
+
+            ActionEffect? effect = await Actions.ExecuteAsync(target, picked, ViewType.Tree);
+            if (effect is { } done)
+                AfterNodeAction(node, done);
+        }
+        catch (Exception ex)
+        {
+            _menuNode = null;
+            _error = ErrorPresenter.Describe(ex);
+        }
+    }
+
+    /// <summary>
+    /// Что перечитать после действия — то же, что делает десктоп по событиям
+    /// ObjectCreated / ContainerRefreshed / удалению узла в TreeView2.
+    /// </summary>
+    private void AfterNodeAction(BrowserNode node, ActionEffect effect)
+    {
+        switch (effect)
+        {
+            case ActionEffect.ChildAdded:
+                ReloadNode(node);
+                break;
+
+            case ActionEffect.Changed:
+                // Карточку могли переименовать; обновление перечитывает детей.
+                if (node.Container is PresentationObject po)
+                    node.Name = po.Name;
+                ReloadNode(node);
+                break;
+
+            // Клон — брат узла, а не его ребёнок, поэтому перечитывается родитель, как
+            // и после удаления. Десктоп делает то же самое: TreeView2.OnObjectCloned
+            // встаёт на родителя и перечитывает его, OnParentChanged(po, 1) — тем же
+            // концом. Лишний FireContainerRefreshed по уходящему узлу, который есть у
+            // половины десктопных мест, не повторяем: одно действие — одна перечитка
+            // (IMPROVEMENTS [WEB-02]).
+            case ActionEffect.SiblingAdded:
+            case ActionEffect.Deleted:
+                BrowserNode parent = node.Parent ?? node;
+                ReloadNode(parent);
+                Select(parent);
+                break;
+        }
+    }
+
+    /// <summary>
+    /// Перечитать детей узла, не сворачивая его, и список справа, если узел
+    /// выбран. Раскрытые внуки при этом сворачиваются — как и в десктопе, где
+    /// OnContainerRefreshed очищает узел и строит его заново.
+    /// </summary>
+    private void ReloadNode(BrowserNode node)
+    {
+        node.Container.ClearCache();
+        node.Children = null;
+        if (node.Expanded)
+            node.Children = LoadChildren(node);
+
+        if (ReferenceEquals(node, _selected))
+            Select(node);
+    }
+
+    private ObjectList? _list;
+
+    /// <summary>Сколько строк отмечено чекбоксами — от ObjectList.SelectionChanged, кнопки «Удалить (N)»/«Снять выделение» видны только при >0.</summary>
+    private int _selectedCount;
+
+    private Task ExportExcel() => _list?.ExportToExcelAsync(_caption) ?? Task.CompletedTask;
+
+    private void ShowError(string message) => _error = message;
+
+    private Task ClearSelection() => _list?.ClearSelection() ?? Task.CompletedTask;
+
+    /// <summary>
+    /// «Удалить (N)» тулбара — массовое удаление отмеченных строк списка
+    /// справа (ObjectActions.DeleteSelectedAsync). Перечитываем выбранный
+    /// узел тем же путём, что и после одиночного удаления/действия строки
+    /// (Changed="RefreshSelected" у ObjectList) — новый DataTable сбрасывает
+    /// выделение сам.
+    /// </summary>
+    private async Task DeleteSelected()
+    {
+        if (_list == null)
+            return;
+
+        ActionEffect? effect = await Actions.DeleteSelectedAsync(_list.SelectedObjects);
+        if (effect != null)
+            RefreshSelected();
+    }
+}

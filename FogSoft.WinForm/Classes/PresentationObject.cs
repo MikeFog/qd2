@@ -106,6 +106,27 @@ namespace FogSoft.WinForm.Classes
 			return res;
 		}
 
+		/// <summary>
+		/// Данные для паспорта: наборы строк для lookup-ов и селекторов
+		/// (процедура с ключом EntityId_Load_PropertyPage, псевдонимы наборов —
+		/// из iTableAlias). null, если процедуры нет: часть паспортов обходится
+		/// без справочников.
+		///
+		/// Вынесено из ShowPassport (PresentationObject.WinForms.cs) без изменений,
+		/// чтобы тем же путём данные брал и веб. См. docs/tasks/web-migration.md,
+		/// этап 2.
+		/// </summary>
+		public DataSet LoadPassportData()
+		{
+			Dictionary<string, object> procParameters = Parameters;
+			DataAccessor.PrepareParameters(
+				procParameters, entity, InterfaceObjects.PropertyPage, Constants.Actions.Load);
+
+			return DataAccessor.IsProcedureExist(procParameters)
+				? DataAccessor.DoAction(procParameters) as DataSet
+				: null;
+		}
+
 		public virtual bool Update()
 		{
 			Dictionary<string, object> procParameters = Parameters;
@@ -145,8 +166,27 @@ namespace FogSoft.WinForm.Classes
 			}
 		}
 
+		/// <summary>
+		/// Черновик копии этого объекта: новый, ещё не сохранённый объект с посеянными
+		/// значениями (как правило — параметры исходного без ключа, с пометкой Clone и
+		/// ссылкой на источник). Записывается обычным Update() из карточки.
+		///
+		/// <c>null</c> — класс клонировать не умеет; так отвечает база, и это ответ по
+		/// умолчанию. Вынесено сюда ради веба: сборка черновика — ядро, показ карточки —
+		/// UI-половина (конвенция docs/tasks/web-migration-dialogs.md). Веб-обработчик
+		/// «Клонировать» один на все классы: он спрашивает этот метод и ничего не знает
+		/// о конкретной сущности.
+		///
+		/// Возвращаемый тип строго PresentationObject: Client собирается под
+		/// .NET Framework 4.8, ковариантных возвращаемых типов там нет.
+		/// </summary>
+		public virtual PresentationObject CreateCloneDraft()
+		{
+			return null;
+		}
+
 		public virtual PresentationObject Clone(Dictionary<string, object> newParameters)
-		{			
+		{
 			DataAccessor.PrepareParameters(newParameters, entity, InterfaceObjects.FakeModule, Constants.Actions.Clone);
             DataSet ds = (DataSet)DataAccessor.DoAction(newParameters, out Dictionary<string, object> outParams);
 
@@ -264,7 +304,15 @@ namespace FogSoft.WinForm.Classes
 			return UserInteraction.Confirm(string.Format(DETACH_PROMPT, Name));
 		}
 
-		protected virtual string DeleteConfirmationText
+		/// <summary>
+		/// Текст вопроса перед удалением. Публичный, потому что спрашивать
+		/// пользователя должен тот, кто умеет это делать в своём UI: десктоп
+		/// спрашивает изнутри Delete() через UserInteraction, а веб не может
+		/// заблокировать circuit в ожидании ответа — он спрашивает сам и зовёт
+		/// Delete(silenceFlag: true). Разрез «спросить / сделать» — конвенция
+		/// этапа 0, docs/tasks/web-migration-dialogs.md.
+		/// </summary>
+		public virtual string DeleteConfirmationText
 		{
 			get { return string.Format(DELETE_PROMPT, Name); }
 		}

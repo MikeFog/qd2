@@ -9,7 +9,9 @@ namespace Merlin.Classes.FakeContainers
 	{
 		#region Constants -------------------------------------
 
-		private struct ActionNames
+		// public, а не private: имена переключателей нужны вебу — он вызывает их
+		// из своего обработчика действий. Так же открыт AdvertTypeContainer.
+		public struct ActionNames
 		{
 			public const string ShowActions = "ShowActions";
 			public const string ShowFirms = "ShowFirms";
@@ -59,6 +61,27 @@ namespace Merlin.Classes.FakeContainers
 			if (actionName == ActionNames.ShowHeadCompanies)
 				return ChildEntity.Id != (int)Entities.HeadCompanyWithConfirmedActions && ChildEntity.Id != (int)Entities.HeadCompanyWithUnconfirmedActions && ChildEntity.Id != (int)Entities.HeadCompanyWithDeletedActions;
             return true;
+		}
+
+		/// <summary>Акции с разбивкой по группам компаний: дети корня — HeadCompanyWithActions.</summary>
+		public void ShowHeadCompanies()
+		{
+			ChildEntity = _headCompanyEntity;
+			FireContainerRefreshed();
+		}
+
+		/// <summary>Акции с разбивкой на фирмы: дети корня — FirmWithActions.</summary>
+		public void ShowFirms()
+		{
+			ChildEntity = _firmEntity;
+			FireContainerRefreshed();
+		}
+
+		/// <summary>Акции без разбивки на фирмы: дети корня — сами акции.</summary>
+		public void ShowActions()
+		{
+			ChildEntity = _actionEntity;
+			FireContainerRefreshed();
 		}
 
 		// DoAction/ShowFilter переехали в ActionContainer.WinForms.cs.

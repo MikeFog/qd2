@@ -1,0 +1,16 @@
+/* Диалог выбора объекта: список во всю ширину окна со своей прокруткой. */
+
+.picker-table {
+    max-height: 55vh;
+}
+
+::deep tbody tr {
+    cursor: pointer;
+}
+
+/* Колонка галочек в режиме Multiselect — тот же класс, что в Passport.razor.css. */
+::deep .col-check {
+    width: 1%;
+    padding-left: var(--s-3);
+    padding-right: 0;
+}

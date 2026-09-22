@@ -17,6 +17,14 @@ builder.Services.AddScoped<UserSession>();
 // Scoped — то есть свой на circuit: диалог одного пользователя не должен
 // быть виден другому.
 builder.Services.AddScoped<DialogService>();
+// Карточку объекта показывают двое — журнал и кнопка «Создать» у objectPicker,
+// поэтому цикл «показать → проверить → сохранить» вынесен в общий сервис.
+builder.Services.AddScoped<PassportDialog>();
+// Действия над объектами (замена контекстного меню десктопа) и само
+// всплывающее меню — тоже свои на circuit, как диалоги.
+builder.Services.AddScoped<TableDialog>();
+builder.Services.AddScoped<ObjectActions>();
+builder.Services.AddScoped<ActionMenuService>();
 builder.Services.AddSingleton<CircuitServicesAccessor>();
 builder.Services.AddScoped<CircuitHandler, CircuitServicesHandler>();
 // Кэш метаданных сущностей — тоже на circuit, и это вопрос не скорости, а прав:

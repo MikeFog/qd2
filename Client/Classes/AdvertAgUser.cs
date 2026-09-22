@@ -5,7 +5,7 @@ using FogSoft.WinForm.DataAccess;
 
 namespace Merlin.Classes
 {
-	static class AdvertAgUser
+	public static class AdvertAgUser
 	{
 		public static bool IsRightToEditForeignActions(this SecurityManager.User user)
 		{

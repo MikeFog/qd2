@@ -403,5 +403,36 @@ namespace Merlin.Classes
         {
             get { return this[ParamNames.CertificateIssued].ToString(); }
         }
+
+		/// <summary>
+		/// Связь радиостанции с агентствами: то, что отметили и сняли в
+		/// селекторе на странице «Агентства».
+		///
+		/// Перенесено из Update() в Massmedia.WinForms.cs без изменений. Там
+		/// оно оказалось недоступно сборке без UI: весь override Update()
+		/// уехал в UI-половину вместе с проверкой лицензии, которая показывает
+		/// диалог. Проверка лицензии там и осталась — это десктопное поведение
+		/// и открытый вопрос №3 плана, — а запись связей нужна обеим версиям.
+		/// </summary>
+		public override void SubmitChildrenChanges()
+		{
+			foreach (ChildrenChanges childrenChanges in childrenChangesList)
+			{
+				foreach (PresentationObject po in childrenChanges.AddedObjects)
+				{
+					MassmediaAgency massmediaAgency =
+						new MassmediaAgency(((Agency) po).AgencyId, MassmediaId);
+					massmediaAgency.Update();
+				}
+
+				foreach (PresentationObject po in childrenChanges.DeletedObjects)
+				{
+					MassmediaAgency massmediaAgency =
+						new MassmediaAgency(((Agency) po).AgencyId, MassmediaId);
+					massmediaAgency.Delete(true);
+				}
+			}
+			childrenChangesList.Clear();
+		}
     }
 }

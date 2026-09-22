@@ -1,0 +1,584 @@
+@using System.Data
+@using FogSoft.Web.Infrastructure
+@using FogSoft.WinForm
+@using FogSoft.WinForm.Classes
+@inject ObjectActions Actions
+@inject ActionMenuService Menu
+@inject IJSRuntime JS
+@implements IAsyncDisposable
+
+@*
+    Список объектов: таблица, сортировка и действия над строкой.
+
+    Действия — по образцу веб-Outlook (решение владельца продукта 2026-09-18):
+    клик по строке открывает карточку; при наведении в строке проявляются
+    быстрые иконки и «⋯» с полным меню; правая кнопка открывает то же меню.
+    Само меню и выполнение — ObjectActions, по метаданным iEntityAction.
+
+    Выделен из Journal.razor, когда появился второй вызывающий — правая
+    половина древовидного экрана (Browser.razor). В десктопе это ровно тот же
+    случай: и JournalForm, и ExplorerForm показывают один и тот же контрол
+    SmartGrid.
+
+    Виртуализация: в разметке живут только видимые строки. Замер на журнале
+    удалённых выпусков (40 521 строка) до неё — первая отрисовка ~30 секунд,
+    405 409 узлов в DOM и 1,8 секунды на любой следующий клик, потому что
+    Blazor Server считает разницу по всему дереву. Процедура при этом отдаёт
+    те же строки за десятки миллисекунд. Раздел 7 п.4 плана.
+
+    Постраничности намеренно нет: в десктопе её тоже нет, прокрутка идёт по
+    всему списку. SpacerElement="tr" обязателен — распорки по умолчанию div,
+    а внутри tbody это недопустимая разметка.
+
+    Выделение чекбоксами (массовое удаление, решение владельца продукта
+    2026-09-22) — только у сущностей с isMassDeleteAllowed. Жест — чекбоксы,
+    а не Ctrl/Shift по строкам десктопа: те заняты браузером (открытие
+    вкладок, встроенное выделение текста) и кликом по строке (открывает
+    карточку), а невидимое выделение при виртуализации для необратимого
+    действия недопустимо. Само удаление и его кнопка — у владельца экрана
+    (Journal.razor/Browser.razor, ScreenToolbar); список только собирает
+    отметки и отдаёт их наружу через SelectedObjects/SelectionChanged.
+*@
+
+@if (Data == null)
+{
+    <div class="state">Загрузка…</div>
+}
+else if (Data.Rows.Count == 0)
+{
+    <div class="state">@EmptyText</div>
+}
+else
+{
+    <div class="data-table object-list">
+        <table class="table table-hover @(ReadOnly ? "no-row-click" : "")">
+            <thead>
+                <tr>
+                    @if (SelectionEnabled)
+                    {
+                        <th class="col-check" @onclick:stopPropagation="true">
+                            <input type="checkbox" class="form-check-input" @ref="_headerCheckboxRef"
+                                   checked="@AllSelected" @onchange="ToggleAll" title="Отметить все" />
+                        </th>
+                    }
+                    <th class="col-icon"></th>
+                    @foreach (var a in Columns)
+                    {
+                        <th class="sortable" @onclick="() => SortBy(a.Name)">
+                            @a.Alias<span class="sort-mark">@SortMark(a.Name)</span>
+                        </th>
+                    }
+                    @if (!ReadOnly)
+                    {
+                        <th class="col-actions"></th>
+                    }
+                </tr>
+            </thead>
+            <tbody>
+                <Virtualize TItem="DataRow" Items="_rows" ItemSize="29" SpacerElement="tr" Context="row">
+                    <tr class="@(ReferenceEquals(row, _menuRow) ? "row-menu-open" : "")"
+                        @onclick="() => OpenPassport(row)"
+                        @oncontextmenu="e => OpenMenu(row, e, fromButton: false)" @oncontextmenu:preventDefault="!ReadOnly">
+                        @if (SelectionEnabled)
+                        {
+                            <td class="col-check" @onclick:stopPropagation="true">
+                                <input type="checkbox" class="form-check-input"
+                                       checked="@_selectedRows.Contains(row)"
+                                       @onclick="e => ToggleRow(row, e)" />
+                            </td>
+                        }
+                        <td class="col-icon"><i class="bi @_icon entity-icon" aria-hidden="true"></i></td>
+                        @foreach (var a in Columns)
+                        {
+                            <td title="@Display(row, a)">
+                                @if (IsBoolean(a))
+                                {
+                                    @if (Display(row, a) == BoolYes)
+                                    {
+                                        <span class="bool-check">✓</span>
+                                    }
+                                }
+                                else
+                                {
+                                    @Display(row, a)
+                                }
+                            </td>
+                        }
+                        @if (!ReadOnly)
+                        {
+                            <td class="col-actions">
+                                @foreach (var quick in _quick)
+                                {
+                                    <button type="button" class="row-btn @(quick.Danger ? "row-btn-danger" : "")"
+                                            title="@quick.Text" aria-label="@quick.Text"
+                                            @onclick="() => Run(row, quick.Name, reportUnavailable: true)" @onclick:stopPropagation="true">
+                                        <i class="bi @quick.Icon" aria-hidden="true"></i>
+                                    </button>
+                                }
+                                <button type="button" class="row-btn" title="Действия" aria-label="Действия" aria-haspopup="menu"
+                                        @onclick="e => OpenMenu(row, e, fromButton: true)" @onclick:stopPropagation="true">
+                                    <i class="bi bi-three-dots" aria-hidden="true"></i>
+                                </button>
+                            </td>
+                        }
+                    </tr>
+                </Virtualize>
+            </tbody>
+        </table>
+    </div>
+}
+
+@code {
+    /// <summary>Сущность строк: из неё берутся колонки и доменный класс.</summary>
+    [Parameter, EditorRequired] public Entity Entity { get; set; } = default!;
+
+    /// <summary>Строки. null — ещё не загружены.</summary>
+    [Parameter] public DataTable? Data { get; set; }
+
+    /// <summary>Текст, когда строк нет.</summary>
+    [Parameter] public string EmptyText { get; set; } = "Записей нет.";
+
+    /// <summary>
+    /// Только показать: ни действий над строками, ни открытия карточки по клику.
+    /// Нужен для готовых таблиц — итогов массовых операций и прочих технических
+    /// списков (<see cref="TableDialog"/>), где строка не доменный объект, а
+    /// запись результата: открывать у неё нечего, удалять нечего.
+    /// </summary>
+    [Parameter] public bool ReadOnly { get; set; }
+
+    /// <summary>
+    /// Список изменился — владелец экрана должен перечитать данные. Сам
+    /// компонент их не грузит: откуда они берутся, знает только он
+    /// (журнал — из сущности, дерево — из выбранного узла).
+    /// </summary>
+    [Parameter] public EventCallback Changed { get; set; }
+
+    /// <summary>Ошибка операции над строкой; показывается владельцем.</summary>
+    [Parameter] public EventCallback<string> Failed { get; set; }
+
+    /// <summary>
+    /// Сколько строк сейчас отмечено чекбоксами — владелец экрана рисует по
+    /// этому числу кнопку массового удаления в своём тулбаре (решение
+    /// владельца продукта 2026-09-22: чекбоксы, не Ctrl/Shift по строкам —
+    /// список виртуализирован, невидимое выделение для необратимого действия
+    /// недопустимо).
+    /// </summary>
+    [Parameter] public EventCallback<int> SelectionChanged { get; set; }
+
+    /// <summary>
+    /// Колонки — атрибуты сущности, у которых есть соответствующая колонка в
+    /// пришедших строках. Метаданные (iEntityAttribute) могут объявлять
+    /// колонку, которой нет в конкретной процедуре загрузки списка — например,
+    /// massmediaList не отдаёт executorName/extraCharge* сущности 9, хотя они
+    /// есть в selector=0. Десктопный SmartGrid пропускает такие атрибуты
+    /// (SmartGrid.SetColumnHeaders: columns.Contains(entityAttribute.Name)),
+    /// и здесь — тот же фильтр, иначе список рисовал бы заголовок с вечно
+    /// пустой колонкой, которую десктоп молча не показывает.
+    /// </summary>
+    private IReadOnlyList<Entity.Attribute> Columns =>
+        Data == null
+            ? Entity.SortedAttributes
+            : Entity.SortedAttributes.Where(a => Data.Columns.Contains(a.Name)).ToList();
+
+    /// <summary>
+    /// Строки в порядке показа. Отдельный список, а не DataTable.Rows:
+    /// Virtualize требует типизированную коллекцию, а сортировка меняет
+    /// порядок, не трогая сам набор.
+    /// </summary>
+    private List<DataRow> _rows = new();
+
+    /// <summary>Значок сущности — один на весь список, как колонка-картинка в SmartGrid.</summary>
+    private string _icon => EntityIcons.For(Entity.IconName);
+
+    private DataTable? _sorted;
+    private string? _sortColumn;
+    private bool _sortDescending;
+
+    // Уведомление о сбросе выделения ждёт до OnParametersSetAsync: сам сброс
+    // случается в синхронном OnParametersSet (вместе с пересборкой сортировки),
+    // а SelectionChanged — асинхронный EventCallback, ждать его здесь нечем.
+    private bool _selectionResetPending;
+
+    protected override void OnParametersSet()
+    {
+        // Пересобираем порядок, когда пришёл другой набор строк: у дерева это
+        // происходит на каждом выборе узла. Выделение при этом тоже сбрасывается —
+        // строки не те же самые DataRow, по которым оно хранится.
+        if (!ReferenceEquals(_sorted, Data))
+        {
+            _sorted = Data;
+            _sortColumn = null;
+            _sortDescending = false;
+            _quick = ResolveQuickActions();
+
+            if (_selectedRows.Count > 0)
+            {
+                _selectedRows.Clear();
+                _lastCheckedRow = null;
+                _selectionResetPending = true;
+            }
+        }
+
+        ApplySort();
+    }
+
+    protected override Task OnParametersSetAsync()
+    {
+        if (!_selectionResetPending)
+            return Task.CompletedTask;
+
+        _selectionResetPending = false;
+        return NotifySelectionChangedAsync();
+    }
+
+    private const string BoolYes = "Да";
+
+    /// <summary>
+    /// Текст ячейки. Для boolean-колонок — «Да»/пусто, а не «True»/«False»
+    /// из ToString(): десктоп для таких колонок вообще не показывает текст
+    /// (DataGridViewExBooleanCell рисует галочку только при true, ничего —
+    /// при false), см. <see cref="IsBoolean"/>. Текст здесь остаётся ради
+    /// подсказки (title) и как содержимое для не-boolean колонок.
+    /// </summary>
+    private string Display(DataRow row, Entity.Attribute attribute)
+    {
+        if (!row.Table.Columns.Contains(attribute.Name))
+            return "";
+
+        object v = row[attribute.Name];
+        if (v == DBNull.Value)
+            return "";
+
+        if (IsBoolean(attribute))
+            return ParseHelper.GetBooleanFromObject(v, false) ? BoolYes : "";
+
+        // Десктопный SmartGrid.CreateDataGridColumn ставит Style.Format "c"
+        // (валюта, с разделителем тысяч и знаком ₽) для money-колонок и "f"
+        // (два знака после запятой, без разделителя тысяч) для decimal/float —
+        // без этого web показывал голый ToString(), например "8000,00" вместо
+        // "8 000,00 ₽". Признак — тот же ColumnInfo.IsMoneyData/IsFloatData.
+        if (v is IConvertible)
+        {
+            ColumnInfoOf(attribute, out ColumnInfo? columnInfo);
+            if (ColumnInfo.IsMoneyData(columnInfo, attribute))
+                return Convert.ToDecimal(v).ToString("C");
+            if (ColumnInfo.IsFloatData(columnInfo, attribute))
+                return Convert.ToDecimal(v).ToString("F");
+        }
+
+        return v.ToString() ?? "";
+    }
+
+    /// <summary>
+    /// Тот же признак, что решает десктопный SmartGrid.CreateDataGridColumn
+    /// при выборе клетки для колонки (ColumnInfo.IsBooleanData) — сначала
+    /// тип атрибута из метаданных, потом тип колонки БД. Переиспользуем
+    /// готовое правило из FogSoft.Core, а не гадаем по значению в DataRow.
+    /// </summary>
+    private bool IsBoolean(Entity.Attribute attribute)
+    {
+        ColumnInfoOf(attribute, out ColumnInfo? columnInfo);
+        return ColumnInfo.IsBooleanData(columnInfo, attribute);
+    }
+
+    private void ColumnInfoOf(Entity.Attribute attribute, out ColumnInfo? columnInfo) =>
+        Entity.ColumnsInfo.TryGetValue(attribute.Name, out columnInfo);
+
+    // ---------- Сортировка ----------
+
+    /// <summary>
+    /// Сортировка на клиенте, как в десктопе: SmartGrid отдаёт её
+    /// DataGridView (SortMode.Automatic) поверх DataView, в процедуру ничего
+    /// не передаётся. Повторный щелчок по той же колонке меняет направление.
+    /// </summary>
+    private void SortBy(string column)
+    {
+        if (string.Equals(_sortColumn, column, StringComparison.OrdinalIgnoreCase))
+            _sortDescending = !_sortDescending;
+        else
+        {
+            _sortColumn = column;
+            _sortDescending = false;
+        }
+
+        ApplySort();
+    }
+
+    private void ApplySort()
+    {
+        if (Data == null)
+        {
+            _rows = new List<DataRow>();
+            return;
+        }
+
+        if (_sortColumn == null || !Data.Columns.Contains(_sortColumn))
+        {
+            _rows = Data.Rows.Cast<DataRow>().ToList();
+            return;
+        }
+
+        // Сортируем через DataView: он сравнивает значения по типу колонки,
+        // а не по их строковому виду — иначе числа и даты выстроились бы
+        // лексикографически.
+        var view = new DataView(Data)
+        {
+            Sort = $"[{_sortColumn.Replace("]", "]]")}] {(_sortDescending ? "DESC" : "ASC")}"
+        };
+        _rows = view.Cast<DataRowView>().Select(v => v.Row).ToList();
+    }
+
+    private string SortMark(string column) =>
+        string.Equals(_sortColumn, column, StringComparison.OrdinalIgnoreCase)
+            ? (_sortDescending ? " ▾" : " ▴")
+            : "";
+
+    // ---------- Выгрузка в Excel ----------
+
+    /// <summary>
+    /// Выгружает список файлом на скачивание — кнопка «Экспорт в Excel» тулбара
+    /// экрана-владельца (десктоп: ExplorerForm.tsbExcel_Click). Выгружается то,
+    /// что сейчас в списке: видимые колонки в порядке сетки и строки в текущем
+    /// порядке сортировки, процедура заново не вызывается — иначе файл не
+    /// совпал бы с тем, что видит пользователь (отбор, сортировка). Пустой
+    /// список — ничего не делает, как десктопный ExportExcel.
+    /// </summary>
+    /// <param name="title">Заголовок экрана — из него имя файла.</param>
+    public async Task ExportToExcelAsync(string? title)
+    {
+        if (Data == null || _rows.Count == 0)
+            return;
+
+        try
+        {
+            using MemoryStream file = GridExcelExport.Build(Entity, Columns, _rows);
+            using var reference = new DotNetStreamReference(file);
+            await using IJSObjectReference module = await JS.InvokeAsync<IJSObjectReference>("import", "./js/download.js");
+            await module.InvokeVoidAsync("downloadStream",
+                GridExcelExport.FileName(title, DateTime.Today), GridExcelExport.ContentType, reference);
+        }
+        catch (Exception ex)
+        {
+            await Failed.InvokeAsync(ErrorPresenter.Describe(ex));
+        }
+    }
+
+    // ---------- Выделение чекбоксами (массовое удаление) ----------
+
+    /// <summary>
+    /// Колонка чекбоксов — только у сущностей с флагом массового удаления
+    /// (iEntity.isMassDeleteAllowed, сегодня только сущность 81 «Тариф») и не
+    /// в режиме показа: строка готовой таблицы — не доменный объект, отмечать
+    /// нечего.
+    /// </summary>
+    private bool SelectionEnabled => !ReadOnly && Entity.IsMassDeleteAllowed;
+
+    /// <summary>
+    /// Выделение — по ссылке на DataRow, а не по индексу или ключу: сортировка
+    /// пересобирает _rows из тех же объектов DataRow, поэтому выбор её
+    /// переживает без всякого учёта столбца сортировки.
+    /// </summary>
+    private readonly HashSet<DataRow> _selectedRows = new();
+
+    /// <summary>Строка последнего клика по чекбоксу — опорная точка для Shift-диапазона.</summary>
+    private DataRow? _lastCheckedRow;
+
+    private ElementReference _headerCheckboxRef;
+    private IJSObjectReference? _checkboxModule;
+    private bool? _appliedIndeterminate;
+
+    private bool AllSelected => _rows.Count > 0 && _selectedRows.Count == _rows.Count;
+
+    /// <summary>Объекты, отмеченные чекбоксами, — то, что владелец экрана передаёт в удаление пачкой.</summary>
+    public IReadOnlyList<PresentationObject> SelectedObjects =>
+        _selectedRows.Select(Entity.CreateObject).ToList();
+
+    /// <summary>«Снять выделение» кнопкой тулбара владельца экрана.</summary>
+    public Task ClearSelection()
+    {
+        if (_selectedRows.Count == 0)
+            return Task.CompletedTask;
+
+        _selectedRows.Clear();
+        _lastCheckedRow = null;
+
+        // Метод вызван снаружи через @ref, а не через событие самого компонента —
+        // Blazor не перерисует ObjectList автоматически, как перерисовал бы после
+        // собственного @onclick/@onchange, поэтому явный StateHasChanged.
+        StateHasChanged();
+        return NotifySelectionChangedAsync();
+    }
+
+    /// <summary>Заголовочный чекбокс: отметить/снять весь текущий список (_rows), а не только отрисованные строки — список виртуализирован.</summary>
+    private Task ToggleAll(ChangeEventArgs e)
+    {
+        bool check = e.Value is bool b && b;
+        if (check)
+            foreach (DataRow row in _rows)
+                _selectedRows.Add(row);
+        else
+            _selectedRows.Clear();
+
+        // Якорь Shift-диапазона теряет смысл после «отметить/снять все».
+        _lastCheckedRow = null;
+        return NotifySelectionChangedAsync();
+    }
+
+    /// <summary>
+    /// Клик по чекбоксу строки не должен открывать карточку (stopPropagation в
+    /// разметке, как у быстрых иконок). Shift+клик отмечает диапазон от строки
+    /// последнего клика по чекбоксу до текущей — привычка из десктопного грида,
+    /// без конфликта с Ctrl/Shift на самой строке (те заняты браузером и
+    /// открытием карточки, поэтому выделение строк решили делать только чекбоксами).
+    /// </summary>
+    private Task ToggleRow(DataRow row, MouseEventArgs e)
+    {
+        bool willSelect = !_selectedRows.Contains(row);
+
+        if (e.ShiftKey && _lastCheckedRow != null)
+        {
+            int from = _rows.IndexOf(_lastCheckedRow);
+            int to = _rows.IndexOf(row);
+            if (from >= 0 && to >= 0)
+            {
+                int lo = Math.Min(from, to), hi = Math.Max(from, to);
+                for (int i = lo; i <= hi; i++)
+                {
+                    if (willSelect)
+                        _selectedRows.Add(_rows[i]);
+                    else
+                        _selectedRows.Remove(_rows[i]);
+                }
+            }
+        }
+        else if (willSelect)
+            _selectedRows.Add(row);
+        else
+            _selectedRows.Remove(row);
+
+        _lastCheckedRow = row;
+        return NotifySelectionChangedAsync();
+    }
+
+    private Task NotifySelectionChangedAsync() => SelectionChanged.InvokeAsync(_selectedRows.Count);
+
+    /// <summary>
+    /// «Отмечено частично» — DOM-свойство чекбокса, не HTML-атрибут; Blazor не
+    /// умеет выставить его разметкой, только JS-интероп после отрисовки.
+    /// </summary>
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (!SelectionEnabled)
+            return;
+
+        bool indeterminate = _selectedRows.Count > 0 && !AllSelected;
+        if (_appliedIndeterminate == indeterminate)
+            return;
+
+        _checkboxModule ??= await JS.InvokeAsync<IJSObjectReference>("import", "./js/checkbox.js");
+        await _checkboxModule.InvokeVoidAsync("setIndeterminate", _headerCheckboxRef, indeterminate);
+        _appliedIndeterminate = indeterminate;
+    }
+
+    public async ValueTask DisposeAsync()
+    {
+        if (_checkboxModule != null)
+        {
+            try { await _checkboxModule.DisposeAsync(); }
+            catch (JSDisconnectedException) { }
+        }
+    }
+
+    // ---------- Действия ----------
+
+    /// <summary>Быстрые иконки строки — одни на весь список, см. ObjectActions.QuickActions.</summary>
+    private IReadOnlyList<ActionMenuItem> _quick = Array.Empty<ActionMenuItem>();
+
+    /// <summary>Строка, у которой открыто меню, — остаётся подсвеченной, пока меню видно.</summary>
+    private DataRow? _menuRow;
+
+    private IReadOnlyList<ActionMenuItem> ResolveQuickActions()
+    {
+        if (Data == null || Data.Rows.Count == 0)
+            return Array.Empty<ActionMenuItem>();
+
+        try
+        {
+            return Actions.QuickActions(Entity, Entity.CreateObject(Data.Rows[0]));
+        }
+        catch
+        {
+            // Иконки — удобство, а не функция: меню «⋯» остаётся.
+            return Array.Empty<ActionMenuItem>();
+        }
+    }
+
+    // Поднятие доменного класса по метаданным может упасть на резолвинге типа,
+    // поэтому перехват: без него исключение убивает circuit и пользователь
+    // видит безымянную «внутреннюю ошибку» вместо причины.
+
+    private async Task OpenMenu(DataRow row, MouseEventArgs e, bool fromButton)
+    {
+        // Правая кнопка в режиме показа не должна открывать пустое меню; браузерное
+        // меню при этом не подавляется (oncontextmenu:preventDefault="!ReadOnly").
+        if (ReadOnly)
+            return;
+
+        try
+        {
+            PresentationObject obj = Entity.CreateObject(row);
+            _menuRow = row;
+            string? picked = await Menu.ShowAsync(
+                Actions.BuildMenu(obj, ViewType.Journal), e.ClientX, e.ClientY, fromButton);
+            _menuRow = null;
+            StateHasChanged();
+
+            if (picked != null)
+                await Execute(obj, picked, reportUnavailable: false);
+        }
+        catch (Exception ex)
+        {
+            _menuRow = null;
+            await Failed.InvokeAsync(ErrorPresenter.Describe(ex));
+        }
+    }
+
+    /// <param name="reportUnavailable">
+    /// Сказать пользователю, что действие недоступно. Нужно быстрым иконкам —
+    /// их доступность заранее не проверяется. Клику по строке не нужно: там,
+    /// где карточки нет, двойной щелчок в десктопе тоже просто ничего не делает.
+    /// </param>
+    /// <summary>
+    /// Клик по строке открывает карточку — кроме режима показа: там строка не
+    /// доменный объект, а запись результата, открывать у неё нечего.
+    /// </summary>
+    private Task OpenPassport(DataRow row) =>
+        ReadOnly ? Task.CompletedTask : Run(row, Constants.EntityActions.ShowPassport);
+
+    private async Task Run(DataRow row, string actionName, bool reportUnavailable = false)
+    {
+        try
+        {
+            await Execute(Entity.CreateObject(row), actionName, reportUnavailable);
+        }
+        catch (Exception ex)
+        {
+            await Failed.InvokeAsync(ErrorPresenter.Describe(ex));
+        }
+    }
+
+    private async Task Execute(PresentationObject obj, string actionName, bool reportUnavailable)
+    {
+        ActionEffect? effect = await Actions.ExecuteAsync(obj, actionName, ViewType.Journal);
+
+        if (effect == null)
+        {
+            if (reportUnavailable)
+                await Failed.InvokeAsync("Это действие для записи недоступно.");
+            return;
+        }
+
+        if (effect != ActionEffect.None)
+            await Changed.InvokeAsync();
+    }
+}

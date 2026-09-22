@@ -1,0 +1,113 @@
+/*
+    Меню действий: белая панель поверх страницы, пункты с иконкой и текстом.
+    Погашенные — серые, удаление — красное, подменю раскрывается вбок при
+    наведении.
+*/
+
+.am-backdrop {
+    position: fixed;
+    inset: 0;
+    z-index: 1090;
+}
+
+.am-menu {
+    position: fixed;
+    z-index: 1091;
+    visibility: hidden;
+    min-width: 220px;
+    max-width: 360px;
+    padding: var(--s-1);
+    background: var(--c-surface);
+    border: 1px solid var(--c-border-strong);
+    border-radius: 6px;
+    box-shadow: 0 8px 24px rgba(15, 23, 42, .12), 0 2px 6px rgba(15, 23, 42, .08);
+    outline: none;
+}
+
+.am-item {
+    position: relative;
+    display: flex;
+    align-items: center;
+    gap: var(--s-2);
+    width: 100%;
+    padding: 6px var(--s-2);
+    border: none;
+    border-radius: 4px;
+    background: none;
+    color: var(--c-text);
+    font-size: 13px;
+    text-align: left;
+    white-space: nowrap;
+}
+
+.am-item:hover,
+.am-item:focus-visible {
+    background: var(--c-accent-soft);
+    outline: none;
+}
+
+.am-icon {
+    width: 16px;
+    flex: 0 0 16px;
+    color: var(--c-text-muted);
+}
+
+.am-text {
+    flex: 1 1 auto;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.am-hint {
+    font-size: 11px;
+    color: var(--c-text-muted);
+}
+
+.am-chevron {
+    font-size: 11px;
+    color: var(--c-text-muted);
+}
+
+.am-off,
+.am-off .am-icon {
+    color: #a3a8b1;
+    cursor: default;
+}
+
+.am-off:hover {
+    background: none;
+}
+
+.am-danger,
+.am-danger .am-icon {
+    color: var(--c-danger);
+}
+
+.am-danger:hover {
+    background: var(--c-danger-soft);
+}
+
+.am-sep {
+    height: 1px;
+    margin: var(--s-1) 6px;
+    background: var(--c-border);
+}
+
+/* Подменю: вложенная панель, видна при наведении на родителя. */
+.am-sub {
+    position: absolute;
+    top: calc(var(--s-1) * -1);
+    left: 100%;
+    display: none;
+    visibility: visible;
+}
+
+.am-parent:hover > .am-sub,
+.am-parent:focus-within > .am-sub {
+    display: block;
+}
+
+.am-flip .am-sub {
+    left: auto;
+    right: 100%;
+}

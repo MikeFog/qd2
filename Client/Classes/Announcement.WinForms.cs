@@ -12,7 +12,7 @@ namespace Merlin.Classes
 		                              InterfaceObjects interfaceObject)
 		{
 			if (actionName == ActionNames.MarkAsRead)
-				SetReadMark(true);
+				MarkAsRead();
 			else
 				base.DoAction(actionName, owner, interfaceObject);
 		}

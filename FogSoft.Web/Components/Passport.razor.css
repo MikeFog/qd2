@@ -1,0 +1,86 @@
+/*
+    Карточка объекта: вкладки страниц и форма в две колонки.
+
+    Подписи стоят слева в колонке фиксированной ширины, значения — справа.
+    Так поля выстраиваются друг под другом; прежний вариант (подпись над
+    полем, всё одной колонкой) давал карточку длиной в несколько экранов и
+    ничего не выравнивал.
+*/
+
+.tabs {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 2px;
+    margin: calc(var(--s-2) * -1) calc(var(--s-4) * -1) var(--s-4);
+    padding: 0 var(--s-4);
+    border-bottom: 1px solid var(--c-border);
+}
+
+.tab {
+    padding: var(--s-2) var(--s-3);
+    border: none;
+    border-bottom: 2px solid transparent;
+    background: none;
+    font-size: 13px;
+    color: var(--c-text-muted);
+    white-space: nowrap;
+}
+
+.tab:hover {
+    color: var(--c-text);
+}
+
+.tab-active {
+    color: var(--c-accent);
+    border-bottom-color: var(--c-accent);
+    font-weight: 600;
+}
+
+.passport-grid {
+    display: grid;
+    grid-template-columns: minmax(140px, 220px) minmax(220px, 1fr);
+    gap: var(--s-3);
+    align-items: center;
+}
+
+.passport-label {
+    font-size: 13px;
+    color: var(--c-text-muted);
+    text-align: right;
+}
+
+.required {
+    color: var(--c-danger);
+    margin-left: 2px;
+}
+
+/* Широкие контролы — таблица набора, картинка, пометка о неподдержанном
+   контроле — занимают всю ширину, подпись встаёт над ними. */
+.passport-label-wide {
+    grid-column: 1 / -1;
+    text-align: left;
+    font-weight: 600;
+    color: var(--c-text);
+    margin-top: var(--s-2);
+}
+
+.passport-control-wide {
+    grid-column: 1 / -1;
+}
+
+::deep .selector-table {
+    max-height: 320px;
+}
+
+::deep .col-check {
+    width: 1%;
+    padding-left: var(--s-3);
+    padding-right: 0;
+}
+
+/* Boolean-колонка selector-грида: галочка только при true, как десктопный
+   DataGridViewExBooleanCell — при false ячейка остаётся пустой. */
+::deep .bool-check {
+    color: var(--c-accent);
+    font-weight: 700;
+}

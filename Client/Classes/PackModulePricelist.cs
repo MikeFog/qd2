@@ -46,6 +46,19 @@ namespace Merlin.Classes
 
 		// EditContent переехал в PackModulePricelist.WinForms.cs.
 
+		/// <summary>
+		/// Черновик копии прайс-листа пакетных модулей: значения исходного, с пометкой
+		/// Clone и ссылкой на источник. Записывается паспортом (Update -> Clone);
+		/// содержимое пакета копирует процедура. Ключ pricelistID остаётся в параметрах —
+		/// как было в CloneContent, сборка перенесена без изменений.
+		/// </summary>
+		public override PresentationObject CreateCloneDraft()
+		{
+			PackModulePricelist draft = new PackModulePricelist { parameters = Parameters };
+			draft.parameters["sourcePricelistID"] = parameters["pricelistID"];
+			draft.parameters[Constants.ParamNames.ActionName] = Constants.EntityActions.Clone;
+			return draft;
+		}
 
 		public override DataTable GetTariffList()
 		{

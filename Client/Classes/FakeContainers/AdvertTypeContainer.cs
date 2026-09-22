@@ -3,9 +3,11 @@ using FogSoft.WinForm.Classes;
 
 namespace Merlin.Classes.FakeContainers
 {
-    internal partial class AdvertTypeContainer : FakeContainer
+    // public, а не internal: веб создаёт контейнер сам (MenuRoutes.Browser) и вызывает
+    // ShowTree/ShowFlat из своего обработчика действий. Так же открыт ActionContainer.
+    public partial class AdvertTypeContainer : FakeContainer
     {
-        private struct ActionNames
+        public struct ActionNames
         {
             public const string ShowTree = "ShowTree";
             public const string ShowFlat = "ShowFlat";
@@ -33,6 +35,20 @@ namespace Merlin.Classes.FakeContainers
             if (actionName == Constants.EntityActions.AddNew)
                 return childEntity.IsActionEnabled(actionName, type);
             return base.IsActionEnabled(actionName, type);
+        }
+
+        /// <summary>Показать с группировкой: корневая сущность — AdvertType, иерархия.</summary>
+        public void ShowTree()
+        {
+            ChildEntity = EntityManager.GetEntity((int)Entities.AdvertType);
+            FireContainerRefreshed();
+        }
+
+        /// <summary>Показать без группировки: плоский список AdvertTypeChild.</summary>
+        public void ShowFlat()
+        {
+            ChildEntity = EntityManager.GetEntity((int)Entities.AdvertTypeChild);
+            FireContainerRefreshed();
         }
 
         // DoAction переехал в AdvertTypeContainer.WinForms.cs.

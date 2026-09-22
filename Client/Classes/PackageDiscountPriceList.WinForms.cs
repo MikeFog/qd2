@@ -26,7 +26,7 @@ namespace Merlin.Classes
 
 		private void ClonePriceList(IWin32Window owner)
 		{
-			PackageDiscountPriceList draft = CreateCloneDraft();
+			PresentationObject draft = CreateCloneDraft();
 			if (draft.ShowPassport(owner))
 				OnObjectCloned(draft);
 		}

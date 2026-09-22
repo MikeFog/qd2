@@ -269,18 +269,6 @@ namespace FogSoft.WinForm
 			return ShowFilter(new FilterForm(entity, xmlFilter, PrepareForFilter(entity), filter), owner);
 		}
 
-		public static DataSet PrepareForFilter(Entity entity)
-		{
-			// load data to display filter
-			Dictionary<string, object> parameters =
-				DataAccessor.PrepareParameters(entity, InterfaceObjects.FilterPage, Constants.Actions.Load);
-
-			DataSet ds = null;
-			if (DataAccessor.IsProcedureExist(parameters))
-				ds = DataAccessor.DoAction(parameters) as DataSet;
-			return ds;
-		}
-
 		private static bool ShowFilter(FilterForm filterForm, IWin32Window owner)
 		{
 			return filterForm.ShowDialog(owner) == DialogResult.OK;

@@ -31,7 +31,7 @@ namespace Merlin.Classes
         /// на источник. Записывается паспортом (Update -> DiscountReleaseIUD 'Clone'); суммы и проценты
         /// копирует процедура. Дата принятия по умолчанию — сегодня.
         /// </summary>
-        internal DiscountRelease CreateCloneDraft()
+        public override PresentationObject CreateCloneDraft()
         {
             DiscountRelease draft = new DiscountRelease { parameters = Parameters };
             draft.parameters[Constants.ParamNames.ActionName] = Constants.Actions.Clone;

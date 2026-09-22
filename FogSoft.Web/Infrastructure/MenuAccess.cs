@@ -40,6 +40,7 @@ public sealed class MenuAccess
 
 	private List<MenuNode>? _tree;
 	private HashSet<int>? _allowedEntities;
+	private HashSet<string>? _allowedBrowsers;
 	private int? _loadedFor;
 
 	public MenuAccess(UserSession session)
@@ -74,9 +75,49 @@ public sealed class MenuAccess
 		if (_allowedEntities!.Contains(entityId))
 			return JournalAccess.Allowed;
 
-		return MenuRoutes.SimpleJournal.Values.Contains(entityId)
+		return MenuRoutes.SimpleJournal.Values.Any(r => r.EntityId == entityId)
 			? JournalAccess.Denied
 			: JournalAccess.NotPorted;
+	}
+
+	/// <summary>
+	/// Разрешён ли пользователю древовидный экран. Правило то же, что у
+	/// журнала: доступ даёт разрешённый пункт меню, а не отдельный список.
+	/// </summary>
+	public JournalAccess CheckBrowser(string codeName)
+	{
+		EnsureLoaded();
+
+		if (_allowedBrowsers!.Contains(codeName))
+			return JournalAccess.Allowed;
+
+		return MenuRoutes.Browser.ContainsKey(codeName)
+			? JournalAccess.Denied
+			: JournalAccess.NotPorted;
+	}
+
+	/// <summary>
+	/// Текст пункта меню по <c>codeName</c> — заголовок журнала, как в десктопе
+	/// (<c>mi.Text</c>). <c>null</c>, если пункта нет в меню пользователя.
+	/// </summary>
+	public string? MenuText(string codeName)
+	{
+		EnsureLoaded();
+		return FindText(_tree!, codeName);
+	}
+
+	private static string? FindText(IEnumerable<MenuNode> nodes, string codeName)
+	{
+		foreach (MenuNode node in nodes)
+		{
+			if (string.Equals(node.CodeName, codeName, StringComparison.OrdinalIgnoreCase))
+				return node.Name;
+
+			string? inChildren = FindText(node.Children, codeName);
+			if (inChildren != null)
+				return inChildren;
+		}
+		return null;
 	}
 
 	/// <summary>
@@ -92,6 +133,7 @@ public sealed class MenuAccess
 
 		_loadedFor = currentUser;
 		_allowedEntities = new HashSet<int>();
+		_allowedBrowsers = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
 
 		if (currentUser == null)
 		{
@@ -109,10 +151,14 @@ public sealed class MenuAccess
 		{
 			// enabled считает сама UserMenuItems (isPublic, админ, персональное
 			// разрешение, группа) — здесь только читаем результат.
-			if (node.Enabled
-				&& !string.IsNullOrEmpty(node.CodeName)
-				&& MenuRoutes.SimpleJournal.TryGetValue(node.CodeName!, out int entityId))
-				_allowedEntities!.Add(entityId);
+			if (node.Enabled && !string.IsNullOrEmpty(node.CodeName))
+			{
+				if (MenuRoutes.SimpleJournal.TryGetValue(node.CodeName!, out JournalRoute? journal))
+					_allowedEntities!.Add(journal.EntityId);
+
+				if (MenuRoutes.Browser.ContainsKey(node.CodeName!))
+					_allowedBrowsers!.Add(node.CodeName!);
+			}
 
 			Collect(node.Children);
 		}

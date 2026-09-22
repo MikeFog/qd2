@@ -1,5 +1,10 @@
+@using System.Data
 @using FogSoft.Web.Infrastructure
+@using FogSoft.WinForm
 @using FogSoft.WinForm.Classes
+@using FogSoft.WinForm.DataAccess
+@inject DialogService Dialogs
+@inject PassportDialog Passports
 
 @*
     Движок паспорта: строит карточку объекта по XML из метаданных.
@@ -8,54 +13,220 @@
     повторён дословно: значения полей кладутся в PresentationObject по имени
     параметра, затем вызывается Update() — та же IUD-процедура, что и в
     десктопе, никакого своего SQL.
+
+    Источник строк для lookup — набор из процедуры паспорта
+    (PresentationObject.LoadPassportData), псевдоним набора берётся из
+    атрибута source. Ровно как в PageFieldLookUp: source → DataSet.Tables[source].
 *@
 
 @if (_pages.Count == 0)
 {
-    <div class="alert alert-warning">У сущности нет паспорта в метаданных.</div>
+    <div class="state">У сущности нет паспорта в метаданных.</div>
 }
 else
 {
-    @* Переменная цикла НЕ должна называться page: Razor принимает @page.Caption
-       за директиву @page и падает на разборе (RZ2005). *@
-    @foreach (var pg in _pages)
+    @* Страницы паспорта — вкладками, как tabPassport в десктопной PassportForm.
+       До этого все страницы шли одной колонкой: у радиостанции их шесть, и
+       карточка выходила длиной в три экрана. *@
+    @if (_pages.Count > 1)
     {
-        <fieldset class="mb-3">
-            @if (!string.IsNullOrEmpty(pg.Caption))
+        <div class="tabs" role="tablist">
+            @for (int i = 0; i < _pages.Count; i++)
             {
-                <legend class="fs-6 text-muted">@pg.Caption</legend>
+                int index = i;
+                <button type="button" role="tab"
+                        class="tab @(index == _activePage ? "tab-active" : "")"
+                        @onclick="() => _activePage = index">
+                    @(_pages[index].Caption is { Length: > 0 } c ? c : $"Страница {index + 1}")
+                </button>
             }
+        </div>
+    }
 
-            @foreach (var field in pg.Fields)
-            {
-                <div class="mb-2">
-                    <label class="form-label">@field.Caption</label>
+    <div class="passport-grid">
+        @foreach (var field in CurrentPage.Fields)
+        {
+            bool wide = field.Selector != null || field.Image != null || field.Unsupported != null;
 
-                    @if (field.Unsupported != null)
+            <div class="passport-label @(wide ? "passport-label-wide" : "")">
+                @field.Caption
+                @if (field.Required)
+                {
+                    <span class="required">*</span>
+                }
+            </div>
+
+            <div class="passport-control @(wide ? "passport-control-wide" : "")">
+                @if (field.Unsupported != null)
+                {
+                    <div class="alert alert-secondary mb-0">
+                        Контрол <code>@field.Unsupported</code> пока не поддержан (этап 2).
+                        Значение не редактируется и не сохраняется.
+                    </div>
+                }
+                else if (field.IsLabel)
+                {
+                    @* Десктопный PageFieldLabel — WinForms Label: только показ,
+                       ApplyChanges пустой, значение никогда не уходит в процедуру. *@
+                    <div class="form-control-plaintext form-control-sm">@LabelText(field)</div>
+                }
+                else if (field.Image != null)
+                {
+                    @if (ImageBytes(field) is { Length: > 0 } bytes)
                     {
-                        <div class="alert alert-secondary py-1 mb-0">
-                            Контрол <code>@field.Unsupported</code> пока не поддержан
-                            (этап 2). Значение не редактируется и не сохраняется.
-                        </div>
-                    }
-                    else if (IsBoolean(field))
-                    {
-                        <div>
-                            <input type="checkbox" class="form-check-input"
-                                   checked="@ReadBool(field.Name)"
-                                   @onchange="e => WriteBool(field.Name, e.Value)" />
+                        <div class="mb-2">
+                            <img src="@DataUrl(bytes)" alt="@field.Caption"
+                                 style="max-height:@(field.Image.Height)px; max-width:100%" />
                         </div>
                     }
                     else
                     {
-                        <input class="form-control"
-                               value="@ReadString(field.Name)"
-                               @onchange="e => WriteString(field.Name, e.Value)" />
+                        <div class="text-muted small mb-2">Нет изображения.</div>
                     }
-                </div>
-            }
-        </fieldset>
-    }
+
+                    <div class="input-group input-group-sm">
+                        <InputFile class="form-control" accept="image/*"
+                                   OnChange="e => LoadImage(field, e)" />
+                        <button type="button" class="btn btn-outline-secondary"
+                                @onclick="() => ClearImage(field)"><i class="bi bi-x-lg" aria-hidden="true"></i>Очистить</button>
+                    </div>
+
+                    @if (_imageError != null)
+                    {
+                        <div class="text-danger small mt-1">@_imageError</div>
+                    }
+                }
+                else if (field.Selector != null)
+                {
+                    <div class="data-table selector-table">
+                        <table class="table table-hover">
+                            <thead>
+                                <tr>
+                                    @if (field.Selector.Multiselect)
+                                    {
+                                        <th class="col-check"></th>
+                                    }
+                                    @foreach (var a in SelectorColumns(field))
+                                    {
+                                        <th>@a.Alias</th>
+                                    }
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @foreach (DataRowView row in SelectorRows(field))
+                                {
+                                    <tr>
+                                        @if (field.Selector.Multiselect)
+                                        {
+                                            <td class="col-check">
+                                                <input type="checkbox" class="form-check-input"
+                                                       checked="@IsSelected(row)"
+                                                       @onchange="e => ToggleSelected(field, row, e.Value)" />
+                                            </td>
+                                        }
+                                        @foreach (var a in SelectorColumns(field))
+                                        {
+                                            <td>
+                                                @if (IsBooleanColumn(field, a))
+                                                {
+                                                    @if (CellText(row, field, a) == BoolYes)
+                                                    {
+                                                        <span class="bool-check">✓</span>
+                                                    }
+                                                }
+                                                else
+                                                {
+                                                    @CellText(row, field, a)
+                                                }
+                                            </td>
+                                        }
+                                    </tr>
+                                }
+                            </tbody>
+                        </table>
+                    </div>
+                }
+                else if (field.Picker != null)
+                {
+                    <div class="input-group input-group-sm">
+                        <input class="form-control@(InvalidClass(field))" readonly value="@PickerName(field)" />
+                        <button type="button" class="btn btn-outline-secondary"
+                                @onclick="() => Select(field)"><i class="bi bi-search" aria-hidden="true"></i>Выбрать</button>
+                        @if (field.Picker.IsCreateNewAllowed)
+                        {
+                            <button type="button" class="btn btn-outline-secondary"
+                                    @onclick="() => CreateNew(field)"><i class="bi bi-plus-lg" aria-hidden="true"></i>Создать</button>
+                        }
+                        <button type="button" class="btn btn-outline-secondary"
+                                @onclick="() => Clear(field)"><i class="bi bi-x-lg" aria-hidden="true"></i>Очистить</button>
+                    </div>
+                }
+                else if (field.Lookup != null)
+                {
+                    <select class="form-select form-select-sm@(InvalidClass(field))"
+                            value="@ReadString(field.Name)"
+                            @onchange="e => WriteLookup(field, e.Value)">
+                        @* Пустой пункт — аналог пустой строки, которую
+                           LookUp.DataSource вставляет при IsNullable. *@
+                        @if (!field.Required)
+                        {
+                            <option value=""></option>
+                        }
+                        @foreach (DataRowView row in RowsFor(field))
+                        {
+                            <option value="@AsText(row[field.Lookup.ColumnWithId])">@DisplayOf(row)</option>
+                        }
+                    </select>
+                }
+                else if (IsBoolean(field))
+                {
+                    <input type="checkbox" class="form-check-input"
+                           checked="@ReadBool(field.Name)"
+                           @onchange="e => WriteBool(field.Name, e.Value)" />
+                }
+                else if (IsDateField(field))
+                {
+                    @* Десктопный PageFieldDate ставит DateTimePickerFormat.Short —
+                       дата без времени. Обычный textbox с ReadString показывал
+                       "01.01.2026 0:00:00": ToString() у DateTime тянет и время,
+                       которого в этом типе поля нет. *@
+                    <input type="date" class="form-control form-control-sm@(InvalidClass(field))"
+                           value="@ReadDate(field.Name)"
+                           @onchange="e => WriteDate(field.Name, e.Value)" />
+                }
+                else if (IsTimeField(field))
+                {
+                    @* PageFieldTime — Custom "HH:mm"; хранится как DateTime с
+                       фиктивной датой 01.01.1900, значим только час:минута. *@
+                    <input type="time" class="form-control form-control-sm@(InvalidClass(field))"
+                           value="@ReadTime(field.Name)"
+                           @onchange="e => WriteTime(field.Name, e.Value)" />
+                }
+                else if (IsTimeDurationField(field))
+                {
+                    @* Десктопный PageFieldTimeDuration — контрол TimeDuration:
+                       два NumericUpDown (минуты, секунды), значение хранится и
+                       уходит в процедуру одним числом секунд
+                       (TimeDuration.Value: min*60 + sec). *@
+                    <div class="input-group input-group-sm" style="max-width:9rem">
+                        <input type="number" class="form-control" min="0"
+                               value="@DurationMinutes(field.Name)"
+                               @onchange="e => WriteDurationMinutes(field.Name, e.Value)" />
+                        <span class="input-group-text">:</span>
+                        <input type="number" class="form-control" min="0" max="59"
+                               value="@DurationSecondsPart(field.Name)"
+                               @onchange="e => WriteDurationSeconds(field.Name, e.Value)" />
+                    </div>
+                }
+                else
+                {
+                    <input class="form-control form-control-sm@(InvalidClass(field))"
+                           value="@ReadString(field.Name)"
+                           @onchange="e => WriteString(field.Name, e.Value)" />
+                }
+            </div>
+        }
+    </div>
 }
 
 @code {
@@ -65,18 +236,190 @@ else
     /// <summary>XML паспорта из метаданных сущности.</summary>
     [Parameter, EditorRequired] public string? Xml { get; set; }
 
+    /// <summary>
+    /// Сущность — нужна только для обязательности полей: она берётся из
+    /// nullability колонок, как в PageField.
+    /// </summary>
+    [Parameter] public Entity? Entity { get; set; }
+
+    /// <summary>Новый объект: влияет на атрибут isMandatoryOnCreate.</summary>
+    [Parameter] public bool IsNew { get; set; }
+
+    /// <summary>
+    /// Наборы строк для lookup-ов — результат PresentationObject.LoadPassportData().
+    /// null, если у сущности нет процедуры паспорта.
+    /// </summary>
+    [Parameter] public DataSet? Data { get; set; }
+
+    /// <summary>
+    /// Поле, не прошедшее проверку при прошлом «Сохранить» (имя из Validate);
+    /// null — нет. Диалог при нажатии закрывается и показывается заново, и
+    /// карточка может оказаться новым экземпляром — поэтому вкладку и
+    /// подсветку восстанавливаем по параметру, а не по состоянию компонента.
+    /// </summary>
+    [Parameter] public string? InvalidField { get; set; }
+
+    // Уже обработанное значение InvalidField: карточка перерисовывается и при
+    // открытии вложенного диалога (выбор объекта), и без этой отметки вкладка
+    // каждый раз прыгала бы обратно к полю с ошибкой.
+    private string? _shownInvalidField;
+
     private IReadOnlyList<PassportPage> _pages = Array.Empty<PassportPage>();
 
-    protected override void OnParametersSet() => _pages = PassportSchema.Parse(Xml);
+    /// <summary>Открытая вкладка — аналог tabPassport.SelectedIndex.</summary>
+    private int _activePage;
 
-    private bool IsBoolean(PassportField f) =>
-        string.Equals(f.XmlType, "boolean", StringComparison.OrdinalIgnoreCase);
+    // Свойство, а не переменная в разметке: локальную пришлось бы объявлять
+    // через @{ }, а это внутри уже открытого блока кода Razor не разрешает.
+    private PassportPage CurrentPage => _pages[Math.Min(_activePage, _pages.Count - 1)];
 
-    private string ReadString(string name)
+    protected override void OnParametersSet()
+    {
+        _pages = PassportSchema.Parse(Xml, Entity, IsNew);
+        if (_activePage >= _pages.Count)
+            _activePage = 0;
+        if (InvalidField != _shownInvalidField)
+        {
+            _shownInvalidField = InvalidField;
+            int page = IndexOf(_pages, InvalidField);
+            if (page >= 0)
+                _activePage = page;
+        }
+        PreselectRequired();
+    }
+
+    private static int IndexOf(IReadOnlyList<PassportPage> pages, string? fieldName)
+    {
+        for (int i = 0; i < pages.Count; i++)
+            if (pages[i].Fields.Any(f => string.Equals(f.Name, fieldName, StringComparison.OrdinalIgnoreCase)))
+                return i;
+        return -1;
+    }
+
+    /// <summary>
+    /// У обязательного lookup-а пустого пункта нет, поэтому незаполненное
+    /// значение показать нечем. Десктоп в этом случае стоит на первой строке
+    /// списка и сохраняет именно её: присвоение LookUp.DataSource выбирает
+    /// нулевой индекс и поднимает SelectedItemChanged. Повторяем это явно —
+    /// иначе выпадающий список выглядел бы пустым, а сохранение отклонялось
+    /// бы как незаполненное.
+    /// </summary>
+    private void PreselectRequired()
+    {
+        foreach (var pg in _pages)
+            foreach (var field in pg.Fields)
+            {
+                if (field.Lookup == null || field.Unsupported != null || !field.Required)
+                    continue;
+                if (ReadString(field.Name).Length > 0)
+                    continue;
+
+                foreach (DataRowView row in RowsFor(field))
+                {
+                    Object[field.Name] = row[field.Lookup.ColumnWithId];
+                    break;
+                }
+            }
+    }
+
+    /// <summary>
+    /// Десктопный PageField.CreateInstance решает вид контрола через
+    /// FieldTypeResolver: сначала атрибут type, а если его нет — тип колонки
+    /// (bit → CheckBox). PassportSchema.ResolveType уже посчитал это в
+    /// field.Type; проверка одного XmlType пропускала bit-колонки без
+    /// явного type="boolean" (например, isActive у радиостанции) — поле
+    /// рисовалось обычным textbox со значением "True"/"False" вместо
+    /// галочки.
+    /// </summary>
+    private bool IsBoolean(PassportField f) => f.Type?.IsBoolean == true;
+
+    private static bool IsDateField(PassportField f) => f.Type?.IsDate == true;
+
+    private static bool IsTimeField(PassportField f) => f.Type?.IsTime == true;
+
+    private static bool IsTimeDurationField(PassportField f) => f.Type?.IsTimeDuration == true;
+
+    private int DurationTotalSeconds(string name)
     {
         object? v = Object[name];
-        return v == null || v == DBNull.Value ? "" : v.ToString() ?? "";
+        return v == null || v == DBNull.Value ? 0 : Convert.ToInt32(v);
     }
+
+    private int DurationMinutes(string name) => DurationTotalSeconds(name) / 60;
+
+    private int DurationSecondsPart(string name) => DurationTotalSeconds(name) % 60;
+
+    private static int ParseIntOrZero(object? value) =>
+        int.TryParse(value?.ToString(), out int n) ? n : 0;
+
+    private void WriteDurationMinutes(string name, object? value) =>
+        Object[name] = ParseIntOrZero(value) * 60 + DurationSecondsPart(name);
+
+    private void WriteDurationSeconds(string name, object? value) =>
+        Object[name] = DurationMinutes(name) * 60 + ParseIntOrZero(value);
+
+    /// <summary>
+    /// Значение для &lt;input type="date"&gt; — тот же перевод в ISO, что и
+    /// у GetFilterText в FilterPanel: HTML-инпут понимает только yyyy-MM-dd.
+    /// </summary>
+    private string ReadDate(string name)
+    {
+        string text = AsText(Object[name]);
+        return text.Length > 0 && DateTime.TryParse(text, out DateTime date)
+            ? date.ToString("yyyy-MM-dd")
+            : "";
+    }
+
+    /// <summary>
+    /// Обратный перевод. Десктопный PageFieldDate.ApplyChanges кладёт
+    /// Picker.Value.Date — дату без времени; здесь то же самое, но строкой,
+    /// как и остальные поля паспорта хранят значения до сохранения.
+    /// </summary>
+    private void WriteDate(string name, object? value)
+    {
+        string text = value?.ToString() ?? "";
+        Object[name] = text.Length > 0 && DateTime.TryParse(text, out DateTime date)
+            ? date.ToString("dd.MM.yyyy")
+            : "";
+    }
+
+    private string ReadTime(string name)
+    {
+        string text = AsText(Object[name]);
+        return text.Length > 0 && DateTime.TryParse(text, out DateTime time)
+            ? time.ToString("HH:mm")
+            : "";
+    }
+
+    /// <summary>
+    /// Десктопный PageFieldTime.ApplyChanges кладёт
+    /// new DateTime(1900, 1, 1, Picker.Value.Hour, Picker.Value.Minute, 0) —
+    /// фиктивная дата 1 января 1900, значимы только часы и минуты.
+    /// </summary>
+    private void WriteTime(string name, object? value)
+    {
+        string text = value?.ToString() ?? "";
+        Object[name] = TimeSpan.TryParse(text, out TimeSpan t)
+            ? new DateTime(1900, 1, 1, t.Hours, t.Minutes, 0).ToString()
+            : "";
+    }
+
+    /// <summary>
+    /// Десктопный PageFieldLabel.SetValue: обычный ToString(), кроме money —
+    /// там decimal.Parse(...).ToString("c"). Само значение никогда не пишется
+    /// назад (ApplyChanges у PageFieldLabel пустой), поэтому только чтение.
+    /// </summary>
+    private string LabelText(PassportField field)
+    {
+        object? v = Object[field.Name];
+        if (v == null || v == DBNull.Value)
+            return "";
+        return field.Type?.IsMoney == true
+            ? Convert.ToDecimal(v).ToString("C")
+            : v.ToString() ?? "";
+    }
+
+    private string ReadString(string name) => AsText(Object[name]);
 
     private void WriteString(string name, object? value) =>
         Object[name] = value?.ToString() ?? "";
@@ -89,4 +432,527 @@ else
 
     private void WriteBool(string name, object? value) =>
         Object[name] = value is bool b ? b : false;
+
+    private static string AsText(object? v) =>
+        v == null || v == DBNull.Value ? "" : v.ToString() ?? "";
+
+    private const string BoolYes = "Да";
+
+    /// <summary>
+    /// Текст ячейки selector-грида. Для boolean-колонки — «Да»/пусто, а не
+    /// «True»/«False» из ToString(): десктопный ObjectsSelector построен на
+    /// SmartGrid, а тот для boolean-колонок текст вообще не рисует
+    /// (DataGridViewExBooleanCell — галочка только при true), см.
+    /// <see cref="IsBooleanColumn"/>. Текст остаётся содержимым для
+    /// не-boolean колонок.
+    /// </summary>
+    private string CellText(DataRowView row, PassportField field, Entity.Attribute attribute)
+    {
+        string column = attribute.Name;
+        if (!row.Row.Table.Columns.Contains(column))
+            return "";
+
+        object v = row[column];
+        if (v == DBNull.Value)
+            return "";
+
+        if (IsBooleanColumn(field, attribute))
+            return ParseHelper.GetBooleanFromObject(v, false) ? BoolYes : "";
+
+        return v.ToString() ?? "";
+    }
+
+    /// <summary>
+    /// Тот же признак, что использует десктопный SmartGrid.CreateDataGridColumn
+    /// (ColumnInfo.IsBooleanData) — сначала тип атрибута из метаданных, потом
+    /// тип колонки БД. Не путать с <see cref="IsBoolean(PassportField)"/> выше:
+    /// та проверяет XML-тип обычного поля паспорта, эта — тип колонки в
+    /// строках selector-грида.
+    /// </summary>
+    private static bool IsBooleanColumn(PassportField field, Entity.Attribute attribute)
+    {
+        Entity entity = EntityManager.GetEntity(field.Selector!.EntityName);
+        entity.ColumnsInfo.TryGetValue(attribute.Name, out ColumnInfo? columnInfo);
+        return ColumnInfo.IsBooleanData(columnInfo, attribute);
+    }
+
+    // ---------- lookup ----------
+
+    /// <summary>
+    /// Строки списка. Повторяет PageFieldLookUp / PageFieldDependentLookup:
+    /// независимый lookup показывает весь набор, зависимый — набор,
+    /// отфильтрованный выражением из атрибута filter по значению родителя, а
+    /// при незаполненном родителе не показывает ничего (в десктопе там
+    /// Lookup.DataSource = null).
+    /// </summary>
+    private DataView RowsFor(PassportField field)
+    {
+        PassportLookup lookup = field.Lookup!;
+
+        // lookup.Source может быть null (запасной путь по entity), но в
+        // паспортах он всегда помечен Unsupported — сюда попадает только с
+        // непустым Source, проверка на всякий случай не даёт упасть на
+        // Data.Tables.Contains(null).
+        if (Data == null || lookup.Source == null || !Data.Tables.Contains(lookup.Source))
+            return Empty;
+
+        DataTable table = Data.Tables[lookup.Source]!;
+        if (lookup.ParentLookupName == null)
+            return new DataView(table);
+
+        string parent = AsText(Object[lookup.ParentLookupName]);
+        if (parent.Length == 0)
+            return Empty;
+
+        return new DataView(table) { RowFilter = string.Format(lookup.ParentFilter ?? "", parent) };
+    }
+
+    /// <summary>Пустой список — в десктопе это Lookup.DataSource = null.</summary>
+    private static DataView Empty => new DataTable().DefaultView;
+
+    private string DisplayOf(DataRowView row) =>
+        row.Row.Table.Columns.Contains(Constants.Parameters.Name)
+            ? AsText(row[Constants.Parameters.Name])
+            : "(в наборе нет колонки name)";
+
+    private void WriteLookup(PassportField field, object? value)
+    {
+        PassportLookup lookup = field.Lookup!;
+        string selected = value?.ToString() ?? "";
+
+        // В процедуру должно уйти значение того же типа, что в наборе строк
+        // (int, а не строка из разметки), поэтому берём его из самой строки.
+        object result = DBNull.Value;
+        if (selected.Length > 0)
+            foreach (DataRowView row in RowsFor(field))
+                if (AsText(row[lookup.ColumnWithId]) == selected)
+                {
+                    result = row[lookup.ColumnWithId];
+                    break;
+                }
+
+        Object[field.Name] = result;
+        ResetDependent(field.Name);
+    }
+
+    /// <summary>
+    /// Смена родителя меняет состав зависимого списка, поэтому его значение
+    /// нужно выбрать заново — иначе в процедуру уйдёт значение, которого в
+    /// новом списке нет. Десктоп делает это неявно: присвоение DataSource
+    /// переводит комбо на первый пункт. Зависимости бывают цепочками
+    /// (радиостанция → модуль → прайс-лист), поэтому обход рекурсивный.
+    /// </summary>
+    private void ResetDependent(string parentName)
+    {
+        foreach (var pg in _pages)
+            foreach (var field in pg.Fields)
+            {
+                if (field.Lookup?.ParentLookupName != parentName)
+                    continue;
+
+                object result = DBNull.Value;
+                if (field.Required)
+                    foreach (DataRowView row in RowsFor(field))
+                    {
+                        result = row[field.Lookup.ColumnWithId];
+                        break;
+                    }
+
+                Object[field.Name] = result;
+                ResetDependent(field.Name);
+            }
+    }
+
+    // ---------- objectPicker ----------
+
+    // Имя выбранного объекта показывается вместо идентификатора, но само
+    // значение в объекте остаётся идентификатором. Разрешение имени стоит
+    // обращения к базе (ObjectPicker2.SelectObject делает то же самое),
+    // поэтому результат держится до смены значения.
+    private readonly Dictionary<string, string> _pickerNames = new(StringComparer.OrdinalIgnoreCase);
+    private readonly Dictionary<string, string> _pickerNamesFor = new(StringComparer.OrdinalIgnoreCase);
+
+    private string PickerName(PassportField field)
+    {
+        string id = ReadString(field.Name);
+        if (_pickerNamesFor.TryGetValue(field.Name, out string? resolvedFor) && resolvedFor == id)
+            return _pickerNames[field.Name];
+
+        string name = PickerData.NameOf(field.Picker!, Data, Object[field.Name]);
+        _pickerNames[field.Name] = name;
+        _pickerNamesFor[field.Name] = id;
+        return name;
+    }
+
+    private async Task Select(PassportField field)
+    {
+        ObjectSelector? selector = null;
+
+        RenderFragment body = builder =>
+        {
+            builder.OpenComponent<ObjectSelector>(0);
+            builder.AddComponentParameter(1, nameof(ObjectSelector.Picker), field.Picker);
+            builder.AddComponentParameter(2, nameof(ObjectSelector.PassportData), Data);
+            builder.AddComponentParameter(3, nameof(ObjectSelector.Owner), Object);
+            builder.AddComponentReferenceCapture(4, c => selector = (ObjectSelector)c);
+            builder.CloseComponent();
+        };
+
+        if (await Dialogs.ShowAsync("Выбрать объект", body, okText: "Выбрать") != DialogOutcome.Ok)
+            return;
+
+        // Пустой выбор — не команда очистить: десктоп по OK без выделенной
+        // строки оставляет прежнее значение (selector.SelectedObject == null,
+        // ApplyChanges его не пишет). Очистка — отдельная кнопка.
+        if (selector?.SelectedRow == null)
+            return;
+
+        Entity entity = EntityManager.GetEntity(field.Picker!.EntityName);
+        Store(field, entity.CreateObject(selector.SelectedRow));
+    }
+
+    private async Task CreateNew(PassportField field)
+    {
+        Entity entity = EntityManager.GetEntity(field.Picker!.EntityName);
+        PresentationObject created = entity.NewObject;
+
+        if (await Passports.ShowAsync(created, isNew: true))
+            Store(field, created);
+    }
+
+    private void Clear(PassportField field)
+    {
+        // В десктопе это btnClear: очищается показанное имя и снимается выбор,
+        // то есть в процедуру значение не уходит вовсе.
+        Object[field.Name] = DBNull.Value;
+        Forget(field);
+    }
+
+    /// <summary>
+    /// Кладёт выбранный объект так же, как ObjectPicker2 + ApplyChanges:
+    /// в параметры уходит первый столбец первичного ключа, а не весь объект.
+    /// </summary>
+    private void Store(PassportField field, PresentationObject selected)
+    {
+        Object[field.Name] = selected.IDs[0] ?? (object)DBNull.Value;
+        Forget(field);
+    }
+
+    private void Forget(PassportField field)
+    {
+        _pickerNames.Remove(field.Name);
+        _pickerNamesFor.Remove(field.Name);
+    }
+
+    // ---------- selector ----------
+
+    // Колонка с состоянием галочки. Имя то же, что в SmartGrid.COL_IsSelected:
+    // его заполняет процедура паспорта (в massmediaPassport — CASE ... END as
+    // isObjectSelected), и именно по нему открытая карточка показывает, что уже
+    // связано с объектом.
+    private const string SelectedColumn = "isObjectSelected";
+
+    /// <summary>
+    /// Что отметили и что сняли — по одному набору на selector. Ровно та же
+    /// пара списков, что копит SmartGrid.CheckedStatusChanged: повторная
+    /// отметка снятого не добавляет объект, а убирает его из снятых.
+    /// </summary>
+    private sealed class SelectorChanges
+    {
+        public readonly List<PresentationObject> Added = new();
+        public readonly List<PresentationObject> Removed = new();
+    }
+
+    private readonly Dictionary<string, SelectorChanges> _selectorChanges =
+        new(StringComparer.OrdinalIgnoreCase);
+
+    private SelectorChanges ChangesOf(PassportField field)
+    {
+        // Ключ — подпись: у selector-а может не быть имени (в паспорте
+        // радиостанции его нет), а на странице их бывает несколько.
+        string key = field.Name.Length > 0 ? field.Name : field.Caption;
+        if (!_selectorChanges.TryGetValue(key, out SelectorChanges? changes))
+            _selectorChanges[key] = changes = new SelectorChanges();
+        return changes;
+    }
+
+    private IReadOnlyList<Entity.Attribute> SelectorColumns(PassportField field) =>
+        EntityManager.GetEntity(field.Selector!.EntityName).SortedAttributes;
+
+    private DataView SelectorRows(PassportField field)
+    {
+        string source = field.Selector!.Source;
+        if (Data == null || !Data.Tables.Contains(source))
+            return Empty;
+
+        DataTable table = Data.Tables[source]!;
+
+        // Набор может прийти без колонки состояния — тогда не отмечено ничего.
+        // SmartGrid.DataSource делает то же самое.
+        if (!table.Columns.Contains(SelectedColumn))
+            table.Columns.Add(new DataColumn(SelectedColumn, typeof(bool)) { DefaultValue = false });
+
+        return new DataView(table);
+    }
+
+    private static bool IsSelected(DataRowView row)
+    {
+        object value = row[SelectedColumn];
+        return value != DBNull.Value && Convert.ToBoolean(value);
+    }
+
+    private void ToggleSelected(PassportField field, DataRowView row, object? value)
+    {
+        bool on = value is bool b && b;
+        row[SelectedColumn] = on;
+
+        PresentationObject obj = EntityManager.GetEntity(field.Selector!.EntityName).CreateObject(row.Row);
+        SelectorChanges changes = ChangesOf(field);
+
+        if (on)
+        {
+            if (!changes.Removed.Remove(obj))
+                changes.Added.Add(obj);
+        }
+        else
+        {
+            if (!changes.Added.Remove(obj))
+                changes.Removed.Add(obj);
+        }
+    }
+
+    /// <summary>
+    /// Отдаёт накопленное редактируемому объекту — дословно то, что делает
+    /// ObjectsSelector.ApplyChanges. Записывает не здесь: в базу это уйдёт
+    /// вместе с сохранением самого объекта, см. ObjectContainer.SubmitChildrenChanges.
+    /// </summary>
+    public void ApplyChanges()
+    {
+        ApplyUntouchedFields();
+
+        if (Object is not IParentObject parent)
+            return;
+
+        foreach (var pg in _pages)
+            foreach (var field in pg.Fields)
+            {
+                if (field.Selector == null || field.Unsupported != null)
+                    continue;
+
+                SelectorChanges changes = ChangesOf(field);
+                if (changes.Added.Count == 0 && changes.Removed.Count == 0)
+                    continue;
+
+                parent.SetChildrenChanges(
+                    EntityManager.GetEntity(field.Selector.EntityName),
+                    new List<PresentationObject>(changes.Added),
+                    new List<PresentationObject>(changes.Removed));
+
+                changes.Added.Clear();
+                changes.Removed.Clear();
+            }
+    }
+
+    // ---------- image ----------
+
+    // Подпись руководителя и подобные картинки весят килобайты; ограничение
+    // нужно только чтобы отказ был внятным, а не обрывом соединения.
+    private const long MaxImageBytes = 4 * 1024 * 1024;
+
+    private string? _imageError;
+
+    /// <summary>
+    /// Байты картинки лежат в том же параметре, что уходит в процедуру, и
+    /// попадают туда из строки журнала. Важно: пока пользователь ничего не
+    /// делал, значение не трогается вовсе — иначе сохранение карточки стирало
+    /// бы подпись, которую никто не редактировал.
+    /// </summary>
+    private byte[]? ImageBytes(PassportField field) => Object[field.Name] as byte[];
+
+    /// <summary>
+    /// Тип определяется по сигнатуре файла, а не по расширению: в базе лежит
+    /// то, что когда-то сохранил десктоп (он писал BMP), а загрузить могут
+    /// что угодно. Десктоп читает через Image.FromStream, который формат
+    /// тоже определяет сам, так что совместимость не теряется.
+    /// </summary>
+    private static string DataUrl(byte[] bytes) =>
+        $"data:{MediaType(bytes)};base64,{Convert.ToBase64String(bytes)}";
+
+    private static string MediaType(byte[] b)
+    {
+        if (b.Length > 1 && b[0] == 0x42 && b[1] == 0x4D) return "image/bmp";
+        if (b.Length > 3 && b[0] == 0x89 && b[1] == 0x50) return "image/png";
+        if (b.Length > 2 && b[0] == 0xFF && b[1] == 0xD8) return "image/jpeg";
+        if (b.Length > 2 && b[0] == 0x47 && b[1] == 0x49) return "image/gif";
+        return "application/octet-stream";
+    }
+
+    private async Task LoadImage(PassportField field, InputFileChangeEventArgs args)
+    {
+        _imageError = null;
+        try
+        {
+            IBrowserFile file = args.File;
+            using Stream source = file.OpenReadStream(MaxImageBytes);
+            using var memory = new MemoryStream();
+            await source.CopyToAsync(memory);
+
+            // Кладём файл как есть, без перекодирования: десктоп сохранял BMP
+            // (Image.Save(stream, ImageFormat.Bmp)), но читает Image.FromStream,
+            // который разбирает и PNG, и JPEG. Перекодирование потребовало бы
+            // System.Drawing на сервере и ничего бы не дало.
+            Object[field.Name] = memory.ToArray();
+        }
+        catch (Exception ex)
+        {
+            _imageError = ErrorPresenter.Describe(ex);
+        }
+    }
+
+    private void ClearImage(PassportField field)
+    {
+        // Ровно как BtnDelete_Click + ApplyChanges в десктопе: пустая картинка
+        // уходит в процедуру как null, а не как отсутствие параметра.
+        Object[field.Name] = null;
+        _imageError = null;
+    }
+
+    /// <summary>
+    /// Значения полей, которых пользователь не коснулся.
+    ///
+    /// В десктопе каждый контрол паспорта реализует ApplyChanges(parameters), и
+    /// форма при сохранении обходит ВСЕ контролы: значение уходит в процедуру
+    /// независимо от того, трогали поле или нет (PageControl.ApplyChanges,
+    /// условие ValueShouldBeSet в карточке всегда истинно). В вебе значение
+    /// попадает в параметры только из обработчика @onchange — то есть лишь у
+    /// тронутых полей.
+    ///
+    /// У существующего объекта разницы нет: параметры уже заполнены процедурой
+    /// загрузки. А у нового в словаре оказываются только поля со значением по
+    /// умолчанию в самом паспорте (атрибут value) и то, что заполнил
+    /// пользователь. Остальные до процедуры не доезжают вовсе, и она получает
+    /// NULL: так «Добавить тариф» падало на NOT NULL-колонке duration_total —
+    /// поле «Полная продолжительность» живёт на вкладке DJin и умолчания не
+    /// имеет (docs/tasks/web-passport-new-object-fields.md).
+    ///
+    /// Пишем то же, что показывает контрол, и в том же виде, что десктопные
+    /// ApplyChanges: галочка (снята = false), число и продолжительность
+    /// (пустые = 0, как NumericUpDown и TimeDuration), обычное поле (пустая
+    /// строка, ровно как PageFieldText кладёт TextBox.Text).
+    ///
+    /// Тип берём из FieldTypeResolver, а не «на глаз»: пустая строка у
+    /// числового параметра не доходит даже до SQL — ADO.NET отказывается
+    /// переводить String в Int16 (проверено живьём на maxCapacity тарифа).
+    /// Поэтому числовые — нулём, строковые — пустой строкой.
+    ///
+    /// Дату и время НЕ выдумываем: пустой календарь — это «не выбрано», а не
+    /// 01.01.1900, и SQL привёл бы '' к дате молча. Поле без распознанного
+    /// типа тоже пропускаем: подставлять вслепую нечего.
+    /// Оба пробела описаны в docs/tasks/web-passport-new-object-fields.md.
+    /// </summary>
+    private void ApplyUntouchedFields()
+    {
+        foreach (var pg in _pages)
+            foreach (var field in pg.Fields)
+            {
+                if (field.Unsupported != null || field.IsLabel || field.Name.Length == 0)
+                    continue;
+
+                // У lookup, objectPicker, selector и картинки своя запись значения.
+                if (field.Lookup != null || field.Picker != null || field.Selector != null || field.Image != null)
+                    continue;
+
+                object? current = Object[field.Name];
+                if (current != null && current != DBNull.Value)
+                    continue;
+
+                if (field.Type == null)
+                    continue;
+
+                if (field.Type.IsBoolean)
+                    Object[field.Name] = false;
+                else if (field.Type.IsTimeDuration || field.Type.IsInteger || field.Type.IsDecimal || field.Type.IsMoney)
+                    Object[field.Name] = 0;
+                else if (!field.Type.IsDate && !field.Type.IsDateTime && !field.Type.IsTime)
+                    Object[field.Name] = "";
+            }
+    }
+
+    /// <summary>
+    /// Первое нарушение обязательности или null. Аналог ValidateUserInput +
+    /// PassportException: текст берётся из того же ключа iMessage, что и в
+    /// десктопе, с той же подстановкой подписи контрола. В fieldName — имя
+    /// поля для подсветки (параметр InvalidField при следующем показе).
+    ///
+    /// Обязательность — готовый PassportField.Required; что считать пустым,
+    /// решает <see cref="IsMissing"/>. Действует и для редактирования: в
+    /// данных ArtvisDev ни одной пустой записи в обязательных строковых и
+    /// датных полях (docs/tasks/web-migration.md, «Обязательные поля карточки»).
+    /// </summary>
+    public string? Validate(out string? fieldName)
+    {
+        fieldName = null;
+        for (int i = 0; i < _pages.Count; i++)
+            foreach (var field in _pages[i].Fields)
+            {
+                if (field.Unsupported != null || !field.Required || field.IsLabel)
+                    continue;
+                if (field.Selector != null || field.Image != null)
+                    continue;
+
+                if (!IsMissing(field))
+                    continue;
+
+                // Открыть вкладку с незаполненным полем — так же делает
+                // десктоп: PassportForm на PassportException переключает
+                // tabPassport.SelectedIndex на страницу с ошибкой. Иначе
+                // пользователь читает сообщение о поле, которого не видит.
+                // Если диалог пересоздаст карточку, вкладку откроет
+                // OnParametersSet по InvalidField.
+                _activePage = i;
+                fieldName = field.Name;
+
+                MessageAccessor.Parameters = new Dictionary<string, object>(
+                    1, StringComparer.InvariantCultureIgnoreCase) { { "controlName", field.Caption } };
+                return MessageAccessor.GetMessage("MandatoryFieldViolation");
+            }
+
+        return null;
+    }
+
+    /// <summary>
+    /// «Не заполнено» по виду контрола. Смотрим то, что ввёл пользователь:
+    /// Validate вызывается до ApplyChanges, то есть до подстановки нулей и
+    /// пустых строк в ApplyUntouchedFields.
+    ///
+    /// Строка — пусто или одни пробелы (десктопный PageFieldText проверяет
+    /// только пустоту; пробелы — осознанно строже). Дата, дата-время и время —
+    /// значения нет: в десктопе DateTimePicker пустым не бывает, в вебе бывает,
+    /// а 01.01.1900 за пользователя мы не подставляем, поэтому пустая
+    /// обязательная дата отклоняется здесь, а не отказом процедуры.
+    /// Числа, деньги, продолжительность и галочки не проверяются, как и в
+    /// десктопе: контрол всегда показывает значение (0 или снятая галочка).
+    /// Поле без распознанного типа десктоп не рисует вовсе — не проверяем.
+    /// </summary>
+    private bool IsMissing(PassportField field)
+    {
+        if (field.Lookup != null || field.Picker != null)
+            return ReadString(field.Name).Length == 0;
+
+        FieldTypeResolver? type = field.Type;
+        if (type == null)
+            return false;
+        if (type.IsString || type.IsDoubleString || type.IsTextArea)
+            return string.IsNullOrWhiteSpace(ReadString(field.Name));
+        if (type.IsDate || type.IsDateTime || type.IsTime)
+            return ReadString(field.Name).Length == 0;
+        return false;
+    }
+
+    /// <summary>
+    /// Подсветка поля, не прошедшего проверку: класс Bootstrap на самом
+    /// контроле, разметку карточки не меняем.
+    /// </summary>
+    private string InvalidClass(PassportField field) =>
+        string.Equals(field.Name, InvalidField, StringComparison.OrdinalIgnoreCase) ? " is-invalid" : "";
 }

@@ -169,6 +169,24 @@ namespace FogSoft.WinForm.Classes
 			childrenChangesList.Add(new ChildrenChanges(childEntity, addedItems, deletedItems));
 		}
 
+		/// <summary>
+		/// Записывает в базу то, что накопил <see cref="SetChildrenChanges"/>.
+		/// По умолчанию не делает ничего: связь «родитель-ребёнок» у каждого
+		/// класса своя, и знает о ней только он сам.
+		///
+		/// Существует ради веба. В десктопе накопленное разбирает
+		/// <c>Update()</c> доменного класса, но у части классов этот override
+		/// оказался в UI-половине (разрез этапа 0), и в сборку без UI не
+		/// попадает — тогда изменения набора молча терялись бы. Веб вызывает
+		/// этот метод сам, сразу после <c>Update()</c>; десктоп продолжает
+		/// звать его из своего <c>Update()</c>, то есть порядок действий
+		/// одинаковый. Повторный вызов безвреден: список очищается.
+		/// См. docs/tasks/web-migration.md, этап 2.
+		/// </summary>
+		public virtual void SubmitChildrenChanges()
+		{
+		}
+
 		#endregion
 
 		public override bool IsActionEnabled(string actionName, ViewType type)
@@ -178,6 +196,45 @@ namespace FogSoft.WinForm.Classes
 				|| string.Compare(actionName, Constants.EntityActions.AssignExisting) == 0)
 				res = res && iterator.ChildEntity != null;
 			return res;
+		}
+
+		/// <summary>
+		/// Первая половина AssignNew: новый дочерний объект, уже привязанный к
+		/// этому контейнеру — ключи родителя и его имя. Без этой привязки
+		/// процедура сохранения не узнает, к кому относится запись.
+		///
+		/// Вынесено из UI-половины ради веба: там карточку показывает не
+		/// ShowPassport, а веб-диалог, но подготовка объекта обязана быть той же.
+		/// </summary>
+		/// <returns>null, если у контейнера нет дочерней сущности.</returns>
+		public PresentationObject CreateNewChild()
+		{
+			if (iterator.ChildEntity == null)
+				return null;
+
+			PresentationObject newObject = iterator.ChildEntity.NewObject;
+
+			for(int i = 0; i < entity.PKColumns.Length; i++)
+				newObject[entity.PKColumns[i]] = parameters[entity.PKColumns[i]];
+
+			newObject[Constants.Parameters.ParentName] = Name;
+			return newObject;
+		}
+
+		/// <summary>
+		/// Вторая половина AssignNew — после того, как карточка нового объекта
+		/// сохранена: передать ему сценарий и отбор, перечитать и сообщить
+		/// подписчикам.
+		/// </summary>
+		public void CompleteNewChild(PresentationObject newObject)
+		{
+			if (newObject is IObjectContainer objectContainer)
+			{
+				objectContainer.RelationScenario = iterator.RelationScenario;
+				objectContainer.Filter = ObjectsIterator.CacheFilterValues(iterator.Filter);
+			}
+			newObject.Refresh();
+			OnObjectCreated(newObject);
 		}
 
 		protected void FireContainerRefreshed()

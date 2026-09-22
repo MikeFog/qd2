@@ -54,6 +54,7 @@
     <Compile Include="..\FogSoft.WinForm\Classes\ObjectContainer.cs" Link="Classes\ObjectContainer.cs" />
     <Compile Include="..\FogSoft.WinForm\Globals.Core.cs" Link="Globals.Core.cs" />
     <Compile Include="..\FogSoft.WinForm\Passport\Classes\PageControl.Constants.cs" Link="Passport\PageControl.Constants.cs" />
+    <Compile Include="..\FogSoft.WinForm\Passport\Classes\PageContext.cs" Link="Passport\PageContext.cs" />
     <Compile Include="..\FogSoft.WinForm\Classes\EntityManager.cs" Link="Classes\EntityManager.cs" />
     <Compile Include="..\FogSoft.WinForm\Classes\FieldTypeResolver.cs" Link="Classes\FieldTypeResolver.cs" />
     <Compile Include="..\FogSoft.WinForm\Classes\Interfaces.cs" Link="Classes\Interfaces.cs" />
@@ -110,6 +111,8 @@
     <Compile Include="..\Client\Classes\CampaignPart.cs" Link="Domain\CampaignPart.cs" />
     <Compile Include="..\Client\Classes\CampaignRoller.cs" Link="Domain\CampaignRoller.cs" />
     <Compile Include="..\Client\Classes\Class1.cs" Link="Domain\Class1.cs" />
+    <Compile Include="..\Client\Classes\ComboModule.cs" Link="Domain\ComboModule.cs" />
+    <Compile Include="..\Client\Classes\ComboModuleContainer.cs" Link="Domain\ComboModuleContainer.cs" />
     <Compile Include="..\Client\Classes\CommonRoller.cs" Link="Domain\CommonRoller.cs" />
     <Compile Include="..\Client\Classes\CpOneDocGenerator.cs" Link="Domain\CpOneDocGenerator.cs" />
     <Compile Include="..\Client\Classes\EntityCampaign.cs" Link="Domain\EntityCampaign.cs" />
