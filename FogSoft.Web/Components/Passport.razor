@@ -46,7 +46,8 @@ else
     <div class="passport-grid">
         @foreach (var field in CurrentPage.Fields)
         {
-            bool wide = field.Selector != null || field.Image != null || field.Unsupported != null;
+            bool wide = field.Selector != null || field.Image != null || field.Tree != null || field.Unsupported != null;
+            bool disabled = IsDisabled(field);
 
             <div class="passport-label @(wide ? "passport-label-wide" : "")">
                 @field.Caption
@@ -94,6 +95,21 @@ else
                     @if (_imageError != null)
                     {
                         <div class="text-danger small mt-1">@_imageError</div>
+                    }
+                }
+                else if (field.Tree != null)
+                {
+                    @if (TreeOf(field) is { } selection)
+                    {
+                        <TreeSelector Selection="selection" Disabled="disabled" />
+                    }
+                    else
+                    {
+                        @* Десктопный TreeObjectsSelector без набора строк падает
+                           (NotImplementedException); здесь — честная пометка. *@
+                        <div class="alert alert-secondary mb-0">
+                            Нет набора строк <code>@field.Tree.Source</code> для дерева.
+                        </div>
                     }
                 }
                 else if (field.Selector != null)
@@ -150,20 +166,20 @@ else
                 {
                     <div class="input-group input-group-sm">
                         <input class="form-control@(InvalidClass(field))" readonly value="@PickerName(field)" />
-                        <button type="button" class="btn btn-outline-secondary"
+                        <button type="button" class="btn btn-outline-secondary" disabled="@disabled"
                                 @onclick="() => Select(field)"><i class="bi bi-search" aria-hidden="true"></i>Выбрать</button>
                         @if (field.Picker.IsCreateNewAllowed)
                         {
-                            <button type="button" class="btn btn-outline-secondary"
+                            <button type="button" class="btn btn-outline-secondary" disabled="@disabled"
                                     @onclick="() => CreateNew(field)"><i class="bi bi-plus-lg" aria-hidden="true"></i>Создать</button>
                         }
-                        <button type="button" class="btn btn-outline-secondary"
+                        <button type="button" class="btn btn-outline-secondary" disabled="@disabled"
                                 @onclick="() => Clear(field)"><i class="bi bi-x-lg" aria-hidden="true"></i>Очистить</button>
                     </div>
                 }
                 else if (field.Lookup != null)
                 {
-                    <select class="form-select form-select-sm@(InvalidClass(field))"
+                    <select class="form-select form-select-sm@(InvalidClass(field))" disabled="@disabled"
                             value="@ReadString(field.Name)"
                             @onchange="e => WriteLookup(field, e.Value)">
                         @* Пустой пункт — аналог пустой строки, которую
@@ -180,7 +196,7 @@ else
                 }
                 else if (IsBoolean(field))
                 {
-                    <input type="checkbox" class="form-check-input"
+                    <input type="checkbox" class="form-check-input" disabled="@disabled"
                            checked="@ReadBool(field.Name)"
                            @onchange="e => WriteBool(field.Name, e.Value)" />
                 }
@@ -190,7 +206,7 @@ else
                        дата без времени. Обычный textbox с ReadString показывал
                        "01.01.2026 0:00:00": ToString() у DateTime тянет и время,
                        которого в этом типе поля нет. *@
-                    <input type="date" class="form-control form-control-sm@(InvalidClass(field))"
+                    <input type="date" class="form-control form-control-sm@(InvalidClass(field))" disabled="@disabled"
                            value="@ReadDate(field.Name)"
                            @onchange="e => WriteDate(field.Name, e.Value)" />
                 }
@@ -198,7 +214,7 @@ else
                 {
                     @* PageFieldTime — Custom "HH:mm"; хранится как DateTime с
                        фиктивной датой 01.01.1900, значим только час:минута. *@
-                    <input type="time" class="form-control form-control-sm@(InvalidClass(field))"
+                    <input type="time" class="form-control form-control-sm@(InvalidClass(field))" disabled="@disabled"
                            value="@ReadTime(field.Name)"
                            @onchange="e => WriteTime(field.Name, e.Value)" />
                 }
@@ -209,18 +225,18 @@ else
                        уходит в процедуру одним числом секунд
                        (TimeDuration.Value: min*60 + sec). *@
                     <div class="input-group input-group-sm" style="max-width:9rem">
-                        <input type="number" class="form-control" min="0"
+                        <input type="number" class="form-control" min="0" disabled="@disabled"
                                value="@DurationMinutes(field.Name)"
                                @onchange="e => WriteDurationMinutes(field.Name, e.Value)" />
                         <span class="input-group-text">:</span>
-                        <input type="number" class="form-control" min="0" max="59"
+                        <input type="number" class="form-control" min="0" max="59" disabled="@disabled"
                                value="@DurationSecondsPart(field.Name)"
                                @onchange="e => WriteDurationSeconds(field.Name, e.Value)" />
                     </div>
                 }
                 else
                 {
-                    <input class="form-control form-control-sm@(InvalidClass(field))"
+                    <input class="form-control form-control-sm@(InvalidClass(field))" disabled="@disabled"
                            value="@ReadString(field.Name)"
                            @onchange="e => WriteString(field.Name, e.Value)" />
                 }
@@ -250,6 +266,19 @@ else
     /// null, если у сущности нет процедуры паспорта.
     /// </summary>
     [Parameter] public DataSet? Data { get; set; }
+
+    /// <summary>
+    /// Недоступные сейчас поля — по имени, как Enabled = false у контролов
+    /// десктопной формы поверх паспорта (например, UpdateControlsStatus у
+    /// RollerSubstitutionForm). Вызывается при каждой отрисовке, поэтому
+    /// правило может зависеть от текущих значений объекта. Недоступное поле
+    /// не проверяется на обязательность: заполнить его пользователь не может.
+    /// null — доступно всё.
+    /// </summary>
+    [Parameter] public Func<string, bool>? FieldDisabled { get; set; }
+
+    private bool IsDisabled(PassportField field) =>
+        FieldDisabled != null && field.Name.Length > 0 && FieldDisabled(field.Name);
 
     /// <summary>
     /// Поле, не прошедшее проверку при прошлом «Сохранить» (имя из Validate);
@@ -644,6 +673,20 @@ else
         _pickerNamesFor.Remove(field.Name);
     }
 
+    // ---------- treeselector ----------
+
+    /// <summary>
+    /// Состояние дерева поля; null — набора строк по source нет. Набор
+    /// резолвится так же, как у lookup и selector: Data.Tables[source].
+    /// </summary>
+    private TreeSelection? TreeOf(PassportField field)
+    {
+        PassportTree tree = field.Tree!;
+        if (Data == null || !Data.Tables.Contains(tree.Source))
+            return null;
+        return TreeSelection.For(Object, field.Name, Data.Tables[tree.Source]!, tree);
+    }
+
     // ---------- selector ----------
 
     // Колонка с состоянием галочки. Имя то же, что в SmartGrid.COL_IsSelected:
@@ -858,8 +901,9 @@ else
                 if (field.Unsupported != null || field.IsLabel || field.Name.Length == 0)
                     continue;
 
-                // У lookup, objectPicker, selector и картинки своя запись значения.
-                if (field.Lookup != null || field.Picker != null || field.Selector != null || field.Image != null)
+                // У lookup, objectPicker, selector, дерева и картинки своя запись значения.
+                if (field.Lookup != null || field.Picker != null || field.Selector != null || field.Image != null
+                    || field.Tree != null)
                     continue;
 
                 object? current = Object[field.Name];
@@ -897,7 +941,9 @@ else
             {
                 if (field.Unsupported != null || !field.Required || field.IsLabel)
                     continue;
-                if (field.Selector != null || field.Image != null)
+                if (field.Selector != null || field.Image != null || field.Tree != null)
+                    continue;
+                if (IsDisabled(field))
                     continue;
 
                 if (!IsMissing(field))

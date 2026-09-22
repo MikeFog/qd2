@@ -18,6 +18,8 @@
     <ImplicitUsings>disable</ImplicitUsings>
     <GenerateAssemblyInfo>false</GenerateAssemblyInfo>
     <NoWarn>$(NoWarn);CS0618;CS0649;CS0162</NoWarn>
+    <!-- Для картинок во встроенном Resources.resx, см. System.Resources.Extensions. -->
+    <GenerateResourceUsePreserializedResources>true</GenerateResourceUsePreserializedResources>
   </PropertyGroup>
 
   <ItemGroup>
@@ -27,6 +29,9 @@
     <PackageReference Include="log4net" Version="2.0.17" />
     <!-- Bitmap-свойства в Resources.Designer.cs (иконки ресурсов) -->
     <PackageReference Include="System.Drawing.Common" Version="8.0.0" />
+    <!-- Встроенный Resources.resx (ниже) содержит картинки: нестроковые ресурсы
+         SDK собирает только предсериализованными и читает этим пакетом. -->
+    <PackageReference Include="System.Resources.Extensions" Version="9.0.0" />
     <!-- Версия совпадает с Client/packages.config (CpOneDocGenerator.cs) -->
     <PackageReference Include="DocumentFormat.OpenXml" Version="3.4.1" />
   </ItemGroup>
@@ -80,6 +85,12 @@
   <!-- Ресурсы (сгенерированный Resources.Designer.cs, без UI-зависимостей) -->
   <ItemGroup>
     <Compile Include="..\Client\Properties\Resources.Designer.cs" Link="Properties\Resources.Designer.cs" />
+    <!-- Сами строки. Без .resx класс Resources компилируется, но любое обращение
+         к тексту (Properties.Resources.NoIssueSelected и т.п.) падает с
+         MissingManifestResourceException. Имя манифеста — то, что ждёт
+         ResourceManager в Resources.Designer.cs. -->
+    <EmbeddedResource Include="..\Client\Properties\Resources.resx" Link="Properties\Resources.resx"
+                      LogicalName="Merlin.Properties.Resources.resources" />
   </ItemGroup>
 
   <!-- Доменные классы Client/Classes: подключены ВСЕ (не только "чистые" по

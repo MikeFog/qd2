@@ -1,0 +1,54 @@
+@using FogSoft.Web.Infrastructure
+
+@*
+    Контрол treeselector паспорта: дерево с галочками из плоской таблицы с
+    parentID. Веб-аналог TreeView2 в режиме InitFixedTree (TreeObjectsSelector).
+
+    Вся логика отметок — в TreeSelection (там же объяснено, почему отмеченный
+    каскадом предок не попадает в выбор). Здесь только отрисовка: данных —
+    десятки строк (дни и выпуски одной кампании), дерево рисуется целиком,
+    без ленивой подгрузки и виртуализации.
+*@
+
+<div class="tree-selector @(Disabled ? "tree-disabled" : "")">
+    <ul class="tree-level">
+        @Node(Selection.Root)
+    </ul>
+</div>
+
+@code {
+    /// <summary>Состояние дерева — живёт в объекте паспорта, см. TreeSelection.</summary>
+    [Parameter, EditorRequired] public TreeSelection Selection { get; set; } = default!;
+
+    [Parameter] public bool Disabled { get; set; }
+
+    private RenderFragment Node(TreeSelectionNode node) => @<li>
+        <div class="tree-row">
+            @if (node.Children.Count > 0)
+            {
+                <button type="button" class="tree-toggle" aria-label="@(node.Expanded ? "Свернуть" : "Развернуть")"
+                        @onclick="() => node.Expanded = !node.Expanded">
+                    <i class="bi @(node.Expanded ? "bi-chevron-down" : "bi-chevron-right")" aria-hidden="true"></i>
+                </button>
+            }
+            else
+            {
+                <span class="tree-toggle-placeholder"></span>
+            }
+            <label class="tree-label">
+                <input type="checkbox" class="form-check-input" checked="@node.Checked" disabled="@Disabled"
+                       @onchange="e => Selection.Toggle(node, e.Value is bool b && b)" />
+                <span>@node.Name</span>
+            </label>
+        </div>
+        @if (node.Expanded && node.Children.Count > 0)
+        {
+            <ul class="tree-level">
+                @foreach (var child in node.Children)
+                {
+                    @Node(child)
+                }
+            </ul>
+        }
+    </li>;
+}

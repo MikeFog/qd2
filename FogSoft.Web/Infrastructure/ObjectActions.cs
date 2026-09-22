@@ -201,6 +201,16 @@ public sealed class ObjectActions
 		{
 			["EditSimilarTariffs"] = (s, t) => s.EditSimilarTariffs((Merlin.Classes.Tariff)t),
 		},
+		// CampaignRoller.WinForms.cs, DoAction: «Заменить рекламный ролик» — именованный
+		// паспорт RollerSubstitute (дерево выпусков — treeselector). Ловит и
+		// CampaignRollerInsideDay (97, ролик под датой в журнале акций): поиск идёт по
+		// базовым классам. Выпуск ролика (98) и выпуск модуля (130) — другие классы со
+		// своей заменой одного выпуска, сюда не попадают. Сам класс internal, поэтому
+		// цель — PresentationObject, а операция — публичный RollerSubstitution.
+		["CampaignRoller"] = new()
+		{
+			[Constants.Actions.Substitute] = (s, t) => s.SubstituteRoller((PresentationObject)t),
+		},
 	};
 
 	private static Task<ActionEffect> Changed(Action apply)
@@ -859,6 +869,129 @@ public sealed class ObjectActions
 			await ShowInfo("Готово", string.Format("Изменено тарифов: {0}, создано новых: {1}", changed!.Count, added!.Count));
 
 		return changed!.Count + added!.Count > 0 ? ActionEffect.SiblingAdded : ActionEffect.None;
+	}
+
+	/// <summary>
+	/// «Заменить рекламный ролик» — веб-аналог CampaignRoller.WinForms.SubstituteRoller +
+	/// RollerSubstitutionForm: именованный паспорт RollerSubstitute с данными своей
+	/// процедуры (не карточки), по «ОК» — проверки формы в её порядке, запись
+	/// RollerSubstitution.Apply, таблица незаменённых роликов, пересчёт акции.
+	///
+	/// <b>Пересчёт — только если длина нового ролика другая</b> (PriceMayChange):
+	/// процедура RollerSubstitute при равной длине не трогает ни цену выпусков, ни
+	/// занятость окон, и ActionRecalculate был бы пустой тратой — та же оптимизация,
+	/// что в десктопе.
+	///
+	/// Эффект — SiblingAdded: десктоп зовёт OnParentChanged(.., GeneralCampaign), под
+	/// датой меняется состав роликов, перечитывать надо родителя.
+	/// </summary>
+	private async Task<ActionEffect> SubstituteRoller(PresentationObject campaignRoller)
+	{
+		var substitution = Merlin.Classes.RollerSubstitution.ForCampaignRoller(campaignRoller);
+		DataSet data = substitution.LoadPassportData();
+		bool hasRollers = Merlin.Classes.RollerSubstitution.HasRollers(data);
+
+		// Черновик — носитель значений паспорта, как PageContext.Parameters у формы;
+		// сам ролик кампании не трогаем: поле rollerID паспорта — его же ключ.
+		PresentationObject template = EntityManager.GetEntity((int)Merlin.Entities.CampaignRoller).NewObject;
+		foreach (KeyValuePair<string, object> p in substitution.CreatePassportParameters(data))
+			template[p.Key] = p.Value;
+		// OnLoad + UpdateControlsStatus: галочка «молчание» снята, а если менять не на
+		// что — включена принудительно (и недоступна, см. SubstitutionFieldDisabled).
+		template[SubstituteParams.SubstituteMute] = !hasRollers;
+
+		Merlin.Classes.Roller? newRoller = null;
+		DataTable? selectedDays = null;
+		DataTable? unsubstituted = null;
+
+		bool ok = await _namedPassports.ShowAsync(template, Merlin.Classes.RollerSubstitution.PassportName,
+			"Замена ролика", isNew: false,
+			values => ValidateSubstitution(substitution, values, out selectedDays, out newRoller),
+			_ => unsubstituted = substitution.Apply(newRoller!, selectedDays!),
+			data, name => SubstitutionFieldDisabled(name, template, hasRollers));
+
+		if (!ok)
+			return ActionEffect.None;
+
+		if (unsubstituted != null && unsubstituted.Rows.Count > 0)
+			await _tables.ShowAsync("Незамененные ролики", unsubstituted,
+				new Entity.Attribute("windowDateOriginal", "Дата выпуска", "datetime"),
+				new Entity.Attribute("message", "Ошибка", "nvarchar"));
+
+		if (substitution.PriceMayChange(newRoller!))
+			await ShowInfo("Замена ролика", substitution.RecalculateAction());
+
+		return ActionEffect.SiblingAdded;
+	}
+
+	private struct SubstituteParams
+	{
+		public const string SubstituteMute = Merlin.Classes.RollerSubstitution.ParamNames.SubstituteMute;
+		public const string MuteDuration = Merlin.Classes.RollerSubstitution.ParamNames.MuteDuration;
+		public const string RollerId = Merlin.Classes.RollerSubstitution.ParamNames.RollerId;
+		public const string AdvertTypeId = Merlin.Classes.RollerSubstitution.ParamNames.AdvertTypeId;
+		public const string Days = Merlin.Classes.RollerSubstitution.ParamNames.Days;
+	}
+
+	/// <summary>
+	/// RollerSubstitutionForm.UpdateControlsStatus: галочка «молчание» доступна, только
+	/// если есть на что менять; длительность молчания — только при галочке; список
+	/// роликов — только без неё.
+	/// </summary>
+	private static bool SubstitutionFieldDisabled(string name, PresentationObject template, bool hasRollers)
+	{
+		bool mute = template[SubstituteParams.SubstituteMute] is true;
+		return name switch
+		{
+			SubstituteParams.SubstituteMute => !hasRollers,
+			SubstituteParams.MuteDuration => !mute,
+			SubstituteParams.RollerId => mute || !hasRollers,
+			_ => false,
+		};
+	}
+
+	/// <summary>
+	/// Проверки RollerSubstitutionForm.ApplyChanges в том же порядке: выбраны ли
+	/// выпуски → новый ролик (молчание с проверками либо выбранный в списке) →
+	/// предмет рекламы в подтверждённой акции. Сами правила — в ядре
+	/// (RollerSubstitution), здесь только последовательность.
+	/// </summary>
+	private static string? ValidateSubstitution(Merlin.Classes.RollerSubstitution substitution,
+		Dictionary<string, object> values, out DataTable? selectedDays, out Merlin.Classes.Roller? newRoller)
+	{
+		selectedDays = null;
+		newRoller = null;
+
+		if (values.TryGetValue(SubstituteParams.Days, out object? days) && days is TreeSelection tree)
+			selectedDays = Merlin.Classes.RollerSubstitution.SelectDays(tree.Table, tree.AddedIDs.ToList());
+		if (selectedDays == null || selectedDays.Rows.Count == 0)
+			return Merlin.Properties.Resources.NoIssueSelected;
+
+		if (values.TryGetValue(SubstituteParams.SubstituteMute, out object? mute) && mute is true)
+		{
+			int duration = values.TryGetValue(SubstituteParams.MuteDuration, out object? d) && d != null && d != DBNull.Value
+				? Convert.ToInt32(d) : 0;
+			int? advertTypeId = values.TryGetValue(SubstituteParams.AdvertTypeId, out object? a) && a != null && a != DBNull.Value
+				? Convert.ToInt32(a) : null;
+
+			string? message = substitution.ValidateMuteRoller(advertTypeId, duration);
+			if (message != null)
+				return message;
+
+			newRoller = substitution.CreateMuteRoller(duration, advertTypeId);
+		}
+		else
+		{
+			// Недостижимо: список роликов обязателен и проверен паспортом, а без
+			// роликов «молчание» включено принудительно. Десктоп в этом случае
+			// молча оставляет форму открытой.
+			if (!values.TryGetValue(SubstituteParams.RollerId, out object? id) || id == null || id == DBNull.Value)
+				return "Не выбран ролик для замены.";
+
+			newRoller = new Merlin.Classes.Roller(Convert.ToInt32(id));
+		}
+
+		return substitution.ValidateNewRoller(newRoller);
 	}
 
 	/// <summary>Простое информационное сообщение — тот же диалог, что и у остальных

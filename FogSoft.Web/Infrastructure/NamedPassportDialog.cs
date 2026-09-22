@@ -61,9 +61,19 @@ public sealed class NamedPassportDialog
 	/// <c>Tariff.ValidateMassEdit</c>). Текст ошибки или null.
 	/// </param>
 	/// <param name="apply">Что сделать с собранными значениями — вызов ядра.</param>
+	/// <param name="data">
+	/// Наборы строк паспорта, если их грузит не процедура карточки шаблона, а своя
+	/// (у замены ролика — ключ CampaignRoller_Substitute_PropertyPage, как у
+	/// RollerSubstitutionForm.LoadData). null — <c>obj.LoadPassportData()</c>.
+	/// </param>
+	/// <param name="fieldDisabled">
+	/// Какие поля сейчас недоступны — взаимозависимость контролов десктопной формы
+	/// (UpdateControlsStatus). Спрашивается при каждой отрисовке. null — доступно всё.
+	/// </param>
 	public Task<bool> ShowAsync(PresentationObject obj, string passportName, string caption, bool isNew,
-		Func<Dictionary<string, object>, string?> validate, Action<Dictionary<string, object>> apply) =>
-		ShowCoreAsync(obj, passportName, caption, isNew, validate, apply);
+		Func<Dictionary<string, object>, string?> validate, Action<Dictionary<string, object>> apply,
+		DataSet? data = null, Func<string, bool>? fieldDisabled = null) =>
+		ShowCoreAsync(obj, passportName, caption, isNew, validate, apply, data, fieldDisabled);
 
 	/// <summary>
 	/// Вариант «значения уходят прямо в процедуру» — веб-аналог второго
@@ -77,16 +87,18 @@ public sealed class NamedPassportDialog
 	public Task<bool> ShowAsync(PresentationObject obj, string passportName, string procedureName, string caption,
 		bool isNew, Func<Dictionary<string, object>, string?> validate) =>
 		ShowCoreAsync(obj, passportName, caption, isNew, validate,
-			parameters => DataAccessor.ExecuteNonQuery(procedureName, parameters));
+			parameters => DataAccessor.ExecuteNonQuery(procedureName, parameters), null, null);
 
 	private async Task<bool> ShowCoreAsync(PresentationObject obj, string passportName, string caption, bool isNew,
-		Func<Dictionary<string, object>, string?> validate, Action<Dictionary<string, object>> apply)
+		Func<Dictionary<string, object>, string?> validate, Action<Dictionary<string, object>> apply,
+		DataSet? data, Func<string, bool>? fieldDisabled)
 	{
 		string xml = PassportLoader.Load(passportName);
 
 		// Справочники — той же процедурой, что у обычной карточки объекта шаблона
-		// (сущности, к которой относится передаваемый черновик).
-		DataSet? data = obj.LoadPassportData();
+		// (сущности, к которой относится передаваемый черновик), если вызывающий
+		// не загрузил свои.
+		data ??= obj.LoadPassportData();
 
 		string? message = null;
 		string? invalidField = null;
@@ -111,7 +123,8 @@ public sealed class NamedPassportDialog
 				builder.AddComponentParameter(7, nameof(Passport.IsNew), isNew);
 				builder.AddComponentParameter(8, nameof(Passport.Data), data);
 				builder.AddComponentParameter(9, nameof(Passport.InvalidField), invalidField);
-				builder.AddComponentReferenceCapture(10, c => passport = (Passport)c);
+				builder.AddComponentParameter(10, nameof(Passport.FieldDisabled), fieldDisabled);
+				builder.AddComponentReferenceCapture(11, c => passport = (Passport)c);
 				builder.CloseComponent();
 			};
 
@@ -130,7 +143,17 @@ public sealed class NamedPassportDialog
 			// изменено» и т.п.) — уже по собранным значениям, как ValidateData
 			// у UniversalPassportForm.ApplyChanges, которая тоже идёт после
 			// page.ApplyChanges().
-			message = validate(obj.Parameters);
+			// Проверка может ходить в базу (замена ролика по «ОК» получает ролик-
+			// молчание, как и десктопная форма), поэтому отказ базы — тем же
+			// сообщением в открытом диалоге, что и отказ apply ниже.
+			try
+			{
+				message = validate(obj.Parameters);
+			}
+			catch (Exception ex)
+			{
+				message = ErrorPresenter.Describe(ex);
+			}
 			if (message != null)
 			{
 				invalidField = null;
