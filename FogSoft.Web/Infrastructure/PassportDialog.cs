@@ -43,6 +43,7 @@ public sealed class PassportDialog
 			: $"Свойства: {obj.Name}";
 
 		string? message = null;
+		string? invalidField = null;
 		Passport? passport = null;
 
 		while (true)
@@ -63,7 +64,8 @@ public sealed class PassportDialog
 				builder.AddComponentParameter(6, nameof(Passport.Entity), obj.Entity);
 				builder.AddComponentParameter(7, nameof(Passport.IsNew), isNew);
 				builder.AddComponentParameter(8, nameof(Passport.Data), data);
-				builder.AddComponentReferenceCapture(9, c => passport = (Passport)c);
+				builder.AddComponentParameter(9, nameof(Passport.InvalidField), invalidField);
+				builder.AddComponentReferenceCapture(10, c => passport = (Passport)c);
 				builder.CloseComponent();
 			};
 
@@ -72,7 +74,9 @@ public sealed class PassportDialog
 
 			// Обязательные поля проверяются до обращения к процедуре — как
 			// ValidateUserInput в ApplyChanges.
-			message = passport?.Validate();
+			// Проверяется то, что ввёл пользователь: подстановка значений
+			// нетронутых полей живёт в ApplyChanges и идёт после проверки.
+			message = passport?.Validate(out invalidField);
 			if (message != null)
 				continue;
 

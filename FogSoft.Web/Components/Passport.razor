@@ -149,7 +149,7 @@ else
                 else if (field.Picker != null)
                 {
                     <div class="input-group input-group-sm">
-                        <input class="form-control" readonly value="@PickerName(field)" />
+                        <input class="form-control@(InvalidClass(field))" readonly value="@PickerName(field)" />
                         <button type="button" class="btn btn-outline-secondary"
                                 @onclick="() => Select(field)"><i class="bi bi-search" aria-hidden="true"></i>Выбрать</button>
                         @if (field.Picker.IsCreateNewAllowed)
@@ -163,7 +163,7 @@ else
                 }
                 else if (field.Lookup != null)
                 {
-                    <select class="form-select form-select-sm"
+                    <select class="form-select form-select-sm@(InvalidClass(field))"
                             value="@ReadString(field.Name)"
                             @onchange="e => WriteLookup(field, e.Value)">
                         @* Пустой пункт — аналог пустой строки, которую
@@ -190,7 +190,7 @@ else
                        дата без времени. Обычный textbox с ReadString показывал
                        "01.01.2026 0:00:00": ToString() у DateTime тянет и время,
                        которого в этом типе поля нет. *@
-                    <input type="date" class="form-control form-control-sm"
+                    <input type="date" class="form-control form-control-sm@(InvalidClass(field))"
                            value="@ReadDate(field.Name)"
                            @onchange="e => WriteDate(field.Name, e.Value)" />
                 }
@@ -198,7 +198,7 @@ else
                 {
                     @* PageFieldTime — Custom "HH:mm"; хранится как DateTime с
                        фиктивной датой 01.01.1900, значим только час:минута. *@
-                    <input type="time" class="form-control form-control-sm"
+                    <input type="time" class="form-control form-control-sm@(InvalidClass(field))"
                            value="@ReadTime(field.Name)"
                            @onchange="e => WriteTime(field.Name, e.Value)" />
                 }
@@ -220,7 +220,7 @@ else
                 }
                 else
                 {
-                    <input class="form-control form-control-sm"
+                    <input class="form-control form-control-sm@(InvalidClass(field))"
                            value="@ReadString(field.Name)"
                            @onchange="e => WriteString(field.Name, e.Value)" />
                 }
@@ -251,6 +251,19 @@ else
     /// </summary>
     [Parameter] public DataSet? Data { get; set; }
 
+    /// <summary>
+    /// Поле, не прошедшее проверку при прошлом «Сохранить» (имя из Validate);
+    /// null — нет. Диалог при нажатии закрывается и показывается заново, и
+    /// карточка может оказаться новым экземпляром — поэтому вкладку и
+    /// подсветку восстанавливаем по параметру, а не по состоянию компонента.
+    /// </summary>
+    [Parameter] public string? InvalidField { get; set; }
+
+    // Уже обработанное значение InvalidField: карточка перерисовывается и при
+    // открытии вложенного диалога (выбор объекта), и без этой отметки вкладка
+    // каждый раз прыгала бы обратно к полю с ошибкой.
+    private string? _shownInvalidField;
+
     private IReadOnlyList<PassportPage> _pages = Array.Empty<PassportPage>();
 
     /// <summary>Открытая вкладка — аналог tabPassport.SelectedIndex.</summary>
@@ -265,7 +278,22 @@ else
         _pages = PassportSchema.Parse(Xml, Entity, IsNew);
         if (_activePage >= _pages.Count)
             _activePage = 0;
+        if (InvalidField != _shownInvalidField)
+        {
+            _shownInvalidField = InvalidField;
+            int page = IndexOf(_pages, InvalidField);
+            if (page >= 0)
+                _activePage = page;
+        }
         PreselectRequired();
+    }
+
+    private static int IndexOf(IReadOnlyList<PassportPage> pages, string? fieldName)
+    {
+        for (int i = 0; i < pages.Count; i++)
+            if (pages[i].Fields.Any(f => string.Equals(f.Name, fieldName, StringComparison.OrdinalIgnoreCase)))
+                return i;
+        return -1;
     }
 
     /// <summary>
@@ -853,30 +881,36 @@ else
     /// <summary>
     /// Первое нарушение обязательности или null. Аналог ValidateUserInput +
     /// PassportException: текст берётся из того же ключа iMessage, что и в
-    /// десктопе, с той же подстановкой подписи контрола.
+    /// десктопе, с той же подстановкой подписи контрола. В fieldName — имя
+    /// поля для подсветки (параметр InvalidField при следующем показе).
     ///
-    /// Проверяются только lookup и objectPicker: обязательность обычных полей
-    /// в вебе пока не проверяется вообще, и вводить её здесь — отдельная
-    /// работа, которая начнёт отклонять сохранения, проходящие сегодня.
+    /// Обязательность — готовый PassportField.Required; что считать пустым,
+    /// решает <see cref="IsMissing"/>. Действует и для редактирования: в
+    /// данных ArtvisDev ни одной пустой записи в обязательных строковых и
+    /// датных полях (docs/tasks/web-migration.md, «Обязательные поля карточки»).
     /// </summary>
-    public string? Validate()
+    public string? Validate(out string? fieldName)
     {
+        fieldName = null;
         for (int i = 0; i < _pages.Count; i++)
             foreach (var field in _pages[i].Fields)
             {
-                if (field.Unsupported != null || !field.Required)
+                if (field.Unsupported != null || !field.Required || field.IsLabel)
                     continue;
-                if (field.Lookup == null && field.Picker == null)
+                if (field.Selector != null || field.Image != null)
                     continue;
 
-                if (ReadString(field.Name).Length > 0)
+                if (!IsMissing(field))
                     continue;
 
                 // Открыть вкладку с незаполненным полем — так же делает
                 // десктоп: PassportForm на PassportException переключает
                 // tabPassport.SelectedIndex на страницу с ошибкой. Иначе
                 // пользователь читает сообщение о поле, которого не видит.
+                // Если диалог пересоздаст карточку, вкладку откроет
+                // OnParametersSet по InvalidField.
                 _activePage = i;
+                fieldName = field.Name;
 
                 MessageAccessor.Parameters = new Dictionary<string, object>(
                     1, StringComparer.InvariantCultureIgnoreCase) { { "controlName", field.Caption } };
@@ -885,4 +919,40 @@ else
 
         return null;
     }
+
+    /// <summary>
+    /// «Не заполнено» по виду контрола. Смотрим то, что ввёл пользователь:
+    /// Validate вызывается до ApplyChanges, то есть до подстановки нулей и
+    /// пустых строк в ApplyUntouchedFields.
+    ///
+    /// Строка — пусто или одни пробелы (десктопный PageFieldText проверяет
+    /// только пустоту; пробелы — осознанно строже). Дата, дата-время и время —
+    /// значения нет: в десктопе DateTimePicker пустым не бывает, в вебе бывает,
+    /// а 01.01.1900 за пользователя мы не подставляем, поэтому пустая
+    /// обязательная дата отклоняется здесь, а не отказом процедуры.
+    /// Числа, деньги, продолжительность и галочки не проверяются, как и в
+    /// десктопе: контрол всегда показывает значение (0 или снятая галочка).
+    /// Поле без распознанного типа десктоп не рисует вовсе — не проверяем.
+    /// </summary>
+    private bool IsMissing(PassportField field)
+    {
+        if (field.Lookup != null || field.Picker != null)
+            return ReadString(field.Name).Length == 0;
+
+        FieldTypeResolver? type = field.Type;
+        if (type == null)
+            return false;
+        if (type.IsString || type.IsDoubleString || type.IsTextArea)
+            return string.IsNullOrWhiteSpace(ReadString(field.Name));
+        if (type.IsDate || type.IsDateTime || type.IsTime)
+            return ReadString(field.Name).Length == 0;
+        return false;
+    }
+
+    /// <summary>
+    /// Подсветка поля, не прошедшего проверку: класс Bootstrap на самом
+    /// контроле, разметку карточки не меняем.
+    /// </summary>
+    private string InvalidClass(PassportField field) =>
+        string.Equals(field.Name, InvalidField, StringComparison.OrdinalIgnoreCase) ? " is-invalid" : "";
 }
