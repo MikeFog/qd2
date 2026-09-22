@@ -37,13 +37,24 @@ namespace Merlin.Classes
 
         public static void ShowPriceChangeMessage(decimal price, decimal newPrice)
         {
-            Dictionary<string, object> msgParameters =
+            string messageKey = GetPriceChangeMessage(price, newPrice, out Dictionary<string, object> msgParameters);
+            UserInteraction.Notify(messageKey, msgParameters);
+        }
+
+        /// <summary>
+        /// Ключ сообщения о смене цены акции и параметры подстановки. Отдельно от
+        /// показа — для веба, где UserInteraction.Notify не назначен (см.
+        /// RollerSubstitution.RecalculateAction).
+        /// </summary>
+        internal static string GetPriceChangeMessage(decimal price, decimal newPrice, out Dictionary<string, object> msgParameters)
+        {
+            msgParameters =
                 new Dictionary<string, object>(2, StringComparer.InvariantCultureIgnoreCase)
                 {
                     ["oldPrice"] = price.ToString("c"),
                     ["newPrice"] = newPrice.ToString("c")
                 };
-            UserInteraction.Notify((newPrice == price) ? "CampaignPriceWithoutChanged" : "CampaignPriceChanged", msgParameters);
+            return (newPrice == price) ? "CampaignPriceWithoutChanged" : "CampaignPriceChanged";
         }
 
 		public override bool IsActionHidden(string actionName, ViewType type)

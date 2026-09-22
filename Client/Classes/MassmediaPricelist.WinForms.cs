@@ -107,12 +107,12 @@ namespace Merlin.Classes
 
 		private static bool ValidateTariffMass(Dictionary<string, object> parameters)
 		{
-			if (Convert.ToInt32(parameters[TariffMassHourFromParam]) > Convert.ToInt32(parameters[TariffMassHourToParam]))
-			{
-				UserMessage.ShowExclamation("Час окончания интервала не может быть меньше часа начала.");
-				return false;
-			}
-			return true;
+			string error = Tariff.ValidateMassCreateHours(
+				Convert.ToInt32(parameters[TariffMassHourFromParam]), Convert.ToInt32(parameters[TariffMassHourToParam]));
+			if (error == null) return true;
+
+			UserMessage.ShowExclamation(error);
+			return false;
 		}
 
 		private void ShowDisabledWindows()

@@ -16,8 +16,8 @@ namespace FogSoft.Web.Infrastructure;
 /// смену способа отрисовки.
 ///
 /// Поддержаны <c>field</c>, <c>lookup</c>, <c>objectPicker</c>,
-/// <c>selector</c>, <c>image</c> и <c>label</c>. Не поддержаны <c>treeselector</c> (в данных
-/// не встречается) и <c>button</c> (переносить нечего: сам контрол пустой, а
+/// <c>selector</c>, <c>treeselector</c>, <c>image</c> и <c>label</c>. Не поддержан
+/// <c>button</c> (переносить нечего: сам контрол пустой, а
 /// поведение живёт в форме паспорта ролика — этап 3, см.
 /// docs/tasks/web-migration.md). Неизвестный элемент не молчит, а превращается в
 /// <see cref="PassportField"/> с <see cref="PassportField.Unsupported"/> —
@@ -85,6 +85,7 @@ public static class PassportSchema
 					Picker: ParsePicker(child),
 					Selector: ParseSelector(child),
 					Image: ParseImage(child),
+					Tree: ParseTree(child),
 					Type: ResolveType(child, name, entity),
 					IsLabel: child.Name == "label"));
 			}
@@ -125,6 +126,20 @@ public static class PassportSchema
 
 		if (node.Name == "image")
 			return null;
+
+		if (node.Name == "treeselector")
+		{
+			// Все три колонки обязательны: десктопный TreeView2.InitFixedTree без
+			// них строит дерево по пустым именам и падает на первой строке.
+			// Набора по source может не оказаться — это видно уже при отрисовке.
+			if (string.IsNullOrEmpty(Attr(node, PageControl.Attributes.Source)))
+				return "treeselector без source";
+			return string.IsNullOrEmpty(Attr(node, PageControl.Attributes.ColumnId))
+				|| string.IsNullOrEmpty(Attr(node, PageControl.Attributes.ColumnParentid))
+				|| string.IsNullOrEmpty(Attr(node, PageControl.Attributes.ColumnName))
+				? "treeselector без columnid/columnparentid/columnname"
+				: null;
+		}
 
 		if (node.Name == "selector")
 		{
@@ -221,6 +236,28 @@ public static class PassportSchema
 		return new PassportImage(height > 0 ? height : 60);
 	}
 
+	/// <summary>
+	/// <c>treeselector</c> — дерево с галочками из плоской таблицы (десктопный
+	/// <c>TreeObjectsSelector</c>). Встречается только в именованных паспортах
+	/// (iPassport) и везде объявлен одинаково: source="days", колонки id /
+	/// parentID / name. Имена берутся из атрибутов, а не зашиты.
+	/// </summary>
+	private static PassportTree? ParseTree(XmlNode node)
+	{
+		if (node.Name != "treeselector")
+			return null;
+
+		string? source = Attr(node, PageControl.Attributes.Source);
+		string? columnId = Attr(node, PageControl.Attributes.ColumnId);
+		string? columnParentId = Attr(node, PageControl.Attributes.ColumnParentid);
+		string? columnName = Attr(node, PageControl.Attributes.ColumnName);
+		if (string.IsNullOrEmpty(source) || string.IsNullOrEmpty(columnId)
+			|| string.IsNullOrEmpty(columnParentId) || string.IsNullOrEmpty(columnName))
+			return null;
+
+		return new PassportTree(source!, columnId!, columnParentId!, columnName!);
+	}
+
 	private static PassportSelector? ParseSelector(XmlNode node)
 	{
 		if (node.Name != "selector")
@@ -315,6 +352,7 @@ public sealed class PassportPage
 /// <param name="Type">Разрешённый тип значения; null у полей, где он не нужен.</param>
 /// <param name="Selector">Описание набора дочерних объектов; null — это не selector.</param>
 /// <param name="Image">Описание картинки; null — это не image.</param>
+/// <param name="Tree">Описание дерева с галочками; null — это не treeselector.</param>
 /// <param name="IsLabel">
 /// Элемент &lt;label&gt;: десктопный PageFieldLabel — только показ, WinForms
 /// Label без ApplyChanges. Значение не редактируется и не уходит в процедуру.
@@ -330,7 +368,8 @@ public sealed record PassportField(
 	FieldTypeResolver? Type = null,
 	PassportSelector? Selector = null,
 	PassportImage? Image = null,
-	bool IsLabel = false);
+	bool IsLabel = false,
+	PassportTree? Tree = null);
 
 /// <param name="Source">Псевдоним набора строк из процедуры паспорта/фильтра (iTableAlias); null — набора нет, список берётся сущностью по <paramref name="EntityName"/>.</param>
 /// <param name="EntityName">Сущность запасного пути, когда готового набора по source нет; null — запасного пути нет.</param>
@@ -371,3 +410,13 @@ public sealed record PassportSelector(
 
 /// <param name="Height">Высота показа в точках; 60, если в метаданных не задана.</param>
 public sealed record PassportImage(int Height);
+
+/// <param name="Source">Псевдоним набора строк из процедуры паспорта (iTableAlias).</param>
+/// <param name="ColumnId">Колонка идентификатора узла; её значения — результат выбора.</param>
+/// <param name="ColumnParentId">Колонка идентификатора родителя; пусто — узел верхнего уровня.</param>
+/// <param name="ColumnName">Колонка подписи узла.</param>
+public sealed record PassportTree(
+	string Source,
+	string ColumnId,
+	string ColumnParentId,
+	string ColumnName);

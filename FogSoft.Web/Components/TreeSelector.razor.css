@@ -1,0 +1,62 @@
+/*
+    Дерево с галочками в паспорте (treeselector). Высота ограничена, как у
+    selector-грида: у длинной кампании дней много, карточка не должна
+    растягиваться на несколько экранов.
+*/
+
+.tree-selector {
+    max-height: 320px;
+    overflow-y: auto;
+    border: 1px solid var(--c-border);
+    border-radius: 4px;
+    padding: var(--s-2) var(--s-3);
+    font-size: 13px;
+}
+
+.tree-level {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+}
+
+.tree-level .tree-level {
+    padding-left: var(--s-4);
+}
+
+.tree-row {
+    display: flex;
+    align-items: center;
+    gap: var(--s-1);
+    min-height: 24px;
+}
+
+.tree-toggle,
+.tree-toggle-placeholder {
+    width: 20px;
+    flex: none;
+}
+
+.tree-toggle {
+    border: none;
+    background: none;
+    padding: 0;
+    color: var(--c-text-muted);
+    line-height: 1;
+}
+
+.tree-label {
+    display: flex;
+    align-items: center;
+    gap: var(--s-2);
+    margin: 0;
+    cursor: pointer;
+}
+
+.tree-label .form-check-input {
+    margin: 0;
+}
+
+.tree-disabled .tree-label {
+    color: var(--c-text-muted);
+    cursor: default;
+}

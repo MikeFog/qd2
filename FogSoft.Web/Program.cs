@@ -20,6 +20,9 @@ builder.Services.AddScoped<DialogService>();
 // Карточку объекта показывают двое — журнал и кнопка «Создать» у objectPicker,
 // поэтому цикл «показать → проверить → сохранить» вынесен в общий сервис.
 builder.Services.AddScoped<PassportDialog>();
+// Именованные паспорта (iPassport) — «Добавить тариф массово», «Изменить похожие
+// тарифы» и подобные формы без своей сущности. См. NamedPassportDialog.
+builder.Services.AddScoped<NamedPassportDialog>();
 // Действия над объектами (замена контекстного меню десктопа) и само
 // всплывающее меню — тоже свои на circuit, как диалоги.
 builder.Services.AddScoped<TableDialog>();

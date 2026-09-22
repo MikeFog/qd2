@@ -1,11 +1,9 @@
 ﻿using System;
-using System.Collections.Generic;
 using System.Data;
 using System.Windows.Forms;
 using FogSoft.WinForm;
 using FogSoft.WinForm.Classes;
 using FogSoft.WinForm.Controls;
-using FogSoft.WinForm.DataAccess;
 using FogSoft.WinForm.Passport.Classes;
 using FogSoft.WinForm.Passport.Forms;
 using FogSoft.WinForm.Properties;
@@ -16,8 +14,7 @@ namespace Merlin.Forms
 {
 	internal partial class RollerSubstitutionForm : PassportForm
 	{
-		private readonly Campaign campaign;
-		private readonly Roller roller;
+		private readonly RollerSubstitution substitution;
 		private Roller newRoller;
 		private DataTable selectedDays;
 		private CheckBox cbSubtituteOnMute;
@@ -33,11 +30,10 @@ namespace Merlin.Forms
 		public RollerSubstitutionForm(Roller roller, Campaign campaign, int? moduleID, int? packModuleID)
 			: base(PassportLoader.Load("RollerSubstitute"))
 		{
-			this.roller = roller;
-			this.campaign = campaign;
+			substitution = new RollerSubstitution(campaign, roller, moduleID, packModuleID);
 			btnApply.Visible = false;
-			DataSet ds = LoadData(moduleID, packModuleID);
-			pageContext = new PageContext(ds, CreateParameters(ds));
+			DataSet ds = substitution.LoadPassportData();
+			pageContext = new PageContext(ds, substitution.CreatePassportParameters(ds));
 			Text = "Замена ролика";
 		}
 
@@ -85,31 +81,6 @@ namespace Merlin.Forms
 			luRollers.Enabled = !cbSubtituteOnMute.Checked && hasRollers;
 		}
 
-		private Dictionary<string, object> CreateParameters(DataSet ds)
-		{
-			Dictionary<string, object> parameters = DataAccessor.CreateParametersDictionary();
-			parameters["rollerName"] = roller.Name;
-			parameters["duration"] = roller.DurationString;
-            parameters["issues"] = ds.Tables["quantity"].Rows[0]["issues"];
-			return parameters;
-		}
-
-		private DataSet LoadData(int? moduleID, int? packModuleID)
-		{
-			Dictionary<string, object> procParameters = DataAccessor.PrepareParameters(
-				EntityManager.GetEntity((int) Entities.CampaignRoller),
-				InterfaceObjects.PropertyPage, Constants.Actions.Substitute);
-
-			procParameters[Roller.ParamNames.RollerId] = roller.RollerId;
-			procParameters[Campaign.ParamNames.CampaignId] = campaign.CampaignId;
-			procParameters[Campaign.ParamNames.CampaignTypeId] = (int)campaign.CampaignType;
-			if (moduleID.HasValue)
-				procParameters["moduleID"] = moduleID;
-			if (packModuleID.HasValue)
-				procParameters["packModuleID"] = packModuleID;
-			return DataAccessor.DoAction(procParameters) as DataSet;
-		}
-
 		protected override void ApplyChanges(Button clickedButton)
 		{
 			try
@@ -118,12 +89,7 @@ namespace Merlin.Forms
 				Cursor = Cursors.WaitCursor;
 
                 TreeView2 treeDays = FindControl("days") as TreeView2;
-                selectedDays = treeDays.DataSource.Clone();
-                foreach (DataRow row in treeDays.DataSource.Rows)
-                {
-                    if (treeDays.AddedIDs.Contains(row["id"]))
-                        selectedDays.Rows.Add(row.ItemArray);
-                }
+                selectedDays = RollerSubstitution.SelectDays(treeDays.DataSource, treeDays.AddedIDs);
 
 				if(selectedDays.Rows.Count == 0)
 				{
@@ -139,10 +105,11 @@ namespace Merlin.Forms
                     return;
 				}
 
-				if(!newRoller.HasAdvertType && campaign.Action.IsConfirmed) 
+				string message = substitution.ValidateNewRoller(newRoller);
+				if (message != null)
 				{ 
 					DialogResult = DialogResult.None;
-                    UserMessage.ShowExclamation(MessageAccessor.GetMessage("WrongRollerForSubstitution"));
+                    UserMessage.ShowExclamation(message);
                     return;
 				}
 			}
@@ -160,21 +127,17 @@ namespace Merlin.Forms
 		{
 			if (cbSubtituteOnMute.Checked)
 			{
-				// если это активированная акция, то для "пустышки" обязательно надо указать предмет рекламы
-				if(opAdvertType.SelectedObject == null && campaign.Action.IsConfirmed)
+				int? advertTypeId = opAdvertType.SelectedObject == null
+					? null : (int?)int.Parse(opAdvertType.SelectedObject.IDs[0].ToString());
+
+				string message = substitution.ValidateMuteRoller(advertTypeId, tdMuteRoller.Value);
+				if (message != null)
 				{
-                    UserMessage.ShowExclamation(Properties.Resources.SubstitutionImpossibleForDummyRoller);
+                    UserMessage.ShowExclamation(message);
                     return null;
                 }
 
-				if(tdMuteRoller.Value == 0)
-				{
-                    UserMessage.ShowExclamation(Properties.Resources.DummyRollerWithZeroDuration);
-                    return null;
-                }
-
-				return MuteRoller.GetRoller(tdMuteRoller.Value, campaign.Action.FirmID, 
-					opAdvertType.SelectedObject == null ? null : (int?)int.Parse(opAdvertType.SelectedObject.IDs[0].ToString()));
+				return substitution.CreateMuteRoller(tdMuteRoller.Value, advertTypeId);
 			}
 			else 
 			{

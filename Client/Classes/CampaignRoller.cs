@@ -97,4 +97,167 @@ namespace Merlin.Classes
 		{
 		}
 	}
+
+	/// <summary>
+	/// Замена ролика по набору дней: данные паспорта RollerSubstitute, проверки по
+	/// «ОК» и запись. Всё, что между ними, — показ формы — делает UI:
+	/// RollerSubstitutionForm в десктопе, NamedPassportDialog в вебе.
+	///
+	/// Публичен ради веба (отдельная сборка): CampaignRoller и Campaign internal, и
+	/// открывать их целиком незачем — вебу нужна только эта операция.
+	/// </summary>
+	public sealed class RollerSubstitution
+	{
+		/// <summary>Имя паспорта в iPassport.</summary>
+		public const string PassportName = "RollerSubstitute";
+
+		/// <summary>Имена полей паспорта RollerSubstitute.</summary>
+		public struct ParamNames
+		{
+			public const string RollerId = "rollerID";
+			public const string SubstituteMute = "subtituteMute";
+			public const string MuteDuration = "rollerMuteDuration";
+			public const string AdvertTypeId = "advertTypeID";
+			public const string Days = "days";
+		}
+
+		private const string RollersTable = "rollers";
+
+		private readonly Campaign campaign;
+		private readonly Roller roller;
+		private readonly int? moduleID;
+		private readonly int? packModuleID;
+
+		internal RollerSubstitution(Campaign campaign, Roller roller, int? moduleID, int? packModuleID)
+		{
+			this.campaign = campaign;
+			this.roller = roller;
+			this.moduleID = moduleID;
+			this.packModuleID = packModuleID;
+		}
+
+		/// <summary>
+		/// То же, что CampaignRoller.SubstituteRoller до показа формы: акция
+		/// перечитывается, модуль — свой, пакетного модуля нет.
+		/// </summary>
+		/// <param name="campaignRoller">Ролик кампании (сущности 95, 97).</param>
+		public static RollerSubstitution ForCampaignRoller(PresentationObject campaignRoller)
+		{
+			CampaignRoller cr = (CampaignRoller)campaignRoller;
+			cr.Campaign.Action.Refresh();
+			return new RollerSubstitution(cr.Campaign, cr.Roller, cr.ModuleID, null);
+		}
+
+		/// <summary>Наборы строк паспорта: quantity, rollers, days.</summary>
+		public DataSet LoadPassportData()
+		{
+			Dictionary<string, object> procParameters = DataAccessor.PrepareParameters(
+				EntityManager.GetEntity((int) Entities.CampaignRoller),
+				InterfaceObjects.PropertyPage, Constants.Actions.Substitute);
+
+			procParameters[Roller.ParamNames.RollerId] = roller.RollerId;
+			procParameters[Campaign.ParamNames.CampaignId] = campaign.CampaignId;
+			procParameters[Campaign.ParamNames.CampaignTypeId] = (int)campaign.CampaignType;
+			if (moduleID.HasValue)
+				procParameters["moduleID"] = moduleID;
+			if (packModuleID.HasValue)
+				procParameters["packModuleID"] = packModuleID;
+			return DataAccessor.DoAction(procParameters) as DataSet;
+		}
+
+		/// <summary>Значения подписей паспорта.</summary>
+		public Dictionary<string, object> CreatePassportParameters(DataSet ds)
+		{
+			Dictionary<string, object> parameters = DataAccessor.CreateParametersDictionary();
+			parameters["rollerName"] = roller.Name;
+			parameters["duration"] = roller.DurationString;
+			parameters["issues"] = ds.Tables["quantity"].Rows[0]["issues"];
+			return parameters;
+		}
+
+		/// <summary>Есть ли на что менять, кроме молчания.</summary>
+		public static bool HasRollers(DataSet ds)
+		{
+			return ds != null && ds.Tables.Contains(RollersTable) && ds.Tables[RollersTable].Rows.Count > 0;
+		}
+
+		/// <summary>
+		/// Строки дерева выпусков, чьи id отмечены (TreeView2.AddedIDs). Пустая
+		/// таблица — ничего не выбрано, сообщение NoIssueSelected.
+		/// </summary>
+		public static DataTable SelectDays(DataTable days, ICollection<object> addedIds)
+		{
+			DataTable selectedDays = days.Clone();
+			foreach (DataRow row in days.Rows)
+			{
+				if (addedIds.Contains(row["id"]))
+					selectedDays.Rows.Add(row.ItemArray);
+			}
+			return selectedDays;
+		}
+
+		/// <summary>
+		/// Проверка замены на молчание («пустышку»): текст сообщения или null.
+		/// </summary>
+		public string ValidateMuteRoller(int? advertTypeId, int duration)
+		{
+			// если это активированная акция, то для "пустышки" обязательно надо указать предмет рекламы
+			if (advertTypeId == null && campaign.Action.IsConfirmed)
+				return Properties.Resources.SubstitutionImpossibleForDummyRoller;
+
+			if (duration == 0)
+				return Properties.Resources.DummyRollerWithZeroDuration;
+
+			return null;
+		}
+
+		/// <summary>Ролик-молчание заданной длины для фирмы акции.</summary>
+		public Roller CreateMuteRoller(int duration, int? advertTypeId)
+		{
+			return MuteRoller.GetRoller(duration, campaign.Action.FirmID, advertTypeId);
+		}
+
+		/// <summary>
+		/// Проверка нового ролика: в подтверждённой акции у него должен быть
+		/// предмет рекламы. Текст сообщения или null.
+		/// </summary>
+		public string ValidateNewRoller(Roller newRoller)
+		{
+			if (!newRoller.HasAdvertType && campaign.Action.IsConfirmed)
+				return MessageAccessor.GetMessage("WrongRollerForSubstitution");
+			return null;
+		}
+
+		/// <summary>
+		/// Нужен ли пересчёт акции: RollerSubstitute переписывает tariffPrice только
+		/// при другой длине ролика (@diffDuration), при равной цена та же.
+		/// </summary>
+		public bool PriceMayChange(Roller newRoller)
+		{
+			return roller.Duration != newRoller.Duration;
+		}
+
+		/// <summary>Запись замены; возвращает таблицу незаменённых роликов или null.</summary>
+		public DataTable Apply(Roller newRoller, DataTable days)
+		{
+			return CampaignRoller.ApplyRollerSubstitutionForDays(campaign, roller, newRoller, days, moduleID, packModuleID);
+		}
+
+		/// <summary>
+		/// Пересчёт акции и текст сообщения о смене цены — то же, что
+		/// CampaignPart.RecalculateAndShowPriceChange(Campaign.Action.TotalPrice), но
+		/// сообщение возвращается, а не показывается: в вебе UserInteraction.Notify
+		/// не назначен.
+		/// </summary>
+		public string RecalculateAction()
+		{
+			decimal price = campaign.Action.TotalPrice;
+			campaign.RecalculateAction();
+			decimal newPrice = campaign.Action != null ? campaign.Action.TotalPrice : decimal.Zero;
+
+			string messageKey = CampaignPart.GetPriceChangeMessage(price, newPrice, out Dictionary<string, object> msgParameters);
+			MessageAccessor.Parameters = msgParameters;
+			return MessageAccessor.GetMessage(messageKey);
+		}
+	}
 }

@@ -173,13 +173,24 @@ namespace Merlin.Classes
 		}
 
 		/// <summary>
+		/// Правило формы «Добавить тариф массово» (и часовой интервал «Изменить похожие
+		/// тарифы» — см. <see cref="ValidateMassEdit"/>): час окончания интервала не может
+		/// быть меньше часа начала. Текст ошибки или null — правило, не диалог; сообщение
+		/// показывает UI-половина (UserMessage) или веб (алерт в диалоге).
+		/// </summary>
+		public static string ValidateMassCreateHours(int hourFrom, int hourTo)
+		{
+			return hourFrom > hourTo ? "Час окончания интервала не может быть меньше часа начала." : null;
+		}
+
+		/// <summary>
 		/// Массово создаёт тарифы: по одному в каждом часе от <paramref name="hourFrom"/> до
 		/// <paramref name="hourTo"/> включительно, в минуту <paramref name="minute"/>. Остальные
 		/// параметры берутся из <paramref name="template"/> (значения паспорта). Каждый тариф —
 		/// отдельный вызов TariffIUD, best-effort: не создавшиеся (дубль, спонсорский тариф,
 		/// разрыв цепочки) попадают в <paramref name="tableErrors"/>, остальные создаются.
 		/// </summary>
-		internal static int CreateMass(Dictionary<string, object> template, int hourFrom, int hourTo, int minute,
+		public static int CreateMass(Dictionary<string, object> template, int hourFrom, int hourTo, int minute,
 			out DataTable tableErrors)
 		{
 			tableErrors = ErrorManager.CreateErrorsTable();
@@ -223,7 +234,7 @@ namespace Merlin.Classes
 		/// hasWindows (есть сгенерированные окна), inUnion (входит в цепочку объединения).
 		/// Сам тариф входит в результат.
 		/// </summary>
-		internal DataTable LoadSimilarTariffs()
+		public DataTable LoadSimilarTariffs()
 		{
 			Dictionary<string, object> procParameters = DataAccessor.CreateParametersDictionary();
 			procParameters[ParamNames.TariffId] = TariffId;
@@ -271,7 +282,38 @@ namespace Merlin.Classes
 		/// сужают набор. Тарифы с окнами и в цепочках объединения пропускаются, все сбои - в
 		/// <paramref name="tableErrors"/>, остальные тарифы обрабатываются (best-effort).
 		/// </summary>
-		internal static void ApplyMassEdit(Dictionary<string, object> original, Dictionary<string, object> edited,
+		/// <summary>
+		/// Правила формы «Изменить похожие тарифы»: интервал часов (см.
+		/// <see cref="ValidateMassCreateHours"/>), дни недели («нельзя добавить день,
+		/// которого не было», «хотя бы один день») и «изменено хоть что-то»
+		/// (<see cref="HasMassEditChanges"/>). Текст первой нарушенной проверки или null.
+		/// </summary>
+		public static string ValidateMassEdit(Dictionary<string, object> original, Dictionary<string, object> edited,
+			int hourFrom, int hourTo, int minute)
+		{
+			string hourError = ValidateMassCreateHours(hourFrom, hourTo);
+			if (hourError != null)
+				return hourError;
+
+			bool anyDay = false;
+			foreach (string day in DayNames)
+			{
+				bool isOn = bool.Parse(edited[day].ToString());
+				bool wasOn = bool.Parse(original[day].ToString());
+				anyDay |= isOn;
+				if (isOn && !wasOn)
+					return "Нельзя добавить день недели, которого нет у исходного тарифа: дни задают область применения.";
+			}
+			if (!anyDay)
+				return "Отметьте хотя бы один день недели, к которому применить изменения.";
+
+			if (!HasMassEditChanges(original, edited, minute))
+				return "Ни один параметр не изменён.";
+
+			return null;
+		}
+
+		public static void ApplyMassEdit(Dictionary<string, object> original, Dictionary<string, object> edited,
 			DataTable similar, int hourFrom, int hourTo, int minute,
 			out DataTable tableErrors, out List<Tariff> changed, out List<Tariff> added)
 		{
