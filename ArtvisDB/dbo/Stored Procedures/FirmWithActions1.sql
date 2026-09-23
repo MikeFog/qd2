@@ -133,7 +133,8 @@ SET TRANSACTION ISOLATION LEVEL READ UNCOMMITTED; -- Важно для прод�
 			and (@managerDiscount is null or (c.managerDiscount - @managerDiscount) < -0.005)
 			and f.headCompanyId = COALESCE(@headCompanyId, f.headCompanyId)
 		order by f.[name]
-	end 
+		OPTION (RECOMPILE); -- catch-all, см. ниже
+	end
 	else 
 		SELECT
 			f.*, 
@@ -234,5 +235,9 @@ SET TRANSACTION ISOLATION LEVEL READ UNCOMMITTED; -- Важно для прод�
 					)
 				and (@managerDiscount is null or (c.managerDiscount - @managerDiscount) < -0.005)
 			)
-		AND f.headCompanyId = COALESCE(@headCompanyId, f.headCompanyId) 
+		AND f.headCompanyId = COALESCE(@headCompanyId, f.headCompanyId)
 		order by f.[name]
+		-- Catch-all запрос: без RECOMPILE план кэшируется под первый набор фильтров
+		-- (например, раскрытие головной организации: @headCompanyId задан, @withoutActionsSince = NULL)
+		-- и потом уходит в таймаут на других (все фирмы + «без акций с»). Как в HeadCompaniesWithActions.
+		OPTION (RECOMPILE);
