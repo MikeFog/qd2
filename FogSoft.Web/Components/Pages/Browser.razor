@@ -75,11 +75,11 @@ else
                 <button class="btn btn-sm btn-danger" @onclick="DeleteSelected"><i class="bi bi-trash3" aria-hidden="true"></i>Удалить (@_selectedCount)</button>
                 <button class="btn btn-sm btn-outline-secondary" @onclick="ClearSelection">Снять выделение</button>
             }
-            <button class="btn btn-sm btn-outline-secondary" @onclick="RefreshSelected"><i class="bi bi-arrow-clockwise" aria-hidden="true"></i>Обновить</button>
+            <button class="btn btn-sm btn-outline-secondary" @onclick="RefreshClicked"><i class="bi bi-arrow-clockwise" aria-hidden="true"></i>Обновить</button>
             <button class="btn btn-sm btn-outline-secondary" disabled="@(_data == null || _data.Rows.Count == 0)" @onclick="ExportExcel"><i class="bi bi-download" aria-hidden="true"></i>Экспорт в Excel</button>
         </ScreenToolbar>
 
-        <FilterPanel Pages="_filterPages" Values="_root.Container!.Filter" FilterData="_filterData"
+        <FilterPanel @ref="_filterPanel" Pages="_filterPages" Values="_root.Container!.Filter" FilterData="_filterData"
                      RestrictManager="_restrictManager" Apply="ApplyFilter" />
 
         <div class="browser-body">
@@ -297,6 +297,15 @@ else
     /// дети — состав мог измениться, и в десктопе Refresh делает то же самое
     /// (OnContainerRefreshed очищает узел и раскрывает его заново).
     /// </summary>
+    private FilterPanel? _filterPanel;
+
+    /// <summary>
+    /// «Обновить» перечитывает узел с текущими значениями отбора (у корня это
+    /// тот же словарь, что правит панель) — поэтому та же проверка, что у
+    /// «Применить» (FilterPanel.Validate).
+    /// </summary>
+    private Task RefreshClicked() => _filterPanel?.Validate() == false ? Task.CompletedTask : RefreshSelected();
+
     private Task RefreshSelected()
     {
         if (_selected == null)

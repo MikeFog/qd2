@@ -93,7 +93,7 @@
                                    выражает снятая галочка, а не пустая строка
                                    (десктопное Lookup.IsNullable = isNullable &&
                                    PageType == Passport, то есть всегда false в фильтре). *@
-                                <select class="form-select form-select-sm"
+                                <select class="form-select form-select-sm @InvalidClass(field)"
                                         disabled="@(!IsFilterUsed(field.Name))"
                                         value="@FilterLookupValue(field)"
                                         @onchange="e => SetFilterLookup(field, e.Value)">
@@ -109,7 +109,7 @@
                                    гасит её при PageTypes.Filter независимо от
                                    isCreateNewAllowed. *@
                                 <div class="input-group input-group-sm">
-                                    <input class="form-control" readonly
+                                    <input class="form-control @InvalidClass(field)" readonly
                                            disabled="@(!IsFilterUsed(field.Name) || IsManagerLocked(field))"
                                            value="@FilterPickerName(field)" />
                                     <button type="button" class="btn btn-outline-secondary"
@@ -119,7 +119,7 @@
                             }
                             else
                             {
-                                <input type="@InputType(field)" class="form-control form-control-sm"
+                                <input type="@InputType(field)" class="form-control form-control-sm @InvalidClass(field)"
                                        disabled="@(!IsFilterUsed(field.Name))"
                                        value="@GetFilterText(field)"
                                        @onchange="e => SetFilterText(field, e.Value)" />
@@ -129,7 +129,13 @@
                 </div>
 
                 <div class="filter-foot">
-                    <button class="btn btn-sm btn-outline-secondary" @onclick="() => Apply.InvokeAsync()"><i class="bi bi-funnel" aria-hidden="true"></i>Применить</button>
+                    @if (_invalid.Count > 0)
+                    {
+                        <div class="alert alert-danger filter-error" role="alert">
+                            Не заполнено: @string.Join(", ", InvalidCaptions()). Задайте значение или снимите галочку.
+                        </div>
+                    }
+                    <button class="btn btn-sm btn-outline-secondary" @onclick="ApplyClicked"><i class="bi bi-funnel" aria-hidden="true"></i>Применить</button>
                 </div>
             </div>
         }
@@ -211,6 +217,69 @@
         _filterPickerNamesFor.Clear();
     }
 
+    // ---------- Проверка перед применением ----------
+
+    // Решение владельца продукта (2026-09-23): отмеченная галочка «использовать»
+    // без значения — ошибка ввода, а не «отбора нет». Молча подставить NULL или
+    // пропустить параметр значило бы показать данные не за тот период / без
+    // отбора, и пользователь мог бы этого не заметить. Правило одно для всех
+    // полей со значением: дата, время, число, текст, список, выбор объекта.
+    // Десктоп дату и время стереть не даёт, а objectPicker без выбора молча
+    // пропускает (PageFieldObjectPicker.ApplyChanges) — здесь веб строже.
+
+    private readonly HashSet<string> _invalid = new(StringComparer.OrdinalIgnoreCase);
+
+    /// <summary>
+    /// Проверить отбор перед чтением данных: у каждой отмеченной галочки должно
+    /// быть значение. Не прошло — поля подсвечиваются, открывается вкладка с
+    /// первым из них, возвращается false, и владелец данные не читает. Зовётся
+    /// из «Применить» и владельцами экрана перед «Обновить»: оба читают текущие
+    /// значения отбора.
+    /// </summary>
+    public bool Validate()
+    {
+        _invalid.Clear();
+        int firstPage = -1;
+        for (int i = 0; i < VisiblePages.Count; i++)
+            foreach (PassportField field in VisiblePages[i].Fields)
+            {
+                if (!NeedsValue(field) || !Values.TryGetValue(field.Name, out object? value) || !IsEmpty(value))
+                    continue;
+                _invalid.Add(field.Name);
+                if (firstPage < 0)
+                    firstPage = i;
+            }
+
+        if (_invalid.Count == 0)
+            return true;
+
+        _filterOpen = true;
+        _activePage = firstPage;
+        StateHasChanged();
+        return false;
+    }
+
+    private async Task ApplyClicked()
+    {
+        if (Validate())
+            await Apply.InvokeAsync();
+    }
+
+    // Поля, у которых галочка означает «отобрать по значению». Булевы флажки
+    // сами и есть значение; неподдержанные поля не рисуются, заполнить их нечем.
+    private static bool NeedsValue(PassportField field) =>
+        field.Unsupported == null && !field.IsLabel && field.Type is not { IsBoolean: true };
+
+    private static bool IsEmpty(object? value) =>
+        value == null || value == DBNull.Value || value is string s && string.IsNullOrWhiteSpace(s);
+
+    private string InvalidClass(PassportField field) => _invalid.Contains(field.Name) ? "is-invalid" : "";
+
+    private IEnumerable<string> InvalidCaptions() =>
+        VisiblePages.SelectMany(p => p.Fields)
+            .Where(f => _invalid.Contains(f.Name))
+            .Select(f => f.Caption.Trim().TrimEnd(':'));
+
     /// <summary>
     /// Правило десктопного <c>ManagerFilter.OnLoad</c>: поле <c>managerID</c>
     /// (а если его нет — <c>userID</c>) вместе со своей галочкой доступно, только
@@ -290,6 +359,7 @@
 
     private void UseFilter(PassportField field, object? value)
     {
+        _invalid.Remove(field.Name);
         if (value is bool on && on)
             Values[field.Name] = InitialFilterValue(field);
         else
@@ -320,13 +390,6 @@
         }
 
         if (field.Picker != null)
-            return DBNull.Value;
-
-        // Время без значения — NULL, а не пустая строка: параметр datetime
-        // пустую строку не принимает («Failed to convert parameter value from
-        // a String to a DateTime»), а NULL процедура % заполнения сама заменяет
-        // границей суток (COALESCE(@StartTime, @MinTime)).
-        if (field.Type is { IsTime: true })
             return DBNull.Value;
 
         return "";
@@ -380,13 +443,7 @@
     private void SetFilterText(PassportField field, object? value)
     {
         string text = value?.ToString() ?? "";
-
-        // Стёртое время — NULL, как и неотмеченное (см. InitialFilterValue).
-        if (text.Length == 0 && field.Type is { IsTime: true })
-        {
-            Values[field.Name] = DBNull.Value;
-            return;
-        }
+        _invalid.Remove(field.Name);
 
         // Обратный перевод: в процедуру должна уйти строка того же вида, что у
         // значений из метаданных, иначе один и тот же фильтр выглядел бы
@@ -398,14 +455,9 @@
             // Время — как десктопный PageFieldTime.ApplyChanges: часы и минуты
             // на дате 01.01.1900 (параметры процедуры — datetime).
             else if (field.Type is { IsTime: true })
-            {
-                if (!TimeSpan.TryParse(text, CultureInfo.InvariantCulture, out TimeSpan time))
-                {
-                    Values[field.Name] = DBNull.Value;
-                    return;
-                }
-                text = new DateTime(1900, 1, 1, time.Hours, time.Minutes, 0).ToString();
-            }
+                text = TimeSpan.TryParse(text, CultureInfo.InvariantCulture, out TimeSpan time)
+                    ? new DateTime(1900, 1, 1, time.Hours, time.Minutes, 0).ToString()
+                    : "";
             else if (IsFractional(field))
                 text = decimal.TryParse(text, NumberStyles.Number, CultureInfo.InvariantCulture, out decimal number)
                     ? number.ToString()
@@ -479,6 +531,7 @@
             }
 
         Values[field.Name] = result;
+        _invalid.Remove(field.Name);
     }
 
     // ---------- objectPicker фильтра ----------
@@ -533,6 +586,7 @@
 
         Entity entity = EntityManager.GetEntity(field.Picker!.EntityName);
         Values[field.Name] = entity.CreateObject(selector.SelectedRow).IDs[0] ?? (object)DBNull.Value;
+        _invalid.Remove(field.Name);
         _filterPickerNames.Remove(field.Name);
         _filterPickerNamesFor.Remove(field.Name);
     }
@@ -566,6 +620,7 @@
 
         object id = selected.IDs[0] ?? (object)DBNull.Value;
         Values[field.Name] = id;
+        _invalid.Remove(field.Name);
         _filterPickerNames[field.Name] = selected.Name;
         _filterPickerNamesFor[field.Name] = AsFilterText(id);
     }

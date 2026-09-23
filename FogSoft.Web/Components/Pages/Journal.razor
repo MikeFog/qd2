@@ -80,12 +80,12 @@ else
             <button class="btn btn-sm btn-outline-secondary" disabled="@(_bulkPending == 0)" @onclick="RunBulkAction"><i class="bi bi-check2-all" aria-hidden="true"></i>@bulk.Caption</button>
         }
         <button class="btn btn-primary btn-sm" disabled="@(!_canAdd)" @onclick="AddNew"><i class="bi bi-plus-lg" aria-hidden="true"></i>Добавить</button>
-        <button class="btn btn-sm btn-outline-secondary" @onclick="Load"><i class="bi bi-arrow-clockwise" aria-hidden="true"></i>Обновить</button>
+        <button class="btn btn-sm btn-outline-secondary" @onclick="Refresh"><i class="bi bi-arrow-clockwise" aria-hidden="true"></i>Обновить</button>
         <button class="btn btn-sm btn-outline-secondary" disabled="@(_data == null || _data.Rows.Count == 0)" @onclick="ExportExcel"><i class="bi bi-download" aria-hidden="true"></i>Экспорт в Excel</button>
     </ScreenToolbar>
 
     @* ---------- Фильтр ---------- *@
-    <FilterPanel Pages="_filterPages" Values="_filterValues" FilterData="_filterData" Apply="Load"
+    <FilterPanel @ref="_filterPanel" Pages="_filterPages" Values="_filterValues" FilterData="_filterData" Apply="Load"
                  RestrictManager="_route?.ManagerFilter == true" />
 
     @* ---------- Список ---------- *@
@@ -289,6 +289,14 @@ else
 
     /// <summary>Перечитать список под слоем ожидания — «Применить», «Обновить», после действий.</summary>
     private Task Load() => Busy.RunAsync(LoadData);
+
+    private FilterPanel? _filterPanel;
+
+    /// <summary>
+    /// «Обновить» читает текущие значения отбора, в том числе неприменённые, —
+    /// поэтому проходит ту же проверку, что «Применить» (FilterPanel.Validate).
+    /// </summary>
+    private Task Refresh() => _filterPanel?.Validate() == false ? Task.CompletedTask : Load();
 
     private void LoadData()
     {
