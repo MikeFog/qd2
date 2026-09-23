@@ -248,6 +248,9 @@ UserControl
 
 ## 8. Дефекты производительности
 
+Подробный разбор каждого пункта (код, правка, риски, проверка) —
+[`docs/tasks/tariffgrid-desktop-perf.md`](tasks/tariffgrid-desktop-perf.md).
+
 Только то, что стоит времени пользователю (двойные загрузки, одиночные операции там, где
 возможна пачка, лишняя работа из-за подписок). Некрасивый, но быстрый код сюда не входит.
 Приоритет — по пользе на единицу работы. Уже записанное в `docs/IMPROVEMENTS.md` помечено
@@ -265,7 +268,7 @@ UserControl
 | **П-7** | `CampaignForm.grid_CellClicked` → `ShowWindowIssues` — [UI-02] | после каждого клика-добавления перестраиваются две таблицы деталей окна (1–2 × `WindowIssuesRetrieve`, клонирование сущностей, привязка) | 165 мс медиана × 5615 кликов за неделю | детали окна — по требованию, не на клик расстановки | средняя (порядок `DoEvents`, SmartGrid) |
 | **П-8** | `EditIssuesForm`: клик веера | `updateDB` → `RefreshGrid` → `GridRefreshed` → `TariffGridRefreshed`, затем `grid_CellClicked` → `ShowWindowIssues` → `TariffGridRefreshed` **ещё раз**; SmartGrid делает `bm.PositionChanged +=` без `-=` → **+2 подписки на каждый клик** (сбрасываются только при пересборке `AddedIssues`) | лишняя привязка + растущая работа на смену строки | одна привязка; `-=` перед `+=` в `SmartGrid` | мала |
 | **П-9** | `FrmGenerator` | ~110 мс на выпуск при `IssueIUD` ~4 мс: `issue.Refresh()` на выпуск, `IsRollerOfTheFirmExist` / `WindowIssuesRetrieve` на каждое окно-кандидат, окна перечитываются на каждый день, `grdSuccess.AddRow` на выпуск | 452 с за неделю по всем пользователям | окна периода одним запросом; «окна с выпуском фирмы» пачкой (есть в 3-м наборе `Grid`); замерить остаток клиента | средняя |
-| П-10 | `RecalculateAction()` с `refreshFlag=true` (`CampaignForm.cs:819, 978, 1071, 1165, 1672`, `FrmGenerator.cs:238`); `ComboModulePlacementForm` (`:333/792` + `ShowStatistics`) | лишняя загрузка акции (`Actions1`) после пересчёта — `TotalPrice` уже приходит из OUTPUT (обоснование — в комментарии `RollerIssuesGrid3.cs:136`) | +1 запрос на операцию | `RecalculateAction(false)` | мала |
+| П-10 | `RecalculateAction()` с `refreshFlag=true` (`CampaignForm.cs:819, 978, 1071, 1165, 1672`, `FrmGenerator.cs:238`); `ComboModulePlacementForm` (`:333/792` + `ShowStatistics`) | лишняя загрузка акции (`Actions1`) после пересчёта — `TotalPrice` уже приходит из OUTPUT; **но** `tariffPrice`, `iCount` и т. п. освежает только этот `Refresh` (кнопка «Цена акции», статистика веера/комбо) | +1 запрос на операцию | вернуть `tariffPrice` OUTPUT-параметром, потом `RecalculateAction(false)`; в комбо убрать второй `Refresh` | мала |
 | П-11 | `CampaignForm.DeleteIssuesInSelectedWindows`, отмена шаблона, `MoveIssuesToWindow`, веер: удаление дублей, «до пересечения», Del | одиночные `IssueIUD`/`MasterIssueDelete`/`AddRangeIssues` в цикле (пересчёт уже один); `MoveIssuesToWindow` и `MoveRangeIssuesToSlot` — `new Roller` на каждую строку | N запросов по 4–30 мс | ролики кэшировать по id; чтение выпусков одним запросом по списку окон. Процедуры массовой записи — только если N реально сотни | мала / средняя |
 | П-12 | `ProgramIssuesGrid2` | N+1 на отрисовке: `Issue.Campaign.Action.FirmName` → `GetCampaignById` + `GetActionById` на каждую чужую ячейку; `LoadIssues` выбрасывается сразу после загрузки (свой `GridRefreshed` раньше формы); клик по чекбоксу вызывает `ShowWindowIssues` дважды (`CellClick` и `CurrentCellDirtyStateChanged`) | сетка крошечная — терпимо | имя фирмы в `ProgramIssues`; одна подписка | мала |
 | П-13 | пакетная: `RefreshDetails` в `CampaignStatusChanged` и в `ShowWindowIssues` | `GetPackModuleIssueDetails` дважды на клик | +1 запрос | вызывать один раз | мала |
@@ -286,8 +289,9 @@ UserControl
   всегда false, сообщение «нет прайс-листа на дату» не показывается никогда.
 - `TrafficGrid.cs:772–773`: в цикле переноса используется `SelectedIssue` (текущая строка), а
   не переменная цикла.
+- `PresentationObject.Equal` сравнивает `object[] IDs` оператором `!=` (упакованные `int` по ссылке) — одинаковые объекты «не равны»; используется `SmartGrid` при каждой смене строки во всём приложении (корень П-4).
 - `PresentationObject.Equals` сравнивает **хеши** (сумма хешей ID + сущность) — коллизия даст
-  ложное равенство; `Equal` сравнивает упакованные ID по ссылке (корень П-4).
+  ложное равенство.
 - `TariffWindowRetrieve`: `LEFT JOIN TariffUnion ON (… OR …)` — у 88 тарифов на dev окна
   приходят дублями (C# перезаписывает ту же ячейку, вреда нет).
 - `MasterIssueDelete`: если у кампании нет подходящего выпуска, `IssueIUD` зовётся с
