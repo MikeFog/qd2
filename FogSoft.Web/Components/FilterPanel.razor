@@ -322,6 +322,13 @@
         if (field.Picker != null)
             return DBNull.Value;
 
+        // Время без значения — NULL, а не пустая строка: параметр datetime
+        // пустую строку не принимает («Failed to convert parameter value from
+        // a String to a DateTime»), а NULL процедура % заполнения сама заменяет
+        // границей суток (COALESCE(@StartTime, @MinTime)).
+        if (field.Type is { IsTime: true })
+            return DBNull.Value;
+
         return "";
     }
 
@@ -329,6 +336,7 @@
         field.Type switch
         {
             { IsDate: true } => "date",
+            { IsTime: true } => "time",
             { IsInteger: true } or { IsDecimal: true } or { IsMoney: true } => "number",
             _ => "text"
         };
@@ -339,8 +347,9 @@
     /// В словаре фильтра значения лежат строками в культуре системы — так их
     /// кладёт ResolveFilterInitialValues, и так их ждёт разбор параметров
     /// процедуры. HTML-инпуты живут по своим правилам: <c>type="date"</c>
-    /// отдаёт и принимает только ISO, <c>type="number"</c> — только точку как
-    /// разделитель дробной части. Поэтому оба типа переводятся туда и обратно.
+    /// отдаёт и принимает только ISO, <c>type="time"</c> — только «ЧЧ:мм»,
+    /// <c>type="number"</c> — только точку как разделитель дробной части.
+    /// Поэтому все три типа переводятся туда и обратно.
     /// Это тот самый стык из раздела 7 п.5 плана, и он не теоретический:
     /// без перевода чисел ввод «0.5» падал с «The input string '0.5' was not
     /// in a correct format».
@@ -357,6 +366,9 @@
         if (field.Type is { IsDate: true })
             return DateTime.TryParse(text, out DateTime date) ? date.ToString("yyyy-MM-dd") : "";
 
+        if (field.Type is { IsTime: true })
+            return DateTime.TryParse(text, out DateTime time) ? time.ToString("HH:mm") : "";
+
         if (IsFractional(field))
             return decimal.TryParse(text, out decimal number)
                 ? number.ToString(CultureInfo.InvariantCulture)
@@ -369,6 +381,13 @@
     {
         string text = value?.ToString() ?? "";
 
+        // Стёртое время — NULL, как и неотмеченное (см. InitialFilterValue).
+        if (text.Length == 0 && field.Type is { IsTime: true })
+        {
+            Values[field.Name] = DBNull.Value;
+            return;
+        }
+
         // Обратный перевод: в процедуру должна уйти строка того же вида, что у
         // значений из метаданных, иначе один и тот же фильтр выглядел бы
         // по-разному в зависимости от того, кто его заполнил.
@@ -376,6 +395,17 @@
         {
             if (field.Type is { IsDate: true })
                 text = DateTime.TryParse(text, out DateTime date) ? date.ToString() : "";
+            // Время — как десктопный PageFieldTime.ApplyChanges: часы и минуты
+            // на дате 01.01.1900 (параметры процедуры — datetime).
+            else if (field.Type is { IsTime: true })
+            {
+                if (!TimeSpan.TryParse(text, CultureInfo.InvariantCulture, out TimeSpan time))
+                {
+                    Values[field.Name] = DBNull.Value;
+                    return;
+                }
+                text = new DateTime(1900, 1, 1, time.Hours, time.Minutes, 0).ToString();
+            }
             else if (IsFractional(field))
                 text = decimal.TryParse(text, NumberStyles.Number, CultureInfo.InvariantCulture, out decimal number)
                     ? number.ToString()
