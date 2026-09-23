@@ -3,6 +3,7 @@
 @using FogSoft.Web.Infrastructure
 @using FogSoft.WinForm.Classes
 @inject UserSession Session
+@inject BusyService Busy
 
 @*
     Оболочка приложения: слева дерево меню, сверху полоса с текущим
@@ -33,6 +34,19 @@
         <main class="shell-content">
             @Body
         </main>
+
+        @* Слой ожидания — см. BusyService. Накрывает экран, но не меню слева.
+           Мышь блокируется сразу, а курсор и полоса появляются с задержкой
+           (CSS): быстрая загрузка не должна мигать. *@
+        @if (Busy.IsBusy)
+        {
+            <div class="shell-busy">
+                <div class="shell-busy-indicator" role="status" aria-label="Выполняется загрузка">
+                    <div class="shell-busy-bar"></div>
+                    <div class="shell-busy-spinner spinner-border" aria-hidden="true"></div>
+                </div>
+            </div>
+        }
     </div>
 </div>
 
@@ -49,9 +63,17 @@
 </div>
 
 @code {
-    protected override void OnInitialized() => Session.Changed += OnSessionChanged;
+    protected override void OnInitialized()
+    {
+        Session.Changed += OnSessionChanged;
+        Busy.Changed += OnBusyChanged;
+    }
 
     private void OnSessionChanged() => InvokeAsync(StateHasChanged);
+
+    // Уже на диспетчере circuit (BusyService зовётся из обработчиков экранов), но
+    // InvokeAsync безвреден и защищает от вызова извне.
+    private void OnBusyChanged() => InvokeAsync(StateHasChanged);
 
     private static string UserName(SecurityManager.User user)
     {
@@ -61,5 +83,9 @@
 
     private void Logout() => SecurityManager.Clear();
 
-    public void Dispose() => Session.Changed -= OnSessionChanged;
+    public void Dispose()
+    {
+        Session.Changed -= OnSessionChanged;
+        Busy.Changed -= OnBusyChanged;
+    }
 }

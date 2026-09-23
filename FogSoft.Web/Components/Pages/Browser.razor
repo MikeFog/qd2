@@ -7,6 +7,7 @@
 @inject ObjectActions Actions
 @inject ActionMenuService Menu
 @inject MenuAccess Access
+@inject BusyService Busy
 
 @*
     Древовидный экран — веб-аналог ExplorerForm: слева дерево, справа список
@@ -84,7 +85,7 @@ else
         <div class="browser-body">
             <nav class="browser-tree">
                 <BrowserNodeView Node="_root" Selected="_selected" MenuNode="_menuNode"
-                                 OnToggle="Toggle" OnSelect="Select" OnMenu="OpenNodeMenu" />
+                                 OnToggle="ToggleNode" OnSelect="SelectNode" OnMenu="OpenNodeMenu" />
             </nav>
 
             <div class="browser-list">
@@ -126,7 +127,7 @@ else
     // контейнера — ActionJournalFilter у журналов рекламных акций.
     private bool _restrictManager;
 
-    protected override void OnParametersSet()
+    protected override async Task OnParametersSetAsync()
     {
         if (SecurityManager.LoggedUser == null)
             return;
@@ -138,9 +139,16 @@ else
             return;
         }
 
+        // Прежний экран на время чтения не показываем: вместо него «Загрузка…».
+        _error = null;
+        _root = null;
+        await Busy.RunAsync(InitBrowser);
+    }
+
+    private void InitBrowser()
+    {
         try
         {
-            _error = null;
             BrowserRoute route = MenuRoutes.Browser[Code];
             _restrictManager = route.ManagerFilter;
             // Сценарий из кода (экраны, которых нет в метаданных) строится заново
@@ -199,17 +207,33 @@ else
     /// узлы, раскрытые до применения, помнят старый отбор. Десктоп делает то
     /// же самое: OnContainerRefreshed очищает узел и раскрывает его заново.
     /// </summary>
-    private void ApplyFilter()
+    private Task ApplyFilter()
     {
         if (_root == null)
-            return;
+            return Task.CompletedTask;
 
-        _root.Children = null;
-        _root.Expanded = false;
-        Select(_root);
+        BrowserNode root = _root;
+        root.Children = null;
+        root.Expanded = false;
+        return Busy.RunAsync(() => Select(root));
     }
 
     // ---------- Дерево ----------
+
+    /// <summary>
+    /// Щелчок по стрелке узла. Ожидание — только когда детей надо читать из базы:
+    /// сворачивание и повторное раскрытие уже загруженного узла мгновенны.
+    /// </summary>
+    private Task ToggleNode(BrowserNode node)
+    {
+        if (node.Expanded || node.Children != null)
+        {
+            Toggle(node);
+            return Task.CompletedTask;
+        }
+
+        return Busy.RunAsync(() => Toggle(node));
+    }
 
     private void Toggle(BrowserNode node)
     {
@@ -270,6 +294,9 @@ else
 
     // ---------- Список справа ----------
 
+    /// <summary>Выбор узла щелчком — чтение списка под слоем ожидания.</summary>
+    private Task SelectNode(BrowserNode node) => Busy.RunAsync(() => Select(node));
+
     /// <summary>
     /// Выбор узла наполняет список его детьми — дословно RefreshDependantGrid:
     /// сущность и строки берутся у контейнера узла, кэш перед этим сбрасывается.
@@ -306,14 +333,15 @@ else
     /// дети — состав мог измениться, и в десктопе Refresh делает то же самое
     /// (OnContainerRefreshed очищает узел и раскрывает его заново).
     /// </summary>
-    private void RefreshSelected()
+    private Task RefreshSelected()
     {
         if (_selected == null)
-            return;
+            return Task.CompletedTask;
 
-        _selected.Children = null;
-        _selected.Expanded = false;
-        Select(_selected);
+        BrowserNode node = _selected;
+        node.Children = null;
+        node.Expanded = false;
+        return Busy.RunAsync(() => Select(node));
     }
 
     // ---------- Меню узла ----------
@@ -329,7 +357,7 @@ else
         try
         {
             if (!ReferenceEquals(node, _selected))
-                Select(node);
+                await SelectNode(node);
 
             object target = node.Container;
             _menuNode = node;
@@ -343,7 +371,7 @@ else
 
             ActionEffect? effect = await Actions.ExecuteAsync(target, picked, ViewType.Tree);
             if (effect is { } done)
-                AfterNodeAction(node, done);
+                await Busy.RunAsync(() => AfterNodeAction(node, done));
         }
         catch (Exception ex)
         {
@@ -427,6 +455,6 @@ else
 
         ActionEffect? effect = await Actions.DeleteSelectedAsync(_list.SelectedObjects);
         if (effect != null)
-            RefreshSelected();
+            await RefreshSelected();
     }
 }

@@ -28,6 +28,8 @@ builder.Services.AddScoped<NamedPassportDialog>();
 builder.Services.AddScoped<TableDialog>();
 builder.Services.AddScoped<ObjectActions>();
 builder.Services.AddScoped<ActionMenuService>();
+// Курсор ожидания на время долгой загрузки — тоже свой на circuit.
+builder.Services.AddScoped<BusyService>();
 builder.Services.AddSingleton<CircuitServicesAccessor>();
 builder.Services.AddScoped<CircuitHandler, CircuitServicesHandler>();
 // Кэш метаданных сущностей — тоже на circuit, и это вопрос не скорости, а прав:

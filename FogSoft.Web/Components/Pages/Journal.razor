@@ -9,6 +9,7 @@
 @inject PassportDialog Passports
 @inject MenuAccess Access
 @inject ObjectActions Actions
+@inject BusyService Busy
 
 @*
     Движок журнала: список объектов сущности, фильтр и карточка — всё по
@@ -152,7 +153,7 @@ else
     private int _bulkPending;
 
 
-    protected override void OnParametersSet()
+    protected override async Task OnParametersSetAsync()
     {
         if (SecurityManager.LoggedUser == null)
             return;
@@ -177,10 +178,25 @@ else
         if (_loadedEntityId == EntityId && _loadedFilterDefault == _route?.FilterDefault)
             return;
 
+        // Отметка «загружено» ставится до чтения, а не после: чтение теперь
+        // асинхронное (BusyService отпускает circuit, чтобы показать ожидание),
+        // и второй проход OnParametersSet успевает прийти, пока первое ещё идёт, —
+        // без отметки он запустил бы тяжёлую процедуру второй раз.
+        _loadedEntityId = EntityId;
+        _loadedFilterDefault = _route?.FilterDefault;
+
+        // Прежний экран на время чтения не показываем: вместо него «Загрузка…».
+        _entity = null;
+        _data = null;
+        _error = null;
+
+        await Busy.RunAsync(InitJournal);
+    }
+
+    private void InitJournal()
+    {
         try
         {
-            _loadedEntityId = null;
-            _error = null;
             _entity = EntityManager.GetEntity(EntityId);
             _filterPages = PassportSchema.Parse(_entity.XmlFilter, _entity, pageType: PageTypes.Filter);
 
@@ -203,12 +219,11 @@ else
             if (_route?.FilterDefault is { } def)
                 _filterValues[def.Field] = Globals.ResolveInitialValue(def.Value);
 
-            Load();
-            _loadedEntityId = EntityId;
-            _loadedFilterDefault = _route?.FilterDefault;
+            LoadData();
         }
         catch (Exception ex)
         {
+            _loadedEntityId = null;
             _error = ErrorPresenter.Describe(ex);
         }
     }
@@ -272,7 +287,10 @@ else
         return false;
     }
 
-    private void Load()
+    /// <summary>Перечитать список под слоем ожидания — «Применить», «Обновить», после действий.</summary>
+    private Task Load() => Busy.RunAsync(LoadData);
+
+    private void LoadData()
     {
         try
         {
@@ -325,7 +343,7 @@ else
             error = ErrorPresenter.Describe(ex);
         }
 
-        Load();
+        await Load();
         if (error != null)
             _error = error;
     }
@@ -350,7 +368,7 @@ else
     private async Task EditObject(PresentationObject obj, bool isNew)
     {
         if (await Passports.ShowAsync(obj, isNew))
-            Load();
+            await Load();
     }
 
     private ObjectList? _list;
@@ -378,7 +396,7 @@ else
 
         ActionEffect? effect = await Actions.DeleteSelectedAsync(_list.SelectedObjects);
         if (effect != null)
-            Load();
+            await Load();
     }
 
 }
