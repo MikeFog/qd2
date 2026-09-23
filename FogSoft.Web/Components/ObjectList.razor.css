@@ -109,3 +109,40 @@
     color: var(--c-accent);
     font-weight: 700;
 }
+
+/* Строка, которую процедура пометила row_style = 'bold' (итог группы в
+   статистике) — как десктопный SmartGrid.dataGrid_RowPrePaint, плюс фон. */
+::deep tbody tr.row-bold > td {
+    font-weight: 700;
+    background: var(--c-bg);
+}
+
+/* Сумма по колонке — строка под таблицей, прилипает к низу прокрутки. */
+::deep tfoot td {
+    position: sticky;
+    bottom: 0;
+    z-index: 1;
+    background: var(--c-bg);
+    border-top: 1px solid var(--c-border-strong);
+    padding: 3px var(--s-3);
+}
+
+::deep .total-btn {
+    padding: 0 6px;
+    border: none;
+    border-radius: 4px;
+    background: none;
+    color: var(--c-text-muted);
+    font: inherit;
+}
+
+::deep .total-btn:hover {
+    background: var(--c-border);
+    color: var(--c-text);
+}
+
+::deep .total-value {
+    color: var(--c-text);
+    font-weight: 700;
+    font-variant-numeric: tabular-nums;
+}

@@ -41,6 +41,10 @@ public static class GridExcelExport
     private const uint StHeader = 1, StText = 2, StNumber = 3, StMoney = 4, StFloat = 5,
                        StTime = 6, StDate = 7, StDateTime = 8;
 
+    // Жирный двойник стилей 2–8 — для строк row_style = 'bold' (RowStyle):
+    // индекс жирного = индекс обычного + BoldShift.
+    private const uint BoldShift = 7;
+
     // Форматы — те же, что ставит десктоп (MSDocumentSheet.SetFormatForCell).
     private const uint FmtMoney = 164, FmtTime = 165, FmtDate = 166, FmtDateTime = 167;
 
@@ -169,11 +173,17 @@ public static class GridExcelExport
 
         foreach (DataRow row in rows)
         {
+            bool bold = RowStyle.IsBold(row);
             writer.WriteStartElement(new Row());
             for (int i = 0; i < columns.Count; i++)
-                writer.WriteElement(exists[i]
+            {
+                Cell cell = exists[i]
                     ? ValueCell(strings, row[columns[i].Name], kinds[i])
-                    : new Cell { StyleIndex = StText });
+                    : new Cell { StyleIndex = StText };
+                if (bold)
+                    cell.StyleIndex = cell.StyleIndex!.Value + BoldShift;
+                writer.WriteElement(cell);
+            }
             writer.WriteEndElement();
         }
 
@@ -427,6 +437,13 @@ public static class GridExcelExport
                 Xf(2, 0, 1),             // 5 — два знака (встроенный «0.00»)
                 Xf(FmtTime, 0, 1),       // 6 — время
                 Xf(FmtDate, 0, 1),       // 7 — дата
-                Xf(FmtDateTime, 0, 1))); // 8 — дата и время
+                Xf(FmtDateTime, 0, 1),   // 8 — дата и время
+                Xf(0, 1, 1),             // 9–15 — то же, что 2–8, жирным (BoldShift)
+                Xf(0, 1, 1),
+                Xf(FmtMoney, 1, 1),
+                Xf(2, 1, 1),
+                Xf(FmtTime, 1, 1),
+                Xf(FmtDate, 1, 1),
+                Xf(FmtDateTime, 1, 1)));
     }
 }

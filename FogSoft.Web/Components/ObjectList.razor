@@ -76,7 +76,7 @@ else
             </thead>
             <tbody>
                 <Virtualize TItem="DataRow" Items="_rows" ItemSize="29" SpacerElement="tr" Context="row">
-                    <tr class="@(ReferenceEquals(row, _menuRow) ? "row-menu-open" : "")"
+                    <tr class="@RowClass(row)"
                         @onclick="() => OpenPassport(row)"
                         @oncontextmenu="e => OpenMenu(row, e, fromButton: false)" @oncontextmenu:preventDefault="!ReadOnly">
                         @if (SelectionEnabled)
@@ -124,6 +124,42 @@ else
                     </tr>
                 </Virtualize>
             </tbody>
+            @if (Columns.Any(IsSummable))
+            {
+                <tfoot>
+                    <tr>
+                        @if (SelectionEnabled)
+                        {
+                            <td class="col-check"></td>
+                        }
+                        <td class="col-icon"></td>
+                        @foreach (var a in Columns)
+                        {
+                            @if (IsSummable(a))
+                            {
+                                <td>
+                                    @if (_totals.TryGetValue(a.Name, out decimal total))
+                                    {
+                                        <button type="button" class="total-btn total-value" title="Сумма по колонке; щелчок — скрыть" @onclick="() => ToggleTotal(a.Name)">Σ @FormatTotal(a, total)</button>
+                                    }
+                                    else
+                                    {
+                                        <button type="button" class="total-btn" title="Сумма по колонке" aria-label="Сумма по колонке «@a.Alias»" @onclick="() => ToggleTotal(a.Name)">Σ</button>
+                                    }
+                                </td>
+                            }
+                            else
+                            {
+                                <td></td>
+                            }
+                        }
+                        @if (!ReadOnly)
+                        {
+                            <td class="col-actions"></td>
+                        }
+                    </tr>
+                </tfoot>
+            }
         </table>
     </div>
 }
@@ -210,6 +246,7 @@ else
             _sortColumn = null;
             _sortDescending = false;
             _quick = ResolveQuickActions();
+            RecalculateTotals();
 
             if (_selectedRows.Count > 0)
             {
@@ -283,6 +320,103 @@ else
 
     private void ColumnInfoOf(Entity.Attribute attribute, out ColumnInfo? columnInfo) =>
         Entity.ColumnsInfo.TryGetValue(attribute.Name, out columnInfo);
+
+    /// <summary>
+    /// Класс строки: открытое меню и оформление, заданное процедурой
+    /// (<see cref="RowStyle"/>).
+    /// </summary>
+    private string RowClass(DataRow row)
+    {
+        string css = ReferenceEquals(row, _menuRow) ? "row-menu-open" : "";
+        return RowStyle.IsBold(row) ? css + " row-bold" : css;
+    }
+
+    // ---------- Сумма по колонке ----------
+
+    // Веб-аналог десктопной «Суммы по колонке» (SmartGrid.CalculateColumnSummary):
+    // сумма всех строк колонки, без исключений — строки-итоги процедуры (row_style)
+    // тоже входят, как в десктопе. Считается по запросу, а не сама: тип money в
+    // метаданных носят и колонки, которые складывать бессмысленно (цена тарифа,
+    // «Средний чек», «Средняя цена»), а отличить их список не может. Выбранные
+    // колонки помнятся, пока открыта та же сущность, и пересчитываются на каждом
+    // новом наборе строк — отбор поменял, итог обновился.
+
+    private readonly HashSet<string> _summed = new(StringComparer.OrdinalIgnoreCase);
+    private readonly Dictionary<string, decimal> _totals = new(StringComparer.OrdinalIgnoreCase);
+    private Entity? _summedEntity;
+
+    /// <summary>
+    /// Колонку можно суммировать, если в пришедших строках она числовая и это
+    /// не ключ сущности. Тип берётся у колонки DataTable: у сущностей
+    /// статистики нет таблицы, и ColumnsInfo для них пуст.
+    /// </summary>
+    private bool IsSummable(Entity.Attribute attribute)
+    {
+        if (Data == null || !Data.Columns.Contains(attribute.Name) || IsBoolean(attribute))
+            return false;
+        if (Entity.PKColumns?.Contains(attribute.Name, StringComparer.OrdinalIgnoreCase) == true)
+            return false;
+
+        return Type.GetTypeCode(Data.Columns[attribute.Name].DataType) switch
+        {
+            TypeCode.Byte or TypeCode.SByte or TypeCode.Int16 or TypeCode.UInt16
+                or TypeCode.Int32 or TypeCode.UInt32 or TypeCode.Int64 or TypeCode.UInt64
+                or TypeCode.Decimal or TypeCode.Double or TypeCode.Single => true,
+            _ => false,
+        };
+    }
+
+    private void ToggleTotal(string column)
+    {
+        if (!_summed.Remove(column))
+            _summed.Add(column);
+        RecalculateTotals();
+    }
+
+    private void RecalculateTotals()
+    {
+        if (!ReferenceEquals(_summedEntity, Entity))
+        {
+            _summedEntity = Entity;
+            _summed.Clear();
+        }
+
+        _totals.Clear();
+        if (Data == null)
+            return;
+
+        foreach (string column in _summed)
+        {
+            if (!Data.Columns.Contains(column))
+                continue;
+
+            decimal sum = 0;
+            foreach (DataRow row in Data.Rows)
+            {
+                object v = row[column];
+                if (v == DBNull.Value)
+                    continue;
+                // double/float вне диапазона decimal (NaN, бесконечность) в сумму не
+                // попадают — в процедурах статистики их не бывает, но падать на
+                // одной ячейке итог не должен.
+                if (v is double d && !double.IsFinite(d) || v is float f && !float.IsFinite(f))
+                    continue;
+                sum += Convert.ToDecimal(v);
+            }
+            _totals[column] = sum;
+        }
+    }
+
+    /// <summary>Формат итога — тот же, что у ячеек колонки (<see cref="Display"/>).</summary>
+    private string FormatTotal(Entity.Attribute attribute, decimal total)
+    {
+        ColumnInfoOf(attribute, out ColumnInfo? columnInfo);
+        if (ColumnInfo.IsMoneyData(columnInfo, attribute))
+            return total.ToString("C");
+        if (ColumnInfo.IsFloatData(columnInfo, attribute) || total != decimal.Truncate(total))
+            return total.ToString("F");
+        return total.ToString("N0");
+    }
 
     // ---------- Сортировка ----------
 
