@@ -38,8 +38,13 @@ namespace FogSoft.Web.Infrastructure;
 public sealed class NamedPassportDialog
 {
 	private readonly DialogService _dialogs;
+	private readonly BusyService _busy;
 
-	public NamedPassportDialog(DialogService dialogs) => _dialogs = dialogs;
+	public NamedPassportDialog(DialogService dialogs, BusyService busy)
+	{
+		_dialogs = dialogs;
+		_busy = busy;
+	}
 
 	/// <summary>
 	/// Показывает именованный паспорт и по «ОК» вызывает <paramref name="apply"/> с
@@ -93,12 +98,16 @@ public sealed class NamedPassportDialog
 		Func<Dictionary<string, object>, string?> validate, Action<Dictionary<string, object>> apply,
 		DataSet? data, Func<string, bool>? fieldDisabled)
 	{
-		string xml = PassportLoader.Load(passportName);
-
 		// Справочники — той же процедурой, что у обычной карточки объекта шаблона
 		// (сущности, к которой относится передаваемый черновик), если вызывающий
-		// не загрузил свои.
-		data ??= obj.LoadPassportData();
+		// не загрузил свои. Одним ожиданием с XML паспорта — оба идут в базу.
+		DataSet? loaded = data;
+		string xml = await _busy.RunAsync(() =>
+		{
+			loaded ??= obj.LoadPassportData();
+			return PassportLoader.Load(passportName);
+		});
+		data = loaded;
 
 		string? message = null;
 		string? invalidField = null;
@@ -148,7 +157,7 @@ public sealed class NamedPassportDialog
 			// сообщением в открытом диалоге, что и отказ apply ниже.
 			try
 			{
-				message = validate(obj.Parameters);
+				message = await _busy.RunAsync(() => validate(obj.Parameters));
 			}
 			catch (Exception ex)
 			{
@@ -162,7 +171,7 @@ public sealed class NamedPassportDialog
 
 			try
 			{
-				apply(obj.Parameters);
+				await _busy.RunAsync(() => apply(obj.Parameters));
 				return true;
 			}
 			catch (Exception ex)

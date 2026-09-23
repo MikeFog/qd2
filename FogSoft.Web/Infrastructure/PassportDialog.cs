@@ -20,8 +20,13 @@ namespace FogSoft.Web.Infrastructure;
 public sealed class PassportDialog
 {
 	private readonly DialogService _dialogs;
+	private readonly BusyService _busy;
 
-	public PassportDialog(DialogService dialogs) => _dialogs = dialogs;
+	public PassportDialog(DialogService dialogs, BusyService busy)
+	{
+		_dialogs = dialogs;
+		_busy = busy;
+	}
 
 	/// <summary>
 	/// Показывает карточку и возвращает true, если объект сохранён.
@@ -35,7 +40,7 @@ public sealed class PassportDialog
 	{
 		// Справочники грузятся один раз на открытие карточки — там же, где их
 		// берёт десктоп.
-		DataSet? data = obj.LoadPassportData();
+		DataSet? data = await _busy.RunAsync(obj.LoadPassportData);
 
 		// Заголовок — как в PassportForm.SetFormCaption.
 		string title = isNew
@@ -88,11 +93,16 @@ public sealed class PassportDialog
 				// которого у нового объекта до Update() ещё нет.
 				passport?.ApplyChanges();
 
-				if (obj.Update())
+				bool saved = await _busy.RunAsync(() =>
 				{
+					if (!obj.Update())
+						return false;
+
 					(obj as ObjectContainer)?.SubmitChildrenChanges();
 					return true;
-				}
+				});
+				if (saved)
+					return true;
 
 				message = "Сохранение отклонено.";
 			}

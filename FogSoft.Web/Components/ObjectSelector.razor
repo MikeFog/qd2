@@ -1,6 +1,7 @@
 @using System.Data
 @using FogSoft.Web.Infrastructure
 @using FogSoft.WinForm.Classes
+@inject BusyService Busy
 
 @*
     Выбор объекта из списка — веб-аналог SelectionForm.
@@ -103,7 +104,11 @@ else
     private IReadOnlyList<Entity.Attribute> _columns = Array.Empty<Entity.Attribute>();
     private string? _error;
 
-    protected override void OnInitialized()
+    // Список грузится под слоем ожидания: диалог открывается сразу с «Загрузка…»,
+    // а не после того, как процедура отдаст строки.
+    protected override Task OnInitializedAsync() => Busy.RunAsync(Load);
+
+    private void Load()
     {
         try
         {

@@ -34,19 +34,6 @@
         <main class="shell-content">
             @Body
         </main>
-
-        @* Слой ожидания — см. BusyService. Накрывает экран, но не меню слева.
-           Мышь блокируется сразу, а курсор и полоса появляются с задержкой
-           (CSS): быстрая загрузка не должна мигать. *@
-        @if (Busy.IsBusy)
-        {
-            <div class="shell-busy">
-                <div class="shell-busy-indicator" role="status" aria-label="Выполняется загрузка">
-                    <div class="shell-busy-bar"></div>
-                    <div class="shell-busy-spinner spinner-border" aria-hidden="true"></div>
-                </div>
-            </div>
-        }
     </div>
 </div>
 
@@ -55,6 +42,19 @@
 
 @* Один на всё приложение — меню действий над объектами, см. ActionMenuService. *@
 <ActionMenuHost />
+
+@* Слой ожидания — см. BusyService. Накрывает всё окно, включая меню и
+   диалоги. Мышь блокируется сразу, а курсор и полоса появляются с задержкой
+   (CSS): быстрая загрузка не должна мигать. *@
+@if (Busy.IsBusy)
+{
+    <div class="shell-busy">
+        <div class="shell-busy-indicator" role="status" aria-label="Выполняется загрузка">
+            <div class="shell-busy-bar"></div>
+            <div class="shell-busy-spinner spinner-border" aria-hidden="true"></div>
+        </div>
+    </div>
+}
 
 <div id="blazor-error-ui" data-nosnippet>
     Произошла непредвиденная ошибка.

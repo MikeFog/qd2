@@ -79,6 +79,11 @@ public enum ActionEffect
 /// своего веб-обработчика. Узнать это отражением нельзя: переопределения лежат
 /// в UI-половинах, которых в веб-сборке нет вообще.
 ///
+/// <b>Ожидание.</b> Обращения к базе внутри действия (удаление, клон, пересчёт)
+/// идут под <see cref="BusyService"/>, показ диалогов — нет: ожидание ответа
+/// пользователя не должно выглядеть как «система занята». Загрузку и сохранение
+/// карточек оборачивают сами PassportDialog и NamedPassportDialog.
+///
 /// Scoped — пользуется диалогами circuit.
 /// </summary>
 public sealed class ObjectActions
@@ -87,13 +92,16 @@ public sealed class ObjectActions
 	private readonly NamedPassportDialog _namedPassports;
 	private readonly DialogService _dialogs;
 	private readonly TableDialog _tables;
+	private readonly BusyService _busy;
 
-	public ObjectActions(PassportDialog passports, NamedPassportDialog namedPassports, DialogService dialogs, TableDialog tables)
+	public ObjectActions(PassportDialog passports, NamedPassportDialog namedPassports, DialogService dialogs, TableDialog tables,
+		BusyService busy)
 	{
 		_passports = passports;
 		_namedPassports = namedPassports;
 		_dialogs = dialogs;
 		_tables = tables;
+		_busy = busy;
 	}
 
 	private delegate Task<ActionEffect> Handler(ObjectActions self, object target);
@@ -132,8 +140,8 @@ public sealed class ObjectActions
 		// AdvertTypeContainer.DoAction: подмена ChildEntity корня (AdvertType ↔ AdvertTypeChild).
 		["AdvertTypeContainer"] = new()
 		{
-			[AdvertTypeContainer.ActionNames.ShowTree] = (_, t) => Changed(((AdvertTypeContainer)t).ShowTree),
-			[AdvertTypeContainer.ActionNames.ShowFlat] = (_, t) => Changed(((AdvertTypeContainer)t).ShowFlat),
+			[AdvertTypeContainer.ActionNames.ShowTree] = (s, t) => s.Changed(((AdvertTypeContainer)t).ShowTree),
+			[AdvertTypeContainer.ActionNames.ShowFlat] = (s, t) => s.Changed(((AdvertTypeContainer)t).ShowFlat),
 		},
 		// ActionContainer.DoAction: подмена ChildEntity корня — разбивка акций по
 		// группам компаний, по фирмам или без разбивки. Какой пункт сейчас
@@ -141,15 +149,15 @@ public sealed class ObjectActions
 		// текущий вид, как в десктопе.
 		["ActionContainer"] = new()
 		{
-			[ActionContainer.ActionNames.ShowHeadCompanies] = (_, t) => Changed(((ActionContainer)t).ShowHeadCompanies),
-			[ActionContainer.ActionNames.ShowFirms] = (_, t) => Changed(((ActionContainer)t).ShowFirms),
-			[ActionContainer.ActionNames.ShowActions] = (_, t) => Changed(((ActionContainer)t).ShowActions),
+			[ActionContainer.ActionNames.ShowHeadCompanies] = (s, t) => s.Changed(((ActionContainer)t).ShowHeadCompanies),
+			[ActionContainer.ActionNames.ShowFirms] = (s, t) => s.Changed(((ActionContainer)t).ShowFirms),
+			[ActionContainer.ActionNames.ShowActions] = (s, t) => s.Changed(((ActionContainer)t).ShowActions),
 		},
 		// Announcement.DoAction: «Пометить как прочтенное». Доступность гасит
 		// Announcement.IsActionEnabled (у прочитанного — серый).
 		["Announcement"] = new()
 		{
-			[Merlin.Classes.Announcement.ActionNames.MarkAsRead] = (_, t) => Changed(((Merlin.Classes.Announcement)t).MarkAsRead),
+			[Merlin.Classes.Announcement.ActionNames.MarkAsRead] = (s, t) => s.Changed(((Merlin.Classes.Announcement)t).MarkAsRead),
 		},
 		// PackageDiscount.DoAction: «Добавить прайс-лист» — это AssignNew с временно
 		// подменённой дочерней сущностью (у пакетной скидки их две: прайс-листы и
@@ -213,10 +221,10 @@ public sealed class ObjectActions
 		},
 	};
 
-	private static Task<ActionEffect> Changed(Action apply)
+	private async Task<ActionEffect> Changed(Action apply)
 	{
-		apply();
-		return Task.FromResult(ActionEffect.Changed);
+		await _busy.RunAsync(apply);
+		return ActionEffect.Changed;
 	}
 
 	/// <summary>
@@ -495,7 +503,7 @@ public sealed class ObjectActions
 				okText: "Удалить") != DialogOutcome.Ok)
 			return ActionEffect.None;
 
-		return obj.Delete(silenceFlag: true) ? ActionEffect.Deleted : ActionEffect.None;
+		return await _busy.RunAsync(() => obj.Delete(silenceFlag: true)) ? ActionEffect.Deleted : ActionEffect.None;
 	}
 
 	/// <summary>
@@ -538,26 +546,29 @@ public sealed class ObjectActions
 		errors.Columns.Add("objectName", typeof(string));
 		errors.Columns.Add("errorText", typeof(string));
 
-		foreach (PresentationObject obj in objects)
+		await _busy.RunAsync(() =>
 		{
-			string objectName = string.IsNullOrEmpty(obj.Name) ? "<без названия>" : obj.Name;
-
-			try
+			foreach (PresentationObject obj in objects)
 			{
-				if (!obj.IsActionEnabled(Constants.EntityActions.Delete, ViewType.Journal))
+				string objectName = string.IsNullOrEmpty(obj.Name) ? "<без названия>" : obj.Name;
+
+				try
 				{
-					AddDeleteError(errors, objectName, string.Format("Удаление недоступно для объекта '{0}'.", objectName));
-					continue;
-				}
+					if (!obj.IsActionEnabled(Constants.EntityActions.Delete, ViewType.Journal))
+					{
+						AddDeleteError(errors, objectName, string.Format("Удаление недоступно для объекта '{0}'.", objectName));
+						continue;
+					}
 
-				if (!obj.Delete(silenceFlag: true))
-					AddDeleteError(errors, objectName, string.Format("Не удалось удалить объект '{0}'.", objectName));
+					if (!obj.Delete(silenceFlag: true))
+						AddDeleteError(errors, objectName, string.Format("Не удалось удалить объект '{0}'.", objectName));
+				}
+				catch (Exception ex)
+				{
+					AddDeleteError(errors, objectName, ErrorPresenter.Describe(ex));
+				}
 			}
-			catch (Exception ex)
-			{
-				AddDeleteError(errors, objectName, ErrorPresenter.Describe(ex));
-			}
-		}
+		});
 
 		if (errors.Rows.Count > 0)
 			await _tables.ShowAsync("Ошибки массового удаления", errors,
@@ -590,11 +601,11 @@ public sealed class ObjectActions
 	private async Task<ActionEffect> AssignNew(object target)
 	{
 		var container = (ObjectContainer)target;
-		PresentationObject? newObject = container.CreateNewChild();
+		PresentationObject? newObject = await _busy.RunAsync(container.CreateNewChild);
 		if (newObject == null || !await _passports.ShowAsync(newObject, isNew: true))
 			return ActionEffect.None;
 
-		container.CompleteNewChild(newObject);
+		await _busy.RunAsync(() => container.CompleteNewChild(newObject));
 		return ActionEffect.ChildAdded;
 	}
 
@@ -678,7 +689,7 @@ public sealed class ObjectActions
 
 			if (!massFlag)
 			{
-				pricelist.ApplyClone(startDate, finishDate, appliedMode);
+				await _busy.RunAsync(() => pricelist.ApplyClone(startDate, finishDate, appliedMode));
 				return ActionEffect.SiblingAdded;
 			}
 
@@ -738,7 +749,7 @@ public sealed class ObjectActions
 			Entity massmedia = EntityManager.GetEntity((int)Merlin.Entities.MassMedia);
 			List<PresentationObject> radioStations = selected.Select(massmedia.CreateObject).ToList();
 
-			DataTable errors = pricelist.ApplyMassClone(startDate, finishDate, mode, radioStations);
+			DataTable errors = await _busy.RunAsync(() => pricelist.ApplyMassClone(startDate, finishDate, mode, radioStations));
 			if (errors.Rows.Count > 0)
 				await ShowCloneErrors(errors);
 
@@ -822,7 +833,7 @@ public sealed class ObjectActions
 	/// </summary>
 	private async Task<ActionEffect> EditSimilarTariffs(Merlin.Classes.Tariff tariff)
 	{
-		DataTable similar = tariff.LoadSimilarTariffs();
+		DataTable similar = await _busy.RunAsync(tariff.LoadSimilarTariffs);
 		if (similar.Rows.Count == 0)
 			return ActionEffect.None;
 
@@ -888,7 +899,7 @@ public sealed class ObjectActions
 	private async Task<ActionEffect> SubstituteRoller(PresentationObject campaignRoller)
 	{
 		var substitution = Merlin.Classes.RollerSubstitution.ForCampaignRoller(campaignRoller);
-		DataSet data = substitution.LoadPassportData();
+		DataSet data = await _busy.RunAsync(substitution.LoadPassportData);
 		bool hasRollers = Merlin.Classes.RollerSubstitution.HasRollers(data);
 
 		// Черновик — носитель значений паспорта, как PageContext.Parameters у формы;
@@ -919,7 +930,7 @@ public sealed class ObjectActions
 				new Entity.Attribute("message", "Ошибка", "nvarchar"));
 
 		if (substitution.PriceMayChange(newRoller!))
-			await ShowInfo("Замена ролика", substitution.RecalculateAction());
+			await ShowInfo("Замена ролика", await _busy.RunAsync(substitution.RecalculateAction));
 
 		return ActionEffect.SiblingAdded;
 	}
@@ -1003,11 +1014,11 @@ public sealed class ObjectActions
 	private async Task<ActionEffect> AddNew(object target)
 	{
 		var container = (FakeContainer)target;
-		PresentationObject newObject = container.CreateNewObject();
+		PresentationObject newObject = await _busy.RunAsync(container.CreateNewObject);
 		if (!await _passports.ShowAsync(newObject, isNew: true))
 			return ActionEffect.None;
 
-		container.CompleteNewObject(newObject);
+		await _busy.RunAsync(() => container.CompleteNewObject(newObject));
 		return ActionEffect.ChildAdded;
 	}
 
