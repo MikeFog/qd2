@@ -158,10 +158,13 @@ public static class PassportSchema
 			if (string.IsNullOrEmpty(Attr(node, PageControl.Attributes.Entity)))
 				return "objectPicker без entity";
 
-			// relationScenario уводит выбор в TreeViewSelector — отдельный
-			// контрол-дерево. В метаданных ArtvisDev такого objectPicker нет
-			// ни одного, поэтому дерево не переносилось.
+			// relationScenario уводит выбор в TreeViewSelector — дерево по
+			// сценарию связей (веб: ScenarioTreePicker). На ArtvisDev такие
+			// objectPicker есть только в фильтрах — «Предмет рекламы» у
+			// статистики 158 и 201; в паспортах ни одного, поэтому там выбор
+			// из дерева не подключался и поле остаётся непереведённым.
 			return string.IsNullOrEmpty(Attr(node, PageControl.Attributes.RelationScenario))
+				|| pageType == PageTypes.Filter
 				? null
 				: "objectPicker с relationScenario";
 		}
@@ -215,6 +218,7 @@ public static class PassportSchema
 			return null;
 
 		string? source = Attr(node, PageControl.Attributes.Source);
+		string? scenario = Attr(node, PageControl.Attributes.RelationScenario);
 		return new PassportPicker(
 			EntityName: entityName!,
 			Source: string.IsNullOrEmpty(source) ? null : source,
@@ -222,7 +226,8 @@ public static class PassportSchema
 			// нет атрибута — кнопки нет.
 			IsCreateNewAllowed: ParseHelper.ParseToBoolean(
 				Attr(node, PageControl.Attributes.IsCreateNewAllowed) ?? string.Empty, false),
-			Filters: ParseFilters(node));
+			Filters: ParseFilters(node),
+			Scenario: string.IsNullOrEmpty(scenario) ? null : scenario);
 	}
 
 	private static PassportImage? ParseImage(XmlNode node)
@@ -389,11 +394,13 @@ public sealed record PassportLookup(
 /// <param name="Source">Псевдоним готового набора строк; null — грузить сущностью по требованию.</param>
 /// <param name="IsCreateNewAllowed">Разрешено ли создавать новый объект прямо из карточки.</param>
 /// <param name="Filters">Значения фильтра из вложенных &lt;filter&gt;.</param>
+/// <param name="Scenario">Сценарий связей (relationScenario): выбор из дерева, а не из списка; null — из списка.</param>
 public sealed record PassportPicker(
 	string EntityName,
 	string? Source,
 	bool IsCreateNewAllowed,
-	IReadOnlyList<PassportFilterValue> Filters);
+	IReadOnlyList<PassportFilterValue> Filters,
+	string? Scenario = null);
 
 /// <param name="Name">Имя параметра процедуры выборки.</param>
 /// <param name="Value">Значение как записано в XML.</param>

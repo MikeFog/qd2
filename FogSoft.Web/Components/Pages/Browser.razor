@@ -79,7 +79,7 @@ else
             <button class="btn btn-sm btn-outline-secondary" disabled="@(_data == null || _data.Rows.Count == 0)" @onclick="ExportExcel"><i class="bi bi-download" aria-hidden="true"></i>Экспорт в Excel</button>
         </ScreenToolbar>
 
-        <FilterPanel Pages="_filterPages" Values="_root.Container.Filter" FilterData="_filterData"
+        <FilterPanel Pages="_filterPages" Values="_root.Container!.Filter" FilterData="_filterData"
                      RestrictManager="_restrictManager" Apply="ApplyFilter" />
 
         <div class="browser-body">
@@ -89,7 +89,7 @@ else
             </nav>
 
             <div class="browser-list">
-                @if (_selected?.Container.ChildEntity is { } childEntity)
+                @if (_selected?.Container?.ChildEntity is { } childEntity)
                 {
                     <ObjectList @ref="_list" Entity="childEntity" Data="_data"
                                 EmptyText="У выбранного узла нет вложенных записей."
@@ -247,7 +247,7 @@ else
                 return;
             }
 
-            node.Children ??= LoadChildren(node);
+            node.Children ??= BrowserNode.LoadChildren(node);
             node.Expanded = true;
         }
         catch (Exception ex)
@@ -255,42 +255,6 @@ else
             _error = ErrorPresenter.Describe(ex);
         }
     }
-
-    /// <summary>
-    /// Дети узла — перечисление его контейнера. Перечисление, а не GetContent():
-    /// ObjectsIterator по пути создаёт доменные объекты и передаёт им сценарий,
-    /// из которого объект узнаёт собственную дочернюю сущность.
-    /// </summary>
-    private List<BrowserNode> LoadChildren(BrowserNode node)
-    {
-        var children = new List<BrowserNode>();
-        foreach (PresentationObject obj in node.Container)
-        {
-            var container = obj as IObjectContainer;
-            if (container == null)
-                continue;
-
-            children.Add(new BrowserNode
-            {
-                Name = obj.Name,
-                Container = container,
-                // Как в TreeView2: значок — у дочерней сущности контейнера-родителя.
-                Icon = EntityIcons.For((node.Container.ChildEntity ?? obj.Entity)?.IconName),
-                Expandable = IsExpandable(obj, container),
-                Parent = node,
-            });
-        }
-        return children;
-    }
-
-    /// <summary>
-    /// Повторяет TreeView2.IsExpandableObject. Колонка isHasChilds — способ
-    /// процедуры сказать «у этой строки детей нет»; по умолчанию считаем, что
-    /// есть.
-    /// </summary>
-    private static bool IsExpandable(PresentationObject obj, IObjectContainer container) =>
-        container.IsChildNodeExpandable
-        && ParseHelper.GetBooleanFromObject(obj["isHasChilds"], true);
 
     // ---------- Список справа ----------
 
@@ -308,7 +272,7 @@ else
             _error = null;
             _selected = node;
 
-            Entity? childEntity = node.Container.ChildEntity;
+            Entity? childEntity = node.Container!.ChildEntity;
             if (childEntity == null)
             {
                 _data = null;
@@ -359,7 +323,7 @@ else
             if (!ReferenceEquals(node, _selected))
                 await SelectNode(node);
 
-            object target = node.Container;
+            object target = node.Container!;
             _menuNode = node;
             string? picked = await Menu.ShowAsync(
                 Actions.BuildMenu(target, ViewType.Tree), request.Mouse.ClientX, request.Mouse.ClientY, request.FromButton);
@@ -421,10 +385,10 @@ else
     /// </summary>
     private void ReloadNode(BrowserNode node)
     {
-        node.Container.ClearCache();
+        node.Container!.ClearCache();
         node.Children = null;
         if (node.Expanded)
-            node.Children = LoadChildren(node);
+            node.Children = BrowserNode.LoadChildren(node);
 
         if (ReferenceEquals(node, _selected))
             Select(node);

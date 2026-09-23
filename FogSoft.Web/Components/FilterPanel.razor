@@ -475,6 +475,12 @@
 
     private async Task SelectFilterPicker(PassportField field)
     {
+        if (field.Picker!.Scenario != null)
+        {
+            await SelectFilterPickerFromTree(field);
+            return;
+        }
+
         ObjectSelector? selector = null;
 
         RenderFragment body = builder =>
@@ -499,5 +505,38 @@
         Values[field.Name] = entity.CreateObject(selector.SelectedRow).IDs[0] ?? (object)DBNull.Value;
         _filterPickerNames.Remove(field.Name);
         _filterPickerNamesFor.Remove(field.Name);
+    }
+
+    /// <summary>
+    /// objectPicker с relationScenario: выбор из дерева сценария
+    /// (ObjectPicker2.btnSelect_Click → TreeViewSelector). В процедуру уходит
+    /// идентификатор выбранного узла, как <c>SelectedObject.IDs[0]</c> в
+    /// PageFieldObjectPicker.ApplyChanges; имя известно сразу — его и
+    /// показываем, без обращения к базе.
+    /// </summary>
+    private async Task SelectFilterPickerFromTree(PassportField field)
+    {
+        ScenarioTreePicker? picker = null;
+
+        RenderFragment body = builder =>
+        {
+            builder.OpenComponent<ScenarioTreePicker>(0);
+            builder.AddComponentParameter(1, nameof(ScenarioTreePicker.Scenario), field.Picker!.Scenario);
+            builder.AddComponentReferenceCapture(2, c => picker = (ScenarioTreePicker)c);
+            builder.CloseComponent();
+        };
+
+        if (await Dialogs.ShowAsync("Выбрать объект", body, okText: "Выбрать") != DialogOutcome.Ok)
+            return;
+
+        // Как и у выбора из списка: пустой выбор — не команда очистить.
+        PresentationObject? selected = picker?.SelectedObject;
+        if (selected == null)
+            return;
+
+        object id = selected.IDs[0] ?? (object)DBNull.Value;
+        Values[field.Name] = id;
+        _filterPickerNames[field.Name] = selected.Name;
+        _filterPickerNamesFor[field.Name] = AsFilterText(id);
     }
 }

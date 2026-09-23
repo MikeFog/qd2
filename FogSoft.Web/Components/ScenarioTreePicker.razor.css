@@ -1,0 +1,7 @@
+/* Диалог выбора из дерева: дерево со своей прокруткой, как список в ObjectSelector. */
+
+.scenario-tree {
+    max-height: 55vh;
+    min-width: min(360px, 100%);
+    overflow: auto;
+}

@@ -1,0 +1,84 @@
+@using FogSoft.Web.Infrastructure
+@using FogSoft.WinForm
+@using FogSoft.WinForm.Classes
+@inject BusyService Busy
+
+@*
+    Выбор объекта из дерева по сценарию связей — веб-аналог TreeViewSelector,
+    который открывает ObjectPicker2 с relationScenario (фильтр «Предмет
+    рекламы» у статистики 158 и 201).
+
+    Дерево то же, что у древовидного экрана: корень — FakeContainer сценария,
+    как в конструкторе TreeViewSelector, дети — BrowserNode.LoadChildren, узлы
+    рисует BrowserNodeView без действий. Выбрать можно любой узел, кроме корня:
+    в десктопе CurrentObject — выбранный узел любого уровня, а у корня
+    (FakeContainer) своего идентификатора нет.
+*@
+
+@if (_error != null)
+{
+    <div class="alert alert-danger mb-0">@_error</div>
+}
+else if (_root == null)
+{
+    <div class="state">Загрузка…</div>
+}
+else
+{
+    <div class="scenario-tree">
+        <BrowserNodeView Node="_root" Selected="_selected" ShowActions="false"
+                         OnToggle="Toggle" OnSelect="Select" />
+    </div>
+}
+
+@code {
+    /// <summary>Имя сценария связей (атрибут relationScenario).</summary>
+    [Parameter, EditorRequired] public string Scenario { get; set; } = default!;
+
+    /// <summary>Выбранный объект; null — ничего не выбрано.</summary>
+    public PresentationObject? SelectedObject => _selected?.Object;
+
+    private BrowserNode? _root;
+    private BrowserNode? _selected;
+    private string? _error;
+
+    protected override Task OnInitializedAsync() => Busy.RunAsync(() => Guard(() =>
+    {
+        RelationScenario scenario = RelationManager.GetScenario(Scenario);
+        var container = new FakeContainer(scenario.Name, Array.Empty<Entity.Action>(), scenario);
+        _root = new BrowserNode { Name = container.Name, Container = container, Expandable = true };
+        _root.Children = BrowserNode.LoadChildren(_root, includeLeaves: true);
+        _root.Expanded = true;
+    }));
+
+    private Task Toggle(BrowserNode node) => Busy.RunAsync(() => Guard(() =>
+    {
+        if (node.Expanded)
+        {
+            node.Expanded = false;
+            return;
+        }
+
+        node.Children ??= BrowserNode.LoadChildren(node, includeLeaves: true);
+        node.Expanded = true;
+    }));
+
+    private void Select(BrowserNode node)
+    {
+        if (node.Parent != null)
+            _selected = node;
+    }
+
+    private void Guard(Action action)
+    {
+        try
+        {
+            _error = null;
+            action();
+        }
+        catch (Exception ex)
+        {
+            _error = ErrorPresenter.Describe(ex);
+        }
+    }
+}

@@ -12,8 +12,8 @@
 
 <div class="tree-node">
     <div class="tree-row @(ReferenceEquals(Node, Selected) ? "tree-row-active" : "") @(ReferenceEquals(Node, MenuNode) ? "tree-row-menu" : "")"
-         @oncontextmenu="e => OnMenu.InvokeAsync(new BrowserNodeMenuRequest(Node, e, false))"
-         @oncontextmenu:preventDefault="true">
+         @oncontextmenu="e => ShowActions ? OnMenu.InvokeAsync(new BrowserNodeMenuRequest(Node, e, false)) : Task.CompletedTask"
+         @oncontextmenu:preventDefault="ShowActions">
         <button type="button" class="tree-caret" disabled="@(!Node.Expandable)"
                 @onclick="() => OnToggle.InvokeAsync(Node)">
             @(Node.Expandable ? (Node.Expanded ? "▾" : "▸") : "")
@@ -22,10 +22,13 @@
                 @onclick="() => OnSelect.InvokeAsync(Node)">
             <i class="bi @Node.Icon entity-icon" aria-hidden="true"></i>@Node.Name
         </button>
-        <button type="button" class="tree-more" title="Действия" aria-label="Действия" aria-haspopup="menu"
-                @onclick="e => OnMenu.InvokeAsync(new BrowserNodeMenuRequest(Node, e, true))">
-            <i class="bi bi-three-dots" aria-hidden="true"></i>
-        </button>
+        @if (ShowActions)
+        {
+            <button type="button" class="tree-more" title="Действия" aria-label="Действия" aria-haspopup="menu"
+                    @onclick="e => OnMenu.InvokeAsync(new BrowserNodeMenuRequest(Node, e, true))">
+                <i class="bi bi-three-dots" aria-hidden="true"></i>
+            </button>
+        }
     </div>
 
     @if (Node.Expanded && Node.Children != null)
@@ -33,7 +36,7 @@
         <div class="tree-children">
             @foreach (var child in Node.Children)
             {
-                <BrowserNodeView Node="child" Selected="Selected" MenuNode="MenuNode"
+                <BrowserNodeView Node="child" Selected="Selected" MenuNode="MenuNode" ShowActions="ShowActions"
                                  OnToggle="OnToggle" OnSelect="OnSelect" OnMenu="OnMenu" />
             }
         </div>
@@ -51,6 +54,12 @@
 
     [Parameter] public EventCallback<BrowserNode> OnToggle { get; set; }
     [Parameter] public EventCallback<BrowserNode> OnSelect { get; set; }
+
+    /// <summary>
+    /// Действия узла («⋯» и правая кнопка). Выключены в диалоге выбора из
+    /// дерева (ScenarioTreePicker): там узел только выбирают.
+    /// </summary>
+    [Parameter] public bool ShowActions { get; set; } = true;
 
     /// <summary>Меню узла: правая кнопка или «⋯».</summary>
     [Parameter] public EventCallback<BrowserNodeMenuRequest> OnMenu { get; set; }
