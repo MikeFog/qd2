@@ -10,12 +10,14 @@
 @isHideBlack BIT = 0,
 @showBlack bit = 1,
 @showWhite bit = 1,
-@loggedUserID smallint 
+@loggedUserID smallint,
+@languageCode VARCHAR(10) = 'ru' -- язык интерфейса веба (docs/tasks/web-i18n.md); десктоп не передаёт
 )
 WITH EXECUTE AS OWNER
 AS
 BEGIN
 	SET NOCOUNT ON;
+	DECLARE @tAction NVARCHAR(200) = dbo.fn_Translate(@languageCode, N'Акция №');
 	
 	Select	@startOfInterval = Convert(datetime, Convert(varchar, @startOfInterval, 112), 112)
 	Select	@endOfInterval = Convert(datetime, Convert(varchar, @endOfInterval, 112), 112)
@@ -157,7 +159,7 @@ WHERE
 		ac.[isConfirmed],
 		a.summa AS totalPrice,
 		us.firstName + Space(1) + us.lastName as creator,
-		'Акция №' + LTRIM(ac.[actionID]) as name,
+		@tAction + LTRIM(ac.[actionID]) as name,
 		f.name as firmName
 	FROM 
 		#tmp1 a

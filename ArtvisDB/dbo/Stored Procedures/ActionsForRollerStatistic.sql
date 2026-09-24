@@ -5,10 +5,12 @@
 @rollerID int,
 @massmediaString varchar(8000),
 @userID smallint = null,
-@loggedUserID smallint 
+@loggedUserID smallint,
+@languageCode VARCHAR(10) = 'ru' -- язык интерфейса веба (docs/tasks/web-i18n.md); десктоп не передаёт
 )
 AS
 SET NOCOUNT ON
+DECLARE @tAction NVARCHAR(200) = dbo.fn_Translate(@languageCode, N'Акция №');
 
 	declare @isRightToViewForeignActions bit, @isRightToViewGroupActions bit
 
@@ -22,7 +24,7 @@ SET NOCOUNT ON
 SELECT distinct
 	ac.*,
 	us.userName as creator,
-	'Акция №' + LTRIM(ac.[actionID]) as name,
+	@tAction + LTRIM(ac.[actionID]) as name,
 	f.name as firmName
 FROM 
 	[Action] ac 

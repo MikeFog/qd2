@@ -7,14 +7,17 @@ CREATE PROCEDURE [dbo].[PackageDiscountPriceLists]
 (
 	@packageDiscountPriceListId INT = NULL,
 	@packageDiscountID INT = NULL,
-	@hidePLInThePast bit = 0
+	@hidePLInThePast bit = 0,
+	@languageCode VARCHAR(10) = 'ru' -- язык интерфейса веба (docs/tasks/web-i18n.md); десктоп не передаёт
 )
 AS
 BEGIN
 	SET NOCOUNT ON;
+	DECLARE @tDiscountsFrom NVARCHAR(200) = dbo.fn_Translate(@languageCode, N'Скидки от ');
+	DECLARE @tTo NVARCHAR(200) = dbo.fn_Translate(@languageCode, N' до ');
 
     SELECT pdpl.*,
-		'Скидки от ' + convert(varchar,pdpl.startDate,104) + case when pdpl.finishDate is null then space(0) else ' до ' + convert(varchar,pdpl.finishDate,104) end as name
+		@tDiscountsFrom + convert(varchar,pdpl.startDate,104) + case when pdpl.finishDate is null then space(0) else @tTo + convert(varchar,pdpl.finishDate,104) end as name
     FROM 
 		[PackageDiscountPriceList] pdpl 
     WHERE 

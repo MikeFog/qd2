@@ -34,10 +34,12 @@
 @managerDiscount float = null,
 @massmediaGroupID smallint = null,
 @showDeleted bit = 0,
-@headCompanyID int = null
+@headCompanyID int = null,
+@languageCode VARCHAR(10) = 'ru' -- язык интерфейса веба (docs/tasks/web-i18n.md); десктоп не передаёт
 )
 AS
 SET NOCOUNT on
+	DECLARE @tAction NVARCHAR(200) = dbo.fn_Translate(@languageCode, N'Акция №');
 	-- Проблема
 	-- a.createDate <= @createDateEnd — при @createDateEnd = '2025-05-01 00:00:00' любая акция, созданная 2025-05-01 11:42, 
 	--отсекается, потому что 11:42 > 00:00.
@@ -74,7 +76,7 @@ SET NOCOUNT on
 	begin 
 		select a.*, 
 			us.userName as creator,
-			'Акция №' + LTRIM(a.[actionID]) + ' (' + LTRIM(f.name) + ')'  as name,
+			@tAction + LTRIM(a.[actionID]) + ' (' + LTRIM(f.name) + ')'  as name,
 			f.name as firmName,
 			coalesce(x.iCount, 0) as iCount,
 			coalesce(x.duration, '00:00') as duration,
@@ -136,7 +138,7 @@ SET NOCOUNT on
 			a.*, 
 			us.userName as creator,
 			--'Акция №' + LTRIM(a.[actionID]) + ' (' + LTRIM(f.name) + ')'  as name,
-			'Акция №' + LTRIM(a.[actionID]) as name,
+			@tAction + LTRIM(a.[actionID]) as name,
 			f.name as firmName,
 			Cast(
 			Case 
@@ -197,7 +199,7 @@ SET NOCOUNT on
 			a.*, 
 			us.userName as creator,
 			--'Акция №' + LTRIM(a.[actionID]) + ' (' + LTRIM(f.name) + ')'  as name,
-			'Акция №' + LTRIM(a.[actionID]) as name,
+			@tAction + LTRIM(a.[actionID]) as name,
 			f.name as firmName,
 			Cast(
 			Case 

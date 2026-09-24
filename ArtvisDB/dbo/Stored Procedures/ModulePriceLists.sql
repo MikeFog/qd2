@@ -4,15 +4,18 @@ CREATE        PROC [dbo].[ModulePriceLists]
 (
 @moduleID smallint = NULL,
 @modulePriceListID smallint = NULL,
-@hideModulePLInThePast bit = 0
+@hideModulePLInThePast bit = 0,
+@languageCode VARCHAR(10) = 'ru' -- язык интерфейса веба (docs/tasks/web-i18n.md); десктоп не передаёт
 )
 
 AS
 SET NOCOUNT ON
+DECLARE @tModule NVARCHAR(200) = dbo.fn_Translate(@languageCode, N'Модуль ')
+DECLARE @tPriceFrom NVARCHAR(200) = dbo.fn_Translate(@languageCode, N' (прайс от ')
 SELECT 
 	mpl.*, 
 	pl.broadcastStart,
-	'Модуль ' + CONVERT(varchar(10), mpl.startDate, 104) + ' - ' + CONVERT(varchar(10), mpl.finishDate, 104) + ' (прайс от ' + CONVERT(varchar(10), pl.startDate, 104) + ')' as NAME,
+	@tModule + CONVERT(varchar(10), mpl.startDate, 104) + ' - ' + CONVERT(varchar(10), mpl.finishDate, 104) + @tPriceFrom + CONVERT(varchar(10), pl.startDate, 104) + ')' as NAME,
 	mm.[roltypeID]
 FROM 
 	[ModulePriceList] mpl

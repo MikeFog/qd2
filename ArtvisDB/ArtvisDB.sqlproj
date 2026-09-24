@@ -168,6 +168,7 @@
     <Build Include="dbo\Functions\fn_IsRightToViewGroupActions.sql" />
     <Build Include="dbo\Functions\f_CheckLinkedTariffWindows.sql" />
     <Build Include="dbo\Functions\fn_GetTariffWindowDateRangeStr.sql" />
+    <Build Include="dbo\Functions\fn_Translate.sql" />
     <Build Include="dbo\Functions\fn_IsRightToViewForeignActions.sql" />
     <Build Include="dbo\Functions\IsRollerInUseByActivatedAction.sql" />
     <Build Include="dbo\Functions\f_IsActiveFilter.sql" />

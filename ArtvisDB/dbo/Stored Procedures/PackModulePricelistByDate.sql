@@ -2,15 +2,17 @@
 (
 @massmediaID SMALLINT = NULL,
 @theDate DATETIME,
-@packModuleID SMALLINT = NULL
+@packModuleID SMALLINT = NULL,
+@languageCode VARCHAR(10) = 'ru' -- язык интерфейса веба (docs/tasks/web-i18n.md); десктоп не передаёт
 )
 AS
 SET NOCOUNT ON
+DECLARE @tPricelistFrom NVARCHAR(200) = dbo.fn_Translate(@languageCode, N'Прайс-лист от ')
 SELECT 
 	mpl.[priceListID],
 	m.massmediaID,
 	mpl.[startDate],
-	'Прайс-лист от ' + CONVERT(varchar(10), mpl.[startDate], 104) as name,
+	@tPricelistFrom + CONVERT(varchar(10), mpl.[startDate], 104) as name,
 	mpl.[finishDate],
 	@packModuleID as packModuleID,
 	mpl.[price], 

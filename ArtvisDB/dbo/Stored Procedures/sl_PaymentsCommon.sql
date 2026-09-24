@@ -1,11 +1,12 @@
 ﻿
 
-CREATE PROC [dbo].[sl_PaymentsCommon]
+CREATE PROC [dbo].[sl_PaymentsCommon] (@languageCode VARCHAR(10) = 'ru') -- язык интерфейса веба (docs/tasks/web-i18n.md); десктоп не передаёт
 AS
 SET NOCOUNT ON
+DECLARE @tFirmPayment NVARCHAR(200) = dbo.fn_Translate(@languageCode, N'Платёж от фирмы ''');
 SELECT
 	p.*,
-	'Платёж от фирмы ''' + f.name + '''' as name,
+	@tFirmPayment + f.name + '''' as name,
 	f.name AS firmName,
 	hc.name as headCompanyName,
 	a.name as agencyName,

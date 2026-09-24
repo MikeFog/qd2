@@ -28,12 +28,14 @@ CREATE procedure [dbo].[Stat_AvgDiscount]
 @ShowBlack bit = 1,
 @Currency int = 1,
 @loggedUserID smallint,
-@actionID int = NULL
+@actionID int = NULL,
+@languageCode VARCHAR(10) = 'ru' -- язык интерфейса веба (docs/tasks/web-i18n.md); десктоп не передаёт
 )
 WITH EXECUTE AS OWNER
 as 
 begin 
 	set nocount on;
+	DECLARE @tAction NVARCHAR(200) = dbo.fn_Translate(@languageCode, N'Акция №');
 
 	declare @massmedias table(massmediaID smallint primary key, myMassmedia bit, foreignMassmedia bit)
 	insert into @massmedias (massmediaID, myMassmedia, foreignMassmedia) 
@@ -213,7 +215,7 @@ begin
 	If	@IsGroupByAgency <> 0
 		Set 	@SQLString = @SQLString + N'Agency.Name as "agency",'
 	If	@IsGroupByActionID <> 0
-		Set 	@SQLString = @SQLString + N'''Акция №'' + cast(r.actionID as varchar) as "actionID",'
+		Set 	@SQLString = @SQLString + N'N''' + REPLACE(@tAction, N'''', N'''''') + N''' + cast(r.actionID as varchar) as "actionID",'
 
 	Set	@SQLString = @SQLString + N' coalesce(sum(r.campaignTariffPrice), 0) as tariffPrice
 		, coalesce(avg(r.campaignVolumeDiscount), 0) as volumeDiscount

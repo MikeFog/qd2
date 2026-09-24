@@ -13,11 +13,13 @@
 @isHideBlack BIT = 0,
 @showBlack bit = 1,
 @showWhite bit = 1,
-@loggedUserID smallint 
+@loggedUserID smallint,
+@languageCode VARCHAR(10) = 'ru' -- язык интерфейса веба (docs/tasks/web-i18n.md); десктоп не передаёт
 )
 WITH EXECUTE AS OWNER
 AS
 SET NOCOUNT ON
+DECLARE @tActionPayment NVARCHAR(200) = dbo.fn_Translate(@languageCode, N'Оплата акции №');
 CREATE TABLE #Agency(agencyID smallint)
 CREATE Table #PaymentType (paymentTypeID smallint)
 
@@ -45,7 +47,7 @@ Else
 
 select distinct
 	psoa.*,
-	'Оплата акции №' + LTrim(psoa.actionID) as name,
+	@tActionPayment + LTrim(psoa.actionID) as name,
 	f.name as firmName,
 	a.name as agencyName,
 	pt.name as paymentTypeName

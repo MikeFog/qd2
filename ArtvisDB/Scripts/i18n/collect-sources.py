@@ -53,6 +53,14 @@ for path in code_files:
                 continue
             add(body.replace('""', '"') if '@' in prefix else unescape(body), 'code')
 
+# Ключи, которые процедуры переводят сами: dbo.fn_Translate(@язык, N'…') (этап 6).
+SQL_KEY = re.compile(r"fn_Translate\(\s*@\w+\s*,\s*N'((?:[^']|'')*)'\s*\)", re.I)
+for dp, dns, fns in os.walk(os.path.join(D, '..', '..', 'dbo')):
+    for fn in fns:
+        if fn.endswith('.sql') and fn != 'fn_Translate.sql':
+            for key in SQL_KEY.findall(io.open(os.path.join(dp, fn), encoding='utf-8-sig').read()):
+                add(key.replace("''", "'"), 'sql')
+
 # Строки Client/Properties/Resources.resx, которые код пропускает через Tr.
 resx = ET.parse(os.path.join(WEB, '..', 'Client', 'Properties', 'Resources.resx')).getroot()
 for data in resx.findall('data'):

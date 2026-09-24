@@ -505,7 +505,7 @@ code	Время выхода меняется только для одной с�
 code	Время выхода по расписанию:	Hora de emisión programada:
 code	Время выхода реальное	Hora de emisión real
 code	Время выхода — в виде чч:мм.	Hora de emisión — en formato hh:mm.
-code	Все	Todos
+code,sql	Все	Todos
 code	Все группы	Todos los grupos
 code	Всего объектов типа '{0}' для объекта '{1}': {2}	Total de objetos de tipo '{0}' para el objeto '{1}': {2}
 code	Всего объектов типа '{0}': {1}	Total de objetos de tipo '{0}': {1}
@@ -671,7 +671,7 @@ code	Подтверждённые рекламные акции	Campañas public
 code	Пока не перенесено	Aún no migrado
 code	Показать	Mostrar
 code	Показать без группировки	Mostrar sin agrupar
-code	Показать все	Mostrar todo
+code,sql	Показать все	Mostrar todo
 code	Показать с группировакой	Mostrar agrupado
 code	Полная продолжительность — в виде мм:сс, например 3:05.	Duración total — en formato mm:ss, por ejemplo 3:05.
 code,column,entity	Пользователь	Usuario
@@ -1029,7 +1029,7 @@ entity	Ролик рекламной кампании (в дне)	Spot de pauta 
 entity	Ролик-незаменен	Spot no sustituido
 entity	Ролик-пустышка	Spot vacío
 entity	Ролики (Статистика по акции)	Spots (estadísticas de la campaña)
-entity	Системные настройки	Configuración del sistema
+entity,sql	Системные настройки	Configuración del sistema
 entity	Содержимое пакетного модуля	Contenido del módulo en paquete
 entity	Сообщение	Mensaje
 entity	Спонсорская программа	Programa de patrocinio
@@ -1397,3 +1397,23 @@ message	Эта операция приведет к окончательному
 message	Эта операция приведет к перемещению рекламной акции '{0}' в "Журнал удалённых рекламных акций". Продолжить?	Esta operación moverá la campaña publicitaria '{0}' al "Registro de campañas publicitarias eliminadas". ¿Continuar?
 message	Эта рекламная акция активирована и уже началась. Для выполнения операции нужны права администратора. Операция прервана.	Esta campaña publicitaria está activada y ya comenzó. Se requieren permisos de administrador para realizar la operación. Operación cancelada.
 message	Этот модуль уже входит в состав комбо-модуля. Операция прервана.	Este módulo ya forma parte de un módulo combo. Operación cancelada.
+sql	 (прайс от 	 (lista del 
+sql	 до 	 al 
+sql	 сек.	 s
+sql	 шт.	 uds.
+sql	Акция №	Campaña N.º 
+sql	Модуль 	Módulo 
+sql	Налог для агентства '	Impuesto de la agencia '
+sql	Оплата акции №	Pago de la campaña N.º 
+sql	Остаток № 	Saldo inicial N.º 
+sql	Пакетная модульная кампания	Pauta de módulos en paquete
+sql	Пакетная модульня кампания	Pauta de módulos en paquete
+sql	Платёж от фирмы '	Pago de la empresa '
+sql	Прайс-лист от 	Lista de precios del 
+sql	Рекламное окно 	Ventana publicitaria 
+sql	Скидка для сумм более 	Descuento para montos mayores a 
+sql	Скидки от 	Descuentos del 
+sql	Тариф 	Tarifa 
+sql	нет тарифных окон	sin ventanas de tarifa
+sql	р.	$
+sql	тарифные окна: 	ventanas de tarifa: 

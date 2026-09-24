@@ -69,6 +69,7 @@ namespace FogSoft.WinForm.DataAccess
 		private struct ParamNames
 		{
 			public const string LoggedUserID = "loggedUserId";
+			public const string LanguageCode = "languageCode";
         }
 
 
@@ -135,6 +136,18 @@ namespace FogSoft.WinForm.DataAccess
         public static void SetActionAuthorization(IActionAuthorization authorization)
         {
             _authorization = authorization ?? throw new ArgumentNullException(nameof(authorization));
+        }
+
+        /// <summary>
+        /// Язык интерфейса для процедур с параметром <c>@languageCode</c>, которым вызывающий
+        /// его не передал (docs/tasks/web-i18n.md, этап 6). Десктоп не задаёт — процедура
+        /// берёт своё умолчание 'ru'; веб подставляет язык пользователя.
+        /// </summary>
+        private static Func<string> _languageCodeProvider;
+
+        public static void SetLanguageCodeProvider(Func<string> provider)
+        {
+            _languageCodeProvider = provider;
         }
 
         private static SqlTransaction _transaction
@@ -772,13 +785,20 @@ end
 			SqlParameter[] cmdParameters =
 				SqlHelperParameterCache.GetSpParameterSet(connection, procedureName);
 
-			SqlParameter[] cmdParametersWithValues = new SqlParameter[parameterValues == null
-			                                                          	? 0
-			                                                          	: Math.Max(parameterValues.Count, cmdParameters.Length)];
+			string languageCode = _languageCodeProvider?.Invoke();
+			SqlParameter[] cmdParametersWithValues = new SqlParameter[cmdParameters.Length];
 			int j = 0;
 			for (int i = 0; i < cmdParameters.Length; i++)
 			{
 				string parameterName = cmdParameters[i].ParameterName.Substring(1);
+				if (languageCode != null
+				    && string.Equals(parameterName, ParamNames.LanguageCode, StringComparison.OrdinalIgnoreCase)
+				    && (parameterValues == null || !parameterValues.ContainsKey(parameterName)))
+				{
+					cmdParameters[i].Value = languageCode;
+					cmdParametersWithValues[j++] = cmdParameters[i];
+					continue;
+				}
 				if (parameterValues != null)
 				{
 					if (parameterValues.ContainsKey(parameterName))

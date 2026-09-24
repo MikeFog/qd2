@@ -13,11 +13,13 @@ CREATE PROCEDURE [dbo].[SpecialActions]
 	@userID smallint = null,
 	@paymentTypeID tinyint = null,
 	@agencyID smallint = null,
-	@loggedUserID smallint
+	@loggedUserID smallint,
+	@languageCode VARCHAR(10) = 'ru' -- язык интерфейса веба (docs/tasks/web-i18n.md); десктоп не передаёт
 )
 as 
 begin 
 	set nocount on;
+	DECLARE @tRemainder NVARCHAR(200) = dbo.fn_Translate(@languageCode, N'Остаток № ');
 
 declare 
 	@isRightToViewForeignActions bit,
@@ -39,7 +41,7 @@ select
 		a.totalPrice as price,
 		a.userID,
 		a.firmID,
-		('Остаток № ' + cast(a.actionID as varchar)) as [name],
+		(@tRemainder + cast(a.actionID as varchar)) as [name],
 		c.agencyID,
 		c.paymentTypeID,
 		ag.name as agency,

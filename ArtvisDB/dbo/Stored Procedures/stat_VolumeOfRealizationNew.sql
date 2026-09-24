@@ -20,12 +20,14 @@
 @massmediaGroupID int = NULL,
 @ShowWhite bit = 1,
 @ShowBlack bit = 1,
-@loggedUserID smallint 
+@loggedUserID smallint,
+@languageCode VARCHAR(10) = 'ru' -- язык интерфейса веба (docs/tasks/web-i18n.md); десктоп не передаёт
 )
 WITH EXECUTE AS OWNER
 As
 
 SET NOCOUNT ON
+DECLARE @tAll NVARCHAR(200) = dbo.fn_Translate(@languageCode, N'Все');
 
 declare @massmedias table(massmediaID smallint primary key, myMassmedia bit, foreignMassmedia bit)
 insert into @massmedias (massmediaID, myMassmedia, foreignMassmedia) 
@@ -219,7 +221,7 @@ If	@IsGroupByAgency <> 0
 If	0 + @IsGroupByPaymentType + @IsGroupByCampaignType + 
 	@IsGroupByMassmedia + @IsGroupByFirm + @IsGroupByAdvertType +
 	@IsGroupByManager + @IsGroupByAgency + @IsGroupByMassmediaGroupType /*+ @IsGroupByCommissionaire*/ = 0
-	set		@SQLString = @SQLString + N'max(''Все'') as "all",'
+	set		@SQLString = @SQLString + N'max(N''' + REPLACE(@tAll, N'''', N'''''') + N''') as "all",'
 
 Set 	@SQLString = @SQLString + 
 		N'case @Summa

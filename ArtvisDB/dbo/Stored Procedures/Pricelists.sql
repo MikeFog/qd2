@@ -2,11 +2,14 @@
 (
     @massmediaID smallint = null,
     @pricelistID smallint = null,
-    @hidePLInThePast bit = 0
+    @hidePLInThePast bit = 0,
+    @languageCode VARCHAR(10) = 'ru' -- язык интерфейса веба (docs/tasks/web-i18n.md); десктоп не передаёт
 )
 AS
 BEGIN
     SET NOCOUNT ON;
+
+    DECLARE @tPricelistFrom NVARCHAR(200) = dbo.fn_Translate(@languageCode, N'Прайс-лист от ');
 
     ;WITH pl0 AS
     (
@@ -29,8 +32,8 @@ BEGIN
     )
     SELECT
         pl.*,
-        N'Прайс-лист от ' + CONVERT(varchar(10), pl.startDate, 104)
-        + N' (' + dbo.fn_GetTariffWindowDateRangeStr(tw.minDate, tw.maxDate, pl.broadcastStart) + N')' AS name,
+        @tPricelistFrom + CONVERT(varchar(10), pl.startDate, 104)
+        + N' (' + dbo.fn_GetTariffWindowDateRangeStr(tw.minDate, tw.maxDate, pl.broadcastStart, @languageCode) + N')' AS name,
         CONVERT(varchar(5), pl.broadcastStart, 114) AS broadcastStartString
     FROM pl0 pl
     LEFT JOIN tw ON tw.pricelistID = pl.pricelistID

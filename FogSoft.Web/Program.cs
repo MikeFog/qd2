@@ -78,7 +78,10 @@ CultureInfo culture = CultureInfo.GetCultureInfo(
 CultureInfo.DefaultThreadCurrentCulture = culture;
 CultureInfo.DefaultThreadCurrentUICulture = culture;
 WebLanguage.PseudoEnabled = app.Environment.IsDevelopment();
-Tr.SetTranslator(new WebTranslator(app.Services.GetRequiredService<CircuitServicesAccessor>()));
+var translator = new WebTranslator(app.Services.GetRequiredService<CircuitServicesAccessor>());
+Tr.SetTranslator(translator);
+// Тот же язык — процедурам с параметром @languageCode (подписи, которые собирает SQL).
+DataAccessor.SetLanguageCodeProvider(() => translator.Current);
 
 // Права на действия начинают проверяться на исполнении, а не только гасить
 // кнопки, как в десктопе: в вебе адрес вызывается напрямую, минуя меню.

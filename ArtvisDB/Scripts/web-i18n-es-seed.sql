@@ -1,5 +1,5 @@
 ﻿/*
-    ДЕПЛОЙ: переводы веб-версии на язык «es» (1398 строк). docs/tasks/web-i18n.md, этап 5.
+    ДЕПЛОЙ: переводы веб-версии на язык «es» (1418 строк). docs/tasks/web-i18n.md, этап 5.
     СГЕНЕРИРОВАН из ArtvisDB/Scripts/i18n/es.tsv скриптом build-seed.py — руками не править.
 
     ПРЕДУСЛОВИЕ     накачен web-i18n-translation-deploy.sql (таблица iTranslation).
@@ -1416,7 +1416,27 @@ INSERT INTO #t ([source], [text]) VALUES
 (N'Эта операция приведет к окончательному удалению рекламной акции ''{0}'' из системы. Продолжить?', N'Esta operación eliminará definitivamente la campaña publicitaria ''{0}'' del sistema. ¿Continuar?'),
 (N'Эта операция приведет к перемещению рекламной акции ''{0}'' в "Журнал удалённых рекламных акций". Продолжить?', N'Esta operación moverá la campaña publicitaria ''{0}'' al "Registro de campañas publicitarias eliminadas". ¿Continuar?'),
 (N'Эта рекламная акция активирована и уже началась. Для выполнения операции нужны права администратора. Операция прервана.', N'Esta campaña publicitaria está activada y ya comenzó. Se requieren permisos de administrador para realizar la operación. Operación cancelada.'),
-(N'Этот модуль уже входит в состав комбо-модуля. Операция прервана.', N'Este módulo ya forma parte de un módulo combo. Operación cancelada.');
+(N'Этот модуль уже входит в состав комбо-модуля. Операция прервана.', N'Este módulo ya forma parte de un módulo combo. Operación cancelada.'),
+(N' (прайс от ', N' (lista del '),
+(N' до ', N' al '),
+(N' сек.', N' s'),
+(N' шт.', N' uds.'),
+(N'Акция №', N'Campaña N.º '),
+(N'Модуль ', N'Módulo '),
+(N'Налог для агентства ''', N'Impuesto de la agencia '''),
+(N'Оплата акции №', N'Pago de la campaña N.º '),
+(N'Остаток № ', N'Saldo inicial N.º '),
+(N'Пакетная модульная кампания', N'Pauta de módulos en paquete'),
+(N'Пакетная модульня кампания', N'Pauta de módulos en paquete'),
+(N'Платёж от фирмы ''', N'Pago de la empresa '''),
+(N'Прайс-лист от ', N'Lista de precios del '),
+(N'Рекламное окно ', N'Ventana publicitaria '),
+(N'Скидка для сумм более ', N'Descuento para montos mayores a '),
+(N'Скидки от ', N'Descuentos del '),
+(N'Тариф ', N'Tarifa '),
+(N'нет тарифных окон', N'sin ventanas de tarifa'),
+(N'р.', N'$'),
+(N'тарифные окна: ', N'ventanas de tarifa: ');
 GO
 
 BEGIN TRANSACTION;

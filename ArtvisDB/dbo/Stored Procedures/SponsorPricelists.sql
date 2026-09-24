@@ -6,14 +6,17 @@ CREATE          PROC [dbo].[SponsorPricelists]
 (
 @sponsorProgramID smallint = NULL,
 @pricelistID smallint = NULL,
-@hideSponsorPLInThePast bit = 0
+@hideSponsorPLInThePast bit = 0,
+@languageCode VARCHAR(10) = 'ru' -- язык интерфейса веба (docs/tasks/web-i18n.md); десктоп не передаёт
 )
 AS
 SET NOCOUNT ON
+DECLARE @tPricelistFrom NVARCHAR(200) = dbo.fn_Translate(@languageCode, N'Прайс-лист от ')
+DECLARE @tTo NVARCHAR(200) = dbo.fn_Translate(@languageCode, N' до ')
 SELECT 
 	spp.*,
 	dbo.fn_Int2Time(spp.bonus) as bonusString,
-	'Прайс-лист от ' + Convert(varchar(8), startDate, 4) + ' до ' + Convert(varchar(8), finishDate, 4)  as name
+	@tPricelistFrom + Convert(varchar(8), startDate, 4) + @tTo + Convert(varchar(8), finishDate, 4)  as name
 FROM 
 	[SponsorProgramPricelist] spp
 WHERE

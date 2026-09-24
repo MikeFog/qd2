@@ -23,12 +23,14 @@
     @IsGroupByAdvertTypeTop bit = 0,
     @ShowWhite bit = 1,
     @ShowBlack bit = 1,
-    @loggedUserID smallint 
+    @loggedUserID smallint,
+    @languageCode VARCHAR(10) = 'ru' -- язык интерфейса веба (docs/tasks/web-i18n.md); десктоп не передаёт
 )
 WITH EXECUTE AS OWNER
 As
 BEGIN
     SET NOCOUNT ON;
+    DECLARE @tAll NVARCHAR(200) = dbo.fn_Translate(@languageCode, N'Все');
 
     IF @StartDay IS NULL OR @FinishDay IS NULL
     BEGIN
@@ -237,7 +239,7 @@ BEGIN
 	IF 0 + @IsGroupByPaymentType + @IsGroupByCampaignType + @IsGroupByMassmedia + @IsGroupByFirm
 		 + @IsGroupByManager + @IsGroupByAgency + @IsGroupByMassmediaGroupType + @IsGroupByHeadCompany
 		 + @IsGroupByAdvertType + @IsGroupByAdvertTypeTop = 0
-		SET @SQLString += N'  max(''Все'') as [all],';
+		SET @SQLString += N'  max(N''' + REPLACE(@tAll, N'''', N'''''') + N''') as [all],';
 
 	-- 2) JOIN’ы для группировок (только если нужны, чтобы не тащить лишнее)
 	-- ВНИМАНИЕ: Firm уже присоединён как f в @JoinSql для фильтра headCompany. Но для group-by firm/headcompany у тебя были другие алиасы.

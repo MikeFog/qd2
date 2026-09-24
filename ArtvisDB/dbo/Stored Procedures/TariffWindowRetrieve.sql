@@ -15,11 +15,13 @@ CREATE PROC [dbo].[TariffWindowRetrieve]
     @massmediaID INT = NULL,
     @showTrafficWindows BIT = 0,
     @showDisabledWindows bit = 1,
-    @useActualTime BIT = 0
+    @useActualTime BIT = 0,
+    @languageCode VARCHAR(10) = 'ru' -- язык интерфейса веба (docs/tasks/web-i18n.md); десктоп не передаёт
 )
 AS
 BEGIN
     SET NOCOUNT ON;
+    DECLARE @tAdWindow NVARCHAR(200) = dbo.fn_Translate(@languageCode, N'Рекламное окно ');
     -- Предотвращаем дедлоки при чтении
     SET TRANSACTION ISOLATION LEVEL READ UNCOMMITTED;
 
@@ -129,7 +131,7 @@ BEGIN
         -- Формируем временный набор (без бесполезного ORDER BY внутри SELECT INTO)
         SELECT
             tw.*,
-            'Рекламное окно ' + CONVERT(varchar(10), windowDateOriginal, 104) + ' ' + 
+            @tAdWindow + CONVERT(varchar(10), windowDateOriginal, 104) + ' ' + 
                 CONVERT(varchar(5), windowDateOriginal, 108)
                 + CASE WHEN windowDateOriginal != windowDateActual 
                        THEN ' (' + CONVERT(varchar(10), windowDateOriginal, 104) + ' ' + CONVERT(varchar(5), windowDateActual, 108) + ')' 
@@ -164,7 +166,7 @@ BEGIN
     BEGIN
         SELECT
             tw.*,
-            'Рекламное окно ' + CONVERT(varchar(10), windowDateOriginal, 104) + ' ' + 
+            @tAdWindow + CONVERT(varchar(10), windowDateOriginal, 104) + ' ' + 
                 CONVERT(varchar(5), windowDateOriginal, 108) AS [name],
             DATEPART(hh, CASE WHEN @useActualTime = 1 THEN windowDateActual ELSE windowDateOriginal END) AS [hour],
             DATEPART(mi, CASE WHEN @useActualTime = 1 THEN windowDateActual ELSE windowDateOriginal END) AS [min],

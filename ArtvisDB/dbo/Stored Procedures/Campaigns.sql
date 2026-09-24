@@ -3,17 +3,20 @@
 @actionID int = null,
 @campaignID int = null,
 @massmediaID smallint = null,
-@loggedUserID smallint = null
+@loggedUserID smallint = null,
+@languageCode VARCHAR(10) = 'ru' -- язык интерфейса веба (docs/tasks/web-i18n.md); десктоп не передаёт
 )
 as
 set nocount on
+DECLARE @tPackModuleCampaign NVARCHAR(200) = dbo.fn_Translate(@languageCode, N'Пакетная модульная кампания');
+DECLARE @tPackModuleCampaignTypo NVARCHAR(200) = dbo.fn_Translate(@languageCode, N'Пакетная модульня кампания');
 
 IF (@actionID IS NOT NULL OR @campaignID IS NOT NULL /* (@campaignID IS NOT NULL AND @massmediaID IS NULL AND @actionID IS NULL)*/)
 begin
 	SELECT
 		cm.*,
 		CASE cm.[campaignTypeID]
-			WHEN 4 THEN 'Пакетная модульная кампания'
+			WHEN 4 THEN @tPackModuleCampaign
 			ELSE mm.NAME + isnull(' (' + mg.name +')', '')
 		END AS name	,
 		mm.name as massmediaName,
@@ -66,7 +69,7 @@ begin
 	SELECT distinct
 		cm.*,
 		CASE cm.[campaignTypeID]
-			WHEN 4 THEN 'Пакетная модульная кампания'
+			WHEN 4 THEN @tPackModuleCampaign
 			ELSE mm.NAME + isnull(' (' + mg.name +')', '')
 		END AS name	,
 		mm.name as massmediaName,
@@ -107,7 +110,7 @@ begin
 	union all
 	(SELECT DISTINCT
 		cm.*,
-		'Пакетная модульня кампания' AS name,
+		@tPackModuleCampaignTypo AS name,
 		mm.name as massmediaName,
 		f.[name] AS firmName,
 		ct.name as campaignTypeName,

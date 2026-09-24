@@ -10,15 +10,17 @@ CREATE      PROC [dbo].[sponsorTariffList]
 @thursday bit = Null,
 @friday bit = Null,
 @saturday bit = Null,
-@sunday bit = Null
+@sunday bit = Null,
+@languageCode VARCHAR(10) = 'ru' -- язык интерфейса веба (docs/tasks/web-i18n.md); десктоп не передаёт
 )
 as
 SET NOCOUNT ON
+DECLARE @tTariff NVARCHAR(200) = dbo.fn_Translate(@languageCode, N'Тариф ');
 SELECT 
 	st.*,
 	Convert(varchar(5), [time], 108) as timeString,
 	dbo.fn_Int2Time([duration]) as tariffDuration,
-	'Тариф ' + 	Convert(varchar(5), [time], 108) as [name] 
+	@tTariff + 	Convert(varchar(5), [time], 108) as [name] 
 FROM 
 	[SponsorTariff] st
 WHERE

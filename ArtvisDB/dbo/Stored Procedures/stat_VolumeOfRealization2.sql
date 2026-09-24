@@ -23,12 +23,14 @@
 @IsGroupByAdvertTypeTop bit = 0,
 @ShowWhite bit = 1,
 @ShowBlack bit = 1,
-@loggedUserID smallint 
+@loggedUserID smallint,
+@languageCode VARCHAR(10) = 'ru' -- язык интерфейса веба (docs/tasks/web-i18n.md); десктоп не передаёт
 )
 WITH EXECUTE AS OWNER
 As
 
 SET NOCOUNT ON
+DECLARE @tAll NVARCHAR(200) = dbo.fn_Translate(@languageCode, N'Все');
 
 --IF @IsGroupByHeadCompany = 1 SET @IsGroupByFirm = 0
 
@@ -144,7 +146,7 @@ If	@IsGroupByAdvertTypeTop <> 0
 If	0 + @IsGroupByPaymentType + @IsGroupByCampaignType + @IsGroupByMassmedia + @IsGroupByFirm
 	  + @IsGroupByManager + @IsGroupByAgency + @IsGroupByMassmediaGroupType + @IsGroupByHeadCompany
 	  + @IsGroupByAdvertType + @IsGroupByAdvertTypeTop = 0
-	set		@SQLString = @SQLString + N'max(''Все'') as "all",'
+	set		@SQLString = @SQLString + N'max(N''' + REPLACE(@tAll, N'''', N'''''') + N''') as "all",'
 
 Set 	@SQLString = @SQLString + 
 		N'case @Summa

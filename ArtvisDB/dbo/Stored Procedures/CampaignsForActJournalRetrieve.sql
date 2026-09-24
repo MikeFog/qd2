@@ -7,11 +7,14 @@
 @showBlack bit = 1,
 @showWhite bit = 1,
 @actionID INT = null,
-@loggedUserID smallint 
+@loggedUserID smallint,
+@languageCode VARCHAR(10) = 'ru' -- язык интерфейса веба (docs/tasks/web-i18n.md); десктоп не передаёт
 )
 WITH EXECUTE AS OWNER
 AS
 Set Nocount On
+DECLARE @tSec NVARCHAR(200) = dbo.fn_Translate(@languageCode, N' сек.');
+DECLARE @tPcs NVARCHAR(200) = dbo.fn_Translate(@languageCode, N' шт.');
 
 If @agencyID Is Null Begin
 	RaisError('AgencyShouldBeSelected', 16, 1)
@@ -251,7 +254,7 @@ Select
 	pt.name as paymentTypeName,
 	u.LastName + ' ' + u.FirstName as userName,
 	r.mistake,
-	case when r.showByDuration = 1 then dbo.fn_Int2Time(r.issuesDuration) + ' сек.' else cast(r.issuesCount as nvarchar(10)) + ' шт.' end as saleVolume
+	case when r.showByDuration = 1 then dbo.fn_Int2Time(r.issuesDuration) + @tSec else cast(r.issuesCount as nvarchar(10)) + @tPcs end as saleVolume
 From 
 	@res r
 	Inner Join Campaign c On r.CampaignId = c.CampaignId

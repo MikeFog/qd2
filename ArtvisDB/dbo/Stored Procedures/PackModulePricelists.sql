@@ -9,16 +9,19 @@ CREATE      PROC [dbo].[PackModulePricelists]
 (
 @packModuleID smallint = null,
 @pricelistID smallint = null,
-@hidePLInThePast bit = 0
+@hidePLInThePast bit = 0,
+@languageCode VARCHAR(10) = 'ru' -- язык интерфейса веба (docs/tasks/web-i18n.md); десктоп не передаёт
 )
 as
 
 SET NOCOUNT ON
+DECLARE @tPricelistFrom NVARCHAR(200) = dbo.fn_Translate(@languageCode, N'Прайс-лист от ')
+DECLARE @tTo NVARCHAR(200) = dbo.fn_Translate(@languageCode, N' до ')
 SELECT DISTINCT
 	pl.[pricelistID], 
 	pl.[packModuleID],
 	pl.[startDate],
-	'Прайс-лист от ' + CONVERT(varchar(10), pl.[startDate], 104) + ' до ' + CONVERT(varchar(10), pl.finishDate, 104) as name,
+	@tPricelistFrom + CONVERT(varchar(10), pl.[startDate], 104) + @tTo + CONVERT(varchar(10), pl.finishDate, 104) as name,
 	pl.[finishDate],
 	pl.[price],
 	pl.[extraChargeFirstRoller],
