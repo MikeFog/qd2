@@ -56,7 +56,7 @@ public sealed class BrowserNode
 	public static List<BrowserNode> LoadChildren(BrowserNode node, bool includeLeaves = false)
 	{
 		IObjectContainer parent = node.Container
-			?? throw new InvalidOperationException("У листа дерева нет детей.");
+			?? throw new InvalidOperationException("У листа дерева нет детей."); // i18n-ok: ошибка разработчика (вызов на листе)
 
 		var children = new List<BrowserNode>();
 		foreach (PresentationObject obj in parent)

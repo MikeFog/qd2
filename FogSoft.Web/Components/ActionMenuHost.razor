@@ -1,4 +1,5 @@
 @using FogSoft.Web.Infrastructure
+@using FogSoft.WinForm.Classes
 @implements IAsyncDisposable
 @inject ActionMenuService Menu
 @inject IJSRuntime JS
@@ -29,8 +30,6 @@
     private IJSObjectReference? _module;
     private Guid _placed;
 
-    private const string NotPortedHint = "В вебе пока нет";
-
     private RenderFragment ItemsFragment(IReadOnlyList<ActionMenuItem> items) => @<text>
         @foreach (var item in items)
         {
@@ -48,7 +47,7 @@
             if (item.Children.Count > 0)
             {
                 <div class="@css am-parent" role="menuitem" tabindex="0" aria-haspopup="true"
-                     aria-disabled="@(off ? "true" : "false")" title="@(item.Ported ? null : NotPortedHint)">
+                     aria-disabled="@(off ? "true" : "false")" title="@(item.Ported ? null : Tr.T("В вебе пока нет"))">
                     @ItemBody(item)
                     <i class="bi bi-chevron-right am-chevron" aria-hidden="true"></i>
                     <div class="am-menu am-sub" role="menu">
@@ -59,7 +58,7 @@
             }
 
             <button type="button" role="menuitem" class="@css"
-                    aria-disabled="@(off ? "true" : "false")" title="@(item.Ported ? null : NotPortedHint)"
+                    aria-disabled="@(off ? "true" : "false")" title="@(item.Ported ? null : Tr.T("В вебе пока нет"))"
                     @onclick="() => Pick(item)" @onclick:stopPropagation="true">
                 @ItemBody(item)
             </button>
@@ -71,7 +70,7 @@
         <span class="am-text">@item.Text</span>
         @if (!item.Ported)
         {
-            <span class="am-hint">скоро</span>
+            <span class="am-hint">@Tr.T("скоро")</span>
         }
         else if (item.Hint != null)
         {

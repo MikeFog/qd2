@@ -1,4 +1,5 @@
 @using FogSoft.Web.Infrastructure
+@using FogSoft.WinForm.Classes
 
 @*
     Один узел дерева древовидного экрана, рекурсивно рисующий своих детей.
@@ -24,7 +25,7 @@
         </button>
         @if (ShowActions)
         {
-            <button type="button" class="tree-more" title="Действия" aria-label="Действия" aria-haspopup="menu"
+            <button type="button" class="tree-more" title="@(Tr.T("Действия"))" aria-label="@(Tr.T("Действия"))" aria-haspopup="menu"
                     @onclick="e => OnMenu.InvokeAsync(new BrowserNodeMenuRequest(Node, e, true))">
                 <i class="bi bi-three-dots" aria-hidden="true"></i>
             </button>

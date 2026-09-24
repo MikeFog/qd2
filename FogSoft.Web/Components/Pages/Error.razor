@@ -1,18 +1,20 @@
 ﻿@page "/Error"
 @using System.Diagnostics
+@using FogSoft.WinForm.Classes
 
-<PageTitle>Error</PageTitle>
+<PageTitle>@Tr.T("Ошибка")</PageTitle>
 
-<h1 class="text-danger">Error.</h1>
-<h2 class="text-danger">An error occurred while processing your request.</h2>
+<h1 class="text-danger">@Tr.T("Ошибка.")</h1>
+<h2 class="text-danger">@Tr.T("При обработке запроса произошла ошибка.")</h2>
 
 @if (ShowRequestId)
 {
     <p>
-        <strong>Request ID:</strong> <code>@RequestId</code>
+        <strong>@Tr.T("Идентификатор запроса:")</strong> <code>@RequestId</code>
     </p>
 }
 
+@* i18n-ok: блок ниже — пояснение для разработчиков, оставлен по-английски *@
 <h3>Development Mode</h3>
 <p>
     Swapping to <strong>Development</strong> environment will display more detailed information about the error that occurred.

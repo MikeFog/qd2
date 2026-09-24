@@ -42,11 +42,11 @@
 
 @if (Data == null)
 {
-    <div class="state">Загрузка…</div>
+    <div class="state">@Tr.T("Загрузка…")</div>
 }
 else if (Data.Rows.Count == 0)
 {
-    <div class="state">@EmptyText</div>
+    <div class="state">@(EmptyText ?? Tr.T("Записей нет."))</div>
 }
 else
 {
@@ -58,7 +58,7 @@ else
                     {
                         <th class="col-check" @onclick:stopPropagation="true">
                             <input type="checkbox" class="form-check-input" @ref="_headerCheckboxRef"
-                                   checked="@AllSelected" @onchange="ToggleAll" title="Отметить все" />
+                                   checked="@AllSelected" @onchange="ToggleAll" title="@(Tr.T("Отметить все"))" />
                         </th>
                     }
                     <th class="col-icon"></th>
@@ -93,7 +93,7 @@ else
                             <td title="@Display(row, a)">
                                 @if (IsBoolean(a))
                                 {
-                                    @if (Display(row, a) == BoolYes)
+                                    @if (Display(row, a) == Tr.T("Да"))
                                     {
                                         <span class="bool-check">✓</span>
                                     }
@@ -115,7 +115,7 @@ else
                                         <i class="bi @quick.Icon" aria-hidden="true"></i>
                                     </button>
                                 }
-                                <button type="button" class="row-btn" title="Действия" aria-label="Действия" aria-haspopup="menu"
+                                <button type="button" class="row-btn" title="@(Tr.T("Действия"))" aria-label="@(Tr.T("Действия"))" aria-haspopup="menu"
                                         @onclick="e => OpenMenu(row, e, fromButton: true)" @onclick:stopPropagation="true">
                                     <i class="bi bi-three-dots" aria-hidden="true"></i>
                                 </button>
@@ -140,11 +140,11 @@ else
                                 <td>
                                     @if (_totals.TryGetValue(a.Name, out decimal total))
                                     {
-                                        <button type="button" class="total-btn total-value" title="Сумма по колонке; щелчок — скрыть" @onclick="() => ToggleTotal(a.Name)">Σ @FormatTotal(a, total)</button>
+                                        <button type="button" class="total-btn total-value" title="@(Tr.T("Сумма по колонке; щелчок — скрыть"))" @onclick="() => ToggleTotal(a.Name)">Σ @FormatTotal(a, total)</button>
                                     }
                                     else
                                     {
-                                        <button type="button" class="total-btn" title="Сумма по колонке" aria-label="Сумма по колонке «@Tr.T(a.Alias)»" @onclick="() => ToggleTotal(a.Name)">Σ</button>
+                                        <button type="button" class="total-btn" title="@(Tr.T("Сумма по колонке"))" aria-label="@(Tr.Format("Сумма по колонке «{0}»", Tr.T(a.Alias)))" @onclick="() => ToggleTotal(a.Name)">Σ</button>
                                     }
                                 </td>
                             }
@@ -171,8 +171,8 @@ else
     /// <summary>Строки. null — ещё не загружены.</summary>
     [Parameter] public DataTable? Data { get; set; }
 
-    /// <summary>Текст, когда строк нет.</summary>
-    [Parameter] public string EmptyText { get; set; } = "Записей нет.";
+    /// <summary>Текст, когда строк нет. null — «Записей нет.»</summary>
+    [Parameter] public string? EmptyText { get; set; }
 
     /// <summary>
     /// Только показать: ни действий над строками, ни открытия карточки по клику.
@@ -274,8 +274,6 @@ else
         return NotifySelectionChangedAsync();
     }
 
-    private const string BoolYes = "Да";
-
     /// <summary>
     /// Текст ячейки. Для boolean-колонок — «Да»/пусто, а не «True»/«False»
     /// из ToString(): десктоп для таких колонок вообще не показывает текст
@@ -293,7 +291,7 @@ else
             return "";
 
         if (IsBoolean(attribute))
-            return ParseHelper.GetBooleanFromObject(v, false) ? BoolYes : "";
+            return ParseHelper.GetBooleanFromObject(v, false) ? Tr.T("Да") : "";
 
         // Десктопный SmartGrid.CreateDataGridColumn ставит Style.Format "c"
         // (валюта, с разделителем тысяч и знаком ₽) для money-колонок и "f"
@@ -714,7 +712,7 @@ else
         if (effect == null)
         {
             if (reportUnavailable)
-                await Failed.InvokeAsync("Это действие для записи недоступно.");
+                await Failed.InvokeAsync(Tr.T("Это действие для записи недоступно."));
             return;
         }
 

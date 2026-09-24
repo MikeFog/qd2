@@ -1,5 +1,6 @@
 @page "/todo/{CodeName}/{*Title}"
 @rendermode InteractiveServer
+@using FogSoft.WinForm.Classes
 
 @*
     Заглушка для пунктов меню, которые ещё не перенесены на веб. Тот же
@@ -8,21 +9,20 @@
     исключение, либо (хуже) тихо ничего не делал.
 *@
 
-<PageTitle>Пока не перенесено</PageTitle>
+<PageTitle>@Tr.T("Пока не перенесено")</PageTitle>
 
 <div class="alert alert-secondary" style="max-width: 40rem">
     <h5>«@UnescapedTitle»</h5>
     <p class="mb-1">
-        Этот пункт меню пока не перенесён на веб — он не сводится к простому
-        журналу по метаданным (<code>codeName = @CodeName</code>).
+        @Tr.T("Этот пункт меню пока не перенесён на веб — он не сводится к простому журналу по метаданным")
+        (<code>codeName = @CodeName</code>).
     </p>
     <p class="mb-0 text-muted">
-        Относится к этапу 2 (свои движки — FakeContainer/MasterDetail) или
-        этапу 3 (специализированные экраны) плана веб-миграции.
+        @Tr.T("Относится к этапу 2 (свои движки — FakeContainer/MasterDetail) или этапу 3 (специализированные экраны) плана веб-миграции.")
     </p>
 </div>
 
-<a class="btn btn-outline-secondary btn-sm" href="/">На главную</a>
+<a class="btn btn-outline-secondary btn-sm" href="/">@Tr.T("На главную")</a>
 
 @code {
     [Parameter] public string CodeName { get; set; } = "";

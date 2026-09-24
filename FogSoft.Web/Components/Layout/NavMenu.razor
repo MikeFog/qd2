@@ -1,5 +1,6 @@
 @using System.Configuration
 @using FogSoft.Web.Infrastructure
+@using FogSoft.WinForm.Classes
 @implements IDisposable
 @inject UserSession Session
 @inject MenuAccess Access
@@ -25,7 +26,7 @@
 
 <nav class="nav-tree">
     <div class="nav-item">
-        <NavLink class="nav-link" href="" Match="NavLinkMatch.All">Начало</NavLink>
+        <NavLink class="nav-link" href="" Match="NavLinkMatch.All">@Tr.T("Начало")</NavLink>
     </div>
 
     @foreach (var node in _menu)
@@ -45,7 +46,7 @@
     /// (appSettings/Title, у заказчика «АРТВИС»).
     /// </summary>
     private static string Title =>
-        ConfigurationManager.AppSettings["Title"] is { Length: > 0 } title ? title : "Система";
+        ConfigurationManager.AppSettings["Title"] is { Length: > 0 } title ? title : Tr.T("Система");
 
     protected override void OnInitialized()
     {

@@ -29,7 +29,7 @@
     <section class="filter">
         <button type="button" class="filter-toggle" @onclick="() => _filterOpen = !_filterOpen">
             <span class="filter-caret">@(_filterOpen ? "▾" : "▸")</span>
-            Отбор
+            @Tr.T("Отбор")
         </button>
 
         @if (_filterOpen)
@@ -46,7 +46,7 @@
                             <button type="button" role="tab"
                                     class="tab @(index == _activePage ? "tab-active" : "")"
                                     @onclick="() => _activePage = index">
-                                @(VisiblePages[index].Caption is { Length: > 0 } c ? c : $"Страница {index + 1}")
+                                @(VisiblePages[index].Caption is { Length: > 0 } c ? c : Tr.Format("Страница {0}", index + 1))
                             </button>
                         }
                     </div>
@@ -63,7 +63,7 @@
                                текста — и туда можно было бы написать что угодно вместо
                                выбора из списка. *@
                             <div class="filter-note">
-                                @field.Caption — @field.Unsupported в фильтре пока не поддержан (этап 2).
+                                @Tr.Format("{0} — {1} в фильтре пока не поддержан (этап 2).", field.Caption, field.Unsupported)
                             </div>
                         }
                         else if (field.Type is { IsBoolean: true })
@@ -114,7 +114,7 @@
                                            value="@FilterPickerName(field)" />
                                     <button type="button" class="btn btn-outline-secondary"
                                             disabled="@(!IsFilterUsed(field.Name) || IsManagerLocked(field))"
-                                            @onclick="() => SelectFilterPicker(field)"><i class="bi bi-search" aria-hidden="true"></i>Выбрать</button>
+                                            @onclick="() => SelectFilterPicker(field)"><i class="bi bi-search" aria-hidden="true"></i>@Tr.T("Выбрать")</button>
                                 </div>
                             }
                             else
@@ -132,10 +132,10 @@
                     @if (_invalid.Count > 0)
                     {
                         <div class="alert alert-danger filter-error" role="alert">
-                            Не заполнено: @string.Join(", ", InvalidCaptions()). Задайте значение или снимите галочку.
+                            @Tr.Format("Не заполнено: {0}.", string.Join(", ", InvalidCaptions())) @Tr.T("Задайте значение или снимите галочку.")
                         </div>
                     }
-                    <button class="btn btn-sm btn-outline-secondary" @onclick="ApplyClicked"><i class="bi bi-funnel" aria-hidden="true"></i>Применить</button>
+                    <button class="btn btn-sm btn-outline-secondary" @onclick="ApplyClicked"><i class="bi bi-funnel" aria-hidden="true"></i>@Tr.T("Применить")</button>
                 </div>
             </div>
         }
@@ -495,7 +495,7 @@
     private static string FilterLookupDisplay(DataRowView row) =>
         row.Row.Table.Columns.Contains(Constants.Parameters.Name)
             ? AsFilterText(row[Constants.Parameters.Name])
-            : "(в наборе нет колонки name)";
+            : Tr.T("(в наборе нет колонки name)");
 
     /// <summary>
     /// Значение для &lt;select&gt;. Пока галочка не отмечена, ключа в
@@ -575,7 +575,7 @@
             builder.CloseComponent();
         };
 
-        if (await Dialogs.ShowAsync("Выбрать объект", body, okText: "Выбрать") != DialogOutcome.Ok)
+        if (await Dialogs.ShowAsync(Tr.T("Выбрать объект"), body, okText: Tr.T("Выбрать")) != DialogOutcome.Ok)
             return;
 
         // Пустой выбор — не команда очистить: тот же случай, что и у
@@ -610,7 +610,7 @@
             builder.CloseComponent();
         };
 
-        if (await Dialogs.ShowAsync("Выбрать объект", body, okText: "Выбрать") != DialogOutcome.Ok)
+        if (await Dialogs.ShowAsync(Tr.T("Выбрать объект"), body, okText: Tr.T("Выбрать")) != DialogOutcome.Ok)
             return;
 
         // Как и у выбора из списка: пустой выбор — не команда очистить.

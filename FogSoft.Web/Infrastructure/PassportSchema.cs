@@ -119,7 +119,7 @@ public static class PassportSchema
 		// а значение пропадало бы.
 		if ((node.Name == "field" || node.Name == "lookup" || node.Name == "objectPicker")
 			&& string.IsNullOrEmpty(Attr(node, PageControl.Attributes.Name)))
-			return $"{node.Name} без атрибута name";
+			return Tr.Format("{0} без атрибута name", node.Name);
 
 		if (node.Name == "field" || node.Name == "label")
 			return null;
@@ -139,7 +139,7 @@ public static class PassportSchema
 			if (pageType == PageTypes.Filter && !string.IsNullOrEmpty(Attr(node, PageControl.Attributes.Entity)))
 				return null;
 
-			return "lookup без источника";
+			return Tr.T("lookup без источника");
 		}
 
 		if (node.Name == "image")
@@ -151,11 +151,11 @@ public static class PassportSchema
 			// них строит дерево по пустым именам и падает на первой строке.
 			// Набора по source может не оказаться — это видно уже при отрисовке.
 			if (string.IsNullOrEmpty(Attr(node, PageControl.Attributes.Source)))
-				return "treeselector без source";
+				return Tr.T("treeselector без source");
 			return string.IsNullOrEmpty(Attr(node, PageControl.Attributes.ColumnId))
 				|| string.IsNullOrEmpty(Attr(node, PageControl.Attributes.ColumnParentid))
 				|| string.IsNullOrEmpty(Attr(node, PageControl.Attributes.ColumnName))
-				? "treeselector без columnid/columnparentid/columnname"
+				? Tr.T("treeselector без columnid/columnparentid/columnname")
 				: null;
 		}
 
@@ -165,16 +165,16 @@ public static class PassportSchema
 			// в ObjectsSelector запасного пути по entity нет вовсе, в отличие
 			// от objectPicker.
 			if (string.IsNullOrEmpty(Attr(node, PageControl.Attributes.Source)))
-				return "selector без source";
+				return Tr.T("selector без source");
 			return string.IsNullOrEmpty(Attr(node, PageControl.Attributes.Entity))
-				? "selector без entity"
+				? Tr.T("selector без entity")
 				: null;
 		}
 
 		if (node.Name == "objectPicker")
 		{
 			if (string.IsNullOrEmpty(Attr(node, PageControl.Attributes.Entity)))
-				return "objectPicker без entity";
+				return Tr.T("objectPicker без entity");
 
 			// relationScenario уводит выбор в TreeViewSelector — дерево по
 			// сценарию связей (веб: ScenarioTreePicker). На ArtvisDev такие
@@ -184,7 +184,7 @@ public static class PassportSchema
 			return string.IsNullOrEmpty(Attr(node, PageControl.Attributes.RelationScenario))
 				|| pageType == PageTypes.Filter
 				? null
-				: "objectPicker с relationScenario";
+				: Tr.T("objectPicker с relationScenario");
 		}
 
 		return node.Name;

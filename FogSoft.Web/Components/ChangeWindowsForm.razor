@@ -1,4 +1,5 @@
 @using Merlin.Classes
+@using FogSoft.WinForm.Classes
 
 @*
     Содержимое диалога «Изменить окна…» экрана «Трафик» — одно действие вместо трёх
@@ -16,28 +17,28 @@
 
 <div class="change-windows">
     <div class="scope">
-        <div class="times">Время выхода по расписанию: <b class="tabular">@TimesText</b></div>
+        <div class="times">@Tr.T("Время выхода по расписанию:") <b class="tabular">@TimesText</b></div>
         <label class="radio">
             <input type="radio" class="form-check-input" name="scope" checked="@(!Value.PeriodMode)"
                    @onchange="() => SetMode(false)" />
-            Только выделенные окна (@Value.SelectedCount)
+            @Tr.Format("Только выделенные окна ({0})", Value.SelectedCount)
         </label>
         <label class="radio">
             <input type="radio" class="form-check-input" name="scope" checked="@Value.PeriodMode"
                    @onchange="() => SetMode(true)" />
-            Повторить на период — эти времена в выбранные дни недели
+            @Tr.T("Повторить на период — эти времена в выбранные дни недели")
         </label>
 
         @if (Value.PeriodMode)
         {
             <div class="period">
                 <label>
-                    Начиная с
+                    @Tr.T("Начиная с")
                     <input type="date" class="form-control form-control-sm" value="@Value.Start.ToString("yyyy-MM-dd")"
                            @onchange="e => SetDate(e, start: true)" />
                 </label>
                 <label>
-                    Оканчивая
+                    @Tr.T("Оканчивая")
                     <input type="date" class="form-control form-control-sm" value="@Value.Finish.ToString("yyyy-MM-dd")"
                            @onchange="e => SetDate(e, start: false)" />
                 </label>
@@ -59,14 +60,14 @@
     <div class="summary">
         @if (Value.Target != null)
         {
-            <div><b>Изменится окон: @Value.Target.Count</b></div>
+            <div><b>@Tr.Format("Изменится окон: {0}", Value.Target.Count)</b></div>
             @if (Value.Target.Count > 0)
             {
-                <div class="text-muted">Сейчас продолжительность: @Value.Target.DurationSummary</div>
-                <div class="text-muted">Сейчас полная: @Value.Target.TotalSummary</div>
+                <div class="text-muted">@Tr.Format("Сейчас продолжительность: {0}", Value.Target.DurationSummary)</div>
+                <div class="text-muted">@Tr.Format("Сейчас полная: {0}", Value.Target.TotalSummary)</div>
                 @if (Value.Target.MovedCount > 0)
                 {
-                    <div class="text-muted">Уже перенесено по времени: @Value.Target.MovedCount</div>
+                    <div class="text-muted">@Tr.Format("Уже перенесено по времени: {0}", Value.Target.MovedCount)</div>
                 }
             }
         }
@@ -74,21 +75,21 @@
 
     <div class="fields">
         <label>
-            Новое время выхода
+            @Tr.T("Новое время выхода")
             <input type="time" class="form-control form-control-sm" disabled="@(!Value.CanChangeTime)"
                    value="@Value.NewTime" @onchange="e => Value.NewTime = e.Value?.ToString()" />
             @if (!Value.CanChangeTime)
             {
-                <span class="text-muted note">только для окон одного времени</span>
+                <span class="text-muted note">@Tr.T("только для окон одного времени")</span>
             }
         </label>
         <label>
-            Новая продолжительность, мм:сс
-            <input class="form-control form-control-sm tabular" placeholder="не менять" @bind="Value.NewDuration" />
+            @Tr.T("Новая продолжительность, мм:сс")
+            <input class="form-control form-control-sm tabular" placeholder="@(Tr.T("не менять"))" @bind="Value.NewDuration" />
         </label>
         <label>
-            Новая полная продолжительность, мм:сс
-            <input class="form-control form-control-sm tabular" placeholder="не менять" @bind="Value.NewTotal" />
+            @Tr.T("Новая полная продолжительность, мм:сс")
+            <input class="form-control form-control-sm tabular" placeholder="@(Tr.T("не менять"))" @bind="Value.NewTotal" />
         </label>
     </div>
 </div>

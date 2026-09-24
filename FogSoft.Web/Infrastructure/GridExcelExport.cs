@@ -55,8 +55,6 @@ public static class GridExcelExport
     // Даты до этого срока Excel не хранит числом (1900 — начало его календаря).
     private static readonly DateTime MinExcelDate = new(1900, 1, 1);
 
-    private const string BoolYes = "Да", BoolNo = "Нет";
-
     /// <summary>
     /// Собирает книгу. <paramref name="columns"/> — колонки в порядке показа,
     /// <paramref name="rows"/> — строки в порядке показа (с учётом сортировки).
@@ -86,7 +84,7 @@ public static class GridExcelExport
             strings.Write(stringsPart);
 
             workbook.Workbook = new Workbook(
-                new Sheets(new Sheet { Id = workbook.GetIdOfPart(sheetPart), SheetId = 1, Name = "Лист1" }));
+                new Sheets(new Sheet { Id = workbook.GetIdOfPart(sheetPart), SheetId = 1, Name = Tr.T("Лист1") }));
             workbook.Workbook.Save();
         }
 
@@ -103,7 +101,7 @@ public static class GridExcelExport
     {
         var invalid = Path.GetInvalidFileNameChars();
         var name = new StringBuilder();
-        foreach (char ch in string.IsNullOrWhiteSpace(title) ? "Список" : title.Trim())
+        foreach (char ch in string.IsNullOrWhiteSpace(title) ? Tr.T("Список") : title.Trim())
             name.Append(Array.IndexOf(invalid, ch) >= 0 ? '-' : ch);
 
         // Windows не любит точку и пробел в конце имени; длинное имя режем —
@@ -257,7 +255,7 @@ public static class GridExcelExport
             return new Cell { StyleIndex = StText };   // пустая, но с рамкой
 
         if (kind == Kind.Boolean || v is bool)
-            return StringCell(strings, ParseHelper.GetBooleanFromObject(v, false) ? BoolYes : BoolNo, StText);
+            return StringCell(strings, ParseHelper.GetBooleanFromObject(v, false) ? Tr.T("Да") : Tr.T("Нет"), StText);
 
         // Атрибут-время: часть суток. Значение приходит и как TimeSpan (тип time
         // в БД), и как DateTime (тип datetime, из которого берётся время).

@@ -25,16 +25,15 @@
 @if (SecurityManager.LoggedUser == null)
 {
     <div class="state">
-        <div class="state-title">Вы не вошли в систему</div>
-        <a href="/">Перейти к входу</a>
+        <div class="state-title">@Tr.T("Вы не вошли в систему")</div>
+        <a href="/">@Tr.T("Перейти к входу")</a>
     </div>
 }
 else if (_access != JournalAccess.Allowed)
 {
     <div class="state">
-        <div class="state-title">Доступ закрыт</div>
-        Этот экран вам не разрешён. Права на экраны выдаются вместе с пунктами меню —
-        обратитесь к администратору системы.
+        <div class="state-title">@Tr.T("Доступ закрыт")</div>
+        @Tr.T("Этот экран вам не разрешён. Права на экраны выдаются вместе с пунктами меню — обратитесь к администратору системы.")
     </div>
 }
 else
@@ -42,10 +41,10 @@ else
     <div class="traffic">
         <ScreenToolbar Title="@_title">
             <button class="btn btn-sm btn-outline-secondary" @onclick="MassClose">
-                <i class="bi bi-lock" aria-hidden="true"></i>Отметить дни обработанными…
+                <i class="bi bi-lock" aria-hidden="true"></i>@Tr.T("Отметить дни обработанными…")
             </button>
             <button class="btn btn-sm btn-outline-secondary" @onclick="RefreshAll">
-                <i class="bi bi-arrow-clockwise" aria-hidden="true"></i>Обновить
+                <i class="bi bi-arrow-clockwise" aria-hidden="true"></i>@Tr.T("Обновить")
             </button>
         </ScreenToolbar>
 
@@ -56,7 +55,7 @@ else
 
         <div class="traffic-body @(_selected != null ? "with-panel" : null)">
             <aside class="stations">
-                <select class="form-select form-select-sm" aria-label="Группа станций" @onchange="ChangeGroup">
+                <select class="form-select form-select-sm" aria-label="@(Tr.T("Группа станций"))" @onchange="ChangeGroup">
                     @if (_groups != null)
                     {
                         foreach (DataRowView g in _groups)
@@ -81,7 +80,7 @@ else
                                         @s[Massmedia.ParamNames.GroupName]
                                         @if (closed != null)
                                         {
-                                            <span class="closed-through" title="День обработан по этой дате">
+                                            <span class="closed-through" title="@(Tr.T("День обработан по этой дате"))">
                                                 <i class="bi bi-lock-fill" aria-hidden="true"></i>@DisplayFormat.Date(closed.Value)
                                             </span>
                                         }
@@ -97,8 +96,8 @@ else
                 @if (_stationId == null)
                 {
                     <div class="state">
-                        <div class="state-title">Выберите станцию</div>
-                        Слева — станции выбранной группы; у закрытых — дата, по которую день обработан.
+                        <div class="state-title">@Tr.T("Выберите станцию")</div>
+                        @Tr.T("Слева — станции выбранной группы; у закрытых — дата, по которую день обработан.")
                     </div>
                 }
                 else
@@ -108,13 +107,13 @@ else
                         <div class="transfer-bar">
                             <i class="bi bi-box-arrow-right" aria-hidden="true"></i>
                             <span>
-                                Перенос выпусков (@_transfer.Issues.Count) из окна
+                                @Tr.Format("Перенос выпусков ({0}) из окна", _transfer.Issues.Count)
                                 <b class="tabular">@DisplayFormat.DayMonthTime(_transfer.Source.WindowDate)</b> —
-                                щёлкните окно, куда перенести
+                                @Tr.T("щёлкните окно, куда перенести")
                             </span>
-                            <button type="button" class="btn btn-sm btn-outline-secondary" title="Отменить перенос (Esc)"
+                            <button type="button" class="btn btn-sm btn-outline-secondary" title="@(Tr.T("Отменить перенос (Esc)"))"
                                     @onclick="CancelTransfer">
-                                Отмена
+                                @Tr.T("Отмена")
                             </button>
                         </div>
                     }
@@ -131,11 +130,11 @@ else
                                 @if (_transfer == null && _selection.Count > 0)
                                 {
                                     <span class="selection-bar">
-                                        <span class="selection-count">Выделено окон: @_selection.Count</span>
+                                        <span class="selection-count">@Tr.Format("Выделено окон: {0}", _selection.Count)</span>
                                         <button type="button" class="btn btn-sm btn-primary" @onclick="() => ChangeWindows(null)">
-                                            <i class="bi bi-pencil-square" aria-hidden="true"></i>Изменить окна…
+                                            <i class="bi bi-pencil-square" aria-hidden="true"></i>@Tr.T("Изменить окна…")
                                         </button>
-                                        <button type="button" class="btn btn-sm btn-outline-secondary" title="Снять выделение (Esc)"
+                                        <button type="button" class="btn btn-sm btn-outline-secondary" title="@(Tr.T("Снять выделение (Esc)"))"
                                                 @onclick="ClearSelection">
                                             <i class="bi bi-x-lg" aria-hidden="true"></i>
                                         </button>
@@ -152,16 +151,16 @@ else
                 <aside class="window-panel">
                     <div class="panel-head">
                         <div>
-                            <div class="panel-title tabular">Окно @DisplayFormat.DateAndTime(_selected.WindowDate)</div>
+                            <div class="panel-title tabular">@Tr.Format("Окно {0}", DisplayFormat.DateAndTime(_selected.WindowDate))</div>
                             <div class="panel-sub">@_selected.Text@WindowWeekGrid.StatusText(_selected)</div>
                             @if (_selected.IsModified)
                             {
-                                <div class="panel-deviations">Не как в тарифе: @string.Join("; ", _selected.Deviations)</div>
+                                <div class="panel-deviations">@Tr.Format("Не как в тарифе: {0}", string.Join("; ", _selected.Deviations))</div>
                             }
                         </div>
-                        <button type="button" class="btn btn-sm btn-outline-secondary" title="Карточка окна"
+                        <button type="button" class="btn btn-sm btn-outline-secondary" title="@(Tr.T("Карточка окна"))"
                                 @onclick="() => OpenPassport(_selected)">
-                            <i class="bi bi-card-text" aria-hidden="true"></i>Карточка
+                            <i class="bi bi-card-text" aria-hidden="true"></i>@Tr.T("Карточка")
                         </button>
                     </div>
                     @if (_issues is { Rows.Count: > 0 })
@@ -169,22 +168,22 @@ else
                         <div class="panel-bar">
                             @if (_checkedIssues > 0)
                             {
-                                <span>Отмечено: @_checkedIssues</span>
+                                <span>@Tr.Format("Отмечено: {0}", _checkedIssues)</span>
                                 <button type="button" class="btn btn-sm btn-primary" disabled="@(_transfer != null)"
                                         @onclick="StartTransfer">
-                                    <i class="bi bi-box-arrow-right" aria-hidden="true"></i>Перенести в окно…
+                                    <i class="bi bi-box-arrow-right" aria-hidden="true"></i>@Tr.T("Перенести в окно…")
                                 </button>
                             }
                             else
                             {
-                                <span class="text-muted">Отметьте выпуски, чтобы перенести их в другое окно.</span>
+                                <span class="text-muted">@Tr.T("Отметьте выпуски, чтобы перенести их в другое окно.")</span>
                             }
                         </div>
                     }
                     <div class="panel-issues">
                         <ObjectList @ref="_issueList" Entity="_issueEntity" Data="_issues" ReadOnly="true" Selectable="true"
                                     SelectionChanged="n => _checkedIssues = n"
-                                    EmptyText="В окне нет выпусков." />
+                                    EmptyText="@(Tr.T("В окне нет выпусков."))" />
                     </div>
                 </aside>
             }
@@ -193,7 +192,7 @@ else
 }
 
 @code {
-    private string _title = "Трафик-менеджмент";
+    private string _title = Tr.T("Трафик-менеджмент");
     private string? _stationName;
     private JournalAccess _access = JournalAccess.Allowed;
     private string? _error;
@@ -336,7 +335,7 @@ else
     /// </summary>
     private RenderFragment<DateTime> DayLockButton => day =>
     @<button type="button" class="day-lock @(IsClosed(day) ? "is-closed" : null)"
-             title="@(IsClosed(day) ? $"Снять отметку «обработан» с {DisplayFormat.DayMonth(day)}" : $"Отметить обработанным по {DisplayFormat.DayMonth(day)}")"
+             title="@(IsClosed(day) ? Tr.Format("Снять отметку «обработан» с {0}", DisplayFormat.DayMonth(day)) : Tr.Format("Отметить обработанным по {0}", DisplayFormat.DayMonth(day)))"
              @onclick="() => ToggleDay(day)" @onclick:stopPropagation="true">
         <i class="bi @(IsClosed(day) ? "bi-unlock" : "bi-lock")" aria-hidden="true"></i>
     </button>;
@@ -351,11 +350,11 @@ else
         bool reopen = IsClosed(day);
         DateTime newDate = reopen ? day.AddDays(-1) : day;
         string text = reopen
-            ? $"Снять отметку «обработан» со станции «{_stationName}» начиная с {DisplayFormat.Date(day)}? Станция будет обработана по {DisplayFormat.Date(newDate)}."
-            : $"Отметить станцию «{_stationName}» обработанной по {DisplayFormat.Date(day)} включительно? Выпуски этих дней сможет менять только трафик-менеджер и администратор.";
+            ? Tr.Format("Снять отметку «обработан» со станции «{0}» начиная с {1}? Станция будет обработана по {2}.", _stationName, DisplayFormat.Date(day), DisplayFormat.Date(newDate))
+            : Tr.Format("Отметить станцию «{0}» обработанной по {1} включительно? Выпуски этих дней сможет менять только трафик-менеджер и администратор.", _stationName, DisplayFormat.Date(day));
 
-        if (await Dialogs.ShowAsync(reopen ? "Снять отметку" : "День обработан", b => b.AddContent(0, text),
-                okText: reopen ? "Снять отметку" : "Отметить") != DialogOutcome.Ok)
+        if (await Dialogs.ShowAsync(reopen ? Tr.T("Снять отметку") : Tr.T("День обработан"), b => b.AddContent(0, text),
+                okText: reopen ? Tr.T("Снять отметку") : Tr.T("Отметить")) != DialogOutcome.Ok)
             return;
 
         int id = _stationId.Value;
@@ -380,15 +379,15 @@ else
 
         while (true)
         {
-            if (await Dialogs.ShowAsync("Отметить дни обработанными", b =>
+            if (await Dialogs.ShowAsync(Tr.T("Отметить дни обработанными"), b =>
                 {
                     b.OpenComponent<MassCloseForm>(0);
                     b.AddComponentParameter(1, nameof(MassCloseForm.Value), model);
                     b.CloseComponent();
-                }, okText: "Отметить") != DialogOutcome.Ok)
+                }, okText: Tr.T("Отметить")) != DialogOutcome.Ok)
                 return;
 
-            model.Message = model.Selected.Count == 0 ? "Отметьте хотя бы одну станцию." : null;
+            model.Message = model.Selected.Count == 0 ? Tr.T("Отметьте хотя бы одну станцию.") : null;
             if (model.Message == null)
                 break;
         }
@@ -419,9 +418,9 @@ else
         });
 
         if (errors.Rows.Count > 0)
-            await Tables.ShowAsync($"Не отмечено станций: {errors.Rows.Count}", errors,
-                new Entity.Attribute("name", "Станция", "nvarchar"),
-                new Entity.Attribute("description", "Причина", "nvarchar"));
+            await Tables.ShowAsync(Tr.Format("Не отмечено станций: {0}", errors.Rows.Count), errors,
+                new Entity.Attribute("name", "Станция", "nvarchar"), // i18n-ok: заголовок колонки переводит ObjectList при выводе (Tr.T(a.Alias))
+                new Entity.Attribute("description", "Причина", "nvarchar")); // i18n-ok: заголовок колонки переводит ObjectList при выводе (Tr.T(a.Alias))
     }
 
     // ---------- Окно ----------
@@ -474,8 +473,8 @@ else
         _menuRow = row;
         var items = new[]
         {
-            new ActionMenuItem { Name = SelectRowAction, Text = "Выделить строку", Icon = "bi-distribute-horizontal", Enabled = true, Ported = true },
-            new ActionMenuItem { Name = ChangeWindowsAction, Text = $"Изменить окна {row.Time}…", Icon = "bi-pencil-square", Enabled = true, Ported = true },
+            new ActionMenuItem { Name = SelectRowAction, Text = Tr.T("Выделить строку"), Icon = "bi-distribute-horizontal", Enabled = true, Ported = true },
+            new ActionMenuItem { Name = ChangeWindowsAction, Text = Tr.Format("Изменить окна {0}…", row.Time), Icon = "bi-pencil-square", Enabled = true, Ported = true },
         };
         string? picked = await Menu.ShowAsync(items, e.ClientX, e.ClientY, fromButton: true);
         _menuRow = null;
@@ -547,18 +546,18 @@ else
 
         while (true)
         {
-            if (await Dialogs.ShowAsync("Изменить окна", b =>
+            if (await Dialogs.ShowAsync(Tr.T("Изменить окна"), b =>
                 {
                     b.OpenComponent<ChangeWindowsForm>(0);
                     b.AddComponentParameter(1, nameof(ChangeWindowsForm.Value), model);
                     b.AddComponentParameter(2, nameof(ChangeWindowsForm.ScopeChanged), scopeChanged);
                     b.CloseComponent();
-                }, okText: "Изменить") != DialogOutcome.Ok)
+                }, okText: Tr.T("Изменить")) != DialogOutcome.Ok)
                 return;
 
             model.Message = ParseChange(model, out WindowChange change);
             if (model.Message == null && model.Target == null)
-                model.Message = "Уточните период и дни недели.";
+                model.Message = Tr.T("Уточните период и дни недели.");
             if (model.Message == null)
                 model.Message = TrafficManagement.Validate(model.Target!, change);
             if (model.Message != null)
@@ -586,14 +585,14 @@ else
         if (!string.IsNullOrWhiteSpace(model.NewTime))
         {
             if (!TimeSpan.TryParse(model.NewTime, out TimeSpan time))
-                return "Время выхода — в виде чч:мм.";
+                return Tr.T("Время выхода — в виде чч:мм.");
             change.NewTime = new TimeSpan(time.Hours, time.Minutes, 0);
         }
 
         if (!TryParseDuration(model.NewDuration, out int? duration))
-            return "Продолжительность — в виде мм:сс, например 2:56.";
+            return Tr.T("Продолжительность — в виде мм:сс, например 2:56.");
         if (!TryParseDuration(model.NewTotal, out int? total))
-            return "Полная продолжительность — в виде мм:сс, например 3:05.";
+            return Tr.T("Полная продолжительность — в виде мм:сс, например 3:05.");
         change.NewDuration = duration;
         change.NewTotal = total;
         return null;
@@ -661,9 +660,9 @@ else
         if (plan == null)
             return;
 
-        string question = $"Перенести выпуски ({plan.Items.Count}) из окна {DisplayFormat.DateAndTime(source.Source.WindowDate)} "
-                          + $"в окно {DisplayFormat.DateAndTime(destination.WindowDate)}?";
-        if (await Dialogs.ShowAsync("Перенос выпусков", b =>
+        string question = Tr.Format("Перенести выпуски ({0}) из окна {1} в окно {2}?", plan.Items.Count,
+                                    DisplayFormat.DateAndTime(source.Source.WindowDate), DisplayFormat.DateAndTime(destination.WindowDate));
+        if (await Dialogs.ShowAsync(Tr.T("Перенос выпусков"), b =>
             {
                 b.OpenElement(0, "p");
                 b.AddContent(1, question);
@@ -680,7 +679,7 @@ else
                     }
                     b.CloseElement();
                 }
-            }, okText: "Перенести") != DialogOutcome.Ok)
+            }, okText: Tr.T("Перенести")) != DialogOutcome.Ok)
             return;
 
         var errors = new DataTable();
@@ -704,9 +703,9 @@ else
         });
 
         if (errors.Rows.Count > 0)
-            await Tables.ShowAsync($"Не перенесено выпусков: {errors.Rows.Count} из {plan.Items.Count}", errors,
-                new Entity.Attribute("name", "Ролик", "nvarchar"),
-                new Entity.Attribute("description", "Причина", "nvarchar"));
+            await Tables.ShowAsync(Tr.Format("Не перенесено выпусков: {0} из {1}", errors.Rows.Count, plan.Items.Count), errors,
+                new Entity.Attribute("name", "Ролик", "nvarchar"), // i18n-ok: заголовок колонки переводит ObjectList при выводе (Tr.T(a.Alias))
+                new Entity.Attribute("description", "Причина", "nvarchar")); // i18n-ok: заголовок колонки переводит ObjectList при выводе (Tr.T(a.Alias))
     }
 
     private async Task OpenPassport(TariffWindowCell cell)
@@ -733,7 +732,7 @@ else
             items.Add(new ActionMenuItem
             {
                 Name = ChangeWindowsAction,
-                Text = _selection.Count > 1 ? $"Изменить выделенные окна ({_selection.Count})…" : "Изменить окно…",
+                Text = _selection.Count > 1 ? Tr.Format("Изменить выделенные окна ({0})…", _selection.Count) : Tr.T("Изменить окно…"),
                 Icon = "bi-pencil-square", Enabled = true, Ported = true,
             });
             string? picked = await Menu.ShowAsync(items, e.ClientX, e.ClientY, fromButton: false);

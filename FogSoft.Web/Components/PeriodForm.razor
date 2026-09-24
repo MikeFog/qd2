@@ -1,3 +1,5 @@
+@using FogSoft.WinForm.Classes
+
 @*
     Содержимое окна выбора интервала (PeriodDialog): две даты, пояснение и ошибка
     проверки. Значения пишутся прямо в модель — её читает PeriodDialog по «ОК».
@@ -13,11 +15,11 @@
 }
 <div class="period">
     <label>
-        Начиная с
+        @Tr.T("Начиная с")
         <input type="date" class="form-control form-control-sm" @bind="Value.Start" />
     </label>
     <label>
-        Оканчивая
+        @Tr.T("Оканчивая")
         <input type="date" class="form-control form-control-sm" @bind="Value.Finish" />
     </label>
 </div>

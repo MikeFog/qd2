@@ -57,7 +57,7 @@ public static class MenuRoutes
 			{ "miBalance", new JournalRoute(Entities.BalanceIssues, ManagerFilter: true) },
 			{ "miBalanceFromRSection", new JournalRoute(Entities.BalanceIssues, ManagerFilter: true) },
 			{ "miAnnouncements", new JournalRoute(Entities.Announcement,
-				BulkAction: new BulkAction("MarkAsRead", "Пометить все как прочтенное")) },
+				BulkAction: new BulkAction("MarkAsRead", "Пометить все как прочтенное")) }, // i18n-ok: подпись кнопки, переводить при показе (Journal.razor, bulk.Caption)
 			{ "miBank", new JournalRoute(Entities.Bank) },
 			{ "miBonusesStat", new JournalRoute(Entities.StatBonuses) },
 			{ "miFirm", new JournalRoute(Entities.Firm) },
@@ -83,12 +83,12 @@ public static class MenuRoutes
 			{ "miStats.FillPercentage", new JournalRoute(Entities.StatsFillPercentage) },
 			{ "miStats.ModuleFinancy", new JournalRoute(Entities.StatModuleFinancy, ManagerFilter: true) },
 			{ "miStats.ModuleLoading", new JournalRoute(Entities.StatModuleLoading, ManagerFilter: true,
-				Caption: "Фактическое размещение рекламных модулей") },
+				Caption: "Фактическое размещение рекламных модулей") }, // i18n-ok: переводится при показе (Journal.razor, Title)
 			{ "miStats.PackModuleFinancy", new JournalRoute(Entities.StatPackModuleFinancy, ManagerFilter: true) },
 			{ "miStats.PackModuleLoading", new JournalRoute(Entities.StatPackModuleLoading, ManagerFilter: true,
-				Caption: "Фактическое размещение пакетных рекламных модулей") },
+				Caption: "Фактическое размещение пакетных рекламных модулей") }, // i18n-ok: переводится при показе (Journal.razor, Title)
 			{ "miStats.SponsorBusiness", new JournalRoute(Entities.StatsSponsorBusiness, ManagerFilter: true,
-				Caption: "Фактическое размещение спонсорских программ") },
+				Caption: "Фактическое размещение спонсорских программ") }, // i18n-ok: переводится при показе (Journal.razor, Title)
 			{ "miStats.VolumeByPaymentType", new JournalRoute(Entities.StatVolumeByPaymentType, ManagerFilter: true) },
 			// Действующий код десктопа — простой журнал; рядом закомментирован вариант с графиком (GraphForm).
 			{ "miStats.VolumeOfRealization", new JournalRoute(Entities.StatsVolumeofRealization, ManagerFilter: true) },
@@ -133,45 +133,45 @@ public static class MenuRoutes
 	private static BrowserRoute ActionJournal(string scenario, string caption,
 		Entities firm, Entities action, Entities headCompany) =>
 		new(scenario, caption,
-			() => new ActionContainer(RelationManager.GetScenario(scenario), caption, firm, action, headCompany),
+			() => new ActionContainer(RelationManager.GetScenario(scenario), Tr.T(caption), firm, action, headCompany),
 			ManagerFilter: true);
 
 	/// <summary>Подтверждённые акции — один экран за тремя пунктами меню.</summary>
 	private static readonly BrowserRoute ConfirmedActions = ActionJournal(
-		RelationScenarios.ConfirmedAction, "Подтверждённые рекламные акции",
+		RelationScenarios.ConfirmedAction, "Подтверждённые рекламные акции", // i18n-ok: переводится при открытии (ActionJournal)
 		Entities.FirmWithConfirmedActions, Entities.Action, Entities.HeadCompanyWithConfirmedActions);
 
 	public static readonly IReadOnlyDictionary<string, BrowserRoute> Browser =
 		new Dictionary<string, BrowserRoute>(StringComparer.OrdinalIgnoreCase)
 		{
-			{ "miTariff", new BrowserRoute(RelationScenarios.Tariff, "Радиостанция") },
+			{ "miTariff", new BrowserRoute(RelationScenarios.Tariff, "Радиостанция") }, // i18n-ok: подпись корня, переводить при показе (Browser.razor, route.RootName)
 			// Десктоп — отдельная форма TariffWindowGenerationForm (своё дерево «Tariff
 			// Windows» + сетка окон). В вебе это то же дерево «Рекламные тарифы», сразу на
 			// вкладке окон у прайс-листа (решение 2026-09-23, docs/tasks/web-tariffgrid.md).
-			{ "miTariffWindow", new BrowserRoute(RelationScenarios.Tariff, "Радиостанция", OpenWindowsTab: true) },
-			{ "miModules", new BrowserRoute(RelationScenarios.Module, "Радиостанция") },
-			{ "miSponsorTariff", new BrowserRoute(RelationScenarios.SponsorProgramm, "Радиостанция") },
-			{ "miDiscount", new BrowserRoute(RelationScenarios.Discount, "Скидки") },
-			{ "miPackageDiscounts", new BrowserRoute(RelationScenarios.PackageDiscount, "Скидки") },
-			{ "miPackModules", new BrowserRoute(RelationScenarios.PackModules, "Пакетные модули") },
-			{ "miComboModules", new BrowserRoute(RelationScenarios.ComboModules, "Комбо-модули") },
-			{ "miAdvertSubject", new BrowserRoute(RelationScenarios.AdvertTypes, "Предметы рекламы",
+			{ "miTariffWindow", new BrowserRoute(RelationScenarios.Tariff, "Радиостанция", OpenWindowsTab: true) }, // i18n-ok: подпись корня, переводить при показе (Browser.razor, route.RootName)
+			{ "miModules", new BrowserRoute(RelationScenarios.Module, "Радиостанция") }, // i18n-ok: подпись корня, переводить при показе (Browser.razor, route.RootName)
+			{ "miSponsorTariff", new BrowserRoute(RelationScenarios.SponsorProgramm, "Радиостанция") }, // i18n-ok: подпись корня, переводить при показе (Browser.razor, route.RootName)
+			{ "miDiscount", new BrowserRoute(RelationScenarios.Discount, "Скидки") }, // i18n-ok: подпись корня, переводить при показе (Browser.razor, route.RootName)
+			{ "miPackageDiscounts", new BrowserRoute(RelationScenarios.PackageDiscount, "Скидки") }, // i18n-ok: подпись корня, переводить при показе (Browser.razor, route.RootName)
+			{ "miPackModules", new BrowserRoute(RelationScenarios.PackModules, "Пакетные модули") }, // i18n-ok: подпись корня, переводить при показе (Browser.razor, route.RootName)
+			{ "miComboModules", new BrowserRoute(RelationScenarios.ComboModules, "Комбо-модули") }, // i18n-ok: подпись корня, переводить при показе (Browser.razor, route.RootName)
+			{ "miAdvertSubject", new BrowserRoute(RelationScenarios.AdvertTypes, "Предметы рекламы", // i18n-ok: подпись корня, переводить при показе (Browser.razor, route.RootName)
 				() => new AdvertTypeContainer()) },
 			// Десктоп открывает их через MasterDetailForm; веб — деревом по
 			// сценарию из кода (CodeScenario), метаданных сценарий не требует.
 			// Подпись корня — имя мастера, как у соседних маршрутов.
-			{ "miAgencyTax", new BrowserRoute("Агентства и налоги", "Агентство",
-				ScenarioFactory: () => CodeScenario.MasterDetail("Агентства и налоги", Entities.Agency, Entities.AgencyTax)) },
-			{ "miHeadOrganizations", new BrowserRoute("Группа компаний", "Группа компаний",
-				ScenarioFactory: () => CodeScenario.MasterDetail("Группа компаний", Entities.HeadCompany, Entities.Firm)) },
+			{ "miAgencyTax", new BrowserRoute("Агентства и налоги", "Агентство", // i18n-ok: ключ — имя сценария связей; подпись корня переводить при показе (Browser.razor)
+				ScenarioFactory: () => CodeScenario.MasterDetail("Агентства и налоги", Entities.Agency, Entities.AgencyTax)) }, // i18n-ok: ключ — имя сценария связей
+			{ "miHeadOrganizations", new BrowserRoute("Группа компаний", "Группа компаний", // i18n-ok: ключ — имя сценария связей; подпись корня переводить при показе (Browser.razor)
+				ScenarioFactory: () => CodeScenario.MasterDetail("Группа компаний", Entities.HeadCompany, Entities.Firm)) }, // i18n-ok: ключ — имя сценария связей
 			{ "miActionJournal", ConfirmedActions },
 			{ "miActionJournalBuh", ConfirmedActions },
 			{ "miActionJournalTraffic", ConfirmedActions },
 			{ "miActionJournalUnconfirmed", ActionJournal(
-				RelationScenarios.UnconfirmedAction, "Макеты рекламных акций",
+				RelationScenarios.UnconfirmedAction, "Макеты рекламных акций", // i18n-ok: переводится при открытии (ActionJournal)
 				Entities.FirmWithUnconfirmedActions, Entities.Action, Entities.HeadCompanyWithUnconfirmedActions) },
 			{ "miActionJournalDeleted", ActionJournal(
-				RelationScenarios.DeletedAction, "Удалённые рекламные акции",
+				RelationScenarios.DeletedAction, "Удалённые рекламные акции", // i18n-ok: переводится при открытии (ActionJournal)
 				Entities.FirmWithDeletedActions, Entities.ActionDeleted, Entities.HeadCompanyWithDeletedActions) },
 		};
 }

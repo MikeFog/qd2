@@ -1,3 +1,4 @@
+using FogSoft.WinForm.Classes;
 using Microsoft.AspNetCore.Components;
 using Microsoft.AspNetCore.Components.Rendering;
 
@@ -41,7 +42,7 @@ public sealed class ProgressDialog
 	{
 		var state = new State { Total = steps.Count };
 		Task<DialogOutcome> dialog = _dialogs.ShowAsync(title, builder => Render(builder, state),
-			okText: null, cancelText: "Остановить");
+			cancelText: Tr.T("Остановить"), showOk: false);
 
 		for (int i = 0; i < steps.Count; i++)
 		{
@@ -92,7 +93,7 @@ public sealed class ProgressDialog
 
 		builder.OpenElement(9, "p");
 		builder.AddAttribute(10, "class", "mt-2 mb-0 tabular");
-		builder.AddContent(11, $"{state.Done} из {state.Total}" + (state.Current != null ? $" · {state.Current}" : ""));
+		builder.AddContent(11, Tr.Format("{0} из {1}", state.Done, state.Total) + (state.Current != null ? $" · {state.Current}" : ""));
 		builder.CloseElement();
 	}
 

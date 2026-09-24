@@ -62,7 +62,7 @@
 @if (Busy.IsBusy)
 {
     <div class="shell-busy">
-        <div class="shell-busy-indicator" role="status" aria-label="Выполняется загрузка">
+        <div class="shell-busy-indicator" role="status" aria-label="@(Tr.T("Выполняется загрузка"))">
             <div class="shell-busy-bar"></div>
             <div class="shell-busy-spinner spinner-border" aria-hidden="true"></div>
         </div>
@@ -70,8 +70,8 @@
 }
 
 <div id="blazor-error-ui" data-nosnippet>
-    Произошла непредвиденная ошибка.
-    <a href="." class="reload">Перезагрузить</a>
+    @Tr.T("Произошла непредвиденная ошибка.")
+    <a href="." class="reload">@Tr.T("Перезагрузить")</a>
     <span class="dismiss">🗙</span>
 </div>
 

@@ -1,3 +1,4 @@
+using FogSoft.WinForm.Classes;
 using Microsoft.AspNetCore.Components;
 
 namespace FogSoft.Web.Infrastructure;
@@ -52,11 +53,17 @@ public sealed class DialogService
 	/// <summary>Сообщает хосту, что нужно перерисоваться.</summary>
 	public event Func<Task>? Changed;
 
-	/// <param name="okText">Надпись на подтверждающей кнопке; null — кнопки нет (окно прогресса).</param>
-	/// <param name="cancelText">Надпись на кнопке отказа.</param>
-	public async Task<DialogOutcome> ShowAsync(string title, RenderFragment body, string? okText = "Сохранить",
-		string cancelText = "Отмена")
+	/// <param name="okText">Надпись на подтверждающей кнопке; null — «Сохранить».</param>
+	/// <param name="cancelText">Надпись на кнопке отказа; null — «Отмена».</param>
+	/// <param name="showOk">false — подтверждающей кнопки нет (окно прогресса).</param>
+	public async Task<DialogOutcome> ShowAsync(string title, RenderFragment body, string? okText = null,
+		string? cancelText = null, bool showOk = true)
 	{
+		// Надписи по умолчанию переводятся здесь, в момент показа, а не в
+		// умолчаниях параметров: те вычисляются при компиляции.
+		okText = showOk ? okText ?? Tr.T("Сохранить") : null;
+		cancelText ??= Tr.T("Отмена");
+
 		// RunContinuationsAsynchronously обязателен: без него продолжение
 		// вызывающего кода выполнилось бы прямо внутри обработчика нажатия
 		// кнопки, на диспетчере circuit, что легко приводит к взаимной
@@ -105,4 +112,4 @@ public sealed class DialogService
 /// <param name="Body">Содержимое — любой компонент, например паспорт.</param>
 /// <param name="OkText">Надпись на подтверждающей кнопке; null — кнопки нет.</param>
 /// <param name="CancelText">Надпись на кнопке отказа.</param>
-public sealed record DialogRequest(string Title, RenderFragment Body, string? OkText, string CancelText = "Отмена");
+public sealed record DialogRequest(string Title, RenderFragment Body, string? OkText, string CancelText);

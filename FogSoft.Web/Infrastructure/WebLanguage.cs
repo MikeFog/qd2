@@ -38,10 +38,11 @@ public static class WebLanguage
 	public static string Default { get; } =
 		Normalize(System.Configuration.ConfigurationManager.AppSettings["Language"]) ?? Russian;
 
+	// Названия языков — каждое на своём языке, не переводятся.
 	public static IReadOnlyList<(string Code, string Name)> Available =>
 		PseudoEnabled
-			? new[] { (Russian, "Русский"), (Spanish, "Español"), (Pseudo, "[·Псевдо·]") }
-			: new[] { (Russian, "Русский"), (Spanish, "Español") };
+			? new[] { (Russian, "Русский"), (Spanish, "Español"), (Pseudo, "[·Псевдо·]") } // i18n-ok
+			: new[] { (Russian, "Русский"), (Spanish, "Español") }; // i18n-ok
 
 	/// <summary>Код языка, если он поддерживается; иначе null.</summary>
 	public static string? Normalize(string? code)

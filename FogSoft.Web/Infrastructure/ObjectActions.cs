@@ -211,13 +211,13 @@ public sealed class ObjectActions
 			[Merlin.Classes.PricelistWindows.ActionNames.GenerateWindows] = (s, t) => s.GenerateWindows(t),
 			[Merlin.Classes.PricelistWindows.ActionNames.DeleteGeneratedWindows] = (s, t) => s.DeleteGeneratedWindows(t, null),
 			[Merlin.Classes.PricelistWindows.ActionNames.DisabledTariffWindows] = (s, t) =>
-				s.ChangeWindowsStatus(t, Merlin.Classes.PricelistWindows.ActionNames.DisabledTariffWindows, "Запретить вносить выпуски в окна"),
+				s.ChangeWindowsStatus(t, Merlin.Classes.PricelistWindows.ActionNames.DisabledTariffWindows, Tr.T("Запретить вносить выпуски в окна")),
 			[Merlin.Classes.PricelistWindows.ActionNames.EnabledTariffWindows] = (s, t) =>
-				s.ChangeWindowsStatus(t, Merlin.Classes.PricelistWindows.ActionNames.EnabledTariffWindows, "Разрешить вносить выпуски в окна"),
+				s.ChangeWindowsStatus(t, Merlin.Classes.PricelistWindows.ActionNames.EnabledTariffWindows, Tr.T("Разрешить вносить выпуски в окна")),
 			[Merlin.Classes.PricelistWindows.ActionNames.MarkWindows] = (s, t) =>
-				s.ChangeWindowsStatus(t, Merlin.Classes.PricelistWindows.ActionNames.MarkWindows, "Пометить окна цветом"),
+				s.ChangeWindowsStatus(t, Merlin.Classes.PricelistWindows.ActionNames.MarkWindows, Tr.T("Пометить окна цветом")),
 			[Merlin.Classes.PricelistWindows.ActionNames.UnmarkWindows] = (s, t) =>
-				s.ChangeWindowsStatus(t, Merlin.Classes.PricelistWindows.ActionNames.UnmarkWindows, "Снять пометку окон цветом"),
+				s.ChangeWindowsStatus(t, Merlin.Classes.PricelistWindows.ActionNames.UnmarkWindows, Tr.T("Снять пометку окон цветом")),
 			[Merlin.Classes.PricelistWindows.ActionNames.ShowDisabledWindows] = (s, t) => s.ShowDisabledWindows(t),
 		},
 		// Tariff.WinForms.cs, DoAction: «Изменить похожие тарифы» — второй именованный
@@ -369,9 +369,9 @@ public sealed class ObjectActions
 		return new ActionMenuItem
 		{
 			Name = action.Name,
-			Text = isProperties ? "Открыть карточку" : Tr.T(action.Alias),
+			Text = isProperties ? Tr.T("Открыть карточку") : Tr.T(action.Alias),
 			// В списке карточку открывает клик по строке, в дереве клик выбирает узел.
-			Hint = isProperties && view == ViewType.Journal ? "клик" : null,
+			Hint = isProperties && view == ViewType.Journal ? Tr.T("клик") : null,
 			Icon = ActionIcons.For(action.Name, action.ImgResourceName),
 			Enabled = IsEnabled(target, action.Name, view),
 			Ported = collapsed.Count > 0 ? collapsed.Any(c => c.Ported) : IsPorted(target, action.Name),
@@ -517,9 +517,9 @@ public sealed class ObjectActions
 		var obj = (PresentationObject)target;
 
 		if (await _dialogs.ShowAsync(
-				"Удаление",
+				Tr.T("Удаление"),
 				builder => builder.AddContent(0, obj.DeleteConfirmationText),
-				okText: "Удалить") != DialogOutcome.Ok)
+				okText: Tr.T("Удалить")) != DialogOutcome.Ok)
 			return ActionEffect.None;
 
 		return await _busy.RunAsync(() => obj.Delete(silenceFlag: true)) ? ActionEffect.Deleted : ActionEffect.None;
@@ -556,9 +556,8 @@ public sealed class ObjectActions
 		if (objects.Count == 0)
 			return null;
 
-		string question = string.Format(
-			"Вы действительно хотите удалить выбранные объекты? ({0} шт.)", objects.Count);
-		if (await _dialogs.ShowAsync("Удаление", builder => builder.AddContent(0, question), okText: "Удалить") != DialogOutcome.Ok)
+		string question = Tr.Format("Вы действительно хотите удалить выбранные объекты? ({0} шт.)", objects.Count);
+		if (await _dialogs.ShowAsync(Tr.T("Удаление"), builder => builder.AddContent(0, question), okText: Tr.T("Удалить")) != DialogOutcome.Ok)
 			return null;
 
 		DataTable errors = new();
@@ -569,18 +568,18 @@ public sealed class ObjectActions
 		{
 			foreach (PresentationObject obj in objects)
 			{
-				string objectName = string.IsNullOrEmpty(obj.Name) ? "<без названия>" : obj.Name;
+				string objectName = string.IsNullOrEmpty(obj.Name) ? Tr.T("<без названия>") : obj.Name;
 
 				try
 				{
 					if (!obj.IsActionEnabled(Constants.EntityActions.Delete, ViewType.Journal))
 					{
-						AddDeleteError(errors, objectName, string.Format("Удаление недоступно для объекта '{0}'.", objectName));
+						AddDeleteError(errors, objectName, Tr.Format("Удаление недоступно для объекта '{0}'.", objectName));
 						continue;
 					}
 
 					if (!obj.Delete(silenceFlag: true))
-						AddDeleteError(errors, objectName, string.Format("Не удалось удалить объект '{0}'.", objectName));
+						AddDeleteError(errors, objectName, Tr.Format("Не удалось удалить объект '{0}'.", objectName));
 				}
 				catch (Exception ex)
 				{
@@ -590,9 +589,9 @@ public sealed class ObjectActions
 		});
 
 		if (errors.Rows.Count > 0)
-			await _tables.ShowAsync("Ошибки массового удаления", errors,
-				new Entity.Attribute("objectName", "Объект", "nvarchar"),
-				new Entity.Attribute("errorText", "Ошибка", "nvarchar"));
+			await _tables.ShowAsync(Tr.T("Ошибки массового удаления"), errors,
+				new Entity.Attribute("objectName", "Объект", "nvarchar"), // i18n-ok: Alias переводится при показе (ObjectList)
+				new Entity.Attribute("errorText", "Ошибка", "nvarchar")); // i18n-ok: Alias переводится при показе (ObjectList)
 
 		return ActionEffect.Deleted;
 	}
@@ -691,7 +690,7 @@ public sealed class ObjectActions
 				builder.CloseComponent();
 			};
 
-			if (await _dialogs.ShowAsync("Клонирование прайс-листа", body) != DialogOutcome.Ok)
+			if (await _dialogs.ShowAsync(Tr.T("Клонирование прайс-листа"), body) != DialogOutcome.Ok)
 				return ActionEffect.None;
 
 			startDate = dialog!.StartDate;
@@ -751,7 +750,7 @@ public sealed class ObjectActions
 				builder.CloseComponent();
 			};
 
-			if (await _dialogs.ShowAsync("Радиостанции", body, okText: "Клонировать") != DialogOutcome.Ok)
+			if (await _dialogs.ShowAsync(Tr.T("Радиостанции"), body, okText: Tr.T("Клонировать")) != DialogOutcome.Ok)
 				return ActionEffect.None;
 
 			IReadOnlyList<DataRow> selected = selector!.SelectedRows;
@@ -761,7 +760,7 @@ public sealed class ObjectActions
 				// Тот же текст, что десктопный Properties.Resources.NoRadiostationSelected
 				// (CheckSelectionResult) — это не бизнес-ошибка процедуры, MessageAccessor
 				// такого ключа не знает.
-				message = "Необходимо выбрать хотя бы одну радиостанцию.";
+				message = Tr.T("Необходимо выбрать хотя бы одну радиостанцию.");
 				continue;
 			}
 
@@ -783,8 +782,8 @@ public sealed class ObjectActions
 	/// складывает имя станции и текст отказа в одну строку description.
 	/// </summary>
 	private Task ShowCloneErrors(DataTable errors) =>
-		_tables.ShowAsync("Ошибки клонирования", errors,
-			new Entity.Attribute("description", "Ошибка", "nvarchar"));
+		_tables.ShowAsync(Tr.T("Ошибки клонирования"), errors,
+			new Entity.Attribute("description", "Ошибка", "nvarchar")); // i18n-ok: Alias переводится при показе (ObjectList)
 
 	/// <summary>
 	/// «Добавить тариф массово» — веб-аналог MassmediaPricelist.WinForms.AddTariffsMass:
@@ -814,7 +813,7 @@ public sealed class ObjectActions
 		int created = 0;
 		DataTable? tableErrors = null;
 
-		bool ok = await _namedPassports.ShowAsync(template, "TariffMass", "Добавить тариф массово", isNew: true,
+		bool ok = await _namedPassports.ShowAsync(template, "TariffMass", Tr.T("Добавить тариф массово"), isNew: true,
 			edited => Merlin.Classes.Tariff.ValidateMassCreateHours(
 				Convert.ToInt32(edited[MassHourFromParam]), Convert.ToInt32(edited[MassHourToParam])),
 			edited => created = Merlin.Classes.Tariff.CreateMass(edited,
@@ -826,10 +825,10 @@ public sealed class ObjectActions
 
 		if (tableErrors.Rows.Count > 0)
 			await _tables.ShowAsync(
-				string.Format("Создано тарифов: {0}, не создано: {1}", created, tableErrors.Rows.Count),
-				tableErrors, new Entity.Attribute("description", "Ошибка", "nvarchar"));
+				Tr.Format("Создано тарифов: {0}, не создано: {1}", created, tableErrors.Rows.Count),
+				tableErrors, new Entity.Attribute("description", "Ошибка", "nvarchar")); // i18n-ok: Alias переводится при показе (ObjectList)
 		else
-			await ShowInfo("Готово", string.Format("Создано тарифов: {0}", created));
+			await ShowInfo(Tr.T("Готово"), Tr.Format("Создано тарифов: {0}", created));
 
 		return ActionEffect.ChildAdded;
 	}
@@ -871,16 +870,16 @@ public sealed class ObjectActions
 		template[MassMinuteParam] = minute;
 		template[MassHourFromParam] = minHour;
 		template[MassHourToParam] = maxHour;
-		template[MassHintParam] = string.Format("{0} шт., минута :{1:00}, часы {2}-{3}",
+		template[MassHintParam] = Tr.Format("{0} шт., минута :{1:00}, часы {2}-{3}",
 			similar.Rows.Count, minute, minHour, maxHour);
-		template[MassDaysHintParam] = "снимите дни, которые менять не нужно";
+		template[MassDaysHintParam] = Tr.T("снимите дни, которые менять не нужно");
 
 		DataTable? tableErrors = null;
 		List<Merlin.Classes.Tariff>? changed = null;
 		List<Merlin.Classes.Tariff>? added = null;
 
 		bool ok = await _namedPassports.ShowAsync(template, "TariffMassEdit",
-			string.Format("Изменить похожие тарифы ({0} шт.)", similar.Rows.Count), isNew: false,
+			Tr.Format("Изменить похожие тарифы ({0} шт.)", similar.Rows.Count), isNew: false,
 			edited => Merlin.Classes.Tariff.ValidateMassEdit(original, edited,
 				Convert.ToInt32(edited[MassHourFromParam]), Convert.ToInt32(edited[MassHourToParam]), Convert.ToInt32(edited[MassMinuteParam])),
 			edited => Merlin.Classes.Tariff.ApplyMassEdit(original, edited, similar,
@@ -892,11 +891,11 @@ public sealed class ObjectActions
 
 		if (tableErrors.Rows.Count > 0)
 			await _tables.ShowAsync(
-				string.Format("Изменено тарифов: {0}, создано новых: {1}, не обработано: {2}",
+				Tr.Format("Изменено тарифов: {0}, создано новых: {1}, не обработано: {2}",
 					changed!.Count, added!.Count, tableErrors.Rows.Count),
-				tableErrors, new Entity.Attribute("description", "Ошибка", "nvarchar"));
+				tableErrors, new Entity.Attribute("description", "Ошибка", "nvarchar")); // i18n-ok: Alias переводится при показе (ObjectList)
 		else
-			await ShowInfo("Готово", string.Format("Изменено тарифов: {0}, создано новых: {1}", changed!.Count, added!.Count));
+			await ShowInfo(Tr.T("Готово"), Tr.Format("Изменено тарифов: {0}, создано новых: {1}", changed!.Count, added!.Count));
 
 		return changed!.Count + added!.Count > 0 ? ActionEffect.SiblingAdded : ActionEffect.None;
 	}
@@ -935,7 +934,7 @@ public sealed class ObjectActions
 		DataTable? unsubstituted = null;
 
 		bool ok = await _namedPassports.ShowAsync(template, Merlin.Classes.RollerSubstitution.PassportName,
-			"Замена ролика", isNew: false,
+			Tr.T("Замена ролика"), isNew: false,
 			values => ValidateSubstitution(substitution, values, out selectedDays, out newRoller),
 			_ => unsubstituted = substitution.Apply(newRoller!, selectedDays!),
 			data, name => SubstitutionFieldDisabled(name, template, hasRollers));
@@ -944,12 +943,12 @@ public sealed class ObjectActions
 			return ActionEffect.None;
 
 		if (unsubstituted != null && unsubstituted.Rows.Count > 0)
-			await _tables.ShowAsync("Незамененные ролики", unsubstituted,
-				new Entity.Attribute("windowDateOriginal", "Дата выпуска", "datetime"),
-				new Entity.Attribute("message", "Ошибка", "nvarchar"));
+			await _tables.ShowAsync(Tr.T("Незамененные ролики"), unsubstituted,
+				new Entity.Attribute("windowDateOriginal", "Дата выпуска", "datetime"), // i18n-ok: Alias переводится при показе (ObjectList)
+				new Entity.Attribute("message", "Ошибка", "nvarchar")); // i18n-ok: Alias переводится при показе (ObjectList)
 
 		if (substitution.PriceMayChange(newRoller!))
-			await ShowInfo("Замена ролика", await _busy.RunAsync(substitution.RecalculateAction));
+			await ShowInfo(Tr.T("Замена ролика"), await _busy.RunAsync(substitution.RecalculateAction));
 
 		return ActionEffect.SiblingAdded;
 	}
@@ -1016,7 +1015,7 @@ public sealed class ObjectActions
 			// роликов «молчание» включено принудительно. Десктоп в этом случае
 			// молча оставляет форму открытой.
 			if (!values.TryGetValue(SubstituteParams.RollerId, out object? id) || id == null || id == DBNull.Value)
-				return "Не выбран ролик для замены.";
+				return Tr.T("Не выбран ролик для замены.");
 
 			newRoller = new Merlin.Classes.Roller(Convert.ToInt32(id));
 		}
@@ -1036,15 +1035,15 @@ public sealed class ObjectActions
 	/// </summary>
 	private async Task<ActionEffect> GenerateWindows(object pricelist)
 	{
-		var period = await _periods.ShowAsync("Интервал генерации окон",
+		var period = await _periods.ShowAsync(Tr.T("Интервал генерации окон"),
 			Merlin.Classes.PricelistWindows.StartDate(pricelist), Merlin.Classes.PricelistWindows.FinishDate(pricelist),
-			"Сгенерировать", (a, b) => Merlin.Classes.PricelistWindows.ValidatePeriod(pricelist, a, b),
-			"Окна строятся по тарифам прайс-листа. Уже сгенерированные окна не меняются.");
+			Tr.T("Сгенерировать"), (a, b) => Merlin.Classes.PricelistWindows.ValidatePeriod(pricelist, a, b),
+			Tr.T("Окна строятся по тарифам прайс-листа. Уже сгенерированные окна не меняются."));
 		if (period is not { } p)
 			return ActionEffect.None;
 
 		var weeks = Merlin.Classes.PricelistWindows.Weeks(p.Start, p.Finish);
-		ProgressOutcome outcome = await _progress.RunAsync("Генерация рекламных окон", weeks, DescribeWeek,
+		ProgressOutcome outcome = await _progress.RunAsync(Tr.T("Генерация рекламных окон"), weeks, DescribeWeek,
 			w => Merlin.Classes.PricelistWindows.Generate(pricelist, w.Item1, w.Item2));
 
 		if (outcome.Done > 0)
@@ -1070,16 +1069,19 @@ public sealed class ObjectActions
 		if (start > finish)
 			start = finish;
 
-		string timeText = time.HasValue ? " " + time.Value.ToString(@"hh\:mm") : "";
-		var period = await _periods.ShowAsync($"Интервал удаления сгенерированных окон{timeText}", start, finish,
-			"Удалить", (a, b) => Merlin.Classes.PricelistWindows.ValidatePeriod(pricelist, a, b),
-			(time.HasValue ? $"Удаляются окна времени{timeText}" : "Удаляются все окна прайс-листа")
-			+ " в выбранном интервале. Окна, в которых уже есть выпуски, остаются.");
+		string? timeText = time?.ToString(@"hh\:mm");
+		var period = await _periods.ShowAsync(timeText != null
+				? Tr.Format("Интервал удаления сгенерированных окон {0}", timeText)
+				: Tr.T("Интервал удаления сгенерированных окон"), start, finish,
+			Tr.T("Удалить"), (a, b) => Merlin.Classes.PricelistWindows.ValidatePeriod(pricelist, a, b),
+			timeText != null
+				? Tr.Format("Удаляются окна времени {0} в выбранном интервале. Окна, в которых уже есть выпуски, остаются.", timeText)
+				: Tr.T("Удаляются все окна прайс-листа в выбранном интервале. Окна, в которых уже есть выпуски, остаются."));
 		if (period is not { } p)
 			return ActionEffect.None;
 
 		var weeks = Merlin.Classes.PricelistWindows.Weeks(p.Start, p.Finish);
-		ProgressOutcome outcome = await _progress.RunAsync("Удаление сгенерированных окон", weeks, DescribeWeek,
+		ProgressOutcome outcome = await _progress.RunAsync(Tr.T("Удаление сгенерированных окон"), weeks, DescribeWeek,
 			w => Merlin.Classes.PricelistWindows.DeleteGenerated(pricelist, w.Item1, w.Item2, time));
 
 		if (outcome.Done > 0)
@@ -1109,29 +1111,29 @@ public sealed class ObjectActions
 	/// <summary>«Показать заблокированные окна» — MassmediaPricelist.WinForms.ShowDisabledWindows.</summary>
 	private async Task<ActionEffect> ShowDisabledWindows(object pricelist)
 	{
-		var period = await _periods.ShowAsync("Выбрать период отчёта",
+		var period = await _periods.ShowAsync(Tr.T("Выбрать период отчёта"),
 			Merlin.Classes.PricelistWindows.StartDate(pricelist), Merlin.Classes.PricelistWindows.FinishDate(pricelist),
-			"Показать", (a, b) => a > b ? MessageAccessor.GetMessage("StartFinishWindowTimeError") : null);
+			Tr.T("Показать"), (a, b) => a > b ? MessageAccessor.GetMessage("StartFinishWindowTimeError") : null);
 		if (period is not { } p)
 			return ActionEffect.None;
 
 		DataTable table = await _busy.RunAsync(() => Merlin.Classes.PricelistWindows.DisabledWindows(pricelist, p.Start, p.Finish));
 		if (table.Rows.Count == 0)
 		{
-			await ShowInfo("Заблокированные окна", "Недоступных для внесения окон за этот период нет.");
+			await ShowInfo(Tr.T("Заблокированные окна"), Tr.T("Недоступных для внесения окон за этот период нет."));
 			return ActionEffect.None;
 		}
 
-		await _tables.ShowAsync($"Заблокированные окна: {table.Rows.Count}", table,
-			new Entity.Attribute(Merlin.Classes.TariffWindow.ParamNames.WindowDateOriginal, "Время выхода", "datetime"),
-			new Entity.Attribute(Merlin.Classes.TariffWindow.ParamNames.WindowDateActual, "Время выхода реальное", "datetime"),
-			new Entity.Attribute("durationString", "Продолжительность", "nvarchar"),
-			new Entity.Attribute(Merlin.Classes.TariffWindow.ParamNames.Price, "Цена", "money"));
+		await _tables.ShowAsync(Tr.Format("Заблокированные окна: {0}", table.Rows.Count), table,
+			new Entity.Attribute(Merlin.Classes.TariffWindow.ParamNames.WindowDateOriginal, "Время выхода", "datetime"), // i18n-ok: Alias переводится при показе (ObjectList)
+			new Entity.Attribute(Merlin.Classes.TariffWindow.ParamNames.WindowDateActual, "Время выхода реальное", "datetime"), // i18n-ok: Alias переводится при показе (ObjectList)
+			new Entity.Attribute("durationString", "Продолжительность", "nvarchar"), // i18n-ok: Alias переводится при показе (ObjectList)
+			new Entity.Attribute(Merlin.Classes.TariffWindow.ParamNames.Price, "Цена", "money")); // i18n-ok: Alias переводится при показе (ObjectList)
 		return ActionEffect.None;
 	}
 
 	private Task ShowInfo(string caption, string text) =>
-		_dialogs.ShowAsync(caption, builder => builder.AddContent(0, text), okText: "Ок");
+		_dialogs.ShowAsync(caption, builder => builder.AddContent(0, text), okText: Tr.T("Ок"));
 
 	/// <summary>FakeContainer, ветка AddNew — то же для корня древовидного экрана.</summary>
 	private async Task<ActionEffect> AddNew(object target)

@@ -21,7 +21,7 @@
 
 @if (_pages.Count == 0)
 {
-    <div class="state">У сущности нет паспорта в метаданных.</div>
+    <div class="state">@Tr.T("У сущности нет паспорта в метаданных.")</div>
 }
 else
 {
@@ -37,7 +37,7 @@ else
                 <button type="button" role="tab"
                         class="tab @(index == _activePage ? "tab-active" : "")"
                         @onclick="() => _activePage = index">
-                    @(_pages[index].Caption is { Length: > 0 } c ? c : $"Страница {index + 1}")
+                    @(_pages[index].Caption is { Length: > 0 } c ? c : Tr.Format("Страница {0}", index + 1))
                 </button>
             }
         </div>
@@ -62,8 +62,8 @@ else
                 @if (field.Unsupported != null)
                 {
                     <div class="alert alert-secondary mb-0">
-                        Контрол <code>@field.Unsupported</code> пока не поддержан (этап 2).
-                        Значение не редактируется и не сохраняется.
+                        @Tr.T("Контрол") <code>@field.Unsupported</code> @Tr.T("пока не поддержан (этап 2).")
+                        @Tr.T("Значение не редактируется и не сохраняется.")
                     </div>
                 }
                 else if (field.IsLabel)
@@ -99,14 +99,14 @@ else
                     }
                     else
                     {
-                        <div class="text-muted small mb-2">Нет изображения.</div>
+                        <div class="text-muted small mb-2">@Tr.T("Нет изображения.")</div>
                     }
 
                     <div class="input-group input-group-sm">
                         <InputFile class="form-control" accept="image/*"
                                    OnChange="e => LoadImage(field, e)" />
                         <button type="button" class="btn btn-outline-secondary"
-                                @onclick="() => ClearImage(field)"><i class="bi bi-x-lg" aria-hidden="true"></i>Очистить</button>
+                                @onclick="() => ClearImage(field)"><i class="bi bi-x-lg" aria-hidden="true"></i>@Tr.T("Очистить")</button>
                     </div>
 
                     @if (_imageError != null)
@@ -125,7 +125,7 @@ else
                         @* Десктопный TreeObjectsSelector без набора строк падает
                            (NotImplementedException); здесь — честная пометка. *@
                         <div class="alert alert-secondary mb-0">
-                            Нет набора строк <code>@field.Tree.Source</code> для дерева.
+                            @Tr.T("Нет набора строк") <code>@field.Tree.Source</code> @Tr.T("для дерева.")
                         </div>
                     }
                 }
@@ -162,7 +162,7 @@ else
                                             <td>
                                                 @if (IsBooleanColumn(field, a))
                                                 {
-                                                    @if (CellText(row, field, a) == BoolYes)
+                                                    @if (CellText(row, field, a) == Tr.T("Да"))
                                                     {
                                                         <span class="bool-check">✓</span>
                                                     }
@@ -184,14 +184,14 @@ else
                     <div class="input-group input-group-sm">
                         <input class="form-control@(InvalidClass(field))" readonly value="@PickerName(field)" />
                         <button type="button" class="btn btn-outline-secondary" disabled="@disabled"
-                                @onclick="() => Select(field)"><i class="bi bi-search" aria-hidden="true"></i>Выбрать</button>
+                                @onclick="() => Select(field)"><i class="bi bi-search" aria-hidden="true"></i>@Tr.T("Выбрать")</button>
                         @if (field.Picker.IsCreateNewAllowed)
                         {
                             <button type="button" class="btn btn-outline-secondary" disabled="@disabled"
-                                    @onclick="() => CreateNew(field)"><i class="bi bi-plus-lg" aria-hidden="true"></i>Создать</button>
+                                    @onclick="() => CreateNew(field)"><i class="bi bi-plus-lg" aria-hidden="true"></i>@Tr.T("Создать")</button>
                         }
                         <button type="button" class="btn btn-outline-secondary" disabled="@disabled"
-                                @onclick="() => Clear(field)"><i class="bi bi-x-lg" aria-hidden="true"></i>Очистить</button>
+                                @onclick="() => Clear(field)"><i class="bi bi-x-lg" aria-hidden="true"></i>@Tr.T("Очистить")</button>
                     </div>
                 }
                 else if (field.Lookup != null)
@@ -498,7 +498,7 @@ else
             return "";
 
         if (IsBoolean(field))
-            return ReadBool(field.Name) ? BoolYes : "Нет";
+            return ReadBool(field.Name) ? Tr.T("Да") : Tr.T("Нет");
         if (IsTimeDurationField(field))
             return DateTimeUtils.Time2String(DurationTotalSeconds(field.Name));
         if (IsTimeField(field))
@@ -536,8 +536,6 @@ else
     private static string AsText(object? v) =>
         v == null || v == DBNull.Value ? "" : v.ToString() ?? "";
 
-    private const string BoolYes = "Да";
-
     /// <summary>
     /// Текст ячейки selector-грида. Для boolean-колонки — «Да»/пусто, а не
     /// «True»/«False» из ToString(): десктопный ObjectsSelector построен на
@@ -557,7 +555,7 @@ else
             return "";
 
         if (IsBooleanColumn(field, attribute))
-            return ParseHelper.GetBooleanFromObject(v, false) ? BoolYes : "";
+            return ParseHelper.GetBooleanFromObject(v, false) ? Tr.T("Да") : "";
 
         return v.ToString() ?? "";
     }
@@ -613,7 +611,7 @@ else
     private string DisplayOf(DataRowView row) =>
         row.Row.Table.Columns.Contains(Constants.Parameters.Name)
             ? AsText(row[Constants.Parameters.Name])
-            : "(в наборе нет колонки name)";
+            : Tr.T("(в наборе нет колонки name)");
 
     private void WriteLookup(PassportField field, object? value)
     {
@@ -698,7 +696,7 @@ else
             builder.CloseComponent();
         };
 
-        if (await Dialogs.ShowAsync("Выбрать объект", body, okText: "Выбрать") != DialogOutcome.Ok)
+        if (await Dialogs.ShowAsync(Tr.T("Выбрать объект"), body, okText: Tr.T("Выбрать")) != DialogOutcome.Ok)
             return;
 
         // Пустой выбор — не команда очистить: десктоп по OK без выделенной

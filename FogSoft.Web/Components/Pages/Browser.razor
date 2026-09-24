@@ -30,28 +30,28 @@
         (RefreshDependantGrid), поэтому список и дерево всегда согласованы.
 *@
 
-<PageTitle>@(_root?.Name ?? "Экран")</PageTitle>
+<PageTitle>@(_root?.Name ?? Tr.T("Экран"))</PageTitle>
 
 @if (SecurityManager.LoggedUser == null)
 {
     <div class="state">
-        <div class="state-title">Вы не вошли в систему</div>
-        <a href="/">Перейти к входу</a>
+        <div class="state-title">@Tr.T("Вы не вошли в систему")</div>
+        <a href="/">@Tr.T("Перейти к входу")</a>
     </div>
 }
 else if (_access == JournalAccess.Denied)
 {
     <div class="state">
-        <div class="state-title">Доступ закрыт</div>
-        Этот экран вам не разрешён. Права на экраны выдаются вместе с пунктами
-        меню — обратитесь к администратору системы.
+        <div class="state-title">@Tr.T("Доступ закрыт")</div>
+        @Tr.T("Этот экран вам не разрешён.")
+        @Tr.T("Права на экраны выдаются вместе с пунктами меню — обратитесь к администратору системы.")
     </div>
 }
 else if (_access == JournalAccess.NotPorted)
 {
     <div class="state">
-        <div class="state-title">Экран не перенесён</div>
-        Пункта меню <code>@Code</code> в вебе пока нет. Это не ограничение прав.
+        <div class="state-title">@Tr.T("Экран не перенесён")</div>
+        @Tr.T("Пункта меню") <code>@Code</code> @Tr.T("в вебе пока нет.") @Tr.T("Это не ограничение прав.")
     </div>
 }
 else if (_error != null)
@@ -60,7 +60,7 @@ else if (_error != null)
 }
 else if (_root == null)
 {
-    <div class="state">Загрузка…</div>
+    <div class="state">@Tr.T("Загрузка…")</div>
 }
 else
 {
@@ -70,14 +70,14 @@ else
            «Добавить модуль» и т. п. Прежняя веб-кнопка создавала объект
            без привязки к родителю (без CreateNewChild). «Изменить», «Удалить» и
            «Фильтр» десктопа тоже не кнопки: действия строки и постоянная панель. *@
-        <ScreenToolbar Title="@(_hasWindows && _windowsTab ? $"{_selected!.Name} / Рекламные окна" : _caption)">
+        <ScreenToolbar Title="@(_hasWindows && _windowsTab ? Tr.Format("{0} / Рекламные окна", _selected!.Name) : _caption)">
             @if (_selectedCount > 0)
             {
-                <button class="btn btn-sm btn-danger" @onclick="DeleteSelected"><i class="bi bi-trash3" aria-hidden="true"></i>Удалить (@_selectedCount)</button>
-                <button class="btn btn-sm btn-outline-secondary" @onclick="ClearSelection">Снять выделение</button>
+                <button class="btn btn-sm btn-danger" @onclick="DeleteSelected"><i class="bi bi-trash3" aria-hidden="true"></i>@Tr.Format("Удалить ({0})", _selectedCount)</button>
+                <button class="btn btn-sm btn-outline-secondary" @onclick="ClearSelection">@Tr.T("Снять выделение")</button>
             }
-            <button class="btn btn-sm btn-outline-secondary" @onclick="RefreshClicked"><i class="bi bi-arrow-clockwise" aria-hidden="true"></i>Обновить</button>
-            <button class="btn btn-sm btn-outline-secondary" disabled="@(_data == null || _data.Rows.Count == 0)" @onclick="ExportExcel"><i class="bi bi-download" aria-hidden="true"></i>Экспорт в Excel</button>
+            <button class="btn btn-sm btn-outline-secondary" @onclick="RefreshClicked"><i class="bi bi-arrow-clockwise" aria-hidden="true"></i>@Tr.T("Обновить")</button>
+            <button class="btn btn-sm btn-outline-secondary" disabled="@(_data == null || _data.Rows.Count == 0)" @onclick="ExportExcel"><i class="bi bi-download" aria-hidden="true"></i>@Tr.T("Экспорт в Excel")</button>
         </ScreenToolbar>
 
         <FilterPanel @ref="_filterPanel" Pages="_filterPages" Values="_root.Container!.Filter" FilterData="_filterData"
@@ -98,9 +98,9 @@ else
                        docs/tasks/web-tariffgrid.md. *@
                     <div class="tabs" role="tablist">
                         <button type="button" role="tab" class="tab @(_windowsTab ? "" : "tab-active")"
-                                @onclick="() => SwitchTab(false)">Тарифы</button>
+                                @onclick="() => SwitchTab(false)">@Tr.T("Тарифы")</button>
                         <button type="button" role="tab" class="tab @(_windowsTab ? "tab-active" : "")"
-                                @onclick="() => SwitchTab(true)">Рекламные окна</button>
+                                @onclick="() => SwitchTab(true)">@Tr.T("Рекламные окна")</button>
                     </div>
                 }
                 @if (_hasWindows && _windowsOpened)
@@ -116,12 +116,12 @@ else
                     if (_selected?.Container?.ChildEntity is { } childEntity)
                     {
                         <ObjectList @ref="_list" Entity="childEntity" Data="_data"
-                                    EmptyText="У выбранного узла нет вложенных записей."
+                                    EmptyText="@(Tr.T("У выбранного узла нет вложенных записей."))"
                                     Changed="RefreshSelected" Failed="ShowError" SelectionChanged="c => _selectedCount = c" />
                     }
                     else
                     {
-                        <div class="state">У этого узла нет вложенного списка.</div>
+                        <div class="state">@Tr.T("У этого узла нет вложенного списка.")</div>
                     }
                 }
             </div>
@@ -199,11 +199,11 @@ else
             // действий и сценарий связей. Действия в вебе не рисуются панелью, но
             // конструктор их требует — передаём те же два, что в десктопе.
             FakeContainer container = route.Factory?.Invoke() ?? new FakeContainer(
-                route.RootName,
+                Tr.T(route.RootName),
                 new[]
                 {
-                    new Entity.Action(Constants.EntityActions.Refresh, "Обновить"),
-                    new Entity.Action(Constants.EntityActions.AddNew, "Добавить"),
+                    new Entity.Action(Constants.EntityActions.Refresh, "Обновить"), // i18n-ok: в вебе панелью не рисуется, только для конструктора
+                    new Entity.Action(Constants.EntityActions.AddNew, "Добавить"), // i18n-ok: в вебе панелью не рисуется, только для конструктора
                 },
                 scenario);
 

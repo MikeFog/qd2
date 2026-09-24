@@ -1,5 +1,6 @@
 @using System.Globalization
 @using Merlin.Classes
+@using FogSoft.WinForm.Classes
 
 @*
     Неделя рекламных окон — общая сетка вкладки «Рекламные окна» у прайс-листа и экрана
@@ -15,7 +16,7 @@
     <div class="week-bar">
         <div class="week-nav">
             @Toolbar
-            <button type="button" class="btn btn-sm btn-outline-secondary" title="Предыдущая неделя"
+            <button type="button" class="btn btn-sm btn-outline-secondary" title="@(Tr.T("Предыдущая неделя"))"
                     disabled="@(Week?.HasPrevious != true)" @onclick="OnPrevious">
                 <i class="bi bi-chevron-left" aria-hidden="true"></i>
             </button>
@@ -25,47 +26,47 @@
                     @($"{DisplayFormat.Date(Week.StartDate)} – {DisplayFormat.Date(Week.FinishDate)}")
                 }
             </span>
-            <button type="button" class="btn btn-sm btn-outline-secondary" title="Следующая неделя"
+            <button type="button" class="btn btn-sm btn-outline-secondary" title="@(Tr.T("Следующая неделя"))"
                     disabled="@(Week?.HasNext != true)" @onclick="OnNext">
                 <i class="bi bi-chevron-right" aria-hidden="true"></i>
             </button>
             <label class="jump">
-                Перейти к дате
+                @Tr.T("Перейти к дате")
                 <input type="date" class="form-control form-control-sm" value="@Date.ToString("yyyy-MM-dd")"
                        @onchange="Jump" />
             </label>
         </div>
         <div class="legend">
-            <span><i class="swatch cell-disabled"></i>недоступно</span>
-            <span><i class="swatch cell-marked"></i>помечено</span>
+            <span><i class="swatch cell-disabled"></i>@Tr.T("недоступно")</span>
+            <span><i class="swatch cell-marked"></i>@Tr.T("помечено")</span>
             @if (IsTraffic)
             {
-                <span title="Занято подтверждёнными выпусками больше, чем есть в окне"><i class="swatch cell-overflow"></i>переполнено</span>
-                <span title="Окно склеено с соседним"><i class="swatch swatch-linked"></i>склеено</span>
-                <span title="День обработан: выпуски менять может только трафик-менеджер и администратор"><i class="swatch cell-closed"></i>день обработан</span>
+                <span title="@(Tr.T("Занято подтверждёнными выпусками больше, чем есть в окне"))"><i class="swatch cell-overflow"></i>@Tr.T("переполнено")</span>
+                <span title="@(Tr.T("Окно склеено с соседним"))"><i class="swatch swatch-linked"></i>@Tr.T("склеено")</span>
+                <span title="@(Tr.T("День обработан: выпуски менять может только трафик-менеджер и администратор"))"><i class="swatch cell-closed"></i>@Tr.T("день обработан")</span>
             }
-            <span title="Окно изменено точечно: продолжительность, цена, время выхода или вместимость не как в тарифе">
-                <i class="swatch swatch-modified"></i>не как в тарифе
+            <span title="@(Tr.T("Окно изменено точечно: продолжительность, цена, время выхода или вместимость не как в тарифе"))">
+                <i class="swatch swatch-modified"></i>@Tr.T("не как в тарифе")
             </span>
         </div>
     </div>
 
     @if (Week == null)
     {
-        <div class="state">Загрузка…</div>
+        <div class="state">@Tr.T("Загрузка…")</div>
     }
     else if (Week.NoPricelist)
     {
         <div class="state">
-            <div class="state-title">На эту неделю у станции нет прайс-листа</div>
-            Рекламные окна строятся по прайс-листу — перейдите к другой дате.
+            <div class="state-title">@Tr.T("На эту неделю у станции нет прайс-листа")</div>
+            @Tr.T("Рекламные окна строятся по прайс-листу — перейдите к другой дате.")
         </div>
     }
     else if (Week.Rows.Count == 0)
     {
         <div class="state">
-            <div class="state-title">На этой неделе рекламных окон нет</div>
-            Окна появляются после генерации по тарифам прайс-листа.
+            <div class="state-title">@Tr.T("На этой неделе рекламных окон нет")</div>
+            @Tr.T("Окна появляются после генерации по тарифам прайс-листа.")
         </div>
     }
     else
@@ -74,24 +75,24 @@
             <table class="table">
                 <thead>
                     <tr>
-                        <th class="col-price">Цена</th>
-                        <th class="col-time">Время</th>
+                        <th class="col-price">@Tr.T("Цена")</th>
+                        <th class="col-time">@Tr.T("Время")</th>
                         @for (int d = 0; d < TariffWindowWeek.DaysInWeek; d++)
                         {
                             int day = d;
                             <th class="col-day @(Week.IsInRange(day) ? null : "out") @(Week.IsClosed(day) ? "closed" : null)"
-                                title="@(Week.IsClosed(day) ? "День обработан" : null)">
+                                title="@(Week.IsClosed(day) ? Tr.T("День обработан") : null)">
                                 <span class="day-name">
                                     @if (Week.IsClosed(day))
                                     {
-                                        <i class="bi bi-lock-fill" aria-label="обработан"></i>
+                                        <i class="bi bi-lock-fill" aria-label="@(Tr.T("обработан"))"></i>
                                     }
                                     @DayNames[day]
                                 </span>
                                 <span class="day-date">@DisplayFormat.DayMonth(Week.Monday.AddDays(day))</span>
                                 @if (Week.IsInRange(day))
                                 {
-                                    <span class="day-count" title="Окон за день">@Week.WindowsPerDay[day]</span>
+                                    <span class="day-count" title="@(Tr.T("Окон за день"))">@Week.WindowsPerDay[day]</span>
                                 }
                                 @if (DayHeader != null && Week.IsInRange(day))
                                 {
@@ -110,8 +111,8 @@
                                 <span class="time-cell">
                                     @if (OnRowMenu.HasDelegate)
                                     {
-                                        <button type="button" class="row-btn" title="Действия со временем @row.Time"
-                                                aria-label="Действия со временем" aria-haspopup="menu"
+                                        <button type="button" class="row-btn" title="@(Tr.Format("Действия со временем {0}", row.Time))"
+                                                aria-label="@(Tr.T("Действия со временем"))" aria-haspopup="menu"
                                                 @onclick="e => OnRowMenu.InvokeAsync(new RowEvent(row, e))">
                                             <i class="bi bi-three-dots" aria-hidden="true"></i>
                                         </button>
@@ -210,10 +211,10 @@
 
     private static string CellTitle(TariffWindowCell cell) =>
         DisplayFormat.DateAndTime(cell.WindowDate) + StatusText(cell)
-        + (cell.IsModified ? "\nНе как в тарифе:\n• " + string.Join("\n• ", cell.Deviations) : "");
+        + (cell.IsModified ? "\n" + Tr.T("Не как в тарифе:") + "\n• " + string.Join("\n• ", cell.Deviations) : "");
 
     /// <summary>Состояние окна одной строкой: недоступно, помечено, переполнено, склеено.</summary>
     public static string StatusText(TariffWindowCell cell) =>
-        (cell.IsDisabled ? " · недоступно" : "") + (cell.IsMarked ? " · помечено" : "")
-        + (cell.IsOverflow ? " · переполнено" : "") + (cell.LinkNote != null ? " · " + cell.LinkNote : "");
+        (cell.IsDisabled ? " · " + Tr.T("недоступно") : "") + (cell.IsMarked ? " · " + Tr.T("помечено") : "")
+        + (cell.IsOverflow ? " · " + Tr.T("переполнено") : "") + (cell.LinkNote != null ? " · " + cell.LinkNote : "");
 }

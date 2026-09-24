@@ -28,29 +28,29 @@
     причина записаны в docs/tasks/web-migration.md, раздел 10.
 *@
 
-<PageTitle>@(Title ?? "Журнал")</PageTitle>
+<PageTitle>@(Title ?? Tr.T("Журнал"))</PageTitle>
 
 @if (SecurityManager.LoggedUser == null)
 {
     <div class="state">
-        <div class="state-title">Вы не вошли в систему</div>
-        <a href="/">Перейти к входу</a>
+        <div class="state-title">@Tr.T("Вы не вошли в систему")</div>
+        <a href="/">@Tr.T("Перейти к входу")</a>
     </div>
 }
 else if (_access == JournalAccess.Denied)
 {
     <div class="state">
-        <div class="state-title">Доступ закрыт</div>
-        Этот журнал вам не разрешён. Права на экраны выдаются вместе с пунктами
-        меню — обратитесь к администратору системы.
+        <div class="state-title">@Tr.T("Доступ закрыт")</div>
+        @Tr.T("Этот журнал вам не разрешён.")
+        @Tr.T("Права на экраны выдаются вместе с пунктами меню — обратитесь к администратору системы.")
     </div>
 }
 else if (_access == JournalAccess.NotPorted)
 {
     <div class="state">
-        <div class="state-title">Экран не перенесён</div>
-        Журнала сущности @EntityId в вебе пока нет — на неё не ведёт ни один
-        перенесённый пункт меню. Это не ограничение прав.
+        <div class="state-title">@Tr.T("Экран не перенесён")</div>
+        @Tr.Format("Журнала сущности {0} в вебе пока нет — на неё не ведёт ни один перенесённый пункт меню.", EntityId)
+        @Tr.T("Это не ограничение прав.")
     </div>
 }
 else if (_error != null)
@@ -59,7 +59,7 @@ else if (_error != null)
 }
 else if (_entity == null)
 {
-    <div class="state">Загрузка…</div>
+    <div class="state">@Tr.T("Загрузка…")</div>
 }
 else
 {
@@ -72,16 +72,16 @@ else
     <ScreenToolbar Title="@Title" Count="@(_data?.Rows.Count ?? 0)">
         @if (_selectedCount > 0)
         {
-            <button class="btn btn-sm btn-danger" @onclick="DeleteSelected"><i class="bi bi-trash3" aria-hidden="true"></i>Удалить (@_selectedCount)</button>
-            <button class="btn btn-sm btn-outline-secondary" @onclick="ClearSelection">Снять выделение</button>
+            <button class="btn btn-sm btn-danger" @onclick="DeleteSelected"><i class="bi bi-trash3" aria-hidden="true"></i>@Tr.Format("Удалить ({0})", _selectedCount)</button>
+            <button class="btn btn-sm btn-outline-secondary" @onclick="ClearSelection">@Tr.T("Снять выделение")</button>
         }
         @if (_route?.BulkAction is { } bulk)
         {
-            <button class="btn btn-sm btn-outline-secondary" disabled="@(_bulkPending == 0)" @onclick="RunBulkAction"><i class="bi bi-check2-all" aria-hidden="true"></i>@bulk.Caption</button>
+            <button class="btn btn-sm btn-outline-secondary" disabled="@(_bulkPending == 0)" @onclick="RunBulkAction"><i class="bi bi-check2-all" aria-hidden="true"></i>@Tr.T(bulk.Caption)</button>
         }
-        <button class="btn btn-primary btn-sm" disabled="@(!_canAdd)" @onclick="AddNew"><i class="bi bi-plus-lg" aria-hidden="true"></i>Добавить</button>
-        <button class="btn btn-sm btn-outline-secondary" @onclick="Refresh"><i class="bi bi-arrow-clockwise" aria-hidden="true"></i>Обновить</button>
-        <button class="btn btn-sm btn-outline-secondary" disabled="@(_data == null || _data.Rows.Count == 0)" @onclick="ExportExcel"><i class="bi bi-download" aria-hidden="true"></i>Экспорт в Excel</button>
+        <button class="btn btn-primary btn-sm" disabled="@(!_canAdd)" @onclick="AddNew"><i class="bi bi-plus-lg" aria-hidden="true"></i>@Tr.T("Добавить")</button>
+        <button class="btn btn-sm btn-outline-secondary" @onclick="Refresh"><i class="bi bi-arrow-clockwise" aria-hidden="true"></i>@Tr.T("Обновить")</button>
+        <button class="btn btn-sm btn-outline-secondary" disabled="@(_data == null || _data.Rows.Count == 0)" @onclick="ExportExcel"><i class="bi bi-download" aria-hidden="true"></i>@Tr.T("Экспорт в Excel")</button>
     </ScreenToolbar>
 
     @* ---------- Фильтр ---------- *@
@@ -93,7 +93,7 @@ else
        тем же IsActionEnabled, что в десктопе. Это только удобство: настоящая
        проверка стоит на исполнении, в DataAccessor.DoAction. *@
     <ObjectList @ref="_list" Entity="_dataEntity ?? _entity" Data="_data"
-                EmptyText="Записей нет. Измените условия отбора."
+                EmptyText="@(Tr.T("Записей нет. Измените условия отбора."))"
                 Changed="Load" Failed="ShowError" SelectionChanged="c => _selectedCount = c" />
 
     </div>

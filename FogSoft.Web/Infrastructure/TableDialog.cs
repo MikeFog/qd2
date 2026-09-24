@@ -73,6 +73,6 @@ public sealed class TableDialog
 			builder.CloseComponent();
 		};
 
-		await _dialogs.ShowAsync(caption, body, okText: "Закрыть");
+		await _dialogs.ShowAsync(caption, body, okText: Tr.T("Закрыть"));
 	}
 }

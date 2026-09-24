@@ -44,8 +44,8 @@ public sealed class PassportDialog
 
 		// Заголовок — как в PassportForm.SetFormCaption.
 		string title = isNew
-			? $"Новый: {Tr.T(obj.Entity.Name)}"
-			: $"Свойства: {obj.Name}";
+			? Tr.Format("Новый: {0}", Tr.T(obj.Entity.Name))
+			: Tr.Format("Свойства: {0}", obj.Name);
 
 		string? message = null;
 		string? invalidField = null;
@@ -104,7 +104,7 @@ public sealed class PassportDialog
 				if (saved)
 					return true;
 
-				message = "Сохранение отклонено.";
+				message = Tr.T("Сохранение отклонено.");
 			}
 			catch (Exception ex)
 			{

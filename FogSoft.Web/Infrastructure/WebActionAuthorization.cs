@@ -59,7 +59,7 @@ public sealed class WebActionAuthorization : DataAccessor.IActionAuthorization
 			return;
 
 		if (SecurityManager.LoggedUser == null)
-			throw new ActionNotAllowedException("Нужно войти в систему.");
+			throw new ActionNotAllowedException(Tr.T("Нужно войти в систему."));
 
 		string rightName = ResolveRightName(actionName);
 		Entity entity = EntityManager.GetEntity(entityId);
@@ -73,13 +73,13 @@ public sealed class WebActionAuthorization : DataAccessor.IActionAuthorization
 			return;
 
 		ErrorManager.Log.Warn(string.Format(
-			"Отказано по правам. Пользователь: {0} (id {1}); сущность: {2} (id {3}); действие: {4}; право: {5}.",
+			"Отказано по правам. Пользователь: {0} (id {1}); сущность: {2} (id {3}); действие: {4}; право: {5}.", // i18n-ok: лог
 			SecurityManager.LoggedUser.LoginName, SecurityManager.LoggedUser.Id,
 			entity.Name, entityId, actionName, rightName));
 
 		throw new ActionNotAllowedException(
-			string.Format("Недостаточно прав: действие «{0}» для «{1}» вам не разрешено.",
-				rightName, entity.Name));
+			Tr.Format("Недостаточно прав: действие «{0}» для «{1}» вам не разрешено.",
+				rightName, Tr.T(entity.Name)));
 	}
 
 	private static string ResolveRightName(string actionName)

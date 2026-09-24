@@ -38,7 +38,7 @@ public static class ErrorPresenter
 				// приложения, но без записи в лог жалобу нечем воспроизвести
 				// (тот же довод, что и в ErrorManager.WinForms.cs).
 				ErrorManager.Log.Warn(string.Format(
-					"Нарушение ограничения (SQL {0}) в процедуре {1}: {2}",
+					"Нарушение ограничения (SQL {0}) в процедуре {1}: {2}", // i18n-ok: лог
 					sqlEx.Number, GetProcedureName(sqlEx), sqlEx.Message));
 				if (ex.Data != null)
 					ErrorManager.Log.Warn(ex.Data);
@@ -74,6 +74,6 @@ public static class ErrorPresenter
 			return ex.Procedure;
 
 		object? fromData = ex.Data?["Procedure"];
-		return fromData?.ToString() ?? "<неизвестна>";
+		return fromData?.ToString() ?? "<неизвестна>"; // i18n-ok: только для лога
 	}
 }

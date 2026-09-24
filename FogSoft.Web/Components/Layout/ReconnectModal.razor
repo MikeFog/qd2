@@ -1,4 +1,5 @@
-﻿<script type="module" src="@Assets["Components/Layout/ReconnectModal.razor.js"]"></script>
+﻿@using FogSoft.WinForm.Classes
+<script type="module" src="@Assets["Components/Layout/ReconnectModal.razor.js"]"></script>
 
 <dialog id="components-reconnect-modal" data-nosnippet>
     <div class="components-reconnect-container">
@@ -7,25 +8,25 @@
             <div></div>
         </div>
         <p class="components-reconnect-first-attempt-visible">
-            Rejoining the server...
+            @Tr.T("Восстанавливаем связь с сервером…")
         </p>
         <p class="components-reconnect-repeated-attempt-visible">
-            Rejoin failed... trying again in <span id="components-seconds-to-next-attempt"></span> seconds.
+            @Tr.T("Не удалось восстановить связь.") @Tr.T("Повторная попытка через") <span id="components-seconds-to-next-attempt"></span> @Tr.T("сек.")
         </p>
         <p class="components-reconnect-failed-visible">
-            Failed to rejoin.<br />Please retry or reload the page.
+            @Tr.T("Не удалось восстановить связь.")<br />@Tr.T("Повторите попытку или перезагрузите страницу.")
         </p>
         <button id="components-reconnect-button" class="components-reconnect-failed-visible">
-            Retry
+            @Tr.T("Повторить")
         </button>
         <p class="components-pause-visible">
-            The session has been paused by the server.
+            @Tr.T("Сервер приостановил сеанс.")
         </p>
         <p class="components-resume-failed-visible">
-            Failed to resume the session.<br />Please retry or reload the page.
+            @Tr.T("Не удалось возобновить сеанс.")<br />@Tr.T("Повторите попытку или перезагрузите страницу.")
         </p>
         <button id="components-resume-button" class="components-pause-visible components-resume-failed-visible">
-            Resume
+            @Tr.T("Продолжить")
         </button>
     </div>
 </dialog>

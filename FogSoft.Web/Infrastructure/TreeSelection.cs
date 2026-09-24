@@ -147,7 +147,7 @@ public sealed class TreeSelection
 	/// </summary>
 	private static TreeSelectionNode Build(DataTable table, PassportTree tree)
 	{
-		var root = new TreeSelectionNode(null, "Все", null) { Expanded = true };
+		var root = new TreeSelectionNode(null, Tr.T("Все"), null) { Expanded = true };
 
 		var byParent = new Dictionary<string, List<DataRow>>();
 		var roots = new List<DataRow>();

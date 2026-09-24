@@ -1,5 +1,6 @@
 @using System.Data
 @using Merlin.Classes
+@using FogSoft.WinForm.Classes
 
 @*
     Содержимое диалога «Отметить дни обработанными» на экране «Трафик» — веб-аналог
@@ -15,17 +16,16 @@
 
 <div class="mass-close">
     <label class="field">
-        Обработано по (включительно)
+        @Tr.T("Обработано по (включительно)")
         <input type="date" class="form-control form-control-sm" @bind="Value.Date" />
     </label>
     <p class="text-muted hint">
-        Выпуски станции по эту дату после отметки сможет менять только трафик-менеджер и
-        администратор. Дата раньше текущей снимает отметку с последующих дней.
+        @Tr.T("Выпуски станции по эту дату после отметки сможет менять только трафик-менеджер и администратор. Дата раньше текущей снимает отметку с последующих дней.")
     </p>
 
     <div class="filter-row">
-        <select class="form-select form-select-sm" aria-label="Группа станций" @bind="Value.Group">
-            <option value="">Все группы</option>
+        <select class="form-select form-select-sm" aria-label="@(Tr.T("Группа станций"))" @bind="Value.Group">
+            <option value="">@Tr.T("Все группы")</option>
             @foreach (string group in Groups)
             {
                 <option value="@group">@group</option>
@@ -33,7 +33,7 @@
         </select>
         <label class="check-all">
             <input type="checkbox" class="form-check-input" checked="@AllVisibleChecked" @onchange="ToggleAll" />
-            Отметить все (@Visible.Count())
+            @Tr.Format("Отметить все ({0})", Visible.Count())
         </label>
     </div>
 
@@ -55,7 +55,7 @@
             </li>
         }
     </ul>
-    <div class="text-muted">Выбрано станций: @Value.Selected.Count</div>
+    <div class="text-muted">@Tr.Format("Выбрано станций: {0}", Value.Selected.Count)</div>
 </div>
 
 @code {

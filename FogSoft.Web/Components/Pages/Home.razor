@@ -13,28 +13,28 @@
     пользователю оно не адресовано и переехало сюда.
 *@
 
-<PageTitle>@(SecurityManager.LoggedUser == null ? "Вход" : "Начало")</PageTitle>
+<PageTitle>@(SecurityManager.LoggedUser == null ? Tr.T("Вход") : Tr.T("Начало"))</PageTitle>
 
 @if (SecurityManager.LoggedUser == null)
 {
     <div class="signin">
         <div class="signin-card">
             <div class="signin-title">@Title</div>
-            <p class="signin-hint">Введите имя пользователя и пароль</p>
+            <p class="signin-hint">@Tr.T("Введите имя пользователя и пароль")</p>
 
             <div class="mb-3">
-                <label class="form-label" for="login">Пользователь</label>
+                <label class="form-label" for="login">@Tr.T("Пользователь")</label>
                 <input id="login" class="form-control" @bind="_login" @bind:event="oninput"
                        @onkeydown="@(e => { if (e.Key == "Enter") DoLogin(); })" />
             </div>
             <div class="mb-4">
-                <label class="form-label" for="password">Пароль</label>
+                <label class="form-label" for="password">@Tr.T("Пароль")</label>
                 <input id="password" class="form-control" type="password" @bind="_password" @bind:event="oninput"
                        @onkeydown="@(e => { if (e.Key == "Enter") DoLogin(); })" />
             </div>
 
             <button class="btn btn-primary w-100" @onclick="DoLogin" disabled="@_busy">
-                @(_busy ? "Проверяю…" : "Войти")
+                @(_busy ? Tr.T("Проверяю…") : Tr.T("Войти"))
             </button>
 
             @if (_error != null)
@@ -49,9 +49,9 @@ else
     <h3 class="mb-3">@Title</h3>
 
     <div class="state">
-        <div class="state-title">Выберите раздел в меню слева</div>
-        Перенесены журналы, карточки объектов и фильтры. Экраны, которых ещё нет,
-        сообщают об этом при открытии.
+        <div class="state-title">@Tr.T("Выберите раздел в меню слева")</div>
+        @Tr.T("Перенесены журналы, карточки объектов и фильтры.")
+        @Tr.T("Экраны, которых ещё нет, сообщают об этом при открытии.")
     </div>
 
     @* Диагностика вертикального среза: проверяет, что пользователь пережил
@@ -59,7 +59,7 @@ else
        Кандидат на удаление, когда каркас перестанет быть новым. *@
     <div class="diagnostics">
         <button class="btn btn-sm btn-outline-secondary" @onclick="CheckMetadata">
-            Проверить загрузку метаданных
+            @Tr.T("Проверить загрузку метаданных")
         </button>
         @if (_metadata != null)
         {
@@ -76,7 +76,7 @@ else
     private bool _busy;
 
     private static string Title =>
-        ConfigurationManager.AppSettings["Title"] is { Length: > 0 } title ? title : "Система";
+        ConfigurationManager.AppSettings["Title"] is { Length: > 0 } title ? title : Tr.T("Система");
 
     private void DoLogin()
     {
@@ -87,7 +87,7 @@ else
             if (WebLogin.Login(Session, _login, _password))
                 _password = "";
             else
-                _error = "Неверный логин или пароль.";
+                _error = Tr.T("Неверный логин или пароль.");
         }
         catch (Exception ex)
         {
@@ -110,10 +110,10 @@ else
         {
             Entity entity = EntityManager.GetEntity(17);
             _metadata =
-                $"Сущность {entity.Id}: {entity.Name}\n" +
-                $"Атрибутов: {entity.SortedAttributes.Count}\n" +
-                $"Паспорт: {(string.IsNullOrEmpty(entity.XmlPassport) ? "нет" : $"есть, {entity.XmlPassport.Length} симв.")}\n" +
-                $"Фильтр: {(string.IsNullOrEmpty(entity.XmlFilter) ? "нет" : $"есть, {entity.XmlFilter.Length} симв.")}";
+                Tr.Format("Сущность {0}: {1}", entity.Id, Tr.T(entity.Name)) + "\n" +
+                Tr.Format("Атрибутов: {0}", entity.SortedAttributes.Count) + "\n" +
+                Tr.Format("Паспорт: {0}", string.IsNullOrEmpty(entity.XmlPassport) ? Tr.T("нет") : Tr.Format("есть, {0} симв.", entity.XmlPassport.Length)) + "\n" +
+                Tr.Format("Фильтр: {0}", string.IsNullOrEmpty(entity.XmlFilter) ? Tr.T("нет") : Tr.Format("есть, {0} симв.", entity.XmlFilter.Length));
         }
         catch (Exception ex)
         {

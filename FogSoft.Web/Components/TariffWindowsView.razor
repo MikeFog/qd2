@@ -50,7 +50,7 @@
         <Toolbar>
             <button type="button" class="btn btn-sm btn-outline-secondary" aria-haspopup="menu"
                     @onclick="OpenPricelistMenu">
-                <i class="bi bi-grid-3x3" aria-hidden="true"></i>Операции с окнами
+                <i class="bi bi-grid-3x3" aria-hidden="true"></i>@Tr.T("Операции с окнами")
                 <i class="bi bi-chevron-down" aria-hidden="true"></i>
             </button>
         </Toolbar>
@@ -62,17 +62,17 @@
             @if (_selected != null)
             {
                 <span class="selection-text">
-                    Окно <b class="tabular">@DisplayFormat.DateAndTime(_selected.WindowDate)</b> · @_selected.Text@WindowWeekGrid.StatusText(_selected)
+                    @Tr.T("Окно") <b class="tabular">@DisplayFormat.DateAndTime(_selected.WindowDate)</b> · @_selected.Text@WindowWeekGrid.StatusText(_selected)
                     @if (_selected.IsModified)
                     {
-                        <span class="deviations"> · не как в тарифе: @string.Join("; ", _selected.Deviations)</span>
+                        <span class="deviations"> · @Tr.Format("не как в тарифе: {0}", string.Join("; ", _selected.Deviations))</span>
                     }
                 </span>
                 <span class="selection-actions">
                     <button type="button" class="btn btn-sm btn-outline-secondary" @onclick="OpenSelectedPassport">
-                        <i class="bi bi-card-text" aria-hidden="true"></i>Открыть карточку
+                        <i class="bi bi-card-text" aria-hidden="true"></i>@Tr.T("Открыть карточку")
                     </button>
-                    <button type="button" class="btn btn-sm btn-outline-secondary" title="Действия" aria-label="Действия"
+                    <button type="button" class="btn btn-sm btn-outline-secondary" title="@(Tr.T("Действия"))" aria-label="@(Tr.T("Действия"))"
                             aria-haspopup="menu" @onclick="e => OpenCellMenu(_selected, e, fromButton: true)">
                         <i class="bi bi-three-dots" aria-hidden="true"></i>
                     </button>
@@ -80,7 +80,7 @@
             }
             else
             {
-                <span class="muted">Выберите окно в сетке. Двойной клик — карточка окна, правая кнопка — действия с окном, «⋯» у времени — действия со строкой.</span>
+                <span class="muted">@Tr.T("Выберите окно в сетке. Двойной клик — карточка окна, правая кнопка — действия с окном, «⋯» у времени — действия со строкой.")</span>
             }
         </div>
     }
@@ -231,7 +231,7 @@
     private static IReadOnlyList<ActionMenuItem> WithDoubleClickHint(IReadOnlyList<ActionMenuItem> items) =>
         items.Select(i => i.Name != Constants.EntityActions.ShowPassport || i.Hint == null ? i : new ActionMenuItem
         {
-            Name = i.Name, Text = i.Text, Icon = i.Icon, Hint = "двойной клик", Enabled = i.Enabled,
+            Name = i.Name, Text = i.Text, Icon = i.Icon, Hint = Tr.T("двойной клик"), Enabled = i.Enabled,
             Ported = i.Ported, Danger = i.Danger, Children = i.Children,
         }).ToList();
 
@@ -255,8 +255,8 @@
             _menuRow = row;
             var items = new[]
             {
-                new ActionMenuItem { Name = ChangePriceAction, Text = "Изменить цену…", Icon = "bi-currency-exchange", Enabled = true, Ported = true },
-                new ActionMenuItem { Name = DeleteGeneratedAction, Text = "Удалить сгенерированные окна…", Icon = "bi-trash3", Enabled = true, Ported = true, Danger = true },
+                new ActionMenuItem { Name = ChangePriceAction, Text = Tr.T("Изменить цену…"), Icon = "bi-currency-exchange", Enabled = true, Ported = true },
+                new ActionMenuItem { Name = DeleteGeneratedAction, Text = Tr.T("Удалить сгенерированные окна…"), Icon = "bi-trash3", Enabled = true, Ported = true, Danger = true },
             };
             string? picked = await Menu.ShowAsync(items, e.ClientX, e.ClientY, fromButton: true);
             _menuRow = null;
@@ -285,7 +285,7 @@
     {
         PresentationObject draft = TariffWindowWeek.CreateChangePriceDraft(Pricelist, row);
         bool changed = await NamedPassports.ShowAsync(draft, TariffWindowWeek.ChangePricePassport,
-            $"Изменение цены: {row.Time}", isNew: false,
+            Tr.Format("Изменение цены: {0}", row.Time), isNew: false,
             values => TariffWindowWeek.ValidateChangePrice(Pricelist, values),
             TariffWindowWeek.ChangePrice,
             data: new System.Data.DataSet());
