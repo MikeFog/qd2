@@ -158,6 +158,17 @@ namespace Merlin.Classes
 			get { return bool.Parse(this["isLastPositionOccupied"].ToString()); }
 		}
 
+		/// <summary>Позиция занята подтверждённым выпуском — так же, как её помечает IssueTransfer в базе.</summary>
+		internal void MarkPositionOccupied(RollerPositions position)
+		{
+			if (position == RollerPositions.First)
+				this["isFirstPositionOccupied"] = true;
+			else if (position == RollerPositions.Second)
+				this["isSecondPositionOccupied"] = true;
+			else if (position == RollerPositions.Last)
+				this["isLastPositionOccupied"] = true;
+		}
+
 		public int GetFreeTime(bool withUnconfirmed)
 		{
 			return Duration - TimeInUseConfirmed - (withUnconfirmed ? TimeInUseUnconfirmed : 0);

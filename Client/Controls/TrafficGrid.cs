@@ -768,8 +768,8 @@ namespace Merlin.Controls
 						Roller addedRoller = issueTransfer.Transfer(selectedIssue, destinationWindow, false);
 						if (addedRoller != null)
 						{
-							UpdateDestinationCell(addedRoller.Duration, destinationWindow);
-							UpdateSourceCell(addedRoller.Duration);
+							UpdateDestinationCell(selectedIssue, addedRoller.Duration, destinationWindow);
+							UpdateSourceCell(selectedIssue, addedRoller.Duration);
 							grdIssue.DeleteRow(selectedIssue);
 						}
 					}
@@ -778,12 +778,29 @@ namespace Merlin.Controls
 			}
 		}
 
-		private void UpdateSourceCell(int rollerDuration)
+		/// <summary>
+		/// Занятость окна после переноса — как её меняет IssueTransfer: у штучного окна — счётчик
+		/// выпусков, у остальных — время; подтверждённые и неподтверждённые отдельно.
+		/// </summary>
+		private static void ChangeUsage(TariffWindowWithRollerIssues window, RollerIssue issue, int rollerDuration, int sign)
 		{
-			if (sourceTariffWindow.MaxCapacity > 0)
-				sourceTariffWindow.CapacityInUseConfirmed--;
+			bool confirmed = ParseHelper.GetBooleanFromObject(issue[Merlin.Classes.Action.ParamNames.IsConfirmed], false);
+			if (window.MaxCapacity > 0)
+			{
+				string column = confirmed
+					? TariffWindowWithRollerIssues.ParamNames.CapacityInUseConfirmed
+					: TariffWindowWithRollerIssues.ParamNames.CapacityInUseUnconfirmed;
+				window[column] = ParseHelper.ParseToInt32(window[column].ToString()) + sign;
+			}
+			else if (confirmed)
+				window.TimeInUseConfirmed += sign * rollerDuration;
 			else
-				sourceTariffWindow.TimeInUseConfirmed -= rollerDuration;
+				window.TimeInUseUnconfirmed += sign * rollerDuration;
+		}
+
+		private void UpdateSourceCell(RollerIssue issue, int rollerDuration)
+		{
+			ChangeUsage(sourceTariffWindow, issue, rollerDuration, -1);
 
 			DataGridViewCell cell = GetCell(sourceTariffWindow);
 			if (cell != null)
@@ -795,12 +812,9 @@ namespace Merlin.Controls
 			}
 		}
 
-		private void UpdateDestinationCell(int rollerDuration, TariffWindowWithRollerIssues destinationWindow)
+		private void UpdateDestinationCell(RollerIssue issue, int rollerDuration, TariffWindowWithRollerIssues destinationWindow)
 		{
-			if (sourceTariffWindow.MaxCapacity > 0)
-				destinationWindow.CapacityInUseConfirmed++;
-			else
-				destinationWindow.TimeInUseConfirmed += rollerDuration;
+			ChangeUsage(destinationWindow, issue, rollerDuration, +1);
 
 			UpdateGridCell(RawDataGridView.CurrentCell, destinationWindow);
 		}

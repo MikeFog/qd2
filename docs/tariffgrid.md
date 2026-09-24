@@ -303,7 +303,13 @@ UserControl
 - `TrafficGrid.TransferIssue` → `RollerIssue.SetNewPosition`: позиция в приёмнике считается по
   объекту окна, загруженному до переноса. Два выпуска «первый» одной пачкой: оба получают
   `First`, второй — отказ процедуры `FirstLastIssueErrorTransfer`. Веб учитывает пачку
-  (`TrafficManagement.PlanTransfer`).
+  (`TrafficManagement.PlanTransfer`). **Исправлено 24.09.2026**: после переноса
+  подтверждённого выпуска `RollerIssue.Transfer` помечает позицию занятой в объекте окна
+  (`TariffWindowWithRollerIssues.MarkPositionOccupied`).
+- `TrafficGrid.UpdateSourceCell`/`UpdateDestinationCell`: занятость окон после переноса
+  (до перечитывания сетки) всегда менялась в подтверждённых, даже у неподтверждённого
+  выпуска, а штучное окно или по времени у приёмника решалось по окну-источнику. **Исправлено
+  24.09.2026** (`ChangeUsage` — как `IssueTransfer`).
 - `PresentationObject.Equal` сравнивает `object[] IDs` оператором `!=` (упакованные `int` по ссылке) — одинаковые объекты «не равны»; используется `SmartGrid` при каждой смене строки во всём приложении (корень П-4).
 - `PresentationObject.Equals` сравнивает **хеши** (сумма хешей ID + сущность) — коллизия даст
   ложное равенство.

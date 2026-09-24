@@ -102,6 +102,11 @@ namespace Merlin.Classes
 			SetNewPosition((TariffWindowWithRollerIssues)destinationWindow, procParameters);
 
 			DataAccessor.DoAction(procParameters);
+			// Позицию занимает только подтверждённый выпуск (как в IssueTransfer). Следующий выпуск
+			// той же пачки должен увидеть её занятой, иначе процедура откажет (FirstLastIssueErrorTransfer).
+			if (ParseHelper.GetBooleanFromObject(this[Action.ParamNames.IsConfirmed], false)
+				&& procParameters.TryGetValue(ParamNames.NewPosition, out object newPosition))
+				((TariffWindowWithRollerIssues)destinationWindow).MarkPositionOccupied((RollerPositions)(int)newPosition);
 			Refresh();
 		}
 
