@@ -179,6 +179,7 @@
     <Compile Include="..\Client\Classes\TariffWindowWithProgramIssue.cs" Link="Domain\TariffWindowWithProgramIssue.cs" />
     <Compile Include="..\Client\Classes\TariffWindowWithRange.cs" Link="Domain\TariffWindowWithRange.cs" />
     <Compile Include="..\Client\Classes\TariffWindowWithRollerIssues.cs" Link="Domain\TariffWindowWithRollerIssues.cs" />
+    <Compile Include="..\Client\Classes\TariffWindowWeek.cs" Link="Domain\TariffWindowWeek.cs" />
   </ItemGroup>
 
 </Project>

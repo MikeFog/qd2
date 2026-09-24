@@ -87,12 +87,30 @@ public static class PassportSchema
 					Image: ParseImage(child),
 					Tree: ParseTree(child),
 					Type: ResolveType(child, name, entity),
-					IsLabel: child.Name == "label"));
+					IsLabel: child.Name == "label",
+					Locked: IsLocked(child)));
 			}
 			pages.Add(page);
 		}
 		return pages;
 	}
+
+	/// <summary>
+	/// Поле только для чтения по метаданным — дословно PageControl.SetControlLockedFlag:
+	/// <c>disabled="true"</c> — для всех, <c>locked="true"</c> — для всех, кроме
+	/// администратора. До этого веб атрибуты не читал, и такие поля (цена и исходное
+	/// время в карточке рекламного окна, занятость и т.п.) были редактируемыми.
+	/// </summary>
+	private static bool IsLocked(XmlNode node)
+	{
+		if (IsTrue(Attr(node, PageControl.Attributes.Disabled)))
+			return true;
+		return IsTrue(Attr(node, PageControl.Attributes.Locked))
+			&& SecurityManager.LoggedUser?.IsAdmin != true;
+	}
+
+	private static bool IsTrue(string? value) =>
+		!string.IsNullOrEmpty(value) && ParseHelper.ParseToBoolean(value);
 
 	private static string? Unsupported(XmlNode node, PageTypes pageType)
 	{
@@ -374,7 +392,8 @@ public sealed record PassportField(
 	PassportSelector? Selector = null,
 	PassportImage? Image = null,
 	bool IsLabel = false,
-	PassportTree? Tree = null);
+	PassportTree? Tree = null,
+	bool Locked = false);
 
 /// <param name="Source">Псевдоним набора строк из процедуры паспорта/фильтра (iTableAlias); null — набора нет, список берётся сущностью по <paramref name="EntityName"/>.</param>
 /// <param name="EntityName">Сущность запасного пути, когда готового набора по source нет; null — запасного пути нет.</param>

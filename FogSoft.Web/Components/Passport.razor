@@ -278,7 +278,7 @@ else
     [Parameter] public Func<string, bool>? FieldDisabled { get; set; }
 
     private bool IsDisabled(PassportField field) =>
-        FieldDisabled != null && field.Name.Length > 0 && FieldDisabled(field.Name);
+        field.Locked || (FieldDisabled != null && field.Name.Length > 0 && FieldDisabled(field.Name));
 
     /// <summary>
     /// Поле, не прошедшее проверку при прошлом «Сохранить» (имя из Validate);

@@ -57,3 +57,45 @@
         max-height: 40vh;
     }
 }
+
+/* Вкладки «Тарифы / Рекламные окна» у прайс-листа — тот же вид, что у страниц
+   карточки (Passport.razor.css). */
+.tabs {
+    display: flex;
+    gap: 2px;
+    margin-bottom: var(--s-2);
+    border-bottom: 1px solid var(--c-border);
+}
+
+.tab {
+    padding: var(--s-2) var(--s-3);
+    border: none;
+    border-bottom: 2px solid transparent;
+    background: none;
+    font-size: 13px;
+    color: var(--c-text-muted);
+    white-space: nowrap;
+}
+
+.tab:hover {
+    color: var(--c-text);
+}
+
+.tab-active {
+    color: var(--c-accent);
+    border-bottom-color: var(--c-accent);
+    font-weight: 600;
+}
+
+/* Сетка окон остаётся в разметке при переключении на «Тарифы» (hidden), поэтому
+   занимает высоту так же, как список. */
+.tab-pane {
+    flex: 1 1 auto;
+    display: flex;
+    flex-direction: column;
+    min-height: 0;
+}
+
+.tab-pane[hidden] {
+    display: none;
+}

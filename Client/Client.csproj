@@ -697,6 +697,7 @@
     <Compile Include="Classes\TariffWindowWithRange.cs" />
     <Compile Include="Classes\TariffWindowWithRollerIssues.cs" />
     <Compile Include="Classes\TariffWindowWithRollerIssues.WinForms.cs" />
+    <Compile Include="Classes\TariffWindowWeek.cs" />
     <Compile Include="Classes\Utils.cs">
       <SubType>Code</SubType>
     </Compile>

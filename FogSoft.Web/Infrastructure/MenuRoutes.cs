@@ -145,6 +145,10 @@ public static class MenuRoutes
 		new Dictionary<string, BrowserRoute>(StringComparer.OrdinalIgnoreCase)
 		{
 			{ "miTariff", new BrowserRoute(RelationScenarios.Tariff, "Радиостанция") },
+			// Десктоп — отдельная форма TariffWindowGenerationForm (своё дерево «Tariff
+			// Windows» + сетка окон). В вебе это то же дерево «Рекламные тарифы», сразу на
+			// вкладке окон у прайс-листа (решение 2026-09-23, docs/tasks/web-tariffgrid.md).
+			{ "miTariffWindow", new BrowserRoute(RelationScenarios.Tariff, "Радиостанция", OpenWindowsTab: true) },
 			{ "miModules", new BrowserRoute(RelationScenarios.Module, "Радиостанция") },
 			{ "miSponsorTariff", new BrowserRoute(RelationScenarios.SponsorProgramm, "Радиостанция") },
 			{ "miDiscount", new BrowserRoute(RelationScenarios.Discount, "Скидки") },
@@ -248,5 +252,8 @@ public sealed record EntitySwitch(string FilterField, Entities WhenTrue);
 /// поиска по имени в метаданных. Вызывается при каждом открытии экрана и не
 /// кэшируется: сценарий держит сущности из кэша circuit, а они персональные.
 /// </param>
+/// <param name="OpenWindowsTab">
+/// У прайс-листа радиостанции открывать сразу вкладку «Рекламные окна», а не «Тарифы».
+/// </param>
 public sealed record BrowserRoute(string Scenario, string RootName, Func<FakeContainer>? Factory = null,
-	bool ManagerFilter = false, Func<RelationScenario>? ScenarioFactory = null);
+	bool ManagerFilter = false, Func<RelationScenario>? ScenarioFactory = null, bool OpenWindowsTab = false);

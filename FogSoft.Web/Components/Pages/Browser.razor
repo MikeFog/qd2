@@ -4,6 +4,7 @@
 @using FogSoft.WinForm
 @using FogSoft.WinForm.Classes
 @using FogSoft.WinForm.Passport.Classes
+@using Merlin.Classes
 @inject ObjectActions Actions
 @inject ActionMenuService Menu
 @inject MenuAccess Access
@@ -69,7 +70,7 @@ else
            «Добавить модуль» и т. п. Прежняя веб-кнопка создавала объект
            без привязки к родителю (без CreateNewChild). «Изменить», «Удалить» и
            «Фильтр» десктопа тоже не кнопки: действия строки и постоянная панель. *@
-        <ScreenToolbar Title="@_caption">
+        <ScreenToolbar Title="@(_hasWindows && _windowsTab ? $"{_selected!.Name} / Рекламные окна" : _caption)">
             @if (_selectedCount > 0)
             {
                 <button class="btn btn-sm btn-danger" @onclick="DeleteSelected"><i class="bi bi-trash3" aria-hidden="true"></i>Удалить (@_selectedCount)</button>
@@ -89,15 +90,39 @@ else
             </nav>
 
             <div class="browser-list">
-                @if (_selected?.Container?.ChildEntity is { } childEntity)
+                @if (_hasWindows)
                 {
-                    <ObjectList @ref="_list" Entity="childEntity" Data="_data"
-                                EmptyText="У выбранного узла нет вложенных записей."
-                                Changed="RefreshSelected" Failed="ShowError" SelectionChanged="c => _selectedCount = c" />
+                    @* У прайс-листа радиостанции две вкладки: тарифы (список детей по
+                       сценарию) и рекламные окна (сетка недели). Десктоп держит окна на
+                       отдельной форме «Генерация рекламных окон» с тем же деревом —
+                       docs/tasks/web-tariffgrid.md. *@
+                    <div class="tabs" role="tablist">
+                        <button type="button" role="tab" class="tab @(_windowsTab ? "" : "tab-active")"
+                                @onclick="() => SwitchTab(false)">Тарифы</button>
+                        <button type="button" role="tab" class="tab @(_windowsTab ? "tab-active" : "")"
+                                @onclick="() => SwitchTab(true)">Рекламные окна</button>
+                    </div>
                 }
-                else
+                @if (_hasWindows && _windowsOpened)
                 {
-                    <div class="state">У этого узла нет вложенного списка.</div>
+                    @* Не пересоздаётся при переключении вкладок — неделя и выбранное окно
+                       сохраняются. Пока вкладку ни разу не открывали, окна не читаются. *@
+                    <div class="tab-pane" hidden="@(!_windowsTab)">
+                        <TariffWindowsView Pricelist="_selected!.Container!" RefreshToken="_windowsRefresh" />
+                    </div>
+                }
+                @if (!(_hasWindows && _windowsTab))
+                {
+                    if (_selected?.Container?.ChildEntity is { } childEntity)
+                    {
+                        <ObjectList @ref="_list" Entity="childEntity" Data="_data"
+                                    EmptyText="У выбранного узла нет вложенных записей."
+                                    Changed="RefreshSelected" Failed="ShowError" SelectionChanged="c => _selectedCount = c" />
+                    }
+                    else
+                    {
+                        <div class="state">У этого узла нет вложенного списка.</div>
+                    }
                 }
             </div>
         </div>
@@ -114,6 +139,18 @@ else
     private string? _error;
     private JournalAccess _access = JournalAccess.Allowed;
     private BrowserNode? _menuNode;
+
+    // Вкладки у прайс-листа радиостанции (TariffWindowWeek.Supports): «Тарифы» —
+    // обычный список детей, «Рекламные окна» — сетка недели. Выбранная вкладка
+    // сохраняется при переходе к другому прайс-листу. Пока открыты окна, список
+    // тарифов не читается — он догружается при переключении (_listStale).
+    private bool _hasWindows;
+    private bool _windowsTab;
+    private bool _listStale;
+    private bool _windowsOpened;
+    // Растёт при каждом чтении узла (выбор, «Обновить», после действия) — сетка
+    // окон перечитывает ту же неделю.
+    private int _windowsRefresh;
 
     // Страницы отбора и набор строк для его lookup/objectPicker — тот же
     // разрез, что у Journal.razor. У сценария отбор либо есть, либо нет
@@ -151,6 +188,7 @@ else
         {
             BrowserRoute route = MenuRoutes.Browser[Code];
             _restrictManager = route.ManagerFilter;
+            _windowsTab = route.OpenWindowsTab;
             // Сценарий из кода (экраны, которых нет в метаданных) строится заново
             // на каждое открытие, по имени — общий словарь RelationManager.
             RelationScenario scenario = route.ScenarioFactory?.Invoke()
@@ -270,7 +308,14 @@ else
         try
         {
             _error = null;
+            // Другой узел — сетка окон заводится заново; тот же (перечитка,
+            // возврат на «Тарифы») — уже открытая сетка остаётся со своей неделей.
+            bool sameNode = ReferenceEquals(node, _selected);
             _selected = node;
+            _hasWindows = TariffWindowWeek.Supports(node.Container);
+            _listStale = false;
+            _windowsOpened = _hasWindows && (_windowsTab || (sameNode && _windowsOpened));
+            _windowsRefresh++;
 
             Entity? childEntity = node.Container!.ChildEntity;
             if (childEntity == null)
@@ -281,6 +326,13 @@ else
             }
 
             _caption = $"{node.Name} / {childEntity.Name}";
+
+            if (_hasWindows && _windowsTab)
+            {
+                _data = null;
+                _listStale = true;
+                return;
+            }
 
             node.Container.ClearCache();
             _data = node.Container.GetContent();
@@ -401,6 +453,23 @@ else
 
         if (ReferenceEquals(node, _selected))
             Select(node);
+    }
+
+    /// <summary>
+    /// Переключение «Тарифы / Рекламные окна». Список тарифов, не прочитанный,
+    /// пока была открыта сетка окон, читается при первом возврате на вкладку.
+    /// </summary>
+    private Task SwitchTab(bool windows)
+    {
+        _windowsTab = windows;
+        if (windows)
+            _windowsOpened = true;
+        if (!windows && _listStale && _selected != null)
+        {
+            BrowserNode node = _selected;
+            return Busy.RunAsync(() => Select(node));
+        }
+        return Task.CompletedTask;
     }
 
     private ObjectList? _list;

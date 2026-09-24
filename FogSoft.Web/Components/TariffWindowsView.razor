@@ -1,0 +1,388 @@
+@using System.Globalization
+@using FogSoft.Web.Infrastructure
+@using FogSoft.WinForm
+@using FogSoft.WinForm.Classes
+@using Merlin.Classes
+@inject BusyService Busy
+@inject ObjectActions Actions
+@inject ActionMenuService Menu
+@inject NamedPassportDialog NamedPassports
+
+@*
+    Вкладка «Окна» у прайс-листа радиостанции: рекламные окна за неделю —
+    веб-аналог сетки на десктопной форме «Генерация рекламных окон»
+    (TariffWindowGenerationForm + TariffWindowGrid).
+
+    Не один в один (docs/tasks/web-tariffgrid.md):
+      - открывается на текущей неделе, если прайс-лист действует (десктоп — всегда
+        на первой неделе прайс-листа);
+      - недоступные и помеченные окна видны цветом, с легендой (в десктопе на этой
+        форме их не видно — раскраска есть только в сетке кампании);
+      - окно, изменённое относительно своего тарифа, помечено уголком, в подсказке —
+        что именно отличается (тариф — шаблон, окно — экземпляр:
+        docs/business-logic.md, «Тариф и рекламное окно»);
+      - под датой — число окон за день (в десктопе строка счётчика здесь всегда нули:
+        она про выпуски кампании, а на форме генерации кампании нет);
+      - нет кнопки «Удалить окно»: в десктопе она есть, но сгенерированное окно
+        процедура удалить не даёт (TariffWindowIUD, TariffWindowDeleteAttempt), а
+        других окон эта сетка не показывает. Удаляют окна «Удалить сгенерированные
+        окна» у строки времени и у прайс-листа.
+
+    Данные — один вызов TariffWindowRetrieve на неделю плюс список тарифов (фасад ядра
+    TariffWindowWeek). Действия над окном — общий движок (ObjectActions) по метаданным
+    сущности «Рекламное окно»: сейчас это «Свойства» (карточка окна).
+*@
+
+<div class="windows">
+    <div class="windows-bar">
+        <div class="week-nav">
+            <button class="btn btn-sm btn-outline-secondary" title="Предыдущая неделя"
+                    disabled="@(_week?.HasPrevious != true)" @onclick="PreviousWeek">
+                <i class="bi bi-chevron-left" aria-hidden="true"></i>
+            </button>
+            <span class="week-caption tabular">
+                @if (_week != null)
+                {
+                    @($"{_week.StartDate:dd.MM.yyyy} – {_week.FinishDate:dd.MM.yyyy}")
+                }
+            </span>
+            <button class="btn btn-sm btn-outline-secondary" title="Следующая неделя"
+                    disabled="@(_week?.HasNext != true)" @onclick="NextWeek">
+                <i class="bi bi-chevron-right" aria-hidden="true"></i>
+            </button>
+            <label class="jump">
+                Перейти к дате
+                <input type="date" class="form-control form-control-sm" value="@_date.ToString("yyyy-MM-dd")"
+                       @onchange="JumpToDate" />
+            </label>
+        </div>
+        <div class="legend">
+            <span><i class="swatch cell-disabled"></i>недоступно</span>
+            <span><i class="swatch cell-marked"></i>помечено</span>
+            <span title="Окно изменено точечно: продолжительность, цена, время выхода или вместимость не как в тарифе">
+                <i class="swatch swatch-modified"></i>не как в тарифе
+            </span>
+        </div>
+    </div>
+
+    @if (_error != null)
+    {
+        <div class="alert alert-danger">@_error</div>
+    }
+
+    @if (_week == null)
+    {
+        if (_error == null)
+        {
+            <div class="state">Загрузка…</div>
+        }
+    }
+    else if (_week.Rows.Count == 0)
+    {
+        <div class="state">
+            <div class="state-title">На этой неделе рекламных окон нет</div>
+            Окна появляются после генерации по тарифам прайс-листа.
+        </div>
+    }
+    else
+    {
+        <div class="data-table windows-table">
+            <table class="table">
+                <thead>
+                    <tr>
+                        <th class="col-price">Цена</th>
+                        <th class="col-time">Время</th>
+                        @for (int d = 0; d < TariffWindowWeek.DaysInWeek; d++)
+                        {
+                            <th class="col-day @(_week.IsInRange(d) ? null : "out")">
+                                <span class="day-name">@DayNames[d]</span>
+                                <span class="day-date">@_week.Monday.AddDays(d).ToString("dd.MM")</span>
+                                @if (_week.IsInRange(d))
+                                {
+                                    <span class="day-count" title="Окон за день">@_week.WindowsPerDay[d]</span>
+                                }
+                            </th>
+                        }
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (TariffWindowRow row in _week.Rows)
+                    {
+                        <tr class="@(ReferenceEquals(row, _menuRow) ? "row-menu-open" : null)">
+                            <td class="col-price">@row.Price.ToString("C")</td>
+                            <td class="col-time">
+                                <span class="time-cell">
+                                    <button type="button" class="row-btn" title="Действия со временем @row.Time"
+                                            aria-label="Действия со временем" aria-haspopup="menu"
+                                            @onclick="e => OpenRowMenu(row, e)">
+                                        <i class="bi bi-three-dots" aria-hidden="true"></i>
+                                    </button>
+                                    @row.Time
+                                </span>
+                            </td>
+                            @for (int d = 0; d < TariffWindowWeek.DaysInWeek; d++)
+                            {
+                                TariffWindowCell? cell = row.Cells[d];
+                                if (cell == null)
+                                {
+                                    <td class="cell empty @(_week.IsInRange(d) ? null : "out")"></td>
+                                }
+                                else
+                                {
+                                    <td class="@CellClass(cell)" title="@CellTitle(cell)"
+                                        @onclick="() => SelectCell(cell)" @ondblclick="() => OpenPassport(cell)"
+                                        @oncontextmenu="e => OpenCellMenu(cell, e, fromButton: false)" @oncontextmenu:preventDefault="true">@cell.Text</td>
+                                }
+                            }
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+
+        <div class="selection-line">
+            @if (_selected != null)
+            {
+                <span class="selection-text">
+                    Окно <b class="tabular">@_selected.WindowDate.ToString("dd.MM.yyyy HH:mm")</b> · @_selected.Text@StatusText(_selected)
+                    @if (_selected.IsModified)
+                    {
+                        <span class="deviations"> · не как в тарифе: @string.Join("; ", _selected.Deviations)</span>
+                    }
+                </span>
+                <span class="selection-actions">
+                    <button type="button" class="btn btn-sm btn-outline-secondary" @onclick="OpenSelectedPassport">
+                        <i class="bi bi-card-text" aria-hidden="true"></i>Открыть карточку
+                    </button>
+                    <button type="button" class="btn btn-sm btn-outline-secondary" title="Действия" aria-label="Действия"
+                            aria-haspopup="menu" @onclick="e => OpenCellMenu(_selected, e, fromButton: true)">
+                        <i class="bi bi-three-dots" aria-hidden="true"></i>
+                    </button>
+                </span>
+            }
+            else
+            {
+                <span class="muted">Выберите окно в сетке. Двойной клик — карточка окна, правая кнопка — действия с окном, «⋯» у времени — действия со строкой.</span>
+            }
+        </div>
+    }
+</div>
+
+@code {
+    /// <summary>Прайс-лист радиостанции — объект узла дерева (MassmediaPricelist, internal в ядре).</summary>
+    [Parameter, EditorRequired] public object Pricelist { get; set; } = default!;
+
+    /// <summary>Меняется, когда экран перечитывает узел («Обновить», действие над прайс-листом):
+    /// сетка перечитывает ту же неделю.</summary>
+    [Parameter] public int RefreshToken { get; set; }
+
+    private static readonly string[] DayNames = { "Пн", "Вт", "Ср", "Чт", "Пт", "Сб", "Вс" };
+
+    // Пункты меню строки времени — действия TariffWindowGrid.cmTimeColumn десктопа.
+    private const string ChangePriceAction = "ChangePrice";
+    private const string DeleteGeneratedAction = "DeleteGeneratedWindows";
+
+    private object? _loadedFor;
+    private int _loadedToken;
+    private TariffWindowWeek? _week;
+    private DateTime _date;
+    private TariffWindowCell? _selected;
+    private TariffWindowRow? _menuRow;
+    private string? _error;
+
+    protected override async Task OnParametersSetAsync()
+    {
+        // Перечитываем только при смене прайс-листа или по сигналу экрана: родитель
+        // перерисовывается и по другим причинам (раскрытие узлов, меню).
+        if (ReferenceEquals(_loadedFor, Pricelist))
+        {
+            if (_loadedToken == RefreshToken)
+                return;
+            _loadedToken = RefreshToken;
+            await Load();
+            return;
+        }
+
+        _loadedFor = Pricelist;
+        _loadedToken = RefreshToken;
+        _week = null;
+        _selected = null;
+        _date = TariffWindowWeek.DefaultDate(Pricelist);
+        await Load();
+    }
+
+    private Task Load() => Busy.RunAsync(() =>
+    {
+        try
+        {
+            _error = null;
+            _week = TariffWindowWeek.Load(Pricelist, _date);
+            // Дата вне срока прайс-листа прижата к его границе — поле показывает, что открыто.
+            if (_date < _week.StartDate || _date > _week.FinishDate)
+                _date = _week.StartDate;
+            // Ячейки после чтения — новые объекты: выбранное окно ищем по номеру. Окна
+            // другой недели на экране нет — выбор сбрасывается.
+            _selected = _selected == null ? null : FindCell(_selected.WindowId);
+        }
+        catch (Exception ex)
+        {
+            _error = ErrorPresenter.Describe(ex);
+        }
+    });
+
+    private Task PreviousWeek()
+    {
+        _date = _week!.StartDate.AddDays(-1);
+        return Load();
+    }
+
+    private Task NextWeek()
+    {
+        _date = _week!.FinishDate.AddDays(1);
+        return Load();
+    }
+
+    private Task JumpToDate(ChangeEventArgs e)
+    {
+        if (!DateTime.TryParseExact(e.Value?.ToString(), "yyyy-MM-dd", CultureInfo.InvariantCulture, DateTimeStyles.None, out DateTime date))
+            return Task.CompletedTask;
+        _date = date;
+        return Load();
+    }
+
+    private void SelectCell(TariffWindowCell cell) => _selected = cell;
+
+    private TariffWindowCell? FindCell(int windowId)
+    {
+        foreach (TariffWindowRow row in _week!.Rows)
+            foreach (TariffWindowCell? cell in row.Cells)
+                if (cell != null && cell.WindowId == windowId)
+                    return cell;
+        return null;
+    }
+
+    // ---------- Действия с окном ----------
+
+    /// <summary>
+    /// Меню окна — тот же движок и те же метаданные, что у строк списков: правая кнопка
+    /// по ячейке или «⋯» в строке выбранного окна. Сначала окно выбирается — видно, к
+    /// чему относится меню (как правая кнопка по узлу дерева).
+    /// </summary>
+    private async Task OpenCellMenu(TariffWindowCell cell, MouseEventArgs e, bool fromButton)
+    {
+        try
+        {
+            _selected = cell;
+            PresentationObject window = TariffWindowWeek.CreateWindowObject(cell);
+            string? picked = await Menu.ShowAsync(WithDoubleClickHint(Actions.BuildMenu(window, ViewType.Journal)),
+                e.ClientX, e.ClientY, fromButton);
+            if (picked != null)
+                await Execute(window, picked);
+        }
+        catch (Exception ex)
+        {
+            _error = ErrorPresenter.Describe(ex);
+        }
+    }
+
+    private Task OpenSelectedPassport() => _selected == null ? Task.CompletedTask : OpenPassport(_selected);
+
+    /// <summary>Карточка окна — двойной клик: одиночный клик в сетке выбирает окно.</summary>
+    private async Task OpenPassport(TariffWindowCell cell)
+    {
+        try
+        {
+            _selected = cell;
+            await Execute(TariffWindowWeek.CreateWindowObject(cell), Constants.EntityActions.ShowPassport);
+        }
+        catch (Exception ex)
+        {
+            _error = ErrorPresenter.Describe(ex);
+        }
+    }
+
+    /// <summary>
+    /// Меню строится для «списка» (ViewType.Journal) — там у «Открыть карточку» подсказка
+    /// «клик». В сетке клик выбирает окно, карточку открывает двойной клик.
+    /// </summary>
+    private static IReadOnlyList<ActionMenuItem> WithDoubleClickHint(IReadOnlyList<ActionMenuItem> items) =>
+        items.Select(i => i.Name != Constants.EntityActions.ShowPassport || i.Hint == null ? i : new ActionMenuItem
+        {
+            Name = i.Name, Text = i.Text, Icon = i.Icon, Hint = "двойной клик", Enabled = i.Enabled,
+            Ported = i.Ported, Danger = i.Danger, Children = i.Children,
+        }).ToList();
+
+    /// <summary>
+    /// Любое изменение окна (время выхода, продолжительность, запрет внесения) может
+    /// перенести его в другую строку или снять/поставить метку — перечитываем неделю.
+    /// </summary>
+    private async Task Execute(PresentationObject window, string actionName)
+    {
+        ActionEffect? effect = await Actions.ExecuteAsync(window, actionName, ViewType.Journal);
+        if (effect is { } done && done != ActionEffect.None)
+            await Load();
+    }
+
+    // ---------- Действия со строкой времени ----------
+
+    private async Task OpenRowMenu(TariffWindowRow row, MouseEventArgs e)
+    {
+        try
+        {
+            _menuRow = row;
+            var items = new[]
+            {
+                new ActionMenuItem { Name = ChangePriceAction, Text = "Изменить цену…", Icon = "bi-currency-exchange", Enabled = true, Ported = true },
+                new ActionMenuItem { Name = DeleteGeneratedAction, Text = "Удалить сгенерированные окна…", Icon = "bi-trash3", Enabled = true, Ported = false, Danger = true },
+            };
+            string? picked = await Menu.ShowAsync(items, e.ClientX, e.ClientY, fromButton: true);
+            _menuRow = null;
+            StateHasChanged();
+
+            if (picked == ChangePriceAction)
+                await ChangePrice(row);
+        }
+        catch (Exception ex)
+        {
+            _menuRow = null;
+            _error = ErrorPresenter.Describe(ex);
+        }
+    }
+
+    /// <summary>
+    /// «Изменить цену…» — веб-аналог TariffWindowGrid.ChangePrice: именованный паспорт
+    /// ChangeTariffWindowsPrice, проверки и процедура TariffWindowChangePrice — в ядре.
+    /// Меняются окна этого времени с этой ценой в выбранном интервале; после — неделя
+    /// перечитывается (окна с новой ценой уходят в другую строку).
+    /// </summary>
+    private async Task ChangePrice(TariffWindowRow row)
+    {
+        PresentationObject draft = TariffWindowWeek.CreateChangePriceDraft(Pricelist, row);
+        bool changed = await NamedPassports.ShowAsync(draft, TariffWindowWeek.ChangePricePassport,
+            $"Изменение цены: {row.Time}", isNew: false,
+            values => TariffWindowWeek.ValidateChangePrice(Pricelist, values),
+            TariffWindowWeek.ChangePrice,
+            data: new System.Data.DataSet());
+        if (changed)
+            await Load();
+    }
+
+    // ---------- Отрисовка ----------
+
+    private string CellClass(TariffWindowCell cell)
+    {
+        string css = "cell";
+        if (cell.IsDisabled) css += " cell-disabled";
+        else if (cell.IsMarked) css += " cell-marked";
+        if (cell.IsModified) css += " cell-modified";
+        if (ReferenceEquals(cell, _selected)) css += " selected";
+        return css;
+    }
+
+    private static string CellTitle(TariffWindowCell cell) =>
+        cell.WindowDate.ToString("dd.MM.yyyy HH:mm") + StatusText(cell)
+        + (cell.IsModified ? "\nНе как в тарифе:\n• " + string.Join("\n• ", cell.Deviations) : "");
+
+    private static string StatusText(TariffWindowCell cell) =>
+        (cell.IsDisabled ? " · недоступно" : "") + (cell.IsMarked ? " · помечено" : "");
+}
