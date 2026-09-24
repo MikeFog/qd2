@@ -28,6 +28,8 @@ BEGIN
         @issuesPrice DECIMAL(18,2),
         @ratio DECIMAL(18,10),
         @campaignDiscount DECIMAL(9,4),
+        @campaignDiscountReleaseID SMALLINT,   -- набор объёмной скидки, давший campaignDiscount
+        @packageDiscountPriceListID INT,       -- прайс-лист пакетной скидки, давший скидку акции
         @timeBonus INT,
         @programsCount INT,
         @issuesCount INT,
@@ -52,7 +54,8 @@ BEGIN
         finishDate DATETIME NULL,
         timeBonus INT NULL,
         campaignDiscount DECIMAL(9,4) NULL,
-        managerDiscountCampaign DECIMAL(18,10) NULL
+        managerDiscountCampaign DECIMAL(18,10) NULL,
+        discountReleaseID SMALLINT NULL
     );
 
     INSERT INTO #CampaignPhase1
@@ -293,7 +296,8 @@ BEGIN
             @campaignTypeID = @campaignTypeID,
             @startDate = @startDate,
             @tariffPrice = @tariffPrice,
-            @discountValue = @campaignDiscount OUTPUT;
+            @discountValue = @campaignDiscount OUTPUT,
+            @discountReleaseID = @campaignDiscountReleaseID OUTPUT;
 
         IF (@oldTotalCount = 0 AND (@newIssuesCount + @newProgramsCount) > 0)
            OR (@oldTotalCount > 0 AND (@newIssuesCount + @newProgramsCount) = 0)
@@ -304,7 +308,8 @@ BEGIN
         UPDATE #CampaignPhase1
         SET
             campaignDiscount = @campaignDiscount,
-            managerDiscountCampaign = @managerDiscountCampaign
+            managerDiscountCampaign = @managerDiscountCampaign,
+            discountReleaseID = @campaignDiscountReleaseID
         WHERE campaignID = @campaignID;
 
         FETCH NEXT FROM cur_phase1
@@ -327,7 +332,8 @@ BEGIN
         c.discount = p.campaignDiscount,
         c.timeBonus = ISNULL(p.timeBonus, 0),
         c.programsCount = ISNULL(p.programsCount, 0),
-        c.managerDiscount = ISNULL(p.managerDiscountCampaign, c.managerDiscount)
+        c.managerDiscount = ISNULL(p.managerDiscountCampaign, c.managerDiscount),
+        c.discountReleaseID = p.discountReleaseID
     FROM dbo.Campaign c
     INNER JOIN #CampaignPhase1 p ON p.campaignID = c.campaignID;
 
@@ -348,14 +354,16 @@ BEGIN
         EXEC dbo.hlp_ActionDiscountCalculate
             @actionID = @actionID,
             @startDate = @startDate,
-            @discountValue = @discountValue OUTPUT;
+            @discountValue = @discountValue OUTPUT,
+            @packageDiscountPriceListID = @packageDiscountPriceListID OUTPUT;
     ELSE
-        SET @discountValue = 1;
+        SELECT @discountValue = 1, @packageDiscountPriceListID = NULL;
 
     UPDATE dbo.[Action]
     SET
         tariffPrice = @tariffPrice,
         discount = @discountValue,
+        packageDiscountPriceListID = @packageDiscountPriceListID,
         startDate = @startDate,
         finishDate = @finishDate,
         modDate = GETDATE()

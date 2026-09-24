@@ -210,7 +210,9 @@
 **Возможное направление (решение за заказчиком, обсуждение назначено):**
 - (а) минимально — в `AddItem` заменить `@startDate` на `@date`, и научить `UpdateItem` перевыставлять `finishDate` соседям; схема остаётся с «открытым» концом;
 - (б) привести к единообразию с остальными сущностями — явные `startDate`/`finishDate` в паспорте и проверка пересечения (как в `PackageDiscountPriceListIUD`, ключ `PackageDiscountsCross`); потребуется поправить `hlp_CompanyDiscountCalculate`, `massmediaList`, паспорт сущности 22, миграцию существующих данных (открытым наборам проставить конец) и клонирование.
-Пока решение не принято, менять не нужно: на проде ошибка проявляется только при добавлении набора задним числом.
+**РЕШЕНО (23.09.2026), выбран вариант (б):** `Scripts/discount-release-finish-date-deploy.sql`. `finishDate` — последний день периода включительно, `NOT NULL`, задаётся в паспорте; открытые наборы закрыты 31.12.2026, закрытые переведены на «начало следующего − 1 день». `DiscountReleaseIUD` проверяет порядок дат (`StartFinishDateError`) и пересечение (`PLPeriodIntersection`), соседей не трогает; `hlp_CompanyDiscountCalculate` — `дата < finishDate + 1 день`. Ключ `DiscountReleaseStartDateExists` больше не используется.
+**Продолжение (23.09.2026):** `Campaign.discountReleaseID` / `Action.packageDiscountPriceListID` пишет `ActionRecalculate`; правка использованной скидки в qd2 показывает затронутые акции и спрашивает подтверждение, удаление использованной запрещено — `docs/tasks/discount-applied-pricelist-id.md`, `Scripts/discount-applied-pricelist-id-deploy.sql`.
+**Осталось:** в `massmediaList` (ветка с `@startDate`/`@finishDate`) фильтр `@hideDiscountsInThePast` проверяет `pl.finishDate` внешнего `Pricelist` вместо `dr.finishDate`, а в основной ветке фильтра по скидкам нет вовсе — не трогалось.
 
 ---
 

@@ -1,6 +1,7 @@
 using System.Windows.Forms;
 using FogSoft.WinForm;
 using FogSoft.WinForm.Classes;
+using Merlin.Forms;
 
 namespace Merlin.Classes
 {
@@ -31,6 +32,12 @@ namespace Merlin.Classes
 				FireContainerRefreshed();
 			}
 			else base.DoAction(actionName, owner, interfaceObject);
+		}
+
+		// Число станций — условие всех прайс-листов пакета: перед записью показываем задетые акции
+		public override bool Update()
+		{
+			return DiscountAffectedActionsForm.ConfirmSave(this) && base.Update();
 		}
 	}
 }

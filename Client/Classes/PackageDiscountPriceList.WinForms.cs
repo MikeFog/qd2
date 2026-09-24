@@ -24,6 +24,12 @@ namespace Merlin.Classes
 				base.DoAction(actionName, owner, interfaceObject);
 		}
 
+		// Перед записью — акции, в которых прайс-лист уже посчитан и которые правка может задеть
+		public override bool Update()
+		{
+			return DiscountAffectedActionsForm.ConfirmSave(this) && base.Update();
+		}
+
 		private void ClonePriceList(IWin32Window owner)
 		{
 			PresentationObject draft = CreateCloneDraft();

@@ -14,9 +14,11 @@
     [totalPrice]          DECIMAL (18, 2) CONSTRAINT [DF_Action_totalPrice] DEFAULT ((0)) NOT NULL,
     [isAlerted]           BIT             CONSTRAINT [DF_Action_isAlerted] DEFAULT ((0)) NOT NULL,
     [deleteDate]          DATETIME        NULL,
+    [packageDiscountPriceListID] INT      NULL,
     CONSTRAINT [PK_Action] PRIMARY KEY NONCLUSTERED ([actionID] ASC) WITH (FILLFACTOR = 90),
     CONSTRAINT [FK_Action_Firm] FOREIGN KEY ([firmID]) REFERENCES [dbo].[Firm] ([firmID]),
-    CONSTRAINT [FK_Action_User] FOREIGN KEY ([userID]) REFERENCES [dbo].[User] ([userID])
+    CONSTRAINT [FK_Action_User] FOREIGN KEY ([userID]) REFERENCES [dbo].[User] ([userID]),
+    CONSTRAINT [FK_Action_PackageDiscountPriceList] FOREIGN KEY ([packageDiscountPriceListID]) REFERENCES [dbo].[PackageDiscountPriceList] ([packageDiscountPriceListID])
 );
 
 
@@ -80,4 +82,9 @@ GO
 CREATE NONCLUSTERED INDEX [IX_Action_isConfirmed_createDate]
     ON [dbo].[Action]([isConfirmed] ASC, [createDate] ASC)
     INCLUDE([firmID], [userID], [actionID], [discount]);
+
+
+GO
+CREATE NONCLUSTERED INDEX [IX_Action_packageDiscountPriceListID]
+    ON [dbo].[Action]([packageDiscountPriceListID] ASC);
 

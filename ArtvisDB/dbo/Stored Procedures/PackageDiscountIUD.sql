@@ -40,6 +40,15 @@ BEGIN
 	END
 	ELSE IF @actionName = 'DeleteItem'
 	BEGIN
+		-- Пакет удаляется вместе с прайс-листами; если по любому из них посчитаны акции — нельзя
+		IF EXISTS(SELECT * FROM [Action] a
+		          JOIN PackageDiscountPriceList pl ON pl.packageDiscountPriceListID = a.packageDiscountPriceListID
+		          WHERE pl.packageDiscountID = @packageDiscountId)
+		BEGIN
+			raiserror('PackageDiscountInUse', 16, 1)
+			return
+		END
+
 		DELETE FROM PackageDiscount WHERE packageDiscountID = @packageDiscountId
 	END
 END

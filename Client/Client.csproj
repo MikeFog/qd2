@@ -619,8 +619,12 @@
     <Compile Include="Classes\Organization.WinForms.cs" />
     <Compile Include="Classes\DiscountRelease.cs" />
     <Compile Include="Classes\DiscountRelease.WinForms.cs" />
+    <Compile Include="Classes\DiscountValue.cs" />
+    <Compile Include="Classes\DiscountValue.WinForms.cs" />
     <Compile Include="Classes\PackageDiscount.cs" />
     <Compile Include="Classes\PackageDiscount.WinForms.cs" />
+    <Compile Include="Classes\PackageDiscountMassmedia.cs" />
+    <Compile Include="Classes\PackageDiscountMassmedia.WinForms.cs" />
     <Compile Include="Classes\PackageDiscountPriceList.cs" />
     <Compile Include="Classes\PackageDiscountPriceList.WinForms.cs" />
     <Compile Include="Classes\PackModule.cs" />
@@ -848,6 +852,9 @@
     </Compile>
     <Compile Include="Forms\FrmTemplate2.Designer.cs">
       <DependentUpon>FrmTemplate2.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Forms\DiscountAffectedActionsForm.cs">
+      <SubType>Form</SubType>
     </Compile>
     <Compile Include="Forms\FrmTemplate3.cs">
       <SubType>Form</SubType>

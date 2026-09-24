@@ -1,7 +1,7 @@
 ﻿CREATE TABLE [dbo].[DiscountRelease] (
     [discountReleaseID] SMALLINT IDENTITY (1, 1) NOT NULL,
     [startDate]         DATETIME NOT NULL,
-    [finishDate]        DATETIME NULL,
+    [finishDate]        DATETIME NOT NULL,
     [massmediaID]       SMALLINT NOT NULL,
     [isForType1]        BIT      CONSTRAINT [DF_DiscountRelease_isForType1] DEFAULT ((0)) NOT NULL,
     [isForType2]        BIT      CONSTRAINT [DF_DiscountRelease_isForType11] DEFAULT ((0)) NOT NULL,

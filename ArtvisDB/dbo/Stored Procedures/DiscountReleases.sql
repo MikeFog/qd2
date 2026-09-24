@@ -16,7 +16,7 @@ FROM
 WHERE
 	dr.[massmediaID] = Coalesce(@massmediaID, dr.[massmediaID])
 	AND dr.[discountReleaseID] = Coalesce(@discountReleaseID, dr.[discountReleaseID])
-	And (@hideDiscountsInThePast = 0 or dr.finishDate > GETDATE() or dr.finishDate Is Null)
+	And (@hideDiscountsInThePast = 0 or dr.finishDate >= CAST(GETDATE() AS date))
 ORDER BY
 	dr.startDate DESC
 GO

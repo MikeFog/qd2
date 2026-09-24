@@ -1,6 +1,7 @@
 using System.Windows.Forms;
 using FogSoft.WinForm;
 using FogSoft.WinForm.Classes;
+using Merlin.Forms;
 
 namespace Merlin.Classes
 {
@@ -15,6 +16,12 @@ namespace Merlin.Classes
 				CloneRelease(owner);
 			else
 				base.DoAction(actionName, owner, interfaceObject);
+		}
+
+		// Перед записью — акции, в которых набор уже посчитан и которые правка может задеть
+		public override bool Update()
+		{
+			return DiscountAffectedActionsForm.ConfirmSave(this) && base.Update();
 		}
 
 		private void CloneRelease(IWin32Window owner)

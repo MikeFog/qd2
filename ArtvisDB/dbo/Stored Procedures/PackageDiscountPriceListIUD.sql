@@ -20,8 +20,7 @@ AS
 begin
 SET NOCOUNT on
 DECLARE 
-	@Id int,
-	@date datetime
+	@Id int
 IF @actionName = 'Clone'
 	SELECT @packageDiscountId = packageDiscountID
 	FROM PackageDiscountPriceList
@@ -87,13 +86,13 @@ END
 		EXEC [PackageDiscountPriceLists] @packageDiscountPriceListId = @packageDiscountPriceListId
 	END
 	ELSE IF @actionName = 'DeleteItem' BEGIN
-		SELECT @date = finishDate	FROM PackageDiscountPriceList
-		WHERE	packageDiscountPriceListId = @packageDiscountPriceListId
+		-- Прайс-лист, по которому уже посчитаны акции, удалять нельзя
+		IF EXISTS(SELECT * FROM [Action] WHERE packageDiscountPriceListID = @packageDiscountPriceListId) BEGIN
+			raiserror('PackageDiscountInUse', 16, 1)
+			return
+		END
 
 		DELETE FROM PackageDiscountPriceList WHERE packageDiscountPriceListId = @packageDiscountPriceListId
-
-		UPDATE PackageDiscountPriceList SET finishDate = @date 
-		WHERE [packageDiscountID] = @packageDiscountID AND finishDate = @startDate	
 	END
 	ELSE IF @actionName = 'UpdateItem' BEGIN
 

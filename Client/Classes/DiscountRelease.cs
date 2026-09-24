@@ -16,6 +16,7 @@ namespace Merlin.Classes
             public const string discountReleaseID = "discountReleaseID";
             public const string sourceDiscountReleaseID = "sourceDiscountReleaseID";
             public const string startDate = "startDate";
+            public const string finishDate = "finishDate";
         }
 
         public DiscountRelease() : base(EntityManager.GetEntity((int)Entities.DiscountRelease))
@@ -29,7 +30,7 @@ namespace Merlin.Classes
         /// <summary>
         /// Черновик копии набора скидок: значения исходного, но без ключа, с пометкой Clone и ссылкой
         /// на источник. Записывается паспортом (Update -> DiscountReleaseIUD 'Clone'); суммы и проценты
-        /// копирует процедура. Дата принятия по умолчанию — сегодня.
+        /// копирует процедура. Период по умолчанию — с сегодня до конца года.
         /// </summary>
         public override PresentationObject CreateCloneDraft()
         {
@@ -38,6 +39,7 @@ namespace Merlin.Classes
             draft.parameters[ParamNames.sourceDiscountReleaseID] = this[ParamNames.discountReleaseID];
             draft.parameters.Remove(ParamNames.discountReleaseID);
             draft.parameters[ParamNames.startDate] = DateTime.Today;
+            draft.parameters[ParamNames.finishDate] = new DateTime(DateTime.Today.Year, 12, 31);
             return draft;
         }
     }

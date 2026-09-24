@@ -21,9 +21,11 @@
     [billDate]        DATETIME         NULL,
     [managerDiscount] DECIMAL (18, 10) CONSTRAINT [DF_Campaign_managerDiscount] DEFAULT ((1)) NOT NULL,
     [contractNo]      INT              NULL,
+    [discountReleaseID] SMALLINT       NULL,
     CONSTRAINT [PK_Campaign] PRIMARY KEY CLUSTERED ([campaignID] ASC),
     CONSTRAINT [FK_Campaign_Action] FOREIGN KEY ([actionID]) REFERENCES [dbo].[Action] ([actionID]) ON DELETE CASCADE ON UPDATE CASCADE,
-    CONSTRAINT [UIX_Campaign] UNIQUE NONCLUSTERED ([actionID] ASC, [massmediaID] ASC, [campaignTypeID] ASC, [paymentTypeID] ASC, [agencyID] ASC)
+    CONSTRAINT [UIX_Campaign] UNIQUE NONCLUSTERED ([actionID] ASC, [massmediaID] ASC, [campaignTypeID] ASC, [paymentTypeID] ASC, [agencyID] ASC),
+    CONSTRAINT [FK_Campaign_DiscountRelease] FOREIGN KEY ([discountReleaseID]) REFERENCES [dbo].[DiscountRelease] ([discountReleaseID])
 );
 
 
@@ -80,4 +82,9 @@ GO
 CREATE NONCLUSTERED INDEX [IX_Campaign_startDate_finishDate]
     ON [dbo].[Campaign]([startDate] ASC, [finishDate] ASC)
     INCLUDE([actionID], [campaignTypeID], [paymentTypeID], [massmediaID]);
+
+
+GO
+CREATE NONCLUSTERED INDEX [IX_Campaign_discountReleaseID]
+    ON [dbo].[Campaign]([discountReleaseID] ASC);
 

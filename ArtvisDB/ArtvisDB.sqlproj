@@ -576,6 +576,7 @@
     <Build Include="dbo\Stored Procedures\CampaignImportGrammofon.sql" />
     <Build Include="dbo\Stored Procedures\massmediaList.sql" />
     <Build Include="dbo\Stored Procedures\DiscountReleaseIUD.sql" />
+    <Build Include="dbo\Stored Procedures\DiscountChangeAffectedActions.sql" />
     <Build Include="dbo\Stored Procedures\ModulePricelistPassport.sql" />
     <Build Include="dbo\Stored Procedures\ModulePricelistIUD.sql" />
     <Build Include="dbo\Stored Procedures\FirmWithActions1.sql" />

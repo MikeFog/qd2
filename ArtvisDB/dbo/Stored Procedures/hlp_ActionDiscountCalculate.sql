@@ -2,7 +2,8 @@
 (
 @actionID int,
 @startDate datetime,
-@discountValue decimal(9,4) output
+@discountValue decimal(9,4) output,
+@packageDiscountPriceListID int = NULL output -- какой прайс-лист дал скидку (NULL — ни один)
 )
 AS
 SET NOCOUNT on
@@ -23,7 +24,10 @@ WHERE c.actionID=@actionID and c.campaignTypeID < 4
 
 SELECT @avgDuration=COALESCE(@avgDuration,0), @campaignsCount=COALESCE(@campaignsCount,0)
 
-SELECT @discountValue=COALESCE(MIN(pl.discount),1) FROM (
+-- Самый выгодный клиенту прайс-лист; при равных скидках — меньший ID, чтобы ссылка была однозначной
+SELECT @discountValue = 1, @packageDiscountPriceListID = NULL
+
+SELECT TOP 1 @discountValue=pl.discount, @packageDiscountPriceListID=pl.packageDiscountPriceListID FROM (
 		SELECT m.packageDiscountPriceListID, count(DISTINCT c.massmediaID) AS campaignsCount
 		FROM Campaign c
 			JOIN (
@@ -53,3 +57,5 @@ WHERE
 	d.count = t.campaignsCount
 	AND @startDate BETWEEN pl.startDate AND pl.finishDate
 	and pl.value <= @priceByCampaigns
+ORDER BY
+	pl.discount, pl.packageDiscountPriceListID
