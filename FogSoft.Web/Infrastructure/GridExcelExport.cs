@@ -168,7 +168,7 @@ public static class GridExcelExport
 
         writer.WriteStartElement(new Row());
         foreach (Entity.Attribute a in columns)
-            writer.WriteElement(StringCell(strings, a.Alias ?? a.Name, StHeader));
+            writer.WriteElement(StringCell(strings, Tr.T(a.Alias) ?? a.Name, StHeader));
         writer.WriteEndElement();
 
         foreach (DataRow row in rows)

@@ -17,14 +17,17 @@ namespace FogSoft.Web.Infrastructure;
 /// </summary>
 public static class MenuService
 {
-	/// <param name="language">Язык пользователя (<see cref="WebLanguage"/>).
-	/// Процедура сама знает только испанский (iMenu.name_es), остальное — русский.</param>
-	public static List<MenuNode> Load(string language)
+	/// <summary>
+	/// Названия — на языке пользователя: процедура отдаёт русские (languageCode = ru,
+	/// старый iMenu.name_es не используется), переводит <see cref="Tr"/> по iTranslation.
+	/// Дерево — своё у каждого circuit (MenuAccess), так что переводить при загрузке можно.
+	/// </summary>
+	public static List<MenuNode> Load()
 	{
 		var parameters = new Dictionary<string, object>(StringComparer.OrdinalIgnoreCase)
 		{
 			[SecurityManager.ParamNames.UserId] = SecurityManager.LoggedUser.Id,
-			["languageCode"] = language,
+			["languageCode"] = WebLanguage.Russian,
 		};
 		DataSet ds = DataAccessor.LoadDataSet("UserMenuItems", parameters);
 		DataTable dt = ds.Tables[0];
@@ -41,7 +44,7 @@ public static class MenuService
 			var node = new MenuNode
 			{
 				MenuId = int.Parse(row["menuID"].ToString()!),
-				Name = row["name"].ToString() ?? "",
+				Name = Tr.T(row["name"].ToString() ?? ""),
 				CodeName = row["codeName"] == DBNull.Value ? null : row["codeName"].ToString(),
 				Enabled = row["enabled"] != DBNull.Value && Convert.ToBoolean(row["enabled"]),
 				ImgResourcePath = row["imgResourcePath"] == DBNull.Value ? null : row["imgResourcePath"].ToString(),

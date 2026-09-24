@@ -123,9 +123,9 @@ else
 
     // Заголовок — как в десктопе: свой у маршрута (то, что MDIForm задаёт в коде),
     // иначе текст пункта меню (mi.Text), иначе имя сущности.
-    private string? Title => _route?.Caption
+    private string? Title => Tr.T(_route?.Caption)
         ?? (_menuCode == null ? null : Access.MenuText(_menuCode))
-        ?? _entity?.Name;
+        ?? Tr.T(_entity?.Name);
 
     private Entity? _entity;
 

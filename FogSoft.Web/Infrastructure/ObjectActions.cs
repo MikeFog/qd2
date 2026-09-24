@@ -369,7 +369,7 @@ public sealed class ObjectActions
 		return new ActionMenuItem
 		{
 			Name = action.Name,
-			Text = isProperties ? "Открыть карточку" : action.Alias,
+			Text = isProperties ? "Открыть карточку" : Tr.T(action.Alias),
 			// В списке карточку открывает клик по строке, в дереве клик выбирает узел.
 			Hint = isProperties && view == ViewType.Journal ? "клик" : null,
 			Icon = ActionIcons.For(action.Name, action.ImgResourceName),
@@ -415,7 +415,7 @@ public sealed class ObjectActions
 			result.Add(new ActionMenuItem
 			{
 				Name = name,
-				Text = action.Alias,
+				Text = Tr.T(action.Alias),
 				Icon = ActionIcons.For(action.Name, action.ImgResourceName),
 				Enabled = true,
 				Ported = true,

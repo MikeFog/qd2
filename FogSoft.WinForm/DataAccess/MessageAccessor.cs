@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Data;
+using FogSoft.WinForm.Classes;
 
 namespace FogSoft.WinForm.DataAccess
 {
@@ -51,7 +52,9 @@ namespace FogSoft.WinForm.DataAccess
 				if(!LoadMessage(name)) return null;
 
 			Message msg = messages[name];
-			string text = msg.Text;
+			// Перевод шаблона — до подстановки параметров (веб, docs/tasks/web-i18n.md);
+			// в десктопе переводчика нет, текст остаётся как в iMessage.
+			string text = Tr.T(msg.Text);
 			if (msg.Parameters != null && msg.Parameters.Length > 0)
 			{
 				object[] msgParameters = new object[msg.Parameters.Length];
@@ -61,7 +64,7 @@ namespace FogSoft.WinForm.DataAccess
 				return string.Format(text, msgParameters);
 			}
 
-			return msg.Text;
+			return text;
 		}
 
 		private static bool LoadMessage(string name)

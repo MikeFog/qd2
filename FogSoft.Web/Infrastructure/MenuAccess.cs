@@ -160,7 +160,7 @@ public sealed class MenuAccess
 			return;
 		}
 
-		_tree = MenuService.Load(language);
+		_tree = MenuService.Load();
 		Collect(_tree);
 	}
 

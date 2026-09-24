@@ -44,7 +44,7 @@ public sealed class PassportDialog
 
 		// Заголовок — как в PassportForm.SetFormCaption.
 		string title = isNew
-			? $"Новый: {obj.Entity.Name}"
+			? $"Новый: {Tr.T(obj.Entity.Name)}"
 			: $"Свойства: {obj.Name}";
 
 		string? message = null;

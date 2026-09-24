@@ -79,10 +79,14 @@ public sealed class WebTranslator : Tr.ITranslator
 		string language = Current;
 		if (language == WebLanguage.Russian)
 			return source;
+		// Разделители, «%», «$» и т. п. — переводить нечего.
+		if (!source.Any(char.IsLetter))
+			return source;
 		if (language == WebLanguage.Pseudo)
 			return "[·" + source + "·]";
 
-		// Хранилища переводов ещё нет (этап 2) — показываем оригинал.
+		if (TranslationStore.Find(language, source, context) is { } text)
+			return text;
 		if (_reportedMissing.TryAdd(language + "\u0001" + context + "\u0001" + source, 0))
 			Log.InfoFormat("Нет перевода [{0}{1}]: «{2}»", language,
 				context == null ? "" : ", " + context, source);

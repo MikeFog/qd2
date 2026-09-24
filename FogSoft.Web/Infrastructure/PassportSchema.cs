@@ -54,7 +54,7 @@ public static class PassportSchema
 
 		foreach (XmlNode pageNode in doc.SelectNodes("//page")!)
 		{
-			var page = new PassportPage(Attr(pageNode, "caption") ?? "");
+			var page = new PassportPage(Tr.T(Attr(pageNode, "caption")) ?? "");
 			foreach (XmlNode child in pageNode.ChildNodes)
 			{
 				if (child.NodeType != XmlNodeType.Element)
@@ -74,7 +74,7 @@ public static class PassportSchema
 
 				page.Fields.Add(new PassportField(
 					Name: name,
-					Caption: Attr(child, PageControl.Attributes.Caption) ?? name,
+					Caption: Tr.T(Attr(child, PageControl.Attributes.Caption)) ?? name,
 					// type в метаданных указан не всегда: у паспорта сущности 17
 					// его нет, тип берётся из атрибутов сущности. Здесь — только
 					// то, что явно записано в XML.

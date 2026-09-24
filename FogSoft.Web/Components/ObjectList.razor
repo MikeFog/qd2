@@ -65,7 +65,7 @@ else
                     @foreach (var a in Columns)
                     {
                         <th class="sortable" @onclick="() => SortBy(a.Name)">
-                            @a.Alias<span class="sort-mark">@SortMark(a.Name)</span>
+                            @Tr.T(a.Alias)<span class="sort-mark">@SortMark(a.Name)</span>
                         </th>
                     }
                     @if (!ReadOnly)
@@ -144,7 +144,7 @@ else
                                     }
                                     else
                                     {
-                                        <button type="button" class="total-btn" title="Сумма по колонке" aria-label="Сумма по колонке «@a.Alias»" @onclick="() => ToggleTotal(a.Name)">Σ</button>
+                                        <button type="button" class="total-btn" title="Сумма по колонке" aria-label="Сумма по колонке «@Tr.T(a.Alias)»" @onclick="() => ToggleTotal(a.Name)">Σ</button>
                                     }
                                 </td>
                             }
