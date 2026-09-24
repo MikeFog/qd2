@@ -1,0 +1,35 @@
+@*
+    Содержимое окна выбора интервала (PeriodDialog): две даты, пояснение и ошибка
+    проверки. Значения пишутся прямо в модель — её читает PeriodDialog по «ОК».
+*@
+
+@if (Value.Message != null)
+{
+    <div class="alert alert-danger">@Value.Message</div>
+}
+@if (Value.Hint != null)
+{
+    <p class="text-muted">@Value.Hint</p>
+}
+<div class="period">
+    <label>
+        Начиная с
+        <input type="date" class="form-control form-control-sm" @bind="Value.Start" />
+    </label>
+    <label>
+        Оканчивая
+        <input type="date" class="form-control form-control-sm" @bind="Value.Finish" />
+    </label>
+</div>
+
+@code {
+    [Parameter, EditorRequired] public Model Value { get; set; } = default!;
+
+    public sealed class Model
+    {
+        public DateTime Start { get; set; }
+        public DateTime Finish { get; set; }
+        public string? Hint { get; set; }
+        public string? Message { get; set; }
+    }
+}

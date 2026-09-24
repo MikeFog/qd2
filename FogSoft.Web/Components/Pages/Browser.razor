@@ -108,7 +108,7 @@ else
                     @* Не пересоздаётся при переключении вкладок — неделя и выбранное окно
                        сохраняются. Пока вкладку ни разу не открывали, окна не читаются. *@
                     <div class="tab-pane" hidden="@(!_windowsTab)">
-                        <TariffWindowsView Pricelist="_selected!.Container!" RefreshToken="_windowsRefresh" />
+                        <TariffWindowsView Pricelist="_selected!.Container!" RefreshToken="_windowsRefresh" Changed="WindowsChanged" />
                     </div>
                 }
                 @if (!(_hasWindows && _windowsTab))
@@ -470,6 +470,32 @@ else
             return Busy.RunAsync(() => Select(node));
         }
         return Task.CompletedTask;
+    }
+
+    /// <summary>
+    /// Операция с окнами прайс-листа завершилась: перечитать сам прайс-лист (в его имени
+    /// срок сгенерированных окон), узел и сетку — как десктоп после генерации делает
+    /// Refresh + FireContainerRefreshed.
+    /// </summary>
+    private Task WindowsChanged()
+    {
+        if (_selected == null)
+            return Task.CompletedTask;
+
+        BrowserNode node = _selected;
+        return Busy.RunAsync(() =>
+        {
+            try
+            {
+                if (node.Container is PresentationObject po)
+                    po.Refresh();
+                AfterNodeAction(node, ActionEffect.Changed);
+            }
+            catch (Exception ex)
+            {
+                _error = ErrorPresenter.Describe(ex);
+            }
+        });
     }
 
     private ObjectList? _list;

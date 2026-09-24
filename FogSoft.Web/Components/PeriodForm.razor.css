@@ -1,0 +1,12 @@
+.period {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--s-4);
+}
+
+.period label {
+    display: flex;
+    flex-direction: column;
+    gap: var(--s-1);
+    color: var(--c-text-muted);
+}

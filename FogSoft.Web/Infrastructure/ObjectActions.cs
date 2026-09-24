@@ -93,15 +93,19 @@ public sealed class ObjectActions
 	private readonly DialogService _dialogs;
 	private readonly TableDialog _tables;
 	private readonly BusyService _busy;
+	private readonly PeriodDialog _periods;
+	private readonly ProgressDialog _progress;
 
 	public ObjectActions(PassportDialog passports, NamedPassportDialog namedPassports, DialogService dialogs, TableDialog tables,
-		BusyService busy)
+		BusyService busy, PeriodDialog periods, ProgressDialog progress)
 	{
 		_passports = passports;
 		_namedPassports = namedPassports;
 		_dialogs = dialogs;
 		_tables = tables;
 		_busy = busy;
+		_periods = periods;
+		_progress = progress;
 	}
 
 	private delegate Task<ActionEffect> Handler(ObjectActions self, object target);
@@ -197,9 +201,24 @@ public sealed class ObjectActions
 		// паспорт TariffMass (см. NamedPassportDialog), не CreateCloneDraft. Класс
 		// MassmediaPricelist сам internal (см. комментарий у ["Pricelist"] выше про
 		// internal-наследников Pricelist), поэтому цель — публичный базовый тип.
+		// Работа с рекламными окнами — остальные ветки того же DoAction. Цель — копия
+		// прайс-листа с дочерней сущностью «Рекламное окно» (PricelistWindows.ForWindows):
+		// только в таком виде MassmediaPricelist.IsActionEnabled эти пункты разрешает.
+		// Вызываются с вкладки «Рекламные окна» (TariffWindowsView).
 		["MassmediaPricelist"] = new()
 		{
 			["AddTariffsMass"] = (s, t) => s.AddTariffsMass((Merlin.Classes.Pricelist)t),
+			[Merlin.Classes.PricelistWindows.ActionNames.GenerateWindows] = (s, t) => s.GenerateWindows(t),
+			[Merlin.Classes.PricelistWindows.ActionNames.DeleteGeneratedWindows] = (s, t) => s.DeleteGeneratedWindows(t, null),
+			[Merlin.Classes.PricelistWindows.ActionNames.DisabledTariffWindows] = (s, t) =>
+				s.ChangeWindowsStatus(t, Merlin.Classes.PricelistWindows.ActionNames.DisabledTariffWindows, "Запретить вносить выпуски в окна"),
+			[Merlin.Classes.PricelistWindows.ActionNames.EnabledTariffWindows] = (s, t) =>
+				s.ChangeWindowsStatus(t, Merlin.Classes.PricelistWindows.ActionNames.EnabledTariffWindows, "Разрешить вносить выпуски в окна"),
+			[Merlin.Classes.PricelistWindows.ActionNames.MarkWindows] = (s, t) =>
+				s.ChangeWindowsStatus(t, Merlin.Classes.PricelistWindows.ActionNames.MarkWindows, "Пометить окна цветом"),
+			[Merlin.Classes.PricelistWindows.ActionNames.UnmarkWindows] = (s, t) =>
+				s.ChangeWindowsStatus(t, Merlin.Classes.PricelistWindows.ActionNames.UnmarkWindows, "Снять пометку окон цветом"),
+			[Merlin.Classes.PricelistWindows.ActionNames.ShowDisabledWindows] = (s, t) => s.ShowDisabledWindows(t),
 		},
 		// Tariff.WinForms.cs, DoAction: «Изменить похожие тарифы» — второй именованный
 		// паспорт (TariffMassEdit). "Clone" у Tariff не задет: ClassActions проверяется по
@@ -1007,6 +1026,110 @@ public sealed class ObjectActions
 
 	/// <summary>Простое информационное сообщение — тот же диалог, что и у остальных
 	/// действий (TableDialog, подтверждение удаления), только с текстом вместо списка.</summary>
+	// ---------- Рекламные окна прайс-листа ----------
+
+	/// <summary>
+	/// «Сгенерировать рекламные окна» — MassmediaPricelist.WinForms.GenerateTariffWindows:
+	/// интервал (по умолчанию — срок прайс-листа), генерация по неделям с прогрессом, затем
+	/// проверка склеенных окон и перечитывание прайс-листа — и после остановки тоже, для
+	/// уже сгенерированной части.
+	/// </summary>
+	private async Task<ActionEffect> GenerateWindows(object pricelist)
+	{
+		var period = await _periods.ShowAsync("Интервал генерации окон",
+			Merlin.Classes.PricelistWindows.StartDate(pricelist), Merlin.Classes.PricelistWindows.FinishDate(pricelist),
+			"Сгенерировать", (a, b) => Merlin.Classes.PricelistWindows.ValidatePeriod(pricelist, a, b),
+			"Окна строятся по тарифам прайс-листа. Уже сгенерированные окна не меняются.");
+		if (period is not { } p)
+			return ActionEffect.None;
+
+		var weeks = Merlin.Classes.PricelistWindows.Weeks(p.Start, p.Finish);
+		ProgressOutcome outcome = await _progress.RunAsync("Генерация рекламных окон", weeks, DescribeWeek,
+			w => Merlin.Classes.PricelistWindows.Generate(pricelist, w.Item1, w.Item2));
+
+		if (outcome.Done > 0)
+			await _busy.RunAsync(() => Merlin.Classes.PricelistWindows.AfterGenerate(
+				pricelist, p.Start, weeks[outcome.Done - 1].Item2));
+		return outcome.Done > 0 ? ActionEffect.Changed : ActionEffect.None;
+	}
+
+	/// <summary>
+	/// «Удалить сгенерированные рекламные окна» у прайс-листа (<paramref name="time"/> = null)
+	/// и у строки времени сетки (только это время) — MassmediaPricelist.WinForms.
+	/// DeleteGeneratedTariffWindows и TariffWindowGrid.DeleteGeneratedTariffWindows.
+	/// Окна с выпусками процедура не трогает.
+	/// </summary>
+	public async Task<ActionEffect> DeleteGeneratedWindows(object pricelist, TimeSpan? time)
+	{
+		DateTime start = Merlin.Classes.PricelistWindows.StartDate(pricelist);
+		// Для одного времени — с сегодняшнего дня: прошлые окна удалять незачем (десктоп
+		// предлагает весь срок прайс-листа).
+		if (time.HasValue && DateTime.Today > start)
+			start = DateTime.Today;
+		DateTime finish = Merlin.Classes.PricelistWindows.FinishDate(pricelist);
+		if (start > finish)
+			start = finish;
+
+		string timeText = time.HasValue ? " " + time.Value.ToString(@"hh\:mm") : "";
+		var period = await _periods.ShowAsync($"Интервал удаления сгенерированных окон{timeText}", start, finish,
+			"Удалить", (a, b) => Merlin.Classes.PricelistWindows.ValidatePeriod(pricelist, a, b),
+			(time.HasValue ? $"Удаляются окна времени{timeText}" : "Удаляются все окна прайс-листа")
+			+ " в выбранном интервале. Окна, в которых уже есть выпуски, остаются.");
+		if (period is not { } p)
+			return ActionEffect.None;
+
+		var weeks = Merlin.Classes.PricelistWindows.Weeks(p.Start, p.Finish);
+		ProgressOutcome outcome = await _progress.RunAsync("Удаление сгенерированных окон", weeks, DescribeWeek,
+			w => Merlin.Classes.PricelistWindows.DeleteGenerated(pricelist, w.Item1, w.Item2, time));
+
+		if (outcome.Done > 0)
+			await _busy.RunAsync(() => Merlin.Classes.PricelistWindows.Refresh(pricelist));
+		return outcome.Done > 0 ? ActionEffect.Changed : ActionEffect.None;
+	}
+
+	private static string DescribeWeek(Tuple<DateTime, DateTime> week) =>
+		$"{week.Item1:dd.MM.yyyy} – {week.Item2:dd.MM.yyyy}";
+
+	/// <summary>
+	/// Запретить/разрешить внесение, пометить/снять пометку — TariffWindowsDisabledStatusForm:
+	/// именованный паспорт TariffWindowsStatusChange (время, интервал, дни недели), один
+	/// вызов процедуры.
+	/// </summary>
+	private async Task<ActionEffect> ChangeWindowsStatus(object pricelist, string actionName, string caption)
+	{
+		PresentationObject draft = Merlin.Classes.PricelistWindows.CreateStatusChangeDraft(pricelist);
+		bool ok = await _namedPassports.ShowAsync(draft, Merlin.Classes.PricelistWindows.StatusChangePassport, caption,
+			isNew: false,
+			values => Merlin.Classes.PricelistWindows.ValidateStatusChange(pricelist, values),
+			values => Merlin.Classes.PricelistWindows.ChangeStatus(pricelist, actionName, values),
+			data: new DataSet());
+		return ok ? ActionEffect.Changed : ActionEffect.None;
+	}
+
+	/// <summary>«Показать заблокированные окна» — MassmediaPricelist.WinForms.ShowDisabledWindows.</summary>
+	private async Task<ActionEffect> ShowDisabledWindows(object pricelist)
+	{
+		var period = await _periods.ShowAsync("Выбрать период отчёта",
+			Merlin.Classes.PricelistWindows.StartDate(pricelist), Merlin.Classes.PricelistWindows.FinishDate(pricelist),
+			"Показать", (a, b) => a > b ? MessageAccessor.GetMessage("StartFinishWindowTimeError") : null);
+		if (period is not { } p)
+			return ActionEffect.None;
+
+		DataTable table = await _busy.RunAsync(() => Merlin.Classes.PricelistWindows.DisabledWindows(pricelist, p.Start, p.Finish));
+		if (table.Rows.Count == 0)
+		{
+			await ShowInfo("Заблокированные окна", "Недоступных для внесения окон за этот период нет.");
+			return ActionEffect.None;
+		}
+
+		await _tables.ShowAsync($"Заблокированные окна: {table.Rows.Count}", table,
+			new Entity.Attribute(Merlin.Classes.TariffWindow.ParamNames.WindowDateOriginal, "Время выхода", "datetime"),
+			new Entity.Attribute(Merlin.Classes.TariffWindow.ParamNames.WindowDateActual, "Время выхода реальное", "datetime"),
+			new Entity.Attribute("durationString", "Продолжительность", "nvarchar"),
+			new Entity.Attribute(Merlin.Classes.TariffWindow.ParamNames.Price, "Цена", "money"));
+		return ActionEffect.None;
+	}
+
 	private Task ShowInfo(string caption, string text) =>
 		_dialogs.ShowAsync(caption, builder => builder.AddContent(0, text), okText: "Ок");
 

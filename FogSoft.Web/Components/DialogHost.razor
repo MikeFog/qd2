@@ -35,10 +35,13 @@
                     @dialog.Body
                 </div>
                 <div class="modal-footer">
-                    <button class="btn btn-primary" disabled="@(!isTop)"
-                            @onclick="() => Dialogs.CloseAsync(DialogOutcome.Ok)">@dialog.OkText</button>
+                    @if (dialog.OkText != null)
+                    {
+                        <button class="btn btn-primary" disabled="@(!isTop)"
+                                @onclick="() => Dialogs.CloseAsync(DialogOutcome.Ok)">@dialog.OkText</button>
+                    }
                     <button class="btn btn-secondary" disabled="@(!isTop)"
-                            @onclick="() => Dialogs.CloseAsync(DialogOutcome.Cancel)">Отмена</button>
+                            @onclick="() => Dialogs.CloseAsync(DialogOutcome.Cancel)">@dialog.CancelText</button>
                 </div>
             </div>
         </div>

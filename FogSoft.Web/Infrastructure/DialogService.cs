@@ -52,7 +52,10 @@ public sealed class DialogService
 	/// <summary>Сообщает хосту, что нужно перерисоваться.</summary>
 	public event Func<Task>? Changed;
 
-	public async Task<DialogOutcome> ShowAsync(string title, RenderFragment body, string okText = "Сохранить")
+	/// <param name="okText">Надпись на подтверждающей кнопке; null — кнопки нет (окно прогресса).</param>
+	/// <param name="cancelText">Надпись на кнопке отказа.</param>
+	public async Task<DialogOutcome> ShowAsync(string title, RenderFragment body, string? okText = "Сохранить",
+		string cancelText = "Отмена")
 	{
 		// RunContinuationsAsynchronously обязателен: без него продолжение
 		// вызывающего кода выполнилось бы прямо внутри обработчика нажатия
@@ -61,7 +64,7 @@ public sealed class DialogService
 		var completion = new TaskCompletionSource<DialogOutcome>(
 			TaskCreationOptions.RunContinuationsAsynchronously);
 
-		_stack.Add(new Entry(new DialogRequest(title, body, okText), completion));
+		_stack.Add(new Entry(new DialogRequest(title, body, okText, cancelText), completion));
 		await NotifyAsync();
 
 		return await completion.Task;
@@ -83,6 +86,12 @@ public sealed class DialogService
 		top.Completion.TrySetResult(outcome);
 	}
 
+	/// <summary>
+	/// Перерисовать открытые диалоги — содержимое, которое читает меняющееся состояние
+	/// (прогресс долгой операции, см. ProgressDialog).
+	/// </summary>
+	public Task RefreshAsync() => NotifyAsync();
+
 	private async Task NotifyAsync()
 	{
 		if (Changed != null)
@@ -94,5 +103,6 @@ public sealed class DialogService
 
 /// <param name="Title">Заголовок окна.</param>
 /// <param name="Body">Содержимое — любой компонент, например паспорт.</param>
-/// <param name="OkText">Надпись на подтверждающей кнопке.</param>
-public sealed record DialogRequest(string Title, RenderFragment Body, string OkText);
+/// <param name="OkText">Надпись на подтверждающей кнопке; null — кнопки нет.</param>
+/// <param name="CancelText">Надпись на кнопке отказа.</param>
+public sealed record DialogRequest(string Title, RenderFragment Body, string? OkText, string CancelText = "Отмена");

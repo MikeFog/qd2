@@ -161,7 +161,7 @@ namespace Merlin.Classes
 		// ChangeTariffWindowsMarkedStatus, ChangeTariffWindowsDisabedStatus,
 		// GenerateTariffWindows(IWin32Window) переехали в MassmediaPricelist.WinForms.cs.
 
-        private void CheckLinkedWindows(DateTime startDate, DateTime finishDate)
+        internal void CheckLinkedWindows(DateTime startDate, DateTime finishDate)
         {
 			Dictionary<string, object> procParameters = new Dictionary<string, object>(StringComparer.CurrentCultureIgnoreCase)
 			{

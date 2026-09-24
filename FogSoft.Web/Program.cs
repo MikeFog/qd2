@@ -26,6 +26,10 @@ builder.Services.AddScoped<NamedPassportDialog>();
 // Действия над объектами (замена контекстного меню десктопа) и само
 // всплывающее меню — тоже свои на circuit, как диалоги.
 builder.Services.AddScoped<TableDialog>();
+// Интервал дат (аналог FrmDateSelector) и долгая операция с прогрессом (аналог
+// ProgressForm) — генерация и удаление рекламных окон.
+builder.Services.AddScoped<PeriodDialog>();
+builder.Services.AddScoped<ProgressDialog>();
 builder.Services.AddScoped<ObjectActions>();
 builder.Services.AddScoped<ActionMenuService>();
 // Курсор ожидания на время долгой загрузки — тоже свой на circuit.

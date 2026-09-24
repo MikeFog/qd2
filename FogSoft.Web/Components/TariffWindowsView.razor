@@ -30,12 +30,20 @@
 
     Данные — один вызов TariffWindowRetrieve на неделю плюс список тарифов (фасад ядра
     TariffWindowWeek). Действия над окном — общий движок (ObjectActions) по метаданным
-    сущности «Рекламное окно»: сейчас это «Свойства» (карточка окна).
+    сущности «Рекламное окно»: сейчас это «Свойства» (карточка окна). Операции с окнами
+    прайс-листа («Сгенерировать», «Удалить сгенерированные», запрет внесения, пометка,
+    заблокированные окна) — тот же движок по метаданным прайс-листа, кнопкой над сеткой;
+    в десктопе это меню узла прайс-листа в дереве формы генерации окон.
 *@
 
 <div class="windows">
     <div class="windows-bar">
         <div class="week-nav">
+            <button type="button" class="btn btn-sm btn-outline-secondary" aria-haspopup="menu"
+                    @onclick="OpenPricelistMenu">
+                <i class="bi bi-grid-3x3" aria-hidden="true"></i>Операции с окнами
+                <i class="bi bi-chevron-down" aria-hidden="true"></i>
+            </button>
             <button class="btn btn-sm btn-outline-secondary" title="Предыдущая неделя"
                     disabled="@(_week?.HasPrevious != true)" @onclick="PreviousWeek">
                 <i class="bi bi-chevron-left" aria-hidden="true"></i>
@@ -175,6 +183,13 @@
     /// <summary>Меняется, когда экран перечитывает узел («Обновить», действие над прайс-листом):
     /// сетка перечитывает ту же неделю.</summary>
     [Parameter] public int RefreshToken { get; set; }
+
+    /// <summary>
+    /// Операция изменила окна прайс-листа (генерация, удаление, запрет, пометка). Экран
+    /// перечитывает узел — в имени прайс-листа срок сгенерированных окон — и вместе с ним
+    /// сетку (RefreshToken).
+    /// </summary>
+    [Parameter] public EventCallback Changed { get; set; }
 
     private static readonly string[] DayNames = { "Пн", "Вт", "Ср", "Чт", "Пт", "Сб", "Вс" };
 
@@ -333,7 +348,7 @@
             var items = new[]
             {
                 new ActionMenuItem { Name = ChangePriceAction, Text = "Изменить цену…", Icon = "bi-currency-exchange", Enabled = true, Ported = true },
-                new ActionMenuItem { Name = DeleteGeneratedAction, Text = "Удалить сгенерированные окна…", Icon = "bi-trash3", Enabled = true, Ported = false, Danger = true },
+                new ActionMenuItem { Name = DeleteGeneratedAction, Text = "Удалить сгенерированные окна…", Icon = "bi-trash3", Enabled = true, Ported = true, Danger = true },
             };
             string? picked = await Menu.ShowAsync(items, e.ClientX, e.ClientY, fromButton: true);
             _menuRow = null;
@@ -341,6 +356,9 @@
 
             if (picked == ChangePriceAction)
                 await ChangePrice(row);
+            else if (picked == DeleteGeneratedAction
+                     && await Actions.DeleteGeneratedWindows(Pricelist, row.TimeOfDay) != ActionEffect.None)
+                await Changed.InvokeAsync();
         }
         catch (Exception ex)
         {
@@ -365,6 +383,41 @@
             data: new System.Data.DataSet());
         if (changed)
             await Load();
+    }
+
+    // ---------- Операции с окнами прайс-листа ----------
+
+    /// <summary>
+    /// Меню прайс-листа, но только его пункты про окна — по метаданным (порядок, права,
+    /// доступность), для копии прайс-листа с дочерней сущностью «Рекламное окно»
+    /// (PricelistWindows.ForWindows). Прочие пункты прайс-листа — в меню узла дерева.
+    /// </summary>
+    private async Task OpenPricelistMenu(MouseEventArgs e)
+    {
+        try
+        {
+            object target = PricelistWindows.ForWindows(Pricelist);
+            var items = Actions.BuildMenu(target, ViewType.Tree)
+                .Where(i => i.IsSeparator || PricelistWindows.ActionNames.All.Contains(i.Name))
+                .ToList();
+            // Разделители по краям и подряд — после фильтра их могло стать больше.
+            while (items.Count > 0 && items[0].IsSeparator) items.RemoveAt(0);
+            while (items.Count > 0 && items[^1].IsSeparator) items.RemoveAt(items.Count - 1);
+            for (int i = items.Count - 1; i > 0; i--)
+                if (items[i].IsSeparator && items[i - 1].IsSeparator) items.RemoveAt(i);
+
+            string? picked = await Menu.ShowAsync(items, e.ClientX, e.ClientY, fromButton: true);
+            if (picked == null)
+                return;
+
+            ActionEffect? effect = await Actions.ExecuteAsync(target, picked, ViewType.Tree);
+            if (effect is { } done && done != ActionEffect.None)
+                await Changed.InvokeAsync();
+        }
+        catch (Exception ex)
+        {
+            _error = ErrorPresenter.Describe(ex);
+        }
     }
 
     // ---------- Отрисовка ----------
