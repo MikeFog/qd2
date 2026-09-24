@@ -156,6 +156,13 @@ a:hover {
     background-color: var(--c-surface);
 }
 
+/* Общий padding выше съедает место Bootstrap под стрелку — без этого стрелка
+   наезжает на текст узкого списка (переключатель языка в шапке). */
+.form-select {
+    padding-right: 28px;
+    background-position: right 8px center;
+}
+
 .form-control[readonly] {
     background: var(--c-bg);
     color: var(--c-text);

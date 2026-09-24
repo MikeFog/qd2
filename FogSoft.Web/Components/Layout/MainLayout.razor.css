@@ -118,6 +118,10 @@
     color: var(--c-text);
 }
 
+.shell-language {
+    width: auto;
+}
+
 .shell-content {
     flex: 1 1 auto;
     overflow: auto;

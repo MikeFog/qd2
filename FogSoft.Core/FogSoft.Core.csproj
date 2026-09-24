@@ -77,6 +77,7 @@
     <Compile Include="..\FogSoft.WinForm\Classes\SecurityManager.cs" Link="Classes\SecurityManager.cs" />
     <Compile Include="..\FogSoft.WinForm\Classes\SimpleObject.cs" Link="Classes\SimpleObject.cs" />
     <Compile Include="..\FogSoft.WinForm\Classes\StringUtil.cs" Link="Classes\StringUtil.cs" />
+    <Compile Include="..\FogSoft.WinForm\Classes\Tr.cs" Link="Classes\Tr.cs" />
     <Compile Include="..\FogSoft.WinForm\Classes\TempFileWorker.cs" Link="Classes\TempFileWorker.cs" />
     <Compile Include="..\FogSoft.WinForm\Classes\Time.cs" Link="Classes\Time.cs" />
     <Compile Include="..\FogSoft.WinForm\Classes\UserSettings.cs" Link="Classes\UserSettings.cs" />

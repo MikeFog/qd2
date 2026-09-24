@@ -49,7 +49,7 @@
                     <span class="meta">@s[Massmedia.ParamNames.GroupName]</span>
                     @if (s[Massmedia.ParamNames.DeadLine] is DateTime closed)
                     {
-                        <span class="meta tabular"><i class="bi bi-lock-fill" aria-hidden="true"></i>@closed.ToString("dd.MM.yyyy")</span>
+                        <span class="meta tabular"><i class="bi bi-lock-fill" aria-hidden="true"></i>@DisplayFormat.Date(closed)</span>
                     }
                 </label>
             </li>

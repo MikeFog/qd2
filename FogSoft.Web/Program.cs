@@ -1,3 +1,4 @@
+using System.Globalization;
 using System.Reflection;
 using FogSoft.Web.Components;
 using FogSoft.Web.Infrastructure;
@@ -68,6 +69,16 @@ SecurityManager.SetLoggedUserStorage(
 // метаданные под конкретный @userID, а кэш в ядре — статический.
 EntityManager.SetEntityCache(
     new WebEntityCache(app.Services.GetRequiredService<CircuitServicesAccessor>()));
+
+// Формат дат, чисел и валюта — одни на всю установку (App.config, Culture), не
+// зависят ни от ОС сервера, ни от языка пользователя. Язык интерфейса — отдельно,
+// в сеансе пользователя: docs/tasks/web-i18n.md.
+CultureInfo culture = CultureInfo.GetCultureInfo(
+    System.Configuration.ConfigurationManager.AppSettings["Culture"] is { Length: > 0 } name ? name : "ru-RU");
+CultureInfo.DefaultThreadCurrentCulture = culture;
+CultureInfo.DefaultThreadCurrentUICulture = culture;
+WebLanguage.PseudoEnabled = app.Environment.IsDevelopment();
+Tr.SetTranslator(new WebTranslator(app.Services.GetRequiredService<CircuitServicesAccessor>()));
 
 // Права на действия начинают проверяться на исполнении, а не только гасить
 // кнопки, как в десктопе: в вебе адрес вызывается напрямую, минуя меню.

@@ -62,7 +62,7 @@
             @if (_selected != null)
             {
                 <span class="selection-text">
-                    Окно <b class="tabular">@_selected.WindowDate.ToString("dd.MM.yyyy HH:mm")</b> · @_selected.Text@WindowWeekGrid.StatusText(_selected)
+                    Окно <b class="tabular">@DisplayFormat.DateAndTime(_selected.WindowDate)</b> · @_selected.Text@WindowWeekGrid.StatusText(_selected)
                     @if (_selected.IsModified)
                     {
                         <span class="deviations"> · не как в тарифе: @string.Join("; ", _selected.Deviations)</span>

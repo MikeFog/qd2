@@ -2,6 +2,7 @@
 @using System.Configuration
 @using FogSoft.Web.Infrastructure
 @using FogSoft.WinForm.Classes
+@inject UserSession Session
 
 @*
     Вход и стартовый экран.
@@ -83,19 +84,10 @@ else
         _error = null;
         try
         {
-            SecurityManager.Login(_login, _password);
-            if (SecurityManager.LoggedUser == null)
-            {
-                _error = "Неверный логин или пароль.";
-            }
-            else
-            {
+            if (WebLogin.Login(Session, _login, _password))
                 _password = "";
-                // Словарь процедур обязателен до первого DoAction и не грузится
-                // лениво — см. CoreBootstrap. В десктопе это делает
-                // SplashLogginForm после входа, здесь — мы.
-                CoreBootstrap.EnsureDictionariesLoaded();
-            }
+            else
+                _error = "Неверный логин или пароль.";
         }
         catch (Exception ex)
         {

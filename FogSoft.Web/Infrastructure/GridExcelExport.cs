@@ -405,6 +405,21 @@ public static class GridExcelExport
             new BottomBorder(new Color { Auto = true }) { Style = BorderStyleValues.Thin },
             new DiagonalBorder());
 
+        // Знак валюты — по культуре установки (App.config, Culture), а не «₽»
+        // намертво: docs/tasks/web-i18n.md. Для ru-RU получается прежний формат.
+        static string MoneyFormatCode()
+        {
+            NumberFormatInfo nf = CultureInfo.CurrentCulture.NumberFormat;
+            string symbol = "\"" + nf.CurrencySymbol + "\"";
+            return nf.CurrencyPositivePattern switch
+            {
+                0 => symbol + "#,##0.00",
+                1 => "#,##0.00" + symbol,
+                2 => symbol + "\\ #,##0.00",
+                _ => "#,##0.00\\ " + symbol,
+            };
+        }
+
         static CellFormat Xf(uint numFmt, uint font, uint border) => new()
         {
             NumberFormatId = numFmt,
@@ -418,7 +433,7 @@ public static class GridExcelExport
 
         return new Stylesheet(
             new NumberingFormats(
-                new NumberingFormat { NumberFormatId = FmtMoney, FormatCode = "#,##0.00\\ \"₽\"" },
+                new NumberingFormat { NumberFormatId = FmtMoney, FormatCode = MoneyFormatCode() },
                 new NumberingFormat { NumberFormatId = FmtTime, FormatCode = "hh:mm:ss" },
                 new NumberingFormat { NumberFormatId = FmtDate, FormatCode = "dd/mm/yyyy" },
                 new NumberingFormat { NumberFormatId = FmtDateTime, FormatCode = "dd/mm/yyyy\\ hh:mm:ss" }),

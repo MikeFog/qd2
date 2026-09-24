@@ -14,6 +14,7 @@ namespace FogSoft.Web.Infrastructure;
 public sealed class UserSession
 {
 	private SecurityManager.User? _user;
+	private string? _language;
 
 	public SecurityManager.User? User
 	{
@@ -21,6 +22,24 @@ public sealed class UserSession
 		set
 		{
 			_user = value;
+			// Язык — настройка пользователя: после выхода вкладка возвращается к
+			// языку установки, а не остаётся на языке прежнего пользователя.
+			if (value == null)
+				_language = null;
+			Changed?.Invoke();
+		}
+	}
+
+	/// <summary>
+	/// Язык интерфейса пользователя (<see cref="WebLanguage"/>); null — язык
+	/// установки. Выставляется при входе из UserSetting и переключателем в шапке.
+	/// </summary>
+	public string? Language
+	{
+		get => _language;
+		set
+		{
+			_language = value;
 			Changed?.Invoke();
 		}
 	}

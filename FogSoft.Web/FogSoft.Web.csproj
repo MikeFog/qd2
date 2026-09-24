@@ -9,6 +9,8 @@
     <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
     <BlazorDisableThrowNavigationException>true</BlazorDisableThrowNavigationException>
+    <!-- user-secrets разработчика: автологин (WebLogin.TryDevAutoLogin) -->
+    <UserSecretsId>fogsoft-web-qd2</UserSecretsId>
   </PropertyGroup>
 
   <ItemGroup>

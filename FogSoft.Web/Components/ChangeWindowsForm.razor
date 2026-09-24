@@ -115,7 +115,7 @@
         public string? Message { get; set; }
     }
 
-    private static readonly string[] DayNames = { "Пн", "Вт", "Ср", "Чт", "Пт", "Сб", "Вс" };
+    private static string[] DayNames => DisplayFormat.WeekDaysFromMonday();
 
     private string TimesText => string.Join(", ", Value.Times.Select(t => t.ToString(@"hh\:mm")));
 

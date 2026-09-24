@@ -4,6 +4,9 @@
 @using FogSoft.WinForm.Classes
 @inject UserSession Session
 @inject BusyService Busy
+@inject IConfiguration Configuration
+@inject IWebHostEnvironment Environment
+@inject NavigationManager Navigation
 
 @*
     Оболочка приложения: слева дерево меню, сверху полоса с текущим
@@ -26,12 +29,22 @@
             {
                 <div class="shell-user">
                     <span class="shell-user-name">@UserName(user)</span>
-                    <button type="button" class="btn btn-sm btn-outline-secondary" @onclick="Logout"><i class="bi bi-box-arrow-right" aria-hidden="true"></i>Выйти</button>
+                    <select class="form-select form-select-sm shell-language" aria-label="@(Tr.T("Язык интерфейса"))"
+                            value="@Language" @onchange="ChangeLanguage">
+                        @foreach (var language in WebLanguage.Available)
+                        {
+                            <option value="@language.Code">@language.Name</option>
+                        }
+                    </select>
+                    <button type="button" class="btn btn-sm btn-outline-secondary" @onclick="Logout"><i class="bi bi-box-arrow-right" aria-hidden="true"></i>@Tr.T("Выйти")</button>
                 </div>
             }
         </header>
 
-        <main class="shell-content">
+        @* Ключ — язык и пользователь: при их смене экран создаётся заново. Иначе
+           страница, у которой не поменялись параметры, осталась бы на прежнем
+           языке, а открытая до автологина — с «вы не вошли в систему». *@
+        <main class="shell-content" @key="ScreenKey">
             @Body
         </main>
     </div>
@@ -71,6 +84,19 @@
 
     private void OnSessionChanged() => InvokeAsync(StateHasChanged);
 
+    // После первой интерактивной отрисовки, а не в OnInitialized: тот вызывается
+    // ещё и при пререндере, где circuit нет и входить некуда.
+    protected override void OnAfterRender(bool firstRender)
+    {
+        if (firstRender)
+        {
+            string query = new Uri(Navigation.Uri).Query;
+            string? devUser = Microsoft.AspNetCore.WebUtilities.QueryHelpers.ParseQuery(query)
+                .TryGetValue("devuser", out var value) ? value.ToString() : null;
+            WebLogin.TryDevAutoLogin(Session, Configuration, Environment, devUser);
+        }
+    }
+
     // Уже на диспетчере circuit (BusyService зовётся из обработчиков экранов), но
     // InvokeAsync безвреден и защищает от вызова извне.
     private void OnBusyChanged() => InvokeAsync(StateHasChanged);
@@ -82,6 +108,19 @@
     }
 
     private void Logout() => SecurityManager.Clear();
+
+    private string Language => Session.Language ?? WebLanguage.Default;
+
+    private string ScreenKey => Language + "|" + Session.User?.Id;
+
+    private void ChangeLanguage(ChangeEventArgs e)
+    {
+        string? language = WebLanguage.Normalize(e.Value?.ToString());
+        if (language == null || language == Language)
+            return;
+        UserSettings.Save(WebLanguage.SettingName, language);
+        Session.Language = language;
+    }
 
     public void Dispose()
     {

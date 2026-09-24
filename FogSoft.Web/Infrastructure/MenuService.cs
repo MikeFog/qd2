@@ -17,12 +17,14 @@ namespace FogSoft.Web.Infrastructure;
 /// </summary>
 public static class MenuService
 {
-	public static List<MenuNode> Load()
+	/// <param name="language">Язык пользователя (<see cref="WebLanguage"/>).
+	/// Процедура сама знает только испанский (iMenu.name_es), остальное — русский.</param>
+	public static List<MenuNode> Load(string language)
 	{
 		var parameters = new Dictionary<string, object>(StringComparer.OrdinalIgnoreCase)
 		{
 			[SecurityManager.ParamNames.UserId] = SecurityManager.LoggedUser.Id,
-			["languageCode"] = System.Configuration.ConfigurationManager.AppSettings["Language"] ?? "ru",
+			["languageCode"] = language,
 		};
 		DataSet ds = DataAccessor.LoadDataSet("UserMenuItems", parameters);
 		DataTable dt = ds.Tables[0];

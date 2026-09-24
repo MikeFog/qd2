@@ -82,7 +82,7 @@ else
                                         @if (closed != null)
                                         {
                                             <span class="closed-through" title="День обработан по этой дате">
-                                                <i class="bi bi-lock-fill" aria-hidden="true"></i>@closed.Value.ToString("dd.MM.yyyy")
+                                                <i class="bi bi-lock-fill" aria-hidden="true"></i>@DisplayFormat.Date(closed.Value)
                                             </span>
                                         }
                                     </span>
@@ -109,7 +109,7 @@ else
                             <i class="bi bi-box-arrow-right" aria-hidden="true"></i>
                             <span>
                                 Перенос выпусков (@_transfer.Issues.Count) из окна
-                                <b class="tabular">@_transfer.Source.WindowDate.ToString("dd.MM HH:mm")</b> —
+                                <b class="tabular">@DisplayFormat.DayMonthTime(_transfer.Source.WindowDate)</b> —
                                 щёлкните окно, куда перенести
                             </span>
                             <button type="button" class="btn btn-sm btn-outline-secondary" title="Отменить перенос (Esc)"
@@ -152,7 +152,7 @@ else
                 <aside class="window-panel">
                     <div class="panel-head">
                         <div>
-                            <div class="panel-title tabular">Окно @_selected.WindowDate.ToString("dd.MM.yyyy HH:mm")</div>
+                            <div class="panel-title tabular">Окно @DisplayFormat.DateAndTime(_selected.WindowDate)</div>
                             <div class="panel-sub">@_selected.Text@WindowWeekGrid.StatusText(_selected)</div>
                             @if (_selected.IsModified)
                             {
@@ -336,7 +336,7 @@ else
     /// </summary>
     private RenderFragment<DateTime> DayLockButton => day =>
     @<button type="button" class="day-lock @(IsClosed(day) ? "is-closed" : null)"
-             title="@(IsClosed(day) ? $"Снять отметку «обработан» с {day:dd.MM}" : $"Отметить обработанным по {day:dd.MM}")"
+             title="@(IsClosed(day) ? $"Снять отметку «обработан» с {DisplayFormat.DayMonth(day)}" : $"Отметить обработанным по {DisplayFormat.DayMonth(day)}")"
              @onclick="() => ToggleDay(day)" @onclick:stopPropagation="true">
         <i class="bi @(IsClosed(day) ? "bi-unlock" : "bi-lock")" aria-hidden="true"></i>
     </button>;
@@ -351,8 +351,8 @@ else
         bool reopen = IsClosed(day);
         DateTime newDate = reopen ? day.AddDays(-1) : day;
         string text = reopen
-            ? $"Снять отметку «обработан» со станции «{_stationName}» начиная с {day:dd.MM.yyyy}? Станция будет обработана по {newDate:dd.MM.yyyy}."
-            : $"Отметить станцию «{_stationName}» обработанной по {day:dd.MM.yyyy} включительно? Выпуски этих дней сможет менять только трафик-менеджер и администратор.";
+            ? $"Снять отметку «обработан» со станции «{_stationName}» начиная с {DisplayFormat.Date(day)}? Станция будет обработана по {DisplayFormat.Date(newDate)}."
+            : $"Отметить станцию «{_stationName}» обработанной по {DisplayFormat.Date(day)} включительно? Выпуски этих дней сможет менять только трафик-менеджер и администратор.";
 
         if (await Dialogs.ShowAsync(reopen ? "Снять отметку" : "День обработан", b => b.AddContent(0, text),
                 okText: reopen ? "Снять отметку" : "Отметить") != DialogOutcome.Ok)
@@ -661,8 +661,8 @@ else
         if (plan == null)
             return;
 
-        string question = $"Перенести выпуски ({plan.Items.Count}) из окна {source.Source.WindowDate:dd.MM.yyyy HH:mm} "
-                          + $"в окно {destination.WindowDate:dd.MM.yyyy HH:mm}?";
+        string question = $"Перенести выпуски ({plan.Items.Count}) из окна {DisplayFormat.DateAndTime(source.Source.WindowDate)} "
+                          + $"в окно {DisplayFormat.DateAndTime(destination.WindowDate)}?";
         if (await Dialogs.ShowAsync("Перенос выпусков", b =>
             {
                 b.OpenElement(0, "p");

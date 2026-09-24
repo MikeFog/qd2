@@ -1088,7 +1088,7 @@ public sealed class ObjectActions
 	}
 
 	private static string DescribeWeek(Tuple<DateTime, DateTime> week) =>
-		$"{week.Item1:dd.MM.yyyy} – {week.Item2:dd.MM.yyyy}";
+		$"{DisplayFormat.Date(week.Item1)} – {DisplayFormat.Date(week.Item2)}";
 
 	/// <summary>
 	/// Запретить/разрешить внесение, пометить/снять пометку — TariffWindowsDisabledStatusForm:

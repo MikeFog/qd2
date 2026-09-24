@@ -347,6 +347,7 @@
     <Compile Include="Classes\ReportExporter.cs" />
     <Compile Include="Classes\SimpleObject.cs" />
     <Compile Include="Classes\StringUtil.cs" />
+    <Compile Include="Classes\Tr.cs" />
     <Compile Include="Controls\ObjectPicker2.cs">
       <SubType>UserControl</SubType>
     </Compile>

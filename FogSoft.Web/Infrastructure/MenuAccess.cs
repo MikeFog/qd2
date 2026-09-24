@@ -43,6 +43,7 @@ public sealed class MenuAccess
 	private HashSet<string>? _allowedBrowsers;
 	private HashSet<string>? _allowedScreens;
 	private int? _loadedFor;
+	private string? _loadedLanguage;
 
 	public MenuAccess(UserSession session)
 	{
@@ -142,10 +143,13 @@ public sealed class MenuAccess
 	private void EnsureLoaded()
 	{
 		int? currentUser = _session.User?.Id;
-		if (_tree != null && _loadedFor == currentUser)
+		// Названия пунктов зависят от языка — при его смене меню перечитывается.
+		string language = _session.Language ?? WebLanguage.Default;
+		if (_tree != null && _loadedFor == currentUser && _loadedLanguage == language)
 			return;
 
 		_loadedFor = currentUser;
+		_loadedLanguage = language;
 		_allowedEntities = new HashSet<int>();
 		_allowedBrowsers = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
 		_allowedScreens = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
@@ -156,7 +160,7 @@ public sealed class MenuAccess
 			return;
 		}
 
-		_tree = MenuService.Load();
+		_tree = MenuService.Load(language);
 		Collect(_tree);
 	}
 

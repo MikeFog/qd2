@@ -512,8 +512,8 @@ else
         {
             DateTime date = v is DateTime d ? d : DateTime.Parse(v.ToString()!);
             return IsDateField(field) || date.TimeOfDay == TimeSpan.Zero
-                ? date.ToString("dd.MM.yyyy")
-                : date.ToString("dd.MM.yyyy HH:mm");
+                ? DisplayFormat.Date(date)
+                : DisplayFormat.DateAndTime(date);
         }
 
         return AsText(v);
