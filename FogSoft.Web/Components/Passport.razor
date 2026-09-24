@@ -51,7 +51,8 @@ else
 
             <div class="passport-label @(wide ? "passport-label-wide" : "")">
                 @field.Caption
-                @if (field.Required)
+                @* Звёздочка «обязательное» у поля-текста ничего не значит: заполнить его нельзя. *@
+                @if (field.Required && !IsReadOnlyText(field))
                 {
                     <span class="required">*</span>
                 }
@@ -70,6 +71,22 @@ else
                     @* Десктопный PageFieldLabel — WinForms Label: только показ,
                        ApplyChanges пустой, значение никогда не уходит в процедуру. *@
                     <div class="form-control-plaintext form-control-sm">@LabelText(field)</div>
+                }
+                else if (IsReadOnlyText(field))
+                {
+                    @* Поле только для чтения по метаданным (disabled="true", locked="true" у
+                       не-администратора) — просто значение, без серого поля ввода. Решение
+                       владельца 2026-09-23. Значение остаётся в объекте и уходит в процедуру
+                       как раньше. Поля, которые гасит условие формы (FieldDisabled), остаются
+                       вводом: они включаются и выключаются на лету. *@
+                    @if (ReadOnlyText(field) is { Length: > 0 } text)
+                    {
+                        <div class="form-control-plaintext form-control-sm passport-readonly">@text</div>
+                    }
+                    else
+                    {
+                        <div class="form-control-plaintext form-control-sm passport-readonly passport-empty">—</div>
+                    }
                 }
                 else if (field.Image != null)
                 {
@@ -446,6 +463,60 @@ else
         return field.Type?.IsMoney == true
             ? Convert.ToDecimal(v).ToString("C")
             : v.ToString() ?? "";
+    }
+
+    /// <summary>
+    /// Рисовать ли поле текстом: заблокировано метаданными и это обычное значение, а не
+    /// список-выбор, дерево или картинка (у тех свой вид «только чтение»).
+    /// </summary>
+    private static bool IsReadOnlyText(PassportField field) =>
+        field.Locked && field.Selector == null && field.Tree == null && field.Image == null;
+
+    /// <summary>
+    /// Значение заблокированного поля в том же виде, в каком его показал бы контрол:
+    /// подпись из списка у lookup, имя объекта у выбора объекта, «Да/Нет», дата, время,
+    /// «мм:сс» у продолжительности, деньги с валютой.
+    /// </summary>
+    private string ReadOnlyText(PassportField field)
+    {
+        if (field.Lookup != null)
+        {
+            string id = ReadString(field.Name);
+            if (id.Length == 0)
+                return "";
+            foreach (DataRowView row in RowsFor(field))
+                if (AsText(row[field.Lookup.ColumnWithId]) == id)
+                    return DisplayOf(row);
+            return id;
+        }
+
+        if (field.Picker != null)
+            return PickerName(field);
+
+        object? v = Object[field.Name];
+        if (v == null || v == DBNull.Value || (v is string s && s.Length == 0))
+            return "";
+
+        if (IsBoolean(field))
+            return ReadBool(field.Name) ? BoolYes : "Нет";
+        if (IsTimeDurationField(field))
+            return DateTimeUtils.Time2String(DurationTotalSeconds(field.Name));
+        if (IsTimeField(field))
+            return ReadTime(field.Name);
+
+        if (field.Type?.IsMoney == true && decimal.TryParse(v.ToString(), out decimal money))
+            return money.ToString("C");
+
+        if ((IsDateField(field) || field.Type?.IsDateTime == true)
+            && (v is DateTime || DateTime.TryParse(v.ToString(), out _)))
+        {
+            DateTime date = v is DateTime d ? d : DateTime.Parse(v.ToString()!);
+            return IsDateField(field) || date.TimeOfDay == TimeSpan.Zero
+                ? date.ToString("dd.MM.yyyy")
+                : date.ToString("dd.MM.yyyy HH:mm");
+        }
+
+        return AsText(v);
     }
 
     private string ReadString(string name) => AsText(Object[name]);

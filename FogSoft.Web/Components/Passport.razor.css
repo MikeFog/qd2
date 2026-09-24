@@ -84,3 +84,13 @@
     color: var(--c-accent);
     font-weight: 700;
 }
+
+
+/* Поле только для чтения по метаданным — значение текстом (ReadOnlyText). */
+.passport-readonly {
+    font-variant-numeric: tabular-nums;
+}
+
+.passport-empty {
+    color: var(--c-text-muted);
+}
