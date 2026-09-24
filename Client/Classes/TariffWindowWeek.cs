@@ -52,6 +52,14 @@ namespace Merlin.Classes
 
 		public TariffWindowWeekMode Mode { get; private set; }
 
+		/// <summary>Прайс-лист, по которому построена неделя (0 — прайс-листа нет), и его срок.</summary>
+		public int PricelistId { get; private set; }
+		public DateTime PricelistStart { get; private set; }
+		public DateTime PricelistFinish { get; private set; }
+
+		/// <summary>Станция недели (трафик).</summary>
+		public int MassmediaId { get; private set; }
+
 		/// <summary>Трафик: на эту дату у станции нет прайс-листа — окон нет и быть не может.</summary>
 		public bool NoPricelist { get; private set; }
 
@@ -173,6 +181,10 @@ namespace Merlin.Classes
 			TariffWindowWeek week = new TariffWindowWeek
 			{
 				Mode = mode,
+				PricelistId = p.PricelistId,
+				PricelistStart = p.StartDate.Date,
+				PricelistFinish = p.FinishDate.Date,
+				MassmediaId = p.MassmediaId,
 				Monday = monday,
 				StartDate = start,
 				FinishDate = finish,
@@ -489,6 +501,19 @@ namespace Merlin.Classes
 
 		/// <summary>Строка TariffWindowRetrieve — из неё поднимается объект окна.</summary>
 		internal DataRow Row { get; }
+
+		/// <summary>Тарифное (оригинальное) время окна — строка сетки.</summary>
+		public TimeSpan OriginalTime
+		{
+			get
+			{
+				DateTime original = (DateTime)Row[TariffWindow.ParamNames.WindowDateOriginal];
+				return new TimeSpan(original.Hour, original.Minute, 0);
+			}
+		}
+
+		/// <summary>День окна по расписанию (dayOriginal) — колонка сетки.</summary>
+		public DateTime OriginalDay => ((DateTime)Row[TariffWindow.ParamNames.WindowDateOriginal]).Date;
 
 		public int WindowId { get; }
 		public DateTime WindowDate { get; }

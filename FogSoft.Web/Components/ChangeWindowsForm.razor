@@ -1,0 +1,142 @@
+@using Merlin.Classes
+
+@*
+    Содержимое диалога «Изменить окна…» экрана «Трафик» — одно действие вместо трёх
+    десктопных форм (перенос времени выхода, изменение продолжительности, изменение
+    продолжительности в дне). Меняется только заполненное. Вместо полей «по тарифу» —
+    сводка текущих значений самих окон (тариф — шаблон, у окон значения свои).
+    Решения владельца — docs/tasks/web-tariffgrid.md, §9. Значения пишутся в модель; окна,
+    которые изменятся, пересчитывает экран (ScopeChanged).
+*@
+
+@if (Value.Message != null)
+{
+    <div class="alert alert-danger">@Value.Message</div>
+}
+
+<div class="change-windows">
+    <div class="scope">
+        <div class="times">Время выхода по расписанию: <b class="tabular">@TimesText</b></div>
+        <label class="radio">
+            <input type="radio" class="form-check-input" name="scope" checked="@(!Value.PeriodMode)"
+                   @onchange="() => SetMode(false)" />
+            Только выделенные окна (@Value.SelectedCount)
+        </label>
+        <label class="radio">
+            <input type="radio" class="form-check-input" name="scope" checked="@Value.PeriodMode"
+                   @onchange="() => SetMode(true)" />
+            Повторить на период — эти времена в выбранные дни недели
+        </label>
+
+        @if (Value.PeriodMode)
+        {
+            <div class="period">
+                <label>
+                    Начиная с
+                    <input type="date" class="form-control form-control-sm" value="@Value.Start.ToString("yyyy-MM-dd")"
+                           @onchange="e => SetDate(e, start: true)" />
+                </label>
+                <label>
+                    Оканчивая
+                    <input type="date" class="form-control form-control-sm" value="@Value.Finish.ToString("yyyy-MM-dd")"
+                           @onchange="e => SetDate(e, start: false)" />
+                </label>
+            </div>
+            <div class="days">
+                @for (int d = 0; d < 7; d++)
+                {
+                    int day = d;
+                    <label>
+                        <input type="checkbox" class="form-check-input" checked="@Value.Days[day]"
+                               @onchange="e => SetDay(day, e.Value is true)" />
+                        @DayNames[day]
+                    </label>
+                }
+            </div>
+        }
+    </div>
+
+    <div class="summary">
+        @if (Value.Target != null)
+        {
+            <div><b>Изменится окон: @Value.Target.Count</b></div>
+            @if (Value.Target.Count > 0)
+            {
+                <div class="text-muted">Сейчас продолжительность: @Value.Target.DurationSummary</div>
+                <div class="text-muted">Сейчас полная: @Value.Target.TotalSummary</div>
+                @if (Value.Target.MovedCount > 0)
+                {
+                    <div class="text-muted">Уже перенесено по времени: @Value.Target.MovedCount</div>
+                }
+            }
+        }
+    </div>
+
+    <div class="fields">
+        <label>
+            Новое время выхода
+            <input type="time" class="form-control form-control-sm" disabled="@(!Value.CanChangeTime)"
+                   value="@Value.NewTime" @onchange="e => Value.NewTime = e.Value?.ToString()" />
+            @if (!Value.CanChangeTime)
+            {
+                <span class="text-muted note">только для окон одного времени</span>
+            }
+        </label>
+        <label>
+            Новая продолжительность, мм:сс
+            <input class="form-control form-control-sm tabular" placeholder="не менять" @bind="Value.NewDuration" />
+        </label>
+        <label>
+            Новая полная продолжительность, мм:сс
+            <input class="form-control form-control-sm tabular" placeholder="не менять" @bind="Value.NewTotal" />
+        </label>
+    </div>
+</div>
+
+@code {
+    [Parameter, EditorRequired] public Model Value { get; set; } = default!;
+
+    /// <summary>Режим или период изменились — экран пересчитывает окна (Value.Target).</summary>
+    [Parameter] public EventCallback ScopeChanged { get; set; }
+
+    public sealed class Model
+    {
+        public IReadOnlyList<TimeSpan> Times { get; set; } = Array.Empty<TimeSpan>();
+        public int SelectedCount { get; set; }
+        public bool CanChangeTime => Times.Count == 1;
+        public bool PeriodMode { get; set; }
+        public DateTime Start { get; set; }
+        public DateTime Finish { get; set; }
+        public bool[] Days { get; set; } = new bool[7];
+        public string? NewTime { get; set; }
+        public string? NewDuration { get; set; }
+        public string? NewTotal { get; set; }
+        public WindowChangeTarget? Target { get; set; }
+        public string? Message { get; set; }
+    }
+
+    private static readonly string[] DayNames = { "Пн", "Вт", "Ср", "Чт", "Пт", "Сб", "Вс" };
+
+    private string TimesText => string.Join(", ", Value.Times.Select(t => t.ToString(@"hh\:mm")));
+
+    private Task SetMode(bool period)
+    {
+        Value.PeriodMode = period;
+        return ScopeChanged.InvokeAsync();
+    }
+
+    private Task SetDate(ChangeEventArgs e, bool start)
+    {
+        if (!DateTime.TryParse(e.Value?.ToString(), out DateTime date))
+            return Task.CompletedTask;
+        if (start) Value.Start = date;
+        else Value.Finish = date;
+        return ScopeChanged.InvokeAsync();
+    }
+
+    private Task SetDay(int day, bool on)
+    {
+        Value.Days[day] = on;
+        return ScopeChanged.InvokeAsync();
+    }
+}

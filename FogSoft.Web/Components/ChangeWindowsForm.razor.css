@@ -1,0 +1,62 @@
+.change-windows {
+    display: flex;
+    flex-direction: column;
+    gap: var(--s-3);
+}
+
+.scope {
+    display: flex;
+    flex-direction: column;
+    gap: var(--s-1);
+}
+
+.radio,
+.days label {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--s-1);
+    margin: 0;
+}
+
+.period {
+    display: flex;
+    gap: var(--s-4);
+    margin-top: var(--s-1);
+}
+
+.period label,
+.fields label {
+    display: flex;
+    flex-direction: column;
+    gap: var(--s-1);
+    color: var(--c-text-muted);
+}
+
+.days {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--s-3);
+}
+
+.summary {
+    padding: var(--s-2) var(--s-3);
+    background: var(--c-bg);
+    border-radius: 6px;
+    font-size: 13px;
+}
+
+.fields {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: var(--s-3);
+}
+
+.note {
+    font-size: 12px;
+}
+
+@media (max-width: 700px) {
+    .fields {
+        grid-template-columns: minmax(0, 1fr);
+    }
+}

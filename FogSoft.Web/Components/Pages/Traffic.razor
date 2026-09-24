@@ -103,11 +103,32 @@ else
                 }
                 else
                 {
-                    <WindowWeekGrid Week="_week" Date="_date" SelectedIds="SelectedIds" DayHeader="DayLockButton"
-                                    OnPrevious="PreviousWeek" OnNext="NextWeek" OnJump="JumpTo"
-                                    OnCellClick="e => SelectCell(e.Cell)"
-                                    OnCellDoubleClick="e => OpenPassport(e.Cell)"
-                                    OnCellContextMenu="e => OpenCellMenu(e.Cell, e.Mouse)" />
+                    @* Esc снимает выделение: клавиши ловит обёртка сетки, фокус на неё ставит клик. *@
+                    <div class="grid-box" tabindex="-1" @ref="_gridBox" @onkeydown="GridKey">
+                        <WindowWeekGrid Week="_week" Date="_date" SelectedIds="SelectedIds" DayHeader="DayLockButton"
+                                        MenuRow="_menuRow"
+                                        OnPrevious="PreviousWeek" OnNext="NextWeek" OnJump="JumpTo"
+                                        OnCellClick="ClickCell"
+                                        OnCellDoubleClick="e => OpenPassport(e.Cell)"
+                                        OnCellContextMenu="e => OpenCellMenu(e.Cell, e.Mouse)"
+                                        OnRowMenu="e => OpenRowMenu(e.Row, e.Mouse)">
+                            <Toolbar>
+                                @if (_selection.Count > 0)
+                                {
+                                    <span class="selection-bar">
+                                        <span class="selection-count">Выделено окон: @_selection.Count</span>
+                                        <button type="button" class="btn btn-sm btn-primary" @onclick="() => ChangeWindows(null)">
+                                            <i class="bi bi-pencil-square" aria-hidden="true"></i>Изменить окна…
+                                        </button>
+                                        <button type="button" class="btn btn-sm btn-outline-secondary" title="Снять выделение (Esc)"
+                                                @onclick="ClearSelection">
+                                            <i class="bi bi-x-lg" aria-hidden="true"></i>
+                                        </button>
+                                    </span>
+                                }
+                            </Toolbar>
+                        </WindowWeekGrid>
+                    </div>
                 }
             </section>
 
@@ -157,7 +178,13 @@ else
 
     private Entity _issueEntity => _issueEntityCache ??= TariffWindowWeek.TrafficIssueEntity();
 
-    private IReadOnlyCollection<int>? SelectedIds => _selected == null ? null : new[] { _selected.WindowId };
+    // Выделение окон (Shift/Ctrl-клик) — для «Изменить окна…»; _selected — окно в правой панели
+    // (последнее кликнутое).
+    private readonly WindowSelection _selection = new();
+    private TariffWindowRow? _menuRow;
+    private ElementReference _gridBox;
+
+    private IReadOnlyCollection<int> SelectedIds => _selection.Ids;
 
     protected override async Task OnInitializedAsync()
     {
@@ -206,6 +233,7 @@ else
         _week = null;
         _selected = null;
         _issues = null;
+        _selection.Clear();
         return LoadWeek();
     }
 
@@ -223,6 +251,7 @@ else
     private void ReloadWeek()
     {
         _week = TariffWindowWeek.LoadForTraffic(_stationId!.Value, _date);
+        _selection.Retain(_week);
         // Ячейки после чтения — новые объекты: выбранное окно ищем по номеру.
         _selected = _selected == null ? null : FindCell(_selected.WindowId);
         _issues = _selected == null ? null : TariffWindowWeek.LoadIssues(_selected);
@@ -230,18 +259,21 @@ else
 
     private Task PreviousWeek()
     {
+        _selection.Clear();
         _date = _week!.StartDate.AddDays(-1);
         return LoadWeek();
     }
 
     private Task NextWeek()
     {
+        _selection.Clear();
         _date = _week!.FinishDate.AddDays(1);
         return LoadWeek();
     }
 
     private Task JumpTo(DateTime date)
     {
+        _selection.Clear();
         _date = date;
         return LoadWeek();
     }
@@ -360,6 +392,183 @@ else
         return Busy.RunAsync(() => Try(() => _issues = TariffWindowWeek.LoadIssues(cell)));
     }
 
+    /// <summary>Клик по окну: выделение (Shift — прямоугольник, Ctrl/⌘ — добавить/убрать) и панель окна.</summary>
+    private async Task ClickCell(WindowWeekGrid.CellEvent e)
+    {
+        _selection.Click(_week!, e.Cell, e.Mouse.ShiftKey, e.Mouse.CtrlKey || e.Mouse.MetaKey);
+        await SelectCell(e.Cell);
+        await _gridBox.FocusAsync(preventScroll: true);
+    }
+
+    private void GridKey(KeyboardEventArgs e)
+    {
+        if (e.Key == "Escape")
+            _selection.Clear();
+    }
+
+    private void ClearSelection() => _selection.Clear();
+
+    // ---------- «Изменить окна…» ----------
+
+    private const string ChangeWindowsAction = "__changeWindows";
+    private const string SelectRowAction = "__selectRow";
+
+    /// <summary>
+    /// «⋯» у времени строки: выделить строку недели или сразу «Изменить окна этого времени…»
+    /// (режим «повторить на период»: неделя, все дни — как десктопные формы у колонки времени).
+    /// </summary>
+    private async Task OpenRowMenu(TariffWindowRow row, MouseEventArgs e)
+    {
+        _menuRow = row;
+        var items = new[]
+        {
+            new ActionMenuItem { Name = SelectRowAction, Text = "Выделить строку", Icon = "bi-distribute-horizontal", Enabled = true, Ported = true },
+            new ActionMenuItem { Name = ChangeWindowsAction, Text = $"Изменить окна {row.Time}…", Icon = "bi-pencil-square", Enabled = true, Ported = true },
+        };
+        string? picked = await Menu.ShowAsync(items, e.ClientX, e.ClientY, fromButton: true);
+        _menuRow = null;
+        StateHasChanged();
+
+        if (picked == SelectRowAction)
+            _selection.SelectRow(_week!, row);
+        else if (picked == ChangeWindowsAction)
+        {
+            _selection.SelectRow(_week!, row);
+            await ChangeWindows(periodMode: true);
+        }
+    }
+
+    /// <summary>
+    /// «Изменить окна…» по выделению. <paramref name="periodMode"/>: null — «только выделенные»;
+    /// true — «повторить на период» (от «⋯» строки). Окна, которые изменятся, пересчитываются
+    /// при смене режима, периода и дней; правка — в ядре одной транзакцией.
+    /// </summary>
+    private async Task ChangeWindows(bool? periodMode)
+    {
+        if (_week == null || _selection.Count == 0)
+            return;
+
+        IReadOnlyList<TariffWindowCell> cells = _selection.Selected(_week);
+        TariffWindowWeek week = _week;
+        var model = new ChangeWindowsForm.Model
+        {
+            Times = cells.Select(c => c.OriginalTime).Distinct().OrderBy(t => t).ToList(),
+            SelectedCount = cells.Count,
+            PeriodMode = periodMode == true,
+            Start = cells.Min(c => c.OriginalDay),
+            Finish = cells.Max(c => c.OriginalDay),
+        };
+        foreach (TariffWindowCell c in cells)
+            model.Days[((int)c.OriginalDay.DayOfWeek + 6) % 7] = true;
+        if (periodMode == true)
+        {
+            model.Start = week.StartDate;
+            model.Finish = week.FinishDate;
+            for (int d = 0; d < 7; d++)
+                model.Days[d] = true;
+        }
+
+        void Recount()
+        {
+            model.Message = null;
+            if (!model.PeriodMode)
+            {
+                model.Target = TrafficManagement.ForCells(week, cells);
+                return;
+            }
+            model.Message = TrafficManagement.ValidatePeriod(week, model.Start, model.Finish, model.Days);
+            model.Target = model.Message == null
+                ? TrafficManagement.ForPeriod(week, model.Times, model.Start, model.Finish, model.Days)
+                : null;
+        }
+
+        await Busy.RunAsync(Recount);
+        EventCallback scopeChanged = EventCallback.Factory.Create(this, async () =>
+        {
+            await Busy.RunAsync(() =>
+            {
+                try { Recount(); }
+                catch (Exception ex) { model.Message = ErrorPresenter.Describe(ex); }
+            });
+            await Dialogs.RefreshAsync();
+        });
+
+        while (true)
+        {
+            if (await Dialogs.ShowAsync("Изменить окна", b =>
+                {
+                    b.OpenComponent<ChangeWindowsForm>(0);
+                    b.AddComponentParameter(1, nameof(ChangeWindowsForm.Value), model);
+                    b.AddComponentParameter(2, nameof(ChangeWindowsForm.ScopeChanged), scopeChanged);
+                    b.CloseComponent();
+                }, okText: "Изменить") != DialogOutcome.Ok)
+                return;
+
+            model.Message = ParseChange(model, out WindowChange change);
+            if (model.Message == null && model.Target == null)
+                model.Message = "Уточните период и дни недели.";
+            if (model.Message == null)
+                model.Message = TrafficManagement.Validate(model.Target!, change);
+            if (model.Message != null)
+                continue;
+
+            try
+            {
+                await Busy.RunAsync(() => TrafficManagement.Apply(model.Target!, change));
+                break;
+            }
+            catch (Exception ex)
+            {
+                model.Message = ErrorPresenter.Describe(ex);
+            }
+        }
+
+        await Busy.RunAsync(() => Try(ReloadWeek));
+    }
+
+    /// <summary>Поля диалога → правка; текст ошибки ввода или null.</summary>
+    private static string? ParseChange(ChangeWindowsForm.Model model, out WindowChange change)
+    {
+        change = new WindowChange();
+
+        if (!string.IsNullOrWhiteSpace(model.NewTime))
+        {
+            if (!TimeSpan.TryParse(model.NewTime, out TimeSpan time))
+                return "Время выхода — в виде чч:мм.";
+            change.NewTime = new TimeSpan(time.Hours, time.Minutes, 0);
+        }
+
+        if (!TryParseDuration(model.NewDuration, out int? duration))
+            return "Продолжительность — в виде мм:сс, например 2:56.";
+        if (!TryParseDuration(model.NewTotal, out int? total))
+            return "Полная продолжительность — в виде мм:сс, например 3:05.";
+        change.NewDuration = duration;
+        change.NewTotal = total;
+        return null;
+    }
+
+    /// <summary>«мм:сс» или число секунд; пусто — не менять.</summary>
+    private static bool TryParseDuration(string? text, out int? seconds)
+    {
+        seconds = null;
+        if (string.IsNullOrWhiteSpace(text))
+            return true;
+
+        string[] parts = text.Trim().Split(':');
+        if (parts.Length == 1 && int.TryParse(parts[0], out int only) && only >= 0)
+        {
+            seconds = only;
+            return true;
+        }
+        if (parts.Length == 2 && int.TryParse(parts[0], out int min) && int.TryParse(parts[1], out int sec)
+            && min >= 0 && sec is >= 0 and < 60)
+        {
+            seconds = min * 60 + sec;
+            return true;
+        }
+        return false;
+    }
+
     private async Task OpenPassport(TariffWindowCell cell)
     {
         await SelectCell(cell);
@@ -370,10 +579,23 @@ else
     {
         try
         {
+            // Правая кнопка по окну вне выделения выделяет его одно — как в таблицах.
+            if (!_selection.Ids.Contains(cell.WindowId))
+                _selection.Click(_week!, cell, shift: false, ctrl: false);
             await SelectCell(cell);
             PresentationObject window = TariffWindowWeek.CreateWindowObject(cell);
-            string? picked = await Menu.ShowAsync(Actions.BuildMenu(window, ViewType.Tree), e.ClientX, e.ClientY, fromButton: false);
-            if (picked != null)
+            var items = Actions.BuildMenu(window, ViewType.Tree).ToList();
+            items.Add(ActionMenuItem.Separator);
+            items.Add(new ActionMenuItem
+            {
+                Name = ChangeWindowsAction,
+                Text = _selection.Count > 1 ? $"Изменить выделенные окна ({_selection.Count})…" : "Изменить окно…",
+                Icon = "bi-pencil-square", Enabled = true, Ported = true,
+            });
+            string? picked = await Menu.ShowAsync(items, e.ClientX, e.ClientY, fromButton: false);
+            if (picked == ChangeWindowsAction)
+                await ChangeWindows(null);
+            else if (picked != null)
                 await Execute(window, picked);
         }
         catch (Exception ex)

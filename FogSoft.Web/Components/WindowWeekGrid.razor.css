@@ -277,3 +277,9 @@ tbody tr.row-menu-open > td.col-price {
     background: var(--c-surface);
     box-shadow: inset 3px 0 0 var(--c-accent);
 }
+
+
+/* Shift-клик по ячейкам — выделение окон, а не текста страницы. */
+.table > tbody > tr > td.cell {
+    user-select: none;
+}

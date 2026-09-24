@@ -193,3 +193,32 @@
 .day-lock.is-closed {
     color: var(--c-text-muted);
 }
+
+
+/* Обёртка сетки — ловит Esc; фокус ставит клик по окну, рамка фокуса не нужна. */
+.grid-box {
+    flex: 1 1 auto;
+    min-height: 0;
+    display: flex;
+    flex-direction: column;
+    outline: none;
+}
+
+.selection-bar {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--s-2);
+    margin-right: var(--s-3);
+    padding-right: var(--s-3);
+    border-right: 1px solid var(--c-border);
+}
+
+.selection-count {
+    font-weight: 600;
+    white-space: nowrap;
+}
+
+
+.selection-bar .btn {
+    white-space: nowrap;
+}
