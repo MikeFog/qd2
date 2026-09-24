@@ -176,6 +176,23 @@ public static class MenuRoutes
 		};
 }
 
+/// <summary>
+/// Пункты меню, у которых в вебе свой экран — не журнал и не дерево: codeName → адрес
+/// страницы. Права — те же, что у остальных пунктов (MenuAccess.CheckScreen).
+/// </summary>
+public static class ScreenRoutes
+{
+	public const string TrafficManagement = "miTrafficManagement";
+
+	public static readonly IReadOnlyDictionary<string, string> Screens =
+		new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase)
+		{
+			// Десктоп — TrafficManagementForm + TrafficGrid; в вебе — свой экран по решениям
+			// владельца 2026-09-23 (docs/tasks/web-tariffgrid.md, §9).
+			{ TrafficManagement, "/traffic" },
+		};
+}
+
 /// <summary>Маршрут простого журнала: сущность плюс то, что десктоп задаёт на уровне пункта меню.</summary>
 /// <param name="Entity">Сущность журнала.</param>
 /// <param name="ManagerFilter">

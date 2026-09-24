@@ -64,6 +64,8 @@ else
             Nav.NavigateTo($"/journal/{journal.EntityId}?menu={Uri.EscapeDataString(Node.CodeName)}");
         else if (MenuRoutes.Browser.ContainsKey(Node.CodeName))
             Nav.NavigateTo($"/browser/{Uri.EscapeDataString(Node.CodeName)}");
+        else if (ScreenRoutes.Screens.TryGetValue(Node.CodeName, out string? screen))
+            Nav.NavigateTo(screen);
         else
             Nav.NavigateTo($"/todo/{Uri.EscapeDataString(Node.CodeName)}/{Uri.EscapeDataString(Node.Name)}");
     }

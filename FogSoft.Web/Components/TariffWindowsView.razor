@@ -1,4 +1,3 @@
-@using System.Globalization
 @using FogSoft.Web.Infrastructure
 @using FogSoft.WinForm
 @using FogSoft.WinForm.Classes
@@ -37,122 +36,33 @@
 *@
 
 <div class="windows">
-    <div class="windows-bar">
-        <div class="week-nav">
-            <button type="button" class="btn btn-sm btn-outline-secondary" aria-haspopup="menu"
-                    @onclick="OpenPricelistMenu">
-                <i class="bi bi-grid-3x3" aria-hidden="true"></i>Операции с окнами
-                <i class="bi bi-chevron-down" aria-hidden="true"></i>
-            </button>
-            <button class="btn btn-sm btn-outline-secondary" title="Предыдущая неделя"
-                    disabled="@(_week?.HasPrevious != true)" @onclick="PreviousWeek">
-                <i class="bi bi-chevron-left" aria-hidden="true"></i>
-            </button>
-            <span class="week-caption tabular">
-                @if (_week != null)
-                {
-                    @($"{_week.StartDate:dd.MM.yyyy} – {_week.FinishDate:dd.MM.yyyy}")
-                }
-            </span>
-            <button class="btn btn-sm btn-outline-secondary" title="Следующая неделя"
-                    disabled="@(_week?.HasNext != true)" @onclick="NextWeek">
-                <i class="bi bi-chevron-right" aria-hidden="true"></i>
-            </button>
-            <label class="jump">
-                Перейти к дате
-                <input type="date" class="form-control form-control-sm" value="@_date.ToString("yyyy-MM-dd")"
-                       @onchange="JumpToDate" />
-            </label>
-        </div>
-        <div class="legend">
-            <span><i class="swatch cell-disabled"></i>недоступно</span>
-            <span><i class="swatch cell-marked"></i>помечено</span>
-            <span title="Окно изменено точечно: продолжительность, цена, время выхода или вместимость не как в тарифе">
-                <i class="swatch swatch-modified"></i>не как в тарифе
-            </span>
-        </div>
-    </div>
-
     @if (_error != null)
     {
         <div class="alert alert-danger">@_error</div>
     }
 
-    @if (_week == null)
-    {
-        if (_error == null)
-        {
-            <div class="state">Загрузка…</div>
-        }
-    }
-    else if (_week.Rows.Count == 0)
-    {
-        <div class="state">
-            <div class="state-title">На этой неделе рекламных окон нет</div>
-            Окна появляются после генерации по тарифам прайс-листа.
-        </div>
-    }
-    else
-    {
-        <div class="data-table windows-table">
-            <table class="table">
-                <thead>
-                    <tr>
-                        <th class="col-price">Цена</th>
-                        <th class="col-time">Время</th>
-                        @for (int d = 0; d < TariffWindowWeek.DaysInWeek; d++)
-                        {
-                            <th class="col-day @(_week.IsInRange(d) ? null : "out")">
-                                <span class="day-name">@DayNames[d]</span>
-                                <span class="day-date">@_week.Monday.AddDays(d).ToString("dd.MM")</span>
-                                @if (_week.IsInRange(d))
-                                {
-                                    <span class="day-count" title="Окон за день">@_week.WindowsPerDay[d]</span>
-                                }
-                            </th>
-                        }
-                    </tr>
-                </thead>
-                <tbody>
-                    @foreach (TariffWindowRow row in _week.Rows)
-                    {
-                        <tr class="@(ReferenceEquals(row, _menuRow) ? "row-menu-open" : null)">
-                            <td class="col-price">@row.Price.ToString("C")</td>
-                            <td class="col-time">
-                                <span class="time-cell">
-                                    <button type="button" class="row-btn" title="Действия со временем @row.Time"
-                                            aria-label="Действия со временем" aria-haspopup="menu"
-                                            @onclick="e => OpenRowMenu(row, e)">
-                                        <i class="bi bi-three-dots" aria-hidden="true"></i>
-                                    </button>
-                                    @row.Time
-                                </span>
-                            </td>
-                            @for (int d = 0; d < TariffWindowWeek.DaysInWeek; d++)
-                            {
-                                TariffWindowCell? cell = row.Cells[d];
-                                if (cell == null)
-                                {
-                                    <td class="cell empty @(_week.IsInRange(d) ? null : "out")"></td>
-                                }
-                                else
-                                {
-                                    <td class="@CellClass(cell)" title="@CellTitle(cell)"
-                                        @onclick="() => SelectCell(cell)" @ondblclick="() => OpenPassport(cell)"
-                                        @oncontextmenu="e => OpenCellMenu(cell, e, fromButton: false)" @oncontextmenu:preventDefault="true">@cell.Text</td>
-                                }
-                            }
-                        </tr>
-                    }
-                </tbody>
-            </table>
-        </div>
+    <WindowWeekGrid Week="_week" Date="_date" SelectedIds="SelectedIds" MenuRow="_menuRow"
+                    OnPrevious="PreviousWeek" OnNext="NextWeek" OnJump="JumpTo"
+                    OnCellClick="e => SelectCell(e.Cell)"
+                    OnCellDoubleClick="e => OpenPassport(e.Cell)"
+                    OnCellContextMenu="e => OpenCellMenu(e.Cell, e.Mouse, fromButton: false)"
+                    OnRowMenu="e => OpenRowMenu(e.Row, e.Mouse)">
+        <Toolbar>
+            <button type="button" class="btn btn-sm btn-outline-secondary" aria-haspopup="menu"
+                    @onclick="OpenPricelistMenu">
+                <i class="bi bi-grid-3x3" aria-hidden="true"></i>Операции с окнами
+                <i class="bi bi-chevron-down" aria-hidden="true"></i>
+            </button>
+        </Toolbar>
+    </WindowWeekGrid>
 
+    @if (_week != null && _week.Rows.Count > 0)
+    {
         <div class="selection-line">
             @if (_selected != null)
             {
                 <span class="selection-text">
-                    Окно <b class="tabular">@_selected.WindowDate.ToString("dd.MM.yyyy HH:mm")</b> · @_selected.Text@StatusText(_selected)
+                    Окно <b class="tabular">@_selected.WindowDate.ToString("dd.MM.yyyy HH:mm")</b> · @_selected.Text@WindowWeekGrid.StatusText(_selected)
                     @if (_selected.IsModified)
                     {
                         <span class="deviations"> · не как в тарифе: @string.Join("; ", _selected.Deviations)</span>
@@ -190,8 +100,6 @@
     /// сетку (RefreshToken).
     /// </summary>
     [Parameter] public EventCallback Changed { get; set; }
-
-    private static readonly string[] DayNames = { "Пн", "Вт", "Ср", "Чт", "Пт", "Сб", "Вс" };
 
     // Пункты меню строки времени — действия TariffWindowGrid.cmTimeColumn десктопа.
     private const string ChangePriceAction = "ChangePrice";
@@ -257,13 +165,13 @@
         return Load();
     }
 
-    private Task JumpToDate(ChangeEventArgs e)
+    private Task JumpTo(DateTime date)
     {
-        if (!DateTime.TryParseExact(e.Value?.ToString(), "yyyy-MM-dd", CultureInfo.InvariantCulture, DateTimeStyles.None, out DateTime date))
-            return Task.CompletedTask;
         _date = date;
         return Load();
     }
+
+    private IReadOnlyCollection<int>? SelectedIds => _selected == null ? null : new[] { _selected.WindowId };
 
     private void SelectCell(TariffWindowCell cell) => _selected = cell;
 
@@ -419,23 +327,4 @@
             _error = ErrorPresenter.Describe(ex);
         }
     }
-
-    // ---------- Отрисовка ----------
-
-    private string CellClass(TariffWindowCell cell)
-    {
-        string css = "cell";
-        if (cell.IsDisabled) css += " cell-disabled";
-        else if (cell.IsMarked) css += " cell-marked";
-        if (cell.IsModified) css += " cell-modified";
-        if (ReferenceEquals(cell, _selected)) css += " selected";
-        return css;
-    }
-
-    private static string CellTitle(TariffWindowCell cell) =>
-        cell.WindowDate.ToString("dd.MM.yyyy HH:mm") + StatusText(cell)
-        + (cell.IsModified ? "\nНе как в тарифе:\n• " + string.Join("\n• ", cell.Deviations) : "");
-
-    private static string StatusText(TariffWindowCell cell) =>
-        (cell.IsDisabled ? " · недоступно" : "") + (cell.IsMarked ? " · помечено" : "");
 }

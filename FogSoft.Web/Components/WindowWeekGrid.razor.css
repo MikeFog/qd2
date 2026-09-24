@@ -1,0 +1,279 @@
+/*
+    Неделя окон (WindowWeekGrid): панель недели сверху, матрица «время × дни» на остаток
+    высоты. Общая для вкладки «Рекламные окна» и экрана «Трафик».
+*/
+
+.week {
+    flex: 1 1 auto;
+    display: flex;
+    flex-direction: column;
+    gap: var(--s-2);
+    min-height: 0;
+}
+
+.week-bar {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--s-2) var(--s-4);
+}
+
+.week-nav {
+    display: flex;
+    align-items: center;
+    gap: var(--s-2);
+}
+
+.week-caption {
+    min-width: 180px;
+    text-align: center;
+    font-weight: 600;
+}
+
+.jump {
+    display: flex;
+    align-items: center;
+    gap: var(--s-2);
+    margin: 0 0 0 var(--s-3);
+    color: var(--c-text-muted);
+}
+
+.jump input {
+    width: auto;
+}
+
+.legend {
+    display: flex;
+    gap: var(--s-4);
+    color: var(--c-text-muted);
+    font-size: 13px;
+}
+
+.legend span {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--s-1);
+}
+
+.swatch {
+    display: inline-block;
+    width: 14px;
+    height: 14px;
+    border: 1px solid var(--c-border-strong);
+    border-radius: 3px;
+}
+
+.week-table {
+    flex: 1 1 auto;
+    min-height: 140px;
+}
+
+.week-table .table {
+    width: auto;
+    border-collapse: separate;
+    border-spacing: 0;
+}
+
+/* Две левые колонки — липкие при горизонтальной прокрутке на узком экране. */
+.col-price,
+.col-time {
+    position: sticky;
+    background: var(--c-surface);
+    z-index: 1;
+    white-space: nowrap;
+}
+
+.col-price {
+    left: 0;
+    min-width: 110px;
+    text-align: right;
+}
+
+.col-time {
+    left: 110px;
+    min-width: 72px;
+    text-align: right;
+    font-weight: 600;
+    border-right: 1px solid var(--c-border-strong);
+}
+
+.table > thead > tr > th.col-price,
+.table > thead > tr > th.col-time {
+    z-index: 2;
+    background: var(--c-bg);
+}
+
+.table > thead > tr > th.col-day {
+    text-align: center;
+    min-width: 88px;
+    line-height: 1.25;
+}
+
+.day-name,
+.day-date,
+.day-count {
+    display: block;
+}
+
+.day-date {
+    text-transform: none;
+    color: var(--c-text);
+}
+
+.day-count {
+    font-weight: 400;
+    text-transform: none;
+}
+
+.table > thead > tr > th.out {
+    opacity: .5;
+}
+
+.table > tbody > tr > td.cell {
+    text-align: center;
+    white-space: nowrap;
+    cursor: pointer;
+    border-left: 1px solid var(--c-border);
+}
+
+.table > tbody > tr > td.cell:hover {
+    box-shadow: inset 0 0 0 1px var(--c-accent);
+}
+
+.table > tbody > tr > td.empty {
+    cursor: default;
+}
+
+.table > tbody > tr > td.empty:hover {
+    box-shadow: none;
+}
+
+.table > tbody > tr > td.out {
+    background: var(--c-bg);
+}
+
+.cell-disabled,
+.table > tbody > tr > td.cell-disabled {
+    background: var(--c-danger-soft);
+}
+
+.cell-marked,
+.table > tbody > tr > td.cell-marked {
+    background: var(--c-accent-soft);
+}
+
+.table > tbody > tr > td.selected,
+.table > tbody > tr > td.selected:hover {
+    box-shadow: inset 0 0 0 2px var(--c-accent);
+    font-weight: 600;
+}
+
+/* Окно не как в тарифе — уголок в правом верхнем углу ячейки (как пометка
+   изменённой ячейки в табличных редакторах). Фон остаётся за статусом окна. */
+.table > tbody > tr > td.cell-modified {
+    position: relative;
+}
+
+.table > tbody > tr > td.cell-modified::after {
+    content: "";
+    position: absolute;
+    top: 0;
+    right: 0;
+    border-style: solid;
+    border-width: 0 8px 8px 0;
+    border-color: transparent var(--c-warn) transparent transparent;
+}
+
+.swatch-modified {
+    position: relative;
+    background: var(--c-surface);
+}
+
+.swatch-modified::after {
+    content: "";
+    position: absolute;
+    top: 0;
+    right: 0;
+    border-style: solid;
+    border-width: 0 7px 7px 0;
+    border-color: transparent var(--c-warn) transparent transparent;
+}
+
+/* «⋯» у времени строки — видна при наведении на строку, как действия строки списка
+   (ObjectList.razor.css); место зарезервировано, строка не прыгает. */
+.time-cell {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--s-1);
+}
+
+.row-btn {
+    visibility: hidden;
+    width: 24px;
+    height: 22px;
+    padding: 0;
+    border: none;
+    border-radius: 4px;
+    background: none;
+    color: var(--c-text-muted);
+}
+
+tbody tr:hover .row-btn,
+tbody tr:focus-within .row-btn,
+tbody tr.row-menu-open .row-btn {
+    visibility: visible;
+}
+
+.row-btn:hover {
+    background: var(--c-border);
+    color: var(--c-text);
+}
+
+tbody tr.row-menu-open > td.col-time,
+tbody tr.row-menu-open > td.col-price {
+    background: var(--c-accent-soft);
+}
+
+@media (hover: none) {
+    .row-btn {
+        visibility: visible;
+    }
+}
+
+/* ---------- Трафик ---------- */
+
+/* Переполнение — сильнее прочих фонов: окно требует внимания. */
+.cell-overflow,
+.table > tbody > tr > td.cell-overflow {
+    background: var(--c-danger-soft);
+    color: var(--c-danger);
+    font-weight: 600;
+}
+
+/* Обработанный день — затенение колонки и замок в заголовке. */
+.table > tbody > tr > td.closed {
+    background-image: repeating-linear-gradient(135deg, transparent 0 6px, rgba(0, 0, 0, .035) 6px 7px);
+}
+
+.table > thead > tr > th.closed {
+    color: var(--c-text);
+}
+
+.cell-closed {
+    background-image: repeating-linear-gradient(135deg, var(--c-surface) 0 3px, var(--c-border) 3px 4px);
+}
+
+/* Склейка — полоса слева в ячейке. */
+.table > tbody > tr > td.cell-linked {
+    box-shadow: inset 3px 0 0 var(--c-accent);
+}
+
+.table > tbody > tr > td.cell-linked.selected {
+    box-shadow: inset 0 0 0 2px var(--c-accent), inset 5px 0 0 var(--c-accent);
+}
+
+.swatch-linked {
+    background: var(--c-surface);
+    box-shadow: inset 3px 0 0 var(--c-accent);
+}

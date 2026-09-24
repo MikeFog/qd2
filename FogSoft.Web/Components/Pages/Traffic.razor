@@ -1,0 +1,295 @@
+@page "/traffic"
+@using System.Data
+@using FogSoft.Web.Infrastructure
+@using FogSoft.WinForm
+@using FogSoft.WinForm.Classes
+@using Merlin.Classes
+@inject MenuAccess Access
+@inject BusyService Busy
+@inject ObjectActions Actions
+@inject ActionMenuService Menu
+
+@*
+    Трафик-менеджмент — веб-экран вместо TrafficManagementForm + TrafficGrid. Не копия формы:
+    решения владельца 2026-09-23 — docs/tasks/web-tariffgrid.md, §9 «Трафик-менеджмент».
+
+    Слева станции (фильтр по группе, «обработано по»), в центре неделя окон станции
+    (WindowWeekGrid в режиме трафика: остаток времени, переполнение, закрытые дни, склейка),
+    справа — выбранное окно и его выпуски (в десктопе — нижняя таблица формы).
+*@
+
+<PageTitle>@_title</PageTitle>
+
+@if (SecurityManager.LoggedUser == null)
+{
+    <div class="state">
+        <div class="state-title">Вы не вошли в систему</div>
+        <a href="/">Перейти к входу</a>
+    </div>
+}
+else if (_access != JournalAccess.Allowed)
+{
+    <div class="state">
+        <div class="state-title">Доступ закрыт</div>
+        Этот экран вам не разрешён. Права на экраны выдаются вместе с пунктами меню —
+        обратитесь к администратору системы.
+    </div>
+}
+else
+{
+    <div class="traffic">
+        <ScreenToolbar Title="@_title">
+            <button class="btn btn-sm btn-outline-secondary" @onclick="RefreshAll">
+                <i class="bi bi-arrow-clockwise" aria-hidden="true"></i>Обновить
+            </button>
+        </ScreenToolbar>
+
+        @if (_error != null)
+        {
+            <div class="alert alert-danger">@_error</div>
+        }
+
+        <div class="traffic-body @(_selected != null ? "with-panel" : null)">
+            <aside class="stations">
+                <select class="form-select form-select-sm" aria-label="Группа станций" @onchange="ChangeGroup">
+                    @if (_groups != null)
+                    {
+                        foreach (DataRowView g in _groups)
+                        {
+                            int id = Convert.ToInt32(g[0]);
+                            <option value="@id" selected="@(id == _groupId)">@g[1]</option>
+                        }
+                    }
+                </select>
+                <ul class="station-list">
+                    @if (_stations != null)
+                    {
+                        foreach (DataRow s in _stations.Rows)
+                        {
+                            int id = Convert.ToInt32(s[Massmedia.ParamNames.MassmediaId]);
+                            DateTime? closed = s[Massmedia.ParamNames.DeadLine] is DateTime d ? d : null;
+                            <li>
+                                <button type="button" class="station @(id == _stationId ? "active" : null)"
+                                        @onclick="() => SelectStation(id, s[Massmedia.ParamNames.Name].ToString()!)">
+                                    <span class="station-name">@s[Massmedia.ParamNames.Name]</span>
+                                    <span class="station-meta">
+                                        @s[Massmedia.ParamNames.GroupName]
+                                        @if (closed != null)
+                                        {
+                                            <span class="closed-through" title="День обработан по этой дате">
+                                                <i class="bi bi-lock-fill" aria-hidden="true"></i>@closed.Value.ToString("dd.MM.yyyy")
+                                            </span>
+                                        }
+                                    </span>
+                                </button>
+                            </li>
+                        }
+                    }
+                </ul>
+            </aside>
+
+            <section class="traffic-week">
+                @if (_stationId == null)
+                {
+                    <div class="state">
+                        <div class="state-title">Выберите станцию</div>
+                        Слева — станции выбранной группы; у закрытых — дата, по которую день обработан.
+                    </div>
+                }
+                else
+                {
+                    <WindowWeekGrid Week="_week" Date="_date" SelectedIds="SelectedIds"
+                                    OnPrevious="PreviousWeek" OnNext="NextWeek" OnJump="JumpTo"
+                                    OnCellClick="e => SelectCell(e.Cell)"
+                                    OnCellDoubleClick="e => OpenPassport(e.Cell)"
+                                    OnCellContextMenu="e => OpenCellMenu(e.Cell, e.Mouse)" />
+                }
+            </section>
+
+            @if (_selected != null)
+            {
+                <aside class="window-panel">
+                    <div class="panel-head">
+                        <div>
+                            <div class="panel-title tabular">Окно @_selected.WindowDate.ToString("dd.MM.yyyy HH:mm")</div>
+                            <div class="panel-sub">@_selected.Text@WindowWeekGrid.StatusText(_selected)</div>
+                            @if (_selected.IsModified)
+                            {
+                                <div class="panel-deviations">Не как в тарифе: @string.Join("; ", _selected.Deviations)</div>
+                            }
+                        </div>
+                        <button type="button" class="btn btn-sm btn-outline-secondary" title="Карточка окна"
+                                @onclick="() => OpenPassport(_selected)">
+                            <i class="bi bi-card-text" aria-hidden="true"></i>Карточка
+                        </button>
+                    </div>
+                    <div class="panel-issues">
+                        <ObjectList Entity="_issueEntity" Data="_issues" ReadOnly="true"
+                                    EmptyText="В окне нет выпусков." />
+                    </div>
+                </aside>
+            }
+        </div>
+    </div>
+}
+
+@code {
+    private string _title = "Трафик-менеджмент";
+    private JournalAccess _access = JournalAccess.Allowed;
+    private string? _error;
+
+    private DataView? _groups;
+    private int _groupId;
+    private DataTable? _stations;
+
+    private int? _stationId;
+    private DateTime _date = DateTime.Today;
+    private TariffWindowWeek? _week;
+    private TariffWindowCell? _selected;
+    private DataTable? _issues;
+    private Entity? _issueEntityCache;
+
+    private Entity _issueEntity => _issueEntityCache ??= TariffWindowWeek.TrafficIssueEntity();
+
+    private IReadOnlyCollection<int>? SelectedIds => _selected == null ? null : new[] { _selected.WindowId };
+
+    protected override async Task OnInitializedAsync()
+    {
+        if (SecurityManager.LoggedUser == null)
+            return;
+
+        _access = Access.CheckScreen(ScreenRoutes.TrafficManagement);
+        if (_access != JournalAccess.Allowed)
+            return;
+
+        _title = Access.MenuText(ScreenRoutes.TrafficManagement) ?? _title;
+        await Busy.RunAsync(() => Try(() =>
+        {
+            _groups = TrafficManagement.Groups();
+            _stations = TrafficManagement.Stations(_groupId);
+        }));
+    }
+
+    private void Try(System.Action work)
+    {
+        try
+        {
+            _error = null;
+            work();
+        }
+        catch (Exception ex)
+        {
+            _error = ErrorPresenter.Describe(ex);
+        }
+    }
+
+    // ---------- Станции ----------
+
+    private Task ChangeGroup(ChangeEventArgs e)
+    {
+        _groupId = int.TryParse(e.Value?.ToString(), out int id) ? id : 0;
+        return Busy.RunAsync(() => Try(() => _stations = TrafficManagement.Stations(_groupId)));
+    }
+
+    private Task SelectStation(int id, string name)
+    {
+        if (_stationId == id)
+            return Task.CompletedTask;
+        _stationId = id;
+        _week = null;
+        _selected = null;
+        _issues = null;
+        return LoadWeek();
+    }
+
+    private Task RefreshAll() => Busy.RunAsync(() => Try(() =>
+    {
+        _stations = TrafficManagement.Stations(_groupId);
+        if (_stationId != null)
+            ReloadWeek();
+    }));
+
+    // ---------- Неделя ----------
+
+    private Task LoadWeek() => Busy.RunAsync(() => Try(ReloadWeek));
+
+    private void ReloadWeek()
+    {
+        _week = TariffWindowWeek.LoadForTraffic(_stationId!.Value, _date);
+        // Ячейки после чтения — новые объекты: выбранное окно ищем по номеру.
+        _selected = _selected == null ? null : FindCell(_selected.WindowId);
+        _issues = _selected == null ? null : TariffWindowWeek.LoadIssues(_selected);
+    }
+
+    private Task PreviousWeek()
+    {
+        _date = _week!.StartDate.AddDays(-1);
+        return LoadWeek();
+    }
+
+    private Task NextWeek()
+    {
+        _date = _week!.FinishDate.AddDays(1);
+        return LoadWeek();
+    }
+
+    private Task JumpTo(DateTime date)
+    {
+        _date = date;
+        return LoadWeek();
+    }
+
+    private TariffWindowCell? FindCell(int windowId)
+    {
+        foreach (TariffWindowRow row in _week!.Rows)
+            foreach (TariffWindowCell? cell in row.Cells)
+                if (cell != null && cell.WindowId == windowId)
+                    return cell;
+        return null;
+    }
+
+    // ---------- Окно ----------
+
+    /// <summary>Выбор окна — панель справа с его выпусками (WindowIssuesRetrieve).</summary>
+    private Task SelectCell(TariffWindowCell cell)
+    {
+        _selected = cell;
+        return Busy.RunAsync(() => Try(() => _issues = TariffWindowWeek.LoadIssues(cell)));
+    }
+
+    private async Task OpenPassport(TariffWindowCell cell)
+    {
+        await SelectCell(cell);
+        await Execute(TariffWindowWeek.CreateWindowObject(cell), Constants.EntityActions.ShowPassport);
+    }
+
+    private async Task OpenCellMenu(TariffWindowCell cell, MouseEventArgs e)
+    {
+        try
+        {
+            await SelectCell(cell);
+            PresentationObject window = TariffWindowWeek.CreateWindowObject(cell);
+            string? picked = await Menu.ShowAsync(Actions.BuildMenu(window, ViewType.Tree), e.ClientX, e.ClientY, fromButton: false);
+            if (picked != null)
+                await Execute(window, picked);
+        }
+        catch (Exception ex)
+        {
+            _error = ErrorPresenter.Describe(ex);
+        }
+    }
+
+    private async Task Execute(PresentationObject window, string actionName)
+    {
+        try
+        {
+            ActionEffect? effect = await Actions.ExecuteAsync(window, actionName, ViewType.Journal);
+            if (effect is { } done && done != ActionEffect.None)
+                await LoadWeek();
+        }
+        catch (Exception ex)
+        {
+            _error = ErrorPresenter.Describe(ex);
+        }
+    }
+}

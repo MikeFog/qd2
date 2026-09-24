@@ -41,6 +41,7 @@ public sealed class MenuAccess
 	private List<MenuNode>? _tree;
 	private HashSet<int>? _allowedEntities;
 	private HashSet<string>? _allowedBrowsers;
+	private HashSet<string>? _allowedScreens;
 	private int? _loadedFor;
 
 	public MenuAccess(UserSession session)
@@ -96,6 +97,19 @@ public sealed class MenuAccess
 			: JournalAccess.NotPorted;
 	}
 
+	/// <summary>Доступ к своему экрану (ScreenRoutes) — по тому же пункту меню пользователя.</summary>
+	public JournalAccess CheckScreen(string codeName)
+	{
+		EnsureLoaded();
+
+		if (_allowedScreens!.Contains(codeName))
+			return JournalAccess.Allowed;
+
+		return ScreenRoutes.Screens.ContainsKey(codeName)
+			? JournalAccess.Denied
+			: JournalAccess.NotPorted;
+	}
+
 	/// <summary>
 	/// Текст пункта меню по <c>codeName</c> — заголовок журнала, как в десктопе
 	/// (<c>mi.Text</c>). <c>null</c>, если пункта нет в меню пользователя.
@@ -134,6 +148,7 @@ public sealed class MenuAccess
 		_loadedFor = currentUser;
 		_allowedEntities = new HashSet<int>();
 		_allowedBrowsers = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+		_allowedScreens = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
 
 		if (currentUser == null)
 		{
@@ -158,6 +173,8 @@ public sealed class MenuAccess
 
 				if (MenuRoutes.Browser.ContainsKey(node.CodeName!))
 					_allowedBrowsers!.Add(node.CodeName!);
+				if (ScreenRoutes.Screens.ContainsKey(node.CodeName!))
+					_allowedScreens!.Add(node.CodeName!);
 			}
 
 			Collect(node.Children);

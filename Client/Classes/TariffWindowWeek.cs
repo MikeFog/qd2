@@ -7,10 +7,25 @@ using FogSoft.WinForm.DataAccess;
 
 namespace Merlin.Classes
 {
+	/// <summary>Что показывает неделя окон.</summary>
+	public enum TariffWindowWeekMode
+	{
+		/// <summary>Вкладка «Рекламные окна» у прайс-листа: в ячейке длительность окна.</summary>
+		Generation,
+
+		/// <summary>
+		/// Трафик-менеджмент: в ячейке остаток свободного времени, «[осталось/всего]» у
+		/// штучных окон, фактическое время перенесённого окна; видны особые окна, переполнение,
+		/// склейка и закрытые («обработанные») дни станции.
+		/// </summary>
+		Traffic
+	}
+
 	/// <summary>
-	/// Рекламные окна прайс-листа за одну неделю — данные веб-вкладки «Окна» у прайс-листа
-	/// (веб-аналог TariffWindowGrid на форме «Генерация рекламных окон»). Публичный фасад:
-	/// MassmediaPricelist internal, веб видит прайс-лист только как object узла дерева.
+	/// Рекламные окна за одну неделю — данные веб-сетки окон: вкладки «Окна» у прайс-листа
+	/// (веб-аналог TariffWindowGrid на форме «Генерация рекламных окон») и экрана «Трафик»
+	/// (веб-аналог TrafficGrid). Публичный фасад: MassmediaPricelist internal, веб видит
+	/// прайс-лист только как object узла дерева, станцию — по id.
 	///
 	/// Раскладка — как у TariffWindowGrid: строка = тарифное время + цена (набор «time»
 	/// процедуры TariffWindowRetrieve), колонка = день по windowDateOriginal, в ячейке —
@@ -34,6 +49,24 @@ namespace Merlin.Classes
 		public bool HasNext { get; private set; }
 
 		public IReadOnlyList<TariffWindowRow> Rows { get; private set; }
+
+		public TariffWindowWeekMode Mode { get; private set; }
+
+		/// <summary>Трафик: на эту дату у станции нет прайс-листа — окон нет и быть не может.</summary>
+		public bool NoPricelist { get; private set; }
+
+		/// <summary>
+		/// Трафик: станция «обработана по» эту дату (Massmedia.deadLine) — выпуски этих дней
+		/// менять нельзя всем, кроме трафик-менеджера и администратора (hlp_IssueVerify,
+		/// DeadLineViolation). null — не закрывалась.
+		/// </summary>
+		public DateTime? ClosedThrough { get; private set; }
+
+		/// <summary>День закрыт: не позже даты «обработано по».</summary>
+		public bool IsClosed(int dayIndex)
+		{
+			return ClosedThrough.HasValue && Monday.AddDays(dayIndex) <= ClosedThrough.Value.Date;
+		}
 
 		/// <summary>Число окон за неделю по дням (Пн…Вс).</summary>
 		public int[] WindowsPerDay { get; private set; }
@@ -70,8 +103,45 @@ namespace Merlin.Classes
 		/// </summary>
 		public static TariffWindowWeek Load(object pricelist, DateTime anyDate)
 		{
-			MassmediaPricelist p = (MassmediaPricelist)pricelist;
+			return LoadCore((MassmediaPricelist)pricelist, anyDate, TariffWindowWeekMode.Generation, null);
+		}
 
+		/// <summary>
+		/// Трафик: неделя окон станции, содержащая <paramref name="anyDate"/>, по прайс-листу,
+		/// действующему в эту дату (как TrafficGrid: прайс-лист ищется заново на каждую неделю, и
+		/// неделя на стыке прайс-листов обрезается его сроком). Особые окна и окна трафика видны,
+		/// модульные тарифы — тоже; время строк — оригинальное (операции трафика ищут окна по
+		/// windowDateOriginal, TrafficGrid.UseActualTime = false).
+		/// </summary>
+		public static TariffWindowWeek LoadForTraffic(int massmediaId, DateTime anyDate)
+		{
+			Massmedia massmedia = Massmedia.GetMassmediaByID(massmediaId);
+			MassmediaPricelist p = massmedia.GetPriceList(anyDate.Date) as MassmediaPricelist;
+			if (p == null)
+			{
+				DateTime monday = anyDate.Date.AddDays(-(((int)anyDate.DayOfWeek + 6) % 7));
+				return new TariffWindowWeek
+				{
+					Mode = TariffWindowWeekMode.Traffic,
+					NoPricelist = true,
+					Monday = monday,
+					StartDate = monday,
+					FinishDate = monday.AddDays(DaysInWeek - 1),
+					HasPrevious = true,
+					HasNext = true,
+					ClosedThrough = massmedia.DeadLine,
+					Rows = new List<TariffWindowRow>(),
+					WindowsPerDay = new int[DaysInWeek]
+				};
+			}
+
+			p.ExcludeSpecialWindows = false;
+			return LoadCore(p, anyDate, TariffWindowWeekMode.Traffic, massmedia.DeadLine);
+		}
+
+		private static TariffWindowWeek LoadCore(MassmediaPricelist p, DateTime anyDate, TariffWindowWeekMode mode,
+			DateTime? closedThrough)
+		{
 			DateTime date = anyDate.Date;
 			if (date < p.StartDate.Date) date = p.StartDate.Date;
 			if (date > p.FinishDate.Date) date = p.FinishDate.Date;
@@ -88,7 +158,7 @@ namespace Merlin.Classes
 			p.ExcludeModuleTariffs = false;
 			try
 			{
-				ds = p.GetTariffWindows(start, finish, null, false);
+				ds = p.GetTariffWindows(start, finish, null, mode == TariffWindowWeekMode.Traffic);
 				// Тарифы — для метки «окно изменено относительно тарифа»: тариф — шаблон,
 				// окно — экземпляр со своими правками (docs/business-logic.md, «Тариф и
 				// рекламное окно»). Десятки строк, один лёгкий запрос на неделю.
@@ -99,17 +169,22 @@ namespace Merlin.Classes
 				p.ExcludeModuleTariffs = true;
 			}
 
+			bool traffic = mode == TariffWindowWeekMode.Traffic;
 			TariffWindowWeek week = new TariffWindowWeek
 			{
+				Mode = mode,
 				Monday = monday,
 				StartDate = start,
 				FinishDate = finish,
-				HasPrevious = start > p.StartDate.Date,
-				HasNext = finish < p.FinishDate.Date,
+				// Трафик листает станцию, а не прайс-лист: за границей срока — следующий прайс-лист
+				// (или «нет прайс-листа»).
+				HasPrevious = traffic || start > p.StartDate.Date,
+				HasNext = traffic || finish < p.FinishDate.Date,
+				ClosedThrough = closedThrough,
 				WindowsPerDay = new int[DaysInWeek]
 			};
 			week.Rows = BuildRows(ds.Tables["time"], ds.Tables[Constants.TableNames.Data], IndexTariffs(tariffs),
-				monday, week.WindowsPerDay);
+				monday, week.WindowsPerDay, mode);
 			return week;
 		}
 
@@ -122,7 +197,7 @@ namespace Merlin.Classes
 		}
 
 		private static List<TariffWindowRow> BuildRows(DataTable times, DataTable windows, Dictionary<int, DataRow> tariffs,
-			DateTime monday, int[] perDay)
+			DateTime monday, int[] perDay, TariffWindowWeekMode mode)
 		{
 			List<TariffWindowRow> rows = new List<TariffWindowRow>(times.Rows.Count);
 			Dictionary<string, TariffWindowRow> byKey = new Dictionary<string, TariffWindowRow>();
@@ -158,15 +233,87 @@ namespace Merlin.Classes
 				row.Cells[day] = new TariffWindowCell(
 					Convert.ToInt32(w[TariffWindow.ParamNames.WindowId]),
 					(DateTime)w[TariffWindow.ParamNames.WindowDateActual],
-					CellText(w),
+					mode == TariffWindowWeekMode.Traffic ? TrafficText(w) : CellText(w),
 					w[TariffWindow.ParamNames.IsDisabled] is bool disabled && disabled,
 					w[TariffWindow.ParamNames.IsMarked] is bool marked && marked,
 					Deviations(w, tariffs),
-					w);
+					w)
+				{
+					IsOverflow = mode == TariffWindowWeekMode.Traffic && IsOverflow(w),
+					LinkNote = mode == TariffWindowWeekMode.Traffic ? LinkNote(w) : null
+				};
 				perDay[day]++;
 			}
 
 			return rows;
+		}
+
+		/// <summary>
+		/// Текст ячейки трафика — как RollerIssuesGrid3.GetCellContent у TrafficGrid (неподтверждённые
+		/// учитываются): остаток времени, у штучного окна «[осталось/всего]», у перенесённого окна —
+		/// фактическое время в скобках (с датой, если перенесено на другой день).
+		/// </summary>
+		private static string TrafficText(DataRow w)
+		{
+			int timeLeft = IntOrZero(w[TariffWindow.ParamNames.Duration])
+				- IntOrZero(w[TariffWindow.ParamNames.TimeInUseConfirmed])
+				- IntOrZero(w[TariffWindow.ParamNames.TimeInUseUnconfirmed]);
+			string text = DateTimeUtils.Time2String(timeLeft);
+
+			int maxCapacity = IntOrZero(w[TariffWindow.ParamNames.MaxCapacity]);
+			if (maxCapacity > 0)
+			{
+				int capacityLeft = maxCapacity
+					- IntOrZero(w[TariffWindowWithRollerIssues.ParamNames.CapacityInUseConfirmed])
+					- IntOrZero(w[TariffWindowWithRollerIssues.ParamNames.CapacityInUseUnconfirmed]);
+				text = string.Format("{0} [{1}/{2}]", text, capacityLeft, maxCapacity);
+			}
+
+			DateTime original = (DateTime)w[TariffWindow.ParamNames.WindowDateOriginal];
+			DateTime actual = (DateTime)w[TariffWindow.ParamNames.WindowDateActual];
+			if (actual.Date != original.Date)
+				text += actual.ToString(" (dd.MM.yy HH:mm)");
+			else if (actual.Hour != original.Hour || actual.Minute != original.Minute)
+				text += actual.ToString(" (HH:mm)");
+			return text;
+		}
+
+		/// <summary>
+		/// Переполнение — занято подтверждёнными больше, чем есть (TrafficGrid.CheckWindowOverflow):
+		/// окно укоротили или перенесли в него выпуски сверх длительности/вместимости.
+		/// </summary>
+		private static bool IsOverflow(DataRow w)
+		{
+			int maxCapacity = IntOrZero(w[TariffWindow.ParamNames.MaxCapacity]);
+			return (maxCapacity > 0 && IntOrZero(w[TariffWindowWithRollerIssues.ParamNames.CapacityInUseConfirmed]) > maxCapacity)
+				|| IntOrZero(w[TariffWindow.ParamNames.TimeInUseConfirmed]) > IntOrZero(w[TariffWindow.ParamNames.Duration]);
+		}
+
+		/// <summary>Склейка с соседним окном (windowPrevId / windowNextId, docs/window-merging.md).</summary>
+		private static string LinkNote(DataRow w)
+		{
+			bool prev = w.Table.Columns.Contains(TariffWindowWithRollerIssues.ParamNames.WindowPrevId)
+				&& w[TariffWindowWithRollerIssues.ParamNames.WindowPrevId] != DBNull.Value;
+			bool next = w.Table.Columns.Contains(TariffWindowWithRollerIssues.ParamNames.WindowNextId)
+				&& w[TariffWindowWithRollerIssues.ParamNames.WindowNextId] != DBNull.Value;
+			if (prev && next) return "склеено с предыдущим и следующим окном";
+			if (prev) return "склеено с предыдущим окном";
+			if (next) return "склеено со следующим окном";
+			return null;
+		}
+
+		/// <summary>Выпуски окна для панели трафика — WindowIssuesRetrieve, неподтверждённые тоже.</summary>
+		public static DataTable LoadIssues(TariffWindowCell cell)
+		{
+			return TariffWindowWithRollerIssues.LoadIssues(true, cell.WindowId);
+		}
+
+		/// <summary>Сущность «Выпуск» с набором колонок трафик-менеджера (как grdSelectedCellIssues).</summary>
+		public static Entity TrafficIssueEntity()
+		{
+			Entity entity = (Entity)EntityManager.GetEntity((int)Entities.Issue).Clone();
+			entity.AttributeSelector = (int)RollerIssue.AttributeSelectors.TrafficManager;
+			return entity;
 		}
 
 		/// <summary>
@@ -333,6 +480,12 @@ namespace Merlin.Classes
 		/// <summary>Чем окно отличается от своего тарифа; пусто — совпадает.</summary>
 		public IReadOnlyList<string> Deviations { get; }
 		public bool IsModified => Deviations.Count > 0;
+
+		/// <summary>Трафик: занято подтверждёнными больше, чем есть.</summary>
+		public bool IsOverflow { get; internal set; }
+
+		/// <summary>Трафик: склеено с соседним окном — пояснение; null — не склеено.</summary>
+		public string LinkNote { get; internal set; }
 
 		/// <summary>Строка TariffWindowRetrieve — из неё поднимается объект окна.</summary>
 		internal DataRow Row { get; }

@@ -1,0 +1,172 @@
+/*
+    Трафик-менеджмент: станции слева, неделя окон в центре, выбранное окно справа.
+    На узком экране — колонкой.
+*/
+
+.traffic {
+    flex: 1 1 auto;
+    display: flex;
+    flex-direction: column;
+    min-height: 0;
+}
+
+.traffic-body {
+    flex: 1 1 auto;
+    display: grid;
+    grid-template-columns: 240px minmax(0, 1fr);
+    grid-template-rows: minmax(0, 1fr);
+    gap: var(--s-4);
+    min-height: 0;
+}
+
+/* С выбранным окном — третья колонка под панель. */
+.traffic-body.with-panel {
+    grid-template-columns: 240px minmax(0, 1fr) 360px;
+}
+
+.stations {
+    grid-column: 1;
+    grid-row: 1 / -1;
+    display: flex;
+    flex-direction: column;
+    gap: var(--s-2);
+    min-height: 0;
+}
+
+.station-list {
+    flex: 1 1 auto;
+    overflow: auto;
+    list-style: none;
+    margin: 0;
+    padding: var(--s-1);
+    background: var(--c-surface);
+    border: 1px solid var(--c-border);
+    border-radius: 6px;
+}
+
+.station {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    width: 100%;
+    padding: var(--s-1) var(--s-2);
+    border: none;
+    border-radius: 4px;
+    background: none;
+    text-align: left;
+}
+
+.station:hover {
+    background: var(--c-bg);
+}
+
+.station.active {
+    background: var(--c-accent-soft);
+    color: var(--c-accent);
+}
+
+.station-name {
+    font-weight: 600;
+}
+
+.station-meta {
+    display: flex;
+    gap: var(--s-2);
+    font-size: 12px;
+    color: var(--c-text-muted);
+}
+
+.closed-through {
+    display: inline-flex;
+    gap: 2px;
+    align-items: center;
+    font-variant-numeric: tabular-nums;
+}
+
+.traffic-week {
+    grid-column: 2;
+    grid-row: 1;
+    min-width: 0;
+    min-height: 0;
+    display: flex;
+    flex-direction: column;
+}
+
+.window-panel {
+    grid-column: 3;
+    grid-row: 1;
+    display: flex;
+    flex-direction: column;
+    gap: var(--s-2);
+    min-height: 0;
+}
+
+.panel-head {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: var(--s-2);
+    padding: var(--s-2) var(--s-3);
+    background: var(--c-surface);
+    border: 1px solid var(--c-border);
+    border-radius: 6px;
+}
+
+.panel-title {
+    font-weight: 600;
+}
+
+.panel-sub {
+    color: var(--c-text-muted);
+    font-size: 13px;
+}
+
+.panel-deviations {
+    color: var(--c-warn);
+    font-size: 13px;
+}
+
+.panel-issues {
+    flex: 1 1 auto;
+    min-height: 0;
+    display: flex;
+    flex-direction: column;
+}
+
+.panel-issues ::deep .data-table {
+    flex: 1 1 auto;
+    min-height: 120px;
+}
+
+/* Неделе нужно ~800px (7 дней + цена и время). Когда рядом с ней не помещается ещё и
+   панель окна, панель встаёт под сетку; станции остаются слева во всю высоту. */
+@media (max-width: 1600px) {
+    .traffic-body.with-panel {
+        grid-template-columns: 240px minmax(0, 1fr);
+        grid-template-rows: minmax(0, 1fr) minmax(220px, 38%);
+    }
+
+    .window-panel {
+        grid-column: 2;
+        grid-row: 2;
+    }
+}
+
+@media (max-width: 900px) {
+    .traffic-body,
+    .traffic-body.with-panel {
+        grid-template-columns: minmax(0, 1fr);
+        grid-template-rows: auto;
+    }
+
+    .stations,
+    .traffic-week,
+    .window-panel {
+        grid-column: 1;
+        grid-row: auto;
+    }
+
+    .stations {
+        max-height: 35vh;
+    }
+}
