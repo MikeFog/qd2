@@ -51,7 +51,7 @@ namespace FogSoft.WinForm.Classes
                 return ex.Procedure;
 
             object fromData = ex.Data != null ? ex.Data["Procedure"] : null;
-            return fromData != null ? fromData.ToString() : "<неизвестна>";
+            return fromData != null ? fromData.ToString() : "<неизвестна>"; // i18n-ok: только в лог
         }
 
         /// <summary>

@@ -10,6 +10,7 @@
 """
 import io
 import os
+import re
 import sys
 
 HERE = os.path.dirname(os.path.abspath(__file__))
@@ -20,7 +21,7 @@ def unescape(s):
     out, i = [], 0
     while i < len(s):
         if s[i] == '\\' and i + 1 < len(s):
-            out.append({'n': '\n', 't': '\t', '\\': '\\'}.get(s[i + 1], '\\' + s[i + 1]))
+            out.append({'n': '\n', 'r': '\r', 't': '\t', '\\': '\\'}.get(s[i + 1], '\\' + s[i + 1]))
             i += 2
         else:
             out.append(s[i])
@@ -29,9 +30,11 @@ def unescape(s):
 
 
 def sql_literal(s):
-    # Переводы строк — через NCHAR(10): файл скрипта в CRLF и иначе исказил бы текст.
-    parts = s.replace("'", "''").split('\n')
-    return ' + NCHAR(10) + '.join("N'" + p + "'" for p in parts)
+    # Переводы строк — через NCHAR(13)/NCHAR(10): файл скрипта в CRLF, и символы
+    # внутри литерала исказились бы. Ключ перевода должен совпасть байт в байт.
+    parts = re.split(r'(\r|\n)', s.replace("'", "''"))
+    return ' + '.join({'\r': 'NCHAR(13)', '\n': 'NCHAR(10)'}.get(p, "N'" + p + "'")
+                      for p in parts if p != '')
 
 
 def main(lang):

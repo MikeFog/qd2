@@ -308,9 +308,9 @@ namespace Merlin.Classes
 				&& w[TariffWindowWithRollerIssues.ParamNames.WindowPrevId] != DBNull.Value;
 			bool next = w.Table.Columns.Contains(TariffWindowWithRollerIssues.ParamNames.WindowNextId)
 				&& w[TariffWindowWithRollerIssues.ParamNames.WindowNextId] != DBNull.Value;
-			if (prev && next) return "склеено с предыдущим и следующим окном";
-			if (prev) return "склеено с предыдущим окном";
-			if (next) return "склеено со следующим окном";
+			if (prev && next) return Tr.T("склеено с предыдущим и следующим окном");
+			if (prev) return Tr.T("склеено с предыдущим окном");
+			if (next) return Tr.T("склеено со следующим окном");
 			return null;
 		}
 
@@ -340,25 +340,25 @@ namespace Merlin.Classes
 			DateTime original = (DateTime)w[TariffWindow.ParamNames.WindowDateOriginal];
 			DateTime actual = (DateTime)w[TariffWindow.ParamNames.WindowDateActual];
 			if (actual != original)
-				result.Add(string.Format("время выхода {0:HH:mm}{1}, по расписанию {2:HH:mm}",
+				result.Add(Tr.Format("время выхода {0:HH:mm}{1}, по расписанию {2:HH:mm}",
 					actual, actual.Date != original.Date ? actual.ToString(" (dd.MM)") : "", original));
 
 			if (w[Tariff.ParamNames.TariffId] == DBNull.Value
 				|| !tariffs.TryGetValue(Convert.ToInt32(w[Tariff.ParamNames.TariffId]), out DataRow t))
 				return result;
 
-			CompareSeconds(result, "продолжительность", w, t, TariffWindow.ParamNames.Duration);
-			CompareSeconds(result, "полная продолжительность", w, t, TariffWindow.ParamNames.DurationTotal);
+			CompareSeconds(result, Tr.T("продолжительность"), w, t, TariffWindow.ParamNames.Duration);
+			CompareSeconds(result, Tr.T("полная продолжительность"), w, t, TariffWindow.ParamNames.DurationTotal);
 
 			decimal windowPrice = Convert.ToDecimal(w[TariffWindow.ParamNames.Price]);
 			decimal tariffPrice = Convert.ToDecimal(t[TariffWindow.ParamNames.Price]);
 			if (windowPrice != tariffPrice)
-				result.Add(string.Format("цена {0:C}, по тарифу {1:C}", windowPrice, tariffPrice));
+				result.Add(Tr.Format("цена {0:C}, по тарифу {1:C}", windowPrice, tariffPrice));
 
 			int windowCapacity = IntOrZero(w[TariffWindow.ParamNames.MaxCapacity]);
 			int tariffCapacity = IntOrZero(t[TariffWindow.ParamNames.MaxCapacity]);
 			if (windowCapacity != tariffCapacity)
-				result.Add(string.Format("вместимость {0}, по тарифу {1}", windowCapacity, tariffCapacity));
+				result.Add(Tr.Format("вместимость {0}, по тарифу {1}", windowCapacity, tariffCapacity));
 
 			return result;
 		}
@@ -372,7 +372,7 @@ namespace Merlin.Classes
 			int windowValue = Convert.ToInt32(w[column]);
 			int tariffValue = Convert.ToInt32(t[column]);
 			if (windowValue != tariffValue)
-				result.Add(string.Format("{0} {1}, по тарифу {2}", caption,
+				result.Add(Tr.Format("{0} {1}, по тарифу {2}", caption,
 					DateTimeUtils.Time2String(windowValue), DateTimeUtils.Time2String(tariffValue)));
 		}
 
@@ -425,13 +425,13 @@ namespace Merlin.Classes
 			DateTime finishDate = Convert.ToDateTime(values[Pricelist.ParamNames.FinishDate]);
 
 			if (Convert.ToDecimal(values[TariffWindow.ParamNames.Price]) == Convert.ToDecimal(values[NewPriceParam]))
-				return Properties.Resources.NewPriceShouldBeDifferent;
+				return Tr.T(Properties.Resources.NewPriceShouldBeDifferent);
 			if (startDate > finishDate)
 				return MessageAccessor.GetMessage("StartFinishWindowTimeError");
 			if (startDate < p.StartDate)
-				return string.Format(Properties.Resources.StartDateShouldBeInsidePricelistDates, p.StartDate.ToShortDateString());
+				return Tr.Format(Properties.Resources.StartDateShouldBeInsidePricelistDates, p.StartDate.ToShortDateString());
 			if (finishDate > p.FinishDate)
-				return string.Format(Properties.Resources.FinishDateShouldBeInsidePricelistDates, p.FinishDate.ToShortDateString());
+				return Tr.Format(Properties.Resources.FinishDateShouldBeInsidePricelistDates, p.FinishDate.ToShortDateString());
 			return null;
 		}
 

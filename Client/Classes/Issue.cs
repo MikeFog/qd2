@@ -95,10 +95,10 @@ namespace Merlin.Classes
         {
             return new List<KeyValuePair<int, string>>
             {
-                new KeyValuePair<int, string>((int)RollerPositions.Undefined, "Не определен"),
-                new KeyValuePair<int, string>((int)RollerPositions.First, "Первый"),
-                new KeyValuePair<int, string>((int)RollerPositions.Second, "Второй"),
-                new KeyValuePair<int, string>((int)RollerPositions.Last, "Последний"),
+                new KeyValuePair<int, string>((int)RollerPositions.Undefined, Tr.T("Не определен")),
+                new KeyValuePair<int, string>((int)RollerPositions.First, Tr.T("Первый")),
+                new KeyValuePair<int, string>((int)RollerPositions.Second, Tr.T("Второй")),
+                new KeyValuePair<int, string>((int)RollerPositions.Last, Tr.T("Последний")),
             };
         }
 
@@ -108,15 +108,15 @@ namespace Merlin.Classes
             {
                 case RollerPositions.First:
                 case RollerPositions.FirstTransferred:
-                    return "Первый";
+                    return Tr.T("Первый");
                 case RollerPositions.Second:
                 case RollerPositions.SecondTransferred:
-                    return "Второй";
+                    return Tr.T("Второй");
                 case RollerPositions.Last:
                 case RollerPositions.LastTransferred:
-                    return "Последний";
+                    return Tr.T("Последний");
                 default:
-                    return "Не опеределен";
+                    return Tr.T("Не опеределен");
             }
         }
     }

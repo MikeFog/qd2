@@ -994,7 +994,7 @@ public sealed class ObjectActions
 		if (values.TryGetValue(SubstituteParams.Days, out object? days) && days is TreeSelection tree)
 			selectedDays = Merlin.Classes.RollerSubstitution.SelectDays(tree.Table, tree.AddedIDs.ToList());
 		if (selectedDays == null || selectedDays.Rows.Count == 0)
-			return Merlin.Properties.Resources.NoIssueSelected;
+			return Tr.T(Merlin.Properties.Resources.NoIssueSelected);
 
 		if (values.TryGetValue(SubstituteParams.SubstituteMute, out object? mute) && mute is true)
 		{

@@ -349,7 +349,7 @@ namespace Merlin.Classes
                 PackModule module = issue.PackModule;
                 Pricelist pricelist = module.GetPriceList(newDate);
                 if (pricelist == null)
-                    ErrorManager.AddErrorRow(tableErrors, newDate, string.Format(Properties.Resources.PackModulePricelistNotFound, module.Name));
+                    ErrorManager.AddErrorRow(tableErrors, newDate, Tr.Format(Properties.Resources.PackModulePricelistNotFound, module.Name));
                 else
                 {
                     try
@@ -375,14 +375,14 @@ namespace Merlin.Classes
 				SponsorPricelist pricelist = issue.SponsorProgram.GetPricelist(newDate);
                 if (pricelist == null) 
 				{
-                    ErrorManager.AddErrorRow(tableErrors, newDate, string.Format(Properties.Resources.SponsorPricelistNotFound, issue.SponsorProgram.Name));
+                    ErrorManager.AddErrorRow(tableErrors, newDate, Tr.Format(Properties.Resources.SponsorPricelistNotFound, issue.SponsorProgram.Name));
                     continue; 
 				}
                     
 				SponsorTariff tariff = pricelist.GetTariffBydate(newDate);
                 if (tariff == null)
                 {
-                    ErrorManager.AddErrorRow(tableErrors, newDate, string.Format(Properties.Resources.SponsorTariffNotFound, issue.SponsorProgram.Name));
+                    ErrorManager.AddErrorRow(tableErrors, newDate, Tr.Format(Properties.Resources.SponsorTariffNotFound, issue.SponsorProgram.Name));
                     continue;
                 }
 
@@ -401,7 +401,7 @@ namespace Merlin.Classes
 				Module module = issue.Module;
 				ModulePricelist pricelist =  module.GetPriceList(newDate);
 				if (pricelist == null)
-					ErrorManager.AddErrorRow(tableErrors, newDate, string.Format(Properties.Resources.ModulePricelistNotFound, module.Name));
+					ErrorManager.AddErrorRow(tableErrors, newDate, Tr.Format(Properties.Resources.ModulePricelistNotFound, module.Name));
 				else
 				{
 					try
@@ -439,7 +439,7 @@ namespace Merlin.Classes
                 }
 				else
 				{
-					ErrorManager.AddErrorRow(tableErrors, newDate, "Рекламное окно не найдено");
+					ErrorManager.AddErrorRow(tableErrors, newDate, Tr.T("Рекламное окно не найдено"));
 				}
 			}
         }
@@ -577,7 +577,7 @@ namespace Merlin.Classes
 		{
 			if (!(SecurityManager.LoggedUser.IsAdmin || SecurityManager.LoggedUser.IsTrafficManager) && StartDate < DateTime.Today)
 			{
-				errorMessage = Properties.Resources.DeactivationNotAllowed;
+				errorMessage = Tr.T(Properties.Resources.DeactivationNotAllowed);
 				return false;
 			}
 			errorMessage = null;

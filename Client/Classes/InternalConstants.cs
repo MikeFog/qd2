@@ -142,7 +142,7 @@
 		public const string StoredProcedures = "Stored procedures";
 		public const string Tariff = "Tariff";
 		public const string SponsorProgramm = "Sponsor programm";
-		public const string AdvertTypes = "Предметы рекламы";
+		public const string AdvertTypes = "Предметы рекламы"; // i18n-ok: ключ сценария = iRelationScenario.name
 		public const string Discount = "Discount";
 		public const string PackageDiscount = "PackageDiscount";
 		public const string ConfirmedAction = "ConfirmedAction";

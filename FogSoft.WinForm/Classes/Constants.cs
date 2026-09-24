@@ -111,11 +111,11 @@
 
 		internal struct ItemsCountTemplates
 		{
-			internal const string Default = "Всего объектов: {0}";
-			internal const string WithObjectType = "Всего объектов типа '{0}': {1}";
-			internal const string WithObjectTypeAndParentObjectName = "Всего объектов типа '{0}' для объекта '{1}': {2}";
+			internal const string Default = "Всего объектов: {0}"; // i18n-ok: строка состояния десктопа (MasterDetailForm)
+			internal const string WithObjectType = "Всего объектов типа '{0}': {1}"; // i18n-ok: строка состояния десктопа
+			internal const string WithObjectTypeAndParentObjectName = "Всего объектов типа '{0}' для объекта '{1}': {2}"; // i18n-ok: строка состояния десктопа
 		}
 
-		public const string MethodNotImplemented = "Метод еще не реализован.";
+		public const string MethodNotImplemented = "Метод еще не реализован."; // i18n-ok: исключение для разработчика
 	}
 }

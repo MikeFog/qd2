@@ -14,14 +14,14 @@ namespace Merlin.Classes.FakeContainers
         }
         private static readonly Entity.Action[] menu = new[]
         {
-            new Entity.Action(ActionNames.ShowTree, "Показать с группировакой"),
-            new Entity.Action(ActionNames.ShowFlat, "Показать без группировки"),
-            new Entity.Action(Constants.EntityActions.AddNew, "Создать новый предмет рекламы"),
+            new Entity.Action(ActionNames.ShowTree, "Показать с группировакой"), // i18n-ok: подпись действия, переводится при выводе
+            new Entity.Action(ActionNames.ShowFlat, "Показать без группировки"), // i18n-ok: подпись действия, переводится при выводе
+            new Entity.Action(Constants.EntityActions.AddNew, "Создать новый предмет рекламы"), // i18n-ok: подпись действия, переводится при выводе
             new Entity.Action(null, "-"),
-            new Entity.Action(Constants.EntityActions.Refresh, "Обновить", Constants.ActionsImages.Refresh)
+            new Entity.Action(Constants.EntityActions.Refresh, "Обновить", Constants.ActionsImages.Refresh) // i18n-ok: подпись действия, переводится при выводе
         };
 
-        public AdvertTypeContainer() : base("Предметы рекламы", menu, RelationManager.GetScenario(RelationScenarios.AdvertTypes))
+        public AdvertTypeContainer() : base(Tr.T("Предметы рекламы"), menu, RelationManager.GetScenario(RelationScenarios.AdvertTypes))
         {
 
         }

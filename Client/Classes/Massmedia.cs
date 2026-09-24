@@ -284,7 +284,7 @@ namespace Merlin.Classes
             DataTable dataTable = entity.GetContent().Copy();
             DataRow row = dataTable.NewRow();
             row[0] = 0;
-            row[1] = "Показать все";
+            row[1] = Tr.T("Показать все");
             dataTable.Rows.InsertAt(row, 0);
             return dataTable.DefaultView;
         }

@@ -98,11 +98,11 @@ namespace Merlin.Classes
 			if (start > finish)
 				return MessageAccessor.GetMessage("StartFinishDateError2");
 			if (start < week.PricelistStart || finish > week.PricelistFinish)
-				return string.Format("Период должен быть внутри срока прайс-листа: {0:dd.MM.yyyy} – {1:dd.MM.yyyy}.",
+				return Tr.Format("Период должен быть внутри срока прайс-листа: {0:dd.MM.yyyy} – {1:dd.MM.yyyy}.",
 					week.PricelistStart, week.PricelistFinish);
 			foreach (bool d in days)
 				if (d) return null;
-			return "Отметьте хотя бы один день недели.";
+			return Tr.T("Отметьте хотя бы один день недели.");
 		}
 
 		/// <summary>
@@ -113,11 +113,11 @@ namespace Merlin.Classes
 		public static string Validate(WindowChangeTarget target, WindowChange change)
 		{
 			if (!change.NewTime.HasValue && !change.NewDuration.HasValue && !change.NewTotal.HasValue)
-				return "Заполните хотя бы одно: время выхода, продолжительность или полную продолжительность.";
+				return Tr.T("Заполните хотя бы одно: время выхода, продолжительность или полную продолжительность.");
 			if (target.Count == 0)
-				return "Под условие не попало ни одного окна.";
+				return Tr.T("Под условие не попало ни одного окна.");
 			if (change.NewTime.HasValue && target.Times.Count > 1)
-				return "Время выхода меняется только для одной строки времени — выделите окна одного времени.";
+				return Tr.T("Время выхода меняется только для одной строки времени — выделите окна одного времени.");
 
 			int bad = 0;
 			string first = null;
@@ -129,13 +129,13 @@ namespace Merlin.Classes
 				{
 					bad++;
 					if (first == null)
-						first = string.Format("{0:dd.MM.yyyy HH:mm}: продолжительность {1} больше полной {2}",
+						first = Tr.Format("{0:dd.MM.yyyy HH:mm}: продолжительность {1} больше полной {2}",
 							(DateTime)w[TariffWindow.ParamNames.WindowDateOriginal],
 							DateTimeUtils.Time2String(duration), DateTimeUtils.Time2String(total));
 				}
 			}
 			if (bad > 0)
-				return string.Format("Продолжительность не может быть больше полной — окон с нарушением: {0}. Например, {1}.", bad, first);
+				return Tr.Format("Продолжительность не может быть больше полной — окон с нарушением: {0}. Например, {1}.", bad, first);
 			return null;
 		}
 
@@ -296,9 +296,9 @@ namespace Merlin.Classes
 
 				int firmId = ParseHelper.GetInt32FromObject(issue[Firm.ParamNames.FirmId], 0);
 				string warning = rollers.Contains(Convert.ToInt32(issue[Roller.ParamNames.RollerId]))
-					? string.Format("В окне уже есть ролик «{0}».", issue["name"])
+					? Tr.Format("В окне уже есть ролик «{0}».", issue["name"])
 					: firmId > 0 && firms.Contains(firmId)
-						? string.Format("В окне уже есть ролики фирмы «{0}».", issue["firmName"])
+						? Tr.Format("В окне уже есть ролики фирмы «{0}».", issue["firmName"])
 						: null;
 				if (warning != null && !plan.Warnings.Contains(warning))
 					plan.Warnings.Add(warning);

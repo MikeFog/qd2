@@ -19,7 +19,7 @@ namespace Merlin.Classes
         {
             if (bool.Parse(parameters[Roller.ParamNames.IsCommon].ToString()) || parameters[Roller.ParamNames.ParentId] != System.DBNull.Value)
             {
-                errorMessage = Properties.Resources.ImpossibleSetAdvertType;
+                errorMessage = FogSoft.WinForm.Classes.Tr.T(Properties.Resources.ImpossibleSetAdvertType);
                 return false;
             }
             errorMessage = null;

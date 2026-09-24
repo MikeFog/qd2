@@ -61,7 +61,7 @@ namespace Merlin.Classes
 			if (start > finish)
 				return MessageAccessor.GetMessage("StartFinishWindowTimeError");
 			if (start < StartDate(pricelist) || finish > FinishDate(pricelist))
-				return string.Format("Интервал должен быть внутри срока прайс-листа: {0:dd.MM.yyyy} – {1:dd.MM.yyyy}.",
+				return Tr.Format("Интервал должен быть внутри срока прайс-листа: {0:dd.MM.yyyy} – {1:dd.MM.yyyy}.",
 					StartDate(pricelist), FinishDate(pricelist));
 			return null;
 		}
@@ -159,7 +159,7 @@ namespace Merlin.Classes
 			foreach (DayOfWeek day in Enum.GetValues(typeof(DayOfWeek)))
 				if (values.TryGetValue(DayParam(day), out object v) && v is bool b && b)
 					return null;
-			return "Отметьте хотя бы один день недели.";
+			return Tr.T("Отметьте хотя бы один день недели.");
 		}
 
 		/// <summary>

@@ -481,7 +481,7 @@ namespace FogSoft.WinForm.DataAccess
 				if (IsHandledBusinessMessage(exp))
 				{
 					ErrorManager.Log.Warn(
-						string.Format("Отклонено бизнес-правилом. Процедура: {0} — {1}",
+						string.Format("Отклонено бизнес-правилом. Процедура: {0} — {1}", // i18n-ok: строка лога
 							procedureName, exp.Message));
 				}
 				else
@@ -610,7 +610,7 @@ namespace FogSoft.WinForm.DataAccess
                 if (IsHandledBusinessMessage(exp))
                 {
                     ErrorManager.Log.Warn(
-                        string.Format("Отклонено бизнес-правилом. Процедура: {0} — {1}",
+                        string.Format("Отклонено бизнес-правилом. Процедура: {0} — {1}", // i18n-ok: строка лога
                             procedureName, exp.Message));
                 }
                 else

@@ -180,7 +180,7 @@ namespace Merlin.Classes
 		/// </summary>
 		public static string ValidateMassCreateHours(int hourFrom, int hourTo)
 		{
-			return hourFrom > hourTo ? "Час окончания интервала не может быть меньше часа начала." : null;
+			return hourFrom > hourTo ? Tr.T("Час окончания интервала не может быть меньше часа начала.") : null;
 		}
 
 		/// <summary>
@@ -302,13 +302,13 @@ namespace Merlin.Classes
 				bool wasOn = bool.Parse(original[day].ToString());
 				anyDay |= isOn;
 				if (isOn && !wasOn)
-					return "Нельзя добавить день недели, которого нет у исходного тарифа: дни задают область применения.";
+					return Tr.T("Нельзя добавить день недели, которого нет у исходного тарифа: дни задают область применения.");
 			}
 			if (!anyDay)
-				return "Отметьте хотя бы один день недели, к которому применить изменения.";
+				return Tr.T("Отметьте хотя бы один день недели, к которому применить изменения.");
 
 			if (!HasMassEditChanges(original, edited, minute))
-				return "Ни один параметр не изменён.";
+				return Tr.T("Ни один параметр не изменён.");
 
 			return null;
 		}
@@ -348,14 +348,14 @@ namespace Merlin.Classes
 
 				if (Convert.ToBoolean(row["hasWindows"]))
 				{
-					ErrorManager.AddErrorRow(tableErrors, DateTime.Now, string.Format(
-						"{0:HH:mm}: у тарифа есть сгенерированные окна - сначала удалите их или правьте окна", oldTime));
+					ErrorManager.AddErrorRow(tableErrors, DateTime.Now,
+						Tr.Format("{0:HH:mm}: у тарифа есть сгенерированные окна - сначала удалите их или правьте окна", oldTime));
 					continue;
 				}
 				if (Convert.ToBoolean(row["inUnion"]))
 				{
-					ErrorManager.AddErrorRow(tableErrors, DateTime.Now, string.Format(
-						"{0:HH:mm}: тариф входит в цепочку объединения - правьте его вручную", oldTime));
+					ErrorManager.AddErrorRow(tableErrors, DateTime.Now,
+						Tr.Format("{0:HH:mm}: тариф входит в цепочку объединения - правьте его вручную", oldTime));
 					continue;
 				}
 

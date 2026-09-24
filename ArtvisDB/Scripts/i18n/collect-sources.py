@@ -37,20 +37,27 @@ def add(s, kind):
     src.setdefault(s, set()).add(kind)
 
 
-for dp, dns, fns in os.walk(WEB):
-    dns[:] = [d for d in dns if d not in fu.SKIP_DIRS]
-    for fn in fns:
-        if not fn.endswith(('.razor', '.cs')):
+RES_KEY = re.compile(r'Tr\.(?:T|Format)\(\s*(?:Merlin\.)?Properties\.Resources\.(\w+)')
+resource_keys = set()
+code_files = [p for p in fu.web_files() if p.endswith(('.razor', '.cs'))] + list(fu.core_files())
+for path in code_files:
+    raw = io.open(path, encoding='utf-8-sig').read()
+    resource_keys.update(RES_KEY.findall(raw))
+    text = fu.strip_comments(raw)
+    for line in text.split('\n'):
+        if re.search(r"\b(_?[Ll]og)\.(Info|Warn|Error|Debug|Fatal)", line):
             continue
-        text = fu.strip_comments(io.open(os.path.join(dp, fn), encoding='utf-8-sig').read())
-        for line in text.split('\n'):
-            if re.search(r"\b(_?[Ll]og)\.(Info|Warn|Error|Debug|Fatal)", line):
+        for m in LIT.finditer(line):
+            prefix, body = m.group(1) or '', m.group(2)
+            if '$' in prefix:
                 continue
-            for m in LIT.finditer(line):
-                prefix, body = m.group(1) or '', m.group(2)
-                if '$' in prefix:
-                    continue
-                add(body.replace('""', '"') if '@' in prefix else unescape(body), 'code')
+            add(body.replace('""', '"') if '@' in prefix else unescape(body), 'code')
+
+# Строки Client/Properties/Resources.resx, которые код пропускает через Tr.
+resx = ET.parse(os.path.join(WEB, '..', 'Client', 'Properties', 'Resources.resx')).getroot()
+for data in resx.findall('data'):
+    if data.get('name') in resource_keys and data.find('value') is not None:
+        add(data.find('value').text, 'code')
 
 db = json.load(io.open(os.path.join(D, 'db.json'), encoding='utf-8'))
 existing = {}

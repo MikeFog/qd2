@@ -20,8 +20,8 @@ namespace FogSoft.WinForm.Classes
 
         #region Constants -------------------------------------
 
-        private const string DELETE_PROMPT = "Эта операция приведет к удалению объекта '{0}' из системы. Продолжить?";
-		private const string DETACH_PROMPT = "Вы действительно хотите отсоединить объект '{0}'?";
+        private const string DELETE_PROMPT = "Эта операция приведет к удалению объекта '{0}' из системы. Продолжить?"; // i18n-ok: переводится при использовании (Tr.Format)
+		private const string DETACH_PROMPT = "Вы действительно хотите отсоединить объект '{0}'?"; // i18n-ok: переводится при использовании (Tr.Format)
 
 		#endregion
 
@@ -301,7 +301,7 @@ namespace FogSoft.WinForm.Classes
 
 		protected virtual bool ConfirmDetach()
 		{
-			return UserInteraction.Confirm(string.Format(DETACH_PROMPT, Name));
+			return UserInteraction.Confirm(Tr.Format(DETACH_PROMPT, Name));
 		}
 
 		/// <summary>
@@ -314,7 +314,7 @@ namespace FogSoft.WinForm.Classes
 		/// </summary>
 		public virtual string DeleteConfirmationText
 		{
-			get { return string.Format(DELETE_PROMPT, Name); }
+			get { return Tr.Format(DELETE_PROMPT, Name); }
 		}
 
 		public Entity Entity

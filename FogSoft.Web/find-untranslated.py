@@ -4,6 +4,7 @@ docs/tasks/web-i18n.md, этап 3.
 
     python FogSoft.Web/find-untranslated.py            # список file:line: текст
     python FogSoft.Web/find-untranslated.py --summary  # только счётчики по файлам
+    python FogSoft.Web/find-untranslated.py --core     # то же для ядра (файлы FogSoft.Core.csproj)
 
 Не считаются: комментарии (//, /* */, @* *@, <!-- -->, ///), строки внутри Tr.T(...) и
 первого аргумента Tr.Format(...), строки логов (Log./_log.) и строки с пометкой
@@ -54,25 +55,48 @@ def scan(path):
     return found
 
 
-def main():
-    summary = "--summary" in sys.argv
-    total = 0
+def web_files():
     for dirpath, dirnames, filenames in os.walk(ROOT):
         dirnames[:] = [d for d in dirnames if d not in SKIP_DIRS]
         for name in sorted(filenames):
-            if not name.endswith(EXTS):
-                continue
-            path = os.path.join(dirpath, name)
-            found = scan(path)
-            if not found:
-                continue
-            total += len(found)
-            rel = os.path.relpath(path, os.path.dirname(ROOT))
-            if summary:
-                print(f"{len(found):4}  {rel}")
-            else:
-                for no, line in found:
-                    print(f"{rel}:{no}: {line}")
+            if name.endswith(EXTS):
+                yield os.path.join(dirpath, name)
+
+
+# Файлы ядра, которые веб не вызывает (только десктоп) — их текст не переводится.
+CORE_DESKTOP_ONLY = {
+    "Money.cs": "сумма прописью — русская морфология, десктопные отчёты",
+    "CpOneDocGenerator.cs": "коммерческое предложение в Word — десктоп",
+    "Class1.cs": "тестовые данные КП",
+    "DateTimeUtils.cs": "названия дней для десктопа; веб — DisplayFormat",
+    "ReportGenerator.cs": "Crystal Reports — десктоп",
+    "UserInteraction.cs": "исключения для разработчика",
+}
+
+
+def core_files():
+    """Файлы ядра, общие с десктопом: всё, что FogSoft.Core.csproj подключает ссылками."""
+    core = os.path.join(os.path.dirname(ROOT), "FogSoft.Core")
+    with open(os.path.join(core, "FogSoft.Core.csproj"), encoding="utf-8-sig") as f:
+        for inc in re.findall(r'<Compile Include="([^"]+\.cs)"', f.read()):
+            if not inc.endswith(".Designer.cs") and os.path.basename(inc) not in CORE_DESKTOP_ONLY:
+                yield os.path.normpath(os.path.join(core, inc))
+
+
+def main():
+    summary = "--summary" in sys.argv
+    total = 0
+    for path in (core_files() if "--core" in sys.argv else web_files()):
+        found = scan(path)
+        if not found:
+            continue
+        total += len(found)
+        rel = os.path.relpath(path, os.path.dirname(ROOT))
+        if summary:
+            print(f"{len(found):4}  {rel}")
+        else:
+            for no, line in found:
+                print(f"{rel}:{no}: {line}")
     print(f"Итого строк с непереведённым русским: {total}")
     return 1 if total else 0
 

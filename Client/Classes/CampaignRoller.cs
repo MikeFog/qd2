@@ -203,10 +203,10 @@ namespace Merlin.Classes
 		{
 			// если это активированная акция, то для "пустышки" обязательно надо указать предмет рекламы
 			if (advertTypeId == null && campaign.Action.IsConfirmed)
-				return Properties.Resources.SubstitutionImpossibleForDummyRoller;
+				return Tr.T(Properties.Resources.SubstitutionImpossibleForDummyRoller);
 
 			if (duration == 0)
-				return Properties.Resources.DummyRollerWithZeroDuration;
+				return Tr.T(Properties.Resources.DummyRollerWithZeroDuration);
 
 			return null;
 		}

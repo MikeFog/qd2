@@ -83,7 +83,7 @@ namespace Merlin.Classes
 
             object[] rowVals = new object[dt.Columns.Count];
 			rowVals[0] = CampaignParts.ProgramPart;
-			rowVals[1] = "Программы для спонсоров";
+			rowVals[1] = Tr.T("Программы для спонсоров");
 			rowVals[2] = this[ParamNames.CampaignId];
 			rowVals[3] = MassmediaId;
             rowVals[4] = Action.DeleteDate;
@@ -91,7 +91,7 @@ namespace Merlin.Classes
             dt.Rows.Add(rowVals);
 
 			rowVals[0] = CampaignParts.RollerPart;
-			rowVals[1] = "Рекламные ролики";
+			rowVals[1] = Tr.T("Рекламные ролики");
 			rowVals[2] = this[ParamNames.CampaignId];
 			rowVals[3] = MassmediaId;
             rowVals[4] = Action.DeleteDate;

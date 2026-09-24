@@ -27,12 +27,12 @@ namespace Merlin.Classes.FakeContainers
 
         private static readonly Entity.Action[] menu = new[]
 		{
-		new Entity.Action(ActionNames.ShowHeadCompanies, "Акции c разбивкой по группам компаний"),	
-		new Entity.Action(ActionNames.ShowFirms, "Акции с разбивкой на фирмы", Constants.ActionsImages.Firm),
-		new Entity.Action(ActionNames.ShowActions, "Акции без разбивки на фирмы"),
+		new Entity.Action(ActionNames.ShowHeadCompanies, "Акции c разбивкой по группам компаний"), // i18n-ok: подпись действия, переводится при выводе	
+		new Entity.Action(ActionNames.ShowFirms, "Акции с разбивкой на фирмы", Constants.ActionsImages.Firm), // i18n-ok: подпись действия, переводится при выводе
+		new Entity.Action(ActionNames.ShowActions, "Акции без разбивки на фирмы"), // i18n-ok: подпись действия, переводится при выводе
 		new Entity.Action(null, "-"),
-		new Entity.Action(Constants.EntityActions.ShowFilters, "Установить фильтр", Constants.ActionsImages.Filter),
-		new Entity.Action(Constants.EntityActions.Refresh, "Обновить", Constants.ActionsImages.Refresh)
+		new Entity.Action(Constants.EntityActions.ShowFilters, "Установить фильтр", Constants.ActionsImages.Filter), // i18n-ok: подпись действия, переводится при выводе
+		new Entity.Action(Constants.EntityActions.Refresh, "Обновить", Constants.ActionsImages.Refresh) // i18n-ok: подпись действия, переводится при выводе
 		};
 
 		#endregion

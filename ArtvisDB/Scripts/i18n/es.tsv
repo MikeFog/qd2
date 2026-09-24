@@ -107,7 +107,7 @@ action	Создать копию	Crear copia
 action	Создать копию прайс-листа	Crear copia de la lista de precios
 action	Создать копию прайс-листа на нескольких радиостанциях	Crear copia de la lista de precios en varias emisoras
 action	Создать новый объект	Crear nuevo objeto
-action	Создать новый предмет рекламы	Crear nuevo rubro publicitario
+action,code	Создать новый предмет рекламы	Crear nuevo rubro publicitario
 action	Создать пользователя и добавить в группу	Crear usuario y agregar al grupo
 action	Счёт-договор	Factura-contrato
 action	Убрать порядок	Quitar orden
@@ -125,7 +125,7 @@ action	Удалить объединение со следующим	Eliminar un
 action	Удалить окончательно	Eliminar definitivamente
 action	Удалить рекламные выпуски	Eliminar emisiones publicitarias
 action	Удалить сгенерированные рекламные окна	Eliminar ventanas publicitarias generadas
-action	Установить фильтр	Aplicar filtro
+action,code	Установить фильтр	Aplicar filtro
 action	Эфирная справка	Certificado de emisión
 caption	1-й ролик (%):	1.er spot (%):
 caption	2-й ролик (%):	2.º spot (%):
@@ -480,26 +480,44 @@ code	selector без entity	selector sin entity
 code	selector без source	selector sin source
 code	treeselector без columnid/columnparentid/columnname	treeselector sin columnid/columnparentid/columnname
 code	treeselector без source	treeselector sin source
+code	{0:HH:mm}: тариф входит в цепочку объединения - правьте его вручную	{0:HH:mm}: la tarifa forma parte de una cadena de unión; modifíquela manualmente
+code	{0:HH:mm}: у тарифа есть сгенерированные окна - сначала удалите их или правьте окна	{0:HH:mm}: la tarifa tiene ventanas generadas; elimínelas primero o modifique las ventanas
+code	{0:dd.MM.yyyy HH:mm}: продолжительность {1} больше полной {2}	{0:dd.MM.yyyy HH:mm}: la duración {1} supera la duración total {2}
+code	{0} {1}, по тарифу {2}	{0} {1}, según tarifa {2}
 code	{0} без атрибута name	{0} sin atributo name
 code	{0} из {1}	{0} de {1}
 code	{0} шт., минута :{1:00}, часы {2}-{3}	{0} uds., minuto :{1:00}, horas {2}-{3}
 code	{0} — {1} в фильтре пока не поддержан (этап 2).	{0} — {1} aún no es compatible con el filtro (etapa 2).
 code,menu	Агентства и налоги	Agencias e impuestos
 code,column,entity	Агентство	Agencia
+code	Акции c разбивкой по группам компаний	Campañas desglosadas por grupo de empresas
+code	Акции без разбивки на фирмы	Campañas sin desglose por empresa
+code	Акции с разбивкой на фирмы	Campañas desglosadas por empresa
 code	Атрибутов: {0}	Atributos: {0}
+code	В окне уже есть ролик «{0}».	La ventana ya contiene el spot «{0}».
+code	В окне уже есть ролики фирмы «{0}».	La ventana ya contiene spots de la empresa «{0}».
 code	Введите имя пользователя и пароль	Ingrese el nombre de usuario y la contraseña
 code	Войти	Iniciar sesión
 code	Восстанавливаем связь с сервером…	Restableciendo la conexión con el servidor…
 code,column	Время	Hora
 code	Время выхода	Hora de emisión
+code	Время выхода меняется только для одной строки времени — выделите окна одного времени.	La hora de emisión solo se modifica para una fila horaria: seleccione ventanas de una misma hora.
 code	Время выхода по расписанию:	Hora de emisión programada:
 code	Время выхода реальное	Hora de emisión real
 code	Время выхода — в виде чч:мм.	Hora de emisión — en formato hh:mm.
 code	Все	Todos
 code	Все группы	Todos los grupos
+code	Всего объектов типа '{0}' для объекта '{1}': {2}	Total de objetos de tipo '{0}' para el objeto '{1}': {2}
+code	Всего объектов типа '{0}': {1}	Total de objetos de tipo '{0}': {1}
+code	Всего объектов: {0}	Total de objetos: {0}
+code	Второй	Segunda
 code	Вход	Inicio de sesión
+code	Вы действительно хотите отсоединить объект '{0}'?	¿Desea realmente desvincular el objeto '{0}'?
 code	Вы действительно хотите удалить выбранные объекты? ({0} шт.)	¿Realmente desea eliminar los objetos seleccionados? ({0} uds.)
 code	Вы не вошли в систему	No ha iniciado sesión
+code,message	Вы ничего не выбрали. Пожалуйста, выберите хотя бы один рекламный выпуск. Операция прервана.	No se seleccionó nada. Seleccione al menos una emisión publicitaria. Operación cancelada.
+code	Вы пытаетесь заменить рекламный ролик в активированной рекламной акции на ролик-пустышку без предмета рекламы. Операция прервана.	Se intenta sustituir un spot de una campaña publicitaria activada por un spot vacío sin rubro publicitario. Operación cancelada.
+code	Вы пытаетесь создать ролик-пустышку с нулевой прододжительностью. Это запрещено.	Se intenta crear un spot vacío con duración cero. No está permitido.
 code	Выберите окно в сетке. Двойной клик — карточка окна, правая кнопка — действия с окном, «⋯» у времени — действия со строкой.	Seleccione una ventana en la grilla. Doble clic — ficha de la ventana, botón derecho — acciones con la ventana, «⋯» junto a la hora — acciones con la fila.
 code	Выберите раздел в меню слева	Seleccione una sección en el menú de la izquierda
 code	Выберите станцию	Seleccione una emisora
@@ -519,6 +537,8 @@ code,column,entity,menu	Группа компаний	Grupo de empresas
 code	Да	Sí
 code,column	Дата выпуска	Fecha de emisión
 code	День обработан	Día procesado
+code	Для того, чтобы назначить предмет рекламы для этого ролика, пожалуйста, используйте журнал рекламных акций.	Para asignar un rubro publicitario a este spot, utilice el registro de campañas publicitarias.
+code	Дни недели	Días de la semana
 code	Добавить	Agregar
 code	Доступ закрыт	Acceso denegado
 code	Журнал	Registro
@@ -530,9 +550,12 @@ code	Задайте значение или снимите галочку.	Indiq
 code	Закрыть	Cerrar
 code	Замена ролика	Sustitución del spot
 code	Записей нет.	No hay registros.
+code	Заполните хотя бы одно: время выхода, продолжительность или полную продолжительность.	Complete al menos uno: hora de emisión, duración o duración total.
 code	Запретить вносить выпуски в окна	Prohibir agregar emisiones a las ventanas
 code	Запрошенной страницы не существует.	La página solicitada no existe.
 code	Значение не редактируется и не сохраняется.	El valor no se puede editar ni se guarda.
+code	Значение поля 'Начиная с' не должно быть меньше даты начала действия прайс-листа: {0}.	El valor del campo 'A partir de' no debe ser anterior a la fecha de inicio de la lista de precios: {0}.
+code	Значение поля 'Оканчивая' должно быть больше даты окончания действия прайс-листа: {0}.	El valor del campo 'Hasta' debe ser posterior a la fecha de fin de la lista de precios: {0}.
 code	Идентификатор запроса:	Identificador de la solicitud:
 code	Изменение цены: {0}	Cambio de precio: {0}
 code	Изменено тарифов: {0}, создано новых: {1}	Tarifas modificadas: {0}, nuevas creadas: {1}
@@ -547,6 +570,7 @@ code	Изменить окно…	Modificar ventana…
 code	Изменить похожие тарифы ({0} шт.)	Modificar tarifas similares ({0} uds.)
 code	Изменить цену…	Modificar precio…
 code	Интервал генерации окон	Intervalo de generación de ventanas
+code	Интервал должен быть внутри срока прайс-листа: {0:dd.MM.yyyy} – {1:dd.MM.yyyy}.	El intervalo debe estar dentro de la vigencia de la lista de precios: {0:dd.MM.yyyy} – {1:dd.MM.yyyy}.
 code	Интервал удаления сгенерированных окон	Intervalo de eliminación de ventanas generadas
 code	Интервал удаления сгенерированных окон {0}	Intervalo de eliminación de ventanas generadas {0}
 code	Как клонировать тарифы прайс-листа?	¿Cómo clonar las tarifas de la lista de precios?
@@ -556,6 +580,7 @@ code,menu	Комбо-модули	Módulos combo
 code	Контрол	Control
 code	Лист1	Hoja1
 code	Макеты рекламных акций	Borradores de campañas publicitarias
+code	Метод еще не реализован.	El método aún no está implementado.
 code	На главную	Ir al inicio
 code	На этой неделе рекламных окон нет	No hay ventanas publicitarias esta semana
 code	На эту неделю у станции нет прайс-листа	La emisora no tiene lista de precios para esta semana
@@ -566,6 +591,11 @@ code	Не выбран ролик для замены.	No se ha seleccionado el 
 code	Не заполнено: {0}.	Sin completar: {0}.
 code	Не как в тарифе:	Distinto de la tarifa:
 code	Не как в тарифе: {0}	Distinto de la tarifa: {0}
+code	Не найден прайс-лист для модуля '{0}' на указанную дату.	No se encontró la lista de precios del módulo '{0}' para la fecha indicada.
+code	Не найден прайс-лист для пакетного модуля '{0}' на указанную дату.	No se encontró la lista de precios del módulo en paquete '{0}' para la fecha indicada.
+code	Не найден прайс-лист для программы '{0}' на указанную дату.	No se encontró la lista de precios del programa '{0}' para la fecha indicada.
+code	Не опеределен	No definida
+code	Не определен	No definida
 code	Не отмечено станций: {0}	Emisoras sin marcar: {0}
 code	Не перенесено выпусков: {0} из {1}	Emisiones no trasladadas: {0} de {1}
 code	Не удалось возобновить сеанс.	No se pudo reanudar la sesión.
@@ -575,12 +605,15 @@ code	Неверный логин или пароль.	Nombre de usuario o contra
 code	Недостаточно прав: действие «{0}» для «{1}» вам не разрешено.	Permisos insuficientes: la acción «{0}» para «{1}» no le está permitida.
 code	Недоступных для внесения окон за этот период нет.	No hay ventanas no disponibles para agregar emisiones en este período.
 code	Незамененные ролики	Spots no sustituidos
+code	Нельзя добавить день недели, которого нет у исходного тарифа: дни задают область применения.	No se puede agregar un día de la semana que no tenga la tarifa original: los días definen el ámbito de aplicación.
 code	Необходимо выбрать хотя бы одну радиостанцию.	Es necesario seleccionar al menos una emisora.
 code	Нет	No
 code	Нет изображения.	Sin imagen.
 code	Нет набора строк	No hay conjunto de filas
+code	Ни один параметр не изменён.	No se modificó ningún parámetro.
 code	Новая полная продолжительность, мм:сс	Nueva duración total, mm:ss
 code	Новая продолжительность, мм:сс	Nueva duración, mm:ss
+code	Новая цена не должна быть равна текущей цене.	El nuevo precio no debe ser igual al precio actual.
 code	Новое время выхода	Nueva hora de emisión
 code	Новый: {0}	Nuevo: {0}
 code	Нужно войти в систему.	Es necesario iniciar sesión.
@@ -597,6 +630,7 @@ code	Операции с окнами	Operaciones con ventanas
 code	Остановить	Detener
 code	Отбор	Filtro
 code	Отказано по правам. Пользователь: {0} (id {1}); сущность: {2} (id {3}); действие: {4}; право: {5}.	Acceso denegado por permisos. Usuario: {0} (id {1}); entidad: {2} (id {3}); acción: {4}; permiso: {5}.
+code	Отклонено бизнес-правилом. Процедура: {0} — {1}	Rechazado por una regla de negocio. Procedimiento: {0} — {1}
 code	Открыть карточку	Abrir ficha
 code	Отмена	Cancelar
 code	Отметить	Marcar
@@ -605,6 +639,8 @@ code	Отметить дни обработанными	Marcar días como proces
 code	Отметить дни обработанными…	Marcar días como procesados…
 code	Отметить станцию «{0}» обработанной по {1} включительно? Выпуски этих дней сможет менять только трафик-менеджер и администратор.	¿Marcar la emisora «{0}» como procesada hasta el {1} inclusive? Las emisiones de esos días solo podrán ser modificadas por el gestor de tráfico y el administrador.
 code	Отметьте выпуски, чтобы перенести их в другое окно.	Marque las emisiones para trasladarlas a otra ventana.
+code	Отметьте хотя бы один день недели, к которому применить изменения.	Marque al menos un día de la semana al que aplicar los cambios.
+code	Отметьте хотя бы один день недели.	Marque al menos un día de la semana.
 code	Отметьте хотя бы одну станцию.	Marque al menos una emisora.
 code	Отмечено: {0}	Marcados: {0}
 code	Относится к этапу 2 (свои движки — FakeContainer/MasterDetail) или этапу 3 (специализированные экраны) плана веб-миграции.	Corresponde a la etapa 2 (motores propios — FakeContainer/MasterDetail) o a la etapa 3 (pantallas especializadas) del plan de migración web.
@@ -615,6 +651,7 @@ code	Ошибки клонирования	Errores de clonación
 code	Ошибки массового удаления	Errores de eliminación masiva
 code,menu	Пакетные модули	Módulos en paquete
 code	Паспорт: {0}	Ficha: {0}
+code	Первый	Primera
 code	Перезагрузить	Recargar
 code	Перейти к входу	Ir al inicio de sesión
 code	Перейти к дате	Ir a la fecha
@@ -624,17 +661,23 @@ code	Перенести в окно…	Trasladar a la ventana…
 code	Перенести выпуски ({0}) из окна {1} в окно {2}?	¿Trasladar las emisiones ({0}) de la ventana {1} a la ventana {2}?
 code	Перенос выпусков	Traslado de emisiones
 code	Перенос выпусков ({0}) из окна	Traslado de emisiones ({0}) desde la ventana
+code	Период должен быть внутри срока прайс-листа: {0:dd.MM.yyyy} – {1:dd.MM.yyyy}.	El período debe estar dentro de la vigencia de la lista de precios: {0:dd.MM.yyyy} – {1:dd.MM.yyyy}.
 code	Повторите попытку или перезагрузите страницу.	Vuelva a intentarlo o recargue la página.
 code	Повторить	Reintentar
 code	Повторить на период — эти времена в выбранные дни недели	Repetir en el período — estas horas en los días de la semana seleccionados
 code	Повторная попытка через	Nuevo intento en
+code	Под условие не попало ни одного окна.	Ninguna ventana cumple la condición.
 code	Подтверждённые рекламные акции	Campañas publicitarias confirmadas
 code	Пока не перенесено	Aún no migrado
 code	Показать	Mostrar
+code	Показать без группировки	Mostrar sin agrupar
+code	Показать все	Mostrar todo
+code	Показать с группировакой	Mostrar agrupado
 code	Полная продолжительность — в виде мм:сс, например 3:05.	Duración total — en formato mm:ss, por ejemplo 3:05.
 code,column,entity	Пользователь	Usuario
 code	Пометить все как прочтенное	Marcar todo como leído
 code	Пометить окна цветом	Marcar ventanas con color
+code	Последний	Última
 code	Права на экраны выдаются вместе с пунктами меню — обратитесь к администратору системы.	Los permisos de las pantallas se otorgan junto con los elementos del menú — contacte al administrador del sistema.
 code	Предметы рекламы	Rubros publicitarios
 code	При обработке запроса произошла ошибка.	Se produjo un error al procesar la solicitud.
@@ -642,14 +685,18 @@ code	Применить	Aplicar
 code,column	Причина	Motivo
 code	Проверить загрузку метаданных	Verificar la carga de metadatos
 code	Проверяю…	Verificando…
+code	Программы для спонсоров	Programas para patrocinadores
+code	Продолжительность не может быть больше полной — окон с нарушением: {0}. Например, {1}.	La duración no puede superar la duración total; ventanas con infracción: {0}. Por ejemplo, {1}.
 code	Продолжительность — в виде мм:сс, например 2:56.	Duración — en formato mm:ss, por ejemplo 2:56.
 code	Продолжить	Continuar
 code	Произошла непредвиденная ошибка.	Se produjo un error inesperado.
 code	Пункта меню	El elemento de menú
 code,column,entity	Радиостанция	Emisora
 code	Разрешить вносить выпуски в окна	Permitir agregar emisiones a las ventanas
+code	Рекламное окно не найдено	No se encontró la ventana publicitaria
 code	Рекламные окна	Ventanas publicitarias
 code	Рекламные окна строятся по прайс-листу — перейдите к другой дате.	Las ventanas publicitarias se generan a partir de la lista de precios — vaya a otra fecha.
+code	Рекламные ролики	Spots publicitarios
 code,column	Ролик	Spot
 code	Русский	Русский
 code	С учётом правок предыдущих тарифов — цена, длительность и время берутся из последних 7 дней	Teniendo en cuenta los cambios de las tarifas anteriores — el precio, la duración y la hora se toman de los últimos 7 días
@@ -676,6 +723,7 @@ code	Страница не найдена	Página no encontrada
 code	Сущность {0}: {1}	Entidad {0}: {1}
 code	Тарифы	Tarifas
 code	Только выделенные окна ({0})	Solo las ventanas seleccionadas ({0})
+code	Только пользователь с правами администратора может деактивировать акцию, которая уже началась!	¡Solo un usuario con permisos de administrador puede desactivar una campaña que ya comenzó!
 code,menu	Трафик-менеджмент	Gestión de tráfico
 code	У листа дерева нет детей.	La hoja del árbol no tiene elementos secundarios.
 code	У сущности нет паспорта в метаданных.	La entidad no tiene ficha en los metadatos.
@@ -694,10 +742,13 @@ code	Фактическое размещение пакетных рекламн
 code	Фактическое размещение рекламных модулей	Colocación real de módulos publicitarios
 code	Фактическое размещение спонсорских программ	Colocación real de programas de patrocinio
 code	Фильтр: {0}	Filtro: {0}
+code	Час окончания интервала не может быть меньше часа начала.	La hora de fin del intervalo no puede ser anterior a la hora de inicio.
+code	Чётный/Нечётный	Par/Impar
 code	Экран	Pantalla
 code	Экран не перенесён	Pantalla no migrada
 code	Экраны, которых ещё нет, сообщают об этом при открытии.	Las pantallas que aún no existen lo indican al abrirse.
 code	Экспорт в Excel	Exportar a Excel
+code	Эта операция приведет к удалению объекта '{0}' из системы. Продолжить?	Esta operación eliminará el objeto '{0}' del sistema. ¿Continuar?
 code	Это действие для записи недоступно.	Esta acción no está disponible para el registro.
 code	Это не ограничение прав.	No se trata de una restricción de permisos.
 code	Этот журнал вам не разрешён.	No tiene permiso para este registro.
@@ -705,6 +756,8 @@ code	Этот пункт меню пока не перенесён на веб �
 code	Этот экран вам не разрешён.	No tiene permiso para esta pantalla.
 code	Этот экран вам не разрешён. Права на экраны выдаются вместе с пунктами меню — обратитесь к администратору системы.	No tiene permiso para esta pantalla. Los permisos de las pantallas se otorgan junto con los elementos del menú — contacte al administrador del sistema.
 code	в вебе пока нет.	aún no existe en la web.
+code	вместимость {0}, по тарифу {1}	capacidad {0}, según tarifa {1}
+code	время выхода {0:HH:mm}{1}, по расписанию {2:HH:mm}	hora de emisión {0:HH:mm}{1}, programada {2:HH:mm}
 code	двойной клик	doble clic
 code	день обработан	día procesado
 code	для дерева.	para el árbol.
@@ -716,12 +769,18 @@ code	недоступно	no disponible
 code	нет	no
 code	переполнено	excedido
 code	пока не поддержан (этап 2).	aún no es compatible (etapa 2).
+code	полная продолжительность	duración total
 code	помечено	marcado
+code	продолжительность	duración
 code	сек.	seg.
 code	склеено	unido
+code	склеено с предыдущим и следующим окном	unida con la ventana anterior y la siguiente
+code	склеено с предыдущим окном	unida con la ventana anterior
+code	склеено со следующим окном	unida con la ventana siguiente
 code	скоро	próximamente
 code	снимите дни, которые менять не нужно	desmarque los días que no deban modificarse
 code	только для окон одного времени	solo para ventanas de la misma hora
+code	цена {0:C}, по тарифу {1:C}	precio {0:C}, según tarifa {1:C}
 code	щёлкните окно, куда перенести	haga clic en la ventana de destino
 column	 Группа	 Grupo
 column	Cумма (+)	Monto (+)
@@ -1090,14 +1149,13 @@ message	В системе уже существует фирма с такой �
 message	В это время на этой станции уже есть обычный тариф. Измените время или день недели. Операция прервана!	En este horario esta emisora ya tiene una tarifa común. Modifique la hora o el día de la semana. ¡Operación cancelada!
 message	В это время на этой станции уже есть спонсорский тариф.Измените время или день недели. Операция прервана!	En este horario esta emisora ya tiene una tarifa de patrocinio. Modifique la hora o el día de la semana. ¡Operación cancelada!
 message	В это рекламное окно возможно разместить или переместить только выпуски роликов с типом новость или программа. Операция прервана.	En esta ventana publicitaria solo se pueden colocar o trasladar emisiones de spots de tipo noticia o programa. Operación cancelada.
-message	Внести выходы рекламных роликов для времени {0} в соответствии с шаблоном?\n{3} [c {1} по {2}]	¿Registrar las emisiones de spots para la hora {0} según la plantilla?\n{3} [del {1} al {2}]
+message	Внести выходы рекламных роликов для времени {0} в соответствии с шаблоном?\r\n{3} [c {1} по {2}]	¿Registrar las emisiones de spots para la hora {0} según la plantilla?\r\n{3} [del {1} al {2}]
 message	Внутренняя ошибка. Операция прервана.	Error interno. Operación cancelada.
 message	Время начала интервала не может быть больше времени его окончания. Операция прервана.	La hora de inicio del intervalo no puede ser posterior a la hora de fin. Operación cancelada.
 message	Вы выбрали для переноса в новую рекламную акцию все кампании, входящие в текущую акцию. Необходимо оставить хотя бы одну. Операция прервана.	Se seleccionaron para trasladar a una nueva campaña publicitaria todas las pautas de la campaña actual. Debe quedar al menos una. Operación cancelada.
 message	Вы выбрали для переноса в новую рекламную кампанию все ролики. Надо что-то оставить в существующей!	Se seleccionaron todos los spots para trasladar a una nueva pauta. ¡Debe quedar al menos uno en la pauta existente!
 message	Вы желаете перенести выбранные выпуски с '{0}' на '{1}'?	¿Desea trasladar las emisiones seleccionadas de '{0}' a '{1}'?
 message	Вы не можете заменить ролик активированной рекламной акции на ролик без предмета рекламы. Операция прервана.	No se puede sustituir un spot de una campaña publicitaria activada por un spot sin rubro publicitario. Operación cancelada.
-message	Вы ничего не выбрали. Пожалуйста, выберите хотя бы один рекламный выпуск. Операция прервана.	No se seleccionó nada. Seleccione al menos una emisión publicitaria. Operación cancelada.
 message	Вы пытаетесь изменить параметры тарифа, который объединён с другим тарифом. Эти изменения нарушают правила объединения, операция прервана.	Se intenta modificar los parámetros de una tarifa unida a otra tarifa. Estos cambios infringen las reglas de unión; operación cancelada.
 message	Вы пытаетесь отметить тариф для использования только в модулях. Но тариф уже использован в обычной рекламной кампании. Операция прервана.	Se intenta marcar la tarifa para uso exclusivo en módulos, pero la tarifa ya se utiliza en una pauta común. Operación cancelada.
 message	Вы хотите перенести выпуск рекламного ролика '{0}' с {1} на {2}?	¿Desea trasladar la emisión del spot '{0}' del {1} al {2}?
@@ -1326,7 +1384,7 @@ message	У данной кампании не было переносов вып
 message	У использованного ролика нельзя изменить название, тип или продолжительность. Операция прервана.	No es posible modificar el nombre, el tipo ni la duración de un spot en uso. Operación cancelada.
 message	У радиостанции не заполнены ролики обвязки политической агитации (карточка радиостанции, вкладка "Политическая агитация"). Операция прервана.	La emisora no tiene configurados los spots de apertura y cierre de propaganda política (ficha de la emisora, pestaña "Propaganda política"). Operación cancelada.
 message	У радиостанции уже есть набор скидок с такой датой принятия. Операция прервана.	La emisora ya tiene un conjunto de descuentos con esa fecha de entrada en vigor. Operación cancelada.
-message	Удалить выходы рекламных роликов для времени {0} в соответствии с шаблоном?\n{3} [c {1} по {2}]	¿Eliminar las emisiones de spots publicitarios para la hora {0} según la plantilla?\n{3} [del {1} al {2}]
+message	Удалить выходы рекламных роликов для времени {0} в соответствии с шаблоном?\r\n{3} [c {1} по {2}]	¿Eliminar las emisiones de spots publicitarios para la hora {0} según la plantilla?\r\n{3} [del {1} al {2}]
 message	Указан некорректный Email. Пожалуйста, проверьте введённые данные.	El Email indicado no es válido. Por favor, verifique los datos ingresados.
 message	Файл лицензии испорчен.	El archivo de licencia está dañado.
 message	Файл лицензии не найден.	No se encontró el archivo de licencia.

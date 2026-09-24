@@ -79,7 +79,7 @@ namespace Merlin.Classes
 			{
 				parameters["StartDate"] = StartDate;
 				parameters["EndDate"] = FinishDate;
-				parameters["Template"] = (_day2AddMode == Day2AddMode.OddEvenDays) ? "Чётный/Нечётный" : "Дни недели";
+				parameters["Template"] = (_day2AddMode == Day2AddMode.OddEvenDays) ? "Чётный/Нечётный" : "Дни недели"; // i18n-ok: параметр процедур десктопа, в вебе не используется
 				return parameters;
 			}
 		}
