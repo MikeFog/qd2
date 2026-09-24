@@ -170,6 +170,12 @@
     [Parameter] public EventCallback<CellEvent> OnCellDoubleClick { get; set; }
     [Parameter] public EventCallback<CellEvent> OnCellContextMenu { get; set; }
 
+    /// <summary>
+    /// Дополнительный класс ячейки от владельца — режимы поверх обычного показа (например,
+    /// выбор окна-приёмника при переносе выпусков: cell-source, cell-target, cell-unavailable).
+    /// </summary>
+    [Parameter] public Func<TariffWindowCell, string?>? ExtraCellClass { get; set; }
+
     /// <summary>Меню «⋯» у времени строки; без подписчика кнопки нет.</summary>
     [Parameter] public EventCallback<RowEvent> OnRowMenu { get; set; }
 
@@ -198,6 +204,7 @@
         if (cell.IsModified) css += " cell-modified";
         if (cell.LinkNote != null) css += " cell-linked";
         if (SelectedIds != null && SelectedIds.Contains(cell.WindowId)) css += " selected";
+        if (ExtraCellClass?.Invoke(cell) is { } extra) css += " " + extra;
         return css;
     }
 

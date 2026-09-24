@@ -258,6 +258,129 @@ namespace Merlin.Classes
 
 		internal static DateTime OriginalDay(DataRow w) =>
 			((DateTime)w[TariffWindow.ParamNames.WindowDateOriginal]).Date;
+
+		// ---------- Перенос выпусков ----------
+
+		/// <summary>
+		/// Перенос выпусков в другое окно станции — десктопный TrafficGrid.TransferIssue +
+		/// SimpleTransfer. Предупреждения «в окне уже есть этот ролик / ролики этой фирмы» —
+		/// одним чтением окна-приёмника и одним подтверждением (десктоп спрашивает по каждому
+		/// выпуску двумя запросами). Позиция (первый/второй/последний) учитывает и выпуски этой
+		/// же пачки: десктоп считал по окну до переноса, и второй «первый» получал отказ.
+		/// </summary>
+		public static IssueTransferPlan PlanTransfer(int massmediaId, IEnumerable<PresentationObject> issues,
+			TariffWindowCell destination)
+		{
+			IssueTransferPlan plan = new IssueTransferPlan(massmediaId, destination);
+
+			// Как IsRollerExist/IsRollerOfTheFirmExist — только подтверждённые выпуски приёмника.
+			DataTable present = TariffWindowWithRollerIssues.LoadIssues(false, destination.WindowId);
+			HashSet<int> rollers = new HashSet<int>();
+			HashSet<int> firms = new HashSet<int>();
+			foreach (DataRow r in present.Rows)
+			{
+				rollers.Add(Convert.ToInt32(r[Roller.ParamNames.RollerId]));
+				firms.Add(ParseHelper.GetInt32FromObject(r[Firm.ParamNames.FirmId], 0));
+			}
+
+			HashSet<RollerPositions> occupied = new HashSet<RollerPositions>();
+			if (IsSet(destination.Row, "isFirstPositionOccupied")) occupied.Add(RollerPositions.First);
+			if (IsSet(destination.Row, "isSecondPositionOccupied")) occupied.Add(RollerPositions.Second);
+			if (IsSet(destination.Row, "isLastPositionOccupied")) occupied.Add(RollerPositions.Last);
+
+			foreach (PresentationObject issue in issues)
+			{
+				bool confirmed = ParseHelper.GetBooleanFromObject(issue[Action.ParamNames.IsConfirmed], false);
+				RollerPositions position = (RollerPositions)Convert.ToInt32(issue[Issue.ParamNames.PositionId]);
+				plan.Items.Add(new IssueTransferPlan.Item(issue, (int)NewPosition(position, confirmed, occupied)));
+
+				int firmId = ParseHelper.GetInt32FromObject(issue[Firm.ParamNames.FirmId], 0);
+				string warning = rollers.Contains(Convert.ToInt32(issue[Roller.ParamNames.RollerId]))
+					? string.Format("В окне уже есть ролик «{0}».", issue["name"])
+					: firmId > 0 && firms.Contains(firmId)
+						? string.Format("В окне уже есть ролики фирмы «{0}».", issue["firmName"])
+						: null;
+				if (warning != null && !plan.Warnings.Contains(warning))
+					plan.Warnings.Add(warning);
+			}
+			return plan;
+		}
+
+		/// <summary>Один выпуск плана — процедура IssueTransfer (проверки «день обработан», вместимость, позиции — в ней).</summary>
+		public static void Transfer(IssueTransferPlan plan, IssueTransferPlan.Item item)
+		{
+			Dictionary<string, object> parameters = DataAccessor.PrepareParameters(
+				RollerIssue.GetEntity(), InterfaceObjects.FakeModule, Constants.Actions.Transfer);
+			parameters[Issue.ParamNames.IssueId] = item.Issue[Issue.ParamNames.IssueId];
+			parameters[Campaign.ParamNames.CampaignId] = item.Issue[Campaign.ParamNames.CampaignId];
+			parameters[Massmedia.ParamNames.MassmediaId] = plan.MassmediaId;
+			parameters[Action.ParamNames.IsConfirmed] = item.Issue[Action.ParamNames.IsConfirmed];
+			parameters["newWindowID"] = plan.Destination.WindowId;
+			parameters["newDate"] = plan.Destination.WindowDate;
+			parameters[RollerIssue.ParamNames.NewPosition] = item.NewPosition;
+			DataAccessor.DoAction(parameters);
+		}
+
+		/// <summary>
+		/// Позиция в окне-приёмнике — как RollerIssue.SetNewPosition: занятая позиция становится
+		/// «перенесённой». Занимают позицию только подтверждённые выпуски (как в IssueTransfer).
+		/// </summary>
+		private static RollerPositions NewPosition(RollerPositions position, bool confirmed, HashSet<RollerPositions> occupied)
+		{
+			RollerPositions main, moved;
+			switch (position)
+			{
+				case RollerPositions.First:
+				case RollerPositions.FirstTransferred:
+					main = RollerPositions.First; moved = RollerPositions.FirstTransferred; break;
+				case RollerPositions.Second:
+				case RollerPositions.SecondTransferred:
+					main = RollerPositions.Second; moved = RollerPositions.SecondTransferred; break;
+				case RollerPositions.Last:
+				case RollerPositions.LastTransferred:
+					main = RollerPositions.Last; moved = RollerPositions.LastTransferred; break;
+				default:
+					return RollerPositions.Undefined;
+			}
+			if (occupied.Contains(main))
+				return moved;
+			if (confirmed)
+				occupied.Add(main);
+			return main;
+		}
+
+		private static bool IsSet(DataRow w, string column) =>
+			w.Table.Columns.Contains(column) && ParseHelper.GetBooleanFromObject(w[column], false);
+	}
+
+	/// <summary>Перенос выпусков: окно-приёмник, выпуски с новыми позициями и предупреждения.</summary>
+	public sealed class IssueTransferPlan
+	{
+		internal IssueTransferPlan(int massmediaId, TariffWindowCell destination)
+		{
+			MassmediaId = massmediaId;
+			Destination = destination;
+		}
+
+		public int MassmediaId { get; }
+		public TariffWindowCell Destination { get; }
+		public List<Item> Items { get; } = new List<Item>();
+
+		/// <summary>В окне уже есть тот же ролик или ролики той же фирмы — перенос возможен, но стоит подтвердить.</summary>
+		public List<string> Warnings { get; } = new List<string>();
+
+		public sealed class Item
+		{
+			internal Item(PresentationObject issue, int newPosition)
+			{
+				Issue = issue;
+				NewPosition = newPosition;
+			}
+
+			public PresentationObject Issue { get; }
+			public int NewPosition { get; }
+			public string Name => Issue["name"].ToString();
+		}
 	}
 
 	/// <summary>Что меняем в окнах: null — не менять.</summary>

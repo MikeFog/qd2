@@ -202,6 +202,12 @@ else
     [Parameter] public EventCallback<int> SelectionChanged { get; set; }
 
     /// <summary>
+    /// Чекбоксы независимо от сущности и ReadOnly — когда отметки нужны владельцу экрана для
+    /// своей операции (перенос выпусков в трафике), а не для массового удаления.
+    /// </summary>
+    [Parameter] public bool Selectable { get; set; }
+
+    /// <summary>
     /// Колонки — атрибуты сущности, у которых есть соответствующая колонка в
     /// пришедших строках. Метаданные (iEntityAttribute) могут объявлять
     /// колонку, которой нет в конкретной процедуре загрузки списка — например,
@@ -505,7 +511,7 @@ else
     /// в режиме показа: строка готовой таблицы — не доменный объект, отмечать
     /// нечего.
     /// </summary>
-    private bool SelectionEnabled => !ReadOnly && Entity.IsMassDeleteAllowed;
+    private bool SelectionEnabled => Selectable || (!ReadOnly && Entity.IsMassDeleteAllowed);
 
     /// <summary>
     /// Выделение — по ссылке на DataRow, а не по индексу или ключу: сортировка

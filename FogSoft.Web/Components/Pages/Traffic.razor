@@ -103,17 +103,32 @@ else
                 }
                 else
                 {
-                    @* Esc снимает выделение: клавиши ловит обёртка сетки, фокус на неё ставит клик. *@
+                    @if (_transfer != null)
+                    {
+                        <div class="transfer-bar">
+                            <i class="bi bi-box-arrow-right" aria-hidden="true"></i>
+                            <span>
+                                Перенос выпусков (@_transfer.Issues.Count) из окна
+                                <b class="tabular">@_transfer.Source.WindowDate.ToString("dd.MM HH:mm")</b> —
+                                щёлкните окно, куда перенести
+                            </span>
+                            <button type="button" class="btn btn-sm btn-outline-secondary" title="Отменить перенос (Esc)"
+                                    @onclick="CancelTransfer">
+                                Отмена
+                            </button>
+                        </div>
+                    }
+                    @* Esc снимает выделение (и отменяет перенос): клавиши ловит обёртка сетки, фокус на неё ставит клик. *@
                     <div class="grid-box" tabindex="-1" @ref="_gridBox" @onkeydown="GridKey">
                         <WindowWeekGrid Week="_week" Date="_date" SelectedIds="SelectedIds" DayHeader="DayLockButton"
-                                        MenuRow="_menuRow"
+                                        MenuRow="_menuRow" ExtraCellClass="TransferCellClass"
                                         OnPrevious="PreviousWeek" OnNext="NextWeek" OnJump="JumpTo"
                                         OnCellClick="ClickCell"
                                         OnCellDoubleClick="e => OpenPassport(e.Cell)"
                                         OnCellContextMenu="e => OpenCellMenu(e.Cell, e.Mouse)"
                                         OnRowMenu="e => OpenRowMenu(e.Row, e.Mouse)">
                             <Toolbar>
-                                @if (_selection.Count > 0)
+                                @if (_transfer == null && _selection.Count > 0)
                                 {
                                     <span class="selection-bar">
                                         <span class="selection-count">Выделено окон: @_selection.Count</span>
@@ -149,8 +164,26 @@ else
                             <i class="bi bi-card-text" aria-hidden="true"></i>Карточка
                         </button>
                     </div>
+                    @if (_issues is { Rows.Count: > 0 })
+                    {
+                        <div class="panel-bar">
+                            @if (_checkedIssues > 0)
+                            {
+                                <span>Отмечено: @_checkedIssues</span>
+                                <button type="button" class="btn btn-sm btn-primary" disabled="@(_transfer != null)"
+                                        @onclick="StartTransfer">
+                                    <i class="bi bi-box-arrow-right" aria-hidden="true"></i>Перенести в окно…
+                                </button>
+                            }
+                            else
+                            {
+                                <span class="text-muted">Отметьте выпуски, чтобы перенести их в другое окно.</span>
+                            }
+                        </div>
+                    }
                     <div class="panel-issues">
-                        <ObjectList Entity="_issueEntity" Data="_issues" ReadOnly="true"
+                        <ObjectList @ref="_issueList" Entity="_issueEntity" Data="_issues" ReadOnly="true" Selectable="true"
+                                    SelectionChanged="n => _checkedIssues = n"
                                     EmptyText="В окне нет выпусков." />
                     </div>
                 </aside>
@@ -185,6 +218,13 @@ else
     private ElementReference _gridBox;
 
     private IReadOnlyCollection<int> SelectedIds => _selection.Ids;
+
+    // Перенос выпусков: отмеченные в панели выпуски ждут щелчка по окну-приёмнику.
+    private ObjectList? _issueList;
+    private int _checkedIssues;
+    private TransferSource? _transfer;
+
+    private sealed record TransferSource(TariffWindowCell Source, IReadOnlyList<PresentationObject> Issues);
 
     protected override async Task OnInitializedAsync()
     {
@@ -228,6 +268,7 @@ else
     {
         if (_stationId == id)
             return Task.CompletedTask;
+        _transfer = null;
         _stationId = id;
         _stationName = name;
         _week = null;
@@ -395,6 +436,13 @@ else
     /// <summary>Клик по окну: выделение (Shift — прямоугольник, Ctrl/⌘ — добавить/убрать) и панель окна.</summary>
     private async Task ClickCell(WindowWeekGrid.CellEvent e)
     {
+        if (_transfer != null)
+        {
+            if (TransferCellClass(e.Cell) == TargetClass)
+                await TransferTo(e.Cell);
+            return;
+        }
+
         _selection.Click(_week!, e.Cell, e.Mouse.ShiftKey, e.Mouse.CtrlKey || e.Mouse.MetaKey);
         await SelectCell(e.Cell);
         await _gridBox.FocusAsync(preventScroll: true);
@@ -402,7 +450,11 @@ else
 
     private void GridKey(KeyboardEventArgs e)
     {
-        if (e.Key == "Escape")
+        if (e.Key != "Escape")
+            return;
+        if (_transfer != null)
+            _transfer = null;
+        else
             _selection.Clear();
     }
 
@@ -569,14 +621,106 @@ else
         return false;
     }
 
+    // ---------- Перенос выпусков ----------
+
+    private const string TargetClass = "cell-target";
+
+    /// <summary>
+    /// «Перенести в окно…»: отмеченные выпуски запоминаются, сетка переходит в выбор приёмника
+    /// (десктоп — галочка с датой над таблицей выпусков и клик по ячейке). Листать недели можно.
+    /// </summary>
+    private async Task StartTransfer()
+    {
+        if (_selected == null || _issueList == null || _checkedIssues == 0)
+            return;
+        _transfer = new TransferSource(_selected, _issueList.SelectedObjects);
+        await _gridBox.FocusAsync(preventScroll: true);
+    }
+
+    private void CancelTransfer() => _transfer = null;
+
+    private string? TransferCellClass(TariffWindowCell cell)
+    {
+        if (_transfer == null)
+            return null;
+        if (cell.WindowId == _transfer.Source.WindowId)
+            return "cell-source";
+        // Недоступное окно процедура не примет (DisabledInsertRoller) — не предлагаем.
+        return cell.IsDisabled ? "cell-unavailable" : TargetClass;
+    }
+
+    /// <summary>
+    /// Одно подтверждение со сводкой и предупреждениями (тот же ролик, та же фирма в окне), затем
+    /// перенос по выпуску; отказы — списком, остальные переносятся (как в десктопе).
+    /// </summary>
+    private async Task TransferTo(TariffWindowCell destination)
+    {
+        TransferSource source = _transfer!;
+        IssueTransferPlan? plan = null;
+        await Busy.RunAsync(() => Try(() => plan = TrafficManagement.PlanTransfer(_stationId!.Value, source.Issues, destination)));
+        if (plan == null)
+            return;
+
+        string question = $"Перенести выпуски ({plan.Items.Count}) из окна {source.Source.WindowDate:dd.MM.yyyy HH:mm} "
+                          + $"в окно {destination.WindowDate:dd.MM.yyyy HH:mm}?";
+        if (await Dialogs.ShowAsync("Перенос выпусков", b =>
+            {
+                b.OpenElement(0, "p");
+                b.AddContent(1, question);
+                b.CloseElement();
+                if (plan.Warnings.Count > 0)
+                {
+                    b.OpenElement(2, "ul");
+                    b.AddAttribute(3, "class", "text-warning-emphasis");
+                    foreach (string w in plan.Warnings)
+                    {
+                        b.OpenElement(4, "li");
+                        b.AddContent(5, w);
+                        b.CloseElement();
+                    }
+                    b.CloseElement();
+                }
+            }, okText: "Перенести") != DialogOutcome.Ok)
+            return;
+
+        var errors = new DataTable();
+        errors.Columns.Add("name", typeof(string));
+        errors.Columns.Add("description", typeof(string));
+        await Busy.RunAsync(() =>
+        {
+            foreach (IssueTransferPlan.Item item in plan.Items)
+            {
+                try
+                {
+                    TrafficManagement.Transfer(plan, item);
+                }
+                catch (Exception ex)
+                {
+                    errors.Rows.Add(item.Name, ErrorPresenter.Describe(ex));
+                }
+            }
+            _transfer = null;
+            Try(ReloadWeek);
+        });
+
+        if (errors.Rows.Count > 0)
+            await Tables.ShowAsync($"Не перенесено выпусков: {errors.Rows.Count} из {plan.Items.Count}", errors,
+                new Entity.Attribute("name", "Ролик", "nvarchar"),
+                new Entity.Attribute("description", "Причина", "nvarchar"));
+    }
+
     private async Task OpenPassport(TariffWindowCell cell)
     {
+        if (_transfer != null)
+            return;
         await SelectCell(cell);
         await Execute(TariffWindowWeek.CreateWindowObject(cell), Constants.EntityActions.ShowPassport);
     }
 
     private async Task OpenCellMenu(TariffWindowCell cell, MouseEventArgs e)
     {
+        if (_transfer != null)
+            return;
         try
         {
             // Правая кнопка по окну вне выделения выделяет его одно — как в таблицах.

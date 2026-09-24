@@ -283,3 +283,25 @@ tbody tr.row-menu-open > td.col-price {
 .table > tbody > tr > td.cell {
     user-select: none;
 }
+
+/* Перенос выпусков: окно-источник, возможные приёмники и недоступные. */
+.table > tbody > tr > td.cell-source,
+.table > tbody > tr > td.cell-source:hover {
+    outline: 2px dashed var(--c-accent);
+    outline-offset: -3px;
+    cursor: default;
+}
+
+.table > tbody > tr > td.cell-target:hover {
+    background: var(--c-accent-soft);
+    box-shadow: inset 0 0 0 2px var(--c-accent);
+}
+
+.table > tbody > tr > td.cell-unavailable {
+    opacity: .35;
+    cursor: not-allowed;
+}
+
+.table > tbody > tr > td.cell-unavailable:hover {
+    box-shadow: none;
+}
