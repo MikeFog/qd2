@@ -769,8 +769,8 @@ namespace Merlin.Controls
 						if (addedRoller != null)
 						{
 							UpdateDestinationCell(addedRoller.Duration, destinationWindow);
-							UpdateSourceCell(SelectedIssue.Roller.Duration);
-							grdIssue.DeleteRow(SelectedIssue);
+							UpdateSourceCell(addedRoller.Duration);
+							grdIssue.DeleteRow(selectedIssue);
 						}
 					}
 				}
