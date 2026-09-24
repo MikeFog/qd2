@@ -111,7 +111,7 @@ declare @programmissue table (
 	issueID int primary key,
 	campaignID int not null,
 	issueDate datetime not null,
-	advertTypeName varchar(256)
+	advertTypeName nvarchar(256)
 )
 
 insert into @programmissue (

@@ -6,9 +6,9 @@
 @roltypeID smallint = NULL,
 @deadLine datetime = NULL,
 @isActive bit = NULL,
-@director varchar(256) = NULL,
-@fullPrefix varchar(256) = NULL,
-@reportString varchar(256) = NULL,
+@director nvarchar(256) = NULL,
+@fullPrefix nvarchar(256) = NULL,
+@reportString nvarchar(256) = NULL,
 @actionName varchar(32),
 @rollerEnterPath NVARCHAR(255) = NULL,
 @rollerExitPath NVARCHAR(255) = NULL,
@@ -25,7 +25,7 @@
 @loggedUserID smallint,
 @mediaPlusMassmediaID smallint = null,
 @painting image = null,
-@certificateIssued varchar(256),
+@certificateIssued nvarchar(256),
 @volume_c decimal(5,2),
 @volume_n decimal(5,2),
 @volume_p decimal(5,2),
@@ -34,7 +34,7 @@
 @agitationLocalRollerID int = null,
 @agitationAnnounceRollerID int = null,
 @agitationFederalRollerID int = null,
-@agitationExcludeIntervals varchar(256) = null
+@agitationExcludeIntervals nvarchar(256) = null
 )
 WITH EXECUTE AS OWNER
 as

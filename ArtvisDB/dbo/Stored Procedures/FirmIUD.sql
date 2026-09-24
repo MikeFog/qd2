@@ -18,9 +18,9 @@ CREATE PROCEDURE [dbo].[FirmIUD]
 @bankID           SMALLINT      = NULL,
 @prefix           NVARCHAR(16)  = NULL,
 @isIdle           TINYINT       = 0,
-@director         VARCHAR(32)   = NULL,
-@reportString     VARCHAR(256) = NULL,
-@registration     VARCHAR(256) = NULL,
+@director         NVARCHAR(32)   = NULL,
+@reportString     NVARCHAR(256) = NULL,
+@registration     NVARCHAR(256) = NULL,
 @actionName       VARCHAR(32)
 )
 WITH EXECUTE AS OWNER

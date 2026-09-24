@@ -10,7 +10,7 @@ WITH EXECUTE AS OWNER
 AS
 SET NOCOUNT ON
 
-declare @invoiceTableText varchar(1024), @invoiceTableTextSponsor varchar(1024)
+declare @invoiceTableText nvarchar(1024), @invoiceTableTextSponsor nvarchar(1024)
 select @invoiceTableText = reportText from [dbo].[ReportPartText] where codeName='invoice1'
 select @invoiceTableTextSponsor = reportText from [dbo].[ReportPartText] where codeName='InvoiceSponsor'
 

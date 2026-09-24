@@ -16,7 +16,7 @@ CREATE PROCEDURE [dbo].[Firms]
 @userId           INT         = NULL,
 @ShowWithAction   BIT         = 1,
 @ShowWithoutAction BIT        = 1,
-@name varchar(256) = null
+@name nvarchar(256) = null
 )
 WITH EXECUTE AS OWNER
 AS

@@ -1,6 +1,6 @@
 ﻿CREATE TABLE [dbo].[MassmediaGroup] (
     [massmediaGroupID] INT           IDENTITY (1, 1) NOT NULL,
-    [name]             VARCHAR (250) NOT NULL,
+    [name]             NVARCHAR (250) NOT NULL,
     CONSTRAINT [PK_MassmediaGroup] PRIMARY KEY CLUSTERED ([massmediaGroupID] ASC) WITH (FILLFACTOR = 90)
 );
 

@@ -7,11 +7,11 @@ CREATE     FUNCTION [dbo].[fn_ProductListByRollerId]
 (
 @rollerId int
 )
-RETURNS varchar(4000)
+RETURNS nvarchar(4000)
 AS
 BEGIN
 
-Declare @productList varchar(1000)
+Declare @productList nvarchar(1000)
 Set @productList = ''
 
 Select	

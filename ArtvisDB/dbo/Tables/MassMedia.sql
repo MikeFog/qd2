@@ -19,7 +19,7 @@
     [rollerEtcMin]         SMALLINT             NULL,
     [mediaPlusMassmediaID] SMALLINT             NULL,
     [grammofonMistake]     TINYINT              CONSTRAINT [DF_MassMedia_grammofonMistake] DEFAULT ((0)) NOT NULL,
-    [name]                 VARCHAR (64)         NOT NULL,
+    [name]                 NVARCHAR (64)        NOT NULL,
     [director]             [dbo].[doubleString] NULL,
     [painting]             IMAGE                NULL,
     [prefix]               [dbo].[doubleString]         NULL,

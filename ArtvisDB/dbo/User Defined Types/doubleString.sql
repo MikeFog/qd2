@@ -1,5 +1,5 @@
 ﻿CREATE TYPE [dbo].[doubleString]
-    FROM VARCHAR (256) NULL;
+    FROM NVARCHAR (256) NULL;
 
 
 GO

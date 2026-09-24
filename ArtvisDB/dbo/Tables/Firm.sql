@@ -15,7 +15,7 @@
     [kpp]           VARCHAR (16)         NULL,
     [okved]         VARCHAR (16)         NULL,
     [email]         VARCHAR (256)        NULL,
-    [director]      VARCHAR (50)         NULL,
+    [director]      NVARCHAR (50)        NULL,
     [reportString]  [dbo].[doubleString] NULL,
     [registration]  [dbo].[doubleString] NULL,
     [headCompanyID] INT                  NULL,

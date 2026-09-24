@@ -1,9 +1,9 @@
 ﻿CREATE TABLE [dbo].[ReportPartText] (
     [reportPartTextID] SMALLINT      IDENTITY (1, 1) NOT NULL,
     [reportTypeID]     SMALLINT      NOT NULL,
-    [reportText]       TEXT          NOT NULL,
+    [reportText]       NVARCHAR (MAX)         NOT NULL,
     [codeName]         VARCHAR (64)  NOT NULL,
-    [description]      VARCHAR (128) NULL,
+    [description]      NVARCHAR (128) NULL,
     CONSTRAINT [PK_ReportPartText] PRIMARY KEY CLUSTERED ([reportPartTextID] ASC)
 );
 

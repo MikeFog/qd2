@@ -2,7 +2,7 @@
 CREATE PROCEDURE [dbo].[MassmediaGroupIUD]
 (
 	@massmediaGroupID int = null out,
-	@name varchar(250) = null,
+	@name nvarchar(250) = null,
 	@actionName varchar(32)
 )
 WITH EXECUTE AS OWNER

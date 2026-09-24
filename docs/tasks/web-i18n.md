@@ -242,6 +242,30 @@ resx, переводы всех видов — в одном хранилище 
   `VideoDJParam.cs:13`) — для испанской установки отдельный вопрос.
 - Crystal Reports (5 живых) — проверить после перехода.
 
+Трек U сделан 24.09.2026 (ветка `feature/nvarchar-user-text`, скрипт
+`ArtvisDB/Scripts/nvarchar-user-text-deploy.sql`, на ArtvisDev накачен):
+- тип `doubleString` → `NVARCHAR(256)` через новый тип + `sp_rename` (16 колонок таблиц);
+  до `DROP TYPE` обновляются представления (`vMassmedia` держит ссылку на тип);
+- 14 колонок → `NVARCHAR`: `MassMedia.name`, `MassmediaGroup.name`, `Firm.director`,
+  `Agency.director/bookkeeper/prefix/directorSignature/bookkeeperSignature/reportPlace`,
+  `BlockType.name`, `ReportType.name`, `iMonthName.name`, `ReportPartText.description`,
+  `ReportPartText.reportText` (`TEXT` → `NVARCHAR(MAX)`); коды не тронуты (`Tariff.suffix` —
+  коды блоков DJin);
+- NULL/NOT NULL и collation — из текущего описания колонки (иначе `ALTER COLUMN` сделал бы
+  `NOT NULL` колонки nullable); 3 индекса пересоздаются, автостатистики удаляются по колонке;
+- 10 объектов, где текст шёл через `varchar`: `FirmIUD`, `AgencyIUD`, `MassmediaIUD`,
+  `MassmediaGroupIUD`, `Firms` и `Rollers` (фильтры), `ActionActivate`, `stat_Bonuses`,
+  `rpt_GenericBill`, `fn_ProductListByRollerId` (найдены сканированием объектов, читающих
+  эти таблицы); политагитация (`AgitationFraming`, `fn_AgitationExcludeIntervals`) не тронута;
+- проверки: 42 вызова процедур до/после — хэши результатов совпали; круговой тест
+  `'Ñandú Café ¿Qué? áéíóú ñ ü'` через `HeadCompanyIUD`, `FirmIUD`, `MassmediaGroupIUD`,
+  `AdvertTypeIUD`, `AgencyIUD`, `MassmediaIUD` — 18/18 без потерь (в транзакции с откатом);
+  повторный запуск скрипта — 0 колонок;
+- не проверено: Crystal-отчёты десктопа с этими полями; экспорт DJin/VideoDJ пишет в
+  `windows-1251` — для испанской установки отдельный вопрос;
+- заметка: `AnnouncementIUD` в ветке `AddItem` вставляет явный ID (IDENTITY_INSERT OFF) —
+  ветка, видимо, мёртвая, не трогалась.
+
 ## Этапы
 
 | # | Что | Риск для десктопа |
@@ -252,7 +276,7 @@ resx, переводы всех видов — в одном хранилище 
 | 4 ✔ | Литералы ядра → `Tr.T(...)` | низкий (без переводчика — тот же текст) |
 | 5 ✔ | Черновой испанский: выгрузка → перевод → загрузка | — |
 | 6 ✔ | SQL-подписи: `fn_Translate` + `@languageCode` | низкий (параметр с умолчанием; сверено хэшами) |
-| U | VARCHAR → NVARCHAR — параллельно, до первой испанской установки | средний: тихая порча вместо ошибки, отсюда круговой тест |
+| U ✔ | VARCHAR → NVARCHAR — до первой испанской установки (ветка `feature/nvarchar-user-text`) | средний: тихая порча вместо ошибки, отсюда круговой тест |
 
 ## Попутные находки (вне задачи)
 
