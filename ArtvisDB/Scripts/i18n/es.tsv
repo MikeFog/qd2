@@ -1,0 +1,1341 @@
+﻿where	source	text
+action	Cчёт	Factura
+action	Активировать	Activar
+action	Видеть акции своей группы	Ver campañas del propio grupo
+action	Видеть чужие акции	Ver campañas ajenas
+action	Восстановить рекламную акцию	Restaurar campaña publicitaria
+action	Выбрать акции для оплаты	Seleccionar campañas para pago
+action	График размещения	Plan de colocación
+action,entity	Группы пользователя	Grupos del usuario
+action	Деактивировать	Desactivar
+action	Добавить Прайс-Лист	Agregar lista de precios
+action	Добавить в группу существующего пользователя	Agregar usuario existente al grupo
+action	Добавить модуль	Agregar módulo
+action	Добавить модуль в пакет	Agregar módulo al paquete
+action	Добавить налог	Agregar impuesto
+action	Добавить новые скидки	Agregar nuevos descuentos
+action	Добавить остаток	Agregar saldo inicial
+action	Добавить предмет рекламы	Agregar rubro publicitario
+action	Добавить радиостанцию	Agregar emisora
+action	Добавить скидку	Agregar descuento
+action	Добавить спонсорскую программу	Agregar programa de patrocinio
+action	Добавить тариф	Agregar tarifa
+action,code	Добавить тариф массово	Agregar tarifas en lote
+action	Договор	Contrato
+action	Заменить рекламный ролик	Sustituir spot publicitario
+action	Запретить внесение в окна (по шаблону)	Prohibir inclusión en ventanas (por plantilla)
+action	Изменить позиционирование	Modificar posicionamiento
+action	Изменить похожие тарифы...	Modificar tarifas similares...
+action	Изменить предмет рекламы	Modificar rubro publicitario
+action,code	Клонировать	Clonar
+action	Назначить предмет рекламы	Asignar rubro publicitario
+action	Назначить предмет рекламы выпускам спонсорских программ	Asignar rubro publicitario a las emisiones de programas de patrocinio
+action	Назначить предмет рекламы или заменить ролик	Asignar rubro publicitario o sustituir spot
+action,code	Обновить	Actualizar
+action	Объединить рекламную акцию	Unir campaña publicitaria
+action	Объединить с предыдущим	Unir con el anterior
+action	Объединить со следующим	Unir con el siguiente
+action	Открыть журнал акций	Abrir registro de campañas
+action	Отметить как удалённую	Marcar como eliminada
+action	Отобрать право	Revocar permiso
+action	Перейти к балансу для фирмы	Ir al balance de la empresa
+action	Перенос дня	Traslado del día
+action	Переносы	Traslados
+action	Пересчитать	Recalcular
+action	Показать акции	Mostrar campañas
+action	Показать дни выхода	Mostrar días de emisión
+action	Показать дни выхода в эфир	Mostrar días de salida al aire
+action	Показать заблокированные окна	Mostrar ventanas bloqueadas
+action	Показать модули	Mostrar módulos
+action	Показать пакетные модули	Mostrar módulos en paquete
+action	Показать пользователей	Mostrar usuarios
+action	Показать права группы	Mostrar permisos del grupo
+action	Показать программы	Mostrar programas
+action	Показать рекламные ролики	Mostrar spots publicitarios
+action	Показать ролики	Mostrar spots
+action	Показать статистику по роликам	Mostrar estadísticas por spot
+action	Показать фирмы	Mostrar empresas
+action	Пометить как прочтенное	Marcar como leído
+action	Пометить рекламные окна	Marcar ventanas publicitarias
+action	Право 'уходить в минус'	Permiso 'quedar en negativo'
+action	Предварительный просмотр активации	Vista previa de la activación
+action	Продлить окно	Extender ventana
+action	Прослушать ролик	Escuchar spot
+action	Разделить рекламную акцию	Dividir campaña publicitaria
+action	Разделить рекламные кампании	Dividir pautas publicitarias
+action	Разрешить внесение в окна (по шаблону)	Permitir inclusión en ventanas (por plantilla)
+action	Распечатать	Imprimir
+action	Распечатать , по периоду	Imprimir , por período
+action	Распечатать график размещения	Imprimir plan de colocación
+action	Распечатать договор	Imprimir contrato
+action	Распечатать договор на проведение рекламной акции	Imprimir contrato de realización de campaña publicitaria
+action	Распечатать по месяцам	Imprimir por meses
+action	Распечатать по периоду	Imprimir por período
+action	Распечатать спонсорский договор	Imprimir contrato de patrocinio
+action	Распечатать спонсорский договор на проведение рекламной акции	Imprimir contrato de patrocinio para la realización de campaña publicitaria
+action	Распечатать частичные	Imprimir parciales
+action	Распечатать частичные по месяцам	Imprimir parciales por meses
+action	Распечатать частичные по периоду	Imprimir parciales por período
+action	Распечатать частичный	Imprimir parcial
+action	Распечатать частичный по месяцам	Imprimir parcial por meses
+action	Распечатать частичный по периоду	Imprimir parcial por período
+action	Распечатать эфирную справку	Imprimir certificado de emisión
+action	Редактировать	Editar
+action	Редактировать акции своей группы	Editar campañas del propio grupo
+action	Редактировать в эфир рекламных роликов	Editar salida al aire de spots publicitarios
+action	Редактировать выпуски программ для спонсоров	Editar emisiones de programas para patrocinadores
+action	Редактировать доступ к пунктам меню	Editar acceso a opciones del menú
+action	Редактировать дочерние фирмы	Editar empresas filiales
+action	Редактировать коэффициенты	Editar coeficientes
+action	Редактировать права для группы	Editar permisos del grupo
+action	Редактировать права для пользователя	Editar permisos del usuario
+action	Редактировать пункты меню для пользователя	Editar opciones del menú del usuario
+action	Редактировать рекламные окна	Editar ventanas publicitarias
+action	Редактировать чужие акции	Editar campañas ajenas
+action	Свойства	Propiedades
+action	Сгенерировать рекламные окна	Generar ventanas publicitarias
+action	Сделать вторым	Colocar en segunda posición
+action	Сделать первым	Colocar en primera posición
+action	Сделать последним	Colocar en última posición
+action	Сменить рекламное агентство	Cambiar agencia de publicidad
+action	Сменить создателя	Cambiar creador
+action	Сменить тип оплаты	Cambiar tipo de pago
+action	Сменить фирму-заказчика	Cambiar empresa cliente
+action	Снять пометку с  рекламных окон	Desmarcar ventanas publicitarias
+action,code	Создать	Crear
+action	Создать копию	Crear copia
+action	Создать копию прайс-листа	Crear copia de la lista de precios
+action	Создать копию прайс-листа на нескольких радиостанциях	Crear copia de la lista de precios en varias emisoras
+action	Создать новый объект	Crear nuevo objeto
+action	Создать новый предмет рекламы	Crear nuevo rubro publicitario
+action	Создать пользователя и добавить в группу	Crear usuario y agregar al grupo
+action	Счёт-договор	Factura-contrato
+action	Убрать порядок	Quitar orden
+action,code	Удалить	Eliminar
+action	Удалить выпуски пакетного модуля	Eliminar emisiones del módulo en paquete
+action	Удалить выпуски пакетных модулей	Eliminar emisiones de los módulos en paquete
+action	Удалить выпуски рекламного модуля	Eliminar emisiones del módulo publicitario
+action	Удалить выпуски рекламных модулей	Eliminar emisiones de los módulos publicitarios
+action	Удалить выпуски спонсорских программ	Eliminar emisiones de los programas de patrocinio
+action	Удалить выпуски спонсорской программы	Eliminar emisiones del programa de patrocinio
+action	Удалить из группы	Eliminar del grupo
+action	Удалить кампанию	Eliminar pauta
+action	Удалить объединение с предыдущим	Eliminar unión con el anterior
+action	Удалить объединение со следующим	Eliminar unión con el siguiente
+action	Удалить окончательно	Eliminar definitivamente
+action	Удалить рекламные выпуски	Eliminar emisiones publicitarias
+action	Удалить сгенерированные рекламные окна	Eliminar ventanas publicitarias generadas
+action	Установить фильтр	Aplicar filtro
+action	Эфирная справка	Certificado de emisión
+caption	1-й ролик (%):	1.er spot (%):
+caption	2-й ролик (%):	2.º spot (%):
+caption	3D вид	Vista 3D
+caption	Cумма платежа:	Monto del pago:
+caption	DJin настройки	Configuración DJin
+caption	DJin настройки (2)	Configuración DJin (2)
+caption	Автор произведения	Autor de la obra
+caption	Агенство:	Agencia:
+caption	Агенство: 	Agencia: 
+caption	Агентства	Agencias
+caption	Агентства с которыми работает данная Радиостанция	Agencias con las que trabaja esta emisora
+caption	Агентство:	Agencia:
+caption	Агентство: 	Agencia: 
+caption	Адрес:	Dirección:
+caption,column	Активный	Activo
+caption,column	Активный объект	Objeto activo
+caption,column	Акция	Campaña
+caption	Акция изменялась (по): 	Campaña modificada (hasta): 
+caption	Акция изменялась (с): 	Campaña modificada (desde): 
+caption	Анонс агитации:	Anuncio de propaganda electoral:
+caption	Атрибуты	Atributos
+caption	БИК:	БИК:
+caption	Банк:	Banco:
+caption	Безопасность	Seguridad
+caption	Блок:	Bloque:
+caption	Бонус:	Bonificación:
+caption	Будут изменены:	Se modificarán:
+caption	Бухгалтер:	Contador:
+caption	Варианты замены:	Opciones de sustitución:
+caption	Включать макеты	Incluir borradores
+caption	Воскресенье	Domingo
+caption	Время (начало): 	Hora (inicio): 
+caption	Время (окончание): 	Hora (fin): 
+caption	Время выхода (минуты):	Hora de emisión (minutos):
+caption	Время выхода реальное:	Hora de emisión real:
+caption	Время выхода:	Hora de emisión:
+caption	Время рекламного выпуска: 	Hora de la emisión publicitaria: 
+caption	Всего выпусков:	Total de emisiones:
+caption	Вторник	Martes
+caption	Второе место в блоке занято	Segunda posición en el bloque ocupada
+caption	Выбирать информацию по дате создания рекламных акций	Seleccionar información por fecha de creación de las campañas publicitarias
+caption	Выпуски	Emisiones
+caption	Выходит без спонсора	Se emite sin patrocinador
+caption	Выходов в эфир:	Salidas al aire:
+caption,column	Город	Ciudad
+caption	Группа компаний:	Grupo de empresas:
+caption	Группа компаний: 	Grupo de empresas: 
+caption,column	Группа радиостанций	Grupo de emisoras
+caption	Группа радиостанций: 	Grupo de emisoras: 
+caption	Группа:	Grupo:
+caption	Группа: 	Grupo: 
+caption	Дата начала интервала: 	Fecha de inicio del intervalo: 
+caption,code	Дата начала:	Fecha de inicio:
+caption	Дата окончания интервала: 	Fecha de fin del intervalo: 
+caption,code	Дата окончания:	Fecha de fin:
+caption	Дата оплаты:	Fecha de pago:
+caption	Дата предоставления скидки (oкончание интервала): 	Fecha de otorgamiento del descuento (fin del intervalo): 
+caption	Дата предоставления скидки (начало интервала): 	Fecha de otorgamiento del descuento (inicio del intervalo): 
+caption	Дата принятия:	Fecha de aceptación:
+caption	Дата прочтения:	Fecha de lectura:
+caption	Дата создания акции (oкончание интервала): 	Fecha de creación de la campaña (fin del intervalo): 
+caption	Дата создания акции (начало интервала): 	Fecha de creación de la campaña (inicio del intervalo): 
+caption	Дата создания акции (с): 	Fecha de creación de la campaña (desde): 
+caption	Дата создания акции(окончание интервала): 	Fecha de creación de la campaña (fin del intervalo): 
+caption	Дата создания акции(по): 	Fecha de creación de la campaña (hasta): 
+caption	Дата создания:	Fecha de creación:
+caption	Дата:	Fecha:
+caption	Дата: 	Fecha: 
+caption	Делитель:	Divisor:
+caption	День рекламного выпуска: 	Día de la emisión publicitaria: 
+caption	День рождения:	Fecha de nacimiento:
+caption	Джингл (j)	Jingle (j)
+caption	Джингл на вход	Jingle de entrada
+caption	Джингл на выход	Jingle de salida
+caption	Для (пользователь):	Para (usuario):
+caption	Для (роль):	Para (rol):
+caption	Для всех фирм	Para todas las empresas
+caption	Дополнительно	Adicional
+caption	Загрузить с диска	Cargar desde disco
+caption	Заменить на пустышку	Sustituir por spot vacío
+caption	Занято (неподтвержд.):	Ocupado (no confirm.):
+caption	Занято (подтвержд.):	Ocupado (confirm.):
+caption	Запретить внесение	Prohibir el ingreso
+caption	ИНН:	ИНН:
+caption	Идентификатор:	Identificador:
+caption	Изменение (начало интервала): 	Modificación (inicio del intervalo): 
+caption	Изменение (окончание интервала): 	Modificación (fin del intervalo): 
+caption	Имя:	Nombre:
+caption	Инвертировать цвета	Invertir colores
+caption	Интервал: по час (включительно):	Intervalo: hasta la hora (inclusive):
+caption	Интервал: с часа:	Intervalo: desde la hora:
+caption	Интервалы, напр. пн-пт 16:00-16:55; 18:00-19:00	Intervalos, p. ej. пн-пт 16:00-16:55; 18:00-19:00
+caption	Использовать для линейной кампании	Usar para pauta lineal
+caption	Использовать для модульной кампании	Usar para pauta modular
+caption	Использовать для спонсорской кампании	Usar para pauta de patrocinio
+caption	Использовать подсветку строк	Usar resaltado de filas
+caption	Использовать только для модулей	Usar solo para módulos
+caption	КПП:	КПП:
+caption	Код ОГРН:	Código ОГРН:
+caption	Количество радиостанций:	Cantidad de emisoras:
+caption,column	Комментарий	Comentario
+caption	Кор. счет:	Cuenta corresponsal:
+caption	Корректировка громкости в Дб	Ajuste de volumen en dB
+caption	Коэфициент:	Coeficiente:
+caption,column	Кто дал скидку	Quién otorgó el descuento
+caption	Лицензиар:	Licenciante:
+caption	Логин:	Nombre de usuario:
+caption	Локальное СМИ (агитация):	Medio local (propaganda electoral):
+caption	Макс. вместимость:	Capacidad máx.:
+caption	Макс. № джингла на вход:	N.º máx. de jingle de entrada:
+caption	Макс. № джингла на выход:	N.º máx. de jingle de salida:
+caption	Менеджер:	Gerente:
+caption	Менеджер: 	Gerente: 
+caption	Менеджерская скидка меньше: 	Descuento del gerente menor que: 
+caption	Менеджерская скидка:	Descuento del gerente:
+caption	Менеджерский коэффициент ниже чем	Coeficiente del gerente menor que
+caption	Место в отчёте:	Posición en el informe:
+caption	Место заключения договора:	Lugar de celebración del contrato:
+caption	Мин. № джингла на вход:	N.º mín. de jingle de entrada:
+caption	Мин. № джингла на выход:	N.º mín. de jingle de salida:
+caption	Минимальная сумма (с учётом объёмных скидок):	Monto mínimo (con descuentos por volumen):
+caption	Модуль:	Módulo:
+caption	Модуль: 	Módulo: 
+caption	Музыка (m)	Música (m)
+caption,column	Название	Nombre
+caption	Название произведения	Título de la obra
+caption	Название:	Nombre:
+caption	Налог:	Impuesto:
+caption	Начало вещания:	Inicio de transmisión:
+caption	Начало интервала: 	Inicio del intervalo: 
+caption	Начало названия: 	Comienzo del nombre: 
+caption	Начало периода:	Inicio del período:
+caption	Начало сравниваемого интервала: 	Inicio del intervalo de comparación: 
+caption	Начало:	Inicio:
+caption	Начиная с:	A partir de:
+caption,column	Не включать в счет на предоплату	No incluir en la factura de anticipo
+caption	Не позднее (A)	No después de (A)
+caption	Не показывать модульные прайс-листы срок действия которых в прошлом	No mostrar listas de precios modulares vencidas
+caption	Не показывать прайс-листы срок действия которых в прошлом	No mostrar listas de precios vencidas
+caption	Не показывать скидки срок действия которых в прошлом	No mostrar descuentos vencidos
+caption	Не показывать спонсорские прайс-листы срок действия которых в прошлом	No mostrar listas de precios de patrocinio vencidas
+caption	Не ранее (W)	No antes de (W)
+caption	Новая полная продолжительность:	Nueva duración total:
+caption	Новая продолжительность:	Nueva duración:
+caption	Новая фирма начиная с (оканчивая на начало интервала): 	Empresa nueva desde (hasta el inicio del intervalo): 
+caption	Новая цена:	Nuevo precio:
+caption	Новости (n)	Noticias (n)
+caption	Новый пароль:	Nueva contraseña:
+caption	Номер акции	Número de campaña
+caption	ОГРН:	ОГРН:
+caption	Обозначение остального:	Rótulo del resto:
+caption	Обрывать блоки (K)	Cortar bloques (K)
+caption	Обрывать фонограммы (H)	Cortar fonogramas (H)
+caption	Общее время:	Tiempo total:
+caption	Общие	General
+caption	Объединить с блоком	Unir con el bloque
+caption	Объединять маленькие значения	Agrupar valores pequeños
+caption	Объект:	Objeto:
+caption	Оканчивая:	Hasta:
+caption	Окончание интервала: 	Fin del intervalo: 
+caption	Окончание кампании: 	Fin de la pauta: 
+caption	Окончание периода:	Fin del período:
+caption	Окончание:	Fin:
+caption	Окончательная цена:	Precio final:
+caption	От (пользователь):	De (usuario):
+caption	От (роль):	De (rol):
+caption	Отображать легенду	Mostrar leyenda
+caption	Отображение выносок:	Mostrar rótulos:
+caption	Отчество:	Patronímico:
+caption	Отчёт:	Informe:
+caption	Пакетный Модуль: 	Módulo en paquete: 
+caption	Пакетный модуль:	Módulo en paquete:
+caption	Пакетный модуль: 	Módulo en paquete: 
+caption,code	Пароль	Contraseña
+caption	Пароль:	Contraseña:
+caption	Первое место в блоке занято	Primera posición en el bloque ocupada
+caption	Перенести на время:	Trasladar a la hora:
+caption	Пирог	Torta
+caption	Платеж доступен для присвоения акциям	Pago disponible para asignar a campañas
+caption	По значениям колонки:	Según los valores de la columna:
+caption	Подписи	Firmas
+caption	Подпись руководителя:	Firma del director:
+caption	Подсветка	Resaltado
+caption	Подтверждение нового пароля:	Confirmación de la nueva contraseña:
+caption	Подтверждение:	Confirmación:
+caption	Позиция:	Posición:
+caption	Показать:	Mostrar:
+caption	Показывать активированные	Mostrar activadas
+caption	Показывать активные объекты	Mostrar objetos activos
+caption	Показывать без оплаты	Mostrar sin pago
+caption	Показывать используемые ролики 	Mostrar spots en uso 
+caption	Показывать мои сообщения	Mostrar mis mensajes
+caption	Показывать не используемые ролики 	Mostrar spots sin uso 
+caption	Показывать неактивные объекты	Mostrar objetos inactivos
+caption	Показывать ролики-пустышки 	Mostrar spots vacíos 
+caption	Показывать с оплатой	Mostrar con pago
+caption	Показывать скрытые: 	Mostrar ocultos: 
+caption	Показывать сообщения для меня	Mostrar mensajes para mí
+caption	Показывать только активированные акции	Mostrar solo campañas activadas
+caption	Показывать только активные объекты	Mostrar solo objetos activos
+caption	Показывать только активные ролики 	Mostrar solo spots activos 
+caption	Показывать только активных	Mostrar solo activos
+caption	Показывать только занятые	Mostrar solo ocupadas
+caption	Показывать только неактивированные	Mostrar solo no activadas
+caption	Показывать только незакрытые платежи	Mostrar solo pagos no cerrados
+caption	Показывать только новые	Mostrar solo nuevos
+caption	Показывать только скидки администраторов	Mostrar solo descuentos de administradores
+caption	Показывать только спонсируемые	Mostrar solo patrocinados
+caption	Показывать только удалённые	Mostrar solo eliminados
+caption	Показывать только фирмы, у которых нет акций с оплатой	Mostrar solo empresas sin campañas con pago
+caption	Показывать фирмы без акций	Mostrar empresas sin campañas
+caption	Показывать фирмы с акциями	Mostrar empresas con campañas
+caption	Политическая агитация	Propaganda política
+caption	Полная продолжительность по тарифу:	Duración total según tarifa:
+caption	Полная продолжительность:	Duración total:
+caption	Полный префикс:	Prefijo completo:
+caption	Пользователь имеет права администратора	El usuario tiene permisos de administrador
+caption	Пользователь имеет права бухгалтера	El usuario tiene permisos de contador
+caption	Пользователь имеет права трафик-менеджера	El usuario tiene permisos de gestor de tráfico
+caption	Пользователь имеет право подтверждать	El usuario puede confirmar
+caption	Пользователь:	Usuario:
+caption	Понедельник	Lunes
+caption	Порядок:	Orden:
+caption	Последн. ролик (%):	Último spot (%):
+caption	Последнее место в блоке занято	Última posición en el bloque ocupada
+caption	Последний выпуск до: 	Última emisión antes de: 
+caption	Последний выпуск после: 	Última emisión después de: 
+caption	Последний менеджер:	Último gerente:
+caption	Последняя модификация:	Última modificación:
+caption	Прайс-лист:	Lista de precios:
+caption	Прайс-листы	Listas de precios
+caption	Предмет рекламы:	Rubro publicitario:
+caption	Префикс:	Prefijo:
+caption	Применить к дням:	Aplicar a los días:
+caption	Причина выдачи:	Motivo del otorgamiento:
+caption	Программа (p)	Programa (p)
+caption	Программа в данный момент является активной	El programa está activo actualmente
+caption	Программа выходит в прямом эфире	El programa se emite en vivo
+caption	Программа:	Programa:
+caption	Программа: 	Programa: 
+caption,code,column	Продолжительность	Duración
+caption	Продолжительность по тарифу:	Duración según tarifa:
+caption	Продолжительность:	Duración:
+caption	Процент бонуса более чем: 	Porcentaje de bonificación mayor que: 
+caption	Процент заполнения (%):	Porcentaje de ocupación (%):
+caption	Прочее	Otros
+caption,column	Путь	Ruta
+caption	Путь до джинглов на  вход:	Ruta de los jingles de entrada:
+caption	Путь до джинглов на выход:	Ruta de los jingles de salida:
+caption	Путь до роликов:	Ruta de los spots:
+caption	Путь:	Ruta:
+caption	Пятница	Viernes
+caption,code,menu	Радиостанции	Emisoras
+caption	Радиостанции с которыми работает данное агентство	Emisoras con las que trabaja esta agencia
+caption	Радиостанция:	Emisora:
+caption	Радиостанция: 	Emisora: 
+caption	Разбивка	Desglose
+caption	Расчетный счет:	Cuenta corriente:
+caption	Реквизиты	Datos fiscales y bancarios
+caption	Реклама (c)	Publicidad (c)
+caption	Рекламный ролик:	Spot publicitario:
+caption	Родитель:	Elemento superior:
+caption	Ролик:	Spot:
+caption	Ролики:	Spots:
+caption	Руководитель:	Director:
+caption	С разбивкой  по дням	Desglosado por días
+caption	С разбивкой  по рекламным окнам	Desglosado por ventanas publicitarias
+caption	С разбивкой  по типам кампаний	Desglosado por tipos de pauta
+caption	С разбивкой по агентствам	Desglosado por agencias
+caption	С разбивкой по акциям	Desglosado por campañas
+caption	С разбивкой по группам	Desglosado por grupos
+caption	С разбивкой по группам компаний	Desglosado por grupos de empresas
+caption	С разбивкой по группам радиостанций	Desglosado por grupos de emisoras
+caption	С разбивкой по дням	Desglosado por días
+caption	С разбивкой по менеджерам	Desglosado por gerentes
+caption	С разбивкой по предметам рекламы	Desglosado por rubros publicitarios
+caption	С разбивкой по предметам рекламы (1-й уровень)	Desglosado por rubros publicitarios (1.er nivel)
+caption	С разбивкой по радиостанциям	Desglosado por emisoras
+caption	С разбивкой по типам кампаний	Desglosado por tipos de pauta
+caption	С разбивкой по типам оплаты	Desglosado por tipos de pago
+caption	С разбивкой по типу оплаты	Desglosado por tipo de pago
+caption	С разбивкой по фирмам	Desglosado por empresas
+caption	С этой даты до начала выбранного интервала нет акций: 	Sin campañas desde esta fecha hasta el inicio del intervalo seleccionado: 
+caption	СМИ:	Medio:
+caption	Свои радиостанции:	Emisoras propias:
+caption	Сделать:	Acción:
+caption	Системный номер:	Número de sistema:
+caption	Скидка:	Descuento:
+caption	Скрыть прочтенные	Ocultar leídos
+caption	Смена пароля	Cambio de contraseña
+caption	Собирать начиная с (%):	Agrupar a partir de (%):
+caption	Создан до: 	Creado hasta: 
+caption	Создан от: 	Creado desde: 
+caption,column	Создатель акции	Creador de la campaña
+caption	Создатель акции:	Creador de la campaña:
+caption	Справка выдана:	Certificado emitido a:
+caption	Среда	Miércoles
+caption	Срок хранения истории (в днях):	Plazo de conservación del historial (días):
+caption	Срок хранения макетов акций (в днях):	Plazo de conservación de borradores de campañas (días):
+caption	Срок хранения удалённых акций (в днях):	Plazo de conservación de campañas eliminadas (días):
+caption	Стиль отрисовки:	Estilo de dibujo:
+caption	Строка для договора (в лице):	Texto para el contrato (representada por):
+caption	Строка для договора (действует на основании):	Texto para el contrato (actuando en virtud de):
+caption	Строка для счёта/договора:	Texto para factura/contrato:
+caption	Суббота	Sábado
+caption	Сумма:	Monto:
+caption	Текст:	Texto:
+caption	Текущая дата:	Fecha actual:
+caption	Текущая цена:	Precio actual:
+caption	Текущее время выхода:	Hora de emisión actual:
+caption	Телефон:	Teléfono:
+caption	Тип блока:	Tipo de bloque:
+caption,column	Тип кампании	Tipo de pauta
+caption	Тип кампании: 	Tipo de pauta: 
+caption	Тип компании: 	Tipo de pauta: 
+caption	Тип оплаты:	Tipo de pago:
+caption	Тип оплаты: 	Tipo de pago: 
+caption	Тип рекламной кампании:	Tipo de pauta publicitaria:
+caption	Тип ролика:	Tipo de spot:
+caption	Тип:	Tipo:
+caption	Только фирмы-пустышки	Solo empresas ficticias
+caption	Только часы: по (включительно):	Solo horas: hasta (inclusive):
+caption	Только часы: с:	Solo horas: desde:
+caption	Уведомление об удаленных выпусках (дни до сегодняшнего дня):	Aviso de emisiones eliminadas (días antes de hoy):
+caption	Упоминание в названии: 	Mención en el nombre: 
+caption	Учитывать пустые блоки	Considerar bloques vacíos
+caption	Файл шаблона КП:	Archivo de plantilla de propuesta comercial:
+caption	Фамилия:	Apellido:
+caption	Федеральное СМИ (агитация):	Medio federal (propaganda electoral):
+caption	Фильтр	Filtro
+caption	Фирма-заказчик	Empresa cliente
+caption	Фирма-заказчик:	Empresa cliente:
+caption	Фирма-заказчик: 	Empresa cliente: 
+caption	Фирма:	Empresa:
+caption	Цвет:	Color:
+caption,code,column	Цена	Precio
+caption	Цена по тарифам:	Precio según tarifas:
+caption	Цена:	Precio:
+caption	Часть названия: 	Parte del nombre: 
+caption	Четверг	Jueves
+caption	Чужие радиостанции:	Emisoras ajenas:
+caption	№ Рекламной акции: 	N.º de campaña publicitaria: 
+code	(в наборе нет колонки name)	(el conjunto no tiene la columna name)
+code	<без названия>	<sin nombre>
+code	<неизвестна>	<desconocida>
+code	[·Псевдо·]	[·Pseudo·]
+code	lookup без источника	lookup sin origen de datos
+code	objectPicker без entity	objectPicker sin entity
+code	objectPicker с relationScenario	objectPicker con relationScenario
+code	selector без entity	selector sin entity
+code	selector без source	selector sin source
+code	treeselector без columnid/columnparentid/columnname	treeselector sin columnid/columnparentid/columnname
+code	treeselector без source	treeselector sin source
+code	{0} без атрибута name	{0} sin atributo name
+code	{0} из {1}	{0} de {1}
+code	{0} шт., минута :{1:00}, часы {2}-{3}	{0} uds., minuto :{1:00}, horas {2}-{3}
+code	{0} — {1} в фильтре пока не поддержан (этап 2).	{0} — {1} aún no es compatible con el filtro (etapa 2).
+code,menu	Агентства и налоги	Agencias e impuestos
+code,column,entity	Агентство	Agencia
+code	Атрибутов: {0}	Atributos: {0}
+code	Введите имя пользователя и пароль	Ingrese el nombre de usuario y la contraseña
+code	Войти	Iniciar sesión
+code	Восстанавливаем связь с сервером…	Restableciendo la conexión con el servidor…
+code,column	Время	Hora
+code	Время выхода	Hora de emisión
+code	Время выхода по расписанию:	Hora de emisión programada:
+code	Время выхода реальное	Hora de emisión real
+code	Время выхода — в виде чч:мм.	Hora de emisión — en formato hh:mm.
+code	Все	Todos
+code	Все группы	Todos los grupos
+code	Вход	Inicio de sesión
+code	Вы действительно хотите удалить выбранные объекты? ({0} шт.)	¿Realmente desea eliminar los objetos seleccionados? ({0} uds.)
+code	Вы не вошли в систему	No ha iniciado sesión
+code	Выберите окно в сетке. Двойной клик — карточка окна, правая кнопка — действия с окном, «⋯» у времени — действия со строкой.	Seleccione una ventana en la grilla. Doble clic — ficha de la ventana, botón derecho — acciones con la ventana, «⋯» junto a la hora — acciones con la fila.
+code	Выберите раздел в меню слева	Seleccione una sección en el menú de la izquierda
+code	Выберите станцию	Seleccione una emisora
+code	Выбирать не из чего: список пуст.	No hay nada que seleccionar: la lista está vacía.
+code	Выбрано станций: {0}	Emisoras seleccionadas: {0}
+code	Выбрать	Seleccionar
+code	Выбрать объект	Seleccionar objeto
+code	Выбрать период отчёта	Seleccionar período del informe
+code	Выделено окон: {0}	Ventanas seleccionadas: {0}
+code	Выделить строку	Seleccionar fila
+code	Выйти	Salir
+code	Выпуски станции по эту дату после отметки сможет менять только трафик-менеджер и администратор. Дата раньше текущей снимает отметку с последующих дней.	Una vez marcadas, las emisiones de la emisora hasta esta fecha solo podrán ser modificadas por el gestor de tráfico y el administrador. Una fecha anterior a la actual quita la marca de los días posteriores.
+code,menu	Генерация рекламных окон	Generación de ventanas publicitarias
+code	Гибрид — модульные тарифы один в один, остальные с учётом правок окон.	Híbrido — las tarifas modulares se copian tal cual, las demás teniendo en cuenta los cambios de ventanas.
+code	Готово	Listo
+code,column,entity,menu	Группа компаний	Grupo de empresas
+code	Да	Sí
+code,column	Дата выпуска	Fecha de emisión
+code	День обработан	Día procesado
+code	Добавить	Agregar
+code	Доступ закрыт	Acceso denegado
+code	Журнал	Registro
+code	Журнала сущности {0} в вебе пока нет — на неё не ведёт ни один перенесённый пункт меню.	El registro de la entidad {0} aún no existe en la web — ningún elemento de menú migrado conduce a ella.
+code	Заблокированные окна	Ventanas bloqueadas
+code	Заблокированные окна: {0}	Ventanas bloqueadas: {0}
+code	Загрузка…	Cargando…
+code	Задайте значение или снимите галочку.	Indique un valor o desmarque la casilla.
+code	Закрыть	Cerrar
+code	Замена ролика	Sustitución del spot
+code	Записей нет.	No hay registros.
+code	Запретить вносить выпуски в окна	Prohibir agregar emisiones a las ventanas
+code	Запрошенной страницы не существует.	La página solicitada no existe.
+code	Значение не редактируется и не сохраняется.	El valor no se puede editar ni se guarda.
+code	Идентификатор запроса:	Identificador de la solicitud:
+code	Изменение цены: {0}	Cambio de precio: {0}
+code	Изменено тарифов: {0}, создано новых: {1}	Tarifas modificadas: {0}, nuevas creadas: {1}
+code	Изменено тарифов: {0}, создано новых: {1}, не обработано: {2}	Tarifas modificadas: {0}, nuevas creadas: {1}, sin procesar: {2}
+code	Изменится окон: {0}	Ventanas que cambiarán: {0}
+code	Изменить	Modificar
+code	Изменить выделенные окна ({0})…	Modificar ventanas seleccionadas ({0})…
+code	Изменить окна	Modificar ventanas
+code	Изменить окна {0}…	Modificar ventanas {0}…
+code	Изменить окна…	Modificar ventanas…
+code	Изменить окно…	Modificar ventana…
+code	Изменить похожие тарифы ({0} шт.)	Modificar tarifas similares ({0} uds.)
+code	Изменить цену…	Modificar precio…
+code	Интервал генерации окон	Intervalo de generación de ventanas
+code	Интервал удаления сгенерированных окон	Intervalo de eliminación de ventanas generadas
+code	Интервал удаления сгенерированных окон {0}	Intervalo de eliminación de ventanas generadas {0}
+code	Как клонировать тарифы прайс-листа?	¿Cómo clonar las tarifas de la lista de precios?
+code	Карточка	Ficha
+code	Клонирование прайс-листа	Clonación de la lista de precios
+code,menu	Комбо-модули	Módulos combo
+code	Контрол	Control
+code	Лист1	Hoja1
+code	Макеты рекламных акций	Borradores de campañas publicitarias
+code	На главную	Ir al inicio
+code	На этой неделе рекламных окон нет	No hay ventanas publicitarias esta semana
+code	На эту неделю у станции нет прайс-листа	La emisora no tiene lista de precios para esta semana
+code	Нарушение ограничения (SQL {0}) в процедуре {1}: {2}	Violación de restricción (SQL {0}) en el procedimiento {1}: {2}
+code,column	Начало	Inicio
+code	Начиная с	A partir de
+code	Не выбран ролик для замены.	No se ha seleccionado el spot de sustitución.
+code	Не заполнено: {0}.	Sin completar: {0}.
+code	Не как в тарифе:	Distinto de la tarifa:
+code	Не как в тарифе: {0}	Distinto de la tarifa: {0}
+code	Не отмечено станций: {0}	Emisoras sin marcar: {0}
+code	Не перенесено выпусков: {0} из {1}	Emisiones no trasladadas: {0} de {1}
+code	Не удалось возобновить сеанс.	No se pudo reanudar la sesión.
+code	Не удалось восстановить связь.	No se pudo restablecer la conexión.
+code	Не удалось удалить объект '{0}'.	No se pudo eliminar el objeto '{0}'.
+code	Неверный логин или пароль.	Nombre de usuario o contraseña incorrectos.
+code	Недостаточно прав: действие «{0}» для «{1}» вам не разрешено.	Permisos insuficientes: la acción «{0}» para «{1}» no le está permitida.
+code	Недоступных для внесения окон за этот период нет.	No hay ventanas no disponibles para agregar emisiones en este período.
+code	Незамененные ролики	Spots no sustituidos
+code	Необходимо выбрать хотя бы одну радиостанцию.	Es necesario seleccionar al menos una emisora.
+code	Нет	No
+code	Нет изображения.	Sin imagen.
+code	Нет набора строк	No hay conjunto de filas
+code	Новая полная продолжительность, мм:сс	Nueva duración total, mm:ss
+code	Новая продолжительность, мм:сс	Nueva duración, mm:ss
+code	Новое время выхода	Nueva hora de emisión
+code	Новый: {0}	Nuevo: {0}
+code	Нужно войти в систему.	Es necesario iniciar sesión.
+code	Обработано по (включительно)	Procesado hasta (inclusive)
+code	Объект	Objeto
+code	Один в один — тарифы копируются без изменений.	Tal cual — las tarifas se copian sin cambios.
+code	Ок	Aceptar
+code	Оканчивая	Hasta
+code	Окна появляются после генерации по тарифам прайс-листа.	Las ventanas aparecen tras generarlas a partir de las tarifas de la lista de precios.
+code	Окна строятся по тарифам прайс-листа. Уже сгенерированные окна не меняются.	Las ventanas se generan a partir de las tarifas de la lista de precios. Las ventanas ya generadas no se modifican.
+code,column	Окно	Ventana
+code	Окно {0}	Ventana {0}
+code	Операции с окнами	Operaciones con ventanas
+code	Остановить	Detener
+code	Отбор	Filtro
+code	Отказано по правам. Пользователь: {0} (id {1}); сущность: {2} (id {3}); действие: {4}; право: {5}.	Acceso denegado por permisos. Usuario: {0} (id {1}); entidad: {2} (id {3}); acción: {4}; permiso: {5}.
+code	Открыть карточку	Abrir ficha
+code	Отмена	Cancelar
+code	Отметить	Marcar
+code	Отметить все ({0})	Marcar todos ({0})
+code	Отметить дни обработанными	Marcar días como procesados
+code	Отметить дни обработанными…	Marcar días como procesados…
+code	Отметить станцию «{0}» обработанной по {1} включительно? Выпуски этих дней сможет менять только трафик-менеджер и администратор.	¿Marcar la emisora «{0}» como procesada hasta el {1} inclusive? Las emisiones de esos días solo podrán ser modificadas por el gestor de tráfico y el administrador.
+code	Отметьте выпуски, чтобы перенести их в другое окно.	Marque las emisiones para trasladarlas a otra ventana.
+code	Отметьте хотя бы одну станцию.	Marque al menos una emisora.
+code	Отмечено: {0}	Marcados: {0}
+code	Относится к этапу 2 (свои движки — FakeContainer/MasterDetail) или этапу 3 (специализированные экраны) плана веб-миграции.	Corresponde a la etapa 2 (motores propios — FakeContainer/MasterDetail) o a la etapa 3 (pantallas especializadas) del plan de migración web.
+code	Очистить	Limpiar
+code,column,entity	Ошибка	Error
+code	Ошибка.	Error.
+code	Ошибки клонирования	Errores de clonación
+code	Ошибки массового удаления	Errores de eliminación masiva
+code,menu	Пакетные модули	Módulos en paquete
+code	Паспорт: {0}	Ficha: {0}
+code	Перезагрузить	Recargar
+code	Перейти к входу	Ir al inicio de sesión
+code	Перейти к дате	Ir a la fecha
+code	Перенесены журналы, карточки объектов и фильтры.	Se migraron los registros, las fichas de objetos y los filtros.
+code	Перенести	Trasladar
+code	Перенести в окно…	Trasladar a la ventana…
+code	Перенести выпуски ({0}) из окна {1} в окно {2}?	¿Trasladar las emisiones ({0}) de la ventana {1} a la ventana {2}?
+code	Перенос выпусков	Traslado de emisiones
+code	Перенос выпусков ({0}) из окна	Traslado de emisiones ({0}) desde la ventana
+code	Повторите попытку или перезагрузите страницу.	Vuelva a intentarlo o recargue la página.
+code	Повторить	Reintentar
+code	Повторить на период — эти времена в выбранные дни недели	Repetir en el período — estas horas en los días de la semana seleccionados
+code	Повторная попытка через	Nuevo intento en
+code	Подтверждённые рекламные акции	Campañas publicitarias confirmadas
+code	Пока не перенесено	Aún no migrado
+code	Показать	Mostrar
+code	Полная продолжительность — в виде мм:сс, например 3:05.	Duración total — en formato mm:ss, por ejemplo 3:05.
+code,column,entity	Пользователь	Usuario
+code	Пометить все как прочтенное	Marcar todo como leído
+code	Пометить окна цветом	Marcar ventanas con color
+code	Права на экраны выдаются вместе с пунктами меню — обратитесь к администратору системы.	Los permisos de las pantallas se otorgan junto con los elementos del menú — contacte al administrador del sistema.
+code	Предметы рекламы	Rubros publicitarios
+code	При обработке запроса произошла ошибка.	Se produjo un error al procesar la solicitud.
+code	Применить	Aplicar
+code,column	Причина	Motivo
+code	Проверить загрузку метаданных	Verificar la carga de metadatos
+code	Проверяю…	Verificando…
+code	Продолжительность — в виде мм:сс, например 2:56.	Duración — en formato mm:ss, por ejemplo 2:56.
+code	Продолжить	Continuar
+code	Произошла непредвиденная ошибка.	Se produjo un error inesperado.
+code	Пункта меню	El elemento de menú
+code,column,entity	Радиостанция	Emisora
+code	Разрешить вносить выпуски в окна	Permitir agregar emisiones a las ventanas
+code	Рекламные окна	Ventanas publicitarias
+code	Рекламные окна строятся по прайс-листу — перейдите к другой дате.	Las ventanas publicitarias se generan a partir de la lista de precios — vaya a otra fecha.
+code,column	Ролик	Spot
+code	Русский	Русский
+code	С учётом правок предыдущих тарифов — цена, длительность и время берутся из последних 7 дней	Teniendo en cuenta los cambios de las tarifas anteriores — el precio, la duración y la hora se toman de los últimos 7 días
+code	Свойства: {0}	Propiedades: {0}
+code	Сгенерировать	Generar
+code	Сейчас полная: {0}	Total actual: {0}
+code	Сейчас продолжительность: {0}	Duración actual: {0}
+code	Сервер приостановил сеанс.	El servidor suspendió la sesión.
+code	Система	Sistema
+code,menu	Скидки	Descuentos
+code	Слева — станции выбранной группы; у закрытых — дата, по которую день обработан.	A la izquierda — las emisoras del grupo seleccionado; en las cerradas, la fecha hasta la que el día está procesado.
+code	Снять выделение	Quitar selección
+code	Снять отметку	Desmarcar
+code	Снять отметку «обработан» со станции «{0}» начиная с {1}? Станция будет обработана по {2}.	¿Quitar la marca «procesado» de la emisora «{0}» a partir del {1}? La emisora quedará procesada hasta el {2}.
+code	Снять пометку окон цветом	Quitar el color de las ventanas
+code	Создано тарифов: {0}	Tarifas creadas: {0}
+code	Создано тарифов: {0}, не создано: {1}	Tarifas creadas: {0}, no creadas: {1}
+code	Сохранение отклонено.	Guardado rechazado.
+code	Сохранить	Guardar
+code	Список	Lista
+code	Станция	Emisora
+code	Страница {0}	Página {0}
+code	Страница не найдена	Página no encontrada
+code	Сущность {0}: {1}	Entidad {0}: {1}
+code	Тарифы	Tarifas
+code	Только выделенные окна ({0})	Solo las ventanas seleccionadas ({0})
+code,menu	Трафик-менеджмент	Gestión de tráfico
+code	У листа дерева нет детей.	La hoja del árbol no tiene elementos secundarios.
+code	У сущности нет паспорта в метаданных.	La entidad no tiene ficha en los metadatos.
+code	У этого узла нет вложенного списка.	Este nodo no tiene una lista anidada.
+code	Удаление	Eliminación
+code	Удаление недоступно для объекта '{0}'.	La eliminación no está disponible para el objeto '{0}'.
+code	Удаление сгенерированных окон	Eliminación de ventanas generadas
+code	Удалить ({0})	Eliminar ({0})
+code	Удалить сгенерированные окна…	Eliminar ventanas generadas…
+code	Удаляются все окна прайс-листа в выбранном интервале. Окна, в которых уже есть выпуски, остаются.	Se eliminan todas las ventanas de la lista de precios en el intervalo seleccionado. Las ventanas que ya tienen emisiones se conservan.
+code	Удаляются окна времени {0} в выбранном интервале. Окна, в которых уже есть выпуски, остаются.	Se eliminan las ventanas de las {0} en el intervalo seleccionado. Las ventanas que ya tienen emisiones se conservan.
+code	Удалённые рекламные акции	Campañas publicitarias eliminadas
+code	Уже перенесено по времени: {0}	Ya trasladadas de horario: {0}
+code	Уточните период и дни недели.	Especifique el período y los días de la semana.
+code	Фактическое размещение пакетных рекламных модулей	Colocación real de módulos publicitarios en paquete
+code	Фактическое размещение рекламных модулей	Colocación real de módulos publicitarios
+code	Фактическое размещение спонсорских программ	Colocación real de programas de patrocinio
+code	Фильтр: {0}	Filtro: {0}
+code	Экран	Pantalla
+code	Экран не перенесён	Pantalla no migrada
+code	Экраны, которых ещё нет, сообщают об этом при открытии.	Las pantallas que aún no existen lo indican al abrirse.
+code	Экспорт в Excel	Exportar a Excel
+code	Это действие для записи недоступно.	Esta acción no está disponible para el registro.
+code	Это не ограничение прав.	No se trata de una restricción de permisos.
+code	Этот журнал вам не разрешён.	No tiene permiso para este registro.
+code	Этот пункт меню пока не перенесён на веб — он не сводится к простому журналу по метаданным	Este elemento de menú aún no se migró a la web — no se reduce a un simple registro basado en metadatos
+code	Этот экран вам не разрешён.	No tiene permiso para esta pantalla.
+code	Этот экран вам не разрешён. Права на экраны выдаются вместе с пунктами меню — обратитесь к администратору системы.	No tiene permiso para esta pantalla. Los permisos de las pantallas se otorgan junto con los elementos del menú — contacte al administrador del sistema.
+code	в вебе пока нет.	aún no existe en la web.
+code	двойной клик	doble clic
+code	день обработан	día procesado
+code	для дерева.	para el árbol.
+code	есть, {0} симв.	sí, {0} caract.
+code	клик	clic
+code	не как в тарифе	distinto de la tarifa
+code	не как в тарифе: {0}	distinto de la tarifa: {0}
+code	недоступно	no disponible
+code	нет	no
+code	переполнено	excedido
+code	пока не поддержан (этап 2).	aún no es compatible (etapa 2).
+code	помечено	marcado
+code	сек.	seg.
+code	склеено	unido
+code	скоро	próximamente
+code	снимите дни, которые менять не нужно	desmarque los días que no deban modificarse
+code	только для окон одного времени	solo para ventanas de la misma hora
+code	щёлкните окно, куда перенести	haga clic en la ventana de destino
+column	 Группа	 Grupo
+column	Cумма (+)	Monto (+)
+column	Cумма (-)	Monto (-)
+column	Cумма за МП	Monto por plan de medios
+column	Автор	Autor
+column	Агенство	Agencia
+column	Административная	Administrativa
+column	Адрес	Dirección
+column	Активирована	Activada
+column	Активная программа	Programa activo
+column	БИК	БИК
+column	БИК банка	БИК del banco
+column,entity	Баланс	Balance
+column,entity	Банк	Banco
+column	Бонус	Bonificación
+column	Брэнд	Marca
+column	Вс.	Dom.
+column	Все акции за деньги	Todas las campañas pagas
+column	Все скидки (коэффициент)	Todos los descuentos (coeficiente)
+column	Всего	Total
+column	Всего (кампания)	Total (pauta)
+column	Вт.	Mar.
+column	Выручка	Ingresos
+column	Выручка (Пред. период)	Ingresos (período ant.)
+column,entity	Группа	Grupo
+column	Дата	Fecha
+column	Дата активации	Fecha de activación
+column	Дата договора	Fecha del contrato
+column	Дата начала	Fecha de inicio
+column	Дата начала новой кампании	Fecha de inicio de la nueva pauta
+column	Дата окончания	Fecha de fin
+column	Дата переноса	Fecha de traslado
+column	Дата платежа	Fecha de pago
+column	Дата последнего выпуска	Fecha de la última emisión
+column	Дата предоставления скидки	Fecha de otorgamiento del descuento
+column	Дата принятия	Fecha de aceptación
+column	Дата разделения	Fecha de división
+column	Дата создания	Fecha de creación
+column	Дата создания акции	Fecha de creación de la campaña
+column	Дата удаления	Fecha de eliminación
+column	Дата эфира	Fecha al aire
+column	Делитель	Divisor
+column	День	Día
+column	Для модулей	Para módulos
+column	Заполняемость (%)	Ocupación (%)
+column	ИНН	ИНН
+column	Идентификатор	Identificador
+column	Израсходовано	Consumido
+column	Имя	Nombre
+column	КПП	КПП
+column	Код ОГРН	Código ОГРН
+column	Кол-во акций	Cant. de campañas
+column	Кол-во выпусков	Cant. de emisiones
+column	Кол-во групп	Cant. de grupos
+column	Количество	Cantidad
+column	Комиссия	Comisión
+column	Коммент.	Coment.
+column	Кому	Para
+column	Кор. счет	Cta. corresp.
+column	Кор. счет банка	Cta. corresp. del banco
+column	Коэффициент	Coeficiente
+column	Линейная	Lineal
+column	Медиа-планер	Planificador de medios
+column	Мен. ск	Desc. ger.
+column,entity	Менеджер	Gerente
+column	Менеджерская скидка	Descuento del gerente
+column	Менеджерская скидка (деньги)	Descuento del gerente (monto)
+column	Место в отчёте	Posición en el informe
+column	Минимальная сумма (с учётом объёмных скидок)	Monto mínimo (con descuentos por volumen)
+column,entity	Модуль	Módulo
+column	Модульная	Modular
+column	Название банка	Nombre del banco
+column	Название ролика	Nombre del spot
+column	Налог	Impuesto
+column	Наценка за 1-й (%)	Recargo por 1.ª posición (%)
+column	Наценка за 2-й  (%)	Recargo por 2.ª posición (%)
+column	Наценка за последний  (%)	Recargo por última posición (%)
+column	Начало эфирного дня	Inicio del día de emisión
+column	Новая дата	Nueva fecha
+column	ОКВЭД	ОКВЭД
+column	Обработано	Procesado
+column	Общее время	Tiempo total
+column	Общий	General
+column	Объем продаж	Volumen de ventas
+column	Объем реализации (секунды)	Volumen de ventas (segundos)
+column	Объемная скидка	Descuento por volumen
+column	Объемная скидка (деньги)	Descuento por volumen (monto)
+column	Объёмная скидка	Descuento por volumen
+column	Окончание	Fin
+column	Операция	Operación
+column	Описание	Descripción
+column	Оплачено	Pagado
+column	Организация	Organización
+column	Оригинальная дата выпуска	Fecha original de emisión
+column	Оригинальное время выпуска	Hora original de emisión
+column	Осн. сумма	Monto base
+column	Остальные типы оплаты не подразумевающие оплату (кроме бонусов)	Otros tipos de pago que no implican pago (excepto bonificaciones)
+column,entity	Остаток	Saldo inicial
+column	От кого	De
+column	Отчество	Patronímico
+column	Отчёт	Informe
+column,entity	Пакетная скидка	Descuento por paquete
+column	Пакетная скидка (деньги)	Descuento por paquete (monto)
+column,entity	Пакетный модуль	Módulo en paquete
+column	Первая половина часа	Primera media hora
+column	Период	Período
+column	Пн.	Lun.
+column	Показатель по количеству	Indicador por cantidad
+column	Показатель по цене	Indicador por precio
+column	Получено	Recibido
+column	Пользовательское право	Permiso de usuario
+column	Порядок	Orden
+column	После скидки	Con descuento
+column	Последний менеджер	Último gerente
+column	Пр-ть	Dur.
+column	Пр-ть полная	Dur. total
+column	Право подтверждать	Permiso para confirmar
+column,entity,menu	Предмет рекламы	Rubro publicitario
+column	Предмет рекламы (1-й уровень)	Rubro publicitario (1.er nivel)
+column	Префикс	Prefijo
+column	Причина скидки	Motivo del descuento
+column	Программа	Programa
+column	Прод-ть	Dur.
+column	Продолжительность (Пред. период)	Duración (período ant.)
+column	Проимпортировано	Importado
+column	Процент	Porcentaje
+column	Процент заполнения	Porcentaje de ocupación
+column	Пт.	Vie.
+column	Радиостанци	Emisora
+column	Расчетный счет	Cuenta corriente
+column	Реальная дата выпуска	Fecha real de emisión
+column,entity	Рекламное окно	Ventana publicitaria
+column	Ролик/Программа	Spot/Programa
+column	Роль	Rol
+column	СМИ	Medio
+column	Сб.	Sáb.
+column	Скидка	Descuento
+column	Создано	Creado
+column	Создатель	Creador
+column	Спонсорская	De patrocinio
+column	Способ разделения	Método de división
+column	Ср.	Mié.
+column	Средний чек по акции	Ticket promedio por campaña
+column	Средний чек по группе	Ticket promedio por grupo
+column	Средняя цена	Precio promedio
+column	Средняя цена (Пред. период)	Precio promedio (período ant.)
+column	Старая дата	Fecha anterior
+column	Статус	Estado
+column	Стоимость рекламной акции без скидок	Costo de la campaña publicitaria sin descuentos
+column	Стоимость рекламной акции со всеми скидками	Costo de la campaña publicitaria con todos los descuentos
+column	Сумма	Monto
+column	Сумма (+)	Monto (+)
+column	Сумма (руб)	Monto (rub.)
+column	Сумма (руб, группа)	Monto (rub., grupo)
+column	Сумма по компаниям	Monto por pautas
+column	Сумма по тарифам	Monto según tarifas
+column,entity	Тариф	Tarifa
+column	Текст	Texto
+column	Телефон	Teléfono
+column	Тип	Tipo
+column	Тип компании	Tipo de pauta
+column	Тип объекта	Tipo de objeto
+column	Тип опланы	Tipo de pago
+column,entity,menu	Тип оплаты	Tipo de pago
+column	Тип рекламы	Tipo de publicidad
+column	Факс	Fax
+column	Фактическое время выпуска	Hora real de emisión
+column	Фактическое время рекламы	Tiempo real de publicidad
+column	Фамилия	Apellido
+column	Фирма	Empresa
+column	Фирма-закачик	Empresa cliente
+column	Цена по тарифам	Precio según tarifas
+column	Цена с учётом всех скидок	Precio con todos los descuentos
+column	Цена с учётом объёмной скидки	Precio con descuento por volumen
+column	Час выпуска	Franja horaria de emisión
+column	Чт.	Jue.
+column	№ Акции	N.º de campaña
+entity	Агентсто для радиостанций	Agencia para emisoras
+entity	Акт выполненных работ (агентства)	Acta de trabajos realizados (agencias)
+entity	Веерное размещение: Выпуски	Distribución en abanico: Emisiones
+entity	Выпуск модульной кампании	Emisión de pauta modular
+entity	Выпуск модуля	Emisión de módulo
+entity	Выпуск пакетного модуля	Emisión de módulo en paquete
+entity	Выпуск пакетного модуля (форма редактирования кампании)	Emisión de módulo en paquete (formulario de edición de pauta)
+entity	Выпуск ролика	Emisión de spot
+entity	Выпуск ролика (активация)	Emisión de spot (activación)
+entity	Выпуск ролика в модуле	Emisión de spot en módulo
+entity	Выпуск ролика модульной кампании	Emisión de spot de pauta modular
+entity	Выпуск спонсорской программы	Emisión de programa de patrocinio
+entity	Группа Радиостанций	Grupo de emisoras
+entity	Группа компаний (журнал рекламных акций)	Grupo de empresas (registro de campañas publicitarias)
+entity	Дата принятия скидок	Fecha de aceptación de descuentos
+entity	День модульной рекламной кампании	Día de pauta publicitaria modular
+entity	День модульной рекламной кампании (в модуле)	Día de pauta publicitaria modular (en módulo)
+entity	День пакетной рекламной кампании	Día de pauta publicitaria en paquete
+entity	День рекламной кампании	Día de pauta publicitaria
+entity	День рекламной кампании (в выпуске)	Día de pauta publicitaria (en emisión)
+entity	День спонсорской кампании в программе	Día de pauta de patrocinio en programa
+entity	День спонсорской компании	Día de pauta de patrocinio
+entity	Импортирование роликов	Importación de spots
+entity	Импортирование фирм	Importación de empresas
+entity	Импортированные выпуски	Emisiones importadas
+entity	Использование бонусов	Uso de bonificaciones
+entity	Использование роликов	Uso de spots
+entity	Кандидаты на оплату	Candidatos a pago
+entity	Комбо-модуль	Módulo combo
+entity	Линейная рекламная компания	Pauta publicitaria lineal
+entity	Менеджерский коэффициент	Coeficiente del gerente
+entity	Модули комбо-модуля	Módulos del módulo combo
+entity	Модули пакетного модуля	Módulos del módulo en paquete
+entity	Модульная рекламная компания	Pauta publicitaria modular
+entity	Налог для агентства	Impuesto de la agencia
+entity	Объем реализации по месяцам	Volumen de ventas por meses
+entity	Оплата акции	Pago de campaña
+entity	Пакетная рекламная компания	Pauta publicitaria en paquete
+entity	Пакетные модули кампании	Módulos en paquete de la pauta
+entity	Перенос выпуска	Traslado de emisión
+entity	Платеж	Pago
+entity	Пользователь в группе	Usuario en grupo
+entity	Пользовательский коэффициент	Coeficiente de usuario
+entity	Пользовательский коэффициент (массовый)	Coeficiente de usuario (masivo)
+entity	Права группы	Permisos del grupo
+entity	Прайс-Лист (Пакетная скидка)	Lista de precios (descuento por paquete)
+entity	Прайс-лист	Lista de precios
+entity	Прайс-лист для Пакетных модулей	Lista de precios para módulos en paquete
+entity	Прайс-лист для модуля	Lista de precios para módulo
+entity	Прайс-лист спонсорских программ	Lista de precios de programas de patrocinio
+entity	Предмет рекламы 2-го уровня	Rubro publicitario de 2.º nivel
+entity	Причина менеджерской скидки	Motivo del descuento del gerente
+entity	Программа спонсоркой кампании в дне	Programa de pauta de patrocinio en el día
+entity	Программа спонсорской компании	Programa de pauta de patrocinio
+entity	Пункт меню	Opción de menú
+entity	Радиостанции у менеджера	Emisoras del gerente
+entity	Радиостанция (Пакетная скидка)	Emisora (descuento por paquete)
+entity	Размещение рекламы на радиостанции	Colocación de publicidad en la emisora
+entity	Рекламная акция	Campaña publicitaria
+entity	Рекламная кампания	Pauta publicitaria
+entity	Рекламное окно (Траффик менеджер)	Ventana publicitaria (gestor de tráfico)
+entity	Рекламный ролик	Spot publicitario
+entity	Ролик "для всех фирм"	Spot "para todas las empresas"
+entity	Ролик модульной кампании (в дне)	Spot de pauta modular (en el día)
+entity	Ролик рекламной акции	Spot de campaña publicitaria
+entity	Ролик рекламной кампании	Spot de pauta publicitaria
+entity	Ролик рекламной кампании (в дне)	Spot de pauta publicitaria (en el día)
+entity	Ролик-незаменен	Spot no sustituido
+entity	Ролик-пустышка	Spot vacío
+entity	Ролики (Статистика по акции)	Spots (estadísticas de la campaña)
+entity	Системные настройки	Configuración del sistema
+entity	Содержимое пакетного модуля	Contenido del módulo en paquete
+entity	Сообщение	Mensaje
+entity	Спонсорская программа	Programa de patrocinio
+entity	Спонсорская рекламная компания	Pauta publicitaria de patrocinio
+entity	Спонсорский тариф	Tarifa de patrocinio
+entity	Статистика: Факторный анализ продаж	Estadísticas: Análisis factorial de ventas
+entity	Статистика:: Отчет по типам оплаты	Estadísticas:: Informe por tipos de pago
+entity	Статистика::% заполнения, объем рекламы	Estadísticas::% de ocupación, volumen de publicidad
+entity	Статистика::Долги и предопл. по фирмам (агентства)	Estadísticas::Deudas y anticipos por empresas (agencias)
+entity	Статистика::Долги и предоплаты (агентства)	Estadísticas::Deudas y anticipos (agencias)
+entity	Статистика::Журнал задолженностей по менеджерам (агентства)	Estadísticas::Registro de deudas por gerentes (agencias)
+entity	Статистика::Загрузка модулей	Estadísticas::Ocupación de módulos
+entity	Статистика::Загрузка пакетных модулей	Estadísticas::Ocupación de módulos en paquete
+entity	Статистика::Загрузка спонсорских программ	Estadísticas::Ocupación de programas de patrocinio
+entity	Статистика::Объем реализации	Estadísticas::Volumen de ventas
+entity	Статистика::Объем реализации в секундах	Estadísticas::Volumen de ventas en segundos
+entity	Статистика::Продажа модулей	Estadísticas::Venta de módulos
+entity	Статистика::Продажа пакетных модулей	Estadísticas::Venta de módulos en paquete
+entity	Статистика::Средняя скидка по радиостанции	Estadísticas::Descuento promedio por emisora
+entity	Сумма скидки	Monto del descuento
+entity	Счёт (оплата акции)	Factura (pago de campaña)
+entity	Тариф для модуля	Tarifa para módulo
+entity	Текст отчётов	Texto de informes
+entity	Тип кампании (Пакетная скидка)	Tipo de pauta (descuento por paquete)
+entity	Удалённая рекламная акция	Campaña publicitaria eliminada
+entity	Удалённый выпуск рекламной акции	Emisión eliminada de campaña publicitaria
+entity	Фирма (журнал рекламных акций)	Empresa (registro de campañas publicitarias)
+entity	Фирма (макеты рекламных акций)	Empresa (borradores de campañas publicitarias)
+entity	Фирма (удалённые рекламные акции)	Empresa (campañas publicitarias eliminadas)
+entity	Фирмы	Empresas
+entity	Части спонсорской кампании	Partes de pauta de patrocinio
+entity	Часть программ спосорской кампании	Parte de programas de pauta de patrocinio
+entity	Часть роликов спонсорской кампании	Parte de spots de pauta de patrocinio
+menu	% заполнения	% de ocupación
+menu	Cальдо расчётов по всем фирмам-заказчикам в разрезе агентств 	Saldo de cuentas de todas las empresas clientes por agencia 
+menu	Cпонсорских программ	De programas de patrocinio
+menu	Администрация	Administración
+menu	Аналитические показатели	Indicadores analíticos
+menu	Баланс для всех фирм-заказчиков	Balance de todas las empresas clientes
+menu	Баланс для конкретной фирмы-заказчика	Balance de una empresa cliente específica
+menu	Банки	Bancos
+menu	Бухгалтерия	Contabilidad
+menu	Ввод остатков	Ingreso de saldos
+menu	Веерное размещение...	Distribución en abanico...
+menu	Внести макет рекламной акции	Agregar borrador de campaña publicitaria
+menu	Выписать акт выполненных работ	Emitir acta de trabajos realizados
+menu	Выручка от размещения пакетных рекламных модулей	Ingresos por colocación de módulos publicitarios en paquete
+menu	Выручка от размещения рекламных модулей	Ingresos por colocación de módulos publicitarios
+menu	Выход	Salir
+menu	График размещения по нескольким акциям	Cronograma de colocación de varias campañas
+menu	Группы Радиостанций	Grupos de emisoras
+menu	Журнал использования бонусов	Registro de uso de bonificaciones
+menu	Журнал использования роликов	Registro de uso de spots
+menu	Журнал макетов рекламных акций	Registro de borradores de campañas publicitarias
+menu	Журнал оплат	Registro de pagos
+menu	Журнал оплат по менеджерам	Registro de pagos por gerente
+menu	Журнал переносов	Registro de traslados
+menu	Журнал подтверждённых рекламных акций	Registro de campañas publicitarias confirmadas
+menu	Журнал рекламных роликов	Registro de spots publicitarios
+menu	Журнал удалённых рекламных акций	Registro de campañas publicitarias eliminadas
+menu	За период (с разбивкой по месяцам)	Por período (desglosado por mes)
+menu	Импорт фирм	Importar empresas
+menu	Калькулятор цены	Calculadora de precios
+menu	Менеджерские скидки	Descuentos del gerente
+menu	Объем продаж в секундах	Volumen de ventas en segundos
+menu	Объем реализации	Volumen de ventas realizadas
+menu	Объем реализации (Сводный)	Volumen de ventas realizadas (Consolidado)
+menu	Отчет по типам оплат	Informe por tipos de pago
+menu	Очистка журнала удаленных рекламных акций	Limpieza del registro de campañas publicitarias eliminadas
+menu	Пакетные скидки	Descuentos por paquete
+menu	Пакетных рекламных модулей	De módulos publicitarios en paquete
+menu	Причины выдачи менеджерской скидки	Motivos de otorgamiento del descuento del gerente
+menu	Развёрнутое итоговое сальдо расчетов в разрезе агентств	Saldo final detallado de cuentas por agencia
+menu	Размещение комбо-модулями...	Colocación con módulos combo...
+menu	Режиссёр	Director
+menu	Рекламные модули	Módulos publicitarios
+menu	Рекламные тарифы	Tarifas publicitarias
+menu	Рекламный отдел	Departamento de publicidad
+menu	Рекламных модулей	De módulos publicitarios
+menu	Сводный (размещение рекламы)	Consolidado (colocación publicitaria)
+menu	Сводный журнал долгов фирм-заказчиков (по менеджерам в разрезе агентств) 	Registro consolidado de deudas de empresas clientes (por gerente y agencia) 
+menu	Сетка вещания	Parrilla de emisión
+menu	Сообщения	Mensajes
+menu	Специальные отчёты	Informes especiales
+menu	Средняя скидка по радиостанциям	Descuento promedio por emisora
+menu	Статистика	Estadísticas
+menu	Тарифы для спонсоров	Tarifas para patrocinadores
+menu	Текст для отчётов	Texto para informes
+menu	Трафик	Tráfico
+menu	Удаление макетов рекламных акций	Eliminación de borradores de campañas publicitarias
+menu	Удаление роликов-пустышек	Eliminación de spots vacíos
+menu	Удаленные рекламные выпуски	Emisiones publicitarias eliminadas
+menu	Фактическое размещение	Colocación real
+menu	Факторный анализ продаж	Análisis factorial de ventas
+menu	Фирмы-заказчики	Empresas clientes
+menu	Экспорт сеток вещания	Exportar parrillas de emisión
+message	Агентство не может быть удалено, так как на него уже выписаны счета. Операция прервана.	No se puede eliminar la agencia porque ya tiene facturas emitidas. Operación cancelada.
+message	Агентство не может быть удалено, так как на него уже заведены платежи. Операция прервана.	No se puede eliminar la agencia porque ya tiene pagos registrados. Operación cancelada.
+message	Агентство с таким названием уже существует. Пожалуйста, введите другое название. Операция прервана.	Ya existe una agencia con ese nombre. Ingrese otro nombre. Operación cancelada.
+message	Акцию №{0} не возможно деактивировать, так как к ней уже привязаны платежи.	No se puede desactivar la campaña N.º {0} porque ya tiene pagos vinculados.
+message	Акция будет активирована (активация может привести к удалению некоторых выпусков). Продолжить?	La campaña será activada (la activación puede eliminar algunas emisiones). ¿Continuar?
+message	Акция будет деактивирована (повторная активация может привести к удалению некоторых выпусков). Продолжить?	La campaña será desactivada (una nueva activación puede eliminar algunas emisiones). ¿Continuar?
+message	Банк с таким БИК уже существует в системе. Операция прервана.	Ya existe en el sistema un banco con ese БИК. Operación cancelada.
+message	Банк с таким названием уже существует. Пожалуйста, введите другое название. Операция прервана.	Ya existe un banco con ese nombre. Ingrese otro nombre. Operación cancelada.
+message	Блок на объединение уже используется в другом блоке. Операция прервана.	El bloque a unir ya se utiliza en otro bloque. Operación cancelada.
+message	Брэнд с таким названием уже существует. Пожалуйста, введите другое название. Операция прервана.	Ya existe una marca con ese nombre. Ingrese otro nombre. Operación cancelada.
+message	В выбранное окно запрещено размещать или переносить выпуски. Операция прервана.	No se permite colocar ni trasladar emisiones a la ventana seleccionada. Operación cancelada.
+message	В данном рекламном окне уже присутствует ролик '{0}'. Вы хотите продолжить перенос? 	Esta ventana publicitaria ya contiene el spot '{0}'. ¿Desea continuar con el traslado? 
+message	В данном рекламном окне уже присутствует ролик данной фирмы. 	Esta ventana publicitaria ya contiene un spot de esta empresa. 
+message	В данном рекламном окне уже присутствует ролик фирмы '{0}'. Вы хотите продолжить перенос? 	Esta ventana publicitaria ya contiene un spot de la empresa '{0}'. ¿Desea continuar con el traslado? 
+message	В данную дату программы не существует.	No existe el programa en esta fecha.
+message	В одной рекламной акции нельзя размещать политическую агитацию вместе с другой рекламой. Операция прервана.	No se puede colocar propaganda política junto con otra publicidad en una misma campaña publicitaria. Operación cancelada.
+message	В окне уже есть ролик с типом "Анонс политической агитации". Операция прервана.	La ventana ya contiene un spot de tipo "Anuncio de propaganda política". Operación cancelada.
+message	В окне уже есть ролик с типом "Локальное СМИ". Операция прервана.	La ventana ya contiene un spot de tipo "Medio local". Operación cancelada.
+message	В окне уже есть ролик с типом "Федеральное СМИ". Операция прервана.	La ventana ya contiene un spot de tipo "Medio nacional". Operación cancelada.
+message	В системе уже существует фирма с такой комбинацией ИНН+КПП+Расчётный счёт. Операция прервана.	Ya existe en el sistema una empresa con esa combinación de ИНН+КПП+Cuenta corriente. Operación cancelada.
+message	В это время на этой станции уже есть обычный тариф. Измените время или день недели. Операция прервана!	En este horario esta emisora ya tiene una tarifa común. Modifique la hora o el día de la semana. ¡Operación cancelada!
+message	В это время на этой станции уже есть спонсорский тариф.Измените время или день недели. Операция прервана!	En este horario esta emisora ya tiene una tarifa de patrocinio. Modifique la hora o el día de la semana. ¡Operación cancelada!
+message	В это рекламное окно возможно разместить или переместить только выпуски роликов с типом новость или программа. Операция прервана.	En esta ventana publicitaria solo se pueden colocar o trasladar emisiones de spots de tipo noticia o programa. Operación cancelada.
+message	Внести выходы рекламных роликов для времени {0} в соответствии с шаблоном?\n{3} [c {1} по {2}]	¿Registrar las emisiones de spots para la hora {0} según la plantilla?\n{3} [del {1} al {2}]
+message	Внутренняя ошибка. Операция прервана.	Error interno. Operación cancelada.
+message	Время начала интервала не может быть больше времени его окончания. Операция прервана.	La hora de inicio del intervalo no puede ser posterior a la hora de fin. Operación cancelada.
+message	Вы выбрали для переноса в новую рекламную акцию все кампании, входящие в текущую акцию. Необходимо оставить хотя бы одну. Операция прервана.	Se seleccionaron para trasladar a una nueva campaña publicitaria todas las pautas de la campaña actual. Debe quedar al menos una. Operación cancelada.
+message	Вы выбрали для переноса в новую рекламную кампанию все ролики. Надо что-то оставить в существующей!	Se seleccionaron todos los spots para trasladar a una nueva pauta. ¡Debe quedar al menos uno en la pauta existente!
+message	Вы желаете перенести выбранные выпуски с '{0}' на '{1}'?	¿Desea trasladar las emisiones seleccionadas de '{0}' a '{1}'?
+message	Вы не можете заменить ролик активированной рекламной акции на ролик без предмета рекламы. Операция прервана.	No se puede sustituir un spot de una campaña publicitaria activada por un spot sin rubro publicitario. Operación cancelada.
+message	Вы ничего не выбрали. Пожалуйста, выберите хотя бы один рекламный выпуск. Операция прервана.	No se seleccionó nada. Seleccione al menos una emisión publicitaria. Operación cancelada.
+message	Вы пытаетесь изменить параметры тарифа, который объединён с другим тарифом. Эти изменения нарушают правила объединения, операция прервана.	Se intenta modificar los parámetros de una tarifa unida a otra tarifa. Estos cambios infringen las reglas de unión; operación cancelada.
+message	Вы пытаетесь отметить тариф для использования только в модулях. Но тариф уже использован в обычной рекламной кампании. Операция прервана.	Se intenta marcar la tarifa para uso exclusivo en módulos, pero la tarifa ya se utiliza en una pauta común. Operación cancelada.
+message	Вы хотите перенести выпуск рекламного ролика '{0}' с {1} на {2}?	¿Desea trasladar la emisión del spot '{0}' del {1} al {2}?
+message	Выбран некорректный предмет рекламы. Пожалуйста, выберите дочерний элемент в дереве предметов рекламы.	Se seleccionó un rubro publicitario incorrecto. Seleccione un elemento hijo en el árbol de rubros publicitarios.
+message	Выбранная дата выходит за пределы прайс-листа.	La fecha seleccionada está fuera del período de la lista de precios.
+message	Выбранная радиостанция на объединение уже объединена с другой радиостанцией.	La emisora seleccionada para unir ya está unida a otra emisora.
+message	Выбранный пользователь уже входит в состав группы. Операция прервана.	El usuario seleccionado ya pertenece al grupo. Operación cancelada.
+message	Выставлять признак 'Для всех фирм' могут только администраторы. Операция прервана.	Solo los administradores pueden marcar el indicador 'Para todas las empresas'. Operación cancelada.
+message	Группа компаний с таким названием уже существует в системе. Операция прервана.	Ya existe en el sistema un grupo de empresas con ese nombre. Operación cancelada.
+message	Группа не может быть удалена, так как существуют радиостанции, привязанные к этой группе. Операция прервана.	No se puede eliminar el grupo porque existen emisoras vinculadas a él. Operación cancelada.
+message	Группа с таким именем уже существует. Операция прервана.	Ya existe un grupo con ese nombre. Operación cancelada.
+message	Данная радиостанция уже добавлена.	Esta emisora ya fue agregada.
+message	Данная фирма уже присвоена брэнду. Операция прервана.	Esta empresa ya está asignada a la marca. Operación cancelada.
+message	Данный выпуск уже проспонсирован.	Esta emisión ya está patrocinada.
+message	Данный модуль уже включен в пакет. Операция прервана.	Este módulo ya está incluido en el paquete. Operación cancelada.
+message	Данный тариф попадает между объединёнными тарифами! Операция прервана. Либо измените параметры данного тарифа, либо удалите объединение между тарифами.	¡Esta tarifa queda entre tarifas unidas! Operación cancelada. Modifique los parámetros de esta tarifa o elimine la unión entre las tarifas.
+message	Данный тип кампании уже добавлен к данной радиостанции в данной скидке.	Este tipo de pauta ya fue agregado a esta emisora en este descuento.
+message	Дата начала действия окна не может быть больше даты его окончания. Операция прервана.	La fecha de inicio de vigencia de la ventana no puede ser posterior a la fecha de fin. Operación cancelada.
+message	Дата начала действия прайс-листа модуля не может выходить за рамки дат действия прайса-листа радиостанции.	La fecha de inicio de vigencia de la lista de precios del módulo no puede estar fuera del período de vigencia de la lista de precios de la emisora.
+message	Дата начала действия прайс-листа не может быть больше даты его окончания. Операция прервана.	La fecha de inicio de vigencia de la lista de precios no puede ser posterior a la fecha de fin. Operación cancelada.
+message	Дата начала действия тарифа не может быть больше даты его окончания. Операция прервана.	La fecha de inicio de vigencia de la tarifa no puede ser posterior a la fecha de fin. Operación cancelada.
+message	Дата начала или окончания действия данного тарифа пересекается с другим тарифом. Операция прервана.	La fecha de inicio o de fin de vigencia de esta tarifa se superpone con otra tarifa. Operación cancelada.
+message	Дата начала или окончания действия прайс-листа пересекается с другим прайс-листом. Операция прервана.	La fecha de inicio o de fin de vigencia de la lista de precios se superpone con otra lista de precios. Operación cancelada.
+message	Дата начала интервала не может быть больше даты его окончания. Операция прервана.	La fecha de inicio del intervalo no puede ser posterior a la fecha de fin. Operación cancelada.
+message	Дата начала периода не может быть больше даты его окончания. Операция прервана.	La fecha de inicio del período no puede ser posterior a la fecha de fin. Operación cancelada.
+message	Дата окончания действия модуля не может быть меньше, чем дата его начала.	La fecha de fin de vigencia del módulo no puede ser anterior a la fecha de inicio.
+message	Дата окончания действия прайс-листа модуля не может выходить за рамки дат действия прайса-листа радиостанции.	La fecha de fin de vigencia de la lista de precios del módulo no puede estar fuera del período de vigencia de la lista de precios de la emisora.
+message	Дата попадает в закрытый трафик-менеджером период.	La fecha corresponde a un período cerrado por el gestor de tráfico.
+message	Дата разделения должна находиться между датой начала и окончания рекламной на радиостанции {0}.	La fecha de división debe estar entre la fecha de inicio y la de fin de la pauta en la emisora {0}.
+message	Даты начала и окончания рекламной кампании на радиостанции {0} совпадают. Разделение по периоду невозможно осуществить.	Las fechas de inicio y fin de la pauta en la emisora {0} coinciden. No es posible dividir por período.
+message	Действие прайс-листа не может быть уменьшено до выставленных сроков, так как он используется в создании модуля. Операция прервана.	No se puede reducir la vigencia de la lista de precios al período indicado porque se utiliza en un módulo. Operación cancelada.
+message	Действие прайс-листа не может быть уменьшено до выставленных сроков, так как он используется в создании пакетного модуля. Операция прервана.	No se puede reducir la vigencia de la lista de precios al período indicado porque se utiliza en un módulo en paquete. Operación cancelada.
+message	Для просмотра журнала необходимо выбрать дату.	Para ver el registro, seleccione una fecha.
+message	Для просмотра журнала необходимо выбрать даты начала и окончания интервала.	Para ver el registro, seleccione las fechas de inicio y fin del intervalo.
+message	Для просмотра статистики необходимо выбрать даты сравниваемых интервалов. Операция прервана.	Para ver las estadísticas, seleccione las fechas de los intervalos a comparar. Operación cancelada.
+message	Для роликов политической агитации позиционирование не применяется. Операция прервана.	El posicionamiento no se aplica a los spots de propaganda política. Operación cancelada.
+message	Для способа разделения "По периоду" надо указать дату разделения рекламной кампании	Para el método de división "Por período" debe indicarse la fecha de división de la pauta
+message	Запрещено редактировать заказ помеченный как выполненный.  Операция прервана.	No se permite modificar un pedido marcado como completado.  Operación cancelada.
+message	Запрещено удалять подтвержденную акцию.  Операция прервана.	No se permite eliminar una campaña confirmada.  Operación cancelada.
+message	Интервалы-исключения заданы неверно. Формат: ЧЧ:ММ-ЧЧ:ММ, несколько интервалов в одной строке разделяются точкой с запятой. Строка может начинаться с дней недели, например: "пн-пт 16:00-16:55; 18:00-19:00", а на следующей строке - другой набор: "сб,вс 10:00-11:00". Дни: пн вт ср чт пт сб вс; допускаются диапазон (пн-пт) и перечисление (пн,ср,пт), строка без дней действует все дни недели. Начало интервала должно быть раньше чем его окончание.	Los intervalos de exclusión son incorrectos. Formato: HH:MM-HH:MM; varios intervalos en una misma línea se separan con punto y coma. La línea puede comenzar con días de la semana, por ejemplo: "пн-пт 16:00-16:55; 18:00-19:00", y en la línea siguiente otro conjunto: "сб,вс 10:00-11:00". Días (abreviaturas rusas, de lunes a domingo): пн вт ср чт пт сб вс; se admiten rangos (пн-пт) y enumeraciones (пн,ср,пт); una línea sin días rige para todos los días de la semana. El inicio del intervalo debe ser anterior a su fin.
+message	Количество выходов в день должно быть больше нуля. Операция прервана.	La cantidad de emisiones por día debe ser mayor que cero. Operación cancelada.
+message	Лицензия просрочена.	La licencia está vencida.
+message	Модуль не может быть удален, так как на его базе сформированы рекламные кампании. Операция прервана.	No se puede eliminar el módulo porque existen pautas creadas a partir de él. Operación cancelada.
+message	Модульный прайс-лист не может быть удален, так как на его базе сформированы рекламные кампании. Операция прервана.	No se puede eliminar la lista de precios modular porque existen pautas creadas a partir de ella. Operación cancelada.
+message	Модульный прайс-лист не может быть удален, так как он используется в пакетных модулях. Операция прервана.	No se puede eliminar la lista de precios modular porque se utiliza en módulos en paquete. Operación cancelada.
+message	Модульный прайс-лист уже используется рекламной кампанией. Изменять его параметры запрещено. Операция прервана.	La lista de precios modular ya se utiliza en una pauta. No se permite modificar sus parámetros. Operación cancelada.
+message	На базе тарифа уже сгенерированы рекламные окна. Изменять его параметры запрещено. Операция прервана.	Ya se generaron ventanas publicitarias a partir de la tarifa. No se permite modificar sus parámetros. Operación cancelada.
+message	На базе этого тарифа уже размещено спонсорство. Изменять его параметры запрещено. Операция прервана.	Ya se colocó un patrocinio a partir de esta tarifa. No se permite modificar sus parámetros. Operación cancelada.
+message	На указанную дату отсутствует прайс-лист.	No hay lista de precios para la fecha indicada.
+message	Начало и окончание интервала выбраны неверно. Операция прервана.	El inicio y el fin del intervalo son incorrectos. Operación cancelada.
+message	Не выбран рекламный ролик.	No se seleccionó un spot publicitario.
+message	Не выбран тип переноса. Операция прервана.	No se seleccionó el tipo de traslado. Operación cancelada.
+message	Не найдены тарифы для данного интервала. Скопируйте сначала обычный прайс-лист.	No se encontraron tarifas para este intervalo. Copie primero la lista de precios común.
+message	Не получилось экспортировать Сетку Вещания. Убедитесь, что указаны корректные пути в настройках.	No se pudo exportar la Parrilla de Emisión. Verifique que las rutas indicadas en la configuración sean correctas.
+message	Не у всех рекламных кампаний выбран способ разделения!	¡No todas las pautas tienen seleccionado un método de división!
+message	Неверное расставление дат.	Las fechas están mal asignadas.
+message	Невозможно активировать акцию без участия пользователя. Бонусное время спонсорских кампаний меньше времени расставленных роликов. Более подробную информацию можно получить при "Предварительном просмотре активации".	No se puede activar la campaña sin intervención del usuario. El tiempo de bonificación de las pautas de patrocinio es menor que el tiempo de los spots colocados. Para más información, consulte la "Vista previa de activación".
+message	Невозможно активировать акцию, так как она содержит ролики без предмета рекламы. Операция прервана.	No se puede activar la campaña porque contiene spots sin rubro publicitario. Operación cancelada.
+message	Невозможно внести изменения в тариф на производство роликов, так как есть заказы, которые его используют. Операция прервана.	No se puede modificar la tarifa de producción de spots porque existen pedidos que la utilizan. Operación cancelada.
+message	Невозможно выполнить операцию, так как рекламная акция содержит всего одну кампанию.	No se puede realizar la operación porque la campaña publicitaria contiene una sola pauta.
+message	Невозможно добавить (изменить) прайс-лист пакетной скидки, даты существования прайс-листа пересекаются с существующими в базе данных.	No se puede agregar (modificar) la lista de precios del descuento por paquete: sus fechas de vigencia se superponen con otras existentes en la base de datos.
+message	Невозможно добавить в данный промежуток времени выпуски на выбранных радиостанциях.	No se pueden agregar emisiones en este intervalo de tiempo en las emisoras seleccionadas.
+message	Невозможно добавить в модуль тарифы разного типа (с максимальной вместимостью и без). Операция прервана.	No se pueden agregar al módulo tarifas de distinto tipo (con y sin capacidad máxima). Operación cancelada.
+message	Невозможно добавить в пакетный модуль модули, имеющие тарифы разного типа (с максимальной вместимостью и без). Операция прервана.	No se pueden agregar al módulo en paquete módulos con tarifas de distinto tipo (con y sin capacidad máxima). Operación cancelada.
+message	Невозможно добавить выбранный модуль в пакетный модуль, так как сроки действия прайс-листа пакетного модуля шире, чем сроки действия прайс-листа выбранного модуля. Операция прервана.	No se puede agregar el módulo seleccionado al módulo en paquete porque la vigencia de la lista de precios del módulo en paquete es más amplia que la de la lista de precios del módulo seleccionado. Operación cancelada.
+message	Невозможно добавить выпуски в рекламную кампанию, так как в ней установлен менеджерский коэффициент, превышающий разрешенный. Операция прервана.	No se pueden agregar emisiones a la pauta porque tiene un coeficiente del gerente superior al permitido. Operación cancelada.
+message	Невозможно добавить данный пакет поскольку медиа-тип пакета отличается от медиа-типов, добавленных в данный пакетный модуль	No se puede agregar este paquete porque su tipo de medio difiere de los tipos de medio agregados a este módulo en paquete
+message	Невозможно добавить или внести изменения в рекламный выпуск с датой выхода в эфир '{0}', так как эта дата уже в прошлом. Операция прервана.	No se puede agregar ni modificar una emisión publicitaria con fecha de salida al aire '{0}' porque esa fecha ya pasó. Operación cancelada.
+message	Невозможно добавить окно, время заблокировано профилактикой. Операция прервана.	No se puede agregar la ventana: el horario está bloqueado por mantenimiento. Operación cancelada.
+message	Невозможно добавить профилактику с {0} по {1}, так как уже существуют выпуски в это время.	No se puede agregar un mantenimiento del {0} al {1} porque ya existen emisiones en ese horario.
+message	Невозможно добавить рекламное окно, так как оно попадает внутрь цепочки объединённых окон.	No se puede agregar la ventana publicitaria porque queda dentro de una cadena de ventanas unidas.
+message	Невозможно добавить рекламную кампанию без агентства. Операция прервана.	No se puede agregar una pauta sin agencia. Operación cancelada.
+message	Невозможно добавить рекламную кампанию в активированную акцию, которая уже закончилась. Операция прервана.	No se puede agregar una pauta a una campaña activada que ya finalizó. Operación cancelada.
+message	Невозможно добавить рекламный выпуск так как ролику не назначен предмет рекламы. Операция прервана.	No se puede agregar la emisión publicitaria porque el spot no tiene asignado un rubro publicitario. Operación cancelada.
+message	Невозможно добавить рекламный выпуск. Бонус для рекламных роликов спонсорской программы слишком мал.  Операция прервана.	No se puede agregar la emisión publicitaria. La bonificación para los spots del programa de patrocinio es insuficiente.  Operación cancelada.
+message	Невозможно добавить рекламный ролик с датой выхода в эфир '{0}'. Рекламное окно недоступно из-за профилактики передатчика	No se puede agregar el spot con fecha de salida al aire '{0}'. La ventana publicitaria no está disponible por mantenimiento del transmisor
+message	Невозможно добавлять или изменять рекламные выпуски с датой выхода в эфир '{0}'. Трафик-менеджер закрыл этот период. Операция прервана.	No se pueden agregar ni modificar emisiones publicitarias con fecha de salida al aire '{0}'. El gestor de tráfico cerró este período. Operación cancelada.
+message	Невозможно изменить данную акцию так как она уже оплачена. Операция прервана.	No se puede modificar esta campaña porque ya está pagada. Operación cancelada.
+message	Невозможно изменить название ролика, или тип на обычную рекламу, или убрать тип "Общий" или снять активность объекта у ролика, который используется в модулях или пакетных модулях как основной ролик. Операция прервана.	No se puede cambiar el nombre del spot, cambiar su tipo a publicidad común, quitar el tipo "General" ni desactivar un spot que se utiliza como spot principal en módulos o módulos en paquete. Operación cancelada.
+message	Невозможно изменить позиционирование так как данный модуль содержит тарифы с максимальной вместимостью меньше 4-х.	No se puede cambiar el posicionamiento porque este módulo contiene tarifas con capacidad máxima menor que 4.
+message	Невозможно изменить позиционирование так как данный пакет содержит тарифы с максимальной вместимостью меньше 4-х.	No se puede cambiar el posicionamiento porque este paquete contiene tarifas con capacidad máxima menor que 4.
+message	Невозможно изменить радиостанцию для объединения, так как уже объединены блоки.	No se puede cambiar la emisora a unir porque ya hay bloques unidos.
+message	Невозможно изменить содержимое пакетного модуля, так как уже существуют рекламные кампании, созданные по данному пакетному модулю.	No se puede modificar el contenido del módulo en paquete porque ya existen pautas creadas a partir de él.
+message	Невозможно изменить содержимое рекламного модуля, так как уже существуют рекламные кампании, созданные по данному рекламному модулю.	No se puede modificar el contenido del módulo publicitario porque ya existen pautas creadas a partir de él.
+message	Невозможно изменить тип тарифа (с максимальной вместимостью и без), так как он используется в модулях. Операция прервана.	No se puede cambiar el tipo de tarifa (con o sin capacidad máxima) porque se utiliza en módulos. Operación cancelada.
+message	Невозможно изменить цену завершившейся рекламной кампании. Операция прервана.	No se puede modificar el precio de una pauta finalizada. Operación cancelada.
+message	Невозможно изменить цену рекламной кампании так как она станет меньше минимально возможной. Операция прервана.	No se puede modificar el precio de la pauta porque quedaría por debajo del mínimo permitido. Operación cancelada.
+message	Невозможно клонировать прайс лист, так как для нового пакетного прайс-листа не находятся все необходимые модульные прайс-листы.	No se puede clonar la lista de precios porque no se encuentran todas las listas de precios modulares necesarias para la nueva lista de precios en paquete.
+message	Невозможно обновить (добавить) текущий коэффициент на этот срок для пользователя, так как он пересекается с существующим у пользователя сроком действия коэффициента.	No se puede actualizar (agregar) el coeficiente actual del usuario para este período porque se superpone con otro período de vigencia de coeficiente del usuario.
+message	Невозможно осуществиить перенос. Проверьте, что в выбранном дне присутствуют необходимые рекламные окна.	No se puede realizar el traslado. Verifique que el día seleccionado tenga las ventanas publicitarias necesarias.
+message	Невозможно отредактировать доступ к пунктам меню для административной группы или пользователя, принадлежащему административной группе. Операция прервана.	No se puede modificar el acceso a los elementos del menú del grupo de administradores ni de un usuario que pertenezca a él. Operación cancelada.
+message	Невозможно отредактировать права для административной группы или пользователя, принадлежащему административной группе. Операция прервана.	No se pueden modificar los permisos del grupo de administradores ni de un usuario que pertenezca a él. Operación cancelada.
+message	Невозможно перенести день из-за проблем с менеджерским коэффициентом. На выбранную вами дату он превышает установленное в этой рекламной кампании значение. Операция прервана.	No se puede trasladar el día por un problema con el coeficiente del gerente: en la fecha seleccionada supera el valor establecido en esta pauta. Operación cancelada.
+message	Невозможно перенести рекламный выпуск. Дата выпуска в прошлом, либо закрыта трафик-менеджером. Операция прервана.	No se puede trasladar la emisión publicitaria. La fecha de la emisión ya pasó o fue cerrada por el gestor de tráfico. Operación cancelada.
+message	Невозможно перенести рекламный выпуск. Новая дата выпуска в прошлом, либо закрыта трафик-менеджером. Операция прервана.	No se puede trasladar la emisión publicitaria. La nueva fecha de la emisión ya pasó o fue cerrada por el gestor de tráfico. Operación cancelada.
+message	Невозможно перенести ролик в данное окно с текущей позицией, так как позиция занята. Операция прервана.	No se puede trasladar el spot a esta ventana con la posición actual porque la posición está ocupada. Operación cancelada.
+message	Невозможно перенести ролик в данное окно, так как будет превышено допустимое время в данном окне. Операция прервана.	No se puede trasladar el spot a esta ventana porque se superaría el tiempo permitido en ella. Operación cancelada.
+message	Невозможно перенести ролик в данное окно, так как будет превышено число допустимых роликов. Операция прервана.	No se puede trasladar el spot a esta ventana porque se superaría la cantidad permitida de spots. Operación cancelada.
+message	Невозможно перенести ролик в закрытый период. Операция прервана.	No se puede trasladar el spot a un período cerrado. Operación cancelada.
+message	Невозможно сделать перенос выпуска в окно, так как оно недоступно из-за профилактики. Операция прервана.	No se puede trasladar la emisión a la ventana porque no está disponible por mantenimiento. Operación cancelada.
+message	Невозможно склеить действующую акцию с макетом. Операция прервана.	No se puede unir una campaña vigente con un borrador. Operación cancelada.
+message	Невозможно сменить агентство, так как для него уже есть присвоенные платежи. Операция прервана!	No se puede cambiar la agencia porque ya tiene pagos asignados. ¡Operación cancelada!
+message	Невозможно сменить дату начала вещания, т.к. уже существуют зависимые окна от этого дата начала вещания, которые будут не валидны после изменения.	No se puede cambiar el inicio de emisión porque ya existen ventanas que dependen de él y dejarían de ser válidas tras el cambio.
+message	Невозможно сменить позиционирование, так как в модуле есть тариф, у которого максимальная вместимость больше 0 и меньше 3.	No se puede cambiar el posicionamiento porque el módulo contiene una tarifa con capacidad máxima mayor que 0 y menor que 3.
+message	Невозможно сменить тип оплаты, так как для него уже есть присвоенные платежи. Операция прервана!	No se puede cambiar el tipo de pago porque ya tiene pagos asignados. ¡Operación cancelada!
+message	Невозможно сменить фирму-заказчика для выбранной рекламной акции. Она либо завершилась, либо началась в одном из предыдущих месяцев.	No es posible cambiar la empresa cliente de la campaña publicitaria seleccionada. La campaña ya finalizó o comenzó en uno de los meses anteriores.
+message	Невозможно сохранить выставленные даты у окна, убедитесь, что на эти даты существует прайс-лист у данной радиостанции. Операция прервана.	No es posible guardar las fechas establecidas para la ventana; verifique que exista una lista de precios de esta emisora para esas fechas. Operación cancelada.
+message	Невозможно спонсировать программу с датой выхода в эфир '{0}'. Операция прервана.	No es posible patrocinar el programa con fecha de emisión '{0}'. Operación cancelada.
+message	Невозможно спонсировать программу с датой выхода в эфир '{0}'. Рекламное окно недоступно из-за профилактики передатчика. Операция прервана.	No es posible patrocinar el programa con fecha de emisión '{0}'. La ventana publicitaria no está disponible por mantenimiento del transmisor. Operación cancelada.
+message	Невозможно удалить агентство, так как оно используется в рекламных кампаниях. Операция прервана.	No es posible eliminar la agencia porque se utiliza en pautas publicitarias. Operación cancelada.
+message	Невозможно удалить агентство, так как эта оно используется в заказах на производство роликов. Операция прервана.	No es posible eliminar la agencia porque se utiliza en órdenes de producción de spots. Operación cancelada.
+message	Невозможно удалить агентство, так как эта оно используется в кампаниях по размещению наружной рекламы. Операция прервана.	No es posible eliminar la agencia porque se utiliza en pautas de publicidad exterior. Operación cancelada.
+message	Невозможно удалить агентство, так как эта оно используется в платежах за производство роликов. Операция прервана.	No es posible eliminar la agencia porque se utiliza en pagos por producción de spots. Operación cancelada.
+message	Невозможно удалить агентство, так как эта оно используется в счетах на предоплату за производство роликов. Операция прервана.	No es posible eliminar la agencia porque se utiliza en facturas de anticipo por producción de spots. Operación cancelada.
+message	Невозможно удалить банк, так как есть медиа-планер, который использует эту информацию. Операция прервана.	No es posible eliminar el banco porque hay un planificador de medios que utiliza esta información. Operación cancelada.
+message	Невозможно удалить банк, так как эта информация используется в агентствах. Операция прервана.	No es posible eliminar el banco porque esta información se utiliza en agencias. Operación cancelada.
+message	Невозможно удалить банк, так как эта информация используется в студиях. Операция прервана.	No es posible eliminar el banco porque esta información se utiliza en estudios. Operación cancelada.
+message	Невозможно удалить банк, так как эта информация используется в фирмах. Операция прервана.	No es posible eliminar el banco porque esta información se utiliza en empresas. Operación cancelada.
+message	Невозможно удалить медиа-планера, так как он использован в рекламных кампаниях. Операция прервана.	No es posible eliminar el planificador de medios porque se utilizó en pautas publicitarias. Operación cancelada.
+message	Невозможно удалить медиа-планера, так как эта информация используется в журнале агентств.  Операция прервана.	No es posible eliminar el planificador de medios porque esta información se utiliza en el registro de agencias.  Operación cancelada.
+message	Невозможно удалить платеж, так как этому платежу присвоены оплаты.	No es posible eliminar el pago porque ya tiene montos asignados.
+message	Невозможно удалить платёж, так как он уже использован для присвоения акциям.  Операция прервана.	No es posible eliminar el pago porque ya se utilizó para asignarlo a campañas.  Operación cancelada.
+message	Невозможно удалить пользователя, так как для него есть записи в журнале подтверждений.  Операция прервана.	No es posible eliminar el usuario porque tiene entradas en el registro de confirmaciones.  Operación cancelada.
+message	Невозможно удалить пользователя, так как он является создателем рекламной акции. Операция прервана.	No es posible eliminar el usuario porque es el creador de una campaña publicitaria. Operación cancelada.
+message	Невозможно удалить прайс-лист пакетной скидки, так как для него созданы радиостанции. Операция прервана.	No es posible eliminar la lista de precios del descuento por paquete porque ya tiene emisoras agregadas. Operación cancelada.
+message	Невозможно удалить прайс-лист, так как для него уже созданы тарифы. Операция прервана.	No es posible eliminar la lista de precios porque ya tiene tarifas creadas. Operación cancelada.
+message	Невозможно удалить предмет рекламы, так как у него есть дочерние элементы. Операция прервана.	No es posible eliminar el rubro publicitario porque tiene subelementos. Operación cancelada.
+message	Невозможно удалить радиостанцию '{0}', так как для неё уже созданы модули. Операция прервана.	No es posible eliminar la emisora '{0}' porque ya tiene módulos creados. Operación cancelada.
+message	Невозможно удалить радиостанцию '{0}', так как для неё уже созданы прайс-листы. Операция прервана.	No es posible eliminar la emisora '{0}' porque ya tiene listas de precios creadas. Operación cancelada.
+message	Невозможно удалить радиостанцию '{0}', так как для неё уже созданы спонсорские программы. Операция прервана.	No es posible eliminar la emisora '{0}' porque ya tiene programas de patrocinio creados. Operación cancelada.
+message	Невозможно удалить радиостанцию, так как для неё уже созданы рекламные кампании. Операция прервана.	No es posible eliminar la emisora porque ya tiene pautas publicitarias creadas. Operación cancelada.
+message	Невозможно удалить рекламное окно, так как оно используется в рекламных кампаниях. Операция прервана.	No es posible eliminar la ventana publicitaria porque se utiliza en pautas publicitarias. Operación cancelada.
+message	Невозможно удалить рекламное окно, так как оно сгенерировано по прайс-листу. Можно удалять только рекламные окна, созданные трафик-менеджером, Операция прервана.	No es posible eliminar la ventana publicitaria porque se generó a partir de la lista de precios. Solo se pueden eliminar las ventanas publicitarias creadas por el gestor de tráfico. Operación cancelada.
+message	Невозможно удалить рекламные ролики с датой выхода в эфир, попадающей в закрытый Трафик-менеджером период. Операция прервана.	No es posible eliminar spots publicitarios con fecha de emisión dentro de un período cerrado por el gestor de tráfico. Operación cancelada.
+message	Невозможно удалить ролик, так как он используется в модульном прайс-листе. Операция прервана.	No es posible eliminar el spot porque se utiliza en una lista de precios de módulo. Operación cancelada.
+message	Невозможно удалить спонсорский тариф, так как он используется в рекламных кампаниях. Операция прервана.	No es posible eliminar la tarifa de patrocinio porque se utiliza en pautas publicitarias. Operación cancelada.
+message	Невозможно удалить стиль ролика '{0}', так как он используется в тарифах продакшен-студии. Операция прервана.	No es posible eliminar el estilo de spot '{0}' porque se utiliza en tarifas del estudio de producción. Operación cancelada.
+message	Невозможно удалить тариф на производство ролика, так как он используется в заказах на производство. Операция прервана.	No es posible eliminar la tarifa de producción de spots porque se utiliza en órdenes de producción. Operación cancelada.
+message	Невозможно удалить тариф, так как он используется в модульных тарифах. Операция прервана.	No es posible eliminar la tarifa porque se utiliza en tarifas de módulos. Operación cancelada.
+message	Невозможно удалить тарифы, так как на их базе сгенерированы рекламные окна. Операция прервана.	No es posible eliminar las tarifas porque a partir de ellas se generaron ventanas publicitarias. Operación cancelada.
+message	Невозможно удалить тип наружной рекламы '{0}', так как он используется в рекламных кампаниях. Операция прервана.	No es posible eliminar el tipo de publicidad exterior '{0}' porque se utiliza en pautas publicitarias. Operación cancelada.
+message	Невозможно удалить тип оплаты '{0}', так как он используется в оплате заказов на производство роликов. Операция прервана.	No es posible eliminar el tipo de pago '{0}' porque se utiliza en pagos de órdenes de producción de spots. Operación cancelada.
+message	Невозможно удалить тип оплаты '{0}', так как он используется в оплате рекламы.	No es posible eliminar el tipo de pago '{0}' porque se utiliza en pagos de publicidad.
+message	Невозможно удалить тип оплаты '{0}', так как он используется в размещениях наружной рекламы. Операция прервана.	No es posible eliminar el tipo de pago '{0}' porque se utiliza en colocaciones de publicidad exterior. Operación cancelada.
+message	Невозможно удалить тип оплаты, так как он использован в рекламных кампаниях. Операция прервана.	No es posible eliminar el tipo de pago porque se utilizó en pautas publicitarias. Operación cancelada.
+message	Невозможно удалить тип ролика '{0}', так как он используется в свойствах радиостанции. Операция прервана.	No es posible eliminar el tipo de spot '{0}' porque se utiliza en las propiedades de la emisora. Operación cancelada.
+message	Невозможно удалить тип ролика '{0}', так как он используется в стилях ролика. Операция прервана.	No es posible eliminar el tipo de spot '{0}' porque se utiliza en estilos de spot. Operación cancelada.
+message	Невозможно удалить фирму '{0}', так как для неё уже созданы акции по размещению наружной рекламы. Операция прервана.	No es posible eliminar la empresa '{0}' porque ya tiene campañas de publicidad exterior creadas. Operación cancelada.
+message	Невозможно удалить фирму, так как для нее созданы рекламные акции. Операция прервана.	No es posible eliminar la empresa porque tiene campañas publicitarias creadas. Operación cancelada.
+message	Невозможно удалить фирму, так как для нее существуют заказы на производство роликов. Операция прервана.	No es posible eliminar la empresa porque tiene órdenes de producción de spots. Operación cancelada.
+message	Недостаточно рекламных окон для размещения всех выпусков. Окон: {0}, выпусков {1}.	Ventanas publicitarias insuficientes para colocar todas las emisiones. Ventanas: {0}, emisiones: {1}.
+message	Некорректное имя пользователя или пароль.	Nombre de usuario o contraseña incorrectos.
+message	Нельзя добавить несколько роликов с выбранным позиционированием в одно окно в рамках одной рекламной акции, даже если это макет. Такую акцию потом невозможно активировать без ошибок.	No se pueden agregar varios spots con el posicionamiento seleccionado en una misma ventana dentro de una misma campaña publicitaria, aunque sea un borrador. Esa campaña no podrá activarse después sin errores.
+message	Нельзя изменить сумму платежа, так как она станет меньше суммы уже присвоенной акциям.  Операция прервана.	No se puede modificar el monto del pago porque quedaría por debajo del monto ya asignado a campañas.  Operación cancelada.
+message	Нельзя редактировать платеж так как он уже использован. Операция прервана.	No se puede modificar el pago porque ya se utilizó. Operación cancelada.
+message	Нельзя редактировать рекламную кампанию, которая уже закончилась. Операция прервана.	No se puede modificar una pauta publicitaria que ya finalizó. Operación cancelada.
+message	Необходимо выбрать агентство. Операция прервана.	Es necesario seleccionar una agencia. Operación cancelada.
+message	Необходимо выбрать хотя бы один ролик для переноса в новую рекламную кампанию.	Es necesario seleccionar al menos un spot para trasladar a la nueva pauta publicitaria.
+message	Необходимо выбрать хотя бы одну рекламную кампанию.	Es necesario seleccionar al menos una pauta publicitaria.
+message	Необходимо указать новую дату начала для всех выбранных рекламных кампаний	Es necesario indicar una nueva fecha de inicio para todas las pautas publicitarias seleccionadas
+message	Нет роликов на замену для данной фирмы.	No hay spots de sustitución para esta empresa.
+message	Новая дата не может быть в прошлом.	La nueva fecha no puede estar en el pasado.
+message	Новое значение позиции рекламных выпусков совпадает с текущим. Операция прервана.	El nuevo valor de posición de las emisiones publicitarias coincide con el actual. Operación cancelada.
+message	Новые даты начала или окончания ({0} - {1}) пересекаются с существующими датами тарифных окон.	Las nuevas fechas de inicio o fin ({0} - {1}) se superponen con las fechas existentes de las ventanas de tarifa.
+message	Окно на этой радиостанции в данное время уже существует.	Ya existe una ventana en esta emisora a esta hora.
+message	Окно не может быть удалено, так как он в него расставлены выпуски (фактические выходы). Операция прервана.	No es posible eliminar la ventana porque tiene emisiones colocadas (salidas al aire efectivas). Operación cancelada.
+message	Операция разделения рекламной акции Вами отменена.	Se canceló la operación de división de la campaña publicitaria.
+message	Операция разделения рекламных кампаний реализована только для кампаний с типом "Линейная". В выбранной рекламной акции такие кампании отсутствуют.	La operación de división de pautas publicitarias solo está implementada para pautas de tipo "Lineal". La campaña publicitaria seleccionada no contiene pautas de ese tipo.
+message	Остатки в тарифных окнах пересчитаны.	Se recalcularon los remanentes en las ventanas de tarifa.
+message	Пакетный модуль с таким названием уже существует. Пожалуйста, введите другое название. Операция прервана.	Ya existe un módulo en paquete con ese nombre. Por favor, ingrese otro nombre. Operación cancelada.
+message	Пароль подтвержден не верно. Операция прервана.	La confirmación de la contraseña es incorrecta. Operación cancelada.
+message	Перед тем, как пометить ролик как выполненный, необходимо ввести название ролика в заказе. Операция прервана.	Antes de marcar el spot como realizado, es necesario ingresar el nombre del spot en la orden. Operación cancelada.
+message	Перенос не выполнен: после него объединённые рекламные окна вышли бы в эфир в неправильном порядке — окно, которое должно идти позже, оказалось бы раньше. Отмените объединение окон, выполните перенос и объедините их заново.	No se realizó el traslado: después de él, las ventanas publicitarias unidas saldrían al aire en un orden incorrecto — la ventana que debe ir después quedaría antes. Deshaga la unión de las ventanas, realice el traslado y vuelva a unirlas.
+message	Переносить ролик можно только один раз. Операция прервана.	El spot solo puede trasladarse una vez. Operación cancelada.
+message	По этой пакетной скидке уже посчитаны акции — удалить её нельзя. Если нужна другая скидка, создайте копию прайс-листа и измените её. Операция прервана.	Ya se calcularon campañas con este descuento por paquete — no es posible eliminarlo. Si se necesita otro descuento, cree una copia de la lista de precios y modifíquela. Operación cancelada.
+message	По этому набору скидок уже посчитаны кампании — удалить его нельзя. Если нужна другая скидка, создайте копию набора и измените её. Операция прервана.	Ya se calcularon pautas con este conjunto de descuentos — no es posible eliminarlo. Si se necesita otro descuento, cree una copia del conjunto y modifíquela. Operación cancelada.
+message	Пожалуйста, выберите правильный объект.	Por favor, seleccione un objeto válido.
+message	Поле '{0}' является обязательным для заполнения. Операция прервана.	El campo '{0}' es obligatorio. Operación cancelada.
+message	Пользователь {0} {1} также не обладает необходимым уровнем привилегий. Операция прервана.	El usuario {0} {1} tampoco tiene el nivel de privilegios necesario. Operación cancelada.
+message	Пользователь используется в системе.	El usuario está en uso en el sistema.
+message	Пользователь не может быть удален, так как от его имени созданы платежи на оплату акций. Операция прервана.	No es posible eliminar el usuario porque se crearon en su nombre pagos de campañas. Operación cancelada.
+message	Пользователь не может быть удален, так как от его имени созданы платежи на оплату заказов на производство роликов. Операция прервана.	No es posible eliminar el usuario porque se crearon en su nombre pagos de órdenes de producción de spots. Operación cancelada.
+message	Пользователь не может быть удален, так как существуют заказы на производство роликов, созданные от его имени. Операция прервана.	No es posible eliminar el usuario porque existen órdenes de producción de spots creadas en su nombre. Operación cancelada.
+message	Пользователь с таким логином уже существует. Операция прервана.	Ya existe un usuario con ese nombre de usuario. Operación cancelada.
+message	Поля Фирма и Предмет рекламы должны быть либо оба пустые, либо оба заполнены.	Los campos Empresa y Rubro publicitario deben estar ambos vacíos o ambos completos.
+message	Прайс-лист не может быть удален, так как на его базе уже созданы рекламные кампании. Операция прервана.	No es posible eliminar la lista de precios porque ya se crearon pautas publicitarias basadas en ella. Operación cancelada.
+message	Прайс-лист уже используется рекламной кампанией. Изменять его параметры запрещено. Операция прервана.	La lista de precios ya está en uso en una pauta publicitaria. No se permite modificar sus parámetros. Operación cancelada.
+message	Превышена разрешенная скидка.	Se superó el descuento permitido.
+message	Предмет рекламы не может быть удален, так как он используется в роликах. Операция прервана.	No es posible eliminar el rubro publicitario porque se utiliza en spots. Operación cancelada.
+message	Продакшн-студия не может быть удалена, так как для нее созданы заказы. Операция прервана.	No es posible eliminar el estudio de producción porque tiene órdenes creadas. Operación cancelada.
+message	Продолжительность не может быть больше полной продолжительности. Операция прервана.	La duración no puede ser mayor que la duración total. Operación cancelada.
+message	Промежуток действия текущего прайс-листа пересекается с существующими прайс-листами модуля. Операция прервана.	El período de vigencia de la lista de precios actual se superpone con listas de precios existentes del módulo. Operación cancelada.
+message	Радиостанция не может быть удалена, так как она имеет действующие окна. Операция прервана.	No es posible eliminar la emisora porque tiene ventanas vigentes. Operación cancelada.
+message	Радиостанция с таким идентификатором из Media Plus уже существует в системе. Операция прервана.	Ya existe en el sistema una emisora con ese identificador de Media Plus. Operación cancelada.
+message	Радиостанция уже имеет скидку на этот тип кампаний.	La emisora ya tiene un descuento para este tipo de pautas.
+message	Рекламная акция восстановлена и доступна для активации в журнале макетов рекламных акций.	La campaña publicitaria se restauró y está disponible para su activación en el registro de borradores de campañas publicitarias.
+message	Рекламная кампания на радиостанции '{0}' содержит только 1 ролик, операция разделения "по роликам" невозможна.	La pauta publicitaria en la emisora '{0}' contiene solo 1 spot; no es posible la división "por spots".
+message	Рекламная кампания не может иметь  цену {0}, так как она слишком мала. Операция прервана.	La pauta publicitaria no puede tener un precio de {0} porque es demasiado bajo. Operación cancelada.
+message	Рекламная кампания такого типа, с таким типом оплаты и радиостанцией уже присутствует в данной рекламной акции. Операция прервана.	Ya existe en esta campaña publicitaria una pauta de este tipo, con este tipo de pago y esta emisora. Operación cancelada.
+message	Рекламное окно не найдено.	No se encontró la ventana publicitaria.
+message	Рекламный ролик  не может быть добавлен так как в этом случае будет превышено максимально возможное время рекламы в данном окне.  Операция прервана.	No es posible agregar el spot publicitario porque se superaría el tiempo máximo de publicidad permitido en esta ventana.  Operación cancelada.
+message	Рекламный ролик не может быть добавлен первым/последним. Операция прервана.	No es posible agregar el spot publicitario en primera/última posición. Operación cancelada.
+message	Рекламный ролик не может быть добавлен, так как в этом случае будет превышено число допустимых роликов в данном окне.	No es posible agregar el spot publicitario porque se superaría la cantidad de spots permitidos en esta ventana.
+message	Ролик используется в активированной рекламной акции. Поле "Предмет рекламы" не может быть пустым. Операция прервана.	El spot se utiliza en una campaña publicitaria activada. El campo "Rubro publicitario" no puede estar vacío. Operación cancelada.
+message	Ролик не может быть удален, так как он используется в выпусках. Операция прервана.	No es posible eliminar el spot porque se utiliza en emisiones. Operación cancelada.
+message	Ролик не может быть удален, так как он используется в привязке к прайс-листам пакетных модулей. Операция прервана.	No es posible eliminar el spot porque está vinculado a listas de precios de módulos en paquete. Operación cancelada.
+message	Ролик с нулевой продолжительностью не может быть активным.	Un spot con duración cero no puede estar activo.
+message	Ролик с таким именем и типом уже существует	Ya existe un spot con ese nombre y tipo
+message	Ролик с таким именем уже существует	Ya existe un spot con ese nombre
+message	Ролик уже используется, заказ нельзя деактивировать.	El spot ya está en uso; no es posible desactivar la orden.
+message	Системная ошибка. Операция прервана.	Error del sistema. Operación cancelada.
+message	Скидка с таким именем уже существует	Ya existe un descuento con ese nombre
+message	Скидка уже содержит прайс-лист с датой начала '{0}'.	El descuento ya contiene una lista de precios con fecha de inicio '{0}'.
+message	Склеиваемый блок должен идти после текущего.	El bloque a unir debe ir después del actual.
+message	Спонсорская программа не может быть удалена. В этом случае продолжительность рекламных роликов превысит бонус от спонсорских программ. Операция прервана.	No es posible eliminar el programa de patrocinio: la duración de los spots publicitarios superaría la bonificación de los programas de patrocinio. Operación cancelada.
+message	Старый пароль не верный. Операция прервана.	La contraseña anterior es incorrecta. Operación cancelada.
+message	Стиль ролика не может быть удален, так как созданы заказы с этим стилем ролика. Операция прервана.	No es posible eliminar el estilo de spot porque existen órdenes creadas con este estilo. Operación cancelada.
+message	Тариф для выбранного стиля ролика уже существует в данном прайс-листе. Операция прервана.	Ya existe una tarifa para el estilo de spot seleccionado en esta lista de precios. Operación cancelada.
+message	Тариф с такими атрибутами уже задан. Проверьте, возможно уже существует тариф для такого же времени и такого же дня недели.	Ya existe una tarifa con estos atributos. Verifique si ya existe una tarifa para la misma hora y el mismo día de la semana.
+message	Тип оплаты не может быть удален, так как он используется в созданных заказах на производство роликов. Операция прервана.	No es posible eliminar el tipo de pago porque se utiliza en órdenes de producción de spots creadas. Operación cancelada.
+message	Только администраторы могут осуществить вход в административное приложение.	Solo los administradores pueden iniciar sesión en la aplicación de administración.
+message	Только пользователь с правами администратора может менять родителя в предмете рекламы.  Операция прервана.	Solo un usuario con permisos de administrador puede cambiar el elemento padre de un rubro publicitario.  Operación cancelada.
+message	Только пользователь с правами администратора может удалять рекламные выпуски с уже прошедшей датой выхода в эфир. Операция прервана.	Solo un usuario con permisos de administrador puede eliminar emisiones publicitarias cuya fecha de emisión ya pasó. Operación cancelada.
+message	У вас нет прав деактивировать рекламную акцию, которая уже началась. Операция прервана.	No tiene permisos para desactivar una campaña publicitaria que ya comenzó. Operación cancelada.
+message	У данной кампании не было переносов выпусков.	Esta pauta no tuvo traslados de emisiones.
+message	У использованного ролика нельзя изменить название, тип или продолжительность. Операция прервана.	No es posible modificar el nombre, el tipo ni la duración de un spot en uso. Operación cancelada.
+message	У радиостанции не заполнены ролики обвязки политической агитации (карточка радиостанции, вкладка "Политическая агитация"). Операция прервана.	La emisora no tiene configurados los spots de apertura y cierre de propaganda política (ficha de la emisora, pestaña "Propaganda política"). Operación cancelada.
+message	У радиостанции уже есть набор скидок с такой датой принятия. Операция прервана.	La emisora ya tiene un conjunto de descuentos con esa fecha de entrada en vigor. Operación cancelada.
+message	Удалить выходы рекламных роликов для времени {0} в соответствии с шаблоном?\n{3} [c {1} по {2}]	¿Eliminar las emisiones de spots publicitarios para la hora {0} según la plantilla?\n{3} [del {1} al {2}]
+message	Указан некорректный Email. Пожалуйста, проверьте введённые данные.	El Email indicado no es válido. Por favor, verifique los datos ingresados.
+message	Файл лицензии испорчен.	El archivo de licencia está dañado.
+message	Файл лицензии не найден.	No se encontró el archivo de licencia.
+message	Файл ролика '{0}' не найден.	No se encontró el archivo del spot '{0}'.
+message	Фирма не может быть удалена, так как у нее существуют ролики. Операция прервана.	No es posible eliminar la empresa porque tiene spots. Operación cancelada.
+message	Фирма с таким названием и ИНН уже существует. Пожалуйста, введите другое название или отредактируйте ИНН. Операция прервана.	Ya existe una empresa con ese nombre e ИНН. Por favor, ingrese otro nombre o modifique el ИНН. Operación cancelada.
+message	Цена рекламной акции изменилась с {0} на {1}.	El precio de la campaña publicitaria cambió de {0} a {1}.
+message	Цена рекламной акции не изменилась и составляет {0}.	El precio de la campaña publicitaria no cambió y es de {0}.
+message	Эта операция приведет к окончательному удалению рекламной акции '{0}' из системы. Продолжить?	Esta operación eliminará definitivamente la campaña publicitaria '{0}' del sistema. ¿Continuar?
+message	Эта операция приведет к перемещению рекламной акции '{0}' в "Журнал удалённых рекламных акций". Продолжить?	Esta operación moverá la campaña publicitaria '{0}' al "Registro de campañas publicitarias eliminadas". ¿Continuar?
+message	Эта рекламная акция активирована и уже началась. Для выполнения операции нужны права администратора. Операция прервана.	Esta campaña publicitaria está activada y ya comenzó. Se requieren permisos de administrador para realizar la operación. Operación cancelada.
+message	Этот модуль уже входит в состав комбо-модуля. Операция прервана.	Este módulo ya forma parte de un módulo combo. Operación cancelada.
