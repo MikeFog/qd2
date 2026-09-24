@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using System.Data;
 using FogSoft.WinForm;
@@ -35,6 +36,17 @@ namespace Merlin.Classes
 			DataTable table = ((DataSet)DataAccessor.DoAction(parameters)).Tables[Constants.TableNames.Data];
 			DataView active = new DataView(table) { RowFilter = "isActive = true", Sort = "name" };
 			return active.ToTable();
+		}
+
+		/// <summary>
+		/// Отметить станцию «обработанной по» дату (Massmedia.deadLine): выпуски этих дней после
+		/// этого может менять только трафик-менеджер и администратор (hlp_IssueVerify). Тот же
+		/// путь, что у десктопа (Massmedia.SetDeadLine: перечитать станцию, поставить дату,
+		/// сохранить — MassmediaIUD). Более ранняя дата снимает отметку с последующих дней.
+		/// </summary>
+		public static void SetClosedThrough(int massmediaId, DateTime date)
+		{
+			Massmedia.GetMassmediaByID(massmediaId).SetDeadLine(date.Date);
 		}
 	}
 }

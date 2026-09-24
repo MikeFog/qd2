@@ -8,6 +8,8 @@
 @inject BusyService Busy
 @inject ObjectActions Actions
 @inject ActionMenuService Menu
+@inject DialogService Dialogs
+@inject TableDialog Tables
 
 @*
     Трафик-менеджмент — веб-экран вместо TrafficManagementForm + TrafficGrid. Не копия формы:
@@ -39,6 +41,9 @@ else
 {
     <div class="traffic">
         <ScreenToolbar Title="@_title">
+            <button class="btn btn-sm btn-outline-secondary" @onclick="MassClose">
+                <i class="bi bi-lock" aria-hidden="true"></i>Отметить дни обработанными…
+            </button>
             <button class="btn btn-sm btn-outline-secondary" @onclick="RefreshAll">
                 <i class="bi bi-arrow-clockwise" aria-hidden="true"></i>Обновить
             </button>
@@ -98,7 +103,7 @@ else
                 }
                 else
                 {
-                    <WindowWeekGrid Week="_week" Date="_date" SelectedIds="SelectedIds"
+                    <WindowWeekGrid Week="_week" Date="_date" SelectedIds="SelectedIds" DayHeader="DayLockButton"
                                     OnPrevious="PreviousWeek" OnNext="NextWeek" OnJump="JumpTo"
                                     OnCellClick="e => SelectCell(e.Cell)"
                                     OnCellDoubleClick="e => OpenPassport(e.Cell)"
@@ -135,6 +140,7 @@ else
 
 @code {
     private string _title = "Трафик-менеджмент";
+    private string? _stationName;
     private JournalAccess _access = JournalAccess.Allowed;
     private string? _error;
 
@@ -196,6 +202,7 @@ else
         if (_stationId == id)
             return Task.CompletedTask;
         _stationId = id;
+        _stationName = name;
         _week = null;
         _selected = null;
         _issues = null;
@@ -246,6 +253,102 @@ else
                 if (cell != null && cell.WindowId == windowId)
                     return cell;
         return null;
+    }
+
+    // ---------- «День обработан» ----------
+
+    /// <summary>
+    /// Кнопка-замок в заголовке дня: у открытого дня — отметить станцию обработанной по этот
+    /// день, у закрытого — снять отметку с этого дня (обработано по предыдущий).
+    /// </summary>
+    private RenderFragment<DateTime> DayLockButton => day =>
+    @<button type="button" class="day-lock @(IsClosed(day) ? "is-closed" : null)"
+             title="@(IsClosed(day) ? $"Снять отметку «обработан» с {day:dd.MM}" : $"Отметить обработанным по {day:dd.MM}")"
+             @onclick="() => ToggleDay(day)" @onclick:stopPropagation="true">
+        <i class="bi @(IsClosed(day) ? "bi-unlock" : "bi-lock")" aria-hidden="true"></i>
+    </button>;
+
+    private bool IsClosed(DateTime day) => _week?.ClosedThrough is { } through && day.Date <= through.Date;
+
+    private async Task ToggleDay(DateTime day)
+    {
+        if (_stationId == null)
+            return;
+
+        bool reopen = IsClosed(day);
+        DateTime newDate = reopen ? day.AddDays(-1) : day;
+        string text = reopen
+            ? $"Снять отметку «обработан» со станции «{_stationName}» начиная с {day:dd.MM.yyyy}? Станция будет обработана по {newDate:dd.MM.yyyy}."
+            : $"Отметить станцию «{_stationName}» обработанной по {day:dd.MM.yyyy} включительно? Выпуски этих дней сможет менять только трафик-менеджер и администратор.";
+
+        if (await Dialogs.ShowAsync(reopen ? "Снять отметку" : "День обработан", b => b.AddContent(0, text),
+                okText: reopen ? "Снять отметку" : "Отметить") != DialogOutcome.Ok)
+            return;
+
+        int id = _stationId.Value;
+        await Busy.RunAsync(() => Try(() =>
+        {
+            TrafficManagement.SetClosedThrough(id, newDate);
+            _stations = TrafficManagement.Stations(_groupId);
+            ReloadWeek();
+        }));
+    }
+
+    /// <summary>
+    /// «Отметить дни обработанными…» — несколько станций сразу (десктопный RadiostationsSelector):
+    /// станции галочками и дата. По станциям по очереди; отказы — списком, остальные отмечаются.
+    /// </summary>
+    private async Task MassClose()
+    {
+        DataTable all = await Busy.RunAsync(() => TrafficManagement.Stations(0));
+        var model = new MassCloseForm.Model { Stations = all };
+        if (_stationId != null)
+            model.Selected.Add(_stationId.Value);
+
+        while (true)
+        {
+            if (await Dialogs.ShowAsync("Отметить дни обработанными", b =>
+                {
+                    b.OpenComponent<MassCloseForm>(0);
+                    b.AddComponentParameter(1, nameof(MassCloseForm.Value), model);
+                    b.CloseComponent();
+                }, okText: "Отметить") != DialogOutcome.Ok)
+                return;
+
+            model.Message = model.Selected.Count == 0 ? "Отметьте хотя бы одну станцию." : null;
+            if (model.Message == null)
+                break;
+        }
+
+        var errors = new DataTable();
+        errors.Columns.Add("name", typeof(string));
+        errors.Columns.Add("description", typeof(string));
+        await Busy.RunAsync(() =>
+        {
+            foreach (int id in model.Selected)
+            {
+                try
+                {
+                    TrafficManagement.SetClosedThrough(id, model.Date);
+                }
+                catch (Exception ex)
+                {
+                    DataRow row = all.Rows.Cast<DataRow>().First(r => Convert.ToInt32(r[Massmedia.ParamNames.MassmediaId]) == id);
+                    errors.Rows.Add(row[Massmedia.ParamNames.Name] + " " + row[Massmedia.ParamNames.GroupName], ErrorPresenter.Describe(ex));
+                }
+            }
+            Try(() =>
+            {
+                _stations = TrafficManagement.Stations(_groupId);
+                if (_stationId != null)
+                    ReloadWeek();
+            });
+        });
+
+        if (errors.Rows.Count > 0)
+            await Tables.ShowAsync($"Не отмечено станций: {errors.Rows.Count}", errors,
+                new Entity.Attribute("name", "Станция", "nvarchar"),
+                new Entity.Attribute("description", "Причина", "nvarchar"));
     }
 
     // ---------- Окно ----------
