@@ -187,6 +187,15 @@
     <Compile Include="..\Client\Classes\TrafficManagement.cs" Link="Domain\TrafficManagement.cs" />
     <Compile Include="..\Client\Classes\RollerStatisticQuery.cs" Link="Domain\RollerStatisticQuery.cs" />
     <Compile Include="..\Client\Classes\BroadcastGrid.cs" Link="Domain\BroadcastGrid.cs" />
+    <Compile Include="..\Client\Classes\BroadcastGridDocx.cs" Link="Domain\BroadcastGridDocx.cs" />
+    <Compile Include="..\Client\Classes\GridExport\BroadcastGridExport.cs" Link="Domain\GridExport\BroadcastGridExport.cs" />
+    <Compile Include="..\Client\Classes\GridExport\ExportDocument.cs" Link="Domain\GridExport\ExportDocument.cs" />
+    <Compile Include="..\Client\Classes\GridExport\ExportHelper.cs" Link="Domain\GridExport\ExportHelper.cs" />
+    <Compile Include="..\Client\Classes\GridExport\ExportParams.cs" Link="Domain\GridExport\ExportParams.cs" />
+    <Compile Include="..\Client\Classes\GridExport\ExportType.cs" Link="Domain\GridExport\ExportType.cs" />
+    <Compile Include="..\Client\Classes\GridExport\DJinSerializer\BlockManager.cs" Link="Domain\GridExport\BlockManager.cs" />
+    <Compile Include="..\Client\Classes\GridExport\DJinSerializer\DJinExportDocument.cs" Link="Domain\GridExport\DJinExportDocument.cs" />
+    <Compile Include="..\Client\Classes\GridExport\DJinSerializer\DJinParam.cs" Link="Domain\GridExport\DJinParam.cs" />
     <Compile Include="..\Client\Classes\ManagerChoice.cs" Link="Domain\ManagerChoice.cs" />
   </ItemGroup>
 

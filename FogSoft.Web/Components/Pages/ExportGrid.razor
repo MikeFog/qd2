@@ -1,0 +1,206 @@
+@page "/grid-export"
+@using System.Data
+@using FogSoft.Web.Infrastructure
+@using FogSoft.WinForm
+@using FogSoft.WinForm.Classes
+@using FogSoft.WinForm.Passport.Classes
+@using Merlin.Classes
+@using Merlin.Classes.GridExport
+@inject MenuAccess Access
+@inject BusyService Busy
+@inject DialogService Dialogs
+@inject ProgressDialog Progress
+@inject TableDialog Tables
+@inject FileSaver Saver
+
+@*
+    «Экспорт сеток вещания» — веб-экран вместо ExportGridForm. Параметры — та же панель, что у
+    журналов, по именованному паспорту BroadcastGridExport (iPassport): станции (выбор
+    нескольких), дата, что выгружать — файлы для эфира (DJin) и сетки в Word.
+
+    Решение владельца 2026-09-25: вместо двух «папок из настроек» десктопа (костыль RDP) —
+    обычный выбор папки в браузере, каждый раз; файлы обоих видов — в неё. Сетка в Word — docx
+    того же вида, что лист «Сетки вещания» (десктоп выгружал Crystal-макет в .doc).
+*@
+
+<PageTitle>@_title</PageTitle>
+
+@if (SecurityManager.LoggedUser == null)
+{
+    <div class="state">
+        <div class="state-title">@Tr.T("Вы не вошли в систему")</div>
+        <a href="/">@Tr.T("Перейти к входу")</a>
+    </div>
+}
+else if (_access != JournalAccess.Allowed)
+{
+    <div class="state">
+        <div class="state-title">@Tr.T("Доступ закрыт")</div>
+        @Tr.T("Этот экран вам не разрешён. Права на экраны выдаются вместе с пунктами меню — обратитесь к администратору системы.")
+    </div>
+}
+else
+{
+    <div class="export-grid">
+        <ScreenToolbar Title="@_title" />
+
+        <FilterPanel Pages="_pages" Values="_values" Apply="Export"
+                     ApplyText="@(Tr.T("Выгрузить в папку…"))" ApplyIcon="bi-folder-symlink" />
+
+        @if (_error != null)
+        {
+            <div class="alert alert-danger">@_error</div>
+        }
+
+        @if (_summary != null)
+        {
+            <div class="alert alert-success">@_summary</div>
+        }
+
+        <p class="text-muted hint">
+            @Tr.T("Отметьте станции и дату, затем выберите папку: для каждой станции туда запишутся файл для эфирной программы (DJin) и сетка в Word. Файлы с теми же именами заменяются.")
+        </p>
+    </div>
+}
+
+@code {
+    /// <summary>Именованный паспорт (iPassport) с параметрами выгрузки.</summary>
+    private const string ParametersPassport = "BroadcastGridExport";
+
+    private const string StationsParam = "massmediaString";
+    private const string DateParam = "theDate";
+    private const string DJinParam = "exportDJin";
+    private const string WordParam = "exportWord";
+
+    private string _title = Tr.T("Экспорт сеток вещания");
+    private JournalAccess _access = JournalAccess.Allowed;
+    private bool _initialized;
+    private string? _error;
+    private string? _summary;
+
+    private IReadOnlyList<PassportPage> _pages = Array.Empty<PassportPage>();
+    private readonly Dictionary<string, object> _values = new(StringComparer.InvariantCultureIgnoreCase);
+    private DataTable? _stations;
+
+    protected override async Task OnInitializedAsync()
+    {
+        if (SecurityManager.LoggedUser == null)
+            return;
+
+        _access = Access.CheckScreen(ScreenRoutes.ExportGrid);
+        if (_access != JournalAccess.Allowed || _initialized)
+            return;
+
+        _initialized = true;
+        _title = Access.MenuText(ScreenRoutes.ExportGrid) ?? _title;
+        await Busy.RunAsync(() => Try(() =>
+        {
+            string xml = PassportLoader.Load(ParametersPassport);
+            _pages = PassportSchema.Parse(xml, pageType: PageTypes.Filter);
+            Globals.ResolveFilterInitialValues(_values, xml);
+            _stations = Massmedia.LoadByGroup(0);
+        }));
+    }
+
+    private void Try(System.Action work)
+    {
+        try
+        {
+            _error = null;
+            work();
+        }
+        catch (Exception ex)
+        {
+            _error = ErrorPresenter.Describe(ex);
+        }
+    }
+
+    /// <summary>
+    /// «Выгрузить в папку…» (панель уже проверила станции и дату). Папка выбирается сразу —
+    /// браузер открывает окно только в ответ на щелчок; потом станции по очереди с окном
+    /// прогресса (сбой станции не останавливает остальные — как в десктопе), затем запись
+    /// файлов и итог.
+    /// </summary>
+    private async Task Export()
+    {
+        _error = null;
+        _summary = null;
+
+        bool djin = IsOn(DJinParam);
+        bool word = IsOn(WordParam);
+        if (!djin && !word)
+        {
+            _error = Tr.T("Отметьте, что выгружать: файлы для эфира, сетки в Word или то и другое.");
+            return;
+        }
+        if (!DateTime.TryParse(_values.TryGetValue(DateParam, out object? d) ? d?.ToString() : null, out DateTime date))
+            return;
+        List<int> stations = (_values.TryGetValue(StationsParam, out object? s) ? s?.ToString() ?? "" : "")
+            .Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
+            .Select(int.Parse).ToList();
+
+        try
+        {
+            if (await Saver.UnsupportedReasonAsync() is { } reason)
+            {
+                _error = reason;
+                return;
+            }
+            if (!await Saver.PickFolderAsync())
+                return;
+
+            var files = new List<ExportFile>();
+            var errors = new DataTable();
+            errors.Columns.Add("name", typeof(string));
+            errors.Columns.Add("description", typeof(string));
+            int empty = 0;
+
+            ProgressOutcome outcome = await Progress.RunAsync(Tr.T("Выгрузка сеток"), stations, StationName, id =>
+            {
+                try
+                {
+                    if (word)
+                        files.Add(BroadcastGridExport.Word(id, date));
+                    if (djin)
+                    {
+                        IList<ExportFile> broadcast = BroadcastGridExport.DJin(id, date);
+                        if (broadcast.Count == 0)
+                            empty++;
+                        files.AddRange(broadcast);
+                    }
+                }
+                catch (Exception ex)
+                {
+                    errors.Rows.Add(StationName(id), ErrorPresenter.Describe(ex));
+                }
+            });
+
+            // Запись в папку — через браузер, по файлу; файлы маленькие, это быстро.
+            foreach (ExportFile file in files)
+                await Saver.WriteToFolderAsync(file);
+
+            _summary = Tr.Format("Записано файлов: {0}.", files.Count)
+                + (empty > 0 ? " " + Tr.Format("Без выпусков в этот день (файла для эфира нет): {0}.", empty) : "")
+                + (outcome.Stopped ? " " + Tr.Format("Выгрузка остановлена: обработано станций {0} из {1}.", outcome.Done, stations.Count) : "");
+
+            if (errors.Rows.Count > 0)
+                await Tables.ShowAsync(Tr.Format("Не выгружено станций: {0}", errors.Rows.Count), errors,
+                    new Entity.Attribute("name", "Станция", "nvarchar"), // i18n-ok: заголовок колонки переводит ObjectList при выводе (Tr.T(a.Alias))
+                    new Entity.Attribute("description", "Причина", "nvarchar")); // i18n-ok: заголовок колонки переводит ObjectList при выводе (Tr.T(a.Alias))
+        }
+        catch (Exception ex)
+        {
+            _error = ErrorPresenter.Describe(ex);
+        }
+    }
+
+    /// <summary>Булево поле панели включено (значения — строки «True»/«False»).</summary>
+    private bool IsOn(string name) =>
+        _values.TryGetValue(name, out object? v) && ParseHelper.ParseToBoolean(v?.ToString() ?? "", false);
+
+    private string StationName(int id)
+    {
+        DataRow? row = _stations?.Rows.Cast<DataRow>().FirstOrDefault(r => Convert.ToInt32(r[Massmedia.ParamNames.MassmediaId]) == id);
+        return row == null ? id.ToString() : $"{row[Massmedia.ParamNames.Name]} ({row[Massmedia.ParamNames.GroupName]})";
+    }
+}

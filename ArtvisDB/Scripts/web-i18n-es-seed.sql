@@ -1,5 +1,5 @@
 ﻿/*
-    ДЕПЛОЙ: переводы веб-версии на язык «es» (1463 строк). docs/tasks/web-i18n.md, этап 5.
+    ДЕПЛОЙ: переводы веб-версии на язык «es» (1480 строк). docs/tasks/web-i18n.md, этап 5.
     СГЕНЕРИРОВАН из ArtvisDB/Scripts/i18n/es.tsv скриптом build-seed.py — руками не править.
 
     ПРЕДУСЛОВИЕ     накачен web-i18n-translation-deploy.sql (таблица iTranslation).
@@ -1481,7 +1481,24 @@ INSERT INTO #t ([source], [text]) VALUES
 (N'Задайте значение.', N'Indique un valor.'),
 (N'Задайте отбор и нажмите «Применить»', N'Defina el filtro y pulse «Aplicar»'),
 (N'Отметить все найденные', N'Marcar todos los encontrados'),
-(N'Радиостанции: ', N'Emisoras: ');
+(N'Радиостанции: ', N'Emisoras: '),
+(N'Без выпусков в этот день (файла для эфира нет): {0}.', N'Sin emisiones ese día (no hay archivo para emisión): {0}.'),
+(N'Выберите, куда сохранить файл.', N'Elija dónde guardar el archivo.'),
+(N'Выгружать нечего: в этот день на станции нет выпусков.', N'No hay nada que exportar: la emisora no tiene emisiones ese día.'),
+(N'Выгрузить в папку…', N'Exportar a carpeta…'),
+(N'Выгрузка остановлена: обработано станций {0} из {1}.', N'Exportación detenida: emisoras procesadas {0} de {1}.'),
+(N'Выгрузка сеток', N'Exportación de parrillas'),
+(N'Выгрузка файлов работает в браузерах Chrome и Edge.', N'La exportación de archivos funciona en los navegadores Chrome y Edge.'),
+(N'Для эфира…', N'Para emisión…'),
+(N'Записано файлов: {0}.', N'Archivos guardados: {0}.'),
+(N'Не выгружено станций: {0}', N'Emisoras no exportadas: {0}'),
+(N'Отметьте станции и дату, затем выберите папку: для каждой станции туда запишутся файл для эфирной программы (DJin) и сетка в Word. Файлы с теми же именами заменяются.', N'Marque las emisoras y la fecha y luego elija la carpeta: para cada emisora se guardarán el archivo para el programa de emisión (DJin) y la parrilla en Word. Los archivos con el mismo nombre se reemplazan.'),
+(N'Отметьте, что выгружать: файлы для эфира, сетки в Word или то и другое.', N'Marque qué exportar: archivos para emisión, parrillas en Word o ambos.'),
+(N'Сохранить…', N'Guardar…'),
+(N'Файл готов', N'El archivo está listo'),
+(N'Файл сетки для эфирной программы (DJin)', N'Archivo de la parrilla para el programa de emisión (DJin)'),
+(N'Сетки в Word', N'Parrillas en Word'),
+(N'Файлы для эфира (DJin)', N'Archivos para emisión (DJin)');
 GO
 
 BEGIN TRANSACTION;

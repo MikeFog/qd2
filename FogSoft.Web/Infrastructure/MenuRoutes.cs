@@ -194,6 +194,9 @@ public static class ScreenRoutes
 	public const string BroadcastGrid = "miPrintGrid";
 	public const string BroadcastGridFromAdSection = "miPrintGridFromRSection";
 
+	/// <summary>«Экспорт сеток вещания» — файлы для эфира и сетки в Word по многим станциям.</summary>
+	public const string ExportGrid = "miExportGrid";
+
 	public static readonly IReadOnlyDictionary<string, string> Screens =
 		new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase)
 		{
@@ -209,6 +212,9 @@ public static class ScreenRoutes
 			// чтобы право проверялось по тому, из которого открыли.
 			{ BroadcastGrid, "/broadcast-grid?menu=" + BroadcastGrid },
 			{ BroadcastGridFromAdSection, "/broadcast-grid?menu=" + BroadcastGridFromAdSection },
+			// Десктоп — ExportGridForm (две папки из настроек); в вебе — выбор папки в браузере
+			// (решение владельца 2026-09-25: папки по умолчанию были костылём RDP).
+			{ ExportGrid, "/grid-export" },
 		};
 }
 

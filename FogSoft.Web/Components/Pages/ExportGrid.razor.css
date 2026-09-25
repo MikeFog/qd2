@@ -1,0 +1,12 @@
+/* Экспорт сеток вещания: параметры (FilterPanel) и итог. */
+
+.export-grid {
+    display: flex;
+    flex-direction: column;
+    gap: var(--s-3);
+}
+
+.hint {
+    margin: 0;
+    font-size: 13px;
+}

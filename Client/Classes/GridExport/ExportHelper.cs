@@ -1,10 +1,10 @@
 ﻿using System.IO;
-using CrystalDecisions.Shared;
 using FogSoft.WinForm.Classes;
 
 namespace Merlin.Classes.GridExport
 {
-	public class ExportHelper
+	// Форматы Crystal (выгрузка сеток в Word из десктопа) — в ExportHelper.WinForms.cs.
+	public partial class ExportHelper
 	{
 		public static string RemoveInvalidFileNameChars(string mmName)
 		{
@@ -18,22 +18,6 @@ namespace Merlin.Classes.GridExport
 			get
 			{
 				return ConfigurationUtil.GetBooleanSettings("ExportOpenFolderOnFinish", true);
-			}
-		}
-
-		public static ExportFormatType CrystalExportFormatType
-		{
-			get
-			{
-				return ConfigurationUtil.GetEnumSettings("CrystalExportFormatType", ExportFormatType.WordForWindows);
-			}
-		}
-
-		public static string CrystalExportFormatTypeExtension
-		{
-			get
-			{
-				return ConfigurationUtil.GetSettings("CrystalExportFormatTypeExtension", ".doc");
 			}
 		}
 	}

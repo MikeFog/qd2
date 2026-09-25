@@ -1,5 +1,6 @@
 ﻿using FogSoft.WinForm.Classes;
 using System;
+using System.Collections.Generic;
 using System.Data;
 using System.IO;
 
@@ -7,34 +8,40 @@ namespace Merlin.Classes.GridExport.DJinSerializer
 {
 	internal class DJinExportDocument : ExportDocument
 	{
-        protected override void Export(Massmedia mm, DateTime date, string fileName, DataTable data, string broadcastTime)
+        protected override IList<ExportFile> Build(Massmedia mm, DateTime date, string fileName, DataTable data, string broadcastTime)
 		{
+			// Два файла: эфир дня от начала вещания до полуночи и хвост после полуночи —
+			// последний уже следующей датой. Файл пишется, только если в его части есть выпуски.
+			List<ExportFile> files = new List<ExportFile>();
+
             if (data.Select("isToday = 1 and rolActionTypeID is not null").Length > 0)
 			{
 				DataRow[] rows = data.Select("isToday = 1");
 				if (rows.Length > 0)
-				{
-					string fileFirst = string.Format("{0}_{1}_{2}-2359.txt", fileName, date.ToString("dd_MM_yyyy"), broadcastTime);
-					using (FileStream file = new FileStream(fileFirst, FileMode.Create))
-					{
-						ExportBlocks(file, rows, mm, date);
-					}
-                    BlockManager.ProcessFile(fileFirst);
-                }
+					files.Add(BuildFile(string.Format("{0}_{1}_{2}-2359.txt", fileName, date.ToString("dd_MM_yyyy"), broadcastTime),
+						rows, mm, date));
             }
 
 			if (data.Select("isToday = 0 and rolActionTypeID is not null").Length > 0)
 			{
 				DataRow[] rows = data.Select("isToday = 0");
 				if (rows.Length > 0)
-				{
-					string fileSecond =	string.Format("{0}_{1}_0000-{2}.txt", fileName, date.AddDays(1).ToString("dd_MM_yyyy"), broadcastTime);
-					using (FileStream file = new FileStream(fileSecond, FileMode.Create))
-						ExportBlocks(file, rows, mm, date);
-                    BlockManager.ProcessFile(fileSecond);
-                }
+					files.Add(BuildFile(string.Format("{0}_{1}_0000-{2}.txt", fileName, date.AddDays(1).ToString("dd_MM_yyyy"), broadcastTime),
+						rows, mm, date));
             }
+
+			return files;
         }
+
+		/// <summary>Блоки сетки и постобработка (BlockManager) — прежде файл писался и перечитывался с диска.</summary>
+		private ExportFile BuildFile(string name, DataRow[] rows, Massmedia mm, DateTime date)
+		{
+			using (MemoryStream stream = new MemoryStream())
+			{
+				ExportBlocks(stream, rows, mm, date);
+				return new ExportFile { Name = name, Content = BlockManager.Process(stream.ToArray()) };
+			}
+		}
 
 		private readonly Random random = new Random(unchecked((int) DateTime.Now.Ticks));
 		private readonly string strAddedPath = string.Format("{{0}}{0}{{1}}.mp3", Path.DirectorySeparatorChar);

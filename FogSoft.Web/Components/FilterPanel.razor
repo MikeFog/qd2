@@ -148,7 +148,7 @@
                             @Tr.Format("Не заполнено: {0}.", string.Join(", ", InvalidCaptions())) @(OnlyRequiredInvalid ? Tr.T("Задайте значение.") : Tr.T("Задайте значение или снимите галочку."))
                         </div>
                     }
-                    <button class="btn btn-sm btn-outline-secondary" @onclick="ApplyClicked"><i class="bi bi-funnel" aria-hidden="true"></i>@Tr.T("Применить")</button>
+                    <button class="btn btn-sm @(ApplyText == null ? "btn-outline-secondary" : "btn-primary")" @onclick="ApplyClicked"><i class="bi @(ApplyIcon ?? "bi-funnel")" aria-hidden="true"></i>@(ApplyText ?? Tr.T("Применить"))</button>
                 </div>
             </div>
         }
@@ -173,6 +173,15 @@
     /// достаточно перечитать список, дереву нужно перестроиться с корня.
     /// </summary>
     [Parameter] public EventCallback Apply { get; set; }
+
+    /// <summary>
+    /// Подпись кнопки вместо «Применить» — когда панель задаёт параметры операции, а не отбор
+    /// списка («Выгрузить в папку…» у экспорта сеток). Уже переведённая; null — «Применить».
+    /// </summary>
+    [Parameter] public string? ApplyText { get; set; }
+
+    /// <summary>Значок кнопки (класс Bootstrap Icons); null — воронка отбора.</summary>
+    [Parameter] public string? ApplyIcon { get; set; }
 
     /// <summary>
     /// Экран открыт из пункта меню, который десктоп ведёт через

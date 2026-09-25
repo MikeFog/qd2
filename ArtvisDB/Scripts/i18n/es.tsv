@@ -1462,3 +1462,20 @@ code	Задайте значение.	Indique un valor.
 code	Задайте отбор и нажмите «Применить»	Defina el filtro y pulse «Aplicar»
 code	Отметить все найденные	Marcar todos los encontrados
 caption	Радиостанции: 	Emisoras: 
+code	Без выпусков в этот день (файла для эфира нет): {0}.	Sin emisiones ese día (no hay archivo para emisión): {0}.
+code	Выберите, куда сохранить файл.	Elija dónde guardar el archivo.
+code	Выгружать нечего: в этот день на станции нет выпусков.	No hay nada que exportar: la emisora no tiene emisiones ese día.
+code	Выгрузить в папку…	Exportar a carpeta…
+code	Выгрузка остановлена: обработано станций {0} из {1}.	Exportación detenida: emisoras procesadas {0} de {1}.
+code	Выгрузка сеток	Exportación de parrillas
+code	Выгрузка файлов работает в браузерах Chrome и Edge.	La exportación de archivos funciona en los navegadores Chrome y Edge.
+code	Для эфира…	Para emisión…
+code	Записано файлов: {0}.	Archivos guardados: {0}.
+code	Не выгружено станций: {0}	Emisoras no exportadas: {0}
+code	Отметьте станции и дату, затем выберите папку: для каждой станции туда запишутся файл для эфирной программы (DJin) и сетка в Word. Файлы с теми же именами заменяются.	Marque las emisoras y la fecha y luego elija la carpeta: para cada emisora se guardarán el archivo para el programa de emisión (DJin) y la parrilla en Word. Los archivos con el mismo nombre se reemplazan.
+code	Отметьте, что выгружать: файлы для эфира, сетки в Word или то и другое.	Marque qué exportar: archivos para emisión, parrillas en Word o ambos.
+code	Сохранить…	Guardar…
+code	Файл готов	El archivo está listo
+code	Файл сетки для эфирной программы (DJin)	Archivo de la parrilla para el programa de emisión (DJin)
+caption	Сетки в Word	Parrillas en Word
+caption	Файлы для эфира (DJin)	Archivos para emisión (DJin)

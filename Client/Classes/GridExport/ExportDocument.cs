@@ -1,64 +1,55 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Data;
-using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Reflection;
-using System.Windows.Forms;
-using FogSoft.WinForm;
 using FogSoft.WinForm.Classes;
 using log4net;
 using Merlin.Classes.GridExport.DJinSerializer;
 
 namespace Merlin.Classes.GridExport
 {
-    abstract class ExportDocument
+	/// <summary>Готовый файл выгрузки: имя (с путём, если его задали) и содержимое.</summary>
+	public sealed class ExportFile
+	{
+		public string Name;
+		public byte[] Content;
+	}
+
+	/// <summary>
+	/// Выгрузка сетки вещания для эфирной программы (DJin). Файлы собираются в памяти
+	/// (<see cref="ExportToMemory"/>) — так их отдаёт веб; десктоп пишет те же байты на диск
+	/// (<see cref="Export(DataTable, Massmedia, DateTime, string)"/>, диалог выбора папки —
+	/// в ExportDocument.WinForms.cs).
+	/// </summary>
+    abstract partial class ExportDocument
 	{
 		private static readonly ILog Log =
 			LogManager.GetLogger(MethodBase.GetCurrentMethod().DeclaringType);
 
-		public void Export(DataTable data, Massmedia mm, DateTime date)
-		{
-			try
-			{
-				if (mm == null)
-					return;
-
-				MassmediaPricelist pl = (MassmediaPricelist) mm.GetPriceList(date);
-				string broadcastTime = pl.BroadcastStart.ToString("HHmm");
-
-				FolderBrowserDialog dlg = new FolderBrowserDialog();
-				Application.DoEvents();
-				if (dlg.ShowDialog(Globals.MdiParent) == DialogResult.OK)
-				{
-					string mmName = mm.Name;
-					mmName = ExportHelper.RemoveInvalidFileNameChars(mmName);
-					string fileName = string.Format("{0}{1}{2}", dlg.SelectedPath, Path.DirectorySeparatorChar, mmName);
-
-					Export(mm, date, fileName, data, broadcastTime);
-					if (ExportHelper.OpenFolderOnFinish)
-						Process.Start(dlg.SelectedPath);
-				}
-			}
-			catch(Exception e)
-			{
-				Log.Error("CouldNotToExport", e);
-				Globals.ShowExclamation("CouldNotToExport");
-			}
-		}
-
+		/// <param name="fileName">Путь и начало имени файлов (без даты и расширения).</param>
 		public void Export(DataTable data, Massmedia mm, DateTime date, string fileName)
 		{
 			if (mm == null)
 				return;
 
-			MassmediaPricelist pl = (MassmediaPricelist)mm.GetPriceList(date);
-			string broadcastTime = pl == null ? string.Empty : pl.BroadcastStart.ToString("HHmm");
-			Export(mm, date, fileName, data, broadcastTime);
+			foreach (ExportFile file in ExportToMemory(data, mm, date, fileName))
+				File.WriteAllBytes(file.Name, file.Content);
 		}
 
-		protected abstract void Export(Massmedia mm, DateTime date, string fileName, DataTable data, string broadcastTime);
+		/// <summary>
+		/// Файлы выгрузки в памяти. <paramref name="fileName"/> — начало имени (у десктопа с
+		/// путём папки, у веба — только имя станции); дата и время эфира дописываются.
+		/// </summary>
+		public IList<ExportFile> ExportToMemory(DataTable data, Massmedia mm, DateTime date, string fileName)
+		{
+			MassmediaPricelist pl = (MassmediaPricelist)mm.GetPriceList(date);
+			string broadcastTime = pl == null ? string.Empty : pl.BroadcastStart.ToString("HHmm");
+			return Build(mm, date, fileName, data, broadcastTime);
+		}
+
+		protected abstract IList<ExportFile> Build(Massmedia mm, DateTime date, string fileName, DataTable data, string broadcastTime);
 
 		protected void ExportBlocks(Stream file, IEnumerable<DataRow> rows, Massmedia mm, DateTime date)
 		{

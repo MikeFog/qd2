@@ -6,6 +6,10 @@ using FogSoft.WinForm.Classes;
 using FogSoft.WinForm.DataAccess;
 using Microsoft.AspNetCore.Components.Server.Circuits;
 
+// Кодовые страницы Windows: выгрузка сетки для эфира (DJin) пишется в windows-1251
+// (DJinParam.Encoding). В .NET Framework они встроены, в .NET — только через провайдер.
+System.Text.Encoding.RegisterProvider(System.Text.CodePagesEncodingProvider.Instance);
+
 var builder = WebApplication.CreateBuilder(args);
 
 builder.Services.AddRazorComponents()
@@ -31,6 +35,8 @@ builder.Services.AddScoped<TableDialog>();
 // ProgressForm) — генерация и удаление рекламных окон.
 builder.Services.AddScoped<PeriodDialog>();
 builder.Services.AddScoped<ProgressDialog>();
+// Сохранение файлов на компьютер пользователя диалогом браузера (выгрузка сеток для эфира).
+builder.Services.AddScoped<FileSaver>();
 builder.Services.AddScoped<ObjectActions>();
 builder.Services.AddScoped<ActionMenuService>();
 // Курсор ожидания на время долгой загрузки — тоже свой на circuit.

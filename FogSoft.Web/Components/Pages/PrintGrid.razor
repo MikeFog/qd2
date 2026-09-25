@@ -6,10 +6,13 @@
 @using FogSoft.WinForm.Classes
 @using FogSoft.WinForm.Passport.Classes
 @using Merlin.Classes
+@using Merlin.Classes.GridExport
 @inject MenuAccess Access
 @inject BusyService Busy
 @inject NavigationManager Nav
 @inject IJSRuntime JS
+@inject FileSaver Saver
+@inject DialogService Dialogs
 
 @*
     «Сетка вещания» — веб-экран вместо FrmGridReport с Crystal-макетом Grid.rpt. Решение
@@ -44,6 +47,11 @@ else
             <ScreenToolbar Title="@_title">
                 <button class="btn btn-sm btn-outline-secondary" disabled="@(_grid == null)" @onclick="Print">
                     <i class="bi bi-printer" aria-hidden="true"></i>@Tr.T("Печать")
+                </button>
+                @* Кнопка «Экспорт» десктопной формы: файл сетки для эфирной программы (DJin). *@
+                <button class="btn btn-sm btn-outline-secondary" disabled="@(_grid == null)" @onclick="ExportForBroadcast"
+                        title="@(Tr.T("Файл сетки для эфирной программы (DJin)"))">
+                    <i class="bi bi-broadcast" aria-hidden="true"></i>@Tr.T("Для эфира…")
                 </button>
             </ScreenToolbar>
 
@@ -248,4 +256,67 @@ else
         _managers?.Rows.Cast<DataRow>().FirstOrDefault(r => Convert.ToInt32(r[SecurityManager.ParamNames.UserId]) == id)?["name"].ToString();
 
     private async Task Print() => await JS.InvokeVoidAsync("print");
+
+    /// <summary>
+    /// Выгрузка для эфира показанной станции и дня — вся сетка, без отбора по менеджеру.
+    /// Файл собирается в памяти, затем «Сохранить как» (диалог браузера). Если браузер
+    /// откажет открыть окно — подготовка заняла слишком долго после щелчка, — окно
+    /// открывается повторно кнопкой в сообщении.
+    /// </summary>
+    private async Task ExportForBroadcast()
+    {
+        if (await Saver.UnsupportedReasonAsync() is { } reason)
+        {
+            _error = reason;
+            return;
+        }
+
+        IList<ExportFile>? files = null;
+        await Busy.RunAsync(() => Try(() => files = BroadcastGridExport.DJin(_shownStationId, _shownDate)));
+        if (files == null)
+            return;
+        if (files.Count == 0)
+        {
+            _error = Tr.T("Выгружать нечего: в этот день на станции нет выпусков.");
+            return;
+        }
+
+        try
+        {
+            if (files.Count == 1)
+            {
+                if (await PickWithRetry(() => Saver.PickFileAsync(files[0].Name)))
+                    await Saver.WriteFileAsync(files[0]);
+                return;
+            }
+
+            // Два файла (эфир после полуночи, при начале вещания не в 00:00) — в папку.
+            if (await PickWithRetry(Saver.PickFolderAsync))
+                foreach (ExportFile file in files)
+                    await Saver.WriteToFolderAsync(file);
+        }
+        catch (Exception ex)
+        {
+            _error = ErrorPresenter.Describe(ex);
+        }
+    }
+
+    /// <summary>
+    /// Окно выбора браузер открывает только сразу после щелчка. Если отказал (SecurityError),
+    /// спрашиваем ещё раз — щелчок по кнопке сообщения даёт новое разрешение.
+    /// </summary>
+    private async Task<bool> PickWithRetry(Func<Task<bool>> pick)
+    {
+        try
+        {
+            return await pick();
+        }
+        catch (JSException ex) when (ex.Message.Contains("SecurityError") || ex.Message.Contains("user activation"))
+        {
+            if (await Dialogs.ShowAsync(Tr.T("Файл готов"), b => b.AddContent(0, Tr.T("Выберите, куда сохранить файл.")),
+                    okText: Tr.T("Сохранить…")) != DialogOutcome.Ok)
+                return false;
+            return await pick();
+        }
+    }
 }

@@ -2,7 +2,6 @@
 using System.Collections;
 using System.Collections.Generic;
 using System.Data;
-using System.Linq;
 using System.Reflection;
 using CrystalDecisions.CrystalReports.Engine;
 using FogSoft.WinForm.Classes;
@@ -16,32 +15,6 @@ namespace Merlin.Forms.GridReport
 {
 	internal class GridReportCreator
 	{
-		private class Window
-		{
-			public DataRow FirstRow;
-            public DataRow SecondRow;
-            public DataRow LastRow;
-
-            public class IssuesWithRoltype
-			{
-				public IList<DataRow> Issues = new List<DataRow>();
-			}
-
-			public IDictionary<string, IssuesWithRoltype> IssuesByRoltype = new Dictionary<string, IssuesWithRoltype>();
-
-            public int IssuesUnprocessed
-			{
-				get
-				{
-					int res = 0;
-					foreach (IssuesWithRoltype item in IssuesByRoltype.Values)
-						res += item.Issues.Count;
-
-                    return res;
-				}
-			}
-		}
-
 		private Massmedia Massmedia { get; set;}
 		private PresentationObject User { get; set;}
 		private DateTime DateTime { get; set; }
@@ -66,7 +39,7 @@ namespace Merlin.Forms.GridReport
 			if (Massmedia != null)
 			{
 				DataSet data = LoadData(true);
-                DataTable dt = AdjustIssuePositions(data.Tables[0]);
+                DataTable dt = BroadcastGridExport.AdjustIssuePositions(data.Tables[0]);
                 ExportDocument document = Classes.GridExport.ExportDocument.GetDocument();
 				if (document != null)
 					document.Export(dt, Massmedia, DateTime);
@@ -78,77 +51,12 @@ namespace Merlin.Forms.GridReport
 			if (Massmedia != null)
 			{
 				DataSet data = LoadData(true);
-				DataTable dt = AdjustIssuePositions(data.Tables[0]);
+				DataTable dt = BroadcastGridExport.AdjustIssuePositions(data.Tables[0]);
 				ExportDocument document = Classes.GridExport.ExportDocument.GetDocument();
 				if (document != null)
 					document.Export(dt, Massmedia, DateTime, fileName);
 			}
 		}
-
-        private DataTable AdjustIssuePositions(DataTable dataTable)
-        {
-			DataTable dt = dataTable.Clone();
-			string time = string.Empty;
-            Window window = null;
-
-			foreach(DataRow row in dataTable.Rows) 
-			{
-				if(time != row[ExportParams.tariffTime].ToString())
-				{
-					// началось новое рекламное окно
-					ProcessTariffWindow(dt, window);
-                    window = new Window();
-					time = row[ExportParams.tariffTime].ToString();
-                }
-
-				string advertType = row[ExportParams.advertTypeId].ToString();
-				int position = 0;
-
-				if (row[ExportParams.positionId] != DBNull.Value)
-					position = int.Parse(row[ExportParams.positionId].ToString());
-				if (position == (int)RollerPositions.First)
-					window.FirstRow = row;
-				else if (position == (int)RollerPositions.Second)
-					window.SecondRow = row;
-				else if (position == (int)RollerPositions.Last)
-					window.LastRow = row;
-				else
-				{
-					if (!window.IssuesByRoltype.ContainsKey(advertType))
-						window.IssuesByRoltype.Add(advertType, new Window.IssuesWithRoltype());
-
-					Window.IssuesWithRoltype list = window.IssuesByRoltype[advertType];
-					list.Issues.Add(row);
-				}
-            }
-            ProcessTariffWindow(dt, window);
-            return dt;
-        }
-
-        private void ProcessTariffWindow(DataTable dt, Window window)
-        {
-			if (window == null) return;
-			if(window.FirstRow != null)
-                dt.Rows.Add(window.FirstRow.ItemArray);
-            if (window.SecondRow != null)
-                dt.Rows.Add(window.SecondRow.ItemArray);
-
-            while (window.IssuesUnprocessed > 0)
-			{
-				int count = 0;
-                foreach (Window.IssuesWithRoltype item in window.IssuesByRoltype.Values.OrderByDescending(val => val.Issues.Count))
-                {
-					if (item.Issues.Count > 0)
-					{
-						dt.Rows.Add(item.Issues[0].ItemArray);
-						item.Issues.RemoveAt(0);
-					}
-					if (++count == 2) break;
-                }
-            }
-            if (window.LastRow != null)
-                dt.Rows.Add(window.LastRow.ItemArray);
-        }
 
         private DataSet LoadData(bool isExport)
 		{

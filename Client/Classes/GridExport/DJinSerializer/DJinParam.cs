@@ -6,8 +6,8 @@ namespace Merlin.Classes.GridExport.DJinSerializer
 	{
 		public const string strFilterDialog = "DJin (*.TXT)|*.txt";
 
-		public const string strBlockComment = "{0} в {1}";
-		public const string strAdvert = "Реклама";
+		public const string strBlockComment = "{0} в {1}"; // i18n-ok: содержимое файла для эфирной программы DJin, не интерфейс
+		public const string strAdvert = "Реклама"; // i18n-ok: содержимое файла для эфирной программы DJin, не интерфейс
 		public const string strBlockEnd = "E";
 		//public const string strBlockStart = "BT";
 		public const string strEtc = "m";

@@ -585,12 +585,15 @@
     <Compile Include="Classes\GridExport\DJinSerializer\DJinParam.cs" />
     <Compile Include="Classes\GridExport\DJinSerializer\DJinExportDocument.cs" />
     <Compile Include="Classes\GridExport\ExportDocument.cs" />
+    <Compile Include="Classes\GridExport\ExportDocument.WinForms.cs" />
+    <Compile Include="Classes\GridExport\BroadcastGridExport.cs" />
     <Compile Include="Classes\GridExport\ExportParams.cs" />
     <Compile Include="Classes\FirmBalanceIssues.cs">
     </Compile>
     <Compile Include="Classes\FirmBalanceIssues.WinForms.cs" />
     <Compile Include="Classes\GridExport\ExportType.cs" />
     <Compile Include="Classes\GridExport\ExportHelper.cs" />
+    <Compile Include="Classes\GridExport\ExportHelper.WinForms.cs" />
     <Compile Include="Classes\HeadCompany.cs" />
     <Compile Include="Classes\HeadCompany.WinForms.cs" />
     <Compile Include="Classes\HeadCompanyWithActions.cs" />
@@ -706,6 +709,7 @@
     <Compile Include="Classes\TrafficManagement.cs" />
     <Compile Include="Classes\RollerStatisticQuery.cs" />
     <Compile Include="Classes\BroadcastGrid.cs" />
+    <Compile Include="Classes\BroadcastGridDocx.cs" />
     <Compile Include="Classes\ManagerChoice.cs" />
     <Compile Include="Classes\Utils.cs">
       <SubType>Code</SubType>

@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Data;
 using System.IO;
 using System.Linq;
+using System.Text;
 
 namespace Merlin.Classes.GridExport.DJinSerializer
 {
@@ -23,10 +24,15 @@ namespace Merlin.Classes.GridExport.DJinSerializer
             public List<string> Lines = new List<string>();
         }
 
-        public static void ProcessFile(string filePath)
+        /// <summary>
+        /// Постобработка готового файла в памяти (веб отдаёт файл, не записывая его на сервере).
+        /// Результат тот же, что был у File.ReadAllLines/WriteAllLines: строки в windows-1251,
+        /// каждая с CRLF (Environment.NewLine в Windows), без BOM.
+        /// </summary>
+        public static byte[] Process(byte[] content)
         {
-            var blocks = ParseBlocks(filePath);
-            var outputLines = new List<string>();
+            var blocks = ParseBlocks(ReadLines(DJinParam.Encoding.GetString(content)));
+            var output = new StringBuilder();
 
             foreach (var block in blocks)
             {
@@ -34,19 +40,31 @@ namespace Merlin.Classes.GridExport.DJinSerializer
                 if (processed == null)
                     continue;
 
-                outputLines.AddRange(processed.Lines);
+                foreach (var line in processed.Lines)
+                    output.Append(line).Append("\r\n");
             }
 
-            File.WriteAllLines(filePath, outputLines, DJinParam.Encoding);
+            return DJinParam.Encoding.GetBytes(output.ToString());
+        }
+
+        /// <summary>Деление на строки — как File.ReadAllLines (CRLF, LF, CR).</summary>
+        private static IEnumerable<string> ReadLines(string text)
+        {
+            using (var reader = new StringReader(text))
+            {
+                string line;
+                while ((line = reader.ReadLine()) != null)
+                    yield return line;
+            }
         }
 
         // ---------------- DataTable -> группы ----------------
 
-        private static List<Block> ParseBlocks(string path)
+        private static List<Block> ParseBlocks(IEnumerable<string> lines)
         {
             var blocks = new List<Block>();
             Block current = null;
-            foreach (var line in File.ReadAllLines(path, DJinParam.Encoding))
+            foreach (var line in lines)
             {
                 if (line.StartsWith("\"B", StringComparison.OrdinalIgnoreCase))
                 {
