@@ -1,0 +1,46 @@
+.quick-search {
+    flex: 0 0 auto;
+    display: flex;
+    align-items: center;
+    gap: var(--s-2);
+    margin-bottom: var(--s-2);
+}
+
+.quick-search input {
+    flex: 1 1 auto;
+    min-width: 0;
+    max-width: 420px;
+}
+
+/* Как десктопный txQuickSearch: нашлось — жёлтое, ничего — розовое. */
+.quick-search input.qs-found {
+    background: var(--c-warn-soft);
+}
+
+.quick-search input.qs-none {
+    background: var(--c-danger-soft);
+}
+
+/* Колонка поиска — «фишка» с крестиком: щелчок возвращает поиск по всем колонкам. */
+.qs-scope {
+    display: inline-flex;
+    align-items: center;
+    gap: 2px;
+    padding: 2px var(--s-2);
+    border: 1px solid var(--c-border);
+    border-radius: 12px;
+    background: var(--c-accent-soft);
+    color: var(--c-accent);
+    font-size: 12px;
+    white-space: nowrap;
+}
+
+.qs-scope:hover {
+    border-color: var(--c-accent);
+}
+
+.qs-count {
+    color: var(--c-text-muted);
+    font-size: 12px;
+    white-space: nowrap;
+}

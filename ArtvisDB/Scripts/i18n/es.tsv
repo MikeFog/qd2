@@ -1432,3 +1432,14 @@ code	Отмечено станций: {0}	Emisoras marcadas: {0}
 code	По	Hasta
 code	С	Desde
 code	Слева — период, станции и остальные условия. Щелчок по ролику покажет акции, в которых он выходил.	A la izquierda: el período, las emisoras y las demás condiciones. Al hacer clic en un spot se muestran las campañas en las que se emitió.
+code	Показаны первые {0} из {1} — уточните поиск.	Se muestran los primeros {0} de {1}: precise la búsqueda.
+code	Поиск	Buscar
+code	Действия	Acciones
+code	Искать по всем колонкам	Buscar en todas las columnas
+code	Ничего не найдено.	No se encontró nada.
+code	Отметить все	Marcar todos
+code	Поиск по всем колонкам	Buscar en todas las columnas
+code	Поиск по полю «{0}»	Buscar en el campo «{0}»
+code	Сумма по колонке	Suma de la columna
+code	Сумма по колонке «{0}»	Suma de la columna «{0}»
+code	Сумма по колонке; щелчок — скрыть	Suma de la columna; clic para ocultar

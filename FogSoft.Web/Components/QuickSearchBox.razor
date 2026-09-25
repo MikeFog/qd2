@@ -1,0 +1,48 @@
+@using FogSoft.WinForm.Classes
+
+@*
+    Быстрый поиск над таблицей — веб-аналог строки поиска десктопного SmartGrid
+    (txQuickSearch). Решение владельца продукта 2026-09-24:
+
+    - пока колонка не выбрана — ищем по всем колонкам; щелчок по заголовку колонки
+      сортирует и сужает поиск до неё (в десктопе — только по колонке сортировки);
+    - ищется фраза целиком, подстрокой, без учёта регистра — как в десктопе
+      (LIKE '%текст%'), запрос на слова не делится;
+    - поле жёлтое, если нашлось, розовое, если нет — как в десктопе.
+
+    Сам фильтр строк — у владельца (QuickSearchFilter): у ObjectList свой показ
+    значений (деньги, даты), у окна выбора — свой. Здесь только поле, область поиска
+    и счётчик.
+*@
+
+<div class="quick-search">
+    @if (ColumnCaption != null)
+    {
+        <button type="button" class="qs-scope" title="@(Tr.T("Искать по всем колонкам"))" @onclick="() => ScopeReset.InvokeAsync()">
+            @ColumnCaption<i class="bi bi-x" aria-hidden="true"></i>
+        </button>
+    }
+    <input type="search" class="form-control form-control-sm @StateClass"
+           placeholder="@(ColumnCaption == null ? Tr.T("Поиск по всем колонкам") : Tr.Format("Поиск по полю «{0}»", ColumnCaption))"
+           value="@Text" @oninput="e => TextChanged.InvokeAsync(e.Value?.ToString() ?? string.Empty)" />
+    @if (Text.Length > 0)
+    {
+        <span class="qs-count">@Tr.Format("{0} из {1}", Matched, Total)</span>
+    }
+</div>
+
+@code {
+    [Parameter] public string Text { get; set; } = "";
+    [Parameter] public EventCallback<string> TextChanged { get; set; }
+
+    /// <summary>Подпись колонки, по которой ищем; null — по всем колонкам.</summary>
+    [Parameter] public string? ColumnCaption { get; set; }
+
+    /// <summary>Щелчок по области поиска — вернуться к поиску по всем колонкам.</summary>
+    [Parameter] public EventCallback ScopeReset { get; set; }
+
+    [Parameter] public int Matched { get; set; }
+    [Parameter] public int Total { get; set; }
+
+    private string StateClass => Text.Length == 0 ? "" : Matched == 0 ? "qs-none" : "qs-found";
+}

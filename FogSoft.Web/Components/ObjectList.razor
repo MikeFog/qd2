@@ -50,6 +50,11 @@ else if (Data.Rows.Count == 0)
 }
 else
 {
+    @if (QuickSearch)
+    {
+        <QuickSearchBox Text="@_search" TextChanged="Search" Matched="_rows.Count" Total="Data.Rows.Count"
+                        ColumnCaption="@SearchColumnCaption" ScopeReset="ResetSearchScope" />
+    }
     <div class="data-table object-list">
         <table class="table table-hover @(ReadOnly && !RowClick.HasDelegate ? "no-row-click" : "")">
             <thead>
@@ -161,6 +166,10 @@ else
                 </tfoot>
             }
         </table>
+        @if (_rows.Count == 0)
+        {
+            <div class="state">@Tr.T("Ничего не найдено.")</div>
+        }
     </div>
 }
 
@@ -210,6 +219,12 @@ else
 
     /// <summary>Выбранная владельцем строка — подсвечивается.</summary>
     [Parameter] public DataRow? ActiveRow { get; set; }
+
+    /// <summary>
+    /// Строка быстрого поиска над таблицей (QuickSearchBox) — как у десктопного SmartGrid
+    /// в журналах, деревьях и окнах выбора (QuickSearchVisible). Служебным таблицам не нужна.
+    /// </summary>
+    [Parameter] public bool QuickSearch { get; set; }
 
     /// <summary>
     /// Чекбоксы независимо от сущности и ReadOnly — когда отметки нужны владельцу экрана для
@@ -262,7 +277,16 @@ else
             _sortColumn = null;
             _sortDescending = false;
             _quick = ResolveQuickActions();
-            RecalculateTotals();
+
+            // Поиск переживает перечитывание той же сущности (после действия над строкой;
+            // экран может отдать новую копию сущности — сравниваем по номеру), но не
+            // переход к другой: у неё другие колонки.
+            if (_searchEntity?.Id != Entity.Id)
+            {
+                _searchEntity = Entity;
+                _search = "";
+                _searchColumn = null;
+            }
 
             if (_selectedRows.Count > 0)
             {
@@ -350,7 +374,8 @@ else
     // ---------- Сумма по колонке ----------
 
     // Веб-аналог десктопной «Суммы по колонке» (SmartGrid.CalculateColumnSummary):
-    // сумма всех строк колонки, без исключений — строки-итоги процедуры (row_style)
+    // сумма всех показанных строк колонки (быстрый поиск сужает её, как RowFilter в
+    // десктопе) — строки-итоги процедуры (row_style)
     // тоже входят, как в десктопе. Считается по запросу, а не сама: тип money в
     // метаданных носят и колонки, которые складывать бессмысленно (цена тарифа,
     // «Средний чек», «Средняя цена»), а отличить их список не может. Выбранные
@@ -407,7 +432,7 @@ else
                 continue;
 
             decimal sum = 0;
-            foreach (DataRow row in Data.Rows)
+            foreach (DataRow row in _rows)
             {
                 object v = row[column];
                 if (v == DBNull.Value)
@@ -441,7 +466,7 @@ else
     /// DataGridView (SortMode.Automatic) поверх DataView, в процедуру ничего
     /// не передаётся. Повторный щелчок по той же колонке меняет направление.
     /// </summary>
-    private void SortBy(string column)
+    private async Task SortBy(string column)
     {
         if (string.Equals(_sortColumn, column, StringComparison.OrdinalIgnoreCase))
             _sortDescending = !_sortDescending;
@@ -451,22 +476,35 @@ else
             _sortDescending = false;
         }
 
-        ApplySort();
+        // Как в десктопе: поиск идёт по колонке сортировки. Булева колонка не ищется.
+        Entity.Attribute? attribute = Columns.FirstOrDefault(a => string.Equals(a.Name, column, StringComparison.OrdinalIgnoreCase));
+        _searchColumn = attribute == null || IsBoolean(attribute) ? null : attribute.Name;
+        await RefilterAsync();
     }
 
+    /// <summary>Порядок показа и быстрый поиск; итоги по колонкам — по тому, что показано.</summary>
     private void ApplySort()
     {
+        _rows = Sorted();
+
+        // Колонки поиска может не оказаться в новом наборе (другая разбивка) — тогда по всем.
+        if (_searchColumn != null && !Columns.Any(a => a.Name == _searchColumn))
+            _searchColumn = null;
+
+        string text = _search.Trim();
+        if (text.Length > 0)
+            _rows = _rows.Where(row => QuickSearchFilter.Matches(row, text, _searchColumn, Columns, Display, IsBoolean)).ToList();
+
+        RecalculateTotals();
+    }
+
+    private List<DataRow> Sorted()
+    {
         if (Data == null)
-        {
-            _rows = new List<DataRow>();
-            return;
-        }
+            return new List<DataRow>();
 
         if (_sortColumn == null || !Data.Columns.Contains(_sortColumn))
-        {
-            _rows = Data.Rows.Cast<DataRow>().ToList();
-            return;
-        }
+            return Data.Rows.Cast<DataRow>().ToList();
 
         // Сортируем через DataView: он сравнивает значения по типу колонки,
         // а не по их строковому виду — иначе числа и даты выстроились бы
@@ -475,7 +513,46 @@ else
         {
             Sort = $"[{_sortColumn.Replace("]", "]]")}] {(_sortDescending ? "DESC" : "ASC")}"
         };
-        _rows = view.Cast<DataRowView>().Select(v => v.Row).ToList();
+        return view.Cast<DataRowView>().Select(v => v.Row).ToList();
+    }
+
+    // ---------- Быстрый поиск ----------
+
+    // Правила — QuickSearchBox/QuickSearchFilter: фраза целиком, по всем колонкам, а после
+    // щелчка по заголовку — по колонке сортировки (десктопный SmartGrid.QuickSearch).
+    private string _search = "";
+    private string? _searchColumn;
+    private Entity? _searchEntity;
+
+    private string? SearchColumnCaption =>
+        _searchColumn == null ? null : Tr.T(Columns.FirstOrDefault(a => a.Name == _searchColumn)?.Alias);
+
+    private Task Search(string text)
+    {
+        _search = text;
+        return RefilterAsync();
+    }
+
+    private Task ResetSearchScope()
+    {
+        _searchColumn = null;
+        return RefilterAsync();
+    }
+
+    /// <summary>
+    /// Перестроить показ. Отметки у строк, которые поиск скрыл, снимаются: «Удалить (N)»
+    /// не должно задеть то, чего не видно (то же правило, что у выделения чекбоксами).
+    /// </summary>
+    private Task RefilterAsync()
+    {
+        ApplySort();
+        int before = _selectedRows.Count;
+        _selectedRows.IntersectWith(_rows);
+        if (_selectedRows.Count == before)
+            return Task.CompletedTask;
+        if (_lastCheckedRow != null && !_selectedRows.Contains(_lastCheckedRow))
+            _lastCheckedRow = null;
+        return NotifySelectionChangedAsync();
     }
 
     private string SortMark(string column) =>
@@ -489,7 +566,7 @@ else
     /// Выгружает список файлом на скачивание — кнопка «Экспорт в Excel» тулбара
     /// экрана-владельца (десктоп: ExplorerForm.tsbExcel_Click). Выгружается то,
     /// что сейчас в списке: видимые колонки в порядке сетки и строки в текущем
-    /// порядке сортировки, процедура заново не вызывается — иначе файл не
+    /// порядке сортировки (после быстрого поиска — только найденные), процедура заново не вызывается — иначе файл не
     /// совпал бы с тем, что видит пользователь (отбор, сортировка). Пустой
     /// список — ничего не делает, как десктопный ExportExcel.
     /// </summary>

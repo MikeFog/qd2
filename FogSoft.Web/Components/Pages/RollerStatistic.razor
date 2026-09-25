@@ -163,7 +163,7 @@ else
                 }
                 else
                 {
-                    <ObjectList @ref="_list" Entity="_result.Entity" Data="_result.Data"
+                    <ObjectList @ref="_list" Entity="_result.Entity" Data="_result.Data" QuickSearch="true"
                                 RowClick="SelectRoller" ActiveRow="_roller"
                                 EmptyText="@(Tr.T("За период на отмеченных станциях ролики не выходили."))"
                                 Changed="Reload" Failed="e => _error = e" />

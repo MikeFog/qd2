@@ -27,6 +27,21 @@ else if (_data.Rows.Count == 0)
 }
 else
 {
+    // Сначала отбор строк: он же считает совпадения для счётчика в строке поиска.
+    var shown = Shown();
+    @if (_data.Rows.Count > SearchThreshold)
+    {
+        <QuickSearchBox Text="@_search" TextChanged="Search" Matched="_matched" Total="_data.Rows.Count"
+                        ColumnCaption="@SearchColumnCaption" ScopeReset="() => _searchColumn = null" />
+    }
+    @if (_matched > shown.Count)
+    {
+        <div class="text-muted small picker-note">@Tr.Format("Показаны первые {0} из {1} — уточните поиск.", shown.Count, _matched)</div>
+    }
+    @if (Multiselect && _selectedRows.Count > 0)
+    {
+        <div class="text-muted small picker-note">@Tr.Format("Отмечено: {0}", _selectedRows.Count)</div>
+    }
     <div class="data-table picker-table">
         <table class="table table-hover">
             <thead>
@@ -37,12 +52,14 @@ else
                     }
                     @foreach (var a in _columns)
                     {
-                        <th>@Tr.T(a.Alias)</th>
+                        <th class="sortable" @onclick="() => SortBy(a.Name)">
+                            @Tr.T(a.Alias)<span class="sort-mark">@SortMark(a.Name)</span>
+                        </th>
                     }
                 </tr>
             </thead>
             <tbody>
-                @foreach (DataRow row in _data.Rows)
+                @foreach (DataRow row in shown)
                 {
                     <tr class="@(IsRowSelected(row) ? "table-primary" : "")"
                         style="cursor:pointer" @onclick="() => RowClicked(row)">
@@ -125,6 +142,73 @@ else
             _error = ErrorPresenter.Describe(ex);
         }
     }
+
+    // Список выбора бывает большим (фирм ~7 000): всё сразу браузер рисует десятки секунд.
+    // Поэтому у длинного списка — быстрый поиск (QuickSearchBox, правило — QuickSearchFilter),
+    // а показывается не больше MaxShown строк. Щелчок по заголовку сортирует и сужает поиск
+    // до этой колонки — как SelectionForm десктопа, где поиск идёт по колонке сортировки.
+    private const int SearchThreshold = 30;
+    private const int MaxShown = 200;
+    private string _search = "";
+    private string? _searchColumn;
+    private string? _sortColumn;
+    private bool _sortDescending;
+    private int _matched;
+
+    private string? SearchColumnCaption =>
+        _searchColumn == null ? null : Tr.T(_columns.FirstOrDefault(a => a.Name == _searchColumn)?.Alias);
+
+    private void Search(string text)
+    {
+        _search = text;
+        // Одиночный выбор, скрытый поиском, не должен уйти по «Выбрать» незаметно.
+        // Галочки множественного выбора копятся между поисками — их число видно над таблицей.
+        if (SelectedRow != null && !IsMatch(SelectedRow, _search.Trim()))
+            SelectedRow = null;
+    }
+
+    private void SortBy(string column)
+    {
+        if (_sortColumn == column)
+            _sortDescending = !_sortDescending;
+        else
+        {
+            _sortColumn = column;
+            _sortDescending = false;
+        }
+        _searchColumn = IsBoolean(column) ? null : column;
+    }
+
+    private string SortMark(string column) =>
+        _sortColumn == column ? (_sortDescending ? " ▾" : " ▴") : "";
+
+    private List<DataRow> Shown()
+    {
+        IEnumerable<DataRow> rows = _data!.Rows.Cast<DataRow>();
+        if (_sortColumn != null && _data.Columns.Contains(_sortColumn))
+            rows = new DataView(_data) { Sort = $"[{_sortColumn.Replace("]", "]]")}] {(_sortDescending ? "DESC" : "ASC")}" }
+                .Cast<DataRowView>().Select(v => v.Row);
+
+        string text = _search.Trim();
+        var result = new List<DataRow>();
+        _matched = 0;
+        foreach (DataRow row in rows)
+        {
+            if (text.Length > 0 && !IsMatch(row, text))
+                continue;
+            _matched++;
+            if (result.Count < MaxShown)
+                result.Add(row);
+        }
+        return result;
+    }
+
+    private bool IsMatch(DataRow row, string text) =>
+        text.Length == 0 || QuickSearchFilter.Matches(row, text, _searchColumn, _columns,
+            (r, a) => Display(r, a.Name), a => IsBoolean(a.Name));
+
+    private bool IsBoolean(string column) =>
+        _data != null && _data.Columns.Contains(column) && _data.Columns[column]!.DataType == typeof(bool);
 
     private bool IsRowSelected(DataRow row) =>
         Multiselect ? _selectedRows.Contains(row) : ReferenceEquals(row, SelectedRow);

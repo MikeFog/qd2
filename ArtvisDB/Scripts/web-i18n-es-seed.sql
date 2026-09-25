@@ -1,5 +1,5 @@
 ﻿/*
-    ДЕПЛОЙ: переводы веб-версии на язык «es» (1433 строк). docs/tasks/web-i18n.md, этап 5.
+    ДЕПЛОЙ: переводы веб-версии на язык «es» (1444 строк). docs/tasks/web-i18n.md, этап 5.
     СГЕНЕРИРОВАН из ArtvisDB/Scripts/i18n/es.tsv скриптом build-seed.py — руками не править.
 
     ПРЕДУСЛОВИЕ     накачен web-i18n-translation-deploy.sql (таблица iTranslation).
@@ -1451,7 +1451,18 @@ INSERT INTO #t ([source], [text]) VALUES
 (N'Отмечено станций: {0}', N'Emisoras marcadas: {0}'),
 (N'По', N'Hasta'),
 (N'С', N'Desde'),
-(N'Слева — период, станции и остальные условия. Щелчок по ролику покажет акции, в которых он выходил.', N'A la izquierda: el período, las emisoras y las demás condiciones. Al hacer clic en un spot se muestran las campañas en las que se emitió.');
+(N'Слева — период, станции и остальные условия. Щелчок по ролику покажет акции, в которых он выходил.', N'A la izquierda: el período, las emisoras y las demás condiciones. Al hacer clic en un spot se muestran las campañas en las que se emitió.'),
+(N'Показаны первые {0} из {1} — уточните поиск.', N'Se muestran los primeros {0} de {1}: precise la búsqueda.'),
+(N'Поиск', N'Buscar'),
+(N'Действия', N'Acciones'),
+(N'Искать по всем колонкам', N'Buscar en todas las columnas'),
+(N'Ничего не найдено.', N'No se encontró nada.'),
+(N'Отметить все', N'Marcar todos'),
+(N'Поиск по всем колонкам', N'Buscar en todas las columnas'),
+(N'Поиск по полю «{0}»', N'Buscar en el campo «{0}»'),
+(N'Сумма по колонке', N'Suma de la columna'),
+(N'Сумма по колонке «{0}»', N'Suma de la columna «{0}»'),
+(N'Сумма по колонке; щелчок — скрыть', N'Suma de la columna; clic para ocultar');
 GO
 
 BEGIN TRANSACTION;

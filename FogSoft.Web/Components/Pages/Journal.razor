@@ -92,7 +92,7 @@ else
     @* Действия над строками — меню ObjectActions, доступность пунктов по
        тем же IsActionEnabled, что в десктопе. Это только удобство: настоящая
        проверка стоит на исполнении, в DataAccessor.DoAction. *@
-    <ObjectList @ref="_list" Entity="_dataEntity ?? _entity" Data="_data"
+    <ObjectList @ref="_list" Entity="_dataEntity ?? _entity" Data="_data" QuickSearch="true"
                 EmptyText="@(Tr.T("Записей нет. Измените условия отбора."))"
                 Changed="Load" Failed="ShowError" SelectionChanged="c => _selectedCount = c" />
 

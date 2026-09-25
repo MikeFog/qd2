@@ -115,7 +115,7 @@ else
                 {
                     if (_selected?.Container?.ChildEntity is { } childEntity)
                     {
-                        <ObjectList @ref="_list" Entity="childEntity" Data="_data"
+                        <ObjectList @ref="_list" Entity="childEntity" Data="_data" QuickSearch="true"
                                     EmptyText="@(Tr.T("У выбранного узла нет вложенных записей."))"
                                     Changed="RefreshSelected" Failed="ShowError" SelectionChanged="c => _selectedCount = c" />
                     }
