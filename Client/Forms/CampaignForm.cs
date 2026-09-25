@@ -88,6 +88,9 @@ namespace Merlin.Forms
                 {
                     EnableWindowSelectionActions();
                     EnableIssueDragDrop();
+                    // Массовая замена роликов — только при видимых номерах роликов (как в веере).
+                    tbbReplaceRoller.Enabled = btnShowRollerNumbers.Checked;
+                    btnShowRollerNumbers.CheckedChanged += (s, args) => tbbReplaceRoller.Enabled = btnShowRollerNumbers.Checked;
                 }
                 else if (IsModuleCampaign)
                     EnableWeekNavigationKeys();
@@ -240,6 +243,7 @@ namespace Merlin.Forms
 			tbbHelp.Visible = !string.IsNullOrEmpty(HelpFileName);
             tbMarkPrimeWindows.Visible = btnShowDisabled.Visible = btnShowMarked.Visible = IsSimplelCampaign;
             btnShowRollerNumbers.Visible = IsSimplelCampaign || IsRangeCampaign;
+            tbbReplaceRoller.Visible = IsSimplelCampaign;
             tsbMuteRoller.Enabled = IsSimplelCampaign;
 			tsbMuteRoller.Visible = tbbPosition.Visible = tbbPlay.Visible = tsbStop.Visible = toolStripSeparator3.Visible = !(_tariffGrid is ProgramIssuesGrid2);
             tbbAdvertType.Visible = !(_tariffGrid is ProgramIssuesGrid2) && !(_tariffGrid is PackModuleGrid);
@@ -1011,28 +1015,29 @@ namespace Merlin.Forms
 			}
 
 			// 4. Собираем выпуски текущей кампании по выбранным окнам через существующий LoadIssues.
-			List<PresentationObject> issues = new List<PresentationObject>();
-			foreach (ITariffWindow window in windows)
-			{
-				TariffWindowWithRollerIssues rollerWindow = window as TariffWindowWithRollerIssues;
-				if (rollerWindow == null)
-					continue;
-
-				DataTable dtIssues = rollerWindow.LoadIssues(true, issueEntity);
-				foreach (DataRow row in dtIssues.Select(string.Format("campaignId = {0}", _campaign.CampaignId)))
-					issues.Add(issueEntity.CreateObject(row));
-			}
-
-			if (issues.Count == 0)
+			List<DataRow> issueRows = LoadCurrentCampaignIssueRows(windows, issueEntity);
+			if (issueRows.Count == 0)
 			{
 				UserMessage.ShowInformation("В выбранных окнах нет выпусков текущей кампании.");
 				return;
 			}
 
-			// 3. Подтверждение.
-			if (UserMessage.ShowQuestion(
-					string.Format("Удалить выпуски текущей кампании в выбранных окнах? ({0} шт.)", issues.Count)) != DialogResult.Yes)
+			// 3. Несколько разных роликов — пусть пользователь отметит, какие удалять (как в
+			// веере). Выбор диалога и есть подтверждение; один ролик — обычный вопрос.
+			List<int> rollerIds = issueRows.ConvertAll(GetRollerId);
+			rollerIds = new List<int>(new HashSet<int>(rollerIds));
+			if (rollerIds.Count > 1)
+			{
+				List<int> chosenIds = SelectRollers(rollerIds, "Какие ролики удалить в выбранных окнах?");
+				if (chosenIds == null)
+					return;
+				issueRows.RemoveAll(row => !chosenIds.Contains(GetRollerId(row)));
+			}
+			else if (UserMessage.ShowQuestion(
+					string.Format("Удалить выпуски текущей кампании в выбранных окнах? ({0} шт.)", issueRows.Count)) != DialogResult.Yes)
 				return;
+
+			List<PresentationObject> issues = issueRows.ConvertAll(row => issueEntity.CreateObject(row));
 
 			// 5-6. Удаление в цикле с накоплением ошибок (паттерн SmartGrid.DeleteSelectedObjects).
 			List<PresentationObject> deletedObjects = new List<PresentationObject>();
@@ -1082,12 +1087,210 @@ namespace Merlin.Forms
 		}
 
 		/// <summary>
-		/// Массовая замена ролика в выделенных окнах (Ctrl+R) на выбранный в списке "Ролики".
-		/// Пока реализована только для веера — см. override в EditIssuesForm.
+		/// Выпуски текущей кампании в окнах (строки WindowIssuesRetrieve через LoadIssues) —
+		/// общий источник массовых удаления и замены в простой кампании.
+		/// </summary>
+		private List<DataRow> LoadCurrentCampaignIssueRows(IEnumerable<ITariffWindow> windows, Entity issueEntity)
+		{
+			List<DataRow> rows = new List<DataRow>();
+			foreach (ITariffWindow window in windows)
+			{
+				TariffWindowWithRollerIssues rollerWindow = window as TariffWindowWithRollerIssues;
+				if (rollerWindow == null)
+					continue;
+
+				DataTable dtIssues = rollerWindow.LoadIssues(true, issueEntity);
+				rows.AddRange(dtIssues.Select(string.Format("campaignId = {0}", _campaign.CampaignId)));
+			}
+			return rows;
+		}
+
+		private static int GetRollerId(DataRow row)
+		{
+			return ParseHelper.GetInt32FromObject(row[Roller.ParamNames.RollerId], 0);
+		}
+
+		/// <summary>
+		/// Массовая замена ролика в выделенных окнах (Ctrl+R / кнопка "Заменить ролики") на
+		/// ролик, выбранный в списке "Ролики" — простая кампания; веер — override в EditIssuesForm.
+		/// Как в веере: только при включённых номерах роликов, при нескольких старых роликах —
+		/// чек-лист вместо вопроса. Замена — та же RollerSubstitute, но по одному выпуску
+		/// (@issueID + @originalWindowID, как замена в одном выпуске): по дням, как веер, нельзя —
+		/// процедура ищет линейные выпуски по dayOriginal исходного окна, а LoadIssues его не
+		/// отдаёт (у перенесённого выпуска исходное окно другое). Пересчёт — один раз в конце.
 		/// </summary>
 		protected virtual void ReplaceRollerInSelectedWindows()
 		{
-			UserMessage.ShowInformation("Массовая замена роликов пока поддерживается только в веерном размещении.");
+			if (_campaign == null || !IsSimplelCampaign)
+				return;
+
+			// Кнопка гасится по тому же условию — здесь то же для Ctrl+R.
+			if (!btnShowRollerNumbers.Checked)
+			{
+				UserMessage.ShowExclamation(
+					"Замена роликов доступна только при включённом показе номеров роликов " +
+					"(кнопка \"Номера роликов\") — так видно, что вы меняете.");
+				return;
+			}
+
+			Roller newRoller = ((IRollerGrid)_tariffGrid).Roller;
+			if (newRoller == null)
+			{
+				UserMessage.ShowExclamation(MessageAccessor.GetMessage("RollerNotSelected"));
+				return;
+			}
+
+			IList<ITariffWindow> windows = _tariffGrid.GetSelectedTariffWindows();
+			if (windows.Count == 0)
+				return;
+
+			Entity issueEntity = _tariffGrid.IssueEntity;
+			if (issueEntity == null || issueEntity.Id != (int)Entities.Issue)
+			{
+				UserMessage.ShowInformation("Массовая замена поддерживается только для простых кампаний без модулей.");
+				return;
+			}
+
+			// Тот же самый ролик уже стоит — заменять нечего.
+			List<DataRow> issueRows = LoadCurrentCampaignIssueRows(windows, issueEntity);
+			issueRows.RemoveAll(row => GetRollerId(row) == newRoller.RollerId);
+			if (issueRows.Count == 0)
+			{
+				UserMessage.ShowInformation("В выделенных окнах нечего заменять.");
+				return;
+			}
+
+			List<int> oldRollerIds = new List<int>(new HashSet<int>(issueRows.ConvertAll(GetRollerId)));
+			if (oldRollerIds.Count > 1)
+			{
+				List<int> chosenIds = SelectRollers(oldRollerIds,
+					string.Format("Какие ролики заменить на «{0}» ({1})?", newRoller.Name, newRoller.DurationString));
+				if (chosenIds == null)
+					return;
+				issueRows.RemoveAll(row => !chosenIds.Contains(GetRollerId(row)));
+				oldRollerIds = chosenIds;
+			}
+			else if (UserMessage.ShowQuestion(string.Format(
+					"Заменить ролики на «{0}» ({1}) в выделенных окнах? ({2} шт.)",
+					newRoller.Name, newRoller.DurationString, issueRows.Count)) != DialogResult.Yes)
+				return;
+
+			Dictionary<int, Roller> oldRollers = new Dictionary<int, Roller>();
+			foreach (int rollerId in oldRollerIds)
+				oldRollers[rollerId] = new Roller(rollerId);
+
+			DataTable unsubstituted = null;
+			DataTable issueErrors = SmartGrid.CreateDeleteErrorsTable();
+			int errorRowNumber = 1;
+			int processedCount = 0;
+			try
+			{
+				Cursor = Cursors.WaitCursor;
+				foreach (DataRow row in issueRows)
+				{
+					Roller oldRoller = oldRollers[GetRollerId(row)];
+					try
+					{
+						DataTable unsub = CampaignRoller.ApplyRollerSubstitutionForIssue(_campaign, oldRoller, newRoller,
+							(int)row[Issue.ParamNames.IssueId], (int)row[TariffWindow.ParamNames.OriginalWindowId]);
+						processedCount++;
+						if (unsub != null && unsub.Rows.Count > 0)
+						{
+							if (unsubstituted == null)
+								unsubstituted = unsub.Clone();
+							foreach (DataRow unsubRow in unsub.Rows)
+								unsubstituted.ImportRow(unsubRow);
+						}
+					}
+					catch (Exception ex)
+					{
+						SmartGrid.AddDeleteError(issueErrors, errorRowNumber++,
+							string.Format("{0} — {1}", ((DateTime)row[Issue.ParamNames.IssueDate]).ToString("dd.MM.yyyy HH:mm"), oldRoller.Name),
+							ErrorManager.GetErrorMessage(ex));
+					}
+				}
+			}
+			finally
+			{
+				Cursor = Cursors.Default;
+			}
+
+			if (processedCount > 0)
+			{
+				// Ролик той же длины цену не меняет — пересчёт акции не нужен (как в CampaignRoller.Substitute).
+				bool priceMayChange = false;
+				foreach (Roller oldRoller in oldRollers.Values)
+					priceMayChange |= oldRoller.Duration != newRoller.Duration;
+				if (priceMayChange)
+					_campaign.RecalculateAction();
+				RefreshGrid();
+				ShowWindowIssues(_tariffGrid.CurrentTariffWindow);
+				CampaignStatusChanged();
+			}
+
+			// Незаменённые по бизнес-правилам (дедлайн/прошлое/...) — журнал одиночной замены.
+			CampaignRoller.ShowUnsubstitutedRollers(unsubstituted);
+
+			if (issueErrors.Rows.Count > 0)
+				SmartGrid.ShowDeleteErrors(issueErrors, "Ошибки массовой замены роликов");
+			else if (unsubstituted == null || unsubstituted.Rows.Count == 0)
+				UserMessage.ShowInformation(string.Format("Заменено роликов: {0}.", processedCount));
+		}
+
+		/// <summary>
+		/// Чек-лист роликов, найденных в выделенных окнах (массовые замена и удаление): SelectionForm по сущности
+		/// Roller. Строки грузятся тем же журнальным Load сущности, что и Firm.GetRollers,
+		/// но по конкретному @rollerID — так в таблице ровно те колонки, которые описаны
+		/// атрибутами сущности, а фильтры журнала (неактивные, клоны общих роликов) не
+		/// выкидывают ролики, реально стоящие в выпусках. Возвращает ID отмеченных или
+		/// null, если пользователь отменил.
+		/// </summary>
+		protected List<int> SelectRollers(IList<int> rollerIds, string caption)
+		{
+			Entity rollerEntity = EntityManager.GetEntity((int)Entities.Roller);
+			DataTable table = new DataTable();
+			// Клон: AttributeSelector меняет общую кэшированную сущность, если ставить его на оригинал.
+			Entity nameOnlyEntity = (Entity)rollerEntity.Clone();
+			nameOnlyEntity.AttributeSelector = (int)Roller.AttributeSelectors.NameOnly;
+			foreach (int rollerId in rollerIds)
+			{
+				Dictionary<string, object> parameters = new Dictionary<string, object>();
+				DataAccessor.PrepareParameters(parameters, rollerEntity, InterfaceObjects.SimpleJournal, Constants.Actions.Load);
+				parameters[Roller.ParamNames.RollerId] = rollerId;
+				table.Merge(((DataSet)DataAccessor.DoAction(parameters)).Tables[Constants.TableNames.Data]);
+			}
+
+			// В ячейках сетки сейчас стоят номера из списка "Ролики" (замена без них
+			// запрещена) — в чек-листе показываем именно их, а не собственную нумерацию 1..N,
+			// и строим строки в том же порядке, что и список роликов.
+			const string numberColumn = "rollerNumber";
+			Dictionary<int, int> rollerNumbers = BuildRollerNumbersMap();
+			table.Columns.Add(numberColumn, typeof(int));
+			foreach (DataRow row in table.Rows)
+			{
+				if (rollerNumbers.TryGetValue(GetRollerId(row), out int number))
+					row[numberColumn] = number;
+			}
+			DataView view = table.DefaultView;
+			view.Sort = numberColumn;
+
+			SelectionForm form = new SelectionForm(nameOnlyEntity, view, caption, true,
+				f =>
+				{
+					if (f.AddedItems.Count > 0)
+						return true;
+					UserMessage.ShowExclamation("Отметьте хотя бы один ролик.");
+					return false;
+				},
+				numberColumn);
+
+			if (form.ShowDialog(this) != DialogResult.OK)
+				return null;
+
+			List<int> result = new List<int>();
+			foreach (PresentationObject po in form.AddedItems)
+				result.Add(Convert.ToInt32(po.IDs[0]));
+			return result;
 		}
 
 		private void tbbTemplateUndo_Click(object sender, EventArgs e)

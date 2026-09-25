@@ -784,63 +784,6 @@ namespace Merlin.Forms.CreateActionMaster
         }
 
         /// <summary>
-        /// Чек-лист роликов, найденных в выделенных окнах (массовые замена и удаление): SelectionForm по сущности
-        /// Roller. Строки грузятся тем же журнальным Load сущности, что и Firm.GetRollers,
-        /// но по конкретному @rollerID — так в таблице ровно те колонки, которые описаны
-        /// атрибутами сущности, а фильтры журнала (неактивные, клоны общих роликов) не
-        /// выкидывают ролики, реально стоящие в выпусках. Возвращает ID отмеченных или
-        /// null, если пользователь отменил.
-        /// </summary>
-        private List<int> SelectRollers(IList<int> rollerIds, string caption)
-        {
-            Entity rollerEntity = EntityManager.GetEntity((int)Entities.Roller);
-            System.Data.DataTable table = new System.Data.DataTable();
-            // Клон: AttributeSelector меняет общую кэшированную сущность, если ставить его на оригинал.
-            Entity nameOnlyEntity = (Entity)rollerEntity.Clone();
-            nameOnlyEntity.AttributeSelector = (int)Roller.AttributeSelectors.NameOnly;
-            foreach (int rollerId in rollerIds)
-            {
-                Dictionary<string, object> parameters = new Dictionary<string, object>();
-                DataAccessor.PrepareParameters(parameters, rollerEntity, InterfaceObjects.SimpleJournal, Constants.Actions.Load);
-                parameters[Roller.ParamNames.RollerId] = rollerId;
-                table.Merge(((System.Data.DataSet)DataAccessor.DoAction(parameters)).Tables[Constants.TableNames.Data]);
-            }
-
-            // В ячейках сетки сейчас стоят номера из списка "Ролики" (замена без них
-            // запрещена) — в чек-листе показываем именно их, а не собственную нумерацию 1..N,
-            // и строим строки в том же порядке, что и список роликов.
-            const string numberColumn = "rollerNumber";
-            Dictionary<int, int> rollerNumbers = BuildRollerNumbersMap();
-            table.Columns.Add(numberColumn, typeof(int));
-            foreach (System.Data.DataRow row in table.Rows)
-            {
-                int rollerId = ParseHelper.GetInt32FromObject(row[Roller.ParamNames.RollerId], 0);
-                if (rollerNumbers.TryGetValue(rollerId, out int number))
-                    row[numberColumn] = number;
-            }
-            System.Data.DataView view = table.DefaultView;
-            view.Sort = numberColumn;
-
-            SelectionForm form = new SelectionForm(nameOnlyEntity, view, caption, true,
-                f =>
-                {
-                    if (f.AddedItems.Count > 0)
-                        return true;
-                    UserMessage.ShowExclamation("Отметьте хотя бы один ролик.");
-                    return false;
-                },
-                numberColumn);
-
-            if (form.ShowDialog(this) != DialogResult.OK)
-                return null;
-
-            List<int> result = new List<int>();
-            foreach (PresentationObject po in form.AddedItems)
-                result.Add(Convert.ToInt32(po.IDs[0]));
-            return result;
-        }
-
-        /// <summary>
         /// «Добавить до полного пересечения» и «Удалить дубли» создаются здесь, а не в дизайнере
         /// базовой формы, — они есть только в веере; тулбар приватный у CampaignForm — берём его
         /// через соседнюю кнопку. Заодно раскладывает тулбар на два кластера, каждый с двойной

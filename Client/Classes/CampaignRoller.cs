@@ -88,6 +88,32 @@ namespace Merlin.Classes
 
 			return (ds != null && ds.Tables.Count > 0) ? ds.Tables[0] : null;
 		}
+
+		/// <summary>
+		/// Та же RollerSubstitute, но для одного выпуска (@issueID + @originalWindowID — #days
+		/// процедура строит сама) и без пересчёта акции: массовая замена в простой кампании
+		/// (CampaignForm.ReplaceRollerInSelectedWindows) пересчитывает один раз в конце.
+		/// Возвращает таблицу незаменённых роликов.
+		/// </summary>
+		public static DataTable ApplyRollerSubstitutionForIssue(Campaign campaign, Roller oldRoller, Roller newRoller,
+								  int issueId, int originalWindowId)
+		{
+			Dictionary<string, object> procParameters = DataAccessor.PrepareParameters(
+				EntityManager.GetEntity((int)Entities.CampaignRoller),
+				InterfaceObjects.FakeModule, Constants.Actions.Substitute);
+			procParameters["oldRollerId"] = oldRoller.RollerId;
+			procParameters["oldDuration"] = oldRoller.Duration;
+			procParameters["newRollerId"] = newRoller.RollerId;
+			procParameters["newDuration"] = newRoller.Duration;
+			procParameters[Campaign.ParamNames.CampaignId] = campaign.CampaignId;
+			procParameters[Campaign.ParamNames.CampaignTypeId] = (int)campaign.CampaignType;
+			procParameters[Issue.ParamNames.IssueId] = issueId;
+			procParameters[TariffWindow.ParamNames.OriginalWindowId] = originalWindowId;
+
+			DataSet ds = DataAccessor.LoadDataSet("RollerSubstitute", procParameters);
+
+			return (ds != null && ds.Tables.Count > 0) ? ds.Tables[0] : null;
+		}
 	}
 
 	internal class CampaignRollerInsideDay : CampaignRoller
