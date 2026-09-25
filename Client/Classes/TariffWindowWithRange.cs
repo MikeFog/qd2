@@ -20,6 +20,8 @@ namespace Merlin.Classes
             HasIssuesAllMassmedia = ParseHelper.GetBooleanFromObject(row["HasIssuesAllMassmedia"], false);
             HasIssuesUnconfirmed = ParseHelper.GetBooleanFromObject(row["HasIssuesUnconfirmed"], false);
             HasIssuesUnconfirmedAllMassmedia = ParseHelper.GetBooleanFromObject(row["HasIssuesUnconfirmedAllMassmedia"], false);
+            HasAdvertType = ParseHelper.GetBooleanFromObject(row["HasAdvertType"], false);
+            HasAdvertTypeUnconfirmed = ParseHelper.GetBooleanFromObject(row["HasAdvertTypeUnconfirmed"], false);
         }
 
         public DateTime WindowDate { get { return ParseHelper.GetDateTimeFromObject(_row["date"], DateTime.Now); } }
@@ -64,6 +66,10 @@ namespace Merlin.Classes
         public bool HasIssuesAllMassmedia { get; private set; }
         public bool HasIssuesUnconfirmed { get; private set; }
         public bool HasIssuesUnconfirmedAllMassmedia { get; private set; }
+        // Хотя бы на одной станции слота есть ролик с выбранным предметом рекламы
+        // (подтверждённый / любой). Считается, только если сетку грузили с @advertTypeID.
+        public bool HasAdvertType { get; private set; }
+        public bool HasAdvertTypeUnconfirmed { get; private set; }
 
         public decimal Price { get; private set; }
 

@@ -187,6 +187,8 @@ namespace Merlin.Controls
 				dictionary.Add("dateStart", StartDate);
 				dictionary.Add("actionID", _action.ActionId);
 				dictionary.Add(Campaign.ParamNames.CampaignIds, CampaignIdsParameter);
+				if (_advertTypePresence != AdvertTypePresences.Undefined)
+					dictionary.Add("advertTypeID", _advertType.IDs[0]);
 				DataSet dataSet = DataAccessor.LoadDataSet("TariffWindowWithRange", dictionary);
 				Data = dataSet.Tables[0];
 
@@ -661,8 +663,10 @@ namespace Merlin.Controls
                     if (window == null)
                         continue;
 
-                    if (RollerPosition != RollerPositions.Undefined)
-                        MarkCellWithRollerPosition(window, rowIndex, columnIndex);
+                    // Жирный — слот подходит под все заданные фильтры (позиция и/или ПР), как в линейной сетке.
+                    if ((RollerPosition != RollerPositions.Undefined || _advertTypePresence != AdvertTypePresences.Undefined)
+                        && IsPositionAvailable(window) && IsAdvertTypeMatched(window))
+                        MarkCellAsNotOccupied(rowIndex, columnIndex);
 
 					// Синий — выпуск акции есть у каждой выбранной кампании, ролики могут быть разными
 					// (требование заказчика). Не по AddedIssues: там только ролики, общие для всех кампаний.
@@ -725,16 +729,18 @@ namespace Merlin.Controls
                 && IsUnconfirmedPositionsNotOccupied(window);
         }
 
-        private void MarkCellWithRollerPosition(TariffWindowWithRange window, int rowIndex, int columnIndex)
+        /// <summary>
+        /// Фильтр «Предметы рекламы». Флаг слота — ПР есть хотя бы на одной станции:
+        /// «Есть» подсвечивает слот, даже если такая станция одна, «Нет» — только если
+        /// ПР нет ни на одной станции. Фильтр не задан — всегда true.
+        /// </summary>
+        private bool IsAdvertTypeMatched(TariffWindowWithRange window)
         {
-            if (window == null) return;
-            if (!ShowUnconfirmed)
-            {
-                if (IsConfirmedPositionNotOccupied(window))
-                    MarkCellAsNotOccupied(rowIndex, columnIndex);
-            }
-            else if (IsConfirmedPositionNotOccupied(window) && IsUnconfirmedPositionsNotOccupied(window))
-                MarkCellAsNotOccupied(rowIndex, columnIndex);
+            if (_advertTypePresence == AdvertTypePresences.Undefined)
+                return true;
+
+            bool found = ShowUnconfirmed ? window.HasAdvertTypeUnconfirmed : window.HasAdvertType;
+            return found == (_advertTypePresence == AdvertTypePresences.Exist);
         }
 
         private bool IsUnconfirmedPositionsNotOccupied(TariffWindowWithRange window)
@@ -1028,8 +1034,13 @@ namespace Merlin.Controls
 
         public SecurityManager.User Grantor { get; set; }
 
+        private AdvertTypePresences _advertTypePresence = AdvertTypePresences.Undefined;
+        private PresentationObject _advertType;
+
         public void SetAdvertTypePresence(AdvertTypePresences advertTypePresence, PresentationObject advertType)
         {
+            _advertTypePresence = advertTypePresence;
+            _advertType = advertType;
             RefreshGrid();
         }
 

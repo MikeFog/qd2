@@ -242,7 +242,7 @@ namespace Merlin.Forms
             btnShowRollerNumbers.Visible = IsSimplelCampaign || IsRangeCampaign;
             tsbMuteRoller.Enabled = IsSimplelCampaign;
 			tsbMuteRoller.Visible = tbbPosition.Visible = tbbPlay.Visible = tsbStop.Visible = toolStripSeparator3.Visible = !(_tariffGrid is ProgramIssuesGrid2);
-            tbbAdvertType.Visible = !(_tariffGrid is ProgramIssuesGrid2) && !(_tariffGrid is PackModuleGrid) && !IsRangeCampaign;
+            tbbAdvertType.Visible = !(_tariffGrid is ProgramIssuesGrid2) && !(_tariffGrid is PackModuleGrid);
             tbbModules.Visible = IsModuleCampaign || IsPackModuleCampaign;
 			if (IsPackModuleCampaign)
 				tbbModules.Text = "Выбор пакета";

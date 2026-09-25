@@ -1,4 +1,28 @@
-﻿CREATE PROCEDURE [dbo].[TariffWindowWithRange]
+﻿/*
+    ПРОД-ДЕПЛОЙ: dbo.TariffWindowWithRange — фильтр «Предметы рекламы» в веере.
+
+    ПОВОД
+      В веере (EditIssuesForm / TariffWithRangeGrid) кнопка «Предметы рекламы» была скрыта,
+      а грид фильтр игнорировал. Правило для получаса веера:
+        - «Есть ПР»  — жирный, если ПР есть хотя бы на ОДНОЙ станции;
+        - «Нет ПР»   — жирный, только если ПР нет НИ НА ОДНОЙ станции.
+
+    ПРАВКА
+      Необязательный @advertTypeID smallint = NULL и две колонки в первом наборе:
+      HasAdvertType (подтверждённые выпуски), HasAdvertTypeUnconfirmed (любые).
+      ПР — как у линейной сетки (TariffWindowWithAdvertTypeRetrieve): сам ПР или дочерний.
+      NULL — флаги 0, остальное без изменений. На ArtvisDev: +~60 мс к загрузке недели.
+
+    ОПЦИИ   QUOTED_IDENTIFIER OFF / ANSI_NULLS ON — как у процедуры на проде (копия Artvis).
+    КЛИЕНТ  совместимо со старым клиентом (параметр необязательный, лишние колонки не читаются).
+            Скрипт — ДО выкладки нового клиента: новый клиент читает HasAdvertType*.
+*/
+
+SET ANSI_NULLS ON;
+SET QUOTED_IDENTIFIER OFF;
+GO
+
+ALTER PROCEDURE [dbo].[TariffWindowWithRange]
 (
     @actionID  int,
     @dateStart datetime,
@@ -413,3 +437,4 @@ BEGIN
     GROUP BY [date], rollerID, positionId
     ORDER BY [date], rollerID, positionId;
 END
+GO
