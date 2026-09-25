@@ -1,7 +1,6 @@
 using System;
 using System.Collections.Generic;
 using System.Data;
-using System.Text;
 using FogSoft.WinForm;
 using FogSoft.WinForm.Classes;
 using FogSoft.WinForm.DataAccess;
@@ -12,23 +11,20 @@ namespace Merlin.Classes
 	/// «Журнал использования роликов» без UI — для веб-экрана (десктоп — RollerStatisticForm).
 	/// Те же процедуры и параметры, что у формы: stat_RollerStatistic (сущность 139, Load) и
 	/// ActionsForRollerStatistic (сущность 77, LoadForRollerStatistic).
+	///
+	/// Отбор — словарь «параметр процедуры → значение», как у журналов: его собирает панель
+	/// отбора по iEntity.filter сущности 139 (значения строками, как их кладёт
+	/// Globals.ResolveFilterInitialValues; разбор типов — DataAccessor).
 	/// </summary>
 	public static class RollerStatisticQuery
 	{
-		/// <summary>Условия отбора — поля левой панели десктопной формы.</summary>
-		public sealed class Filter
+		public static class ParamNames
 		{
-			public DateTime Start = DateTime.Today;
-			public DateTime Finish = DateTime.Today;
-			public readonly HashSet<int> MassmediaIds = new HashSet<int>();
-			public int? UserId;
-			public int? FirmId;
-			public int? AdvertTypeId;
-			public int? HeadCompanyId;
-			public bool ShowWhite = true;
-			public bool ShowBlack = true;
-			public bool SplitByManager;
-			public bool SplitByDays;
+			public const string StartDate = "startDate";
+			public const string FinishDate = "finishDate";
+			public const string MassmediaString = "massmediaString";
+			public const string SplitByManager = "splitByManager";
+			public const string SplitByDays = "splitByDays";
 		}
 
 		/// <summary>Строки журнала и сущность колонок: у разбивки по дням к ней добавлены колонки дат.</summary>
@@ -39,30 +35,17 @@ namespace Merlin.Classes
 		}
 
 		/// <summary>Журнал по отбору (RollerStatisticForm.RefreshData).</summary>
-		public static Result Load(Filter filter)
+		public static Result Load(IDictionary<string, object> filter)
 		{
 			Entity entity = (Entity)EntityManager.GetEntity((int)Entities.RollerStatistic).Clone();
 			Dictionary<string, object> parameters = DataAccessor.PrepareParameters(entity);
-			parameters["massmediaString"] = MassmediaString(filter);
-			parameters["startDate"] = filter.Start.Date;
-			parameters["finishDate"] = filter.Finish.Date;
-			parameters["showWhite"] = filter.ShowWhite;
-			parameters["showBlack"] = filter.ShowBlack;
-			parameters["splitByManager"] = filter.SplitByManager;
-			parameters["splitByDays"] = filter.SplitByDays;
-			if (filter.UserId != null)
-				parameters[SecurityManager.ParamNames.UserId] = filter.UserId.Value;
-			if (filter.FirmId != null)
-				parameters[Firm.ParamNames.FirmId] = filter.FirmId.Value;
-			if (filter.AdvertTypeId != null)
-				parameters["advertTypeID"] = filter.AdvertTypeId.Value;
-			if (filter.HeadCompanyId != null)
-				parameters["headCompanyID"] = filter.HeadCompanyId.Value;
+			foreach (KeyValuePair<string, object> value in filter)
+				parameters[value.Key] = value.Value;
 
 			DataSet ds = (DataSet)DataAccessor.DoAction(parameters);
 			DataTable data = ds.Tables[0];
-			if (filter.SplitByDays)
-				AddDayColumns(entity, data, ds.Tables[1], ds.Tables[2], filter.SplitByManager);
+			if (IsOn(filter, ParamNames.SplitByDays))
+				AddDayColumns(entity, data, ds.Tables[1], ds.Tables[2], IsOn(filter, ParamNames.SplitByManager));
 
 			return new Result { Entity = entity, Data = data };
 		}
@@ -115,28 +98,28 @@ namespace Merlin.Classes
 		/// (RollerStatisticForm.grid_ObjectSelected). При разбивке по менеджерам — только
 		/// акции менеджера этой строки.
 		/// </summary>
-		public static DataTable LoadActions(Filter filter, DataRow roller)
+		public static DataTable LoadActions(IDictionary<string, object> filter, DataRow roller)
 		{
 			Entity entity = EntityManager.GetEntity((int)Entities.Action);
 			Dictionary<string, object> parameters =
 				DataAccessor.PrepareParameters(entity, InterfaceObjects.SimpleJournal, "LoadForRollerStatistic");
-			parameters["startDate"] = filter.Start.Date;
-			parameters["finishDate"] = filter.Finish.Date;
-			parameters["massmediaString"] = MassmediaString(filter);
+			foreach (string name in new[] { ParamNames.StartDate, ParamNames.FinishDate, ParamNames.MassmediaString })
+				if (filter.TryGetValue(name, out object value))
+					parameters[name] = value;
 			parameters[Roller.ParamNames.RollerId] = roller[Roller.ParamNames.RollerId];
-			if (filter.SplitByManager)
+			if (IsOn(filter, ParamNames.SplitByManager))
 				parameters[SecurityManager.ParamNames.UserId] = roller[SecurityManager.ParamNames.UserId];
 
 			DataSet ds = (DataSet)DataAccessor.DoAction(parameters);
 			return ds.Tables[Constants.TableNames.Data];
 		}
 
-		private static string MassmediaString(Filter filter)
+		/// <summary>Булево поле отбора включено (значения фильтра — строки «True»/«False»).</summary>
+		public static bool IsOn(IDictionary<string, object> filter, string name)
 		{
-			StringBuilder sb = new StringBuilder();
-			foreach (int id in filter.MassmediaIds)
-				sb.Append(id).Append(',');
-			return sb.ToString();
+			object value;
+			return filter.TryGetValue(name, out value) && value != null
+				&& ParseHelper.ParseToBoolean(value.ToString(), false);
 		}
 
 		// ---------- «Назначить предмет рекламы» ----------

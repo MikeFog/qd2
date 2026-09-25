@@ -10,29 +10,12 @@
     gap: var(--s-3);
 }
 
-.controls {
+/* Листание по дням над листом. */
+.day-nav {
     display: flex;
-    flex-wrap: wrap;
-    align-items: flex-end;
-    gap: var(--s-3);
-    margin-bottom: var(--s-3);
-}
-
-.field {
-    display: flex;
-    flex-direction: column;
-    gap: 2px;
-    margin: 0;
-    font-size: 13px;
-    color: var(--c-text-muted);
-}
-
-.field.station select {
-    min-width: 260px;
-}
-
-.date-nav input {
-    width: 150px;
+    align-items: center;
+    gap: var(--s-2);
+    font-weight: 600;
 }
 
 .sheet {

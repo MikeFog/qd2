@@ -81,13 +81,26 @@
                                PageField: в режиме фильтра там не подпись, а CheckBox,
                                и параметр уходит в процедуру только когда он отмечен
                                (ValueShouldBeSet). *@
+                            @* Обязательное поле (mandatory="true") отбирает всегда: галочка
+                               включена и не снимается, пустое значение — ошибка при «Применить». *@
                             <input type="checkbox" class="form-check-input"
-                                   disabled="@IsManagerLocked(field)"
+                                   disabled="@(IsManagerLocked(field) || field.Required)"
                                    checked="@IsFilterUsed(field.Name)"
                                    @onchange="e => UseFilter(field, e.Value)" />
                             <label class="filter-label">@field.Caption</label>
 
-                            @if (field.Lookup != null)
+                            @if (field.MultiPick)
+                            {
+                                <div class="input-group input-group-sm">
+                                    <input class="form-control @InvalidClass(field)" readonly
+                                           disabled="@(!IsFilterUsed(field.Name))"
+                                           value="@MultiPickText(field)" title="@MultiPickText(field)" />
+                                    <button type="button" class="btn btn-outline-secondary"
+                                            disabled="@(!IsFilterUsed(field.Name))"
+                                            @onclick="() => SelectMultiPick(field)"><i class="bi bi-search" aria-hidden="true"></i>@Tr.T("Выбрать")</button>
+                                </div>
+                            }
+                            else if (field.Lookup != null)
                             {
                                 @* Пустого пункта в списке нет: в фильтре пустоту
                                    выражает снятая галочка, а не пустая строка
@@ -132,7 +145,7 @@
                     @if (_invalid.Count > 0)
                     {
                         <div class="alert alert-danger filter-error" role="alert">
-                            @Tr.Format("Не заполнено: {0}.", string.Join(", ", InvalidCaptions())) @Tr.T("Задайте значение или снимите галочку.")
+                            @Tr.Format("Не заполнено: {0}.", string.Join(", ", InvalidCaptions())) @(OnlyRequiredInvalid ? Tr.T("Задайте значение.") : Tr.T("Задайте значение или снимите галочку."))
                         </div>
                     }
                     <button class="btn btn-sm btn-outline-secondary" @onclick="ApplyClicked"><i class="bi bi-funnel" aria-hidden="true"></i>@Tr.T("Применить")</button>
@@ -215,6 +228,14 @@
         _filterLookupCache.Clear();
         _filterPickerNames.Clear();
         _filterPickerNamesFor.Clear();
+        _multiPickNames.Clear();
+
+        // Обязательное поле отбирает всегда: если в метаданных у него нет значения по
+        // умолчанию, ключ всё равно появляется — пустым, и «Применить» потребует его заполнить.
+        foreach (PassportPage page in Pages)
+            foreach (PassportField field in page.Fields)
+                if (field.Required && NeedsValue(field) && !Values.ContainsKey(field.Name))
+                    Values[field.Name] = field.MultiPick ? "" : InitialFilterValue(field);
     }
 
     // ---------- Проверка перед применением ----------
@@ -272,6 +293,10 @@
 
     private static bool IsEmpty(object? value) =>
         value == null || value == DBNull.Value || value is string s && string.IsNullOrWhiteSpace(s);
+
+    // У обязательного поля галочку не снять — совет «снимите галочку» ему не подходит.
+    private bool OnlyRequiredInvalid =>
+        VisiblePages.SelectMany(p => p.Fields).Where(f => _invalid.Contains(f.Name)).All(f => f.Required);
 
     private string InvalidClass(PassportField field) => _invalid.Contains(field.Name) ? "is-invalid" : "";
 
@@ -359,6 +384,8 @@
 
     private void UseFilter(PassportField field, object? value)
     {
+        if (field.Required)
+            return;
         _invalid.Remove(field.Name);
         if (value is bool on && on)
             Values[field.Name] = InitialFilterValue(field);
@@ -623,5 +650,53 @@
         _invalid.Remove(field.Name);
         _filterPickerNames[field.Name] = selected.Name;
         _filterPickerNamesFor[field.Name] = AsFilterText(id);
+    }
+
+    // ---------- selector фильтра: несколько значений ----------
+
+    // Значение — ключи через запятую с запятой в конце («12,15,»), как massmediaString
+    // процедур. Имена выбранных известны только после выбора в этом окне; до того
+    // (значение по умолчанию) показываем число.
+    private readonly Dictionary<string, string> _multiPickNames = new(StringComparer.OrdinalIgnoreCase);
+
+    private static List<string> MultiPickIds(object? value) =>
+        (value?.ToString() ?? "").Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries).ToList();
+
+    private string MultiPickText(PassportField field)
+    {
+        List<string> ids = Values.TryGetValue(field.Name, out object? v) ? MultiPickIds(v) : new List<string>();
+        if (ids.Count == 0)
+            return "";
+        return _multiPickNames.TryGetValue(field.Name, out string? names)
+            ? Tr.Format("{0} шт.: {1}", ids.Count, names)
+            : Tr.Format("Выбрано: {0}", ids.Count);
+    }
+
+    /// <summary>Окно выбора с галочками и быстрым поиском; уже выбранные — отмечены.</summary>
+    private async Task SelectMultiPick(PassportField field)
+    {
+        ObjectSelector? selector = null;
+        List<string> ids = Values.TryGetValue(field.Name, out object? v) ? MultiPickIds(v) : new List<string>();
+
+        RenderFragment body = builder =>
+        {
+            builder.OpenComponent<ObjectSelector>(0);
+            builder.AddComponentParameter(1, nameof(ObjectSelector.Picker), field.Picker);
+            builder.AddComponentParameter(2, nameof(ObjectSelector.PassportData), FilterData);
+            builder.AddComponentParameter(3, nameof(ObjectSelector.Multiselect), true);
+            builder.AddComponentParameter(4, nameof(ObjectSelector.InitialSelectedIds), ids);
+            builder.AddComponentReferenceCapture(5, c => selector = (ObjectSelector)c);
+            builder.CloseComponent();
+        };
+
+        if (await Dialogs.ShowAsync(field.Caption.Trim().TrimEnd(':'), body, okText: Tr.T("Выбрать")) != DialogOutcome.Ok
+            || selector == null)
+            return;
+
+        Entity entity = EntityManager.GetEntity(field.Picker!.EntityName);
+        List<PresentationObject> picked = selector.SelectedRows.Select(entity.CreateObject).ToList();
+        Values[field.Name] = string.Concat(picked.Select(o => o.IDs[0] + ","));
+        _multiPickNames[field.Name] = string.Join(", ", picked.Select(o => o.Name));
+        _invalid.Remove(field.Name);
     }
 }

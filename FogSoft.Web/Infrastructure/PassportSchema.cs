@@ -72,6 +72,10 @@ public static class PassportSchema
 
 				string name = Attr(child, PageControl.Attributes.Name) ?? string.Empty;
 
+				// selector в фильтре — выбор нескольких объектов по сущности (станции журнала
+				// использования роликов): тот же выбор, что у objectPicker, только с галочками.
+				bool multiPick = pageType == PageTypes.Filter && child.Name == "selector";
+
 				page.Fields.Add(new PassportField(
 					Name: name,
 					Caption: Tr.T(Attr(child, PageControl.Attributes.Caption)) ?? name,
@@ -82,8 +86,9 @@ public static class PassportSchema
 					Unsupported: Unsupported(child, pageType),
 					Required: IsRequired(child, name, entity, isNew),
 					Lookup: ParseLookup(child),
-					Picker: ParsePicker(child),
-					Selector: ParseSelector(child),
+					Picker: multiPick ? ParseMultiPicker(child) : ParsePicker(child),
+					Selector: multiPick ? null : ParseSelector(child),
+					MultiPick: multiPick,
 					Image: ParseImage(child),
 					Tree: ParseTree(child),
 					Type: ResolveType(child, name, entity),
@@ -157,6 +162,19 @@ public static class PassportSchema
 				|| string.IsNullOrEmpty(Attr(node, PageControl.Attributes.ColumnName))
 				? Tr.T("treeselector без columnid/columnparentid/columnname")
 				: null;
+		}
+
+		if (node.Name == "selector" && pageType == PageTypes.Filter)
+		{
+			// В фильтре selector — это выбор нескольких значений одного параметра: имя
+			// параметра обязательно, набор строк — готовый по source или сущностью по entity.
+			if (string.IsNullOrEmpty(Attr(node, PageControl.Attributes.Name)))
+				return Tr.T("selector в фильтре без атрибута name");
+			if (string.IsNullOrEmpty(Attr(node, PageControl.Attributes.Entity)))
+				return Tr.T("selector без entity");
+			return ParseHelper.ParseToBoolean(Attr(node, PageControl.Attributes.Multiselect) ?? string.Empty, false)
+				? null
+				: Tr.T("selector в фильтре без multiselect");
 		}
 
 		if (node.Name == "selector")
@@ -281,6 +299,16 @@ public static class PassportSchema
 		return new PassportTree(source!, columnId!, columnParentId!, columnName!);
 	}
 
+	/// <summary>selector в фильтре: выбирают из той же сущности, что objectPicker.</summary>
+	private static PassportPicker? ParseMultiPicker(XmlNode node)
+	{
+		string? entityName = Attr(node, PageControl.Attributes.Entity);
+		if (string.IsNullOrEmpty(entityName))
+			return null;
+		return new PassportPicker(entityName!, Attr(node, PageControl.Attributes.Source), false,
+			Array.Empty<PassportFilterValue>());
+	}
+
 	private static PassportSelector? ParseSelector(XmlNode node)
 	{
 		if (node.Name != "selector")
@@ -376,6 +404,11 @@ public sealed class PassportPage
 /// <param name="Selector">Описание набора дочерних объектов; null — это не selector.</param>
 /// <param name="Image">Описание картинки; null — это не image.</param>
 /// <param name="Tree">Описание дерева с галочками; null — это не treeselector.</param>
+/// <param name="MultiPick">
+/// selector в фильтре: выбор нескольких объектов из <see cref="Picker"/>. Значение —
+/// ключи через запятую с запятой в конце («12,15,»), как ждут процедуры
+/// (<c>massmediaString</c> → <c>fn_CreateTableFromString</c>).
+/// </param>
 /// <param name="IsLabel">
 /// Элемент &lt;label&gt;: десктопный PageFieldLabel — только показ, WinForms
 /// Label без ApplyChanges. Значение не редактируется и не уходит в процедуру.
@@ -393,7 +426,8 @@ public sealed record PassportField(
 	PassportImage? Image = null,
 	bool IsLabel = false,
 	PassportTree? Tree = null,
-	bool Locked = false);
+	bool Locked = false,
+	bool MultiPick = false);
 
 /// <param name="Source">Псевдоним набора строк из процедуры паспорта/фильтра (iTableAlias); null — набора нет, список берётся сущностью по <paramref name="EntityName"/>.</param>
 /// <param name="EntityName">Сущность запасного пути, когда готового набора по source нет; null — запасного пути нет.</param>

@@ -1,5 +1,5 @@
 ﻿/*
-    ДЕПЛОЙ: переводы веб-версии на язык «es» (1453 строк). docs/tasks/web-i18n.md, этап 5.
+    ДЕПЛОЙ: переводы веб-версии на язык «es» (1463 строк). docs/tasks/web-i18n.md, этап 5.
     СГЕНЕРИРОВАН из ArtvisDB/Scripts/i18n/es.tsv скриптом build-seed.py — руками не править.
 
     ПРЕДУСЛОВИЕ     накачен web-i18n-translation-deploy.sql (таблица iTranslation).
@@ -1471,7 +1471,17 @@ INSERT INTO #t ([source], [text]) VALUES
 (N'Сетка откроется здесь; «Печать» отправит её на принтер или сохранит в PDF.', N'La parrilla se abrirá aquí; «Imprimir» la envía a la impresora o la guarda en PDF.'),
 (N'Следующий день', N'Día siguiente'),
 (N'Фактическое время рекламы:', N'Tiempo real de publicidad:'),
-(N'— выберите —', N'— seleccione —');
+(N'— выберите —', N'— seleccione —'),
+(N'selector в фильтре без multiselect', N'selector en el filtro sin multiselect'),
+(N'selector в фильтре без атрибута name', N'selector en el filtro sin atributo name'),
+(N'{0} шт.: {1}', N'{0}: {1}'),
+(N'Выберите радиостанцию и дату и нажмите «Применить»', N'Seleccione la emisora y la fecha y pulse «Aplicar»'),
+(N'Выберите станции и период. Щелчок по ролику покажет акции, в которых он выходил.', N'Seleccione las emisoras y el período. Al hacer clic en un spot se muestran las campañas en las que se emitió.'),
+(N'Выбрано: {0}', N'Seleccionados: {0}'),
+(N'Задайте значение.', N'Indique un valor.'),
+(N'Задайте отбор и нажмите «Применить»', N'Defina el filtro y pulse «Aplicar»'),
+(N'Отметить все найденные', N'Marcar todos los encontrados'),
+(N'Радиостанции: ', N'Emisoras: ');
 GO
 
 BEGIN TRANSACTION;

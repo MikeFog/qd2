@@ -1452,3 +1452,13 @@ code	Сетка откроется здесь; «Печать» отправит
 code	Следующий день	Día siguiente
 code	Фактическое время рекламы:	Tiempo real de publicidad:
 code	— выберите —	— seleccione —
+code	selector в фильтре без multiselect	selector en el filtro sin multiselect
+code	selector в фильтре без атрибута name	selector en el filtro sin atributo name
+code	{0} шт.: {1}	{0}: {1}
+code	Выберите радиостанцию и дату и нажмите «Применить»	Seleccione la emisora y la fecha y pulse «Aplicar»
+code	Выберите станции и период. Щелчок по ролику покажет акции, в которых он выходил.	Seleccione las emisoras y el período. Al hacer clic en un spot se muestran las campañas en las que se emitió.
+code	Выбрано: {0}	Seleccionados: {0}
+code	Задайте значение.	Indique un valor.
+code	Задайте отбор и нажмите «Применить»	Defina el filtro y pulse «Aplicar»
+code	Отметить все найденные	Marcar todos los encontrados
+caption	Радиостанции: 	Emisoras: 

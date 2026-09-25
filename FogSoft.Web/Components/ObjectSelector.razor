@@ -48,7 +48,12 @@ else
                 <tr>
                     @if (Multiselect)
                     {
-                        <th class="col-check"></th>
+                        @* Отметить все найденные (не только показанные 200) — как «Все» у
+                           списка станций десктопа; с поиском «Ярославль» это выбор группы. *@
+                        <th class="col-check">
+                            <input type="checkbox" class="form-check-input" title="@(Tr.T("Отметить все найденные"))"
+                                   checked="@AllMatchedSelected()" @onchange="e => SelectAllMatched(e.Value is true)" />
+                        </th>
                     }
                     @foreach (var a in _columns)
                     {
@@ -110,6 +115,13 @@ else
     /// </summary>
     [Parameter] public IReadOnlyList<DataRow>? InitialSelectedRows { get; set; }
 
+    /// <summary>
+    /// То же по ключам — когда у вызывающего только значения, а не строки этого набора
+    /// (выбор нескольких значений в фильтре: значение — «12,15,»). Ключ — первичный ключ
+    /// сущности строками.
+    /// </summary>
+    [Parameter] public IReadOnlyCollection<string>? InitialSelectedIds { get; set; }
+
     /// <summary>Выбранная строка; null — пользователь ничего не выбрал. Не используется в Multiselect.</summary>
     public DataRow? SelectedRow { get; private set; }
 
@@ -136,6 +148,12 @@ else
             if (InitialSelectedRows != null)
                 foreach (DataRow row in InitialSelectedRows)
                     _selectedRows.Add(row);
+
+            if (InitialSelectedIds is { Count: > 0 } ids && entity.PKColumns.Length > 0
+                && _data.Columns.Contains(entity.PKColumns[0]))
+                foreach (DataRow row in _data.Rows)
+                    if (ids.Contains(row[entity.PKColumns[0]].ToString()!))
+                        _selectedRows.Add(row);
         }
         catch (Exception ex)
         {
@@ -201,6 +219,23 @@ else
                 result.Add(row);
         }
         return result;
+    }
+
+    private IEnumerable<DataRow> MatchedRows()
+    {
+        string text = _search.Trim();
+        return _data!.Rows.Cast<DataRow>().Where(r => IsMatch(r, text));
+    }
+
+    private bool AllMatchedSelected() => _matched > 0 && MatchedRows().All(_selectedRows.Contains);
+
+    private void SelectAllMatched(bool on)
+    {
+        foreach (DataRow row in MatchedRows())
+            if (on)
+                _selectedRows.Add(row);
+            else
+                _selectedRows.Remove(row);
     }
 
     private bool IsMatch(DataRow row, string text) =>
