@@ -38,37 +38,6 @@ namespace Merlin.Classes
 			public DataTable Data;
 		}
 
-		/// <summary>
-		/// Менеджер в отборе можно менять только с правом на чужие или групповые акции — иначе
-		/// он всегда сам пользователь (RollerStatisticForm, конструктор).
-		/// </summary>
-		public static bool CanChooseManager()
-		{
-			SecurityManager.User user = SecurityManager.LoggedUser;
-			return user.IsRightToViewForeignActions() || user.IsRightToViewGroupActions();
-		}
-
-		/// <summary>Менеджеры, доступные пользователю (UserListByRights): userID, name.</summary>
-		public static DataTable Managers()
-		{
-			DataTable table = DataAccessor.LoadDataSet("UserListByRights", DataAccessor.CreateParametersDictionary()).Tables[0];
-			DataView view = new DataView(table) { Sort = "name" };
-			return view.ToTable(false, SecurityManager.ParamNames.UserId, "name");
-		}
-
-		/// <summary>Станции группы (0 — все) — список десктопной формы (Massmedia, NameAndGroupOnly).</summary>
-		public static DataTable Stations(int groupId)
-		{
-			Entity entity = (Entity)Massmedia.GetEntity().Clone();
-			entity.AttributeSelector = (int)Massmedia.AttributeSelectors.NameAndGroupOnly;
-			Dictionary<string, object> parameters = DataAccessor.PrepareParameters(entity);
-			if (groupId > 0)
-				parameters.Add(Massmedia.ParamNames.GroupId, groupId);
-
-			DataTable table = ((DataSet)DataAccessor.DoAction(parameters)).Tables[Constants.TableNames.Data];
-			return new DataView(table) { Sort = Massmedia.ParamNames.Name }.ToTable();
-		}
-
 		/// <summary>Журнал по отбору (RollerStatisticForm.RefreshData).</summary>
 		public static Result Load(Filter filter)
 		{

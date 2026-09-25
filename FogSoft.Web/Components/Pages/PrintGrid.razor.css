@@ -1,0 +1,146 @@
+/*
+    Сетка вещания: на экране — лист на сером фоне, на печати — только лист (общие правила
+    печати оболочки — в app.css, «Печать»). Вид — как Crystal-макет Grid.rpt: книжная A4,
+    окна в три колонки «газетой».
+*/
+
+.broadcast-grid {
+    display: flex;
+    flex-direction: column;
+    gap: var(--s-3);
+}
+
+.controls {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: flex-end;
+    gap: var(--s-3);
+    margin-bottom: var(--s-3);
+}
+
+.field {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    margin: 0;
+    font-size: 13px;
+    color: var(--c-text-muted);
+}
+
+.field.station select {
+    min-width: 260px;
+}
+
+.date-nav input {
+    width: 150px;
+}
+
+.sheet {
+    align-self: flex-start;
+    width: 100%;
+    max-width: 210mm;
+    padding: 12mm 10mm;
+    background: #fff;
+    color: #000;
+    border: 1px solid var(--c-border);
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+    font-size: 11px;
+}
+
+.sheet h1 {
+    margin: 0 0 4mm;
+    text-align: center;
+    font-family: "Times New Roman", serif;
+    font-size: 20px;
+    font-weight: 700;
+}
+
+.sheet-head,
+.sheet-foot {
+    display: grid;
+    grid-template-columns: max-content 1fr;
+    gap: 1mm 6mm;
+    margin: 0 0 4mm 8mm;
+    font-size: 13px;
+}
+
+.sheet-foot {
+    margin-top: 5mm;
+}
+
+.sheet-head dt,
+.sheet-foot dt {
+    font-weight: 400;
+}
+
+.sheet-head dd,
+.sheet-foot dd {
+    margin: 0;
+}
+
+.windows {
+    column-count: 3;
+    column-gap: 6mm;
+}
+
+/* Окно не рвётся между колонками, если помещается; длинное рвётся, как в макете. */
+.window {
+    break-inside: avoid-column;
+    margin-bottom: 1mm;
+}
+
+.line {
+    display: grid;
+    grid-template-columns: 11mm minmax(0, 1fr) max-content;
+    gap: 2mm;
+    line-height: 1.35;
+}
+
+.name {
+    overflow-wrap: anywhere;
+}
+
+.dur,
+.time {
+    font-variant-numeric: tabular-nums;
+}
+
+.total {
+    display: flex;
+    justify-content: space-between;
+    padding-top: 1px;
+    border-bottom: 1.5px solid #000;
+    font-weight: 700;
+    font-variant-numeric: tabular-nums;
+}
+
+/* Узкий экран: колонок меньше. На печати — всегда три (правило ниже). */
+@media screen and (max-width: 1100px) {
+    .windows {
+        column-count: 2;
+    }
+}
+
+@media screen and (max-width: 700px) {
+    .windows {
+        column-count: 1;
+    }
+}
+
+@media print {
+    @page {
+        size: A4 portrait;
+        margin: 10mm;
+    }
+
+    .sheet {
+        max-width: none;
+        padding: 0;
+        border: none;
+        box-shadow: none;
+    }
+
+    .windows {
+        column-count: 3;
+    }
+}

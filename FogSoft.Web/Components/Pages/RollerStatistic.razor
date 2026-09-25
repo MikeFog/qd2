@@ -262,13 +262,13 @@ else
         {
             // RollerStatisticForm: без права на чужие/групповые акции менеджер — всегда сам
             // пользователь; из «Рекламного отдела» — он же по умолчанию.
-            _canChooseManager = RollerStatisticQuery.CanChooseManager();
-            _managers = RollerStatisticQuery.Managers();
+            _canChooseManager = ManagerChoice.CanChoose();
+            _managers = ManagerChoice.Managers();
             if (_menuCode == ScreenRoutes.RollerStatisticForManager || !_canChooseManager)
                 _filter.UserId = SecurityManager.LoggedUser.Id;
 
             _groups = Massmedia.LoadGroupsWithShowAllOption();
-            _stations = RollerStatisticQuery.Stations(_groupId);
+            _stations = Massmedia.LoadByGroup(_groupId);
         }));
     }
 
@@ -309,7 +309,7 @@ else
         _groupId = int.TryParse(e.Value?.ToString(), out int id) ? id : 0;
         return Busy.RunAsync(() => Try(() =>
         {
-            _stations = RollerStatisticQuery.Stations(_groupId);
+            _stations = Massmedia.LoadByGroup(_groupId);
             // Отмечены остаются только станции, которые видны: отбор — по видимому списку.
             var visible = _stations.Rows.Cast<DataRow>().Select(r => Convert.ToInt32(r[Massmedia.ParamNames.MassmediaId])).ToHashSet();
             _filter.MassmediaIds.IntersectWith(visible);

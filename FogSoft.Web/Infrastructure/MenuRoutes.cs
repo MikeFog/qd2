@@ -190,6 +190,10 @@ public static class ScreenRoutes
 	/// <summary>Тот же журнал из «Рекламного отдела»: менеджер по умолчанию — текущий пользователь.</summary>
 	public const string RollerStatisticForManager = "miRollerStatisticWithFilter";
 
+	/// <summary>«Сетка вещания» из «Трафика» и из «Рекламного отдела» — один и тот же экран.</summary>
+	public const string BroadcastGrid = "miPrintGrid";
+	public const string BroadcastGridFromAdSection = "miPrintGridFromRSection";
+
 	public static readonly IReadOnlyDictionary<string, string> Screens =
 		new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase)
 		{
@@ -200,6 +204,11 @@ public static class ScreenRoutes
 			// различаются только менеджером по умолчанию, поэтому пункт едет в адресе.
 			{ RollerStatistic, "/roller-statistic?menu=" + RollerStatistic },
 			{ RollerStatisticForManager, "/roller-statistic?menu=" + RollerStatisticForManager },
+			// Десктоп — FrmGridReport (Crystal-макет Grid.rpt); в вебе — страница со стилями
+			// печати (docs/tasks/web-reports.md, вариант B). Пункты одинаковые; пункт в адресе —
+			// чтобы право проверялось по тому, из которого открыли.
+			{ BroadcastGrid, "/broadcast-grid?menu=" + BroadcastGrid },
+			{ BroadcastGridFromAdSection, "/broadcast-grid?menu=" + BroadcastGridFromAdSection },
 		};
 }
 

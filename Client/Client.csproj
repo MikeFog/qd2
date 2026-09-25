@@ -705,6 +705,8 @@
     <Compile Include="Classes\PricelistWindows.cs" />
     <Compile Include="Classes\TrafficManagement.cs" />
     <Compile Include="Classes\RollerStatisticQuery.cs" />
+    <Compile Include="Classes\BroadcastGrid.cs" />
+    <Compile Include="Classes\ManagerChoice.cs" />
     <Compile Include="Classes\Utils.cs">
       <SubType>Code</SubType>
     </Compile>

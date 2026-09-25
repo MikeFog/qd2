@@ -289,6 +289,23 @@ namespace Merlin.Classes
             return dataTable.DefaultView;
         }
 
+		/// <summary>
+		/// Станции группы (0 — все), имя и группа, по имени — список станций с галочками или
+		/// выбором в веб-экранах (журнал использования роликов, сетка вещания). Тот же набор,
+		/// что у десктопного LoadRadiostationsByGroup с селектором NameAndGroupOnly.
+		/// </summary>
+		public static DataTable LoadByGroup(int groupId)
+		{
+			Entity entity = (Entity)GetEntity().Clone();
+			entity.AttributeSelector = (int)AttributeSelectors.NameAndGroupOnly;
+			Dictionary<string, object> parameters = DataAccessor.PrepareParameters(entity);
+			if (groupId > 0)
+				parameters.Add(ParamNames.GroupId, groupId);
+
+			DataTable table = ((DataSet)DataAccessor.DoAction(parameters)).Tables[Constants.TableNames.Data];
+			return new DataView(table) { Sort = ParamNames.Name }.ToTable();
+		}
+
 		// LoadRadiostationsByGroup переехал в Massmedia.WinForms.cs — принимает
 		// UI-типы LookUp/SmartGrid параметрами.
 

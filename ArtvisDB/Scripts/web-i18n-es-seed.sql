@@ -1,5 +1,5 @@
 ﻿/*
-    ДЕПЛОЙ: переводы веб-версии на язык «es» (1444 строк). docs/tasks/web-i18n.md, этап 5.
+    ДЕПЛОЙ: переводы веб-версии на язык «es» (1453 строк). docs/tasks/web-i18n.md, этап 5.
     СГЕНЕРИРОВАН из ArtvisDB/Scripts/i18n/es.tsv скриптом build-seed.py — руками не править.
 
     ПРЕДУСЛОВИЕ     накачен web-i18n-translation-deploy.sql (таблица iTranslation).
@@ -1462,7 +1462,16 @@ INSERT INTO #t ([source], [text]) VALUES
 (N'Поиск по полю «{0}»', N'Buscar en el campo «{0}»'),
 (N'Сумма по колонке', N'Suma de la columna'),
 (N'Сумма по колонке «{0}»', N'Suma de la columna «{0}»'),
-(N'Сумма по колонке; щелчок — скрыть', N'Suma de la columna; clic para ocultar');
+(N'Сумма по колонке; щелчок — скрыть', N'Suma de la columna; clic para ocultar'),
+(N'Выберите радиостанцию и дату', N'Seleccione la emisora y la fecha'),
+(N'Заполняемость:', N'Ocupación:'),
+(N'На этот день у станции нет рекламных окон.', N'La emisora no tiene ventanas publicitarias este día.'),
+(N'Печать', N'Imprimir'),
+(N'Предыдущий день', N'Día anterior'),
+(N'Сетка откроется здесь; «Печать» отправит её на принтер или сохранит в PDF.', N'La parrilla se abrirá aquí; «Imprimir» la envía a la impresora o la guarda en PDF.'),
+(N'Следующий день', N'Día siguiente'),
+(N'Фактическое время рекламы:', N'Tiempo real de publicidad:'),
+(N'— выберите —', N'— seleccione —');
 GO
 
 BEGIN TRANSACTION;

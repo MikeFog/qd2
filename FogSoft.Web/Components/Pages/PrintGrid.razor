@@ -1,0 +1,294 @@
+@page "/broadcast-grid"
+@using System.Data
+@using System.Globalization
+@using FogSoft.Web.Infrastructure
+@using FogSoft.WinForm
+@using FogSoft.WinForm.Classes
+@using Merlin.Classes
+@inject MenuAccess Access
+@inject BusyService Busy
+@inject NavigationManager Nav
+@inject IJSRuntime JS
+
+@*
+    «Сетка вещания» — веб-экран вместо FrmGridReport с Crystal-макетом Grid.rpt. Решение
+    2026-09-22 (docs/tasks/web-reports.md, вариант B): не документ для клиента, а рабочая
+    распечатка — обычная страница, а на бумагу её кладёт браузер (стили печати ниже, «Печать»).
+
+    Вид повторяет макет: шапка (дата, станция, менеджер), окна в три колонки — время на первой
+    строке, ролик с позицией, длительность; под окном жирно длительность окна и сумма роликов;
+    внизу заполняемость и фактическое время рекламы.
+*@
+
+<PageTitle>@_title</PageTitle>
+
+@if (SecurityManager.LoggedUser == null)
+{
+    <div class="state">
+        <div class="state-title">@Tr.T("Вы не вошли в систему")</div>
+        <a href="/">@Tr.T("Перейти к входу")</a>
+    </div>
+}
+else if (_access != JournalAccess.Allowed)
+{
+    <div class="state">
+        <div class="state-title">@Tr.T("Доступ закрыт")</div>
+        @Tr.T("Этот экран вам не разрешён. Права на экраны выдаются вместе с пунктами меню — обратитесь к администратору системы.")
+    </div>
+}
+else
+{
+    <div class="broadcast-grid">
+        <div class="no-print">
+            <ScreenToolbar Title="@_title">
+                <button class="btn btn-primary btn-sm" disabled="@(_stationId == null)" @onclick="Show">
+                    <i class="bi bi-arrow-clockwise" aria-hidden="true"></i>@Tr.T("Показать")
+                </button>
+                <button class="btn btn-sm btn-outline-secondary" disabled="@(_grid == null)" @onclick="Print">
+                    <i class="bi bi-printer" aria-hidden="true"></i>@Tr.T("Печать")
+                </button>
+            </ScreenToolbar>
+
+            <div class="controls">
+                <label class="field station">
+                    @Tr.T("Радиостанция")
+                    <select class="form-select form-select-sm" @onchange="ChangeStation">
+                        <option value="" selected="@(_stationId == null)">@Tr.T("— выберите —")</option>
+                        @if (_stations != null)
+                        {
+                            foreach (var group in _stations.Rows.Cast<DataRow>().GroupBy(r => r[Massmedia.ParamNames.GroupName].ToString()))
+                            {
+                                <optgroup label="@group.Key">
+                                    @foreach (DataRow s in group)
+                                    {
+                                        int id = Convert.ToInt32(s[Massmedia.ParamNames.MassmediaId]);
+                                        <option value="@id" selected="@(id == _stationId)">@s[Massmedia.ParamNames.Name]</option>
+                                    }
+                                </optgroup>
+                            }
+                        }
+                    </select>
+                </label>
+
+                <div class="field">
+                    @Tr.T("Дата")
+                    <div class="input-group input-group-sm date-nav">
+                        <button type="button" class="btn btn-outline-secondary" title="@(Tr.T("Предыдущий день"))" @onclick="() => ShiftDay(-1)">
+                            <i class="bi bi-chevron-left" aria-hidden="true"></i>
+                        </button>
+                        <input type="date" class="form-control" value="@_date.ToString("yyyy-MM-dd")" @onchange="ChangeDate" />
+                        <button type="button" class="btn btn-outline-secondary" title="@(Tr.T("Следующий день"))" @onclick="() => ShiftDay(1)">
+                            <i class="bi bi-chevron-right" aria-hidden="true"></i>
+                        </button>
+                    </div>
+                </div>
+
+                <label class="field">
+                    @Tr.T("Менеджер")
+                    <select class="form-select form-select-sm" disabled="@(!_canChooseManager)" @onchange="ChangeManager">
+                        <option value="" selected="@(_userId == null)">@Tr.T("Все менеджеры")</option>
+                        @if (_managers != null)
+                        {
+                            foreach (DataRow m in _managers.Rows)
+                            {
+                                int id = Convert.ToInt32(m[SecurityManager.ParamNames.UserId]);
+                                <option value="@id" selected="@(id == _userId)">@m["name"]</option>
+                            }
+                        }
+                    </select>
+                </label>
+            </div>
+
+            @if (_error != null)
+            {
+                <div class="alert alert-danger">@_error</div>
+            }
+        </div>
+
+        @if (_grid == null)
+        {
+            <div class="state no-print">
+                <div class="state-title">@Tr.T("Выберите радиостанцию и дату")</div>
+                @Tr.T("Сетка откроется здесь; «Печать» отправит её на принтер или сохранит в PDF.")
+            </div>
+        }
+        else
+        {
+            <article class="sheet">
+                <h1>@Tr.T("Сетка вещания")</h1>
+                <dl class="sheet-head">
+                    <dt>@Tr.T("Дата:")</dt>
+                    <dd>@DisplayFormat.Date(_shownDate) (@CultureInfo.CurrentCulture.DateTimeFormat.GetDayName(_shownDate.DayOfWeek))</dd>
+                    <dt>@Tr.T("Радиостанция:")</dt>
+                    <dd>@_shownStation</dd>
+                    @if (_shownManager != null)
+                    {
+                        <dt>@Tr.T("Менеджер:")</dt>
+                        <dd>@_shownManager</dd>
+                    }
+                </dl>
+
+                @if (_grid.Windows.Count == 0)
+                {
+                    <p class="text-muted">@Tr.T("На этот день у станции нет рекламных окон.")</p>
+                }
+                else
+                {
+                    <div class="windows">
+                        @foreach (BroadcastGrid.Window w in _grid.Windows)
+                        {
+                            <section class="window">
+                                @if (w.Rows.Count == 0)
+                                {
+                                    <div class="line"><span class="time">@w.Time</span></div>
+                                }
+                                @for (int i = 0; i < w.Rows.Count; i++)
+                                {
+                                    <div class="line">
+                                        <span class="time">@(i == 0 ? w.Time : null)</span>
+                                        <span class="name">@w.Rows[i].Description</span>
+                                        <span class="dur">@w.Rows[i].Duration</span>
+                                    </div>
+                                }
+                                <div class="total">
+                                    <span>@w.WindowDuration</span>
+                                    <span>@w.AdsDuration</span>
+                                </div>
+                            </section>
+                        }
+                    </div>
+                }
+
+                <dl class="sheet-foot">
+                    <dt>@Tr.T("Заполняемость:")</dt>
+                    <dd>@(_grid.Fill == null ? "—" : _grid.Fill + " %")</dd>
+                    <dt>@Tr.T("Фактическое время рекламы:")</dt>
+                    <dd>@(_grid.RealTime ?? "—")</dd>
+                </dl>
+            </article>
+        }
+    </div>
+}
+
+@code {
+    [SupplyParameterFromQuery(Name = "menu")] public string? Menu { get; set; }
+
+    private string _title = Tr.T("Сетка вещания");
+    private JournalAccess _access = JournalAccess.Allowed;
+    private bool _initialized;
+    private string? _error;
+
+    private DataTable? _stations;
+    private DataTable? _managers;
+    private bool _canChooseManager;
+
+    private int? _stationId;
+    private DateTime _date = DateTime.Today;
+    private int? _userId;
+
+    // Что показано сейчас — шапка листа не должна меняться, пока не нажали «Показать».
+    private BroadcastGrid? _grid;
+    private DateTime _shownDate;
+    private string? _shownStation;
+    private string? _shownManager;
+
+    protected override async Task OnParametersSetAsync()
+    {
+        if (SecurityManager.LoggedUser == null)
+            return;
+
+        // Оба пункта ведут на один экран; право — по тому, из которого открыли.
+        string code = string.Equals(Menu, ScreenRoutes.BroadcastGridFromAdSection, StringComparison.OrdinalIgnoreCase)
+            ? ScreenRoutes.BroadcastGridFromAdSection : ScreenRoutes.BroadcastGrid;
+        _access = Access.CheckScreen(code);
+        if (_access != JournalAccess.Allowed && Menu == null)
+            _access = Access.CheckScreen(code = ScreenRoutes.BroadcastGridFromAdSection);
+        if (_access != JournalAccess.Allowed || _initialized)
+            return;
+
+        _initialized = true;
+        _title = Access.MenuText(code) ?? _title;
+        await Busy.RunAsync(() => Try(() =>
+        {
+            _stations = Massmedia.LoadByGroup(0);
+            _managers = ManagerChoice.Managers();
+            // FrmGridReport: без права на чужие/групповые акции — только свои выпуски.
+            _canChooseManager = ManagerChoice.CanChoose();
+            if (!_canChooseManager)
+                _userId = SecurityManager.LoggedUser.Id;
+        }));
+    }
+
+    private void Try(System.Action work)
+    {
+        try
+        {
+            _error = null;
+            work();
+        }
+        catch (Exception ex)
+        {
+            _error = ErrorPresenter.Describe(ex);
+        }
+    }
+
+    private Task ChangeStation(ChangeEventArgs e)
+    {
+        _stationId = int.TryParse(e.Value?.ToString(), out int id) ? id : null;
+        return _stationId == null ? Task.CompletedTask : Show();
+    }
+
+    private Task ChangeDate(ChangeEventArgs e)
+    {
+        if (!DateTime.TryParse(e.Value?.ToString(), CultureInfo.InvariantCulture, DateTimeStyles.None, out DateTime date))
+            return Task.CompletedTask;
+        _date = date.Date;
+        return ShowIfSelected();
+    }
+
+    private Task ShiftDay(int days)
+    {
+        _date = _date.AddDays(days);
+        return ShowIfSelected();
+    }
+
+    private Task ChangeManager(ChangeEventArgs e)
+    {
+        _userId = int.TryParse(e.Value?.ToString(), out int id) ? id : null;
+        return ShowIfSelected();
+    }
+
+    private Task ShowIfSelected() => _stationId == null ? Task.CompletedTask : Show();
+
+    /// <summary>
+    /// Прочитать сетку (rpt_Grid_v3 ~1 с). Десктоп после смены станции, даты или менеджера
+    /// очищал отчёт и ждал «Обновить»; здесь сетка сразу перечитывается — отчёт один и недолгий.
+    /// </summary>
+    private Task Show()
+    {
+        if (_stationId == null)
+            return Task.CompletedTask;
+
+        int station = _stationId.Value;
+        DateTime date = _date;
+        int? user = _userId;
+        return Busy.RunAsync(() => Try(() =>
+        {
+            _grid = BroadcastGrid.Load(station, date, user);
+            _shownDate = date;
+            _shownStation = StationName(station);
+            _shownManager = user == null ? null : ManagerName(user.Value);
+        }));
+    }
+
+    private string? StationName(int id)
+    {
+        DataRow? row = _stations?.Rows.Cast<DataRow>().FirstOrDefault(r => Convert.ToInt32(r[Massmedia.ParamNames.MassmediaId]) == id);
+        return row == null ? null : $"{row[Massmedia.ParamNames.Name]} ({row[Massmedia.ParamNames.GroupName]})";
+    }
+
+    private string? ManagerName(int id) =>
+        _managers?.Rows.Cast<DataRow>().FirstOrDefault(r => Convert.ToInt32(r[SecurityManager.ParamNames.UserId]) == id)?["name"].ToString();
+
+    private async Task Print() => await JS.InvokeVoidAsync("print");
+}

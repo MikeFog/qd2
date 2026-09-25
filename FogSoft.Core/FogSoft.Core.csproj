@@ -186,6 +186,8 @@
     <Compile Include="..\Client\Classes\PricelistWindows.cs" Link="Domain\PricelistWindows.cs" />
     <Compile Include="..\Client\Classes\TrafficManagement.cs" Link="Domain\TrafficManagement.cs" />
     <Compile Include="..\Client\Classes\RollerStatisticQuery.cs" Link="Domain\RollerStatisticQuery.cs" />
+    <Compile Include="..\Client\Classes\BroadcastGrid.cs" Link="Domain\BroadcastGrid.cs" />
+    <Compile Include="..\Client\Classes\ManagerChoice.cs" Link="Domain\ManagerChoice.cs" />
   </ItemGroup>
 
 </Project>

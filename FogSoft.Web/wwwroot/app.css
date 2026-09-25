@@ -347,3 +347,33 @@ a:hover {
 .blazor-error-boundary::after {
     content: "Произошла ошибка."
 }
+
+
+/* ---------- Печать ----------
+
+   Печатается только содержимое экрана: без меню, верхней полосы и того, что экран
+   пометил no-print (кнопки, поля отбора). Оболочка на экране — колонки фиксированной
+   высоты со своей прокруткой; на бумаге это обрезало бы лист до одной страницы, поэтому
+   высоту и прокрутку снимаем. Первый клиент — «Сетка вещания» (PrintGrid). */
+@media print {
+    .shell-nav,
+    .shell-top,
+    .shell-busy,
+    .no-print,
+    #blazor-error-ui,
+    #components-reconnect-modal {
+        display: none !important;
+    }
+
+    html,
+    body,
+    .shell,
+    .shell-main,
+    .shell-content {
+        display: block !important;
+        height: auto !important;
+        overflow: visible !important;
+        padding: 0 !important;
+        background: #fff !important;
+    }
+}
