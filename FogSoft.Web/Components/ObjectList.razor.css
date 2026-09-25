@@ -58,7 +58,8 @@
     cursor: default;
 }
 
-/* Строка, у которой открыто меню, остаётся подсвеченной. */
+/* Строка, у которой открыто меню, и строка, выбранная владельцем (RowClick), подсвечены. */
+::deep tbody tr.row-active > td,
 ::deep tbody tr.row-menu-open > td {
     background: var(--c-accent-soft);
 }

@@ -1,0 +1,444 @@
+@page "/roller-statistic"
+@using System.Data
+@using FogSoft.Web.Infrastructure
+@using FogSoft.WinForm
+@using FogSoft.WinForm.Classes
+@using Merlin.Classes
+@inject MenuAccess Access
+@inject BusyService Busy
+@inject DialogService Dialogs
+@inject NavigationManager Nav
+
+@*
+    «Журнал использования роликов» — веб-экран вместо RollerStatisticForm. Слева отбор (период,
+    менеджер, фирма, предмет рекламы, группа компаний, оплата, станции), в центре ролики с
+    количеством выпусков, справа — акции выбранного ролика (в десктопе — нижняя таблица).
+    Прослушивание ролика отложено (решение владельца 2026-09-24: в самый конец переноса).
+
+    Два пункта меню — «Трафик» и «Рекламный отдел» — отличаются только менеджером по
+    умолчанию (MDIForm.ShowRollerStatistic(setuser)); пункт приходит в адресе (?menu=).
+*@
+
+<PageTitle>@_title</PageTitle>
+
+@if (SecurityManager.LoggedUser == null)
+{
+    <div class="state">
+        <div class="state-title">@Tr.T("Вы не вошли в систему")</div>
+        <a href="/">@Tr.T("Перейти к входу")</a>
+    </div>
+}
+else if (_access != JournalAccess.Allowed)
+{
+    <div class="state">
+        <div class="state-title">@Tr.T("Доступ закрыт")</div>
+        @Tr.T("Этот экран вам не разрешён. Права на экраны выдаются вместе с пунктами меню — обратитесь к администратору системы.")
+    </div>
+}
+else
+{
+    <div class="roller-stat">
+        <ScreenToolbar Title="@_title" Count="@_result?.Data.Rows.Count">
+            <button class="btn btn-primary btn-sm" @onclick="Show">
+                <i class="bi bi-funnel" aria-hidden="true"></i>@Tr.T("Показать")
+            </button>
+            <button class="btn btn-sm btn-outline-secondary" disabled="@(_result == null || _result.Data.Rows.Count == 0)" @onclick="ExportExcel">
+                <i class="bi bi-download" aria-hidden="true"></i>@Tr.T("Экспорт в Excel")
+            </button>
+        </ScreenToolbar>
+
+        @if (_error != null)
+        {
+            <div class="alert alert-danger">@_error</div>
+        }
+
+        <div class="roller-stat-body @(_roller != null ? "with-panel" : null)">
+            <aside class="filter-side">
+                <div class="period">
+                    <label>
+                        @Tr.T("С")
+                        <input type="date" class="form-control form-control-sm" @bind="_filter.Start" />
+                    </label>
+                    <label>
+                        @Tr.T("По")
+                        <input type="date" class="form-control form-control-sm" @bind="_filter.Finish" />
+                    </label>
+                </div>
+
+                <label class="field">
+                    @Tr.T("Менеджер")
+                    <select class="form-select form-select-sm" disabled="@(!_canChooseManager)" @onchange="ChangeManager">
+                        <option value="" selected="@(_filter.UserId == null)">@Tr.T("Все менеджеры")</option>
+                        @if (_managers != null)
+                        {
+                            foreach (DataRow m in _managers.Rows)
+                            {
+                                int id = Convert.ToInt32(m[SecurityManager.ParamNames.UserId]);
+                                <option value="@id" selected="@(id == _filter.UserId)">@m["name"]</option>
+                            }
+                        }
+                    </select>
+                </label>
+
+                <div class="field">
+                    @Tr.T("Фирма")
+                    <div class="input-group input-group-sm">
+                        <input class="form-control" readonly value="@_firmName" placeholder="@(Tr.T("Все"))" />
+                        <button type="button" class="btn btn-outline-secondary" title="@(Tr.T("Выбрать"))" @onclick="SelectFirm"><i class="bi bi-search" aria-hidden="true"></i></button>
+                        <button type="button" class="btn btn-outline-secondary" title="@(Tr.T("Очистить"))" disabled="@(_filter.FirmId == null)"
+                                @onclick="() => { _filter.FirmId = null; _firmName = null; }"><i class="bi bi-x-lg" aria-hidden="true"></i></button>
+                    </div>
+                </div>
+
+                <div class="field">
+                    @Tr.T("Предмет рекламы")
+                    <div class="input-group input-group-sm">
+                        <input class="form-control" readonly value="@_advertTypeName" placeholder="@(Tr.T("Все"))" />
+                        <button type="button" class="btn btn-outline-secondary" title="@(Tr.T("Выбрать"))" @onclick="SelectAdvertType"><i class="bi bi-search" aria-hidden="true"></i></button>
+                        <button type="button" class="btn btn-outline-secondary" title="@(Tr.T("Очистить"))" disabled="@(_filter.AdvertTypeId == null)"
+                                @onclick="() => { _filter.AdvertTypeId = null; _advertTypeName = null; }"><i class="bi bi-x-lg" aria-hidden="true"></i></button>
+                    </div>
+                </div>
+
+                <div class="field">
+                    @Tr.T("Группа компаний")
+                    <div class="input-group input-group-sm">
+                        <input class="form-control" readonly value="@_headCompanyName" placeholder="@(Tr.T("Все"))" />
+                        <button type="button" class="btn btn-outline-secondary" title="@(Tr.T("Выбрать"))" @onclick="SelectHeadCompany"><i class="bi bi-search" aria-hidden="true"></i></button>
+                        <button type="button" class="btn btn-outline-secondary" title="@(Tr.T("Очистить"))" disabled="@(_filter.HeadCompanyId == null)"
+                                @onclick="() => { _filter.HeadCompanyId = null; _headCompanyName = null; }"><i class="bi bi-x-lg" aria-hidden="true"></i></button>
+                    </div>
+                </div>
+
+                <div class="checks">
+                    <label><input type="checkbox" class="form-check-input" @bind="_filter.ShowWhite" />@Tr.T("Показывать с оплатой")</label>
+                    <label><input type="checkbox" class="form-check-input" @bind="_filter.ShowBlack" />@Tr.T("Показывать без оплаты")</label>
+                    <label><input type="checkbox" class="form-check-input" @bind="_filter.SplitByManager" />@Tr.T("С разбивкой по менеджерам")</label>
+                    <label><input type="checkbox" class="form-check-input" @bind="_filter.SplitByDays" />@Tr.T("С разбивкой по дням")</label>
+                </div>
+
+                <div class="stations-head">
+                    <select class="form-select form-select-sm" aria-label="@(Tr.T("Группа станций"))" @onchange="ChangeGroup">
+                        @if (_groups != null)
+                        {
+                            foreach (DataRowView g in _groups)
+                            {
+                                int id = Convert.ToInt32(g[0]);
+                                <option value="@id" selected="@(id == _groupId)">@g[1]</option>
+                            }
+                        }
+                    </select>
+                    <label class="check-all">
+                        <input type="checkbox" class="form-check-input" checked="@AllStationsChecked" @onchange="ToggleAllStations" />
+                        @Tr.Format("Все ({0})", _stations?.Rows.Count ?? 0)
+                    </label>
+                </div>
+                <ul class="station-list">
+                    @if (_stations != null)
+                    {
+                        foreach (DataRow s in _stations.Rows)
+                        {
+                            int id = Convert.ToInt32(s[Massmedia.ParamNames.MassmediaId]);
+                            <li>
+                                <label>
+                                    <input type="checkbox" class="form-check-input" checked="@_filter.MassmediaIds.Contains(id)"
+                                           @onchange="e => ToggleStation(id, e.Value is true)" />
+                                    <span class="station-name">@s[Massmedia.ParamNames.Name]</span>
+                                    <span class="station-meta">@s[Massmedia.ParamNames.GroupName]</span>
+                                </label>
+                            </li>
+                        }
+                    }
+                </ul>
+                <div class="text-muted small">@Tr.Format("Отмечено станций: {0}", _filter.MassmediaIds.Count)</div>
+            </aside>
+
+            <section class="rollers">
+                @if (_result == null)
+                {
+                    <div class="state">
+                        <div class="state-title">@Tr.T("Задайте отбор и нажмите «Показать»")</div>
+                        @Tr.T("Слева — период, станции и остальные условия. Щелчок по ролику покажет акции, в которых он выходил.")
+                    </div>
+                }
+                else
+                {
+                    <ObjectList @ref="_list" Entity="_result.Entity" Data="_result.Data"
+                                RowClick="SelectRoller" ActiveRow="_roller"
+                                EmptyText="@(Tr.T("За период на отмеченных станциях ролики не выходили."))"
+                                Changed="Reload" Failed="e => _error = e" />
+                }
+            </section>
+
+            @if (_roller != null)
+            {
+                <aside class="actions-panel">
+                    <div class="panel-head">
+                        <div>
+                            <div class="panel-title">@_roller["rollerDescription"]</div>
+                            <div class="panel-sub">
+                                @_roller["firmDescription"]
+                                @if (_roller.Table.Columns.Contains("userName"))
+                                {
+                                    <text> · @_roller["userName"]</text>
+                                }
+                            </div>
+                        </div>
+                        <button type="button" class="btn btn-sm btn-outline-secondary" title="@(Tr.T("Закрыть"))" @onclick="() => { _roller = null; _actions = null; }">
+                            <i class="bi bi-x-lg" aria-hidden="true"></i>
+                        </button>
+                    </div>
+                    <div class="panel-list">
+                        <ObjectList Entity="_actionEntity" Data="_actions" ReadOnly="true"
+                                    EmptyText="@(Tr.T("Акций нет."))" />
+                    </div>
+                </aside>
+            }
+        </div>
+    </div>
+}
+
+@code {
+    private string _title = Tr.T("Журнал использования роликов");
+    private string _menuCode = ScreenRoutes.RollerStatistic;
+    private JournalAccess _access = JournalAccess.Allowed;
+    private string? _error;
+
+    private RollerStatisticQuery.Filter _filter = new();
+    private bool _canChooseManager;
+    private DataTable? _managers;
+    private string? _firmName;
+    private string? _advertTypeName;
+    private string? _headCompanyName;
+
+    private DataView? _groups;
+    private int _groupId;
+    private DataTable? _stations;
+
+    // Отбор, по которому построена таблица: акции ролика читаются по нему, а не по
+    // тому, что пользователь успел поменять слева после «Показать».
+    private RollerStatisticQuery.Filter? _shown;
+    private RollerStatisticQuery.Result? _result;
+    private ObjectList? _list;
+
+    private DataRow? _roller;
+    private DataTable? _actions;
+    private Entity? _actionEntityCache;
+    private Entity _actionEntity => _actionEntityCache ??= EntityManager.GetEntity((int)Merlin.Entities.Action);
+
+    /// <summary>Пункт меню из адреса — чтобы переход между двумя пунктами вызывал OnParametersSet.</summary>
+    [SupplyParameterFromQuery(Name = "menu")] public string? Menu { get; set; }
+
+    // Пункт, для которого экран уже собран. Переход «Трафик» ↔ «Рекламный отдел» не создаёт
+    // страницу заново (тот же адрес, другой ?menu=) — отбор собирается с нуля по новому пункту.
+    private string? _initializedFor;
+
+    protected override async Task OnParametersSetAsync()
+    {
+        if (SecurityManager.LoggedUser == null)
+            return;
+
+        string code = ResolveMenu();
+        if (code == _initializedFor)
+            return;
+        _initializedFor = code;
+        _menuCode = code;
+
+        _filter = new RollerStatisticQuery.Filter();
+        _firmName = _advertTypeName = _headCompanyName = null;
+        _groupId = 0;
+        _shown = null;
+        _result = null;
+        _roller = null;
+        _actions = null;
+        _error = null;
+
+        _access = Access.CheckScreen(_menuCode);
+        if (_access != JournalAccess.Allowed)
+            return;
+
+        _title = Access.MenuText(_menuCode) ?? Tr.T("Журнал использования роликов");
+        await Busy.RunAsync(() => Try(() =>
+        {
+            // RollerStatisticForm: без права на чужие/групповые акции менеджер — всегда сам
+            // пользователь; из «Рекламного отдела» — он же по умолчанию.
+            _canChooseManager = RollerStatisticQuery.CanChooseManager();
+            _managers = RollerStatisticQuery.Managers();
+            if (_menuCode == ScreenRoutes.RollerStatisticForManager || !_canChooseManager)
+                _filter.UserId = SecurityManager.LoggedUser.Id;
+
+            _groups = Massmedia.LoadGroupsWithShowAllOption();
+            _stations = RollerStatisticQuery.Stations(_groupId);
+        }));
+    }
+
+    /// <summary>Пункт меню из адреса; без него (адрес набран руками) — первый разрешённый из двух.</summary>
+    private string ResolveMenu()
+    {
+        string query = new Uri(Nav.Uri).Query;
+        string? menu = Microsoft.AspNetCore.WebUtilities.QueryHelpers.ParseQuery(query).TryGetValue("menu", out var m) ? m.ToString() : null;
+        if (string.Equals(menu, ScreenRoutes.RollerStatisticForManager, StringComparison.OrdinalIgnoreCase))
+            return ScreenRoutes.RollerStatisticForManager;
+        if (string.Equals(menu, ScreenRoutes.RollerStatistic, StringComparison.OrdinalIgnoreCase))
+            return ScreenRoutes.RollerStatistic;
+        return Access.CheckScreen(ScreenRoutes.RollerStatistic) == JournalAccess.Allowed
+            ? ScreenRoutes.RollerStatistic
+            : ScreenRoutes.RollerStatisticForManager;
+    }
+
+    private void Try(System.Action work)
+    {
+        try
+        {
+            _error = null;
+            work();
+        }
+        catch (Exception ex)
+        {
+            _error = ErrorPresenter.Describe(ex);
+        }
+    }
+
+    // ---------- Отбор ----------
+
+    private void ChangeManager(ChangeEventArgs e) =>
+        _filter.UserId = int.TryParse(e.Value?.ToString(), out int id) ? id : null;
+
+    private Task ChangeGroup(ChangeEventArgs e)
+    {
+        _groupId = int.TryParse(e.Value?.ToString(), out int id) ? id : 0;
+        return Busy.RunAsync(() => Try(() =>
+        {
+            _stations = RollerStatisticQuery.Stations(_groupId);
+            // Отмечены остаются только станции, которые видны: отбор — по видимому списку.
+            var visible = _stations.Rows.Cast<DataRow>().Select(r => Convert.ToInt32(r[Massmedia.ParamNames.MassmediaId])).ToHashSet();
+            _filter.MassmediaIds.IntersectWith(visible);
+        }));
+    }
+
+    private bool AllStationsChecked => _stations is { Rows.Count: > 0 } && _filter.MassmediaIds.Count == _stations.Rows.Count;
+
+    private void ToggleStation(int id, bool on)
+    {
+        if (on) _filter.MassmediaIds.Add(id);
+        else _filter.MassmediaIds.Remove(id);
+    }
+
+    private void ToggleAllStations(ChangeEventArgs e)
+    {
+        bool on = e.Value is true;
+        _filter.MassmediaIds.Clear();
+        if (on && _stations != null)
+            foreach (DataRow r in _stations.Rows)
+                _filter.MassmediaIds.Add(Convert.ToInt32(r[Massmedia.ParamNames.MassmediaId]));
+    }
+
+    private async Task SelectFirm()
+    {
+        if (await PickFromList((int)Merlin.Entities.Firm, Tr.T("Выбор фирмы")) is { } firm)
+        {
+            _filter.FirmId = Convert.ToInt32(firm.IDs[0]);
+            _firmName = firm.Name;
+        }
+    }
+
+    private async Task SelectHeadCompany()
+    {
+        if (await PickFromList((int)Merlin.Entities.HeadCompany, Tr.T("Выбор группы компаний")) is { } company)
+        {
+            _filter.HeadCompanyId = Convert.ToInt32(company.IDs[0]);
+            _headCompanyName = company.Name;
+        }
+    }
+
+    /// <summary>Выбор объекта из списка сущности — десктопный ObjectPicker2 → SelectionForm.</summary>
+    private async Task<PresentationObject?> PickFromList(int entityId, string caption)
+    {
+        Entity entity = EntityManager.GetEntity(entityId);
+        var picker = new PassportPicker(entity.CodeName, null, false, Array.Empty<PassportFilterValue>());
+        ObjectSelector? selector = null;
+        RenderFragment body = b =>
+        {
+            b.OpenComponent<ObjectSelector>(0);
+            b.AddComponentParameter(1, nameof(ObjectSelector.Picker), picker);
+            b.AddComponentReferenceCapture(2, c => selector = (ObjectSelector)c);
+            b.CloseComponent();
+        };
+
+        if (await Dialogs.ShowAsync(caption, body, okText: Tr.T("Выбрать")) != DialogOutcome.Ok || selector?.SelectedRow == null)
+            return null;
+        return entity.CreateObject(selector.SelectedRow);
+    }
+
+    /// <summary>Предмет рекламы — из дерева (ObjectPicker2 со сценарием «Предметы рекламы»).</summary>
+    private async Task SelectAdvertType()
+    {
+        ScenarioTreePicker? picker = null;
+        RenderFragment body = b =>
+        {
+            b.OpenComponent<ScenarioTreePicker>(0);
+            b.AddComponentParameter(1, nameof(ScenarioTreePicker.Scenario), Merlin.RelationScenarios.AdvertTypes);
+            b.AddComponentReferenceCapture(2, c => picker = (ScenarioTreePicker)c);
+            b.CloseComponent();
+        };
+
+        if (await Dialogs.ShowAsync(Tr.T("Выбор предмета рекламы"), body, okText: Tr.T("Выбрать")) != DialogOutcome.Ok
+            || picker?.SelectedObject is not { } selected)
+            return;
+        _filter.AdvertTypeId = Convert.ToInt32(selected.IDs[0]);
+        _advertTypeName = selected.Name;
+    }
+
+    // ---------- Таблица ----------
+
+    /// <summary>
+    /// «Показать». Десктоп без отмеченных станций молча ничего не делает, а период «с» позже
+    /// «по» отдаёт пустую таблицу; здесь в обоих случаях — сообщение.
+    /// </summary>
+    private Task Show()
+    {
+        if (_filter.MassmediaIds.Count == 0)
+        {
+            _error = Tr.T("Отметьте хотя бы одну станцию.");
+            return Task.CompletedTask;
+        }
+        if (_filter.Start.Date > _filter.Finish.Date)
+        {
+            _error = Tr.T("Дата начала периода позже даты окончания.");
+            return Task.CompletedTask;
+        }
+
+        _shown = Copy(_filter);
+        return Reload();
+    }
+
+    /// <summary>Перечитать по показанному отбору — после «Показать» и после действия над строкой.</summary>
+    private Task Reload() => _shown == null ? Task.CompletedTask : Busy.RunAsync(() => Try(() =>
+    {
+        _roller = null;
+        _actions = null;
+        _result = RollerStatisticQuery.Load(_shown);
+    }));
+
+    private static RollerStatisticQuery.Filter Copy(RollerStatisticQuery.Filter f)
+    {
+        var copy = new RollerStatisticQuery.Filter
+        {
+            Start = f.Start, Finish = f.Finish, UserId = f.UserId, FirmId = f.FirmId,
+            AdvertTypeId = f.AdvertTypeId, HeadCompanyId = f.HeadCompanyId,
+            ShowWhite = f.ShowWhite, ShowBlack = f.ShowBlack,
+            SplitByManager = f.SplitByManager, SplitByDays = f.SplitByDays,
+        };
+        copy.MassmediaIds.UnionWith(f.MassmediaIds);
+        return copy;
+    }
+
+    private Task SelectRoller(DataRow row)
+    {
+        _roller = row;
+        _actions = null;
+        return Busy.RunAsync(() => Try(() => _actions = RollerStatisticQuery.LoadActions(_shown!, row)));
+    }
+
+    private Task ExportExcel() => _list?.ExportToExcelAsync(_title) ?? Task.CompletedTask;
+}

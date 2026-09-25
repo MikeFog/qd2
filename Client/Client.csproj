@@ -704,6 +704,7 @@
     <Compile Include="Classes\TariffWindowWeek.cs" />
     <Compile Include="Classes\PricelistWindows.cs" />
     <Compile Include="Classes\TrafficManagement.cs" />
+    <Compile Include="Classes\RollerStatisticQuery.cs" />
     <Compile Include="Classes\Utils.cs">
       <SubType>Code</SubType>
     </Compile>

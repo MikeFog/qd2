@@ -51,7 +51,7 @@ else if (Data.Rows.Count == 0)
 else
 {
     <div class="data-table object-list">
-        <table class="table table-hover @(ReadOnly ? "no-row-click" : "")">
+        <table class="table table-hover @(ReadOnly && !RowClick.HasDelegate ? "no-row-click" : "")">
             <thead>
                 <tr>
                     @if (SelectionEnabled)
@@ -202,6 +202,16 @@ else
     [Parameter] public EventCallback<int> SelectionChanged { get; set; }
 
     /// <summary>
+    /// Клик по строке выбирает её (владелец показывает что-то по выбранной строке), а не
+    /// открывает карточку — десктопный SmartGrid.ObjectSelected с зависимой таблицей
+    /// («Журнал использования роликов»: ролик → его акции). Действия «⋯» остаются.
+    /// </summary>
+    [Parameter] public EventCallback<DataRow> RowClick { get; set; }
+
+    /// <summary>Выбранная владельцем строка — подсвечивается.</summary>
+    [Parameter] public DataRow? ActiveRow { get; set; }
+
+    /// <summary>
     /// Чекбоксы независимо от сущности и ReadOnly — когда отметки нужны владельцу экрана для
     /// своей операции (перенос выпусков в трафике), а не для массового удаления.
     /// </summary>
@@ -332,6 +342,8 @@ else
     private string RowClass(DataRow row)
     {
         string css = ReferenceEquals(row, _menuRow) ? "row-menu-open" : "";
+        if (ReferenceEquals(row, ActiveRow))
+            css += " row-active";
         return RowStyle.IsBold(row) ? css + " row-bold" : css;
     }
 
@@ -691,7 +703,8 @@ else
     /// доменный объект, а запись результата, открывать у неё нечего.
     /// </summary>
     private Task OpenPassport(DataRow row) =>
-        ReadOnly ? Task.CompletedTask : Run(row, Constants.EntityActions.ShowPassport);
+        RowClick.HasDelegate ? RowClick.InvokeAsync(row)
+        : ReadOnly ? Task.CompletedTask : Run(row, Constants.EntityActions.ShowPassport);
 
     private async Task Run(DataRow row, string actionName, bool reportUnavailable = false)
     {

@@ -238,6 +238,14 @@ public sealed class ObjectActions
 		{
 			[Constants.Actions.Substitute] = (s, t) => s.SubstituteRoller((PresentationObject)t),
 		},
+		// ActionRollerInStatJournal.WinForms.cs, DoAction: «Назначить предмет рекламы» у
+		// строки «Журнала использования роликов» (139). Ролик акции (ActionRoller) с тем же
+		// именем действия — другой класс со своим диалогом, сюда не попадает и остаётся
+		// серым. Класс internal — операция в публичном RollerStatisticQuery.
+		["ActionRollerInStatJournal"] = new()
+		{
+			[Merlin.Classes.Action.ActionNames.SetAdvertType] = (s, t) => s.SetRollerAdvertType((PresentationObject)t),
+		},
 	};
 
 	private async Task<ActionEffect> Changed(Action apply)
@@ -1130,6 +1138,40 @@ public sealed class ObjectActions
 			new Entity.Attribute("durationString", "Продолжительность", "nvarchar"), // i18n-ok: Alias переводится при показе (ObjectList)
 			new Entity.Attribute(Merlin.Classes.TariffWindow.ParamNames.Price, "Цена", "money")); // i18n-ok: Alias переводится при показе (ObjectList)
 		return ActionEffect.None;
+	}
+
+	/// <summary>
+	/// ActionRollerInStatJournal.SetAdvertType: ролику «для всех фирм» и копии — отказ с
+	/// причиной, иначе выбор из предметов рекламы 2-го уровня (десктоп — SelectionForm по
+	/// сущности AdvertTypeChild) и ActionRollerSetAdvertType.
+	/// </summary>
+	private async Task<ActionEffect> SetRollerAdvertType(PresentationObject roller)
+	{
+		string? reason = Merlin.Classes.RollerStatisticQuery.CannotSetAdvertType(roller);
+		if (reason != null)
+		{
+			await ShowInfo(Tr.T("Назначить предмет рекламы"), reason);
+			return ActionEffect.None;
+		}
+
+		Entity entity = EntityManager.GetEntity((int)Merlin.Entities.AdvertTypeChild);
+		var picker = new PassportPicker(entity.CodeName, null, false, Array.Empty<PassportFilterValue>());
+		ObjectSelector? selector = null;
+		RenderFragment body = builder =>
+		{
+			builder.OpenComponent<ObjectSelector>(0);
+			builder.AddComponentParameter(1, nameof(ObjectSelector.Picker), picker);
+			builder.AddComponentReferenceCapture(2, c => selector = (ObjectSelector)c);
+			builder.CloseComponent();
+		};
+
+		if (await _dialogs.ShowAsync(Tr.T("Выбор предмета рекламы"), body, okText: Tr.T("Назначить")) != DialogOutcome.Ok
+			|| selector?.SelectedRow == null)
+			return ActionEffect.None;
+
+		PresentationObject advertType = entity.CreateObject(selector.SelectedRow);
+		await _busy.RunAsync(() => Merlin.Classes.RollerStatisticQuery.SetAdvertType(roller, advertType));
+		return ActionEffect.Changed;
 	}
 
 	private Task ShowInfo(string caption, string text) =>

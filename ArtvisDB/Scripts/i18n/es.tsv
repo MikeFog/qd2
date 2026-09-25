@@ -1417,3 +1417,18 @@ sql	Тариф 	Tarifa
 sql	нет тарифных окон	sin ventanas de tarifa
 sql	р.	$
 sql	тарифные окна: 	ventanas de tarifa: 
+code	Акций нет.	No hay campañas.
+code	Все ({0})	Todas ({0})
+code	Все менеджеры	Todos los gerentes
+code	Выбор группы компаний	Selección del grupo de empresas
+code	Выбор предмета рекламы	Selección del rubro publicitario
+code	Выбор фирмы	Selección de la empresa
+code	Группа станций	Grupo de emisoras
+code	Дата начала периода позже даты окончания.	La fecha de inicio del período es posterior a la fecha de fin.
+code	За период на отмеченных станциях ролики не выходили.	En el período no se emitieron spots en las emisoras marcadas.
+code	Задайте отбор и нажмите «Показать»	Defina el filtro y pulse «Mostrar»
+code	Назначить	Asignar
+code	Отмечено станций: {0}	Emisoras marcadas: {0}
+code	По	Hasta
+code	С	Desde
+code	Слева — период, станции и остальные условия. Щелчок по ролику покажет акции, в которых он выходил.	A la izquierda: el período, las emisoras y las demás condiciones. Al hacer clic en un spot se muestran las campañas en las que se emitió.

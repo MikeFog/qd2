@@ -1,0 +1,200 @@
+/*
+    Журнал использования роликов: отбор слева, ролики в центре, акции выбранного ролика справа.
+    На узком экране — колонкой.
+*/
+
+.roller-stat {
+    flex: 1 1 auto;
+    display: flex;
+    flex-direction: column;
+    min-height: 0;
+}
+
+.roller-stat-body {
+    flex: 1 1 auto;
+    display: grid;
+    grid-template-columns: 260px minmax(0, 1fr);
+    grid-template-rows: minmax(0, 1fr);
+    gap: var(--s-4);
+    min-height: 0;
+}
+
+.roller-stat-body.with-panel {
+    grid-template-columns: 260px minmax(0, 1fr) 420px;
+}
+
+.filter-side {
+    grid-column: 1;
+    grid-row: 1 / -1;
+    display: flex;
+    flex-direction: column;
+    gap: var(--s-2);
+    min-height: 0;
+    overflow-x: hidden;
+    overflow-y: auto;
+}
+
+.period {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+    gap: var(--s-2);
+}
+
+.period input {
+    min-width: 0;
+    padding-left: var(--s-1);
+    padding-right: var(--s-1);
+}
+
+.period label,
+.field {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    margin: 0;
+    font-size: 13px;
+    color: var(--c-text-muted);
+}
+
+.checks {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    font-size: 13px;
+}
+
+.checks label,
+.check-all {
+    display: flex;
+    align-items: center;
+    gap: var(--s-1);
+    margin: 0;
+}
+
+.stations-head {
+    display: flex;
+    align-items: center;
+    gap: var(--s-2);
+    margin-top: var(--s-1);
+}
+
+.check-all {
+    white-space: nowrap;
+    font-size: 13px;
+}
+
+.station-list {
+    flex: 1 1 auto;
+    min-height: 160px;
+    overflow: auto;
+    list-style: none;
+    margin: 0;
+    padding: var(--s-1);
+    background: var(--c-surface);
+    border: 1px solid var(--c-border);
+    border-radius: 6px;
+}
+
+.station-list label {
+    display: flex;
+    align-items: center;
+    gap: var(--s-2);
+    margin: 0;
+    padding: 2px var(--s-1);
+    border-radius: 4px;
+}
+
+.station-list label:hover {
+    background: var(--c-bg);
+}
+
+.station-name {
+    font-weight: 600;
+}
+
+.station-meta {
+    font-size: 12px;
+    color: var(--c-text-muted);
+}
+
+.rollers {
+    grid-column: 2;
+    grid-row: 1;
+    min-width: 0;
+    min-height: 0;
+    display: flex;
+    flex-direction: column;
+}
+
+.actions-panel {
+    grid-column: 3;
+    grid-row: 1;
+    display: flex;
+    flex-direction: column;
+    gap: var(--s-2);
+    min-height: 0;
+}
+
+.panel-head {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: var(--s-2);
+    padding: var(--s-2) var(--s-3);
+    background: var(--c-surface);
+    border: 1px solid var(--c-border);
+    border-radius: 6px;
+}
+
+.panel-title {
+    font-weight: 600;
+}
+
+.panel-sub {
+    color: var(--c-text-muted);
+    font-size: 13px;
+}
+
+.panel-list {
+    flex: 1 1 auto;
+    min-height: 0;
+    display: flex;
+    flex-direction: column;
+}
+
+.panel-list ::deep .data-table {
+    flex: 1 1 auto;
+    min-height: 120px;
+}
+
+/* Таблице роликов нужно место: панель акций уходит под неё. */
+@media (max-width: 1500px) {
+    .roller-stat-body.with-panel {
+        grid-template-columns: 260px minmax(0, 1fr);
+        grid-template-rows: minmax(0, 1fr) minmax(220px, 38%);
+    }
+
+    .actions-panel {
+        grid-column: 2;
+        grid-row: 2;
+    }
+}
+
+@media (max-width: 900px) {
+    .roller-stat-body,
+    .roller-stat-body.with-panel {
+        grid-template-columns: minmax(0, 1fr);
+        grid-template-rows: auto;
+    }
+
+    .filter-side,
+    .rollers,
+    .actions-panel {
+        grid-column: 1;
+        grid-row: auto;
+    }
+
+    .filter-side {
+        max-height: 50vh;
+    }
+}

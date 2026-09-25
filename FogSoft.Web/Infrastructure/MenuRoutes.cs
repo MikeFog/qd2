@@ -184,12 +184,22 @@ public static class ScreenRoutes
 {
 	public const string TrafficManagement = "miTrafficManagement";
 
+	/// <summary>«Журнал использования роликов» из «Трафика»: менеджер по умолчанию — все.</summary>
+	public const string RollerStatistic = "miRollerStatistic";
+
+	/// <summary>Тот же журнал из «Рекламного отдела»: менеджер по умолчанию — текущий пользователь.</summary>
+	public const string RollerStatisticForManager = "miRollerStatisticWithFilter";
+
 	public static readonly IReadOnlyDictionary<string, string> Screens =
 		new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase)
 		{
 			// Десктоп — TrafficManagementForm + TrafficGrid; в вебе — свой экран по решениям
 			// владельца 2026-09-23 (docs/tasks/web-tariffgrid.md, §9).
 			{ TrafficManagement, "/traffic" },
+			// Десктоп — RollerStatisticForm (MDIForm.ShowRollerStatistic(setuser)); пункты
+			// различаются только менеджером по умолчанию, поэтому пункт едет в адресе.
+			{ RollerStatistic, "/roller-statistic?menu=" + RollerStatistic },
+			{ RollerStatisticForManager, "/roller-statistic?menu=" + RollerStatisticForManager },
 		};
 }
 

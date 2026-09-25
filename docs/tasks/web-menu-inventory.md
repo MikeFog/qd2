@@ -481,7 +481,7 @@ Ctrl+Shift+A. В вебе их нет и не будет: решение вла�
 | 113 | Рекламный отдел → Журнал оплат по менеджерам | `miPaymentByManagerFromRSection` | `:192` → ShowCommonOrderByManagerFromRSection:665 | Простой журнал + ManagerFilter | PaymentCommonAction (146) | перенесён (SimpleJournal) | 6 | +3/−0 | 24 |
 | 114 | Рекламный отдел → Баланс для всех фирм-заказчиков | `miBalanceFromRSection` | `:186` → ShowBalance:438 | Простой журнал + ManagerFilter | BalanceIssues (184) | перенесён (SimpleJournal) | 6 | +3/−0 | 24 |
 | 62 | Рекламный отдел → Сетка вещания | `miPrintGridFromRSection` | `:196` → ShowPrintGridForm:670 | Отчёт / выгрузка | `FrmGridReport` (Crystal-просмотрщик) | этап 4 | 6 | +4/−0 | 24 |
-| 71 | Рекламный отдел → Журнал использования роликов | `miRollerStatisticWithFilter` | `:204` → ShowRollerStatistic(true):702 | Собственная форма | `RollerStatisticForm` (менеджер по умолчанию — текущий) | этап 3 | 6 | +3/−0 | 24 |
+| 71 | Рекламный отдел → Журнал использования роликов | `miRollerStatisticWithFilter` | `:204` → ShowRollerStatistic(true):702 | Собственная форма | `RollerStatisticForm` (менеджер по умолчанию — текущий) | перенесён (`/roller-statistic`, 2026-09-24; прослушивание — в конце) | 6 | +3/−0 | 24 |
 | 178 | Рекламный отдел → Журнал использования бонусов | `miBonusesStat` | `:257` → inline:258 | Простой журнал | StatBonuses (1269) | перенесён (SimpleJournal) | 4 | — | 17 |
 | 16 | Рекламный отдел → Фирмы-заказчики | `miFirm` | `:179` → ShowFirms:605 | Простой журнал | Firm (16) | перенесён (SimpleJournal) | 8 | +3/−0 | 30 |
 | 169 | Рекламный отдел → Группа компаний | `miHeadOrganizations` | `:249` → ShowHeadCompanies:610 | MasterDetail | HeadCompany (1248) → Firm (16), `ShowInactive=1` | перенесён деревом (2026-09-21) | 7 | — | 28 |
@@ -490,8 +490,8 @@ Ctrl+Shift+A. В вебе их нет и не будет: решение вла�
 | 107 | Рекламный отдел → Сообщения | `miAnnouncements` | `:222` → ShowAnnouncements:410 | Журнал-наследник со своей логикой | `AnnouncementJournalForm` (Announcement, 179) | перенесён (SimpleJournal + кнопка «Пометить все»); проверено вживую 2026-09-21 | 7 | +3/−0 | 27 |
 | 22 | Рекламный отдел → Выход | `miExit` | `:137` → ApplicationExit:985 | Выход из приложения | `Application.Exit()` | сделан: выход из сеанса (`MenuNodeView`); проверено вживую 2026-09-18 | 7 | +3/−0 | 27 |
 | 23 | Режиссёр → Журнал рекламных роликов | `miRoller` | `:157` → ShowRollers:520 | Журнал-наследник со своей логикой | `AudioJournalForm` (Roller, 20) | этап 3 + этап 4 (аудио) | 8 | +2/−1 | 27 |
-| 70 | Трафик → Журнал использования роликов | `miRollerStatistic` | `:202` → ShowRollerStatistic(false):702 | Собственная форма | `RollerStatisticForm` (свой отбор, 3 таблицы, аудио, Excel) | этап 3 | 2 | +3/−0 | 8 |
-| 72 | Трафик → Трафик-менеджмент | `miTrafficManagement` | `:206` → ShowTrafficManagement:713 | Собственная форма | `TrafficManagementForm` (`TrafficGrid`) | этап 3 | 2 | — | 5 |
+| 70 | Трафик → Журнал использования роликов | `miRollerStatistic` | `:202` → ShowRollerStatistic(false):702 | Собственная форма | `RollerStatisticForm` (свой отбор, 3 таблицы, аудио, Excel) | перенесён (`/roller-statistic`, 2026-09-24; прослушивание — в конце) | 2 | +3/−0 | 8 |
+| 72 | Трафик → Трафик-менеджмент | `miTrafficManagement` | `:206` → ShowTrafficManagement:713 | Собственная форма | `TrafficManagementForm` (`TrafficGrid`) | перенесён (`/traffic`, 2026-09-23) | 2 | — | 5 |
 | 64 | Трафик → Сетка вещания | `miPrintGrid` | `:196` → ShowPrintGridForm:670 | Отчёт / выгрузка | `FrmGridReport` (Crystal-просмотрщик) | этап 4 | 2 | — | 5 |
 | 152 | Трафик → Экспорт сеток вещания | `miExportGrid` | `:234` → ExportGrid:309 | Отчёт / выгрузка | `ExportGridForm` (файлы на диск) | этап 4 | 1 | — | 5 |
 | 73 | Трафик → Журнал переносов | `miTransferJournal` | `:210` → ShowTransferJournal:708 | Простой журнал | TransferLog (141) | перенесён (SimpleJournal) | 2 | — | 5 |

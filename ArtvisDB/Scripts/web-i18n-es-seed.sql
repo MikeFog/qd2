@@ -1,5 +1,5 @@
 ﻿/*
-    ДЕПЛОЙ: переводы веб-версии на язык «es» (1418 строк). docs/tasks/web-i18n.md, этап 5.
+    ДЕПЛОЙ: переводы веб-версии на язык «es» (1433 строк). docs/tasks/web-i18n.md, этап 5.
     СГЕНЕРИРОВАН из ArtvisDB/Scripts/i18n/es.tsv скриптом build-seed.py — руками не править.
 
     ПРЕДУСЛОВИЕ     накачен web-i18n-translation-deploy.sql (таблица iTranslation).
@@ -1436,7 +1436,22 @@ INSERT INTO #t ([source], [text]) VALUES
 (N'Тариф ', N'Tarifa '),
 (N'нет тарифных окон', N'sin ventanas de tarifa'),
 (N'р.', N'$'),
-(N'тарифные окна: ', N'ventanas de tarifa: ');
+(N'тарифные окна: ', N'ventanas de tarifa: '),
+(N'Акций нет.', N'No hay campañas.'),
+(N'Все ({0})', N'Todas ({0})'),
+(N'Все менеджеры', N'Todos los gerentes'),
+(N'Выбор группы компаний', N'Selección del grupo de empresas'),
+(N'Выбор предмета рекламы', N'Selección del rubro publicitario'),
+(N'Выбор фирмы', N'Selección de la empresa'),
+(N'Группа станций', N'Grupo de emisoras'),
+(N'Дата начала периода позже даты окончания.', N'La fecha de inicio del período es posterior a la fecha de fin.'),
+(N'За период на отмеченных станциях ролики не выходили.', N'En el período no se emitieron spots en las emisoras marcadas.'),
+(N'Задайте отбор и нажмите «Показать»', N'Defina el filtro y pulse «Mostrar»'),
+(N'Назначить', N'Asignar'),
+(N'Отмечено станций: {0}', N'Emisoras marcadas: {0}'),
+(N'По', N'Hasta'),
+(N'С', N'Desde'),
+(N'Слева — период, станции и остальные условия. Щелчок по ролику покажет акции, в которых он выходил.', N'A la izquierda: el período, las emisoras y las demás condiciones. Al hacer clic en un spot se muestran las campañas en las que se emitió.');
 GO
 
 BEGIN TRANSACTION;
