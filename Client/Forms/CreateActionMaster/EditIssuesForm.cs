@@ -395,7 +395,8 @@ namespace Merlin.Forms.CreateActionMaster
         /// AddedIssues по дате окна и удаляем через MasterIssue.Delete -> MasterIssueDelete
         /// (выпуск удаляется на всех радиостанциях акции). Красные (частичные) группы и всё, что
         /// осталось сверх синих копий, — отдельно через DeleteSlotIssueGroup (несколько проходов,
-        /// см. SplitIntoDeletePasses). Одно нажатие Delete очищает выбранные окна полностью.
+        /// см. SplitIntoDeletePasses). Одно нажатие Delete очищает выбранные окна полностью;
+        /// если в них больше одного ролика — только от роликов, отмеченных в чек-листе (SelectRollers).
         /// Часть может не удалиться (прошлое/дедлайн у подтверждённых) — ошибки собираем и
         /// показываем (паттерн SmartGrid.DeleteSelectedObjects). Очистка AddedIssues + Recalculate
         /// + RefreshGrid выполняются в ProcessCurrentCampaignIssuesDelete через ObjectsDeleted.
@@ -411,7 +412,8 @@ namespace Merlin.Forms.CreateActionMaster
                 return;
 
             Entity masterEntity = EntityManager.GetEntity((int)Entities.MasterIssues);
-            List<PresentationObject> issues = new List<PresentationObject>();
+            // Синие строки AddedIssues; объекты MasterIssue создаются из них после выбора роликов.
+            List<System.Data.DataRow> blueIssueRows = new List<System.Data.DataRow>();
             // Частичные («красные») слоты: выпуск есть не во всех выбранных кампаниях, в
             // AddedIssues его нет — содержимое читаем из базы и удаляем по тем кампаниям,
             // где оно реально стоит.
@@ -434,7 +436,7 @@ namespace Merlin.Forms.CreateActionMaster
                 Dictionary<string, int> blueRowsByKey = new Dictionary<string, int>();
                 foreach (System.Data.DataRow row in rows)
                 {
-                    issues.Add(masterEntity.CreateObject(row));
+                    blueIssueRows.Add(row);
                     int rollerId = ParseHelper.GetInt32FromObject(row[Roller.ParamNames.RollerId], 0);
                     int positionId = ParseHelper.GetInt32FromObject(row[Issue.ParamNames.PositionId], 0);
                     string key = rollerId + "/" + positionId;
@@ -465,11 +467,34 @@ namespace Merlin.Forms.CreateActionMaster
                 }
             }
 
-            if (issues.Count + partialGroups.Count == 0)
+            if (blueIssueRows.Count + partialGroups.Count == 0)
             {
                 UserMessage.ShowInformation("В выбранных окнах нет выпусков этой акции.");
                 return;
             }
+
+            // Несколько разных роликов в выбранных окнах — пусть пользователь отметит, какие
+            // удалять (как при массовой замене). Выбор диалога и есть подтверждение.
+            // Фильтр по ролику согласован с blueRowsByDate: ключ «ролик/позиция» включает ролик,
+            // так что синие и красные части одного ролика остаются или уходят вместе.
+            bool askConfirmation = true;
+            List<int> rollerIds = blueIssueRows
+                .Select(row => ParseHelper.GetInt32FromObject(row[Roller.ParamNames.RollerId], 0))
+                .Concat(partialGroups.Select(partial => partial.Value.RollerId))
+                .Distinct()
+                .ToList();
+            if (rollerIds.Count > 1)
+            {
+                List<int> chosenIds = SelectRollers(rollerIds, "Какие ролики удалить в выбранных окнах?");
+                if (chosenIds == null)
+                    return;
+                blueIssueRows.RemoveAll(row =>
+                    !chosenIds.Contains(ParseHelper.GetInt32FromObject(row[Roller.ParamNames.RollerId], 0)));
+                partialGroups.RemoveAll(partial => !chosenIds.Contains(partial.Value.RollerId));
+                askConfirmation = false;
+            }
+
+            List<PresentationObject> issues = blueIssueRows.Select(row => masterEntity.CreateObject(row)).ToList();
 
             // "Штук" — не групп (issues.Count + partialGroups.Count), а реальных записей Issue
             // в базе: MasterIssueDelete удаляет по одной записи на каждую станцию из
@@ -480,7 +505,7 @@ namespace Merlin.Forms.CreateActionMaster
             foreach (KeyValuePair<DateTime, TariffWithRangeGrid.SlotIssueGroup> partial in partialGroups)
                 realTotalCount += partial.Value.CampaignIds.Count;
 
-            if (UserMessage.ShowQuestion(
+            if (askConfirmation && UserMessage.ShowQuestion(
                     string.Format("Удалить выпуски в выбранных окнах по выбранным кампаниям? ({0} шт.)", realTotalCount)) != DialogResult.Yes)
                 return;
 
@@ -676,7 +701,8 @@ namespace Merlin.Forms.CreateActionMaster
             bool askConfirmation = true;
             if (oldRollerIds.Count > 1)
             {
-                List<int> chosenIds = SelectRollersToReplace(oldRollerIds, newRoller);
+                List<int> chosenIds = SelectRollers(oldRollerIds,
+                    string.Format("Какие ролики заменить на «{0}» ({1})?", newRoller.Name, newRoller.DurationString));
                 if (chosenIds == null)
                     return;
                 slotRows.RemoveAll(r => !chosenIds.Contains(r.RollerId));
@@ -758,14 +784,14 @@ namespace Merlin.Forms.CreateActionMaster
         }
 
         /// <summary>
-        /// Чек-лист старых роликов, найденных в выделенных окнах: SelectionForm по сущности
+        /// Чек-лист роликов, найденных в выделенных окнах (массовые замена и удаление): SelectionForm по сущности
         /// Roller. Строки грузятся тем же журнальным Load сущности, что и Firm.GetRollers,
         /// но по конкретному @rollerID — так в таблице ровно те колонки, которые описаны
         /// атрибутами сущности, а фильтры журнала (неактивные, клоны общих роликов) не
         /// выкидывают ролики, реально стоящие в выпусках. Возвращает ID отмеченных или
         /// null, если пользователь отменил.
         /// </summary>
-        private List<int> SelectRollersToReplace(IList<int> rollerIds, Roller newRoller)
+        private List<int> SelectRollers(IList<int> rollerIds, string caption)
         {
             Entity rollerEntity = EntityManager.GetEntity((int)Entities.Roller);
             System.Data.DataTable table = new System.Data.DataTable();
@@ -795,8 +821,7 @@ namespace Merlin.Forms.CreateActionMaster
             System.Data.DataView view = table.DefaultView;
             view.Sort = numberColumn;
 
-            SelectionForm form = new SelectionForm(nameOnlyEntity, view,
-                string.Format("Какие ролики заменить на «{0}» ({1})?", newRoller.Name, newRoller.DurationString), true,
+            SelectionForm form = new SelectionForm(nameOnlyEntity, view, caption, true,
                 f =>
                 {
                     if (f.AddedItems.Count > 0)
