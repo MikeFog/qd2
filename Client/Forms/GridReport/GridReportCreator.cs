@@ -161,7 +161,9 @@ namespace Merlin.Forms.GridReport
                 ["theDate"] = DateTime,
                 ["isExport"] = isExport
             };
-			if (User != null)
+			// Менеджер — только для просмотра. Выгрузка для эфира (DJin) — вся сетка станции,
+			// иначе в эфир ушли бы выпуски одного менеджера.
+			if (User != null && !isExport)
 				procParameters[SecurityManager.ParamNames.UserId] = User.IDs[0];
 
 			DataSet ds = DataAccessor.LoadDataSet("rpt_Grid_v3", procParameters, 120);
