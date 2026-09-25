@@ -45,7 +45,7 @@ CampaignForm_Load                                       [CampaignForm.cs:57]
   ├── InitModulesList()             — только модульная/пакетная кампания
   ├── InitSponsorProgramList()      — только редактирование спонсорских программ
   ├── RollerIssuesGrid config       — IsPopUpMenuAllowed, ExcludeSpecialTariffs, ShowUnconfirmed
-  ├── EnableWindowSelectionDelete() — только простая кампания (Del по выделению)
+  ├── EnableWindowSelectionActions() — только простая кампания (Del/Insert/Ctrl+R по выделению)
   └── _campaign.DisplayCampaignData(lstStat)  ◄═══ панель статистики (кампания уже Refresh'нута в ctor)
 ```
 

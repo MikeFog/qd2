@@ -232,6 +232,7 @@ UserControl
 | неделя / позиция / фильтр | полный `RefreshGrid`: 3 запроса сетки + 2–3 в `GridRefreshed` (ролики) | то же с `TariffWindowWithRange` |
 | Insert по выделенным окнам | `IssueIUD` **+ `ActionRecalculate` на каждое окно** + ещё один в конце (П-1) | `AddRangeIssues` в цикле, пересчёт один |
 | Del по выделенным окнам | `WindowIssuesRetrieve` на окно + `IssueIUD` на выпуск, пересчёт один | `MasterIssueDelete` на выпуск/группу |
+| Ctrl+R (замена ролика) по выделенным окнам | `WindowIssuesRetrieve` на окно + `RollerSubstitute` **на выпуск** (`@issueID`+`@originalWindowID`), пересчёт один и только при разной длине | `RangeSlotIssues` одним батчем + `RollerSubstitute` на пару (кампания, старый ролик) с `#days`, пересчёт один |
 | шаблон (`FrmGenerator`) | на день: прайс-лист + окна; на выпуск: `IssueIUD` + `issue.Refresh()`, проверки фирмы на окно-кандидат; пересчёт один в `finally` | путь Simple: `AddIssuesRange` **с пересчётом на каждую дату** |
 | отмена шаблона | `IssueIUD` на выпуск, пересчёт один | `MasterIssueDelete` на слот, пересчёт один |
 

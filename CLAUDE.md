@@ -34,6 +34,7 @@ Important project documents:
 - Tariff grid family reference: `docs/tariffgrid.md` — all placement/window grids (`TariffGrid` hierarchy, `TariffWithRangeGrid`, `ComboModuleGrid`, `TrafficGrid`): hosts, procedures, cell semantics, prod timings, ranked performance defects П-1…П-17. Read before touching any grid, placement form or template generator. Web design: `docs/tasks/web-tariffgrid.md`.
 - Window merging reference: `docs/window-merging.md` — two distinct "склейка" mechanisms: `TariffUnion` (pricelist-level tariff continuation) and `TariffWindow.windowPrevId`/`windowNextId` (per-day window chains); entry points, readers, and known defects.
 - `broadcastStart` reference: `docs/broadcast-start.md` — legacy "broadcast day start" field in `Pricelist`/`SponsorProgramPricelist`; full inventory of ~50 dependent DB objects and 7 C# files grouped by removal cost, data-state evidence that the field is dormant, and a staged removal plan. Read before touching anything that shifts `issueDate` by `broadcastStart`.
+- Mass operations on selected tariff-grid windows: `docs/mass-window-operations.md` — Del / Insert / Ctrl+R (roller replace) / roller checklist in linear `CampaignForm` and veer `EditIssuesForm`; where enabled, implementation differences, why linear replace goes per issue.
 ## Scenario maps
 
 Detailed scenario investigations are stored in:

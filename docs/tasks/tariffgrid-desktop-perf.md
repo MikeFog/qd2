@@ -298,7 +298,8 @@
 | `CampaignForm.UndoLastTemplateAdd` (`:1115`) | `IssueIUD` Delete на выпуск |
 | `CampaignForm.MoveIssuesToWindow` (`:1334`) | Delete + `sourceIssue.Roller` (`new Roller` → запрос) + `AddIssue` |
 | `EditIssuesForm.ReplaceRollerInSelectedWindows` (`:713`) | `GetCampaignById` + `new Roller` на группу — оба не нужны (данные есть в `_campaignsView` и `SlotIssueRow.Duration`) |
-| `EditIssuesForm.SelectRollersToReplace` (`:775`) | загрузка ролика на каждый id |
+| `CampaignForm.ReplaceRollerInSelectedWindows` (линейка) | `WindowIssuesRetrieve` на окно + `RollerSubstitute` на выпуск (по дням, как веер, нельзя — см. `docs/mass-window-operations.md`) |
+| `CampaignForm.SelectRollers` (чек-лист замены/удаления, общий для линейки и веера) | загрузка ролика на каждый id |
 | `EditIssuesForm` удаление дублей / «до пересечения» / Del / перенос (`:1101`, `:1186`, `:495`, `:1724`) | `MasterIssueDelete` / `AddRangeIssues` на строку, `new Roller` на строку |
 | `ComboModulePlacementForm` Del / отмена (`:703`, `:591`) | `ModuleIssueIUD` на выпуск |
 | `TrafficGrid.TransferIssue` (`:764`) | `SelectedIssue.Roller` — новая загрузка на каждую итерацию; **и** берётся текущая строка, а не переменная цикла (дефект, см. `docs/tariffgrid.md` §9) |
