@@ -29,9 +29,14 @@ namespace Merlin.Forms
         public ActionFinalPriceForm(ActionOnMassmedia action) : this()
         {
             txtFinalPrice.Value = action.TotalPrice;
-            txtRatio.Value = 0;
             _action = action;
             _campaignsTable = action.Campaigns();
+            // Менеджерская скидка хранится на кампании, у акции её нет — показываем усреднённую:
+            // итоговая цена акции / сумма кампаний со всеми скидками, кроме менеджерской.
+            decimal priceWithoutManagerDiscount = CalculateFinalPrice(1);
+            txtRatio.Value = priceWithoutManagerDiscount == 0
+                ? 0
+                : Math.Round(action.TotalPrice / priceWithoutManagerDiscount, 4, MidpointRounding.AwayFromZero);
         }
 
         protected override void OnLoad(EventArgs e)

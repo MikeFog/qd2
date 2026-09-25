@@ -73,7 +73,7 @@
             // txtRatio
             // 
             this.txtRatio.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Left | System.Windows.Forms.AnchorStyles.Right)));
-            this.txtRatio.DecimalPlaces = 2;
+            this.txtRatio.DecimalPlaces = 4;
             this.txtRatio.Increment = new decimal(new int[] {
             1,
             0,
