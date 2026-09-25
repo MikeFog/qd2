@@ -68,6 +68,7 @@ namespace Merlin.Forms
                 Cursor = Cursors.WaitCursor;
 
                 ProcessToolbar();
+                HideRedundantToolbarSeparators();
                 SetFormCaption();
                 SetTariffGrid();
                 if (!(_tariffGrid is IRollerGrid))
@@ -253,7 +254,47 @@ namespace Merlin.Forms
 
             tbbTemplate.Visible = tbbTemplate2.Visible = tbbTemplate3.Visible = tbbTemplateUndo.Visible = 
 				!(IsModuleCampaign || IsPackModuleCampaign || _tariffGrid is ProgramIssuesGrid2);
-			tbSetManagerDiscount.Enabled = !IsRangeCampaign;
+			// Менеджерский коэффициент — свойство одной кампании, у веера (много кампаний) его нет.
+			tbSetManagerDiscount.Visible = !IsRangeCampaign;
+		}
+
+		/// <summary>
+		/// Кнопки тулбара по-разному скрываются для линейки, веера, модулей и спонсорских —
+		/// из-за этого разделители оказываются в начале, в конце или по нескольку подряд.
+		/// Оставляем только те, что стоят между видимыми кнопками, по одному. Только скрывает,
+		/// поэтому вызывается после того, как видимость кнопок окончательно выставлена (и
+		/// повторно — если наследник потом дописал в тулбар свои кнопки). Available, а не
+		/// Visible: до показа формы Visible у всех кнопок читается как false.
+		/// </summary>
+		protected void HideRedundantToolbarSeparators()
+		{
+			ToolStripItem lastSeparator = null;
+			bool separatorAllowed = false;
+			foreach (ToolStripItem item in tsCampaign.Items)
+			{
+				if (!item.Available)
+					continue;
+
+				if (item is ToolStripSeparator)
+				{
+					if (separatorAllowed)
+					{
+						lastSeparator = item;
+						separatorAllowed = false;
+					}
+					else
+						item.Available = false;
+				}
+				else
+				{
+					lastSeparator = null;
+					separatorAllowed = true;
+				}
+			}
+
+			// Разделитель в самом конце — справа от него ничего не видно.
+			if (lastSeparator != null)
+				lastSeparator.Available = false;
 		}
 
 		/// <summary>

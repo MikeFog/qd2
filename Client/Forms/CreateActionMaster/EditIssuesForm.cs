@@ -786,8 +786,8 @@ namespace Merlin.Forms.CreateActionMaster
         /// <summary>
         /// «Добавить до полного пересечения» и «Удалить дубли» создаются здесь, а не в дизайнере
         /// базовой формы, — они есть только в веере; тулбар приватный у CampaignForm — берём его
-        /// через соседнюю кнопку. Заодно раскладывает тулбар на два кластера, каждый с двойной
-        /// разделительной чертой по краям: три шаблона и четыре действия над выделенными окнами
+        /// через соседнюю кнопку. Заодно раскладывает тулбар на два кластера, разделённых одинарной
+        /// чертой: три шаблона и четыре действия над выделенными окнами
         /// («Заменить ролики», «Добавить до полного пересечения», «Удалить дубли», «Отменить»).
         /// «Отменить» в базовой форме стоит сразу за шаблонами (там она относится к ним же) —
         /// здесь переносится в кластер действий, обычная кампания остаётся как была.
@@ -812,11 +812,8 @@ namespace Merlin.Forms.CreateActionMaster
 
             ToolStrip toolbar = tbbReplaceRoller.Owner;
 
-            // Слева от шаблонов уже стоит одинарная черта (toolStripSeparator3) — дописываем вторую.
-            toolbar.Items.Insert(toolbar.Items.IndexOf(tbbTemplate), new ToolStripSeparator());
-
-            // Между шаблонами и кластером действий — двойная черта.
-            toolbar.Items.Insert(toolbar.Items.IndexOf(tbbReplaceRoller), new ToolStripSeparator());
+            // Слева от шаблонов черта уже есть (toolStripSeparator3), справа от кластера —
+            // тоже (toolStripSeparator2); не хватает только черты между шаблонами и кластером.
             toolbar.Items.Insert(toolbar.Items.IndexOf(tbbReplaceRoller), new ToolStripSeparator());
 
             tbbTemplateUndo.DisplayStyle = ToolStripItemDisplayStyle.Image;
@@ -827,8 +824,7 @@ namespace Merlin.Forms.CreateActionMaster
             toolbar.Items.Insert(index + 2, _tbbDeleteDuplicates);
             toolbar.Items.Insert(index + 3, tbbTemplateUndo);
 
-            // Справа от кластера — одинарная черта (toolStripSeparator2), дописываем перед ней вторую.
-            toolbar.Items.Insert(index + 4, new ToolStripSeparator());
+            HideRedundantToolbarSeparators();
         }
 
         private void SetRollerNumberActionsEnabled()
