@@ -248,6 +248,7 @@ namespace FogSoft.WinForm.Controls
 
                 // Сохраняем PK чекнутых объектов ДО Clear()
                 HashSet<string> checkedKeys = SaveCheckedKeys();
+                List<ColumnLayout> columnLayouts = SaveColumnLayouts();
 
                 Clear();
                 if (value == null) return;
@@ -295,6 +296,7 @@ namespace FogSoft.WinForm.Controls
                     dataGrid.AutoGenerateColumns = true;
                     dataGrid.DataSource = value;
                 }
+                RestoreColumnLayouts(columnLayouts);
                 if (dataGrid.Columns.Count > 0)
                 {
                     currentColumn = CheckCurrentColumnData(dataGrid.Columns[0]);
@@ -858,6 +860,52 @@ namespace FogSoft.WinForm.Controls
                     pkColumns[i] = table.Columns[entity.PKColumns[i]];
                 table.PrimaryKey = pkColumns;
             }
+        }
+
+        private struct ColumnLayout
+        {
+            public string Key;
+            public DataGridViewAutoSizeColumnMode AutoSizeMode;
+            public int Width;
+        }
+
+        /// <summary>
+        /// Ширины колонок до перепривязки: Clear() пересоздаёт колонки с шириной по умолчанию,
+        /// и после обновления данных грид «разваливался», если форма не звала AdjustColumnsWidthExt.
+        /// </summary>
+        private List<ColumnLayout> SaveColumnLayouts()
+        {
+            return dataGrid.Columns.Cast<DataGridViewColumn>()
+                .Select(c => new ColumnLayout { Key = ColumnLayoutKey(c), AutoSizeMode = c.AutoSizeMode, Width = c.Width })
+                .ToList();
+        }
+
+        /// <summary>
+        /// Восстанавливает ширины, только если набор колонок тот же (то же самое обновилось),
+        /// чтобы не переносить ширины на грид с другой сущностью или другими колонками.
+        /// </summary>
+        private void RestoreColumnLayouts(List<ColumnLayout> layouts)
+        {
+            if (layouts.Count == 0 || layouts.Count != dataGrid.Columns.Count)
+                return;
+            for (int i = 0; i < layouts.Count; i++)
+                if (ColumnLayoutKey(dataGrid.Columns[i]) != layouts[i].Key)
+                    return;
+
+            for (int i = 0; i < layouts.Count; i++)
+            {
+                DataGridViewColumn col = dataGrid.Columns[i];
+                col.AutoSizeMode = layouts[i].AutoSizeMode;
+                if (col.InheritedAutoSizeMode == DataGridViewAutoSizeColumnMode.None)
+                    col.Width = layouts[i].Width;
+            }
+            RepositionCheckBoxHeader();
+        }
+
+        // Name у колонок сущности не задаётся — различаем по полю данных и заголовку.
+        private static string ColumnLayoutKey(DataGridViewColumn c)
+        {
+            return c.Name + "|" + c.DataPropertyName + "|" + c.HeaderText;
         }
 
         private HashSet<string> SaveCheckedKeys()
