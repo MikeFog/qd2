@@ -1,4 +1,32 @@
-﻿CREATE  PROC [dbo].[Actions1]
+﻿/*
+    ПРОД-ДЕПЛОЙ: dbo.Actions1 — отбор по менеджеру при поиске акции по номеру.
+
+    ПОВОД
+      При заданном @actionID процедура уходит в отдельную ветку, где не было
+      ни отбора по @userID, ни проверки прав. В журнале акций в режиме
+      «Акции без разбивки на фирмы» обычный менеджер (менеджер в фильтре
+      зафиксирован на нём самом) вводил номер чужой акции и видел её.
+      Режимы по фирмам / группам компаний (FirmWithActions1,
+      HeadCompaniesWithActions) чужую акцию не показывали и не менялись.
+
+    ПРАВКА
+      В ветке @actionID добавлено  and (@userID is null or a.userID = @userID).
+      Загрузка карточки акции по номеру (PresentationObject.Refresh) передаёт
+      userID самой акции или не передаёт вовсе — её условие не отсекает.
+
+    ОСТАТОК (не закрыт): пользователь с правом на групповые акции может
+      снять галку «Менеджер» и по номеру увидит любую акцию. Полная проверка
+      прав в этой ветке требует разбора всех вызовов по номеру.
+
+    ИДЕМПОТЕНТНОСТЬ  повторный запуск перезаливает то же тело (CREATE OR ALTER).
+    ОТКАТ  git show HEAD~:"ArtvisDB/dbo/Stored Procedures/Actions1.sql"
+
+      sqlcmd -S <сервер> -d <база> -E -f 65001 -I -i actions1-actionid-userid-deploy.sql
+*/
+SET ANSI_NULLS ON;
+SET QUOTED_IDENTIFIER ON;
+GO
+CREATE OR ALTER PROC [dbo].[Actions1]
 (
 @actionID int = NULL,
 @firmID smallint = NULL,

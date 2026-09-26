@@ -199,6 +199,8 @@ namespace Merlin.Forms
 					ShowTrafficManagement();
 				else if (strMiName == "miMultiActionMediaPlan")
 					ShowMultiActionMediaPlan();
+				else if (strMiName == "miMultiActionMediaPlanSelect")
+					ShowMultiActionMediaPlanSelect();
 				else if (strMiName == "miTransferJournal")
 					ShowTransferJournal(mi);
 				else if (strMiName == "miAgencyTax")
@@ -681,13 +683,28 @@ namespace Merlin.Forms
 			using (FrmMultiActionMediaPlan f = new FrmMultiActionMediaPlan())
 			{
 				if (f.ShowDialog(this) != DialogResult.OK) return;
-
-				List<Merlin.Classes.Action> actions = new List<Merlin.Classes.Action>();
-				foreach (int id in f.ActionIds)
-					actions.Add(ActionOnMassmedia.GetActionById(id));
-
-				MediaPlan.CreateInstance(actions, false).Show(true);
+				PrintMultiActionMediaPlan(f.ActionIds);
 			}
+		}
+
+		// То же для рекламного отдела: акции отмечаются в списке по фильтру
+		// (только доступные пользователю), номера вручную не вводятся.
+		private void ShowMultiActionMediaPlanSelect()
+		{
+			using (FrmActionsSelector f = new FrmActionsSelector())
+			{
+				if (f.ShowDialog(this) != DialogResult.OK) return;
+				PrintMultiActionMediaPlan(f.ActionIds);
+			}
+		}
+
+		private static void PrintMultiActionMediaPlan(IList<int> actionIds)
+		{
+			List<Merlin.Classes.Action> actions = new List<Merlin.Classes.Action>();
+			foreach (int id in actionIds)
+				actions.Add(ActionOnMassmedia.GetActionById(id));
+
+			MediaPlan.CreateInstance(actions, false).Show(true);
 		}
 
 		private void ShowAgencyTaxJournal(ToolStripItem mi)

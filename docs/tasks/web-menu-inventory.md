@@ -285,6 +285,9 @@ sed -n '/private void MenuItemClick/,/catch (Exception ex)/p' Client/Forms/MDIFo
   Crystal Reports. **`miExportGrid`** — `ExportGridForm`: выгрузка сеток на диск
   (Crystal/Word/txt). **`miMultiActionMediaPlan`** — диалог `FrmMultiActionMediaPlan`
   (номера акций) → `MediaPlan.CreateInstance(...).Show(true)`, то есть Excel.
+  **`miMultiActionMediaPlanSelect`** (добавлен 2026-09-25) — тот же медиаплан,
+  но акции отмечаются в `FrmActionsSelector` по фильтру сущности 77, без ручного
+  ввода номеров (`docs/tasks/multi-action-media-plan.md`).
 - **`VolumeOfRealizationByManager`** — `GraphForm` (диаграммы столбцами и
   круговая) на тех же данных, что `miStats.VolumeOfRealization` (158), с
   `managerID = текущий пользователь` и правилом `ManagerFilter`
@@ -415,7 +418,8 @@ Ctrl+Shift+A. В вебе их нет и не будет: решение вла�
 **Не выдан никому** (нет ни групп, ни личных выдач, не публичный — открывается
 только администраторам): `miFirmImport`, `miManagerDiscountHistory`,
 `miManagerDiscountReason`, `miComboModules`, `miComboModulePlacement`,
-`miMultiActionMediaPlan`. Это признак «кандидат в мёртвые» **или** «ещё не
+`miMultiActionMediaPlan` (и добавленный позже `miMultiActionMediaPlanSelect` —
+права раздают вручную). Это признак «кандидат в мёртвые» **или** «ещё не
 раздали»; отличить по базе нельзя. Для трёх из шести (`miManagerDiscountHistory`,
 `miManagerDiscountReason`, `miComboModules`) в вебе маршрут уже есть.
 
@@ -483,6 +487,7 @@ Ctrl+Shift+A. В вебе их нет и не будет: решение вла�
 | 62 | Рекламный отдел → Сетка вещания | `miPrintGridFromRSection` | `:196` → ShowPrintGridForm:670 | Отчёт / выгрузка | `FrmGridReport` (Crystal-просмотрщик) | перенесён (`/broadcast-grid`, 2026-09-25; «Для эфира…» — файл DJin) | 6 | +4/−0 | 24 |
 | 71 | Рекламный отдел → Журнал использования роликов | `miRollerStatisticWithFilter` | `:204` → ShowRollerStatistic(true):702 | Собственная форма | `RollerStatisticForm` (менеджер по умолчанию — текущий) | перенесён (`/roller-statistic`, 2026-09-24; прослушивание — в конце) | 6 | +3/−0 | 24 |
 | 178 | Рекламный отдел → Журнал использования бонусов | `miBonusesStat` | `:257` → inline:258 | Простой журнал | StatBonuses (1269) | перенесён (SimpleJournal) | 4 | — | 17 |
+| — | Рекламный отдел → График размещения по нескольким акциям | `miMultiActionMediaPlanSelect` | `:202` → ShowMultiActionMediaPlanSelect:692 | Отчёт / выгрузка | `FrmActionsSelector` (акции 77 с чек-боксами, фильтр `iEntity.filter` 77) → `MediaPlan.CreateInstance(...).Show(true)` (Excel) | этап 4; добавлен 2026-09-25 после снимка — в веб-меню виден, ведёт на `/todo` | 0 | — | 0 |
 | 16 | Рекламный отдел → Фирмы-заказчики | `miFirm` | `:179` → ShowFirms:605 | Простой журнал | Firm (16) | перенесён (SimpleJournal) | 8 | +3/−0 | 30 |
 | 169 | Рекламный отдел → Группа компаний | `miHeadOrganizations` | `:249` → ShowHeadCompanies:610 | MasterDetail | HeadCompany (1248) → Firm (16), `ShowInactive=1` | перенесён деревом (2026-09-21) | 7 | — | 28 |
 | 39 | Рекламный отдел → Предмет рекламы | `miAdvertSubject` | `:155` → ShowAdvertSubjects:509 | Дерево на своём контейнере | `AdvertTypeContainer` (сценарий «Предметы рекламы»: 17 / 1243) | перенесён (Browser), переключатели в меню корня; проверено вживую 2026-09-18 | 7 | +7/−0 | 26 |
