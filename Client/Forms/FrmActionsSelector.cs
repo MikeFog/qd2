@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.Data;
+using System.Linq;
 using System.Windows.Forms;
 using FogSoft.WinForm;
 using FogSoft.WinForm.Classes;
@@ -152,12 +153,21 @@ namespace Merlin.Forms
 		{
 			// Без перезагрузки: при перепривязке SmartGrid вернул бы отметки
 			// из своего Added2Checked.
+			// Кнопка тулбара не забирает фокус у грида: только что отмеченный чекбокс
+			// остаётся в режиме редактирования и рисует своё значение, а не строки,
+			// пока фокус не уйдёт. Завершаем редактирование сами, до сброса данных.
+			DataGridView dgv = grid.InternalGrid;
+			dgv.EndEdit();
+
 			_selectedIds.Clear();
 			grid.Added2Checked.Clear();
 			grid.RemovedFromChecked.Clear();
 			if (grid.DataSource != null)
 				foreach (DataRow row in grid.DataSource.Table.Rows)
 					row[SmartGrid.COL_IsSelected] = false;
+			if (dgv.Controls.Find("checkboxHeader", false).FirstOrDefault() is CheckBox header)
+				header.Checked = false;
+			dgv.Invalidate();
 			UpdateSelectedLabel();
 		}
 
