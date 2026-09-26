@@ -483,6 +483,12 @@ namespace FogSoft.WinForm.Controls
             }
 
 			RebuildTree(presentationObject);
+
+            // Если выделение не сдвинулось (родитель уже был выбран), AfterSelect не сработал
+            // и список дочерних объектов никто не перечитал; у узла-листа (прайс-лист -> тарифы)
+            // RebuildTree(po) его тоже не трогает.
+            if (tvStructure.SelectedNode == originalNode)
+                RefreshDependantGrid();
         }
 
 		private void SaveExpandedNodes(TreeNode node, IList<PresentationObject> expandenObjects)
