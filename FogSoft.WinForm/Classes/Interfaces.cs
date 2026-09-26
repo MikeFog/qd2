@@ -50,7 +50,7 @@ namespace FogSoft.WinForm
 
 	public delegate void ObjectParentChange(PresentationObject presentationObject, int parentDepth);
 
-    public delegate void ObjectParentChange2(PresentationObject presentationObject, Entity parentEntity);
+    public delegate void ObjectParentChange2(PresentationObject presentationObject, Func<PresentationObject, bool> isParent);
 
     public delegate void ObjectCheckedDelegate(PresentationObject presentationObject, bool state);
 

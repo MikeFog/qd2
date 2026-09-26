@@ -109,7 +109,7 @@ namespace Merlin.Classes
 				// не годятся - каждое из них перестраивает узел, а новая строка вставляется в начало списка.
 				// У пункта на строке нет ссылки на контейнер, поэтому сообщаем «изменился родитель - прайс-лист».
 				if (changed.Count + added.Count > 0)
-					OnParentChanged(this, EntityManager.GetEntity((int)Entities.Pricelist));
+					OnParentChanged(this, po => po is Pricelist);
 
 				if (tableErrors.Rows.Count > 0)
 					Globals.ShowSimpleJournal(EntityManager.GetEntity((int)Entities.ErrTmplGen),

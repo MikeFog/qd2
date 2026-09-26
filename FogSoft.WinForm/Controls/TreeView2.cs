@@ -223,8 +223,6 @@ namespace FogSoft.WinForm.Controls
                             if (!string.IsNullOrEmpty(imgName))
                                 imageCurrentIndex = ResolveImageIndex(imgName);
                             AddObject2Node(e.Node, po, IsExpandableObject(po), imageCurrentIndex, false);
-							if (po is IObjectContainer objContainer2 && (po.Entity.Id == 137 || po.Entity.Id == 118))
-								objContainer2.Filter = objContainer.Filter;
                         }
                     }
                 }
@@ -459,19 +457,17 @@ namespace FogSoft.WinForm.Controls
 			}
         }
 
-        private void RebuildTree(PresentationObject presentationObject, Entity parentEntity)
+        private void RebuildTree(PresentationObject presentationObject, Func<PresentationObject, bool> isParent)
 		{
             TreeNode originalNode = tvStructure.SelectedNode;
-            if (originalNode == null || parentEntity == null) return;
+            if (originalNode == null || isParent == null) return;
 
-            // Поднимаемся по выделению до узла, представляющего parentEntity
-            // (сравнение направленное: EntityCampaign.Equals распознаёт все типы
-            // кампаний). Если такого предка в цепочке нет (замена ролика из контекста
-            // вне поддерева кампании) — исходный while уходил за корень дерева и падал
-            // с NRE на CurrentObject.Entity. Теперь: не перестраиваем, возвращаем
+            // Поднимаемся по выделению до ближайшего узла, который вызывающий
+            // признаёт родителем. Если такого предка в цепочке нет (замена ролика
+            // из контекста вне поддерева кампании) — не перестраиваем, возвращаем
             // исходное выделение.
             while (tvStructure.SelectedNode != null
-                   && CurrentObject?.Entity?.Equals(parentEntity) != true)
+                   && !(CurrentObject != null && isParent(CurrentObject)))
             {
                 tvStructure.SelectedNode = tvStructure.SelectedNode.Parent;
             }

@@ -200,7 +200,7 @@ namespace Merlin.Classes
             //Globals.ShowSimpleJournal(EntityManager.GetEntity((int)Entities.RollerUnSubtitude), "Незамененные ролики", ds.Tables[0]);
             RecalculateAndShowPriceChange(price);
             //Refresh();
-            OnParentChanged(this, EntityManager.GetEntity((int)Entities.GeneralCampaign));
+            OnParentChanged(this, po => po is Campaign);
             return warning;
         }
 

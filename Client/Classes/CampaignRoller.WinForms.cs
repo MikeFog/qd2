@@ -42,7 +42,7 @@ namespace Merlin.Classes
 						   if (priceMayChange)
 							   RecalculateAndShowPriceChange(Campaign.Action.TotalPrice);
 						   //OnParentChanged(this, refreshLevel);
-						   OnParentChanged(this, EntityManager.GetEntity((int)Entities.GeneralCampaign));
+						   OnParentChanged(this, po => po is Campaign);
 					   });
 		}
 

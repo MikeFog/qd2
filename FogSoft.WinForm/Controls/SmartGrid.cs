@@ -1280,9 +1280,9 @@ namespace FogSoft.WinForm.Controls
             EntityParentChanged?.Invoke(presentationObject, i);
         }
 
-        private void OnObjectParentChange2(PresentationObject presentationObject, Entity parentEntity)
+        private void OnObjectParentChange2(PresentationObject presentationObject, Func<PresentationObject, bool> isParent)
         {
-            RebuildTree?.Invoke(presentationObject, parentEntity);
+            RebuildTree?.Invoke(presentationObject, isParent);
         }
 
         private void OnObjectCreated(PresentationObject presentationObject)
@@ -1895,7 +1895,7 @@ namespace FogSoft.WinForm.Controls
 
         private bool _lockMultiSelect = false;
         internal Action<PresentationObject> RebuildCurrentNode { get; set; }
-        internal Action<PresentationObject, Entity> RebuildTree { get; set; }
+        internal Action<PresentationObject, Func<PresentationObject, bool>> RebuildTree { get; set; }
 
         private void dataGrid_RowPrePaint(object sender, DataGridViewRowPrePaintEventArgs e)
         {

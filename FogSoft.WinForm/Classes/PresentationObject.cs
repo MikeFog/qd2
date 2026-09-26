@@ -421,9 +421,13 @@ namespace FogSoft.WinForm.Classes
             ParentChanged?.Invoke(presentationObject, parentDepth);
         }
 
-        protected void OnParentChanged(PresentationObject presentationObject, Entity parentEntity)
+        /// <summary>
+        /// Просит дерево перестроить ближайший узел-предок, для которого
+        /// <paramref name="isParent"/> вернёт true (например, <c>po => po is Campaign</c>).
+        /// </summary>
+        protected void OnParentChanged(PresentationObject presentationObject, Func<PresentationObject, bool> isParent)
         {
-            ParentChanged2?.Invoke(presentationObject, parentEntity);
+            ParentChanged2?.Invoke(presentationObject, isParent);
         }
 
         protected void OnObjectCloned(PresentationObject presentationObject)
