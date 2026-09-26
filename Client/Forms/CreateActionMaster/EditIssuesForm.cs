@@ -1365,7 +1365,7 @@ namespace Merlin.Forms.CreateActionMaster
         /// <summary>
         /// «В этом окне:», дальше каждая чужая акция той же фирмы с новой строки — номер,
         /// статус подтверждения и владелец (по аналогии с текстом диалога подтверждения
-        /// переноса).
+        /// переноса). Модульная кампания своей акции — первой строкой.
         /// </summary>
         private string BuildOtherFirmActionsTooltip(TariffWithRangeGrid rangeGrid, DateTime windowDate)
         {
@@ -1377,6 +1377,12 @@ namespace Merlin.Forms.CreateActionMaster
             foreach (TariffWithRangeGrid.OtherFirmAction action in actions)
             {
                 string status = action.HasConfirmed ? "подтверждена" : "не подтверждена";
+                // Своя акция здесь — только выпуски её модульных кампаний (в веер не входят).
+                if (action.ActionId == rangeGrid.Action.ActionId)
+                {
+                    lines.Insert(0, string.Format("Модульная кампания этой акции ({0})", status));
+                    continue;
+                }
                 string details = string.IsNullOrEmpty(action.OwnerName) ? status : status + ", " + action.OwnerName;
                 lines.Add(string.Format("Акция №{0} ({1})", action.ActionId, details));
             }
