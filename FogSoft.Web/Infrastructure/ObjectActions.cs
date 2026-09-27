@@ -246,6 +246,12 @@ public sealed class ObjectActions
 		{
 			[Merlin.Classes.Action.ActionNames.SetAdvertType] = (s, t) => s.SetRollerAdvertType((PresentationObject)t),
 		},
+		// PaymentCommon.WinForms.cs, DoAction: «Выбрать акции для оплаты» (PaymentCandidatesForm) —
+		// в «Журнале оплат». Доступность — PaymentCommon.IsActionEnabled (платёж не распределён).
+		["PaymentCommon"] = new()
+		{
+			[Merlin.Classes.PaymentCommon.ActionNames.SelectActionsToPay] = (s, t) => s.SelectActionsToPay((Merlin.Classes.PaymentCommon)t),
+		},
 	};
 
 	private async Task<ActionEffect> Changed(Action apply)
@@ -1171,6 +1177,28 @@ public sealed class ObjectActions
 
 		PresentationObject advertType = entity.CreateObject(selector.SelectedRow);
 		await _busy.RunAsync(() => Merlin.Classes.RollerStatisticQuery.SetAdvertType(roller, advertType));
+		return ActionEffect.Changed;
+	}
+
+	/// <summary>
+	/// PaymentCommon.SelectActions: кандидаты, распределение галочками, запись по «ОК».
+	/// Десктоп после этого делает Refresh + FireContainerRefreshed — здесь экран
+	/// перечитывает платежи и оплаты по <see cref="ActionEffect.Changed"/>.
+	/// </summary>
+	private async Task<ActionEffect> SelectActionsToPay(Merlin.Classes.PaymentCommon payment)
+	{
+		DataTable candidates = await _busy.RunAsync(payment.GetPaymentCandidates);
+		var model = new PaymentCandidatesForm.Model(payment.Summa, payment.Consumed, candidates);
+
+		if (await _dialogs.ShowAsync(Tr.T("Акции на оплату"), builder =>
+			{
+				builder.OpenComponent<PaymentCandidatesForm>(0);
+				builder.AddComponentParameter(1, nameof(PaymentCandidatesForm.Value), model);
+				builder.CloseComponent();
+			}, okText: Tr.T("Оплатить")) != DialogOutcome.Ok || model.Allocated.Count == 0)
+			return ActionEffect.None;
+
+		await _busy.RunAsync(() => payment.PayActions(model.Allocated));
 		return ActionEffect.Changed;
 	}
 

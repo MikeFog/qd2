@@ -755,8 +755,9 @@ else
         {
             PresentationObject obj = Entity.CreateObject(row);
             _menuRow = row;
+            IReadOnlyList<ActionMenuItem> items = Actions.BuildMenu(obj, ViewType.Journal);
             string? picked = await Menu.ShowAsync(
-                Actions.BuildMenu(obj, ViewType.Journal), e.ClientX, e.ClientY, fromButton);
+                RowClick.HasDelegate ? WithoutClickHint(items) : items, e.ClientX, e.ClientY, fromButton);
             _menuRow = null;
             StateHasChanged();
 
@@ -794,6 +795,17 @@ else
             await Failed.InvokeAsync(ErrorPresenter.Describe(ex));
         }
     }
+
+    /// <summary>
+    /// Подсказка «клик» у «Открыть карточку» — неправда, когда щелчок по строке выбирает её
+    /// (<see cref="RowClick"/>): карточка тогда открывается только из меню.
+    /// </summary>
+    private static IReadOnlyList<ActionMenuItem> WithoutClickHint(IReadOnlyList<ActionMenuItem> items) =>
+        items.Select(i => i.Name != Constants.EntityActions.ShowPassport || i.Hint == null ? i : new ActionMenuItem
+        {
+            Name = i.Name, Text = i.Text, Icon = i.Icon, Enabled = i.Enabled,
+            Ported = i.Ported, Danger = i.Danger, Children = i.Children,
+        }).ToList();
 
     private async Task Execute(PresentationObject obj, string actionName, bool reportUnavailable)
     {

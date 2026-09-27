@@ -1479,3 +1479,12 @@ code	Файл готов	El archivo está listo
 code	Файл сетки для эфирной программы (DJin)	Archivo de la parrilla para el programa de emisión (DJin)
 caption	Сетки в Word	Parrillas en Word
 caption	Файлы для эфира (DJin)	Archivos para emisión (DJin)
+code	Выберите платёж — здесь появятся оплаченные им акции.	Seleccione un pago: aquí aparecerán las campañas pagadas con él.
+code	Платёж ещё не распределён по акциям.	El pago aún no está distribuido entre campañas.
+code	Сумма платежа:	Monto del pago:
+code	Осталось распределить:	Queda por distribuir:
+code	Неоплаченных акций для этого платежа нет.	No hay campañas impagas para este pago.
+code	К оплате	A pagar
+code	Акция {0}	Campaña {0}
+code	Акции на оплату	Campañas a pagar
+code	Оплатить	Pagar

@@ -10,7 +10,7 @@ namespace Merlin.Classes
 	// Конвенция — docs/tasks/web-migration-dialogs.md.
 	public partial class PaymentCommon : Payment
 	{
-		private struct ActionNames
+		public struct ActionNames
 		{
 			public const string SelectActionsToPay = "SelectActionsToPay";
 		}
@@ -41,7 +41,7 @@ namespace Merlin.Classes
 		}
 
 		/// <summary>Акции — кандидаты на оплату этим платежом.</summary>
-		internal DataTable GetPaymentCandidates()
+		public DataTable GetPaymentCandidates()
 		{
 			Entity entityPaymentCandidate =
 				EntityManager.GetEntity((int) Entities.ActionPaymentCandidate);

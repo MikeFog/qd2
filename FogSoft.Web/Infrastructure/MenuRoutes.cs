@@ -197,6 +197,10 @@ public static class ScreenRoutes
 	/// <summary>«Экспорт сеток вещания» — файлы для эфира и сетки в Word по многим станциям.</summary>
 	public const string ExportGrid = "miExportGrid";
 
+	/// <summary>«Журнал оплат» из «Бухгалтерии» и из «Рекламного отдела».</summary>
+	public const string PaymentCommon = "miPaymentCommon";
+	public const string PaymentCommonFromAdSection = "miPaymentFRS";
+
 	public static readonly IReadOnlyDictionary<string, string> Screens =
 		new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase)
 		{
@@ -215,6 +219,10 @@ public static class ScreenRoutes
 			// Десктоп — ExportGridForm (две папки из настроек); в вебе — выбор папки в браузере
 			// (решение владельца 2026-09-25: папки по умолчанию были костылём RDP).
 			{ ExportGrid, "/grid-export" },
+			// Десктоп — MasterDetailForm (MDIForm.ShowPaymentCommon); пункты различаются только
+			// filterAgencies процедуры PaymentsCommon, поэтому пункт едет в адресе.
+			{ PaymentCommon, "/payments?menu=" + PaymentCommon },
+			{ PaymentCommonFromAdSection, "/payments?menu=" + PaymentCommonFromAdSection },
 		};
 }
 

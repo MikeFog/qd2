@@ -64,15 +64,12 @@ namespace Merlin.Forms
 				Application.DoEvents();
 				Cursor.Current = Cursors.WaitCursor;
 
-				Entity entity = payment.ProfitEntity;
-				PresentationObject paymentAction = new PresentationObject(entity);
-				paymentAction[Payment.ParamNames.PaymentID] = payment.PaymentId;
+				List<KeyValuePair<int, decimal>> sums = new List<KeyValuePair<int, decimal>>();
 				foreach (PresentationObject presentationObject in grdCandidates.Added2Checked)
-				{
-					paymentAction[Payment.ParamNames.Summa] = dicWithDistributedMoney[presentationObject];
-					paymentAction[Action.ParamNames.ActionId] = presentationObject[Action.ParamNames.ActionId];
-					paymentAction.Update();
-				}
+					sums.Add(new KeyValuePair<int, decimal>(
+						Convert.ToInt32(presentationObject[Action.ParamNames.ActionId]),
+						dicWithDistributedMoney[presentationObject]));
+				payment.PayActions(sums);
 			}
 			catch (Exception ex)
 			{

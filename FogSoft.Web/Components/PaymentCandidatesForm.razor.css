@@ -1,0 +1,45 @@
+.candidates {
+    display: flex;
+    flex-direction: column;
+    gap: var(--s-2);
+    min-width: 460px;
+}
+
+.totals {
+    display: flex;
+    gap: var(--s-4);
+    color: var(--c-text-muted);
+}
+
+.totals b {
+    color: var(--c-text);
+}
+
+.list {
+    max-height: 50vh;
+    overflow: auto;
+    border: 1px solid var(--c-border);
+    border-radius: 6px;
+}
+
+.list table {
+    margin: 0;
+}
+
+.list th {
+    position: sticky;
+    top: 0;
+    background: var(--c-surface);
+}
+
+.col-check {
+    width: 32px;
+}
+
+.num {
+    text-align: right;
+}
+
+.tabular {
+    font-variant-numeric: tabular-nums;
+}

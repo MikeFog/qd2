@@ -86,7 +86,7 @@ sed -n '/private void MenuItemClick/,/catch (Exception ex)/p' Client/Forms/MDIFo
 | Журнал-наследник, по сути простой (`miMassMedia`) | 1 | перенесён |
 | Дерево на `FakeContainer` | 7 | перенесены все |
 | Дерево на своём контейнере | 6 | перенесены все: «Предмет рекламы» (2026-09-18), 5 журналов акций (2026-09-20) |
-| `MasterDetail` | 4 | движка не будет (решение владельца 2026-09-21): `miAgencyTax` и `miHeadOrganizations` перенесены деревом; два журнала оплат — решение отложено |
+| `MasterDetail` | 4 | движка не будет (решение владельца 2026-09-21): `miAgencyTax` и `miHeadOrganizations` перенесены деревом; два журнала оплат — отдельным экраном «платежи сверху, оплаты снизу» (`/payments`, 2026-09-26) |
 | Журнал-наследник со своей логикой | 4 | `miStats.Balance` (2026-09-18) и `miAnnouncements` (2026-09-21) перенесены; нет: `miRoller`, `miActPrint` |
 | Собственная форма | 6 | нет, этап 3 |
 | Диалог → журнал(ы) | 1 | отложено 2026-09-21: в лоб не переносим, нужно своё решение (§10) |
@@ -109,7 +109,7 @@ sed -n '/private void MenuItemClick/,/catch (Exception ex)/p' Client/Forms/MDIFo
 | Статус | Пунктов |
 |---|---:|
 | перенесён (32 `SimpleJournal` + 15 `Browser`) | 47 |
-| журналы оплат: `MasterDetail` в вебе не будет, решение об экране отложено (2026-09-21) | 2 |
+| журналы оплат: перенесены своим экраном `/payments` — не деревом и не движком `MasterDetail` (2026-09-26) | 2 |
 | этап 3 | 11 |
 | этап 4 (отчёты, выгрузки, импорт) | 5 |
 | отложено (§10) | 4 |
@@ -263,8 +263,9 @@ sed -n '/private void MenuItemClick/,/catch (Exception ex)/p' Client/Forms/MDIFo
   пункта делаются деревом (слева дерево, справа список детей). Разбор, включая
   то, что сценария связи для этих пар в метаданных нет и заводить его там не
   нужно, — `web-migration.md`, этап 2. **Сделано 2026-09-21 для `miAgencyTax` и
-  `miHeadOrganizations`** (сценарий из кода — `CodeScenario`); журналы оплат
-  отложены решением владельца.
+  `miHeadOrganizations`** (сценарий из кода — `CodeScenario`). Журналы оплат —
+  исключение (решение владельца 2026-09-26): свой экран `/payments`, платежи
+  сверху, оплаты выбранного платежа снизу, как в десктопе.
 - **`miPaymentByManager`**: сначала модальный `FrmManagerSelector` (даты,
   агентство, галочки менеджеров), затем **по журналу PaymentCommonAction (146) на
   каждого выбранного менеджера** (`MDIForm.cs:645`–`:663`). Тот же 146 через
@@ -481,7 +482,7 @@ Ctrl+Shift+A. В вебе их нет и не будет: решение вла�
 | 158 | Рекламный отдел → Журнал макетов рекламных акций | `miActionJournalUnconfirmed` | `:169` → ShowMassmediaActions:395 | Дерево на своём контейнере | `ActionContainer(UnconfirmedAction)`: 137 / 77 / 1256 | перенесён (Browser, 2026-09-20); действия по строке — этапы 3-4 | 5 | +8/−0 | 24 |
 | 157 | Рекламный отдел → Журнал удалённых рекламных акций | `miActionJournalDeleted` | `:172` → ShowMassmediaActions:395 | Дерево на своём контейнере | `ActionContainer(DeletedAction)`: 1229 / 1236 / 1257 | перенесён (Browser, 2026-09-20); действия по строке — этапы 3-4 | 5 | +7/−0 | 23 |
 | 145 | Рекламный отдел → Объем реализации (Сводный) | `VolumeOfRealizationByManager` | `:232` → ShowGraphVolumeOfRealizationByPerson:823 | График | `GraphForm` на данных StatsVolumeofRealization (158), `managerID = LoggedUser` | перенесён (SimpleJournal) 2026-09-21: журнал 158 с менеджером по умолчанию; диаграммы отложены | 5 | +3/−0 | 24 |
-| 112 | Рекламный отдел → Журнал оплат | `miPaymentFRS` | `:181` → ShowPaymentCommon(true):628 | MasterDetail | PaymentCommon (145) → PaymentCommonAction (146), `filterAgencies=true` | решение отложено (2026-09-21) | 6 | +3/−0 | 24 |
+| 112 | Рекламный отдел → Журнал оплат | `miPaymentFRS` | `:181` → ShowPaymentCommon(true):628 | MasterDetail | PaymentCommon (145) → PaymentCommonAction (146), `filterAgencies=true` | перенесён (`/payments`, 2026-09-26) | 6 | +3/−0 | 24 |
 | 113 | Рекламный отдел → Журнал оплат по менеджерам | `miPaymentByManagerFromRSection` | `:192` → ShowCommonOrderByManagerFromRSection:665 | Простой журнал + ManagerFilter | PaymentCommonAction (146) | перенесён (SimpleJournal) | 6 | +3/−0 | 24 |
 | 114 | Рекламный отдел → Баланс для всех фирм-заказчиков | `miBalanceFromRSection` | `:186` → ShowBalance:438 | Простой журнал + ManagerFilter | BalanceIssues (184) | перенесён (SimpleJournal) | 6 | +3/−0 | 24 |
 | 62 | Рекламный отдел → Сетка вещания | `miPrintGridFromRSection` | `:196` → ShowPrintGridForm:670 | Отчёт / выгрузка | `FrmGridReport` (Crystal-просмотрщик) | перенесён (`/broadcast-grid`, 2026-09-25; «Для эфира…» — файл DJin) | 6 | +4/−0 | 24 |
@@ -515,7 +516,7 @@ Ctrl+Shift+A. В вебе их нет и не будет: решение вла�
 | 149 | Статистика → Аналитические показатели → Объем продаж в секундах | `miStats.VolumeOfRealizationSec` | `:802` → ShowStatsJournal:745 | Простой журнал + ManagerFilter | StatVolumeOfRealizationSec (219) | перенесён (SimpleJournal) | 1 | — | 5 |
 | 46 | Бухгалтерия | `miAccounting` | — (ветки нет) | Папка с codeName, без обработчика | папка «Бухгалтерия» | — (папка рисуется как группа) | 3 | +1/−0 | 9 |
 | 48 | Бухгалтерия → Выписать акт выполненных работ | `miActPrint` | `:216` → ShowActJournal:349 | Журнал-наследник со своей логикой | `ActJournalForm` (ActJournalRow, 156) | этап 3 + этап 4 (печать) | 3 | — | 8 |
-| 77 | Бухгалтерия → Журнал оплат | `miPaymentCommon` | `:181` → ShowPaymentCommon(false):628 | MasterDetail | PaymentCommon (145) → PaymentCommonAction (146), `filterAgencies=false` | решение отложено (2026-09-21) | 3 | +1/−0 | 9 |
+| 77 | Бухгалтерия → Журнал оплат | `miPaymentCommon` | `:181` → ShowPaymentCommon(false):628 | MasterDetail | PaymentCommon (145) → PaymentCommonAction (146), `filterAgencies=false` | перенесён (`/payments`, 2026-09-26) | 3 | +1/−0 | 9 |
 | 84 | Бухгалтерия → Журнал оплат по менеджерам | `miPaymentByManager` | `:190` → ShowCommonOrderByManager:645 | Диалог → журнал(ы) | `FrmManagerSelector` → по журналу PaymentCommonAction (146) на каждого выбранного менеджера | отложено 2026-09-21 (§10) | 3 | — | 8 |
 | 85 | Бухгалтерия → Баланс для конкретной фирмы-заказчика | `miFirmBalance` | `:188` → ShowFirmBalance:638 | Собственная форма | `FrmFirmIssuesBalance` (← `FrmFirmBalance`) | этап 3 (п.3 плана) | 3 | — | 8 |
 | 86 | Бухгалтерия → Баланс для всех фирм-заказчиков | `miBalance` | `:184` → ShowBalance:438 | Простой журнал + ManagerFilter | BalanceIssues (184) | перенесён (SimpleJournal) | 3 | — | 8 |

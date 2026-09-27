@@ -6,9 +6,10 @@ using Merlin.Forms;
 namespace Merlin.Classes
 {
 	// UI-часть PaymentCommon: диспетчеризация и диалог выбора акций на оплату.
-	// Применение выбора — внутри PaymentCandidatesForm; бизнес-часть на этой
-	// стороне — только подготовка кандидатов (GetPaymentCandidates, в
-	// PaymentCommon.cs). Конвенция — docs/tasks/web-migration-dialogs.md.
+	// Бизнес-часть — кандидаты (GetPaymentCandidates, PaymentCommon.cs) и запись
+	// оплат (Payment.PayActions, её зовёт PaymentCandidatesForm); веб-диалог —
+	// FogSoft.Web/Components/PaymentCandidatesForm.razor.
+	// Конвенция — docs/tasks/web-migration-dialogs.md.
 	public partial class PaymentCommon
 	{
 		public override void DoAction(string actionName, IWin32Window owner, InterfaceObjects interfaceObject)

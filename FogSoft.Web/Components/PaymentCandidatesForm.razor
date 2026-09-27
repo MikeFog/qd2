@@ -1,0 +1,98 @@
+@using System.Data
+@using FogSoft.WinForm.Classes
+
+@*
+    Содержимое диалога «Выбрать акции для оплаты» — веб-аналог десктопной
+    PaymentCandidatesForm: акции-кандидаты галочками, остаток платежа к распределению.
+    Отмеченной акции достаётся её долг (Сумма − Оплачено), но не больше остатка —
+    в порядке отметки, как в десктопе. Распределение пишется прямо в модель; запись
+    в базу — Payment.PayActions по «ОК».
+*@
+
+<div class="candidates">
+    <div class="totals">
+        <span>@Tr.T("Сумма платежа:") <b class="tabular">@Value.Summa.ToString("C")</b></span>
+        <span>@Tr.T("Осталось распределить:") <b class="tabular">@Value.Free.ToString("C")</b></span>
+    </div>
+
+    @if (Value.Candidates.Rows.Count == 0)
+    {
+        <div class="text-muted">@Tr.T("Неоплаченных акций для этого платежа нет.")</div>
+    }
+    else
+    {
+        <div class="list">
+            <table class="table table-sm">
+                <thead>
+                    <tr>
+                        <th class="col-check"></th>
+                        <th>@Tr.T("№ Акции")</th>
+                        <th class="num">@Tr.T("Сумма")</th>
+                        <th class="num">@Tr.T("Оплачено")</th>
+                        <th class="num">@Tr.T("К оплате")</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (DataRow row in Value.Candidates.Rows)
+                    {
+                        int id = ActionId(row);
+                        bool on = Value.Allocated.TryGetValue(id, out decimal sum);
+                        <tr>
+                            <td class="col-check">
+                                @* Пустой остаток нечего распределять: десктоп при этом записывал оплату в 0 ₽. *@
+                                <input type="checkbox" class="form-check-input" checked="@on"
+                                       disabled="@(!on && Value.Free <= 0)" aria-label="@(Tr.Format("Акция {0}", id))"
+                                       @onchange="e => Toggle(row, e.Value is true)" />
+                            </td>
+                            <td class="tabular">@id</td>
+                            <td class="num tabular">@Money(row, "finalPrice").ToString("C")</td>
+                            <td class="num tabular">@Money(row, "paidUp").ToString("C")</td>
+                            <td class="num tabular">@(on ? sum.ToString("C") : "")</td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    }
+</div>
+
+@code {
+    [Parameter, EditorRequired] public Model Value { get; set; } = default!;
+
+    public sealed class Model
+    {
+        public Model(decimal summa, decimal consumed, DataTable candidates)
+        {
+            Summa = summa;
+            Free = summa - consumed;
+            Candidates = candidates;
+        }
+
+        public decimal Summa { get; }
+        public decimal Free { get; set; }
+        public DataTable Candidates { get; }
+
+        /// <summary>actionID → сколько платежа на неё распределено.</summary>
+        public Dictionary<int, decimal> Allocated { get; } = new();
+    }
+
+    private static int ActionId(DataRow row) => Convert.ToInt32(row[Merlin.Classes.Action.ParamNames.ActionId]);
+
+    private static decimal Money(DataRow row, string column) =>
+        row[column] == DBNull.Value ? 0 : Convert.ToDecimal(row[column]);
+
+    /// <summary>PaymentCandidatesForm.grdCandidates_ObjectChecked.</summary>
+    private void Toggle(DataRow row, bool on)
+    {
+        int id = ActionId(row);
+        if (on)
+        {
+            decimal debt = Money(row, "finalPrice") - Money(row, "paidUp");
+            decimal sum = Math.Min(debt, Value.Free);
+            Value.Free -= sum;
+            Value.Allocated[id] = sum;
+        }
+        else if (Value.Allocated.Remove(id, out decimal sum))
+            Value.Free += sum;
+    }
+}

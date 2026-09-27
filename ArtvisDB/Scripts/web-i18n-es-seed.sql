@@ -1,5 +1,5 @@
 ﻿/*
-    ДЕПЛОЙ: переводы веб-версии на язык «es» (1480 строк). docs/tasks/web-i18n.md, этап 5.
+    ДЕПЛОЙ: переводы веб-версии на язык «es» (1489 строк). docs/tasks/web-i18n.md, этап 5.
     СГЕНЕРИРОВАН из ArtvisDB/Scripts/i18n/es.tsv скриптом build-seed.py — руками не править.
 
     ПРЕДУСЛОВИЕ     накачен web-i18n-translation-deploy.sql (таблица iTranslation).
@@ -1498,7 +1498,16 @@ INSERT INTO #t ([source], [text]) VALUES
 (N'Файл готов', N'El archivo está listo'),
 (N'Файл сетки для эфирной программы (DJin)', N'Archivo de la parrilla para el programa de emisión (DJin)'),
 (N'Сетки в Word', N'Parrillas en Word'),
-(N'Файлы для эфира (DJin)', N'Archivos para emisión (DJin)');
+(N'Файлы для эфира (DJin)', N'Archivos para emisión (DJin)'),
+(N'Выберите платёж — здесь появятся оплаченные им акции.', N'Seleccione un pago: aquí aparecerán las campañas pagadas con él.'),
+(N'Платёж ещё не распределён по акциям.', N'El pago aún no está distribuido entre campañas.'),
+(N'Сумма платежа:', N'Monto del pago:'),
+(N'Осталось распределить:', N'Queda por distribuir:'),
+(N'Неоплаченных акций для этого платежа нет.', N'No hay campañas impagas para este pago.'),
+(N'К оплате', N'A pagar'),
+(N'Акция {0}', N'Campaña {0}'),
+(N'Акции на оплату', N'Campañas a pagar'),
+(N'Оплатить', N'Pagar');
 GO
 
 BEGIN TRANSACTION;

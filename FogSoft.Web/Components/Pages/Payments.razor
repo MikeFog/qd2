@@ -1,0 +1,272 @@
+@page "/payments"
+@using System.Data
+@using FogSoft.Web.Infrastructure
+@using FogSoft.WinForm
+@using FogSoft.WinForm.Classes
+@using FogSoft.WinForm.Passport.Classes
+@using Merlin.Classes
+@inject MenuAccess Access
+@inject BusyService Busy
+@inject PassportDialog Passports
+@inject NavigationManager Nav
+
+@*
+    «Журнал оплат» — веб-экран вместо MasterDetailForm (MDIForm.ShowPaymentCommon): сверху
+    платежи (PaymentCommon, 145) с отбором по её XmlFilter, снизу — оплаты акций выбранного
+    платежа (PaymentCommonAction, 146). Единственный экран «мастер → деталь» в вебе: движка
+    MasterDetail нет (решение владельца 2026-09-21), а деревом этот журнал не делается —
+    у платежа восемь финансовых колонок (docs/tasks/web-migration.md).
+
+    Два пункта меню — «Бухгалтерия» (miPaymentCommon) и «Рекламный отдел» (miPaymentFRS) —
+    отличаются только скрытым параметром filterAgencies процедуры PaymentsCommon; пункт
+    приходит в адресе (?menu=).
+*@
+
+<PageTitle>@_title</PageTitle>
+
+@if (SecurityManager.LoggedUser == null)
+{
+    <div class="state">
+        <div class="state-title">@Tr.T("Вы не вошли в систему")</div>
+        <a href="/">@Tr.T("Перейти к входу")</a>
+    </div>
+}
+else if (_access != JournalAccess.Allowed)
+{
+    <div class="state">
+        <div class="state-title">@Tr.T("Доступ закрыт")</div>
+        @Tr.T("Этот экран вам не разрешён. Права на экраны выдаются вместе с пунктами меню — обратитесь к администратору системы.")
+    </div>
+}
+else if (_master == null)
+{
+    @if (_error != null)
+    {
+        <div class="alert alert-danger">@_error</div>
+    }
+    else
+    {
+        <div class="state">@Tr.T("Загрузка…")</div>
+    }
+}
+else
+{
+    <div class="payments">
+        @* Тулбар — как у MasterDetailForm: Добавить | Обновить | Экспорт. «Изменить» и
+           «Удалить» — действия строки («⋯»), «Фильтр» — постоянная панель. *@
+        <ScreenToolbar Title="@_title" Count="@(_data?.Rows.Count ?? 0)">
+            <button class="btn btn-primary btn-sm" disabled="@(!_canAdd)" @onclick="AddNew"><i class="bi bi-plus-lg" aria-hidden="true"></i>@Tr.T("Добавить")</button>
+            <button class="btn btn-sm btn-outline-secondary" @onclick="Refresh"><i class="bi bi-arrow-clockwise" aria-hidden="true"></i>@Tr.T("Обновить")</button>
+            <button class="btn btn-sm btn-outline-secondary" disabled="@(_data == null || _data.Rows.Count == 0)" @onclick="ExportMaster"><i class="bi bi-download" aria-hidden="true"></i>@Tr.T("Экспорт в Excel")</button>
+        </ScreenToolbar>
+
+        <FilterPanel @ref="_filterPanel" Pages="_filterPages" Values="_filterValues" FilterData="_filterData" Apply="Load" />
+
+        @if (_error != null)
+        {
+            <div class="alert alert-danger">@_error</div>
+        }
+
+        <section class="payments-master">
+            @* Щелчок по платежу выбирает его (SmartGrid.DependantGrid), карточка — из «⋯». *@
+            <ObjectList @ref="_masterList" Entity="_master" Data="_data" QuickSearch="true"
+                        RowClick="SelectPayment" ActiveRow="_payment"
+                        EmptyText="@(Tr.T("Записей нет. Измените условия отбора."))"
+                        Changed="Load" Failed="ShowError" />
+        </section>
+
+        <section class="payments-detail">
+            <div class="detail-head">
+                <div class="detail-title">
+                    @if (_payment == null)
+                    {
+                        @Tr.T("Выберите платёж — здесь появятся оплаченные им акции.")
+                    }
+                    else
+                    {
+                        @($"{_paymentName} / {Tr.T(_detail!.Name)}")
+                        <span class="detail-count">@(_details?.Rows.Count ?? 0)</span>
+                    }
+                </div>
+                @if (_payment != null)
+                {
+                    <button class="btn btn-sm btn-outline-secondary" disabled="@(_details == null || _details.Rows.Count == 0)" @onclick="ExportDetail"
+                            title="@(Tr.T("Экспорт в Excel"))" aria-label="@(Tr.T("Экспорт в Excel"))">
+                        <i class="bi bi-download" aria-hidden="true"></i>
+                    </button>
+                }
+            </div>
+            @if (_payment != null)
+            {
+                @* Удаление оплаты меняет «Израсходовано»/«Остаток» платежа — перечитываются
+                   оба списка (десктоп: DependantGrid_ObjectDeleted перечитывает строку мастера). *@
+                <ObjectList @ref="_detailList" Entity="_detail!" Data="_details" QuickSearch="true"
+                            EmptyText="@(Tr.T("Платёж ещё не распределён по акциям."))"
+                            Changed="Load" Failed="ShowError" />
+            }
+        </section>
+    </div>
+}
+
+@code {
+    private const string CommonMenu = ScreenRoutes.PaymentCommon;
+    private const string AdSectionMenu = ScreenRoutes.PaymentCommonFromAdSection;
+
+    // Параметр PaymentsCommon: не админу и не бухгалтеру — только агентства, где у него есть
+    // акции или платежи. В отборе его нет, десктоп кладёт его в словарь отбора в коде.
+    private const string FilterAgenciesParam = "filterAgencies";
+
+    private string _title = Tr.T("Журнал оплат");
+    private string? _menuCode;
+    private JournalAccess _access = JournalAccess.Allowed;
+    private string? _error;
+
+    private Entity? _master;
+    private Entity? _detail;
+    private bool _canAdd;
+
+    private FilterPanel? _filterPanel;
+    private IReadOnlyList<PassportPage> _filterPages = Array.Empty<PassportPage>();
+    private readonly Dictionary<string, object> _filterValues = new(StringComparer.InvariantCultureIgnoreCase);
+    private DataSet? _filterData;
+
+    private DataTable? _data;
+    private ObjectList? _masterList;
+
+    private DataRow? _payment;
+    private string _paymentName = "";
+    private DataTable? _details;
+    private ObjectList? _detailList;
+
+    protected override async Task OnParametersSetAsync()
+    {
+        if (SecurityManager.LoggedUser == null)
+            return;
+
+        string code = ResolveMenu();
+        if (code == _menuCode)
+            return;
+        _menuCode = code;
+
+        _master = null;
+        _data = null;
+        _payment = null;
+        _details = null;
+        _error = null;
+
+        _access = Access.CheckScreen(code);
+        if (_access != JournalAccess.Allowed)
+            return;
+
+        _title = Access.MenuText(code) ?? Tr.T("Журнал оплат");
+        await Busy.RunAsync(() => Try(() =>
+        {
+            Entity master = EntityManager.GetEntity((int)Merlin.Entities.PaymentCommon);
+            _detail = EntityManager.GetEntity((int)Merlin.Entities.PaymentCommonAction);
+            _canAdd = master.IsActionEnabled(Constants.EntityActions.AddNew, ViewType.Journal);
+
+            // Новый список страниц — FilterPanel сбрасывает свои кэши по смене ссылки.
+            _filterPages = PassportSchema.Parse(master.XmlFilter, master, pageType: PageTypes.Filter);
+            _filterData = Globals.PrepareForFilter(master);
+
+            // MDIForm.ShowPaymentCommon + MasterDetailForm: сначала параметр пункта, затем
+            // значения по умолчанию из метаданных.
+            _filterValues.Clear();
+            _filterValues[FilterAgenciesParam] = code == AdSectionMenu;
+            Globals.ResolveFilterInitialValues(_filterValues, master.XmlFilter);
+
+            _master = master;
+            LoadData();
+        }));
+    }
+
+    /// <summary>Пункт меню из адреса; без него (адрес набран руками) — первый разрешённый из двух.</summary>
+    private string ResolveMenu()
+    {
+        string query = new Uri(Nav.Uri).Query;
+        string? menu = Microsoft.AspNetCore.WebUtilities.QueryHelpers.ParseQuery(query).TryGetValue("menu", out var m) ? m.ToString() : null;
+        if (string.Equals(menu, AdSectionMenu, StringComparison.OrdinalIgnoreCase))
+            return AdSectionMenu;
+        if (string.Equals(menu, CommonMenu, StringComparison.OrdinalIgnoreCase))
+            return CommonMenu;
+        return Access.CheckScreen(CommonMenu) == JournalAccess.Allowed ? CommonMenu : AdSectionMenu;
+    }
+
+    private void Try(System.Action work)
+    {
+        try
+        {
+            _error = null;
+            work();
+        }
+        catch (Exception ex)
+        {
+            _error = ErrorPresenter.Describe(ex);
+        }
+    }
+
+    /// <summary>«Применить», «Обновить» и после любого действия над платежом или оплатой.</summary>
+    private Task Load() => Busy.RunAsync(() => Try(LoadData));
+
+    private Task Refresh() => _filterPanel?.Validate() == false ? Task.CompletedTask : Load();
+
+    /// <summary>
+    /// Перечитать платежи и, если выбранный платёж остался в списке, — его оплаты.
+    /// Платёж ищется по ключу: после действия его «Израсходовано»/«Остаток» могли измениться,
+    /// а после удаления или смены отбора его может уже не быть.
+    /// </summary>
+    private void LoadData()
+    {
+        object? selectedId = _payment?[Payment.ParamNames.PaymentID];
+        _payment = null;
+        _details = null;
+
+        _master!.ClearCache();
+        _data = _master.GetContent(_filterValues);
+
+        if (selectedId != null)
+            foreach (DataRow row in _data.Rows)
+                if (Equals(row[Payment.ParamNames.PaymentID], selectedId))
+                {
+                    LoadDetails(row);
+                    break;
+                }
+    }
+
+    private Task SelectPayment(DataRow row) => Busy.RunAsync(() => Try(() => LoadDetails(row)));
+
+    /// <summary>
+    /// SmartGrid.RefreshDependantGrid: объект строки мастера получает дочернюю сущность
+    /// подчинённой таблицы (SmartGrid.CreateObject) и отдаёт свои дети.
+    /// </summary>
+    private void LoadDetails(DataRow row)
+    {
+        _payment = row;
+        _details = null;
+
+        PresentationObject payment = _master!.CreateObject(row);
+        _paymentName = payment.Name;
+        var container = (IObjectContainer)payment;
+        container.ChildEntity = _detail;
+        _details = container.GetContent();
+    }
+
+    private async Task AddNew()
+    {
+        try
+        {
+            if (await Passports.ShowAsync(_master!.NewObject, isNew: true))
+                await Load();
+        }
+        catch (Exception ex)
+        {
+            _error = ErrorPresenter.Describe(ex);
+        }
+    }
+
+    private Task ExportMaster() => _masterList?.ExportToExcelAsync(_title) ?? Task.CompletedTask;
+
+    private Task ExportDetail() => _detailList?.ExportToExcelAsync($"{_paymentName} / {Tr.T(_detail!.Name)}") ?? Task.CompletedTask;
+
+    private void ShowError(string message) => _error = message;
+}
