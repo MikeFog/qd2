@@ -192,14 +192,10 @@ namespace Merlin.Classes
 		{
 			if (IsChangePossible)
 			{
-				SelectionForm selector;
-				if (SecurityManager.LoggedUser.IsAdmin || SecurityManager.LoggedUser.IsBookKeeper)
-					selector = new SelectionForm(EntityManager.GetEntity((int)Entities.Agency), "Рекламное агентство");
-				else
-					selector = new SelectionForm(EntityManager.GetEntity((int)Entities.Agency),
-					(this is CampaignOnSingleMassmedia radioStation)
-						? radioStation.Massmedia.Agencies.DefaultView : SecurityManager.LoggedUser.Agencies.DefaultView,
-					"Рекламное агентство");
+				DataView candidates = AgencyCandidates;
+				SelectionForm selector = candidates == null
+					? new SelectionForm(EntityManager.GetEntity((int)Entities.Agency), "Рекламное агентство")
+					: new SelectionForm(EntityManager.GetEntity((int)Entities.Agency), candidates, "Рекламное агентство");
 				if (selector.ShowDialog(owner) == DialogResult.OK)
 				{
 					ApplyAgencyChange(int.Parse(selector.SelectedObject.IDs[0].ToString()));

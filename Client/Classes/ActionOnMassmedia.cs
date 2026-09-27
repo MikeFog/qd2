@@ -105,7 +105,7 @@ namespace Merlin.Classes
 		/// Разрешено ли делить/объединять акцию. <paramref name="messageKey"/> — ключ
 		/// MessageAccessor с причиной отказа, null если разрешено.
 		/// </summary>
-		internal bool CanSplitOrMerge(DateTime startDate, out string messageKey)
+		public bool CanSplitOrMerge(DateTime startDate, out string messageKey)
 		{
 			messageKey = null;
             if (SecurityManager.LoggedUser.IsAdmin || SecurityManager.LoggedUser.IsTrafficManager || !IsConfirmed) return true;
@@ -121,7 +121,7 @@ namespace Merlin.Classes
 		/// Кампании — кандидаты на перенос в новую акцию. null, если делить нечего;
 		/// тогда <paramref name="messageKey"/> содержит ключ причины.
 		/// </summary>
-		internal DataTable GetCampaignsForSplit(out string messageKey)
+		public DataTable GetCampaignsForSplit(out string messageKey)
 		{
 			messageKey = null;
 			DataTable dt = Campaigns();
@@ -136,7 +136,7 @@ namespace Merlin.Classes
 		/// <summary>
 		/// Проверяет выбор пользователя для деления акции.
 		/// </summary>
-		internal bool IsSplitSelectionValid(int selectedCount, out string messageKey)
+		public bool IsSplitSelectionValid(int selectedCount, out string messageKey)
 		{
 			messageKey = null;
 			if (selectedCount == Campaigns().Rows.Count)
@@ -155,7 +155,7 @@ namespace Merlin.Classes
 		/// <summary>
 		/// Переносит выбранные кампании в новую акцию и пересчитывает обе.
 		/// </summary>
-		internal void ApplySplitAction(IList<PresentationObject> campaignsToMove)
+		public void ApplySplitAction(IList<PresentationObject> campaignsToMove)
 		{
 			ActionOnMassmedia newAction = CreateNewActionForSplit();
 			foreach (var campaign in campaignsToMove)
@@ -482,17 +482,24 @@ namespace Merlin.Classes
 			return base.IsActionEnabled(actionName, type);
 		}
 
-		// Restore, Merge и ActivateAction переехали в ActionOnMassmedia.WinForms.cs.
-		// Restore и ActivateAction перенесены целиком без разреза: Restore
-		// использует Globals.SetWaitCursor/SetDefaultCursor (не связано с
-		// ShowDialog, но само по себе UI); ActivateAction слишком плотно
+		/// <summary>Вернуть удалённую акцию из журнала удалённых (ActionRestore).</summary>
+		public void ApplyRestore()
+		{
+			Dictionary<string, object> procParameters = DataAccessor.CreateParametersDictionary();
+			procParameters.Add(ParamNames.ActionId, ActionId);
+			DataAccessor.ExecuteNonQuery("ActionRestore", procParameters);
+			OnObjectDeleted(this);
+		}
+
+		// Merge и ActivateAction переехали в ActionOnMassmedia.WinForms.cs.
+		// ActivateAction перенесён целиком без разреза: ActivateAction слишком плотно
 		// переплетён с отображением трёх журналов результатов через
 		// специально созданные для показа виртуальные сущности — деловая
 		// логика активации и подготовка данных для отображения не разделяются
 		// без переделки самого способа сообщать результат активации.
 
 		/// <summary>Кандидаты на объединение с этой акцией. null, если объединять не с чем.</summary>
-		internal DataTable GetActionsForMerge()
+		public DataTable GetActionsForMerge()
 		{
 			Entity entityAction = EntityManager.GetEntity((int) Entities.Action);
 			Dictionary<string, object> parametersActions =
@@ -507,7 +514,7 @@ namespace Merlin.Classes
 		}
 
 		/// <summary>Объединяет эту акцию с <paramref name="action2"/>.</summary>
-		internal void ApplyMerge(ActionOnMassmedia action2)
+		public void ApplyMerge(ActionOnMassmedia action2)
 		{
 			Dictionary<string, object> parametersMerge = DataAccessor.CreateParametersDictionary();
 			parametersMerge["firstActionID"] = ActionId;
@@ -573,7 +580,7 @@ namespace Merlin.Classes
 		// DeactivateAction переехал в ActionOnMassmedia.WinForms.cs.
 
 		/// <summary>Можно ли деактивировать акцию. false — <paramref name="errorMessage"/> заполнен.</summary>
-		internal bool CanDeactivate(out string errorMessage)
+		public bool CanDeactivate(out string errorMessage)
 		{
 			if (!(SecurityManager.LoggedUser.IsAdmin || SecurityManager.LoggedUser.IsTrafficManager) && StartDate < DateTime.Today)
 			{
@@ -584,7 +591,7 @@ namespace Merlin.Classes
 			return true;
 		}
 
-		internal void ApplyDeactivate()
+		public void ApplyDeactivate()
 		{
 			DataAccessor.PrepareParameters(
 				parameters, entity, InterfaceObjects.FakeModule, Constants.Actions.Deactivate);

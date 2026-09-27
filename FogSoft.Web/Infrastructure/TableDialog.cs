@@ -64,6 +64,16 @@ public sealed class TableDialog
 		Entity entity = EntityManager.CreateVirtualEntity(
 			VirtualEntityId, caption, "VirtualTable", pkColumn: string.Empty, attributes: columns);
 
+		await ShowAsync(caption, entity, table);
+	}
+
+	/// <summary>
+	/// Показать строки настоящей сущности с её колонками из метаданных — как
+	/// <c>Globals.ShowSimpleJournal(entity, caption, parameters)</c>, когда журнал
+	/// открывается под один объект (статистика по роликам акции). Только чтение.
+	/// </summary>
+	public async Task ShowAsync(string caption, Entity entity, DataTable table)
+	{
 		RenderFragment body = builder =>
 		{
 			builder.OpenComponent<Components.ObjectList>(0);

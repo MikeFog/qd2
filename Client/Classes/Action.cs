@@ -343,7 +343,42 @@ namespace Merlin.Classes
 
         #endregion
 
-        // ChangeFirm/IsChangeFirmPossible/ChangeCreator/PrintAgencyDocuments переехали в Action.WinForms.cs.
+        // PrintAgencyDocuments переехал в Action.WinForms.cs; выбор фирмы и менеджера
+        // для ChangeFirm/ChangeCreator — там же, применение — здесь (нужно и вебу).
+
+        /// <summary>
+        /// Можно ли сменить фирму-заказчика: администратору, бухгалтеру и у макета —
+        /// всегда; у подтверждённой — только если акция началась не раньше текущего
+        /// месяца и ещё не закончилась.
+        /// </summary>
+        public bool IsChangeFirmPossible
+        {
+            get
+            {
+                if (SecurityManager.LoggedUser.IsAdmin || SecurityManager.LoggedUser.IsBookKeeper || !IsConfirmed) return true;
+                // если акция началась в предыдущем месяце или ранее, то нельзя
+                if (new DateTime(StartDate.Year, StartDate.Month, 1) < new DateTime(DateTime.Today.Year, DateTime.Today.Month, 1)) return false;
+                // если начало в этом месяце, то не должна уже закончиться
+                if (FinishDate < DateTime.Today) return false;
+
+                return true;
+            }
+        }
+
+        public void ApplyFirmChange(int firmId)
+        {
+            this[ParamNames.FirmId] = firmId;
+            Update();
+            Refresh();
+            OnObjectChanged(this);
+        }
+
+        public void ApplyCreatorChange(object managerId)
+        {
+            parameters[ParamNames.NewCreatorId] = managerId.ToString();
+            Update();
+            Refresh();
+        }
 
 
         #region Protected -----------------------------------

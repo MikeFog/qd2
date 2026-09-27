@@ -396,7 +396,22 @@ namespace Merlin.Classes
 			FireContainerRefreshed();
 		}
 
-		// ChangeAgency и ChangePaymentType переехали в Campaign.WinForms.cs.
+		// ChangeAgency и ChangePaymentType (диалоги выбора) переехали в Campaign.WinForms.cs.
+
+		/// <summary>
+		/// Агентства на выбор при смене агентства: null — все (администратору и
+		/// бухгалтеру), иначе агентства станции кампании либо агентства пользователя.
+		/// </summary>
+		internal DataView AgencyCandidates
+		{
+			get
+			{
+				if (SecurityManager.LoggedUser.IsAdmin || SecurityManager.LoggedUser.IsBookKeeper)
+					return null;
+				return (this is CampaignOnSingleMassmedia radioStation)
+					? radioStation.Massmedia.Agencies.DefaultView : SecurityManager.LoggedUser.Agencies.DefaultView;
+			}
+		}
 
 		internal void ApplyAgencyChange(int agencyId)
 		{
@@ -586,4 +601,25 @@ namespace Merlin.Classes
             }
 		}
     }
+
+	/// <summary>
+	/// Смена агентства и типа оплаты кампании снаружи сборки (веб): сам класс
+	/// <see cref="Campaign"/> internal. Логика — его же методы, здесь только вход.
+	/// </summary>
+	public static class CampaignChange
+	{
+		public const string ChangeAgencyAction = Campaign.ActionNames.ChangeAgency;
+		public const string ChangePaymentTypeAction = Campaign.ActionNames.ChangePaymentType;
+
+		public static bool IsPossible(PresentationObject campaign) => ((Campaign)campaign).IsChangePossible;
+
+		/// <summary>null — выбирать из всех агентств.</summary>
+		public static DataView AgencyCandidates(PresentationObject campaign) => ((Campaign)campaign).AgencyCandidates;
+
+		public static void ApplyAgency(PresentationObject campaign, int agencyId) =>
+			((Campaign)campaign).ApplyAgencyChange(agencyId);
+
+		public static void ApplyPaymentType(PresentationObject campaign, int paymentTypeId) =>
+			((Campaign)campaign).ApplyPaymentTypeChange(paymentTypeId);
+	}
 }

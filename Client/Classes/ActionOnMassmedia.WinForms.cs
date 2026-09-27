@@ -104,10 +104,7 @@ namespace Merlin.Classes
 			{
 				Globals.SetWaitCursor((Form)owner);
 
-				Dictionary<string, object> procParameters = DataAccessor.CreateParametersDictionary();
-				procParameters.Add("actionID", ActionId);
-				DataAccessor.ExecuteNonQuery("ActionRestore", procParameters);
-				OnObjectDeleted(this);
+				ApplyRestore();
 				UserMessage.ShowCompleted(MessageAccessor.GetMessage("ActionRestored"));
 			}
 			finally

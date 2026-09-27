@@ -191,29 +191,12 @@ namespace Merlin.Classes
 					Application.DoEvents();
 					owner.Cursor = Cursors.WaitCursor;
 
-					this[ParamNames.FirmId] = newFirm.FirmId;
-					Update();
-					Refresh();
-					OnObjectChanged(this);
+					ApplyFirmChange(newFirm.FirmId);
 					UserMessage.ShowInformation(Properties.Resources.FirmChangeSuccess);
 				}
 			}
 			else
 				UserMessage.ShowExclamation(MessageAccessor.GetMessage("ChangeFirmIsForbidden"));
-		}
-
-		private bool IsChangeFirmPossible
-		{
-			get
-			{
-				if (SecurityManager.LoggedUser.IsAdmin || SecurityManager.LoggedUser.IsBookKeeper || !IsConfirmed) return true;
-				// если акция началась в предыдущем месяце или ранее, то нельзя
-				if (new DateTime(StartDate.Year, StartDate.Month, 1) < new DateTime(DateTime.Today.Year, DateTime.Today.Month, 1)) return false;
-				// если начало в этом месяце, то не должна уже закончиться
-				if (FinishDate < DateTime.Today) return false;
-
-				return true;
-			}
 		}
 
 		private void ChangeCreator(Control owner)
@@ -224,9 +207,7 @@ namespace Merlin.Classes
 				Application.DoEvents();
 				owner.Cursor = Cursors.WaitCursor;
 
-				parameters[ParamNames.NewCreatorId] = manager.IDs[0].ToString();
-				Update();
-				Refresh();
+				ApplyCreatorChange(manager.IDs[0]);
 			}
 		}
 

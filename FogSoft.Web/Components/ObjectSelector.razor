@@ -89,7 +89,15 @@ else
 
 @code {
     /// <summary>Что выбираем и по какому фильтру.</summary>
-    [Parameter, EditorRequired] public PassportPicker Picker { get; set; } = default!;
+    [Parameter] public PassportPicker? Picker { get; set; }
+    /// <summary>
+    /// Выбор из готового набора вместо <see cref="Picker"/> — как SelectionForm(entity,
+    /// dataView) десктопа: кандидатов посчитал вызывающий (например, акции для
+    /// объединения). Сущность — объектом: у части сущностей нет codeName.
+    /// </summary>
+    [Parameter] public Entity? SourceEntity { get; set; }
+    /// <summary>Строки для <see cref="SourceEntity"/>; null — все строки сущности.</summary>
+    [Parameter] public DataTable? SourceRows { get; set; }
 
     /// <summary>Наборы строк паспорта — источник кандидатов, если он там есть.</summary>
     [Parameter] public DataSet? PassportData { get; set; }
@@ -141,9 +149,11 @@ else
     {
         try
         {
-            Entity entity = EntityManager.GetEntity(Picker.EntityName);
+            Entity entity = SourceEntity ?? EntityManager.GetEntity(Picker!.EntityName);
             _columns = entity.SortedAttributes;
-            _data = PickerData.Candidates(Picker, PassportData, Owner);
+            _data = SourceEntity != null
+                ? SourceRows ?? entity.GetContent()
+                : PickerData.Candidates(Picker!, PassportData, Owner);
 
             if (InitialSelectedRows != null)
                 foreach (DataRow row in InitialSelectedRows)

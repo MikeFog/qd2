@@ -65,7 +65,7 @@ namespace Merlin.Classes
 		}
 
 		/// <summary>Фирмы-заказчики — кандидаты для выбора.</summary>
-		internal static DataTable GetFirmCandidates()
+		public static DataTable GetFirmCandidates()
 		{
 			Entity entity = EntityManager.GetEntity((int) Entities.Firm);
 			Dictionary<string, object> filterValues =

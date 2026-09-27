@@ -255,6 +255,33 @@ public sealed class ObjectActions
 		{
 			[Merlin.Classes.PaymentCommon.ActionNames.SelectActionsToPay] = (s, t) => s.SelectActionsToPay((Merlin.Classes.PaymentCommon)t),
 		},
+		// Action.WinForms.cs, DoAction: смена фирмы-заказчика и создателя акции.
+		["Action"] = new()
+		{
+			[Merlin.Classes.Action.ActionNames.ChangeFirm] = (s, t) => s.ChangeFirm((Merlin.Classes.Action)t),
+			[Merlin.Classes.Action.ActionNames.ChangeCreator] = (s, t) => s.ChangeCreator((Merlin.Classes.Action)t),
+		},
+		// ActionOnMassmedia.WinForms.cs, DoAction: операции журнала акций, которые решаются
+		// вопросом или выбором из списка. «Восстановить» ловит и удалённую акцию (ActionDeleted —
+		// наследник). Активация, «Разделить кампании», клон и массовая смена типа оплаты —
+		// следующие партии (свои окна).
+		["ActionOnMassmedia"] = new()
+		{
+			[Merlin.Classes.Action.ActionNames.Recalculate] = (s, t) => s.RecalculateAction((Merlin.Classes.ActionOnMassmedia)t),
+			[Merlin.Classes.Action.ActionNames.Deactivate] = (s, t) => s.DeactivateAction((Merlin.Classes.ActionOnMassmedia)t),
+			[Merlin.Classes.Action.ActionNames.Merge] = (s, t) => s.MergeActions((Merlin.Classes.ActionOnMassmedia)t),
+			[Merlin.Classes.Action.ActionNames.SplitAction] = (s, t) => s.SplitAction((Merlin.Classes.ActionOnMassmedia)t),
+			[Merlin.Classes.Action.ActionNames.ActionRollers] = (s, t) => s.ShowActionRollers((Merlin.Classes.ActionOnMassmedia)t),
+			[Merlin.Classes.Action.ActionNames.Restore] = (s, t) => s.RestoreAction((Merlin.Classes.ActionOnMassmedia)t),
+		},
+		// Campaign.WinForms.cs, DoAction: смена агентства и типа оплаты кампании — у всех
+		// видов кампаний (линейная, модульная, спонсорская, пакетная). Класс internal —
+		// вход через CampaignChange.
+		["Campaign"] = new()
+		{
+			[Merlin.Classes.CampaignChange.ChangeAgencyAction] = (s, t) => s.ChangeCampaignAgency((PresentationObject)t),
+			[Merlin.Classes.CampaignChange.ChangePaymentTypeAction] = (s, t) => s.ChangeCampaignPaymentType((PresentationObject)t),
+		},
 	};
 
 	private async Task<ActionEffect> Changed(Action apply)
@@ -1206,6 +1233,254 @@ public sealed class ObjectActions
 		await _busy.RunAsync(() => payment.PayActions(model.Allocated));
 		return ActionEffect.Changed;
 	}
+
+	// ---------- Рекламная акция и кампания: операции журнала ----------
+	//
+	// Веб-аналоги веток DoAction из Action.WinForms.cs, ActionOnMassmedia.WinForms.cs и
+	// Campaign.WinForms.cs. Проверки и запись — методы ядра, здесь только диалоги. Сообщений
+	// «успешно» нет (решение 2026-09-22: результат виден в списке), кроме «Восстановить» —
+	// акция уходит в другой журнал, и сообщение говорит, в какой.
+	//
+	// Эффект SiblingAdded там, где объект уходит из-под своего родителя (другая фирма,
+	// объединение, новая акция при делении): перечитывается родитель, как и в десктопе
+	// (OnParentChanged / FireContainerRefreshed по родителю).
+
+	/// <summary>Action.ChangeFirm: правило «можно ли», выбор фирмы, запись.</summary>
+	private async Task<ActionEffect> ChangeFirm(Merlin.Classes.Action action)
+	{
+		if (!action.IsChangeFirmPossible)
+		{
+			await ShowInfo(Tr.T("Сменить фирму-заказчика"), MessageAccessor.GetMessage("ChangeFirmIsForbidden"));
+			return ActionEffect.None;
+		}
+
+		Entity firms = EntityManager.GetEntity((int)Merlin.Entities.Firm);
+		DataTable candidates = await _busy.RunAsync(Merlin.Classes.Firm.GetFirmCandidates);
+		DataRow? firm = (await PickAsync(Tr.T("Фирма-заказчик"), firms, candidates, Tr.T("Сменить")))?[0];
+		if (firm == null)
+			return ActionEffect.None;
+
+		await _busy.RunAsync(() => action.ApplyFirmChange(Convert.ToInt32(PickedId(firms, firm))));
+		return ActionEffect.SiblingAdded;
+	}
+
+	/// <summary>Action.ChangeCreator: выбор менеджера (Utils.SelectManager), запись.</summary>
+	private async Task<ActionEffect> ChangeCreator(Merlin.Classes.Action action)
+	{
+		Entity users = EntityManager.GetEntity((int)Merlin.Entities.User);
+		DataRow? manager = (await PickAsync(Tr.T("Менеджер"), users, null, Tr.T("Сменить")))?[0];
+		if (manager == null)
+			return ActionEffect.None;
+
+		await _busy.RunAsync(() => action.ApplyCreatorChange(PickedId(users, manager)));
+		return ActionEffect.Changed;
+	}
+
+	private async Task<ActionEffect> RecalculateAction(Merlin.Classes.ActionOnMassmedia action)
+	{
+		await _busy.RunAsync(() => action.Recalculate(true));
+		return ActionEffect.Changed;
+	}
+
+	/// <summary>
+	/// ActionOnMassmedia.DeactivateAction: запрет по дате начала, вопрос, деактивация.
+	/// Акция уходит в журнал макетов — для этого экрана это удаление.
+	/// </summary>
+	private async Task<ActionEffect> DeactivateAction(Merlin.Classes.ActionOnMassmedia action)
+	{
+		string caption = Tr.T("Деактивировать");
+		if (!action.CanDeactivate(out string error))
+		{
+			await ShowInfo(caption, error);
+			return ActionEffect.None;
+		}
+
+		if (await _dialogs.ShowAsync(caption, builder => builder.AddContent(0, MessageAccessor.GetMessage("ConfirmActionDeactivate")),
+				okText: caption) != DialogOutcome.Ok)
+			return ActionEffect.None;
+
+		await _busy.RunAsync(action.ApplyDeactivate);
+		return ActionEffect.Deleted;
+	}
+
+	/// <summary>
+	/// ActionOnMassmedia.Merge: запрет для начавшейся подтверждённой, выбор второй акции той же
+	/// фирмы (кандидатов даёт ядро), тот же запрет для неё, объединение.
+	/// </summary>
+	private async Task<ActionEffect> MergeActions(Merlin.Classes.ActionOnMassmedia action)
+	{
+		string caption = Tr.T("Объединить с ...");
+		if (!action.CanSplitOrMerge(action.StartDate.Date, out string messageKey))
+		{
+			await ShowInfo(caption, MessageAccessor.GetMessage(messageKey));
+			return ActionEffect.None;
+		}
+
+		DataTable? candidates = await _busy.RunAsync(action.GetActionsForMerge);
+		if (candidates == null)
+			return ActionEffect.None;
+
+		Entity actions = EntityManager.GetEntity((int)Merlin.Entities.Action);
+		DataRow? picked = (await PickAsync(caption, actions, candidates, Tr.T("Объединить")))?[0];
+		if (picked == null || actions.CreateObject(picked) is not Merlin.Classes.ActionOnMassmedia second)
+			return ActionEffect.None;
+
+		if (!second.CanSplitOrMerge(second.StartDate.Date, out messageKey))
+		{
+			await ShowInfo(caption, MessageAccessor.GetMessage(messageKey));
+			return ActionEffect.None;
+		}
+
+		await _busy.RunAsync(() => action.ApplyMerge(second));
+		return ActionEffect.SiblingAdded;
+	}
+
+	/// <summary>
+	/// ActionOnMassmedia.SplitAction: отмеченные кампании уходят в новую акцию. Нельзя
+	/// ни ни одной, ни все сразу — проверка ядра, окно выбора остаётся открытым.
+	/// </summary>
+	private async Task<ActionEffect> SplitAction(Merlin.Classes.ActionOnMassmedia action)
+	{
+		string caption = Tr.T("Разделить рекламную акцию");
+		if (!action.CanSplitOrMerge(action.StartDate.Date, out string messageKey))
+		{
+			await ShowInfo(caption, MessageAccessor.GetMessage(messageKey));
+			return ActionEffect.None;
+		}
+
+		DataTable? campaigns = null;
+		string? reasonKey = null;
+		await _busy.RunAsync(() => campaigns = action.GetCampaignsForSplit(out reasonKey));
+		if (campaigns == null)
+		{
+			await ShowInfo(caption, MessageAccessor.GetMessage(reasonKey!));
+			return ActionEffect.None;
+		}
+
+		Entity entity = EntityManager.GetEntity((int)Merlin.Entities.CampaignOnMassmedia);
+		IReadOnlyList<DataRow>? picked = await PickAsync(
+			Tr.T("Выберите рекламные кампании, которые хотите перенести в новую акцию"), entity, campaigns,
+			Tr.T("Разделить"), multiselect: true,
+			validate: rows => action.IsSplitSelectionValid(rows.Count, out string key) ? null : MessageAccessor.GetMessage(key));
+		if (picked == null)
+			return ActionEffect.None;
+
+		List<PresentationObject> toMove = picked.Select(entity.CreateObject).ToList();
+		await _busy.RunAsync(() => action.ApplySplitAction(toMove));
+		return ActionEffect.SiblingAdded;
+	}
+
+	/// <summary>ActionOnMassmedia.ShowRollers: журнал «Статистика по роликам» под одну акцию.</summary>
+	private async Task<ActionEffect> ShowActionRollers(Merlin.Classes.ActionOnMassmedia action)
+	{
+		Entity entity = EntityManager.GetEntity((int)Merlin.Entities.ActionRollersStat);
+		var filter = new Dictionary<string, object>(StringComparer.InvariantCultureIgnoreCase)
+		{
+			[Merlin.Classes.Action.ParamNames.ActionId] = action.ActionId,
+		};
+		DataTable rows = await _busy.RunAsync(() => entity.GetContent(filter));
+		await _tables.ShowAsync(Tr.Format("Статистика по роликам для акции №{0}", action.ActionId), entity, rows);
+		return ActionEffect.None;
+	}
+
+	/// <summary>ActionOnMassmedia.Restore: акция возвращается в журнал макетов.</summary>
+	private async Task<ActionEffect> RestoreAction(Merlin.Classes.ActionOnMassmedia action)
+	{
+		await _busy.RunAsync(action.ApplyRestore);
+		await ShowInfo(Tr.T("Восстановить рекламную акцию"), MessageAccessor.GetMessage("ActionRestored"));
+		return ActionEffect.Deleted;
+	}
+
+	/// <summary>Campaign.ChangeAgency: правило «можно ли», агентства по правам, запись.</summary>
+	private async Task<ActionEffect> ChangeCampaignAgency(PresentationObject campaign)
+	{
+		if (!Merlin.Classes.CampaignChange.IsPossible(campaign))
+		{
+			await ShowInfo(Tr.T("Сменить рекламное агентство"), Tr.T(Merlin.Properties.Resources.ChangeAgencyIsForbidden));
+			return ActionEffect.None;
+		}
+
+		Entity agencies = EntityManager.GetEntity((int)Merlin.Entities.Agency);
+		DataTable? candidates = Merlin.Classes.CampaignChange.AgencyCandidates(campaign)?.ToTable();
+		DataRow? agency = (await PickAsync(Tr.T("Рекламное агентство"), agencies, candidates, Tr.T("Сменить")))?[0];
+		if (agency == null)
+			return ActionEffect.None;
+
+		await _busy.RunAsync(() => Merlin.Classes.CampaignChange.ApplyAgency(campaign, Convert.ToInt32(PickedId(agencies, agency))));
+		return ActionEffect.Changed;
+	}
+
+	/// <summary>Campaign.ChangePaymentType: правило «можно ли», выбор типа оплаты, запись.</summary>
+	private async Task<ActionEffect> ChangeCampaignPaymentType(PresentationObject campaign)
+	{
+		if (!Merlin.Classes.CampaignChange.IsPossible(campaign))
+		{
+			await ShowInfo(Tr.T("Сменить тип оплаты"), Tr.T(Merlin.Properties.Resources.ChangePaymentTypeIsForbidden));
+			return ActionEffect.None;
+		}
+
+		Entity types = EntityManager.GetEntity((int)Merlin.Entities.PaymentType);
+		DataRow? type = (await PickAsync(Tr.T("Типы оплаты"), types, null, Tr.T("Сменить")))?[0];
+		if (type == null)
+			return ActionEffect.None;
+
+		await _busy.RunAsync(() => Merlin.Classes.CampaignChange.ApplyPaymentType(campaign, Convert.ToInt32(PickedId(types, type))));
+		return ActionEffect.Changed;
+	}
+
+	/// <summary>
+	/// Выбор из списка — веб-аналог SelectionForm(entity, dataView, caption[, showCheckboxes,
+	/// проверка]). <paramref name="rows"/> null — все строки сущности. Проверка выбора, как
+	/// делегат SelectionForm: текст ошибки над списком, окно открыто снова с теми же отметками.
+	/// </summary>
+	/// <returns>Выбранные строки (одна без <paramref name="multiselect"/>); null — отказ.</returns>
+	private async Task<IReadOnlyList<DataRow>?> PickAsync(string caption, Entity entity, DataTable? rows, string okText,
+		bool multiselect = false, Func<IReadOnlyList<DataRow>, string?>? validate = null)
+	{
+		ObjectSelector? selector = null;
+		string? message = null;
+		IReadOnlyList<DataRow>? previouslySelected = null;
+
+		while (true)
+		{
+			RenderFragment body = builder =>
+			{
+				if (message != null)
+				{
+					builder.OpenElement(0, "div");
+					builder.AddAttribute(1, "class", "alert alert-danger");
+					builder.AddContent(2, message);
+					builder.CloseElement();
+				}
+
+				builder.OpenComponent<ObjectSelector>(3);
+				builder.AddComponentParameter(4, nameof(ObjectSelector.SourceEntity), entity);
+				builder.AddComponentParameter(5, nameof(ObjectSelector.SourceRows), rows);
+				builder.AddComponentParameter(6, nameof(ObjectSelector.Multiselect), multiselect);
+				builder.AddComponentParameter(7, nameof(ObjectSelector.InitialSelectedRows), previouslySelected);
+				builder.AddComponentReferenceCapture(8, c => selector = (ObjectSelector)c);
+				builder.CloseComponent();
+			};
+
+			if (await _dialogs.ShowAsync(caption, body, okText: okText) != DialogOutcome.Ok || selector == null)
+				return null;
+
+			IReadOnlyList<DataRow> selected = multiselect
+				? selector.SelectedRows
+				: selector.SelectedRow is { } row ? new[] { row } : Array.Empty<DataRow>();
+			if (!multiselect && selected.Count == 0)
+				return null;
+
+			message = validate?.Invoke(selected);
+			if (message == null)
+				return selected;
+
+			previouslySelected = selected;
+		}
+	}
+
+	/// <summary>Ключ выбранной строки — то же, что SelectedObject.IDs[0] у SelectionForm.</summary>
+	private static object PickedId(Entity entity, DataRow row) => row[entity.PKColumns[0]];
 
 	private Task ShowInfo(string caption, string text) =>
 		_dialogs.ShowAsync(caption, builder => builder.AddContent(0, text), okText: Tr.T("Ок"));
