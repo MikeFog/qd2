@@ -78,7 +78,7 @@ else
                         }
                         @foreach (var a in _columns)
                         {
-                            <td>@Display(row, a.Name)</td>
+                            <td>@Display(row, a)</td>
                         }
                     </tr>
                 }
@@ -240,7 +240,7 @@ else
 
     private bool IsMatch(DataRow row, string text) =>
         text.Length == 0 || QuickSearchFilter.Matches(row, text, _searchColumn, _columns,
-            (r, a) => Display(r, a.Name), a => IsBoolean(a.Name));
+            Display, a => IsBoolean(a.Name));
 
     private bool IsBoolean(string column) =>
         _data != null && _data.Columns.Contains(column) && _data.Columns[column]!.DataType == typeof(bool);
@@ -265,11 +265,13 @@ else
             _selectedRows.Remove(row);
     }
 
-    private static string Display(DataRow row, string column)
+    private static string Display(DataRow row, Entity.Attribute attribute)
     {
-        if (!row.Table.Columns.Contains(column))
+        if (!row.Table.Columns.Contains(attribute.Name))
             return "";
-        object v = row[column];
+        object v = row[attribute.Name];
+        if (v is DateTime date)
+            return DisplayFormat.Value(date, attribute.DataType is "date" or "date2");
         return v == DBNull.Value ? "" : v.ToString() ?? "";
     }
 }

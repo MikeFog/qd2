@@ -341,6 +341,9 @@ else
                 return Convert.ToDecimal(v).ToString("F");
         }
 
+        if (v is DateTime date)
+            return DisplayFormat.Value(date, attribute.DataType is "date" or "date2");
+
         return v.ToString() ?? "";
     }
 

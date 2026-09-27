@@ -434,7 +434,7 @@ public static class GridExcelExport
                 new NumberingFormat { NumberFormatId = FmtMoney, FormatCode = MoneyFormatCode() },
                 new NumberingFormat { NumberFormatId = FmtTime, FormatCode = "hh:mm:ss" },
                 new NumberingFormat { NumberFormatId = FmtDate, FormatCode = "dd/mm/yyyy" },
-                new NumberingFormat { NumberFormatId = FmtDateTime, FormatCode = "dd/mm/yyyy\\ hh:mm:ss" }),
+                new NumberingFormat { NumberFormatId = FmtDateTime, FormatCode = "dd/mm/yyyy\\ hh:mm" }),
             new Fonts(Tahoma(false), Tahoma(true)),
             new Fills(
                 new Fill(new PatternFill { PatternType = PatternValues.None }),

@@ -511,9 +511,7 @@ else
             && (v is DateTime || DateTime.TryParse(v.ToString(), out _)))
         {
             DateTime date = v is DateTime d ? d : DateTime.Parse(v.ToString()!);
-            return IsDateField(field) || date.TimeOfDay == TimeSpan.Zero
-                ? DisplayFormat.Date(date)
-                : DisplayFormat.DateAndTime(date);
+            return DisplayFormat.Value(date, IsDateField(field));
         }
 
         return AsText(v);
