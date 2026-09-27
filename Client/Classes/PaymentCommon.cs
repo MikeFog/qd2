@@ -40,6 +40,19 @@ namespace Merlin.Classes
 			return base.IsActionEnabled(actionName, type);
 		}
 
+		/// <summary>
+		/// Почему «Выбрать акции для оплаты» погашено — по тем же условиям, что
+		/// IsActionEnabled. null — причина не в платеже (например, нет права).
+		/// </summary>
+		public string SelectActionsToPayUnavailableReason()
+		{
+			if (!bool.Parse(this["isEnabled"].ToString()))
+				return Tr.T("Платёж недоступен для присвоения акциям — галочка в карточке платежа.");
+			if (Consumed >= Summa)
+				return Tr.T("Платёж распределён полностью.");
+			return null;
+		}
+
 		/// <summary>Акции — кандидаты на оплату этим платежом.</summary>
 		public DataTable GetPaymentCandidates()
 		{

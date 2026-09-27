@@ -22,6 +22,9 @@ public sealed class ActionMenuItem
 	/// <summary>Пояснение справа от текста, например «клик».</summary>
 	public string? Hint { get; init; }
 
+	/// <summary>Почему пункт погашен — подсказка при наведении; null — причину объяснить нечем.</summary>
+	public string? DisabledReason { get; init; }
+
 	/// <summary>Право и состояние объекта: IsActionEnabled, как в десктопе.</summary>
 	public bool Enabled { get; init; }
 
@@ -379,6 +382,7 @@ public sealed class ObjectActions
 
 		bool isProperties = action.Name == Constants.EntityActions.ShowPassport;
 		IReadOnlyList<ActionMenuItem> collapsed = CollapseSeparators(children);
+		bool enabled = IsEnabled(target, action.Name, view);
 
 		return new ActionMenuItem
 		{
@@ -387,7 +391,8 @@ public sealed class ObjectActions
 			// В списке карточку открывает клик по строке, в дереве клик выбирает узел.
 			Hint = isProperties && view == ViewType.Journal ? Tr.T("клик") : null,
 			Icon = ActionIcons.For(action.Name, action.ImgResourceName),
-			Enabled = IsEnabled(target, action.Name, view),
+			Enabled = enabled,
+			DisabledReason = enabled ? null : DisabledReason(target, action.Name),
 			Ported = collapsed.Count > 0 ? collapsed.Any(c => c.Ported) : IsPorted(target, action.Name),
 			Danger = action.Name == Constants.EntityActions.Delete,
 			Children = collapsed,
@@ -1235,6 +1240,17 @@ public sealed class ObjectActions
 		PresentationObject po => po.IsActionEnabled(actionName, view),
 		FakeContainer fc => fc.IsActionEnabled(actionName, view),
 		_ => false
+	};
+
+	/// <summary>
+	/// Почему погашенное действие недоступно — там, где доменный класс умеет это
+	/// объяснить. Десктоп причин не показывает; добавляются по мере вопросов.
+	/// </summary>
+	private static string? DisabledReason(object target, string actionName) => target switch
+	{
+		Merlin.Classes.PaymentCommon payment when actionName == Merlin.Classes.PaymentCommon.ActionNames.SelectActionsToPay
+			=> payment.SelectActionsToPayUnavailableReason(),
+		_ => null
 	};
 
 	/// <summary>

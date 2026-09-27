@@ -58,7 +58,7 @@
             }
 
             <button type="button" role="menuitem" class="@css"
-                    aria-disabled="@(off ? "true" : "false")" title="@(item.Ported ? null : Tr.T("В вебе пока нет"))"
+                    aria-disabled="@(off ? "true" : "false")" title="@(item.Ported ? (item.Enabled ? null : item.DisabledReason) : Tr.T("В вебе пока нет"))"
                     @onclick="() => Pick(item)" @onclick:stopPropagation="true">
                 @ItemBody(item)
             </button>
