@@ -226,7 +226,7 @@ else
             Filters.Restore(FilterScreen, container.Filter);
 
             _root = new BrowserNode { Name = container.Name, Container = container, Expandable = true };
-            Select(_root);
+            OpenRoot(_root);
         }
         catch (Exception ex)
         {
@@ -262,7 +262,20 @@ else
         Filters.Remember(FilterScreen, root.Container!.Filter);
         root.Children = null;
         root.Expanded = false;
-        return Busy.RunAsync(() => Select(root));
+        return Busy.RunAsync(() => OpenRoot(root));
+    }
+
+    /// <summary>
+    /// Корень при открытии экрана (и после «Применить») сразу раскрыт — первый
+    /// уровень дерева виден без щелчка по стрелке. Раскрываем после Select:
+    /// дети — то же перечисление контейнера, что и список справа, и берутся
+    /// из только что прочитанного кэша, второго запроса нет.
+    /// </summary>
+    private void OpenRoot(BrowserNode root)
+    {
+        Select(root);
+        if (_error == null)
+            Toggle(root);
     }
 
     // ---------- Дерево ----------
