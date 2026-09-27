@@ -84,7 +84,10 @@ public static class PassportSchema
 					// то, что явно записано в XML.
 					XmlType: Attr(child, PageControl.Attributes.Type),
 					Unsupported: Unsupported(child, pageType),
-					Required: IsRequired(child, name, entity, isNew),
+					// В отборе обязательность — только явная (mandatory/required в XML): колонка
+					// NOT NULL у сущности говорит о карточке, а не о фильтре — иначе поле вроде
+					// «Создатель акции» журнала переносов (userID) нельзя было бы снять.
+					Required: pageType == PageTypes.Filter ? IsExplicitlyRequired(child) : IsRequired(child, name, entity, isNew),
 					Lookup: ParseLookup(child),
 					Picker: multiPick ? ParseMultiPicker(child) : ParsePicker(child),
 					Selector: multiPick ? null : ParseSelector(child),
@@ -379,6 +382,14 @@ public static class PassportSchema
 		}
 
 		return !isNullable;
+	}
+
+	private static bool IsExplicitlyRequired(XmlNode node)
+	{
+		string? required = Attr(node, PageControl.Attributes.Required);
+		if (!string.IsNullOrEmpty(required))
+			return ParseHelper.ParseToBoolean(required, false);
+		return IsTrue(Attr(node, PageControl.Attributes.Mandatory));
 	}
 
 	private static string? Attr(XmlNode node, string name) =>
