@@ -48,6 +48,8 @@ builder.Services.AddScoped<CircuitHandler, CircuitServicesHandler>();
 builder.Services.AddScoped<CircuitEntityCacheState>();
 // Меню пользователя и вытекающий из него доступ к экранам — тоже на circuit.
 builder.Services.AddScoped<MenuAccess>();
+// Применённый отбор экранов — на время сеанса, см. FilterMemory.
+builder.Services.AddScoped<FilterMemory>();
 
 var app = builder.Build();
 

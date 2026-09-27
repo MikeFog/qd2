@@ -9,6 +9,7 @@
 @inject BusyService Busy
 @inject PassportDialog Passports
 @inject NavigationManager Nav
+@inject FilterMemory Filters
 
 @*
     «Журнал оплат» — веб-экран вместо MasterDetailForm (MDIForm.ShowPaymentCommon): сверху
@@ -60,7 +61,7 @@ else
             <button class="btn btn-sm btn-outline-secondary" disabled="@(_data == null || _data.Rows.Count == 0)" @onclick="ExportMaster"><i class="bi bi-download" aria-hidden="true"></i>@Tr.T("Экспорт в Excel")</button>
         </ScreenToolbar>
 
-        <FilterPanel @ref="_filterPanel" Pages="_filterPages" Values="_filterValues" FilterData="_filterData" Apply="Load" />
+        <FilterPanel @ref="_filterPanel" Pages="_filterPages" Values="_filterValues" FilterData="_filterData" Apply="Load" Screen="@_menuCode" />
 
         @if (_error != null)
         {
@@ -174,6 +175,7 @@ else
             _filterValues.Clear();
             _filterValues[FilterAgenciesParam] = code == AdSectionMenu;
             Globals.ResolveFilterInitialValues(_filterValues, master.XmlFilter);
+            Filters.Restore(code, _filterValues);
 
             _master = master;
             LoadData();
@@ -223,6 +225,7 @@ else
 
         _master!.ClearCache();
         _data = _master.GetContent(_filterValues);
+        Filters.Remember(_menuCode!, _filterValues);
 
         if (selectedId != null)
             foreach (DataRow row in _data.Rows)

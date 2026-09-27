@@ -80,6 +80,10 @@
     border-top: 1px solid var(--c-border);
 }
 
+.filter-reset {
+    margin-left: var(--s-2);
+}
+
 /* Вкладки страниц отбора — те же, что у карточки (Passport.razor.css); стили
    там изолированы компонентом, поэтому повторены здесь. */
 .tabs {

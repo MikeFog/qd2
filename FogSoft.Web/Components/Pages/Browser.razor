@@ -9,6 +9,7 @@
 @inject ActionMenuService Menu
 @inject MenuAccess Access
 @inject BusyService Busy
+@inject FilterMemory Filters
 
 @*
     Древовидный экран — веб-аналог ExplorerForm: слева дерево, справа список
@@ -81,7 +82,7 @@ else
         </ScreenToolbar>
 
         <FilterPanel @ref="_filterPanel" Pages="_filterPages" Values="_root.Container!.Filter" FilterData="_filterData"
-                     RestrictManager="_restrictManager" Apply="ApplyFilter" />
+                     RestrictManager="_restrictManager" Apply="ApplyFilter" Screen="@FilterScreen" />
 
         <div class="browser-body">
             <nav class="browser-tree">
@@ -139,6 +140,8 @@ else
     private string? _error;
     private JournalAccess _access = JournalAccess.Allowed;
     private BrowserNode? _menuNode;
+
+    private string FilterScreen => "browser/" + Code;
 
     // Вкладки у прайс-листа радиостанции (TariffWindowWeek.Supports): «Тарифы» —
     // обычный список детей, «Рекламные окна» — сетка недели. Выбранная вкладка
@@ -219,6 +222,9 @@ else
             // десктопном FakeContainer.ShowFilter.
             _filterData = NeedsFilterData(_filterPages) ? Globals.PrepareForFilter(scenario.StartingEntity) : null;
 
+            // Умолчания отбора контейнер разложил сам (FakeContainer, ResolveFilterInitialValues).
+            Filters.Restore(FilterScreen, container.Filter);
+
             _root = new BrowserNode { Name = container.Name, Container = container, Expandable = true };
             Select(_root);
         }
@@ -251,6 +257,9 @@ else
             return Task.CompletedTask;
 
         BrowserNode root = _root;
+        // Запоминается только здесь: «Обновить» у дочернего узла читает его собственную
+        // копию отбора (CacheFilterValues), а не ту, что сейчас в панели.
+        Filters.Remember(FilterScreen, root.Container!.Filter);
         root.Children = null;
         root.Expanded = false;
         return Busy.RunAsync(() => Select(root));

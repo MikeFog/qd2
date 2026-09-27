@@ -8,6 +8,7 @@
 @inject MenuAccess Access
 @inject BusyService Busy
 @inject NavigationManager Nav
+@inject FilterMemory Filters
 
 @*
     «Журнал использования роликов» — веб-экран вместо RollerStatisticForm. Сверху отбор — та же
@@ -49,7 +50,7 @@ else
         </ScreenToolbar>
 
         <FilterPanel @ref="_filterPanel" Pages="_filterPages" Values="_filterValues" FilterData="_filterData"
-                     Apply="Show" RestrictManager="true" />
+                     Apply="Show" RestrictManager="true" Screen="@_menuCode" />
 
         @if (_error != null)
         {
@@ -168,6 +169,7 @@ else
             // FilterPanel, RestrictManager).
             if (_menuCode == ScreenRoutes.RollerStatisticForManager || !ManagerChoice.CanChoose())
                 _filterValues[SecurityManager.ParamNames.UserId] = SecurityManager.LoggedUser.Id;
+            Filters.Restore(_menuCode, _filterValues);
         }));
     }
 
@@ -227,6 +229,7 @@ else
         _roller = null;
         _actions = null;
         _result = RollerStatisticQuery.Load(_shown);
+        Filters.Remember(_menuCode, _shown!);
     }));
 
     private Task SelectRoller(DataRow row)

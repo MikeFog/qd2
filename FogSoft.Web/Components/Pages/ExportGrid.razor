@@ -12,6 +12,7 @@
 @inject ProgressDialog Progress
 @inject TableDialog Tables
 @inject FileSaver Saver
+@inject FilterMemory Filters
 
 @*
     «Экспорт сеток вещания» — веб-экран вместо ExportGridForm. Параметры — та же панель, что у
@@ -44,7 +45,7 @@ else
     <div class="export-grid">
         <ScreenToolbar Title="@_title" />
 
-        <FilterPanel Pages="_pages" Values="_values" Apply="Export"
+        <FilterPanel Pages="_pages" Values="_values" Apply="Export" Screen="@ScreenRoutes.ExportGrid"
                      ApplyText="@(Tr.T("Выгрузить в папку…"))" ApplyIcon="bi-folder-symlink" />
 
         @if (_error != null)
@@ -98,6 +99,7 @@ else
             string xml = PassportLoader.Load(ParametersPassport);
             _pages = PassportSchema.Parse(xml, pageType: PageTypes.Filter);
             Globals.ResolveFilterInitialValues(_values, xml);
+            Filters.Restore(ScreenRoutes.ExportGrid, _values);
             _stations = Massmedia.LoadByGroup(0);
         }));
     }
@@ -135,6 +137,7 @@ else
         }
         if (!DateTime.TryParse(_values.TryGetValue(DateParam, out object? d) ? d?.ToString() : null, out DateTime date))
             return;
+        Filters.Remember(ScreenRoutes.ExportGrid, _values);
         List<int> stations = (_values.TryGetValue(StationsParam, out object? s) ? s?.ToString() ?? "" : "")
             .Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
             .Select(int.Parse).ToList();

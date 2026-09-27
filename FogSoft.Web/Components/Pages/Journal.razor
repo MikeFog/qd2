@@ -10,6 +10,7 @@
 @inject MenuAccess Access
 @inject ObjectActions Actions
 @inject BusyService Busy
+@inject FilterMemory Filters
 
 @*
     Движок журнала: список объектов сущности, фильтр и карточка — всё по
@@ -86,7 +87,7 @@ else
 
     @* ---------- Фильтр ---------- *@
     <FilterPanel @ref="_filterPanel" Pages="_filterPages" Values="_filterValues" FilterData="_filterData" Apply="Load"
-                 RestrictManager="_route?.ManagerFilter == true" />
+                 RestrictManager="_route?.ManagerFilter == true" Screen="@FilterScreen" />
 
     @* ---------- Список ---------- *@
     @* Действия над строками — меню ObjectActions, доступность пунктов по
@@ -126,6 +127,10 @@ else
     private string? Title => Tr.T(_route?.Caption)
         ?? (_menuCode == null ? null : Access.MenuText(_menuCode))
         ?? Tr.T(_entity?.Name);
+
+    // Ключ отбора в FilterMemory — по пункту меню, а не по сущности: два пункта на одну
+    // сущность (158) различаются как раз отбором по умолчанию.
+    private string FilterScreen => "journal/" + (_menuCode ?? EntityId.ToString());
 
     private Entity? _entity;
 
@@ -219,6 +224,9 @@ else
             if (_route?.FilterDefault is { } def)
                 _filterValues[def.Field] = Globals.ResolveInitialValue(def.Value);
 
+            // Отбор, применённый в этом журнале раньше за сеанс, сильнее и того и другого.
+            Filters.Restore(FilterScreen, _filterValues);
+
             LoadData();
         }
         catch (Exception ex)
@@ -306,6 +314,7 @@ else
             _dataEntity = DataEntityFor();
             _dataEntity.ClearCache();
             _data = _dataEntity.GetContent(_filterValues);
+            Filters.Remember(FilterScreen, _filterValues);
             _bulkPending = BulkTargets().Count;
         }
         catch (Exception ex)

@@ -1490,3 +1490,5 @@ code	Акции на оплату	Campañas a pagar
 code	Оплатить	Pagar
 code	Платёж недоступен для присвоения акциям — галочка в карточке платежа.	El pago no está disponible para asignar a campañas: casilla en la ficha del pago.
 code	Платёж распределён полностью.	El pago está distribuido por completo.
+code	По умолчанию	Por defecto
+code	Вернуть значения отбора по умолчанию. В силу вступят по «Применить».	Restablecer los valores del filtro por defecto. Se aplicarán al pulsar «Aplicar».

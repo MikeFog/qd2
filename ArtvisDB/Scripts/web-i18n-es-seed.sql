@@ -1,5 +1,5 @@
 ﻿/*
-    ДЕПЛОЙ: переводы веб-версии на язык «es» (1491 строк). docs/tasks/web-i18n.md, этап 5.
+    ДЕПЛОЙ: переводы веб-версии на язык «es» (1493 строк). docs/tasks/web-i18n.md, этап 5.
     СГЕНЕРИРОВАН из ArtvisDB/Scripts/i18n/es.tsv скриптом build-seed.py — руками не править.
 
     ПРЕДУСЛОВИЕ     накачен web-i18n-translation-deploy.sql (таблица iTranslation).
@@ -1509,7 +1509,9 @@ INSERT INTO #t ([source], [text]) VALUES
 (N'Акции на оплату', N'Campañas a pagar'),
 (N'Оплатить', N'Pagar'),
 (N'Платёж недоступен для присвоения акциям — галочка в карточке платежа.', N'El pago no está disponible para asignar a campañas: casilla en la ficha del pago.'),
-(N'Платёж распределён полностью.', N'El pago está distribuido por completo.');
+(N'Платёж распределён полностью.', N'El pago está distribuido por completo.'),
+(N'По умолчанию', N'Por defecto'),
+(N'Вернуть значения отбора по умолчанию. В силу вступят по «Применить».', N'Restablecer los valores del filtro por defecto. Se aplicarán al pulsar «Aplicar».');
 GO
 
 BEGIN TRANSACTION;

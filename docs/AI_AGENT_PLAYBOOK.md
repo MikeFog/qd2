@@ -125,6 +125,9 @@ architecture whenever they would make the web migration easier.
 как у журналов (`mandatory="true"` — обязательное поле, `selector multiselect` — несколько
 значений строкой «id,id,»). Образцы: журнал использования роликов (сущность 139) и сетка
 вещания (`BroadcastGridFilter`).
+Отбор помнится на сеанс: экран зовёт `FilterMemory.Restore` после умолчаний,
+`Remember` после чтения данных и передаёт панели `Screen` (см. `docs/tasks/web-migration.md`,
+«Отбор помнится на сеанс»).
 
 **Ловушки.**
 - `PassportLoader` кэширует XML в статическом словаре. В отличие от `[WEB-01]` в

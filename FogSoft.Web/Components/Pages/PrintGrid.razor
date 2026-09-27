@@ -13,6 +13,7 @@
 @inject IJSRuntime JS
 @inject FileSaver Saver
 @inject DialogService Dialogs
+@inject FilterMemory Filters
 
 @*
     «Сетка вещания» — веб-экран вместо FrmGridReport с Crystal-макетом Grid.rpt. Решение
@@ -57,7 +58,8 @@ else
 
             @* Отбор — та же панель, что у журналов, по именованному паспорту BroadcastGridFilter
                (iPassport): станция и дата обязательны, менеджер — по правам (RestrictManager). *@
-            <FilterPanel Pages="_filterPages" Values="_filterValues" Apply="Show" RestrictManager="true" />
+            <FilterPanel Pages="_filterPages" Values="_filterValues" Apply="Show" RestrictManager="true"
+                         Screen="@ScreenRoutes.BroadcastGrid" />
 
             @if (_error != null)
             {
@@ -193,6 +195,8 @@ else
             // FrmGridReport: без права на чужие/групповые акции — только свои выпуски.
             if (!ManagerChoice.CanChoose())
                 _filterValues[SecurityManager.ParamNames.UserId] = SecurityManager.LoggedUser.Id;
+            // Оба пункта меню — один экран и один отбор.
+            Filters.Restore(ScreenRoutes.BroadcastGrid, _filterValues);
 
             _stations = Massmedia.LoadByGroup(0);
             _managers = ManagerChoice.Managers();
@@ -239,6 +243,7 @@ else
     private Task Load(int stationId, DateTime date, int? userId) => Busy.RunAsync(() => Try(() =>
     {
         _grid = BroadcastGrid.Load(stationId, date, userId);
+        Filters.Remember(ScreenRoutes.BroadcastGrid, _filterValues);
         _shownStationId = stationId;
         _shownDate = date;
         _shownUserId = userId;

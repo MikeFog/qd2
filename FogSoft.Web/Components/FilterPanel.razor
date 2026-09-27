@@ -5,6 +5,7 @@
 @using FogSoft.WinForm.Classes
 @using Merlin.Classes
 @inject DialogService Dialogs
+@inject FilterMemory Filters
 
 @*
     Панель отбора: сворачивающийся блок с полями фильтра, галочкой
@@ -149,6 +150,11 @@
                         </div>
                     }
                     <button class="btn btn-sm @(ApplyText == null ? "btn-outline-secondary" : "btn-primary")" @onclick="ApplyClicked"><i class="bi @(ApplyIcon ?? "bi-funnel")" aria-hidden="true"></i>@(ApplyText ?? Tr.T("Применить"))</button>
+                    @if (Screen != null)
+                    {
+                        <button class="btn btn-sm btn-outline-secondary filter-reset" @onclick="ResetClicked"
+                                title="@Tr.T("Вернуть значения отбора по умолчанию. В силу вступят по «Применить».")"><i class="bi bi-arrow-counterclockwise" aria-hidden="true"></i>@Tr.T("По умолчанию")</button>
+                    }
                 </div>
             </div>
         }
@@ -190,6 +196,12 @@
     /// групповые акции — см. <see cref="IsManagerLocked"/>.
     /// </summary>
     [Parameter] public bool RestrictManager { get; set; }
+
+    /// <summary>
+    /// Ключ экрана в <see cref="FilterMemory"/> — экран запоминает отбор на сеанс. Тогда
+    /// рядом с «Применить» есть «По умолчанию»; null — экран отбор не запоминает.
+    /// </summary>
+    [Parameter] public string? Screen { get; set; }
 
     private bool _filterOpen = true;
 
@@ -287,6 +299,15 @@
         _activePage = firstPage;
         StateHasChanged();
         return false;
+    }
+
+    private void ResetClicked()
+    {
+        Filters.Reset(Screen!, Values);
+        _invalid.Clear();
+        // Имена отмеченных в множественном выборе не привязаны к значению — после сброса
+        // они были бы от прежнего выбора.
+        _multiPickNames.Clear();
     }
 
     private async Task ApplyClicked()
