@@ -1,7 +1,8 @@
 # Многоязычность веб-версии (ru + es)
 
-Статус (24.09.2026): этапы 1–6 сделаны, проверены вживую и закоммичены в master (не
-запушено). Впереди: U (NVARCHAR), вычитка испанского носителем, прод, хвосты этапа 6.
+Статус (29.09.2026): этапы 1–6 и трек U **на проде** (Deploy/08 и 10, накат 29.09.2026).
+Впереди: вычитка испанского носителем, хвосты этапа 6 (DiscountReleases, sl_TariffRetrieve,
+stat_VolumeOfRealizationByMonth*, TariffPassport, строка после сохранения в обёртках IUD).
 
 Этап 1 — что есть: `Tr` (шов ядра), `WebLanguage`/`WebTranslator`
 (`FogSoft.Web/Infrastructure/WebLanguage.cs`), язык в `UserSession.Language`
