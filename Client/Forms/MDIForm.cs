@@ -704,7 +704,7 @@ namespace Merlin.Forms
 			foreach (int id in actionIds)
 				actions.Add(ActionOnMassmedia.GetActionById(id));
 
-			MediaPlan.CreateInstance(actions, false).Show(true);
+			MediaPlan.CreateInstance(actions, false).Show();
 		}
 
 		private void ShowAgencyTaxJournal(ToolStripItem mi)

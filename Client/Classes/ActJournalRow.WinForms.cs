@@ -14,7 +14,7 @@ namespace Merlin.Classes
 			if (actionName == Campaign.ActionNames.PrintOnAirInquire)
 				GetCampaign().PrintOnAirInquire((Form) owner);
 			else if (actionName == Campaign.ActionNames.PrintMediaPlan)
-				GetCampaign().PrintMediaPlan(false, false, false, false);
+				GetCampaign().PrintMediaPlan(false, false, false);
 		}
 
 		private Campaign GetCampaign()

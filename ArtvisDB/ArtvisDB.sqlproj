@@ -478,7 +478,6 @@
     <Build Include="dbo\Stored Procedures\CampaignRollers.sql" />
     <Build Include="dbo\Stored Procedures\AgencyIUD.sql" />
     <Build Include="dbo\Stored Procedures\LogDeletedIssueInsert.sql" />
-    <Build Include="dbo\Stored Procedures\MediaPlanRetrieve.sql" />
     <Build Include="dbo\Stored Procedures\stat_VolumeOfRealization.sql" />
     <Build Include="dbo\Stored Procedures\ModuleCampaignRollers.sql" />
     <Build Include="dbo\Stored Procedures\rpt_Grid_v2.sql" />

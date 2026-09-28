@@ -120,22 +120,20 @@ namespace Merlin.Classes
 			return id > 0 ? issue : null;
 		}
 
-		public IDictionary<string, string> GetUniqueMassmedias(bool isFact)
+		// Станции пакета с выпусками (по фактическим окнам) — по блоку медиаплана на
+		// каждую. Ключ — «id,» (формат @massmediaIDString), значение — имя станции.
+		public IDictionary<string, string> GetUniqueMassmedias()
 		{
 			Dictionary<string, object> parametersMM = new Dictionary<string, object>();
 			parametersMM["campaignID"] = CampaignId;
-			parametersMM["isFact"] = isFact;
+			parametersMM["isFact"] = true;
 			DataSet ds = DataAccessor.LoadDataSet("GetUniqueMMsForPackModuleCampaign", parametersMM);
 			if (ds.Tables.Count > 0)
 			{
-				MediaPlanCampaignGroups mp = new MediaPlanCampaignGroups();
-				DataTable dt = ds.Tables[0];
-				foreach (DataRow dataRow in dt.Rows)
-					mp.AddMassmedia(int.Parse(dataRow["massmediaID"].ToString())
-						, dataRow["name"].ToString()
-						, int.Parse(dataRow["rollerID"].ToString())
-						, DateTime.Parse(dataRow["date"].ToString()));
-				return mp.GetUniqueMassmedias();
+				var result = new Dictionary<string, string>();
+				foreach (DataRow dataRow in ds.Tables[0].Rows)
+					result[dataRow["massmediaID"] + ","] = dataRow["name"].ToString();
+				return result;
 			}
 			return null;
 		}

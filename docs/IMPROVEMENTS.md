@@ -208,6 +208,7 @@
 **Область:** `Client\Classes\Action.cs` (`GetCampaigns`, ~стр. 272–279), `Client\Classes\Action.WinForms.cs` (медиаплан по акции), `Client\Classes\MediaPlan.cs`
 **Суть:** `Action.GetCampaigns` строит список `Campaign` через `Campaign.GetCampaignById`, который возвращает `null` для удалённой кампании. `BuildAddedIssuesTable` (`Action.cs:384–388`) эти `null` явно отфильтровывает — но `Action.WinForms.cs` (вызовы `MediaPlan.CreateInstance(IList<Campaign>, ...)`) передаёт список как есть, а `MediaPlan.PrintMediaPlan` / `PrintCampaignInfo` разыменовывают элементы без проверки. NRE, если в акции есть удалённая кампания, попавшая в список. На практике маловероятно (`dbo.Campaigns` перечисляет кампании существующей акции), но контракт «список без `null`» нигде не держится.
 **Возможное направление:** фильтровать `null` в `Action.GetCampaigns` (или в точке передачи в `MediaPlan`), как это уже делает `BuildAddedIssuesTable`. Предсуществующее, к ветке `hotfix/mediaplan-v2-perf` отношения не имеет (её N+1-фикс `null` кэширует и поведение не меняет).
+**Статус:** закрыто 27.09.2026 — `Action.GetCampaigns` пропускает `null` (этап 1 `docs/tasks/web-mediaplan.md`).
 
 ---
 

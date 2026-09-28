@@ -290,7 +290,10 @@ namespace Merlin.Classes
                 int campaignId = int.Parse(dr[Campaign.ParamNames.CampaignId].ToString());
                 if (campaignIds != null && !campaignIds.Contains(campaignId))
                     continue;
-                campaigns.Add(Campaign.GetCampaignById(campaignId));
+                // GetCampaignById отдаёт null для удалённой кампании.
+                Campaign campaign = Campaign.GetCampaignById(campaignId);
+                if (campaign != null)
+                    campaigns.Add(campaign);
             }
             return campaigns;
         }
@@ -318,7 +321,9 @@ namespace Merlin.Classes
         {
             Dictionary<string, object> procParameters = new Dictionary<string, object>(StringComparer.CurrentCultureIgnoreCase)
             {
-                [ParamNames.ActionId] = ActionId
+                [ParamNames.ActionId] = ActionId,
+                // Месяцы по фактическим окнам — как и сам медиаплан.
+                ["isFact"] = true
             };
             return DataAccessor.LoadDataSet("GetMonthes", procParameters);
         }

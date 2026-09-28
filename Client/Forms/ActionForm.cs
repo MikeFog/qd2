@@ -385,7 +385,7 @@ namespace Merlin.Forms
 		private void tsbPrintMediaPlan_Click(object sender, EventArgs e)
 		{
 			if (SelectedCampaign != null)
-				SelectedCampaign.PrintMediaPlan(false, false, false, false);
+				SelectedCampaign.PrintMediaPlan(false, false, false);
 		}
 
         private void tsbSetActionPrice_Click(object sender, EventArgs e)

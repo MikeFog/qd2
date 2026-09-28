@@ -34,30 +34,21 @@ namespace Merlin.Classes
 			}
 			else if (actionName == Constants.EntityActions.Edit)
 				EditRollerIssues(owner, new RollerIssuesGrid3());
-			else if (actionName == ActionNames.PrintMediaPlan)
-				PrintMediaPlan(false, false, false, false);
-			else if (actionName == ActionNames.PrintMediaPlanFact)
-				PrintMediaPlan(true, false, false, false);
-			else if (actionName == ActionNames.PrintMediaPlanMonth)
-				PrintMediaPlan(false, true, false, false);
-			else if (actionName == ActionNames.PrintMediaPlanFactMonth)
-				PrintMediaPlan(true, true, false, false);
-			else if (actionName == ActionNames.PrintMediaPlanByPeriod)
-				PrintMediaPlan(false, false, true, false);
-			else if (actionName == ActionNames.PrintMediaPlanFactByPeriod)
-				PrintMediaPlan(true, false, true, false);
-			else if (actionName == ActionNames.PrintSelectivelyMediaPlan)
-				PrintMediaPlan(false, false, false, true);
-			else if (actionName == ActionNames.PrintSelectivelyMediaPlanFact)
-				PrintMediaPlan(true, false, false, true);
-			else if (actionName == ActionNames.PrintSelectivelyMediaPlanMonth)
-				PrintMediaPlan(false, true, false, true);
-			else if (actionName == ActionNames.PrintSelectivelyMediaPlanFactMonth)
-				PrintMediaPlan(true, true, false, true);
-			else if (actionName == ActionNames.PrintSelectivelyMediaPlanByPeriod)
-				PrintMediaPlan(false, false, true, true);
-			else if (actionName == ActionNames.PrintSelectivelyMediaPlanFactByPeriod)
-				PrintMediaPlan(true, false, true, true);
+			// Медиаплан всегда по фактическим окнам, поэтому пары «X» / «XFact» —
+			// одно и то же. В iEntityAction у кампаний (Artvis/ArtvisDev) есть
+			// только Fact-имена; имена без Fact оставлены на случай других баз.
+			else if (actionName == ActionNames.PrintMediaPlan || actionName == ActionNames.PrintMediaPlanFact)
+				PrintMediaPlan(false, false, false);
+			else if (actionName == ActionNames.PrintMediaPlanMonth || actionName == ActionNames.PrintMediaPlanFactMonth)
+				PrintMediaPlan(true, false, false);
+			else if (actionName == ActionNames.PrintMediaPlanByPeriod || actionName == ActionNames.PrintMediaPlanFactByPeriod)
+				PrintMediaPlan(false, true, false);
+			else if (actionName == ActionNames.PrintSelectivelyMediaPlan || actionName == ActionNames.PrintSelectivelyMediaPlanFact)
+				PrintMediaPlan(false, false, true);
+			else if (actionName == ActionNames.PrintSelectivelyMediaPlanMonth || actionName == ActionNames.PrintSelectivelyMediaPlanFactMonth)
+				PrintMediaPlan(true, false, true);
+			else if (actionName == ActionNames.PrintSelectivelyMediaPlanByPeriod || actionName == ActionNames.PrintSelectivelyMediaPlanFactByPeriod)
+				PrintMediaPlan(false, true, true);
 			else if (actionName == ActionNames.PrintTransfers)
 				PrintTransfers();
 			else if (actionName == ActionNames.DeleteIssues)
@@ -121,7 +112,7 @@ namespace Merlin.Classes
 				Globals.ShowSimpleJournal(EntityManager.GetEntity((int)Entities.CampaignIssuesTransfers), Resources.CampaignIssuesTransfersTitle, ds.Tables[0]);
 		}
 
-		public void PrintMediaPlan(bool isActual, bool isByMonth, bool isByPeriod, bool selectively)
+		public void PrintMediaPlan(bool isByMonth, bool isByPeriod, bool selectively)
 		{
 			Application.DoEvents();
 			Refresh();
@@ -130,7 +121,7 @@ namespace Merlin.Classes
 			{
 				Dictionary<string, object> procParameters = new Dictionary<string, object>(StringComparer.CurrentCultureIgnoreCase);
 				procParameters[ParamNames.CampaignId] = CampaignId;
-				procParameters["isFact"] = isActual;
+				procParameters["isFact"] = true;
 				DataSet ds = DataAccessor.LoadDataSet("GetMonthes", procParameters);
 
 				Dictionary<object, object> dMonthsToShow = new Dictionary<object, object>();
@@ -151,16 +142,16 @@ namespace Merlin.Classes
 				IList<DateTime> months = new List<DateTime>();
 				foreach (KeyValuePair<object, object> item in f.CheckedItems)
 					months.Add((DateTime)item.Key);
-				MediaPlan.CreateInstance(this, months, selectively).Show(isActual);
+				MediaPlan.CreateInstance(this, months, selectively).Show();
 			}
 			else if (isByPeriod)
 			{
 				FrmDateSelector selector = new FrmDateSelector(StartDate, FinishDate, "Выбор периода");
 				if (selector.ShowDialog(Globals.MdiParent) == DialogResult.OK)
-					MediaPlan.CreateInstance(this, selector.StartDate, selector.FinishDate, selectively).Show(isActual);
+					MediaPlan.CreateInstance(this, selector.StartDate, selector.FinishDate, selectively).Show();
 			}
 			else
-				MediaPlan.CreateInstance(this, selectively).Show(isActual);
+				MediaPlan.CreateInstance(this, selectively).Show();
 		}
 
 		protected void EditRollerIssues(IWin32Window owner, TariffGrid tariffGrid)

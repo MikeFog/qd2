@@ -32,7 +32,6 @@ namespace Merlin.Classes
 		private readonly IList<Action> _actions;
 		private readonly DateTime? _dateFrom;
 		private readonly DateTime? _dateTo;
-		private bool _isFact;
         private readonly bool _selectively;
         private bool exportStarted = false;
 
@@ -130,11 +129,10 @@ namespace Merlin.Classes
 
 		#endregion
 		
-		public void Show(bool isFact)
+		// Медиаплан всегда строится по фактическим окнам выпусков (@isFact = 1 в
+		// процедурах). Раньше Show принимал isFact и тут же перезаписывал его на true.
+		public void Show()
 		{
-			isFact = true;
-
-			_isFact = isFact;
 			_savedFilePath = null;
             CultureInfo oldCulture = Thread.CurrentThread.CurrentCulture;
             // Проверка пути сохранения может уходить в недоступный сетевой каталог и висеть
@@ -186,7 +184,7 @@ namespace Merlin.Classes
 
         private void ExportMediaPlan()
 		{
-			PrintMediaPlan(_isFact);
+			PrintMediaPlan();
             if (exportStarted)
             {
 				string folder = UserSettings.Load("Path2SaveReports") ?? string.Empty;
@@ -318,7 +316,7 @@ namespace Merlin.Classes
             {
                 procParameters.Add("actionId", action.ActionId);
             }
-            procParameters.Add("isFact", _isFact);
+            procParameters.Add("isFact", true);
 
             if (year.HasValue && month.HasValue)
             {
@@ -347,7 +345,7 @@ namespace Merlin.Classes
             }
         }
 
-		private void PrintMediaPlan(bool isFact)
+		private void PrintMediaPlan()
 		{
             if (_selectively)
             {
@@ -359,7 +357,7 @@ namespace Merlin.Classes
 
 			if (IsActionMode)
 			{
-				PrintActionInfo(isFact);
+				PrintActionInfo();
 			}
 			else
 			{
@@ -374,16 +372,16 @@ namespace Merlin.Classes
 							    &&
 							    (time.Year < campaign.FinishDate.Year ||
 							     (time.Year == campaign.FinishDate.Year && time.Month <= campaign.FinishDate.Month)))
-								PrintCampaignInfo(campaign, isFact, time.Year, time.Month);
+								PrintCampaignInfo(campaign, time.Year, time.Month);
 						}
 					}
 					else
-						PrintCampaignInfo(campaign, isFact, null, null);
+						PrintCampaignInfo(campaign, null, null);
 				}
 			}
 		}
 
-		private void PrintActionInfo(bool isFact)
+		private void PrintActionInfo()
 		{
 			// Загружаем сырой датасет напрямую, чтобы получить agencyID
 			Dictionary<string, object> parametersMM = new Dictionary<string, object>();
@@ -391,7 +389,7 @@ namespace Merlin.Classes
 				parametersMM["actionIDString"] = ActionIdString;
 			else
 				parametersMM[Merlin.Classes.Action.ParamNames.ActionId] = action.ActionId;
-			parametersMM["isFact"] = isFact;
+			parametersMM["isFact"] = true;
 			DataSet dsRaw = DataAccessor.LoadDataSet("GetUniqueMMsForAction", parametersMM);
 			DataTable dt = dsRaw.Tables[0];
 
@@ -414,30 +412,20 @@ namespace Merlin.Classes
 			{
 				Agency agency = Agency.GetAgencyByID(agencyId);
 
-				// Строим MediaPlanCampaignGroups только из строк этого агентства
-				MediaPlanCampaignGroups mp = new MediaPlanCampaignGroups();
-				if (dsRaw.Tables.Count > 1)
-					mp.InitUniquesList(dsRaw.Tables[1]);
-				foreach (DataRow row in agencyRows[agencyId])
-					mp.AddMassmedia(
-						int.Parse(row["massmediaID"].ToString()),
-						row["name"].ToString(),
-						int.Parse(row["rollerID"].ToString()),
-						DateTime.Parse(row["date"].ToString()));
-
-				IDictionary<string, string> mms = mp.GetUniqueMassmedias();
+				IDictionary<string, string> mms = GetAgencyMassmedias(
+					agencyRows[agencyId], dsRaw.Tables.Count > 1 ? dsRaw.Tables[1] : null);
 
 				bool printedHeader = false;
 				foreach (KeyValuePair<string, string> mm in mms)
 				{
 					DataSet ds;
-					if (LoadData(null, mm.Key, isFact, null, null, agencyId, out ds))
+					if (LoadData(null, mm.Key, null, null, agencyId, out ds))
 					{
 						if (!printedHeader)
 						{
 							currentY = 2;
 							VerifyExportManager();
-							activeSheet = ExportManager.Application.GetNewSheet(agency.Name, "Tahoma", 8);
+							activeSheet = ExportManager.Application.GetNewSheet(SafeSheetName(agency.Name), "Tahoma", 8);
 							SetPageOrientation();
 							printedHeader = true;
 						}
@@ -454,11 +442,40 @@ namespace Merlin.Classes
 							currentY++;
 							PrintHeader(action, agency, mm.Value, mm.Key);
 						}
-						PrintContent(ds, null, agency, mm.Key, isFact, null, null);
+						PrintContent(ds, null, agency, mm.Key, null, null);
 						currentY += 3;
 					}
 				}
 			}
+		}
+
+		// Станции листа агентства, по блоку на каждую: сначала станции из строк
+		// агентства в порядке первого появления, затем станции спонсорских кампаний
+		// акции (второй набор GetUniqueMMsForAction), которых среди них нет, — по
+		// возрастанию ID. Ключ — «id,» (формат @massmediaIDString), значение — имя.
+		// Раньше это делал MediaPlanCampaignGroups; его склейка станций с одинаковыми
+		// роликами/днями была отключена (CompareTo всегда 1), порядок тот же.
+		private static IDictionary<string, string> GetAgencyMassmedias(IEnumerable<DataRow> agencyRows, DataTable sponsorMassmedias)
+		{
+			var result = new Dictionary<string, string>();
+			var ids = new HashSet<int>();
+			foreach (DataRow row in agencyRows)
+			{
+				int id = int.Parse(row["massmediaID"].ToString());
+				if (ids.Add(id))
+					result.Add(id + ",", row["name"].ToString());
+			}
+			if (sponsorMassmedias != null)
+			{
+				foreach (DataRow row in sponsorMassmedias.Rows.Cast<DataRow>()
+					.OrderBy(r => int.Parse(r[Massmedia.ParamNames.MassmediaId].ToString())))
+				{
+					int id = int.Parse(row[Massmedia.ParamNames.MassmediaId].ToString());
+					if (ids.Add(id))
+						result.Add(id + ",", row[Massmedia.ParamNames.Name].ToString());
+				}
+			}
+			return result;
 		}
 
         private void VerifyExportManager()
@@ -471,7 +488,7 @@ namespace Merlin.Classes
             }
         }
 
-		private void PrintCampaignInfo(Campaign campaign, bool isFact, int? year, int? month)
+		private void PrintCampaignInfo(Campaign campaign, int? year, int? month)
 		{
 			bool printedHeader = false;
 
@@ -479,7 +496,7 @@ namespace Merlin.Classes
             if (campaign.CampaignType == Campaign.CampaignTypes.PackModule)
             {
                 CampaignPackModule campaignPackModule = campaign as CampaignPackModule;
-                mms = campaignPackModule.GetUniqueMassmedias(isFact);
+                mms = campaignPackModule.GetUniqueMassmedias();
             }
             else
             {
@@ -490,13 +507,13 @@ namespace Merlin.Classes
             foreach (KeyValuePair<string, string> mm in mms)
             {
                 DataSet ds;
-                if (LoadData(campaign, mm.Key, isFact, year, month, null, out ds))
+                if (LoadData(campaign, mm.Key, year, month, null, out ds))
                 {
                     if (!printedHeader)
                     {
                         currentY = 2;
                         VerifyExportManager();
-                        activeSheet = ExportManager.Application.GetNewSheet(GetSheetName(campaign, year, month), "Tahoma", 8);
+                        activeSheet = ExportManager.Application.GetNewSheet(SafeSheetName(GetSheetName(campaign, year, month)), "Tahoma", 8);
                         SetPageOrientation();
 
                         printedHeader = true;
@@ -506,7 +523,7 @@ namespace Merlin.Classes
 					currentY++;
                     PrintHeader(campaign.Action, campaign.Agency, mm.Value, mm.Key);
                     currentY++;
-                    PrintContent(ds, campaign, campaign.Agency, mm.Key, isFact, year, month);
+                    PrintContent(ds, campaign, campaign.Agency, mm.Key, year, month);
                     currentY += 3;
                 }
             }
@@ -525,7 +542,19 @@ namespace Merlin.Classes
 				return string.Format("{0}{1} ({2})", prefix, campaign.Name, campaign.CampaignId);
 		}
 
-		private void PrintContent(DataSet ds, Campaign campaign, Agency agency, string mmIds, bool isFact, int? year, int? month)
+		// Excel не принимает в имени листа []:*?/\ и больше 31 символа — COM
+		// бросает исключение и экспорт обрывается на середине.
+		private static string SafeSheetName(string name)
+		{
+			var sb = new StringBuilder(name ?? string.Empty);
+			foreach (char c in new[] { '[', ']', ':', '*', '?', '/', '\\' })
+				sb.Replace(c, '_');
+			// Апостроф в начале или конце имени Excel тоже не принимает.
+			string safe = sb.ToString().Trim('\'');
+			return safe.Length > 31 ? safe.Substring(0, 31) : safe;
+		}
+
+		private void PrintContent(DataSet ds, Campaign campaign, Agency agency, string mmIds, int? year, int? month)
 		{
 			PrintRollersList(ds.Tables[0], campaign == null ? Campaign.CampaignTypes.Module : campaign.CampaignType);
 			if ((campaign != null && campaign.CampaignType == Campaign.CampaignTypes.Sponsor) || (campaign == null && IsActionMode))
@@ -539,7 +568,7 @@ namespace Merlin.Classes
 			PrintFooter(campaign, agency, ds.Tables[1], ds.Tables[2], mmIds, year, month);
 		}
 
-        private bool LoadData(Campaign campaign, string mmIds, bool isFact, int? year, int? month, int? agencyId, out DataSet ds)
+        private bool LoadData(Campaign campaign, string mmIds, int? year, int? month, int? agencyId, out DataSet ds)
         {
             Dictionary<string, object> procParameters = new Dictionary<string, object>(2);
 			if(agencyId != null) 
@@ -559,7 +588,7 @@ namespace Merlin.Classes
                 procParameters.Add("actionId", action.ActionId);
             }
             procParameters.Add("massmediaIDString", mmIds);
-            procParameters.Add("isFact", isFact);
+            procParameters.Add("isFact", true);
 
             if (year.HasValue && month.HasValue)
             {
@@ -658,9 +687,12 @@ namespace Merlin.Classes
 			decimal priceTotal = 0;
 			decimal tariffPriceTotal = 0;
 			decimal taxPriceTotal = 0;
+			// Начало периода блока — дата, на которую берётся ставка НДС для подписи.
+			DateTime? periodStart = null;
 			if (campaign != null)
 			{
 				DateTime start = isByMounth ? new DateTime(year.Value, month.Value, 1) : isByPeriod ? _dateFrom.Value : campaign.StartDate;
+				periodStart = start;
 				DateTime finish = isByMounth ? new DateTime(year.Value, month.Value, DateTime.DaysInMonth(year.Value, month.Value)) : isByPeriod ? _dateTo.Value : campaign.FinishDate;
 				foreach (string id in ids)
 				{
@@ -681,6 +713,8 @@ namespace Merlin.Classes
 							|| ((CampaignOnSingleMassmedia)c).Massmedia.MassmediaId.ToString() == id)
 						{
 							DateTime start = isByMounth ? new DateTime(year.Value, month.Value, 1) : isByPeriod ? _dateFrom.Value : c.StartDate;
+							if (periodStart == null || start < periodStart)
+								periodStart = start;
 							DateTime finish = isByMounth
 							                  	? new DateTime(year.Value, month.Value, DateTime.DaysInMonth(year.Value, month.Value))
 												: isByPeriod ? _dateTo.Value : c.FinishDate;
@@ -696,11 +730,11 @@ namespace Merlin.Classes
 
 			// Итоговый блок футера — подряд идущие строки столбца 3, пишем одним
 			// SetValuesForRange вместо 3-6 отдельных SetCellValue.
-			int totalDuration = dtTimeList.Rows.Count > 0 ? ids.Length * int.Parse(dtTimeList.Compute("sum(totalDuration)", string.Empty).ToString()) : 0;
+			int totalDuration = dtTimeList.Rows.Count > 0 ? int.Parse(dtTimeList.Compute("sum(totalDuration)", string.Empty).ToString()) : 0;
 			decimal discount = 1 - (tariffPriceTotal == 0 ? 1 : (priceTotal / tariffPriceTotal));
 			var footLines = new System.Collections.Generic.List<object>
 			{
-				string.Format("Всего трансляций: {0}", dtIssues.Rows.Count * ids.Length),
+				string.Format("Всего трансляций: {0}", dtIssues.Rows.Count),
 				string.Format("Время трансляций: {0}", DateTimeUtils.Time2String(totalDuration)),
 			};
 			if (!_printSettings.HideTariffPrice)
@@ -719,7 +753,7 @@ namespace Merlin.Classes
 				footLines.Add($"Стоимость спланированной рекламы: {priceTotal:c}");
 			}
 			if (taxPriceTotal > 0)
-				footLines.Add($"В том числе  НДС  (5%): {taxPriceTotal:c}");
+				footLines.Add(TaxLine(agency, periodStart, taxPriceTotal));
 			WriteColumn(currentY, 3, footLines);
 			currentY += footLines.Count;
             currentY++;
@@ -737,6 +771,18 @@ namespace Merlin.Classes
 			if (campaign != null && ConfigurationUtil.IsPrintContactPerson)
 				SetCellValue(currentY, 3, string.Format("Контактное лицо: {0}", campaign.Action.Creator.ContactInfo));
         }
+
+		// Ставка — из AgencyTax агентства на начало периода блока (раньше в тексте
+		// было жёстко «5%»). Сама сумма НДС считается в GetPriceByPeriod по ставке
+		// на дату каждого выпуска. Если на начало периода ставки нет (действует с
+		// середины периода), процент не пишем.
+		private static string TaxLine(Agency agency, DateTime? periodStart, decimal taxPriceTotal)
+		{
+			decimal rate = agency != null && periodStart.HasValue ? agency.GetTaxValue(periodStart.Value) : 0;
+			return rate > 0
+				? $"В том числе НДС ({rate:0.##}%): {taxPriceTotal:c}"
+				: $"В том числе НДС: {taxPriceTotal:c}";
+		}
 
 		private void PrintIssuesGrid(int rowsCount, DataTable dtIssues, DataTable dataCounts, Campaign.CampaignTypes campaignType, int? year, int? month)
 		{
@@ -896,6 +942,9 @@ namespace Merlin.Classes
 		private void PrintRollersList(DataTable dtRollers, Campaign.CampaignTypes type)
 		{
 			colRollers = new Dictionary<int, int>(dtRollers.Rows.Count);
+			// Без роликов в блоке таблицу времени и сетку не рисуем (PrintContent),
+			// а не берём ширину от предыдущего блока.
+			_columnWithRollerName = 0;
 			int labelCol = type == Campaign.CampaignTypes.Simple ? 4 : 3;   // "Ролики:"
 			int dataCol = labelCol + 1;                                     // №, длит., кол-во, имя
 			int rollerCount = dtRollers.Rows.Count;
