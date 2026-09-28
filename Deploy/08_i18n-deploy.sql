@@ -1,0 +1,5468 @@
+﻿/*
+    ПРОД-ДЕПЛОЙ 08_i18n-deploy.sql
+    Многоязычность веба: таблица переводов, испанские переводы, процедуры с @languageCode.
+    КОГДА: в любое время; десктоп результата не заметит; после наката перезапустить веб.
+
+    Склеено из ArtvisDB/Scripts (части ниже — без изменений, каждая со своей шапкой):
+      - web-i18n-translation-deploy.sql
+      - web-i18n-es-seed.sql
+      - web-i18n-sql-deploy.sql
+    Запуск: sqlcmd -S <сервер> -d <база> -E -f 65001 -I -b -i 08_i18n-deploy.sql
+    (-b — остановка на первой ошибке; части идемпотентны, повторный запуск безопасен)
+*/
+
+-- ============================================================================
+-- ЧАСТЬ: web-i18n-translation-deploy.sql
+-- ============================================================================
+SET ANSI_NULLS ON;
+SET QUOTED_IDENTIFIER ON;
+GO
+/*
+    ДЕПЛОЙ: хранилище переводов веб-версии (многоязычность, этап 2).
+    Задача: docs/tasks/web-i18n.md.
+
+    ЧТО ДЕЛАЕТ
+      1. Таблица iTranslation(lang, context, source, text) — перевод по русскому тексту.
+      2. Процедура TranslationLoad @lang — все переводы языка (веб грузит их в память).
+      3. Переносит готовые испанские названия пунктов меню из iMenu.name_es в iTranslation.
+         Колонка iMenu.name_es и процедуры меню НЕ меняются: десктоп и Protector работают как раньше.
+
+    КЛИЕНТ          десктоп не затронут. Веб после наката — перезапустить (переводы кэшируются).
+    ИДЕМПОТЕНТНОСТЬ повторный запуск безопасен (перенос не перезаписывает уже заданные переводы).
+    ОТКАТ           DROP PROCEDURE dbo.TranslationLoad; DROP TABLE dbo.iTranslation.
+*/
+
+-- USE [Artvis];
+-- GO
+
+SET NOCOUNT ON;
+-- sqlcmd по умолчанию создаёт процедуры с QUOTED_IDENTIFIER OFF — задаём явно
+SET ANSI_NULLS ON;
+SET QUOTED_IDENTIFIER ON;
+GO
+
+IF OBJECT_ID('dbo.iTranslation') IS NULL
+BEGIN
+    CREATE TABLE [dbo].[iTranslation] (
+        [lang]       VARCHAR (10)    NOT NULL,
+        [context]    VARCHAR (32)    CONSTRAINT [DF_iTranslation_context] DEFAULT ('') NOT NULL,
+        [source]     NVARCHAR (4000) NOT NULL,
+        [text]       NVARCHAR (4000) NOT NULL,
+        [sourceHash] AS (CONVERT([binary](32), hashbytes('SHA2_256', [source]))) PERSISTED NOT NULL,
+        CONSTRAINT [PK_iTranslation] PRIMARY KEY CLUSTERED ([lang] ASC, [context] ASC, [sourceHash] ASC)
+    );
+    PRINT 'Создана таблица iTranslation';
+END
+GO
+
+CREATE OR ALTER PROCEDURE [dbo].[TranslationLoad]
+(
+    @lang VARCHAR(10)
+)
+AS
+SET NOCOUNT ON;
+
+SELECT [context], [source], [text]
+FROM   [dbo].[iTranslation]
+WHERE  [lang] = @lang;
+GO
+GRANT EXECUTE ON OBJECT::[dbo].[TranslationLoad] TO PUBLIC AS [dbo];
+GO
+
+-- Меню: name_es → iTranslation. Разделители «-» и совпадающие с русским не переносим;
+-- если у одного русского названия разные испанские — берём любое (меньшее).
+BEGIN TRANSACTION;
+
+INSERT INTO [dbo].[iTranslation] ([lang], [context], [source], [text])
+SELECT 'es', '', m.[name], MIN(m.[name_es])
+FROM   [dbo].[iMenu] m
+WHERE  m.[name_es] IS NOT NULL
+  AND  LTRIM(RTRIM(m.[name_es])) <> ''
+  AND  m.[name] <> '-'
+  AND  m.[name_es] <> m.[name] COLLATE Latin1_General_BIN
+  AND  NOT EXISTS (SELECT 1 FROM [dbo].[iTranslation] t
+                   WHERE t.[lang] = 'es' AND t.[context] = ''
+                     AND t.[sourceHash] = CONVERT(binary(32), hashbytes('SHA2_256', m.[name])))
+GROUP BY m.[name];
+
+PRINT CONCAT('Перенесено переводов меню: ', @@ROWCOUNT);
+
+COMMIT TRANSACTION;
+GO
+
+-- ============================================================================
+-- ЧАСТЬ: web-i18n-es-seed.sql
+-- ============================================================================
+SET ANSI_NULLS ON;
+SET QUOTED_IDENTIFIER ON;
+GO
+/*
+    ДЕПЛОЙ: переводы веб-версии на язык «es» (1537 строк). docs/tasks/web-i18n.md, этап 5.
+    СГЕНЕРИРОВАН из ArtvisDB/Scripts/i18n/es.tsv скриптом build-seed.py — руками не править.
+
+    ПРЕДУСЛОВИЕ     накачен web-i18n-translation-deploy.sql (таблица iTranslation).
+    ИДЕМПОТЕНТНОСТЬ повторный запуск безопасен: новые строки вставляются, изменённые — обновляются.
+    КЛИЕНТ          веб перезапустить (переводы кэшируются в памяти). Десктоп не затронут.
+*/
+
+SET NOCOUNT ON;
+SET ANSI_NULLS ON;
+SET QUOTED_IDENTIFIER ON;
+GO
+
+CREATE TABLE #t ([source] NVARCHAR(4000) NOT NULL, [text] NVARCHAR(4000) NOT NULL);
+GO
+INSERT INTO #t ([source], [text]) VALUES
+(N'Cчёт', N'Factura'),
+(N'Активировать', N'Activar'),
+(N'Видеть акции своей группы', N'Ver campañas del propio grupo'),
+(N'Видеть чужие акции', N'Ver campañas ajenas'),
+(N'Восстановить рекламную акцию', N'Restaurar campaña publicitaria'),
+(N'Выбрать акции для оплаты', N'Seleccionar campañas para pago'),
+(N'График размещения', N'Plan de colocación'),
+(N'Группы пользователя', N'Grupos del usuario'),
+(N'Деактивировать', N'Desactivar'),
+(N'Добавить Прайс-Лист', N'Agregar lista de precios'),
+(N'Добавить в группу существующего пользователя', N'Agregar usuario existente al grupo'),
+(N'Добавить модуль', N'Agregar módulo'),
+(N'Добавить модуль в пакет', N'Agregar módulo al paquete'),
+(N'Добавить налог', N'Agregar impuesto'),
+(N'Добавить новые скидки', N'Agregar nuevos descuentos'),
+(N'Добавить остаток', N'Agregar saldo inicial'),
+(N'Добавить предмет рекламы', N'Agregar rubro publicitario'),
+(N'Добавить радиостанцию', N'Agregar emisora'),
+(N'Добавить скидку', N'Agregar descuento'),
+(N'Добавить спонсорскую программу', N'Agregar programa de patrocinio'),
+(N'Добавить тариф', N'Agregar tarifa'),
+(N'Добавить тариф массово', N'Agregar tarifas en lote'),
+(N'Договор', N'Contrato'),
+(N'Заменить рекламный ролик', N'Sustituir spot publicitario'),
+(N'Запретить внесение в окна (по шаблону)', N'Prohibir inclusión en ventanas (por plantilla)'),
+(N'Изменить позиционирование', N'Modificar posicionamiento'),
+(N'Изменить похожие тарифы...', N'Modificar tarifas similares...'),
+(N'Изменить предмет рекламы', N'Modificar rubro publicitario'),
+(N'Клонировать', N'Clonar'),
+(N'Назначить предмет рекламы', N'Asignar rubro publicitario'),
+(N'Назначить предмет рекламы выпускам спонсорских программ', N'Asignar rubro publicitario a las emisiones de programas de patrocinio'),
+(N'Назначить предмет рекламы или заменить ролик', N'Asignar rubro publicitario o sustituir spot'),
+(N'Обновить', N'Actualizar'),
+(N'Объединить рекламную акцию', N'Unir campaña publicitaria'),
+(N'Объединить с предыдущим', N'Unir con el anterior'),
+(N'Объединить со следующим', N'Unir con el siguiente'),
+(N'Открыть журнал акций', N'Abrir registro de campañas'),
+(N'Отметить как удалённую', N'Marcar como eliminada'),
+(N'Отобрать право', N'Revocar permiso'),
+(N'Перейти к балансу для фирмы', N'Ir al balance de la empresa'),
+(N'Перенос дня', N'Traslado del día'),
+(N'Переносы', N'Traslados'),
+(N'Пересчитать', N'Recalcular'),
+(N'Показать акции', N'Mostrar campañas'),
+(N'Показать дни выхода', N'Mostrar días de emisión'),
+(N'Показать дни выхода в эфир', N'Mostrar días de salida al aire'),
+(N'Показать заблокированные окна', N'Mostrar ventanas bloqueadas'),
+(N'Показать модули', N'Mostrar módulos'),
+(N'Показать пакетные модули', N'Mostrar módulos en paquete'),
+(N'Показать пользователей', N'Mostrar usuarios'),
+(N'Показать права группы', N'Mostrar permisos del grupo'),
+(N'Показать программы', N'Mostrar programas'),
+(N'Показать рекламные ролики', N'Mostrar spots publicitarios'),
+(N'Показать ролики', N'Mostrar spots'),
+(N'Показать статистику по роликам', N'Mostrar estadísticas por spot'),
+(N'Показать фирмы', N'Mostrar empresas'),
+(N'Пометить как прочтенное', N'Marcar como leído'),
+(N'Пометить рекламные окна', N'Marcar ventanas publicitarias'),
+(N'Право ''уходить в минус''', N'Permiso ''quedar en negativo'''),
+(N'Предварительный просмотр активации', N'Vista previa de la activación'),
+(N'Продлить окно', N'Extender ventana'),
+(N'Прослушать ролик', N'Escuchar spot'),
+(N'Разделить рекламную акцию', N'Dividir campaña publicitaria'),
+(N'Разделить рекламные кампании', N'Dividir pautas publicitarias'),
+(N'Разрешить внесение в окна (по шаблону)', N'Permitir inclusión en ventanas (por plantilla)'),
+(N'Распечатать', N'Imprimir'),
+(N'Распечатать , по периоду', N'Imprimir , por período'),
+(N'Распечатать график размещения', N'Imprimir plan de colocación'),
+(N'Распечатать договор', N'Imprimir contrato'),
+(N'Распечатать договор на проведение рекламной акции', N'Imprimir contrato de realización de campaña publicitaria'),
+(N'Распечатать по месяцам', N'Imprimir por meses'),
+(N'Распечатать по периоду', N'Imprimir por período'),
+(N'Распечатать спонсорский договор', N'Imprimir contrato de patrocinio'),
+(N'Распечатать спонсорский договор на проведение рекламной акции', N'Imprimir contrato de patrocinio para la realización de campaña publicitaria'),
+(N'Распечатать частичные', N'Imprimir parciales'),
+(N'Распечатать частичные по месяцам', N'Imprimir parciales por meses'),
+(N'Распечатать частичные по периоду', N'Imprimir parciales por período'),
+(N'Распечатать частичный', N'Imprimir parcial'),
+(N'Распечатать частичный по месяцам', N'Imprimir parcial por meses'),
+(N'Распечатать частичный по периоду', N'Imprimir parcial por período'),
+(N'Распечатать эфирную справку', N'Imprimir certificado de emisión'),
+(N'Редактировать', N'Editar'),
+(N'Редактировать акции своей группы', N'Editar campañas del propio grupo'),
+(N'Редактировать в эфир рекламных роликов', N'Editar salida al aire de spots publicitarios'),
+(N'Редактировать выпуски программ для спонсоров', N'Editar emisiones de programas para patrocinadores'),
+(N'Редактировать доступ к пунктам меню', N'Editar acceso a opciones del menú'),
+(N'Редактировать дочерние фирмы', N'Editar empresas filiales'),
+(N'Редактировать коэффициенты', N'Editar coeficientes'),
+(N'Редактировать права для группы', N'Editar permisos del grupo'),
+(N'Редактировать права для пользователя', N'Editar permisos del usuario'),
+(N'Редактировать пункты меню для пользователя', N'Editar opciones del menú del usuario'),
+(N'Редактировать рекламные окна', N'Editar ventanas publicitarias'),
+(N'Редактировать чужие акции', N'Editar campañas ajenas'),
+(N'Свойства', N'Propiedades'),
+(N'Сгенерировать рекламные окна', N'Generar ventanas publicitarias'),
+(N'Сделать вторым', N'Colocar en segunda posición'),
+(N'Сделать первым', N'Colocar en primera posición'),
+(N'Сделать последним', N'Colocar en última posición'),
+(N'Сменить рекламное агентство', N'Cambiar agencia de publicidad'),
+(N'Сменить создателя', N'Cambiar creador'),
+(N'Сменить тип оплаты', N'Cambiar tipo de pago'),
+(N'Сменить фирму-заказчика', N'Cambiar empresa cliente'),
+(N'Снять пометку с  рекламных окон', N'Desmarcar ventanas publicitarias'),
+(N'Создать', N'Crear'),
+(N'Создать копию', N'Crear copia'),
+(N'Создать копию прайс-листа', N'Crear copia de la lista de precios'),
+(N'Создать копию прайс-листа на нескольких радиостанциях', N'Crear copia de la lista de precios en varias emisoras'),
+(N'Создать новый объект', N'Crear nuevo objeto'),
+(N'Создать новый предмет рекламы', N'Crear nuevo rubro publicitario'),
+(N'Создать пользователя и добавить в группу', N'Crear usuario y agregar al grupo'),
+(N'Счёт-договор', N'Factura-contrato'),
+(N'Убрать порядок', N'Quitar orden'),
+(N'Удалить', N'Eliminar'),
+(N'Удалить выпуски пакетного модуля', N'Eliminar emisiones del módulo en paquete'),
+(N'Удалить выпуски пакетных модулей', N'Eliminar emisiones de los módulos en paquete'),
+(N'Удалить выпуски рекламного модуля', N'Eliminar emisiones del módulo publicitario'),
+(N'Удалить выпуски рекламных модулей', N'Eliminar emisiones de los módulos publicitarios'),
+(N'Удалить выпуски спонсорских программ', N'Eliminar emisiones de los programas de patrocinio'),
+(N'Удалить выпуски спонсорской программы', N'Eliminar emisiones del programa de patrocinio'),
+(N'Удалить из группы', N'Eliminar del grupo'),
+(N'Удалить кампанию', N'Eliminar pauta'),
+(N'Удалить объединение с предыдущим', N'Eliminar unión con el anterior'),
+(N'Удалить объединение со следующим', N'Eliminar unión con el siguiente'),
+(N'Удалить окончательно', N'Eliminar definitivamente'),
+(N'Удалить рекламные выпуски', N'Eliminar emisiones publicitarias'),
+(N'Удалить сгенерированные рекламные окна', N'Eliminar ventanas publicitarias generadas'),
+(N'Установить фильтр', N'Aplicar filtro'),
+(N'Эфирная справка', N'Certificado de emisión'),
+(N'1-й ролик (%):', N'1.er spot (%):'),
+(N'2-й ролик (%):', N'2.º spot (%):'),
+(N'3D вид', N'Vista 3D'),
+(N'Cумма платежа:', N'Monto del pago:'),
+(N'DJin настройки', N'Configuración DJin'),
+(N'DJin настройки (2)', N'Configuración DJin (2)'),
+(N'Автор произведения', N'Autor de la obra'),
+(N'Агенство:', N'Agencia:'),
+(N'Агенство: ', N'Agencia: '),
+(N'Агентства', N'Agencias'),
+(N'Агентства с которыми работает данная Радиостанция', N'Agencias con las que trabaja esta emisora'),
+(N'Агентство:', N'Agencia:'),
+(N'Агентство: ', N'Agencia: '),
+(N'Адрес:', N'Dirección:'),
+(N'Активный', N'Activo'),
+(N'Активный объект', N'Objeto activo'),
+(N'Акция', N'Campaña'),
+(N'Акция изменялась (по): ', N'Campaña modificada (hasta): '),
+(N'Акция изменялась (с): ', N'Campaña modificada (desde): '),
+(N'Анонс агитации:', N'Anuncio de propaganda electoral:'),
+(N'Атрибуты', N'Atributos'),
+(N'БИК:', N'БИК:'),
+(N'Банк:', N'Banco:'),
+(N'Безопасность', N'Seguridad'),
+(N'Блок:', N'Bloque:'),
+(N'Бонус:', N'Bonificación:'),
+(N'Будут изменены:', N'Se modificarán:'),
+(N'Бухгалтер:', N'Contador:'),
+(N'Варианты замены:', N'Opciones de sustitución:'),
+(N'Включать макеты', N'Incluir borradores'),
+(N'Воскресенье', N'Domingo'),
+(N'Время (начало): ', N'Hora (inicio): '),
+(N'Время (окончание): ', N'Hora (fin): '),
+(N'Время выхода (минуты):', N'Hora de emisión (minutos):'),
+(N'Время выхода реальное:', N'Hora de emisión real:'),
+(N'Время выхода:', N'Hora de emisión:'),
+(N'Время рекламного выпуска: ', N'Hora de la emisión publicitaria: '),
+(N'Всего выпусков:', N'Total de emisiones:'),
+(N'Вторник', N'Martes'),
+(N'Второе место в блоке занято', N'Segunda posición en el bloque ocupada'),
+(N'Выбирать информацию по дате создания рекламных акций', N'Seleccionar información por fecha de creación de las campañas publicitarias'),
+(N'Выпуски', N'Emisiones'),
+(N'Выходит без спонсора', N'Se emite sin patrocinador'),
+(N'Выходов в эфир:', N'Salidas al aire:'),
+(N'Город', N'Ciudad'),
+(N'Группа компаний:', N'Grupo de empresas:'),
+(N'Группа компаний: ', N'Grupo de empresas: '),
+(N'Группа радиостанций', N'Grupo de emisoras'),
+(N'Группа радиостанций: ', N'Grupo de emisoras: '),
+(N'Группа:', N'Grupo:'),
+(N'Группа: ', N'Grupo: '),
+(N'Дата начала интервала: ', N'Fecha de inicio del intervalo: '),
+(N'Дата начала:', N'Fecha de inicio:'),
+(N'Дата окончания интервала: ', N'Fecha de fin del intervalo: '),
+(N'Дата окончания:', N'Fecha de fin:'),
+(N'Дата оплаты:', N'Fecha de pago:'),
+(N'Дата предоставления скидки (oкончание интервала): ', N'Fecha de otorgamiento del descuento (fin del intervalo): '),
+(N'Дата предоставления скидки (начало интервала): ', N'Fecha de otorgamiento del descuento (inicio del intervalo): '),
+(N'Дата принятия:', N'Fecha de aceptación:'),
+(N'Дата прочтения:', N'Fecha de lectura:'),
+(N'Дата создания акции (oкончание интервала): ', N'Fecha de creación de la campaña (fin del intervalo): '),
+(N'Дата создания акции (начало интервала): ', N'Fecha de creación de la campaña (inicio del intervalo): '),
+(N'Дата создания акции (с): ', N'Fecha de creación de la campaña (desde): '),
+(N'Дата создания акции(окончание интервала): ', N'Fecha de creación de la campaña (fin del intervalo): '),
+(N'Дата создания акции(по): ', N'Fecha de creación de la campaña (hasta): '),
+(N'Дата создания:', N'Fecha de creación:'),
+(N'Дата:', N'Fecha:'),
+(N'Дата: ', N'Fecha: '),
+(N'Делитель:', N'Divisor:'),
+(N'День рекламного выпуска: ', N'Día de la emisión publicitaria: '),
+(N'День рождения:', N'Fecha de nacimiento:'),
+(N'Джингл (j)', N'Jingle (j)'),
+(N'Джингл на вход', N'Jingle de entrada'),
+(N'Джингл на выход', N'Jingle de salida'),
+(N'Для (пользователь):', N'Para (usuario):'),
+(N'Для (роль):', N'Para (rol):'),
+(N'Для всех фирм', N'Para todas las empresas'),
+(N'Дополнительно', N'Adicional'),
+(N'Загрузить с диска', N'Cargar desde disco'),
+(N'Заменить на пустышку', N'Sustituir por spot vacío'),
+(N'Занято (неподтвержд.):', N'Ocupado (no confirm.):'),
+(N'Занято (подтвержд.):', N'Ocupado (confirm.):'),
+(N'Запретить внесение', N'Prohibir el ingreso'),
+(N'ИНН:', N'ИНН:'),
+(N'Идентификатор:', N'Identificador:'),
+(N'Изменение (начало интервала): ', N'Modificación (inicio del intervalo): '),
+(N'Изменение (окончание интервала): ', N'Modificación (fin del intervalo): '),
+(N'Имя:', N'Nombre:'),
+(N'Инвертировать цвета', N'Invertir colores'),
+(N'Интервал: по час (включительно):', N'Intervalo: hasta la hora (inclusive):'),
+(N'Интервал: с часа:', N'Intervalo: desde la hora:'),
+(N'Интервалы, напр. пн-пт 16:00-16:55; 18:00-19:00', N'Intervalos, p. ej. пн-пт 16:00-16:55; 18:00-19:00'),
+(N'Использовать для линейной кампании', N'Usar para pauta lineal'),
+(N'Использовать для модульной кампании', N'Usar para pauta modular'),
+(N'Использовать для спонсорской кампании', N'Usar para pauta de patrocinio'),
+(N'Использовать подсветку строк', N'Usar resaltado de filas'),
+(N'Использовать только для модулей', N'Usar solo para módulos'),
+(N'КПП:', N'КПП:'),
+(N'Код ОГРН:', N'Código ОГРН:'),
+(N'Количество радиостанций:', N'Cantidad de emisoras:'),
+(N'Комментарий', N'Comentario'),
+(N'Кор. счет:', N'Cuenta corresponsal:'),
+(N'Корректировка громкости в Дб', N'Ajuste de volumen en dB'),
+(N'Коэфициент:', N'Coeficiente:'),
+(N'Кто дал скидку', N'Quién otorgó el descuento'),
+(N'Лицензиар:', N'Licenciante:'),
+(N'Логин:', N'Nombre de usuario:'),
+(N'Локальное СМИ (агитация):', N'Medio local (propaganda electoral):'),
+(N'Макс. вместимость:', N'Capacidad máx.:'),
+(N'Макс. № джингла на вход:', N'N.º máx. de jingle de entrada:'),
+(N'Макс. № джингла на выход:', N'N.º máx. de jingle de salida:'),
+(N'Менеджер:', N'Gerente:'),
+(N'Менеджер: ', N'Gerente: '),
+(N'Менеджерская скидка меньше: ', N'Descuento del gerente menor que: '),
+(N'Менеджерская скидка:', N'Descuento del gerente:'),
+(N'Менеджерский коэффициент ниже чем', N'Coeficiente del gerente menor que'),
+(N'Место в отчёте:', N'Posición en el informe:'),
+(N'Место заключения договора:', N'Lugar de celebración del contrato:'),
+(N'Мин. № джингла на вход:', N'N.º mín. de jingle de entrada:'),
+(N'Мин. № джингла на выход:', N'N.º mín. de jingle de salida:'),
+(N'Минимальная сумма (с учётом объёмных скидок):', N'Monto mínimo (con descuentos por volumen):'),
+(N'Модуль:', N'Módulo:'),
+(N'Модуль: ', N'Módulo: '),
+(N'Музыка (m)', N'Música (m)'),
+(N'Название', N'Nombre'),
+(N'Название произведения', N'Título de la obra'),
+(N'Название:', N'Nombre:'),
+(N'Налог:', N'Impuesto:'),
+(N'Начало вещания:', N'Inicio de transmisión:'),
+(N'Начало интервала: ', N'Inicio del intervalo: '),
+(N'Начало названия: ', N'Comienzo del nombre: '),
+(N'Начало периода:', N'Inicio del período:'),
+(N'Начало сравниваемого интервала: ', N'Inicio del intervalo de comparación: '),
+(N'Начало:', N'Inicio:'),
+(N'Начиная с:', N'A partir de:'),
+(N'Не включать в счет на предоплату', N'No incluir en la factura de anticipo'),
+(N'Не позднее (A)', N'No después de (A)'),
+(N'Не показывать модульные прайс-листы срок действия которых в прошлом', N'No mostrar listas de precios modulares vencidas'),
+(N'Не показывать прайс-листы срок действия которых в прошлом', N'No mostrar listas de precios vencidas'),
+(N'Не показывать скидки срок действия которых в прошлом', N'No mostrar descuentos vencidos'),
+(N'Не показывать спонсорские прайс-листы срок действия которых в прошлом', N'No mostrar listas de precios de patrocinio vencidas'),
+(N'Не ранее (W)', N'No antes de (W)'),
+(N'Новая полная продолжительность:', N'Nueva duración total:'),
+(N'Новая продолжительность:', N'Nueva duración:'),
+(N'Новая фирма начиная с (оканчивая на начало интервала): ', N'Empresa nueva desde (hasta el inicio del intervalo): '),
+(N'Новая цена:', N'Nuevo precio:'),
+(N'Новости (n)', N'Noticias (n)'),
+(N'Новый пароль:', N'Nueva contraseña:'),
+(N'Номер акции', N'Número de campaña'),
+(N'ОГРН:', N'ОГРН:'),
+(N'Обозначение остального:', N'Rótulo del resto:'),
+(N'Обрывать блоки (K)', N'Cortar bloques (K)'),
+(N'Обрывать фонограммы (H)', N'Cortar fonogramas (H)'),
+(N'Общее время:', N'Tiempo total:'),
+(N'Общие', N'General'),
+(N'Объединить с блоком', N'Unir con el bloque'),
+(N'Объединять маленькие значения', N'Agrupar valores pequeños'),
+(N'Объект:', N'Objeto:'),
+(N'Оканчивая:', N'Hasta:'),
+(N'Окончание интервала: ', N'Fin del intervalo: '),
+(N'Окончание кампании: ', N'Fin de la pauta: '),
+(N'Окончание периода:', N'Fin del período:'),
+(N'Окончание:', N'Fin:'),
+(N'Окончательная цена:', N'Precio final:'),
+(N'От (пользователь):', N'De (usuario):'),
+(N'От (роль):', N'De (rol):'),
+(N'Отображать легенду', N'Mostrar leyenda'),
+(N'Отображение выносок:', N'Mostrar rótulos:'),
+(N'Отчество:', N'Patronímico:'),
+(N'Отчёт:', N'Informe:'),
+(N'Пакетный Модуль: ', N'Módulo en paquete: '),
+(N'Пакетный модуль:', N'Módulo en paquete:'),
+(N'Пакетный модуль: ', N'Módulo en paquete: '),
+(N'Пароль', N'Contraseña'),
+(N'Пароль:', N'Contraseña:'),
+(N'Первое место в блоке занято', N'Primera posición en el bloque ocupada'),
+(N'Перенести на время:', N'Trasladar a la hora:'),
+(N'Пирог', N'Torta'),
+(N'Платеж доступен для присвоения акциям', N'Pago disponible para asignar a campañas'),
+(N'По значениям колонки:', N'Según los valores de la columna:'),
+(N'Подписи', N'Firmas'),
+(N'Подпись руководителя:', N'Firma del director:'),
+(N'Подсветка', N'Resaltado'),
+(N'Подтверждение нового пароля:', N'Confirmación de la nueva contraseña:'),
+(N'Подтверждение:', N'Confirmación:'),
+(N'Позиция:', N'Posición:'),
+(N'Показать:', N'Mostrar:'),
+(N'Показывать активированные', N'Mostrar activadas'),
+(N'Показывать активные объекты', N'Mostrar objetos activos'),
+(N'Показывать без оплаты', N'Mostrar sin pago'),
+(N'Показывать используемые ролики ', N'Mostrar spots en uso '),
+(N'Показывать мои сообщения', N'Mostrar mis mensajes'),
+(N'Показывать не используемые ролики ', N'Mostrar spots sin uso '),
+(N'Показывать неактивные объекты', N'Mostrar objetos inactivos'),
+(N'Показывать ролики-пустышки ', N'Mostrar spots vacíos '),
+(N'Показывать с оплатой', N'Mostrar con pago'),
+(N'Показывать скрытые: ', N'Mostrar ocultos: '),
+(N'Показывать сообщения для меня', N'Mostrar mensajes para mí'),
+(N'Показывать только активированные акции', N'Mostrar solo campañas activadas'),
+(N'Показывать только активные объекты', N'Mostrar solo objetos activos'),
+(N'Показывать только активные ролики ', N'Mostrar solo spots activos '),
+(N'Показывать только активных', N'Mostrar solo activos'),
+(N'Показывать только занятые', N'Mostrar solo ocupadas'),
+(N'Показывать только неактивированные', N'Mostrar solo no activadas'),
+(N'Показывать только незакрытые платежи', N'Mostrar solo pagos no cerrados'),
+(N'Показывать только новые', N'Mostrar solo nuevos'),
+(N'Показывать только скидки администраторов', N'Mostrar solo descuentos de administradores'),
+(N'Показывать только спонсируемые', N'Mostrar solo patrocinados'),
+(N'Показывать только удалённые', N'Mostrar solo eliminados'),
+(N'Показывать только фирмы, у которых нет акций с оплатой', N'Mostrar solo empresas sin campañas con pago'),
+(N'Показывать фирмы без акций', N'Mostrar empresas sin campañas'),
+(N'Показывать фирмы с акциями', N'Mostrar empresas con campañas'),
+(N'Политическая агитация', N'Propaganda política'),
+(N'Полная продолжительность по тарифу:', N'Duración total según tarifa:'),
+(N'Полная продолжительность:', N'Duración total:'),
+(N'Полный префикс:', N'Prefijo completo:'),
+(N'Пользователь имеет права администратора', N'El usuario tiene permisos de administrador'),
+(N'Пользователь имеет права бухгалтера', N'El usuario tiene permisos de contador'),
+(N'Пользователь имеет права трафик-менеджера', N'El usuario tiene permisos de gestor de tráfico'),
+(N'Пользователь имеет право подтверждать', N'El usuario puede confirmar'),
+(N'Пользователь:', N'Usuario:'),
+(N'Понедельник', N'Lunes'),
+(N'Порядок:', N'Orden:'),
+(N'Последн. ролик (%):', N'Último spot (%):'),
+(N'Последнее место в блоке занято', N'Última posición en el bloque ocupada'),
+(N'Последний выпуск до: ', N'Última emisión antes de: '),
+(N'Последний выпуск после: ', N'Última emisión después de: '),
+(N'Последний менеджер:', N'Último gerente:'),
+(N'Последняя модификация:', N'Última modificación:'),
+(N'Прайс-лист:', N'Lista de precios:'),
+(N'Прайс-листы', N'Listas de precios'),
+(N'Предмет рекламы:', N'Rubro publicitario:'),
+(N'Префикс:', N'Prefijo:'),
+(N'Применить к дням:', N'Aplicar a los días:'),
+(N'Причина выдачи:', N'Motivo del otorgamiento:'),
+(N'Программа (p)', N'Programa (p)'),
+(N'Программа в данный момент является активной', N'El programa está activo actualmente'),
+(N'Программа выходит в прямом эфире', N'El programa se emite en vivo'),
+(N'Программа:', N'Programa:'),
+(N'Программа: ', N'Programa: '),
+(N'Продолжительность', N'Duración'),
+(N'Продолжительность по тарифу:', N'Duración según tarifa:'),
+(N'Продолжительность:', N'Duración:'),
+(N'Процент бонуса более чем: ', N'Porcentaje de bonificación mayor que: '),
+(N'Процент заполнения (%):', N'Porcentaje de ocupación (%):'),
+(N'Прочее', N'Otros'),
+(N'Путь', N'Ruta'),
+(N'Путь до джинглов на  вход:', N'Ruta de los jingles de entrada:'),
+(N'Путь до джинглов на выход:', N'Ruta de los jingles de salida:'),
+(N'Путь до роликов:', N'Ruta de los spots:'),
+(N'Путь:', N'Ruta:'),
+(N'Пятница', N'Viernes'),
+(N'Радиостанции', N'Emisoras'),
+(N'Радиостанции с которыми работает данное агентство', N'Emisoras con las que trabaja esta agencia'),
+(N'Радиостанция:', N'Emisora:'),
+(N'Радиостанция: ', N'Emisora: '),
+(N'Разбивка', N'Desglose'),
+(N'Расчетный счет:', N'Cuenta corriente:'),
+(N'Реквизиты', N'Datos fiscales y bancarios'),
+(N'Реклама (c)', N'Publicidad (c)'),
+(N'Рекламный ролик:', N'Spot publicitario:'),
+(N'Родитель:', N'Elemento superior:'),
+(N'Ролик:', N'Spot:'),
+(N'Ролики:', N'Spots:'),
+(N'Руководитель:', N'Director:'),
+(N'С разбивкой  по дням', N'Desglosado por días'),
+(N'С разбивкой  по рекламным окнам', N'Desglosado por ventanas publicitarias'),
+(N'С разбивкой  по типам кампаний', N'Desglosado por tipos de pauta'),
+(N'С разбивкой по агентствам', N'Desglosado por agencias'),
+(N'С разбивкой по акциям', N'Desglosado por campañas'),
+(N'С разбивкой по группам', N'Desglosado por grupos'),
+(N'С разбивкой по группам компаний', N'Desglosado por grupos de empresas'),
+(N'С разбивкой по группам радиостанций', N'Desglosado por grupos de emisoras'),
+(N'С разбивкой по дням', N'Desglosado por días'),
+(N'С разбивкой по менеджерам', N'Desglosado por gerentes'),
+(N'С разбивкой по предметам рекламы', N'Desglosado por rubros publicitarios'),
+(N'С разбивкой по предметам рекламы (1-й уровень)', N'Desglosado por rubros publicitarios (1.er nivel)'),
+(N'С разбивкой по радиостанциям', N'Desglosado por emisoras'),
+(N'С разбивкой по типам кампаний', N'Desglosado por tipos de pauta'),
+(N'С разбивкой по типам оплаты', N'Desglosado por tipos de pago'),
+(N'С разбивкой по типу оплаты', N'Desglosado por tipo de pago'),
+(N'С разбивкой по фирмам', N'Desglosado por empresas'),
+(N'С этой даты до начала выбранного интервала нет акций: ', N'Sin campañas desde esta fecha hasta el inicio del intervalo seleccionado: '),
+(N'СМИ:', N'Medio:'),
+(N'Свои радиостанции:', N'Emisoras propias:'),
+(N'Сделать:', N'Acción:'),
+(N'Системный номер:', N'Número de sistema:'),
+(N'Скидка:', N'Descuento:'),
+(N'Скрыть прочтенные', N'Ocultar leídos'),
+(N'Смена пароля', N'Cambio de contraseña'),
+(N'Собирать начиная с (%):', N'Agrupar a partir de (%):'),
+(N'Создан до: ', N'Creado hasta: '),
+(N'Создан от: ', N'Creado desde: '),
+(N'Создатель акции', N'Creador de la campaña'),
+(N'Создатель акции:', N'Creador de la campaña:'),
+(N'Справка выдана:', N'Certificado emitido a:'),
+(N'Среда', N'Miércoles'),
+(N'Срок хранения истории (в днях):', N'Plazo de conservación del historial (días):'),
+(N'Срок хранения макетов акций (в днях):', N'Plazo de conservación de borradores de campañas (días):'),
+(N'Срок хранения удалённых акций (в днях):', N'Plazo de conservación de campañas eliminadas (días):'),
+(N'Стиль отрисовки:', N'Estilo de dibujo:'),
+(N'Строка для договора (в лице):', N'Texto para el contrato (representada por):'),
+(N'Строка для договора (действует на основании):', N'Texto para el contrato (actuando en virtud de):'),
+(N'Строка для счёта/договора:', N'Texto para factura/contrato:'),
+(N'Суббота', N'Sábado'),
+(N'Сумма:', N'Monto:'),
+(N'Текст:', N'Texto:'),
+(N'Текущая дата:', N'Fecha actual:'),
+(N'Текущая цена:', N'Precio actual:'),
+(N'Текущее время выхода:', N'Hora de emisión actual:'),
+(N'Телефон:', N'Teléfono:'),
+(N'Тип блока:', N'Tipo de bloque:'),
+(N'Тип кампании', N'Tipo de pauta'),
+(N'Тип кампании: ', N'Tipo de pauta: '),
+(N'Тип компании: ', N'Tipo de pauta: '),
+(N'Тип оплаты:', N'Tipo de pago:'),
+(N'Тип оплаты: ', N'Tipo de pago: '),
+(N'Тип рекламной кампании:', N'Tipo de pauta publicitaria:'),
+(N'Тип ролика:', N'Tipo de spot:'),
+(N'Тип:', N'Tipo:'),
+(N'Только фирмы-пустышки', N'Solo empresas ficticias'),
+(N'Только часы: по (включительно):', N'Solo horas: hasta (inclusive):'),
+(N'Только часы: с:', N'Solo horas: desde:'),
+(N'Уведомление об удаленных выпусках (дни до сегодняшнего дня):', N'Aviso de emisiones eliminadas (días antes de hoy):'),
+(N'Упоминание в названии: ', N'Mención en el nombre: '),
+(N'Учитывать пустые блоки', N'Considerar bloques vacíos'),
+(N'Файл шаблона КП:', N'Archivo de plantilla de propuesta comercial:'),
+(N'Фамилия:', N'Apellido:'),
+(N'Федеральное СМИ (агитация):', N'Medio federal (propaganda electoral):'),
+(N'Фильтр', N'Filtro'),
+(N'Фирма-заказчик', N'Empresa cliente'),
+(N'Фирма-заказчик:', N'Empresa cliente:'),
+(N'Фирма-заказчик: ', N'Empresa cliente: '),
+(N'Фирма:', N'Empresa:'),
+(N'Цвет:', N'Color:'),
+(N'Цена', N'Precio'),
+(N'Цена по тарифам:', N'Precio según tarifas:'),
+(N'Цена:', N'Precio:'),
+(N'Часть названия: ', N'Parte del nombre: '),
+(N'Четверг', N'Jueves'),
+(N'Чужие радиостанции:', N'Emisoras ajenas:'),
+(N'№ Рекламной акции: ', N'N.º de campaña publicitaria: '),
+(N'(в наборе нет колонки name)', N'(el conjunto no tiene la columna name)'),
+(N'<без названия>', N'<sin nombre>'),
+(N'<неизвестна>', N'<desconocida>'),
+(N'[·Псевдо·]', N'[·Pseudo·]'),
+(N'lookup без источника', N'lookup sin origen de datos'),
+(N'objectPicker без entity', N'objectPicker sin entity'),
+(N'objectPicker с relationScenario', N'objectPicker con relationScenario'),
+(N'selector без entity', N'selector sin entity'),
+(N'selector без source', N'selector sin source'),
+(N'treeselector без columnid/columnparentid/columnname', N'treeselector sin columnid/columnparentid/columnname'),
+(N'treeselector без source', N'treeselector sin source'),
+(N'{0:HH:mm}: тариф входит в цепочку объединения - правьте его вручную', N'{0:HH:mm}: la tarifa forma parte de una cadena de unión; modifíquela manualmente'),
+(N'{0:HH:mm}: у тарифа есть сгенерированные окна - сначала удалите их или правьте окна', N'{0:HH:mm}: la tarifa tiene ventanas generadas; elimínelas primero o modifique las ventanas'),
+(N'{0:dd.MM.yyyy HH:mm}: продолжительность {1} больше полной {2}', N'{0:dd.MM.yyyy HH:mm}: la duración {1} supera la duración total {2}'),
+(N'{0} {1}, по тарифу {2}', N'{0} {1}, según tarifa {2}'),
+(N'{0} без атрибута name', N'{0} sin atributo name'),
+(N'{0} из {1}', N'{0} de {1}'),
+(N'{0} шт., минута :{1:00}, часы {2}-{3}', N'{0} uds., minuto :{1:00}, horas {2}-{3}'),
+(N'{0} — {1} в фильтре пока не поддержан (этап 2).', N'{0} — {1} aún no es compatible con el filtro (etapa 2).'),
+(N'Агентства и налоги', N'Agencias e impuestos'),
+(N'Агентство', N'Agencia'),
+(N'Акции c разбивкой по группам компаний', N'Campañas desglosadas por grupo de empresas'),
+(N'Акции без разбивки на фирмы', N'Campañas sin desglose por empresa'),
+(N'Акции с разбивкой на фирмы', N'Campañas desglosadas por empresa'),
+(N'Атрибутов: {0}', N'Atributos: {0}'),
+(N'В окне уже есть ролик «{0}».', N'La ventana ya contiene el spot «{0}».'),
+(N'В окне уже есть ролики фирмы «{0}».', N'La ventana ya contiene spots de la empresa «{0}».'),
+(N'Введите имя пользователя и пароль', N'Ingrese el nombre de usuario y la contraseña'),
+(N'Войти', N'Iniciar sesión'),
+(N'Восстанавливаем связь с сервером…', N'Restableciendo la conexión con el servidor…');
+GO
+INSERT INTO #t ([source], [text]) VALUES
+(N'Время', N'Hora'),
+(N'Время выхода', N'Hora de emisión'),
+(N'Время выхода меняется только для одной строки времени — выделите окна одного времени.', N'La hora de emisión solo se modifica para una fila horaria: seleccione ventanas de una misma hora.'),
+(N'Время выхода по расписанию:', N'Hora de emisión programada:'),
+(N'Время выхода реальное', N'Hora de emisión real'),
+(N'Время выхода — в виде чч:мм.', N'Hora de emisión — en formato hh:mm.'),
+(N'Все', N'Todos'),
+(N'Все группы', N'Todos los grupos'),
+(N'Всего объектов типа ''{0}'' для объекта ''{1}'': {2}', N'Total de objetos de tipo ''{0}'' para el objeto ''{1}'': {2}'),
+(N'Всего объектов типа ''{0}'': {1}', N'Total de objetos de tipo ''{0}'': {1}'),
+(N'Всего объектов: {0}', N'Total de objetos: {0}'),
+(N'Второй', N'Segunda'),
+(N'Вход', N'Inicio de sesión'),
+(N'Вы действительно хотите отсоединить объект ''{0}''?', N'¿Desea realmente desvincular el objeto ''{0}''?'),
+(N'Вы действительно хотите удалить выбранные объекты? ({0} шт.)', N'¿Realmente desea eliminar los objetos seleccionados? ({0} uds.)'),
+(N'Вы не вошли в систему', N'No ha iniciado sesión'),
+(N'Вы ничего не выбрали. Пожалуйста, выберите хотя бы один рекламный выпуск. Операция прервана.', N'No se seleccionó nada. Seleccione al menos una emisión publicitaria. Operación cancelada.'),
+(N'Вы пытаетесь заменить рекламный ролик в активированной рекламной акции на ролик-пустышку без предмета рекламы. Операция прервана.', N'Se intenta sustituir un spot de una campaña publicitaria activada por un spot vacío sin rubro publicitario. Operación cancelada.'),
+(N'Вы пытаетесь создать ролик-пустышку с нулевой прододжительностью. Это запрещено.', N'Se intenta crear un spot vacío con duración cero. No está permitido.'),
+(N'Выберите окно в сетке. Двойной клик — карточка окна, правая кнопка — действия с окном, «⋯» у времени — действия со строкой.', N'Seleccione una ventana en la grilla. Doble clic — ficha de la ventana, botón derecho — acciones con la ventana, «⋯» junto a la hora — acciones con la fila.'),
+(N'Выберите раздел в меню слева', N'Seleccione una sección en el menú de la izquierda'),
+(N'Выберите станцию', N'Seleccione una emisora'),
+(N'Выбирать не из чего: список пуст.', N'No hay nada que seleccionar: la lista está vacía.'),
+(N'Выбрано станций: {0}', N'Emisoras seleccionadas: {0}'),
+(N'Выбрать', N'Seleccionar'),
+(N'Выбрать объект', N'Seleccionar objeto'),
+(N'Выбрать период отчёта', N'Seleccionar período del informe'),
+(N'Выделено окон: {0}', N'Ventanas seleccionadas: {0}'),
+(N'Выделить строку', N'Seleccionar fila'),
+(N'Выйти', N'Salir'),
+(N'Выпуски станции по эту дату после отметки сможет менять только трафик-менеджер и администратор. Дата раньше текущей снимает отметку с последующих дней.', N'Una vez marcadas, las emisiones de la emisora hasta esta fecha solo podrán ser modificadas por el gestor de tráfico y el administrador. Una fecha anterior a la actual quita la marca de los días posteriores.'),
+(N'Генерация рекламных окон', N'Generación de ventanas publicitarias'),
+(N'Гибрид — модульные тарифы один в один, остальные с учётом правок окон.', N'Híbrido — las tarifas modulares se copian tal cual, las demás teniendo en cuenta los cambios de ventanas.'),
+(N'Готово', N'Listo'),
+(N'Группа компаний', N'Grupo de empresas'),
+(N'Да', N'Sí'),
+(N'Дата выпуска', N'Fecha de emisión'),
+(N'День обработан', N'Día procesado'),
+(N'Для того, чтобы назначить предмет рекламы для этого ролика, пожалуйста, используйте журнал рекламных акций.', N'Para asignar un rubro publicitario a este spot, utilice el registro de campañas publicitarias.'),
+(N'Дни недели', N'Días de la semana'),
+(N'Добавить', N'Agregar'),
+(N'Доступ закрыт', N'Acceso denegado'),
+(N'Журнал', N'Registro'),
+(N'Журнала сущности {0} в вебе пока нет — на неё не ведёт ни один перенесённый пункт меню.', N'El registro de la entidad {0} aún no existe en la web — ningún elemento de menú migrado conduce a ella.'),
+(N'Заблокированные окна', N'Ventanas bloqueadas'),
+(N'Заблокированные окна: {0}', N'Ventanas bloqueadas: {0}'),
+(N'Загрузка…', N'Cargando…'),
+(N'Задайте значение или снимите галочку.', N'Indique un valor o desmarque la casilla.'),
+(N'Закрыть', N'Cerrar'),
+(N'Замена ролика', N'Sustitución del spot'),
+(N'Записей нет.', N'No hay registros.'),
+(N'Заполните хотя бы одно: время выхода, продолжительность или полную продолжительность.', N'Complete al menos uno: hora de emisión, duración o duración total.'),
+(N'Запретить вносить выпуски в окна', N'Prohibir agregar emisiones a las ventanas'),
+(N'Запрошенной страницы не существует.', N'La página solicitada no existe.'),
+(N'Значение не редактируется и не сохраняется.', N'El valor no se puede editar ni se guarda.'),
+(N'Значение поля ''Начиная с'' не должно быть меньше даты начала действия прайс-листа: {0}.', N'El valor del campo ''A partir de'' no debe ser anterior a la fecha de inicio de la lista de precios: {0}.'),
+(N'Значение поля ''Оканчивая'' должно быть больше даты окончания действия прайс-листа: {0}.', N'El valor del campo ''Hasta'' debe ser posterior a la fecha de fin de la lista de precios: {0}.'),
+(N'Идентификатор запроса:', N'Identificador de la solicitud:'),
+(N'Изменение цены: {0}', N'Cambio de precio: {0}'),
+(N'Изменено тарифов: {0}, создано новых: {1}', N'Tarifas modificadas: {0}, nuevas creadas: {1}'),
+(N'Изменено тарифов: {0}, создано новых: {1}, не обработано: {2}', N'Tarifas modificadas: {0}, nuevas creadas: {1}, sin procesar: {2}'),
+(N'Изменится окон: {0}', N'Ventanas que cambiarán: {0}'),
+(N'Изменить', N'Modificar'),
+(N'Изменить выделенные окна ({0})…', N'Modificar ventanas seleccionadas ({0})…'),
+(N'Изменить окна', N'Modificar ventanas'),
+(N'Изменить окна {0}…', N'Modificar ventanas {0}…'),
+(N'Изменить окна…', N'Modificar ventanas…'),
+(N'Изменить окно…', N'Modificar ventana…'),
+(N'Изменить похожие тарифы ({0} шт.)', N'Modificar tarifas similares ({0} uds.)'),
+(N'Изменить цену…', N'Modificar precio…'),
+(N'Интервал генерации окон', N'Intervalo de generación de ventanas'),
+(N'Интервал должен быть внутри срока прайс-листа: {0:dd.MM.yyyy} – {1:dd.MM.yyyy}.', N'El intervalo debe estar dentro de la vigencia de la lista de precios: {0:dd.MM.yyyy} – {1:dd.MM.yyyy}.'),
+(N'Интервал удаления сгенерированных окон', N'Intervalo de eliminación de ventanas generadas'),
+(N'Интервал удаления сгенерированных окон {0}', N'Intervalo de eliminación de ventanas generadas {0}'),
+(N'Как клонировать тарифы прайс-листа?', N'¿Cómo clonar las tarifas de la lista de precios?'),
+(N'Карточка', N'Ficha'),
+(N'Клонирование прайс-листа', N'Clonación de la lista de precios'),
+(N'Комбо-модули', N'Módulos combo'),
+(N'Контрол', N'Control'),
+(N'Лист1', N'Hoja1'),
+(N'Макеты рекламных акций', N'Borradores de campañas publicitarias'),
+(N'Метод еще не реализован.', N'El método aún no está implementado.'),
+(N'На главную', N'Ir al inicio'),
+(N'На этой неделе рекламных окон нет', N'No hay ventanas publicitarias esta semana'),
+(N'На эту неделю у станции нет прайс-листа', N'La emisora no tiene lista de precios para esta semana'),
+(N'Нарушение ограничения (SQL {0}) в процедуре {1}: {2}', N'Violación de restricción (SQL {0}) en el procedimiento {1}: {2}'),
+(N'Начало', N'Inicio'),
+(N'Начиная с', N'A partir de'),
+(N'Не выбран ролик для замены.', N'No se ha seleccionado el spot de sustitución.'),
+(N'Не заполнено: {0}.', N'Sin completar: {0}.'),
+(N'Не как в тарифе:', N'Distinto de la tarifa:'),
+(N'Не как в тарифе: {0}', N'Distinto de la tarifa: {0}'),
+(N'Не найден прайс-лист для модуля ''{0}'' на указанную дату.', N'No se encontró la lista de precios del módulo ''{0}'' para la fecha indicada.'),
+(N'Не найден прайс-лист для пакетного модуля ''{0}'' на указанную дату.', N'No se encontró la lista de precios del módulo en paquete ''{0}'' para la fecha indicada.'),
+(N'Не найден прайс-лист для программы ''{0}'' на указанную дату.', N'No se encontró la lista de precios del programa ''{0}'' para la fecha indicada.'),
+(N'Не опеределен', N'No definida'),
+(N'Не определен', N'No definida'),
+(N'Не отмечено станций: {0}', N'Emisoras sin marcar: {0}'),
+(N'Не перенесено выпусков: {0} из {1}', N'Emisiones no trasladadas: {0} de {1}'),
+(N'Не удалось возобновить сеанс.', N'No se pudo reanudar la sesión.'),
+(N'Не удалось восстановить связь.', N'No se pudo restablecer la conexión.'),
+(N'Не удалось удалить объект ''{0}''.', N'No se pudo eliminar el objeto ''{0}''.'),
+(N'Неверный логин или пароль.', N'Nombre de usuario o contraseña incorrectos.'),
+(N'Недостаточно прав: действие «{0}» для «{1}» вам не разрешено.', N'Permisos insuficientes: la acción «{0}» para «{1}» no le está permitida.'),
+(N'Недоступных для внесения окон за этот период нет.', N'No hay ventanas no disponibles para agregar emisiones en este período.'),
+(N'Незамененные ролики', N'Spots no sustituidos'),
+(N'Нельзя добавить день недели, которого нет у исходного тарифа: дни задают область применения.', N'No se puede agregar un día de la semana que no tenga la tarifa original: los días definen el ámbito de aplicación.'),
+(N'Необходимо выбрать хотя бы одну радиостанцию.', N'Es necesario seleccionar al menos una emisora.'),
+(N'Нет', N'No'),
+(N'Нет изображения.', N'Sin imagen.'),
+(N'Нет набора строк', N'No hay conjunto de filas'),
+(N'Ни один параметр не изменён.', N'No se modificó ningún parámetro.'),
+(N'Новая полная продолжительность, мм:сс', N'Nueva duración total, mm:ss'),
+(N'Новая продолжительность, мм:сс', N'Nueva duración, mm:ss'),
+(N'Новая цена не должна быть равна текущей цене.', N'El nuevo precio no debe ser igual al precio actual.'),
+(N'Новое время выхода', N'Nueva hora de emisión'),
+(N'Новый: {0}', N'Nuevo: {0}'),
+(N'Нужно войти в систему.', N'Es necesario iniciar sesión.'),
+(N'Обработано по (включительно)', N'Procesado hasta (inclusive)'),
+(N'Объект', N'Objeto'),
+(N'Один в один — тарифы копируются без изменений.', N'Tal cual — las tarifas se copian sin cambios.'),
+(N'Ок', N'Aceptar'),
+(N'Оканчивая', N'Hasta'),
+(N'Окна появляются после генерации по тарифам прайс-листа.', N'Las ventanas aparecen tras generarlas a partir de las tarifas de la lista de precios.'),
+(N'Окна строятся по тарифам прайс-листа. Уже сгенерированные окна не меняются.', N'Las ventanas se generan a partir de las tarifas de la lista de precios. Las ventanas ya generadas no se modifican.'),
+(N'Окно', N'Ventana'),
+(N'Окно {0}', N'Ventana {0}'),
+(N'Операции с окнами', N'Operaciones con ventanas'),
+(N'Остановить', N'Detener'),
+(N'Отбор', N'Filtro'),
+(N'Отказано по правам. Пользователь: {0} (id {1}); сущность: {2} (id {3}); действие: {4}; право: {5}.', N'Acceso denegado por permisos. Usuario: {0} (id {1}); entidad: {2} (id {3}); acción: {4}; permiso: {5}.'),
+(N'Отклонено бизнес-правилом. Процедура: {0} — {1}', N'Rechazado por una regla de negocio. Procedimiento: {0} — {1}'),
+(N'Открыть карточку', N'Abrir ficha'),
+(N'Отмена', N'Cancelar'),
+(N'Отметить', N'Marcar'),
+(N'Отметить все ({0})', N'Marcar todos ({0})'),
+(N'Отметить дни обработанными', N'Marcar días como procesados'),
+(N'Отметить дни обработанными…', N'Marcar días como procesados…'),
+(N'Отметить станцию «{0}» обработанной по {1} включительно? Выпуски этих дней сможет менять только трафик-менеджер и администратор.', N'¿Marcar la emisora «{0}» como procesada hasta el {1} inclusive? Las emisiones de esos días solo podrán ser modificadas por el gestor de tráfico y el administrador.'),
+(N'Отметьте выпуски, чтобы перенести их в другое окно.', N'Marque las emisiones para trasladarlas a otra ventana.'),
+(N'Отметьте хотя бы один день недели, к которому применить изменения.', N'Marque al menos un día de la semana al que aplicar los cambios.'),
+(N'Отметьте хотя бы один день недели.', N'Marque al menos un día de la semana.'),
+(N'Отметьте хотя бы одну станцию.', N'Marque al menos una emisora.'),
+(N'Отмечено: {0}', N'Marcados: {0}'),
+(N'Относится к этапу 2 (свои движки — FakeContainer/MasterDetail) или этапу 3 (специализированные экраны) плана веб-миграции.', N'Corresponde a la etapa 2 (motores propios — FakeContainer/MasterDetail) o a la etapa 3 (pantallas especializadas) del plan de migración web.'),
+(N'Очистить', N'Limpiar'),
+(N'Ошибка', N'Error'),
+(N'Ошибка.', N'Error.'),
+(N'Ошибки клонирования', N'Errores de clonación'),
+(N'Ошибки массового удаления', N'Errores de eliminación masiva'),
+(N'Пакетные модули', N'Módulos en paquete'),
+(N'Паспорт: {0}', N'Ficha: {0}'),
+(N'Первый', N'Primera'),
+(N'Перезагрузить', N'Recargar'),
+(N'Перейти к входу', N'Ir al inicio de sesión'),
+(N'Перейти к дате', N'Ir a la fecha'),
+(N'Перенесены журналы, карточки объектов и фильтры.', N'Se migraron los registros, las fichas de objetos y los filtros.'),
+(N'Перенести', N'Trasladar'),
+(N'Перенести в окно…', N'Trasladar a la ventana…'),
+(N'Перенести выпуски ({0}) из окна {1} в окно {2}?', N'¿Trasladar las emisiones ({0}) de la ventana {1} a la ventana {2}?'),
+(N'Перенос выпусков', N'Traslado de emisiones'),
+(N'Перенос выпусков ({0}) из окна', N'Traslado de emisiones ({0}) desde la ventana'),
+(N'Период должен быть внутри срока прайс-листа: {0:dd.MM.yyyy} – {1:dd.MM.yyyy}.', N'El período debe estar dentro de la vigencia de la lista de precios: {0:dd.MM.yyyy} – {1:dd.MM.yyyy}.'),
+(N'Повторите попытку или перезагрузите страницу.', N'Vuelva a intentarlo o recargue la página.'),
+(N'Повторить', N'Reintentar'),
+(N'Повторить на период — эти времена в выбранные дни недели', N'Repetir en el período — estas horas en los días de la semana seleccionados'),
+(N'Повторная попытка через', N'Nuevo intento en'),
+(N'Под условие не попало ни одного окна.', N'Ninguna ventana cumple la condición.'),
+(N'Подтверждённые рекламные акции', N'Campañas publicitarias confirmadas'),
+(N'Пока не перенесено', N'Aún no migrado'),
+(N'Показать', N'Mostrar'),
+(N'Показать без группировки', N'Mostrar sin agrupar'),
+(N'Показать все', N'Mostrar todo'),
+(N'Показать с группировакой', N'Mostrar agrupado'),
+(N'Полная продолжительность — в виде мм:сс, например 3:05.', N'Duración total — en formato mm:ss, por ejemplo 3:05.'),
+(N'Пользователь', N'Usuario'),
+(N'Пометить все как прочтенное', N'Marcar todo como leído'),
+(N'Пометить окна цветом', N'Marcar ventanas con color'),
+(N'Последний', N'Última'),
+(N'Права на экраны выдаются вместе с пунктами меню — обратитесь к администратору системы.', N'Los permisos de las pantallas se otorgan junto con los elementos del menú — contacte al administrador del sistema.'),
+(N'Предметы рекламы', N'Rubros publicitarios'),
+(N'При обработке запроса произошла ошибка.', N'Se produjo un error al procesar la solicitud.'),
+(N'Применить', N'Aplicar'),
+(N'Причина', N'Motivo'),
+(N'Проверить загрузку метаданных', N'Verificar la carga de metadatos'),
+(N'Проверяю…', N'Verificando…'),
+(N'Программы для спонсоров', N'Programas para patrocinadores'),
+(N'Продолжительность не может быть больше полной — окон с нарушением: {0}. Например, {1}.', N'La duración no puede superar la duración total; ventanas con infracción: {0}. Por ejemplo, {1}.'),
+(N'Продолжительность — в виде мм:сс, например 2:56.', N'Duración — en formato mm:ss, por ejemplo 2:56.'),
+(N'Продолжить', N'Continuar'),
+(N'Произошла непредвиденная ошибка.', N'Se produjo un error inesperado.'),
+(N'Пункта меню', N'El elemento de menú'),
+(N'Радиостанция', N'Emisora'),
+(N'Разрешить вносить выпуски в окна', N'Permitir agregar emisiones a las ventanas'),
+(N'Рекламное окно не найдено', N'No se encontró la ventana publicitaria'),
+(N'Рекламные окна', N'Ventanas publicitarias'),
+(N'Рекламные окна строятся по прайс-листу — перейдите к другой дате.', N'Las ventanas publicitarias se generan a partir de la lista de precios — vaya a otra fecha.'),
+(N'Рекламные ролики', N'Spots publicitarios'),
+(N'Ролик', N'Spot'),
+(N'Русский', N'Русский'),
+(N'С учётом правок предыдущих тарифов — цена, длительность и время берутся из последних 7 дней', N'Teniendo en cuenta los cambios de las tarifas anteriores — el precio, la duración y la hora se toman de los últimos 7 días'),
+(N'Свойства: {0}', N'Propiedades: {0}'),
+(N'Сгенерировать', N'Generar'),
+(N'Сейчас полная: {0}', N'Total actual: {0}'),
+(N'Сейчас продолжительность: {0}', N'Duración actual: {0}'),
+(N'Сервер приостановил сеанс.', N'El servidor suspendió la sesión.'),
+(N'Система', N'Sistema'),
+(N'Скидки', N'Descuentos'),
+(N'Слева — станции выбранной группы; у закрытых — дата, по которую день обработан.', N'A la izquierda — las emisoras del grupo seleccionado; en las cerradas, la fecha hasta la que el día está procesado.'),
+(N'Снять выделение', N'Quitar selección'),
+(N'Снять отметку', N'Desmarcar'),
+(N'Снять отметку «обработан» со станции «{0}» начиная с {1}? Станция будет обработана по {2}.', N'¿Quitar la marca «procesado» de la emisora «{0}» a partir del {1}? La emisora quedará procesada hasta el {2}.'),
+(N'Снять пометку окон цветом', N'Quitar el color de las ventanas'),
+(N'Создано тарифов: {0}', N'Tarifas creadas: {0}'),
+(N'Создано тарифов: {0}, не создано: {1}', N'Tarifas creadas: {0}, no creadas: {1}'),
+(N'Сохранение отклонено.', N'Guardado rechazado.'),
+(N'Сохранить', N'Guardar'),
+(N'Список', N'Lista'),
+(N'Станция', N'Emisora'),
+(N'Страница {0}', N'Página {0}'),
+(N'Страница не найдена', N'Página no encontrada'),
+(N'Сущность {0}: {1}', N'Entidad {0}: {1}'),
+(N'Тарифы', N'Tarifas'),
+(N'Только выделенные окна ({0})', N'Solo las ventanas seleccionadas ({0})'),
+(N'Только пользователь с правами администратора может деактивировать акцию, которая уже началась!', N'¡Solo un usuario con permisos de administrador puede desactivar una campaña que ya comenzó!'),
+(N'Трафик-менеджмент', N'Gestión de tráfico'),
+(N'У листа дерева нет детей.', N'La hoja del árbol no tiene elementos secundarios.'),
+(N'У сущности нет паспорта в метаданных.', N'La entidad no tiene ficha en los metadatos.'),
+(N'У этого узла нет вложенного списка.', N'Este nodo no tiene una lista anidada.'),
+(N'Удаление', N'Eliminación'),
+(N'Удаление недоступно для объекта ''{0}''.', N'La eliminación no está disponible para el objeto ''{0}''.'),
+(N'Удаление сгенерированных окон', N'Eliminación de ventanas generadas'),
+(N'Удалить ({0})', N'Eliminar ({0})'),
+(N'Удалить сгенерированные окна…', N'Eliminar ventanas generadas…'),
+(N'Удаляются все окна прайс-листа в выбранном интервале. Окна, в которых уже есть выпуски, остаются.', N'Se eliminan todas las ventanas de la lista de precios en el intervalo seleccionado. Las ventanas que ya tienen emisiones se conservan.'),
+(N'Удаляются окна времени {0} в выбранном интервале. Окна, в которых уже есть выпуски, остаются.', N'Se eliminan las ventanas de las {0} en el intervalo seleccionado. Las ventanas que ya tienen emisiones se conservan.'),
+(N'Удалённые рекламные акции', N'Campañas publicitarias eliminadas'),
+(N'Уже перенесено по времени: {0}', N'Ya trasladadas de horario: {0}'),
+(N'Уточните период и дни недели.', N'Especifique el período y los días de la semana.'),
+(N'Фактическое размещение пакетных рекламных модулей', N'Colocación real de módulos publicitarios en paquete'),
+(N'Фактическое размещение рекламных модулей', N'Colocación real de módulos publicitarios'),
+(N'Фактическое размещение спонсорских программ', N'Colocación real de programas de patrocinio'),
+(N'Фильтр: {0}', N'Filtro: {0}'),
+(N'Час окончания интервала не может быть меньше часа начала.', N'La hora de fin del intervalo no puede ser anterior a la hora de inicio.'),
+(N'Чётный/Нечётный', N'Par/Impar'),
+(N'Экран', N'Pantalla'),
+(N'Экран не перенесён', N'Pantalla no migrada'),
+(N'Экраны, которых ещё нет, сообщают об этом при открытии.', N'Las pantallas que aún no existen lo indican al abrirse.'),
+(N'Экспорт в Excel', N'Exportar a Excel'),
+(N'Эта операция приведет к удалению объекта ''{0}'' из системы. Продолжить?', N'Esta operación eliminará el objeto ''{0}'' del sistema. ¿Continuar?'),
+(N'Это действие для записи недоступно.', N'Esta acción no está disponible para el registro.'),
+(N'Это не ограничение прав.', N'No se trata de una restricción de permisos.'),
+(N'Этот журнал вам не разрешён.', N'No tiene permiso para este registro.'),
+(N'Этот пункт меню пока не перенесён на веб — он не сводится к простому журналу по метаданным', N'Este elemento de menú aún no se migró a la web — no se reduce a un simple registro basado en metadatos'),
+(N'Этот экран вам не разрешён.', N'No tiene permiso para esta pantalla.'),
+(N'Этот экран вам не разрешён. Права на экраны выдаются вместе с пунктами меню — обратитесь к администратору системы.', N'No tiene permiso para esta pantalla. Los permisos de las pantallas se otorgan junto con los elementos del menú — contacte al administrador del sistema.'),
+(N'в вебе пока нет.', N'aún no existe en la web.'),
+(N'вместимость {0}, по тарифу {1}', N'capacidad {0}, según tarifa {1}'),
+(N'время выхода {0:HH:mm}{1}, по расписанию {2:HH:mm}', N'hora de emisión {0:HH:mm}{1}, programada {2:HH:mm}'),
+(N'двойной клик', N'doble clic'),
+(N'день обработан', N'día procesado'),
+(N'для дерева.', N'para el árbol.'),
+(N'есть, {0} симв.', N'sí, {0} caract.'),
+(N'клик', N'clic'),
+(N'не как в тарифе', N'distinto de la tarifa'),
+(N'не как в тарифе: {0}', N'distinto de la tarifa: {0}'),
+(N'недоступно', N'no disponible'),
+(N'нет', N'no'),
+(N'переполнено', N'excedido'),
+(N'пока не поддержан (этап 2).', N'aún no es compatible (etapa 2).'),
+(N'полная продолжительность', N'duración total'),
+(N'помечено', N'marcado'),
+(N'продолжительность', N'duración'),
+(N'сек.', N'seg.'),
+(N'склеено', N'unido'),
+(N'склеено с предыдущим и следующим окном', N'unida con la ventana anterior y la siguiente'),
+(N'склеено с предыдущим окном', N'unida con la ventana anterior'),
+(N'склеено со следующим окном', N'unida con la ventana siguiente'),
+(N'скоро', N'próximamente'),
+(N'снимите дни, которые менять не нужно', N'desmarque los días que no deban modificarse'),
+(N'только для окон одного времени', N'solo para ventanas de la misma hora'),
+(N'цена {0:C}, по тарифу {1:C}', N'precio {0:C}, según tarifa {1:C}'),
+(N'щёлкните окно, куда перенести', N'haga clic en la ventana de destino'),
+(N' Группа', N' Grupo'),
+(N'Cумма (+)', N'Monto (+)'),
+(N'Cумма (-)', N'Monto (-)'),
+(N'Cумма за МП', N'Monto por plan de medios'),
+(N'Автор', N'Autor'),
+(N'Агенство', N'Agencia'),
+(N'Административная', N'Administrativa'),
+(N'Адрес', N'Dirección'),
+(N'Активирована', N'Activada'),
+(N'Активная программа', N'Programa activo'),
+(N'БИК', N'БИК'),
+(N'БИК банка', N'БИК del banco'),
+(N'Баланс', N'Balance'),
+(N'Банк', N'Banco'),
+(N'Бонус', N'Bonificación'),
+(N'Брэнд', N'Marca'),
+(N'Вс.', N'Dom.'),
+(N'Все акции за деньги', N'Todas las campañas pagas'),
+(N'Все скидки (коэффициент)', N'Todos los descuentos (coeficiente)'),
+(N'Всего', N'Total'),
+(N'Всего (кампания)', N'Total (pauta)'),
+(N'Вт.', N'Mar.'),
+(N'Выручка', N'Ingresos'),
+(N'Выручка (Пред. период)', N'Ingresos (período ant.)'),
+(N'Группа', N'Grupo'),
+(N'Дата', N'Fecha'),
+(N'Дата активации', N'Fecha de activación'),
+(N'Дата договора', N'Fecha del contrato'),
+(N'Дата начала', N'Fecha de inicio'),
+(N'Дата начала новой кампании', N'Fecha de inicio de la nueva pauta'),
+(N'Дата окончания', N'Fecha de fin'),
+(N'Дата переноса', N'Fecha de traslado'),
+(N'Дата платежа', N'Fecha de pago'),
+(N'Дата последнего выпуска', N'Fecha de la última emisión'),
+(N'Дата предоставления скидки', N'Fecha de otorgamiento del descuento'),
+(N'Дата принятия', N'Fecha de aceptación'),
+(N'Дата разделения', N'Fecha de división'),
+(N'Дата создания', N'Fecha de creación'),
+(N'Дата создания акции', N'Fecha de creación de la campaña'),
+(N'Дата удаления', N'Fecha de eliminación'),
+(N'Дата эфира', N'Fecha al aire'),
+(N'Делитель', N'Divisor'),
+(N'День', N'Día'),
+(N'Для модулей', N'Para módulos'),
+(N'Заполняемость (%)', N'Ocupación (%)'),
+(N'ИНН', N'ИНН'),
+(N'Идентификатор', N'Identificador'),
+(N'Израсходовано', N'Consumido'),
+(N'Имя', N'Nombre'),
+(N'КПП', N'КПП'),
+(N'Код ОГРН', N'Código ОГРН'),
+(N'Кол-во акций', N'Cant. de campañas'),
+(N'Кол-во выпусков', N'Cant. de emisiones'),
+(N'Кол-во групп', N'Cant. de grupos'),
+(N'Количество', N'Cantidad'),
+(N'Комиссия', N'Comisión'),
+(N'Коммент.', N'Coment.'),
+(N'Кому', N'Para'),
+(N'Кор. счет', N'Cta. corresp.'),
+(N'Кор. счет банка', N'Cta. corresp. del banco'),
+(N'Коэффициент', N'Coeficiente'),
+(N'Линейная', N'Lineal'),
+(N'Медиа-планер', N'Planificador de medios'),
+(N'Мен. ск', N'Desc. ger.'),
+(N'Менеджер', N'Gerente'),
+(N'Менеджерская скидка', N'Descuento del gerente'),
+(N'Менеджерская скидка (деньги)', N'Descuento del gerente (monto)'),
+(N'Место в отчёте', N'Posición en el informe'),
+(N'Минимальная сумма (с учётом объёмных скидок)', N'Monto mínimo (con descuentos por volumen)'),
+(N'Модуль', N'Módulo'),
+(N'Модульная', N'Modular'),
+(N'Название банка', N'Nombre del banco'),
+(N'Название ролика', N'Nombre del spot'),
+(N'Налог', N'Impuesto'),
+(N'Наценка за 1-й (%)', N'Recargo por 1.ª posición (%)'),
+(N'Наценка за 2-й  (%)', N'Recargo por 2.ª posición (%)'),
+(N'Наценка за последний  (%)', N'Recargo por última posición (%)'),
+(N'Начало эфирного дня', N'Inicio del día de emisión'),
+(N'Новая дата', N'Nueva fecha'),
+(N'ОКВЭД', N'ОКВЭД'),
+(N'Обработано', N'Procesado'),
+(N'Общее время', N'Tiempo total'),
+(N'Общий', N'General'),
+(N'Объем продаж', N'Volumen de ventas'),
+(N'Объем реализации (секунды)', N'Volumen de ventas (segundos)'),
+(N'Объемная скидка', N'Descuento por volumen'),
+(N'Объемная скидка (деньги)', N'Descuento por volumen (monto)'),
+(N'Объёмная скидка', N'Descuento por volumen'),
+(N'Окончание', N'Fin'),
+(N'Операция', N'Operación'),
+(N'Описание', N'Descripción'),
+(N'Оплачено', N'Pagado'),
+(N'Организация', N'Organización'),
+(N'Оригинальная дата выпуска', N'Fecha original de emisión'),
+(N'Оригинальное время выпуска', N'Hora original de emisión'),
+(N'Осн. сумма', N'Monto base'),
+(N'Остальные типы оплаты не подразумевающие оплату (кроме бонусов)', N'Otros tipos de pago que no implican pago (excepto bonificaciones)'),
+(N'Остаток', N'Saldo inicial'),
+(N'От кого', N'De'),
+(N'Отчество', N'Patronímico'),
+(N'Отчёт', N'Informe'),
+(N'Пакетная скидка', N'Descuento por paquete'),
+(N'Пакетная скидка (деньги)', N'Descuento por paquete (monto)'),
+(N'Пакетный модуль', N'Módulo en paquete'),
+(N'Первая половина часа', N'Primera media hora'),
+(N'Период', N'Período'),
+(N'Пн.', N'Lun.'),
+(N'Показатель по количеству', N'Indicador por cantidad'),
+(N'Показатель по цене', N'Indicador por precio'),
+(N'Получено', N'Recibido'),
+(N'Пользовательское право', N'Permiso de usuario'),
+(N'Порядок', N'Orden'),
+(N'После скидки', N'Con descuento'),
+(N'Последний менеджер', N'Último gerente'),
+(N'Пр-ть', N'Dur.'),
+(N'Пр-ть полная', N'Dur. total'),
+(N'Право подтверждать', N'Permiso para confirmar'),
+(N'Предмет рекламы', N'Rubro publicitario'),
+(N'Предмет рекламы (1-й уровень)', N'Rubro publicitario (1.er nivel)'),
+(N'Префикс', N'Prefijo'),
+(N'Причина скидки', N'Motivo del descuento'),
+(N'Программа', N'Programa'),
+(N'Прод-ть', N'Dur.'),
+(N'Продолжительность (Пред. период)', N'Duración (período ant.)'),
+(N'Проимпортировано', N'Importado'),
+(N'Процент', N'Porcentaje'),
+(N'Процент заполнения', N'Porcentaje de ocupación'),
+(N'Пт.', N'Vie.'),
+(N'Радиостанци', N'Emisora'),
+(N'Расчетный счет', N'Cuenta corriente'),
+(N'Реальная дата выпуска', N'Fecha real de emisión'),
+(N'Рекламное окно', N'Ventana publicitaria'),
+(N'Ролик/Программа', N'Spot/Programa'),
+(N'Роль', N'Rol'),
+(N'СМИ', N'Medio'),
+(N'Сб.', N'Sáb.'),
+(N'Скидка', N'Descuento'),
+(N'Создано', N'Creado'),
+(N'Создатель', N'Creador'),
+(N'Спонсорская', N'De patrocinio'),
+(N'Способ разделения', N'Método de división'),
+(N'Ср.', N'Mié.'),
+(N'Средний чек по акции', N'Ticket promedio por campaña'),
+(N'Средний чек по группе', N'Ticket promedio por grupo'),
+(N'Средняя цена', N'Precio promedio'),
+(N'Средняя цена (Пред. период)', N'Precio promedio (período ant.)'),
+(N'Старая дата', N'Fecha anterior'),
+(N'Статус', N'Estado'),
+(N'Стоимость рекламной акции без скидок', N'Costo de la campaña publicitaria sin descuentos'),
+(N'Стоимость рекламной акции со всеми скидками', N'Costo de la campaña publicitaria con todos los descuentos'),
+(N'Сумма', N'Monto'),
+(N'Сумма (+)', N'Monto (+)'),
+(N'Сумма (руб)', N'Monto (rub.)'),
+(N'Сумма (руб, группа)', N'Monto (rub., grupo)'),
+(N'Сумма по компаниям', N'Monto por pautas'),
+(N'Сумма по тарифам', N'Monto según tarifas'),
+(N'Тариф', N'Tarifa'),
+(N'Текст', N'Texto'),
+(N'Телефон', N'Teléfono'),
+(N'Тип', N'Tipo'),
+(N'Тип компании', N'Tipo de pauta'),
+(N'Тип объекта', N'Tipo de objeto'),
+(N'Тип опланы', N'Tipo de pago'),
+(N'Тип оплаты', N'Tipo de pago'),
+(N'Тип рекламы', N'Tipo de publicidad'),
+(N'Факс', N'Fax'),
+(N'Фактическое время выпуска', N'Hora real de emisión'),
+(N'Фактическое время рекламы', N'Tiempo real de publicidad'),
+(N'Фамилия', N'Apellido'),
+(N'Фирма', N'Empresa'),
+(N'Фирма-закачик', N'Empresa cliente'),
+(N'Цена по тарифам', N'Precio según tarifas'),
+(N'Цена с учётом всех скидок', N'Precio con todos los descuentos'),
+(N'Цена с учётом объёмной скидки', N'Precio con descuento por volumen'),
+(N'Час выпуска', N'Franja horaria de emisión'),
+(N'Чт.', N'Jue.'),
+(N'№ Акции', N'N.º de campaña'),
+(N'Агентсто для радиостанций', N'Agencia para emisoras'),
+(N'Акт выполненных работ (агентства)', N'Acta de trabajos realizados (agencias)'),
+(N'Веерное размещение: Выпуски', N'Distribución en abanico: Emisiones'),
+(N'Выпуск модульной кампании', N'Emisión de pauta modular'),
+(N'Выпуск модуля', N'Emisión de módulo'),
+(N'Выпуск пакетного модуля', N'Emisión de módulo en paquete'),
+(N'Выпуск пакетного модуля (форма редактирования кампании)', N'Emisión de módulo en paquete (formulario de edición de pauta)'),
+(N'Выпуск ролика', N'Emisión de spot'),
+(N'Выпуск ролика (активация)', N'Emisión de spot (activación)'),
+(N'Выпуск ролика в модуле', N'Emisión de spot en módulo'),
+(N'Выпуск ролика модульной кампании', N'Emisión de spot de pauta modular'),
+(N'Выпуск спонсорской программы', N'Emisión de programa de patrocinio'),
+(N'Группа Радиостанций', N'Grupo de emisoras'),
+(N'Группа компаний (журнал рекламных акций)', N'Grupo de empresas (registro de campañas publicitarias)'),
+(N'Дата принятия скидок', N'Fecha de aceptación de descuentos'),
+(N'День модульной рекламной кампании', N'Día de pauta publicitaria modular'),
+(N'День модульной рекламной кампании (в модуле)', N'Día de pauta publicitaria modular (en módulo)'),
+(N'День пакетной рекламной кампании', N'Día de pauta publicitaria en paquete'),
+(N'День рекламной кампании', N'Día de pauta publicitaria'),
+(N'День рекламной кампании (в выпуске)', N'Día de pauta publicitaria (en emisión)'),
+(N'День спонсорской кампании в программе', N'Día de pauta de patrocinio en programa'),
+(N'День спонсорской компании', N'Día de pauta de patrocinio'),
+(N'Импортирование роликов', N'Importación de spots'),
+(N'Импортирование фирм', N'Importación de empresas'),
+(N'Импортированные выпуски', N'Emisiones importadas'),
+(N'Использование бонусов', N'Uso de bonificaciones'),
+(N'Использование роликов', N'Uso de spots'),
+(N'Кандидаты на оплату', N'Candidatos a pago'),
+(N'Комбо-модуль', N'Módulo combo'),
+(N'Линейная рекламная компания', N'Pauta publicitaria lineal'),
+(N'Менеджерский коэффициент', N'Coeficiente del gerente'),
+(N'Модули комбо-модуля', N'Módulos del módulo combo'),
+(N'Модули пакетного модуля', N'Módulos del módulo en paquete'),
+(N'Модульная рекламная компания', N'Pauta publicitaria modular'),
+(N'Налог для агентства', N'Impuesto de la agencia'),
+(N'Объем реализации по месяцам', N'Volumen de ventas por meses'),
+(N'Оплата акции', N'Pago de campaña'),
+(N'Пакетная рекламная компания', N'Pauta publicitaria en paquete'),
+(N'Пакетные модули кампании', N'Módulos en paquete de la pauta'),
+(N'Перенос выпуска', N'Traslado de emisión');
+GO
+INSERT INTO #t ([source], [text]) VALUES
+(N'Платеж', N'Pago'),
+(N'Пользователь в группе', N'Usuario en grupo'),
+(N'Пользовательский коэффициент', N'Coeficiente de usuario'),
+(N'Пользовательский коэффициент (массовый)', N'Coeficiente de usuario (masivo)'),
+(N'Права группы', N'Permisos del grupo'),
+(N'Прайс-Лист (Пакетная скидка)', N'Lista de precios (descuento por paquete)'),
+(N'Прайс-лист', N'Lista de precios'),
+(N'Прайс-лист для Пакетных модулей', N'Lista de precios para módulos en paquete'),
+(N'Прайс-лист для модуля', N'Lista de precios para módulo'),
+(N'Прайс-лист спонсорских программ', N'Lista de precios de programas de patrocinio'),
+(N'Предмет рекламы 2-го уровня', N'Rubro publicitario de 2.º nivel'),
+(N'Причина менеджерской скидки', N'Motivo del descuento del gerente'),
+(N'Программа спонсоркой кампании в дне', N'Programa de pauta de patrocinio en el día'),
+(N'Программа спонсорской компании', N'Programa de pauta de patrocinio'),
+(N'Пункт меню', N'Opción de menú'),
+(N'Радиостанции у менеджера', N'Emisoras del gerente'),
+(N'Радиостанция (Пакетная скидка)', N'Emisora (descuento por paquete)'),
+(N'Размещение рекламы на радиостанции', N'Colocación de publicidad en la emisora'),
+(N'Рекламная акция', N'Campaña publicitaria'),
+(N'Рекламная кампания', N'Pauta publicitaria'),
+(N'Рекламное окно (Траффик менеджер)', N'Ventana publicitaria (gestor de tráfico)'),
+(N'Рекламный ролик', N'Spot publicitario'),
+(N'Ролик "для всех фирм"', N'Spot "para todas las empresas"'),
+(N'Ролик модульной кампании (в дне)', N'Spot de pauta modular (en el día)'),
+(N'Ролик рекламной акции', N'Spot de campaña publicitaria'),
+(N'Ролик рекламной кампании', N'Spot de pauta publicitaria'),
+(N'Ролик рекламной кампании (в дне)', N'Spot de pauta publicitaria (en el día)'),
+(N'Ролик-незаменен', N'Spot no sustituido'),
+(N'Ролик-пустышка', N'Spot vacío'),
+(N'Ролики (Статистика по акции)', N'Spots (estadísticas de la campaña)'),
+(N'Системные настройки', N'Configuración del sistema'),
+(N'Содержимое пакетного модуля', N'Contenido del módulo en paquete'),
+(N'Сообщение', N'Mensaje'),
+(N'Спонсорская программа', N'Programa de patrocinio'),
+(N'Спонсорская рекламная компания', N'Pauta publicitaria de patrocinio'),
+(N'Спонсорский тариф', N'Tarifa de patrocinio'),
+(N'Статистика: Факторный анализ продаж', N'Estadísticas: Análisis factorial de ventas'),
+(N'Статистика:: Отчет по типам оплаты', N'Estadísticas:: Informe por tipos de pago'),
+(N'Статистика::% заполнения, объем рекламы', N'Estadísticas::% de ocupación, volumen de publicidad'),
+(N'Статистика::Долги и предопл. по фирмам (агентства)', N'Estadísticas::Deudas y anticipos por empresas (agencias)'),
+(N'Статистика::Долги и предоплаты (агентства)', N'Estadísticas::Deudas y anticipos (agencias)'),
+(N'Статистика::Журнал задолженностей по менеджерам (агентства)', N'Estadísticas::Registro de deudas por gerentes (agencias)'),
+(N'Статистика::Загрузка модулей', N'Estadísticas::Ocupación de módulos'),
+(N'Статистика::Загрузка пакетных модулей', N'Estadísticas::Ocupación de módulos en paquete'),
+(N'Статистика::Загрузка спонсорских программ', N'Estadísticas::Ocupación de programas de patrocinio'),
+(N'Статистика::Объем реализации', N'Estadísticas::Volumen de ventas'),
+(N'Статистика::Объем реализации в секундах', N'Estadísticas::Volumen de ventas en segundos'),
+(N'Статистика::Продажа модулей', N'Estadísticas::Venta de módulos'),
+(N'Статистика::Продажа пакетных модулей', N'Estadísticas::Venta de módulos en paquete'),
+(N'Статистика::Средняя скидка по радиостанции', N'Estadísticas::Descuento promedio por emisora'),
+(N'Сумма скидки', N'Monto del descuento'),
+(N'Счёт (оплата акции)', N'Factura (pago de campaña)'),
+(N'Тариф для модуля', N'Tarifa para módulo'),
+(N'Текст отчётов', N'Texto de informes'),
+(N'Тип кампании (Пакетная скидка)', N'Tipo de pauta (descuento por paquete)'),
+(N'Удалённая рекламная акция', N'Campaña publicitaria eliminada'),
+(N'Удалённый выпуск рекламной акции', N'Emisión eliminada de campaña publicitaria'),
+(N'Фирма (журнал рекламных акций)', N'Empresa (registro de campañas publicitarias)'),
+(N'Фирма (макеты рекламных акций)', N'Empresa (borradores de campañas publicitarias)'),
+(N'Фирма (удалённые рекламные акции)', N'Empresa (campañas publicitarias eliminadas)'),
+(N'Фирмы', N'Empresas'),
+(N'Части спонсорской кампании', N'Partes de pauta de patrocinio'),
+(N'Часть программ спосорской кампании', N'Parte de programas de pauta de patrocinio'),
+(N'Часть роликов спонсорской кампании', N'Parte de spots de pauta de patrocinio'),
+(N'% заполнения', N'% de ocupación'),
+(N'Cальдо расчётов по всем фирмам-заказчикам в разрезе агентств ', N'Saldo de cuentas de todas las empresas clientes por agencia '),
+(N'Cпонсорских программ', N'De programas de patrocinio'),
+(N'Администрация', N'Administración'),
+(N'Аналитические показатели', N'Indicadores analíticos'),
+(N'Баланс для всех фирм-заказчиков', N'Balance de todas las empresas clientes'),
+(N'Баланс для конкретной фирмы-заказчика', N'Balance de una empresa cliente específica'),
+(N'Банки', N'Bancos'),
+(N'Бухгалтерия', N'Contabilidad'),
+(N'Ввод остатков', N'Ingreso de saldos'),
+(N'Веерное размещение...', N'Distribución en abanico...'),
+(N'Внести макет рекламной акции', N'Agregar borrador de campaña publicitaria'),
+(N'Выписать акт выполненных работ', N'Emitir acta de trabajos realizados'),
+(N'Выручка от размещения пакетных рекламных модулей', N'Ingresos por colocación de módulos publicitarios en paquete'),
+(N'Выручка от размещения рекламных модулей', N'Ingresos por colocación de módulos publicitarios'),
+(N'Выход', N'Salir'),
+(N'График размещения по нескольким акциям', N'Cronograma de colocación de varias campañas'),
+(N'Группы Радиостанций', N'Grupos de emisoras'),
+(N'Журнал использования бонусов', N'Registro de uso de bonificaciones'),
+(N'Журнал использования роликов', N'Registro de uso de spots'),
+(N'Журнал макетов рекламных акций', N'Registro de borradores de campañas publicitarias'),
+(N'Журнал оплат', N'Registro de pagos'),
+(N'Журнал оплат по менеджерам', N'Registro de pagos por gerente'),
+(N'Журнал переносов', N'Registro de traslados'),
+(N'Журнал подтверждённых рекламных акций', N'Registro de campañas publicitarias confirmadas'),
+(N'Журнал рекламных роликов', N'Registro de spots publicitarios'),
+(N'Журнал удалённых рекламных акций', N'Registro de campañas publicitarias eliminadas'),
+(N'За период (с разбивкой по месяцам)', N'Por período (desglosado por mes)'),
+(N'Импорт фирм', N'Importar empresas'),
+(N'Калькулятор цены', N'Calculadora de precios'),
+(N'Менеджерские скидки', N'Descuentos del gerente'),
+(N'Объем продаж в секундах', N'Volumen de ventas en segundos'),
+(N'Объем реализации', N'Volumen de ventas realizadas'),
+(N'Объем реализации (Сводный)', N'Volumen de ventas realizadas (Consolidado)'),
+(N'Отчет по типам оплат', N'Informe por tipos de pago'),
+(N'Очистка журнала удаленных рекламных акций', N'Limpieza del registro de campañas publicitarias eliminadas'),
+(N'Пакетные скидки', N'Descuentos por paquete'),
+(N'Пакетных рекламных модулей', N'De módulos publicitarios en paquete'),
+(N'Причины выдачи менеджерской скидки', N'Motivos de otorgamiento del descuento del gerente'),
+(N'Развёрнутое итоговое сальдо расчетов в разрезе агентств', N'Saldo final detallado de cuentas por agencia'),
+(N'Размещение комбо-модулями...', N'Colocación con módulos combo...'),
+(N'Режиссёр', N'Director'),
+(N'Рекламные модули', N'Módulos publicitarios'),
+(N'Рекламные тарифы', N'Tarifas publicitarias'),
+(N'Рекламный отдел', N'Departamento de publicidad'),
+(N'Рекламных модулей', N'De módulos publicitarios'),
+(N'Сводный (размещение рекламы)', N'Consolidado (colocación publicitaria)'),
+(N'Сводный журнал долгов фирм-заказчиков (по менеджерам в разрезе агентств) ', N'Registro consolidado de deudas de empresas clientes (por gerente y agencia) '),
+(N'Сетка вещания', N'Parrilla de emisión'),
+(N'Сообщения', N'Mensajes'),
+(N'Специальные отчёты', N'Informes especiales'),
+(N'Средняя скидка по радиостанциям', N'Descuento promedio por emisora'),
+(N'Статистика', N'Estadísticas'),
+(N'Тарифы для спонсоров', N'Tarifas para patrocinadores'),
+(N'Текст для отчётов', N'Texto para informes'),
+(N'Трафик', N'Tráfico'),
+(N'Удаление макетов рекламных акций', N'Eliminación de borradores de campañas publicitarias'),
+(N'Удаление роликов-пустышек', N'Eliminación de spots vacíos'),
+(N'Удаленные рекламные выпуски', N'Emisiones publicitarias eliminadas'),
+(N'Фактическое размещение', N'Colocación real'),
+(N'Факторный анализ продаж', N'Análisis factorial de ventas'),
+(N'Фирмы-заказчики', N'Empresas clientes'),
+(N'Экспорт сеток вещания', N'Exportar parrillas de emisión'),
+(N'Агентство не может быть удалено, так как на него уже выписаны счета. Операция прервана.', N'No se puede eliminar la agencia porque ya tiene facturas emitidas. Operación cancelada.'),
+(N'Агентство не может быть удалено, так как на него уже заведены платежи. Операция прервана.', N'No se puede eliminar la agencia porque ya tiene pagos registrados. Operación cancelada.'),
+(N'Агентство с таким названием уже существует. Пожалуйста, введите другое название. Операция прервана.', N'Ya existe una agencia con ese nombre. Ingrese otro nombre. Operación cancelada.'),
+(N'Акцию №{0} не возможно деактивировать, так как к ней уже привязаны платежи.', N'No se puede desactivar la campaña N.º {0} porque ya tiene pagos vinculados.'),
+(N'Акция будет активирована (активация может привести к удалению некоторых выпусков). Продолжить?', N'La campaña será activada (la activación puede eliminar algunas emisiones). ¿Continuar?'),
+(N'Акция будет деактивирована (повторная активация может привести к удалению некоторых выпусков). Продолжить?', N'La campaña será desactivada (una nueva activación puede eliminar algunas emisiones). ¿Continuar?'),
+(N'Банк с таким БИК уже существует в системе. Операция прервана.', N'Ya existe en el sistema un banco con ese БИК. Operación cancelada.'),
+(N'Банк с таким названием уже существует. Пожалуйста, введите другое название. Операция прервана.', N'Ya existe un banco con ese nombre. Ingrese otro nombre. Operación cancelada.'),
+(N'Блок на объединение уже используется в другом блоке. Операция прервана.', N'El bloque a unir ya se utiliza en otro bloque. Operación cancelada.'),
+(N'Брэнд с таким названием уже существует. Пожалуйста, введите другое название. Операция прервана.', N'Ya existe una marca con ese nombre. Ingrese otro nombre. Operación cancelada.'),
+(N'В выбранное окно запрещено размещать или переносить выпуски. Операция прервана.', N'No se permite colocar ni trasladar emisiones a la ventana seleccionada. Operación cancelada.'),
+(N'В данном рекламном окне уже присутствует ролик ''{0}''. Вы хотите продолжить перенос? ', N'Esta ventana publicitaria ya contiene el spot ''{0}''. ¿Desea continuar con el traslado? '),
+(N'В данном рекламном окне уже присутствует ролик данной фирмы. ', N'Esta ventana publicitaria ya contiene un spot de esta empresa. '),
+(N'В данном рекламном окне уже присутствует ролик фирмы ''{0}''. Вы хотите продолжить перенос? ', N'Esta ventana publicitaria ya contiene un spot de la empresa ''{0}''. ¿Desea continuar con el traslado? '),
+(N'В данную дату программы не существует.', N'No existe el programa en esta fecha.'),
+(N'В одной рекламной акции нельзя размещать политическую агитацию вместе с другой рекламой. Операция прервана.', N'No se puede colocar propaganda política junto con otra publicidad en una misma campaña publicitaria. Operación cancelada.'),
+(N'В окне уже есть ролик с типом "Анонс политической агитации". Операция прервана.', N'La ventana ya contiene un spot de tipo "Anuncio de propaganda política". Operación cancelada.'),
+(N'В окне уже есть ролик с типом "Локальное СМИ". Операция прервана.', N'La ventana ya contiene un spot de tipo "Medio local". Operación cancelada.'),
+(N'В окне уже есть ролик с типом "Федеральное СМИ". Операция прервана.', N'La ventana ya contiene un spot de tipo "Medio nacional". Operación cancelada.'),
+(N'В системе уже существует фирма с такой комбинацией ИНН+КПП+Расчётный счёт. Операция прервана.', N'Ya existe en el sistema una empresa con esa combinación de ИНН+КПП+Cuenta corriente. Operación cancelada.'),
+(N'В это время на этой станции уже есть обычный тариф. Измените время или день недели. Операция прервана!', N'En este horario esta emisora ya tiene una tarifa común. Modifique la hora o el día de la semana. ¡Operación cancelada!'),
+(N'В это время на этой станции уже есть спонсорский тариф.Измените время или день недели. Операция прервана!', N'En este horario esta emisora ya tiene una tarifa de patrocinio. Modifique la hora o el día de la semana. ¡Operación cancelada!'),
+(N'В это рекламное окно возможно разместить или переместить только выпуски роликов с типом новость или программа. Операция прервана.', N'En esta ventana publicitaria solo se pueden colocar o trasladar emisiones de spots de tipo noticia o programa. Operación cancelada.'),
+(N'Внести выходы рекламных роликов для времени {0} в соответствии с шаблоном?' + NCHAR(13) + NCHAR(10) + N'{3} [c {1} по {2}]', N'¿Registrar las emisiones de spots para la hora {0} según la plantilla?' + NCHAR(13) + NCHAR(10) + N'{3} [del {1} al {2}]'),
+(N'Внутренняя ошибка. Операция прервана.', N'Error interno. Operación cancelada.'),
+(N'Время начала интервала не может быть больше времени его окончания. Операция прервана.', N'La hora de inicio del intervalo no puede ser posterior a la hora de fin. Operación cancelada.'),
+(N'Вы выбрали для переноса в новую рекламную акцию все кампании, входящие в текущую акцию. Необходимо оставить хотя бы одну. Операция прервана.', N'Se seleccionaron para trasladar a una nueva campaña publicitaria todas las pautas de la campaña actual. Debe quedar al menos una. Operación cancelada.'),
+(N'Вы выбрали для переноса в новую рекламную кампанию все ролики. Надо что-то оставить в существующей!', N'Se seleccionaron todos los spots para trasladar a una nueva pauta. ¡Debe quedar al menos uno en la pauta existente!'),
+(N'Вы желаете перенести выбранные выпуски с ''{0}'' на ''{1}''?', N'¿Desea trasladar las emisiones seleccionadas de ''{0}'' a ''{1}''?'),
+(N'Вы не можете заменить ролик активированной рекламной акции на ролик без предмета рекламы. Операция прервана.', N'No se puede sustituir un spot de una campaña publicitaria activada por un spot sin rubro publicitario. Operación cancelada.'),
+(N'Вы пытаетесь изменить параметры тарифа, который объединён с другим тарифом. Эти изменения нарушают правила объединения, операция прервана.', N'Se intenta modificar los parámetros de una tarifa unida a otra tarifa. Estos cambios infringen las reglas de unión; operación cancelada.'),
+(N'Вы пытаетесь отметить тариф для использования только в модулях. Но тариф уже использован в обычной рекламной кампании. Операция прервана.', N'Se intenta marcar la tarifa para uso exclusivo en módulos, pero la tarifa ya se utiliza en una pauta común. Operación cancelada.'),
+(N'Вы хотите перенести выпуск рекламного ролика ''{0}'' с {1} на {2}?', N'¿Desea trasladar la emisión del spot ''{0}'' del {1} al {2}?'),
+(N'Выбран некорректный предмет рекламы. Пожалуйста, выберите дочерний элемент в дереве предметов рекламы.', N'Se seleccionó un rubro publicitario incorrecto. Seleccione un elemento hijo en el árbol de rubros publicitarios.'),
+(N'Выбранная дата выходит за пределы прайс-листа.', N'La fecha seleccionada está fuera del período de la lista de precios.'),
+(N'Выбранная радиостанция на объединение уже объединена с другой радиостанцией.', N'La emisora seleccionada para unir ya está unida a otra emisora.'),
+(N'Выбранный пользователь уже входит в состав группы. Операция прервана.', N'El usuario seleccionado ya pertenece al grupo. Operación cancelada.'),
+(N'Выставлять признак ''Для всех фирм'' могут только администраторы. Операция прервана.', N'Solo los administradores pueden marcar el indicador ''Para todas las empresas''. Operación cancelada.'),
+(N'Группа компаний с таким названием уже существует в системе. Операция прервана.', N'Ya existe en el sistema un grupo de empresas con ese nombre. Operación cancelada.'),
+(N'Группа не может быть удалена, так как существуют радиостанции, привязанные к этой группе. Операция прервана.', N'No se puede eliminar el grupo porque existen emisoras vinculadas a él. Operación cancelada.'),
+(N'Группа с таким именем уже существует. Операция прервана.', N'Ya existe un grupo con ese nombre. Operación cancelada.'),
+(N'Данная радиостанция уже добавлена.', N'Esta emisora ya fue agregada.'),
+(N'Данная фирма уже присвоена брэнду. Операция прервана.', N'Esta empresa ya está asignada a la marca. Operación cancelada.'),
+(N'Данный выпуск уже проспонсирован.', N'Esta emisión ya está patrocinada.'),
+(N'Данный модуль уже включен в пакет. Операция прервана.', N'Este módulo ya está incluido en el paquete. Operación cancelada.'),
+(N'Данный тариф попадает между объединёнными тарифами! Операция прервана. Либо измените параметры данного тарифа, либо удалите объединение между тарифами.', N'¡Esta tarifa queda entre tarifas unidas! Operación cancelada. Modifique los parámetros de esta tarifa o elimine la unión entre las tarifas.'),
+(N'Данный тип кампании уже добавлен к данной радиостанции в данной скидке.', N'Este tipo de pauta ya fue agregado a esta emisora en este descuento.'),
+(N'Дата начала действия окна не может быть больше даты его окончания. Операция прервана.', N'La fecha de inicio de vigencia de la ventana no puede ser posterior a la fecha de fin. Operación cancelada.'),
+(N'Дата начала действия прайс-листа модуля не может выходить за рамки дат действия прайса-листа радиостанции.', N'La fecha de inicio de vigencia de la lista de precios del módulo no puede estar fuera del período de vigencia de la lista de precios de la emisora.'),
+(N'Дата начала действия прайс-листа не может быть больше даты его окончания. Операция прервана.', N'La fecha de inicio de vigencia de la lista de precios no puede ser posterior a la fecha de fin. Operación cancelada.'),
+(N'Дата начала действия тарифа не может быть больше даты его окончания. Операция прервана.', N'La fecha de inicio de vigencia de la tarifa no puede ser posterior a la fecha de fin. Operación cancelada.'),
+(N'Дата начала или окончания действия данного тарифа пересекается с другим тарифом. Операция прервана.', N'La fecha de inicio o de fin de vigencia de esta tarifa se superpone con otra tarifa. Operación cancelada.'),
+(N'Дата начала или окончания действия прайс-листа пересекается с другим прайс-листом. Операция прервана.', N'La fecha de inicio o de fin de vigencia de la lista de precios se superpone con otra lista de precios. Operación cancelada.'),
+(N'Дата начала интервала не может быть больше даты его окончания. Операция прервана.', N'La fecha de inicio del intervalo no puede ser posterior a la fecha de fin. Operación cancelada.'),
+(N'Дата начала периода не может быть больше даты его окончания. Операция прервана.', N'La fecha de inicio del período no puede ser posterior a la fecha de fin. Operación cancelada.'),
+(N'Дата окончания действия модуля не может быть меньше, чем дата его начала.', N'La fecha de fin de vigencia del módulo no puede ser anterior a la fecha de inicio.'),
+(N'Дата окончания действия прайс-листа модуля не может выходить за рамки дат действия прайса-листа радиостанции.', N'La fecha de fin de vigencia de la lista de precios del módulo no puede estar fuera del período de vigencia de la lista de precios de la emisora.'),
+(N'Дата попадает в закрытый трафик-менеджером период.', N'La fecha corresponde a un período cerrado por el gestor de tráfico.'),
+(N'Дата разделения должна находиться между датой начала и окончания рекламной на радиостанции {0}.', N'La fecha de división debe estar entre la fecha de inicio y la de fin de la pauta en la emisora {0}.'),
+(N'Даты начала и окончания рекламной кампании на радиостанции {0} совпадают. Разделение по периоду невозможно осуществить.', N'Las fechas de inicio y fin de la pauta en la emisora {0} coinciden. No es posible dividir por período.'),
+(N'Действие прайс-листа не может быть уменьшено до выставленных сроков, так как он используется в создании модуля. Операция прервана.', N'No se puede reducir la vigencia de la lista de precios al período indicado porque se utiliza en un módulo. Operación cancelada.'),
+(N'Действие прайс-листа не может быть уменьшено до выставленных сроков, так как он используется в создании пакетного модуля. Операция прервана.', N'No se puede reducir la vigencia de la lista de precios al período indicado porque se utiliza en un módulo en paquete. Operación cancelada.'),
+(N'Для просмотра журнала необходимо выбрать дату.', N'Para ver el registro, seleccione una fecha.'),
+(N'Для просмотра журнала необходимо выбрать даты начала и окончания интервала.', N'Para ver el registro, seleccione las fechas de inicio y fin del intervalo.'),
+(N'Для просмотра статистики необходимо выбрать даты сравниваемых интервалов. Операция прервана.', N'Para ver las estadísticas, seleccione las fechas de los intervalos a comparar. Operación cancelada.'),
+(N'Для роликов политической агитации позиционирование не применяется. Операция прервана.', N'El posicionamiento no se aplica a los spots de propaganda política. Operación cancelada.'),
+(N'Для способа разделения "По периоду" надо указать дату разделения рекламной кампании', N'Para el método de división "Por período" debe indicarse la fecha de división de la pauta'),
+(N'Запрещено редактировать заказ помеченный как выполненный.  Операция прервана.', N'No se permite modificar un pedido marcado como completado.  Operación cancelada.'),
+(N'Запрещено удалять подтвержденную акцию.  Операция прервана.', N'No se permite eliminar una campaña confirmada.  Operación cancelada.'),
+(N'Интервалы-исключения заданы неверно. Формат: ЧЧ:ММ-ЧЧ:ММ, несколько интервалов в одной строке разделяются точкой с запятой. Строка может начинаться с дней недели, например: "пн-пт 16:00-16:55; 18:00-19:00", а на следующей строке - другой набор: "сб,вс 10:00-11:00". Дни: пн вт ср чт пт сб вс; допускаются диапазон (пн-пт) и перечисление (пн,ср,пт), строка без дней действует все дни недели. Начало интервала должно быть раньше чем его окончание.', N'Los intervalos de exclusión son incorrectos. Formato: HH:MM-HH:MM; varios intervalos en una misma línea se separan con punto y coma. La línea puede comenzar con días de la semana, por ejemplo: "пн-пт 16:00-16:55; 18:00-19:00", y en la línea siguiente otro conjunto: "сб,вс 10:00-11:00". Días (abreviaturas rusas, de lunes a domingo): пн вт ср чт пт сб вс; se admiten rangos (пн-пт) y enumeraciones (пн,ср,пт); una línea sin días rige para todos los días de la semana. El inicio del intervalo debe ser anterior a su fin.'),
+(N'Количество выходов в день должно быть больше нуля. Операция прервана.', N'La cantidad de emisiones por día debe ser mayor que cero. Operación cancelada.'),
+(N'Лицензия просрочена.', N'La licencia está vencida.'),
+(N'Модуль не может быть удален, так как на его базе сформированы рекламные кампании. Операция прервана.', N'No se puede eliminar el módulo porque existen pautas creadas a partir de él. Operación cancelada.'),
+(N'Модульный прайс-лист не может быть удален, так как на его базе сформированы рекламные кампании. Операция прервана.', N'No se puede eliminar la lista de precios modular porque existen pautas creadas a partir de ella. Operación cancelada.'),
+(N'Модульный прайс-лист не может быть удален, так как он используется в пакетных модулях. Операция прервана.', N'No se puede eliminar la lista de precios modular porque se utiliza en módulos en paquete. Operación cancelada.'),
+(N'Модульный прайс-лист уже используется рекламной кампанией. Изменять его параметры запрещено. Операция прервана.', N'La lista de precios modular ya se utiliza en una pauta. No se permite modificar sus parámetros. Operación cancelada.'),
+(N'На базе тарифа уже сгенерированы рекламные окна. Изменять его параметры запрещено. Операция прервана.', N'Ya se generaron ventanas publicitarias a partir de la tarifa. No se permite modificar sus parámetros. Operación cancelada.'),
+(N'На базе этого тарифа уже размещено спонсорство. Изменять его параметры запрещено. Операция прервана.', N'Ya se colocó un patrocinio a partir de esta tarifa. No se permite modificar sus parámetros. Operación cancelada.'),
+(N'На указанную дату отсутствует прайс-лист.', N'No hay lista de precios para la fecha indicada.'),
+(N'Начало и окончание интервала выбраны неверно. Операция прервана.', N'El inicio y el fin del intervalo son incorrectos. Operación cancelada.'),
+(N'Не выбран рекламный ролик.', N'No se seleccionó un spot publicitario.'),
+(N'Не выбран тип переноса. Операция прервана.', N'No se seleccionó el tipo de traslado. Operación cancelada.'),
+(N'Не найдены тарифы для данного интервала. Скопируйте сначала обычный прайс-лист.', N'No se encontraron tarifas para este intervalo. Copie primero la lista de precios común.'),
+(N'Не получилось экспортировать Сетку Вещания. Убедитесь, что указаны корректные пути в настройках.', N'No se pudo exportar la Parrilla de Emisión. Verifique que las rutas indicadas en la configuración sean correctas.'),
+(N'Не у всех рекламных кампаний выбран способ разделения!', N'¡No todas las pautas tienen seleccionado un método de división!'),
+(N'Неверное расставление дат.', N'Las fechas están mal asignadas.'),
+(N'Невозможно активировать акцию без участия пользователя. Бонусное время спонсорских кампаний меньше времени расставленных роликов. Более подробную информацию можно получить при "Предварительном просмотре активации".', N'No se puede activar la campaña sin intervención del usuario. El tiempo de bonificación de las pautas de patrocinio es menor que el tiempo de los spots colocados. Para más información, consulte la "Vista previa de activación".'),
+(N'Невозможно активировать акцию, так как она содержит ролики без предмета рекламы. Операция прервана.', N'No se puede activar la campaña porque contiene spots sin rubro publicitario. Operación cancelada.'),
+(N'Невозможно внести изменения в тариф на производство роликов, так как есть заказы, которые его используют. Операция прервана.', N'No se puede modificar la tarifa de producción de spots porque existen pedidos que la utilizan. Operación cancelada.'),
+(N'Невозможно выполнить операцию, так как рекламная акция содержит всего одну кампанию.', N'No se puede realizar la operación porque la campaña publicitaria contiene una sola pauta.'),
+(N'Невозможно добавить (изменить) прайс-лист пакетной скидки, даты существования прайс-листа пересекаются с существующими в базе данных.', N'No se puede agregar (modificar) la lista de precios del descuento por paquete: sus fechas de vigencia se superponen con otras existentes en la base de datos.'),
+(N'Невозможно добавить в данный промежуток времени выпуски на выбранных радиостанциях.', N'No se pueden agregar emisiones en este intervalo de tiempo en las emisoras seleccionadas.'),
+(N'Невозможно добавить в модуль тарифы разного типа (с максимальной вместимостью и без). Операция прервана.', N'No se pueden agregar al módulo tarifas de distinto tipo (con y sin capacidad máxima). Operación cancelada.'),
+(N'Невозможно добавить в пакетный модуль модули, имеющие тарифы разного типа (с максимальной вместимостью и без). Операция прервана.', N'No se pueden agregar al módulo en paquete módulos con tarifas de distinto tipo (con y sin capacidad máxima). Operación cancelada.'),
+(N'Невозможно добавить выбранный модуль в пакетный модуль, так как сроки действия прайс-листа пакетного модуля шире, чем сроки действия прайс-листа выбранного модуля. Операция прервана.', N'No se puede agregar el módulo seleccionado al módulo en paquete porque la vigencia de la lista de precios del módulo en paquete es más amplia que la de la lista de precios del módulo seleccionado. Operación cancelada.'),
+(N'Невозможно добавить выпуски в рекламную кампанию, так как в ней установлен менеджерский коэффициент, превышающий разрешенный. Операция прервана.', N'No se pueden agregar emisiones a la pauta porque tiene un coeficiente del gerente superior al permitido. Operación cancelada.'),
+(N'Невозможно добавить данный пакет поскольку медиа-тип пакета отличается от медиа-типов, добавленных в данный пакетный модуль', N'No se puede agregar este paquete porque su tipo de medio difiere de los tipos de medio agregados a este módulo en paquete'),
+(N'Невозможно добавить или внести изменения в рекламный выпуск с датой выхода в эфир ''{0}'', так как эта дата уже в прошлом. Операция прервана.', N'No se puede agregar ni modificar una emisión publicitaria con fecha de salida al aire ''{0}'' porque esa fecha ya pasó. Operación cancelada.'),
+(N'Невозможно добавить окно, время заблокировано профилактикой. Операция прервана.', N'No se puede agregar la ventana: el horario está bloqueado por mantenimiento. Operación cancelada.'),
+(N'Невозможно добавить профилактику с {0} по {1}, так как уже существуют выпуски в это время.', N'No se puede agregar un mantenimiento del {0} al {1} porque ya existen emisiones en ese horario.'),
+(N'Невозможно добавить рекламное окно, так как оно попадает внутрь цепочки объединённых окон.', N'No se puede agregar la ventana publicitaria porque queda dentro de una cadena de ventanas unidas.'),
+(N'Невозможно добавить рекламную кампанию без агентства. Операция прервана.', N'No se puede agregar una pauta sin agencia. Operación cancelada.'),
+(N'Невозможно добавить рекламную кампанию в активированную акцию, которая уже закончилась. Операция прервана.', N'No se puede agregar una pauta a una campaña activada que ya finalizó. Operación cancelada.'),
+(N'Невозможно добавить рекламный выпуск так как ролику не назначен предмет рекламы. Операция прервана.', N'No se puede agregar la emisión publicitaria porque el spot no tiene asignado un rubro publicitario. Operación cancelada.'),
+(N'Невозможно добавить рекламный выпуск. Бонус для рекламных роликов спонсорской программы слишком мал.  Операция прервана.', N'No se puede agregar la emisión publicitaria. La bonificación para los spots del programa de patrocinio es insuficiente.  Operación cancelada.'),
+(N'Невозможно добавить рекламный ролик с датой выхода в эфир ''{0}''. Рекламное окно недоступно из-за профилактики передатчика', N'No se puede agregar el spot con fecha de salida al aire ''{0}''. La ventana publicitaria no está disponible por mantenimiento del transmisor'),
+(N'Невозможно добавлять или изменять рекламные выпуски с датой выхода в эфир ''{0}''. Трафик-менеджер закрыл этот период. Операция прервана.', N'No se pueden agregar ni modificar emisiones publicitarias con fecha de salida al aire ''{0}''. El gestor de tráfico cerró este período. Operación cancelada.'),
+(N'Невозможно изменить данную акцию так как она уже оплачена. Операция прервана.', N'No se puede modificar esta campaña porque ya está pagada. Operación cancelada.'),
+(N'Невозможно изменить название ролика, или тип на обычную рекламу, или убрать тип "Общий" или снять активность объекта у ролика, который используется в модулях или пакетных модулях как основной ролик. Операция прервана.', N'No se puede cambiar el nombre del spot, cambiar su tipo a publicidad común, quitar el tipo "General" ni desactivar un spot que se utiliza como spot principal en módulos o módulos en paquete. Operación cancelada.'),
+(N'Невозможно изменить позиционирование так как данный модуль содержит тарифы с максимальной вместимостью меньше 4-х.', N'No se puede cambiar el posicionamiento porque este módulo contiene tarifas con capacidad máxima menor que 4.'),
+(N'Невозможно изменить позиционирование так как данный пакет содержит тарифы с максимальной вместимостью меньше 4-х.', N'No se puede cambiar el posicionamiento porque este paquete contiene tarifas con capacidad máxima menor que 4.'),
+(N'Невозможно изменить радиостанцию для объединения, так как уже объединены блоки.', N'No se puede cambiar la emisora a unir porque ya hay bloques unidos.'),
+(N'Невозможно изменить содержимое пакетного модуля, так как уже существуют рекламные кампании, созданные по данному пакетному модулю.', N'No se puede modificar el contenido del módulo en paquete porque ya existen pautas creadas a partir de él.'),
+(N'Невозможно изменить содержимое рекламного модуля, так как уже существуют рекламные кампании, созданные по данному рекламному модулю.', N'No se puede modificar el contenido del módulo publicitario porque ya existen pautas creadas a partir de él.'),
+(N'Невозможно изменить тип тарифа (с максимальной вместимостью и без), так как он используется в модулях. Операция прервана.', N'No se puede cambiar el tipo de tarifa (con o sin capacidad máxima) porque se utiliza en módulos. Operación cancelada.'),
+(N'Невозможно изменить цену завершившейся рекламной кампании. Операция прервана.', N'No se puede modificar el precio de una pauta finalizada. Operación cancelada.'),
+(N'Невозможно изменить цену рекламной кампании так как она станет меньше минимально возможной. Операция прервана.', N'No se puede modificar el precio de la pauta porque quedaría por debajo del mínimo permitido. Operación cancelada.'),
+(N'Невозможно клонировать прайс лист, так как для нового пакетного прайс-листа не находятся все необходимые модульные прайс-листы.', N'No se puede clonar la lista de precios porque no se encuentran todas las listas de precios modulares necesarias para la nueva lista de precios en paquete.'),
+(N'Невозможно обновить (добавить) текущий коэффициент на этот срок для пользователя, так как он пересекается с существующим у пользователя сроком действия коэффициента.', N'No se puede actualizar (agregar) el coeficiente actual del usuario para este período porque se superpone con otro período de vigencia de coeficiente del usuario.'),
+(N'Невозможно осуществиить перенос. Проверьте, что в выбранном дне присутствуют необходимые рекламные окна.', N'No se puede realizar el traslado. Verifique que el día seleccionado tenga las ventanas publicitarias necesarias.'),
+(N'Невозможно отредактировать доступ к пунктам меню для административной группы или пользователя, принадлежащему административной группе. Операция прервана.', N'No se puede modificar el acceso a los elementos del menú del grupo de administradores ni de un usuario que pertenezca a él. Operación cancelada.'),
+(N'Невозможно отредактировать права для административной группы или пользователя, принадлежащему административной группе. Операция прервана.', N'No se pueden modificar los permisos del grupo de administradores ni de un usuario que pertenezca a él. Operación cancelada.'),
+(N'Невозможно перенести день из-за проблем с менеджерским коэффициентом. На выбранную вами дату он превышает установленное в этой рекламной кампании значение. Операция прервана.', N'No se puede trasladar el día por un problema con el coeficiente del gerente: en la fecha seleccionada supera el valor establecido en esta pauta. Operación cancelada.'),
+(N'Невозможно перенести рекламный выпуск. Дата выпуска в прошлом, либо закрыта трафик-менеджером. Операция прервана.', N'No se puede trasladar la emisión publicitaria. La fecha de la emisión ya pasó o fue cerrada por el gestor de tráfico. Operación cancelada.'),
+(N'Невозможно перенести рекламный выпуск. Новая дата выпуска в прошлом, либо закрыта трафик-менеджером. Операция прервана.', N'No se puede trasladar la emisión publicitaria. La nueva fecha de la emisión ya pasó o fue cerrada por el gestor de tráfico. Operación cancelada.'),
+(N'Невозможно перенести ролик в данное окно с текущей позицией, так как позиция занята. Операция прервана.', N'No se puede trasladar el spot a esta ventana con la posición actual porque la posición está ocupada. Operación cancelada.'),
+(N'Невозможно перенести ролик в данное окно, так как будет превышено допустимое время в данном окне. Операция прервана.', N'No se puede trasladar el spot a esta ventana porque se superaría el tiempo permitido en ella. Operación cancelada.'),
+(N'Невозможно перенести ролик в данное окно, так как будет превышено число допустимых роликов. Операция прервана.', N'No se puede trasladar el spot a esta ventana porque se superaría la cantidad permitida de spots. Operación cancelada.'),
+(N'Невозможно перенести ролик в закрытый период. Операция прервана.', N'No se puede trasladar el spot a un período cerrado. Operación cancelada.'),
+(N'Невозможно сделать перенос выпуска в окно, так как оно недоступно из-за профилактики. Операция прервана.', N'No se puede trasladar la emisión a la ventana porque no está disponible por mantenimiento. Operación cancelada.'),
+(N'Невозможно склеить действующую акцию с макетом. Операция прервана.', N'No se puede unir una campaña vigente con un borrador. Operación cancelada.'),
+(N'Невозможно сменить агентство, так как для него уже есть присвоенные платежи. Операция прервана!', N'No se puede cambiar la agencia porque ya tiene pagos asignados. ¡Operación cancelada!'),
+(N'Невозможно сменить дату начала вещания, т.к. уже существуют зависимые окна от этого дата начала вещания, которые будут не валидны после изменения.', N'No se puede cambiar el inicio de emisión porque ya existen ventanas que dependen de él y dejarían de ser válidas tras el cambio.'),
+(N'Невозможно сменить позиционирование, так как в модуле есть тариф, у которого максимальная вместимость больше 0 и меньше 3.', N'No se puede cambiar el posicionamiento porque el módulo contiene una tarifa con capacidad máxima mayor que 0 y menor que 3.'),
+(N'Невозможно сменить тип оплаты, так как для него уже есть присвоенные платежи. Операция прервана!', N'No se puede cambiar el tipo de pago porque ya tiene pagos asignados. ¡Operación cancelada!'),
+(N'Невозможно сменить фирму-заказчика для выбранной рекламной акции. Она либо завершилась, либо началась в одном из предыдущих месяцев.', N'No es posible cambiar la empresa cliente de la campaña publicitaria seleccionada. La campaña ya finalizó o comenzó en uno de los meses anteriores.'),
+(N'Невозможно сохранить выставленные даты у окна, убедитесь, что на эти даты существует прайс-лист у данной радиостанции. Операция прервана.', N'No es posible guardar las fechas establecidas para la ventana; verifique que exista una lista de precios de esta emisora para esas fechas. Operación cancelada.'),
+(N'Невозможно спонсировать программу с датой выхода в эфир ''{0}''. Операция прервана.', N'No es posible patrocinar el programa con fecha de emisión ''{0}''. Operación cancelada.'),
+(N'Невозможно спонсировать программу с датой выхода в эфир ''{0}''. Рекламное окно недоступно из-за профилактики передатчика. Операция прервана.', N'No es posible patrocinar el programa con fecha de emisión ''{0}''. La ventana publicitaria no está disponible por mantenimiento del transmisor. Operación cancelada.'),
+(N'Невозможно удалить агентство, так как оно используется в рекламных кампаниях. Операция прервана.', N'No es posible eliminar la agencia porque se utiliza en pautas publicitarias. Operación cancelada.'),
+(N'Невозможно удалить агентство, так как эта оно используется в заказах на производство роликов. Операция прервана.', N'No es posible eliminar la agencia porque se utiliza en órdenes de producción de spots. Operación cancelada.'),
+(N'Невозможно удалить агентство, так как эта оно используется в кампаниях по размещению наружной рекламы. Операция прервана.', N'No es posible eliminar la agencia porque se utiliza en pautas de publicidad exterior. Operación cancelada.'),
+(N'Невозможно удалить агентство, так как эта оно используется в платежах за производство роликов. Операция прервана.', N'No es posible eliminar la agencia porque se utiliza en pagos por producción de spots. Operación cancelada.'),
+(N'Невозможно удалить агентство, так как эта оно используется в счетах на предоплату за производство роликов. Операция прервана.', N'No es posible eliminar la agencia porque se utiliza en facturas de anticipo por producción de spots. Operación cancelada.'),
+(N'Невозможно удалить банк, так как есть медиа-планер, который использует эту информацию. Операция прервана.', N'No es posible eliminar el banco porque hay un planificador de medios que utiliza esta información. Operación cancelada.'),
+(N'Невозможно удалить банк, так как эта информация используется в агентствах. Операция прервана.', N'No es posible eliminar el banco porque esta información se utiliza en agencias. Operación cancelada.'),
+(N'Невозможно удалить банк, так как эта информация используется в студиях. Операция прервана.', N'No es posible eliminar el banco porque esta información se utiliza en estudios. Operación cancelada.'),
+(N'Невозможно удалить банк, так как эта информация используется в фирмах. Операция прервана.', N'No es posible eliminar el banco porque esta información se utiliza en empresas. Operación cancelada.'),
+(N'Невозможно удалить медиа-планера, так как он использован в рекламных кампаниях. Операция прервана.', N'No es posible eliminar el planificador de medios porque se utilizó en pautas publicitarias. Operación cancelada.'),
+(N'Невозможно удалить медиа-планера, так как эта информация используется в журнале агентств.  Операция прервана.', N'No es posible eliminar el planificador de medios porque esta información se utiliza en el registro de agencias.  Operación cancelada.'),
+(N'Невозможно удалить платеж, так как этому платежу присвоены оплаты.', N'No es posible eliminar el pago porque ya tiene montos asignados.'),
+(N'Невозможно удалить платёж, так как он уже использован для присвоения акциям.  Операция прервана.', N'No es posible eliminar el pago porque ya se utilizó para asignarlo a campañas.  Operación cancelada.'),
+(N'Невозможно удалить пользователя, так как для него есть записи в журнале подтверждений.  Операция прервана.', N'No es posible eliminar el usuario porque tiene entradas en el registro de confirmaciones.  Operación cancelada.'),
+(N'Невозможно удалить пользователя, так как он является создателем рекламной акции. Операция прервана.', N'No es posible eliminar el usuario porque es el creador de una campaña publicitaria. Operación cancelada.'),
+(N'Невозможно удалить прайс-лист пакетной скидки, так как для него созданы радиостанции. Операция прервана.', N'No es posible eliminar la lista de precios del descuento por paquete porque ya tiene emisoras agregadas. Operación cancelada.'),
+(N'Невозможно удалить прайс-лист, так как для него уже созданы тарифы. Операция прервана.', N'No es posible eliminar la lista de precios porque ya tiene tarifas creadas. Operación cancelada.'),
+(N'Невозможно удалить предмет рекламы, так как у него есть дочерние элементы. Операция прервана.', N'No es posible eliminar el rubro publicitario porque tiene subelementos. Operación cancelada.'),
+(N'Невозможно удалить радиостанцию ''{0}'', так как для неё уже созданы модули. Операция прервана.', N'No es posible eliminar la emisora ''{0}'' porque ya tiene módulos creados. Operación cancelada.'),
+(N'Невозможно удалить радиостанцию ''{0}'', так как для неё уже созданы прайс-листы. Операция прервана.', N'No es posible eliminar la emisora ''{0}'' porque ya tiene listas de precios creadas. Operación cancelada.'),
+(N'Невозможно удалить радиостанцию ''{0}'', так как для неё уже созданы спонсорские программы. Операция прервана.', N'No es posible eliminar la emisora ''{0}'' porque ya tiene programas de patrocinio creados. Operación cancelada.'),
+(N'Невозможно удалить радиостанцию, так как для неё уже созданы рекламные кампании. Операция прервана.', N'No es posible eliminar la emisora porque ya tiene pautas publicitarias creadas. Operación cancelada.'),
+(N'Невозможно удалить рекламное окно, так как оно используется в рекламных кампаниях. Операция прервана.', N'No es posible eliminar la ventana publicitaria porque se utiliza en pautas publicitarias. Operación cancelada.'),
+(N'Невозможно удалить рекламное окно, так как оно сгенерировано по прайс-листу. Можно удалять только рекламные окна, созданные трафик-менеджером, Операция прервана.', N'No es posible eliminar la ventana publicitaria porque se generó a partir de la lista de precios. Solo se pueden eliminar las ventanas publicitarias creadas por el gestor de tráfico. Operación cancelada.'),
+(N'Невозможно удалить рекламные ролики с датой выхода в эфир, попадающей в закрытый Трафик-менеджером период. Операция прервана.', N'No es posible eliminar spots publicitarios con fecha de emisión dentro de un período cerrado por el gestor de tráfico. Operación cancelada.'),
+(N'Невозможно удалить ролик, так как он используется в модульном прайс-листе. Операция прервана.', N'No es posible eliminar el spot porque se utiliza en una lista de precios de módulo. Operación cancelada.'),
+(N'Невозможно удалить спонсорский тариф, так как он используется в рекламных кампаниях. Операция прервана.', N'No es posible eliminar la tarifa de patrocinio porque se utiliza en pautas publicitarias. Operación cancelada.'),
+(N'Невозможно удалить стиль ролика ''{0}'', так как он используется в тарифах продакшен-студии. Операция прервана.', N'No es posible eliminar el estilo de spot ''{0}'' porque se utiliza en tarifas del estudio de producción. Operación cancelada.'),
+(N'Невозможно удалить тариф на производство ролика, так как он используется в заказах на производство. Операция прервана.', N'No es posible eliminar la tarifa de producción de spots porque se utiliza en órdenes de producción. Operación cancelada.'),
+(N'Невозможно удалить тариф, так как он используется в модульных тарифах. Операция прервана.', N'No es posible eliminar la tarifa porque se utiliza en tarifas de módulos. Operación cancelada.'),
+(N'Невозможно удалить тарифы, так как на их базе сгенерированы рекламные окна. Операция прервана.', N'No es posible eliminar las tarifas porque a partir de ellas se generaron ventanas publicitarias. Operación cancelada.'),
+(N'Невозможно удалить тип наружной рекламы ''{0}'', так как он используется в рекламных кампаниях. Операция прервана.', N'No es posible eliminar el tipo de publicidad exterior ''{0}'' porque se utiliza en pautas publicitarias. Operación cancelada.'),
+(N'Невозможно удалить тип оплаты ''{0}'', так как он используется в оплате заказов на производство роликов. Операция прервана.', N'No es posible eliminar el tipo de pago ''{0}'' porque se utiliza en pagos de órdenes de producción de spots. Operación cancelada.'),
+(N'Невозможно удалить тип оплаты ''{0}'', так как он используется в оплате рекламы.', N'No es posible eliminar el tipo de pago ''{0}'' porque se utiliza en pagos de publicidad.'),
+(N'Невозможно удалить тип оплаты ''{0}'', так как он используется в размещениях наружной рекламы. Операция прервана.', N'No es posible eliminar el tipo de pago ''{0}'' porque se utiliza en colocaciones de publicidad exterior. Operación cancelada.'),
+(N'Невозможно удалить тип оплаты, так как он использован в рекламных кампаниях. Операция прервана.', N'No es posible eliminar el tipo de pago porque se utilizó en pautas publicitarias. Operación cancelada.'),
+(N'Невозможно удалить тип ролика ''{0}'', так как он используется в свойствах радиостанции. Операция прервана.', N'No es posible eliminar el tipo de spot ''{0}'' porque se utiliza en las propiedades de la emisora. Operación cancelada.'),
+(N'Невозможно удалить тип ролика ''{0}'', так как он используется в стилях ролика. Операция прервана.', N'No es posible eliminar el tipo de spot ''{0}'' porque se utiliza en estilos de spot. Operación cancelada.'),
+(N'Невозможно удалить фирму ''{0}'', так как для неё уже созданы акции по размещению наружной рекламы. Операция прервана.', N'No es posible eliminar la empresa ''{0}'' porque ya tiene campañas de publicidad exterior creadas. Operación cancelada.'),
+(N'Невозможно удалить фирму, так как для нее созданы рекламные акции. Операция прервана.', N'No es posible eliminar la empresa porque tiene campañas publicitarias creadas. Operación cancelada.'),
+(N'Невозможно удалить фирму, так как для нее существуют заказы на производство роликов. Операция прервана.', N'No es posible eliminar la empresa porque tiene órdenes de producción de spots. Operación cancelada.'),
+(N'Недостаточно рекламных окон для размещения всех выпусков. Окон: {0}, выпусков {1}.', N'Ventanas publicitarias insuficientes para colocar todas las emisiones. Ventanas: {0}, emisiones: {1}.'),
+(N'Некорректное имя пользователя или пароль.', N'Nombre de usuario o contraseña incorrectos.'),
+(N'Нельзя добавить несколько роликов с выбранным позиционированием в одно окно в рамках одной рекламной акции, даже если это макет. Такую акцию потом невозможно активировать без ошибок.', N'No se pueden agregar varios spots con el posicionamiento seleccionado en una misma ventana dentro de una misma campaña publicitaria, aunque sea un borrador. Esa campaña no podrá activarse después sin errores.'),
+(N'Нельзя изменить сумму платежа, так как она станет меньше суммы уже присвоенной акциям.  Операция прервана.', N'No se puede modificar el monto del pago porque quedaría por debajo del monto ya asignado a campañas.  Operación cancelada.'),
+(N'Нельзя редактировать платеж так как он уже использован. Операция прервана.', N'No se puede modificar el pago porque ya se utilizó. Operación cancelada.'),
+(N'Нельзя редактировать рекламную кампанию, которая уже закончилась. Операция прервана.', N'No se puede modificar una pauta publicitaria que ya finalizó. Operación cancelada.'),
+(N'Необходимо выбрать агентство. Операция прервана.', N'Es necesario seleccionar una agencia. Operación cancelada.'),
+(N'Необходимо выбрать хотя бы один ролик для переноса в новую рекламную кампанию.', N'Es necesario seleccionar al menos un spot para trasladar a la nueva pauta publicitaria.'),
+(N'Необходимо выбрать хотя бы одну рекламную кампанию.', N'Es necesario seleccionar al menos una pauta publicitaria.'),
+(N'Необходимо указать новую дату начала для всех выбранных рекламных кампаний', N'Es necesario indicar una nueva fecha de inicio para todas las pautas publicitarias seleccionadas'),
+(N'Нет роликов на замену для данной фирмы.', N'No hay spots de sustitución para esta empresa.'),
+(N'Новая дата не может быть в прошлом.', N'La nueva fecha no puede estar en el pasado.'),
+(N'Новое значение позиции рекламных выпусков совпадает с текущим. Операция прервана.', N'El nuevo valor de posición de las emisiones publicitarias coincide con el actual. Operación cancelada.'),
+(N'Новые даты начала или окончания ({0} - {1}) пересекаются с существующими датами тарифных окон.', N'Las nuevas fechas de inicio o fin ({0} - {1}) se superponen con las fechas existentes de las ventanas de tarifa.'),
+(N'Окно на этой радиостанции в данное время уже существует.', N'Ya existe una ventana en esta emisora a esta hora.'),
+(N'Окно не может быть удалено, так как он в него расставлены выпуски (фактические выходы). Операция прервана.', N'No es posible eliminar la ventana porque tiene emisiones colocadas (salidas al aire efectivas). Operación cancelada.'),
+(N'Операция разделения рекламной акции Вами отменена.', N'Se canceló la operación de división de la campaña publicitaria.'),
+(N'Операция разделения рекламных кампаний реализована только для кампаний с типом "Линейная". В выбранной рекламной акции такие кампании отсутствуют.', N'La operación de división de pautas publicitarias solo está implementada para pautas de tipo "Lineal". La campaña publicitaria seleccionada no contiene pautas de ese tipo.'),
+(N'Остатки в тарифных окнах пересчитаны.', N'Se recalcularon los remanentes en las ventanas de tarifa.'),
+(N'Пакетный модуль с таким названием уже существует. Пожалуйста, введите другое название. Операция прервана.', N'Ya existe un módulo en paquete con ese nombre. Por favor, ingrese otro nombre. Operación cancelada.'),
+(N'Пароль подтвержден не верно. Операция прервана.', N'La confirmación de la contraseña es incorrecta. Operación cancelada.'),
+(N'Перед тем, как пометить ролик как выполненный, необходимо ввести название ролика в заказе. Операция прервана.', N'Antes de marcar el spot como realizado, es necesario ingresar el nombre del spot en la orden. Operación cancelada.'),
+(N'Перенос не выполнен: после него объединённые рекламные окна вышли бы в эфир в неправильном порядке — окно, которое должно идти позже, оказалось бы раньше. Отмените объединение окон, выполните перенос и объедините их заново.', N'No se realizó el traslado: después de él, las ventanas publicitarias unidas saldrían al aire en un orden incorrecto — la ventana que debe ir después quedaría antes. Deshaga la unión de las ventanas, realice el traslado y vuelva a unirlas.'),
+(N'Переносить ролик можно только один раз. Операция прервана.', N'El spot solo puede trasladarse una vez. Operación cancelada.'),
+(N'По этой пакетной скидке уже посчитаны акции — удалить её нельзя. Если нужна другая скидка, создайте копию прайс-листа и измените её. Операция прервана.', N'Ya se calcularon campañas con este descuento por paquete — no es posible eliminarlo. Si se necesita otro descuento, cree una copia de la lista de precios y modifíquela. Operación cancelada.'),
+(N'По этому набору скидок уже посчитаны кампании — удалить его нельзя. Если нужна другая скидка, создайте копию набора и измените её. Операция прервана.', N'Ya se calcularon pautas con este conjunto de descuentos — no es posible eliminarlo. Si se necesita otro descuento, cree una copia del conjunto y modifíquela. Operación cancelada.'),
+(N'Пожалуйста, выберите правильный объект.', N'Por favor, seleccione un objeto válido.'),
+(N'Поле ''{0}'' является обязательным для заполнения. Операция прервана.', N'El campo ''{0}'' es obligatorio. Operación cancelada.'),
+(N'Пользователь {0} {1} также не обладает необходимым уровнем привилегий. Операция прервана.', N'El usuario {0} {1} tampoco tiene el nivel de privilegios necesario. Operación cancelada.'),
+(N'Пользователь используется в системе.', N'El usuario está en uso en el sistema.'),
+(N'Пользователь не может быть удален, так как от его имени созданы платежи на оплату акций. Операция прервана.', N'No es posible eliminar el usuario porque se crearon en su nombre pagos de campañas. Operación cancelada.'),
+(N'Пользователь не может быть удален, так как от его имени созданы платежи на оплату заказов на производство роликов. Операция прервана.', N'No es posible eliminar el usuario porque se crearon en su nombre pagos de órdenes de producción de spots. Operación cancelada.'),
+(N'Пользователь не может быть удален, так как существуют заказы на производство роликов, созданные от его имени. Операция прервана.', N'No es posible eliminar el usuario porque existen órdenes de producción de spots creadas en su nombre. Operación cancelada.'),
+(N'Пользователь с таким логином уже существует. Операция прервана.', N'Ya existe un usuario con ese nombre de usuario. Operación cancelada.'),
+(N'Поля Фирма и Предмет рекламы должны быть либо оба пустые, либо оба заполнены.', N'Los campos Empresa y Rubro publicitario deben estar ambos vacíos o ambos completos.'),
+(N'Прайс-лист не может быть удален, так как на его базе уже созданы рекламные кампании. Операция прервана.', N'No es posible eliminar la lista de precios porque ya se crearon pautas publicitarias basadas en ella. Operación cancelada.'),
+(N'Прайс-лист уже используется рекламной кампанией. Изменять его параметры запрещено. Операция прервана.', N'La lista de precios ya está en uso en una pauta publicitaria. No se permite modificar sus parámetros. Operación cancelada.'),
+(N'Превышена разрешенная скидка.', N'Se superó el descuento permitido.'),
+(N'Предмет рекламы не может быть удален, так как он используется в роликах. Операция прервана.', N'No es posible eliminar el rubro publicitario porque se utiliza en spots. Operación cancelada.'),
+(N'Продакшн-студия не может быть удалена, так как для нее созданы заказы. Операция прервана.', N'No es posible eliminar el estudio de producción porque tiene órdenes creadas. Operación cancelada.'),
+(N'Продолжительность не может быть больше полной продолжительности. Операция прервана.', N'La duración no puede ser mayor que la duración total. Operación cancelada.'),
+(N'Промежуток действия текущего прайс-листа пересекается с существующими прайс-листами модуля. Операция прервана.', N'El período de vigencia de la lista de precios actual se superpone con listas de precios existentes del módulo. Operación cancelada.'),
+(N'Радиостанция не может быть удалена, так как она имеет действующие окна. Операция прервана.', N'No es posible eliminar la emisora porque tiene ventanas vigentes. Operación cancelada.'),
+(N'Радиостанция с таким идентификатором из Media Plus уже существует в системе. Операция прервана.', N'Ya existe en el sistema una emisora con ese identificador de Media Plus. Operación cancelada.'),
+(N'Радиостанция уже имеет скидку на этот тип кампаний.', N'La emisora ya tiene un descuento para este tipo de pautas.'),
+(N'Рекламная акция восстановлена и доступна для активации в журнале макетов рекламных акций.', N'La campaña publicitaria se restauró y está disponible para su activación en el registro de borradores de campañas publicitarias.'),
+(N'Рекламная кампания на радиостанции ''{0}'' содержит только 1 ролик, операция разделения "по роликам" невозможна.', N'La pauta publicitaria en la emisora ''{0}'' contiene solo 1 spot; no es posible la división "por spots".'),
+(N'Рекламная кампания не может иметь  цену {0}, так как она слишком мала. Операция прервана.', N'La pauta publicitaria no puede tener un precio de {0} porque es demasiado bajo. Operación cancelada.'),
+(N'Рекламная кампания такого типа, с таким типом оплаты и радиостанцией уже присутствует в данной рекламной акции. Операция прервана.', N'Ya existe en esta campaña publicitaria una pauta de este tipo, con este tipo de pago y esta emisora. Operación cancelada.'),
+(N'Рекламное окно не найдено.', N'No se encontró la ventana publicitaria.'),
+(N'Рекламный ролик  не может быть добавлен так как в этом случае будет превышено максимально возможное время рекламы в данном окне.  Операция прервана.', N'No es posible agregar el spot publicitario porque se superaría el tiempo máximo de publicidad permitido en esta ventana.  Operación cancelada.'),
+(N'Рекламный ролик не может быть добавлен первым/последним. Операция прервана.', N'No es posible agregar el spot publicitario en primera/última posición. Operación cancelada.'),
+(N'Рекламный ролик не может быть добавлен, так как в этом случае будет превышено число допустимых роликов в данном окне.', N'No es posible agregar el spot publicitario porque se superaría la cantidad de spots permitidos en esta ventana.'),
+(N'Ролик используется в активированной рекламной акции. Поле "Предмет рекламы" не может быть пустым. Операция прервана.', N'El spot se utiliza en una campaña publicitaria activada. El campo "Rubro publicitario" no puede estar vacío. Operación cancelada.'),
+(N'Ролик не может быть удален, так как он используется в выпусках. Операция прервана.', N'No es posible eliminar el spot porque se utiliza en emisiones. Operación cancelada.'),
+(N'Ролик не может быть удален, так как он используется в привязке к прайс-листам пакетных модулей. Операция прервана.', N'No es posible eliminar el spot porque está vinculado a listas de precios de módulos en paquete. Operación cancelada.'),
+(N'Ролик с нулевой продолжительностью не может быть активным.', N'Un spot con duración cero no puede estar activo.'),
+(N'Ролик с таким именем и типом уже существует', N'Ya existe un spot con ese nombre y tipo'),
+(N'Ролик с таким именем уже существует', N'Ya existe un spot con ese nombre'),
+(N'Ролик уже используется, заказ нельзя деактивировать.', N'El spot ya está en uso; no es posible desactivar la orden.'),
+(N'Системная ошибка. Операция прервана.', N'Error del sistema. Operación cancelada.'),
+(N'Скидка с таким именем уже существует', N'Ya existe un descuento con ese nombre'),
+(N'Скидка уже содержит прайс-лист с датой начала ''{0}''.', N'El descuento ya contiene una lista de precios con fecha de inicio ''{0}''.'),
+(N'Склеиваемый блок должен идти после текущего.', N'El bloque a unir debe ir después del actual.'),
+(N'Спонсорская программа не может быть удалена. В этом случае продолжительность рекламных роликов превысит бонус от спонсорских программ. Операция прервана.', N'No es posible eliminar el programa de patrocinio: la duración de los spots publicitarios superaría la bonificación de los programas de patrocinio. Operación cancelada.'),
+(N'Старый пароль не верный. Операция прервана.', N'La contraseña anterior es incorrecta. Operación cancelada.'),
+(N'Стиль ролика не может быть удален, так как созданы заказы с этим стилем ролика. Операция прервана.', N'No es posible eliminar el estilo de spot porque existen órdenes creadas con este estilo. Operación cancelada.'),
+(N'Тариф для выбранного стиля ролика уже существует в данном прайс-листе. Операция прервана.', N'Ya existe una tarifa para el estilo de spot seleccionado en esta lista de precios. Operación cancelada.'),
+(N'Тариф с такими атрибутами уже задан. Проверьте, возможно уже существует тариф для такого же времени и такого же дня недели.', N'Ya existe una tarifa con estos atributos. Verifique si ya existe una tarifa para la misma hora y el mismo día de la semana.'),
+(N'Тип оплаты не может быть удален, так как он используется в созданных заказах на производство роликов. Операция прервана.', N'No es posible eliminar el tipo de pago porque se utiliza en órdenes de producción de spots creadas. Operación cancelada.'),
+(N'Только администраторы могут осуществить вход в административное приложение.', N'Solo los administradores pueden iniciar sesión en la aplicación de administración.'),
+(N'Только пользователь с правами администратора может менять родителя в предмете рекламы.  Операция прервана.', N'Solo un usuario con permisos de administrador puede cambiar el elemento padre de un rubro publicitario.  Operación cancelada.'),
+(N'Только пользователь с правами администратора может удалять рекламные выпуски с уже прошедшей датой выхода в эфир. Операция прервана.', N'Solo un usuario con permisos de administrador puede eliminar emisiones publicitarias cuya fecha de emisión ya pasó. Operación cancelada.'),
+(N'У вас нет прав деактивировать рекламную акцию, которая уже началась. Операция прервана.', N'No tiene permisos para desactivar una campaña publicitaria que ya comenzó. Operación cancelada.'),
+(N'У данной кампании не было переносов выпусков.', N'Esta pauta no tuvo traslados de emisiones.'),
+(N'У использованного ролика нельзя изменить название, тип или продолжительность. Операция прервана.', N'No es posible modificar el nombre, el tipo ni la duración de un spot en uso. Operación cancelada.'),
+(N'У радиостанции не заполнены ролики обвязки политической агитации (карточка радиостанции, вкладка "Политическая агитация"). Операция прервана.', N'La emisora no tiene configurados los spots de apertura y cierre de propaganda política (ficha de la emisora, pestaña "Propaganda política"). Operación cancelada.'),
+(N'У радиостанции уже есть набор скидок с такой датой принятия. Операция прервана.', N'La emisora ya tiene un conjunto de descuentos con esa fecha de entrada en vigor. Operación cancelada.'),
+(N'Удалить выходы рекламных роликов для времени {0} в соответствии с шаблоном?' + NCHAR(13) + NCHAR(10) + N'{3} [c {1} по {2}]', N'¿Eliminar las emisiones de spots publicitarios para la hora {0} según la plantilla?' + NCHAR(13) + NCHAR(10) + N'{3} [del {1} al {2}]'),
+(N'Указан некорректный Email. Пожалуйста, проверьте введённые данные.', N'El Email indicado no es válido. Por favor, verifique los datos ingresados.'),
+(N'Файл лицензии испорчен.', N'El archivo de licencia está dañado.'),
+(N'Файл лицензии не найден.', N'No se encontró el archivo de licencia.'),
+(N'Файл ролика ''{0}'' не найден.', N'No se encontró el archivo del spot ''{0}''.'),
+(N'Фирма не может быть удалена, так как у нее существуют ролики. Операция прервана.', N'No es posible eliminar la empresa porque tiene spots. Operación cancelada.'),
+(N'Фирма с таким названием и ИНН уже существует. Пожалуйста, введите другое название или отредактируйте ИНН. Операция прервана.', N'Ya existe una empresa con ese nombre e ИНН. Por favor, ingrese otro nombre o modifique el ИНН. Operación cancelada.'),
+(N'Цена рекламной акции изменилась с {0} на {1}.', N'El precio de la campaña publicitaria cambió de {0} a {1}.'),
+(N'Цена рекламной акции не изменилась и составляет {0}.', N'El precio de la campaña publicitaria no cambió y es de {0}.'),
+(N'Эта операция приведет к окончательному удалению рекламной акции ''{0}'' из системы. Продолжить?', N'Esta operación eliminará definitivamente la campaña publicitaria ''{0}'' del sistema. ¿Continuar?'),
+(N'Эта операция приведет к перемещению рекламной акции ''{0}'' в "Журнал удалённых рекламных акций". Продолжить?', N'Esta operación moverá la campaña publicitaria ''{0}'' al "Registro de campañas publicitarias eliminadas". ¿Continuar?'),
+(N'Эта рекламная акция активирована и уже началась. Для выполнения операции нужны права администратора. Операция прервана.', N'Esta campaña publicitaria está activada y ya comenzó. Se requieren permisos de administrador para realizar la operación. Operación cancelada.'),
+(N'Этот модуль уже входит в состав комбо-модуля. Операция прервана.', N'Este módulo ya forma parte de un módulo combo. Operación cancelada.'),
+(N' (прайс от ', N' (lista del '),
+(N' до ', N' al '),
+(N' сек.', N' s'),
+(N' шт.', N' uds.'),
+(N'Акция №', N'Campaña N.º '),
+(N'Модуль ', N'Módulo '),
+(N'Налог для агентства ''', N'Impuesto de la agencia '''),
+(N'Оплата акции №', N'Pago de la campaña N.º '),
+(N'Остаток № ', N'Saldo inicial N.º '),
+(N'Пакетная модульная кампания', N'Pauta de módulos en paquete'),
+(N'Пакетная модульня кампания', N'Pauta de módulos en paquete'),
+(N'Платёж от фирмы ''', N'Pago de la empresa '''),
+(N'Прайс-лист от ', N'Lista de precios del '),
+(N'Рекламное окно ', N'Ventana publicitaria '),
+(N'Скидка для сумм более ', N'Descuento para montos mayores a '),
+(N'Скидки от ', N'Descuentos del '),
+(N'Тариф ', N'Tarifa '),
+(N'нет тарифных окон', N'sin ventanas de tarifa'),
+(N'р.', N'$'),
+(N'тарифные окна: ', N'ventanas de tarifa: '),
+(N'Акций нет.', N'No hay campañas.'),
+(N'Все ({0})', N'Todas ({0})'),
+(N'Все менеджеры', N'Todos los gerentes'),
+(N'Выбор группы компаний', N'Selección del grupo de empresas'),
+(N'Выбор предмета рекламы', N'Selección del rubro publicitario'),
+(N'Выбор фирмы', N'Selección de la empresa'),
+(N'Группа станций', N'Grupo de emisoras'),
+(N'Дата начала периода позже даты окончания.', N'La fecha de inicio del período es posterior a la fecha de fin.'),
+(N'За период на отмеченных станциях ролики не выходили.', N'En el período no se emitieron spots en las emisoras marcadas.'),
+(N'Задайте отбор и нажмите «Показать»', N'Defina el filtro y pulse «Mostrar»'),
+(N'Назначить', N'Asignar'),
+(N'Отмечено станций: {0}', N'Emisoras marcadas: {0}'),
+(N'По', N'Hasta'),
+(N'С', N'Desde'),
+(N'Слева — период, станции и остальные условия. Щелчок по ролику покажет акции, в которых он выходил.', N'A la izquierda: el período, las emisoras y las demás condiciones. Al hacer clic en un spot se muestran las campañas en las que se emitió.'),
+(N'Показаны первые {0} из {1} — уточните поиск.', N'Se muestran los primeros {0} de {1}: precise la búsqueda.'),
+(N'Поиск', N'Buscar'),
+(N'Действия', N'Acciones'),
+(N'Искать по всем колонкам', N'Buscar en todas las columnas'),
+(N'Ничего не найдено.', N'No se encontró nada.'),
+(N'Отметить все', N'Marcar todos'),
+(N'Поиск по всем колонкам', N'Buscar en todas las columnas'),
+(N'Поиск по полю «{0}»', N'Buscar en el campo «{0}»'),
+(N'Сумма по колонке', N'Suma de la columna'),
+(N'Сумма по колонке «{0}»', N'Suma de la columna «{0}»'),
+(N'Сумма по колонке; щелчок — скрыть', N'Suma de la columna; clic para ocultar'),
+(N'Выберите радиостанцию и дату', N'Seleccione la emisora y la fecha'),
+(N'Заполняемость:', N'Ocupación:'),
+(N'На этот день у станции нет рекламных окон.', N'La emisora no tiene ventanas publicitarias este día.'),
+(N'Печать', N'Imprimir'),
+(N'Предыдущий день', N'Día anterior'),
+(N'Сетка откроется здесь; «Печать» отправит её на принтер или сохранит в PDF.', N'La parrilla se abrirá aquí; «Imprimir» la envía a la impresora o la guarda en PDF.'),
+(N'Следующий день', N'Día siguiente'),
+(N'Фактическое время рекламы:', N'Tiempo real de publicidad:'),
+(N'— выберите —', N'— seleccione —'),
+(N'selector в фильтре без multiselect', N'selector en el filtro sin multiselect'),
+(N'selector в фильтре без атрибута name', N'selector en el filtro sin atributo name'),
+(N'{0} шт.: {1}', N'{0}: {1}'),
+(N'Выберите радиостанцию и дату и нажмите «Применить»', N'Seleccione la emisora y la fecha y pulse «Aplicar»'),
+(N'Выберите станции и период. Щелчок по ролику покажет акции, в которых он выходил.', N'Seleccione las emisoras y el período. Al hacer clic en un spot se muestran las campañas en las que se emitió.'),
+(N'Выбрано: {0}', N'Seleccionados: {0}'),
+(N'Задайте значение.', N'Indique un valor.'),
+(N'Задайте отбор и нажмите «Применить»', N'Defina el filtro y pulse «Aplicar»'),
+(N'Отметить все найденные', N'Marcar todos los encontrados'),
+(N'Радиостанции: ', N'Emisoras: '),
+(N'Без выпусков в этот день (файла для эфира нет): {0}.', N'Sin emisiones ese día (no hay archivo para emisión): {0}.'),
+(N'Выберите, куда сохранить файл.', N'Elija dónde guardar el archivo.'),
+(N'Выгружать нечего: в этот день на станции нет выпусков.', N'No hay nada que exportar: la emisora no tiene emisiones ese día.'),
+(N'Выгрузить в папку…', N'Exportar a carpeta…'),
+(N'Выгрузка остановлена: обработано станций {0} из {1}.', N'Exportación detenida: emisoras procesadas {0} de {1}.'),
+(N'Выгрузка сеток', N'Exportación de parrillas'),
+(N'Выгрузка файлов работает в браузерах Chrome и Edge.', N'La exportación de archivos funciona en los navegadores Chrome y Edge.'),
+(N'Для эфира…', N'Para emisión…'),
+(N'Записано файлов: {0}.', N'Archivos guardados: {0}.'),
+(N'Не выгружено станций: {0}', N'Emisoras no exportadas: {0}'),
+(N'Отметьте станции и дату, затем выберите папку: для каждой станции туда запишутся файл для эфирной программы (DJin) и сетка в Word. Файлы с теми же именами заменяются.', N'Marque las emisoras y la fecha y luego elija la carpeta: para cada emisora se guardarán el archivo para el programa de emisión (DJin) y la parrilla en Word. Los archivos con el mismo nombre se reemplazan.'),
+(N'Отметьте, что выгружать: файлы для эфира, сетки в Word или то и другое.', N'Marque qué exportar: archivos para emisión, parrillas en Word o ambos.'),
+(N'Сохранить…', N'Guardar…'),
+(N'Файл готов', N'El archivo está listo'),
+(N'Файл сетки для эфирной программы (DJin)', N'Archivo de la parrilla para el programa de emisión (DJin)'),
+(N'Сетки в Word', N'Parrillas en Word'),
+(N'Файлы для эфира (DJin)', N'Archivos para emisión (DJin)'),
+(N'Выберите платёж — здесь появятся оплаченные им акции.', N'Seleccione un pago: aquí aparecerán las campañas pagadas con él.'),
+(N'Платёж ещё не распределён по акциям.', N'El pago aún no está distribuido entre campañas.'),
+(N'Сумма платежа:', N'Monto del pago:'),
+(N'Осталось распределить:', N'Queda por distribuir:'),
+(N'Неоплаченных акций для этого платежа нет.', N'No hay campañas impagas para este pago.'),
+(N'К оплате', N'A pagar'),
+(N'Акция {0}', N'Campaña {0}'),
+(N'Акции на оплату', N'Campañas a pagar'),
+(N'Оплатить', N'Pagar'),
+(N'Платёж недоступен для присвоения акциям — галочка в карточке платежа.', N'El pago no está disponible para asignar a campañas: casilla en la ficha del pago.'),
+(N'Платёж распределён полностью.', N'El pago está distribuido por completo.'),
+(N'По умолчанию', N'Por defecto'),
+(N'Вернуть значения отбора по умолчанию. В силу вступят по «Применить».', N'Restablecer los valores del filtro por defecto. Se aplicarán al pulsar «Aplicar».'),
+(N'График размещения по нескольким акциям № {0} для {1}.xlsx', N'Plan de colocación de varias campañas N.º {0} para {1}.xlsx'),
+(N'График размещения для рекламной акции № {0} для {1}.xlsx', N'Plan de colocación de la campaña publicitaria N.º {0} para {1}.xlsx'),
+(N'График размещения по нескольким акциям № {0}', N'Plan de colocación de varias campañas N.º {0}'),
+(N'График размещения для рекламной акции № {0}', N'Plan de colocación de la campaña publicitaria N.º {0}'),
+(N'Частичный график размещения для рекламной акции № {0}', N'Plan de colocación parcial de la campaña publicitaria N.º {0}'),
+(N'Программы:', N'Programas:'),
+(N'Всего трансляций: {0}', N'Total de emisiones: {0}');
+GO
+INSERT INTO #t ([source], [text]) VALUES
+(N'Время трансляций: {0}', N'Tiempo de emisión: {0}'),
+(N'Стоимость спланированной рекламы: {0:c}', N'Costo de la publicidad planificada: {0:c}'),
+(N'Стоимость спланированной рекламы по тарифам: {0:c}', N'Costo de la publicidad planificada según tarifas: {0:c}'),
+(N'Стоимость спланированной рекламы с учетом скидки: {0:c}', N'Costo de la publicidad planificada con descuento: {0:c}'),
+(N'Скидка: {0}', N'Descuento: {0}'),
+(N'В том числе НДС ({0:0.##}%): {1:c}', N'IVA incluido ({0:0.##} %): {1:c}'),
+(N'В том числе НДС: {0:c}', N'IVA incluido: {0:c}'),
+(N'Исполнитель:', N'Contratista:'),
+(N'Заказчик:', N'Cliente:'),
+(N'Контактное лицо: {0}', N'Persona de contacto: {0}'),
+(N'№{0}', N'N.º {0}'),
+(N'Заказчик: {0}', N'Cliente: {0}'),
+(N'Исполнитель: {0}', N'Contratista: {0}'),
+(N'Исполнители: {0}', N'Contratistas: {0}'),
+(N'Радиостанция: {0}', N'Emisora: {0}'),
+(N'СМИ: {0}', N'Medio: {0}'),
+(N'Территория распространения: {0}', N'Área de cobertura: {0}'),
+(N'Лист', N'Hoja'),
+(N'Акции не выбраны', N'Ninguna campaña seleccionada'),
+(N'Введите хотя бы один номер рекламной акции.', N'Introduzca al menos un número de campaña publicitaria.'),
+(N'Выберите ролики', N'Seleccione los spots'),
+(N'Выбрано ({0}): {1}', N'Seleccionadas ({0}): {1}'),
+(N'Вывести информацию о предмете рекламы', N'Mostrar el rubro publicitario'),
+(N'Выпусков нет — выбирать не из чего.', N'No hay emisiones: no hay nada que seleccionar.'),
+(N'Выпусков нет — печатать нечего.', N'No hay emisiones: no hay nada que imprimir.'),
+(N'Месяцы', N'Meses'),
+(N'Номера рекламных акций через запятую:', N'Números de campañas publicitarias separados por comas:'),
+(N'Отметьте акции галочками — отметки сохраняются при смене отбора.', N'Marque las campañas: las marcas se conservan al cambiar el filtro.'),
+(N'Отметьте хотя бы один месяц.', N'Marque al menos un mes.'),
+(N'Отметьте хотя бы один ролик.', N'Marque al menos un spot.'),
+(N'Отметьте хотя бы одну рекламную акцию.', N'Marque al menos una campaña publicitaria.'),
+(N'Распечатать документ с подготовленными подписями', N'Imprimir el documento con las firmas preparadas'),
+(N'Рекламные акции не найдены: {0}. Исправьте номера и повторите.', N'Campañas publicitarias no encontradas: {0}. Corrija los números y vuelva a intentarlo.'),
+(N'Ролики', N'Spots'),
+(N'Скрыть стоимость по тарифам', N'Ocultar el costo según tarifas'),
+(N'Сформировать', N'Generar'),
+(N'Сформировать…', N'Generar…');
+GO
+
+BEGIN TRANSACTION;
+
+MERGE [dbo].[iTranslation] AS dst
+USING (SELECT 'es' AS [lang], '' AS [context], [source], [text] FROM #t) AS src
+   ON dst.[lang] = src.[lang] AND dst.[context] = src.[context]
+  AND dst.[sourceHash] = CONVERT(binary(32), hashbytes('SHA2_256', src.[source]))
+WHEN MATCHED AND dst.[text] <> src.[text] COLLATE Latin1_General_BIN THEN
+    UPDATE SET [text] = src.[text]
+WHEN NOT MATCHED BY TARGET THEN
+    INSERT ([lang], [context], [source], [text]) VALUES (src.[lang], src.[context], src.[source], src.[text]);
+
+PRINT CONCAT('Вставлено или обновлено переводов: ', @@ROWCOUNT);
+
+COMMIT TRANSACTION;
+GO
+
+DROP TABLE #t;
+GO
+
+-- ============================================================================
+-- ЧАСТЬ: web-i18n-sql-deploy.sql
+-- ============================================================================
+SET ANSI_NULLS ON;
+SET QUOTED_IDENTIFIER ON;
+GO
+/*
+    ДЕПЛОЙ: процедуры отдают видимый текст на языке пользователя веба (многоязычность, этап 6).
+    Задача: docs/tasks/web-i18n.md. Сгенерирован из файлов ArtvisDB/dbo — объекты ниже
+    совпадают с репозиторием.
+
+    ЧТО ДЕЛАЕТ
+      1. dbo.fn_Translate(@lang, @source) — перевод по iTranslation; для 'ru'/NULL — исходный текст.
+      2. dbo.fn_GetTariffWindowDateRangeStr — 4-й параметр @lang, результат NVARCHAR(255)
+         (единственный вызывающий — Pricelists, обновляется здесь же).
+      3. 30 процедур получают последний параметр @languageCode VARCHAR(10) = 'ru' и
+         переводят свои подписи («Прайс-лист от …», «Акция №», «сек.», «Все» …) один раз в
+         переменную. Десктоп параметр не передаёт — результат прежний (сверено хэшами
+         результатов на ArtvisDev до/после). Колонки с такими подписями становятся nvarchar.
+         Объекты: Actions1, ActionsForBalance, ActionsForRollerStatistic, AgencyTaxRetrieve, Campaigns, CampaignsForActJournalRetrieve, DiscountValues, ModulePriceLists, ModulePricelistByDate, ModulePricelistPassport, PackModuleContentPassport, PackModulePricelistByDate, PackModulePricelists, PackageDiscountPriceLists, PaymentCommonActions, PricelistByDate, Pricelists, SpecialActions, SponsorPricelistByDate, SponsorPricelists, Stat_AvgDiscount, SysParams, TariffWindowRetrieve, sl_LookupMassmediaGroupd, sl_PaymentsCommon, sponsorTariffList, stat_VolumeOfRealization, stat_VolumeOfRealization2, stat_VolumeOfRealization3, stat_VolumeOfRealizationNew.
+
+    ПРЕДУСЛОВИЕ     накачен web-i18n-translation-deploy.sql (таблица iTranslation).
+    ТРАНЗАКЦИЯ      все объекты — в одной транзакции; при ошибке — откат и остановка (NOEXEC).
+    QUOTED_IDENTIFIER — у каждого объекта как на проде (OFF у Campaigns, ModulePricelistByDate, PackModulePricelistByDate, PricelistByDate, SponsorPricelistByDate).
+    ИДЕМПОТЕНТНОСТЬ повторный запуск безопасен (CREATE OR ALTER).
+    ОТКАТ           процедуры и функцию — из предыдущего коммита; DROP FUNCTION dbo.fn_Translate.
+*/
+
+-- USE [Artvis];
+-- GO
+
+SET NOCOUNT ON;
+SET XACT_ABORT ON;
+SET ANSI_NULLS ON;
+GO
+IF OBJECT_ID('dbo.iTranslation') IS NULL
+BEGIN
+    RAISERROR('Нет таблицы iTranslation: сначала web-i18n-translation-deploy.sql', 16, 1);
+    SET NOEXEC ON;
+END
+GO
+BEGIN TRANSACTION;
+GO
+
+-- ===== fn_Translate =====
+IF @@TRANCOUNT = 0 BEGIN RAISERROR('Транзакция откатилась — fn_Translate и дальше не выполняются', 16, 1); SET NOEXEC ON; END
+GO
+SET QUOTED_IDENTIFIER ON;
+GO
+-- Перевод видимого текста для веба (docs/tasks/web-i18n.md): ключ — русский текст, как у Tr.T в C#.
+-- Язык 'ru' или NULL — исходный текст без обращения к таблице (десктоп процедурам язык не передаёт).
+-- Вызывать один раз в переменную в начале процедуры, а не в каждой строке результата.
+CREATE OR ALTER FUNCTION [dbo].[fn_Translate]
+(
+    @lang   VARCHAR(10),
+    @source NVARCHAR(4000)
+)
+RETURNS NVARCHAR(4000)
+AS
+BEGIN
+    IF @lang IS NULL OR @lang = 'ru'
+        RETURN @source;
+
+    RETURN COALESCE(
+        (SELECT [text]
+         FROM   [dbo].[iTranslation]
+         WHERE  [lang] = @lang
+           AND  [context] = ''
+           AND  [sourceHash] = CONVERT(binary(32), hashbytes('SHA2_256', @source))),
+        @source);
+END
+GO
+
+-- ===== fn_GetTariffWindowDateRangeStr =====
+IF @@TRANCOUNT = 0 BEGIN RAISERROR('Транзакция откатилась — fn_GetTariffWindowDateRangeStr и дальше не выполняются', 16, 1); SET NOEXEC ON; END
+GO
+SET QUOTED_IDENTIFIER ON;
+GO
+CREATE OR ALTER FUNCTION [dbo].[fn_GetTariffWindowDateRangeStr]
+(
+	@startDate DATETIME = null,
+	@finishDate DATETIME = null,
+	@broadcastStart DATETIME,
+	@lang VARCHAR(10) -- язык интерфейса веба (docs/tasks/web-i18n.md); 'ru' — исходный текст
+)
+RETURNS NVARCHAR(255)
+AS
+BEGIN
+	DECLARE @str NVARCHAR(255)
+	
+	IF (@startDate IS NULL)
+		BEGIN
+			SET @str = dbo.fn_Translate(@lang, N'нет тарифных окон')
+		END
+	ELSE
+		BEGIN
+			IF CAST(@finishDate AS TIME) < CAST(@broadcastStart AS TIME)
+				Set @finishDate = DATEADD(dd, -1, @finishDate)	
+			SET @str = dbo.fn_Translate(@lang, N'тарифные окна: ') + CONVERT(VARCHAR(255), @startDate, 104) + ' - ' + CONVERT(VARCHAR(255), @finishDate, 104)
+		END
+		
+	RETURN @str
+END
+GO
+
+-- ===== Actions1 =====
+IF @@TRANCOUNT = 0 BEGIN RAISERROR('Транзакция откатилась — Actions1 и дальше не выполняются', 16, 1); SET NOEXEC ON; END
+GO
+SET QUOTED_IDENTIFIER ON;
+GO
+CREATE OR ALTER PROC [dbo].[Actions1]
+(
+@actionID int = NULL,
+@firmID smallint = NULL,
+@startOfInterval datetime = null,
+@endOfInterval datetime = null,
+@createDateBegin datetime = null, -- Новый параметр
+@createDateEnd datetime = null,   -- Новый параметр
+@paymentTypeId tinyint = null,
+@campaignTypeId tinyint = null,
+@campaignFinishDate datetime = null,
+@firmId2 smallint = null,
+@userID smallint = null,
+@changeStartOfInterval datetime = null,
+@changeEndOfInterval datetime = null,
+@massmediaId smallint = null,
+@agencyID smallint = null,
+@issueDay datetime = null,
+@issueDate datetime = null,
+@rollerId smallint = null,
+@isHideBlack bit = 0,
+@isHideWhite bit = 0,
+@paymentTypesIDString varchar(1024) = null,
+@agenciesIDString varchar(1024) = NULL,
+@withoutActionId INT = NULL,
+@isShowActivate BIT = 0,
+@isShowNotActivate BIT = 0,
+@withoutActionsSince datetime = null,
+@showBlack bit = 1,
+@showWhite bit = 1,
+@moduleID int = null,
+@packModuleID int = null,
+@loggedUserID smallint = null,
+@managerDiscount float = null,
+@massmediaGroupID smallint = null,
+@showDeleted bit = 0,
+@headCompanyID int = null,
+@languageCode VARCHAR(10) = 'ru' -- язык интерфейса веба (docs/tasks/web-i18n.md); десктоп не передаёт
+)
+AS
+SET NOCOUNT on
+	DECLARE @tAction NVARCHAR(200) = dbo.fn_Translate(@languageCode, N'Акция №');
+	-- Проблема
+	-- a.createDate <= @createDateEnd — при @createDateEnd = '2025-05-01 00:00:00' любая акция, созданная 2025-05-01 11:42, 
+	--отсекается, потому что 11:42 > 00:00.
+	-- Решение — сдвиг границы, а не обрезка колонки
+	SET @createDateEnd = DATEADD(DAY, 1, CAST(@createDateEnd AS date));
+
+	declare @massmedias table(massmediaID smallint primary key, myMassmedia bit, foreignMassmedia bit)
+	insert into @massmedias (massmediaID, myMassmedia, foreignMassmedia) 
+	select * from dbo.fn_GetMassmediasForUser(@loggedUserID)
+
+	declare @isRightToViewForeignActions bit,@isRightToViewGroupActions bit
+
+	select @isRightToViewForeignActions = dbo.fn_IsRightToViewForeignActions(@loggedUserID),
+		@isRightToViewGroupActions = dbo.fn_IsRightToViewGroupActions(@loggedUserID)
+
+	declare @ugroups table(id int)
+	insert into @ugroups (id)
+	select * from dbo.[fn_GetUserGroups](@loggedUserID)
+
+	declare @headCompaniesWithRecentAction table (headCompanyID int primary key)
+	if @withoutActionsSince is not null
+	begin
+		insert into @headCompaniesWithRecentAction (headCompanyID)
+		select distinct f1.headCompanyID
+		from [Action] a1
+			inner join [Firm] f1 on a1.firmID = f1.firmID
+		where f1.headCompanyID is not null
+			and a1.isConfirmed = 1
+			and a1.finishDate >= @withoutActionsSince
+			and (@startOfInterval is null or a1.startDate < @startOfInterval)
+	end
+
+	if @actionID is not null
+	begin 
+		select a.*, 
+			us.userName as creator,
+			@tAction + LTRIM(a.[actionID]) + ' (' + LTRIM(f.name) + ')'  as name,
+			f.name as firmName,
+			coalesce(x.iCount, 0) as iCount,
+			coalesce(x.duration, '00:00') as duration,
+			Cast(
+				Case 
+					When a.tariffPrice = 0 Then 1
+					Else a.totalPrice/a.tariffPrice
+			End  
+			as decimal(5,2)) as finalRatio,
+			a.startDate,
+			a.finishDate
+		from [Action] a
+			INNER JOIN [vUser] us ON us.userID = a.userID
+			INNER JOIN [Firm] f ON f.firmID = a.firmID
+			left join 
+			(
+				select c.actionID, count(distinct i.issueID) as iCount,
+					dbo.fn_Int2Time(coalesce(sum(r.duration), 0)) as duration
+				from dbo.Campaign c 
+					inner join Issue i on c.campaignID = i.campaignID
+					inner join Roller r on i.rollerID = r.rollerID
+				where c.actionID = @actionID 
+				group by c.actionID
+			) x on a.actionID = x.actionID
+		where 
+			a.actionID = @actionID 
+            -- Фильтр по дате создания
+            AND (@createDateBegin IS NULL OR a.createDate >= @createDateBegin)
+            AND (@createDateEnd IS NULL OR a.createDate < @createDateEnd)
+			and (@headCompanyID is null or f.headCompanyID = @headCompanyID)
+			-- Отбор по менеджеру из фильтра журнала: без него обычный менеджер находил
+			-- чужую акцию по номеру. Загрузка карточки по номеру (Refresh) передаёт
+			-- userID самой акции или не передаёт вовсе — её условие не отсекает.
+			and (@userID is null or a.userID = @userID)
+			AND (
+				(a.[isConfirmed] = 0 AND @isShowNotActivate = 1 And a.deleteDate is null) 
+				OR (a.[isConfirmed] = 1 AND @isShowActivate = 1 And a.deleteDate is null) 
+				or (a.deleteDate is not null and @showDeleted = 1)
+				OR (@isShowNotActivate = 0 And @isShowActivate = 0 And @showDeleted = 0)
+				)
+	end 
+	else if @issueDay is not null or @rollerId is not null or @issueDate is not null or @moduleID is not null or @packModuleID is not null
+	begin 
+		declare @issues table (actionID int primary key )
+		insert into @issues
+		select distinct c.actionID 
+		from Issue i 
+			inner join TariffWindow tw on i.originalWindowID = tw.windowId
+			inner join Campaign c on i.campaignID = c.campaignID
+			Inner Join MassMedia mm On mm.massmediaID = tw.massmediaID
+			left join ModuleIssue mi on i.moduleIssueID = mi.moduleIssueID
+			left join PackModuleIssue pmi on i.packModuleIssueID = pmi.packModuleIssueID
+			left join PackModulePriceList pmpl on pmi.pricelistID = pmpl.priceListID
+		where i.rollerID = coalesce(@rollerId, i.rollerID)
+			and (@issueDate is null or ((datepart(hh, tw.windowDateOriginal) = datepart(hh, @issueDate)) and (datepart(minute, tw.windowDateOriginal) = datepart(minute, @issueDate))) )
+			and (@issueDay is null or (@issueDay is not null and (tw.dayOriginal = @issueDay)) )
+			and (@moduleID is null or mi.moduleID = @moduleID)
+			and (@packModuleID is null or pmpl.packModuleID = @packModuleID)	
+			and mm.massmediaGroupID = Coalesce(@massmediaGroupID, mm.massmediaGroupID)
+			and tw.massmediaID = Coalesce(@massmediaId, tw.massmediaId)
+										
+		SELECT distinct 
+			a.*, 
+			us.userName as creator,
+			--'Акция №' + LTRIM(a.[actionID]) + ' (' + LTRIM(f.name) + ')'  as name,
+			@tAction + LTRIM(a.[actionID]) as name,
+			f.name as firmName,
+			Cast(
+			Case 
+				When a.tariffPrice = 0 Then 1
+				Else a.totalPrice/a.tariffPrice
+			End  
+			as decimal(5,2)) as finalRatio,
+			a.startDate,
+			a.finishDate
+		FROM 
+			[Action] a
+			inner join @issues i on i.actionID = a.actionID
+			Inner Join Campaign c ON c.actionId = a.actionId
+			Inner Join PaymentType pt ON pt.paymentTypeID = c.paymentTypeID
+			INNER JOIN [Agency] ag ON c.[agencyID] = ag.[agencyID]
+			INNER JOIN [vUser] us ON us.userID = a.userID
+			INNER JOIN [Firm] f ON f.firmID = a.firmID
+			left join @massmedias umm on c.massmediaID = umm.massmediaID
+			left join GroupMember gm on us.userID = gm.userID
+			left join @ugroups ug on gm.groupID = ug.id
+		WHERE	
+			(us.userID = @loggedUserID or @isRightToViewForeignActions = 1 or (@isRightToViewGroupActions = 1 and ug.id is not null)) and
+			a.isSpecial = 0 and	
+			a.finishDate >= Coalesce(@startOfInterval, a.finishDate) And
+			a.startDate <= Coalesce(@endOfInterval, a.startDate) And
+            -- Фильтр по дате создания
+            (@createDateBegin IS NULL OR a.createDate >= @createDateBegin) AND
+            (@createDateEnd IS NULL OR a.createDate < @createDateEnd) AND
+			c.paymentTypeId = Coalesce(@paymentTypeId, c.paymentTypeId) And
+			c.campaignTypeId = Coalesce(@campaignTypeId, c.campaignTypeId) And
+			c.finishDate = Coalesce(@campaignFinishDate, c.finishDate) And
+			a.firmId = Coalesce(@firmId2, a.firmId) And
+			a.userId = Coalesce(@userId, a.userId) And
+			a.modDate >= Coalesce(@changeStartOfInterval, a.modDate) And
+			a.modDate <= Coalesce(@changeEndOfInterval, a.modDate) And
+			((c.[agencyID] IS NULL AND @agencyID IS NULL) OR c.agencyId = Coalesce(@agencyID, c.agencyId)) And
+			a.actionId = Coalesce(@actionId, a.actionId) And
+			(pt.isHidden = 0 or @isHideWhite = 0) And
+			(pt.isHidden = 1 or @isHideBlack = 0) and
+			((pt.IsHidden = 1 and @showBlack = 1)  or
+			(pt.IsHidden = 0 and @showWhite = 1)) and
+			a.[actionID] = COALESCE(@actionID, a.[actionID]) AND
+			a.[firmID] = COALESCE(@firmID, a.[firmID]) 
+			AND (
+				(a.[isConfirmed] = 0 AND @isShowNotActivate = 1 And a.deleteDate is null) 
+				OR (a.[isConfirmed] = 1 AND @isShowActivate = 1 And a.deleteDate is null) 
+				or (a.deleteDate is not null and @showDeleted = 1)
+				)
+			AND (@withoutActionId IS NULL OR a.[actionID] <> @withoutActionId)
+			and (@withoutActionsSince is null or not exists(select 1 from @headCompaniesWithRecentAction h where h.headCompanyID = f.headCompanyID))
+			and (@managerDiscount is null or (c.managerDiscount - @managerDiscount) < -0.005)
+			and (@headCompanyID is null or f.headCompanyID = @headCompanyID)
+		order by a.actionID desc
+	end
+	else 
+		Begin
+		SELECT distinct 
+			a.*, 
+			us.userName as creator,
+			--'Акция №' + LTRIM(a.[actionID]) + ' (' + LTRIM(f.name) + ')'  as name,
+			@tAction + LTRIM(a.[actionID]) as name,
+			f.name as firmName,
+			Cast(
+			Case 
+				When a.tariffPrice = 0 Then 1
+				Else a.totalPrice/a.tariffPrice
+			End  
+			as decimal(5,2)) as finalRatio,
+			a.startDate,
+			a.finishDate
+		FROM 
+			[Action] a
+			Inner Join Campaign c ON c.actionId = a.actionId
+			Inner Join PaymentType pt ON pt.paymentTypeID = c.paymentTypeID
+			INNER JOIN [User] us ON us.userID = a.userID
+			INNER JOIN [Firm] f ON f.firmID = a.firmID
+			LEFT JOIN (
+				PackModuleIssue i 
+				JOIN [PackModuleContent] AS pmc ON i.[priceListID] = pmc.[pricelistID]
+				JOIN [ModulePriceList] AS mpl ON pmc.modulePriceListID = mpl.modulePriceListID
+				JOIN [Module] AS m ON mpl.[moduleID] = m.[moduleID]
+				) ON i.campaignID = c.campaignID
+		where
+			(a.userID = @loggedUserID 
+						or @isRightToViewForeignActions = 1 
+						or (
+							@isRightToViewGroupActions = 1 
+							AND EXISTS (
+								SELECT 1 
+								FROM GroupMember gm 
+									JOIN fn_GetUserGroups(@loggedUserID) ug on gm.groupID = ug.id
+								WHERE a.userID = gm.userID
+								)
+							)
+						)
+			and EXISTS (
+					SELECT 1 
+					FROM @massmedias umm 
+					WHERE umm.massmediaID = CASE WHEN c.campaignTypeID=4 THEN m.massmediaID ELSE c.massmediaID END
+							and ((a.userID = @loggedUserID and umm.myMassmedia = 1) or (a.userID <> @loggedUserID and umm.foreignMassmedia = 1))
+					) 
+			AND (@massmediaGroupID IS NULL 
+					OR 
+					EXISTS (
+						SELECT 1
+						FROM MassMedia mm
+						WHERE mm.massmediaID = CASE WHEN c.campaignTypeID=4 THEN m.massmediaID ELSE c.massmediaID END
+							AND mm.massmediaGroupID = @massmediaGroupID
+						)
+					)
+			and	a.isSpecial = 0 and		
+			(a.finishDate >= Coalesce(@startOfInterval, a.finishDate) Or (a.finishDate Is Null And @startOfInterval Is Null )) And
+			(a.startDate <= Coalesce(@endOfInterval, a.startDate) Or (a.startDate Is Null And @endOfInterval Is Null ))  And
+            -- Фильтр по дате создания
+            (@createDateBegin IS NULL OR a.createDate >= @createDateBegin) AND
+            (@createDateEnd IS NULL OR a.createDate < @createDateEnd) AND
+			c.paymentTypeId = Coalesce(@paymentTypeId, c.paymentTypeId) And
+			c.campaignTypeId = Coalesce(@campaignTypeId, c.campaignTypeId) And 
+			c.finishDate = Coalesce(@campaignFinishDate, c.finishDate) And
+			a.firmId = Coalesce(@firmId2, a.firmId) And
+			a.userId = Coalesce(@userId, a.userId) And
+			a.modDate >= Coalesce(@changeStartOfInterval, a.modDate) And
+			a.modDate <= Coalesce(@changeEndOfInterval, a.modDate)
+			and (c.massmediaID = Coalesce(@massmediaId, c.massmediaId) Or c.massmediaID Is Null)	
+			and (m.massmediaID = Coalesce(@massmediaId, m.massmediaID) Or m.massmediaID Is Null)
+			and ((c.[agencyID] IS NULL AND @agencyID IS NULL) OR c.agencyId = Coalesce(@agencyID, c.agencyId)) And
+			a.actionId = Coalesce(@actionId, a.actionId) And
+			(pt.isHidden = 0 or @isHideWhite = 0) And
+			(pt.isHidden = 1 or @isHideBlack = 0) and
+			((pt.IsHidden = 1 and @showBlack = 1)  or
+			(pt.IsHidden = 0 and @showWhite = 1)) and
+			a.[actionID] = COALESCE(@actionID, a.[actionID]) AND
+			a.[firmID] = COALESCE(@firmID, a.[firmID])
+			AND (
+				(a.[isConfirmed] = 0 AND @isShowNotActivate = 1 And a.deleteDate is null) 
+				OR (a.[isConfirmed] = 1 AND @isShowActivate = 1 And a.deleteDate is null) 
+				or (a.deleteDate is not null and @showDeleted = 1)
+				)
+			AND (@withoutActionId IS NULL OR a.[actionID] <> @withoutActionId)
+			and (@withoutActionsSince is null or not exists(select 1 from @headCompaniesWithRecentAction h where h.headCompanyID = f.headCompanyID))
+			and (@managerDiscount is null or (c.managerDiscount - @managerDiscount) < -0.005)
+			and (@headCompanyID is null or f.headCompanyID = @headCompanyID)
+		order by a.actionID desc
+		End
+GO
+
+-- ===== ActionsForBalance =====
+IF @@TRANCOUNT = 0 BEGIN RAISERROR('Транзакция откатилась — ActionsForBalance и дальше не выполняются', 16, 1); SET NOEXEC ON; END
+GO
+SET QUOTED_IDENTIFIER ON;
+GO
+CREATE OR ALTER PROCEDURE [dbo].[ActionsForBalance]
+(
+@firmID smallint = NULL,
+@startOfInterval datetime = null,
+@endOfInterval datetime = null,
+@userID smallint = null,
+--@paymentTypesIDString varchar(1024) = null,
+@agenciesIDString varchar(1024) = NULL,
+@isHideWhite BIT = 0,
+@isHideBlack BIT = 0,
+@showBlack bit = 1,
+@showWhite bit = 1,
+@loggedUserID smallint,
+@languageCode VARCHAR(10) = 'ru' -- язык интерфейса веба (docs/tasks/web-i18n.md); десктоп не передаёт
+)
+WITH EXECUTE AS OWNER
+AS
+BEGIN
+	SET NOCOUNT ON;
+	DECLARE @tAction NVARCHAR(200) = dbo.fn_Translate(@languageCode, N'Акция №');
+	
+	Select	@startOfInterval = Convert(datetime, Convert(varchar, @startOfInterval, 112), 112)
+	Select	@endOfInterval = Convert(datetime, Convert(varchar, @endOfInterval, 112), 112)
+			
+	CREATE TABLE #Agency(agencyID smallint)
+
+	-- Populate temporary tables with Agency and Payment types
+	IF @agenciesIDString Is Null
+		INSERT INTO #Agency 
+		SELECT agencyID FROM Agency
+	Else
+		Exec dbo.hlp_PopulateTableFromCommaSeparatedString '#Agency', @agenciesIDString 
+		
+	declare @massmedias table(massmediaID smallint primary key, myMassmedia bit, foreignMassmedia bit)
+	insert into @massmedias (massmediaID, myMassmedia, foreignMassmedia) 
+	select * from dbo.fn_GetMassmediasForUser(@loggedUserID)
+
+	declare @isRightToViewForeignActions bit,
+		@isRightToViewGroupActions bit
+
+	select @isRightToViewForeignActions = dbo.fn_IsRightToViewForeignActions(@loggedUserID),
+		@isRightToViewGroupActions = dbo.fn_IsRightToViewGroupActions(@loggedUserID)
+
+	declare @ugroups table(id int)
+	insert into @ugroups (id) 
+	select * from dbo.[fn_GetUserGroups](@loggedUserID)
+		
+	CREATE TABLE #tmp1(actionID int primary key,	summa decimal(18,2) NULL, tariffPrice decimal(18,2) null, [priceSumByCampaigns] decimal(18,2) null)
+	INSERT INTO #tmp1 ([actionID], [summa], [tariffPrice], [priceSumByCampaigns]) 
+SELECT distinct a.actionID, 0, 0, 0
+FROM 
+	[Action] a
+		Inner Join Campaign c ON c.actionId = a.actionId
+		Inner Join PaymentType pt ON pt.paymentTypeID = c.paymentTypeID
+		inner join [#Agency] ag on c.agencyID = ag.agencyID
+		left join @massmedias umm on c.massmediaID = umm.massmediaID
+		left join GroupMember gm on a.userID = gm.userID
+		left join @ugroups ug on gm.groupID = ug.id
+WHERE		
+		(a.userID = @loggedUserID 
+		 or @isRightToViewForeignActions = 1 
+		 or (@isRightToViewGroupActions = 1 and ug.id is not null)) and
+
+		(a.isSpecial = 1 
+		 or (c.campaignTypeID <> 4 
+		     and umm.massmediaID is not null 
+		     and ((a.userID = @loggedUserID and umm.myMassmedia = 1) 
+		          or (a.userID <> @loggedUserID and umm.foreignMassmedia = 1)))
+		 or (c.campaignTypeID = 4 
+		     and not exists(
+				select *
+				from PackModuleIssue pmi 
+					inner join PackModuleContent pmc on pmi.pricelistID = pmc.pricelistID
+					inner join Module m on pmc.moduleID = m.moduleID
+					left join @massmedias ummm on m.massmediaID = ummm.massmediaID
+				where pmi.campaignID = c.campaignID 
+				  and (
+						ummm.massmediaID is null 
+						or (a.userID = @loggedUserID and ummm.myMassmedia = 0)
+						or (a.userID <> @loggedUserID and ummm.foreignMassmedia = 0)
+				  )
+		     )
+		)) and	
+		a.finishDate >= Coalesce(@startOfInterval, a.finishDate) and
+		a.startDate <= Coalesce(@endOfInterval, a.startDate) and
+		a.userId = Coalesce(@userId, a.userId) and
+		(pt.isHidden = 0 or @isHideWhite = 0) and
+		(pt.isHidden = 1 or @isHideBlack = 0) and
+		((pt.IsHidden = 1 and @showBlack = 1)  
+		 or (pt.IsHidden = 0 and @showWhite = 1)) and
+		a.[firmID] = COALESCE(@firmID, a.[firmID]) and
+		a.[isConfirmed] = 1
+		
+	Declare cur_Companies Cursor local fast_forward
+	For
+	SELECT 	c.campaignID, c.campaignTypeID,
+			c.startDate,
+			a.[actionID],
+			c.finalPrice,
+			c.managerDiscount,
+			c.discount,
+			c.finishDate,
+			ac.discount,
+			c.tariffPrice
+	From	campaign AS c join #tmp1 as a on c.actionID = a.actionID
+			join paymenttype as pt on c.paymentTypeID = pt.paymenttypeID
+			join agency as ag on ag.agencyID = c.agencyID
+			inner join [Action] ac on ac.actionID = c.actionID
+	Where	ag.agencyID IN (Select agencyID From #Agency)
+			and (pt.isHidden = 0 or @isHideWhite = 0) And
+				(pt.isHidden = 1 or @isHideBlack = 0) and
+			((pt.IsHidden = 1 and @showBlack = 1)  or
+			(pt.IsHidden = 0 and @showWhite = 1)) 
+				
+	Declare	@campaignID int, @TypeID int, @StartDate DATETIME,
+			@Price decimal(18,2), @Action int,
+			@FinalPrice decimal(18,2), @tariffPrice decimal(18,2), 
+			@managerDiscount decimal(18,10), @discount decimal(9,4), 
+			@finishDate datetime, @actiondiscount decimal(9,4)
+		
+	Open	cur_Companies
+	Fetch	Next from cur_Companies
+	Into 	@campaignID, @TypeID, @StartDate, @Action, @FinalPrice, @managerDiscount, @discount, @finishDate, @actiondiscount, @tariffPrice
+
+	While	@@fetch_status = 0
+	Begin
+		If	(@startOfInterval is null and @endOfInterval IS null) OR (@endOfInterval > @finishDate and @startOfInterval < @StartDate)
+		begin 
+			set  @Price = @FinalPrice 
+		end 
+		else
+		begin 
+			exec GetPriceByPeriod @campaignID = @campaignID, @campaignTypeID = @TypeID, @startDate = @startOfInterval, @finishDate = @endOfInterval, @price = @price OUTPUT, @tariffPrice = @tariffPrice output
+		end
+		
+		UPDATE [#tmp1] SET summa = summa + ISNULL(@Price, 0), [tariffPrice] = [tariffPrice] + ISNULL(@tariffPrice, 0), [priceSumByCampaigns] = [priceSumByCampaigns] + ISNULL(@tariffPrice * @managerDiscount * @discount, 0)
+		WHERE [actionID] = @Action
+
+		Fetch	Next from cur_Companies
+		Into 	@campaignID, @TypeID, @StartDate, @Action, @FinalPrice, @managerDiscount, @discount, @finishDate, @actiondiscount, @tariffPrice
+
+	end
+
+	close		cur_Companies
+	Deallocate	cur_Companies
+		
+	SELECT 
+		ac.[actionID],
+		ac.[firmID],
+		ac.[startDate],
+		ac.[finishDate],
+		ac.[discount],
+		ac.[userID],
+		a.tariffPrice AS [tariffPrice],
+		a.[priceSumByCampaigns] AS [priceSumByCampaigns],
+		ac.[createDate],
+		ac.[modDate],
+		ac.[isSpecial],
+		ac.[isConfirmed],
+		a.summa AS totalPrice,
+		us.firstName + Space(1) + us.lastName as creator,
+		@tAction + LTRIM(ac.[actionID]) as name,
+		f.name as firmName
+	FROM 
+		#tmp1 a
+		INNER JOIN [Action] ac ON a.actionID = ac.actionID
+		INNER JOIN [User] us ON us.userID = ac.userID
+		INNER JOIN [Firm] f ON f.firmID = ac.firmID
+	ORDER BY
+		ac.[actionID] DESC		
+END
+GO
+
+-- ===== ActionsForRollerStatistic =====
+IF @@TRANCOUNT = 0 BEGIN RAISERROR('Транзакция откатилась — ActionsForRollerStatistic и дальше не выполняются', 16, 1); SET NOEXEC ON; END
+GO
+SET QUOTED_IDENTIFIER ON;
+GO
+CREATE OR ALTER PROCEDURE [dbo].[ActionsForRollerStatistic]
+(
+@startDate datetime,
+@finishDate datetime,
+@rollerID int,
+@massmediaString varchar(8000),
+@userID smallint = null,
+@loggedUserID smallint,
+@languageCode VARCHAR(10) = 'ru' -- язык интерфейса веба (docs/tasks/web-i18n.md); десктоп не передаёт
+)
+AS
+SET NOCOUNT ON
+DECLARE @tAction NVARCHAR(200) = dbo.fn_Translate(@languageCode, N'Акция №');
+
+	declare @isRightToViewForeignActions bit, @isRightToViewGroupActions bit
+
+	select @isRightToViewForeignActions = dbo.fn_IsRightToViewForeignActions(@loggedUserID),
+		@isRightToViewGroupActions = dbo.fn_IsRightToViewGroupActions(@loggedUserID)
+
+	declare @ugroups table(id int)
+	insert into @ugroups (id) 
+	select * from dbo.[fn_GetUserGroups](@loggedUserID)
+
+SELECT distinct
+	ac.*,
+	us.userName as creator,
+	@tAction + LTRIM(ac.[actionID]) as name,
+	f.name as firmName
+FROM 
+	[Action] ac 
+	INNER JOIN [vUser] us ON us.userID = ac.userID
+	INNER JOIN [Firm] f ON f.firmID = ac.firmID
+	INNER JOIN [Campaign] c ON c.actionID = ac.actionID
+	INNER JOIN Issue i ON c.campaignID = i.campaignID
+	INNER JOIN TariffWindow tw On tw.windowId = i.originalWindowID
+	INNER JOIN dbo.fn_CreateTableFromString(@massmediaString) m on m.ID = tw.massmediaID
+	inner join 
+	(
+		select distinct u.userID 
+		from [User] u
+			left join [GroupMember] gm on u.userID = gm.userID
+			left join @ugroups ug on gm.groupID = ug.id	
+		where u.userID = @loggedUserID or @isRightToViewForeignActions = 1 or (@isRightToViewGroupActions = 1 and ug.id is not null)
+	) as x on ac.userID = x.userID
+where 
+	i.rollerID = @rollerID AND
+	tw.dayOriginal between @startDate and @finishDate and 
+	ac.userID = Coalesce(@userID, ac.userID)	
+ORDER BY
+	ac.[actionID] DESC
+GO
+
+-- ===== AgencyTaxRetrieve =====
+IF @@TRANCOUNT = 0 BEGIN RAISERROR('Транзакция откатилась — AgencyTaxRetrieve и дальше не выполняются', 16, 1); SET NOEXEC ON; END
+GO
+SET QUOTED_IDENTIFIER ON;
+GO
+CREATE OR ALTER PROC [dbo].[AgencyTaxRetrieve]
+(
+@agencyId smallint = null,
+@agencyTaxId smallint = null,
+@languageCode VARCHAR(10) = 'ru' -- язык интерфейса веба (docs/tasks/web-i18n.md); десктоп не передаёт
+)
+AS
+SET NOCOUNT ON
+DECLARE @tAgencyTax NVARCHAR(200) = dbo.fn_Translate(@languageCode, N'Налог для агентства ''');
+
+Select 
+	a.*,
+	t.name as taxName,
+	@tAgencyTax + ag.name + '''' as name
+From
+	AgencyTax a
+	Inner Join iTax t On a.taxId = t.taxId
+	Inner Join Agency ag On a.agencyId = ag.agencyId
+Where
+	a.agencyId = Coalesce(@agencyId, a.agencyId) And
+	a.agencyTaxId = Coalesce(@agencyTaxId, a.agencyTaxId)
+Order by
+	a.startDate desc
+GO
+
+-- ===== Campaigns =====
+IF @@TRANCOUNT = 0 BEGIN RAISERROR('Транзакция откатилась — Campaigns и дальше не выполняются', 16, 1); SET NOEXEC ON; END
+GO
+SET QUOTED_IDENTIFIER OFF;
+GO
+CREATE OR ALTER PROC [dbo].[Campaigns]
+(
+@actionID int = null,
+@campaignID int = null,
+@massmediaID smallint = null,
+@loggedUserID smallint = null,
+@languageCode VARCHAR(10) = 'ru' -- язык интерфейса веба (docs/tasks/web-i18n.md); десктоп не передаёт
+)
+as
+set nocount on
+DECLARE @tPackModuleCampaign NVARCHAR(200) = dbo.fn_Translate(@languageCode, N'Пакетная модульная кампания');
+DECLARE @tPackModuleCampaignTypo NVARCHAR(200) = dbo.fn_Translate(@languageCode, N'Пакетная модульня кампания');
+
+IF (@actionID IS NOT NULL OR @campaignID IS NOT NULL /* (@campaignID IS NOT NULL AND @massmediaID IS NULL AND @actionID IS NULL)*/)
+begin
+	SELECT
+		cm.*,
+		CASE cm.[campaignTypeID]
+			WHEN 4 THEN @tPackModuleCampaign
+			ELSE mm.NAME + isnull(' (' + mg.name +')', '')
+		END AS name	,
+		mm.name as massmediaName,
+		f.[name] AS firmName,
+		ct.name as campaignTypeName,
+		pt.name as paymentTypeName,
+		ag.name as agencyName,
+		dbo.fn_Int2Time(cm.issuesDuration) as issuesDurationString,
+		u.lastName + ' ' + u.firstName as modUserName,
+		CASE cm.[campaignTypeID]
+			WHEN 1 THEN 91
+			WHEN 2 THEN 93
+			WHEN 3 THEN 92
+			WHEN 4 THEN 171
+		END AS entityId,
+		CASE cm.[campaignTypeID]
+			WHEN 4 THEN CAST(1 AS DECIMAL(9,4))
+			ELSE a.[discount]
+		END AS packDiscount,
+		cm.[finalPrice] AS fullPrice,
+		mg.name as groupName,
+		a.deleteDate
+	FROM
+		[Campaign] cm WITH (NOLOCK)
+		INNER JOIN [Action] a WITH (NOLOCK) ON cm.[actionID] = a.[actionID]
+		INNER JOIN [Firm] f WITH (NOLOCK) ON a.[firmID] = f.[firmID]
+		LEFT JOIN vMassMedia mm WITH (NOLOCK) ON mm.massmediaID = cm.massmediaID
+		LEFT JOIN MassmediaGroup mg WITH (NOLOCK) on mg.massmediaGroupID = mm.massmediaGroupID
+		INNER JOIN iCampaignType ct WITH (NOLOCK) ON ct.campaignTypeID = cm.campaignTypeID
+		INNER JOIN PaymentType pt WITH (NOLOCK) ON pt.paymentTypeID = cm.paymentTypeID
+		LEFT JOIN Agency ag WITH (NOLOCK) ON ag.agencyId = cm.agencyId
+		LEFT OUTER JOIN [User] u WITH (NOLOCK) ON u.userId = cm.modUser
+	WHERE
+		cm.actionID = COALESCE(@actionID, cm.actionID) AND
+		cm.campaignID = COALESCE(@campaignID, cm.campaignID)
+	ORDER BY
+		cm.campaignID
+end
+ELSE
+begin
+	declare @isRightToViewForeignActions bit, @isRightToViewGroupActions bit
+
+	select @isRightToViewForeignActions = dbo.fn_IsRightToViewForeignActions(@loggedUserID),
+		@isRightToViewGroupActions = dbo.fn_IsRightToViewGroupActions(@loggedUserID)
+
+	declare @ugroups table(id int)
+	insert into @ugroups (id)
+	select * from dbo.[fn_GetUserGroups](@loggedUserID)
+
+	SELECT distinct
+		cm.*,
+		CASE cm.[campaignTypeID]
+			WHEN 4 THEN @tPackModuleCampaign
+			ELSE mm.NAME + isnull(' (' + mg.name +')', '')
+		END AS name	,
+		mm.name as massmediaName,
+		f.[name] AS firmName,
+		ct.name as campaignTypeName,
+		pt.name as paymentTypeName,
+		ag.name as agencyName,
+		dbo.fn_Int2Time(cm.issuesDuration) as issuesDurationString,
+		u.lastName + ' ' + u.firstName as modUserName,
+		CASE cm.[campaignTypeID]
+			WHEN 1 THEN 91
+			WHEN 2 THEN 93
+			WHEN 3 THEN 92
+			WHEN 4 THEN 171
+		END AS entityId,
+		NULL AS packmodulemassmediaID,
+		a.[discount] AS packDiscount,
+		cm.[finalPrice] AS fullPrice,
+		mg.name as groupName,
+		a.deleteDate
+	FROM
+		[Campaign] cm WITH (NOLOCK)
+		INNER JOIN [Action] a WITH (NOLOCK) ON cm.[actionID] = a.[actionID]
+		INNER JOIN [Firm] f WITH (NOLOCK) ON a.[firmID] = f.[firmID]
+		INNER JOIN vMassMedia mm WITH (NOLOCK) ON mm.massmediaID = cm.massmediaID
+			AND cm.massmediaID = COALESCE(@massmediaID, cm.massmediaID)
+		LEFT JOIN MassmediaGroup mg WITH (NOLOCK) on mg.massmediaGroupID = mm.massmediaGroupID
+		INNER JOIN iCampaignType ct WITH (NOLOCK) ON ct.campaignTypeID = cm.campaignTypeID
+		INNER JOIN PaymentType pt WITH (NOLOCK) ON pt.paymentTypeID = cm.paymentTypeID
+		LEFT JOIN Agency ag WITH (NOLOCK) ON ag.agencyId = cm.agencyId
+		LEFT OUTER JOIN [User] u WITH (NOLOCK) ON u.userId = cm.modUser
+		left join GroupMember gm WITH (NOLOCK) on a.userID = gm.userID
+		left join @ugroups ug on gm.groupID = ug.id
+	where
+		cm.actionID = COALESCE(@actionID, cm.actionID) AND
+		cm.campaignID = COALESCE(@campaignID, cm.campaignID) AND
+		a.isConfirmed = 1 AND cm.[campaignTypeID] <> 4
+	union all
+	(SELECT DISTINCT
+		cm.*,
+		@tPackModuleCampaignTypo AS name,
+		mm.name as massmediaName,
+		f.[name] AS firmName,
+		ct.name as campaignTypeName,
+		pt.name as paymentTypeName,
+		ag.name as agencyName,
+		dbo.fn_Int2Time(cm.issuesDuration) as issuesDurationString,
+		u.lastName + ' ' + u.firstName as modUserName,
+		171 AS entityId,
+		mm.massmediaID AS packmodulemassmediaID,
+		CAST(1 AS DECIMAL(9,4)) AS packDiscount,
+		CAST(cm.[finalPrice] AS DECIMAL(18,2)) AS fullPrice,
+		mg.name as groupName,
+		a.deleteDate
+	FROM
+		[Campaign] cm WITH (NOLOCK)
+		INNER JOIN [Action] a WITH (NOLOCK) ON cm.[actionID] = a.[actionID]
+		INNER JOIN [Firm] f WITH (NOLOCK) ON a.[firmID] = f.[firmID]
+		INNER JOIN iCampaignType ct WITH (NOLOCK) ON ct.campaignTypeID = cm.campaignTypeID
+			AND cm.[campaignTypeID] = 4
+		INNER JOIN PaymentType pt WITH (NOLOCK) ON pt.paymentTypeID = cm.paymentTypeID
+		LEFT JOIN Agency ag WITH (NOLOCK) ON ag.agencyId = cm.agencyId
+		LEFT OUTER JOIN [User] u WITH (NOLOCK) ON u.userId = cm.modUser
+		INNER JOIN [PackModuleIssue] pmi WITH (NOLOCK) ON pmi.campaignID = cm.campaignID
+		INNER JOIN [PackModuleContent] pmc WITH (NOLOCK) ON pmc.pricelistID = pmi.pricelistID
+		INNER JOIN Module m WITH (NOLOCK) ON m.moduleID = pmc.moduleID
+		INNER JOIN vMassMedia mm WITH (NOLOCK) ON mm.massmediaID = m.massmediaID
+			AND m.massmediaID = COALESCE(@massmediaID, m.massmediaID)
+		LEFT JOIN MassmediaGroup mg WITH (NOLOCK) on mg.massmediaGroupID = mm.massmediaGroupID
+		left join GroupMember gm WITH (NOLOCK) on a.userID = gm.userID
+		left join @ugroups ug on gm.groupID = ug.id
+	where
+		(a.userID = @loggedUserID or @isRightToViewForeignActions = 1 or (@isRightToViewGroupActions = 1 and ug.id is not null)) and
+		cm.actionID = COALESCE(@actionID, cm.actionID) AND
+		cm.campaignID = COALESCE(@campaignID, cm.campaignID) AND
+		a.isConfirmed = 1 AND cm.[campaignTypeID] = 4
+	)
+	ORDER BY
+		cm.campaignID
+end
+GO
+
+-- ===== CampaignsForActJournalRetrieve =====
+IF @@TRANCOUNT = 0 BEGIN RAISERROR('Транзакция откатилась — CampaignsForActJournalRetrieve и дальше не выполняются', 16, 1); SET NOEXEC ON; END
+GO
+SET QUOTED_IDENTIFIER ON;
+GO
+CREATE OR ALTER PROC [dbo].[CampaignsForActJournalRetrieve]
+(
+@startDate DATETIME = null,
+@finishDate DATETIME = null,
+@agencyID int = null,
+@firmId int = null,
+@showBlack bit = 1,
+@showWhite bit = 1,
+@actionID INT = null,
+@loggedUserID smallint,
+@languageCode VARCHAR(10) = 'ru' -- язык интерфейса веба (docs/tasks/web-i18n.md); десктоп не передаёт
+)
+WITH EXECUTE AS OWNER
+AS
+Set Nocount On
+DECLARE @tSec NVARCHAR(200) = dbo.fn_Translate(@languageCode, N' сек.');
+DECLARE @tPcs NVARCHAR(200) = dbo.fn_Translate(@languageCode, N' шт.');
+
+If @agencyID Is Null Begin
+	RaisError('AgencyShouldBeSelected', 16, 1)
+	Return
+END
+
+IF @startDate IS NULL 
+	SELECT @startDate = dbo.ToShortDate(MIN(c.[startDate])) FROM [Campaign] c
+	
+IF @finishDate IS NULL 
+	SELECT @finishDate = dbo.ToShortDate(MAX(c.finishDate)) FROM [Campaign] c
+
+IF @finishDate < @startDate
+BEGIN
+	RaisError('WrongDates', 16, 1)
+	Return
+end
+
+declare @massmedias table(massmediaID smallint primary key, myMassmedia bit, foreignMassmedia bit)
+insert into @massmedias (massmediaID, myMassmedia, foreignMassmedia) 
+select * from dbo.fn_GetMassmediasForUser(@loggedUserID)
+
+declare @isRightToViewForeignActions bit, @isRightToViewGroupActions bit
+
+select @isRightToViewForeignActions = dbo.fn_IsRightToViewForeignActions(@loggedUserID),
+	@isRightToViewGroupActions = dbo.fn_IsRightToViewGroupActions(@loggedUserID)
+
+declare @ugroups table(id int)
+insert into @ugroups (id) 
+select * from dbo.[fn_GetUserGroups](@loggedUserID)
+
+Declare @res Table(
+	currentdate DATETIME,
+	campaignId int,
+	typeId smallint,
+	total decimal(18,2) NULL,
+	massmediaID INT null,
+	mistake decimal(18,2) default 0,
+	issuesCount INT default 0,
+	issuesDuration timeDuration NULL default 0,
+	showByDuration BIT NULL default 1
+)
+
+DECLARE @tmpDate DATETIME 
+SET @tmpDate = @startDate
+WHILE @tmpDate <= @finishDate
+begin
+	Insert Into @res
+	Select distinct
+		dbo.ToShortDate(CASE 
+			WHEN dbo.fn_LastDateOfMonth(@tmpDate) < a.[finishDate] 
+				THEN dbo.fn_LastDateOfMonth(@tmpDate) 
+				ELSE a.[finishDate]
+		end),
+		c.campaignID,
+		c.campaignTypeID,
+		0,
+		c.[massmediaID],
+		0,
+		0,
+		0,
+		1
+	from
+		[Action] a 
+		inner join Campaign c ON c.[actionID] = a.[actionID]
+		inner join PaymentType pt On c.paymentTypeId = pt.paymentTypeId
+		left join @massmedias umm on c.massmediaID = umm.massmediaID
+		left join GroupMember gm on a.userID = gm.userID
+		left join @ugroups ug on gm.groupID = ug.id
+	Where	
+		(a.userID = @loggedUserID or @isRightToViewForeignActions = 1 or (@isRightToViewGroupActions = 1 and ug.id is not null)) 
+		and (
+			a.isSpecial = 1 
+			or c.campaignTypeID = 4 
+			or umm.massmediaID is not null 
+			and ((a.userID = @loggedUserID and umm.myMassmedia = 1) or (a.userID <> @loggedUserID and umm.foreignMassmedia = 1))
+		) 
+		and	a.isSpecial = 0	AND a.[actionID] = COALESCE(@actionID, a.[actionID])
+		and a.firmID = isnull(@firmID, a.firmID)
+		and c.agencyId = @agencyId AND
+		(pt.isHidden = 0 or @showBlack = 1) And
+		(pt.isHidden = 1 or @showWhite = 1) AND
+		a.[isConfirmed] = 1 AND
+		dbo.ToShortDate(a.[finishDate]) >= @tmpDate AND 
+		(dbo.fn_LastDateOfMonth(@tmpDate) <= (@finishDate) OR dbo.ToShortDate(a.[finishDate]) <= @finishDate)
+				
+	SET @tmpDate = DATEADD(month, 1, dbo.fn_FirstDateOfMonth(@tmpDate))
+END
+
+Declare	
+	@currentDate DATETIME,
+	@typeId smallint,
+	@total decimal(18,2),
+	@campaignID INT,
+	@massmediaID smallint,
+	@campaignStartDate datetime,
+	@campaignFinishDate datetime,
+	@campaignFinalPrice decimal(18,2),
+	@campaignAdiscount decimal(18,10),
+	@mistake decimal(18,2),
+	@userID smallint,
+	@issuesCount INT,
+	@issuesDuration timeDuration,
+	@showByDuration BIT
+
+Declare cur_comp2 Cursor local fast_forward
+For
+SELECT r.currentDate, r.campaignId, r.typeId, c.startDate, c.finishDate, c.finalPrice, a.discount, a.userID From @res r inner join Campaign c on r.campaignId = c.campaignId inner join [Action] a on c.actionID = a.actionID
+Open cur_comp2
+
+Fetch Next From cur_comp2 Into @currentDate, @campaignId, @typeId, @campaignStartDate,@campaignFinishDate,@campaignFinalPrice,@campaignAdiscount,@userID
+While @@fetch_status = 0 BEGIN
+	SET @startDate = dbo.fn_FirstDateOfMonth(@currentDate)
+
+	IF @typeId = 4
+	BEGIN
+		DELETE FROM @res WHERE [campaignID] = @campaignID AND [currentdate] = @currentDate
+		
+		Exec GetPriceByPeriod 
+			@campaignId, @typeId, @startDate, @currentDate, @total OUT
+		
+		CREATE TABLE #tmp(massmediaID SMALLINT, price decimal(18,2))
+		INSERT INTO #tmp
+		SELECT 
+			m.[massmediaID], sum(mpl.[price])
+		FROM [PackModuleIssue] i 
+			INNER JOIN [PackModuleContent] AS pmc ON i.[priceListID] = pmc.[pricelistID]
+			INNER JOIN [ModulePriceList] AS mpl ON pmc.modulePriceListID = mpl.modulePriceListID
+			INNER JOIN [Module] AS m ON mpl.[moduleID] = m.[moduleID]
+		WHERE 
+			i.campaignID = @campaignID	and
+			i.issueDate between @startDate and @currentDate 
+		group by m.massmediaID
+			
+			
+		declare @sumPrice decimal(18,2)
+		SELECT @sumPrice = sum(t1.price) FROM [#tmp] AS t1
+			
+		INSERT INTO @res ([currentdate],[campaignId],[typeId],[total],[massmediaID])
+		select @currentDate, @campaignId, @typeId, @total * sum(t1.price)/ @sumPrice, t1.massmediaID 
+		from #tmp as t1
+			inner join @massmedias mmu on t1.massmediaID = mmu.massmediaID 
+				and ((@userID = @loggedUserID and mmu.myMassmedia = 1) or
+					(@userID <> @loggedUserID and mmu.foreignMassmedia = 1))
+		group by t1.massmediaID
+		
+		drop table #tmp 
+
+		update r
+		set 
+			r.issuesCount = r.issuesCount + x.issuesCount,
+			r.issuesDuration = r.issuesDuration + x.issuesDuration,
+			r.showByDuration = x.showByDuration
+		from 
+			@res r
+		inner join (
+			select 	COUNT(*) as issuesCount, 
+				SUM(rol.duration) as issuesDuration, 
+				cast(case when SUM(tw.maxCapacity) > 0 then 0 else 1 end as bit) as showByDuration,
+				m.massmediaID
+			from Issue i 
+				inner join TariffWindow tw on i.originalWindowID = tw.windowId
+				INNER join Roller rol on rol.rollerID = i.rollerID
+				INNER join PackModuleIssue pmi on i.packModuleIssueID = pmi.packModuleIssueID
+				INNER JOIN [PackModuleContent] AS pmc ON pmi.[priceListID] = pmc.[pricelistID]
+				INNER JOIN [ModulePriceList] AS mpl ON pmc.modulePriceListID = mpl.modulePriceListID
+				INNER JOIN [Module] AS m ON mpl.[moduleID] = m.[moduleID]
+				left join @massmedias mmu on m.massmediaID = mmu.massmediaID 
+					and ((@userID = @loggedUserID and mmu.myMassmedia = 1) or
+						(@userID <> @loggedUserID and mmu.foreignMassmedia = 1))
+			where i.campaignID = @campaignID and tw.massmediaID = m.massmediaID and pmi.issueDate between @startDate and @currentDate 
+			group by m.massmediaID
+		) as x on r.massmediaID = x.massmediaID
+		where r.campaignId = @campaignID
+	END
+	ELSE
+	begin
+		Exec GetPriceByPeriod 
+			@campaignId, @typeId, @startDate, @currentDate, @total OUT
+		
+		IF @typeId = 2
+		BEGIN
+			select 
+				@issuesCount = COUNT(*), 
+				@issuesDuration = SUM(st.duration), 
+				@showByDuration = 0
+			From ProgramIssue i 
+				inner join SponsorTariff st on i.tariffID = st.tariffID
+				inner join SponsorProgramPriceList pl on st.priceListID = pl.priceListID
+			Where		
+				i.campaignID = @campaignID and 
+				Convert(datetime, Convert(varchar(8), DATEADD(mi, -DATEPART(mi, pl.broadcastStart), DATEADD(hh, -DATEPART(hh, pl.broadcastStart), i.issueDate)), 112), 112) between dbo.ToShortDate(@startDate) and dbo.ToShortDate(@currentDate) 
+		END
+		ELSE
+		BEGIN
+			select 
+				@issuesCount = COUNT(*), 
+				@issuesDuration = SUM(rol.duration), 
+				@showByDuration = case when SUM(tw.maxCapacity) > 0 then 0 else 1 end
+			from Issue i 
+				inner join Roller rol on rol.rollerID = i.rollerID
+				inner join TariffWindow tw on i.originalWindowID = tw.windowId
+			where i.campaignID = @campaignID and tw.dayOriginal between dbo.ToShortDate(@startDate) and dbo.ToShortDate(@currentDate) 
+		END
+		
+		Update @res
+		Set total = @total, showByDuration = @showByDuration, issuesCount = issuesCount + @issuesCount, issuesDuration = issuesDuration + @issuesDuration
+		Where currentDate = @currentDate And campaignId = @campaignId
+	END
+	
+	if @campaignFinishDate between @startDate and @currentDate
+	begin 
+		Exec GetPriceByPeriod @campaignId, @typeId, @campaignStartDate, @campaignFinishDate, @total out
+		set @mistake = @campaignFinalPrice - @total
+		update @res set mistake = @mistake where campaignId = @campaignID
+	end 
+	
+	Fetch Next From cur_comp2 INTO @currentDate, @campaignId, @typeId, @campaignStartDate,@campaignFinishDate,@campaignFinalPrice,@campaignAdiscount,@userID
+End
+
+CLOSE cur_comp2
+DEALLOCATE cur_comp2
+
+Select 
+	r.currentDate,
+	r.currentDate AS currentDate2,
+	c.campaignId,
+	c.actionId,
+	c.startDate,
+	c.finishDate,
+	cast(null as decimal(18,2)) as total,
+	r.total as campaignTotal,
+	f.name as firmName,
+	f.firmId,
+	m.nameWithGroup as massmediaName,
+	m.massmediaId,
+	pt.name as paymentTypeName,
+	u.LastName + ' ' + u.FirstName as userName,
+	r.mistake,
+	case when r.showByDuration = 1 then dbo.fn_Int2Time(r.issuesDuration) + @tSec else cast(r.issuesCount as nvarchar(10)) + @tPcs end as saleVolume
+From 
+	@res r
+	Inner Join Campaign c On r.CampaignId = c.CampaignId
+	Inner Join Action a On a.actionId = c.actionId
+	Inner Join Firm f On f.firmId = a.firmId
+	Inner Join vMassmedia m On m.massmediaId = r.massmediaID
+	Inner Join PaymentType pt On pt.paymentTypeId = c.paymentTypeId
+	Inner Join [User] u On u.userId = a.userId
+WHERE 
+	r.total IS NOT NULL AND r.total > 0
+Order by
+	r.currentDate asc,
+	c.actionId desc
+	
+
+select top 1 1
+from @res r
+	inner join MassMedia mm on r.massmediaID = mm.massmediaID 
+	inner join @massmedias mmu on mm.massmediaID = mmu.massmediaID 
+where mm.deadline < @finishDate
+GO
+
+-- ===== DiscountValues =====
+IF @@TRANCOUNT = 0 BEGIN RAISERROR('Транзакция откатилась — DiscountValues и дальше не выполняются', 16, 1); SET NOEXEC ON; END
+GO
+SET QUOTED_IDENTIFIER ON;
+GO
+CREATE OR ALTER PROC dbo.DiscountValues
+(
+@discountReleaseID smallint = Null,
+@discountValueID smallint = Null,
+@languageCode VARCHAR(10) = 'ru' -- язык интерфейса веба (docs/tasks/web-i18n.md); десктоп не передаёт
+)
+AS
+SET NOCOUNT ON
+DECLARE @tDiscountForSumsOver NVARCHAR(200) = dbo.fn_Translate(@languageCode, N'Скидка для сумм более ')
+DECLARE @tRub NVARCHAR(200) = dbo.fn_Translate(@languageCode, N'р.')
+SELECT 
+	[discountValueID], 
+	[discountReleaseID], 
+	[summa], 
+	[discount],
+	@tDiscountForSumsOver + LTrim(Str([summa])) + @tRub as name
+FROM 
+	[DiscountValue]
+WHERE
+	[discountReleaseID] = Coalesce(@discountReleaseID, [discountReleaseID])
+	AND [discountValueID] = Coalesce(@discountValueID, [discountValueID])
+ORDER BY
+	summa DESC
+GO
+GRANT EXECUTE
+    ON OBJECT::[dbo].[DiscountValues] TO PUBLIC
+    AS [dbo];
+GO
+
+-- ===== ModulePriceLists =====
+IF @@TRANCOUNT = 0 BEGIN RAISERROR('Транзакция откатилась — ModulePriceLists и дальше не выполняются', 16, 1); SET NOEXEC ON; END
+GO
+SET QUOTED_IDENTIFIER ON;
+GO
+CREATE OR ALTER PROC [dbo].[ModulePriceLists]
+(
+@moduleID smallint = NULL,
+@modulePriceListID smallint = NULL,
+@hideModulePLInThePast bit = 0,
+@languageCode VARCHAR(10) = 'ru' -- язык интерфейса веба (docs/tasks/web-i18n.md); десктоп не передаёт
+)
+
+AS
+SET NOCOUNT ON
+DECLARE @tModule NVARCHAR(200) = dbo.fn_Translate(@languageCode, N'Модуль ')
+DECLARE @tPriceFrom NVARCHAR(200) = dbo.fn_Translate(@languageCode, N' (прайс от ')
+SELECT 
+	mpl.*, 
+	pl.broadcastStart,
+	@tModule + CONVERT(varchar(10), mpl.startDate, 104) + ' - ' + CONVERT(varchar(10), mpl.finishDate, 104) + @tPriceFrom + CONVERT(varchar(10), pl.startDate, 104) + ')' as NAME,
+	mm.[roltypeID]
+FROM 
+	[ModulePriceList] mpl
+	INNER JOIN PriceList pl ON pl.priceListID = mpl.priceListID
+	INNER JOIN [MassMedia] mm ON pl.[massmediaID] = mm.[massmediaID]
+WHERE
+	mpl.moduleID = Coalesce(@moduleID, mpl.moduleID) And
+	mpl.modulePriceListID = Coalesce(@modulePriceListID, mpl.modulePriceListID)
+	AND (@hideModulePLInThePast = 0 OR mpl.finishDate >= CAST(GETDATE() AS DATE))
+ORDER BY
+	mpl.startDate ASC
+GO
+GRANT EXECUTE
+    ON OBJECT::[dbo].[ModulePriceLists] TO PUBLIC
+    AS [dbo];
+GO
+
+-- ===== ModulePricelistByDate =====
+IF @@TRANCOUNT = 0 BEGIN RAISERROR('Транзакция откатилась — ModulePricelistByDate и дальше не выполняются', 16, 1); SET NOEXEC ON; END
+GO
+SET QUOTED_IDENTIFIER OFF;
+GO
+CREATE OR ALTER PROC [dbo].[ModulePricelistByDate]
+(
+@massmediaID smallint,
+@theDate datetime,
+@moduleID SMALLINT = NULL,
+@languageCode VARCHAR(10) = 'ru' -- язык интерфейса веба (docs/tasks/web-i18n.md); десктоп не передаёт
+)
+AS
+SET NOCOUNT ON
+DECLARE @tPricelistFrom NVARCHAR(200) = dbo.fn_Translate(@languageCode, N'Прайс-лист от ')
+SELECT 
+	mpl.[modulePriceListID], 
+	mpl.[priceListID],
+	mpl.[price],
+	mpl.[moduleID],
+	mpl.startDate,
+	mpl.[finishDate],
+	@tPricelistFrom + CONVERT(varchar(10), mpl.startDate, 104) as name
+FROM 
+	[ModulePricelist] mpl 
+	INNER JOIN [Pricelist] pl ON mpl.[priceListID] = pl.[pricelistID]
+WHERE
+	mpl.moduleID = ISNULL(@moduleID, mpl.moduleID) AND
+	@theDate BETWEEN mpl.[startDate] AND mpl.[finishDate] AND
+	pl.[massmediaID] = @massmediaID
+GO
+
+-- ===== ModulePricelistPassport =====
+IF @@TRANCOUNT = 0 BEGIN RAISERROR('Транзакция откатилась — ModulePricelistPassport и дальше не выполняются', 16, 1); SET NOEXEC ON; END
+GO
+SET QUOTED_IDENTIFIER ON;
+GO
+CREATE OR ALTER PROC [dbo].[ModulePricelistPassport]
+(
+@moduleID smallint,
+@modulePriceListID smallint = NULL,
+@languageCode VARCHAR(10) = 'ru' -- язык интерфейса веба (docs/tasks/web-i18n.md); десктоп не передаёт
+)
+AS
+SET NOCOUNT ON
+DECLARE @tPricelistFrom NVARCHAR(200) = dbo.fn_Translate(@languageCode, N'Прайс-лист от ')
+SELECT 
+	DISTINCT(p.pricelistID) as ID,
+	p.[startDate],
+	@tPricelistFrom + CONVERT(varchar(10), p.startDate, 104) as name 
+FROM 
+	Module m
+	INNER JOIN Pricelist p ON p.massmediaID = m.massmediaID
+	LEFT JOIN ModulePriceList mp ON m.moduleID = mp.moduleID 
+		And p.priceListID = mp.priceListID 
+		And (mp.modulePriceListID <> @modulePriceListID OR @modulePriceListID IS NULL) 
+WHERE 
+	m.moduleID = @moduleID 
+ORDER BY 
+	p.startDate DESC
+GO
+
+-- ===== PackModuleContentPassport =====
+IF @@TRANCOUNT = 0 BEGIN RAISERROR('Транзакция откатилась — PackModuleContentPassport и дальше не выполняются', 16, 1); SET NOEXEC ON; END
+GO
+SET QUOTED_IDENTIFIER ON;
+GO
+CREATE OR ALTER PROCEDURE [dbo].[PackModuleContentPassport]
+(
+@languageCode VARCHAR(10) = 'ru' -- язык интерфейса веба (docs/tasks/web-i18n.md); десктоп не передаёт
+)
+WITH EXECUTE AS OWNER
+AS
+SET NOCOUNT ON
+DECLARE @tModule NVARCHAR(200) = dbo.fn_Translate(@languageCode, N'Модуль ')
+DECLARE @tPriceFrom NVARCHAR(200) = dbo.fn_Translate(@languageCode, N' (прайс от ')
+-- 1. Massmedia
+SELECT massmediaID as [id], nameWithGroup as [name] FROM vMassmedia  where isActive = 1 ORDER BY [name]
+
+-- 2. Modules
+EXEC ModuleList
+
+-- 3. PriceLists
+SELECT 
+	mpl.[modulePriceListID], 
+	mpl.[moduleID],
+	@tModule + CONVERT(varchar(10), mpl.startDate, 104) + ' - ' + CONVERT(varchar(10), mpl.finishDate, 104) + @tPriceFrom + CONVERT(varchar(10), pl.startDate, 104) + ')' as NAME
+FROM 
+	[ModulePriceList] mpl
+	INNER JOIN PriceList pl ON pl.priceListID = mpl.priceListID
+ORDER BY
+	mpl.startDate asc
+GO
+
+-- ===== PackModulePricelistByDate =====
+IF @@TRANCOUNT = 0 BEGIN RAISERROR('Транзакция откатилась — PackModulePricelistByDate и дальше не выполняются', 16, 1); SET NOEXEC ON; END
+GO
+SET QUOTED_IDENTIFIER OFF;
+GO
+CREATE OR ALTER PROC [dbo].[PackModulePricelistByDate]
+(
+@massmediaID SMALLINT = NULL,
+@theDate DATETIME,
+@packModuleID SMALLINT = NULL,
+@languageCode VARCHAR(10) = 'ru' -- язык интерфейса веба (docs/tasks/web-i18n.md); десктоп не передаёт
+)
+AS
+SET NOCOUNT ON
+DECLARE @tPricelistFrom NVARCHAR(200) = dbo.fn_Translate(@languageCode, N'Прайс-лист от ')
+SELECT 
+	mpl.[priceListID],
+	m.massmediaID,
+	mpl.[startDate],
+	@tPricelistFrom + CONVERT(varchar(10), mpl.[startDate], 104) as name,
+	mpl.[finishDate],
+	@packModuleID as packModuleID,
+	mpl.[price], 
+	mpl.rollerID
+FROM 
+	[PackModulePriceList] mpl
+	INNER JOIN [PackModuleContent] pmc ON mpl.pricelistID = pmc.pricelistID
+	INNER JOIN [Module] m ON pmc.moduleID = m.moduleID 
+		AND m.massmediaID = ISNULL(@massmediaID, m.massmediaID)
+WHERE
+	mpl.[packModuleID] = ISNULL(@packModuleID, mpl.[packModuleID]) AND
+	mpl.[startDate] <= @theDate AND mpl.[finishDate] >= @theDate -- Не находит прайс лист когда редактируешь кампанию
+GO
+
+-- ===== PackModulePricelists =====
+IF @@TRANCOUNT = 0 BEGIN RAISERROR('Транзакция откатилась — PackModulePricelists и дальше не выполняются', 16, 1); SET NOEXEC ON; END
+GO
+SET QUOTED_IDENTIFIER ON;
+GO
+CREATE OR ALTER PROC [dbo].[PackModulePricelists]
+(
+@packModuleID smallint = null,
+@pricelistID smallint = null,
+@hidePLInThePast bit = 0,
+@languageCode VARCHAR(10) = 'ru' -- язык интерфейса веба (docs/tasks/web-i18n.md); десктоп не передаёт
+)
+as
+
+SET NOCOUNT ON
+DECLARE @tPricelistFrom NVARCHAR(200) = dbo.fn_Translate(@languageCode, N'Прайс-лист от ')
+DECLARE @tTo NVARCHAR(200) = dbo.fn_Translate(@languageCode, N' до ')
+SELECT DISTINCT
+	pl.[pricelistID], 
+	pl.[packModuleID],
+	pl.[startDate],
+	@tPricelistFrom + CONVERT(varchar(10), pl.[startDate], 104) + @tTo + CONVERT(varchar(10), pl.finishDate, 104) as name,
+	pl.[finishDate],
+	pl.[price],
+	pl.[extraChargeFirstRoller],
+	pl.[extraChargeSecondRoller],
+	pl.[extraChargeLastRoller],
+	pl.rollerID,
+	mm.[roltypeID]
+FROM 
+	[PackModulePriceList] pl
+	left JOIN [PackModuleContent] pmc ON pl.[priceListID] = pmc.[pricelistID]
+	left JOIN [Module] m ON pmc.[moduleID] = m.[moduleID]
+	left JOIN [MassMedia] mm ON m.[massmediaID] = mm.[massmediaID]
+WHERE
+	pl.packModuleID = Coalesce(@packModuleID, pl.packModuleID) And
+	pl.[pricelistID] = Coalesce(@pricelistID, pl.[pricelistID])
+	And (@hidePLInThePast = 0 or pl.finishDate > GETDATE())
+ORDER BY 
+	pl.[startDate] DESC
+GO
+
+-- ===== PackageDiscountPriceLists =====
+IF @@TRANCOUNT = 0 BEGIN RAISERROR('Транзакция откатилась — PackageDiscountPriceLists и дальше не выполняются', 16, 1); SET NOEXEC ON; END
+GO
+SET QUOTED_IDENTIFIER ON;
+GO
+-- =============================================
+-- Author:		Denis Gladkikh
+-- Create date: 01.02.2008
+-- Description:	<Description,,>
+-- =============================================
+CREATE OR ALTER PROCEDURE [dbo].[PackageDiscountPriceLists]
+(
+	@packageDiscountPriceListId INT = NULL,
+	@packageDiscountID INT = NULL,
+	@hidePLInThePast bit = 0,
+	@languageCode VARCHAR(10) = 'ru' -- язык интерфейса веба (docs/tasks/web-i18n.md); десктоп не передаёт
+)
+AS
+BEGIN
+	SET NOCOUNT ON;
+	DECLARE @tDiscountsFrom NVARCHAR(200) = dbo.fn_Translate(@languageCode, N'Скидки от ');
+	DECLARE @tTo NVARCHAR(200) = dbo.fn_Translate(@languageCode, N' до ');
+
+    SELECT pdpl.*,
+		@tDiscountsFrom + convert(varchar,pdpl.startDate,104) + case when pdpl.finishDate is null then space(0) else @tTo + convert(varchar,pdpl.finishDate,104) end as name
+    FROM 
+		[PackageDiscountPriceList] pdpl 
+    WHERE 
+		pdpl.[packageDiscountID] = ISNULL(@packageDiscountID, pdpl.[packageDiscountID])
+		AND pdpl.[packageDiscountPriceListID] = ISNULL(@packageDiscountPriceListID, pdpl.[packageDiscountPriceListID])
+		And (@hidePLInThePast = 0 or pdpl.finishDate > GETDATE())
+	ORDER BY
+		pdpl.startDate desc
+END
+GO
+
+-- ===== PaymentCommonActions =====
+IF @@TRANCOUNT = 0 BEGIN RAISERROR('Транзакция откатилась — PaymentCommonActions и дальше не выполняются', 16, 1); SET NOEXEC ON; END
+GO
+SET QUOTED_IDENTIFIER ON;
+GO
+CREATE OR ALTER PROCEDURE [dbo].[PaymentCommonActions]
+(
+@paymentID int = null,
+@managerID smallint = null,
+@startOfInterval datetime = null,
+@endOfInterval datetime = null,
+@agencyID smallint = null,
+@paymentTypeID smallint = null,
+@firmID smallint = null,
+--@paymentTypesIDString varchar(1024) = null,
+@agenciesIDString varchar(1024) = NULL,
+@isHideWhite BIT = 0,
+@isHideBlack BIT = 0,
+@showBlack bit = 1,
+@showWhite bit = 1,
+@loggedUserID smallint,
+@languageCode VARCHAR(10) = 'ru' -- язык интерфейса веба (docs/tasks/web-i18n.md); десктоп не передаёт
+)
+WITH EXECUTE AS OWNER
+AS
+SET NOCOUNT ON
+DECLARE @tActionPayment NVARCHAR(200) = dbo.fn_Translate(@languageCode, N'Оплата акции №');
+CREATE TABLE #Agency(agencyID smallint)
+CREATE Table #PaymentType (paymentTypeID smallint)
+
+-- Populate temporary tables with Agency and Payment types
+IF @agenciesIDString Is Null
+	IF @agencyID IS NULL
+		INSERT INTO #Agency SELECT agencyID FROM Agency
+	ELSE
+		INSERT INTO #Agency VALUES(@agencyID)
+Else
+	Exec dbo.hlp_PopulateTableFromCommaSeparatedString '#Agency', @agenciesIDString
+
+	declare @massmedias table(massmediaID smallint primary key, myMassmedia bit, foreignMassmedia bit)
+	insert into @massmedias (massmediaID, myMassmedia, foreignMassmedia) 
+	select * from dbo.fn_GetMassmediasForUser(@loggedUserID)
+
+	declare @isRightToViewForeignActions bit, @isRightToViewGroupActions bit
+
+	select @isRightToViewForeignActions = dbo.fn_IsRightToViewForeignActions(@loggedUserID),
+		@isRightToViewGroupActions = dbo.fn_IsRightToViewGroupActions(@loggedUserID)
+
+	declare @ugroups table(id int)
+	insert into @ugroups (id) 
+	select * from dbo.[fn_GetUserGroups](@loggedUserID)
+
+select distinct
+	psoa.*,
+	@tActionPayment + LTrim(psoa.actionID) as name,
+	f.name as firmName,
+	a.name as agencyName,
+	pt.name as paymentTypeName
+FROM
+	[PaymentAction] psoa
+	INNER JOIN [Action] soa ON soa.actionID = psoa.actionID
+	inner join [Campaign] c on soa.[actionID] = c.[actionID]
+	INNER JOIN Payment pso ON pso.paymentID = psoa.paymentID
+	INNER JOIN Firm f ON f.firmID = pso.firmID
+	INNER JOIN Agency a ON a.agencyID = pso.agencyID
+	INNER JOIN PaymentType pt ON pt.paymentTypeID = pso.paymentTypeID
+	left join @massmedias umm on c.massmediaID = umm.massmediaID
+	left join GroupMember gm on soa.userID = gm.userID
+	left join @ugroups ug on gm.groupID = ug.id
+where
+	(soa.userID = @loggedUserID or @isRightToViewForeignActions = 1 or (@isRightToViewGroupActions = 1 and ug.id is not null)) and
+			(soa.isSpecial = 1 or (c.campaignTypeID <> 4 and umm.massmediaID is not null and ((soa.userID = @loggedUserID and umm.myMassmedia = 1) or (soa.userID <> @loggedUserID and umm.foreignMassmedia = 1) )) 
+				or (c.campaignTypeID = 4 and not exists(select * 
+														from PackModuleIssue pmi 
+															inner join PackModuleContent pmc on pmi.pricelistID = pmc.pricelistID
+															inner join Module m on pmc.moduleID = m.moduleID
+															left join @massmedias ummm on m.massmediaID = ummm.massmediaID
+														where pmi.campaignID = c.campaignID and (ummm.massmediaID is null or 
+															(soa.userID = @loggedUserID and umm.myMassmedia = 0) or
+															 (soa.userID <> @loggedUserID and umm.foreignMassmedia = 0) )))) and	
+	psoa.[paymentID] = Coalesce(@paymentID, psoa.[paymentID]) And
+	pso.paymentDate BETWEEN Coalesce(@startOfInterval, pso.paymentDate)
+		And Coalesce(dateadd(ss, -1, dateadd(day, 1, @endOfInterval)), pso.paymentDate)	And
+	soa.userID = Coalesce(@managerID, soa.[userID]) And
+	pso.agencyID IN (Select agencyID From #Agency) And
+	soa.firmID = Coalesce(@firmID, soa.firmID) AND 
+	(pt.isHidden = 0 or @isHideWhite = 0) And
+	(pt.isHidden = 1 or @isHideBlack = 0) and
+	((pt.IsHidden = 1 and @showBlack = 1)  or
+	(pt.IsHidden = 0 and @showWhite = 1)) 
+ORDER BY
+	psoa.actionID desc
+GO
+
+-- ===== PricelistByDate =====
+IF @@TRANCOUNT = 0 BEGIN RAISERROR('Транзакция откатилась — PricelistByDate и дальше не выполняются', 16, 1); SET NOEXEC ON; END
+GO
+SET QUOTED_IDENTIFIER OFF;
+GO
+CREATE OR ALTER PROC [dbo].[PricelistByDate]
+(
+@massmediaID SMALLINT = null,
+@theDate datetime,
+@moduleID smallint = NULL,
+@campaignID INT = null,
+@languageCode VARCHAR(10) = 'ru' -- язык интерфейса веба (docs/tasks/web-i18n.md); десктоп не передаёт
+)
+AS
+SET NOCOUNT ON
+DECLARE @tPricelistFrom NVARCHAR(200) = dbo.fn_Translate(@languageCode, N'Прайс-лист от ')
+IF @campaignID IS NULL 
+	SELECT 
+		pl.*,
+		@tPricelistFrom + CONVERT(varchar(10), pl.[startDate], 104) as name,
+		@moduleID as moduleID
+	FROM 
+		[Pricelist] pl
+	WHERE
+		pl.pricelistID = dbo.fn_GetPricelistIDByDate(@massmediaID, @theDate, default)
+ELSE
+BEGIN
+	DECLARE @campaignTypeID SMALLINT
+	SELECT @campaignTypeID = campaignTypeID FROM [Campaign] WHERE [campaignID] = @campaignID
+	
+	IF @campaignTypeID = 4
+		SELECT 
+			pmpl.*, 
+			@tPricelistFrom + CONVERT(varchar(10), pmpl.[startDate], 104) as name
+		FROM [Campaign] c 
+			INNER JOIN [PackModuleIssue] pmi ON pmi.[campaignID] = c.[campaignID]
+			INNER JOIN [PackModulePriceList] pmpl ON pmi.[pricelistID] = pmpl.[priceListID]
+		WHERE
+			@theDate BETWEEN pmpl.[startDate] AND pmpl.[finishDate]
+END
+GO
+
+-- ===== Pricelists =====
+IF @@TRANCOUNT = 0 BEGIN RAISERROR('Транзакция откатилась — Pricelists и дальше не выполняются', 16, 1); SET NOEXEC ON; END
+GO
+SET QUOTED_IDENTIFIER ON;
+GO
+CREATE OR ALTER PROC [dbo].[Pricelists]
+(
+    @massmediaID smallint = null,
+    @pricelistID smallint = null,
+    @hidePLInThePast bit = 0,
+    @languageCode VARCHAR(10) = 'ru' -- язык интерфейса веба (docs/tasks/web-i18n.md); десктоп не передаёт
+)
+AS
+BEGIN
+    SET NOCOUNT ON;
+
+    DECLARE @tPricelistFrom NVARCHAR(200) = dbo.fn_Translate(@languageCode, N'Прайс-лист от ');
+
+    ;WITH pl0 AS
+    (
+        SELECT *
+        FROM dbo.Pricelist pl
+        WHERE pl.massmediaID = COALESCE(@massmediaID, pl.massmediaID)
+          AND pl.pricelistID = COALESCE(@pricelistID, pl.pricelistID)
+          AND (@hidePLInThePast = 0 OR pl.finishDate >= CAST(GETDATE() AS DATE))
+    ),
+    tw AS
+    (
+        SELECT
+            t.pricelistID,
+            MIN(tw.windowDateOriginal) AS minDate,
+            MAX(tw.windowDateOriginal) AS maxDate
+        FROM dbo.TariffWindow tw
+        INNER JOIN dbo.Tariff t ON t.tariffID = tw.tariffId
+        WHERE EXISTS (SELECT 1 FROM pl0 WHERE pl0.pricelistID = t.pricelistID)
+        GROUP BY t.pricelistID
+    )
+    SELECT
+        pl.*,
+        @tPricelistFrom + CONVERT(varchar(10), pl.startDate, 104)
+        + N' (' + dbo.fn_GetTariffWindowDateRangeStr(tw.minDate, tw.maxDate, pl.broadcastStart, @languageCode) + N')' AS name,
+        CONVERT(varchar(5), pl.broadcastStart, 114) AS broadcastStartString
+    FROM pl0 pl
+    LEFT JOIN tw ON tw.pricelistID = pl.pricelistID
+    ORDER BY pl.startDate DESC;
+END
+GO
+GRANT EXECUTE
+    ON OBJECT::[dbo].[Pricelists] TO PUBLIC
+    AS [dbo];
+GO
+
+-- ===== SpecialActions =====
+IF @@TRANCOUNT = 0 BEGIN RAISERROR('Транзакция откатилась — SpecialActions и дальше не выполняются', 16, 1); SET NOEXEC ON; END
+GO
+SET QUOTED_IDENTIFIER ON;
+GO
+-- =============================================
+-- Author:		Denis Gladkikh (dgladkikh@fogsoft.ru)
+-- Create date: 17.09.2008
+-- Description:	List Special Actions
+-- Modification: Denis Gladkikh (dgladkikh@fogsoft.ru) 18.09.2008 - Need agency with payment Type
+-- =============================================
+CREATE OR ALTER PROCEDURE [dbo].[SpecialActions] 
+(
+	@actionID int = null,
+	@startDate datetime = null, 
+	@endDate datetime = null,
+	@firmID int = null,
+	@userID smallint = null,
+	@paymentTypeID tinyint = null,
+	@agencyID smallint = null,
+	@loggedUserID smallint,
+	@languageCode VARCHAR(10) = 'ru' -- язык интерфейса веба (docs/tasks/web-i18n.md); десктоп не передаёт
+)
+as 
+begin 
+	set nocount on;
+	DECLARE @tRemainder NVARCHAR(200) = dbo.fn_Translate(@languageCode, N'Остаток № ');
+
+declare 
+	@isRightToViewForeignActions bit,
+	@isRightToViewGroupActions bit
+
+select 
+	@isRightToViewForeignActions = dbo.fn_IsRightToViewForeignActions(@loggedUserID),
+	@isRightToViewGroupActions = dbo.fn_IsRightToViewGroupActions(@loggedUserID)
+
+	declare @ugroups table(id int)
+	insert into @ugroups (id) 
+	select * from dbo.[fn_GetUserGroups](@loggedUserID)
+
+    select distinct
+		a.actionID, 
+		f.[name] as firm, 
+		u.userName as manager,
+		a.startDate as date,
+		a.totalPrice as price,
+		a.userID,
+		a.firmID,
+		(@tRemainder + cast(a.actionID as varchar)) as [name],
+		c.agencyID,
+		c.paymentTypeID,
+		ag.name as agency,
+		pt.[name] as paymenttype
+    from [Action] a 
+		inner join Campaign c on a.actionID = c.actionID
+		inner join Firm f on a.firmID = f.firmID
+		inner join [User] u on a.userID = u.userID
+		inner join Agency ag on c.agencyID = ag.agencyID
+		inner join PaymentType pt on c.paymentTypeID = pt.paymentTypeID
+		left join GroupMember gm on a.userID = gm.userID
+		left join @ugroups ug on gm.groupID = ug.id
+	where a.isSpecial = 1 
+		and (a.userID = @loggedUserID or @isRightToViewForeignActions = 1 or (@isRightToViewGroupActions = 1 and ug.id is not null)) 
+		and a.actionID = coalesce(@actionID, a.actionID)
+		and ((@startDate is null or a.startDate >= @startDate)
+		and (@endDate is null or a.startDate <= @endDate)
+		and a.firmID = coalesce(@firmID, a.firmID)
+		and a.userID = coalesce(@userID, a.userID)
+		and c.agencyID = coalesce(@agencyID, c.agencyID)
+		and c.paymentTypeID = coalesce(@paymentTypeID, c.paymentTypeID))
+	order by 1
+end
+GO
+
+-- ===== SponsorPricelistByDate =====
+IF @@TRANCOUNT = 0 BEGIN RAISERROR('Транзакция откатилась — SponsorPricelistByDate и дальше не выполняются', 16, 1); SET NOEXEC ON; END
+GO
+SET QUOTED_IDENTIFIER OFF;
+GO
+/*
+Mdified: Denis Gladkikh (dgladkikh@fogsoft.ru) 17.09.2008 - Add broadcast start logic to sponsor price list
+*/
+CREATE OR ALTER PROC [dbo].[SponsorPricelistByDate]
+(
+@sponsorProgramID smallint,
+@theDate datetime,
+@languageCode VARCHAR(10) = 'ru' -- язык интерфейса веба (docs/tasks/web-i18n.md); десктоп не передаёт
+)
+AS
+SET NOCOUNT ON
+DECLARE @tPricelistFrom NVARCHAR(200) = dbo.fn_Translate(@languageCode, N'Прайс-лист от ')
+IF EXISTS (
+	SELECT * FROM [SponsorProgramPricelist] pl
+	WHERE	sponsorProgramID = @sponsorProgramID AND	@theDate between pl.[startDate] AND pl.finishDate
+	)
+	SELECT 
+		pl.[pricelistID], 
+		pl.[sponsorProgramID],
+		pl.[startDate],
+		@tPricelistFrom + CONVERT(varchar(10), pl.[startDate], 104) as name,
+		pl.[finishDate],
+		pl.bonus,
+		pl.broadcastStart
+	FROM 
+		[SponsorProgramPricelist] pl
+	WHERE
+		pl.sponsorProgramID = @sponsorProgramID AND
+		@theDate between pl.[startDate] AND pl.finishDate
+ELSE
+	SELECT TOP 1
+		pl.[pricelistID], 
+		pl.[sponsorProgramID],
+		pl.[startDate],
+		@tPricelistFrom + CONVERT(varchar(10), pl.[startDate], 104) as name,
+		pl.[finishDate],
+		pl.bonus,
+		pl.broadcastStart
+	FROM 
+		[SponsorProgramPricelist] pl
+	WHERE
+		pl.sponsorProgramID = @sponsorProgramID AND
+		@theDate < pl.[startDate] 
+	ORDER BY
+		pl.[startDate]
+GO
+
+-- ===== SponsorPricelists =====
+IF @@TRANCOUNT = 0 BEGIN RAISERROR('Транзакция откатилась — SponsorPricelists и дальше не выполняются', 16, 1); SET NOEXEC ON; END
+GO
+SET QUOTED_IDENTIFIER ON;
+GO
+/*
+Modified by: Denis Gladkikh (dgladkikh@fogsoft.ru) 17.09.2008
+*/
+CREATE OR ALTER PROC [dbo].[SponsorPricelists]
+(
+@sponsorProgramID smallint = NULL,
+@pricelistID smallint = NULL,
+@hideSponsorPLInThePast bit = 0,
+@languageCode VARCHAR(10) = 'ru' -- язык интерфейса веба (docs/tasks/web-i18n.md); десктоп не передаёт
+)
+AS
+SET NOCOUNT ON
+DECLARE @tPricelistFrom NVARCHAR(200) = dbo.fn_Translate(@languageCode, N'Прайс-лист от ')
+DECLARE @tTo NVARCHAR(200) = dbo.fn_Translate(@languageCode, N' до ')
+SELECT 
+	spp.*,
+	dbo.fn_Int2Time(spp.bonus) as bonusString,
+	@tPricelistFrom + Convert(varchar(8), startDate, 4) + @tTo + Convert(varchar(8), finishDate, 4)  as name
+FROM 
+	[SponsorProgramPricelist] spp
+WHERE
+	spp.sponsorProgramID = COALESCE(@sponsorProgramID, spp.sponsorProgramID) AND
+	spp.pricelistID = COALESCE(@pricelistID, spp.pricelistID) 
+	And (@hideSponsorPLInThePast = 0  Or spp.finishDate > GETDATE())
+ORDER BY
+	spp.finishDate DESC
+GO
+GRANT EXECUTE
+    ON OBJECT::[dbo].[SponsorPricelists] TO PUBLIC
+    AS [dbo];
+GO
+
+-- ===== Stat_AvgDiscount =====
+IF @@TRANCOUNT = 0 BEGIN RAISERROR('Транзакция откатилась — Stat_AvgDiscount и дальше не выполняются', 16, 1); SET NOEXEC ON; END
+GO
+SET QUOTED_IDENTIFIER ON;
+GO
+-- =============================================
+-- Author:		Denis Gladkikh (dgladkikh@fogsoft.ru)
+-- Create date: 21.11.2008
+-- Description:	Информация о скидках
+-- =============================================
+CREATE OR ALTER procedure [dbo].[Stat_AvgDiscount] 
+(
+@StartDay DATETIME = default,
+@FinishDay DATETIME = default,
+@FirmID int = default, 
+@HeadCompanyID int = default, 
+@MassmediaID int = default, 
+@PaymentTypeID int = default,
+@CampaignTypeID int = default,
+@ManagerID int = default,
+@AgencyID int = default,
+@AdvertTypeID int = default,
+@IsGroupByPaymentType bit = 0,
+@IsGroupByCampaignType bit = 0,
+@IsGroupByMassmedia bit = 0,
+@IsGroupByFirm bit = 0,
+@IsGroupByManager bit = 0,
+@IsGroupByAgency bit = 0,
+@IsGroupByMassmediaGroupType bit = 0,
+@IsGroupByActionID bit = 0,
+@massmediaGroupID int = NULL,
+@ShowWhite bit = 1,
+@ShowBlack bit = 1,
+@Currency int = 1,
+@loggedUserID smallint,
+@actionID int = NULL,
+@languageCode VARCHAR(10) = 'ru' -- язык интерфейса веба (docs/tasks/web-i18n.md); десктоп не передаёт
+)
+WITH EXECUTE AS OWNER
+as 
+begin 
+	set nocount on;
+	DECLARE @tAction NVARCHAR(200) = dbo.fn_Translate(@languageCode, N'Акция №');
+
+	declare @massmedias table(massmediaID smallint primary key, myMassmedia bit, foreignMassmedia bit)
+	insert into @massmedias (massmediaID, myMassmedia, foreignMassmedia) 
+	select * from dbo.fn_GetMassmediasForUser(@loggedUserID)
+
+	declare @isRightToViewForeignActions bit,
+			@isRightToViewGroupActions bit
+
+	select @isRightToViewForeignActions = dbo.fn_IsRightToViewForeignActions(@loggedUserID),
+		@isRightToViewGroupActions = dbo.fn_IsRightToViewGroupActions(@loggedUserID)
+
+	declare @ugroups table(id int)
+	insert into @ugroups (id) 
+	select * from dbo.[fn_GetUserGroups](@loggedUserID)
+
+	If	@StartDay Is Null Or @FinishDay Is Null
+		Begin
+		Raiserror('FilterStartFinishDays', 16, 1)
+		Return
+		End
+
+	CREATE TABLE #res
+	(
+		campaignTariffPrice decimal(18,2),
+		campaignPrice decimal(18,2),
+		campaignVolumeDiscount decimal(9,4),
+		campaignManagerDiscount decimal(9,4),
+		campaignPackDiscount decimal(9,4),
+		MassmediaID SMALLINT,
+		PaymentTypeID SMALLINT,
+		ActionID INT,
+		campaignTypeID SMALLINT,
+		Manager_ID SMALLINT,
+		AgencyID SMALLINT,
+		AdvertType_ID smallint,
+		massmediaGroupID int
+	)
+
+	Set	@StartDay = dbo.ToShortDate(@StartDay)
+	Set	@FinishDay = dbo.ToShortDate(@FinishDay)
+
+	Declare cur_companies Cursor Local fast_forward
+	For
+	select  distinct  c.campaignID, c.ActionID, c.massmediaID, 
+			c.PaymentTypeID, c.campaignTypeID, a.userID, c.AgencyID, 
+			c.[startDate], mm.massmediaGroupID, a.discount, c.finalPrice, c.finishDate, c.managerDiscount, c.discount, c.tariffPrice
+	From	
+		Campaign c
+		INNER Join [Action] a On c.ActionID = a.actionID AND a.[isConfirmed] = 1
+		inner join Firm f on f.firmID = a.firmID
+		inner join 
+		(
+			select distinct am.agencyID, max(cast(mm.foreignMassmedia as tinyint)) as foreignMassmedia from AgencyMassmedia am 
+				inner join @massmedias mm on am.massmediaID = mm.massmediaID
+			group by am.agencyID
+		) xx on c.agencyID = xx.agencyID and (a.isSpecial = 0 or xx.foreignMassmedia = 1) 
+		INNER JOIN PaymentType On c.PaymentTypeID = PaymentType.PaymentTypeID
+		left join MassMedia mm on c.massmediaID = mm.massmediaID
+		
+		left JOIN [PackModuleIssue] pmi ON pmi.[campaignID] = c.[campaignID]
+		left JOIN [PackModuleContent] pmc ON pmc.[pricelistID] = pmi.[pricelistID]
+		left JOIN [Module] m ON pmc.[moduleID] = m.[moduleID]
+		
+		inner join @massmedias mmu on (mm.massmediaID = mmu.massmediaID 
+							or m.massmediaID = mmu.massmediaID)
+		inner join MassMedia mmfu on mmu.massmediaID = mmfu.massmediaID 
+		inner join 
+				(
+					select distinct u.userID 
+					from [User] u
+						left join [GroupMember] gm on u.userID = gm.userID
+						left join @ugroups ug on gm.groupID = ug.id
+					where u.userID = @loggedUserID or @isRightToViewForeignActions = 1 or (@isRightToViewGroupActions = 1 and ug.id is not null)
+				) as x on a.userID = x.userID
+	Where	c.StartDate <= @FinishDay and
+			c.FinishDate >= @StartDay and
+			c.AgencyID = IsNull(@AgencyID, c.AgencyID) and
+			a.firmID = IsNull(@FirmID, a.firmID) and
+			f.headCompanyID = IsNull(@headCompanyID, f.headCompanyID) and
+			a.userID = IsNull(@ManagerID, a.userID) and
+			c.PaymentTypeID = IsNull(@PaymentTypeID, c.PaymentTypeID) and
+			c.campaignTypeID = IsNull(@CampaignTypeID, c.campaignTypeID) and
+			(@ShowWhite <> 0 or PaymentType.isHidden <> 0) and  
+			(@ShowBlack <> 0 or PaymentType.isHidden = 0)  
+			and (@MassmediaID is null or mmfu.massmediaID = @MassmediaID)
+			and (@massmediaGroupID is null or mmfu.massmediaGroupId = @massmediaGroupID)
+			and ((a.userID = @loggedUserID and mmu.myMassmedia = 1) or (a.userID <> @loggedUserID and mmu.foreignMassmedia = 1))
+			and (@actionID is null or a.actionID = @actionID)
+
+	Declare	@campaignID int, 
+		@campaignPrice decimal(18,2),
+		@SummaVar decimal(18,2),
+		@CompStartDate datetime,
+		@actionDiscount decimal(9,4),
+		@sumPrice decimal(18,2),
+		@finalPrice decimal(18,2),
+		@cfinishDate datetime,
+		@managerDiscount decimal(9,4),
+		@volumeDiscount decimal(9,4),
+		@campaignTariffPrice decimal(18,2)
+
+	Open	cur_companies
+	Fetch	next from cur_companies into 
+		@campaignID, @ActionID, @MassmediaID, @PaymenttypeID, 
+		@CampaignTypeID, @ManagerID, @AgencyID, @CompStartDate, @massmediaGroupID, @actionDiscount, @finalPrice, @cfinishDate,@managerDiscount,@volumeDiscount,@campaignTariffPrice
+
+	While	@@fetch_status = 0
+	begin
+		if @FinishDay < @cfinishDate or @StartDay > @CompStartDate
+			exec GetPriceByPeriod @campaignId, @CampaignTypeID, @StartDay, @FinishDay, @campaignPrice out, null,@campaignTariffPrice out
+		else 
+			set @campaignPrice = @finalPrice
+
+		IF @CampaignTypeID = 4
+		begin
+			declare @tmp table (massmediaID smallint, price decimal(18,2), tariffPrice decimal(18,2))
+					
+			insert into @tmp(massmediaID, price)
+			select
+				m.[massmediaID], sum(mpl.[price])
+			from [PackModuleIssue] i 
+				INNER JOIN [PackModuleContent] AS pmc ON i.[priceListID] = pmc.[pricelistID]
+				INNER JOIN [ModulePriceList] AS mpl ON pmc.modulePriceListID = mpl.modulePriceListID
+				INNER JOIN [Module] AS m ON mpl.[moduleID] = m.[moduleID]
+			where 
+				i.campaignID = @campaignID	and
+				i.issueDate between @StartDay and @FinishDay 
+			group by m.massmediaID
+				
+			select @sumPrice = sum(t1.price) FROM @tmp AS t1
+			
+			insert into #res (campaignVolumeDiscount,campaignManagerDiscount,campaignPackDiscount,[campaignPrice],campaignTariffPrice, [MassmediaID],[PaymentTypeID],[ActionID],[campaignTypeID],[Manager_ID],	[AgencyID],[AdvertType_ID],	massmediaGroupID) 
+			select 1,@managerDiscount, 1,@campaignPrice * sum(t1.price)/ @sumPrice, @campaignTariffPrice * sum(t1.price)/ @sumPrice, t1.massmediaID, @PaymenttypeID, @ActionID, @CampaignTypeID,@ManagerID, @AgencyID, 0, mm.massmediaGroupID
+			from @tmp as t1
+				inner join MassMedia mm on t1.massmediaID = mm.massmediaID
+				inner join @massmedias mmu on mm.massmediaID = mmu.massmediaID 
+			where t1.price > 0  
+				and (@MassmediaID is null or mm.massmediaID = @MassmediaID)
+				and (@massmediaGroupID is null or mm.massmediaGroupId = @massmediaGroupID)
+				and ((@ManagerID = @loggedUserID and mmu.myMassmedia = 1) or (@ManagerID <> @loggedUserID and mmu.foreignMassmedia = 1))
+			group by t1.massmediaID, mm.massmediaGroupID
+		END
+		ELSE
+		begin
+			if	@campaignPrice > 0 
+				Insert	Into #res (campaignVolumeDiscount,campaignManagerDiscount,campaignPackDiscount,[campaignPrice],campaignTariffPrice, [MassmediaID],[PaymentTypeID],[ActionID],[campaignTypeID],[Manager_ID],[AgencyID],[AdvertType_ID], massmediaGroupID) 
+				Values( @volumeDiscount,@managerDiscount, @actionDiscount,@campaignPrice, @campaignTariffPrice, @MassmediaID, @PaymenttypeID, @ActionID, @CampaignTypeID, @ManagerID, @AgencyID, 0, @massmediaGroupID)
+		end
+			
+		fetch next from cur_companies into 
+				@campaignID, @ActionID, @MassmediaID, @PaymenttypeID,
+				@CampaignTypeID, @ManagerID, @AgencyID, @CompStartDate, @massmediaGroupID, @actionDiscount, @finalPrice, @cfinishDate,@managerDiscount,@volumeDiscount,@campaignTariffPrice
+	End	
+
+	close cur_companies
+	deallocate cur_companies
+
+	-- output ---------------------------------------------------------
+	Declare	@SQLString NVARCHAR(2500),
+					@IsStarted int
+
+	/* Build the SQL string once.*/
+	Set	@SQLString = N'Select	row_number() over(order by coalesce(sum(r.campaignTariffPrice), 0)) as RowNum,'
+
+	If	@IsGroupByPaymentType <> 0
+		Set 	@SQLString = @SQLString + N'Paymenttype.Name as "payment_type",'
+	If	@IsGroupByCampaignType <> 0
+		Set 	@SQLString = @SQLString + N'iCampaignType.Name as "campaign_type",'
+	If	@IsGroupByMassmedia <> 0
+		Set 	@SQLString = @SQLString + N'vMassMedia.Name as "massmedia", vMassMedia.groupName as "massmedia_group",'
+	If	@IsGroupByMassmediaGroupType <> 0
+		Set 	@SQLString = @SQLString + N'MassmediaGroup.Name as "massmedia_group",'
+	If	@IsGroupByFirm <> 0
+		Set 	@SQLString = @SQLString + N'Firm.Name as "firm",'
+	If	@IsGroupByManager <> 0
+		Set 	@SQLString = @SQLString + N'coalesce([User].LastName, '''') + coalesce(space(1) + [User].FirstName, '''') as "manager",'
+	If	@IsGroupByAgency <> 0
+		Set 	@SQLString = @SQLString + N'Agency.Name as "agency",'
+	If	@IsGroupByActionID <> 0
+		Set 	@SQLString = @SQLString + N'N''' + REPLACE(@tAction, N'''', N'''''') + N''' + cast(r.actionID as varchar) as "actionID",'
+
+	Set	@SQLString = @SQLString + N' coalesce(sum(r.campaignTariffPrice), 0) as tariffPrice
+		, coalesce(avg(r.campaignVolumeDiscount), 0) as volumeDiscount
+		, cast(coalesce(sum(r.campaignTariffPrice - r.campaignTariffPrice * r.campaignVolumeDiscount), 0) as decimal(18,2)) as volumeDicountPrice
+		, coalesce(avg(r.campaignPackDiscount),0) as packDiscount
+		, cast(coalesce(sum(r.campaignTariffPrice * r.campaignVolumeDiscount * (1 - r.campaignPackDiscount)) , 0) as decimal(18,2)) as discountPrice
+		, coalesce(avg(r.campaignManagerDiscount), 0) as managerDiscount
+		, cast(coalesce(sum(r.campaignTariffPrice * r.campaignVolumeDiscount * r.campaignPackDiscount * (1 - r.campaignManagerDiscount)), 0) as decimal(18,2)) as managerDicountPrice
+		, coalesce(sum(r.campaignPrice), 0) as price	
+	from #res as r '
+
+	If	@IsGroupByMassmediaGroupType <> 0 Set @SQLString = @SQLString + N' inner join MassmediaGroup on r.massmediaGroupID = MassmediaGroup.massmediaGroupID '
+	If	@IsGroupByPaymentType <> 0 Set @SQLString = @SQLString + N' inner join Paymenttype on r.PaymentTypeID = Paymenttype.PaymenttypeID'
+	If	@IsGroupByCampaignType <> 0 Set @SQLString = @SQLString + N' inner join iCampaignType on r.campaignTypeID = iCampaignType.CampaignTypeID'
+	If	@IsGroupByMassmedia <> 0 Set @SQLString = @SQLString + N' inner join vMassMedia on r.massmediaID = vMassMedia.massmediaID'
+	If	@IsGroupByFirm <> 0 Set @SQLString = @SQLString + N' inner join Action on r.ActionID = Action.ActionID inner join Firm on Action.firmID = Firm.FirmID '
+	If	@IsGroupByManager <> 0 Set @SQLString = @SQLString + N' inner join [User] on r.Manager_ID = [User].UserID'
+	If	@IsGroupByAgency <> 0 Set @SQLString = @SQLString + N' inner join Agency on r.AgencyID = Agency.AgencyID'
+
+	If	0 + @IsGroupByPaymentType + @IsGroupByCampaignType + 
+		@IsGroupByMassmedia + @IsGroupByFirm + 
+		@IsGroupByManager + @IsGroupByAgency + @IsGroupByMassmediaGroupType + @IsGroupByActionID <> 0
+		begin
+
+		-- Group By part
+		set	@IsStarted = 0
+		Set 	@SQLString = @SQLString + N' Group by '
+
+		if	@IsGroupByPaymentType <> 0 begin
+			if	@IsStarted = 1 set @SQLString = @SQLString + N','	
+			Set 	@SQLString = @SQLString + N'Paymenttype.Name'
+			set	@IsStarted = 1
+		end
+
+		If	@IsGroupByCampaignType <> 0
+			begin
+			if	@IsStarted = 1 set @SQLString = @SQLString + N','	
+			Set 	@SQLString = @SQLString + N'iCampaignType.Name'
+			set	@IsStarted = 1
+			end
+
+		If	@IsGroupByMassmedia <> 0
+			begin
+			if	@IsStarted = 1 set  @SQLString = @SQLString + N','	
+			Set 	@SQLString = @SQLString + N'vMassMedia.Name, vMassMedia.groupName'
+			set	@IsStarted = 1
+			end
+
+		If	@IsGroupByFirm <> 0
+			begin
+			if	@IsStarted = 1 set  @SQLString = @SQLString + N','	
+			Set 	@SQLString = @SQLString + N'Firm.Name'
+			set	@IsStarted = 1
+			end
+
+		If	@IsGroupByManager <> 0
+			begin
+
+			if	@IsStarted = 1 set  @SQLString = @SQLString + N','	
+			Set 	@SQLString = @SQLString + N'coalesce([User].LastName, '''') + coalesce(space(1) + [User].FirstName, '''')'
+			set	@IsStarted = 1
+			end
+
+		If	@IsGroupByAgency <> 0
+			begin
+			if	@IsStarted = 1 set  @SQLString = @SQLString + N','	
+			Set 	@SQLString = @SQLString + N'Agency.Name'
+			set	@IsStarted = 1
+			end
+				
+		If	@IsGroupByMassmediaGroupType <> 0
+			begin
+			if	@IsStarted = 1 set  @SQLString = @SQLString + N','	
+			Set @SQLString = @SQLString + N'MassmediaGroup.Name'
+			set	@IsStarted = 1
+			end
+		
+		If	@IsGroupByActionID <> 0
+			begin
+			if	@IsStarted = 1 set  @SQLString = @SQLString + N','	
+			Set @SQLString = @SQLString + N'r.actionID'
+			set	@IsStarted = 1
+			end
+
+		end
+
+	EXECUTE sp_executesql @SQLString
+
+	Drop table #res
+end
+GO
+
+-- ===== SysParams =====
+IF @@TRANCOUNT = 0 BEGIN RAISERROR('Транзакция откатилась — SysParams и дальше не выполняются', 16, 1); SET NOEXEC ON; END
+GO
+SET QUOTED_IDENTIFIER ON;
+GO
+-- =============================================
+-- Author:		Denis Gladkikh (dgladkikh@fogsoft.ru)
+-- Create date: 05.11.2008
+-- Description:	Получить системные настройки
+-- =============================================
+CREATE OR ALTER procedure [dbo].[SysParams] (@languageCode VARCHAR(10) = 'ru') -- язык интерфейса веба (docs/tasks/web-i18n.md); десктоп не передаёт
+as 
+begin 
+	set nocount on;
+	DECLARE @tSysParams NVARCHAR(200) = dbo.fn_Translate(@languageCode, N'Системные настройки');
+    
+    select 
+		dbo.f_SysParamsDaysLog() as daysLog, 
+		coalesce((select top 1 cast([value] as int) from iInternalVariable where [name] = 'DaysHistorySave'), 365) as daysHistorySave, 
+		coalesce((select top 1 cast([value] as int) from iInternalVariable where [name] = 'DeletedActionsLifetime'), 365) as DeletedActionsLifetime, 
+		coalesce((select top 1 cast([value] as int) from iInternalVariable where [name] = 'UnconfirmedActionsLifetime'), 365) as UnconfirmedActionsLifetime, 
+		@tSysParams as [name]
+
+end
+GO
+
+-- ===== TariffWindowRetrieve =====
+IF @@TRANCOUNT = 0 BEGIN RAISERROR('Транзакция откатилась — TariffWindowRetrieve и дальше не выполняются', 16, 1); SET NOEXEC ON; END
+GO
+SET QUOTED_IDENTIFIER ON;
+GO
+CREATE OR ALTER PROC [dbo].[TariffWindowRetrieve]
+(
+    @pricelistId int = null,
+    @broadcastStart datetime = null,
+    @startDate datetime = null,
+    @finishDate datetime = null,
+    @moduleId int = null,
+    @windowId int = null,
+    @actualDate datetime = NULL,
+    @windowDateActual DATETIME = NULL,
+    @windowDateOriginal DATETIME = NULL,
+    @excludeSpecialWindows BIT = 0,
+    @excludeModuleTariffs BIT = 0,
+    @massmediaID INT = NULL,
+    @showTrafficWindows BIT = 0,
+    @showDisabledWindows bit = 1,
+    @useActualTime BIT = 0,
+    @languageCode VARCHAR(10) = 'ru' -- язык интерфейса веба (docs/tasks/web-i18n.md); десктоп не передаёт
+)
+AS
+BEGIN
+    SET NOCOUNT ON;
+    DECLARE @tAdWindow NVARCHAR(200) = dbo.fn_Translate(@languageCode, N'Рекламное окно ');
+    -- Предотвращаем дедлоки при чтении
+    SET TRANSACTION ISOLATION LEVEL READ UNCOMMITTED;
+
+    DECLARE @broadcasrStartHour tinyint;
+    IF @broadcastStart IS NOT NULL 
+        SET @broadcasrStartHour = DATEPART(hh, @broadcastStart);
+    ELSE
+        SET @broadcasrStartHour = 0;
+
+    -- Используем временную таблицу вместо @tmpWindow для корректной статистики
+    CREATE TABLE #tmpWindow (windowId int PRIMARY KEY);
+
+    -------------------------------------------------------------------------
+    -- 1. Наполнение списка ID окон
+    -------------------------------------------------------------------------
+    
+    -- Точечный поиск по датам
+    IF @windowDateActual IS NOT NULL AND @windowDateOriginal IS NOT NULL AND @massmediaID IS NOT NULL 
+    BEGIN
+        INSERT INTO #tmpWindow (windowId)
+        SELECT windowID 
+        FROM [TariffWindow]
+        WHERE [windowDateActual] = @windowDateActual 
+          AND [windowDateOriginal] = @windowDateOriginal
+          AND massmediaID = @massmediaID;
+    END
+    -- Поиск по конкретному ID
+    ELSE IF @windowId IS NOT NULL
+    BEGIN
+        INSERT INTO #tmpWindow (windowId) VALUES (@windowId);
+    END
+    -- Поиск по вхождению времени в длительность окна
+    Else If @actualDate Is Not Null
+    BEGIN
+        INSERT INTO #tmpWindow (windowId)
+        SELECT TOP 1 windowId
+        FROM TariffWindow
+        WHERE massmediaID = @massmediaID 
+          AND windowDateActual <= @actualDate -- Это SARGable условие (быстрый поиск по индексу)
+          AND DATEADD(s, duration, windowDateActual) >= @actualDate -- Проверка только для одной строки
+        ORDER BY windowDateActual DESC; -- Берем самое близкое к моменту
+    END
+    -- Основной поиск: Модуль НЕ указан
+    ELSE IF @moduleId IS NULL
+    BEGIN
+        INSERT INTO #tmpWindow (windowId)
+        SELECT tw.windowId
+        FROM TariffWindow tw
+        INNER JOIN Tariff t ON t.tariffId = tw.tariffId
+        WHERE (@excludeModuleTariffs = 0 OR t.[isForModuleOnly] = 0)
+          AND (@pricelistId IS NULL OR t.pricelistId = @pricelistId)
+          AND (@startDate IS NULL OR tw.dayOriginal >= @startDate)
+          AND (@finishDate IS NULL OR tw.dayOriginal <= @finishDate)
+          AND (tw.isDisabled = 0 OR @showDisabledWindows = 1)
+
+        UNION ALL
+
+        SELECT DISTINCT tw.windowId
+        FROM TariffWindow tw
+        INNER JOIN [Pricelist] pl ON pl.[massmediaID] = tw.massmediaID 
+            AND tw.dayOriginal BETWEEN pl.startDate AND pl.finishDate
+        WHERE tw.tariffID IS NULL 
+          AND @showTrafficWindows = 1 
+          AND @excludeSpecialWindows = 0 
+          AND (@pricelistId IS NULL OR pl.pricelistId = @pricelistId)
+          AND (@startDate IS NULL OR tw.dayOriginal >= @startDate)
+          AND (@finishDate IS NULL OR tw.dayOriginal <= @finishDate)
+          AND (tw.isDisabled = 0 OR @showDisabledWindows = 1);
+    END
+    -- Основной поиск: Модуль указан
+    ELSE
+    BEGIN
+        INSERT INTO #tmpWindow (windowId)
+        SELECT tw.windowId
+        FROM TariffWindow tw
+        INNER JOIN ModuleTariff mt ON mt.tariffId = tw.tariffId
+        INNER JOIN ModulePriceList mpl ON mpl.modulePriceListID = mt.modulePriceListID
+        WHERE mpl.moduleId = @moduleId
+          AND mpl.pricelistId = @pricelistId
+          AND mpl.startDate <= @finishDate AND mpl.finishDate >= @startDate
+          AND (@startDate IS NULL OR tw.dayOriginal >= @startDate)
+          AND (@finishDate IS NULL OR tw.dayOriginal <= @finishDate)
+
+        UNION ALL
+
+        SELECT DISTINCT tw.windowId
+        FROM TariffWindow tw
+        INNER JOIN [Pricelist] pl ON pl.[massmediaID] = tw.massmediaID
+            AND tw.dayOriginal BETWEEN pl.startDate AND pl.finishDate
+        INNER JOIN [Module] m ON tw.massmediaID = m.[massmediaID] AND m.moduleId = @moduleId
+        INNER JOIN ModulePriceList mpl ON mpl.priceListID = pl.priceListID
+        WHERE tw.tariffID IS NULL 
+          AND @showTrafficWindows = 1  
+          AND @excludeSpecialWindows = 0 
+          AND (@pricelistId IS NULL OR pl.pricelistId = @pricelistId)
+          AND mpl.startDate <= @finishDate AND mpl.finishDate >= @startDate
+          AND (@startDate IS NULL OR tw.dayOriginal >= @startDate)
+          AND (@finishDate IS NULL OR tw.dayOriginal <= @finishDate);
+    END
+
+    -------------------------------------------------------------------------
+    -- 2. Формирование финальных наборов данных
+    -------------------------------------------------------------------------
+
+    IF @excludeSpecialWindows = 0    
+    BEGIN
+        -- Формируем временный набор (без бесполезного ORDER BY внутри SELECT INTO)
+        SELECT
+            tw.*,
+            @tAdWindow + CONVERT(varchar(10), windowDateOriginal, 104) + ' ' + 
+                CONVERT(varchar(5), windowDateOriginal, 108)
+                + CASE WHEN windowDateOriginal != windowDateActual 
+                       THEN ' (' + CONVERT(varchar(10), windowDateOriginal, 104) + ' ' + CONVERT(varchar(5), windowDateActual, 108) + ')' 
+                       ELSE '' END AS [name],
+            DATEPART(hh, CASE WHEN @useActualTime = 1 THEN windowDateActual ELSE windowDateOriginal END) AS [hour],
+            DATEPART(mi, CASE WHEN @useActualTime = 1 THEN windowDateActual ELSE windowDateOriginal END) AS [min],
+            dayOriginal AS windowDateBroadcast,
+            dayActual  AS windowDateActualBroadcast
+        INTO #final1 
+        FROM #tmpWindow ttw
+        INNER JOIN TariffWindow tw ON ttw.windowId = tw.windowId;
+
+        -- Первый результат (сетка часов)
+        SELECT DISTINCT    
+            [hour],
+            [min],
+            price,
+            CASE WHEN [hour] >= @broadcasrStartHour THEN 0 ELSE 1 END AS flag
+        FROM #final1 
+        ORDER BY flag, [hour], [min];
+
+        -- Второй результат (список окон)
+        SELECT f.*, 
+            CASE WHEN tu.tariffID IS NULL THEN 0 ELSE 1 END AS IsTariffUnited 
+        FROM #final1 f
+        LEFT JOIN TariffUnion tu ON (f.tariffId = tu.tariffID OR f.tariffId = tu.tariffUnionID)
+        ORDER BY f.windowDateOriginal DESC;
+        
+        DROP TABLE #final1;
+    END
+    ELSE    
+    BEGIN
+        SELECT
+            tw.*,
+            @tAdWindow + CONVERT(varchar(10), windowDateOriginal, 104) + ' ' + 
+                CONVERT(varchar(5), windowDateOriginal, 108) AS [name],
+            DATEPART(hh, CASE WHEN @useActualTime = 1 THEN windowDateActual ELSE windowDateOriginal END) AS [hour],
+            DATEPART(mi, CASE WHEN @useActualTime = 1 THEN windowDateActual ELSE windowDateOriginal END) AS [min],
+            dayOriginal AS windowDateBroadcast,
+            dayActual AS windowDateActualBroadcast
+        INTO #final2           
+        FROM #tmpWindow ttw
+        INNER JOIN TariffWindow tw ON ttw.windowId = tw.windowId;
+        
+        -- Первый результат
+        SELECT DISTINCT    
+            [hour],
+            [min],
+            price,
+            CASE WHEN [hour] >= @broadcasrStartHour THEN 0 ELSE 1 END AS flag
+        FROM #final2 
+        ORDER BY flag, [hour], [min];
+    
+        -- Второй результат
+        SELECT * FROM #final2 ORDER BY windowDateOriginal DESC;
+
+        DROP TABLE #final2;
+    END
+
+    DROP TABLE #tmpWindow;
+END
+GO
+
+-- ===== sl_LookupMassmediaGroupd =====
+IF @@TRANCOUNT = 0 BEGIN RAISERROR('Транзакция откатилась — sl_LookupMassmediaGroupd и дальше не выполняются', 16, 1); SET NOEXEC ON; END
+GO
+SET QUOTED_IDENTIFIER ON;
+GO
+CREATE OR ALTER PROC [dbo].[sl_LookupMassmediaGroupd] (@languageCode VARCHAR(10) = 'ru') -- язык интерфейса веба (docs/tasks/web-i18n.md); десктоп не передаёт
+as
+SET NOCOUNT ON
+DECLARE @tShowAll NVARCHAR(200) = dbo.fn_Translate(@languageCode, N'Показать все');
+select 0 as id, @tShowAll as [name]
+union
+SELECT [massmediaGroupID] as id, name FROM [dbo].[MassmediaGroup]
+GO
+
+-- ===== sl_PaymentsCommon =====
+IF @@TRANCOUNT = 0 BEGIN RAISERROR('Транзакция откатилась — sl_PaymentsCommon и дальше не выполняются', 16, 1); SET NOEXEC ON; END
+GO
+SET QUOTED_IDENTIFIER ON;
+GO
+CREATE OR ALTER PROC [dbo].[sl_PaymentsCommon] (@languageCode VARCHAR(10) = 'ru') -- язык интерфейса веба (docs/tasks/web-i18n.md); десктоп не передаёт
+AS
+SET NOCOUNT ON
+DECLARE @tFirmPayment NVARCHAR(200) = dbo.fn_Translate(@languageCode, N'Платёж от фирмы ''');
+SELECT
+	p.*,
+	@tFirmPayment + f.name + '''' as name,
+	f.name AS firmName,
+	hc.name as headCompanyName,
+	a.name as agencyName,
+	pt.name as paymentTypeName,
+	u.LastName + Space(1) + u.firstName as userName,
+	CASE 
+		WHEN SUM(pa.summa) > 0 THEN	SUM(pa.summa)
+		ELSE 0
+	END AS consumed
+	,p.summa - CASE 
+		WHEN SUM(pa.summa) > 0 THEN	(SUM(pa.summa)) 
+		ELSE 0
+	END AS remainder
+FROM
+	#PaymentsCommon p2
+	INNER JOIN [Payment] p ON p.paymentID = p2.paymentID
+	INNER JOIN firm f ON f.firmID = p.firmID
+	Inner Join HeadCompany hc on hc.headCompanyID = f.headCompanyID
+	INNER JOIN agency a ON a.agencyID = p.agencyID
+	INNER JOIN paymentType pt ON pt.paymentTypeID = p.paymentTypeID
+	INNER JOIN [user] u ON u.userID = p.userID
+	LEFT JOIN [PaymentAction] pa ON pa.paymentID = p.paymentID
+GROUP BY 
+	f.name, a.name, pt.name, u.LastName, u.firstName, p.[agencyID], p.[firmID], p.[isEnabled], 
+	p.[paymentDate], p.[paymentID], p.[paymentTypeID], p.[userID], p.[summa], hc.name
+ORDER BY
+	p.paymentDate DESC
+GO
+
+-- ===== sponsorTariffList =====
+IF @@TRANCOUNT = 0 BEGIN RAISERROR('Транзакция откатилась — sponsorTariffList и дальше не выполняются', 16, 1); SET NOEXEC ON; END
+GO
+SET QUOTED_IDENTIFIER ON;
+GO
+CREATE OR ALTER PROC [dbo].[sponsorTariffList]
+(
+@pricelistID smallint = Null,
+@tariffID smallint = Null,
+@time smalldatetime = Null,
+@monday bit = Null,
+@tuesday bit = Null,
+@wednesday bit = Null,
+@thursday bit = Null,
+@friday bit = Null,
+@saturday bit = Null,
+@sunday bit = Null,
+@languageCode VARCHAR(10) = 'ru' -- язык интерфейса веба (docs/tasks/web-i18n.md); десктоп не передаёт
+)
+as
+SET NOCOUNT ON
+DECLARE @tTariff NVARCHAR(200) = dbo.fn_Translate(@languageCode, N'Тариф ');
+SELECT 
+	st.*,
+	Convert(varchar(5), [time], 108) as timeString,
+	dbo.fn_Int2Time([duration]) as tariffDuration,
+	@tTariff + 	Convert(varchar(5), [time], 108) as [name] 
+FROM 
+	[SponsorTariff] st
+WHERE
+	st.[pricelistID] = Coalesce(@pricelistID, st.pricelistID)
+	And st.tariffID = Coalesce(@tariffID, st.tariffID)
+	And st.time = Coalesce(@time, st.time)
+	And st.monday = Coalesce(@monday, st.monday)
+	And st.tuesday = Coalesce(@tuesday, st.tuesday)
+	And st.wednesday = Coalesce(@wednesday, st.wednesday)
+	And st.thursday = Coalesce(@thursday, st.thursday)
+	And st.friday = Coalesce(@friday, st.friday)
+	And st.saturday = Coalesce(@saturday, st.saturday)
+	And st.sunday = Coalesce(@sunday, st.sunday)
+ORDER BY
+	st.[time]
+GO
+GRANT EXECUTE
+    ON OBJECT::[dbo].[sponsorTariffList] TO PUBLIC
+    AS [dbo];
+GO
+
+-- ===== stat_VolumeOfRealization =====
+IF @@TRANCOUNT = 0 BEGIN RAISERROR('Транзакция откатилась — stat_VolumeOfRealization и дальше не выполняются', 16, 1); SET NOEXEC ON; END
+GO
+SET QUOTED_IDENTIFIER ON;
+GO
+CREATE OR ALTER Procedure [dbo].[stat_VolumeOfRealization]
+(
+@StartDay DATETIME = default,
+@FinishDay DATETIME = default,
+@FirmID int = default, 
+@MassmediaID int = default, 
+@PaymentTypeID int = default,
+@CampaignTypeID int = default,
+@ManagerID int = default,
+@AgencyID int = default,
+@IsGroupByPaymentType bit = 0,
+@IsGroupByCampaignType bit = 0,
+@IsGroupByMassmedia bit = 0,
+@IsGroupByFirm bit = 0,
+@IsGroupByManager bit = 0,
+@IsGroupByAgency bit = 0,
+@IsGroupByMassmediaGroupType bit = 0,
+@massmediaGroupID int = NULL,
+@ShowWhite bit = 1,
+@ShowBlack bit = 1,
+@loggedUserID smallint,
+@languageCode VARCHAR(10) = 'ru' -- язык интерфейса веба (docs/tasks/web-i18n.md); десктоп не передаёт
+)
+WITH EXECUTE AS OWNER
+As
+
+SET NOCOUNT ON
+DECLARE @tAll NVARCHAR(200) = dbo.fn_Translate(@languageCode, N'Все');
+
+declare @massmedias table(massmediaID smallint primary key, myMassmedia bit, foreignMassmedia bit)
+insert into @massmedias (massmediaID, myMassmedia, foreignMassmedia) 
+select * from dbo.fn_GetMassmediasForUser(@loggedUserID)
+
+declare @isRightToViewForeignActions bit,
+	@isRightToViewGroupActions bit
+
+select @isRightToViewForeignActions = dbo.fn_IsRightToViewForeignActions(@loggedUserID),
+	@isRightToViewGroupActions = dbo.fn_IsRightToViewGroupActions(@loggedUserID)
+
+declare @ugroups table(id int)
+insert into @ugroups (id) 
+select * from dbo.[fn_GetUserGroups](@loggedUserID)
+
+If	@StartDay Is Null Or @FinishDay Is Null
+	Begin
+	Raiserror('FilterStartFinishDays', 16, 1)
+	Return
+	End
+
+CREATE TABLE #tmp1
+(
+CompanyPrice decimal(18,2),
+MassmediaID SMALLINT,
+PaymentTypeID SMALLINT,
+ActionID INT,
+campaignTypeID SMALLINT,
+Manager_ID SMALLINT,
+AgencyID SMALLINT,
+massmediaGroupID int
+)
+
+Set	@StartDay = dbo.ToShortDate(@StartDay)
+Set	@FinishDay = dbo.ToShortDate(@FinishDay)
+
+-- select all companies, which has appropriated 
+-- start and finish dates
+Declare cur_companies Cursor Local fast_forward
+For
+select distinct  c.campaignID, c.ActionID, c.massmediaID, 
+		c.PaymentTypeID, c.campaignTypeID, a.userID, c.AgencyID, 
+		c.[startDate], max(coalesce(mm.massmediaGroupID,0)), a.discount, c.finalPrice, c.finishDate
+From	
+	Campaign c
+	INNER Join [Action] a On c.ActionID = a.actionID
+		AND a.[isConfirmed] = 1
+	INNER JOIN PaymentType On c.PaymentTypeID = PaymentType.PaymentTypeID
+	left join MassMedia mm on c.massmediaID = mm.massmediaID
+	left JOIN [PackModuleIssue] pmi ON pmi.[campaignID] = c.[campaignID]
+	left JOIN [PackModuleContent] pmc ON pmc.[pricelistID] = pmi.[pricelistID]
+	left JOIN [Module] m ON pmc.[moduleID] = m.[moduleID]
+	inner join @massmedias mmu on (mm.massmediaID = mmu.massmediaID 
+						or m.massmediaID = mmu.massmediaID)
+	inner join MassMedia mmfu on mmu.massmediaID = mmfu.massmediaID 
+	left join GroupMember gm on a.userID = gm.userID
+	left join @ugroups ug on gm.groupID = ug.id
+Where	
+	(a.userID = @loggedUserID or @isRightToViewForeignActions = 1 or (@isRightToViewGroupActions = 1 and ug.id is not null)) and
+	c.StartDate <= @FinishDay and
+	c.FinishDate >= @StartDay and
+	c.AgencyID = IsNull(@AgencyID, c.AgencyID) and
+	a.firmID = IsNull(@FirmID, a.firmID) and
+	a.userID = IsNull(@ManagerID, a.userID)  and
+	c.PaymentTypeID = IsNull(@PaymentTypeID, c.PaymentTypeID) and
+	c.campaignTypeID = IsNull(@CampaignTypeID, c.campaignTypeID) and
+	(@ShowWhite <> 0 or PaymentType.isHidden <> 0) and  
+	(@ShowBlack <> 0 or PaymentType.isHidden = 0)  
+	and (@MassmediaID is null or mmfu.massmediaID = @MassmediaID)
+	and (@massmediaGroupID is null or mmfu.massmediaGroupId = @massmediaGroupID)
+	and ((a.userID = @loggedUserID and mmu.myMassmedia = 1) or (a.userID <> @loggedUserID and mmu.foreignMassmedia = 1))
+
+group by c.campaignID, c.ActionID, c.massmediaID, 
+		c.PaymentTypeID, c.campaignTypeID, a.userID, c.AgencyID, 
+		c.[startDate], a.discount, c.finalPrice, c.finishDate
+
+-- select all companies, which have Issues inside interval
+Declare	@campaignID int, 
+	@ActionID int, 
+	@campaignPrice decimal(18,2),
+	@SummaVar decimal(18,2),
+	@CompStartDate datetime,
+	@actionDiscount float,
+	@sumPrice decimal(18,2),
+	@finalPrice decimal(18,2),
+	@cfinishDate datetime,
+	@campMassmediaGroupID int,
+	@mmID smallint
+	
+declare @tmp table (massmediaID smallint, price decimal(18,2))
+
+Open	cur_companies
+Fetch	next from cur_companies into 
+	@campaignID, @ActionID, @mmID, @PaymenttypeID, 
+	@CampaignTypeID, @ManagerID, @AgencyID, @CompStartDate, @campMassmediaGroupID, @actionDiscount, @finalPrice, @cfinishDate
+
+--Set	@FinishDay = Convert(datetime, Convert(varchar, @FinishDay, 112), 112) - 1
+While	@@fetch_status = 0
+begin
+	if @FinishDay < @cfinishDate or @StartDay > @CompStartDate
+		exec GetPriceByPeriod @campaignId, @CampaignTypeID, @StartDay, @FinishDay, @campaignPrice out
+	else 
+		set @campaignPrice = @finalPrice
+
+	IF @CampaignTypeID = 4
+	begin
+		delete from @tmp
+				
+		insert into @tmp(massmediaID, price)
+		select
+			m.[massmediaID], sum(mpl.[price])
+		from [PackModuleIssue] i 
+			INNER JOIN [PackModuleContent] AS pmc ON i.[priceListID] = pmc.[pricelistID]
+			INNER JOIN [ModulePriceList] AS mpl ON pmc.modulePriceListID = mpl.modulePriceListID
+			INNER JOIN [Module] AS m ON mpl.[moduleID] = m.[moduleID]
+		where 
+			i.campaignID = @campaignID	and
+			i.issueDate between @StartDay and @FinishDay 
+		group by m.massmediaID
+			
+		select @sumPrice = sum(t1.price) FROM @tmp AS t1
+		
+		insert into #tmp1 ([CompanyPrice],	[MassmediaID],[PaymentTypeID],[ActionID],[campaignTypeID],[Manager_ID],	[AgencyID],massmediaGroupID) 
+		select @campaignPrice * sum(t1.price)/ @sumPrice,  t1.massmediaID, @PaymenttypeID, @ActionID, @CampaignTypeID,@ManagerID, @AgencyID, mm.massmediaGroupID
+		from @tmp as t1
+			inner join MassMedia mm on t1.massmediaID = mm.massmediaID
+			inner join @massmedias mmu on mm.massmediaID = mmu.massmediaID 
+		where t1.price > 0  
+			and (@MassmediaID is null or mm.massmediaID = @MassmediaID)
+			and (@massmediaGroupID is null or mm.massmediaGroupId = @massmediaGroupID)
+		group by t1.massmediaID, mm.massmediaGroupID
+	END
+	ELSE
+	begin
+		if	@campaignPrice > 0 
+			Insert	Into #tmp1 ([CompanyPrice],[MassmediaID],[PaymentTypeID],[ActionID],[campaignTypeID],[Manager_ID],[AgencyID],massmediaGroupID) 
+			Values(@campaignPrice,  @mmID, @PaymenttypeID, @ActionID, @CampaignTypeID, @ManagerID, @AgencyID, @campMassmediaGroupID)
+	end
+		
+	fetch next from cur_companies into 
+			@campaignID, @ActionID, @mmID, @PaymenttypeID,
+			@CampaignTypeID, @ManagerID, @AgencyID, @CompStartDate, @campMassmediaGroupID, @actionDiscount, @finalPrice, @cfinishDate
+End	
+
+close cur_companies
+deallocate cur_companies
+
+Select	@SummaVar = IsNull(sum(CompanyPrice), 0) From	#tmp1
+
+-- output ---------------------------------------------------------
+Declare	@SQLString NVARCHAR(2500),
+				@IsStarted int
+
+/* Build the SQL string once.*/
+Set	@SQLString = N'Select	row_number() over(order by IsNull(Sum(CompanyPrice), 0)) as RowNum,'
+Set	@SQLString = @SQLString + N' IsNull(Sum(CompanyPrice), 0) as  sum1'
+
+Set @SQLString = @SQLString + N',  '
+
+/*
+If	@IsGroupByCommissionaire <> 0
+	Set 	@SQLString = @SQLString + N'Dic_Commissionaire.Description as "Комиссионер",'
+*/
+If	@IsGroupByPaymentType <> 0
+	Set 	@SQLString = @SQLString + N'Paymenttype.Name as "payment_type",'
+If	@IsGroupByCampaignType <> 0
+	Set 	@SQLString = @SQLString + N'iCampaignType.Name as "campaign_type",'
+If	@IsGroupByMassmedia <> 0
+	Set 	@SQLString = @SQLString + N'vMassMedia.NameWithGroup as "massmedia", vMassMedia.massmediaID,'
+If	@IsGroupByMassmediaGroupType <> 0
+	Set 	@SQLString = @SQLString + N'MassmediaGroup.Name as "massmedia_group",'
+If	@IsGroupByFirm <> 0
+	Set 	@SQLString = @SQLString + N'Firm.Name as "firm",'
+If	@IsGroupByManager <> 0
+	Set 	@SQLString = @SQLString + N'[User].userName as "manager",'
+If	@IsGroupByAgency <> 0
+	Set 	@SQLString = @SQLString + N'Agency.Name as "agency",'
+
+If	0 + @IsGroupByPaymentType + @IsGroupByCampaignType + 
+	@IsGroupByMassmedia + @IsGroupByFirm + 
+	@IsGroupByManager + @IsGroupByAgency + @IsGroupByMassmediaGroupType  = 0
+	set		@SQLString = @SQLString + N'max(N''' + REPLACE(@tAll, N'''', N'''''') + N''') as "all",'
+
+Set 	@SQLString = @SQLString + 
+		N'case @Summa
+			when	0 then 0
+			else	Cast((IsNull(Sum(CompanyPrice), 0) * 100.0 / @Summa) as decimal(12,2))
+		End as "percent"	
+From	#tmp1'
+
+If	@IsGroupByMassmediaGroupType <> 0 Set @SQLString = @SQLString + N' inner join MassmediaGroup on #tmp1.massmediaGroupID = MassmediaGroup.massmediaGroupID '
+If	@IsGroupByPaymentType <> 0 Set @SQLString = @SQLString + N' inner join Paymenttype on #tmp1.PaymentTypeID = Paymenttype.PaymenttypeID'
+If	@IsGroupByCampaignType <> 0 Set @SQLString = @SQLString + N' inner join iCampaignType on #tmp1.campaignTypeID = iCampaignType.CampaignTypeID'
+If	@IsGroupByMassmedia <> 0 Set @SQLString = @SQLString + N' inner join vMassMedia on #tmp1.massmediaID = vMassMedia.massmediaID'
+If	@IsGroupByFirm <> 0 Set @SQLString = @SQLString + N' inner join Action on #tmp1.ActionID = Action.ActionID inner join Firm on Action.firmID = Firm.FirmID '
+If	@IsGroupByManager <> 0 Set @SQLString = @SQLString + N' inner join [User] on #tmp1.Manager_ID = [User].UserID'
+If	@IsGroupByAgency <> 0 Set @SQLString = @SQLString + N' inner join Agency on #tmp1.AgencyID = Agency.AgencyID'
+
+Set 	@SQLString = @SQLString + N' Where CompanyPrice <> 0 '
+
+If	0 + @IsGroupByPaymentType + @IsGroupByCampaignType + 
+	@IsGroupByMassmedia + @IsGroupByFirm + 
+	@IsGroupByManager + @IsGroupByAgency + @IsGroupByMassmediaGroupType <> 0
+	begin
+
+	-- Group By part
+	set	@IsStarted = 0
+	Set 	@SQLString = @SQLString + N' Group by '
+
+/*
+	if	@IsGroupByCommissionaire <> 0 begin
+		if	@IsStarted = 1 set @SQLString = @SQLString + N','	
+		Set 	@SQLString = @SQLString + N'Dic_Commissionaire.Description'
+		set	@IsStarted = 1
+	end
+*/
+	if	@IsGroupByPaymentType <> 0 begin
+		if	@IsStarted = 1 set @SQLString = @SQLString + N','	
+		Set 	@SQLString = @SQLString + N'Paymenttype.Name'
+		set	@IsStarted = 1
+	end
+
+	If	@IsGroupByCampaignType <> 0
+		begin
+		if	@IsStarted = 1 set @SQLString = @SQLString + N','	
+		Set 	@SQLString = @SQLString + N'iCampaignType.Name'
+		set	@IsStarted = 1
+		end
+
+	If	@IsGroupByMassmedia <> 0
+		begin
+		if	@IsStarted = 1 set  @SQLString = @SQLString + N','	
+		Set 	@SQLString = @SQLString + N'vMassMedia.NameWithGroup, vMassMedia.massmediaID'
+		set	@IsStarted = 1
+		end
+
+	If	@IsGroupByFirm <> 0
+		begin
+		if	@IsStarted = 1 set  @SQLString = @SQLString + N','	
+		Set 	@SQLString = @SQLString + N'Firm.Name'
+		set	@IsStarted = 1
+		end
+
+	If	@IsGroupByManager <> 0
+		begin
+
+		if	@IsStarted = 1 set  @SQLString = @SQLString + N','	
+		Set 	@SQLString = @SQLString + N'[User].userName'
+		set	@IsStarted = 1
+		end
+
+	If	@IsGroupByAgency <> 0
+		begin
+		if	@IsStarted = 1 set  @SQLString = @SQLString + N','	
+		Set 	@SQLString = @SQLString + N'Agency.Name'
+		set	@IsStarted = 1
+		end
+
+	If	@IsGroupByMassmediaGroupType <> 0
+		begin
+		if	@IsStarted = 1 set  @SQLString = @SQLString + N','	
+		Set @SQLString = @SQLString + N'MassmediaGroup.Name'
+		set	@IsStarted = 1
+		end
+
+	end
+
+EXECUTE sp_executesql @SQLString,
+	N'@Summa decimal(18,2)',
+	@Summa = @SummaVar		
+
+Drop		table #tmp1
+GO
+
+-- ===== stat_VolumeOfRealization2 =====
+IF @@TRANCOUNT = 0 BEGIN RAISERROR('Транзакция откатилась — stat_VolumeOfRealization2 и дальше не выполняются', 16, 1); SET NOEXEC ON; END
+GO
+SET QUOTED_IDENTIFIER ON;
+GO
+CREATE OR ALTER Procedure [dbo].[stat_VolumeOfRealization2]
+(
+@StartDay DATETIME = NULL,
+@FinishDay DATETIME = NULL,
+@FirmID smallint = NULL, 
+@headCompanyID smallint = NULL, 
+@MassmediaID smallint = NULL, 
+@PaymentTypeID smallint = NULL,
+@CampaignTypeID tinyint = NULL,
+@ManagerID smallint = NULL,
+@AgencyID smallint = NULL,
+@massmediaGroupID int = NULL,
+@advertTypeID smallint = NULL,
+@IsGroupByMassmedia bit = 0,
+@IsGroupByPaymentType bit = 0,
+@IsGroupByCampaignType bit = 0,
+@IsGroupByManager bit = 0,
+@IsGroupByAgency bit = 0,
+@IsGroupByFirm bit = 0,
+@IsGroupByHeadCompany bit = 0,  -- НОВЫЙ ПАРАМЕТР
+@IsGroupByMassmediaGroupType bit = 0,
+@IsGroupByAdvertType bit = 0,
+@IsGroupByAdvertTypeTop bit = 0,
+@ShowWhite bit = 1,
+@ShowBlack bit = 1,
+@loggedUserID smallint,
+@languageCode VARCHAR(10) = 'ru' -- язык интерфейса веба (docs/tasks/web-i18n.md); десктоп не передаёт
+)
+WITH EXECUTE AS OWNER
+As
+
+SET NOCOUNT ON
+DECLARE @tAll NVARCHAR(200) = dbo.fn_Translate(@languageCode, N'Все');
+
+--IF @IsGroupByHeadCompany = 1 SET @IsGroupByFirm = 0
+
+IF @StartDay IS NULL OR @FinishDay IS NULL
+BEGIN
+	RAISERROR('FilterStartFinishDays', 16, 1)
+	RETURN
+END
+
+SET	@StartDay = dbo.ToShortDate(@StartDay)
+SET	@FinishDay = dbo.ToShortDate(@FinishDay)
+
+
+-- output ---------------------------------------------------------
+DECLARE	@SQLString NVARCHAR(MAX), @IsStarted int
+
+/* Build the SQL string once.*/
+SET @SQLString = N'
+DECLARE @Summa money
+SET @Summa=0
+
+DECLARE @Campaign TABLE (
+			campaignID int, 
+			advertTypeID smallint,
+			actionID int, 
+			massmediaID smallint, 
+			paymentTypeID smallint, 
+			campaignTypeID tinyint, 
+			agencyID smallint,
+			startDate datetime,
+			finishDate datetime,
+			finalPrice money,
+			userID smallint,
+			firmID smallint,
+			discount float,
+			massmediaGroupID int,
+			price money,
+			INDEX i1 UNIQUE CLUSTERED (campaignID, massmediaID, advertTypeID)
+			)
+
+INSERT @Campaign
+SELECT d.* 
+FROM fn_statGetPrice(@startDate, @finishDate, @loggedUserID) d Inner Join Firm f On f.firmId = d.FirmId'
+If	@ShowWhite = 0 OR @ShowBlack = 0 Set @SQLString = @SQLString + N' inner join Paymenttype on d.PaymentTypeID = Paymenttype.PaymenttypeID'
+If	@advertTypeID IS NOT NULL Set @SQLString = @SQLString + N' left join AdvertType at on at.advertTypeID = d.advertTypeID'
+
+Set @SQLString = @SQLString +
+'
+WHERE 1=1
+'
+If	@ShowWhite = 0 AND @ShowBlack <> 0 Set @SQLString = @SQLString + N' AND PaymentType.isHidden <> 0'
+If	@ShowBlack = 0 AND @ShowWhite <> 0 Set @SQLString = @SQLString + N' AND PaymentType.isHidden = 0'
+IF	@FirmID IS NOT NULL Set @SQLString = @SQLString + N' AND d.firmID = @FirmID'
+IF	@headCompanyID IS NOT NULL Set @SQLString = @SQLString + N' AND f.headCompanyID = @headCompanyID'
+IF	@MassmediaID IS NOT NULL Set @SQLString = @SQLString + N' AND d.massmediaID = @MassmediaID'
+IF	@PaymentTypeID IS NOT NULL Set @SQLString = @SQLString + N' AND d.paymentTypeID = @PaymentTypeID'
+IF	@CampaignTypeID IS NOT NULL Set @SQLString = @SQLString + N' AND d.campaignTypeID = @CampaignTypeID'
+IF	@ManagerID IS NOT NULL Set @SQLString = @SQLString + N' AND d.userID = @ManagerID'
+IF	@AgencyID IS NOT NULL Set @SQLString = @SQLString + N' AND d.agencyID = @AgencyID'
+IF	@massmediaGroupID IS NOT NULL Set @SQLString = @SQLString + N' AND d.massmediaGroupID = @massmediaGroupID'
+IF	@advertTypeID IS NOT NULL Set @SQLString = @SQLString + N' AND @advertTypeID IN(at.parentID,d.advertTypeID)'
+
+Set @SQLString = @SQLString +
+'
+SELECT	@Summa = ISNULL(sum(price), 0) FROM @Campaign
+'
+If @IsGroupByFirm = 1 And @IsGroupByHeadCompany = 1 and 0 + @IsGroupByPaymentType + @IsGroupByCampaignType + @IsGroupByMassmedia
+	  + @IsGroupByManager + @IsGroupByAgency + @IsGroupByMassmediaGroupType
+	  + @IsGroupByAdvertType + @IsGroupByAdvertTypeTop = 0
+	Begin
+Set @SQLString = @SQLString +
+'
+	DECLARE @res TABLE (
+		RowNum int, 
+		sum1 money,
+		sum4 money,
+		firm varchar(256), 
+		head_company varchar(256), 
+		hc2 varchar(256), 
+		[percent] decimal(12,2),
+		row_style varchar(20),
+		INDEX i1 UNIQUE CLUSTERED (RowNum)
+	)
+
+	Insert Into @res(RowNum, sum1, firm, head_company, [percent])
+	'
+	End
+Set	@SQLString = @SQLString + N'Select	row_number() over(order by IsNull(Sum(price), 0)) as RowNum,'
+Set	@SQLString = @SQLString + N' IsNull(Sum(price), 0) as  sum1'
+Set @SQLString = @SQLString + N',  '
+
+If	@IsGroupByPaymentType <> 0
+	Set 	@SQLString = @SQLString + N'Paymenttype.Name as "payment_type",'
+If	@IsGroupByCampaignType <> 0
+	Set 	@SQLString = @SQLString + N'iCampaignType.Name as "campaign_type",'
+If	@IsGroupByMassmedia <> 0
+	Set 	@SQLString = @SQLString + N'vMassMedia.NameWithGroup as "massmedia", vMassMedia.massmediaID,'
+If	@IsGroupByMassmediaGroupType <> 0
+	Set 	@SQLString = @SQLString + N'MassmediaGroup.Name as "massmedia_group",'
+If	@IsGroupByFirm <> 0
+	Set 	@SQLString = @SQLString + N'Firm.Name as "firm",'
+If	@IsGroupByHeadCompany <> 0  -- НОВАЯ ГРУППИРОВКА
+	Set 	@SQLString = @SQLString + N'HeadCompany.Name as "head_company",'
+If	@IsGroupByManager <> 0
+	Set 	@SQLString = @SQLString + N'[User].userName as "manager",'
+If	@IsGroupByAgency <> 0
+	Set 	@SQLString = @SQLString + N'Agency.Name as "agency",'
+If	@IsGroupByAdvertType <> 0
+	Set 	@SQLString = @SQLString + N'AdvertType.Name as "adverttype",'
+If	@IsGroupByAdvertTypeTop <> 0
+	Set 	@SQLString = @SQLString + N'at.Name as "topAdverttype",'
+
+If	0 + @IsGroupByPaymentType + @IsGroupByCampaignType + @IsGroupByMassmedia + @IsGroupByFirm
+	  + @IsGroupByManager + @IsGroupByAgency + @IsGroupByMassmediaGroupType + @IsGroupByHeadCompany
+	  + @IsGroupByAdvertType + @IsGroupByAdvertTypeTop = 0
+	set		@SQLString = @SQLString + N'max(N''' + REPLACE(@tAll, N'''', N'''''') + N''') as "all",'
+
+Set 	@SQLString = @SQLString + 
+		N'case @Summa
+			when	0 then 0
+			else	Cast((IsNull(Sum(price), 0) * 100.0 / @Summa) as decimal(12,2))
+		End as "percent"	
+FROM @Campaign d'
+
+If	@IsGroupByMassmediaGroupType <> 0 Set @SQLString = @SQLString + N' inner join MassmediaGroup on d.massmediaGroupID = MassmediaGroup.massmediaGroupID '
+If	@IsGroupByPaymentType <> 0 Set @SQLString = @SQLString + N' inner join Paymenttype on d.PaymentTypeID = Paymenttype.PaymenttypeID'
+If	@IsGroupByCampaignType <> 0 Set @SQLString = @SQLString + N' inner join iCampaignType on d.campaignTypeID = iCampaignType.CampaignTypeID'
+If	@IsGroupByMassmedia <> 0 Set @SQLString = @SQLString + N' inner join vMassMedia on d.massmediaID = vMassMedia.massmediaID'
+If	@IsGroupByFirm <> 0 And @IsGroupByHeadCompany = 0  Set @SQLString = @SQLString + N' inner join Firm on d.firmID = Firm.FirmID '
+If	@IsGroupByHeadCompany <> 0 Set @SQLString = @SQLString + N' inner join Firm on d.firmID = Firm.FirmID inner join HeadCompany on Firm.headCompanyID = HeadCompany.headCompanyID '  -- НОВЫЙ JOIN
+If	@IsGroupByManager <> 0 Set @SQLString = @SQLString + N' inner join [User] on d.userID = [User].UserID'
+If	@IsGroupByAgency <> 0 Set @SQLString = @SQLString + N' inner join Agency on d.AgencyID = Agency.AgencyID'
+If	@IsGroupByAdvertType <> 0 OR @IsGroupByAdvertTypeTop <> 0 Set @SQLString = @SQLString + N' left join AdvertType on d.advertTypeID = AdvertType.AdvertTypeID'
+If	@IsGroupByAdvertTypeTop <> 0 Set @SQLString = @SQLString + N' left join AdvertType at on AdvertType.parentID = at.AdvertTypeID'
+
+Set 	@SQLString = @SQLString + N' Where price <> 0 '
+
+If	0 + @IsGroupByPaymentType + @IsGroupByCampaignType
+	  + @IsGroupByMassmedia + @IsGroupByFirm + @IsGroupByManager + @IsGroupByAgency + @IsGroupByMassmediaGroupType 
+	  + @IsGroupByAdvertType + @IsGroupByAdvertTypeTop + @IsGroupByHeadCompany <> 0  -- ДОБАВИЛИ В УСЛОВИЕ
+	begin
+
+	-- Group By part
+	set	@IsStarted = 0
+	Set 	@SQLString = @SQLString + N' Group by '
+
+	if	@IsGroupByPaymentType <> 0 begin
+		if	@IsStarted = 1 set @SQLString = @SQLString + N','	
+		Set 	@SQLString = @SQLString + N'Paymenttype.Name'
+		set	@IsStarted = 1
+	end
+
+	If	@IsGroupByCampaignType <> 0
+		begin
+		if	@IsStarted = 1 set @SQLString = @SQLString + N','	
+		Set 	@SQLString = @SQLString + N'iCampaignType.Name'
+		set	@IsStarted = 1
+		end
+
+	If	@IsGroupByMassmedia <> 0
+		begin
+		if	@IsStarted = 1 set  @SQLString = @SQLString + N','	
+		Set 	@SQLString = @SQLString + N'vMassMedia.NameWithGroup, vMassMedia.massmediaID'
+		set	@IsStarted = 1
+		end
+
+	If	@IsGroupByFirm <> 0
+		begin
+		if	@IsStarted = 1 set  @SQLString = @SQLString + N','	
+		Set 	@SQLString = @SQLString + N'Firm.Name'
+		set	@IsStarted = 1
+		end
+
+	If	@IsGroupByHeadCompany <> 0  -- НОВАЯ ГРУППИРОВКА В GROUP BY
+		begin
+		if	@IsStarted = 1 set  @SQLString = @SQLString + N','	
+		Set 	@SQLString = @SQLString + N'HeadCompany.Name'
+		set	@IsStarted = 1
+		end
+
+	If	@IsGroupByManager <> 0
+		begin
+
+		if	@IsStarted = 1 set  @SQLString = @SQLString + N','	
+		Set 	@SQLString = @SQLString + N'[User].userName'
+		set	@IsStarted = 1
+		end
+
+	If	@IsGroupByAgency <> 0
+		begin
+		if	@IsStarted = 1 set  @SQLString = @SQLString + N','	
+		Set 	@SQLString = @SQLString + N'Agency.Name'
+		set	@IsStarted = 1
+		end
+
+	If	@IsGroupByAdvertType <> 0
+		begin
+		if	@IsStarted = 1 set  @SQLString = @SQLString + N','	
+		Set 	@SQLString = @SQLString + N'AdvertType.Name'
+		set	@IsStarted = 1
+		end
+
+	If	@IsGroupByAdvertTypeTop <> 0
+		begin
+		if	@IsStarted = 1 set  @SQLString = @SQLString + N','	
+		Set 	@SQLString = @SQLString + N'at.Name'
+		set	@IsStarted = 1
+		end
+
+	If	@IsGroupByMassmediaGroupType <> 0
+		begin
+		if	@IsStarted = 1 set  @SQLString = @SQLString + N','	
+		Set @SQLString = @SQLString + N'MassmediaGroup.Name'
+		set	@IsStarted = 1
+		end
+
+	end
+
+
+If @IsGroupByFirm = 1 And @IsGroupByHeadCompany = 1 and 0 + @IsGroupByPaymentType + @IsGroupByCampaignType + @IsGroupByMassmedia
+	  + @IsGroupByManager + @IsGroupByAgency + @IsGroupByMassmediaGroupType
+	  + @IsGroupByAdvertType + @IsGroupByAdvertTypeTop = 0
+	Begin
+	Set @SQLString = @SQLString +
+	'
+	Declare @c int
+	Select @c = count(*) from @res
+
+	Insert Into @res(RowNum, sum4, head_company, [percent], row_style)
+	Select row_number() over (order by head_company) + @c, Sum(sum1), Head_Company, SUM([percent]), ''bold'' From @res Group By head_company having COUNT(*) > 1;
+
+	Update @res Set hc2 = head_company;
+
+	WITH DuplicatesCTE AS (
+    SELECT 
+        head_company,
+        COUNT(*) as count
+    FROM @res
+    GROUP BY head_company
+    HAVING COUNT(*) > 1
+	)
+	UPDATE t
+	SET t.head_company = NULL
+	FROM @res t
+	INNER JOIN DuplicatesCTE d ON t.head_company = d.head_company
+	Where t.firm Is Not Null;
+
+	Update @res Set sum4 = sum1 Where sum1 Is Not Null And head_company Is Not Null;
+
+	Select * From @res Order By hc2, firm
+	'
+	
+	End
+
+print @SQLString
+
+EXECUTE sp_executesql @SQLString,
+	N'@startDate datetime, @finishDate datetime, @loggedUserID smallint, @FirmID smallint, @MassmediaID smallint, 
+		@PaymentTypeID smallint, @CampaignTypeID tinyint,
+		@ManagerID smallint, @AgencyID smallint, @massmediaGroupID int, @advertTypeID smallint, @headCompanyID smallint',
+	@startDate = @StartDay, 
+	@finishDate = @FinishDay, 
+	@loggedUserID = @loggedUserID, 
+	@FirmID = @FirmID,
+	@MassmediaID = @MassmediaID,
+	@PaymentTypeID = @PaymentTypeID,
+	@CampaignTypeID = @CampaignTypeID,
+	@ManagerID = @ManagerID,
+	@AgencyID = @AgencyID,
+	@massmediaGroupID = @massmediaGroupID,
+	@advertTypeID = @advertTypeID,
+	@headCompanyID = @headCompanyID
+GO
+
+-- ===== stat_VolumeOfRealization3 =====
+IF @@TRANCOUNT = 0 BEGIN RAISERROR('Транзакция откатилась — stat_VolumeOfRealization3 и дальше не выполняются', 16, 1); SET NOEXEC ON; END
+GO
+SET QUOTED_IDENTIFIER ON;
+GO
+CREATE OR ALTER Procedure [dbo].[stat_VolumeOfRealization3]
+(
+    @StartDay DATETIME = NULL,
+    @FinishDay DATETIME = NULL,
+    @FirmID smallint = NULL, 
+    @headCompanyID smallint = NULL, 
+    @MassmediaID smallint = NULL, 
+    @PaymentTypeID smallint = NULL,
+    @CampaignTypeID tinyint = NULL,
+    @ManagerID smallint = NULL,
+    @AgencyID smallint = NULL,
+    @massmediaGroupID int = NULL,
+    @advertTypeID smallint = NULL,
+    @IsGroupByMassmedia bit = 0,
+    @IsGroupByPaymentType bit = 0,
+    @IsGroupByCampaignType bit = 0,
+    @IsGroupByManager bit = 0,
+    @IsGroupByAgency bit = 0,
+    @IsGroupByFirm bit = 0,
+    @IsGroupByHeadCompany bit = 0,  -- НОВЫЙ ПАРАМЕТР
+    @IsGroupByMassmediaGroupType bit = 0,
+    @IsGroupByAdvertType bit = 0,
+    @IsGroupByAdvertTypeTop bit = 0,
+    @ShowWhite bit = 1,
+    @ShowBlack bit = 1,
+    @loggedUserID smallint,
+    @languageCode VARCHAR(10) = 'ru' -- язык интерфейса веба (docs/tasks/web-i18n.md); десктоп не передаёт
+)
+WITH EXECUTE AS OWNER
+As
+BEGIN
+    SET NOCOUNT ON;
+    DECLARE @tAll NVARCHAR(200) = dbo.fn_Translate(@languageCode, N'Все');
+
+    IF @StartDay IS NULL OR @FinishDay IS NULL
+    BEGIN
+        RAISERROR('FilterStartFinishDays', 16, 1)
+        RETURN
+    END
+
+    SET @StartDay  = dbo.ToShortDate(@StartDay)
+    SET @FinishDay = dbo.ToShortDate(@FinishDay)
+
+	DECLARE @IsFirmHeadCompanyOnly bit = 0;
+	DECLARE @IsAdvertTypeTopOnly   bit = 0;
+
+	IF @IsGroupByFirm = 1 AND @IsGroupByHeadCompany = 1
+	   AND 0 + @IsGroupByPaymentType + @IsGroupByCampaignType + @IsGroupByMassmedia
+			 + @IsGroupByManager + @IsGroupByAgency + @IsGroupByMassmediaGroupType
+			 + @IsGroupByAdvertType + @IsGroupByAdvertTypeTop = 0
+	BEGIN
+		SET @IsFirmHeadCompanyOnly = 1;
+	END
+
+	-- НОВОЕ: спец-режим только для AdvertType + AdvertTypeTop
+	IF @IsGroupByAdvertType = 1 AND @IsGroupByAdvertTypeTop = 1
+	   AND 0 + @IsGroupByPaymentType + @IsGroupByCampaignType + @IsGroupByMassmedia
+			 + @IsGroupByManager + @IsGroupByAgency + @IsGroupByMassmediaGroupType
+			 + @IsGroupByFirm + @IsGroupByHeadCompany = 0
+	BEGIN
+		SET @IsAdvertTypeTopOnly = 1;
+	END
+
+    --------------------------------------------------------------------
+    -- NEW: вместо fn_statGetPrice() создаём #Campaign и заполняем процедурой
+    --------------------------------------------------------------------
+    CREATE TABLE #Campaign
+    (
+        campaignID int NOT NULL, 
+        advertTypeID smallint NULL,
+        actionID int NULL, 
+        massmediaID smallint NULL, 
+        paymentTypeID smallint NULL, 
+        campaignTypeID tinyint NULL, 
+        agencyID smallint NULL,
+        startDate datetime NULL,
+        finishDate datetime NULL,
+        finalPrice decimal(18,2) NULL,
+        userID smallint NULL,
+        firmID smallint NULL,
+        discount decimal(9,4) NULL,
+        massmediaGroupID int NULL,
+        price decimal(18,2) NULL
+    );
+
+    CREATE UNIQUE CLUSTERED INDEX IX_Campaign
+        ON #Campaign (campaignID, massmediaID, advertTypeID);
+
+    INSERT INTO #Campaign
+    EXEC dbo.stat_GetPrice_proc
+         @StartDay,
+         @FinishDay,
+         @loggedUserID;
+
+-- ... после заполнения #Campaign
+
+	DECLARE @SQLString NVARCHAR(MAX);
+	DECLARE @JoinSql   NVARCHAR(MAX) = N'';
+	DECLARE @WhereSql  NVARCHAR(MAX) = N' WHERE d.price <> 0 ';
+	DECLARE @GroupJoinSql NVARCHAR(MAX) = N'';
+
+	DECLARE @IsStarted int;
+
+	-- Базовые join'ы для фильтров/группировок
+	-- Firm понадобится почти всегда (у тебя часто фильтр по headCompanyID и group-by firm/headCompany)
+	SET @JoinSql += N' INNER JOIN Firm f ON f.firmId = d.firmId ';
+
+	-- AdvertType нужен если фильтруем по advertTypeID (для parentID)
+	IF @advertTypeID IS NOT NULL
+		SET @JoinSql += N' LEFT JOIN AdvertType atFilter ON atFilter.advertTypeID = d.advertTypeID ';
+
+	-- PaymentType нужен если:
+	--  1) фильтруем по ShowWhite/ShowBlack
+	--  2) группируем по PaymentType
+	--  3) фильтруем по PaymentTypeID (можно без join, но пусть будет единообразно)
+	IF (@ShowWhite = 0 OR @ShowBlack = 0) OR (@IsGroupByPaymentType <> 0)
+	BEGIN
+		SET @JoinSql += N' INNER JOIN PaymentType pt ON pt.PaymentTypeID = d.PaymentTypeID ';
+	END
+
+	-- ========= ЕДИНЫЙ ФИЛЬТР (Where) =========
+
+	-- ShowWhite/ShowBlack: каноничная логика
+	-- (white = pt.isHidden = 0, black = pt.isHidden <> 0)
+	-- Если оба 1 -> пропускаем всё, если оба 0 -> пусто
+	IF (@ShowWhite = 0 OR @ShowBlack = 0)
+	BEGIN
+		SET @WhereSql += N'
+	  AND (
+			(@ShowWhite = 1 AND pt.isHidden = 0)
+		 OR (@ShowBlack = 1 AND pt.isHidden <> 0)
+	  )';
+	END
+
+	IF @FirmID IS NOT NULL
+		SET @WhereSql += N' AND d.firmID = @FirmID';
+
+	IF @headCompanyID IS NOT NULL
+		SET @WhereSql += N' AND f.headCompanyID = @headCompanyID';
+
+	IF @MassmediaID IS NOT NULL
+		SET @WhereSql += N' AND d.massmediaID = @MassmediaID';
+
+	IF @PaymentTypeID IS NOT NULL
+		SET @WhereSql += N' AND d.paymentTypeID = @PaymentTypeID';
+
+	IF @CampaignTypeID IS NOT NULL
+		SET @WhereSql += N' AND d.campaignTypeID = @CampaignTypeID';
+
+	IF @ManagerID IS NOT NULL
+		SET @WhereSql += N' AND d.userID = @ManagerID';
+
+	IF @AgencyID IS NOT NULL
+		SET @WhereSql += N' AND d.agencyID = @AgencyID';
+
+	IF @massmediaGroupID IS NOT NULL
+		SET @WhereSql += N' AND d.massmediaGroupID = @massmediaGroupID';
+
+	IF @advertTypeID IS NOT NULL
+		SET @WhereSql += N' AND (d.advertTypeID = @advertTypeID OR atFilter.parentID = @advertTypeID)';
+
+	-- ========= Сборка SQL =========
+	SET @SQLString = N'
+	DECLARE @Summa decimal(18,2) = 0;
+
+	SELECT @Summa = ISNULL(SUM(d.price), 0)
+	FROM #Campaign d
+	' + @JoinSql + CHAR(10) + @WhereSql + N';
+
+	';
+
+	IF @IsFirmHeadCompanyOnly = 1
+	BEGIN
+		SET @SQLString += N'
+		DECLARE @res TABLE (
+			RowNum int,
+			sum4 decimal(18,2),
+			sum1 decimal(18,2),
+			firm varchar(256),
+			head_company varchar(256),
+			hc2 varchar(256),
+			[percent] decimal(12,2),
+			row_style varchar(20),
+			INDEX i1 UNIQUE CLUSTERED (RowNum)
+		);
+
+		INSERT INTO @res(RowNum, sum1, firm, head_company, [percent])
+		';
+	END
+
+	IF @IsAdvertTypeTopOnly = 1
+	BEGIN
+		SET @SQLString += N'
+		DECLARE @resAdvert TABLE (
+			RowNum int,
+			sum4 decimal(18,2),
+			sum1 decimal(18,2),
+			adverttype varchar(256),
+			topAdverttype varchar(256),
+			top2 varchar(256),
+			[percent] decimal(12,2),
+			row_style varchar(20),
+			INDEX i1 UNIQUE CLUSTERED (RowNum)
+		);
+
+		INSERT INTO @resAdvert(RowNum, sum1, adverttype, topAdverttype, [percent])
+		';
+	END
+	-- ==== дальше твоя логика построения SELECT списка ====
+
+	-- 1) Заголовок SELECT + поля группировки
+	SET @SQLString += N'
+	SELECT
+		row_number() over(order by ISNULL(SUM(d.price),0)) as RowNum,
+		ISNULL(SUM(d.price),0) as sum1,
+	';
+
+	IF @IsGroupByPaymentType <> 0
+		SET @SQLString += N'  pt.Name as payment_type,';
+	IF @IsGroupByCampaignType <> 0
+		SET @SQLString += N'  iCampaignType.Name as campaign_type,';
+	IF @IsGroupByMassmedia <> 0
+		SET @SQLString += N'  vMassMedia.NameWithGroup as massmedia, vMassMedia.massmediaID,';
+	IF @IsGroupByMassmediaGroupType <> 0
+		SET @SQLString += N'  MassmediaGroup.Name as massmedia_group,';
+	IF @IsGroupByFirm <> 0
+		SET @SQLString += N'  f.Name as firm,';
+	IF @IsGroupByHeadCompany <> 0
+		SET @SQLString += N'  HeadCompany.Name as head_company,';
+	IF @IsGroupByManager <> 0
+		SET @SQLString += N'  [User].userName as manager,';
+	IF @IsGroupByAgency <> 0
+		SET @SQLString += N'  Agency.Name as agency,';
+	IF @IsGroupByAdvertType <> 0
+		SET @SQLString += N'  AdvertType.Name as adverttype,';
+	IF @IsGroupByAdvertTypeTop <> 0
+		SET @SQLString += N'  at.Name as topAdverttype,';
+
+	IF 0 + @IsGroupByPaymentType + @IsGroupByCampaignType + @IsGroupByMassmedia + @IsGroupByFirm
+		 + @IsGroupByManager + @IsGroupByAgency + @IsGroupByMassmediaGroupType + @IsGroupByHeadCompany
+		 + @IsGroupByAdvertType + @IsGroupByAdvertTypeTop = 0
+		SET @SQLString += N'  max(N''' + REPLACE(@tAll, N'''', N'''''') + N''') as [all],';
+
+	-- 2) JOIN’ы для группировок (только если нужны, чтобы не тащить лишнее)
+	-- ВНИМАНИЕ: Firm уже присоединён как f в @JoinSql для фильтра headCompany. Но для group-by firm/headcompany у тебя были другие алиасы.
+	-- Чтобы не ломать существующую часть, оставим твою секцию JOIN'ов, но только добавим недостающее:
+	IF @IsGroupByMassmediaGroupType <> 0 SET @GroupJoinSql  += N' inner join MassmediaGroup on d.massmediaGroupID = MassmediaGroup.massmediaGroupID ';
+	IF @IsGroupByCampaignType <> 0 SET @GroupJoinSql += N' inner join iCampaignType on d.campaignTypeID = iCampaignType.CampaignTypeID';
+	IF @IsGroupByMassmedia <> 0 SET @GroupJoinSql += N' inner join vMassMedia on d.massmediaID = vMassMedia.massmediaID';
+
+	IF @IsGroupByHeadCompany <> 0 SET @GroupJoinSql += N' inner join HeadCompany on f.headCompanyID = HeadCompany.headCompanyID ';
+	IF @IsGroupByManager <> 0 SET @GroupJoinSql += N' inner join [User] on d.userID = [User].UserID';
+	IF @IsGroupByAgency <> 0 SET @GroupJoinSql += N' inner join Agency on d.AgencyID = Agency.AgencyID';
+	IF @IsGroupByAdvertType <> 0 OR @IsGroupByAdvertTypeTop <> 0 SET @GroupJoinSql += N' left join AdvertType on d.advertTypeID = AdvertType.AdvertTypeID';
+	IF @IsGroupByAdvertTypeTop <> 0 SET @GroupJoinSql += N' left join AdvertType at on AdvertType.parentID = at.AdvertTypeID';
+
+	-- percent (теперь sum1 и @Summa на одном и том же фильтре)
+	SET @SQLString += N'
+		CASE @Summa
+			WHEN 0 THEN 0
+			ELSE CAST((ISNULL(SUM(d.price),0) * 100.0 / @Summa) as decimal(12,2))
+		END as [percent]
+	FROM #Campaign d
+	' + @JoinSql + CHAR(10) + @GroupJoinSql + CHAR(10)  + @WhereSql + CHAR(10);
+
+	-- 3) GROUP BY (как у тебя)
+	IF 0 + @IsGroupByPaymentType + @IsGroupByCampaignType
+		  + @IsGroupByMassmedia + @IsGroupByFirm + @IsGroupByManager + @IsGroupByAgency + @IsGroupByMassmediaGroupType 
+		  + @IsGroupByAdvertType + @IsGroupByAdvertTypeTop + @IsGroupByHeadCompany <> 0
+	BEGIN
+		SET @IsStarted = 0;
+		SET @SQLString += N' GROUP BY ';
+
+		IF @IsGroupByPaymentType <> 0 BEGIN
+			IF @IsStarted = 1 SET @SQLString += N',';
+			SET @SQLString += N'pt.Name';
+			SET @IsStarted = 1;
+		END
+
+		IF @IsGroupByCampaignType <> 0 BEGIN
+			IF @IsStarted = 1 SET @SQLString += N',';
+			SET @SQLString += N'iCampaignType.Name';
+			SET @IsStarted = 1;
+		END
+
+		IF @IsGroupByMassmedia <> 0 BEGIN
+			IF @IsStarted = 1 SET @SQLString += N',';
+			SET @SQLString += N'vMassMedia.NameWithGroup, vMassMedia.massmediaID';
+			SET @IsStarted = 1;
+		END
+
+		IF @IsGroupByFirm <> 0 BEGIN
+			IF @IsStarted = 1 SET @SQLString += N',';
+			SET @SQLString += N'f.Name';
+			SET @IsStarted = 1;
+		END
+
+		IF @IsGroupByHeadCompany <> 0 BEGIN
+			IF @IsStarted = 1 SET @SQLString += N',';
+			SET @SQLString += N'HeadCompany.Name';
+			SET @IsStarted = 1;
+		END
+
+		IF @IsGroupByManager <> 0 BEGIN
+			IF @IsStarted = 1 SET @SQLString += N',';
+			SET @SQLString += N'[User].userName';
+			SET @IsStarted = 1;
+		END
+
+		IF @IsGroupByAgency <> 0 BEGIN
+			IF @IsStarted = 1 SET @SQLString += N',';
+			SET @SQLString += N'Agency.Name';
+			SET @IsStarted = 1;
+		END
+
+		IF @IsGroupByAdvertType <> 0 BEGIN
+			IF @IsStarted = 1 SET @SQLString += N',';
+			SET @SQLString += N'AdvertType.Name';
+			SET @IsStarted = 1;
+		END
+
+		IF @IsGroupByAdvertTypeTop <> 0 BEGIN
+			IF @IsStarted = 1 SET @SQLString += N',';
+			SET @SQLString += N'at.Name';
+			SET @IsStarted = 1;
+		END
+
+		IF @IsGroupByMassmediaGroupType <> 0 BEGIN
+			IF @IsStarted = 1 SET @SQLString += N',';
+			SET @SQLString += N'MassmediaGroup.Name';
+			SET @IsStarted = 1;
+		END
+	END
+
+	IF @IsFirmHeadCompanyOnly = 1
+	BEGIN
+		SET @SQLString += N'
+		DECLARE @c int;
+		SELECT @c = COUNT(*) FROM @res;
+
+		INSERT INTO @res(RowNum, sum4, head_company, [percent], row_style)
+		SELECT ROW_NUMBER() OVER (ORDER BY head_company) + @c,
+			   SUM(sum1),
+			   head_company,
+			   SUM([percent]),
+			   ''bold''
+		FROM @res
+		GROUP BY head_company
+		HAVING COUNT(*) > 1;
+
+		UPDATE @res SET hc2 = head_company;
+
+		WITH DuplicatesCTE AS (
+			SELECT head_company
+			FROM @res
+			GROUP BY head_company
+			HAVING COUNT(*) > 1
+		)
+		UPDATE t
+		SET t.head_company = NULL
+		FROM @res t
+		INNER JOIN DuplicatesCTE d ON t.head_company = d.head_company
+		WHERE t.firm IS NOT NULL;
+
+		UPDATE @res
+		SET sum4 = sum1
+		WHERE sum1 IS NOT NULL AND head_company IS NOT NULL;
+
+		SELECT * FROM @res ORDER BY hc2, firm;
+		';
+	END
+
+	IF @IsAdvertTypeTopOnly = 1
+	BEGIN
+		SET @SQLString += N'
+		DECLARE @c2 int;
+		SELECT @c2 = COUNT(*) FROM @resAdvert;
+
+		-- добавляем "итоги" по верхнему уровню (topAdverttype) как жирные строки
+		INSERT INTO @resAdvert(RowNum, sum4, topAdverttype, [percent], row_style)
+		SELECT ROW_NUMBER() OVER (ORDER BY topAdverttype) + @c2,
+			   SUM(sum1),
+			   topAdverttype,
+			   SUM([percent]),
+			   ''bold''
+		FROM @resAdvert
+		GROUP BY topAdverttype
+		HAVING COUNT(*) > 1;
+
+		UPDATE @resAdvert SET top2 = topAdverttype;
+
+		-- прячем повторяющийся верхний уровень в "детальных" строках (как head_company)
+		WITH DuplicatesCTE AS (
+			SELECT topAdverttype
+			FROM @resAdvert
+			GROUP BY topAdverttype
+			HAVING COUNT(*) > 1
+		)
+		UPDATE t
+		SET t.topAdverttype = NULL
+		FROM @resAdvert t
+		INNER JOIN DuplicatesCTE d ON t.topAdverttype = d.topAdverttype
+		WHERE t.adverttype IS NOT NULL;
+
+		-- sum4 = sum1 для жирных строк (как у фирм)
+		UPDATE @resAdvert
+		SET sum4 = sum1
+		WHERE sum1 IS NOT NULL AND topAdverttype IS NOT NULL;
+
+		SELECT * FROM @resAdvert ORDER BY top2, adverttype;
+		';
+	END
+
+	--PRINT @SQLString  -- можно включить для отладки
+	--return
+
+	EXECUTE sp_executesql @SQLString,
+	N'@startDate datetime, @finishDate datetime, @loggedUserID smallint,
+	  @FirmID smallint, @MassmediaID smallint, @PaymentTypeID smallint, @CampaignTypeID tinyint,
+	  @ManagerID smallint, @AgencyID smallint, @massmediaGroupID int, @advertTypeID smallint, @headCompanyID smallint,
+	  @ShowWhite bit, @ShowBlack bit',
+		@startDate = @StartDay,
+		@finishDate = @FinishDay,
+		@loggedUserID = @loggedUserID,
+		@FirmID = @FirmID,
+		@MassmediaID = @MassmediaID,
+		@PaymentTypeID = @PaymentTypeID,
+		@CampaignTypeID = @CampaignTypeID,
+		@ManagerID = @ManagerID,
+		@AgencyID = @AgencyID,
+		@massmediaGroupID = @massmediaGroupID,
+		@advertTypeID = @advertTypeID,
+		@headCompanyID = @headCompanyID,
+		@ShowWhite = @ShowWhite,
+		@ShowBlack = @ShowBlack;
+
+END
+GO
+
+-- ===== stat_VolumeOfRealizationNew =====
+IF @@TRANCOUNT = 0 BEGIN RAISERROR('Транзакция откатилась — stat_VolumeOfRealizationNew и дальше не выполняются', 16, 1); SET NOEXEC ON; END
+GO
+SET QUOTED_IDENTIFIER ON;
+GO
+CREATE OR ALTER Procedure [dbo].[stat_VolumeOfRealizationNew]
+(
+@StartDay DATETIME = default,
+@FinishDay DATETIME = default,
+@FirmID int = default, 
+@MassmediaID int = default, 
+@PaymentTypeID int = default,
+@CampaignTypeID int = default,
+@ManagerID int = default,
+@AgencyID int = default,
+@AdvertTypeID int = default,
+@IsGroupByPaymentType bit = 0,
+@IsGroupByCampaignType bit = 0,
+@IsGroupByMassmedia bit = 0,
+@IsGroupByFirm bit = 0,
+@IsGroupByManager bit = 0,
+@IsGroupByAgency bit = 0,
+@IsGroupByMassmediaGroupType bit = 0,
+@IsGroupByAdvertType bit = 0,
+@massmediaGroupID int = NULL,
+@ShowWhite bit = 1,
+@ShowBlack bit = 1,
+@loggedUserID smallint,
+@languageCode VARCHAR(10) = 'ru' -- язык интерфейса веба (docs/tasks/web-i18n.md); десктоп не передаёт
+)
+WITH EXECUTE AS OWNER
+As
+
+SET NOCOUNT ON
+DECLARE @tAll NVARCHAR(200) = dbo.fn_Translate(@languageCode, N'Все');
+
+declare @massmedias table(massmediaID smallint primary key, myMassmedia bit, foreignMassmedia bit)
+insert into @massmedias (massmediaID, myMassmedia, foreignMassmedia) 
+select * from dbo.fn_GetMassmediasForUser(@loggedUserID)
+
+declare @isRightToViewForeignActions bit,
+	@isRightToViewGroupActions bit
+
+select @isRightToViewForeignActions = dbo.fn_IsRightToViewForeignActions(@loggedUserID),
+	@isRightToViewGroupActions = dbo.fn_IsRightToViewGroupActions(@loggedUserID)
+
+declare @ugroups table(id int)
+insert into @ugroups (id) 
+select * from dbo.[fn_GetUserGroups](@loggedUserID)
+
+If	@StartDay Is Null Or @FinishDay Is Null
+	Begin
+	Raiserror('FilterStartFinishDays', 16, 1)
+	Return
+	End
+
+CREATE TABLE #tmp1
+(
+CompanyPrice decimal(18,2),
+MassmediaID SMALLINT,
+PaymentTypeID SMALLINT,
+ActionID INT,
+campaignTypeID SMALLINT,
+Manager_ID SMALLINT,
+AgencyID SMALLINT,
+massmediaGroupID int,
+advertTypeID smallint,
+issuePrice decimal(18,2)
+)
+
+Set	@StartDay = dbo.ToShortDate(@StartDay)
+Set	@FinishDay = dbo.ToShortDate(@FinishDay)
+
+-- select all companies, which has appropriated 
+-- start and finish dates
+Declare cur_companies Cursor Local fast_forward
+For
+select distinct  
+	c.campaignID, c.ActionID, c.massmediaID, 
+	c.PaymentTypeID, c.campaignTypeID, a.userID, c.AgencyID, 
+	--c.[startDate], max(coalesce(mm.roltypeID,0)),  max(coalesce(mm.massmediaGroupID,0)), 
+	c.[startDate], mm.massmediaGroupID,  --max(coalesce(mm.massmediaGroupID,0)), 
+	a.discount, c.finalPrice, c.finishDate, r.advertTypeID, i.ratio * i.tariffPrice
+From	
+	Campaign c
+	INNER Join [Action] a On c.ActionID = a.actionID AND a.[isConfirmed] = 1
+	INNER JOIN Issue i On i.campaignID = c.campaignID
+	INNER Join Roller r On r.rollerID = i.rollerID
+	INNER JOIN PaymentType On c.PaymentTypeID = PaymentType.PaymentTypeID
+	left join MassMedia mm on c.massmediaID = mm.massmediaID	
+	left JOIN [PackModuleIssue] pmi ON pmi.[campaignID] = c.[campaignID]
+	left JOIN [PackModuleContent] pmc ON pmc.[pricelistID] = pmi.[pricelistID]
+	left JOIN [Module] m ON pmc.[moduleID] = m.[moduleID]	
+	inner join @massmedias mmu on (mm.massmediaID = mmu.massmediaID 
+						or m.massmediaID = mmu.massmediaID)
+	inner join MassMedia mmfu on mmu.massmediaID = mmfu.massmediaID 	
+	left join GroupMember gm on a.userID = gm.userID
+	left join @ugroups ug on gm.groupID = ug.id
+Where	
+	(a.userID = @loggedUserID or @isRightToViewForeignActions = 1 or (@isRightToViewGroupActions = 1 and ug.id is not null)) and
+	c.StartDate <= @FinishDay and
+	c.FinishDate >= @StartDay and
+	c.AgencyID = IsNull(@AgencyID, c.AgencyID) and
+	a.firmID = IsNull(@FirmID, a.firmID) and
+	a.userID = IsNull(@ManagerID, a.userID) and
+	c.PaymentTypeID = IsNull(@PaymentTypeID, c.PaymentTypeID) and
+	c.campaignTypeID = IsNull(@CampaignTypeID, c.campaignTypeID) and
+	(@ShowWhite <> 0 or PaymentType.isHidden <> 0) and  
+	(@ShowBlack <> 0 or PaymentType.isHidden = 0)  
+	and (@MassmediaID is null or mmfu.massmediaID = @MassmediaID)
+	and (@massmediaGroupID is null or mmfu.massmediaGroupId = @massmediaGroupID)
+	and ((a.userID = @loggedUserID and mmu.myMassmedia = 1) or (a.userID <> @loggedUserID and mmu.foreignMassmedia = 1))
+	and r.advertTypeID = IsNull(@AdvertTypeID, r.advertTypeID)
+/*
+group by 
+	c.campaignID, c.ActionID, c.massmediaID, 
+	c.PaymentTypeID, c.campaignTypeID, a.userID, c.AgencyID, 
+	c.[startDate], a.discount, c.finalPrice, c.finishDate,
+	mm.roltypeID
+*/
+
+-- select all companies, which have Issues inside interval
+Declare	
+	@campaignID int, 
+	@ActionID int, 
+	@campaignPrice decimal(18,2),
+	@SummaVar decimal(18,2),
+	@CompStartDate datetime,
+	@actionDiscount decimal(9,4),
+	@sumPrice decimal(18,2),
+	@finalPrice decimal(18,2),
+	@cfinishDate datetime,
+	@campMassmediaGroupID int,
+	@mmID smallint,
+	@advTypeID smallint,
+	@issuePrice decimal(18,2)
+	
+declare @tmp table (massmediaID smallint, price decimal(18,2))
+
+Open	cur_companies
+Fetch	next from cur_companies into 
+	@campaignID, @ActionID, @mmID, @PaymenttypeID, 
+	@CampaignTypeID, @ManagerID, @AgencyID, @CompStartDate, @campMassmediaGroupID, @actionDiscount, 
+	@finalPrice, @cfinishDate, @advTypeID, @issuePrice
+
+--Set	@FinishDay = Convert(datetime, Convert(varchar, @FinishDay, 112), 112) - 1
+While	@@fetch_status = 0
+begin
+	if @FinishDay < @cfinishDate or @StartDay > @CompStartDate
+		exec GetPriceByPeriod @campaignId, @CampaignTypeID, @StartDay, @FinishDay, @campaignPrice out
+	else 
+		set @campaignPrice = @finalPrice
+
+	IF @CampaignTypeID = 4
+	begin
+		delete from @tmp
+				
+		insert into @tmp(massmediaID, price)
+		select
+			m.[massmediaID], sum(mpl.[price])
+		from [PackModuleIssue] i 
+			INNER JOIN [PackModuleContent] AS pmc ON i.[priceListID] = pmc.[pricelistID]
+			INNER JOIN [ModulePriceList] AS mpl ON pmc.modulePriceListID = mpl.modulePriceListID
+			INNER JOIN [Module] AS m ON mpl.[moduleID] = m.[moduleID]
+		where 
+			i.campaignID = @campaignID	and
+			i.issueDate between @StartDay and @FinishDay 
+		group by m.massmediaID
+			
+		select @sumPrice = sum(t1.price) FROM @tmp AS t1
+		
+		insert into #tmp1 ([CompanyPrice],	[MassmediaID],[PaymentTypeID],[ActionID],[campaignTypeID],[Manager_ID],	[AgencyID], massmediaGroupID) 
+		select @campaignPrice * sum(t1.price)/ @sumPrice,  t1.massmediaID, @PaymenttypeID, @ActionID, @CampaignTypeID,@ManagerID, @AgencyID, mm.massmediaGroupID
+		from @tmp as t1
+			inner join MassMedia mm on t1.massmediaID = mm.massmediaID
+			inner join @massmedias mmu on mm.massmediaID = mmu.massmediaID 
+		where t1.price > 0  
+			and (@MassmediaID is null or mm.massmediaID = @MassmediaID)
+			and (@massmediaGroupID is null or mm.massmediaGroupId = @massmediaGroupID)
+		group by t1.massmediaID, mm.massmediaGroupID
+	END
+	ELSE
+	begin
+		if	@campaignPrice > 0 
+			Insert	Into #tmp1 ([CompanyPrice],[MassmediaID],[PaymentTypeID],[ActionID],[campaignTypeID],[Manager_ID],[AgencyID], massmediaGroupID, advertTypeID) 
+			Values(@campaignPrice,  @mmID, @PaymenttypeID, @ActionID, @CampaignTypeID, @ManagerID, @AgencyID, @campMassmediaGroupID, @advTypeID)
+	end
+		
+	fetch next from cur_companies into 
+			@campaignID, @ActionID, @mmID, @PaymenttypeID,
+			@CampaignTypeID, @ManagerID, @AgencyID, @CompStartDate, @campMassmediaGroupID, @actionDiscount, 
+			@finalPrice, @cfinishDate, @advTypeID, @issuePrice
+End	
+
+close cur_companies
+deallocate cur_companies
+
+Select	@SummaVar = IsNull(sum(CompanyPrice), 0) From	#tmp1
+
+-- output ---------------------------------------------------------
+Declare	@SQLString NVARCHAR(2500),
+				@IsStarted int
+
+/* Build the SQL string once.*/
+Set	@SQLString = N'Select	row_number() over(order by IsNull(Sum(CompanyPrice), 0)) as RowNum,'
+Set	@SQLString = @SQLString + N' IsNull(Sum(CompanyPrice), 0) as  sum1'
+
+Set @SQLString = @SQLString + N',  '
+
+If	@IsGroupByAdvertType <> 0
+	Set 	@SQLString = @SQLString + N'AdvertType.Name as "advert_type",'
+If	@IsGroupByPaymentType <> 0
+	Set 	@SQLString = @SQLString + N'Paymenttype.Name as "payment_type",'
+If	@IsGroupByCampaignType <> 0
+	Set 	@SQLString = @SQLString + N'iCampaignType.Name as "campaign_type",'
+If	@IsGroupByMassmedia <> 0
+	Set 	@SQLString = @SQLString + N'vMassMedia.Name as "massmedia", vMassMedia.groupName as "massmedia_group",'
+If	@IsGroupByMassmediaGroupType <> 0
+	Set 	@SQLString = @SQLString + N'MassmediaGroup.Name as "massmedia_group",'
+If	@IsGroupByFirm <> 0
+	Set 	@SQLString = @SQLString + N'Firm.Name as "firm",'
+If	@IsGroupByManager <> 0
+	Set 	@SQLString = @SQLString + N'coalesce([User].LastName, '''') + coalesce(space(1) + [User].FirstName, '''') as "manager",'
+If	@IsGroupByAgency <> 0
+	Set 	@SQLString = @SQLString + N'Agency.Name as "agency",'
+If	0 + @IsGroupByPaymentType + @IsGroupByCampaignType + 
+	@IsGroupByMassmedia + @IsGroupByFirm + @IsGroupByAdvertType +
+	@IsGroupByManager + @IsGroupByAgency + @IsGroupByMassmediaGroupType /*+ @IsGroupByCommissionaire*/ = 0
+	set		@SQLString = @SQLString + N'max(N''' + REPLACE(@tAll, N'''', N'''''') + N''') as "all",'
+
+Set 	@SQLString = @SQLString + 
+		N'case @Summa
+			when	0 then 0
+			else	Cast((IsNull(Sum(CompanyPrice), 0) * 100.0 / @Summa) as decimal(18,2))
+		End as "percent"	
+From	#tmp1'
+
+If	@IsGroupByMassmediaGroupType <> 0 Set @SQLString = @SQLString + N' inner join MassmediaGroup on #tmp1.massmediaGroupID = MassmediaGroup.massmediaGroupID '
+If	@IsGroupByPaymentType <> 0 Set @SQLString = @SQLString + N' inner join Paymenttype on #tmp1.PaymentTypeID = Paymenttype.PaymenttypeID'
+If	@IsGroupByCampaignType <> 0 Set @SQLString = @SQLString + N' inner join iCampaignType on #tmp1.campaignTypeID = iCampaignType.CampaignTypeID'
+If	@IsGroupByMassmedia <> 0 Set @SQLString = @SQLString + N' inner join vMassMedia on #tmp1.massmediaID = vMassMedia.massmediaID'
+If	@IsGroupByAdvertType <> 0 Set @SQLString = @SQLString + N' inner join AdvertType on #tmp1.advertTypeID = AdvertType.advertTypeID'
+If	@IsGroupByFirm <> 0 Set @SQLString = @SQLString + N' inner join Action on #tmp1.ActionID = Action.ActionID inner join Firm on Action.firmID = Firm.FirmID '
+If	@IsGroupByManager <> 0 Set @SQLString = @SQLString + N' inner join [User] on #tmp1.Manager_ID = [User].UserID'
+If	@IsGroupByAgency <> 0 Set @SQLString = @SQLString + N' inner join Agency on #tmp1.AgencyID = Agency.AgencyID'
+
+
+Set 	@SQLString = @SQLString + N' Where CompanyPrice <> 0 '
+
+If	0 + @IsGroupByPaymentType + @IsGroupByCampaignType + 
+	@IsGroupByMassmedia + @IsGroupByFirm + @IsGroupByAdvertType +
+	@IsGroupByManager + @IsGroupByAgency + @IsGroupByMassmediaGroupType /*+ @IsGroupByCommissionaire*/ <> 0
+	begin
+
+	-- Group By part
+	set	@IsStarted = 0
+	Set 	@SQLString = @SQLString + N' Group by '
+
+/*
+	if	@IsGroupByCommissionaire <> 0 begin
+		if	@IsStarted = 1 set @SQLString = @SQLString + N','	
+		Set 	@SQLString = @SQLString + N'Dic_Commissionaire.Description'
+		set	@IsStarted = 1
+	end
+*/
+	if	@IsGroupByPaymentType <> 0 begin
+		if	@IsStarted = 1 set @SQLString = @SQLString + N','	
+		Set 	@SQLString = @SQLString + N'Paymenttype.Name'
+		set	@IsStarted = 1
+	end
+
+	If	@IsGroupByCampaignType <> 0
+		begin
+		if	@IsStarted = 1 set @SQLString = @SQLString + N','	
+		Set 	@SQLString = @SQLString + N'iCampaignType.Name'
+		set	@IsStarted = 1
+		end
+
+	If	@IsGroupByAdvertType <> 0
+		begin
+		if	@IsStarted = 1 set @SQLString = @SQLString + N','	
+		Set 	@SQLString = @SQLString + N'AdvertType.Name'
+		set	@IsStarted = 1
+		end
+
+	If	@IsGroupByMassmedia <> 0
+		begin
+		if	@IsStarted = 1 set  @SQLString = @SQLString + N','	
+		Set 	@SQLString = @SQLString + N'vMassMedia.Name, vMassMedia.groupName'
+		set	@IsStarted = 1
+		end
+
+	If	@IsGroupByFirm <> 0
+		begin
+		if	@IsStarted = 1 set  @SQLString = @SQLString + N','	
+		Set 	@SQLString = @SQLString + N'Firm.Name'
+		set	@IsStarted = 1
+		end
+
+	If	@IsGroupByManager <> 0
+		begin
+
+		if	@IsStarted = 1 set  @SQLString = @SQLString + N','	
+		Set 	@SQLString = @SQLString + N'coalesce([User].LastName, '''') + coalesce(space(1) + [User].FirstName, '''')'
+		set	@IsStarted = 1
+		end
+
+	If	@IsGroupByAgency <> 0
+		begin
+		if	@IsStarted = 1 set  @SQLString = @SQLString + N','	
+		Set 	@SQLString = @SQLString + N'Agency.Name'
+		set	@IsStarted = 1
+		end
+	
+	If	@IsGroupByMassmediaGroupType <> 0
+		begin
+		if	@IsStarted = 1 set  @SQLString = @SQLString + N','	
+		Set @SQLString = @SQLString + N'MassmediaGroup.Name'
+		set	@IsStarted = 1
+		end
+
+	end
+
+EXECUTE sp_executesql @SQLString,
+	N'@Summa decimal(18,2)',
+	@Summa = @SummaVar		
+
+Drop		table #tmp1
+GO
+
+SET QUOTED_IDENTIFIER ON;
+GO
+IF @@TRANCOUNT = 0 BEGIN RAISERROR('Транзакция откатилась — ничего не применено', 16, 1); SET NOEXEC ON; END
+GO
+COMMIT TRANSACTION;
+PRINT 'Этап 6 многоязычности применён.';
+GO
+SET NOEXEC OFF;
+GO
+
+SET ANSI_NULLS ON;
+SET QUOTED_IDENTIFIER ON;
+GO
