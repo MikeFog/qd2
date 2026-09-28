@@ -267,6 +267,7 @@
     </Compile>
     <Compile Include="Classes\Export\IDocumentSheet.cs" />
     <Compile Include="Classes\Export\IExportDocument.cs" />
+    <Compile Include="Classes\Export\SheetWriter.cs" />
     <Compile Include="Classes\Export\MSExcel\MSDocumentSheet.cs" />
     <Compile Include="Classes\Export\MSExcel\MSExportDocument.cs" />
     <Compile Include="Classes\Export\OOCalc\OODocumentSheet.cs" />

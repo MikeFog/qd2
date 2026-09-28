@@ -6,8 +6,8 @@
 
 В интерфейсе медиаплан называется **«График размещения»**. Это не Crystal, а
 выгрузка в Excel через COM (`FogSoft.WinForm/Classes/Export`, `ExportManager`,
-`IDocumentSheet`). Весь генератор — один класс `Client/Classes/MediaPlan.cs`
-(~1000 строк).
+`IDocumentSheet`). Генератор — `Client/Classes/MediaPlanBuilder.cs` (в ядре, пишет
+в `IExportDocument`), десктопные диалоги и Excel — `Client/Classes/MediaPlan.cs`.
 
 ## 1. Карта вариантов
 
@@ -30,7 +30,7 @@
 | | `PrintSelectivelyMediaPlan` | 77 (709) | → `Simple, true` | К | целиком | да |
 | | `PrintSelectivelyMediaPlanMonth` | 77 (710) | → `Month, true` | К | по месяцам | да |
 | | `PrintSelectivelyMediaPlanPeriod` | 77 (711) | → `Period, true` | К | период | да |
-| Линейная кампания (91) → «График размещения» → | `PrintMediaPlanFact`, `…FactMonth`, `…FactByPeriod`, `PrintSelectivelyMediaPlanFact`, `…FactMonth`, `…FactPeriod` | 91 (169, 604, 642, 712, 713, 714) | `Campaign.WinForms.cs:37-60` → `PrintMediaPlan(isActual, byMonth, byPeriod, sel)` `:124` | К, одна кампания | все три | да |
+| Линейная кампания (91) → «График размещения» → | `PrintMediaPlanFact`, `…FactMonth`, `…FactByPeriod`, `PrintSelectivelyMediaPlanFact`, `…FactMonth`, `…FactPeriod` | 91 (169, 604, 642, 712, 713, 714) | `Campaign.WinForms.cs` → `PrintMediaPlan(byMonth, byPeriod, sel)` | К, одна кампания | все три | да |
 | Модульная (92) / спонсорская (93) / пакетная (171) → | `PrintMediaPlanFact`, `…FactMonth`, `…FactByPeriod` | 92 (190, 606, 644), 93 (211, 608, 646), 171 (494, 610, 648) | то же | К, одна кампания | все три | **нет** |
 | Акт выполненных работ (156) | `PrintMediaPlan` «Распечатать график размещения» | 156 (488) | `ActJournalRow.WinForms.cs:16` → кампания строки | К | целиком | нет |
 | `ActionForm`, кнопка на тулбаре | `tsbPrintMediaPlan` | — | `ActionForm.cs:385` → выбранная кампания | К | целиком | нет |
@@ -72,12 +72,13 @@ ArtvisDev; Tumen/Belgorod не проверены — базы вне сети).
 точка входа (DoAction / кнопка / меню)
   ├─ [по месяцам]  GetMonthes @isFact=1 → FrmMonths
   ├─ [за период]   FrmDateSelector (по умолчанию даты акции/кампании)
-  └─ MediaPlan.CreateInstance(... , selectively)       — 8 перегрузок, MediaPlan.cs:72-129
+  └─ MediaPlan.CreateInstance(... , selectively)       — 8 перегрузок (десктоп)
        .Show()                                          — всегда по фактическим окнам
-          ├─ PrintMediaPlanSettings (4 галочки)         — :148
-          ├─ [выборочно] SelectRollers: MediaPlanRetrieve_v2 @onlyRollers=1
-          │     по каждой кампании (× месяц) → SelectionForm роликов
-          ├─ раскладка К: PrintCampaignInfo по каждой кампании (× месяц)
+          ├─ PrintMediaPlanSettings (4 галочки)
+          ├─ [выборочно] MediaPlanBuilder.GetRollers: MediaPlanRetrieve_v2
+          │     @onlyRollers=1 по каждой кампании (× месяц) → SelectionForm роликов
+          ├─ MediaPlanBuilder.Build(ExcelDocument)       — ядро, пишет в IExportDocument
+          │   раскладка К: PrintCampaignInfo по каждой кампании (× месяц)
           │   раскладка С: PrintActionInfo — GetUniqueMMsForAction → по агентствам
           │     └─ на каждую станцию: LoadData = MediaPlanRetrieve_v2 → блок станции
           └─ сохранение: в Path2SaveReports или открыть книгу в Excel
@@ -88,19 +89,19 @@ ArtvisDev; Tumen/Belgorod не проверены — базы вне сети).
 
 ## 3. Раскладки листов
 
-### К — «по кампаниям» (`PrintCampaignInfo`, `:474`)
+### К — «по кампаниям» (`MediaPlanBuilder.PrintCampaignInfo`)
 
 - Лист на кампанию; при разбивке по месяцам — лист на **кампанию × месяц**
   (месяц попадает в лист, если лежит между `StartDate` и `FinishDate` кампании).
 - Имя листа: `«{месяц} {год} »{имя кампании} ({campaignID})`, обрезается с `...`
-  до 30 символов (`GetSheetName`, `:515`).
+  до 30 символов (`GetSheetName`).
 - Станции внутри листа: у пакетной кампании — список станций пакета
   (`CampaignPackModule.GetUniqueMassmedias` → `GetUniqueMMsForPackModuleCampaign`),
   у остальных — одна станция кампании.
 - Тип кампании определяет форму блока (§4): у линейной есть колонка «Цена»,
   у спонсорской — блок «Программы».
 
-### С — «по станциям» (`PrintActionInfo`, `:386`)
+### С — «по станциям» (`MediaPlanBuilder.PrintActionInfo`)
 
 - `GetUniqueMMsForAction` (одна акция или `@actionIDString`) → пары
   (станция, агентство); лист на **агентство** (имя листа = имя агентства),
@@ -211,7 +212,7 @@ ArtvisDev; Tumen/Belgorod не проверены — базы вне сети).
   стоит проверить глазами.
 - Блок без роликов печатается без таблицы времени и сетки (до этапа 1 он
   брал ширину от предыдущего блока).
-- В раскладке К после шапки лишняя пустая строка (`currentY++` на `:508`),
+- В раскладке К после шапки лишняя пустая строка (`currentY++` в `PrintCampaignInfo`),
   в С её нет — у двух раскладок разный вертикальный ритм.
 - Набор 3 при `campaignTypeId IS NULL OR = 4` фильтруется на **первую** станцию
   из `@massmediaIDString` — рассчитано на склейку станций, которой больше нет.
@@ -236,7 +237,12 @@ ArtvisDev; Tumen/Belgorod не проверены — базы вне сети).
 
 ## 9. Файлы
 
-- `Client/Classes/MediaPlan.cs` — генератор (не входит в `FogSoft.Core`).
+- `Client/Classes/MediaPlanBuilder.cs` — построитель: данные и раскладка листов, пишет в
+  `IExportDocument` (входит в `FogSoft.Core`, с этапа 2 плана веба).
+- `Client/Classes/MediaPlan.cs` — десктопная обёртка: диалоги, Excel через COM
+  (`ExcelDocument`), сохранение файла.
+- `FogSoft.WinForm/Classes/Export/SheetWriter.cs` — запись таблиц в лист (в ядре;
+  `ExportManager.CopyData2WorkSheet`/`PopulateWorksheet` делегируют сюда).
 - `Client/Classes/PrintSettings.cs`, `Client/Forms/PrintMediaPlanSettings*.cs` — настройки.
 - `Client/Classes/Action.WinForms.cs:39-102`, `Campaign.WinForms.cs:37-160`,
   `ActJournalRow.WinForms.cs:16`, `Forms/ActionForm.cs:354,385`, `Forms/MDIForm.cs:681-708`.

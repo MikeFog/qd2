@@ -209,29 +209,20 @@ namespace FogSoft.WinForm.Classes.Export
 			return -1;
 		}
 
+		// Реализация — в SheetWriter (входит и в FogSoft.Core).
 		public static void CopyData2WorkSheet(IDocumentSheet sheet, DataTable dt, int left, int top, bool rotate)
-        {
-            object[,] data = ProcessData(dt, rotate);
-            PopulateWorksheet(data, left, top, sheet);
-        }
+		{
+			SheetWriter.CopyData2WorkSheet(sheet, dt, left, top, rotate);
+		}
 
 		public static void CopyData2WorkSheet(IDocumentSheet sheet, DataTable dt, int left, int top)
 		{
-		    CopyData2WorkSheet(sheet, dt, left, top, false);
+			SheetWriter.CopyData2WorkSheet(sheet, dt, left, top);
 		}
 
 		public static void PopulateWorksheet(object[,] data, int left, int top, IDocumentSheet ws)
 		{
-			int height = data.GetLength(0);
-			int width = data.GetLength(1);
-			int bottom = top + height - 1;
-			int right = left + width - 1;
-
-			if (height == 0 && width == 0)
-				return;
-
-			ws.SetValuesForRange(top, left, bottom, right, data);
-			ws.SetBordersStyles(top, left, bottom, right, height > 1);
+			SheetWriter.PopulateWorksheet(data, left, top, ws);
 		}
 
 		private static void CopyData2WorkSheet(IDocumentSheet ws, DataGridView dg, DataView dv, Entity entity, bool needHighlight)
@@ -262,59 +253,16 @@ namespace FogSoft.WinForm.Classes.Export
 			}
 		}
 
-        private static bool TryParseMonthYear(string s, out DateTime result)
-        {
-            result = default(DateTime);
-            if (string.IsNullOrWhiteSpace(s)) return false;
-
-            string cleaned = s.Trim();
-            if (cleaned.EndsWith("г.", StringComparison.OrdinalIgnoreCase))
-                cleaned = cleaned.Substring(0, cleaned.Length - 2).Trim();
-            else if (cleaned.EndsWith("г", StringComparison.OrdinalIgnoreCase))
-                cleaned = cleaned.Substring(0, cleaned.Length - 1).Trim();
-
-            if (DateTime.TryParseExact(cleaned, new[] { "MMMM yyyy", "MMM yyyy" },
-                    new CultureInfo("ru-RU"), DateTimeStyles.None, out result))
-            {
-                result = new DateTime(result.Year, result.Month, 1);
-                return true;
-            }
-
-            return false;
-        }
-
-        private static object ConvertCellValue(object val)
-        {
-            if (val is string s && TryParseMonthYear(s, out DateTime dt))
-                return dt;
-            return val;
-        }
-
 		private static object[,] ProcessData(DataView dv, List<Column> columns)
 		{
 			object[,] data = new object[dv.Count, columns.Count];
 			for (int i = 0; i < dv.Count; i++)
 				for (int j = 0; j < columns.Count; j++)
 				{
-					data[i, j] = ConvertCellValue(columns[j].FormatValue(dv[i][columns[j].MappingName]));
+					data[i, j] = SheetWriter.ConvertCellValue(columns[j].FormatValue(dv[i][columns[j].MappingName]));
 					//ErrorManager.Log.Info(data[i, j]);
 				}
 			return data;
-		}
-
-        private static object[,] ProcessData(DataTable dt, bool rotate)
-		{
-            object[,] data = rotate ? new object[dt.Columns.Count, dt.Rows.Count] : new object[dt.Rows.Count, dt.Columns.Count];
-            for (int i = 0; i < dt.Rows.Count; i++)
-                for (int j = 0; j < dt.Columns.Count; j++)
-                {
-                    object converted = ConvertCellValue(dt.Rows[i][j]);
-                    if (rotate)
-                        data[j, i] = converted;
-                    else
-                        data[i, j] = converted;
-                }
-            return data;
 		}
 
 		private static void MakeCaption(

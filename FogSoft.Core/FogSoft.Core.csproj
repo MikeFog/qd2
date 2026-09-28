@@ -78,6 +78,9 @@
     <Compile Include="..\FogSoft.WinForm\Classes\SimpleObject.cs" Link="Classes\SimpleObject.cs" />
     <Compile Include="..\FogSoft.WinForm\Classes\StringUtil.cs" Link="Classes\StringUtil.cs" />
     <Compile Include="..\FogSoft.WinForm\Classes\Tr.cs" Link="Classes\Tr.cs" />
+    <Compile Include="..\FogSoft.WinForm\Classes\Export\IDocumentSheet.cs" Link="Classes\Export\IDocumentSheet.cs" />
+    <Compile Include="..\FogSoft.WinForm\Classes\Export\IExportDocument.cs" Link="Classes\Export\IExportDocument.cs" />
+    <Compile Include="..\FogSoft.WinForm\Classes\Export\SheetWriter.cs" Link="Classes\Export\SheetWriter.cs" />
     <Compile Include="..\FogSoft.WinForm\Classes\TempFileWorker.cs" Link="Classes\TempFileWorker.cs" />
     <Compile Include="..\FogSoft.WinForm\Classes\Time.cs" Link="Classes\Time.cs" />
     <Compile Include="..\FogSoft.WinForm\Classes\UserSettings.cs" Link="Classes\UserSettings.cs" />
@@ -163,6 +166,7 @@
     <Compile Include="..\Client\Classes\PriceCalculatorClasses.cs" Link="Domain\PriceCalculatorClasses.cs" />
     <Compile Include="..\Client\Classes\Pricelist.cs" Link="Domain\Pricelist.cs" />
     <Compile Include="..\Client\Classes\PrintSettings.cs" Link="Domain\PrintSettings.cs" />
+    <Compile Include="..\Client\Classes\MediaPlanBuilder.cs" Link="Domain\MediaPlanBuilder.cs" />
     <Compile Include="..\Client\Classes\ProgramIssue.cs" Link="Domain\ProgramIssue.cs" />
     <Compile Include="..\Client\Classes\ProgramPartOfSponsorCampaign.cs" Link="Domain\ProgramPartOfSponsorCampaign.cs" />
     <Compile Include="..\Client\Classes\Roller.cs" Link="Domain\Roller.cs" />
