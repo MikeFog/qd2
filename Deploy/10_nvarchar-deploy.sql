@@ -55,7 +55,11 @@ GO
 
 -- ===== 1. Колонки =====
 IF OBJECT_ID('tempdb..#target') IS NOT NULL DROP TABLE #target;
-CREATE TABLE #target (tbl sysname, col sysname, newType nvarchar(64));
+-- COLLATE DATABASE_DEFAULT: #target живёт в tempdb, а у сервера сопоставление может отличаться
+-- от базы (на проде сервер Cyrillic_General_CI_AI, база Cyrillic_General_CI_AS) — иначе
+-- сравнение с sys.columns.name падает с ошибкой 468.
+CREATE TABLE #target (tbl sysname COLLATE DATABASE_DEFAULT, col sysname COLLATE DATABASE_DEFAULT,
+                      newType nvarchar(64) COLLATE DATABASE_DEFAULT);
 INSERT INTO #target (tbl, col, newType) VALUES
     ('MassMedia', 'name', 'nvarchar(64)'),
     ('MassmediaGroup', 'name', 'nvarchar(250)'),
