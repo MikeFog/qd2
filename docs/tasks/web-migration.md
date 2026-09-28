@@ -228,7 +228,7 @@
 
 | Что | Проблема | Минимальное решение |
 |---|---|---|
-| Crystal Reports, 14 `.rpt` (`Client/Reports`) | рантайм только под .NET Framework | вынести в отдельный процесс-сервис на 4.8: на входе имя отчёта и параметры, на выходе PDF-поток. Сами `.rpt` и обвязка не трогаются |
+| Crystal Reports, 14 `.rpt` (`Client/Reports`) | рантайм только под .NET Framework | ~~вынести в отдельный процесс-сервис на 4.8~~ — отменено 2026-09-28: Word-шаблоны с полями на OpenXml, см. `docs/tasks/web-reports.md` §6.0 |
 | Excel через COM Interop: `FogSoft.WinForm/Classes/Export/MSExcel/*`, `Client/Classes/Import/FirmImporter.cs` | COM на сервере недопустим — лицензия, зависающие процессы, экземпляр на пользователя | подменить реализацию за существующими интерфейсами `IExportDocument` / `IDocumentSheet` на `DocumentFormat.OpenXml` (уже в референсах проекта) |
 | OpenOffice UNO: `Export/OOCalc/*`, ссылки `cli_ure`, `cli_uretypes` | то же | удалить ветку, оставить одну OpenXml-реализацию; настройка `ExportOffice` теряет смысл |
 | NAudio — прослушивание роликов (`Client/Forms/RollerPassportForm.cs`) | одна форма | `<audio>` плюс эндпоинт стриминга файла |
@@ -3904,7 +3904,11 @@ Crystal-сервис, QR (`QRCoder` работает серверно), стри
 > договоров» — `docs/tasks/web-reports.md`: живых Crystal-отчётов пять, а не
 > 14; рекомендация — Word-шаблоны с полями (развитие `CpOneDocGenerator`) для
 > документов и HTML для сетки вещания вместо сервиса на .NET Framework.
-> Решение за владельцем.
+>
+> **2026-09-28: решено.** Crystal-сервис не строим. Документы для клиента —
+> Word-шаблоны с полями, хранятся в базе с версиями, редактирует администратор
+> (`docs/tasks/web-reports.md` §6.0); веб отдаёт DOCX, PDF делает Word
+> пользователя (§6.1). Сетка вещания — HTML, сделана.
 
 1. **Excel: COM Interop → `DocumentFormat.OpenXml`** (перенесено из этапа 0
    п.5). Подменить реализацию за существующими интерфейсами `IExportDocument` /
