@@ -211,6 +211,10 @@ SET NOCOUNT on
             AND (@createDateBegin IS NULL OR a.createDate >= @createDateBegin)
             AND (@createDateEnd IS NULL OR a.createDate < @createDateEnd)
 			and (@headCompanyID is null or f.headCompanyID = @headCompanyID)
+			-- Отбор по менеджеру из фильтра журнала: без него обычный менеджер находил
+			-- чужую акцию по номеру. Загрузка карточки по номеру (Refresh) передаёт
+			-- userID самой акции или не передаёт вовсе — её условие не отсекает.
+			and (@userID is null or a.userID = @userID)
 			AND (
 				(a.[isConfirmed] = 0 AND @isShowNotActivate = 1 And a.deleteDate is null) 
 				OR (a.[isConfirmed] = 1 AND @isShowActivate = 1 And a.deleteDate is null) 
