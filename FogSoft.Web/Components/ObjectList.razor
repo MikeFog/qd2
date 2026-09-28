@@ -623,6 +623,23 @@ else
     public IReadOnlyList<PresentationObject> SelectedObjects =>
         _selectedRows.Select(Entity.CreateObject).ToList();
 
+    /// <summary>Строки, отмеченные чекбоксами.</summary>
+    public IReadOnlyCollection<DataRow> SelectedRows => _selectedRows;
+
+    /// <summary>
+    /// Отметить строки — владелец экрана возвращает отметки после перечитывания списка
+    /// (выбор акций для сводного медиаплана: отметки переживают смену отбора).
+    /// </summary>
+    public Task SelectRows(IEnumerable<DataRow> rows)
+    {
+        _selectedRows.Clear();
+        foreach (DataRow row in rows)
+            _selectedRows.Add(row);
+        _lastCheckedRow = null;
+        StateHasChanged();
+        return NotifySelectionChangedAsync();
+    }
+
     /// <summary>«Снять выделение» кнопкой тулбара владельца экрана.</summary>
     public Task ClearSelection()
     {

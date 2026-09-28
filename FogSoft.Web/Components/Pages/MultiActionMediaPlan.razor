@@ -1,0 +1,281 @@
+@page "/multi-action-media-plan"
+@using System.Data
+@using FogSoft.Web.Infrastructure
+@using FogSoft.WinForm
+@using FogSoft.WinForm.Classes
+@using FogSoft.WinForm.Passport.Classes
+@using Merlin.Classes
+@using Merlin.Classes.GridExport
+@inject MenuAccess Access
+@inject BusyService Busy
+@inject NavigationManager Nav
+@inject FilterMemory Filters
+@inject ObjectActions Actions
+@inject FileSaver Saver
+
+@*
+    «График размещения по нескольким акциям» — сводный медиаплан: выпуски всех выбранных
+    акций печатаются как одна большая акция (docs/tasks/multi-action-media-plan.md).
+    Два пункта меню — два способа выбрать акции, как в десктопе:
+    - «Трафик» (FrmMultiActionMediaPlan) — номера через запятую, проверка без закрытия;
+    - «Рекламный отдел» (FrmActionsSelector) — галочки в списке акций по отбору сущности
+      «Рекламная акция» (Actions1, права менеджера — в процедуре); отметки переживают
+      смену отбора.
+    Дальше — настройки печати и «Сохранить как», как у «Графика размещения» акции.
+*@
+
+<PageTitle>@_title</PageTitle>
+
+@if (SecurityManager.LoggedUser == null)
+{
+    <div class="state">
+        <div class="state-title">@Tr.T("Вы не вошли в систему")</div>
+        <a href="/">@Tr.T("Перейти к входу")</a>
+    </div>
+}
+else if (_access != JournalAccess.Allowed)
+{
+    <div class="state">
+        <div class="state-title">@Tr.T("Доступ закрыт")</div>
+        @Tr.T("Этот экран вам не разрешён. Права на экраны выдаются вместе с пунктами меню — обратитесь к администратору системы.")
+    </div>
+}
+else
+{
+    <div class="multi-mp">
+        <ScreenToolbar Title="@_title" Count="@(_bySelection ? _actions?.Rows.Count : null)">
+            @if (_bySelection)
+            {
+                <button class="btn btn-sm btn-outline-secondary" @onclick="Refresh">
+                    <i class="bi bi-arrow-clockwise" aria-hidden="true"></i>@Tr.T("Обновить")
+                </button>
+                <button class="btn btn-sm btn-outline-secondary" disabled="@(_selectedIds.Count == 0)" @onclick="ClearSelection">
+                    <i class="bi bi-x-square" aria-hidden="true"></i>@Tr.T("Снять выделение")
+                </button>
+            }
+            <button class="btn btn-sm btn-primary" @onclick="Print">
+                <i class="bi bi-file-earmark-spreadsheet" aria-hidden="true"></i>@Tr.T("Сформировать…")
+            </button>
+        </ScreenToolbar>
+
+        @if (_error != null)
+        {
+            <div class="alert alert-danger">@_error</div>
+        }
+
+        @if (_bySelection)
+        {
+            <FilterPanel @ref="_filterPanel" Pages="_filterPages" Values="_filterValues" FilterData="_filterData"
+                         Apply="Show" Screen="@_menuCode" />
+
+            <div class="selected">
+                @(_selectedIds.Count == 0
+                    ? Tr.T("Акции не выбраны")
+                    : Tr.Format("Выбрано ({0}): {1}", _selectedIds.Count, string.Join(", ", _selectedIds)))
+            </div>
+
+            <section class="actions-list">
+                @if (_actions == null)
+                {
+                    <div class="state">
+                        <div class="state-title">@Tr.T("Задайте отбор и нажмите «Применить»")</div>
+                        @Tr.T("Отметьте акции галочками — отметки сохраняются при смене отбора.")
+                    </div>
+                }
+                else
+                {
+                    <ObjectList @ref="_list" Entity="_entity" Data="_actions" ReadOnly="true" Selectable="true"
+                                QuickSearch="true" SelectionChanged="SelectionChanged"
+                                EmptyText="@(Tr.T("По отбору акций нет."))" />
+                }
+            </section>
+        }
+        else
+        {
+            <label class="ids">
+                @Tr.T("Номера рекламных акций через запятую:")
+                <textarea class="form-control" rows="3" @bind="_idsText"></textarea>
+            </label>
+        }
+    </div>
+}
+
+@code {
+    private string _title = Tr.T("График размещения по нескольким акциям");
+    private string _menuCode = ScreenRoutes.MultiActionMediaPlan;
+    private JournalAccess _access = JournalAccess.Allowed;
+    private string? _error;
+    private string? _initializedFor;
+
+    /// <summary>«Рекламный отдел» — выбор галочками; «Трафик» — номера руками.</summary>
+    private bool _bySelection;
+    private string _idsText = "";
+
+    // Лениво: страница создаётся и при пререндере, до входа пользователя.
+    private Entity? _entityCache;
+    private Entity _entity => _entityCache ??= EntityManager.GetEntity((int)Merlin.Entities.Action);
+    private FilterPanel? _filterPanel;
+    private IReadOnlyList<PassportPage> _filterPages = Array.Empty<PassportPage>();
+    private readonly Dictionary<string, object> _filterValues = new(StringComparer.InvariantCultureIgnoreCase);
+    private DataSet? _filterData;
+
+    private DataTable? _actions;
+    private ObjectList? _list;
+    private readonly SortedSet<int> _selectedIds = new();
+    // После перечитывания ObjectList сбрасывает отметки — их возвращаем после отрисовки,
+    // а сообщения о сбросе до этого не учитываем.
+    private bool _restorePending;
+
+    protected override async Task OnParametersSetAsync()
+    {
+        if (SecurityManager.LoggedUser == null)
+            return;
+
+        string code = ResolveMenu();
+        if (code == _initializedFor)
+            return;
+        _initializedFor = code;
+        _menuCode = code;
+        _bySelection = code == ScreenRoutes.MultiActionMediaPlanSelect;
+        _actions = null;
+        _selectedIds.Clear();
+        _error = null;
+
+        _access = Access.CheckScreen(_menuCode);
+        if (_access != JournalAccess.Allowed)
+            return;
+        _title = Access.MenuText(_menuCode) ?? Tr.T("График размещения по нескольким акциям");
+
+        if (_bySelection)
+            await Busy.RunAsync(() => Try(() =>
+            {
+                _filterPages = PassportSchema.Parse(_entity.XmlFilter, _entity, pageType: PageTypes.Filter);
+                _filterData = Globals.PrepareForFilter(_entity);
+                _filterValues.Clear();
+                Globals.ResolveFilterInitialValues(_filterValues, _entity.XmlFilter);
+                Filters.Restore(_menuCode, _filterValues);
+            }));
+    }
+
+    private string ResolveMenu()
+    {
+        string query = new Uri(Nav.Uri).Query;
+        string? menu = Microsoft.AspNetCore.WebUtilities.QueryHelpers.ParseQuery(query).TryGetValue("menu", out var m) ? m.ToString() : null;
+        if (string.Equals(menu, ScreenRoutes.MultiActionMediaPlanSelect, StringComparison.OrdinalIgnoreCase))
+            return ScreenRoutes.MultiActionMediaPlanSelect;
+        if (string.Equals(menu, ScreenRoutes.MultiActionMediaPlan, StringComparison.OrdinalIgnoreCase))
+            return ScreenRoutes.MultiActionMediaPlan;
+        return Access.CheckScreen(ScreenRoutes.MultiActionMediaPlanSelect) == JournalAccess.Allowed
+            ? ScreenRoutes.MultiActionMediaPlanSelect
+            : ScreenRoutes.MultiActionMediaPlan;
+    }
+
+    private void Try(System.Action work)
+    {
+        try
+        {
+            _error = null;
+            work();
+        }
+        catch (Exception ex)
+        {
+            _error = ErrorPresenter.Describe(ex);
+        }
+    }
+
+    private Task Show() => Busy.RunAsync(() => Try(() =>
+    {
+        _actions = MediaPlanJob.LoadActionsForSelection(_filterValues);
+        _restorePending = true;
+        Filters.Remember(_menuCode, _filterValues);
+    }));
+
+    private Task Refresh() => _filterPanel?.Validate() == false ? Task.CompletedTask : Show();
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (!_restorePending || _list == null || _actions == null)
+            return;
+        _restorePending = false;
+        await _list.SelectRows(_actions.Rows.Cast<DataRow>().Where(r => _selectedIds.Contains(ActionIdOf(r))));
+    }
+
+    private static int ActionIdOf(DataRow row) =>
+        ParseHelper.ParseToInt32(row[Merlin.Classes.Action.ParamNames.ActionId].ToString());
+
+    /// <summary>Отметки видимых строк заменяют их прежнее состояние; невидимые — остаются.</summary>
+    private void SelectionChanged(int _)
+    {
+        if (_restorePending || _list == null || _actions == null)
+            return;
+        foreach (DataRow row in _actions.Rows)
+            _selectedIds.Remove(ActionIdOf(row));
+        foreach (DataRow row in _list.SelectedRows)
+            _selectedIds.Add(ActionIdOf(row));
+    }
+
+    private async Task ClearSelection()
+    {
+        _selectedIds.Clear();
+        if (_list != null)
+            await _list.ClearSelection();
+    }
+
+    private async Task Print()
+    {
+        _error = await Saver.UnsupportedReasonAsync();
+        if (_error != null)
+            return;
+        IList<int> ids;
+        if (_bySelection)
+        {
+            ids = _selectedIds.ToList();
+            if (ids.Count == 0)
+            {
+                _error = Tr.T("Отметьте хотя бы одну рекламную акцию.");
+                return;
+            }
+        }
+        else
+        {
+            ids = MediaPlanJob.ParseActionIds(_idsText);
+            if (ids.Count == 0)
+            {
+                _error = Tr.T("Введите хотя бы один номер рекламной акции.");
+                return;
+            }
+            IList<int>? missing = null;
+            await Busy.RunAsync(() => Try(() => missing = MediaPlanJob.FindMissingActions(ids)));
+            if (missing == null)
+                return;
+            if (missing.Count > 0)
+            {
+                _error = Tr.Format("Рекламные акции не найдены: {0}. Исправьте номера и повторите.", string.Join(", ", missing));
+                return;
+            }
+        }
+
+        var model = new MediaPlanPrintForm.Model();
+        if (!await Actions.AskMediaPlanSettings(_title, model))
+            return;
+
+        ExportFile? file = null;
+        await Busy.RunAsync(() => Try(() =>
+            file = MediaPlanJob.ForActions(ids).Build(ObjectActions.ToPrintSettings(model), null, null, null, null)));
+        if (_error != null)
+            return;
+        if (file == null)
+        {
+            _error = Tr.T("Выпусков нет — печатать нечего.");
+            return;
+        }
+        try
+        {
+            await Actions.SaveMediaPlan(file);
+        }
+        catch (Exception ex)
+        {
+            _error = ErrorPresenter.Describe(ex);
+        }
+    }
+}

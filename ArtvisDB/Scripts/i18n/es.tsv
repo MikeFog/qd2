@@ -1517,3 +1517,22 @@ code	Радиостанция: {0}	Emisora: {0}
 code	СМИ: {0}	Medio: {0}
 code	Территория распространения: {0}	Área de cobertura: {0}
 code	Лист	Hoja
+code	Акции не выбраны	Ninguna campaña seleccionada
+code	Введите хотя бы один номер рекламной акции.	Introduzca al menos un número de campaña publicitaria.
+code	Выберите ролики	Seleccione los spots
+code	Выбрано ({0}): {1}	Seleccionadas ({0}): {1}
+code	Вывести информацию о предмете рекламы	Mostrar el rubro publicitario
+code	Выпусков нет — выбирать не из чего.	No hay emisiones: no hay nada que seleccionar.
+code	Выпусков нет — печатать нечего.	No hay emisiones: no hay nada que imprimir.
+code	Месяцы	Meses
+code	Номера рекламных акций через запятую:	Números de campañas publicitarias separados por comas:
+code	Отметьте акции галочками — отметки сохраняются при смене отбора.	Marque las campañas: las marcas se conservan al cambiar el filtro.
+code	Отметьте хотя бы один месяц.	Marque al menos un mes.
+code	Отметьте хотя бы один ролик.	Marque al menos un spot.
+code	Отметьте хотя бы одну рекламную акцию.	Marque al menos una campaña publicitaria.
+code	Распечатать документ с подготовленными подписями	Imprimir el documento con las firmas preparadas
+code	Рекламные акции не найдены: {0}. Исправьте номера и повторите.	Campañas publicitarias no encontradas: {0}. Corrija los números y vuelva a intentarlo.
+code	Ролики	Spots
+code	Скрыть стоимость по тарифам	Ocultar el costo según tarifas
+code	Сформировать	Generar
+code	Сформировать…	Generar…

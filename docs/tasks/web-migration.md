@@ -3917,6 +3917,11 @@ Crystal-сервис, QR (`QRCoder` работает серверно), стри
    §9. Там же зафиксированы два места мёртвого кода в слое экспорта
    (`MSExportDocument.GetNewSheet`, `ExportManager.ExportExcel`), которые
    логично убрать заодно с заменой слоя.
+   **Сделано 27–28.09.2026** отдельным планом `docs/tasks/web-mediaplan.md`:
+   построитель `MediaPlanBuilder` и OpenXml-реализация `IExportDocument`
+   (`OpenXmlExportDocument`) — в ядре, десктопный медиаплан уже без COM, в вебе
+   все пункты «График размещения» и экран сводного плана. Остальные экспорты
+   (п. 1) по-прежнему на COM — `OpenXmlExportDocument` можно подставлять им.
 
 ### Этап 5. Перевод в эксплуатацию
 

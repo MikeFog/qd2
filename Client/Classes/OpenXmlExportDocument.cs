@@ -58,12 +58,15 @@ namespace Merlin.Classes
 					wbPart.Workbook = new S.Workbook(new S.BookViews(new S.WorkbookView()));
 					var styles = new StyleTable();
 					var strings = new SharedStrings();
+					// Подпись агентства повторяется на каждом листе — в книге одна копия
+					// картинки на все листы, как у Excel (иначе файл больше в разы).
+					var images = new Dictionary<string, ImagePart>();
 					var sheets = new S.Sheets();
 					uint sheetId = 1;
 					foreach (OpenXmlDocumentSheet sheet in _sheets)
 					{
 						WorksheetPart wsPart = wbPart.AddNewPart<WorksheetPart>();
-						sheet.Write(wsPart, styles, strings);
+						sheet.Write(wsPart, styles, strings, images);
 						sheets.Append(new S.Sheet { Id = wbPart.GetIdOfPart(wsPart), SheetId = sheetId++, Name = sheet.Name });
 					}
 					wbPart.Workbook.Append(sheets);
@@ -636,7 +639,8 @@ namespace Merlin.Classes
 
 		#region Запись листа
 
-		public void Write(WorksheetPart part, OpenXmlExportDocument.StyleTable styles, OpenXmlExportDocument.SharedStrings strings)
+		public void Write(WorksheetPart part, OpenXmlExportDocument.StyleTable styles, OpenXmlExportDocument.SharedStrings strings,
+			Dictionary<string, ImagePart> images)
 		{
 			var ws = new S.Worksheet();
 			uint baseStyle = styles.GetStyle(_baseFormat);
@@ -673,7 +677,7 @@ namespace Merlin.Classes
 			{
 				DrawingsPart drawings = part.AddNewPart<DrawingsPart>();
 				ws.Append(new S.Drawing { Id = part.GetIdOfPart(drawings) });
-				WriteDrawings(drawings);
+				WriteDrawings(drawings, images);
 			}
 			part.Worksheet = ws;
 		}
@@ -748,16 +752,28 @@ namespace Merlin.Classes
 			return name;
 		}
 
-		private void WriteDrawings(DrawingsPart drawings)
+		private void WriteDrawings(DrawingsPart drawings, Dictionary<string, ImagePart> images)
 		{
 			var wsDr = new Xdr.WorksheetDrawing();
 			uint id = 1;
 			foreach (Image img in _images)
 			{
-				ImagePart imagePart = drawings.AddImagePart(ImagePartType.Png);
-				using (var ms = new MemoryStream(img.Png))
-					imagePart.FeedData(ms);
-				string relId = drawings.GetIdOfPart(imagePart);
+				string key = Convert.ToBase64String(System.Security.Cryptography.SHA256.Create().ComputeHash(img.Png));
+				string relId;
+				if (images.TryGetValue(key, out ImagePart shared))
+				{
+					// Та же картинка уже на этом листе (подпись у каждого блока) — та же связь.
+					IdPartPair linked = drawings.Parts.FirstOrDefault(pp => pp.OpenXmlPart == shared);
+					relId = linked.OpenXmlPart != null ? linked.RelationshipId : drawings.GetIdOfPart(drawings.AddPart(shared));
+				}
+				else
+				{
+					ImagePart imagePart = drawings.AddImagePart(ImagePartType.Png);
+					using (var ms = new MemoryStream(img.Png))
+						imagePart.FeedData(ms);
+					images[key] = imagePart;
+					relId = drawings.GetIdOfPart(imagePart);
+				}
 
 				wsDr.Append(new Xdr.OneCellAnchor(
 					new Xdr.FromMarker(

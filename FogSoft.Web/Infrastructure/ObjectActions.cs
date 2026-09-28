@@ -89,7 +89,7 @@ public enum ActionEffect
 ///
 /// Scoped — пользуется диалогами circuit.
 /// </summary>
-public sealed class ObjectActions
+public sealed partial class ObjectActions
 {
 	private readonly PassportDialog _passports;
 	private readonly NamedPassportDialog _namedPassports;
@@ -98,9 +98,10 @@ public sealed class ObjectActions
 	private readonly BusyService _busy;
 	private readonly PeriodDialog _periods;
 	private readonly ProgressDialog _progress;
+	private readonly FileSaver _saver;
 
 	public ObjectActions(PassportDialog passports, NamedPassportDialog namedPassports, DialogService dialogs, TableDialog tables,
-		BusyService busy, PeriodDialog periods, ProgressDialog progress)
+		BusyService busy, PeriodDialog periods, ProgressDialog progress, FileSaver saver)
 	{
 		_passports = passports;
 		_namedPassports = namedPassports;
@@ -109,6 +110,7 @@ public sealed class ObjectActions
 		_busy = busy;
 		_periods = periods;
 		_progress = progress;
+		_saver = saver;
 	}
 
 	private delegate Task<ActionEffect> Handler(ObjectActions self, object target);

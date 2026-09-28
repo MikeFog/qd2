@@ -273,7 +273,7 @@ namespace Merlin.Classes
 
         // PrintMediaPlan и GetSelectedMonths переехали в Action.WinForms.cs.
 
-        private static IList<Campaign> GetCampaigns(DataTable dt)
+        internal static IList<Campaign> GetCampaigns(DataTable dt)
         {
             return GetCampaigns(dt, null);
         }

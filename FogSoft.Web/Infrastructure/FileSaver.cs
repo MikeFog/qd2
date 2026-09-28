@@ -56,6 +56,29 @@ public sealed class FileSaver : IAsyncDisposable
 		await (await Module()).InvokeVoidAsync("writeFile", reference);
 	}
 
+	/// <summary>
+	/// «Сохранить как» для готового файла: выбор места и запись. Файл к этому моменту уже
+	/// собран, щелчок пользователя мог быть давно — если браузер отказал открыть окно
+	/// (SecurityError), <paramref name="askAgain"/> показывает сообщение с кнопкой, щелчок
+	/// по ней даёт новое разрешение (как PickWithRetry у сетки вещания).
+	/// </summary>
+	/// <returns>false — пользователь закрыл окно выбора.</returns>
+	public async Task<bool> SaveAsAsync(ExportFile file, Func<Task<bool>> askAgain)
+	{
+		bool picked;
+		try
+		{
+			picked = await PickFileAsync(file.Name);
+		}
+		catch (JSException ex) when (ex.Message.Contains("SecurityError") || ex.Message.Contains("user activation"))
+		{
+			picked = await askAgain() && await PickFileAsync(file.Name);
+		}
+		if (picked)
+			await WriteFileAsync(file);
+		return picked;
+	}
+
 	public async ValueTask DisposeAsync()
 	{
 		if (_module != null)

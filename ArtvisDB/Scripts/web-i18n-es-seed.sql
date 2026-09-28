@@ -1,5 +1,5 @@
 ﻿/*
-    ДЕПЛОЙ: переводы веб-версии на язык «es» (1518 строк). docs/tasks/web-i18n.md, этап 5.
+    ДЕПЛОЙ: переводы веб-версии на язык «es» (1537 строк). docs/tasks/web-i18n.md, этап 5.
     СГЕНЕРИРОВАН из ArtvisDB/Scripts/i18n/es.tsv скриптом build-seed.py — руками не править.
 
     ПРЕДУСЛОВИЕ     накачен web-i18n-translation-deploy.sql (таблица iTranslation).
@@ -1538,7 +1538,26 @@ INSERT INTO #t ([source], [text]) VALUES
 (N'Радиостанция: {0}', N'Emisora: {0}'),
 (N'СМИ: {0}', N'Medio: {0}'),
 (N'Территория распространения: {0}', N'Área de cobertura: {0}'),
-(N'Лист', N'Hoja');
+(N'Лист', N'Hoja'),
+(N'Акции не выбраны', N'Ninguna campaña seleccionada'),
+(N'Введите хотя бы один номер рекламной акции.', N'Introduzca al menos un número de campaña publicitaria.'),
+(N'Выберите ролики', N'Seleccione los spots'),
+(N'Выбрано ({0}): {1}', N'Seleccionadas ({0}): {1}'),
+(N'Вывести информацию о предмете рекламы', N'Mostrar el rubro publicitario'),
+(N'Выпусков нет — выбирать не из чего.', N'No hay emisiones: no hay nada que seleccionar.'),
+(N'Выпусков нет — печатать нечего.', N'No hay emisiones: no hay nada que imprimir.'),
+(N'Месяцы', N'Meses'),
+(N'Номера рекламных акций через запятую:', N'Números de campañas publicitarias separados por comas:'),
+(N'Отметьте акции галочками — отметки сохраняются при смене отбора.', N'Marque las campañas: las marcas se conservan al cambiar el filtro.'),
+(N'Отметьте хотя бы один месяц.', N'Marque al menos un mes.'),
+(N'Отметьте хотя бы один ролик.', N'Marque al menos un spot.'),
+(N'Отметьте хотя бы одну рекламную акцию.', N'Marque al menos una campaña publicitaria.'),
+(N'Распечатать документ с подготовленными подписями', N'Imprimir el documento con las firmas preparadas'),
+(N'Рекламные акции не найдены: {0}. Исправьте номера и повторите.', N'Campañas publicitarias no encontradas: {0}. Corrija los números y vuelva a intentarlo.'),
+(N'Ролики', N'Spots'),
+(N'Скрыть стоимость по тарифам', N'Ocultar el costo según tarifas'),
+(N'Сформировать', N'Generar'),
+(N'Сформировать…', N'Generar…');
 GO
 
 BEGIN TRANSACTION;

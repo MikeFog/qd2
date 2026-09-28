@@ -1,0 +1,80 @@
+@using FogSoft.WinForm.Classes
+
+@*
+    Содержимое окна «График размещения» (ObjectActions.MediaPlan): разбивка — месяцы
+    (как FrmMonths, все отмечены) или период (как FrmDateSelector) — и настройки печати
+    (PrintMediaPlanSettings без «сразу сохранять на диск»: в вебе файл сохраняется
+    диалогом браузера). Значения пишутся прямо в модель — её читает вызывающий по «ОК».
+*@
+
+@if (Value.Message != null)
+{
+    <div class="alert alert-danger">@Value.Message</div>
+}
+
+@if (Value.Months != null)
+{
+    <div class="mp-section">
+        <div class="mp-caption">@Tr.T("Месяцы")</div>
+        @foreach (MonthItem month in Value.Months)
+        {
+            <label class="form-check">
+                <input type="checkbox" class="form-check-input" @bind="month.Checked" />
+                @month.Date.ToString("MMMM yyyy")
+            </label>
+        }
+    </div>
+}
+
+@if (Value.ByPeriod)
+{
+    <div class="mp-section period">
+        <label>
+            @Tr.T("Начиная с")
+            <input type="date" class="form-control form-control-sm" @bind="Value.Start" />
+        </label>
+        <label>
+            @Tr.T("Оканчивая")
+            <input type="date" class="form-control form-control-sm" @bind="Value.Finish" />
+        </label>
+    </div>
+}
+
+<div class="mp-section">
+    <label class="form-check">
+        <input type="checkbox" class="form-check-input" @bind="Value.PrintWithSignatures" />
+        @Tr.T("Распечатать документ с подготовленными подписями")
+    </label>
+    <label class="form-check">
+        <input type="checkbox" class="form-check-input" @bind="Value.ShowAdvertisingInfo" />
+        @Tr.T("Вывести информацию о предмете рекламы")
+    </label>
+    <label class="form-check">
+        <input type="checkbox" class="form-check-input" @bind="Value.HideTariffPrice" />
+        @Tr.T("Скрыть стоимость по тарифам")
+    </label>
+</div>
+
+@code {
+    [Parameter, EditorRequired] public Model Value { get; set; } = default!;
+
+    public sealed class MonthItem
+    {
+        public DateTime Date { get; init; }
+        public bool Checked { get; set; } = true;
+    }
+
+    public sealed class Model
+    {
+        /// <summary>Месяцы на выбор; null — разбивки по месяцам нет.</summary>
+        public List<MonthItem>? Months { get; init; }
+        public bool ByPeriod { get; init; }
+        public DateTime Start { get; set; }
+        public DateTime Finish { get; set; }
+        // Как в десктопном диалоге: подписи включены, остальное выключено.
+        public bool PrintWithSignatures { get; set; } = true;
+        public bool ShowAdvertisingInfo { get; set; }
+        public bool HideTariffPrice { get; set; }
+        public string? Message { get; set; }
+    }
+}

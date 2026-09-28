@@ -197,6 +197,14 @@ public static class ScreenRoutes
 	/// <summary>«Экспорт сеток вещания» — файлы для эфира и сетки в Word по многим станциям.</summary>
 	public const string ExportGrid = "miExportGrid";
 
+	/// <summary>
+	/// «График размещения по нескольким акциям»: из «Трафика» — номера акций вводятся
+	/// руками (FrmMultiActionMediaPlan), из «Рекламного отдела» — выбор галочками
+	/// из акций, которые пользователю видны (FrmActionsSelector).
+	/// </summary>
+	public const string MultiActionMediaPlan = "miMultiActionMediaPlan";
+	public const string MultiActionMediaPlanSelect = "miMultiActionMediaPlanSelect";
+
 	/// <summary>«Журнал оплат» из «Бухгалтерии» и из «Рекламного отдела».</summary>
 	public const string PaymentCommon = "miPaymentCommon";
 	public const string PaymentCommonFromAdSection = "miPaymentFRS";
@@ -223,6 +231,10 @@ public static class ScreenRoutes
 			// filterAgencies процедуры PaymentsCommon, поэтому пункт едет в адресе.
 			{ PaymentCommon, "/payments?menu=" + PaymentCommon },
 			{ PaymentCommonFromAdSection, "/payments?menu=" + PaymentCommonFromAdSection },
+			// Десктоп — FrmMultiActionMediaPlan / FrmActionsSelector → MediaPlan (MDIForm.
+			// ShowMultiActionMediaPlan*); в вебе один экран, способ выбора акций — по пункту.
+			{ MultiActionMediaPlan, "/multi-action-media-plan?menu=" + MultiActionMediaPlan },
+			{ MultiActionMediaPlanSelect, "/multi-action-media-plan?menu=" + MultiActionMediaPlanSelect },
 		};
 }
 
