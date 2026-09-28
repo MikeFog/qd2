@@ -713,8 +713,7 @@ public sealed partial class ObjectActions
 		// у PricelistCloneDialog.StartDate) — на каждом обороте цикла заново
 		// засеиваем компонент тем, что пользователь уже ввёл, а не значениями по
 		// умолчанию.
-		DateTime startDate = DateTime.Today;
-		DateTime finishDate = DateTime.Today;
+		pricelist.GetClonePeriod(out DateTime startDate, out DateTime finishDate);
 		Merlin.Classes.PricelistCloneMode mode = Merlin.Classes.PricelistCloneMode.WithWindowChanges;
 
 		while (true)

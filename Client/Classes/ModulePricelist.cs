@@ -87,7 +87,10 @@ namespace Merlin.Classes
 		/// <summary>
 		/// Черновик копии прайс-листа модуля: значения исходного без ключа, с пометкой
 		/// Clone и ссылкой на источник. Записывается паспортом (Update -> Clone); тарифы
-		/// копирует процедура. Сборка перенесена из CloneTariffList без изменений.
+		/// копирует процедура. Период по умолчанию — год по Pricelist.GetClonePeriod внутри
+		/// прайс-листа станции, действующего 1 января этого года: модульный не выходит за его
+		/// границы (ModulePricelistIUD), и ссылка переключается на него. Прайс-листа станции
+		/// ещё нет — остаётся целый год, процедура ответит CopyPriceListFirst.
 		/// </summary>
 		public override PresentationObject CreateCloneDraft()
 		{
@@ -95,6 +98,17 @@ namespace Merlin.Classes
 			draft.parameters[Constants.ParamNames.ActionName] = Constants.Actions.Clone;
 			draft.parameters[SourceModulePriceListIdParam] = this[ParamNames.ModulePriceListID];
 			draft.parameters.Remove(ParamNames.ModulePriceListID);
+
+			GetClonePeriod(out DateTime start, out DateTime finish);
+			Pricelist stationPricelist = new Module(ModuleID).Massmedia.GetPriceList(start);
+			if (stationPricelist != null)
+			{
+				draft.parameters[Pricelist.ParamNames.PricelistId] = stationPricelist.PricelistId;
+				if (stationPricelist.FinishDate.Date < finish)
+					finish = stationPricelist.FinishDate.Date;
+			}
+			draft.parameters[Pricelist.ParamNames.StartDate] = start;
+			draft.parameters[Pricelist.ParamNames.FinishDate] = finish;
 			return draft;
 		}
 

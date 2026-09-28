@@ -518,6 +518,13 @@ else
             for (int d = 0; d < 7; d++)
                 model.Days[d] = true;
         }
+        // «Повторить на период» по умолчанию — с первого необработанного дня до конца года.
+        if (TrafficManagement.TryGetDefaultPeriod(week.ClosedThrough, week.PricelistStart, week.PricelistFinish,
+                out DateTime defaultStart, out DateTime defaultFinish))
+        {
+            model.Start = defaultStart;
+            model.Finish = defaultFinish;
+        }
 
         void Recount()
         {

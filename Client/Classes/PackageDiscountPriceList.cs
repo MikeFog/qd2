@@ -47,7 +47,8 @@ namespace Merlin.Classes
         /// <summary>
         /// Черновик копии прайс-листа: значения исходного, но без ключа, с пометкой Clone и ссылкой на
         /// источник. Записывается паспортом (Update -> PackageDiscountPriceListIUD 'Clone'); радиостанции
-        /// копирует процедура. Период по умолчанию — следующий за исходным той же длины (см. CalcCloneFinishDate).
+        /// копирует процедура. Период по умолчанию — год, следующий за годом окончания исходного
+        /// (Pricelist.GetClonePeriod).
         /// </summary>
         public override PresentationObject CreateCloneDraft()
         {
@@ -56,28 +57,13 @@ namespace Merlin.Classes
             draft.parameters[ParamNames.sourcePackageDiscountPriceListId] = this[ParamNames.packageDiscountPriceListID];
             draft.parameters.Remove(ParamNames.packageDiscountPriceListID);
 
-            if (this[ParamNames.startDate] is DateTime start && this[ParamNames.finishDate] is DateTime finish)
+            if (this[ParamNames.finishDate] is DateTime finish)
             {
-                DateTime newStart = finish.Date.AddDays(1);
+                Pricelist.GetClonePeriod(finish, out DateTime newStart, out DateTime newFinish);
                 draft.parameters[ParamNames.startDate] = newStart;
-                draft.parameters[ParamNames.finishDate] = CalcCloneFinishDate(start.Date, finish.Date, newStart);
+                draft.parameters[ParamNames.finishDate] = newFinish;
             }
             return draft;
-        }
-
-        /// <summary>
-        /// Окончание копии. Период из целых месяцев (с 1-го числа по последний день месяца) переносится
-        /// на то же число месяцев — полный год даёт полный год, високосность не сбивает границу.
-        /// Любой другой период — на то же число дней.
-        /// </summary>
-        internal static DateTime CalcCloneFinishDate(DateTime start, DateTime finish, DateTime newStart)
-        {
-            bool wholeMonths = start.Day == 1 && finish.AddDays(1).Day == 1;
-            if (!wholeMonths)
-                return newStart.AddDays((finish - start).TotalDays);
-
-            int months = (finish.Year - start.Year) * 12 + finish.Month - start.Month + 1;
-            return newStart.AddMonths(months).AddDays(-1);
         }
 
         /// <summary>Записывает выбранные радиостанции в пакетную скидку.</summary>

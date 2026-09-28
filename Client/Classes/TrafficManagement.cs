@@ -49,6 +49,23 @@ namespace Merlin.Classes
 			Massmedia.GetMassmediaByID(massmediaId).SetDeadLine(date.Date);
 		}
 
+		/// <summary>
+		/// Период массовых правок окон по умолчанию: с первого необработанного дня (станция ни разу
+		/// не отмечалась — с сегодня) по 31.12 того же года, в границах прайс-листа. false — в этом
+		/// прайс-листе необработанных дней нет, период остаётся за вызывающим.
+		/// </summary>
+		public static bool TryGetDefaultPeriod(DateTime? closedThrough, DateTime pricelistStart, DateTime pricelistFinish,
+			out DateTime start, out DateTime finish)
+		{
+			start = closedThrough?.Date.AddDays(1) ?? DateTime.Today;
+			if (start < pricelistStart.Date)
+				start = pricelistStart.Date;
+			finish = new DateTime(start.Year, 12, 31);
+			if (finish > pricelistFinish.Date)
+				finish = pricelistFinish.Date;
+			return start <= finish;
+		}
+
 		// ---------- «Изменить окна…» ----------
 
 		/// <summary>

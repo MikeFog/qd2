@@ -31,10 +31,11 @@ namespace Merlin.Classes
 				// Даты и режим клонирования — одним диалогом. Виды прайса без режимов
 				// (спонсорский) спрашивают только даты, прежним диалогом.
 				DateTime startDate, finishDate;
+				GetClonePeriod(out startDate, out finishDate);
 				PricelistCloneMode? mode = null;
 				if (SupportsCloneModes)
 				{
-					PricelistCloneForm cloneForm = new PricelistCloneForm();
+					PricelistCloneForm cloneForm = new PricelistCloneForm(startDate, finishDate);
 					if (cloneForm.ShowDialog(owner) != DialogResult.OK)
 						return;
 					startDate = cloneForm.StartDate;
@@ -43,7 +44,7 @@ namespace Merlin.Classes
 				}
 				else
 				{
-					FrmDateSelector fSelector = new FrmDateSelector("Даты начала и окончания");
+					FrmDateSelector fSelector = FrmDateSelector.WithDefaults("Даты начала и окончания", startDate, finishDate);
 					if (fSelector.ShowDialog(owner) != DialogResult.OK)
 						return;
 					startDate = fSelector.StartDate.Date;

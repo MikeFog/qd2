@@ -478,8 +478,7 @@ namespace Merlin.Controls
 				Dictionary<string, object> dictionary = DataAccessor.CreateParametersDictionary();
 				dictionary.Add("time", currentDateTime);
 
-				dictionary.Add("startDate", CurrentDate);
-				dictionary.Add("finishDate", CurrentDate);
+				AddDefaultPeriod(dictionary);
 
 				UniversalPassportForm frm = new UniversalPassportForm(dictionary, UniversalPassportForm.PassportNames.DeleteWindows, DeleteWindows, "Удалить окна", ValidatePassportDates);
 				if (frm.ShowDialog(this) == DialogResult.OK)
@@ -524,8 +523,7 @@ namespace Merlin.Controls
 				dictionary.Add("newduration", tariff.Duration);
                 dictionary.Add("duration_total", tariff.DurationTotal);
                 dictionary.Add("newduration_total", tariff.DurationTotal);
-                dictionary.Add("startDate", CurrentDate);
-				dictionary.Add("finishDate", CurrentDate);
+                AddDefaultPeriod(dictionary);
 				dictionary.Add("pricelistid", Pricelist.PricelistId);
 				ShowUniversalPassport(dictionary, UniversalPassportForm.PassportNames.ChangeDuration, UniversalPassportForm.ProcedureNames.ChangeDuration,
 					"Изменение продолжительности", ValidatePassportDates);
@@ -550,8 +548,7 @@ namespace Merlin.Controls
 				Dictionary<string, object> dictionary = DataAccessor.CreateParametersDictionary();
 				dictionary.Add("time", currentDateTime);
 				dictionary.Add("newtime", currentDateTime);
-				dictionary.Add("startDate", CurrentDate);
-				dictionary.Add("finishDate", CurrentDate);
+				AddDefaultPeriod(dictionary);
 				dictionary.Add("pricelistid", Pricelist.PricelistId);
 
 				ShowUniversalPassport(dictionary, UniversalPassportForm.PassportNames.MoveTime, UniversalPassportForm.ProcedureNames.MoveTime,
@@ -566,6 +563,19 @@ namespace Merlin.Controls
                 Cursor.Current = Cursors.Default;
             }
         }
+
+		/// <summary>
+		/// Период массовых правок окон по умолчанию — с первого необработанного дня до конца года
+		/// (TrafficManagement.TryGetDefaultPeriod); в прайс-листе всё обработано — день под курсором.
+		/// </summary>
+		private void AddDefaultPeriod(Dictionary<string, object> dictionary)
+		{
+			if (!TrafficManagement.TryGetDefaultPeriod(Massmedia.DeadLine, Pricelist.StartDate, Pricelist.FinishDate,
+					out DateTime start, out DateTime finish))
+				start = finish = CurrentDate;
+			dictionary.Add("startDate", start);
+			dictionary.Add("finishDate", finish);
+		}
 
 		private bool ValidatePassportDates(Dictionary<string, object> parameters)
 		{
@@ -617,23 +627,37 @@ namespace Merlin.Controls
 				DateTime startDate = PassportStartDate(parameters);
 				DateTime finishDate = PassportFinishDate(parameters);
 
+				// По умолчанию период — до конца года, поэтому сначала собираем окна и спрашиваем.
+				List<TariffWindow> windows = new List<TariffWindow>();
+				for (DateTime day = startDate; day <= finishDate; day = day.AddDays(1))
+				{
+					TariffWindow window = _massmedia.GetTariffWindow(new DateTime(day.Year, day.Month, day.Day, time.Hour, time.Minute, time.Second));
+					if (window != null)
+						windows.Add(window);
+				}
+				Cursor.Current = Cursors.Default;
+				if (windows.Count == 0)
+				{
+					UserMessage.ShowInformation("В выбранном периоде окон нет.");
+					return;
+				}
+				if (UserMessage.ShowQuestion(string.Format("Будет удалено окон {0:HH:mm}: {1} (с {2:dd.MM.yyyy} по {3:dd.MM.yyyy}). Удалить?",
+						time, windows.Count, startDate, finishDate)) != DialogResult.Yes)
+					return;
+				Cursor.Current = Cursors.WaitCursor;
+
                 DataTable tableErrors = ErrorManager.CreateErrorsTable();
 
-                while (startDate <= finishDate)
+				foreach (TariffWindow window in windows)
 				{
-
-					DateTime date = new DateTime(startDate.Year, startDate.Month, startDate.Day, time.Hour, time.Minute, time.Second);
-					TariffWindow window = _massmedia.GetTariffWindow(date);
 					try
 					{
-						window?.Delete(true);
+						window.Delete(true);
 					}
 					catch(Exception ex) 
 					{ 
-						ErrorManager.AddErrorRow(tableErrors, date, MessageAccessor.GetMessage(ex.Message));
+						ErrorManager.AddErrorRow(tableErrors, window.WindowDate, MessageAccessor.GetMessage(ex.Message));
                     }
-
-					startDate = startDate.AddDays(1);
 				}
                 if (tableErrors.Rows.Count > 0)
                 {

@@ -50,14 +50,52 @@ namespace Merlin.Classes
 		/// Черновик копии прайс-листа пакетных модулей: значения исходного, с пометкой
 		/// Clone и ссылкой на источник. Записывается паспортом (Update -> Clone);
 		/// содержимое пакета копирует процедура. Ключ pricelistID остаётся в параметрах —
-		/// как было в CloneContent, сборка перенесена без изменений.
+		/// как было в CloneContent. Период по умолчанию — год по Pricelist.GetClonePeriod,
+		/// суженный до общего периода модульных прайс-листов всех модулей пакета: процедура
+		/// требует, чтобы каждый покрывал период пакета целиком (CannotClonePackModulePriceList).
+		/// Если у какого-то модуля на 1 января модульного прайс-листа нет — остаётся целый год.
 		/// </summary>
 		public override PresentationObject CreateCloneDraft()
 		{
 			PackModulePricelist draft = new PackModulePricelist { parameters = Parameters };
 			draft.parameters["sourcePricelistID"] = parameters["pricelistID"];
 			draft.parameters[Constants.ParamNames.ActionName] = Constants.EntityActions.Clone;
+
+			GetClonePeriod(out DateTime start, out DateTime finish);
+			DateTime? common = CommonModulesFinish(start);
+			if (common < finish)
+				finish = common.Value;
+			draft.parameters[ParamNames.StartDate] = start;
+			draft.parameters[ParamNames.FinishDate] = finish;
 			return draft;
+		}
+
+		/// <summary>
+		/// Самое раннее окончание модульных прайс-листов модулей пакета, действующих на <paramref name="date"/>;
+		/// null — у какого-то модуля такого нет.
+		/// </summary>
+		private DateTime? CommonModulesFinish(DateTime date)
+		{
+			DataTable content = DataAccessor.LoadDataSet("PackModuleContentRetrieve",
+				new Dictionary<string, object> { { ParamNames.PricelistId, PricelistId } }).Tables[0];
+
+			DateTime? result = null;
+			foreach (DataRow row in content.Rows)
+			{
+				DataTable modulePricelists = DataAccessor.LoadDataSet("ModulePricelistByDate", new Dictionary<string, object>
+				{
+					{ Massmedia.ParamNames.MassmediaId, row[Massmedia.ParamNames.MassmediaId] },
+					{ "theDate", date },
+					{ Module.ParamNames.ModuleId, row[Module.ParamNames.ModuleId] }
+				}).Tables[0];
+				if (modulePricelists.Rows.Count == 0)
+					return null;
+
+				DateTime finish = ((DateTime)modulePricelists.Rows[0][ParamNames.FinishDate]).Date;
+				if (result == null || finish < result)
+					result = finish;
+			}
+			return result;
 		}
 
 		public override DataTable GetTariffList()

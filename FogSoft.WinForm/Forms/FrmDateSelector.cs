@@ -54,6 +54,15 @@ namespace FogSoft.WinForm
 			dtFinishDate.MaxDate = dtFinishDate.Value = finishDate;
 		}
 
+		/// <summary>Выбор периода с предложенными датами, без ограничений на выбор.</summary>
+		public static FrmDateSelector WithDefaults(string caption, DateTime startDate, DateTime finishDate)
+		{
+			FrmDateSelector selector = new FrmDateSelector(caption);
+			selector.dtStartDate.Value = startDate;
+			selector.dtFinishDate.Value = finishDate;
+			return selector;
+		}
+
 		public FrmDateSelector(string caption, DateTime minDate, DateTime maxDate) : this(caption)
 		{
 			dtStartDate.MinDate = minDate;

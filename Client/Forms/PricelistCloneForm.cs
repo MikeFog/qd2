@@ -24,9 +24,11 @@ namespace Merlin.Forms
 		private Button btnOk;
 		private Button btnCancel;
 
-		public PricelistCloneForm()
+		public PricelistCloneForm(DateTime startDate, DateTime finishDate)
 		{
 			InitializeComponent();
+			dtStartDate.Value = startDate;
+			dtFinishDate.Value = finishDate;
 		}
 
 		public DateTime StartDate { get; private set; }

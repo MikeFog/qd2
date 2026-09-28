@@ -62,6 +62,24 @@ namespace Merlin.Classes
 		// DoAction, ClonePriceList и CheckSelectionResult переехали в Pricelist.WinForms.cs.
 
 		/// <summary>
+		/// Период копии по умолчанию — весь календарный год, следующий за годом окончания исходного
+		/// (исходный до 03.09.2027 — копия 01.01–31.12.2028). Одно правило для копий всех прайс-листов
+		/// и скидок; модульные дополнительно обрезаются границами прайс-листа станции.
+		/// </summary>
+		public static void GetClonePeriod(DateTime sourceFinish, out DateTime start, out DateTime finish)
+		{
+			int year = sourceFinish.Year + 1;
+			start = new DateTime(year, 1, 1);
+			finish = new DateTime(year, 12, 31);
+		}
+
+		/// <summary>Период копии этого прайс-листа по умолчанию — см. GetClonePeriod.</summary>
+		public void GetClonePeriod(out DateTime start, out DateTime finish)
+		{
+			GetClonePeriod(FinishDate, out start, out finish);
+		}
+
+		/// <summary>
 		/// Есть ли у клонирования выбор режима. Только у обычного прайс-листа: остальные
 		/// виды клонируются своими процедурами, параметра @cloneMode у них нет.
 		/// </summary>

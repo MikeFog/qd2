@@ -106,6 +106,18 @@ namespace Merlin.Classes
 			return base.IsActionEnabled(actionName, type);
 		}
 
+		/// <summary>
+		/// «Клонировать на несколько радиостанций» — только в «Рекламных тарифах»; в «Генерации
+		/// рекламных окон» (дочерняя сущность — окна) не дублируем, решение заказчика 27.09.2026.
+		/// </summary>
+		public override bool IsActionHidden(string actionName, ViewType type)
+		{
+			if (actionName == Pricelist.ActionNames.MassClone
+				&& ChildEntity != null && ChildEntity.Id == (int)Entities.TariffWindow)
+				return true;
+			return base.IsActionHidden(actionName, type);
+		}
+
 		public override DataTable GetTariffList()
 		{
 			Dictionary<string, object> procParameters =
