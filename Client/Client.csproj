@@ -616,6 +616,7 @@
     <Compile Include="Classes\MassmediaPricelist.WinForms.cs" />
     <Compile Include="Classes\MediaPlan.cs" />
     <Compile Include="Classes\MediaPlanBuilder.cs" />
+    <Compile Include="Classes\OpenXmlExportDocument.cs" />
     <Compile Include="Classes\ModuleCampaignDay.cs" />
     <Compile Include="Classes\MuteRoller.cs" />
     <Compile Include="Classes\Organization.cs" />

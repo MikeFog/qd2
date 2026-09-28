@@ -1,10 +1,10 @@
 ﻿using FogSoft.WinForm;
 using FogSoft.WinForm.Classes;
-using FogSoft.WinForm.Classes.Export;
 using FogSoft.WinForm.Forms;
 using System;
 using System.Collections.Generic;
 using System.Data;
+using System.Diagnostics;
 using System.Globalization;
 using System.IO;
 using System.Threading;
@@ -13,14 +13,14 @@ using System.Windows.Forms;
 namespace Merlin.Classes
 {
 	/// <summary>
-	/// Печать медиаплана в десктопе: диалоги (настройки печати, выбор роликов),
-	/// Excel через COM и сохранение файла. Сам медиаплан строит
-	/// <see cref="MediaPlanBuilder"/> (входит в FogSoft.Core).
+	/// Печать медиаплана в десктопе: диалоги (настройки печати, выбор роликов)
+	/// и файл. Сам медиаплан строит <see cref="MediaPlanBuilder"/>, книгу —
+	/// <see cref="OpenXmlExportDocument"/> (оба в FogSoft.Core, общие с вебом);
+	/// Excel нужен только чтобы открыть готовый файл.
 	/// </summary>
     internal class MediaPlan
 	{
 		private readonly MediaPlanBuilder _builder;
-        private bool exportStarted = false;
 		private PrintSettings _printSettings;
 		private string _savedFilePath;
 
@@ -101,9 +101,6 @@ namespace Merlin.Classes
 				Application.UseWaitCursor = true;
 				Application.DoEvents();
 
-                // Экспорт идёт синхронно на UI-потоке (STA): Excel создаётся и
-                // освобождается на одном апартаменте — без маршалинга между потоками,
-                // из-за которого процесс EXCEL.EXE раньше зависал в памяти.
                 ExportMediaPlan();
 
 				Application.UseWaitCursor = false;
@@ -114,13 +111,6 @@ namespace Merlin.Classes
 			}
 			catch(Exception e)
 			{
-				// Экспорт мог упасть на середине, когда Excel ещё скрыт (ScreenUpdating=false).
-				// Показываем то, что успело записаться, чтобы не оставлять окно без владельца.
-				if (exportStarted)
-				{
-					try { ExportManager.Application.FinishExport(); }
-					catch { }
-				}
 				ErrorManager.LogError("Error to show media plan", e);
 			}
 			finally
@@ -135,26 +125,49 @@ namespace Merlin.Classes
             if (_builder.Selectively && !SelectRollers())
                 return;
 
-			_builder.Build(new ExcelDocument(this));
-            if (exportStarted)
-            {
-				string folder = UserSettings.Load("Path2SaveReports") ?? string.Empty;
-				bool canSaveToDisk = _printSettings.SaveDirectlyToDisk
-					&& !string.IsNullOrEmpty(folder)
-					&& Directory.Exists(folder);
+			var document = new OpenXmlExportDocument();
+			// Нет данных — нет файла (раньше так же не открывался пустой Excel).
+			if (!_builder.Build(document))
+				return;
 
-				if (canSaveToDisk)
-				{
-					string filePath = Path.Combine(folder, _builder.FileName);
+			string folder = UserSettings.Load("Path2SaveReports") ?? string.Empty;
+			bool canSaveToDisk = _printSettings.SaveDirectlyToDisk
+				&& !string.IsNullOrEmpty(folder)
+				&& Directory.Exists(folder);
 
-					ExportManager.Application.SaveToDisk(filePath);
-					_savedFilePath = filePath;
-				}
-				else
+			byte[] content = document.ToArray();
+			if (canSaveToDisk)
+			{
+				_savedFilePath = WriteFile(folder, _builder.FileName, content);
+			}
+			else
+			{
+				// Раньше книга открывалась в Excel несохранённой; теперь — файлом
+				// из временной папки (решение по docs/tasks/web-mediaplan.md, 2.4).
+				string tempFolder = Path.Combine(Path.GetTempPath(), "qd2");
+				Directory.CreateDirectory(tempFolder);
+				Process.Start(WriteFile(tempFolder, _builder.FileName, content));
+			}
+		}
+
+		// Пишет файл; если файл с таким именем открыт (например, прошлый медиаплан
+		// ещё в Excel), берёт «имя (2).xlsx», «имя (3).xlsx»…
+		private static string WriteFile(string folder, string fileName, byte[] content)
+		{
+			string name = Path.GetFileNameWithoutExtension(fileName);
+			string ext = Path.GetExtension(fileName);
+			for (int i = 1; ; i++)
+			{
+				string path = Path.Combine(folder, i == 1 ? fileName : $"{name} ({i}){ext}");
+				try
 				{
-					ExportManager.Application.FinishExport();
+					File.WriteAllBytes(path, content);
+					return path;
 				}
-            }
+				catch (IOException) when (i < 20 && File.Exists(path))
+				{
+				}
+			}
 		}
 
 		private bool SelectRollers()
@@ -200,39 +213,5 @@ namespace Merlin.Classes
 
             return !cancelled;
         }
-
-        private void VerifyExportManager()
-        {
-            if (!exportStarted)
-            {
-                ExportManager.StartNewApplication();
-                ExportManager.Application.StartExport();
-                exportStarted = true;
-            }
-        }
-
-		// Excel запускается только на первом листе с данными — как и раньше:
-		// нет данных — нет пустого окна Excel.
-		private sealed class ExcelDocument : IExportDocument
-		{
-			private readonly MediaPlan _owner;
-
-			public ExcelDocument(MediaPlan owner)
-			{
-				_owner = owner;
-			}
-
-			public IDocumentSheet GetNewSheet(string name, string fontName, int fontSize)
-			{
-				_owner.VerifyExportManager();
-				return ExportManager.Application.GetNewSheet(name, fontName, fontSize);
-			}
-
-			public void StartExport() => ExportManager.Application.StartExport();
-			public void FinishExport() => ExportManager.Application.FinishExport();
-			public void OnAppQuit() => ExportManager.Application.OnAppQuit();
-			public bool Visible() => ExportManager.Application.Visible();
-			public void SaveToDisk(string filePath) => ExportManager.Application.SaveToDisk(filePath);
-		}
 	}
 }

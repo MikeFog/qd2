@@ -167,6 +167,7 @@
     <Compile Include="..\Client\Classes\Pricelist.cs" Link="Domain\Pricelist.cs" />
     <Compile Include="..\Client\Classes\PrintSettings.cs" Link="Domain\PrintSettings.cs" />
     <Compile Include="..\Client\Classes\MediaPlanBuilder.cs" Link="Domain\MediaPlanBuilder.cs" />
+    <Compile Include="..\Client\Classes\OpenXmlExportDocument.cs" Link="Domain\OpenXmlExportDocument.cs" />
     <Compile Include="..\Client\Classes\ProgramIssue.cs" Link="Domain\ProgramIssue.cs" />
     <Compile Include="..\Client\Classes\ProgramPartOfSponsorCampaign.cs" Link="Domain\ProgramPartOfSponsorCampaign.cs" />
     <Compile Include="..\Client\Classes\Roller.cs" Link="Domain\Roller.cs" />

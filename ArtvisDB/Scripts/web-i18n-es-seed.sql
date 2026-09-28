@@ -1,5 +1,5 @@
 ﻿/*
-    ДЕПЛОЙ: переводы веб-версии на язык «es» (1493 строк). docs/tasks/web-i18n.md, этап 5.
+    ДЕПЛОЙ: переводы веб-версии на язык «es» (1518 строк). docs/tasks/web-i18n.md, этап 5.
     СГЕНЕРИРОВАН из ArtvisDB/Scripts/i18n/es.tsv скриптом build-seed.py — руками не править.
 
     ПРЕДУСЛОВИЕ     накачен web-i18n-translation-deploy.sql (таблица iTranslation).
@@ -1511,7 +1511,34 @@ INSERT INTO #t ([source], [text]) VALUES
 (N'Платёж недоступен для присвоения акциям — галочка в карточке платежа.', N'El pago no está disponible para asignar a campañas: casilla en la ficha del pago.'),
 (N'Платёж распределён полностью.', N'El pago está distribuido por completo.'),
 (N'По умолчанию', N'Por defecto'),
-(N'Вернуть значения отбора по умолчанию. В силу вступят по «Применить».', N'Restablecer los valores del filtro por defecto. Se aplicarán al pulsar «Aplicar».');
+(N'Вернуть значения отбора по умолчанию. В силу вступят по «Применить».', N'Restablecer los valores del filtro por defecto. Se aplicarán al pulsar «Aplicar».'),
+(N'График размещения по нескольким акциям № {0} для {1}.xlsx', N'Plan de colocación de varias campañas N.º {0} para {1}.xlsx'),
+(N'График размещения для рекламной акции № {0} для {1}.xlsx', N'Plan de colocación de la campaña publicitaria N.º {0} para {1}.xlsx'),
+(N'График размещения по нескольким акциям № {0}', N'Plan de colocación de varias campañas N.º {0}'),
+(N'График размещения для рекламной акции № {0}', N'Plan de colocación de la campaña publicitaria N.º {0}'),
+(N'Частичный график размещения для рекламной акции № {0}', N'Plan de colocación parcial de la campaña publicitaria N.º {0}'),
+(N'Программы:', N'Programas:'),
+(N'Всего трансляций: {0}', N'Total de emisiones: {0}');
+GO
+INSERT INTO #t ([source], [text]) VALUES
+(N'Время трансляций: {0}', N'Tiempo de emisión: {0}'),
+(N'Стоимость спланированной рекламы: {0:c}', N'Costo de la publicidad planificada: {0:c}'),
+(N'Стоимость спланированной рекламы по тарифам: {0:c}', N'Costo de la publicidad planificada según tarifas: {0:c}'),
+(N'Стоимость спланированной рекламы с учетом скидки: {0:c}', N'Costo de la publicidad planificada con descuento: {0:c}'),
+(N'Скидка: {0}', N'Descuento: {0}'),
+(N'В том числе НДС ({0:0.##}%): {1:c}', N'IVA incluido ({0:0.##} %): {1:c}'),
+(N'В том числе НДС: {0:c}', N'IVA incluido: {0:c}'),
+(N'Исполнитель:', N'Contratista:'),
+(N'Заказчик:', N'Cliente:'),
+(N'Контактное лицо: {0}', N'Persona de contacto: {0}'),
+(N'№{0}', N'N.º {0}'),
+(N'Заказчик: {0}', N'Cliente: {0}'),
+(N'Исполнитель: {0}', N'Contratista: {0}'),
+(N'Исполнители: {0}', N'Contratistas: {0}'),
+(N'Радиостанция: {0}', N'Emisora: {0}'),
+(N'СМИ: {0}', N'Medio: {0}'),
+(N'Территория распространения: {0}', N'Área de cobertura: {0}'),
+(N'Лист', N'Hoja');
 GO
 
 BEGIN TRANSACTION;

@@ -5,9 +5,12 @@
 тонкости и известные долги. План переноса в веб — `docs/tasks/web-mediaplan.md`.
 
 В интерфейсе медиаплан называется **«График размещения»**. Это не Crystal, а
-выгрузка в Excel через COM (`FogSoft.WinForm/Classes/Export`, `ExportManager`,
-`IDocumentSheet`). Генератор — `Client/Classes/MediaPlanBuilder.cs` (в ядре, пишет
-в `IExportDocument`), десктопные диалоги и Excel — `Client/Classes/MediaPlan.cs`.
+книга Excel. До этапа 3 плана веба её строил сам Excel через COM; с этапа 3
+(27.09.2026) — `OpenXmlExportDocument` без Excel, Excel только открывает готовый
+файл. Генератор — `Client/Classes/MediaPlanBuilder.cs` (в ядре, пишет в
+`IExportDocument`), десктопные диалоги и файл — `Client/Classes/MediaPlan.cs`.
+Всё ниже про раскладку листа верно для обоих способов: OpenXml повторяет лист
+из COM (стенд `tools/mediaplan-compare`).
 
 ## 1. Карта вариантов
 
@@ -77,15 +80,15 @@ ArtvisDev; Tumen/Belgorod не проверены — базы вне сети).
           ├─ PrintMediaPlanSettings (4 галочки)
           ├─ [выборочно] MediaPlanBuilder.GetRollers: MediaPlanRetrieve_v2
           │     @onlyRollers=1 по каждой кампании (× месяц) → SelectionForm роликов
-          ├─ MediaPlanBuilder.Build(ExcelDocument)       — ядро, пишет в IExportDocument
+          ├─ MediaPlanBuilder.Build(OpenXmlExportDocument) — ядро, книга в памяти
           │   раскладка К: PrintCampaignInfo по каждой кампании (× месяц)
           │   раскладка С: PrintActionInfo — GetUniqueMMsForAction → по агентствам
           │     └─ на каждую станцию: LoadData = MediaPlanRetrieve_v2 → блок станции
-          └─ сохранение: в Path2SaveReports или открыть книгу в Excel
+          └─ файл: в Path2SaveReports или в %TEMP%\qd2 и открыть в Excel
 ```
 
-Экспорт синхронный, на UI-потоке (STA), курсор ожидания; при падении
-посередине показывается то, что успело записаться (`FinishExport`).
+Экспорт синхронный, курсор ожидания. Если файл с таким именем занят (открыт
+в Excel), пишется «имя (2).xlsx» и т.д.
 
 ## 3. Раскладки листов
 
@@ -195,7 +198,8 @@ ArtvisDev; Tumen/Belgorod не проверены — базы вне сети).
 | Скрыть стоимость по тарифам | выкл | итоги: только финальная стоимость |
 | Сразу сохранять файл на диск | выкл, недоступна без `Path2SaveReports` | сохранение в папку: «График размещения для рекламной акции № N для {фирма}.xlsx» / «…по нескольким акциям № … для …» |
 
-Без «сразу сохранять» книга открывается в Excel несохранённой.
+Без «сразу сохранять» файл пишется во временную папку `%TEMP%\qd2` и
+открывается в Excel (до этапа 3 — несохранённой книгой «Книга1»).
 
 ## 7. Тонкости и ловушки
 
@@ -218,9 +222,17 @@ ArtvisDev; Tumen/Belgorod не проверены — базы вне сети).
   из `@massmediaIDString` — рассчитано на склейку станций, которой больше нет.
 - Форматы дат, денег (`{0:c}`) и процентов берутся из текущей культуры потока
   (сохраняется и восстанавливается вокруг экспорта).
-- Имя листа Excel ≤ 31 символа и без `[]:*?/\`: с этапа 1 `MediaPlan.SafeSheetName`
-  заменяет такие символы на `_` и обрезает. `MSExportDocument.GetNewSheet`
-  при совпадении имени оставляет лист с именем по умолчанию («Лист2»).
+- Имя листа Excel ≤ 31 символа и без `[]:*?/\`: с этапа 1 `MediaPlanBuilder.SafeSheetName`
+  заменяет такие символы на `_` и обрезает. При совпадении имени лист получает
+  имя по умолчанию «ЛистN» (так делал и Excel через COM).
+- Подпись агентства на длинном листе: Excel через COM ставил картинку по
+  координате в пунктах, и к концу листа на 900+ строк она «уезжала» вниз до
+  11 строк от «Исполнитель:». С этапа 3 (OpenXml) картинка привязана к ячейке
+  и стоит точно. Картинки в БД — BMP, в файл кладутся PNG.
+- Тексты листа идут через `Tr` (этап 3): в вебе — на языке пользователя
+  (испанские строки — `ArtvisDB/Scripts/i18n/es.tsv`), в десктопе — русские.
+  Денежный формат ячеек при русской культуре прежний (`#,##0.00 p`), иначе —
+  знак валюты культуры.
 - `Action.GetCampaigns` пропускает удалённые кампании (с этапа 1; раньше отдавал
   `null` → NRE в раскладке К, `IMPROVEMENTS.md` C#-02).
 
@@ -230,6 +242,8 @@ ArtvisDev; Tumen/Belgorod не проверены — базы вне сети).
 - `GetUniqueMMsForAction`: `ROW_NUMBER` + `RECOMPILE`, 1,7–2 с → 50–200 мс.
 - N+1 по `Campaigns` в итогах сводного плана убран кэшем (`2e36d7d`).
 - Запись в Excel пачками `SetValuesForRange` (`e686c11`) — COM-вызовы были узким местом.
+- OpenXml вместо COM (этап 3): те же 18 сценариев стенда — в 3–6 раз быстрее
+  (например, 12 листов по месяцам: 9,5 с → 1,5 с), Excel в памяти не висит.
 
 Остаток: `MediaPlanRetrieve_v2` зовётся по разу на станцию (+ по разу на
 кампанию × месяц для списка роликов), `GetPriceByPeriod` — на каждую кампанию
@@ -239,8 +253,9 @@ ArtvisDev; Tumen/Belgorod не проверены — базы вне сети).
 
 - `Client/Classes/MediaPlanBuilder.cs` — построитель: данные и раскладка листов, пишет в
   `IExportDocument` (входит в `FogSoft.Core`, с этапа 2 плана веба).
-- `Client/Classes/MediaPlan.cs` — десктопная обёртка: диалоги, Excel через COM
-  (`ExcelDocument`), сохранение файла.
+- `Client/Classes/MediaPlan.cs` — десктопная обёртка: диалоги, файл, открыть в Excel.
+- `Client/Classes/OpenXmlExportDocument.cs` — книга Excel в памяти (`IExportDocument`
+  на OpenXml, в ядре): повторяет запись через COM, автоподбор ширины по Tahoma.
 - `FogSoft.WinForm/Classes/Export/SheetWriter.cs` — запись таблиц в лист (в ядре;
   `ExportManager.CopyData2WorkSheet`/`PopulateWorksheet` делегируют сюда).
 - `Client/Classes/PrintSettings.cs`, `Client/Forms/PrintMediaPlanSettings*.cs` — настройки.

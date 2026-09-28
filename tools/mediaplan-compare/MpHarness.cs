@@ -16,6 +16,27 @@ class Storage : SecurityManager.ILoggedUserStorage
 	public SecurityManager.User User { get; set; }
 }
 
+// Переводчик для --lang: строки языка из iTranslation (как TranslationStore веба).
+class DbTranslator : Tr.ITranslator
+{
+	private readonly Dictionary<string, string> _texts = new Dictionary<string, string>();
+
+	public DbTranslator(string lang)
+	{
+		var ps = new Dictionary<string, object> { { "lang", lang } };
+		DataTable t = FogSoft.WinForm.DataAccess.DataAccessor.LoadDataSet("TranslationLoad", ps).Tables[0];
+		foreach (DataRow r in t.Rows)
+			if (r["context"].ToString() == "")
+				_texts[r["source"].ToString()] = r["text"].ToString();
+	}
+
+	public string Translate(string source, string context)
+	{
+		string text;
+		return _texts.TryGetValue(source, out text) ? text : source;
+	}
+}
+
 class Scenario
 {
 	public string Name;
@@ -29,6 +50,7 @@ static class P
 	static Assembly M;
 	static Type TMediaPlan, TAction, TCampaign, TActionOnMM, TPrintSettings;
 	static string outDir;
+	static bool openXml;
 
 	[STAThread]
 	static int Main(string[] args)
@@ -46,7 +68,19 @@ static class P
 		SecurityManager.SetLoggedUserStorage(new Storage { User = SecurityManager.GetUser(3) });
 		FogSoft.WinForm.DataAccess.DataAccessor.LoadProcedureConfig();
 
-		string only = args.Length > 1 ? args[1] : null;
+		// Аргументы: папка [--openxml] [сценарий]. --openxml — новая сборка пишет
+		// через OpenXmlExportDocument вместо Excel.
+		var rest = new List<string>(args);
+		rest.RemoveAt(0);
+		openXml = rest.Remove("--openxml");
+		// --lang es — тексты через Tr на заданном языке (как в вебе).
+		int langAt = rest.IndexOf("--lang");
+		if (langAt >= 0)
+		{
+			Tr.SetTranslator(new DbTranslator(rest[langAt + 1]));
+			rest.RemoveRange(langAt, 2);
+		}
+		string only = rest.Count > 0 ? rest[0] : null;
 		int fails = 0;
 		foreach (Scenario sc in Scenarios())
 		{
@@ -111,6 +145,20 @@ static class P
 		{
 			object builder = builderField.GetValue(mp);
 			builder.GetType().GetProperty("Settings").SetValue(builder, settings, null);
+			// Сборка без Excel-адаптера (этап 3+) пишет только через OpenXml.
+			if (openXml || TMediaPlan.GetNestedType("ExcelDocument", BindingFlags.NonPublic) == null)
+			{
+				object xml = Activator.CreateInstance(M.GetType("Merlin.Classes.OpenXmlExportDocument", true), true);
+				bool any = (bool)builder.GetType().GetMethod("Build").Invoke(builder, new object[] { xml });
+				string xpath = Path.Combine(outDir, sc.Name + ".xlsx");
+				if (!any)
+				{
+					File.WriteAllText(Path.Combine(outDir, sc.Name + ".empty"), "no data");
+					return "(empty)";
+				}
+				xml.GetType().GetMethod("SaveToDisk").Invoke(xml, new object[] { xpath });
+				return xpath;
+			}
 			Type docType = TMediaPlan.GetNestedType("ExcelDocument", BindingFlags.NonPublic);
 			object doc = docType.GetConstructors(Any)[0].Invoke(new object[] { mp });
 			builder.GetType().GetMethod("Build").Invoke(builder, new object[] { doc });

@@ -17,7 +17,8 @@ namespace Merlin.Classes
 	/// листов. Пишет в любой <see cref="IExportDocument"/> — в десктопе это Excel
 	/// через COM (<see cref="MediaPlan"/>), в вебе будет OpenXml. Диалогов не
 	/// показывает: настройки печати и выбранные ролики задаёт вызывающий.
-	/// Справочник — docs/mediaplan.md.
+	/// Тексты — через <see cref="Tr"/>: в вебе переводятся на язык пользователя,
+	/// в десктопе остаются русскими. Справочник — docs/mediaplan.md.
 	/// </summary>
 	internal class MediaPlanBuilder
 	{
@@ -95,8 +96,8 @@ namespace Merlin.Classes
 				foreach (char c in Path.GetInvalidFileNameChars())
 					safeFirm = safeFirm.Replace(c, '_');
 				return IsMultiActionMode
-					? $"График размещения по нескольким акциям № {ActionIdsLabel} для {safeFirm}.xlsx"
-					: $"График размещения для рекламной акции № {GetActionId()} для {safeFirm}.xlsx";
+					? Tr.Format("График размещения по нескольким акциям № {0} для {1}.xlsx", ActionIdsLabel, safeFirm)
+					: Tr.Format("График размещения для рекламной акции № {0} для {1}.xlsx", GetActionId(), safeFirm);
 			}
 		}
 
@@ -494,13 +495,13 @@ namespace Merlin.Classes
 			int count = dtProgIssues.Rows.Count;
 			if (count == 0)
 			{
-				WriteRow(currentY, 3, new object[] { "Программы:" });
+				WriteRow(currentY, 3, new object[] { Tr.T("Программы:") });
 				return;
 			}
 			// Блок: count строк, колонки [3..6]. Строка 0: "Программы:" + первая
 			// программа; строки 1..N-1: дата / время / название.
 			var block = new object[count, 4];
-			block[0, 0] = "Программы:";
+			block[0, 0] = Tr.T("Программы:");
 			int r = 0;
 			foreach (DataRow row in dtProgIssues.Rows)
 			{
@@ -593,30 +594,30 @@ namespace Merlin.Classes
 			decimal discount = 1 - (tariffPriceTotal == 0 ? 1 : (priceTotal / tariffPriceTotal));
 			var footLines = new System.Collections.Generic.List<object>
 			{
-				string.Format("Всего трансляций: {0}", dtIssues.Rows.Count),
-				string.Format("Время трансляций: {0}", DateTimeUtils.Time2String(totalDuration)),
+				Tr.Format("Всего трансляций: {0}", dtIssues.Rows.Count),
+				Tr.Format("Время трансляций: {0}", DateTimeUtils.Time2String(totalDuration)),
 			};
 			if (!Settings.HideTariffPrice)
 			{
 				if (discount == decimal.Zero)
-					footLines.Add($"Стоимость спланированной рекламы: {priceTotal:c}");
-				footLines.Add($"Стоимость спланированной рекламы по тарифам: {tariffPriceTotal:c}");
+					footLines.Add(Tr.Format("Стоимость спланированной рекламы: {0:c}", priceTotal));
+				footLines.Add(Tr.Format("Стоимость спланированной рекламы по тарифам: {0:c}", tariffPriceTotal));
 				if (discount != decimal.Zero)
 				{
-					footLines.Add(string.Format("Скидка: {0}", discount.ToString("P")));
-					footLines.Add($"Стоимость спланированной рекламы с учетом скидки: {priceTotal:c}");
+					footLines.Add(Tr.Format("Скидка: {0}", discount.ToString("P")));
+					footLines.Add(Tr.Format("Стоимость спланированной рекламы с учетом скидки: {0:c}", priceTotal));
 				}
 			}
 			else
 			{
-				footLines.Add($"Стоимость спланированной рекламы: {priceTotal:c}");
+				footLines.Add(Tr.Format("Стоимость спланированной рекламы: {0:c}", priceTotal));
 			}
 			if (taxPriceTotal > 0)
 				footLines.Add(TaxLine(agency, periodStart, taxPriceTotal));
 			WriteColumn(currentY, 3, footLines);
 			currentY += footLines.Count;
             currentY++;
-			SetCellValue(currentY, 3, "Исполнитель:");
+			SetCellValue(currentY, 3, Tr.T("Исполнитель:"));
 
 			if (agency != null && Settings.PrintWithSignatures && agency.SignatureBytes != null)
 			{
@@ -624,11 +625,11 @@ namespace Merlin.Classes
             }
 
 			currentY += 4;
-			SetCellValue(currentY, 3, "Заказчик:");
+			SetCellValue(currentY, 3, Tr.T("Заказчик:"));
 
 			currentY += 2;
 			if (campaign != null && ConfigurationUtil.IsPrintContactPerson)
-				SetCellValue(currentY, 3, string.Format("Контактное лицо: {0}", campaign.Action.Creator.ContactInfo));
+				SetCellValue(currentY, 3, Tr.Format("Контактное лицо: {0}", campaign.Action.Creator.ContactInfo));
         }
 
 		// Ставка — из AgencyTax агентства на начало периода блока (раньше в тексте
@@ -639,8 +640,8 @@ namespace Merlin.Classes
 		{
 			decimal rate = agency != null && periodStart.HasValue ? agency.GetTaxValue(periodStart.Value) : 0;
 			return rate > 0
-				? $"В том числе НДС ({rate:0.##}%): {taxPriceTotal:c}"
-				: $"В том числе НДС: {taxPriceTotal:c}";
+				? Tr.Format("В том числе НДС ({0:0.##}%): {1:c}", rate, taxPriceTotal)
+				: Tr.Format("В том числе НДС: {0:c}", taxPriceTotal);
 		}
 
 		private void PrintIssuesGrid(int rowsCount, DataTable dtIssues, DataTable dataCounts, Campaign.CampaignTypes campaignType, int? year, int? month)
@@ -735,7 +736,7 @@ namespace Merlin.Classes
 		private static void CreateNewColumn(DateTime currentDate, string[] dateColumn, IList<string[]> dateColumns, ICollection<int> weekend)
 		{
 			dateColumn[0] = currentDate.ToShortDateString();
-			dateColumn[1] = DateTimeUtils.ResolveWeekDayName(currentDate.DayOfWeek, DateTimeUtils.WeekDayNameFormat.Short);
+			dateColumn[1] = Tr.T(DateTimeUtils.ResolveWeekDayName(currentDate.DayOfWeek, DateTimeUtils.WeekDayNameFormat.Short));
 			dateColumns.Add(dateColumn);
 
 			if ((currentDate.DayOfWeek == DayOfWeek.Saturday
@@ -772,8 +773,8 @@ namespace Merlin.Classes
 		{
 			bool simple = campaignType == Campaign.CampaignTypes.Simple;
 			WriteRow(currentY, 1, simple
-				? new object[] { "Время", "Коммент.", "Цена", "Прод-ть" }
-				: new object[] { "Время", "Коммент.", "Прод-ть" });
+				? new object[] { Tr.T("Время"), Tr.T("Коммент."), Tr.T("Цена"), Tr.T("Прод-ть") }
+				: new object[] { Tr.T("Время"), Tr.T("Коммент."), Tr.T("Прод-ть") });
 			activeSheet.SetBoldForRange(currentY, 1, currentY, 3 + (simple ? 1 : 0));
 			SheetWriter.CopyData2WorkSheet(activeSheet, dtTimes, 1, ++currentY);
 			CreateTimeCollection(dtTimes.Rows, campaignType);
@@ -810,20 +811,20 @@ namespace Merlin.Classes
 
 			if (rollerCount == 0)
 			{
-				WriteRow(currentY, labelCol, new object[] { "Ролики:" });
+				WriteRow(currentY, labelCol, new object[] { Tr.T("Ролики:") });
 				return;
 			}
 
 			// Блок: rollerCount строк, колонки [labelCol .. dataCol+3].
 			// Строка 0: "Ролики:" + данные ролика 0; строки 1..N-1: данные ролика i.
 			var block = new object[rollerCount, 5];
-			block[0, 0] = "Ролики:";
+			block[0, 0] = Tr.T("Ролики:");
 			int index = 1;
 			int r = 0;
 			foreach (DataRow row in dtRollers.Rows)
 			{
 				colRollers.Add(int.Parse(row["rollerId"].ToString()), index);
-				block[r, 1] = string.Format("№{0}", index++);
+				block[r, 1] = Tr.Format("№{0}", index++);
 				block[r, 2] = DateTimeUtils.Time2String(int.Parse(row["duration"].ToString()));
 				block[r, 3] = row["quantity"].ToString();
 				block[r, 4] = Settings.ShowAdvertisingInfo
@@ -859,14 +860,14 @@ namespace Merlin.Classes
 
             var lines = new System.Collections.Generic.List<object>
             {
-                string.Format("Заказчик: {0}", customerNamesOverride ?? a.Firm.PrefixWithName),
+                Tr.Format("Заказчик: {0}", customerNamesOverride ?? a.Firm.PrefixWithName),
                 agency != null
-                    ? string.Format("Исполнитель: {0}", agency.PrefixWithName)
+                    ? Tr.Format("Исполнитель: {0}", agency.PrefixWithName)
                     // TODO: Тут явно неправильно, так как теперь идентификаторы агентства и радиостанции не совпадают!
-                    : string.Format("Исполнители: {0}", action.GetAgenciesString(mmIds)),
-                string.Format("Радиостанция: {0}", mmNames),
-                string.Format("СМИ: {0}", massmediaNames.ToString()),
-                string.Format("Территория распространения: {0}", groupNames.ToString()),
+                    : Tr.Format("Исполнители: {0}", action.GetAgenciesString(mmIds)),
+                Tr.Format("Радиостанция: {0}", mmNames),
+                Tr.Format("СМИ: {0}", massmediaNames.ToString()),
+                Tr.Format("Территория распространения: {0}", groupNames.ToString()),
             };
             WriteColumn(currentY, 1, lines);
             currentY += lines.Count;
@@ -877,18 +878,18 @@ namespace Merlin.Classes
 			activeSheet.SetStyleForRange(y, x, y, x, true, true, 12);
             if (_selectively)
             {
-                SetCellValue(y, x, string.Format("Частичный график размещения для рекламной акции № {0}", actionID));
+                SetCellValue(y, x, Tr.Format("Частичный график размещения для рекламной акции № {0}", actionID));
             }
             else
             {
-                SetCellValue(y, x, string.Format("График размещения для рекламной акции № {0}", actionID));
+                SetCellValue(y, x, Tr.Format("График размещения для рекламной акции № {0}", actionID));
             }
 		}
 
 		private void PrintCaption(string actionsLabel, int x, int y)
 		{
 			activeSheet.SetStyleForRange(y, x, y, x, true, true, 12);
-			SetCellValue(y, x, string.Format("График размещения по нескольким акциям № {0}", actionsLabel));
+			SetCellValue(y, x, Tr.Format("График размещения по нескольким акциям № {0}", actionsLabel));
 		}
 
 		private void SetCellValue(int rowIndex, int colIndex, object value)

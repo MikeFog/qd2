@@ -1492,3 +1492,28 @@ code	Платёж недоступен для присвоения акциям 
 code	Платёж распределён полностью.	El pago está distribuido por completo.
 code	По умолчанию	Por defecto
 code	Вернуть значения отбора по умолчанию. В силу вступят по «Применить».	Restablecer los valores del filtro por defecto. Se aplicarán al pulsar «Aplicar».
+code	График размещения по нескольким акциям № {0} для {1}.xlsx	Plan de colocación de varias campañas N.º {0} para {1}.xlsx
+code	График размещения для рекламной акции № {0} для {1}.xlsx	Plan de colocación de la campaña publicitaria N.º {0} para {1}.xlsx
+code	График размещения по нескольким акциям № {0}	Plan de colocación de varias campañas N.º {0}
+code	График размещения для рекламной акции № {0}	Plan de colocación de la campaña publicitaria N.º {0}
+code	Частичный график размещения для рекламной акции № {0}	Plan de colocación parcial de la campaña publicitaria N.º {0}
+code	Программы:	Programas:
+code	Всего трансляций: {0}	Total de emisiones: {0}
+code	Время трансляций: {0}	Tiempo de emisión: {0}
+code	Стоимость спланированной рекламы: {0:c}	Costo de la publicidad planificada: {0:c}
+code	Стоимость спланированной рекламы по тарифам: {0:c}	Costo de la publicidad planificada según tarifas: {0:c}
+code	Стоимость спланированной рекламы с учетом скидки: {0:c}	Costo de la publicidad planificada con descuento: {0:c}
+code	Скидка: {0}	Descuento: {0}
+code	В том числе НДС ({0:0.##}%): {1:c}	IVA incluido ({0:0.##} %): {1:c}
+code	В том числе НДС: {0:c}	IVA incluido: {0:c}
+code	Исполнитель:	Contratista:
+code	Заказчик:	Cliente:
+code	Контактное лицо: {0}	Persona de contacto: {0}
+code	№{0}	N.º {0}
+code	Заказчик: {0}	Cliente: {0}
+code	Исполнитель: {0}	Contratista: {0}
+code	Исполнители: {0}	Contratistas: {0}
+code	Радиостанция: {0}	Emisora: {0}
+code	СМИ: {0}	Medio: {0}
+code	Территория распространения: {0}	Área de cobertura: {0}
+code	Лист	Hoja
