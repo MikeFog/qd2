@@ -202,6 +202,10 @@
     <Compile Include="..\Client\Classes\GridExport\DJinSerializer\DJinExportDocument.cs" Link="Domain\GridExport\DJinExportDocument.cs" />
     <Compile Include="..\Client\Classes\GridExport\DJinSerializer\DJinParam.cs" Link="Domain\GridExport\DJinParam.cs" />
     <Compile Include="..\Client\Classes\ManagerChoice.cs" Link="Domain\ManagerChoice.cs" />
+    <!-- Документы из Word-шаблонов (docs/tasks/web-reports.md §8). Только веб: десктоп
+         печатает через Crystal до решения о переводе (§7 п.1), в Client.csproj не входят. -->
+    <Compile Include="..\Client\Classes\Documents\DocumentData.cs" Link="Domain\Documents\DocumentData.cs" />
+    <Compile Include="..\Client\Classes\Documents\DocxTemplate.cs" Link="Domain\Documents\DocxTemplate.cs" />
   </ItemGroup>
 
 </Project>

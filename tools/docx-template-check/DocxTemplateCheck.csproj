@@ -1,0 +1,15 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <!-- Стенд движка Word-шаблонов (docs/tasks/web-reports.md §8, этап 1). Не входит в qd2.sln:
+       dotnet run, аргумент: папка для файлов результата -->
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>net10.0</TargetFramework>
+    <Nullable>disable</Nullable>
+    <ImplicitUsings>disable</ImplicitUsings>
+    <!-- Картинка для проверки рисуется System.Drawing; стенд запускается на Windows. -->
+    <NoWarn>$(NoWarn);CA1416</NoWarn>
+  </PropertyGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\..\FogSoft.Core\FogSoft.Core.csproj" />
+  </ItemGroup>
+</Project>
