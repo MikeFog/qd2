@@ -59,6 +59,8 @@ stat_VolumeOfRealizationByMonth*, TariffPassport, строка после сох
   пересобрать список источников: `ArtvisDB/Scripts/i18n/dump-sources.ps1` +
   `collect-sources.py` (метаданные ArtvisDev + литералы веба + caption из XML)
   и сравнить с `es.tsv`.
+- 2026-09-28: +177 строк документов из Word-шаблонов (docs/tasks/web-reports.md §8.9),
+  всего 1714.
 - Для вычитки носителем стоит проверить: «pauta» для кампании, «ventana» (в
   Аргентине привычнее «tanda»), «gerente» (возможно «ejecutivo de cuentas»),
   «Сумма (руб)» → «Monto (rub.)».

@@ -107,10 +107,10 @@ namespace Merlin.Classes.Documents
 		private static byte[] Bill(IDictionary<string, string> parts)
 		{
 			var doc = new DocBuilder("Tahoma", 9, 1134, 850);
+			string forMonth = Tag("#" + F.ForMonth) + " " + Tr.Format("за месяц {0} года", Tag(F.Month)) + Tag("/" + F.ForMonth);
 			doc.Add(P(JustificationValues.Center, R(
-				Tr.T("Счёт №") + " " + Tag(F.Number) + " " + Tr.T("от") + " " + Tag(F.Date)
-				+ Tag("#" + F.ForMonth) + " " + Tr.T("за месяц") + " " + Tag(F.Month) + " " + Tr.T("года") + Tag("/" + F.ForMonth)
-				+ " " + Tr.T("к акции №") + " " + Tag(F.ActionNumber), bold: true, size: 12)));
+				Tr.Format("Счёт № {0} от {1}{2} к акции № {3}", Tag(F.Number), Tag(F.Date), forMonth, Tag(F.ActionNumber)),
+				bold: true, size: 12)));
 			doc.Add(Empty());
 
 			var rows = new List<string[]>

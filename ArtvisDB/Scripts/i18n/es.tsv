@@ -1536,3 +1536,180 @@ code	Ролики	Spots
 code	Скрыть стоимость по тарифам	Ocultar el costo según tarifas
 code	Сформировать	Generar
 code	Сформировать…	Generar…
+code	Счёт	Factura
+code	Спонсорский договор	Contrato de patrocinio
+code	У акции нет кампаний на одной радиостанции — эфирную справку примерить не на чем.	La campaña no tiene pautas en una sola emisora: no hay con qué probar el certificado de emisión.
+code	{0} №{1} к акции {2} за {3} для {4}	{0} n.º {1} de la campaña {2} de {3} para {4}
+code	{0} №{1} к акции {2} для {3}	{0} n.º {1} de la campaña {2} para {3}
+code	{0} от {1:dd.MM.yyyy} для {2}	{0} del {1:dd.MM.yyyy} para {2}
+code	{0} {1} {2} к акции {3} для {4}	{0} {1} {2} de la campaña {3} para {4}
+code	Договор печатается по акции (а не из карточки фирмы без акции)	El contrato se imprime desde una campaña (no desde la ficha de la empresa sin campaña)
+code	Сумма без НДС	Monto sin IVA
+code	Строки счёта: радиостанции и программы	Líneas de la factura: emisoras y programas
+code	Номер строки по порядку	Número de línea correlativo
+code	Наименование услуги (текст из настроек счёта и радиостанции)	Descripción del servicio (texto de la configuración de la factura y de la emisora)
+code	Количество выходов	Cantidad de emisiones
+code	Сумма строки с НДС	Monto de la línea con IVA
+code	Сумма строки без НДС	Monto de la línea sin IVA
+code	НДС в строке	IVA de la línea
+code	Счёт за один месяц (печать счёта по месяцам)	Factura de un solo mes (impresión de facturas por meses)
+code	Месяц счёта, например «сентябрь 2026»	Mes de la factura, por ejemplo «septiembre 2026»
+code	QR-код для оплаты (нет, если у агентства не указаны счёт, банк или БИК)	Código QR de pago (no aparece si la agencia no tiene cuenta, banco o БИК)
+code	При печати отмечено «Включать цену»	Al imprimir se marcó «Incluir precio»
+code	Месяц справки, например «сентябрь 2026»	Mes del certificado, por ejemplo «septiembre 2026»
+code	Радиостанция: название для документов	Emisora: nombre para documentos
+code	Радиостанция: учредитель	Emisora: fundador
+code	Радиостанция: группа	Emisora: grupo
+code	Радиостанция: название без группы	Emisora: nombre sin grupo
+code	Радиостанция: директор	Emisora: director
+code	Радиостанция: свидетельство о регистрации СМИ	Emisora: certificado de registro del medio
+code	Радиостанция: подпись и печать (если при печати выбрано «С подписью и печатью»)	Emisora: firma y sello (si al imprimir se eligió «Con firma y sello»)
+code	Выходы роликов за месяц	Emisiones de spots del mes
+code	Количество выходов роликов за месяц	Cantidad de emisiones de spots del mes
+code	Выходы спонсорских программ за месяц	Emisiones de programas de patrocinio del mes
+code	За месяц были выходы спонсорских программ	En el mes hubo emisiones de programas de patrocinio
+code	Агентство: название с формой собственности, например ООО «Ромашка»	Agencia: nombre con forma societaria, por ejemplo «Romashka S.R.L.»
+code	Агентство: название без формы собственности	Agencia: nombre sin forma societaria
+code	Агентство: форма собственности полностью	Agencia: forma societaria completa
+code	Агентство: «в лице … действующего на основании …»	Agencia: «representada por … que actúa en virtud de …»
+code	Агентство: регистрация	Agencia: registro
+code	Агентство: директор	Agencia: director
+code	Агентство: бухгалтер	Agencia: contador
+code	Агентство: адрес	Agencia: dirección
+code	Агентство: телефон	Agencia: teléfono
+code	Агентство: электронная почта	Agencia: correo electrónico
+code	Агентство: ИНН	Agencia: ИНН
+code	Агентство: КПП	Agencia: КПП
+code	Агентство: ОГРН	Agencia: ОГРН
+code	Агентство: расчётный счёт	Agencia: cuenta corriente
+code	Агентство: банк	Agencia: banco
+code	Агентство: корреспондентский счёт банка	Agencia: cuenta corresponsal del banco
+code	Агентство: БИК банка	Agencia: БИК del banco
+code	Агентство: город заключения договора	Agencia: ciudad de celebración del contrato
+code	Агентство: подпись и печать (если при печати выбрано «С подписью и печатью»)	Agencia: firma y sello (si al imprimir se eligió «Con firma y sello»)
+code	Фирма: название с формой собственности	Empresa: nombre con forma societaria
+code	Фирма: название без формы собственности	Empresa: nombre sin forma societaria
+code	Фирма: «в лице … действующего на основании …» (пусто — линия для заполнения от руки)	Empresa: «representada por … que actúa en virtud de …» (vacío: línea para completar a mano)
+code	Фирма: регистрация (пусто — линия для заполнения от руки)	Empresa: registro (vacío: línea para completar a mano)
+code	Фирма: директор	Empresa: director
+code	Фирма: адрес	Empresa: dirección
+code	Фирма: телефон	Empresa: teléfono
+code	Фирма: электронная почта	Empresa: correo electrónico
+code	Фирма: ИНН	Empresa: ИНН
+code	Фирма: КПП	Empresa: КПП
+code	Фирма: ОГРН	Empresa: ОГРН
+code	Фирма: расчётный счёт	Empresa: cuenta corriente
+code	Фирма: банк	Empresa: banco
+code	Фирма: корреспондентский счёт банка	Empresa: cuenta corresponsal del banco
+code	Фирма: БИК банка	Empresa: БИК del banco
+code	Номер счёта (он же номер договора)	Número de factura (también número de contrato)
+code	Дата документа, например 28.09.2026	Fecha del documento, por ejemplo 28.09.2026
+code	Дата документа словами, например 28 сентября 2026 г.	Fecha del documento en palabras, por ejemplo 28 de septiembre de 2026
+code	Облагается НДС: у агентства есть ставка на дату документа	Gravado con IVA: la agencia tiene alícuota en la fecha del documento
+code	Ставка НДС в процентах, например 5	Alícuota de IVA en porcentaje, por ejemplo 5
+code	Сумма с НДС	Monto con IVA
+code	Сумма с НДС прописью	Monto con IVA en letras
+code	В том числе НДС	IVA incluido
+code	Менеджер акции: фамилия и имя	Gerente de la campaña: apellido y nombre
+code	Менеджер акции: телефон	Gerente de la campaña: teléfono
+code	Менеджер акции: электронная почта	Gerente de la campaña: correo electrónico
+code	Менеджер акции: фамилия, имя, телефон и почта одной строкой	Gerente de la campaña: apellido, nombre, teléfono y correo en una línea
+code	Ролик или программа	Spot o programa
+code	Хронометраж	Duración
+code	Дата выхода	Fecha de emisión
+code	Время выхода; (F), (S), (L) — первый, второй, последний в блоке	Hora de emisión; (F), (S), (L): primero, segundo, último del bloque
+code	Файл не читается как документ Word (.docx).	El archivo no se puede leer como documento Word (.docx).
+code	Метки {0} и {1} должны стоять на одном уровне абзаца (не одна в ссылке или поле, а другая — вне).	Las marcas {0} y {1} deben estar al mismo nivel del párrafo (no una dentro de un vínculo o campo y la otra fuera).
+code	Блок {0}…{1} занимает несколько абзацев — тогда каждая из этих меток должна стоять отдельным абзацем.	El bloque {0}…{1} ocupa varios párrafos: en ese caso cada una de estas marcas debe estar en un párrafo aparte.
+code	Метки {0} и {1} должны стоять в одном абзаце, отдельными абзацами в одном месте документа или в одной таблице.	Las marcas {0} y {1} deben estar en un mismo párrafo, en párrafos aparte en un mismo lugar del documento o en una misma tabla.
+code	Блок {0} не закрыт меткой {1}.	El bloque {0} no está cerrado con la marca {1}.
+code	Неизвестное поле {0}.	Campo desconocido {0}.
+code	Поле {0} — условие или список, его нельзя вывести как текст.	El campo {0} es una condición o una lista: no se puede mostrar como texto.
+code	Испорченная метка в абзаце «{0}»: проверьте парные скобки {1} или наберите метку заново одним куском.	Marca dañada en el párrafo «{0}»: revise las llaves dobles {1} o vuelva a escribir la marca de una sola vez.
+code	Метка {0} закрывает блок, который не был открыт.	La marca {0} cierra un bloque que no fue abierto.
+code	Метка {0} стоит раньше, чем закрыт блок {1}.	La marca {0} está antes de que se cierre el bloque {1}.
+code	Поле {0} — условие или список: пишите {1}…{2}.	El campo {0} es una condición o una lista: escriba {1}…{2}.
+code	Сумма прописью:	Monto en letras:
+code	Контактное лицо:	Persona de contacto:
+code	Телефон / Email:	Teléfono / Email:
+code	Р/сч.:	Cta. cte.:
+code	К/сч.:	Cta. corresp.:
+code	Эфирная справка для акции №	Certificado de emisión de la campaña n.º
+code	Территория распространения:	Zona de cobertura:
+code	Название ролика или программы	Nombre del spot o programa
+code	Рекламные выпуски	Emisiones publicitarias
+code	Всего выходов:	Total de emisiones:
+code	Спонсорские выпуски	Emisiones de patrocinio
+code	руб.	rub.
+code	Предмет счёта	Concepto de la factura
+code	НДС	IVA
+code	Итого:	Total:
+code	Услуги, оказываемые по данному договору, НДС не облагаются.	Los servicios prestados según este contrato no están gravados con IVA.
+code	У акции нет выходов — не за какой месяц выставлять счёт.	La campaña no tiene emisiones: no hay mes por el cual facturar.
+code	Отметьте хотя бы одно агентство.	Marque al menos una agencia.
+code	Укажите дату договора у каждого отмеченного агентства.	Indique la fecha del contrato para cada agencia marcada.
+code	Эфирная справка печатается по кампании на радиостанции или пакетному модулю.	El certificado de emisión se imprime para una pauta en una emisora o para un módulo en paquete.
+code	У кампании нет выходов — справку печатать не за что.	La pauta no tiene emisiones: no hay nada que certificar.
+code	Шаблон документа агентства «{0}» не подходит: {1}	La plantilla de documento de la agencia «{0}» no es válida: {1}
+code	У акции нет кампаний — не по какому агентству печатать.	La campaña no tiene pautas: no hay agencia por la cual imprimir.
+code	Выбор агентств	Selección de agencias
+code	{0} ({1} из {2})	{0} ({1} de {2})
+code	Скачать Word	Descargar Word
+code	Следующий	Siguiente
+code	Номер счёта	Número de factura
+code	выставлен ранее	emitida antes
+code	новый	nueva
+code	Месяцы — счёт на каждый отмеченный месяц	Meses: una factura por cada mes marcado
+code	С подписью и печатью	Con firma y sello
+code	Показать документ не удалось — его можно скачать и открыть в Word.	No se pudo mostrar el documento: puede descargarlo y abrirlo en Word.
+code	Метка вставляется в документ Word как обычный текст. Регистр букв, «е»/«ё» и пробелы внутри скобок не важны.	La marca se inserta en el documento Word como texto común. Las mayúsculas, «е»/«ё» y los espacios dentro de las llaves no importan.
+code	{{Поле}}	{{Campo}}
+code	значение;	valor;
+code	{{#Условие}}…{{/Условие}}	{{#Condición}}…{{/Condición}}
+code	текст между метками печатается, если условие выполнено;	el texto entre las marcas se imprime si se cumple la condición;
+code	{{^Условие}}…{{/Условие}}	{{^Condición}}…{{/Condición}}
+code	если не выполнено;	si no se cumple;
+code	{{#Список}}…{{/Список}}	{{#Lista}}…{{/Lista}}
+code	повторяется для каждой строки списка; метки в разных ячейках одной строки таблицы повторяют строку таблицы.	se repite por cada línea de la lista; las marcas en distintas celdas de una misma fila de tabla repiten esa fila.
+code	Если блок занимает несколько абзацев, его метки должны стоять отдельными абзацами.	Si el bloque ocupa varios párrafos, sus marcas deben estar en párrafos aparte.
+code	Метка	Marca
+code	Что подставляется	Qué se inserta
+code	Скопировать	Copiar
+code	(картинка)	(imagen)
+code	(список; поля строки — ниже)	(lista; los campos de la línea están abajo)
+code	Скопировано: {0}	Copiado: {0}
+code	Скопировать не удалось — выделите метку {0} и скопируйте вручную.	No se pudo copiar: seleccione la marca {0} y cópiela a mano.
+code	Файл Word (.docx)	Archivo Word (.docx)
+code	Шаблон не принят:	La plantilla no fue aceptada:
+code	Файл «{0}» проверен: ошибок нет.	Archivo «{0}» verificado: sin errores.
+code	Действует с	Vigente desde
+code	Комментарий (что изменилось)	Comentario (qué cambió)
+code	Примерить на акции №	Probar en la campaña n.º
+code	Файл больше 20 МБ — это не похоже на шаблон документа.	El archivo supera los 20 MB: no parece una plantilla de documento.
+code	Документ печатается по шаблону, который действует на дату документа. Пока шаблон вида не загружен, печатается начальный — из «Текста отчётов», тем же текстом, что в qd2.	El documento se imprime con la plantilla vigente en la fecha del documento. Mientras no se cargue una plantilla del tipo, se imprime la inicial, a partir del «Texto para informes», con el mismo texto que en qd2.
+code	Действует шаблон с {0:d} — «{1}»	Plantilla vigente desde el {0:d}: «{1}»
+code	Загруженные версии начнут действовать позже — сейчас печатается начальный шаблон	Las versiones cargadas entrarán en vigencia más adelante: ahora se imprime la plantilla inicial
+code	Шаблон не загружен — печатается начальный из «Текста отчётов»	No hay plantilla cargada: se imprime la inicial a partir del «Texto para informes»
+code	Скачать	Descargar
+code	Загрузить новую версию…	Cargar nueva versión…
+code	Примерить на акции…	Probar en una campaña…
+code	Поля	Campos
+code	Файл	Archivo
+code	Загрузил	Cargado por
+code	Когда	Cuándo
+code	действует	vigente
+code	Удалить версию	Eliminar versión
+code	Шаблоны документов	Plantillas de documentos
+code	{0}: новая версия шаблона — {1}	{0}: nueva versión de la plantilla — {1}
+code	Загрузить	Cargar
+code	Выберите файл шаблона.	Seleccione el archivo de la plantilla.
+code	Шаблон с ошибками не загружается — исправьте его в Word и выберите файл заново.	Una plantilla con errores no se carga: corríjala en Word y vuelva a seleccionar el archivo.
+code	Примерить на акции	Probar en una campaña
+code	{0}: примерка на акции №{1}	{0}: prueba en la campaña n.º {1}
+code	Документ не построен.	El documento no se generó.
+code	Поля шаблона: {0}	Campos de la plantilla: {0}
+code	Удалить версию «{0}», действующую с {1:d}? Файл будет удалён без возможности восстановления.	¿Eliminar la versión «{0}», vigente desde el {1:d}? El archivo se eliminará sin posibilidad de recuperarlo.
+code	Месяцы — справка на каждый отмеченный месяц	Meses: un certificado por cada mes marcado
+code	Включать цену	Incluir precio
+code	Счёт № {0} от {1}{2} к акции № {3}	Factura n.º {0} del {1}{2} de la campaña n.º {3}
+code	за месяц {0} года	del mes de {0}
