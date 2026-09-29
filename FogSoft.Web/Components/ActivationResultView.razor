@@ -29,7 +29,7 @@
     <section class="block">
         <h6>@Tr.T(block.Caption) <span class="text-muted">(@block.Data.Rows.Count)</span></h6>
         <div style="height: @(ListHeight(block.Data.Rows.Count))px">
-            <ObjectList Entity="block.Entity" Data="block.Data" ReadOnly="true" />
+            <ExportableList Entity="block.Entity" Data="block.Data" ReadOnly="true" Title="@Tr.T(block.Caption)" />
         </div>
     </section>
 }
@@ -60,6 +60,7 @@
 
     private static int Count(DataTable? t) => t?.Rows.Count ?? 0;
 
-    // До 12 строк видно целиком, дальше — прокрутка внутри блока (строка 29px + шапка и итоги).
-    private static int ListHeight(int rows) => Math.Min(rows, 12) * 29 + 72;
+    // До 12 строк видно целиком, дальше — прокрутка внутри блока (строка 29px + шапка, итоги
+    // и полоска с кнопкой выгрузки).
+    private static int ListHeight(int rows) => Math.Min(rows, 12) * 29 + 72 + 40;
 }

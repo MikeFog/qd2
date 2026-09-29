@@ -1,5 +1,5 @@
 ﻿/*
-    ДЕПЛОЙ: переводы веб-версии на язык «es» (1757 строк). docs/tasks/web-i18n.md, этап 5.
+    ДЕПЛОЙ: переводы веб-версии на язык «es» (1758 строк). docs/tasks/web-i18n.md, этап 5.
     СГЕНЕРИРОВАН из ArtvisDB/Scripts/i18n/es.tsv скриптом build-seed.py — руками не править.
 
     ПРЕДУСЛОВИЕ     накачен web-i18n-translation-deploy.sql (таблица iTranslation).
@@ -1777,7 +1777,8 @@ INSERT INTO #t ([source], [text]) VALUES
 (N'Предварительный просмотр результатов активации', N'Vista previa de los resultados de la activación'),
 (N'Пытаться переносить выпуски, которые не удалось активировать', N'Intentar trasladar las emisiones que no se pudieron activar'),
 (N'Разрешить перенос в окно с другой ценой', N'Permitir el traslado a una ventana con otro precio'),
-(N'Результаты активации', N'Resultados de la activación');
+(N'Результаты активации', N'Resultados de la activación'),
+(N'Журнал переносов кампании', N'Registro de traslados de la pauta');
 GO
 
 BEGIN TRANSACTION;

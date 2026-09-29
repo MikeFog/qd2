@@ -16,7 +16,7 @@
 }
 @if (_data != null)
 {
-    <ObjectList Entity="Entity" Data="_data" Changed="Reload" Failed="e => _error = e" />
+    <ExportableList Entity="Entity" Data="_data" Title="@Title" Changed="Reload" Failed="e => _error = e" />
 }
 
 @code {
@@ -24,6 +24,9 @@
 
     /// <summary>Чтение строк; вызывается при открытии и после каждого действия.</summary>
     [Parameter, EditorRequired] public Func<DataTable> Load { get; set; } = default!;
+
+    /// <summary>Заголовок окна — имя файла выгрузки в Excel.</summary>
+    [Parameter] public string? Title { get; set; }
 
     private DataTable? _data;
     private string? _error;

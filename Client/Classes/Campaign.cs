@@ -307,7 +307,18 @@ namespace Merlin.Classes
 
 		// DoAction переехал в Campaign.WinForms.cs.
 
-		// DeleteIssues (диалог), PrintTransfers переехали в Campaign.WinForms.cs.
+		// DeleteIssues (диалог), PrintTransfers (показ) переехали в Campaign.WinForms.cs.
+
+		/// <summary>
+		/// «Переносы»: выпуски кампании, фактическое окно которых отличается от исходного
+		/// (CampaignIssuesTransfers). Пустая таблица — переносов не было.
+		/// </summary>
+		internal DataTable LoadTransfers()
+		{
+			DataSet ds = DataAccessor.LoadDataSet("CampaignIssuesTransfers",
+				new Dictionary<string, object> { { ParamNames.CampaignId, CampaignId } });
+			return ds != null && ds.Tables.Count > 0 ? ds.Tables[0] : new DataTable();
+		}
 
 		/// <summary>
 		/// Удаляет выбранные выпуски (id — из CampaignDaysForm.SelectedIDs).
@@ -655,6 +666,11 @@ namespace Merlin.Classes
 			else
 				((Campaign)campaign).ShowRollers();
 		}
+
+		public const string PrintTransfersAction = Campaign.ActionNames.PrintTransfers;
+
+		/// <summary>«Переносы» кампании; пустая таблица — переносов не было.</summary>
+		public static DataTable Transfers(PresentationObject campaign) => ((Campaign)campaign).LoadTransfers();
 
 		/// <summary>Переключение пакетной кампании на её пакетные модули.</summary>
 		public static void ShowPackModules(PresentationObject campaign) => ((CampaignPackModule)campaign).ShowPackModules();

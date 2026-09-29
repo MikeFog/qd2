@@ -299,6 +299,7 @@ public sealed partial class ObjectActions
 		{
 			[Merlin.Classes.CampaignChange.ChangeAgencyAction] = (s, t) => s.ChangeCampaignAgency((PresentationObject)t),
 			[Merlin.Classes.CampaignChange.ChangePaymentTypeAction] = (s, t) => s.ChangeCampaignPaymentType((PresentationObject)t),
+			[Merlin.Classes.CampaignChange.PrintTransfersAction] = (s, t) => s.ShowCampaignTransfers((PresentationObject)t),
 			// Эфирная справка из Word-шаблона агентства (ObjectActions.Documents.cs): кампания на станции и пакетный модуль.
 			[Merlin.Classes.Documents.ClientDocuments.PrintOnAirInquireAction] = (s, t) => s.PrintOnAirInquire((PresentationObject)t),
 			// Переключение узла кампании в дереве (дни / ролики / пакетные модули) — как у
@@ -1421,6 +1422,21 @@ public sealed partial class ObjectActions
 		return ActionEffect.None;
 	}
 
+	/// <summary>
+	/// Campaign.PrintTransfers: перенесённые трафиком выпуски кампании (журнал 206); нет —
+	/// сообщение CampaignHaveNotTransfers, как в десктопе.
+	/// </summary>
+	private async Task<ActionEffect> ShowCampaignTransfers(PresentationObject campaign)
+	{
+		DataTable rows = await _busy.RunAsync(() => Merlin.Classes.CampaignChange.Transfers(campaign));
+		string caption = Tr.T(Merlin.Properties.Resources.CampaignIssuesTransfersTitle);
+		if (rows.Rows.Count == 0)
+			await ShowInfo(caption, MessageAccessor.GetMessage("CampaignHaveNotTransfers"));
+		else
+			await _tables.ShowAsync(caption, EntityManager.GetEntity((int)Merlin.Entities.CampaignIssuesTransfers), rows, wide: true);
+		return ActionEffect.None;
+	}
+
 	/// <summary>ActionOnMassmedia.Restore: акция возвращается в журнал макетов.</summary>
 	private async Task<ActionEffect> RestoreAction(Merlin.Classes.ActionOnMassmedia action)
 	{
@@ -1520,13 +1536,15 @@ public sealed partial class ObjectActions
 	{
 		Entity entity = EntityManager.GetEntity((int)Merlin.Entities.ActionRollers);
 		int actionId = action.ActionId;
-		await _dialogs.ShowAsync(title ?? Tr.Format("Ролики рекламной акции № {0}", actionId), builder =>
+		string caption = title ?? Tr.Format("Ролики рекламной акции № {0}", actionId);
+		await _dialogs.ShowAsync(caption, builder =>
 		{
 			builder.OpenComponent<LiveObjectList>(0);
 			builder.AddComponentParameter(1, nameof(LiveObjectList.Entity), entity);
 			builder.AddComponentParameter(2, nameof(LiveObjectList.Load), (Func<DataTable>)(() => Merlin.Classes.ActionRollerChange.Load(actionId)));
+			builder.AddComponentParameter(3, nameof(LiveObjectList.Title), caption);
 			builder.CloseComponent();
-		}, okText: Tr.T("Закрыть"), wide: true);
+		}, okText: Tr.T("Закрыть"), wide: true, showCancel: false);
 		return ActionEffect.Changed;
 	}
 
@@ -1580,7 +1598,7 @@ public sealed partial class ObjectActions
 				builder.OpenComponent<ActivationResultView>(0);
 				builder.AddComponentParameter(1, nameof(ActivationResultView.Value), result);
 				builder.CloseComponent();
-			}, okText: Tr.T("Закрыть"), wide: true);
+			}, okText: Tr.T("Закрыть"), wide: true, showCancel: false);
 
 		return !isTest && result.FatalError == null ? ActionEffect.Deleted : ActionEffect.None;
 	}
@@ -1713,7 +1731,7 @@ public sealed partial class ObjectActions
 	private static object PickedId(Entity entity, DataRow row) => row[entity.PKColumns[0]];
 
 	private Task ShowInfo(string caption, string text) =>
-		_dialogs.ShowAsync(caption, builder => builder.AddContent(0, text), okText: Tr.T("Ок"));
+		_dialogs.ShowAsync(caption, builder => builder.AddContent(0, text), okText: Tr.T("Ок"), showCancel: false);
 
 	/// <summary>FakeContainer, ветка AddNew — то же для корня древовидного экрана.</summary>
 	private async Task<ActionEffect> AddNew(object target)

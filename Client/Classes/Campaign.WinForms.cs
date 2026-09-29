@@ -102,11 +102,11 @@ namespace Merlin.Classes
 
 		private void PrintTransfers()
 		{
-			DataSet ds = DataAccessor.LoadDataSet("CampaignIssuesTransfers", new Dictionary<string, object> { {ParamNames.CampaignId, CampaignId } });
-			if (ds == null  || ds.Tables.Count == 0 || ds.Tables[0].Rows.Count == 0)
+			DataTable transfers = LoadTransfers();
+			if (transfers.Rows.Count == 0)
 				Globals.ShowInfo("CampaignHaveNotTransfers");
 			else
-				Globals.ShowSimpleJournal(EntityManager.GetEntity((int)Entities.CampaignIssuesTransfers), Resources.CampaignIssuesTransfersTitle, ds.Tables[0]);
+				Globals.ShowSimpleJournal(EntityManager.GetEntity((int)Entities.CampaignIssuesTransfers), Resources.CampaignIssuesTransfersTitle, transfers);
 		}
 
 		public void PrintMediaPlan(bool isByMonth, bool isByPeriod, bool selectively)

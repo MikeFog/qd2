@@ -57,8 +57,10 @@ public sealed class DialogService
 	/// <param name="cancelText">Надпись на кнопке отказа; null — «Отмена».</param>
 	/// <param name="showOk">false — подтверждающей кнопки нет (окно прогресса).</param>
 	/// <param name="wide">Широкое окно — для просмотра документа.</param>
+	/// <param name="showCancel">false — кнопки отказа нет: окно только для чтения (таблица,
+	/// сообщение), где «Ок» и «Отмена» значили бы одно и то же. Крестик и Esc закрывают как раньше.</param>
 	public async Task<DialogOutcome> ShowAsync(string title, RenderFragment body, string? okText = null,
-		string? cancelText = null, bool showOk = true, bool wide = false)
+		string? cancelText = null, bool showOk = true, bool wide = false, bool showCancel = true)
 	{
 		// Надписи по умолчанию переводятся здесь, в момент показа, а не в
 		// умолчаниях параметров: те вычисляются при компиляции.
@@ -72,7 +74,7 @@ public sealed class DialogService
 		var completion = new TaskCompletionSource<DialogOutcome>(
 			TaskCreationOptions.RunContinuationsAsynchronously);
 
-		_stack.Add(new Entry(new DialogRequest(title, body, okText, cancelText, wide), completion));
+		_stack.Add(new Entry(new DialogRequest(title, body, okText, cancelText, wide, showCancel), completion));
 		await NotifyAsync();
 
 		return await completion.Task;
@@ -113,4 +115,6 @@ public sealed class DialogService
 /// <param name="Body">Содержимое — любой компонент, например паспорт.</param>
 /// <param name="OkText">Надпись на подтверждающей кнопке; null — кнопки нет.</param>
 /// <param name="CancelText">Надпись на кнопке отказа.</param>
-public sealed record DialogRequest(string Title, RenderFragment Body, string? OkText, string CancelText, bool Wide = false);
+/// <param name="ShowCancel">Рисовать ли кнопку отказа.</param>
+public sealed record DialogRequest(string Title, RenderFragment Body, string? OkText, string CancelText, bool Wide = false,
+	bool ShowCancel = true);

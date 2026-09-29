@@ -329,7 +329,7 @@ else
         string caption = Tr.Format("{0}: примерка на акции №{1}", ClientDocuments.KindName(kind), actionId);
         if (problem != null || result == null)
         {
-            await Dialogs.ShowAsync(caption, b => b.AddContent(0, problem ?? Tr.T("Документ не построен.")), okText: Tr.T("Ок"));
+            await Dialogs.ShowAsync(caption, b => b.AddContent(0, problem ?? Tr.T("Документ не построен.")), okText: Tr.T("Ок"), showCancel: false);
             return;
         }
         await Dialogs.ShowAsync(caption, builder =>

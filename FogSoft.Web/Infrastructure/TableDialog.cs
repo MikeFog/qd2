@@ -72,17 +72,19 @@ public sealed class TableDialog
 	/// <c>Globals.ShowSimpleJournal(entity, caption, parameters)</c>, когда журнал
 	/// открывается под один объект (статистика по роликам акции). Только чтение.
 	/// </summary>
-	public async Task ShowAsync(string caption, Entity entity, DataTable table)
+	/// <param name="wide">Широкое окно — когда колонок много (журнал переносов кампании).</param>
+	public async Task ShowAsync(string caption, Entity entity, DataTable table, bool wide = false)
 	{
 		RenderFragment body = builder =>
 		{
-			builder.OpenComponent<Components.ObjectList>(0);
-			builder.AddComponentParameter(1, nameof(Components.ObjectList.Entity), entity);
-			builder.AddComponentParameter(2, nameof(Components.ObjectList.Data), table);
-			builder.AddComponentParameter(3, nameof(Components.ObjectList.ReadOnly), true);
+			builder.OpenComponent<Components.ExportableList>(0);
+			builder.AddComponentParameter(1, nameof(Components.ExportableList.Entity), entity);
+			builder.AddComponentParameter(2, nameof(Components.ExportableList.Data), table);
+			builder.AddComponentParameter(3, nameof(Components.ExportableList.ReadOnly), true);
+			builder.AddComponentParameter(4, nameof(Components.ExportableList.Title), caption);
 			builder.CloseComponent();
 		};
 
-		await _dialogs.ShowAsync(caption, body, okText: Tr.T("Закрыть"));
+		await _dialogs.ShowAsync(caption, body, okText: Tr.T("Закрыть"), wide: wide, showCancel: false);
 	}
 }

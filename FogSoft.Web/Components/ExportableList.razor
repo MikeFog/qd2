@@ -1,0 +1,35 @@
+@using System.Data
+@using FogSoft.WinForm.Classes
+
+@*
+    Список в окне с кнопкой «Экспорт в Excel» над ним — как у журналов десктопа, где
+    выгрузка есть у любого грида. Общий для окон с готовой таблицей (TableDialog),
+    окна роликов акции (LiveObjectList) и блоков результата активации: выгрузка —
+    тот же ObjectList.ExportToExcelAsync, что у кнопки экрана журнала.
+*@
+
+<div class="exportable">
+    <div class="bar">
+        <button class="btn btn-sm btn-outline-secondary" disabled="@(Data == null || Data.Rows.Count == 0)" @onclick="Export">
+            <i class="bi bi-download" aria-hidden="true"></i>@Tr.T("Экспорт в Excel")
+        </button>
+    </div>
+    <div class="list">
+        <ObjectList @ref="_list" Entity="Entity" Data="Data" ReadOnly="ReadOnly" Changed="Changed" Failed="Failed" />
+    </div>
+</div>
+
+@code {
+    [Parameter, EditorRequired] public Entity Entity { get; set; } = default!;
+    [Parameter] public DataTable? Data { get; set; }
+    [Parameter] public bool ReadOnly { get; set; }
+    [Parameter] public EventCallback Changed { get; set; }
+    [Parameter] public EventCallback<string> Failed { get; set; }
+
+    /// <summary>Заголовок — из него имя файла выгрузки.</summary>
+    [Parameter] public string? Title { get; set; }
+
+    private ObjectList? _list;
+
+    private Task Export() => _list?.ExportToExcelAsync(Title) ?? Task.CompletedTask;
+}
