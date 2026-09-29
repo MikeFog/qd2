@@ -36,6 +36,7 @@ public sealed class FilterMemory
 			_user = session.User;
 			_applied.Clear();
 			_defaults.Clear();
+			_presets.Clear();
 		};
 	}
 
@@ -46,9 +47,33 @@ public sealed class FilterMemory
 	public void Restore(string screen, Dictionary<string, object> values)
 	{
 		_defaults[screen] = Copy(values);
+		if (_presets.Remove(screen, out var preset))
+		{
+			// Переход с отбором (Preset): как новое окно десктопа — умолчания плюс
+			// заданные поля, прежний отбор экрана не подмешивается. DBNull — поле
+			// выключено (в панели выключенное поле — отсутствие ключа).
+			foreach (var (key, value) in preset)
+			{
+				if (value == null || value == DBNull.Value)
+					values.Remove(key);
+				else
+					values[key] = value;
+			}
+			return;
+		}
 		if (_applied.TryGetValue(screen, out var saved))
 			CopyInto(saved, values);
 	}
+
+	private readonly Dictionary<string, Dictionary<string, object>> _presets = new(StringComparer.OrdinalIgnoreCase);
+
+	/// <summary>
+	/// Отбор для ближайшего открытия экрана — переход «открыть журнал с отбором» (из
+	/// строки журнала бонусов в журнал акций). Действует один раз, при следующем
+	/// <see cref="Restore"/>.
+	/// </summary>
+	public void Preset(string screen, IReadOnlyDictionary<string, object> values) =>
+		_presets[screen] = new Dictionary<string, object>(values, StringComparer.OrdinalIgnoreCase);
 
 	/// <summary>Данные прочитаны по этому отбору.</summary>
 	public void Remember(string screen, Dictionary<string, object> values) => _applied[screen] = Copy(values);

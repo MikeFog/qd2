@@ -100,9 +100,17 @@ public sealed partial class ObjectActions
 	private readonly ProgressDialog _progress;
 	private readonly FileSaver _saver;
 
+	private readonly FilterMemory _filters;
+	private readonly MenuAccess _menuAccess;
+	private readonly NavigationManager _navigation;
+
 	public ObjectActions(PassportDialog passports, NamedPassportDialog namedPassports, DialogService dialogs, TableDialog tables,
-		BusyService busy, PeriodDialog periods, ProgressDialog progress, FileSaver saver)
+		BusyService busy, PeriodDialog periods, ProgressDialog progress, FileSaver saver,
+		FilterMemory filters, MenuAccess menuAccess, NavigationManager navigation)
 	{
+		_filters = filters;
+		_menuAccess = menuAccess;
+		_navigation = navigation;
 		_passports = passports;
 		_namedPassports = namedPassports;
 		_dialogs = dialogs;
@@ -164,6 +172,12 @@ public sealed partial class ObjectActions
 		},
 		// HeadCompanyWithActions.DoAction: то же у узла группы компаний — дети фирмы или
 		// акции (в журнале удалённых — удалённые). Погашен текущий вид (IsActionEnabled).
+		// BalanceStatRow.DoAction: из строки журнала бонусов — журнал подтверждённых акций с
+		// отбором по строке (в десктопе — новое окно, здесь — переход на экран).
+		["BalanceStatRow"] = new()
+		{
+			[Merlin.Classes.BonusStatRow.OpenActionJournalAction] = (s, t) => s.OpenActionJournal((PresentationObject)t),
+		},
 		["HeadCompanyWithActions"] = new()
 		{
 			[Merlin.Classes.HeadCompanyView.ShowFirmsAction] = (s, t) => s.Changed(() => Merlin.Classes.HeadCompanyView.ShowFirms((PresentationObject)t)),
@@ -1441,6 +1455,27 @@ public sealed partial class ObjectActions
 			await ShowInfo(caption, MessageAccessor.GetMessage("CampaignHaveNotTransfers"));
 		else
 			await _tables.ShowAsync(caption, EntityManager.GetEntity((int)Merlin.Entities.CampaignIssuesTransfers), rows, wide: true);
+		return ActionEffect.None;
+	}
+
+	/// <summary>
+	/// BalanceStatRow «Открыть журнал акций»: переход на журнал подтверждённых акций с отбором
+	/// из строки (фирма или группа компаний, группа станций, менеджер, период). Пунктов журнала
+	/// три (Рекламный отдел, Бухгалтерия, Трафик) и права на них отдельные — берём первый
+	/// доступный пользователю.
+	/// </summary>
+	private async Task<ActionEffect> OpenActionJournal(PresentationObject row)
+	{
+		string? code = new[] { "miActionJournal", "miActionJournalBuh", "miActionJournalTraffic" }
+			.FirstOrDefault(c => _menuAccess.CheckBrowser(c) == JournalAccess.Allowed);
+		if (code == null)
+		{
+			await ShowInfo(Tr.T("Открыть журнал акций"), Tr.T("Нет доступа к журналу подтверждённых рекламных акций."));
+			return ActionEffect.None;
+		}
+
+		_filters.Preset("browser/" + code, Merlin.Classes.BonusStatRow.ActionJournalFilter(row));
+		_navigation.NavigateTo("/browser/" + code);
 		return ActionEffect.None;
 	}
 
