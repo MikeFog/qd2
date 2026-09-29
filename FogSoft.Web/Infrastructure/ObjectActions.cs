@@ -178,6 +178,12 @@ public sealed partial class ObjectActions
 		{
 			[Merlin.Classes.BonusStatRow.OpenActionJournalAction] = (s, t) => s.OpenActionJournal((PresentationObject)t),
 		},
+		// PackModulePricelist.AssignExisting: «Добавить модуль в пакет» — новая строка
+		// «Модули пакетного модуля» (135) с прайс-листом пакета, карточкой.
+		["PackModulePricelist"] = new()
+		{
+			[Constants.EntityActions.AssignExisting] = (s, t) => s.AddModuleToPack((Merlin.Classes.PackModulePricelist)t),
+		},
 		// HeadCompany.DoAction: «Редактировать дочерние фирмы» — добавить фирмы в группу
 		// компаний (выбранные уходят из своих групп; опустевшая группа исчезает).
 		["HeadCompany"] = new()
@@ -1502,6 +1508,18 @@ public sealed partial class ObjectActions
 		List<PresentationObject> items = picked.Select(firms.CreateObject).ToList();
 		bool groupRemoved = await _busy.RunAsync(() => headCompany.ApplyFirmsReassign(items));
 		return groupRemoved ? ActionEffect.SiblingAdded : ActionEffect.Changed;
+	}
+
+	/// <summary>
+	/// PackModulePricelist.AssignExisting: новая строка содержимого пакета с прайс-листом
+	/// пакета — карточка (станция → модуль → прайс-лист модуля, зависимые списки); сохраняет
+	/// карточка, как в десктопе (ShowPassport).
+	/// </summary>
+	private async Task<ActionEffect> AddModuleToPack(Merlin.Classes.PackModulePricelist pricelist)
+	{
+		PresentationObject content = EntityManager.GetEntity((int)Merlin.Entities.PackModuleContent).NewObject;
+		content[Merlin.Classes.Pricelist.ParamNames.PricelistId] = pricelist.PricelistId;
+		return await _passports.ShowAsync(content, isNew: true) ? ActionEffect.ChildAdded : ActionEffect.None;
 	}
 
 	/// <summary>ActionOnMassmedia.Restore: акция возвращается в журнал макетов.</summary>
