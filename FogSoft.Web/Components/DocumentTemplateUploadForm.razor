@@ -1,0 +1,97 @@
+@using FogSoft.WinForm.Classes
+@using Merlin.Classes.Documents
+
+@*
+    Окно «Загрузить новую версию» (экран «Шаблоны документов»): файл Word проверяется сразу
+    при выборе (DocxTemplate.Validate по каталогу полей вида), дата «действует с» и
+    комментарий; до сохранения шаблон можно примерить на акции. Сохраняет вызывающий по «ОК».
+*@
+
+@if (Value.Message != null)
+{
+    <div class="alert alert-danger">@Value.Message</div>
+}
+
+<div class="upload">
+    <label class="form-label">@Tr.T("Файл Word (.docx)")</label>
+    <InputFile class="form-control form-control-sm" accept=".docx" OnChange="Load" />
+
+    @if (Value.Errors.Count > 0)
+    {
+        <div class="alert alert-danger mt-2">
+            <div>@Tr.T("Шаблон не принят:")</div>
+            <ul class="mb-0">
+                @foreach (string error in Value.Errors)
+                {
+                    <li>@error</li>
+                }
+            </ul>
+        </div>
+    }
+    else if (Value.Content != null)
+    {
+        <div class="alert alert-success mt-2 py-1">@Tr.Format("Файл «{0}» проверен: ошибок нет.", Value.FileName)</div>
+    }
+
+    <div class="row g-2 mt-1">
+        <div class="col-auto">
+            <label class="form-label">@Tr.T("Действует с")</label>
+            <input type="date" class="form-control form-control-sm" @bind="Value.StartDate" />
+        </div>
+        <div class="col">
+            <label class="form-label">@Tr.T("Комментарий (что изменилось)")</label>
+            <input type="text" class="form-control form-control-sm" maxlength="255" @bind="Value.Comment" />
+        </div>
+    </div>
+
+    <div class="row g-2 mt-2 align-items-end">
+        <div class="col-auto">
+            <label class="form-label">@Tr.T("Примерить на акции №")</label>
+            <input type="number" class="form-control form-control-sm" @bind="Value.ActionId" />
+        </div>
+        <div class="col-auto">
+            <button type="button" class="btn btn-outline-secondary btn-sm"
+                    disabled="@(Value.Content == null || Value.Errors.Count > 0 || Value.ActionId is null)"
+                    @onclick="() => Value.Preview(Value.Content!, Value.ActionId!.Value)">@Tr.T("Показать")</button>
+        </div>
+    </div>
+</div>
+
+@code {
+    [Parameter, EditorRequired] public Model Value { get; set; } = default!;
+
+    private const long MaxSize = 20 * 1024 * 1024;
+
+    private async Task Load(InputFileChangeEventArgs e)
+    {
+        Value.Message = null;
+        Value.Content = null;
+        Value.Errors.Clear();
+        IBrowserFile file = e.File;
+        if (file.Size > MaxSize)
+        {
+            Value.Message = Tr.T("Файл больше 20 МБ — это не похоже на шаблон документа.");
+            return;
+        }
+        using var buffer = new MemoryStream();
+        await using (Stream stream = file.OpenReadStream(MaxSize))
+            await stream.CopyToAsync(buffer);
+        Value.Content = buffer.ToArray();
+        Value.FileName = file.Name;
+        Value.Errors.AddRange(DocxTemplate.Validate(Value.Content, DocumentFields.For(Value.Kind)));
+    }
+
+    public sealed class Model
+    {
+        public DocumentKind Kind { get; init; }
+        public byte[]? Content { get; set; }
+        public string FileName { get; set; } = "";
+        public List<string> Errors { get; } = new();
+        public DateTime StartDate { get; set; } = DateTime.Today;
+        public string? Comment { get; set; }
+        public int? ActionId { get; set; }
+        /// <summary>Примерка файла на акции (окно просмотра открывает экран).</summary>
+        public Func<byte[], int, Task> Preview { get; init; } = default!;
+        public string? Message { get; set; }
+    }
+}

@@ -1,0 +1,26 @@
+.fields-help {
+    font-size: 13px;
+    color: var(--c-text-muted);
+}
+
+.fields-help ul {
+    margin-bottom: var(--s-2);
+}
+
+.fields .item td:first-child {
+    padding-left: var(--s-5);
+}
+
+.tag {
+    border: 1px solid var(--c-border);
+    border-radius: 4px;
+    background: var(--c-bg);
+    font-family: Consolas, monospace;
+    font-size: 12px;
+    padding: 0 4px;
+    cursor: pointer;
+}
+
+.tag:hover {
+    border-color: var(--c-accent);
+}

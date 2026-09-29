@@ -1,0 +1,102 @@
+@using FogSoft.WinForm.Classes
+@using Merlin.Classes.Documents
+@inject IJSRuntime JS
+@implements IAsyncDisposable
+
+@*
+    Справочник полей Word-шаблона одного вида документа (экран «Шаблоны документов»):
+    что вставить в документ и что подставится. Щелчок по метке копирует её — остаётся
+    вставить в Word. Каталог — DocumentFields (ядро), по нему же проверяется загрузка.
+*@
+
+<div class="fields-help">
+    <p>@Tr.T("Метка вставляется в документ Word как обычный текст. Регистр букв, «е»/«ё» и пробелы внутри скобок не важны.")</p>
+    <ul>
+        <li><code>@Tr.T("{{Поле}}")</code> — @Tr.T("значение;")</li>
+        <li><code>@Tr.T("{{#Условие}}…{{/Условие}}")</code> — @Tr.T("текст между метками печатается, если условие выполнено;") <code>@Tr.T("{{^Условие}}…{{/Условие}}")</code> — @Tr.T("если не выполнено;")</li>
+        <li><code>@Tr.T("{{#Список}}…{{/Список}}")</code> — @Tr.T("повторяется для каждой строки списка; метки в разных ячейках одной строки таблицы повторяют строку таблицы.")</li>
+    </ul>
+    <p>@Tr.T("Если блок занимает несколько абзацев, его метки должны стоять отдельными абзацами.")</p>
+</div>
+
+@if (_copied != null)
+{
+    <div class="alert alert-secondary py-1">@_copied</div>
+}
+
+<table class="table table-sm fields">
+    <thead>
+        <tr>
+            <th>@Tr.T("Метка")</th>
+            <th>@Tr.T("Что подставляется")</th>
+        </tr>
+    </thead>
+    <tbody>
+        @foreach (DocumentField field in DocumentFields.For(Kind))
+        {
+            <tr>
+                <td>@TagButtons(field)</td>
+                <td>@field.Description@KindNote(field)</td>
+            </tr>
+            @foreach (DocumentField item in field.ItemFields)
+            {
+                <tr class="item">
+                    <td>@TagButton("{{" + item.Name + "}}")</td>
+                    <td>@item.Description</td>
+                </tr>
+            }
+        }
+    </tbody>
+</table>
+
+@code {
+    [Parameter, EditorRequired] public DocumentKind Kind { get; set; }
+
+    private IJSObjectReference? _module;
+    private string? _copied;
+
+    private RenderFragment TagButtons(DocumentField field) => field.Kind switch
+    {
+        DocumentFieldKind.Flag => @<span>@TagButton("{{#" + field.Name + "}}") … @TagButton("{{/" + field.Name + "}}")</span>,
+        DocumentFieldKind.List => @<span>@TagButton("{{#" + field.Name + "}}") … @TagButton("{{/" + field.Name + "}}")</span>,
+        _ => TagButton("{{" + field.Name + "}}"),
+    };
+
+    private RenderFragment TagButton(string tag) =>
+        @<button type="button" class="tag" title="@(Tr.T("Скопировать"))" @onclick="() => Copy(tag)">@tag</button>;
+
+    private static string KindNote(DocumentField field) => field.Kind switch
+    {
+        DocumentFieldKind.Image => " " + Tr.T("(картинка)"),
+        DocumentFieldKind.List => " " + Tr.T("(список; поля строки — ниже)"),
+        _ => "",
+    };
+
+    private async Task Copy(string tag)
+    {
+        try
+        {
+            _module ??= await JS.InvokeAsync<IJSObjectReference>("import", "./js/clipboard.js");
+            await _module.InvokeVoidAsync("copy", tag);
+            _copied = Tr.Format("Скопировано: {0}", tag);
+        }
+        catch (JSException)
+        {
+            // Браузер не дал доступа к буферу (окно не в фокусе, запрет в настройках).
+            _copied = Tr.Format("Скопировать не удалось — выделите метку {0} и скопируйте вручную.", tag);
+        }
+    }
+
+    public async ValueTask DisposeAsync()
+    {
+        if (_module == null)
+            return;
+        try
+        {
+            await _module.DisposeAsync();
+        }
+        catch (JSDisconnectedException)
+        {
+        }
+    }
+}

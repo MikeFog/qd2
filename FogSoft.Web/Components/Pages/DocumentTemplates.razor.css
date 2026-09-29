@@ -1,0 +1,68 @@
+/* Шаблоны документов: агентство, по виду документа — состояние, действия и версии. */
+
+.document-templates {
+    display: flex;
+    flex-direction: column;
+    gap: var(--s-3);
+}
+
+.agency {
+    display: flex;
+    align-items: center;
+    gap: var(--s-2);
+    max-width: 480px;
+}
+
+.hint {
+    margin: 0;
+    font-size: 13px;
+    color: var(--c-text-muted);
+}
+
+.kind {
+    background: var(--c-surface);
+    border: 1px solid var(--c-border);
+    border-radius: 6px;
+    padding: var(--s-3);
+}
+
+.kind-head {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: var(--s-2) var(--s-4);
+}
+
+.kind-head h6 {
+    margin: 0;
+    flex: 1;
+    min-width: 170px;
+}
+
+.state-line {
+    /* Отдельной строкой под заголовком и кнопками — на узком окне не сжимается в столбик. */
+    flex: 1 1 100%;
+    order: 3;
+    color: var(--c-text-muted);
+    font-size: 13px;
+}
+
+.actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--s-2);
+}
+
+.versions {
+    margin: var(--s-3) 0 0;
+    font-size: 13px;
+}
+
+.versions .current td {
+    font-weight: 600;
+}
+
+.row-actions {
+    white-space: nowrap;
+    text-align: right;
+}

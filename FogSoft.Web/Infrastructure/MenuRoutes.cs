@@ -68,7 +68,6 @@ public static class MenuRoutes
 			{ "miMassMedia", new JournalRoute(Entities.MassMedia) },
 			{ "miPaymentByManagerFromRSection", new JournalRoute(Entities.PaymentCommonAction, ManagerFilter: true) },
 			{ "miPaymentType", new JournalRoute(Entities.PaymentType) },
-			{ "miReportPartText", new JournalRoute(Entities.ReportPartText) },
 			{ "miSpecialActions", new JournalRoute(Entities.SpecialAction, ManagerFilter: true) },
 			// StatBalanceJournalForm: при включённой «С разбивкой по агентствам» таблица
 			// берёт сущность StatsBalanceGroup, иначе StatsBalance; фильтр общий.
@@ -209,6 +208,12 @@ public static class ScreenRoutes
 	public const string PaymentCommon = "miPaymentCommon";
 	public const string PaymentCommonFromAdSection = "miPaymentFRS";
 
+	/// <summary>
+	/// «Текст отчётов» — в вебе экран «Шаблоны документов» (docs/tasks/web-reports.md §8 этап 6):
+	/// шаблоны — преемник текстов отчётов, права те же, десктоп открывает свой журнал текстов.
+	/// </summary>
+	public const string DocumentTemplates = "miReportPartText";
+
 	public static readonly IReadOnlyDictionary<string, string> Screens =
 		new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase)
 		{
@@ -235,6 +240,9 @@ public static class ScreenRoutes
 			// ShowMultiActionMediaPlan*); в вебе один экран, способ выбора акций — по пункту.
 			{ MultiActionMediaPlan, "/multi-action-media-plan?menu=" + MultiActionMediaPlan },
 			{ MultiActionMediaPlanSelect, "/multi-action-media-plan?menu=" + MultiActionMediaPlanSelect },
+			// Десктоп — журнал «Текст отчётов» (ReportPartText); в вебе — Word-шаблоны документов
+			// агентств с версиями (решение владельца 2026-09-28, docs/tasks/web-reports.md §6.0).
+			{ DocumentTemplates, "/document-templates" },
 		};
 }
 

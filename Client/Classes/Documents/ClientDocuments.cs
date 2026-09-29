@@ -162,6 +162,40 @@ namespace Merlin.Classes.Documents
 			};
 		}
 
+		/// <summary>
+		/// Данные документа для примерки шаблона на акции (экран «Шаблоны документов»): номер и дата —
+		/// из выставленного счёта агентства (нет счёта — номер 0 и сегодня), подписи включены;
+		/// эфирная справка — по первой кампании акции на одной радиостанции (своего агентства,
+		/// если есть), за месяц её начала. null и <paramref name="problem"/> — примерить не на чем.
+		/// </summary>
+		public static DocumentData Sample(DocumentKind kind, int actionId, Agency agency, out string problem)
+		{
+			problem = null;
+			Action action = ActionOnMassmedia.GetActionById(actionId);
+			DocumentBill bill = DocumentBills.Find(action, agency.AgencyId) ?? new DocumentBill(0, DateTime.Today);
+			string number = bill.Number.ToString(CultureInfo.CurrentCulture);
+			switch (kind)
+			{
+				case DocumentKind.Contract:
+				case DocumentKind.SponsorContract:
+					return Contract(action, null, agency, bill.Date, number, true);
+				case DocumentKind.Bill:
+				case DocumentKind.BillContract:
+					return Bill(action, agency, number, bill.Date, null, true);
+				default:
+					List<CampaignOnSingleMassmedia> campaigns = Action.GetCampaigns(action.Campaigns())
+						.OfType<CampaignOnSingleMassmedia>().ToList();
+					CampaignOnSingleMassmedia campaign = campaigns.FirstOrDefault(c => c.Agency != null && c.Agency.AgencyId == agency.AgencyId)
+						?? campaigns.FirstOrDefault();
+					if (campaign == null)
+					{
+						problem = Tr.T("У акции нет кампаний на одной радиостанции — эфирную справку примерить не на чем.");
+						return null;
+					}
+					return OnAirInquire(campaign, agency, campaign.Massmedia, campaign.StartDate, true, true);
+			}
+		}
+
 		private static string SafeFileName(string name)
 		{
 			foreach (char c in System.IO.Path.GetInvalidFileNameChars())
@@ -186,6 +220,12 @@ namespace Merlin.Classes.Documents
 				foreach (DataRow row in candidates.Rows)
 					result.Add(Agency.GetAgencyByID(Convert.ToInt32(row[Agency.ParamNames.AgencyId])));
 			return result;
+		}
+
+		/// <summary>Агентство по ID (конструктор и <c>GetAgencyByID</c> в ядре внутренние).</summary>
+		public static Agency AgencyById(int agencyId)
+		{
+			return Agency.GetAgencyByID(agencyId);
 		}
 
 		private static DocumentData Common(Agency agency, Firm firm, Action action, bool withAgencySignature)
