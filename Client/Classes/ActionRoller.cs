@@ -7,9 +7,9 @@ using System.Data;
 
 namespace Merlin.Classes
 {
-    // UI-часть (DoAction, SetAdvertType-диалог) — в ActionRoller.WinForms.cs.
-    // SubstituteRoller (в DoAction) — часть кластера замены ролика,
-    // docs/tasks/web-migration-dialogs.md, §8 п.4, не тронут.
+    // UI-часть (DoAction, диалоги SetAdvertType и SubstituteRoller) — в
+    // ActionRoller.WinForms.cs; запись замены по всей акции — здесь
+    // (ApplyActionSubstitution), вход для веба — ActionRollerChange.
     // Конвенция — docs/tasks/web-migration-dialogs.md.
     internal partial class ActionRoller : Roller
     {
@@ -25,8 +25,63 @@ namespace Merlin.Classes
             isNew = false;
         }
 
-        // DoAction, SetAdvertType (диалог) и SubstituteRoller (кластер замены
-        // ролика, §8 п.4, не разрезан) переехали в ActionRoller.WinForms.cs.
+        // DoAction и диалоги SetAdvertType / SubstituteRoller — в ActionRoller.WinForms.cs.
+
+        internal ActionOnMassmedia ActionOfRoller() => new ActionOnMassmedia((int)this[Action.ParamNames.ActionId]);
+
+        /// <summary>
+        /// Замена этого ролика на <paramref name="newRoller"/> во всех кампаниях акции:
+        /// у линейной и спонсорской — по дням кампании, у модульной — по каждому модулю,
+        /// у пакетной — по каждому пакетному модулю. Возвращает таблицы незаменённых
+        /// роликов (по одной на кампанию/модуль/пакет, только непустые). Пересчёт акции —
+        /// за вызывающим.
+        /// </summary>
+        internal List<DataTable> ApplyActionSubstitution(ActionOnMassmedia action, Roller newRoller)
+        {
+            var result = new List<DataTable>();
+            void Add(DataTable table)
+            {
+                if (table != null && table.Rows.Count > 0)
+                    result.Add(table);
+            }
+
+            foreach (DataRow campaignRow in action.Campaigns().Rows)
+            {
+                CampaignOnSingleMassmedia campaign = new CampaignOnSingleMassmedia(campaignRow);
+                if (campaign.CampaignType == Campaign.CampaignTypes.Simple ||
+                    campaign.CampaignType == Campaign.CampaignTypes.Sponsor)
+                    Add(CampaignRoller.ApplyRollerSubstitutionForDays(campaign, this, newRoller, campaign.Days(this), null, null));
+                else if (campaign.CampaignType == Campaign.CampaignTypes.Module)
+                {
+                    CampaignModule campaignModule = new CampaignModule(campaign.CampaignId)
+                    {
+                        ChildEntity = EntityManager.GetEntity((int)Entities.CampaignModule)
+                    };
+                    foreach (DataRow moduleRow in campaignModule.GetContent().Rows)
+                    {
+                        Module module = new Module(moduleRow);
+                        Add(CampaignRoller.ApplyRollerSubstitutionForDays(campaign, this, newRoller, campaign.Days(this), module.ModuleId, null));
+                    }
+                }
+                else if (campaign.CampaignType == Campaign.CampaignTypes.PackModule)
+                {
+                    CampaignPackModule campaignPackModule = new CampaignPackModule(campaign.CampaignId)
+                    {
+                        ChildEntity = EntityManager.GetEntity((int)Entities.PackModuleInCampaign)
+                    };
+                    foreach (DataRow packModuleRow in campaignPackModule.GetContent().Rows)
+                    {
+                        PackModule packModule = new PackModule(packModuleRow);
+                        Add(CampaignRoller.ApplyRollerSubstitutionForDays(campaign, this, newRoller, campaign.Days(this), null, packModule.PackModuleId));
+                    }
+                }
+                else
+                {
+                    System.Diagnostics.Debug.Assert(false, "Unknown campaign type");
+                }
+            }
+            return result;
+        }
 
         public override bool IsActionEnabled(string actionName, ViewType type)
         {
@@ -98,6 +153,63 @@ namespace Merlin.Classes
             actionRoller[Action.ParamNames.ActionId] = this[Action.ParamNames.ActionId];
             actionRoller[Firm.ParamNames.FirmId] = this[Firm.ParamNames.FirmId];
             return actionRoller;
+        }
+    }
+
+    /// <summary>
+    /// Ролики акции (окно «Назначить предмет рекламы или заменить ролик») снаружи
+    /// сборки (веб): ActionRoller и CommonRoller internal.
+    /// </summary>
+    public static class ActionRollerChange
+    {
+        public const string SetAdvertTypeAction = Action.ActionNames.SetAdvertType;
+        public const string SubstituteAction = Constants.Actions.Substitute;
+
+        /// <summary>Ролики акции с числом выпусков — то, что десктоп показывает в журнале 1244.</summary>
+        public static DataTable Load(int actionId)
+        {
+            var filter = new Dictionary<string, object>(StringComparer.InvariantCultureIgnoreCase)
+            {
+                [Action.ParamNames.ActionId] = actionId,
+            };
+            return EntityManager.GetEntity((int)Entities.ActionRollers).GetContent(filter);
+        }
+
+        /// <summary>
+        /// Назначение предмета рекламы. Ролику «для всех фирм» (CommonRoller) — без
+        /// changeFlag, как в десктопе (CommonRoller.DoAction).
+        /// </summary>
+        public static void SetAdvertType(PresentationObject roller, object advertTypeId) =>
+            ((ActionRoller)roller).ApplyAdvertTypeChange(advertTypeId, !(roller is CommonRoller));
+
+        /// <summary>Кандидаты на замену — ролики фирмы акции.</summary>
+        public static DataTable SubstituteCandidates(PresentationObject roller) =>
+            ((ActionRoller)roller).ActionOfRoller().Firm.GetRollers();
+
+        /// <summary>
+        /// Замена во всей акции и пересчёт. Возвращает незаменённые ролики одной
+        /// таблицей (null — всё заменено) и текст сообщения о цене акции.
+        /// </summary>
+        public static (DataTable Unsubstituted, string PriceMessage) Substitute(PresentationObject roller, int newRollerId)
+        {
+            ActionRoller actionRoller = (ActionRoller)roller;
+            ActionOnMassmedia action = actionRoller.ActionOfRoller();
+            // В десктопе цену подтягивает Firm того же объекта (выбор кандидатов); здесь
+            // объект свежий — без Refresh TotalPrice был бы 0.
+            action.Refresh();
+            decimal price = action.TotalPrice;
+
+            DataTable merged = null;
+            foreach (DataTable table in actionRoller.ApplyActionSubstitution(action, new Roller(newRollerId)))
+            {
+                if (merged == null)
+                    merged = table.Copy();
+                else
+                    merged.Merge(table);
+            }
+
+            action.Recalculate();
+            return (merged, CampaignPart.PriceChangeText(price, action.TotalPrice));
         }
     }
 }

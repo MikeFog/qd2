@@ -4,7 +4,6 @@ using System.Data;
 using System.Windows.Forms;
 using FogSoft.WinForm;
 using FogSoft.WinForm.Classes;
-using FogSoft.WinForm.DataAccess;
 using FogSoft.WinForm.Forms;
 using Merlin.Classes;
 
@@ -16,9 +15,6 @@ namespace Merlin.Forms
 	// существующий CampaignIUD, best-effort + журнал ошибок).
 	internal partial class ChangePaymentTypeMassForm : Form
 	{
-		// Селектор атрибутов сущности 91 для списка кампаний (mass-change-payment-type-seed.sql)
-		private const int CampaignListSelector = 3;
-
 		private readonly ActionOnMassmedia _action;
 
 		public ChangePaymentTypeMassForm()
@@ -41,14 +37,10 @@ namespace Merlin.Forms
 			{
 				base.OnLoad(e);
 
-				Dictionary<string, object> procParameters = DataAccessor.CreateParametersDictionary();
-				procParameters["ShowActive"] = true;
 				lookUpPaymentType.ColumnWithID = Campaign.ParamNames.PaymentTypeID;
-				lookUpPaymentType.DataSource = DataAccessor.LoadDataSet("PaymentTypesLoad", procParameters).Tables[0].DefaultView;
+				lookUpPaymentType.DataSource = ActionOnMassmedia.LoadActivePaymentTypes().DefaultView;
 
-				Entity entity = (Entity)EntityManager.GetEntity((int)Entities.GeneralCampaign).Clone();
-				entity.AttributeSelector = CampaignListSelector;
-				grdCampaigns.Entity = entity;
+				grdCampaigns.Entity = ActionOnMassmedia.CampaignListEntity();
 				grdCampaigns.DataSource = _action.Campaigns().DefaultView;
 
 				UpdateOkEnabled();

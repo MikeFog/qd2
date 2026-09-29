@@ -21,13 +21,13 @@ namespace Merlin.Classes
 
         // DoAction переехал в CampaignModule.WinForms.cs.
 
-        private void ShowModuleDays()
+        internal void ShowModuleDays()
         {
             ChildEntity = EntityManager.GetEntity((int)Entities.ModuleCampaignDay);
             FireContainerRefreshed();
         }
 
-        private void ShowModuleRollers()
+        internal void ShowModuleRollers()
         {
             ChildEntity = EntityManager.GetEntity((int)Entities.CampaignModule);
             FireContainerRefreshed();

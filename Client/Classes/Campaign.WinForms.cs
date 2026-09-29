@@ -28,10 +28,7 @@ namespace Merlin.Classes
 			else if (actionName == ActionNames.ShowRollers)
 				ShowRollers();
 			else if (actionName == ActionNames.ShowDays)
-			{
-				ChildEntity = EntityManager.GetEntity((int)Entities.CampaignDay);
-				FireContainerRefreshed();
-			}
+				ShowDaysView();
 			else if (actionName == Constants.EntityActions.Edit)
 				EditRollerIssues(owner, new RollerIssuesGrid3());
 			// Медиаплан всегда по фактическим окнам, поэтому пары «X» / «XFact» —

@@ -250,13 +250,33 @@ namespace Merlin.Classes
         // Clone переехал в ActionOnMassmedia.WinForms.cs.
         // ChangePaymentTypeMass (диалог) — тоже там; здесь только применение.
 
+        /// <summary>Действующие типы оплаты — список выбора массовой смены.</summary>
+        public static DataTable LoadActivePaymentTypes()
+        {
+            Dictionary<string, object> procParameters = DataAccessor.CreateParametersDictionary();
+            procParameters["ShowActive"] = true;
+            return DataAccessor.LoadDataSet("PaymentTypesLoad", procParameters).Tables[0];
+        }
+
+        /// <summary>
+        /// Кампании акции для чек-листа массовой смены: сущность 91 с селектором 3
+        /// (mass-change-payment-type-seed.sql). Клон — чтобы не менять селектор у
+        /// общей закэшированной сущности.
+        /// </summary>
+        public static Entity CampaignListEntity()
+        {
+            Entity entity = (Entity)EntityManager.GetEntity((int)Entities.GeneralCampaign).Clone();
+            entity.AttributeSelector = 3;
+            return entity;
+        }
+
         /// <summary>
         /// Массово меняет тип оплаты у выбранных кампаний акции. Каждая кампания —
         /// своя транзакция (CampaignIUD), best-effort: сбойные попадают в
         /// <paramref name="tableErrors"/> (пустая, если ошибок не было), остальные
         /// применяются. Пересчёт не нужен — тип оплаты на цену не влияет.
         /// </summary>
-        internal void ApplyPaymentTypeChangeMass(int paymentTypeId, IEnumerable<PresentationObject> campaigns, out DataTable tableErrors)
+        public void ApplyPaymentTypeChangeMass(int paymentTypeId, IEnumerable<PresentationObject> campaigns, out DataTable tableErrors)
         {
             tableErrors = ErrorManager.CreateErrorsTable();
 

@@ -1,0 +1,44 @@
+@using System.Data
+@using FogSoft.WinForm.Classes
+
+@*
+    Содержимое диалога «Сменить тип оплаты» у акции — веб-аналог десктопного
+    ChangePaymentTypeMassForm: тип оплаты из действующих и кампании акции галочками.
+    Значения пишутся прямо в модель — её читает ObjectActions по «ОК».
+*@
+
+@if (Value.Message != null)
+{
+    <div class="alert alert-danger">@Value.Message</div>
+}
+
+<label class="field">
+    @Tr.T("Новый тип оплаты")
+    <select class="form-select form-select-sm" @bind="Value.PaymentTypeId">
+        <option value="">@Tr.T("— выберите —")</option>
+        @foreach (DataRow t in Value.PaymentTypes.Rows)
+        {
+            <option value="@t["paymentTypeID"]">@t["name"]</option>
+        }
+    </select>
+</label>
+
+<p class="text-muted hint">@Tr.T("Отметьте кампании, у которых нужно сменить тип оплаты.")</p>
+<ObjectList @ref="_list" Entity="Value.CampaignEntity" Data="Value.Campaigns" ReadOnly="true" Selectable="true"
+            SelectionChanged="_ => Value.Selected = _list?.SelectedObjects ?? Array.Empty<PresentationObject>()" />
+
+@code {
+    [Parameter, EditorRequired] public Model Value { get; set; } = default!;
+
+    private ObjectList? _list;
+
+    public sealed class Model
+    {
+        public DataTable PaymentTypes { get; init; } = new();
+        public Entity CampaignEntity { get; init; } = default!;
+        public DataTable Campaigns { get; init; } = new();
+        public int? PaymentTypeId { get; set; }
+        public IReadOnlyList<PresentationObject> Selected { get; set; } = Array.Empty<PresentationObject>();
+        public string? Message { get; set; }
+    }
+}

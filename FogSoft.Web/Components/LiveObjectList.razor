@@ -1,0 +1,45 @@
+@using System.Data
+@using FogSoft.Web.Infrastructure
+@using FogSoft.WinForm.Classes
+@inject BusyService Busy
+
+@*
+    Список настоящей сущности в окне, с действиями по строкам, — веб-аналог
+    Globals.ShowSimpleJournal(entity, caption, parameters, showModal: true).
+    После любого действия в строке список перечитывается (Load) — как журнал
+    десктопа по ObjectChanged / DataNeedRefresh. Первый пример — ролики акции.
+*@
+
+@if (_error != null)
+{
+    <div class="alert alert-danger">@_error</div>
+}
+@if (_data != null)
+{
+    <ObjectList Entity="Entity" Data="_data" Changed="Reload" Failed="e => _error = e" />
+}
+
+@code {
+    [Parameter, EditorRequired] public Entity Entity { get; set; } = default!;
+
+    /// <summary>Чтение строк; вызывается при открытии и после каждого действия.</summary>
+    [Parameter, EditorRequired] public Func<DataTable> Load { get; set; } = default!;
+
+    private DataTable? _data;
+    private string? _error;
+
+    protected override Task OnInitializedAsync() => Reload();
+
+    private Task Reload() => Busy.RunAsync(() =>
+    {
+        try
+        {
+            _error = null;
+            _data = Load();
+        }
+        catch (Exception ex)
+        {
+            _error = ErrorPresenter.Describe(ex);
+        }
+    });
+}

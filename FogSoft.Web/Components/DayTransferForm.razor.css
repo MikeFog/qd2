@@ -1,0 +1,23 @@
+.facts {
+    display: grid;
+    grid-template-columns: max-content 1fr;
+    gap: var(--s-1) var(--s-4);
+    margin-bottom: var(--s-4);
+}
+
+.facts dt {
+    font-weight: normal;
+    color: var(--c-text-muted);
+}
+
+.facts dd {
+    margin: 0;
+}
+
+.field {
+    display: flex;
+    flex-direction: column;
+    gap: var(--s-1);
+    max-width: 200px;
+    color: var(--c-text-muted);
+}

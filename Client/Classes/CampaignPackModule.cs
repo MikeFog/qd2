@@ -57,13 +57,13 @@ namespace Merlin.Classes
 			}
 		}
 
-		private void ShowPackModules()
+		internal void ShowPackModules()
 		{
 			ChildEntity = EntityManager.GetEntity((int)Entities.PackModuleInCampaign);
 			FireContainerRefreshed();
 		}
 
-		private void ShowDays()
+		internal void ShowDays()
 		{
 			ChildEntity = EntityManager.GetEntity((int)Entities.PackCampaignDay);
 			FireContainerRefreshed();

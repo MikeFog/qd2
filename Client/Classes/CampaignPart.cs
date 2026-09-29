@@ -35,6 +35,25 @@ namespace Merlin.Classes
             ShowPriceChangeMessage(price, newPrice);
         }
 
+        /// <summary>
+        /// То же, что <see cref="RecalculateAndShowPriceChange"/>, но текст сообщения
+        /// возвращается, а не показывается — для веба.
+        /// </summary>
+        internal string RecalculateWithPriceMessage(decimal price)
+        {
+            Campaign?.RecalculateAction();
+            decimal newPrice = (Campaign != null && Campaign.Action != null) ? Campaign.Action.TotalPrice : decimal.Zero;
+            return PriceChangeText(price, newPrice);
+        }
+
+        /// <summary>Текст сообщения о смене цены акции (ключ и подстановка — <see cref="GetPriceChangeMessage"/>).</summary>
+        internal static string PriceChangeText(decimal price, decimal newPrice)
+        {
+            string messageKey = GetPriceChangeMessage(price, newPrice, out Dictionary<string, object> msgParameters);
+            MessageAccessor.Parameters = msgParameters;
+            return MessageAccessor.GetMessage(messageKey);
+        }
+
         public static void ShowPriceChangeMessage(decimal price, decimal newPrice)
         {
             string messageKey = GetPriceChangeMessage(price, newPrice, out Dictionary<string, object> msgParameters);

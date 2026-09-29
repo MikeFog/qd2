@@ -1,6 +1,5 @@
 using System;
 using System.Data;
-using System.Diagnostics;
 using System.Windows.Forms;
 using FogSoft.WinForm;
 using FogSoft.WinForm.Classes;
@@ -8,9 +7,9 @@ using FogSoft.WinForm.Forms;
 
 namespace Merlin.Classes
 {
-	// UI-часть ActionRoller: диспетчеризация, диалог замены ролика (кластер,
-	// не разрезан, §8 п.4) и диалог смены предмета рекламы. Бизнес-часть смены
-	// предмета рекламы (ApplyAdvertTypeChange) — в ActionRoller.cs.
+	// UI-часть ActionRoller: диспетчеризация, диалог замены ролика во всей акции
+	// и диалог смены предмета рекламы. Запись (ApplyActionSubstitution,
+	// ApplyAdvertTypeChange) — в ActionRoller.cs.
 	// Конвенция — docs/tasks/web-migration-dialogs.md.
 	internal partial class ActionRoller
 	{
@@ -29,7 +28,7 @@ namespace Merlin.Classes
 			try
 			{
 				Entity entity = EntityManager.GetEntity((int)Entities.Roller);
-				ActionOnMassmedia action = new ActionOnMassmedia((int)this[Action.ParamNames.ActionId]);
+				ActionOnMassmedia action = ActionOfRoller();
 
 				SelectionForm form = new SelectionForm(entity, action.Firm.GetRollers().DefaultView, "Замена ролика");
 				if (form.ShowDialog(owner) == DialogResult.OK)
@@ -37,53 +36,11 @@ namespace Merlin.Classes
 					owner.UseWaitCursor = true;
 					Application.DoEvents();
 
-					var newRollerId = (int)form.SelectedObject.IDs[0];
 					decimal price = action.TotalPrice;
-
-					foreach (DataRow campaignrRow in action.Campaigns().Rows)
-					{
-						CampaignOnSingleMassmedia campaign = new CampaignOnSingleMassmedia(campaignrRow);
-						// Журнал незаменённых роликов показывается внутри цикла, по разу
-						// на каждую кампанию/модуль/пакет — как было, когда показ сидел
-						// внутри самой записи в БД. Поведение сохранено намеренно:
-						// при незаменённых роликах в нескольких кампаниях пользователь
-						// по-прежнему увидит несколько журналов подряд.
-						if (campaign.CampaignType == Campaign.CampaignTypes.Simple ||
-							campaign.CampaignType == Campaign.CampaignTypes.Sponsor)
-							CampaignRoller.ShowUnsubstitutedRollers(
-								CampaignRoller.ApplyRollerSubstitutionForDays(campaign, this, new Roller(newRollerId), campaign.Days(this), null, null));
-						else if (campaign.CampaignType == Campaign.CampaignTypes.Module)
-						{
-							CampaignModule campaignModule = new CampaignModule(campaign.CampaignId)
-							{
-								ChildEntity = EntityManager.GetEntity((int)Entities.CampaignModule)
-							};
-							foreach (DataRow moduleRow in campaignModule.GetContent().Rows)
-							{
-								Module module = new Module(moduleRow);
-								CampaignRoller.ShowUnsubstitutedRollers(
-									CampaignRoller.ApplyRollerSubstitutionForDays(campaign, this, new Roller(newRollerId), campaign.Days(this), module.ModuleId, null));
-							}
-
-						}
-						else if (campaign.CampaignType == Campaign.CampaignTypes.PackModule)
-						{
-							CampaignPackModule campaignPackModule = new CampaignPackModule(campaign.CampaignId)
-							{
-								ChildEntity = EntityManager.GetEntity((int)Entities.PackModuleInCampaign)
-							};
-							foreach (DataRow packModuleRow in campaignPackModule.GetContent().Rows)
-							{
-								PackModule packModule = new PackModule(packModuleRow);
-								CampaignRoller.ShowUnsubstitutedRollers(
-									CampaignRoller.ApplyRollerSubstitutionForDays(campaign, this, new Roller(newRollerId), campaign.Days(this), null, packModule.PackModuleId));
-							}
-						}
-						else
-						{
-							Debug.Assert(false, "Unknown campaign type");
-						}
-					}
+					// Журналы незаменённых роликов — по разу на каждую кампанию/модуль/пакет,
+					// как и раньше; теперь после записи всех, а не между ними.
+					foreach (DataTable unsubstituted in ApplyActionSubstitution(action, new Roller((int)form.SelectedObject.IDs[0])))
+						CampaignRoller.ShowUnsubstitutedRollers(unsubstituted);
 					action.Recalculate();
 					OnDataNeedRefresh();
 					CampaignPart.ShowPriceChangeMessage(price, action.TotalPrice);

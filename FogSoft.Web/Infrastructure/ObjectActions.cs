@@ -262,6 +262,8 @@ public sealed partial class ObjectActions
 		{
 			[Merlin.Classes.Action.ActionNames.ChangeFirm] = (s, t) => s.ChangeFirm((Merlin.Classes.Action)t),
 			[Merlin.Classes.Action.ActionNames.ChangeCreator] = (s, t) => s.ChangeCreator((Merlin.Classes.Action)t),
+			// «Назначить предмет рекламы или заменить ролик» — окно роликов акции (журнал 1244).
+			[Merlin.Classes.Action.ActionNames.SetAdvertType] = (s, t) => s.EditActionRollers((Merlin.Classes.Action)t),
 			// Документы из Word-шаблонов агентства (docs/tasks/web-reports.md §8), ObjectActions.Documents.cs.
 			[Merlin.Classes.Action.ActionNames.PrintContract] = (s, t) => s.PrintActionDocument((Merlin.Classes.Action)t, Merlin.Classes.Documents.DocumentKind.Contract),
 			[Merlin.Classes.Action.ActionNames.PrintSponsorContract] = (s, t) => s.PrintActionDocument((Merlin.Classes.Action)t, Merlin.Classes.Documents.DocumentKind.SponsorContract),
@@ -276,9 +278,8 @@ public sealed partial class ObjectActions
 			[Merlin.Classes.Action.ActionNames.PrintSponsorContract] = (s, t) => s.PrintFirmContract((Merlin.Classes.Firm)t, Merlin.Classes.Documents.DocumentKind.SponsorContract),
 		},
 		// ActionOnMassmedia.WinForms.cs, DoAction: операции журнала акций, которые решаются
-		// вопросом или выбором из списка. «Восстановить» ловит и удалённую акцию (ActionDeleted —
-		// наследник). Активация, «Разделить кампании», клон и массовая смена типа оплаты —
-		// следующие партии (свои окна).
+		// вопросом, выбором из списка или небольшим окном. «Восстановить» ловит и удалённую акцию
+		// (ActionDeleted — наследник). Активация, «Разделить кампании» и клон — следующие партии.
 		["ActionOnMassmedia"] = new()
 		{
 			[Merlin.Classes.Action.ActionNames.Recalculate] = (s, t) => s.RecalculateAction((Merlin.Classes.ActionOnMassmedia)t),
@@ -287,6 +288,7 @@ public sealed partial class ObjectActions
 			[Merlin.Classes.Action.ActionNames.SplitAction] = (s, t) => s.SplitAction((Merlin.Classes.ActionOnMassmedia)t),
 			[Merlin.Classes.Action.ActionNames.ActionRollers] = (s, t) => s.ShowActionRollers((Merlin.Classes.ActionOnMassmedia)t),
 			[Merlin.Classes.Action.ActionNames.Restore] = (s, t) => s.RestoreAction((Merlin.Classes.ActionOnMassmedia)t),
+			[Merlin.Classes.Action.ActionNames.ChangePaymentTypeMass] = (s, t) => s.ChangePaymentTypeMass((Merlin.Classes.ActionOnMassmedia)t),
 		},
 		// Campaign.WinForms.cs, DoAction: смена агентства и типа оплаты кампании — у всех
 		// видов кампаний (линейная, модульная, спонсорская, пакетная). Класс internal —
@@ -297,6 +299,25 @@ public sealed partial class ObjectActions
 			[Merlin.Classes.CampaignChange.ChangePaymentTypeAction] = (s, t) => s.ChangeCampaignPaymentType((PresentationObject)t),
 			// Эфирная справка из Word-шаблона агентства (ObjectActions.Documents.cs): кампания на станции и пакетный модуль.
 			[Merlin.Classes.Documents.ClientDocuments.PrintOnAirInquireAction] = (s, t) => s.PrintOnAirInquire((PresentationObject)t),
+			// Переключение узла кампании в дереве (дни / ролики / пакетные модули) — как у
+			// ActionContainer: сменилась дочерняя сущность, узел перечитывается. Доступность
+			// (только дерево, не текущий вид) решает IsActionEnabled кампании.
+			[Merlin.Classes.CampaignChange.ShowDaysAction] = (s, t) => s.Changed(() => Merlin.Classes.CampaignChange.ShowDays((PresentationObject)t)),
+			[Merlin.Classes.CampaignChange.ShowRollersAction] = (s, t) => s.Changed(() => Merlin.Classes.CampaignChange.ShowRollers((PresentationObject)t)),
+			[Merlin.Classes.CampaignChange.ShowPackModulesAction] = (s, t) => s.Changed(() => Merlin.Classes.CampaignChange.ShowPackModules((PresentationObject)t)),
+		},
+		// CampaignDay.WinForms.cs, DoAction: «Перенос дня» — дни линейной, модульной и пакетной
+		// кампании (ModuleCampaignDay, CampaignPackDay — наследники). Вход — CampaignDayTransfer.
+		["CampaignDay"] = new()
+		{
+			[Merlin.Classes.CampaignDayTransfer.TransferAction] = (s, t) => s.TransferDay((PresentationObject)t),
+		},
+		// ActionRoller.WinForms.cs, DoAction: строки окна роликов акции. CommonRoller (ролик
+		// «для всех фирм») — наследник, отличие внутри ActionRollerChange.SetAdvertType.
+		["ActionRoller"] = new()
+		{
+			[Merlin.Classes.ActionRollerChange.SetAdvertTypeAction] = (s, t) => s.SetActionRollerAdvertType((PresentationObject)t),
+			[Merlin.Classes.ActionRollerChange.SubstituteAction] = (s, t) => s.SubstituteActionRoller((PresentationObject)t),
 		},
 	};
 
@@ -1404,6 +1425,142 @@ public sealed partial class ObjectActions
 		await _busy.RunAsync(action.ApplyRestore);
 		await ShowInfo(Tr.T("Восстановить рекламную акцию"), MessageAccessor.GetMessage("ActionRestored"));
 		return ActionEffect.Deleted;
+	}
+
+	// ---------- Партия 2: небольшие окна ----------
+
+	/// <summary>
+	/// ActionOnMassmedia.ChangePaymentTypeMass: тип оплаты из действующих и кампании
+	/// галочками (ChangePaymentTypeMassForm), затем по одной кампании best-effort; отказы —
+	/// таблицей. «ОК» без типа или без кампаний — сообщение, окно остаётся (в десктопе
+	/// кнопка просто погашена).
+	/// </summary>
+	private async Task<ActionEffect> ChangePaymentTypeMass(Merlin.Classes.ActionOnMassmedia action)
+	{
+		var model = await _busy.RunAsync(() => new PaymentTypeMassForm.Model
+		{
+			PaymentTypes = Merlin.Classes.ActionOnMassmedia.LoadActivePaymentTypes(),
+			CampaignEntity = Merlin.Classes.ActionOnMassmedia.CampaignListEntity(),
+			Campaigns = action.Campaigns(),
+		});
+
+		while (true)
+		{
+			if (await _dialogs.ShowAsync(Tr.T("Сменить тип оплаты"), builder =>
+				{
+					builder.OpenComponent<PaymentTypeMassForm>(0);
+					builder.AddComponentParameter(1, nameof(PaymentTypeMassForm.Value), model);
+					builder.CloseComponent();
+				}, okText: Tr.T("Сменить"), wide: true) != DialogOutcome.Ok)
+				return ActionEffect.None;
+
+			model.Message = model.PaymentTypeId == null ? Tr.T("Выберите тип оплаты.")
+				: model.Selected.Count == 0 ? MessageAccessor.GetMessage("NoCampaignSelected")
+				: null;
+			if (model.Message == null)
+				break;
+		}
+
+		DataTable? errors = null;
+		await _busy.RunAsync(() => action.ApplyPaymentTypeChangeMass(model.PaymentTypeId!.Value, model.Selected, out errors));
+		if (errors is { Rows.Count: > 0 })
+			await _tables.ShowAsync(Tr.T("Ошибки смены типа оплаты"), errors,
+				new Entity.Attribute("description", "Ошибка", "nvarchar")); // i18n-ok: Alias переводится при показе (ObjectList)
+		return ActionEffect.Changed;
+	}
+
+	/// <summary>
+	/// CampaignDay.TransferDay: исходный день, срок прайс-листа, новая дата; после
+	/// переноса — сообщение о цене акции, как RecalculateAndShowPriceChange десктопа.
+	/// Отказ процедуры (занятое окно и т.п.) — обычная ошибка действия.
+	/// </summary>
+	private async Task<ActionEffect> TransferDay(PresentationObject day)
+	{
+		var model = await _busy.RunAsync(() =>
+		{
+			DateTime source = Merlin.Classes.CampaignDayTransfer.Day(day);
+			return new DayTransferForm.Model
+			{
+				Source = source,
+				Target = source,
+				Pricelist = Merlin.Classes.CampaignDayTransfer.PricelistPeriod(day),
+			};
+		});
+
+		while (true)
+		{
+			if (await _dialogs.ShowAsync(Tr.T("Перенос дня"), builder =>
+				{
+					builder.OpenComponent<DayTransferForm>(0);
+					builder.AddComponentParameter(1, nameof(DayTransferForm.Value), model);
+					builder.CloseComponent();
+				}, okText: Tr.T("Перенести")) != DialogOutcome.Ok)
+				return ActionEffect.None;
+
+			// В десктопе «ОК» с той же датой уходит в процедуру; здесь — просто нечего делать.
+			model.Message = model.Target.Date == model.Source.Date ? Tr.T("Выберите другую дату.") : null;
+			if (model.Message == null)
+				break;
+		}
+
+		string priceMessage = await _busy.RunAsync(() => Merlin.Classes.CampaignDayTransfer.Apply(day, model.Target.Date));
+		await ShowInfo(Tr.T("Перенос дня"), priceMessage);
+		return ActionEffect.SiblingAdded;
+	}
+
+	/// <summary>
+	/// Action.SetAdvertTypeOrSubstituteRoller: окно со списком роликов акции (журнал 1244),
+	/// у строк — «Назначить предмет рекламы» и «Заменить рекламный ролик». Список
+	/// перечитывается после каждого действия; по закрытии перечитывается и сама акция.
+	/// </summary>
+	private async Task<ActionEffect> EditActionRollers(Merlin.Classes.Action action)
+	{
+		Entity entity = EntityManager.GetEntity((int)Merlin.Entities.ActionRollers);
+		int actionId = action.ActionId;
+		await _dialogs.ShowAsync(Tr.Format("Ролики рекламной акции № {0}", actionId), builder =>
+		{
+			builder.OpenComponent<LiveObjectList>(0);
+			builder.AddComponentParameter(1, nameof(LiveObjectList.Entity), entity);
+			builder.AddComponentParameter(2, nameof(LiveObjectList.Load), (Func<DataTable>)(() => Merlin.Classes.ActionRollerChange.Load(actionId)));
+			builder.CloseComponent();
+		}, okText: Tr.T("Закрыть"), wide: true);
+		return ActionEffect.Changed;
+	}
+
+	/// <summary>ActionRoller.SetAdvertType: выбор предмета рекламы, запись.</summary>
+	private async Task<ActionEffect> SetActionRollerAdvertType(PresentationObject roller)
+	{
+		Entity entity = EntityManager.GetEntity((int)Merlin.Entities.AdvertTypeChild);
+		DataRow? advertType = (await PickAsync(Tr.T("Выбор предмета рекламы"), entity, null, Tr.T("Назначить")))?[0];
+		if (advertType == null)
+			return ActionEffect.None;
+
+		await _busy.RunAsync(() => Merlin.Classes.ActionRollerChange.SetAdvertType(roller, PickedId(entity, advertType)));
+		return ActionEffect.Changed;
+	}
+
+	/// <summary>
+	/// ActionRoller.SubstituteRoller: новый ролик из роликов фирмы — во всех кампаниях
+	/// акции сразу. Незаменённые — одной таблицей (десктоп показывает журнал на каждую
+	/// кампанию), затем сообщение о цене акции.
+	/// </summary>
+	private async Task<ActionEffect> SubstituteActionRoller(PresentationObject roller)
+	{
+		Entity rollers = EntityManager.GetEntity((int)Merlin.Entities.Roller);
+		DataTable candidates = await _busy.RunAsync(() => Merlin.Classes.ActionRollerChange.SubstituteCandidates(roller));
+		DataRow? picked = (await PickAsync(Tr.T("Замена ролика"), rollers, candidates, Tr.T("Заменить")))?[0];
+		if (picked == null)
+			return ActionEffect.None;
+
+		var (unsubstituted, priceMessage) = await _busy.RunAsync(() =>
+			Merlin.Classes.ActionRollerChange.Substitute(roller, Convert.ToInt32(PickedId(rollers, picked))));
+
+		if (unsubstituted != null)
+			await _tables.ShowAsync(Tr.T("Незамененные ролики"), unsubstituted,
+				new Entity.Attribute("windowDateOriginal", "Дата выпуска", "datetime"), // i18n-ok: Alias переводится при показе (ObjectList)
+				new Entity.Attribute("message", "Ошибка", "nvarchar")); // i18n-ok: Alias переводится при показе (ObjectList)
+		await ShowInfo(Tr.T("Замена ролика"), priceMessage);
+		return ActionEffect.Changed;
 	}
 
 	/// <summary>Campaign.ChangeAgency: правило «можно ли», агентства по правам, запись.</summary>

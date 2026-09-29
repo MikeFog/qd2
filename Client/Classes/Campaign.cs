@@ -387,7 +387,14 @@ namespace Merlin.Classes
 			Refresh();
 		}
 
-		private void ShowRollers()
+		/// <summary>«Показать дни выхода» у линейной и спонсорской кампании.</summary>
+		internal void ShowDaysView()
+		{
+			ChildEntity = EntityManager.GetEntity((int) Entities.CampaignDay);
+			FireContainerRefreshed();
+		}
+
+		internal void ShowRollers()
 		{
 			if (entity.Id == (int) Entities.GeneralCampaign)
 				ChildEntity = EntityManager.GetEntity((int) Entities.CampaignRoller);
@@ -621,5 +628,35 @@ namespace Merlin.Classes
 
 		public static void ApplyPaymentType(PresentationObject campaign, int paymentTypeId) =>
 			((Campaign)campaign).ApplyPaymentTypeChange(paymentTypeId);
+
+		public const string ShowDaysAction = Campaign.ActionNames.ShowDays;
+		public const string ShowRollersAction = Campaign.ActionNames.ShowRollers;
+		public const string ShowPackModulesAction = CampaignPackModule.PackActionNames.ShowPackModules;
+
+		/// <summary>
+		/// Переключение узла кампании в дереве на дни выхода — та ветка DoAction, что у
+		/// вида кампании в десктопе: у модульной и пакетной свои сущности дней.
+		/// </summary>
+		public static void ShowDays(PresentationObject campaign)
+		{
+			switch (campaign)
+			{
+				case CampaignModule module: module.ShowModuleDays(); break;
+				case CampaignPackModule pack: pack.ShowDays(); break;
+				default: ((Campaign)campaign).ShowDaysView(); break;
+			}
+		}
+
+		/// <summary>Переключение на ролики (у модульной — на модули).</summary>
+		public static void ShowRollers(PresentationObject campaign)
+		{
+			if (campaign is CampaignModule module)
+				module.ShowModuleRollers();
+			else
+				((Campaign)campaign).ShowRollers();
+		}
+
+		/// <summary>Переключение пакетной кампании на её пакетные модули.</summary>
+		public static void ShowPackModules(PresentationObject campaign) => ((CampaignPackModule)campaign).ShowPackModules();
 	}
 }

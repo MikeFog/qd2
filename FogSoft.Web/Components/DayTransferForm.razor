@@ -1,0 +1,46 @@
+@using FogSoft.Web.Infrastructure
+@using FogSoft.WinForm.Classes
+
+@*
+    Содержимое диалога «Перенос дня» — веб-аналог десктопного TransferDayForm:
+    исходный день, срок прайс-листа станции на этот день и новая дата.
+    Значение пишется прямо в модель — её читает ObjectActions по «ОК».
+*@
+
+@if (Value.Message != null)
+{
+    <div class="alert alert-danger">@Value.Message</div>
+}
+
+<dl class="facts">
+    <dt>@Tr.T("Переносимый день")</dt>
+    <dd class="tabular">@DisplayFormat.Date(Value.Source)</dd>
+    <dt>@Tr.T("Прайс-лист действует")</dt>
+    <dd class="tabular">
+        @if (Value.Pricelist is { } p)
+        {
+            @Tr.Format("с {0} по {1}", DisplayFormat.Date(p.Start), DisplayFormat.Date(p.Finish))
+        }
+        else
+        {
+            @Tr.T("прайс-листа на этот день нет")
+        }
+    </dd>
+</dl>
+
+<label class="field">
+    @Tr.T("Перенести на")
+    <input type="date" class="form-control form-control-sm" @bind="Value.Target" />
+</label>
+
+@code {
+    [Parameter, EditorRequired] public Model Value { get; set; } = default!;
+
+    public sealed class Model
+    {
+        public DateTime Source { get; init; }
+        public (DateTime Start, DateTime Finish)? Pricelist { get; init; }
+        public DateTime Target { get; set; }
+        public string? Message { get; set; }
+    }
+}
