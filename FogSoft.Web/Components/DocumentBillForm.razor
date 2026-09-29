@@ -6,6 +6,7 @@
     счёта, как десктопное «Дата и номер счёта» (FrmBill): выставленный счёт показывает свой
     номер, для нового номер уже взят из нумерации агентства; смена года даты берёт номер
     заново. Общий флажок «С подписью и печатью» — вместо вопроса десктопа при печати.
+    Для счёта по месяцам — ещё месяцы (как FrmMonths у Action.PrintBills), все отмечены.
 *@
 
 @if (Value.Message != null)
@@ -39,6 +40,20 @@
     </tbody>
 </table>
 
+@if (Value.Months != null)
+{
+    <div class="months">
+        <div class="text-muted">@Tr.T("Месяцы — счёт на каждый отмеченный месяц")</div>
+        @foreach (MonthItem month in Value.Months)
+        {
+            <label class="form-check">
+                <input type="checkbox" class="form-check-input" @bind="month.Checked" />
+                @month.Date.ToString("MMMM yyyy")
+            </label>
+        }
+    </div>
+}
+
 <label class="form-check">
     <input type="checkbox" class="form-check-input" @bind="Value.WithSignature" />
     @Tr.T("С подписью и печатью")
@@ -66,9 +81,17 @@
         public DateTime Date { get; set; }
     }
 
+    public sealed class MonthItem
+    {
+        public DateTime Date { get; init; }
+        public bool Checked { get; set; } = true;
+    }
+
     public sealed class Model
     {
         public List<Row> Rows { get; } = new();
+        /// <summary>Месяцы счёта «по месяцам»; null — обычный документ.</summary>
+        public List<MonthItem>? Months { get; init; }
         public bool WithSignature { get; set; } = true;
         /// <summary>Следующий номер счёта агентства на год (DocumentBills.NextNumber).</summary>
         public Func<int, int, int> NextNumber { get; init; } = default!;

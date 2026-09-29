@@ -1,0 +1,64 @@
+@using System.Globalization
+@using FogSoft.WinForm.Classes
+
+@*
+    Договор из карточки фирмы, без акции (ObjectActions.Documents): агентства с отметкой и
+    датой договора у каждого — как SelectCampaignsForm в режиме агентств (Firm.PrintContract),
+    плюс «С подписью и печатью» вместо вопроса десктопа при печати.
+*@
+
+@if (Value.Message != null)
+{
+    <div class="alert alert-danger">@Value.Message</div>
+}
+
+<table class="table table-sm align-middle">
+    <thead>
+        <tr>
+            <th></th>
+            <th>@Tr.T("Агентство")</th>
+            <th>@Tr.T("Дата договора")</th>
+        </tr>
+    </thead>
+    <tbody>
+        @foreach (Row row in Value.Rows)
+        {
+            <tr>
+                <td><input type="checkbox" class="form-check-input" @bind="row.Checked" /></td>
+                <td>@row.AgencyName</td>
+                <td>
+                    <input type="date" class="form-control form-control-sm" value="@row.Date?.ToString("yyyy-MM-dd")"
+                           @onchange="e => ChangeDate(row, e)" />
+                </td>
+            </tr>
+        }
+    </tbody>
+</table>
+
+<label class="form-check">
+    <input type="checkbox" class="form-check-input" @bind="Value.WithSignature" />
+    @Tr.T("С подписью и печатью")
+</label>
+
+@code {
+    [Parameter, EditorRequired] public Model Value { get; set; } = default!;
+
+    private static void ChangeDate(Row row, ChangeEventArgs e) =>
+        row.Date = DateTime.TryParseExact(e.Value?.ToString(), "yyyy-MM-dd", CultureInfo.InvariantCulture,
+            DateTimeStyles.None, out DateTime date) ? date : null;
+
+    public sealed class Row
+    {
+        public int AgencyId { get; init; }
+        public string AgencyName { get; init; } = "";
+        public bool Checked { get; set; }
+        public DateTime? Date { get; set; } = DateTime.Today;
+    }
+
+    public sealed class Model
+    {
+        public List<Row> Rows { get; } = new();
+        public bool WithSignature { get; set; } = true;
+        public string? Message { get; set; }
+    }
+}

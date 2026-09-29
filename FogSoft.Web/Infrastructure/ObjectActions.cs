@@ -262,9 +262,18 @@ public sealed partial class ObjectActions
 		{
 			[Merlin.Classes.Action.ActionNames.ChangeFirm] = (s, t) => s.ChangeFirm((Merlin.Classes.Action)t),
 			[Merlin.Classes.Action.ActionNames.ChangeCreator] = (s, t) => s.ChangeCreator((Merlin.Classes.Action)t),
-			// Договоры из Word-шаблонов агентства (docs/tasks/web-reports.md §8), ObjectActions.Documents.cs.
-			[Merlin.Classes.Action.ActionNames.PrintContract] = (s, t) => s.PrintContract((Merlin.Classes.Action)t, Merlin.Classes.Documents.DocumentKind.Contract),
-			[Merlin.Classes.Action.ActionNames.PrintSponsorContract] = (s, t) => s.PrintContract((Merlin.Classes.Action)t, Merlin.Classes.Documents.DocumentKind.SponsorContract),
+			// Документы из Word-шаблонов агентства (docs/tasks/web-reports.md §8), ObjectActions.Documents.cs.
+			[Merlin.Classes.Action.ActionNames.PrintContract] = (s, t) => s.PrintActionDocument((Merlin.Classes.Action)t, Merlin.Classes.Documents.DocumentKind.Contract),
+			[Merlin.Classes.Action.ActionNames.PrintSponsorContract] = (s, t) => s.PrintActionDocument((Merlin.Classes.Action)t, Merlin.Classes.Documents.DocumentKind.SponsorContract),
+			[Merlin.Classes.Action.ActionNames.PrintBillContract] = (s, t) => s.PrintActionDocument((Merlin.Classes.Action)t, Merlin.Classes.Documents.DocumentKind.BillContract),
+			[Merlin.Classes.Action.ActionNames.PrintBill] = (s, t) => s.PrintActionDocument((Merlin.Classes.Action)t, Merlin.Classes.Documents.DocumentKind.Bill),
+			[Merlin.Classes.Action.ActionNames.PrintBillByMounth] = (s, t) => s.PrintActionDocument((Merlin.Classes.Action)t, Merlin.Classes.Documents.DocumentKind.Bill, byMonth: true),
+		},
+		// Firm.WinForms.cs, DoAction: договор из карточки фирмы, без акции (ObjectActions.Documents.cs).
+		["Firm"] = new()
+		{
+			[Merlin.Classes.Action.ActionNames.PrintContract] = (s, t) => s.PrintFirmContract((Merlin.Classes.Firm)t, Merlin.Classes.Documents.DocumentKind.Contract),
+			[Merlin.Classes.Action.ActionNames.PrintSponsorContract] = (s, t) => s.PrintFirmContract((Merlin.Classes.Firm)t, Merlin.Classes.Documents.DocumentKind.SponsorContract),
 		},
 		// ActionOnMassmedia.WinForms.cs, DoAction: операции журнала акций, которые решаются
 		// вопросом или выбором из списка. «Восстановить» ловит и удалённую акцию (ActionDeleted —
@@ -286,6 +295,8 @@ public sealed partial class ObjectActions
 		{
 			[Merlin.Classes.CampaignChange.ChangeAgencyAction] = (s, t) => s.ChangeCampaignAgency((PresentationObject)t),
 			[Merlin.Classes.CampaignChange.ChangePaymentTypeAction] = (s, t) => s.ChangeCampaignPaymentType((PresentationObject)t),
+			// Эфирная справка из Word-шаблона агентства (ObjectActions.Documents.cs): кампания на станции и пакетный модуль.
+			[Merlin.Classes.Documents.ClientDocuments.PrintOnAirInquireAction] = (s, t) => s.PrintOnAirInquire((PresentationObject)t),
 		},
 	};
 

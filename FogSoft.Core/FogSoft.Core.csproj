@@ -211,6 +211,7 @@
     <Compile Include="..\Client\Classes\Documents\DocumentTemplateStore.cs" Link="Domain\Documents\DocumentTemplateStore.cs" />
     <Compile Include="..\Client\Classes\Documents\DocumentFields.cs" Link="Domain\Documents\DocumentFields.cs" />
     <Compile Include="..\Client\Classes\Documents\ClientDocuments.cs" Link="Domain\Documents\ClientDocuments.cs" />
+    <Compile Include="..\Client\Classes\Documents\ClientDocuments.Files.cs" Link="Domain\Documents\ClientDocuments.Files.cs" />
     <Compile Include="..\Client\Classes\Documents\StartingTemplates.cs" Link="Domain\Documents\StartingTemplates.cs" />
     <Compile Include="..\Client\Classes\Documents\DocumentBills.cs" Link="Domain\Documents\DocumentBills.cs" />
     <Compile Include="..\Client\Reports\QrPaymentHelper.cs" Link="Domain\Documents\QrPaymentHelper.cs" />

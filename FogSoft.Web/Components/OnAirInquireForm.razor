@@ -1,0 +1,44 @@
+@using FogSoft.WinForm.Classes
+
+@*
+    Окно эфирной справки (ObjectActions.Documents): месяцы кампании и «Включать цену» — как
+    FrmMonths в CampaignOnSingleMassmedia.PrintOnAirInquire, плюс «С подписью и печатью»
+    радиостанции вместо вопроса десктопа при печати.
+*@
+
+@if (Value.Message != null)
+{
+    <div class="alert alert-danger">@Value.Message</div>
+}
+
+<div class="months">
+    <div class="text-muted">@Tr.T("Месяцы — справка на каждый отмеченный месяц")</div>
+    @foreach (DocumentBillForm.MonthItem month in Value.Months)
+    {
+        <label class="form-check">
+            <input type="checkbox" class="form-check-input" @bind="month.Checked" />
+            @month.Date.ToString("MMMM yyyy")
+        </label>
+    }
+</div>
+
+<label class="form-check">
+    <input type="checkbox" class="form-check-input" @bind="Value.WithPrice" />
+    @Tr.T("Включать цену")
+</label>
+<label class="form-check">
+    <input type="checkbox" class="form-check-input" @bind="Value.WithSignature" />
+    @Tr.T("С подписью и печатью")
+</label>
+
+@code {
+    [Parameter, EditorRequired] public Model Value { get; set; } = default!;
+
+    public sealed class Model
+    {
+        public List<DocumentBillForm.MonthItem> Months { get; init; } = new();
+        public bool WithPrice { get; set; }
+        public bool WithSignature { get; set; } = true;
+        public string? Message { get; set; }
+    }
+}

@@ -1,0 +1,6 @@
+.months {
+    display: flex;
+    flex-direction: column;
+    gap: var(--s-1);
+    margin-bottom: var(--s-3);
+}

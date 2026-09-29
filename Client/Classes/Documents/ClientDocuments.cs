@@ -18,7 +18,7 @@ namespace Merlin.Classes.Documents
 	/// (<c>rpt_GenericBill</c>, сумма прописью, QR), <c>ContractReport</c> (ставка НДС),
 	/// <c>OnAirInquireReport</c> (выходы, цена за месяц).
 	/// </summary>
-	public static class ClientDocuments
+	public static partial class ClientDocuments
 	{
 		/// <summary>Как у десктопа для пустых «в лице» и «регистрации» фирмы — линия для заполнения от руки.</summary>
 		private const string Blank = "_________________________";
@@ -144,25 +144,6 @@ namespace Merlin.Classes.Documents
 		}
 
 		/// <summary>
-		/// Договор или спонсорский договор по акции — готовый .docx: шаблон агентства на дату счёта
-		/// (или начальный из «Текста отчётов»), заполненный данными. Имя — как у десктопа
-		/// («Договор №12 к акции 345 для …»). Ошибка шаблона — <see cref="DocumentTemplateException"/>.
-		/// </summary>
-		public static ExportFile ContractFile(Action action, Agency agency, DocumentKind kind, DocumentBill bill,
-			bool withSignature)
-		{
-			string number = bill.Number.ToString(CultureInfo.CurrentCulture);
-			byte[] template = StartingTemplates.ForPrint(agency.AgencyId, kind, bill.Date);
-			DocumentData data = Contract(action, null, agency, bill.Date, number, withSignature);
-			return new ExportFile
-			{
-				Name = SafeFileName(Tr.Format("{0} №{1} к акции {2} для {3}", KindName(kind), number, action.ActionId,
-					action.FirmName)) + ".docx",
-				Content = DocxTemplate.Render(template, data)
-			};
-		}
-
-		/// <summary>
 		/// Данные документа для примерки шаблона на акции (экран «Шаблоны документов»): номер и дата —
 		/// из выставленного счёта агентства (нет счёта — номер 0 и сегодня), подписи включены;
 		/// эфирная справка — по первой кампании акции на одной радиостанции (своего агентства,
@@ -194,13 +175,6 @@ namespace Merlin.Classes.Documents
 					}
 					return OnAirInquire(campaign, agency, campaign.Massmedia, campaign.StartDate, true, true);
 			}
-		}
-
-		private static string SafeFileName(string name)
-		{
-			foreach (char c in System.IO.Path.GetInvalidFileNameChars())
-				name = name.Replace(c, '_');
-			return name;
 		}
 
 		/// <summary>

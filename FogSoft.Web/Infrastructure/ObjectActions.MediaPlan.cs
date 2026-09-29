@@ -30,6 +30,8 @@ public sealed partial class ObjectActions
 		{
 			[MediaPlanJob.ActJournalRowAction] = (s, t) => s.PrintMediaPlan(
 				() => MediaPlanJob.ForActJournalRow((PresentationObject)t), MediaPlanJob.Breakdown.Whole),
+			// Эфирная справка строки акта — ObjectActions.Documents.cs.
+			[Merlin.Classes.Documents.ClientDocuments.PrintOnAirInquireAction] = (s, t) => s.PrintOnAirInquire((PresentationObject)t),
 		};
 	}
 
