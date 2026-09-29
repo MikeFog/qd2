@@ -64,12 +64,14 @@ namespace Merlin.Classes.Documents
 			public const string TaxSum = "НДС.Сумма";
 			public const string Total = "Сумма";
 			public const string TotalInWords = "СуммаПрописью";
+			public const string TotalWithoutTax = "СуммаБезНДС";
 
 			public const string Rows = "Строки";
 			public const string RowNumber = "Номер";
 			public const string RowName = "Наименование";
 			public const string RowQuantity = "Количество";
 			public const string RowSum = "Сумма";
+			public const string RowSumWithoutTax = "СуммаБезНДС";
 			public const string RowTax = "НДС";
 
 			public const string ForMonth = "ЗаМесяц";
@@ -91,6 +93,8 @@ namespace Merlin.Classes.Documents
 			public const string IssueDate = "Дата";
 			public const string IssueTime = "Время";
 			public const string WithPrice = "СЦеной";
+			public const string IssueCount = "ВсегоВыходов";
+			public const string HasSponsorIssues = "ЕстьСпонсорскиеВыходы";
 		}
 
 		/// <summary>Поля шаблона документа данного вида (описания — на языке пользователя).</summary>
@@ -114,6 +118,7 @@ namespace Merlin.Classes.Documents
 					fields.AddRange(DocumentHeaderFields());
 					fields.AddRange(TaxRateFields());
 					fields.AddRange(SumFields());
+					fields.Add(Text(Names.TotalWithoutTax, "Сумма без НДС"));
 					fields.AddRange(ManagerFields());
 					fields.Add(new DocumentField(Names.Rows, DocumentFieldKind.List, Tr.T("Строки счёта: радиостанции и программы"), new[]
 					{
@@ -121,6 +126,7 @@ namespace Merlin.Classes.Documents
 						Text(Names.RowName, "Наименование услуги (текст из настроек счёта и радиостанции)"),
 						Text(Names.RowQuantity, "Количество выходов"),
 						Text(Names.RowSum, "Сумма строки с НДС"),
+						Text(Names.RowSumWithoutTax, "Сумма строки без НДС"),
 						Text(Names.RowTax, "НДС в строке")
 					}));
 					fields.Add(Flag(Names.ForMonth, "Счёт за один месяц (печать счёта по месяцам)"));
@@ -140,7 +146,9 @@ namespace Merlin.Classes.Documents
 					fields.Add(Text(Names.StationCertificate, "Радиостанция: свидетельство о регистрации СМИ"));
 					fields.Add(Image(Names.StationSignature, "Радиостанция: подпись и печать (если при печати выбрано «С подписью и печатью»)"));
 					fields.Add(IssueList(Names.Issues, "Выходы роликов за месяц"));
+					fields.Add(Text(Names.IssueCount, "Количество выходов роликов за месяц"));
 					fields.Add(IssueList(Names.SponsorIssues, "Выходы спонсорских программ за месяц"));
+					fields.Add(Flag(Names.HasSponsorIssues, "За месяц были выходы спонсорских программ"));
 					break;
 			}
 			return fields;

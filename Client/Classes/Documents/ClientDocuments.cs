@@ -52,7 +52,8 @@ namespace Merlin.Classes.Documents
 			foreach (DataRow row in rows.Rows)
 			{
 				decimal rowSum = row["price"] == DBNull.Value ? 0 : Convert.ToDecimal(row["price"]);
-				decimal rowTax = row["tax"] == DBNull.Value ? 0 : Convert.ToDecimal(row["tax"]);
+				// НДС строки округляется до копеек, итог НДС — сумма округлённых (как формула fTaxRounded в GenericBill.rpt).
+				decimal rowTax = row["tax"] == DBNull.Value ? 0 : Math.Round(Convert.ToDecimal(row["tax"]), 2);
 				total += rowSum;
 				tax += rowTax;
 				data.AddItem(F.Rows)
@@ -60,11 +61,13 @@ namespace Merlin.Classes.Documents
 					.Set(F.RowName, row["name"].ToString())
 					.Set(F.RowQuantity, row["quantity"].ToString())
 					.Set(F.RowSum, FormatMoney(rowSum))
+					.Set(F.RowSumWithoutTax, FormatMoney(rowSum - rowTax))
 					.Set(F.RowTax, FormatMoney(rowTax));
 			}
 			// Как BillReport.CalculateBillTotal.
 			total = Math.Round(total, 2, MidpointRounding.ToEven);
 			SetSums(data, total, tax);
+			data.Set(F.TotalWithoutTax, FormatMoney(total - tax));
 
 			decimal rate = agency.GetTaxValue(date);
 			SetTaxRate(data, rate);
@@ -112,6 +115,8 @@ namespace Merlin.Classes.Documents
 
 			AddIssues(data, F.Issues, issues.Tables[0]);
 			AddIssues(data, F.SponsorIssues, issues.Tables.Count > 1 ? issues.Tables[1] : null);
+			data.Set(F.IssueCount, issues.Tables[0].Rows.Count.ToString(CultureInfo.CurrentCulture))
+				.SetFlag(F.HasSponsorIssues, issues.Tables.Count > 1 && issues.Tables[1].Rows.Count > 0);
 
 			data.SetFlag(F.WithPrice, withPrice);
 			decimal price = 0, taxPrice = 0;

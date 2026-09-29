@@ -236,6 +236,40 @@ internal static class Program
 		DocumentData onAir = ClientDocuments.OnAirInquire(campaign, agency, massmedia, new DateTime(2026, 8, 1), true, true);
 		Body onAirBody = Dump(DocumentKind.OnAirInquire, "on-air", onAir);
 		Check("документы: выходы эфирной справки", onAirBody.Descendants<Paragraph>().Count(p => p.InnerText.StartsWith("  Выходы: ")) == 431);
+
+		// Начальные шаблоны из «Текста отчётов» ArtvisDev: годны по каталогу и заполняются данными акции.
+		IDictionary<string, string> parts = StartingTemplates.LoadReportParts();
+		var filled = new Dictionary<DocumentKind, DocumentData>
+		{
+			{ DocumentKind.Contract, contract },
+			{ DocumentKind.SponsorContract, contract },
+			{ DocumentKind.Bill, bill },
+			{ DocumentKind.BillContract, bill },
+			{ DocumentKind.OnAirInquire, onAir }
+		};
+		foreach (KeyValuePair<DocumentKind, DocumentData> pair in filled)
+		{
+			byte[] template = StartingTemplates.Build(pair.Key, parts);
+			Save("start-" + pair.Key, template);
+			IList<string> errors = DocxTemplate.Validate(template, DocumentFields.For(pair.Key));
+			Check($"начальный шаблон «{pair.Key}» годен", errors.Count == 0, string.Join(" / ", errors));
+			try
+			{
+				byte[] result = DocxTemplate.Render(template, pair.Value);
+				Save("filled-" + pair.Key, result);
+				using (var doc = WordprocessingDocument.Open(new MemoryStream(result), false))
+				{
+					List<ValidationErrorInfo> invalid = new OpenXmlValidator().Validate(doc).ToList();
+					string text = doc.MainDocumentPart.Document.Body.InnerText;
+					Check($"начальный шаблон «{pair.Key}» заполнен", invalid.Count == 0 && !text.Contains("{{") && !System.Text.RegularExpressions.Regex.IsMatch(text, "@(agency|firm|actionID|billNo)"),
+						invalid.Count > 0 ? invalid[0].Description + " " + invalid[0].Path?.XPath : text.Substring(0, Math.Min(300, text.Length)));
+				}
+			}
+			catch (Exception e)
+			{
+				Check($"начальный шаблон «{pair.Key}» заполнен", false, e.Message);
+			}
+		}
 	}
 
 	/// <summary>Шаблон из всех полей каталога вида: проверка, заполнение, печать значений.</summary>
