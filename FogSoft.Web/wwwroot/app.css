@@ -377,3 +377,11 @@ a:hover {
         background: #fff !important;
     }
 }
+
+/* Boolean-колонка: галочка только при true, как десктопный
+   DataGridViewExBooleanCell — при false ячейка остаётся пустой.
+   Общая для списков (ObjectList), окон выбора (ObjectSelector) и selector-грида карточки. */
+.bool-check {
+    color: var(--c-accent);
+    font-weight: 700;
+}

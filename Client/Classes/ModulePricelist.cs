@@ -155,7 +155,7 @@ namespace Merlin.Classes
 		/// Loads module tariffes for this price list
 		/// </summary>
 		/// <returns></returns>
-		private DataTable LoadTariffList()
+		internal DataTable LoadTariffList()
 		{
 			DataAccessor.PrepareParameters(parameters, EntityManager.GetEntity((int) Entities.Tariff),
 			                               InterfaceObjects.Selector, Constants.Actions.LoadForSelection);
@@ -184,5 +184,23 @@ namespace Merlin.Classes
 		{
 			return EntityManager.GetEntity((int) Entities.ModulePricelist);
 		}
+	}
+
+	/// <summary>
+	/// «Редактировать рекламные окна» у прайс-листа модуля снаружи сборки (веб):
+	/// ModulePricelist internal. Тарифы станции с признаком «уже в модуле»; запись —
+	/// добавленные и снятые, как SelectionForm десктопа (Added/Deleted).
+	/// </summary>
+	public static class ModuleTariffList
+	{
+		public const string EditAction = "EditTariffList";
+
+		/// <summary>Колонка признака «тариф уже в модуле» (SmartGrid.COL_IsSelected).</summary>
+		public const string SelectedColumn = "isObjectSelected";
+
+		public static DataTable Load(PresentationObject modulePricelist) => ((ModulePricelist)modulePricelist).LoadTariffList();
+
+		public static void Apply(PresentationObject modulePricelist, IEnumerable<PresentationObject> added, IEnumerable<PresentationObject> removed) =>
+			((ModulePricelist)modulePricelist).ApplyTariffListChanges(added, removed);
 	}
 }

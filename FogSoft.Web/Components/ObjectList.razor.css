@@ -122,13 +122,6 @@
     }
 }
 
-/* Boolean-колонка: галочка только при true, как десктопный
-   DataGridViewExBooleanCell — при false ячейка остаётся пустой. */
-::deep .bool-check {
-    color: var(--c-accent);
-    font-weight: 700;
-}
-
 /* Строка, которую процедура пометила row_style = 'bold' (итог группы в
    статистике) — как десктопный SmartGrid.dataGrid_RowPrePaint, плюс фон. */
 ::deep tbody tr.row-bold > td {

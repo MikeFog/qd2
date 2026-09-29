@@ -178,6 +178,12 @@ public sealed partial class ObjectActions
 		{
 			[Merlin.Classes.BonusStatRow.OpenActionJournalAction] = (s, t) => s.OpenActionJournal((PresentationObject)t),
 		},
+		// ModulePricelist.DoAction: «Редактировать рекламные окна» — тарифы станции галочками,
+		// уже входящие в модуль отмечены; новые отметки добавляются, снятые — удаляются.
+		["ModulePricelist"] = new()
+		{
+			[Merlin.Classes.ModuleTariffList.EditAction] = (s, t) => s.EditModuleTariffs((PresentationObject)t),
+		},
 		// PackModulePricelist.AssignExisting: «Добавить модуль в пакет» — новая строка
 		// «Модули пакетного модуля» (135) с прайс-листом пакета, карточкой.
 		["PackModulePricelist"] = new()
@@ -1522,6 +1528,33 @@ public sealed partial class ObjectActions
 		return await _passports.ShowAsync(content, isNew: true) ? ActionEffect.ChildAdded : ActionEffect.None;
 	}
 
+	/// <summary>
+	/// ModulePricelist.EditTariffList: SelectionForm с чекбоксами по тарифам станции, отмечены
+	/// входящие в модуль (isObjectSelected с сервера); запись — разница: добавленные и снятые.
+	/// </summary>
+	private async Task<ActionEffect> EditModuleTariffs(PresentationObject modulePricelist)
+	{
+		Entity tariffs = EntityManager.GetEntity((int)Merlin.Entities.Tariff);
+		DataTable rows = await _busy.RunAsync(() => Merlin.Classes.ModuleTariffList.Load(modulePricelist));
+		string flag = Merlin.Classes.ModuleTariffList.SelectedColumn;
+		List<DataRow> before = rows.Columns.Contains(flag)
+			? rows.Rows.Cast<DataRow>().Where(r => r[flag] is true).ToList()
+			: new List<DataRow>();
+
+		IReadOnlyList<DataRow>? after = await PickAsync(Tr.T("Тарифы для модуля"), tariffs, rows, Tr.T("Сохранить"),
+			multiselect: true, initiallySelected: before);
+		if (after == null)
+			return ActionEffect.None;
+
+		var added = after.Except(before).Select(tariffs.CreateObject).ToList();
+		var removed = before.Except(after).Select(tariffs.CreateObject).ToList();
+		if (added.Count == 0 && removed.Count == 0)
+			return ActionEffect.None;
+
+		await _busy.RunAsync(() => Merlin.Classes.ModuleTariffList.Apply(modulePricelist, added, removed));
+		return ActionEffect.Changed;
+	}
+
 	/// <summary>ActionOnMassmedia.Restore: акция возвращается в журнал макетов.</summary>
 	private async Task<ActionEffect> RestoreAction(Merlin.Classes.ActionOnMassmedia action)
 	{
@@ -1767,12 +1800,14 @@ public sealed partial class ObjectActions
 	/// делегат SelectionForm: текст ошибки над списком, окно открыто снова с теми же отметками.
 	/// </summary>
 	/// <returns>Выбранные строки (одна без <paramref name="multiselect"/>); null — отказ.</returns>
+	/// <param name="initiallySelected">Отмеченные при открытии (набор уже привязанных объектов).</param>
 	private async Task<IReadOnlyList<DataRow>?> PickAsync(string caption, Entity entity, DataTable? rows, string okText,
-		bool multiselect = false, Func<IReadOnlyList<DataRow>, string?>? validate = null)
+		bool multiselect = false, Func<IReadOnlyList<DataRow>, string?>? validate = null,
+		IReadOnlyList<DataRow>? initiallySelected = null)
 	{
 		ObjectSelector? selector = null;
 		string? message = null;
-		IReadOnlyList<DataRow>? previouslySelected = null;
+		IReadOnlyList<DataRow>? previouslySelected = initiallySelected;
 
 		while (true)
 		{

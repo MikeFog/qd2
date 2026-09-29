@@ -54,8 +54,10 @@ else if (_access == JournalAccess.NotPorted)
         @Tr.T("Это не ограничение прав.")
     </div>
 }
-else if (_error != null)
+else if (_error != null && _entity == null)
 {
+    @* Экран не открылся — ошибка вместо него. Отказ действия или чтения узла на уже
+       открытом экране — плашкой над ним (ниже), экран остаётся. *@
     <div class="alert alert-danger">@_error</div>
 }
 else if (_entity == null)
@@ -64,6 +66,13 @@ else if (_entity == null)
 }
 else
 {
+    @if (_error != null)
+    {
+        <div class="alert alert-danger alert-dismissible screen-error" role="alert">
+            @_error
+            <button type="button" class="btn-close" aria-label="@(Tr.T("Закрыть"))" @onclick="() => _error = null"></button>
+        </div>
+    }
     <div class="journal">
 
     @* Тулбар — как JournalForm: Добавить | Обновить | Экспорт. «Изменить» и

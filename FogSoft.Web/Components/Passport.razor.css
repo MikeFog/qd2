@@ -78,13 +78,6 @@
     padding-right: 0;
 }
 
-/* Boolean-колонка selector-грида: галочка только при true, как десктопный
-   DataGridViewExBooleanCell — при false ячейка остаётся пустой. */
-::deep .bool-check {
-    color: var(--c-accent);
-    font-weight: 700;
-}
-
 
 /* Поле только для чтения по метаданным — значение текстом (ReadOnlyText). */
 .passport-readonly {

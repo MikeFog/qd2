@@ -78,7 +78,16 @@ else
                         }
                         @foreach (var a in _columns)
                         {
-                            <td>@Display(row, a)</td>
+                            @* Булева колонка — галочка при true, пусто при false, как в списках
+                               (ObjectList) и десктопном DataGridViewExBooleanCell. *@
+                            @if (IsBoolean(a.Name))
+                            {
+                                <td>@if (row[a.Name] is true) { <span class="bool-check">✓</span> }</td>
+                            }
+                            else
+                            {
+                                <td>@Display(row, a)</td>
+                            }
                         }
                     </tr>
                 }
