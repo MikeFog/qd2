@@ -244,8 +244,8 @@ namespace Merlin.Classes.Documents
 		}
 
 		/// <summary>
-		/// «НДС не облагается…» (блок <c>NoNDSText</c>). Десктоп печатал его в каждом счёте, даже
-		/// с колонкой «НДС (5%)»; здесь — только когда НДС нет (§8.5).
+		/// «НДС не облагается…» (блок <c>NoNDSText</c>) — только когда НДС нет (§8.5), как в десктопе:
+		/// там <c>txtTaxString</c> скрыт формулой Suppress (<c>Sum({@fTax})&lt;&gt;0</c> в GenericBill.rpt).
 		/// </summary>
 		private static Paragraph NoTaxText(IDictionary<string, string> parts, string font, int size, JustificationValues align)
 		{
