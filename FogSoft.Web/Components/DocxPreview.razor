@@ -1,0 +1,54 @@
+@using FogSoft.WinForm.Classes
+@inject IJSRuntime JS
+@implements IAsyncDisposable
+
+@*
+    Просмотр .docx внутри окна (ObjectActions.Documents): отрисовывает docx-preview в браузере
+    (wwwroot/js/docxPreview.js). Контейнер Blazor не трогает — его содержимое целиком за JS.
+*@
+
+@if (_error != null)
+{
+    <div class="alert alert-warning">@_error</div>
+}
+<div class="docx-preview" @ref="_container"></div>
+
+@code {
+    [Parameter, EditorRequired] public byte[] Content { get; set; } = default!;
+
+    private ElementReference _container;
+    private IJSObjectReference? _module;
+    private string? _error;
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (!firstRender)
+            return;
+        try
+        {
+            _module = await JS.InvokeAsync<IJSObjectReference>("import", "./js/docxPreview.js");
+            using var stream = new MemoryStream(Content);
+            using var reference = new DotNetStreamReference(stream);
+            await _module.InvokeVoidAsync("render", _container, reference);
+        }
+        catch (JSException e)
+        {
+            ErrorManager.LogError("DocxPreview: просмотр не удался", e); // i18n-ok: лог
+            _error = Tr.T("Показать документ не удалось — его можно скачать и открыть в Word.");
+            StateHasChanged();
+        }
+    }
+
+    public async ValueTask DisposeAsync()
+    {
+        if (_module == null)
+            return;
+        try
+        {
+            await _module.DisposeAsync();
+        }
+        catch (JSDisconnectedException)
+        {
+        }
+    }
+}

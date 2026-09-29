@@ -29,7 +29,7 @@ namespace Merlin.Classes.Documents
 
 		private static string Normalize(string name)
 		{
-			return name == null ? null : name.Replace('ё', 'е').Replace('Ё', 'Е');
+			return name == null ? null : name.Replace('ё', 'е').Replace('Ё', 'Е'); // i18n-ok: буквы алфавита, не текст
 		}
 
 		public bool Equals(string x, string y)

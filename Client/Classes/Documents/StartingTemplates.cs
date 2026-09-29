@@ -43,14 +43,7 @@ namespace Merlin.Classes.Documents
 
 		public static string FileName(DocumentKind kind)
 		{
-			switch (kind)
-			{
-				case DocumentKind.Bill: return Tr.T("Счёт") + ".docx";
-				case DocumentKind.OnAirInquire: return Tr.T("Эфирная справка") + ".docx";
-				case DocumentKind.BillContract: return Tr.T("Счёт-договор") + ".docx";
-				case DocumentKind.Contract: return Tr.T("Договор") + ".docx";
-				default: return Tr.T("Спонсорский договор") + ".docx";
-			}
+			return ClientDocuments.KindName(kind) + ".docx";
 		}
 
 		public static byte[] Build(DocumentKind kind, IDictionary<string, string> parts)
@@ -71,7 +64,7 @@ namespace Merlin.Classes.Documents
 			}
 		}
 
-		#region Документы
+		#region Документы // i18n-ok: имя региона кода
 
 		// Contract.rpt: Georgia 11, поля слева 2 см, остальные 1 см.
 		private static byte[] Contract(IDictionary<string, string> parts, string prefix, string title, string titleWithoutAction,
@@ -299,7 +292,7 @@ namespace Merlin.Classes.Documents
 
 		#endregion
 
-		#region Тексты «Текст отчётов» → Word
+		#region Тексты «Текст отчётов» → Word // i18n-ok: имя региона кода
 
 		/// <summary>@-метки десктопа (<c>GenericReport.GetTextPart</c>) → поля шаблона.</summary>
 		private static readonly Dictionary<string, string> LegacyTokens = new Dictionary<string, string>
@@ -337,7 +330,7 @@ namespace Merlin.Classes.Documents
 		/// </summary>
 		private static string TaxClause(string subject)
 		{
-			subject = Regex.Replace(subject, @"по\s+ставке\s+\d+([,.]\d+)?\s*%", "по ставке " + Tag(F.TaxRate) + "%");
+			subject = Regex.Replace(subject, @"по\s+ставке\s+\d+([,.]\d+)?\s*%", "по ставке " + Tag(F.TaxRate) + "%"); // i18n-ok: образец текста договора на русском
 			return Regex.Replace(subject, @"^(\s*\d+(?:\.\d+)*\.?\s*)(.*" + Regex.Escape(Tag(F.TaxRate)) + @".*?)\s*$",
 				m => m.Groups[1].Value + Tag("#" + F.WithTax) + m.Groups[2].Value + Tag("/" + F.WithTax)
 					+ Tag("^" + F.WithTax) + Tr.T("Услуги, оказываемые по данному договору, НДС не облагаются.") + Tag("/" + F.WithTax),
@@ -408,7 +401,7 @@ namespace Merlin.Classes.Documents
 
 		#endregion
 
-		#region Построение Word
+		#region Построение Word // i18n-ok: имя региона кода
 
 		private static string Tag(string name)
 		{

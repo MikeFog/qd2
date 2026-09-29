@@ -24,7 +24,7 @@
         @* modal-dialog-scrollable: длинная карточка прокручивается внутри
            окна, а кнопки остаются на месте. Без этого до «Сохранить» на
            паспорте радиостанции приходилось скроллить всю страницу. *@
-        <div class="modal-dialog modal-dialog-centered modal-dialog-scrollable modal-lg">
+        <div class="modal-dialog modal-dialog-centered modal-dialog-scrollable @(dialog.Wide ? "modal-xl" : "modal-lg")">
             <div class="modal-content">
                 <div class="modal-header">
                     <h5 class="modal-title">@dialog.Title</h5>

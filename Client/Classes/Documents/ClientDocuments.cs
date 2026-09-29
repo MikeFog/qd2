@@ -5,6 +5,7 @@ using System.Globalization;
 using System.Linq;
 using FogSoft.WinForm.Classes;
 using FogSoft.WinForm.DataAccess;
+using Merlin.Classes.GridExport;
 using Merlin.Reports;
 using F = Merlin.Classes.Documents.DocumentFields.Names;
 
@@ -127,6 +128,45 @@ namespace Merlin.Classes.Documents
 			SetSums(data, price, taxPrice);
 			SetTaxRate(data, agency.GetTaxValue(monthStart));
 			return data;
+		}
+
+		/// <summary>Название вида документа для заголовков и имён файлов.</summary>
+		public static string KindName(DocumentKind kind)
+		{
+			switch (kind)
+			{
+				case DocumentKind.Bill: return Tr.T("Счёт");
+				case DocumentKind.OnAirInquire: return Tr.T("Эфирная справка");
+				case DocumentKind.BillContract: return Tr.T("Счёт-договор");
+				case DocumentKind.Contract: return Tr.T("Договор");
+				default: return Tr.T("Спонсорский договор");
+			}
+		}
+
+		/// <summary>
+		/// Договор или спонсорский договор по акции — готовый .docx: шаблон агентства на дату счёта
+		/// (или начальный из «Текста отчётов»), заполненный данными. Имя — как у десктопа
+		/// («Договор №12 к акции 345 для …»). Ошибка шаблона — <see cref="DocumentTemplateException"/>.
+		/// </summary>
+		public static ExportFile ContractFile(Action action, Agency agency, DocumentKind kind, DocumentBill bill,
+			bool withSignature)
+		{
+			string number = bill.Number.ToString(CultureInfo.CurrentCulture);
+			byte[] template = StartingTemplates.ForPrint(agency.AgencyId, kind, bill.Date);
+			DocumentData data = Contract(action, null, agency, bill.Date, number, withSignature);
+			return new ExportFile
+			{
+				Name = SafeFileName(Tr.Format("{0} №{1} к акции {2} для {3}", KindName(kind), number, action.ActionId,
+					action.FirmName)) + ".docx",
+				Content = DocxTemplate.Render(template, data)
+			};
+		}
+
+		private static string SafeFileName(string name)
+		{
+			foreach (char c in System.IO.Path.GetInvalidFileNameChars())
+				name = name.Replace(c, '_');
+			return name;
 		}
 
 		/// <summary>

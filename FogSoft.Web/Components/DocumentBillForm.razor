@@ -1,0 +1,77 @@
+@using System.Globalization
+@using FogSoft.WinForm.Classes
+
+@*
+    Окно перед печатью договора (ObjectActions.Documents): по каждому агентству — номер и дата
+    счёта, как десктопное «Дата и номер счёта» (FrmBill): выставленный счёт показывает свой
+    номер, для нового номер уже взят из нумерации агентства; смена года даты берёт номер
+    заново. Общий флажок «С подписью и печатью» — вместо вопроса десктопа при печати.
+*@
+
+@if (Value.Message != null)
+{
+    <div class="alert alert-danger">@Value.Message</div>
+}
+
+<table class="table table-sm align-middle">
+    <thead>
+        <tr>
+            <th>@Tr.T("Агентство")</th>
+            <th>@Tr.T("Номер счёта")</th>
+            <th>@Tr.T("Дата")</th>
+        </tr>
+    </thead>
+    <tbody>
+        @foreach (Row row in Value.Rows)
+        {
+            <tr>
+                <td>@row.AgencyName</td>
+                <td>
+                    @row.Number
+                    <span class="text-muted small">@(row.Existing ? Tr.T("выставлен ранее") : Tr.T("новый"))</span>
+                </td>
+                <td>
+                    <input type="date" class="form-control form-control-sm" value="@row.Date.ToString("yyyy-MM-dd")"
+                           @onchange="e => ChangeDate(row, e)" />
+                </td>
+            </tr>
+        }
+    </tbody>
+</table>
+
+<label class="form-check">
+    <input type="checkbox" class="form-check-input" @bind="Value.WithSignature" />
+    @Tr.T("С подписью и печатью")
+</label>
+
+@code {
+    [Parameter, EditorRequired] public Model Value { get; set; } = default!;
+
+    private void ChangeDate(Row row, ChangeEventArgs e)
+    {
+        if (!DateTime.TryParseExact(e.Value?.ToString(), "yyyy-MM-dd", CultureInfo.InvariantCulture, DateTimeStyles.None, out DateTime date))
+            return;
+        // Как FrmBill.dtDate_ValueChanged: номер счёта — в нумерации года.
+        if (date.Year != row.Date.Year)
+            row.Number = Value.NextNumber(row.AgencyId, date.Year);
+        row.Date = date;
+    }
+
+    public sealed class Row
+    {
+        public int AgencyId { get; init; }
+        public string AgencyName { get; init; } = "";
+        public bool Existing { get; init; }
+        public int Number { get; set; }
+        public DateTime Date { get; set; }
+    }
+
+    public sealed class Model
+    {
+        public List<Row> Rows { get; } = new();
+        public bool WithSignature { get; set; } = true;
+        /// <summary>Следующий номер счёта агентства на год (DocumentBills.NextNumber).</summary>
+        public Func<int, int, int> NextNumber { get; init; } = default!;
+        public string? Message { get; set; }
+    }
+}

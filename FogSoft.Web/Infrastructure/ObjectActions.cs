@@ -262,6 +262,9 @@ public sealed partial class ObjectActions
 		{
 			[Merlin.Classes.Action.ActionNames.ChangeFirm] = (s, t) => s.ChangeFirm((Merlin.Classes.Action)t),
 			[Merlin.Classes.Action.ActionNames.ChangeCreator] = (s, t) => s.ChangeCreator((Merlin.Classes.Action)t),
+			// Договоры из Word-шаблонов агентства (docs/tasks/web-reports.md §8), ObjectActions.Documents.cs.
+			[Merlin.Classes.Action.ActionNames.PrintContract] = (s, t) => s.PrintContract((Merlin.Classes.Action)t, Merlin.Classes.Documents.DocumentKind.Contract),
+			[Merlin.Classes.Action.ActionNames.PrintSponsorContract] = (s, t) => s.PrintContract((Merlin.Classes.Action)t, Merlin.Classes.Documents.DocumentKind.SponsorContract),
 		},
 		// ActionOnMassmedia.WinForms.cs, DoAction: операции журнала акций, которые решаются
 		// вопросом или выбором из списка. «Восстановить» ловит и удалённую акцию (ActionDeleted —

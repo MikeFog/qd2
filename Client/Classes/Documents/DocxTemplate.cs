@@ -119,7 +119,7 @@ namespace Merlin.Classes.Documents
 				yield return footer;
 		}
 
-		#region Метки
+		#region Метки // i18n-ok: имя региона кода
 
 		private sealed class Tag
 		{
@@ -309,7 +309,7 @@ namespace Merlin.Classes.Documents
 
 		#endregion
 
-		#region Блоки
+		#region Блоки // i18n-ok: имя региона кода
 
 		private enum SectionShape
 		{
@@ -570,7 +570,7 @@ namespace Merlin.Classes.Documents
 
 		#endregion
 
-		#region Значения
+		#region Значения // i18n-ok: имя региона кода
 
 		private sealed class RenderContext
 		{
@@ -676,7 +676,7 @@ namespace Merlin.Classes.Documents
 
 		#endregion
 
-		#region Проверка
+		#region Проверка // i18n-ok: имя региона кода
 
 		private static void CheckBrokenTags(OpenXmlElement root, List<string> errors)
 		{

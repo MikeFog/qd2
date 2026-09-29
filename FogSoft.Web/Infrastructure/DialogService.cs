@@ -56,8 +56,9 @@ public sealed class DialogService
 	/// <param name="okText">Надпись на подтверждающей кнопке; null — «Сохранить».</param>
 	/// <param name="cancelText">Надпись на кнопке отказа; null — «Отмена».</param>
 	/// <param name="showOk">false — подтверждающей кнопки нет (окно прогресса).</param>
+	/// <param name="wide">Широкое окно — для просмотра документа.</param>
 	public async Task<DialogOutcome> ShowAsync(string title, RenderFragment body, string? okText = null,
-		string? cancelText = null, bool showOk = true)
+		string? cancelText = null, bool showOk = true, bool wide = false)
 	{
 		// Надписи по умолчанию переводятся здесь, в момент показа, а не в
 		// умолчаниях параметров: те вычисляются при компиляции.
@@ -71,7 +72,7 @@ public sealed class DialogService
 		var completion = new TaskCompletionSource<DialogOutcome>(
 			TaskCreationOptions.RunContinuationsAsynchronously);
 
-		_stack.Add(new Entry(new DialogRequest(title, body, okText, cancelText), completion));
+		_stack.Add(new Entry(new DialogRequest(title, body, okText, cancelText, wide), completion));
 		await NotifyAsync();
 
 		return await completion.Task;
@@ -112,4 +113,4 @@ public sealed class DialogService
 /// <param name="Body">Содержимое — любой компонент, например паспорт.</param>
 /// <param name="OkText">Надпись на подтверждающей кнопке; null — кнопки нет.</param>
 /// <param name="CancelText">Надпись на кнопке отказа.</param>
-public sealed record DialogRequest(string Title, RenderFragment Body, string? OkText, string CancelText);
+public sealed record DialogRequest(string Title, RenderFragment Body, string? OkText, string CancelText, bool Wide = false);

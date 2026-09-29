@@ -1,0 +1,7 @@
+.docx-preview {
+    min-height: 40vh;
+    max-height: 70vh;
+    overflow: auto;
+    background: var(--c-bg);
+    border: 1px solid var(--c-border);
+}

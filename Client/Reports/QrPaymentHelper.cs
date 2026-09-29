@@ -63,9 +63,9 @@ namespace Merlin.Reports
             CultureInfo ruCulture = CultureInfo.GetCultureInfo("ru-RU");
 
             string taxInfo = taxRate > 0
-                ? $", в т.ч. НДС {taxRate.ToString("0.##", ruCulture)}%, {tax.ToString("F2", ruCulture)} руб."
-                : ", без НДС";
-            string purpose = $"Счет №{billNo} к акции {actionId}{taxInfo}";
+                ? $", в т.ч. НДС {taxRate.ToString("0.##", ruCulture)}%, {tax.ToString("F2", ruCulture)} руб." // i18n-ok: назначение платежа
+                : ", без НДС"; // i18n-ok: назначение платежа в QR — для банка, по-русски
+            string purpose = $"Счет №{billNo} к акции {actionId}{taxInfo}"; // i18n-ok: назначение платежа
 
             var sb = new StringBuilder("ST00012");
             Field(sb, "Name",        agency.PrefixWithName);
