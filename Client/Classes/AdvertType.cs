@@ -44,6 +44,14 @@ namespace Merlin.Classes
 			get { return int.Parse(IDs[0].ToString()); }
 		}
 
-        // AssignNew переехал в AdvertType.WinForms.cs.
+        // AssignNew (карточка) — в AdvertType.WinForms.cs; черновик — здесь, его зовёт и веб.
+
+        /// <summary>Новый дочерний предмет рекламы: объект дочерней сущности с родителем — этим.</summary>
+        public PresentationObject CreateChildDraft()
+        {
+            PresentationObject newObject = ChildEntity.NewObject;
+            newObject[ParamNames.ParentId] = parameters[entity.PKColumns[0]];
+            return newObject;
+        }
     }
 }

@@ -178,6 +178,12 @@ public sealed partial class ObjectActions
 		{
 			[Merlin.Classes.BonusStatRow.OpenActionJournalAction] = (s, t) => s.OpenActionJournal((PresentationObject)t),
 		},
+		// AdvertType.AssignNew: «Добавить» у предмета рекламы — новый дочерний предмет с
+		// родителем-этим (общий AssignNew родителя не проставляет).
+		["AdvertType"] = new()
+		{
+			[Constants.EntityActions.AssignNew] = (s, t) => s.AddChildAdvertType((Merlin.Classes.AdvertType)t),
+		},
 		// ModulePricelist.DoAction: «Редактировать рекламные окна» — тарифы станции галочками,
 		// уже входящие в модуль отмечены; новые отметки добавляются, снятые — удаляются.
 		["ModulePricelist"] = new()
@@ -404,7 +410,6 @@ public sealed partial class ObjectActions
 		// «Свойства» открывают форму редактирования акции (ActionForm) — этап 3.
 		["ActionOnMassmedia"] = new[] { Constants.EntityActions.ShowPassport },
 		// Свой AssignNew: выбор из списка, мастер, набор галочками.
-		["AdvertType"] = new[] { Constants.EntityActions.AssignNew },
 		["ComboModuleContainer"] = new[] { Constants.EntityActions.AssignNew },
 		["PackageDiscountPriceList"] = new[] { Constants.EntityActions.AssignNew },
 		// Своё удаление: пересчёт, каскад, подтверждение другим текстом.
@@ -1553,6 +1558,13 @@ public sealed partial class ObjectActions
 
 		await _busy.RunAsync(() => Merlin.Classes.ModuleTariffList.Apply(modulePricelist, added, removed));
 		return ActionEffect.Changed;
+	}
+
+	/// <summary>AdvertType.AssignNew: карточка нового дочернего предмета рекламы.</summary>
+	private async Task<ActionEffect> AddChildAdvertType(Merlin.Classes.AdvertType advertType)
+	{
+		PresentationObject draft = advertType.CreateChildDraft();
+		return await _passports.ShowAsync(draft, isNew: true) ? ActionEffect.ChildAdded : ActionEffect.None;
 	}
 
 	/// <summary>ActionOnMassmedia.Restore: акция возвращается в журнал макетов.</summary>
