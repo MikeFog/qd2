@@ -34,6 +34,8 @@
     <PackageReference Include="System.Resources.Extensions" Version="9.0.0" />
     <!-- Версия совпадает с Client/packages.config (CpOneDocGenerator.cs) -->
     <PackageReference Include="DocumentFormat.OpenXml" Version="3.4.1" />
+    <!-- QR оплаты в счёте из Word-шаблона; версия совпадает с Client/packages.config (QrPaymentHelper.cs) -->
+    <PackageReference Include="QRCoder" Version="1.8.0" />
   </ItemGroup>
 
   <!-- Слой доступа к данным -->
@@ -207,6 +209,9 @@
     <Compile Include="..\Client\Classes\Documents\DocumentData.cs" Link="Domain\Documents\DocumentData.cs" />
     <Compile Include="..\Client\Classes\Documents\DocxTemplate.cs" Link="Domain\Documents\DocxTemplate.cs" />
     <Compile Include="..\Client\Classes\Documents\DocumentTemplateStore.cs" Link="Domain\Documents\DocumentTemplateStore.cs" />
+    <Compile Include="..\Client\Classes\Documents\DocumentFields.cs" Link="Domain\Documents\DocumentFields.cs" />
+    <Compile Include="..\Client\Classes\Documents\ClientDocuments.cs" Link="Domain\Documents\ClientDocuments.cs" />
+    <Compile Include="..\Client\Reports\QrPaymentHelper.cs" Link="Domain\Documents\QrPaymentHelper.cs" />
   </ItemGroup>
 
 </Project>

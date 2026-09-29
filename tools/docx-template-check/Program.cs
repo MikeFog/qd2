@@ -28,7 +28,10 @@ internal static class Program
 		RenderCases();
 		ValidateCases();
 		if (db)
+		{
 			StoreCases();
+			DocumentCases();
+		}
 
 		Console.WriteLine(failed == 0 ? "OK: все проверки прошли" : $"ОШИБОК: {failed}");
 		return failed == 0 ? 0 : 1;
@@ -192,6 +195,103 @@ internal static class Program
 				DocumentTemplateStore.Delete(id);
 		}
 		Check("БД: удалено", DocumentTemplateStore.List(agencyId, kind).Count == 0);
+	}
+
+	// Сборка значений на ArtvisDev: шаблон «все поля каталога» должен проходить проверку и
+	// заполняться без ошибок; суммы счёта сверяются с rpt_GenericBill (как печатает Crystal).
+	private static void DocumentCases()
+	{
+		// Как веб при старте (DomainAssemblyResolver): метаданные ссылаются на сборки десктопа.
+		AppDomain.CurrentDomain.AssemblyResolve += (_, e) =>
+			new[] { "Merlin", "FogSoft.WinForm" }.Contains(new System.Reflection.AssemblyName(e.Name).Name)
+				? typeof(FogSoft.WinForm.Classes.PresentationObject).Assembly
+				: null;
+		FogSoft.WinForm.DataAccess.DataAccessor.LoadProcedureConfig();
+		var action = Merlin.Classes.ActionOnMassmedia.GetActionById(185313);
+		IList<Merlin.Classes.Agency> agencies = ClientDocuments.AgenciesOf(action);
+		Check("документы: агентство акции", agencies.Count == 1 && agencies[0].AgencyId == 201,
+			string.Join(",", agencies.Select(a => a.AgencyId)));
+		Merlin.Classes.Agency agency = agencies[0];
+		var billDate = new DateTime(2026, 7, 28);
+
+		DocumentData contract = ClientDocuments.Contract(action, null, agency, billDate, "411", true);
+		Dump(DocumentKind.Contract, "contract", contract);
+
+		DocumentData bill = ClientDocuments.Bill(action, agency, "411", billDate, null, true);
+		Body billBody = Dump(DocumentKind.Bill, "bill", bill);
+		System.Data.DataTable rpt = FogSoft.WinForm.DataAccess.DataAccessor.LoadDataSet("rpt_GenericBill",
+			new Dictionary<string, object> { { "actionId", 185313 }, { "agencyId", 201 } }).Tables[0];
+		decimal total = rpt.Rows.Cast<System.Data.DataRow>().Sum(r => (decimal)r["price"]);
+		Check("документы: строк счёта как в rpt_GenericBill", billBody.Descendants<Paragraph>()
+			.Count(p => p.InnerText.StartsWith("  Строки: ")) == rpt.Rows.Count);
+		Check("документы: сумма счёта", Paragraphs(billBody).Contains("Сумма: " + Math.Round(total, 2).ToString("N2")));
+
+		DocumentData byMonth = ClientDocuments.Bill(action, agency, "411", billDate, new DateTime(2026, 8, 1), false);
+		Dump(DocumentKind.Bill, "bill-month", byMonth);
+
+		Type campaignType = typeof(ClientDocuments).Assembly.GetType("Merlin.Classes.Campaign");
+		var campaign = (FogSoft.WinForm.Classes.PresentationObject)campaignType.GetMethod("GetCampaignById").Invoke(null, new object[] { 408900 });
+		var massmedia = (Merlin.Classes.Massmedia)typeof(Merlin.Classes.Massmedia).GetMethod("GetMassmediaByID",
+			System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Static).Invoke(null, new object[] { 235 });
+		DocumentData onAir = ClientDocuments.OnAirInquire(campaign, agency, massmedia, new DateTime(2026, 8, 1), true, true);
+		Body onAirBody = Dump(DocumentKind.OnAirInquire, "on-air", onAir);
+		Check("документы: выходы эфирной справки", onAirBody.Descendants<Paragraph>().Count(p => p.InnerText.StartsWith("  Выходы: ")) == 431);
+	}
+
+	/// <summary>Шаблон из всех полей каталога вида: проверка, заполнение, печать значений.</summary>
+	private static Body Dump(DocumentKind kind, string name, DocumentData data)
+	{
+		var content = new List<OpenXmlElement>();
+		foreach (DocumentField field in DocumentFields.For(kind))
+		{
+			string tag = "{{" + field.Name + "}}";
+			switch (field.Kind)
+			{
+				case DocumentFieldKind.Flag:
+					content.Add(P(R(field.Name + ": "), R("{{#" + field.Name + "}}да{{/" + field.Name + "}}{{^" + field.Name + "}}нет{{/" + field.Name + "}}")));
+					break;
+				case DocumentFieldKind.List:
+					content.Add(P(R("{{#" + field.Name + "}}")));
+					content.Add(P(R("  " + field.Name + ": " + string.Join(" | ", field.ItemFields.Select(i => "{{" + i.Name + "}}")))));
+					content.Add(P(R("{{/" + field.Name + "}}")));
+					break;
+				case DocumentFieldKind.Image:
+					content.Add(P(R(field.Name + ": "), R("{{#" + field.Name + "}}картинка {{/" + field.Name + "}}"), R(tag)));
+					break;
+				default:
+					content.Add(P(R(field.Name + ": " + tag)));
+					break;
+			}
+		}
+		byte[] template = Template(content.ToArray());
+		IList<string> errors = DocxTemplate.Validate(template, DocumentFields.For(kind));
+		Check($"документы: шаблон всех полей «{kind}» годен", errors.Count == 0, string.Join(" / ", errors));
+		try
+		{
+			byte[] result = DocxTemplate.Render(template, data);
+			Save("fields-" + name, result);
+			using (var doc = WordprocessingDocument.Open(new MemoryStream(result), false))
+			{
+				var body = (Body)doc.MainDocumentPart.Document.Body.CloneNode(true);
+				Check($"документы: «{name}» заполнен", true);
+				int listLines = 0;
+				foreach (Paragraph p in body.Elements<Paragraph>())
+				{
+					bool listLine = p.InnerText.StartsWith("  ");
+					if (listLine && ++listLines > 3)
+						continue;
+					if (!listLine)
+						listLines = 0;
+					Console.WriteLine("       " + p.InnerText + (p.Descendants<Drawing>().Any() ? " [картинка]" : ""));
+				}
+				return body;
+			}
+		}
+		catch (Exception e)
+		{
+			Check($"документы: «{name}» заполнен", false, e.Message);
+			return new Body();
+		}
 	}
 
 	#region Построение шаблонов

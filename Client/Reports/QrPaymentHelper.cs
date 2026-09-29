@@ -12,6 +12,8 @@ namespace Merlin.Reports
 {
     internal static class QrPaymentHelper
     {
+#if !NET
+        // Десктоп (Crystal; старый csproj символ NET не задаёт). В веб-ядре (net10) класса QRCode нет — там GenerateBillQrPng.
         // Returns a Bitmap of ST00012 payment QR (caller must dispose), or null if agency has no bank details.
         internal static Bitmap GenerateBillQrBitmap(Agency agency, string billNo, int actionId, decimal total, decimal tax, decimal taxRate)
         {
@@ -24,6 +26,24 @@ namespace Merlin.Reports
                 QRCodeData data = generator.CreateQrCode(payload, QRCodeGenerator.ECCLevel.M, forceUtf8: true);
                 using (var code = new QRCode(data))
                     return code.GetGraphic(5);
+            }
+        }
+#endif
+
+        /// <summary>
+        /// То же, что <c>GenerateBillQrBitmap</c>, но PNG-байтами — для Word-шаблонов
+        /// (docs/tasks/web-reports.md §8). null — у агентства нет счёта, банка или БИК.
+        /// </summary>
+        internal static byte[] GenerateBillQrPng(Agency agency, string billNo, int actionId, decimal total, decimal tax, decimal taxRate)
+        {
+            string payload = BuildSt00012(agency, billNo, actionId, total, tax, taxRate);
+            if (payload == null)
+                return null;
+
+            using (var generator = new QRCodeGenerator())
+            {
+                QRCodeData data = generator.CreateQrCode(payload, QRCodeGenerator.ECCLevel.M, forceUtf8: true);
+                return new PngByteQRCode(data).GetGraphic(5);
             }
         }
 
