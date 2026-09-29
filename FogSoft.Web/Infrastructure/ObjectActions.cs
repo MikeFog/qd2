@@ -162,6 +162,13 @@ public sealed partial class ObjectActions
 			[ActionContainer.ActionNames.ShowFirms] = (s, t) => s.Changed(((ActionContainer)t).ShowFirms),
 			[ActionContainer.ActionNames.ShowActions] = (s, t) => s.Changed(((ActionContainer)t).ShowActions),
 		},
+		// HeadCompanyWithActions.DoAction: то же у узла группы компаний — дети фирмы или
+		// акции (в журнале удалённых — удалённые). Погашен текущий вид (IsActionEnabled).
+		["HeadCompanyWithActions"] = new()
+		{
+			[Merlin.Classes.HeadCompanyView.ShowFirmsAction] = (s, t) => s.Changed(() => Merlin.Classes.HeadCompanyView.ShowFirms((PresentationObject)t)),
+			[Merlin.Classes.HeadCompanyView.ShowActionsAction] = (s, t) => s.Changed(() => Merlin.Classes.HeadCompanyView.ShowActions((PresentationObject)t)),
+		},
 		// Announcement.DoAction: «Пометить как прочтенное». Доступность гасит
 		// Announcement.IsActionEnabled (у прочитанного — серый).
 		["Announcement"] = new()
