@@ -217,38 +217,60 @@ BEGIN
     --    OPT: ранний WHERE отсекает строки, не influencing ни на одну из 4 колонок
     --    Выпуски фирмы вне веера: чужие акции и модульные/пакетно-модульные кампании
     --    своей акции (их выпуски тоже стоят в TariffWindow — риск пересечения в блоке).
+    --    #otherIssues — общий источник для п.7 и п.9. Сначала выпуски фирмы за неделю
+    --    по станциям веера (как #advWindows в п.8а), потом раскладка по получасам:
+    --    range-join dbo.TariffWindow с #res на каждый получас стоил ~0,8 с (×2 — п.7 и п.9).
     --------------------------------------------------------------------
-    ;WITH all_issues AS
-    (
-        SELECT
-            r.[date],
-            tw.massmediaID,
-            i.isConfirmed,
-            a.deleteDate
-        FROM #res r
-        JOIN dbo.TariffWindow tw
-            ON tw.windowDateActual BETWEEN r.[date] AND r.[enddate]
-        JOIN #mm m
-            ON m.massmediaID = tw.massmediaID
-        JOIN dbo.Issue i
-            ON i.actualWindowID = tw.windowId
-        JOIN dbo.Campaign c
-            ON c.campaignID = i.campaignID
-        JOIN dbo.Action a
-            ON a.actionID  = c.actionID
-           AND a.firmID    = @firmID
-           AND (a.actionID <> @actionID OR c.campaignTypeID <> 1)
-        WHERE i.isConfirmed = 1        -- нужен для HasIssues
-           OR a.deleteDate IS NULL     -- нужен для HasIssuesUnconfirmed
-    ),
-    per_mm AS
+    SELECT
+        tw.windowDateActual,
+        tw.massmediaID,
+        a.actionID,
+        a.userID,
+        a.deleteDate,
+        i.rollerID,
+        i.positionId,
+        isConfirmed = CONVERT(int, i.isConfirmed)
+    INTO #firmWeekIssues
+    FROM #mm m
+    JOIN dbo.TariffWindow tw
+        ON tw.massmediaID = m.massmediaID
+       AND tw.windowDateActual BETWEEN @minDate AND @maxEnd
+    JOIN dbo.Issue i
+        ON i.actualWindowID = tw.windowId
+    JOIN dbo.Campaign c
+        ON c.campaignID = i.campaignID
+    JOIN dbo.Action a
+        ON a.actionID  = c.actionID
+       AND a.firmID    = @firmID
+       AND (a.actionID <> @actionID OR c.campaignTypeID <> 1)
+    WHERE i.isConfirmed = 1        -- нужен для HasIssues
+       OR a.deleteDate IS NULL     -- нужен для HasIssuesUnconfirmed
+    OPTION (RECOMPILE); -- как в п.8а: план по переменным @minDate/@maxEnd
+
+    SELECT
+        r.[date],
+        f.massmediaID,
+        f.actionID,
+        f.rollerID,
+        f.positionId,
+        ownerName = u.lastName + ' ' + u.firstName,
+        f.isConfirmed,
+        f.deleteDate
+    INTO #otherIssues
+    FROM #firmWeekIssues f
+    JOIN #res r
+        ON f.windowDateActual BETWEEN r.[date] AND r.[enddate]
+    LEFT JOIN dbo.[User] u
+        ON u.userID = f.userID;
+
+    ;WITH per_mm AS
     (
         SELECT
             [date],
             massmediaID,
             hasConfirmed     = MAX(CASE WHEN isConfirmed = 1    THEN 1 ELSE 0 END),
             hasAnyNonDeleted = MAX(CASE WHEN deleteDate IS NULL THEN 1 ELSE 0 END)
-        FROM all_issues
+        FROM #otherIssues
         GROUP BY [date], massmediaID
     ),
     slots AS
@@ -332,8 +354,8 @@ BEGIN
 
     --------------------------------------------------------------------
     -- 9) Чужие акции той же фирмы по датам (подсказка бирюзовых/оранжевых
-    --    ячеек — TariffWithRangeGrid.GetOtherFirmActions). Тот же джойн, что
-    --    и all_issues в п.7 (не тянем ещё раз в базу отдельным запросом на
+    --    ячеек — TariffWithRangeGrid.GetOtherFirmActions). Тот же #otherIssues,
+    --    что и в п.7 (не тянем ещё раз в базу отдельным запросом на
     --    ховер), но сгруппирован по ([date], actionID), а не только по [date].
     --    Из того же #otherIssues идёт и последний набор (п.10) — ролики чужих
     --    акций фирмы по слотам: в режиме номеров роликов бирюзовые/оранжевые
@@ -342,32 +364,6 @@ BEGIN
     --    Как и в п.7, сюда же попадает своя акция (actionID = @actionID) — выпуски
     --    её модульных кампаний; C# подписывает её в подсказке отдельно.
     --------------------------------------------------------------------
-    SELECT
-        r.[date],
-        a.actionID,
-        i.rollerID,
-        i.positionId,
-        ownerName = u.lastName + ' ' + u.firstName,
-        isConfirmed = CONVERT(int, i.isConfirmed)
-    INTO #otherIssues
-    FROM #res r
-    JOIN dbo.TariffWindow tw
-        ON tw.windowDateActual BETWEEN r.[date] AND r.[enddate]
-    JOIN #mm m
-        ON m.massmediaID = tw.massmediaID
-    JOIN dbo.Issue i
-        ON i.actualWindowID = tw.windowId
-    JOIN dbo.Campaign c
-        ON c.campaignID = i.campaignID
-    JOIN dbo.Action a
-        ON a.actionID  = c.actionID
-       AND a.firmID    = @firmID
-       AND (a.actionID <> @actionID OR c.campaignTypeID <> 1)
-    LEFT JOIN dbo.[User] u
-        ON u.userID = a.userID
-    WHERE i.isConfirmed = 1
-       OR a.deleteDate IS NULL;
-
     SELECT
         [date],
         actionID,
