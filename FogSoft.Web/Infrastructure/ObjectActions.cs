@@ -184,6 +184,12 @@ public sealed partial class ObjectActions
 		{
 			[Constants.EntityActions.AssignNew] = (s, t) => s.AddChildAdvertType((Merlin.Classes.AdvertType)t),
 		},
+		// ComboModuleContainer.AssignNew: «Добавить» у комбо-модуля — состав галочками по
+		// каталогу модулей активных станций (как «Редактировать рекламные окна»).
+		["ComboModuleContainer"] = new()
+		{
+			[Constants.EntityActions.AssignNew] = (s, t) => s.EditComboModuleComposition((PresentationObject)t),
+		},
 		// ModulePricelist.DoAction: «Редактировать рекламные окна» — тарифы станции галочками,
 		// уже входящие в модуль отмечены; новые отметки добавляются, снятые — удаляются.
 		["ModulePricelist"] = new()
@@ -410,7 +416,6 @@ public sealed partial class ObjectActions
 		// «Свойства» открывают форму редактирования акции (ActionForm) — этап 3.
 		["ActionOnMassmedia"] = new[] { Constants.EntityActions.ShowPassport },
 		// Свой AssignNew: выбор из списка, мастер, набор галочками.
-		["ComboModuleContainer"] = new[] { Constants.EntityActions.AssignNew },
 		["PackageDiscountPriceList"] = new[] { Constants.EntityActions.AssignNew },
 		// Своё удаление: пересчёт, каскад, подтверждение другим текстом.
 		["MasterIssue"] = new[] { Constants.EntityActions.Delete },
@@ -1537,26 +1542,44 @@ public sealed partial class ObjectActions
 	/// ModulePricelist.EditTariffList: SelectionForm с чекбоксами по тарифам станции, отмечены
 	/// входящие в модуль (isObjectSelected с сервера); запись — разница: добавленные и снятые.
 	/// </summary>
-	private async Task<ActionEffect> EditModuleTariffs(PresentationObject modulePricelist)
+	private Task<ActionEffect> EditModuleTariffs(PresentationObject modulePricelist) =>
+		EditMembership(Tr.T("Тарифы для модуля"), EntityManager.GetEntity((int)Merlin.Entities.Tariff),
+			() => Merlin.Classes.ModuleTariffList.Load(modulePricelist), Merlin.Classes.ModuleTariffList.SelectedColumn,
+			(added, removed) => Merlin.Classes.ModuleTariffList.Apply(modulePricelist, added, removed));
+
+	/// <summary>
+	/// ComboModuleContainer.AssignNew (EditModules): каталог модулей активных станций галочками,
+	/// входящие в комбо-модуль отмечены; запись — добавленные и снятые.
+	/// </summary>
+	private Task<ActionEffect> EditComboModuleComposition(PresentationObject comboModule) =>
+		EditMembership(Tr.T("Модули комбо-модуля"), EntityManager.GetEntity((int)Merlin.Entities.Module),
+			() => Merlin.Classes.ComboModuleComposition.Load(comboModule), Merlin.Classes.ComboModuleComposition.SelectedColumn,
+			(added, removed) => Merlin.Classes.ComboModuleComposition.Apply(comboModule, added, removed));
+
+	/// <summary>
+	/// Набор состава галочками — веб-аналог SelectionForm(..., showCheckboxes: true) с
+	/// Added/Deleted: процедура отдаёт кандидатов с признаком «уже входит» (<paramref name="selectedColumn"/>),
+	/// они отмечены при открытии; по «Сохранить» — разница: новые отметки и снятые.
+	/// </summary>
+	private async Task<ActionEffect> EditMembership(string caption, Entity entity, Func<DataTable> load, string selectedColumn,
+		Action<List<PresentationObject>, List<PresentationObject>> apply)
 	{
-		Entity tariffs = EntityManager.GetEntity((int)Merlin.Entities.Tariff);
-		DataTable rows = await _busy.RunAsync(() => Merlin.Classes.ModuleTariffList.Load(modulePricelist));
-		string flag = Merlin.Classes.ModuleTariffList.SelectedColumn;
-		List<DataRow> before = rows.Columns.Contains(flag)
-			? rows.Rows.Cast<DataRow>().Where(r => r[flag] is true).ToList()
+		DataTable rows = await _busy.RunAsync(load);
+		List<DataRow> before = rows.Columns.Contains(selectedColumn)
+			? rows.Rows.Cast<DataRow>().Where(r => r[selectedColumn] is true).ToList()
 			: new List<DataRow>();
 
-		IReadOnlyList<DataRow>? after = await PickAsync(Tr.T("Тарифы для модуля"), tariffs, rows, Tr.T("Сохранить"),
+		IReadOnlyList<DataRow>? after = await PickAsync(caption, entity, rows, Tr.T("Сохранить"),
 			multiselect: true, initiallySelected: before);
 		if (after == null)
 			return ActionEffect.None;
 
-		var added = after.Except(before).Select(tariffs.CreateObject).ToList();
-		var removed = before.Except(after).Select(tariffs.CreateObject).ToList();
+		var added = after.Except(before).Select(entity.CreateObject).ToList();
+		var removed = before.Except(after).Select(entity.CreateObject).ToList();
 		if (added.Count == 0 && removed.Count == 0)
 			return ActionEffect.None;
 
-		await _busy.RunAsync(() => Merlin.Classes.ModuleTariffList.Apply(modulePricelist, added, removed));
+		await _busy.RunAsync(() => apply(added, removed));
 		return ActionEffect.Changed;
 	}
 

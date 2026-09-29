@@ -41,11 +41,52 @@ namespace Merlin.Classes
 			return procParameters;
 		}
 
-		private DataTable LoadAllModules()
+		/// <summary>Каталог модулей активных станций; isObjectSelected — уже в составе.</summary>
+		internal DataTable LoadAllModules()
 		{
 			Dictionary<string, object> procParameters = DataAccessor.CreateParametersDictionary();
 			procParameters[ComboModule.ParamNames.ComboModuleId] = ComboModuleId;
 			return DataAccessor.LoadDataSet("ComboModuleAllModulesSelection", procParameters).Tables[0];
 		}
+
+		/// <summary>
+		/// Запись изменений состава: добавленные модули — строкой ComboModuleContentIUD,
+		/// снятые — её удалением.
+		/// </summary>
+		internal void ApplyModulesChanges(IEnumerable<PresentationObject> added, IEnumerable<PresentationObject> removed)
+		{
+			Entity contentEntity = EntityManager.GetEntity((int) Entities.ComboModuleContent);
+
+			foreach (PresentationObject po in added)
+			{
+				// Entity.CreateObject(Dictionary) присваивает Parameters, а у этого
+				// свойства побочный эффект isNew = false - без явного сброса Update()
+				// отправил бы UpdateItem с пустым comboModuleContentID, который тихо
+				// не находит ни одной строки (WHERE comboModuleContentID = NULL).
+				PresentationObject content = contentEntity.CreateObject(MakeContentParameters(po));
+				content.IsNew = true;
+				content.Update();
+			}
+
+			foreach (PresentationObject po in removed)
+				contentEntity.CreateObject(MakeContentParameters(po)).Delete(true);
+
+			FireContainerRefreshed();
+		}
+	}
+
+	/// <summary>
+	/// Состав комбо-модуля («Добавить» у узла комбо-модуля) снаружи сборки (веб):
+	/// ComboModuleContainer internal.
+	/// </summary>
+	public static class ComboModuleComposition
+	{
+		/// <summary>Колонка признака «модуль уже в составе».</summary>
+		public const string SelectedColumn = "isObjectSelected";
+
+		public static DataTable Load(PresentationObject comboModule) => ((ComboModuleContainer)comboModule).LoadAllModules();
+
+		public static void Apply(PresentationObject comboModule, IEnumerable<PresentationObject> added, IEnumerable<PresentationObject> removed) =>
+			((ComboModuleContainer)comboModule).ApplyModulesChanges(added, removed);
 	}
 }

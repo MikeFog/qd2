@@ -3910,6 +3910,13 @@ objectPicker с галочкой и без выбора молча пропус�
   `AdvertType.CreateChildDraft` в ядре, десктоп зовёт его же; `AdvertType` убран из
   `DesktopOverrides`. Проверено: «ТЕСТ Claude» в «Автомобили и сопотствующие товары» — записан
   с parentID 1939, затем удалён.
+- **«Добавить модуль» у комбо-модуля** — состав галочками по каталогу модулей активных станций
+  (`ComboModuleAllModulesSelection`, входящие отмечены), запись — добавленные и снятые
+  (`ComboModuleContentIUD`). Запись перенесена из WinForms в ядро
+  (`ComboModuleContainer.ApplyModulesChanges`), вход — `ComboModuleComposition`;
+  `ComboModuleContainer` убран из `DesktopOverrides`. У «Редактировать рекламные окна» и здесь в
+  вебе общий помощник `EditMembership` (набор галочками → разница). Проверено: «Переславль» — один
+  модуль добавлен и один снят, затем возвращено.
 
 **Выгрузка в Excel из окон с таблицей (2026-09-29).** По просьбе владельца — как у любого
 грида десктопа. Общий компонент `ExportableList`: кнопка «Экспорт в Excel» над списком
