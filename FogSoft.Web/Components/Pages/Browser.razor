@@ -71,7 +71,8 @@ else
            «Добавить модуль» и т. п. Прежняя веб-кнопка создавала объект
            без привязки к родителю (без CreateNewChild). «Изменить», «Удалить» и
            «Фильтр» десктопа тоже не кнопки: действия строки и постоянная панель. *@
-        <ScreenToolbar Title="@(_hasWindows && _windowsTab ? Tr.Format("{0} / Рекламные окна", _selected!.Name) : _caption)">
+        <ScreenToolbar Title="@(_hasWindows && _windowsTab ? Tr.Format("{0} / Рекламные окна", _selected!.Name) : _caption)"
+                       Count="@(_hasWindows && _windowsTab ? null : _data?.Rows.Count)">
             @if (_selectedCount > 0)
             {
                 <button class="btn btn-sm btn-danger" @onclick="DeleteSelected"><i class="bi bi-trash3" aria-hidden="true"></i>@Tr.Format("Удалить ({0})", _selectedCount)</button>

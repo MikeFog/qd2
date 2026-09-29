@@ -46,16 +46,20 @@ namespace Merlin.Classes
         // DoAction и EditFirms переехали в HeadCompany.WinForms.cs.
 
         /// <summary>Кандидаты на переприкрепление к этой головной компании.</summary>
-        internal DataTable GetFirmsForReassign()
+        public DataTable GetFirmsForReassign()
         {
             Entity entity = EntityManager.GetEntity((int)Entities.Firm);
             Dictionary<string, object> filterValues = DataAccessor.CreateParametersDictionary();
             return entity.GetContent(filterValues);
         }
 
-        /// <summary>Переприкрепляет выбранные фирмы к этой головной компании.</summary>
-        internal void ApplyFirmsReassign(IList<PresentationObject> items)
+        /// <summary>
+        /// Переприкрепляет выбранные фирмы к этой головной компании. true — какая-то из
+        /// прежних групп опустела и исчезла (веб перечитывает дерево от родителя).
+        /// </summary>
+        public bool ApplyFirmsReassign(IList<PresentationObject> items)
         {
+            bool anyGroupRemoved = false;
             foreach (var item in items)
             {
                 int oldId = (int)item[Firm.ParamNames.HeadCompanyID];
@@ -63,9 +67,14 @@ namespace Merlin.Classes
                 item[Firm.ParamNames.HeadCompanyID] = IDs[0];
                 item.Update();
 
-                if (HeadCompany.GetObjectById(oldId) == null) OnObjectDeleted(hc);
+                if (HeadCompany.GetObjectById(oldId) == null)
+                {
+                    anyGroupRemoved = true;
+                    OnObjectDeleted(hc);
+                }
             }
             OnObjectChanged(this);
+            return anyGroupRemoved;
         }
 
         private static Entity GetEntity()

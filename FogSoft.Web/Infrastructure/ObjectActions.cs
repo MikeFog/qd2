@@ -178,6 +178,12 @@ public sealed partial class ObjectActions
 		{
 			[Merlin.Classes.BonusStatRow.OpenActionJournalAction] = (s, t) => s.OpenActionJournal((PresentationObject)t),
 		},
+		// HeadCompany.DoAction: «Редактировать дочерние фирмы» — добавить фирмы в группу
+		// компаний (выбранные уходят из своих групп; опустевшая группа исчезает).
+		["HeadCompany"] = new()
+		{
+			["EditFirms"] = (s, t) => s.EditHeadCompanyFirms((Merlin.Classes.HeadCompany)t),
+		},
 		["HeadCompanyWithActions"] = new()
 		{
 			[Merlin.Classes.HeadCompanyView.ShowFirmsAction] = (s, t) => s.Changed(() => Merlin.Classes.HeadCompanyView.ShowFirms((PresentationObject)t)),
@@ -1477,6 +1483,25 @@ public sealed partial class ObjectActions
 		_filters.Preset("browser/" + code, Merlin.Classes.BonusStatRow.ActionJournalFilter(row));
 		_navigation.NavigateTo("/browser/" + code);
 		return ActionEffect.None;
+	}
+
+	/// <summary>
+	/// HeadCompany.EditFirms: фирмы галочками из всех (SelectionForm с чекбоксами), отмеченные
+	/// переносятся в эту группу. Перечитывается сама группа — видно добавленные фирмы; если
+	/// какая-то прежняя группа опустела и исчезла — дерево от родителя.
+	/// </summary>
+	private async Task<ActionEffect> EditHeadCompanyFirms(Merlin.Classes.HeadCompany headCompany)
+	{
+		Entity firms = EntityManager.GetEntity((int)Merlin.Entities.Firm);
+		DataTable candidates = await _busy.RunAsync(headCompany.GetFirmsForReassign);
+		IReadOnlyList<DataRow>? picked = await PickAsync(Tr.T("Фирмы-заказчики"), firms, candidates, Tr.T("Добавить в группу"),
+			multiselect: true);
+		if (picked == null || picked.Count == 0)
+			return ActionEffect.None;
+
+		List<PresentationObject> items = picked.Select(firms.CreateObject).ToList();
+		bool groupRemoved = await _busy.RunAsync(() => headCompany.ApplyFirmsReassign(items));
+		return groupRemoved ? ActionEffect.SiblingAdded : ActionEffect.Changed;
 	}
 
 	/// <summary>ActionOnMassmedia.Restore: акция возвращается в журнал макетов.</summary>
