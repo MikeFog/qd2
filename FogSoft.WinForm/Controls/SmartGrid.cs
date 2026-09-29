@@ -1538,7 +1538,9 @@ namespace FogSoft.WinForm.Controls
             return value.Replace("[", "[[]")
                         //.Replace("]", "[]]")
                         .Replace("%", "[%]")
-                        .Replace("_", "[_]");
+                        .Replace("*", "[*]")
+                        .Replace("_", "[_]")
+                        .Replace("'", "''");
         }
 
         public bool Contains(PresentationObject presentationObject)
