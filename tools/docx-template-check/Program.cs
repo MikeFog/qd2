@@ -20,12 +20,15 @@ internal static class Program
 
 	private static int Main(string[] args)
 	{
-		outDir = args.Length > 0 ? args[0] : null;
+		bool db = args.Contains("--db");
+		outDir = args.FirstOrDefault(a => a != "--db");
 		if (outDir != null)
 			Directory.CreateDirectory(outDir);
 
 		RenderCases();
 		ValidateCases();
+		if (db)
+			StoreCases();
 
 		Console.WriteLine(failed == 0 ? "OK: все проверки прошли" : $"ОШИБОК: {failed}");
 		return failed == 0 ? 0 : 1;
@@ -142,6 +145,53 @@ internal static class Program
 
 		IList<string> garbage = DocxTemplate.Validate(new byte[] { 1, 2, 3 }, Catalog);
 		Check("не docx", garbage.Count == 1, string.Join(" / ", garbage));
+	}
+
+	private sealed class TestUserStorage : FogSoft.WinForm.Classes.SecurityManager.ILoggedUserStorage
+	{
+		public FogSoft.WinForm.Classes.SecurityManager.User User { get; set; }
+	}
+
+	// Хранилище на ArtvisDev: версии по дате, действующая сегодня, удаление. Свои строки за собой убирает.
+	private static void StoreCases()
+	{
+		var storage = new TestUserStorage();
+		FogSoft.WinForm.Classes.SecurityManager.SetLoggedUserStorage(storage);
+		storage.User = FogSoft.WinForm.Classes.SecurityManager.GetUser(3);
+		const int agencyId = 135;
+		var kind = DocumentKind.Contract;
+		byte[] v1 = Template(new OpenXmlElement[] { P(R("версия 1")) });
+		byte[] v2 = Template(new OpenXmlElement[] { P(R("версия 2")) });
+
+		var ids = new List<int>();
+		try
+		{
+			ids.Add(DocumentTemplateStore.Add(agencyId, kind, new DateTime(2026, 1, 1), v1, "Договор 2026.docx", " первая "));
+			ids.Add(DocumentTemplateStore.Add(agencyId, kind, new DateTime(2026, 7, 1), v2, "Договор июль.docx", null));
+			ids.Add(DocumentTemplateStore.Add(agencyId, kind, new DateTime(2026, 7, 1), v2, "Договор июль исправл.docx", ""));
+
+			Check("БД: до первой версии шаблона нет", DocumentTemplateStore.ForDate(agencyId, kind, new DateTime(2025, 12, 31)) == null);
+			DocumentTemplateFile march = DocumentTemplateStore.ForDate(agencyId, kind, new DateTime(2026, 3, 15, 14, 0, 0));
+			Check("БД: на 15.03 действует версия от 01.01", march?.Id == ids[0] && march.Content.SequenceEqual(v1));
+			Check("БД: на 01.07 — загруженная последней из двух", DocumentTemplateStore.ForDate(agencyId, kind, new DateTime(2026, 7, 1))?.Id == ids[2]);
+			Check("БД: другой вид документа пуст", DocumentTemplateStore.ForDate(agencyId, DocumentKind.Bill, new DateTime(2026, 7, 1)) == null);
+
+			List<DocumentTemplateVersion> list = DocumentTemplateStore.List(agencyId, kind);
+			Check("БД: список версий", list.Select(v => v.Id).SequenceEqual(new[] { ids[2], ids[1], ids[0] }),
+				string.Join(",", list.Select(v => v.Id)));
+			Check("БД: сегодня действует последняя", list.Where(v => v.IsCurrent).Select(v => v.Id).SequenceEqual(new[] { ids[2] }));
+			DocumentTemplateVersion first = list.Single(v => v.Id == ids[0]);
+			Check("БД: поля версии", first.Comment == "первая" && list.Single(v => v.Id == ids[1]).Comment == null
+				&& first.Size == v1.Length && !string.IsNullOrEmpty(first.CreatedByName) && first.KindName.Length > 0,
+				$"{first.Comment}|{first.Size}|{first.CreatedByName}|{first.KindName}");
+			Check("БД: файл по ID", DocumentTemplateStore.Load(ids[1])?.FileName == "Договор июль.docx");
+		}
+		finally
+		{
+			foreach (int id in ids)
+				DocumentTemplateStore.Delete(id);
+		}
+		Check("БД: удалено", DocumentTemplateStore.List(agencyId, kind).Count == 0);
 	}
 
 	#region Построение шаблонов

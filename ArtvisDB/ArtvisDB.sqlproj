@@ -99,6 +99,7 @@
     <Build Include="dbo\Tables\iInternalVariable.sql" />
     <Build Include="dbo\Tables\UserSetting.sql" />
     <Build Include="dbo\Tables\iTranslation.sql" />
+    <Build Include="dbo\Tables\DocumentTemplate.sql" />
     <Build Include="dbo\Tables\SponsorProgramPricelist.sql" />
     <Build Include="dbo\Tables\iEntity.sql" />
     <Build Include="dbo\Tables\iEntityAttribute.sql" />
@@ -402,6 +403,10 @@
     <Build Include="dbo\Stored Procedures\UserSettingRetrieve.sql" />
     <Build Include="dbo\Stored Procedures\UserSettingIUD.sql" />
     <Build Include="dbo\Stored Procedures\TranslationLoad.sql" />
+    <Build Include="dbo\Stored Procedures\DocumentTemplates.sql" />
+    <Build Include="dbo\Stored Procedures\DocumentTemplateRetrieve.sql" />
+    <Build Include="dbo\Stored Procedures\DocumentTemplateIns.sql" />
+    <Build Include="dbo\Stored Procedures\DocumentTemplateDel.sql" />
     <Build Include="dbo\Stored Procedures\ActionDeactivate.sql" />
     <Build Include="dbo\Stored Procedures\TransferLogFilter.sql" />
     <Build Include="dbo\Stored Procedures\SpecialActions.sql" />

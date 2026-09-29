@@ -206,6 +206,7 @@
          печатает через Crystal до решения о переводе (§7 п.1), в Client.csproj не входят. -->
     <Compile Include="..\Client\Classes\Documents\DocumentData.cs" Link="Domain\Documents\DocumentData.cs" />
     <Compile Include="..\Client\Classes\Documents\DocxTemplate.cs" Link="Domain\Documents\DocxTemplate.cs" />
+    <Compile Include="..\Client\Classes\Documents\DocumentTemplateStore.cs" Link="Domain\Documents\DocumentTemplateStore.cs" />
   </ItemGroup>
 
 </Project>
