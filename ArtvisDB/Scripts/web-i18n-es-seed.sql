@@ -1,5 +1,5 @@
 ﻿/*
-    ДЕПЛОЙ: переводы веб-версии на язык «es» (1714 строк). docs/tasks/web-i18n.md, этап 5.
+    ДЕПЛОЙ: переводы веб-версии на язык «es» (1757 строк). docs/tasks/web-i18n.md, этап 5.
     СГЕНЕРИРОВАН из ArtvisDB/Scripts/i18n/es.tsv скриптом build-seed.py — руками не править.
 
     ПРЕДУСЛОВИЕ     накачен web-i18n-translation-deploy.sql (таблица iTranslation).
@@ -1734,7 +1734,50 @@ INSERT INTO #t ([source], [text]) VALUES
 (N'Месяцы — справка на каждый отмеченный месяц', N'Meses: un certificado por cada mes marcado'),
 (N'Включать цену', N'Incluir precio'),
 (N'Счёт № {0} от {1}{2} к акции № {3}', N'Factura n.º {0} del {1}{2} de la campaña n.º {3}'),
-(N'за месяц {0} года', N'del mes de {0}');
+(N'за месяц {0} года', N'del mes de {0}'),
+(N'Объединить с ...', N'Combinar con...'),
+(N'Объединить', N'Combinar'),
+(N'Разделить', N'Dividir'),
+(N'Выберите рекламные кампании, которые хотите перенести в новую акцию', N'Seleccione las pautas publicitarias que desea trasladar a una nueva campaña'),
+(N'Сменить', N'Cambiar'),
+(N'Статистика по роликам для акции №{0}', N'Estadística de spots de la campaña N.º {0}'),
+(N'Рекламное агентство', N'Agencia publicitaria'),
+(N'Типы оплаты', N'Tipos de pago'),
+(N'Невозможно сменить агентство для выбранной рекламной кампании. Она либо завершилась, либо началась в одном из предыдущих месяцев.', N'No se puede cambiar la agencia de la pauta publicitaria seleccionada: ya terminó o comenzó en uno de los meses anteriores.'),
+(N'Невозможно сменить тип оплаты для выбранной рекламной кампании. Она либо завершилась, либо началась в одном из предыдущих месяцев.', N'No se puede cambiar el tipo de pago de la pauta publicitaria seleccionada: ya terminó o comenzó en uno de los meses anteriores.'),
+(N'Выберите другую дату.', N'Seleccione otra fecha.'),
+(N'Выберите тип оплаты.', N'Seleccione el tipo de pago.'),
+(N'Новый тип оплаты', N'Nuevo tipo de pago'),
+(N'Отметьте кампании, у которых нужно сменить тип оплаты.', N'Marque las pautas cuyo tipo de pago desea cambiar.'),
+(N'Ошибки смены типа оплаты', N'Errores al cambiar el tipo de pago'),
+(N'Перенести на', N'Trasladar al'),
+(N'Переносимый день', N'Día a trasladar'),
+(N'Прайс-лист действует', N'Lista de precios vigente'),
+(N'прайс-листа на этот день нет', N'no hay lista de precios para este día'),
+(N'с {0} по {1}', N'del {0} al {1}'),
+(N'Ролики рекламной акции № {0}', N'Spots de la campaña publicitaria N.º {0}'),
+(N'Заменить', N'Sustituir'),
+(N'Активировано: {0}', N'Activadas: {0}'),
+(N'Активированы', N'Activadas'),
+(N'Активировать акцию с выбранными параметрами?', N'¿Activar la campaña con los parámetros seleccionados?'),
+(N'Выпусков для активации нет.', N'No hay emisiones para activar.'),
+(N'Дата (исходная)', N'Fecha (original)'),
+(N'Дата (новая)', N'Fecha (nueva)'),
+(N'Количество попыток поиска окна:', N'Número de intentos de búsqueda de ventana:'),
+(N'Назначьте предмет рекламы роликам акции № {0}', N'Asigne el rubro publicitario a los spots de la campaña N.º {0}'),
+(N'Не активировано: {0}', N'No activadas: {0}'),
+(N'Не активированы', N'No activadas'),
+(N'Не использовать окна, где есть ролики данной фирмы', N'No usar ventanas con spots de esta empresa'),
+(N'Невозможно активировать акцию, так как она содержит выпуски спонсорских программ без предмета рекламы. Операция прервана.', N'No se puede activar la campaña porque contiene emisiones de programas patrocinados sin rubro publicitario. Operación cancelada.'),
+(N'Параметры активации', N'Parámetros de activación'),
+(N'Параметры переноса', N'Parámetros de traslado'),
+(N'Перенесено: {0}', N'Trasladadas: {0}'),
+(N'Перенесены', N'Trasladadas'),
+(N'Поиск выполняется только в рамках того же дня. Позиция выпуска сохраняется без изменений.', N'La búsqueda se realiza solo dentro del mismo día. La posición de la emisión no cambia.'),
+(N'Предварительный просмотр результатов активации', N'Vista previa de los resultados de la activación'),
+(N'Пытаться переносить выпуски, которые не удалось активировать', N'Intentar trasladar las emisiones que no se pudieron activar'),
+(N'Разрешить перенос в окно с другой ценой', N'Permitir el traslado a una ventana con otro precio'),
+(N'Результаты активации', N'Resultados de la activación');
 GO
 
 BEGIN TRANSACTION;

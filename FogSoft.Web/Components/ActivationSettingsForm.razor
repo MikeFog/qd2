@@ -1,0 +1,43 @@
+@using FogSoft.WinForm.Classes
+@using Merlin.Classes
+
+@*
+    Содержимое диалога «Параметры активации» — веб-аналог ActionActivateSettingsForm:
+    галочка переноса и, при ней, параметры переноса. Значения пишутся прямо в
+    модель (ActionOnMassmedia.ActivationSettings) — её читает ObjectActions по «ОК».
+*@
+
+<p>@Tr.T("Активировать акцию с выбранными параметрами?")</p>
+
+<label class="check">
+    <input type="checkbox" class="form-check-input" @bind="Value.TryTransferFailedIssues" />
+    @Tr.T("Пытаться переносить выпуски, которые не удалось активировать")
+</label>
+
+<fieldset class="transfer" disabled="@(!Value.TryTransferFailedIssues)">
+    <legend>@Tr.T("Параметры переноса")</legend>
+    <label class="count">
+        @Tr.T("Количество попыток поиска окна:")
+        <input type="number" class="form-control form-control-sm" min="1" max="20" @bind="Attempts" />
+    </label>
+    <label class="check">
+        <input type="checkbox" class="form-check-input" @bind="Value.AllowDifferentWindowPrice" />
+        @Tr.T("Разрешить перенос в окно с другой ценой")
+    </label>
+    <label class="check">
+        <input type="checkbox" class="form-check-input" @bind="Value.AvoidFirmRollerWindows" />
+        @Tr.T("Не использовать окна, где есть ролики данной фирмы")
+    </label>
+    <p class="text-muted hint">@Tr.T("Поиск выполняется только в рамках того же дня. Позиция выпуска сохраняется без изменений.")</p>
+</fieldset>
+
+@code {
+    [Parameter, EditorRequired] public ActionOnMassmedia.ActivationSettings Value { get; set; } = default!;
+
+    // Как NumericUpDown десктопа: 1..20, введённое вне границ прижимается к ним.
+    private int Attempts
+    {
+        get => Value.TransferAttemptCount;
+        set => Value.TransferAttemptCount = Math.Clamp(value, 1, 20);
+    }
+}

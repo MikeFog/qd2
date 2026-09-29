@@ -70,31 +70,22 @@ namespace Merlin.Classes
 
 		private bool CheckActionRollersAndProgramIssues()
 		{
-			Dictionary<string, object> procParameters = DataAccessor.CreateParametersDictionary();
-			procParameters[ParamNames.ActionId] = ActionId;
-			DataSet dataSet = DataAccessor.LoadDataSet("RollersWithoutAdvertype", procParameters);
-			DataTable dtRollers = dataSet.Tables[0];
-			DataTable dtProgramIssues = dataSet.Tables[1];
-
-			if (dtRollers.Rows.Count > 0)
+			CheckAdvertTypes(out bool rollersWithout, out bool programIssuesWithout);
+			if (rollersWithout)
 			{
-				// allow rhe user assign advert type for rollers without it and then try to activate again without test flag.
-				// If there are still rollers without advert type - show message and do not activate
+				// дать назначить предмет рекламы роликам без него и проверить ещё раз;
+				// если такие ролики остались — не активировать
 				SetAdvertTypeOrSubstituteRoller();
-				dataSet = DataAccessor.LoadDataSet("RollersWithoutAdvertype", procParameters);
-				dtRollers = dataSet.Tables[0];
-				if (dtRollers.Rows.Count > 0)
+				CheckAdvertTypes(out rollersWithout, out _);
+				if (rollersWithout)
 				{
 					UserMessage.ShowExclamation(MessageAccessor.GetMessage("ActivationWithRollersWithoutAdvType"));
 					return false;
 				}
 			}
 
-			if (dtProgramIssues.Rows.Count > 0)
-			{
-				// the same for program issues without advert type
+			if (programIssuesWithout)
 				UserMessage.ShowExclamation(Properties.Resources.ActivationWithProgramIssuesWithoutAdvType);
-			}
 			return true;
 		}
 
@@ -154,20 +145,15 @@ namespace Merlin.Classes
 			}
 		}
 
-		// ActivateAction перенесён целиком, без разреза — деловая логика
-		// активации и подготовка трёх виртуальных сущностей для отображения
-		// результата переплетены; см. комментарий у места переноса в
-		// ActionOnMassmedia.cs.
+		// Запись и разбор результата — ActionOnMassmedia.RunActivation (ядро); здесь окно
+		// параметров и показ трёх журналов результата.
 		private void ActivateAction(bool isTestActivation)
 		{
-			bool tryTransferFailedIssues = false;
-			bool allowDifferentWindowPrice = false;
-			bool avoidFirmRollerWindows = true;
-			int transferAttemptCount = 0;
-
 			try
 			{
 				if (!isTestActivation && !CheckActionRollersAndProgramIssues()) return;
+
+				ActivationSettings settings = ActivationSettings.NoTransfer;
 				if (!isTestActivation)
 				{
 					using (ActionActivateSettingsForm form = new ActionActivateSettingsForm())
@@ -175,119 +161,45 @@ namespace Merlin.Classes
 						if (form.ShowDialog(Globals.MdiParent) != DialogResult.OK)
 							return;
 
-						tryTransferFailedIssues = form.TryTransferFailedIssues;
-						allowDifferentWindowPrice = form.AllowDifferentWindowPrice;
-						avoidFirmRollerWindows = form.AvoidFirmRollerWindows;
-						transferAttemptCount = form.TransferAttemptCount;
+						settings = new ActivationSettings
+						{
+							TryTransferFailedIssues = form.TryTransferFailedIssues,
+							AllowDifferentWindowPrice = form.AllowDifferentWindowPrice,
+							AvoidFirmRollerWindows = form.AvoidFirmRollerWindows,
+							TransferAttemptCount = form.TransferAttemptCount,
+						};
 					}
 				}
 
 				Cursor.Current = Cursors.WaitCursor;
-				parameters["isTestActivate"] = isTestActivation;
-				parameters["tryTransferFailedIssues"] = tryTransferFailedIssues;
-				parameters["allowDifferentWindowPrice"] = allowDifferentWindowPrice;
-				parameters["avoidFirmRollerWindows"] = avoidFirmRollerWindows;
-				parameters["transferAttemptCount"] = transferAttemptCount;
+				ActivationResult result = RunActivation(isTestActivation, settings);
 
-				DataAccessor.PrepareParameters(
-					parameters, entity, InterfaceObjects.FakeModule, Constants.Actions.Activate);
-				DataSet ds = (DataSet)DataAccessor.DoAction(parameters);
+				string caption = isTestActivation
+					? "Предварительный просмотр результатов активации"
+					: "Результаты активации";
+				ShowActivationJournal(result.Activated, -5000, "Активированные выпуски", "ActivatedIssues", "Issue.png",
+					caption + ": активированное", ActivationColumns.Issues());
+				ShowActivationJournal(result.Transferred, -5002, "Перенесённые выпуски", "TransferredIssues", "issue_transferred.png",
+					caption + ": перенесенное", ActivationColumns.Transferred());
+				ShowActivationJournal(result.NotActivated, -5001, "Неактивированные выпуски", "NotActivatedIssues", "DeletedIssues.png",
+					caption + ": неактивированное", ActivationColumns.Issues());
 
-				if (ds.Tables["activated"].Rows.Count > 0)
-				{
-					Entity activatedEntity = EntityManager.CreateVirtualEntity(
-						-5000,
-						"Активированные выпуски",
-						"ActivatedIssues",
-						"issueID",
-						"Issue.png",
-						new Entity.Attribute("radiostationName", "Радиостанция", "nvarchar"),
-						new Entity.Attribute("groupName", "Группа", "nvarchar"),
-						new Entity.Attribute("name", "Ролик/Программа", "nvarchar"),
-						new Entity.Attribute("advertTypeName", "Предмет рекламы", "nvarchar"),
-						new Entity.Attribute("issueDate", "Дата", "datetime"),
-						new Entity.Attribute("duration", "Пр-ть", "nvarchar"),
-						new Entity.Attribute("issuePosition", "Порядок", "nvarchar"),
-						new Entity.Attribute("statusDescription", "Статус", "nvarchar"));
-					Globals.ShowSimpleJournal(
-						activatedEntity,
-						(isTestActivation
-							? "Предварительный просмотр результатов активации"
-							: "Результаты активации") + ": активированное"
-						, ds.Tables["activated"]);
-				}
-
-				DataTable transferred = ds.Tables.Contains("transferred")
-					? ds.Tables["transferred"]
-					: (ds.Tables.Count > 3 ? ds.Tables[3] : null);
-				if (transferred != null && transferred.Rows.Count > 0)
-				{
-					Entity transferredEntity = EntityManager.CreateVirtualEntity(
-						-5002,
-						"Перенесённые выпуски",
-						"TransferredIssues",
-						"issueID",
-						"issue_transferred.png",
-						new Entity.Attribute("radiostationName", "Радиостанция", "nvarchar"),
-						new Entity.Attribute("groupName", "Группа", "nvarchar"),
-						new Entity.Attribute("name", "Ролик/Программа", "nvarchar"),
-						new Entity.Attribute("advertTypeName", "Предмет рекламы", "nvarchar"),
-						new Entity.Attribute("oldIssueDate", "Дата (исходная)", "datetime"),
-						new Entity.Attribute("issueDate", "Дата (новая)", "datetime"),
-						new Entity.Attribute("duration", "Пр-ть", "nvarchar"),
-						new Entity.Attribute("issuePosition", "Порядок", "nvarchar"),
-						new Entity.Attribute("statusDescription", "Статус", "nvarchar"));
-
-					Globals.ShowSimpleJournal(
-						transferredEntity,
-						(isTestActivation
-							? "Предварительный просмотр результатов активации"
-							: "Результаты активации") + ": перенесенное"
-						, transferred);
-				}
-
-				if (ds.Tables["notactivated"].Rows.Count > 0)
-				{
-					Entity notActivatedEntity = EntityManager.CreateVirtualEntity(
-						-5001,
-						"Неактивированные выпуски",
-						"NotActivatedIssues",
-						"issueID",
-						"DeletedIssues.png",
-						new Entity.Attribute("radiostationName", "Радиостанция", "nvarchar"),
-						new Entity.Attribute("groupName", "Группа", "nvarchar"),
-						new Entity.Attribute("name", "Ролик/Программа", "nvarchar"),
-						new Entity.Attribute("advertTypeName", "Предмет рекламы", "nvarchar"),
-						new Entity.Attribute("issueDate", "Дата", "datetime"),
-						new Entity.Attribute("duration", "Пр-ть", "nvarchar"),
-						new Entity.Attribute("issuePosition", "Порядок", "nvarchar"),
-						new Entity.Attribute("statusDescription", "Статус", "nvarchar"));
-					Globals.ShowSimpleJournal(
-						notActivatedEntity,
-						(isTestActivation
-							? "Предварительный просмотр результатов активации"
-							: "Результаты активации") + ": неактивированное"
-						, ds.Tables["notactivated"]);
-				}
-
-				bool errorFlag = false;
-				if (ds.Tables["fatal_errors"].Rows.Count > 0)
-				{
-					UserMessage.ShowExclamation(ds.Tables["fatal_errors"].Rows[0]["errorMessage"].ToString());
-					errorFlag = true;
-				}
-
-				if (!isTestActivation && !errorFlag)
-				{
-					Refresh();
-					Recalculate();
-					OnObjectDeleted(this);
-				}
+				if (result.FatalError != null)
+					UserMessage.ShowExclamation(result.FatalError);
 			}
 			finally
 			{
 				Cursor.Current = Cursors.Default;
 			}
+		}
+
+		private static void ShowActivationJournal(DataTable table, int entityId, string entityName, string codeName,
+			string iconName, string caption, Entity.Attribute[] columns)
+		{
+			if (table == null || table.Rows.Count == 0)
+				return;
+			Entity entity = EntityManager.CreateVirtualEntity(entityId, entityName, codeName, "issueID", iconName, columns);
+			Globals.ShowSimpleJournal(entity, caption, table);
 		}
 
 		private bool IsSplitOrMergeEnabled(DateTime startDate)

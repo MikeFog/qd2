@@ -279,7 +279,7 @@ public sealed partial class ObjectActions
 		},
 		// ActionOnMassmedia.WinForms.cs, DoAction: операции журнала акций, которые решаются
 		// вопросом, выбором из списка или небольшим окном. «Восстановить» ловит и удалённую акцию
-		// (ActionDeleted — наследник). Активация, «Разделить кампании» и клон — следующие партии.
+		// (ActionDeleted — наследник). «Разделить кампании» и клон — следующая партия.
 		["ActionOnMassmedia"] = new()
 		{
 			[Merlin.Classes.Action.ActionNames.Recalculate] = (s, t) => s.RecalculateAction((Merlin.Classes.ActionOnMassmedia)t),
@@ -289,6 +289,8 @@ public sealed partial class ObjectActions
 			[Merlin.Classes.Action.ActionNames.ActionRollers] = (s, t) => s.ShowActionRollers((Merlin.Classes.ActionOnMassmedia)t),
 			[Merlin.Classes.Action.ActionNames.Restore] = (s, t) => s.RestoreAction((Merlin.Classes.ActionOnMassmedia)t),
 			[Merlin.Classes.Action.ActionNames.ChangePaymentTypeMass] = (s, t) => s.ChangePaymentTypeMass((Merlin.Classes.ActionOnMassmedia)t),
+			[Merlin.Classes.Action.ActionNames.Activate] = (s, t) => s.ActivateAction((Merlin.Classes.ActionOnMassmedia)t, isTest: false),
+			[Merlin.Classes.Action.ActionNames.ActivateTest] = (s, t) => s.ActivateAction((Merlin.Classes.ActionOnMassmedia)t, isTest: true),
 		},
 		// Campaign.WinForms.cs, DoAction: смена агентства и типа оплаты кампании — у всех
 		// видов кампаний (линейная, модульная, спонсорская, пакетная). Класс internal —
@@ -1513,11 +1515,12 @@ public sealed partial class ObjectActions
 	/// у строк — «Назначить предмет рекламы» и «Заменить рекламный ролик». Список
 	/// перечитывается после каждого действия; по закрытии перечитывается и сама акция.
 	/// </summary>
-	private async Task<ActionEffect> EditActionRollers(Merlin.Classes.Action action)
+	/// <param name="title">Заголовок окна; null — «Ролики рекламной акции № N».</param>
+	private async Task<ActionEffect> EditActionRollers(Merlin.Classes.Action action, string? title = null)
 	{
 		Entity entity = EntityManager.GetEntity((int)Merlin.Entities.ActionRollers);
 		int actionId = action.ActionId;
-		await _dialogs.ShowAsync(Tr.Format("Ролики рекламной акции № {0}", actionId), builder =>
+		await _dialogs.ShowAsync(title ?? Tr.Format("Ролики рекламной акции № {0}", actionId), builder =>
 		{
 			builder.OpenComponent<LiveObjectList>(0);
 			builder.AddComponentParameter(1, nameof(LiveObjectList.Entity), entity);
@@ -1525,6 +1528,61 @@ public sealed partial class ObjectActions
 			builder.CloseComponent();
 		}, okText: Tr.T("Закрыть"), wide: true);
 		return ActionEffect.Changed;
+	}
+
+	// ---------- Партия 3: активация ----------
+
+	/// <summary>
+	/// ActionOnMassmedia.ActivateAction. Предпросмотр — сразу прогон без переноса и показ
+	/// результата. Активация: ролики без предмета рекламы — окно роликов акции (назначить),
+	/// повторная проверка, если остались — отказ; выпуски программ без предмета — только
+	/// предупреждение; затем «Параметры активации», прогон и результат одним окном
+	/// (ActivationResultView) вместо трёх журналов десктопа. Акция без фатальной ошибки
+	/// уходит из журнала макетов — для этого экрана это удаление.
+	/// </summary>
+	private async Task<ActionEffect> ActivateAction(Merlin.Classes.ActionOnMassmedia action, bool isTest)
+	{
+		string activate = Tr.T("Активировать");
+		var settings = Merlin.Classes.ActionOnMassmedia.ActivationSettings.NoTransfer;
+
+		if (!isTest)
+		{
+			bool rollersWithout = false, programIssuesWithout = false;
+			await _busy.RunAsync(() => action.CheckAdvertTypes(out rollersWithout, out programIssuesWithout));
+			if (rollersWithout)
+			{
+				await EditActionRollers(action, Tr.Format("Назначьте предмет рекламы роликам акции № {0}", action.ActionId));
+				await _busy.RunAsync(() => action.CheckAdvertTypes(out rollersWithout, out _));
+				if (rollersWithout)
+				{
+					await ShowInfo(activate, MessageAccessor.GetMessage("ActivationWithRollersWithoutAdvType"));
+					return ActionEffect.Changed;
+				}
+			}
+			if (programIssuesWithout)
+				await ShowInfo(activate, Tr.T(Merlin.Properties.Resources.ActivationWithProgramIssuesWithoutAdvType));
+
+			settings = new Merlin.Classes.ActionOnMassmedia.ActivationSettings { TransferAttemptCount = 1 };
+			if (await _dialogs.ShowAsync(Tr.T("Параметры активации"), builder =>
+				{
+					builder.OpenComponent<ActivationSettingsForm>(0);
+					builder.AddComponentParameter(1, nameof(ActivationSettingsForm.Value), settings);
+					builder.CloseComponent();
+				}, okText: activate) != DialogOutcome.Ok)
+				return ActionEffect.None;
+		}
+
+		var result = await _busy.RunAsync(() => action.RunActivation(isTest, settings));
+		await _dialogs.ShowAsync(
+			isTest ? Tr.T("Предварительный просмотр результатов активации") : Tr.T("Результаты активации"),
+			builder =>
+			{
+				builder.OpenComponent<ActivationResultView>(0);
+				builder.AddComponentParameter(1, nameof(ActivationResultView.Value), result);
+				builder.CloseComponent();
+			}, okText: Tr.T("Закрыть"), wide: true);
+
+		return !isTest && result.FatalError == null ? ActionEffect.Deleted : ActionEffect.None;
 	}
 
 	/// <summary>ActionRoller.SetAdvertType: выбор предмета рекламы, запись.</summary>

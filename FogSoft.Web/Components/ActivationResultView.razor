@@ -1,0 +1,65 @@
+@using System.Data
+@using FogSoft.WinForm.Classes
+@using Merlin.Classes
+
+@*
+    Результат активации (и её предпросмотра) одним окном — вместо трёх журналов
+    подряд десктопа (ActivateAction): сверху сводка, ниже блоки «не активировано»,
+    «перенесено», «активировано». Пустые блоки не показываются; проблемы — первыми.
+*@
+
+@if (Value.FatalError != null)
+{
+    <div class="alert alert-danger">@Value.FatalError</div>
+}
+
+<div class="summary">
+    <span class="chip @(Count(Value.NotActivated) > 0 ? "bad" : "")">@Tr.Format("Не активировано: {0}", Count(Value.NotActivated))</span>
+    <span class="chip @(Count(Value.Transferred) > 0 ? "warn" : "")">@Tr.Format("Перенесено: {0}", Count(Value.Transferred))</span>
+    <span class="chip ok">@Tr.Format("Активировано: {0}", Count(Value.Activated))</span>
+</div>
+
+@if (_blocks.Count == 0 && Value.FatalError == null)
+{
+    <p class="text-muted">@Tr.T("Выпусков для активации нет.")</p>
+}
+
+@foreach (var block in _blocks)
+{
+    <section class="block">
+        <h6>@Tr.T(block.Caption) <span class="text-muted">(@block.Data.Rows.Count)</span></h6>
+        <div style="height: @(ListHeight(block.Data.Rows.Count))px">
+            <ObjectList Entity="block.Entity" Data="block.Data" ReadOnly="true" />
+        </div>
+    </section>
+}
+
+@code {
+    [Parameter, EditorRequired] public ActionOnMassmedia.ActivationResult Value { get; set; } = default!;
+
+    private sealed record Block(string Caption, Entity Entity, DataTable Data);
+
+    private readonly List<Block> _blocks = new();
+
+    protected override void OnParametersSet()
+    {
+        _blocks.Clear();
+        Add("Не активированы", -5001, "NotActivatedIssues", Value.NotActivated, ActionOnMassmedia.ActivationColumns.Issues()); // i18n-ok: подпись блока переводится при показе (Tr.T(block.Caption))
+        Add("Перенесены", -5002, "TransferredIssues", Value.Transferred, ActionOnMassmedia.ActivationColumns.Transferred()); // i18n-ok: подпись блока переводится при показе (Tr.T(block.Caption))
+        Add("Активированы", -5000, "ActivatedIssues", Value.Activated, ActionOnMassmedia.ActivationColumns.Issues()); // i18n-ok: подпись блока переводится при показе (Tr.T(block.Caption))
+    }
+
+    // Виртуальные сущности — как у десктопа (те же id и колонки); живут только в этом окне.
+    private void Add(string caption, int id, string codeName, DataTable? data, Entity.Attribute[] columns)
+    {
+        if (data == null || data.Rows.Count == 0)
+            return;
+        Entity entity = EntityManager.CreateVirtualEntity(id, caption, codeName, "issueID", columns);
+        _blocks.Add(new Block(caption, entity, data));
+    }
+
+    private static int Count(DataTable? t) => t?.Rows.Count ?? 0;
+
+    // До 12 строк видно целиком, дальше — прокрутка внутри блока (строка 29px + шапка и итоги).
+    private static int ListHeight(int rows) => Math.Min(rows, 12) * 29 + 72;
+}

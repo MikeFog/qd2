@@ -1713,3 +1713,46 @@ code	Месяцы — справка на каждый отмеченный ме
 code	Включать цену	Incluir precio
 code	Счёт № {0} от {1}{2} к акции № {3}	Factura n.º {0} del {1}{2} de la campaña n.º {3}
 code	за месяц {0} года	del mes de {0}
+code	Объединить с ...	Combinar con...
+code	Объединить	Combinar
+code	Разделить	Dividir
+code	Выберите рекламные кампании, которые хотите перенести в новую акцию	Seleccione las pautas publicitarias que desea trasladar a una nueva campaña
+code	Сменить	Cambiar
+code	Статистика по роликам для акции №{0}	Estadística de spots de la campaña N.º {0}
+code	Рекламное агентство	Agencia publicitaria
+code	Типы оплаты	Tipos de pago
+code	Невозможно сменить агентство для выбранной рекламной кампании. Она либо завершилась, либо началась в одном из предыдущих месяцев.	No se puede cambiar la agencia de la pauta publicitaria seleccionada: ya terminó o comenzó en uno de los meses anteriores.
+code	Невозможно сменить тип оплаты для выбранной рекламной кампании. Она либо завершилась, либо началась в одном из предыдущих месяцев.	No se puede cambiar el tipo de pago de la pauta publicitaria seleccionada: ya terminó o comenzó en uno de los meses anteriores.
+code	Выберите другую дату.	Seleccione otra fecha.
+code	Выберите тип оплаты.	Seleccione el tipo de pago.
+code	Новый тип оплаты	Nuevo tipo de pago
+code	Отметьте кампании, у которых нужно сменить тип оплаты.	Marque las pautas cuyo tipo de pago desea cambiar.
+code	Ошибки смены типа оплаты	Errores al cambiar el tipo de pago
+code	Перенести на	Trasladar al
+code	Переносимый день	Día a trasladar
+code	Прайс-лист действует	Lista de precios vigente
+code	прайс-листа на этот день нет	no hay lista de precios para este día
+code	с {0} по {1}	del {0} al {1}
+code	Ролики рекламной акции № {0}	Spots de la campaña publicitaria N.º {0}
+code	Заменить	Sustituir
+code	Активировано: {0}	Activadas: {0}
+code	Активированы	Activadas
+code	Активировать акцию с выбранными параметрами?	¿Activar la campaña con los parámetros seleccionados?
+code	Выпусков для активации нет.	No hay emisiones para activar.
+code	Дата (исходная)	Fecha (original)
+code	Дата (новая)	Fecha (nueva)
+code	Количество попыток поиска окна:	Número de intentos de búsqueda de ventana:
+code	Назначьте предмет рекламы роликам акции № {0}	Asigne el rubro publicitario a los spots de la campaña N.º {0}
+code	Не активировано: {0}	No activadas: {0}
+code	Не активированы	No activadas
+code	Не использовать окна, где есть ролики данной фирмы	No usar ventanas con spots de esta empresa
+code	Невозможно активировать акцию, так как она содержит выпуски спонсорских программ без предмета рекламы. Операция прервана.	No se puede activar la campaña porque contiene emisiones de programas patrocinados sin rubro publicitario. Operación cancelada.
+code	Параметры активации	Parámetros de activación
+code	Параметры переноса	Parámetros de traslado
+code	Перенесено: {0}	Trasladadas: {0}
+code	Перенесены	Trasladadas
+code	Поиск выполняется только в рамках того же дня. Позиция выпуска сохраняется без изменений.	La búsqueda se realiza solo dentro del mismo día. La posición de la emisión no cambia.
+code	Предварительный просмотр результатов активации	Vista previa de los resultados de la activación
+code	Пытаться переносить выпуски, которые не удалось активировать	Intentar trasladar las emisiones que no se pudieron activar
+code	Разрешить перенос в окно с другой ценой	Permitir el traslado a una ventana con otro precio
+code	Результаты активации	Resultados de la activación

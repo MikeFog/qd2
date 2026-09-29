@@ -511,12 +511,9 @@ namespace Merlin.Classes
 			OnObjectDeleted(this);
 		}
 
-		// Merge и ActivateAction переехали в ActionOnMassmedia.WinForms.cs.
-		// ActivateAction перенесён целиком без разреза: ActivateAction слишком плотно
-		// переплетён с отображением трёх журналов результатов через
-		// специально созданные для показа виртуальные сущности — деловая
-		// логика активации и подготовка данных для отображения не разделяются
-		// без переделки самого способа сообщать результат активации.
+		// Merge (диалог) переехал в ActionOnMassmedia.WinForms.cs. Активация разрезана
+		// (2026-09-29): запись и разбор результата — RunActivation здесь, окна
+		// настроек и показ результата — в UI (десктоп и веб).
 
 		/// <summary>Кандидаты на объединение с этой акцией. null, если объединять не с чем.</summary>
 		public DataTable GetActionsForMerge()
@@ -620,12 +617,108 @@ namespace Merlin.Classes
 			OnObjectDeleted(this);
 		}
 
-        // ActivateAction переехал в ActionOnMassmedia.WinForms.cs (см. комментарий выше).
+        /// <summary>Параметры активации — окно «Параметры активации».</summary>
+        public sealed class ActivationSettings
+        {
+            /// <summary>Пытаться переносить выпуски, которые не удалось активировать.</summary>
+            public bool TryTransferFailedIssues { get; set; }
+            public bool AllowDifferentWindowPrice { get; set; }
+            public bool AvoidFirmRollerWindows { get; set; } = true;
+            public int TransferAttemptCount { get; set; }
 
-        // CheckActionRollersAndProgramIssues переехал в
-        // ActionOnMassmedia.WinForms.cs (вызывает UI-метод
-        // SetAdvertTypeOrSubstituteRoller и сам содержит показ сообщений;
-        // используется только из уже перенесённого ActivateAction).
+            /// <summary>Параметры без переноса — предпросмотр и «ОК» без галочки.</summary>
+            public static ActivationSettings NoTransfer => new ActivationSettings();
+        }
+
+        /// <summary>Что вернула активация (или её предпросмотр).</summary>
+        public sealed class ActivationResult
+        {
+            public DataTable Activated { get; internal set; }
+            public DataTable Transferred { get; internal set; }
+            public DataTable NotActivated { get; internal set; }
+            /// <summary>Фатальная ошибка процедуры; null — её нет.</summary>
+            public string FatalError { get; internal set; }
+        }
+
+        /// <summary>
+        /// Ролики и выпуски программ без предмета рекламы. Ролики без предмета не дают
+        /// активировать (их сначала назначают в окне «ролики акции»); выпуски программ —
+        /// только предупреждение.
+        /// </summary>
+        public void CheckAdvertTypes(out bool rollersWithout, out bool programIssuesWithout)
+        {
+            Dictionary<string, object> procParameters = DataAccessor.CreateParametersDictionary();
+            procParameters[ParamNames.ActionId] = ActionId;
+            DataSet dataSet = DataAccessor.LoadDataSet("RollersWithoutAdvertype", procParameters);
+            rollersWithout = dataSet.Tables[0].Rows.Count > 0;
+            programIssuesWithout = dataSet.Tables[1].Rows.Count > 0;
+        }
+
+        /// <summary>
+        /// Активация (или предпросмотр при <paramref name="isTest"/>). После настоящей
+        /// активации без фатальной ошибки акция перечитывается, пересчитывается и уходит
+        /// из журнала макетов (OnObjectDeleted) — как было в десктопе.
+        /// </summary>
+        public ActivationResult RunActivation(bool isTest, ActivationSettings settings)
+        {
+            parameters["isTestActivate"] = isTest;
+            parameters["tryTransferFailedIssues"] = settings.TryTransferFailedIssues;
+            parameters["allowDifferentWindowPrice"] = settings.TryTransferFailedIssues && settings.AllowDifferentWindowPrice;
+            parameters["avoidFirmRollerWindows"] = settings.TryTransferFailedIssues && settings.AvoidFirmRollerWindows;
+            parameters["transferAttemptCount"] = settings.TryTransferFailedIssues ? settings.TransferAttemptCount : 0;
+
+            DataAccessor.PrepareParameters(parameters, entity, InterfaceObjects.FakeModule, Constants.Actions.Activate);
+            DataSet ds = (DataSet)DataAccessor.DoAction(parameters);
+
+            var result = new ActivationResult
+            {
+                Activated = ds.Tables["activated"],
+                Transferred = ds.Tables.Contains("transferred")
+                    ? ds.Tables["transferred"]
+                    : (ds.Tables.Count > 3 ? ds.Tables[3] : null),
+                NotActivated = ds.Tables["notactivated"],
+                FatalError = ds.Tables["fatal_errors"].Rows.Count > 0
+                    ? ds.Tables["fatal_errors"].Rows[0]["errorMessage"].ToString()
+                    : null,
+            };
+
+            if (!isTest && result.FatalError == null)
+            {
+                Refresh();
+                Recalculate();
+                OnObjectDeleted(this);
+            }
+            return result;
+        }
+
+        /// <summary>Колонки таблиц результата активации — общие для десктопа и веба.</summary>
+        public static class ActivationColumns
+        {
+            public static Entity.Attribute[] Issues() => new[]
+            {
+                new Entity.Attribute("radiostationName", "Радиостанция", "nvarchar"),
+                new Entity.Attribute("groupName", "Группа", "nvarchar"),
+                new Entity.Attribute("name", "Ролик/Программа", "nvarchar"),
+                new Entity.Attribute("advertTypeName", "Предмет рекламы", "nvarchar"),
+                new Entity.Attribute("issueDate", "Дата", "datetime"),
+                new Entity.Attribute("duration", "Пр-ть", "nvarchar"),
+                new Entity.Attribute("issuePosition", "Порядок", "nvarchar"),
+                new Entity.Attribute("statusDescription", "Статус", "nvarchar"),
+            };
+
+            public static Entity.Attribute[] Transferred() => new[]
+            {
+                new Entity.Attribute("radiostationName", "Радиостанция", "nvarchar"),
+                new Entity.Attribute("groupName", "Группа", "nvarchar"),
+                new Entity.Attribute("name", "Ролик/Программа", "nvarchar"),
+                new Entity.Attribute("advertTypeName", "Предмет рекламы", "nvarchar"),
+                new Entity.Attribute("oldIssueDate", "Дата (исходная)", "datetime"),
+                new Entity.Attribute("issueDate", "Дата (новая)", "datetime"),
+                new Entity.Attribute("duration", "Пр-ть", "nvarchar"),
+                new Entity.Attribute("issuePosition", "Порядок", "nvarchar"),
+                new Entity.Attribute("statusDescription", "Статус", "nvarchar"),
+            };
+        }
 
         public static ActionOnMassmedia GetActionById(int actionId)
 		{
