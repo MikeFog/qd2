@@ -38,11 +38,45 @@ namespace Merlin.Classes
         {
         }
 
-        // AssignNew, AssignMany, ValidatePassportData переехали в
-        // PackageDiscountPriceList.WinForms.cs. ValidatePassportData показывает
-        // сообщение сама — так устроен делегатный контракт с UniversalPassportForm
-        // (ValidateDataDelegate: bool(Dictionary<string,object>)), развести без
-        // правки самой формы нельзя.
+        // AssignNew и AssignMany (окна) — в PackageDiscountPriceList.WinForms.cs; данные для
+        // карточки станций, проверка и запись — здесь, их зовут и десктоп, и веб.
+
+        /// <summary>Имя именованного паспорта «Радиостанции» (iPassport).</summary>
+        internal const string RadioStationsPassport = "PackDiscountRadiostations";
+
+        /// <summary>
+        /// «Добавить» открывает карточку станций галочками, пока у прайс-листа станций нет;
+        /// когда уже есть — обычную карточку одной станции.
+        /// </summary>
+        internal bool NeedsRadioStationsAssignment => GetContent().Rows.Count == 0;
+
+        /// <summary>
+        /// Данные карточки станций: все радиостанции (набор «massmedia» для selector);
+        /// накопленные прежде изменения набора сбрасываются.
+        /// </summary>
+        internal DataSet PrepareRadioStationsAssignment()
+        {
+            DataTable dt = EntityManager.GetEntity((int)Entities.MassMedia).GetContent();
+            dt.TableName = "massmedia";
+            DataSet ds = new DataSet();
+            ds.Tables.Add(dt.Copy());
+            childrenChangesList.Clear();
+            return ds;
+        }
+
+        /// <summary>Проверка карточки станций: текст отказа или null.</summary>
+        internal string ValidateRadioStationsAssignment(Dictionary<string, object> parameters)
+        {
+            if (!IsChecked(parameters, ParamNames.isForType1) && !IsChecked(parameters, ParamNames.isForType2)
+                && !IsChecked(parameters, ParamNames.isForType3))
+                return Tr.T(Properties.Resources.NoCampaignTypeSelected);
+            if (SelectedRadioStations.Count == 0)
+                return Tr.T(Properties.Resources.NoRadiostationSelected);
+            return null;
+        }
+
+        private static bool IsChecked(Dictionary<string, object> parameters, string name) =>
+            parameters.TryGetValue(name, out object value) && value is bool b && b;
 
         /// <summary>
         /// Черновик копии прайс-листа: значения исходного, но без ключа, с пометкой Clone и ссылкой на
@@ -100,5 +134,26 @@ namespace Merlin.Classes
                 return radioStations;
             }
         }
+    }
+
+    /// <summary>
+    /// «Добавить» у прайс-листа пакетной скидки снаружи сборки (веб):
+    /// PackageDiscountPriceList internal.
+    /// </summary>
+    public static class PackageDiscountStations
+    {
+        public const string PassportName = PackageDiscountPriceList.RadioStationsPassport;
+
+        public static bool NeedsAssignment(PresentationObject pricelist) =>
+            ((PackageDiscountPriceList)pricelist).NeedsRadioStationsAssignment;
+
+        public static DataSet Prepare(PresentationObject pricelist) =>
+            ((PackageDiscountPriceList)pricelist).PrepareRadioStationsAssignment();
+
+        public static string Validate(PresentationObject pricelist, Dictionary<string, object> parameters) =>
+            ((PackageDiscountPriceList)pricelist).ValidateRadioStationsAssignment(parameters);
+
+        public static void Apply(PresentationObject pricelist, Dictionary<string, object> parameters) =>
+            ((PackageDiscountPriceList)pricelist).ApplyRadioStationsAssignment(parameters);
     }
 }

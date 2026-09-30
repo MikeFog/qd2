@@ -184,6 +184,12 @@ public sealed partial class ObjectActions
 		{
 			[Constants.EntityActions.AssignNew] = (s, t) => s.AddChildAdvertType((Merlin.Classes.AdvertType)t),
 		},
+		// PackageDiscountPriceList.AssignNew: пока станций нет — карточка станций галочками с
+		// типами кампаний (PackDiscountRadiostations), затем — обычная карточка одной станции.
+		["PackageDiscountPriceList"] = new()
+		{
+			[Constants.EntityActions.AssignNew] = (s, t) => s.AddPackageDiscountStations((PresentationObject)t),
+		},
 		// ComboModuleContainer.AssignNew: «Добавить» у комбо-модуля — состав галочками по
 		// каталогу модулей активных станций (как «Редактировать рекламные окна»).
 		["ComboModuleContainer"] = new()
@@ -415,8 +421,6 @@ public sealed partial class ObjectActions
 	{
 		// «Свойства» открывают форму редактирования акции (ActionForm) — этап 3.
 		["ActionOnMassmedia"] = new[] { Constants.EntityActions.ShowPassport },
-		// Свой AssignNew: выбор из списка, мастер, набор галочками.
-		["PackageDiscountPriceList"] = new[] { Constants.EntityActions.AssignNew },
 		// Своё удаление: пересчёт, каскад, подтверждение другим текстом.
 		["MasterIssue"] = new[] { Constants.EntityActions.Delete },
 		["ModuleIssue"] = new[] { Constants.EntityActions.Delete },
@@ -1588,6 +1592,25 @@ public sealed partial class ObjectActions
 	{
 		PresentationObject draft = advertType.CreateChildDraft();
 		return await _passports.ShowAsync(draft, isNew: true) ? ActionEffect.ChildAdded : ActionEffect.None;
+	}
+
+	/// <summary>
+	/// PackageDiscountPriceList.AssignNew: у прайс-листа без станций — именованная карточка
+	/// «Радиостанции» (типы кампаний + станции галочками, AssignMany), у прайс-листа со станциями —
+	/// обычное «Добавить» одной станции (base.AssignNew).
+	/// </summary>
+	private async Task<ActionEffect> AddPackageDiscountStations(PresentationObject pricelist)
+	{
+		if (!await _busy.RunAsync(() => Merlin.Classes.PackageDiscountStations.NeedsAssignment(pricelist)))
+			return await AssignNew(pricelist);
+
+		DataSet data = await _busy.RunAsync(() => Merlin.Classes.PackageDiscountStations.Prepare(pricelist));
+		bool ok = await _namedPassports.ShowAsync(pricelist, Merlin.Classes.PackageDiscountStations.PassportName,
+			Tr.T("Радиостанции"), isNew: true,
+			values => Merlin.Classes.PackageDiscountStations.Validate(pricelist, values),
+			values => Merlin.Classes.PackageDiscountStations.Apply(pricelist, values),
+			data, fieldsEntity: EntityManager.GetEntity((int)Merlin.Entities.PackageDiscountMassmedia));
+		return ok ? ActionEffect.ChildAdded : ActionEffect.None;
 	}
 
 	/// <summary>ActionOnMassmedia.Restore: акция возвращается в журнал макетов.</summary>

@@ -75,10 +75,16 @@ public sealed class NamedPassportDialog
 	/// Какие поля сейчас недоступны — взаимозависимость контролов десктопной формы
 	/// (UpdateControlsStatus). Спрашивается при каждой отрисовке. null — доступно всё.
 	/// </param>
+	/// <param name="fieldsEntity">
+	/// Сущность, по атрибутам которой определяются типы полей паспорта, — третий аргумент
+	/// десктопного UniversalPassportForm, когда он не совпадает с сущностью черновика
+	/// (карточка станций пакетной скидки пишет в прайс-лист, а поля описаны у станций).
+	/// null — сущность черновика.
+	/// </param>
 	public Task<bool> ShowAsync(PresentationObject obj, string passportName, string caption, bool isNew,
 		Func<Dictionary<string, object>, string?> validate, Action<Dictionary<string, object>> apply,
-		DataSet? data = null, Func<string, bool>? fieldDisabled = null) =>
-		ShowCoreAsync(obj, passportName, caption, isNew, validate, apply, data, fieldDisabled);
+		DataSet? data = null, Func<string, bool>? fieldDisabled = null, Entity? fieldsEntity = null) =>
+		ShowCoreAsync(obj, passportName, caption, isNew, validate, apply, data, fieldDisabled, fieldsEntity);
 
 	/// <summary>
 	/// Вариант «значения уходят прямо в процедуру» — веб-аналог второго
@@ -92,11 +98,11 @@ public sealed class NamedPassportDialog
 	public Task<bool> ShowAsync(PresentationObject obj, string passportName, string procedureName, string caption,
 		bool isNew, Func<Dictionary<string, object>, string?> validate) =>
 		ShowCoreAsync(obj, passportName, caption, isNew, validate,
-			parameters => DataAccessor.ExecuteNonQuery(procedureName, parameters), null, null);
+			parameters => DataAccessor.ExecuteNonQuery(procedureName, parameters), null, null, null);
 
 	private async Task<bool> ShowCoreAsync(PresentationObject obj, string passportName, string caption, bool isNew,
 		Func<Dictionary<string, object>, string?> validate, Action<Dictionary<string, object>> apply,
-		DataSet? data, Func<string, bool>? fieldDisabled)
+		DataSet? data, Func<string, bool>? fieldDisabled, Entity? fieldsEntity)
 	{
 		// Справочники — той же процедурой, что у обычной карточки объекта шаблона
 		// (сущности, к которой относится передаваемый черновик), если вызывающий
@@ -128,7 +134,7 @@ public sealed class NamedPassportDialog
 				builder.OpenComponent<Passport>(3);
 				builder.AddComponentParameter(4, nameof(Passport.Object), obj);
 				builder.AddComponentParameter(5, nameof(Passport.Xml), xml);
-				builder.AddComponentParameter(6, nameof(Passport.Entity), obj.Entity);
+				builder.AddComponentParameter(6, nameof(Passport.Entity), fieldsEntity ?? obj.Entity);
 				builder.AddComponentParameter(7, nameof(Passport.IsNew), isNew);
 				builder.AddComponentParameter(8, nameof(Passport.Data), data);
 				builder.AddComponentParameter(9, nameof(Passport.InvalidField), invalidField);

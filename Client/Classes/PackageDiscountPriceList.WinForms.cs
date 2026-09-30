@@ -39,7 +39,7 @@ namespace Merlin.Classes
 
 		protected override void AssignNew(IWin32Window owner)
 		{
-			if (GetContent().Rows.Count == 0)
+			if (NeedsRadioStationsAssignment)
 				AssignMany((Form)owner);
 			else
 				base.AssignNew(owner);
@@ -47,12 +47,8 @@ namespace Merlin.Classes
 
 		private void AssignMany(Form owner)
 		{
-			DataTable dt = EntityManager.GetEntity((int)Entities.MassMedia).GetContent();
-			dt.TableName = "massmedia";
-			DataSet ds = new DataSet();
-			ds.Tables.Add(dt.Copy());
-			childrenChangesList.Clear();
-			UniversalPassportForm frm = new UniversalPassportForm(this, "PackDiscountRadiostations", "Радиостанции", EntityManager.GetEntity((int)Entities.PackageDiscountMassmedia),
+			DataSet ds = PrepareRadioStationsAssignment();
+			UniversalPassportForm frm = new UniversalPassportForm(this, RadioStationsPassport, "Радиостанции", EntityManager.GetEntity((int)Entities.PackageDiscountMassmedia),
 				ds, ValidatePassportData, ApplyPassportData);
 			if (frm.ShowDialog(owner) == DialogResult.OK)
 				FireContainerRefreshed();
@@ -60,20 +56,12 @@ namespace Merlin.Classes
 
 		private bool ValidatePassportData(Dictionary<string, object> parameters)
 		{
+			string message = ValidateRadioStationsAssignment(parameters);
+			if (message == null)
+				return true;
 
-			if (!(bool)parameters[ParamNames.isForType1] && !(bool)parameters[ParamNames.isForType2] && !(bool)parameters[ParamNames.isForType3])
-			{
-				UserMessage.ShowExclamation(Properties.Resources.NoCampaignTypeSelected);
-				return false;
-			}
-
-			if (SelectedRadioStations.Count == 0)
-			{
-				UserMessage.ShowExclamation(Properties.Resources.NoRadiostationSelected);
-				return false;
-			}
-
-			return true;
+			UserMessage.ShowExclamation(message);
+			return false;
 		}
 
 		private void ApplyPassportData(Dictionary<string, object> parameters)
