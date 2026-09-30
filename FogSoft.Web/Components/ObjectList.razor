@@ -69,7 +69,7 @@ else
                     <th class="col-icon"></th>
                     @foreach (var a in Columns)
                     {
-                        <th class="sortable" @onclick="() => SortBy(a.Name)">
+                        <th class="sortable @NumClass(a)" @onclick="() => SortBy(a.Name)">
                             @Tr.T(a.Alias)<span class="sort-mark">@SortMark(a.Name)</span>
                         </th>
                     }
@@ -95,7 +95,7 @@ else
                         <td class="col-icon"><i class="bi @_icon entity-icon" aria-hidden="true"></i></td>
                         @foreach (var a in Columns)
                         {
-                            <td title="@Display(row, a)">
+                            <td class="@NumClass(a)" title="@Display(row, a)">
                                 @if (IsBoolean(a))
                                 {
                                     @if (Display(row, a) == Tr.T("Да"))
@@ -142,7 +142,7 @@ else
                         {
                             @if (IsSummable(a))
                             {
-                                <td>
+                                <td class="@NumClass(a)">
                                     @if (_totals.TryGetValue(a.Name, out decimal total))
                                     {
                                         <button type="button" class="total-btn total-value" title="@(Tr.T("Сумма по колонке; щелчок — скрыть"))" @onclick="() => ToggleTotal(a.Name)">Σ @FormatTotal(a, total)</button>
@@ -357,6 +357,15 @@ else
     {
         ColumnInfoOf(attribute, out ColumnInfo? columnInfo);
         return ColumnInfo.IsBooleanData(columnInfo, attribute);
+    }
+
+    /// <summary>Деньги и дробные числа — по правому краю, как в десктопном гриде (формат "c"/"f").</summary>
+    private string NumClass(Entity.Attribute attribute)
+    {
+        ColumnInfoOf(attribute, out ColumnInfo? columnInfo);
+        return ColumnInfo.IsMoneyData(columnInfo, attribute) || ColumnInfo.IsFloatData(columnInfo, attribute)
+            ? "num"
+            : "";
     }
 
     private void ColumnInfoOf(Entity.Attribute attribute, out ColumnInfo? columnInfo) =>

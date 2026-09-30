@@ -139,6 +139,11 @@
     padding: 3px var(--s-3);
 }
 
+::deep .num {
+    text-align: right;
+    font-variant-numeric: tabular-nums;
+}
+
 ::deep .total-btn {
     padding: 0 6px;
     border: none;
