@@ -56,7 +56,7 @@ else
                         ColumnCaption="@SearchColumnCaption" ScopeReset="ResetSearchScope" />
     }
     <div class="data-table object-list">
-        <table class="table table-hover @(ReadOnly && !RowClick.HasDelegate ? "no-row-click" : "")">
+        <table class="table table-hover @(!ShowActions && !RowClick.HasDelegate ? "no-row-click" : "")">
             <thead>
                 <tr>
                     @if (SelectionEnabled)
@@ -73,7 +73,7 @@ else
                             @Tr.T(a.Alias)<span class="sort-mark">@SortMark(a.Name)</span>
                         </th>
                     }
-                    @if (!ReadOnly)
+                    @if (ShowActions)
                     {
                         <th class="col-actions"></th>
                     }
@@ -83,7 +83,7 @@ else
                 <Virtualize TItem="DataRow" Items="_rows" ItemSize="29" SpacerElement="tr" Context="row">
                     <tr class="@RowClass(row)"
                         @onclick="() => OpenPassport(row)"
-                        @oncontextmenu="e => OpenMenu(row, e, fromButton: false)" @oncontextmenu:preventDefault="!ReadOnly">
+                        @oncontextmenu="e => OpenMenu(row, e, fromButton: false)" @oncontextmenu:preventDefault="ShowActions">
                         @if (SelectionEnabled)
                         {
                             <td class="col-check" @onclick:stopPropagation="true">
@@ -109,7 +109,7 @@ else
                                 }
                             </td>
                         }
-                        @if (!ReadOnly)
+                        @if (ShowActions)
                         {
                             <td class="col-actions">
                                 @foreach (var quick in _quick)
@@ -158,7 +158,7 @@ else
                                 <td></td>
                             }
                         }
-                        @if (!ReadOnly)
+                        @if (ShowActions)
                         {
                             <td class="col-actions"></td>
                         }
@@ -277,6 +277,7 @@ else
             _sortColumn = null;
             _sortDescending = false;
             _quick = ResolveQuickActions();
+            _hasMenu = ResolveHasMenu();
 
             // Поиск переживает перечитывание той же сущности (после действия над строкой;
             // экран может отдать новую копию сущности — сравниваем по номеру), но не
@@ -753,6 +754,31 @@ else
     /// <summary>Строка, у которой открыто меню, — остаётся подсвеченной, пока меню видно.</summary>
     private DataRow? _menuRow;
 
+    /// <summary>
+    /// Есть ли у записей списка хоть одно действие. У статистик (158 «Объем реализации»
+    /// и др.) действий в метаданных нет вовсе — тогда ни «⋯», ни правой кнопки, ни
+    /// курсора-«руки»: иначе открывалось пустое меню.
+    /// </summary>
+    private bool _hasMenu;
+
+    private bool ShowActions => !ReadOnly && _hasMenu;
+
+    private bool ResolveHasMenu()
+    {
+        if (Data == null || Data.Rows.Count == 0)
+            return false;
+
+        try
+        {
+            return Actions.BuildMenu(Entity.CreateObject(Data.Rows[0]), ViewType.Journal).Any(i => !i.IsSeparator);
+        }
+        catch
+        {
+            // Не угадали — лучше лишняя «⋯», чем потерянные действия.
+            return true;
+        }
+    }
+
     private IReadOnlyList<ActionMenuItem> ResolveQuickActions()
     {
         if (Data == null || Data.Rows.Count == 0)
@@ -775,16 +801,19 @@ else
 
     private async Task OpenMenu(DataRow row, MouseEventArgs e, bool fromButton)
     {
-        // Правая кнопка в режиме показа не должна открывать пустое меню; браузерное
-        // меню при этом не подавляется (oncontextmenu:preventDefault="!ReadOnly").
-        if (ReadOnly)
+        // Правая кнопка в режиме показа и у записей без действий не должна открывать
+        // пустое меню; браузерное при этом не подавляется (preventDefault="ShowActions").
+        if (!ShowActions)
             return;
 
         try
         {
             PresentationObject obj = Entity.CreateObject(row);
-            _menuRow = row;
             IReadOnlyList<ActionMenuItem> items = Actions.BuildMenu(obj, ViewType.Journal);
+            if (!items.Any(i => !i.IsSeparator))
+                return;
+
+            _menuRow = row;
             string? picked = await Menu.ShowAsync(
                 RowClick.HasDelegate ? WithoutClickHint(items) : items, e.ClientX, e.ClientY, fromButton);
             _menuRow = null;
