@@ -44,12 +44,38 @@
     line-height: 1;
 }
 
+/* Подпись занимает всю строку: галочку ставит щелчок по тексту и правее него,
+   не только по самому квадратику. */
 .tree-label {
     display: flex;
+    flex: 1;
     align-items: center;
     gap: var(--s-2);
     margin: 0;
+    padding: 1px var(--s-1);
+    border-radius: 4px;
     cursor: pointer;
+    user-select: none;
+}
+
+.tree-label:hover {
+    background: var(--c-accent-soft);
+}
+
+.tree-disabled .tree-label:hover {
+    background: none;
+}
+
+.tree-tools {
+    display: flex;
+    justify-content: flex-end;
+    margin-bottom: var(--s-1);
+}
+
+.tree-tools .btn {
+    padding: 0;
+    font-size: 13px;
+    text-decoration: none;
 }
 
 .tree-label .form-check-input {

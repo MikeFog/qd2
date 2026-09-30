@@ -78,6 +78,30 @@ public sealed class TreeSelection
 			? selection.AddedIDs
 			: Array.Empty<object>();
 
+	/// <summary>Все ли узлы с детьми раскрыты — надпись кнопки «Раскрыть всё / Свернуть всё».</summary>
+	public bool AllExpanded => Branches(Root).All(n => n.Expanded);
+
+	/// <summary>
+	/// Кнопка «Раскрыть всё / Свернуть всё» — TreeView2.BtnToggleExpand_Click десктопа.
+	/// Корень «Все» при сворачивании остаётся раскрытым: иначе дерево схлопнулось бы в
+	/// одну строку, а открывается оно именно так — корень раскрыт, дни свёрнуты.
+	/// </summary>
+	public void SetAllExpanded(bool expanded)
+	{
+		foreach (TreeSelectionNode node in Branches(Root))
+			node.Expanded = expanded || node == Root;
+	}
+
+	private static IEnumerable<TreeSelectionNode> Branches(TreeSelectionNode node)
+	{
+		if (node.Children.Count == 0)
+			yield break;
+		yield return node;
+		foreach (TreeSelectionNode child in node.Children)
+			foreach (TreeSelectionNode branch in Branches(child))
+				yield return branch;
+	}
+
 	/// <summary>Щелчок по галочке узла: новое состояние <paramref name="on"/>.</summary>
 	public void Toggle(TreeSelectionNode node, bool on)
 	{

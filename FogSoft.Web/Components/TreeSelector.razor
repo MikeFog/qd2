@@ -11,6 +11,18 @@
     без ленивой подгрузки и виртуализации.
 *@
 
+@* «Раскрыть всё / Свернуть всё» — как кнопка над деревом в десктопе (TreeView2).
+   Нужна, только если есть что раскрывать глубже корня. *@
+@if (Selection.Root.Children.Any(c => c.Children.Count > 0))
+{
+    bool all = Selection.AllExpanded;
+    <div class="tree-tools">
+        <button type="button" class="btn btn-sm btn-link" @onclick="() => Selection.SetAllExpanded(!all)">
+            <i class="bi @(all ? "bi-arrows-collapse" : "bi-arrows-expand")" aria-hidden="true"></i>
+            @(all ? Tr.T("Свернуть всё") : Tr.T("Раскрыть всё"))
+        </button>
+    </div>
+}
 <div class="tree-selector @(Disabled ? "tree-disabled" : "")">
     <ul class="tree-level">
         @Node(Selection.Root)

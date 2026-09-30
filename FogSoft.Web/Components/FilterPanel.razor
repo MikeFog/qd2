@@ -84,11 +84,12 @@
                                (ValueShouldBeSet). *@
                             @* Обязательное поле (mandatory="true") отбирает всегда: галочка
                                включена и не снимается, пустое значение — ошибка при «Применить». *@
-                            <input type="checkbox" class="form-check-input"
+                            @* Подпись — <label> галочки: щелчок по тексту включает и выключает поле. *@
+                            <input type="checkbox" class="form-check-input" id="@("fu_" + field.Name)"
                                    disabled="@(IsManagerLocked(field) || field.Required)"
                                    checked="@IsFilterUsed(field.Name)"
                                    @onchange="e => UseFilter(field, e.Value)" />
-                            <label class="filter-label">@field.Caption</label>
+                            <label class="filter-label" for="@("fu_" + field.Name)">@field.Caption</label>
 
                             @if (field.MultiPick)
                             {

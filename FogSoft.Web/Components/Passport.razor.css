@@ -49,6 +49,17 @@
     text-align: right;
 }
 
+/* Подпись булева поля ставит и снимает галочку (label for). */
+.passport-label-check {
+    cursor: pointer;
+    user-select: none;
+}
+
+/* Строка набора с галочками ставит галочку по щелчку. */
+::deep .selector-row-check {
+    cursor: pointer;
+}
+
 .required {
     color: var(--c-danger);
     margin-left: 2px;

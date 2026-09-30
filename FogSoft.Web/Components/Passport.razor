@@ -49,14 +49,18 @@ else
             bool wide = field.Selector != null || field.Image != null || field.Tree != null || field.Unsupported != null;
             bool disabled = IsDisabled(field);
 
-            <div class="passport-label @(wide ? "passport-label-wide" : "")">
+            @* Подпись булева поля — <label> его галочки: щелчок по тексту ставит и снимает
+               галочку, как в десктопе. Если галочка не нарисована (поле только для чтения и
+               т. п.), for ни на что не указывает и щелчок ничего не делает. *@
+            <label class="passport-label @(wide ? "passport-label-wide" : "") @(IsBoolean(field) && !disabled ? "passport-label-check" : "")"
+                   for="@(IsBoolean(field) ? CheckId(field) : null)">
                 @field.Caption
                 @* Звёздочка «обязательное» у поля-текста ничего не значит: заполнить его нельзя. *@
                 @if (field.Required && !IsReadOnlyText(field))
                 {
                     <span class="required">*</span>
                 }
-            </div>
+            </label>
 
             <div class="passport-control @(wide ? "passport-control-wide" : "")">
                 @if (field.Unsupported != null)
@@ -148,10 +152,12 @@ else
                             <tbody>
                                 @foreach (DataRowView row in SelectorRows(field))
                                 {
-                                    <tr>
+                                    @* Галочку ставит и щелчок по строке — как в окне выбора (ObjectSelector). *@
+                                    <tr class="@(field.Selector.Multiselect ? "selector-row-check" : "")"
+                                        @onclick="() => { if (field.Selector.Multiselect) ToggleSelected(field, row, !IsSelected(row)); }">
                                         @if (field.Selector.Multiselect)
                                         {
-                                            <td class="col-check">
+                                            <td class="col-check" @onclick:stopPropagation="true">
                                                 <input type="checkbox" class="form-check-input"
                                                        checked="@IsSelected(row)"
                                                        @onchange="e => ToggleSelected(field, row, e.Value)" />
@@ -213,7 +219,7 @@ else
                 }
                 else if (IsBoolean(field))
                 {
-                    <input type="checkbox" class="form-check-input" disabled="@disabled"
+                    <input type="checkbox" class="form-check-input" disabled="@disabled" id="@CheckId(field)"
                            checked="@ReadBool(field.Name)"
                            @onchange="e => WriteBool(field.Name, e.Value)" />
                 }
@@ -378,6 +384,11 @@ else
     /// галочки.
     /// </summary>
     private bool IsBoolean(PassportField f) => f.Type?.IsBoolean == true;
+
+    // Своя приставка у каждой карточки: окно выбора может открыть вторую поверх первой,
+    // и одинаковые id связали бы подпись с чужой галочкой.
+    private readonly string _idPrefix = "p" + Guid.NewGuid().ToString("N")[..8];
+    private string CheckId(PassportField f) => _idPrefix + "_" + f.Name;
 
     private static bool IsDateField(PassportField f) => f.Type?.IsDate == true;
 

@@ -56,6 +56,12 @@
     margin: 0;
 }
 
+/* Подпись включает и выключает поле отбора (label for) — пока галочка доступна. */
+.form-check-input:not(:disabled) + .filter-label {
+    cursor: pointer;
+    user-select: none;
+}
+
 /* Логическое поле само себе подпись — занимает всю ширину сетки. */
 .filter-check {
     grid-column: 1 / -1;
@@ -66,6 +72,8 @@
 
 .filter-check .form-check-label {
     font-size: 13px;
+    cursor: pointer;
+    user-select: none;
 }
 
 .filter-note {
