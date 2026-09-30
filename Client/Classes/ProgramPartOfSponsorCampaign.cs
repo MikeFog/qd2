@@ -39,6 +39,32 @@ namespace Merlin.Classes
         // DoAction, SetAdvertType и EditProgramIssues переехали в
         // ProgramPartOfSponsorCampaign.WinForms.cs.
 
+        /// <summary>
+        /// «Показать дни выхода» / «Показать программы» — смена дочерней сущности узла.
+        /// false — это не переключатель.
+        /// </summary>
+        internal bool TrySwitchView(string actionName)
+        {
+            if (actionName == ActionNames.ShowDays)
+                ChildEntity = EntityManager.GetEntity((int)Entities.SponsorCampaignDay);
+            else if (actionName == ActionNames.ShowPrograms)
+                ChildEntity = EntityManager.GetEntity((int)Entities.SponsorCampaignProgram);
+            else
+                return false;
+            FireContainerRefreshed();
+            return true;
+        }
+
+        /// <summary>Переключатель на текущий вид погашен — как у кампании.</summary>
+        public override bool IsActionEnabled(string actionName, ViewType type)
+        {
+            if (actionName == ActionNames.ShowDays)
+                return base.IsActionEnabled(actionName, type) && ChildEntity?.Id != (int)Entities.SponsorCampaignDay;
+            if (actionName == ActionNames.ShowPrograms)
+                return base.IsActionEnabled(actionName, type) && ChildEntity?.Id != (int)Entities.SponsorCampaignProgram;
+            return base.IsActionEnabled(actionName, type);
+        }
+
         /// <summary>Назначает предмет рекламы выбранным выпускам программы.</summary>
         internal void ApplyAdvertTypeToIssues(IEnumerable<int> selectedIds, int advertTypeId)
         {
@@ -63,5 +89,24 @@ namespace Merlin.Classes
 
             return ((DataSet)DataAccessor.DoAction(procParameters)).Tables[Constants.TableNames.Data];
         }
+	}
+
+	/// <summary>
+	/// Вход для веба к узлам частей спонсорской кампании («Программы для спонсоров» /
+	/// «Рекламные ролики»): классы частей internal.
+	/// </summary>
+	public static class SponsorCampaignPartView
+	{
+		public const string ShowDaysAction = ProgramPartOfSponsorCampaign.ActionNames.ShowDays;
+		public const string ShowProgramsAction = ProgramPartOfSponsorCampaign.ActionNames.ShowPrograms;
+		public const string ShowRollersAction = RollerPartOfSponsorCampaign.ActionNames.ShowRollers;
+
+		public static void SwitchView(PresentationObject part, string actionName)
+		{
+			if (part is ProgramPartOfSponsorCampaign programs)
+				programs.TrySwitchView(actionName);
+			else
+				((RollerPartOfSponsorCampaign)part).TrySwitchView(actionName);
+		}
 	}
 }

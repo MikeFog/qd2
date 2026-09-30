@@ -366,6 +366,21 @@ public sealed partial class ObjectActions
 			[Merlin.Classes.CampaignChange.ShowRollersAction] = (s, t) => s.Changed(() => Merlin.Classes.CampaignChange.ShowRollers((PresentationObject)t)),
 			[Merlin.Classes.CampaignChange.ShowPackModulesAction] = (s, t) => s.Changed(() => Merlin.Classes.CampaignChange.ShowPackModules((PresentationObject)t)),
 		},
+		// ProgramPartOfSponsorCampaign / RollerPartOfSponsorCampaign, DoAction: узлы частей
+		// спонсорской кампании («Программы для спонсоров» / «Рекламные ролики») — переключатели
+		// вида (дни выхода ↔ программы / ролики), как у кампании: сменилась дочерняя сущность,
+		// узел перечитан. Погашен текущий вид (IsActionEnabled части). Классы internal —
+		// вход через SponsorCampaignPartView.
+		["ProgramPartOfSponsorCampaign"] = new()
+		{
+			[Merlin.Classes.SponsorCampaignPartView.ShowDaysAction] = (s, t) => s.SwitchSponsorPartView(t, Merlin.Classes.SponsorCampaignPartView.ShowDaysAction),
+			[Merlin.Classes.SponsorCampaignPartView.ShowProgramsAction] = (s, t) => s.SwitchSponsorPartView(t, Merlin.Classes.SponsorCampaignPartView.ShowProgramsAction),
+		},
+		["RollerPartOfSponsorCampaign"] = new()
+		{
+			[Merlin.Classes.SponsorCampaignPartView.ShowDaysAction] = (s, t) => s.SwitchSponsorPartView(t, Merlin.Classes.SponsorCampaignPartView.ShowDaysAction),
+			[Merlin.Classes.SponsorCampaignPartView.ShowRollersAction] = (s, t) => s.SwitchSponsorPartView(t, Merlin.Classes.SponsorCampaignPartView.ShowRollersAction),
+		},
 		// CampaignDay.WinForms.cs, DoAction: «Перенос дня» — дни линейной, модульной и пакетной
 		// кампании (ModuleCampaignDay, CampaignPackDay — наследники). Вход — CampaignDayTransfer.
 		["CampaignDay"] = new()
@@ -386,6 +401,9 @@ public sealed partial class ObjectActions
 		await _busy.RunAsync(apply);
 		return ActionEffect.Changed;
 	}
+
+	private Task<ActionEffect> SwitchSponsorPartView(object part, string actionName) =>
+		Changed(() => Merlin.Classes.SponsorCampaignPartView.SwitchView((PresentationObject)part, actionName));
 
 	/// <summary>
 	/// Предметные действия, которые десктопный DoAction класса передаёт общему.
@@ -426,8 +444,6 @@ public sealed partial class ObjectActions
 		["ModuleIssue"] = new[] { Constants.EntityActions.Delete },
 		["CampaignPart"] = new[] { Constants.EntityActions.Delete },
 		// Своё обновление в DoAction.
-		["ProgramPartOfSponsorCampaign"] = new[] { Constants.EntityActions.Refresh },
-		["RollerPartOfSponsorCampaign"] = new[] { Constants.EntityActions.Refresh },
 		["SponsorProgramPart"] = new[] { Constants.EntityActions.Refresh },
 	};
 

@@ -14,18 +14,10 @@ namespace Merlin.Classes
 	{
 		public override void DoAction(string actionName, IWin32Window owner, InterfaceObjects interfaceObject)
 		{
+			if (TrySwitchView(actionName))
+				return;
 			if (actionName == ActionNames.EditIssues)
 				EditRollerIssues(owner as Form);
-			else if (actionName == ActionNames.ShowDays)
-			{
-				ChildEntity = EntityManager.GetEntity((int)Entities.CampaignDay);
-				base.FireContainerRefreshed();
-			}
-			else if (actionName == ActionNames.ShowRollers)
-			{
-				ChildEntity = EntityManager.GetEntity((int)Entities.CampaignRoller);
-				base.FireContainerRefreshed();
-			}
 			else if (actionName == Campaign.ActionNames.DeleteIssues)
 			{
 				if (Campaign.DeleteIssues(owner as Form, isFireEvent: false))

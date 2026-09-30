@@ -15,17 +15,9 @@ namespace Merlin.Classes
 	{
 		public override void DoAction(string actionName, IWin32Window owner, InterfaceObjects interfaceObject)
 		{
-			if (actionName == ActionNames.ShowDays)
-			{
-				ChildEntity = EntityManager.GetEntity((int)Entities.SponsorCampaignDay);
-				base.FireContainerRefreshed();
-			}
-			else if (actionName == ActionNames.ShowPrograms)
-			{
-				ChildEntity = EntityManager.GetEntity((int)Entities.SponsorCampaignProgram);
-				base.FireContainerRefreshed();
-			}
-			else if (actionName == Action.ActionNames.SetAdvertType)
+			if (TrySwitchView(actionName))
+				return;
+			if (actionName == Action.ActionNames.SetAdvertType)
 				SetAdvertType();
 			else if (actionName == ActionNames.EditIssues)
 				EditProgramIssues(owner as Form);
