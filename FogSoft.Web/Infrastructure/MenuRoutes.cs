@@ -214,6 +214,9 @@ public static class ScreenRoutes
 	/// </summary>
 	public const string DocumentTemplates = "miReportPartText";
 
+	/// <summary>«Баланс для конкретной фирмы-заказчика» из «Бухгалтерии».</summary>
+	public const string FirmBalance = "miFirmBalance";
+
 	public static readonly IReadOnlyDictionary<string, string> Screens =
 		new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase)
 		{
@@ -243,6 +246,9 @@ public static class ScreenRoutes
 			// Десктоп — журнал «Текст отчётов» (ReportPartText); в вебе — Word-шаблоны документов
 			// агентств с версиями (решение владельца 2026-09-28, docs/tasks/web-reports.md §6.0).
 			{ DocumentTemplates, "/document-templates" },
+			// Десктоп — FrmFirmIssuesBalance (контролы на форме, без метаданных); в вебе — отбор на
+			// FilterPanel, итоги и два списка. Данные — ядро FirmBalanceReport.
+			{ FirmBalance, "/firm-balance" },
 		};
 }
 

@@ -178,6 +178,12 @@ public sealed partial class ObjectActions
 		{
 			[Merlin.Classes.BonusStatRow.OpenActionJournalAction] = (s, t) => s.OpenActionJournal((PresentationObject)t),
 		},
+		// FirmBalance.DoAction: «Перейти к балансу для фирмы» у строки «Баланса для всех фирм» —
+		// экран «Баланс для фирмы» с этой фирмой; в десктопе — новое окно, здесь — переход.
+		["FirmBalanceIssues"] = new()
+		{
+			[FirmBalanceJumpAction] = (s, t) => s.OpenFirmBalance((Merlin.Classes.FirmBalance)t),
+		},
 		// AdvertType.AssignNew: «Добавить» у предмета рекламы — новый дочерний предмет с
 		// родителем-этим (общий AssignNew родителя не проставляет).
 		["AdvertType"] = new()
@@ -1545,6 +1551,47 @@ public sealed partial class ObjectActions
 	/// три (Рекламный отдел, Бухгалтерия, Трафик) и права на них отдельные — берём первый
 	/// доступный пользователю.
 	/// </summary>
+	private const string FirmBalanceJumpAction = "Jump2FirmBalance";
+
+	/// <summary>
+	/// FirmBalanceIssues.Jump2FirmBalanceJournal: окончание периода — дата отбора «Баланса для всех
+	/// фирм» (десктоп берёт journal.Filters["theDate"]), без неё — неделя назад; начало — на полгода
+	/// раньше. Из того же отбора — агентство и «с оплатой / без оплаты» (десктоп оставлял агентства
+	/// неотмеченными, и без них баланс нулевой); нет агентства — то, что было на экране баланса
+	/// в прошлый раз. Экран сразу показывает баланс (?show=1); десктоп ждал «Обновить».
+	/// </summary>
+	private Task<ActionEffect> OpenFirmBalance(Merlin.Classes.FirmBalance row)
+	{
+		IReadOnlyDictionary<string, object>? journal = new[] { "miBalance", "miBalanceFromRSection" }
+			.Select(code => _filters.Applied("journal/" + code)).FirstOrDefault(f => f != null);
+		string screen = FogSoft.Web.Components.Pages.FirmBalance.Screen;
+
+		DateTime end = journal != null && journal.TryGetValue("theDate", out object? date)
+			&& DateTime.TryParse(date?.ToString(), out DateTime parsed) ? parsed.Date : DateTime.Today.AddDays(-7);
+
+		var preset = new Dictionary<string, object>
+		{
+			[Merlin.Classes.FirmBalanceReport.ParamNames.StartOfInterval] = end.AddMonths(-6),
+			[Merlin.Classes.FirmBalanceReport.ParamNames.EndOfInterval] = end,
+			[Merlin.Classes.FirmBalanceReport.ParamNames.FirmId] = row.FirmID,
+		};
+
+		if (journal != null && journal.TryGetValue("agencyID", out object? agency) && agency != null && agency != DBNull.Value)
+			preset[Merlin.Classes.FirmBalanceReport.ParamNames.Agencies] = agency + ",";
+		else if (_filters.Applied(screen) is { } last
+			&& last.TryGetValue(Merlin.Classes.FirmBalanceReport.ParamNames.Agencies, out object? agencies) && agencies != null)
+			preset[Merlin.Classes.FirmBalanceReport.ParamNames.Agencies] = agencies;
+
+		foreach ((string from, string to) in new[] { ("showWhite", Merlin.Classes.FirmBalanceReport.ParamNames.ShowWhite),
+			("showBlack", Merlin.Classes.FirmBalanceReport.ParamNames.ShowBlack) })
+			if (journal != null && journal.TryGetValue(from, out object? flag) && flag != null)
+				preset[to] = flag;
+
+		_filters.Preset(screen, preset);
+		_navigation.NavigateTo("/firm-balance?show=1");
+		return Task.FromResult(ActionEffect.None);
+	}
+
 	private async Task<ActionEffect> OpenActionJournal(PresentationObject row)
 	{
 		string? code = new[] { "miActionJournal", "miActionJournalBuh", "miActionJournalTraffic" }

@@ -92,7 +92,7 @@ sed -n '/private void MenuItemClick/,/catch (Exception ex)/p' Client/Forms/MDIFo
 | Диалог → журнал(ы) | 1 | отложено 2026-09-21: в лоб не переносим, нужно своё решение (§10) |
 | Мастер: диалоги → карточка акции (новая) | 3 | нет, этап 3 |
 | Действие без экрана | 3 | отложено 2026-09-21: пока не делаем (§10) |
-| Импорт из файла (новая) | 1 | нет, этап 4 (`miFirmImport`) |
+| Импорт из файла (новая) | 1 | нет, отложен надолго (`miFirmImport`, решение 2026-09-30) |
 | Отчёт / выгрузка | 4 | нет, этап 4 |
 | График (новая) | 1 | перенесён таблицей 2026-09-21; диаграммы отложены (§10) |
 | Выход из приложения (новая) | 1 | сделан (2026-09-18): выход из сеанса, как кнопка «Выйти» |
@@ -302,7 +302,8 @@ sed -n '/private void MenuItemClick/,/catch (Exception ex)/p' Client/Forms/MDIFo
   напрямую, не через `DoAction`: проверки права на действие в самом обработчике
   нет.
 - **`miFirmImport`**: `OpenFileDialog` и разбор Excel через COM Interop
-  (`FirmImporter.cs:33`–`:60`); в плане этапа 4 (`web-migration.md`, п.1).
+  (`FirmImporter.cs:33`–`:60`). **Отложен надолго — решение владельца 2026-09-30:**
+  пунктом никто не пользуется (доступ только у администраторов), в ближайших планах его нет.
 - **Мастера**: `miCreateUnconfirmedAction` — `Firm.SelectFirm` →
   `ActionOnMassmedia.ShowPassport`; `miMasterCreateActions` — `SelectFirm` →
   `SelectMassmediasStep` → `EditIssuesForm` → `ActionForm`;
@@ -518,7 +519,7 @@ Ctrl+Shift+A. В вебе их нет и не будет: решение вла�
 | 48 | Бухгалтерия → Выписать акт выполненных работ | `miActPrint` | `:216` → ShowActJournal:349 | Журнал-наследник со своей логикой | `ActJournalForm` (ActJournalRow, 156) | этап 3 + этап 4 (печать) | 3 | — | 8 |
 | 77 | Бухгалтерия → Журнал оплат | `miPaymentCommon` | `:181` → ShowPaymentCommon(false):628 | MasterDetail | PaymentCommon (145) → PaymentCommonAction (146), `filterAgencies=false` | перенесён (`/payments`, 2026-09-26) | 3 | +1/−0 | 9 |
 | 84 | Бухгалтерия → Журнал оплат по менеджерам | `miPaymentByManager` | `:190` → ShowCommonOrderByManager:645 | Диалог → журнал(ы) | `FrmManagerSelector` → по журналу PaymentCommonAction (146) на каждого выбранного менеджера | отложено 2026-09-21 (§10) | 3 | — | 8 |
-| 85 | Бухгалтерия → Баланс для конкретной фирмы-заказчика | `miFirmBalance` | `:188` → ShowFirmBalance:638 | Собственная форма | `FrmFirmIssuesBalance` (← `FrmFirmBalance`) | этап 3 (п.3 плана) | 3 | — | 8 |
+| 85 | Бухгалтерия → Баланс для конкретной фирмы-заказчика | `miFirmBalance` | `:188` → ShowFirmBalance:638 | Собственная форма | `FrmFirmIssuesBalance` (← `FrmFirmBalance`) | перенесён (`/firm-balance`, 2026-09-30; данные — ядро `FirmBalanceReport`) | 3 | — | 8 |
 | 86 | Бухгалтерия → Баланс для всех фирм-заказчиков | `miBalance` | `:184` → ShowBalance:438 | Простой журнал + ManagerFilter | BalanceIssues (184) | перенесён (SimpleJournal) | 3 | — | 8 |
 | 122 | Бухгалтерия → Журнал подтверждённых рекламных акций | `miActionJournalBuh` | `:165` → ShowMassmediaActions:395 | Дерево на своём контейнере | `ActionContainer(ConfirmedAction)`: 118 / 77 / 1255 | перенесён (Browser, 2026-09-20); действия по строке — этапы 3-4 | 2 | — | 8 |
 | 92 | Бухгалтерия → Специальные отчёты → Cальдо расчётов по всем фирмам-заказчикам в разрезе агентств | `miStats.Balance` | `:765` → ShowStatBalance:816 | Журнал-наследник со своей логикой | `StatBalanceJournalForm`: StatsBalance (160) / StatsBalanceGroup (185) | перенесён (SimpleJournal + подмена сущности); проверено вживую 2026-09-18 | 1 | — | 5 |
@@ -545,7 +546,7 @@ Ctrl+Shift+A. В вебе их нет и не будет: решение вла�
 | 163 | Администрация → Удаление роликов-пустышек | `deleteDummyRollers` | `:238` → DeleteDummyRollers:270 | Действие без экрана | вопрос + `DeleteUnusedDummyRollers` | отложено 2026-09-21 (§10) | 0 | +2/−0 | 2 |
 | 164 | Администрация → Очистка журнала удаленных рекламных акций | `deleteDeletedActions` | `:240` → DeleteDeletedActions:283 | Действие без экрана | вопрос + `DeleteDeletedActions` | отложено 2026-09-21 (§10) | 0 | +2/−0 | 2 |
 | 165 | Администрация → Удаление макетов рекламных акций | `deleteUnconfirmedActions` | `:242` → DeleteUnconfirmedActions:296 | Действие без экрана | вопрос + `DeleteUnconfirmedActions` | отложено 2026-09-21 (§10) | 0 | +2/−0 | 2 |
-| 166 | Администрация → Импорт фирм | `miFirmImport` | `:244` → inline:246 → `FirmImporter.Import` | Импорт из файла | `OpenFileDialog` + Excel COM Interop | этап 4 (`FirmImporter`, п.1) | 0 | — | 0 |
+| 166 | Администрация → Импорт фирм | `miFirmImport` | `:244` → inline:246 → `FirmImporter.Import` | Импорт из файла | `OpenFileDialog` + Excel COM Interop | отложен надолго (решение 2026-09-30) | 0 | — | 0 |
 
 ## 10. Отложено
 

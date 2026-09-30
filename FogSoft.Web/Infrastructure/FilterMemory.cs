@@ -75,6 +75,14 @@ public sealed class FilterMemory
 	public void Preset(string screen, IReadOnlyDictionary<string, object> values) =>
 		_presets[screen] = new Dictionary<string, object>(values, StringComparer.OrdinalIgnoreCase);
 
+	/// <summary>
+	/// Отбор, по которому экран последний раз читал данные; null — ещё не читал. Для переходов,
+	/// которым нужен отбор исходного журнала (десктопный IJournal.Filters): «Перейти к балансу
+	/// для фирмы» берёт дату «Баланса для всех фирм».
+	/// </summary>
+	public IReadOnlyDictionary<string, object>? Applied(string screen) =>
+		_applied.TryGetValue(screen, out var values) ? values : null;
+
 	/// <summary>Данные прочитаны по этому отбору.</summary>
 	public void Remember(string screen, Dictionary<string, object> values) => _applied[screen] = Copy(values);
 

@@ -204,6 +204,14 @@
     /// </summary>
     [Parameter] public string? Screen { get; set; }
 
+    /// <summary>
+    /// Поле отбора поменяли (имя поля) — для экранов, где одно поле зависит от другого:
+    /// «Баланс для фирмы» сужает список менеджеров до менеджеров выбранной фирмы.
+    /// </summary>
+    [Parameter] public EventCallback<string> ValueChanged { get; set; }
+
+    private void Changed(string name) => _ = ValueChanged.InvokeAsync(name);
+
     private bool _filterOpen;
 
     // Открытая вкладка — аналог tabPassport.SelectedIndex. Значения полей
@@ -403,6 +411,7 @@
         // поэтому и мы пишем строкой — иначе при сравнении фильтров
         // (ObjectsIterator.IsNewFilter) типы разъедутся.
         Values[name] = (value is bool b && b).ToString();
+        Changed(name);
     }
 
     /// <summary>
@@ -422,6 +431,7 @@
             Values[field.Name] = InitialFilterValue(field);
         else
             Values.Remove(field.Name);
+        Changed(field.Name);
     }
 
     /// <summary>
@@ -523,6 +533,7 @@
         }
 
         Values[field.Name] = text;
+        Changed(field.Name);
     }
 
     // Целые числа разделителя не имеют, переводить нечего.
@@ -590,6 +601,7 @@
 
         Values[field.Name] = result;
         _invalid.Remove(field.Name);
+        Changed(field.Name);
     }
 
     // ---------- objectPicker фильтра ----------
@@ -647,6 +659,7 @@
         _invalid.Remove(field.Name);
         _filterPickerNames.Remove(field.Name);
         _filterPickerNamesFor.Remove(field.Name);
+        Changed(field.Name);
     }
 
     /// <summary>
@@ -681,6 +694,7 @@
         _invalid.Remove(field.Name);
         _filterPickerNames[field.Name] = selected.Name;
         _filterPickerNamesFor[field.Name] = AsFilterText(id);
+        Changed(field.Name);
     }
 
     // ---------- selector фильтра: несколько значений ----------
@@ -729,5 +743,6 @@
         Values[field.Name] = string.Concat(picked.Select(o => o.IDs[0] + ","));
         _multiPickNames[field.Name] = string.Join(", ", picked.Select(o => o.Name));
         _invalid.Remove(field.Name);
+        Changed(field.Name);
     }
 }

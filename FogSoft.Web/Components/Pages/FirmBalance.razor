@@ -1,0 +1,260 @@
+@page "/firm-balance"
+@using System.Data
+@using FogSoft.Web.Infrastructure
+@using FogSoft.WinForm
+@using FogSoft.WinForm.Classes
+@using FogSoft.WinForm.Passport.Classes
+@using Merlin.Classes
+@inject MenuAccess Access
+@inject BusyService Busy
+@inject FilterMemory Filters
+
+@*
+    «Баланс для конкретной фирмы-заказчика» — веб-экран вместо FrmFirmIssuesBalance. Сверху отбор
+    на той же панели, что у журналов (FilterPanel); разметка отбора — здесь, у десктопной формы её
+    нет, контролы нарисованы на форме: период, фирма (обязательна), менеджер из менеджеров фирмы,
+    агентства (несколько), «с оплатой / без оплаты». Ниже итоги и два списка — акции и платежи.
+    Данные и расчёт — ядро FirmBalanceReport, десктопная форма зовёт то же.
+
+    Второй вход — «Перейти к балансу для фирмы» у строки «Баланса для всех фирм»: отбор приходит
+    через FilterMemory.Preset, ?show=1 — сразу показать.
+*@
+
+<PageTitle>@_title</PageTitle>
+
+@if (SecurityManager.LoggedUser == null)
+{
+    <div class="state">
+        <div class="state-title">@Tr.T("Вы не вошли в систему")</div>
+        <a href="/">@Tr.T("Перейти к входу")</a>
+    </div>
+}
+else if (_access != JournalAccess.Allowed)
+{
+    <div class="state">
+        <div class="state-title">@Tr.T("Доступ закрыт")</div>
+        @Tr.T("Этот экран вам не разрешён. Права на экраны выдаются вместе с пунктами меню — обратитесь к администратору системы.")
+    </div>
+}
+else
+{
+    <div class="firm-balance">
+        <ScreenToolbar Title="@_title">
+            <button class="btn btn-sm btn-outline-secondary" @onclick="Refresh">
+                <i class="bi bi-arrow-clockwise" aria-hidden="true"></i>@Tr.T("Обновить")
+            </button>
+        </ScreenToolbar>
+
+        <FilterPanel @ref="_filterPanel" Pages="_filterPages" Values="_filterValues" FilterData="_filterData"
+                     Apply="Show" Screen="@Screen" ValueChanged="FilterChanged" />
+
+        @if (_error != null)
+        {
+            <div class="alert alert-danger">@_error</div>
+        }
+
+        @if (_result == null)
+        {
+            <div class="state">
+                <div class="state-title">@Tr.T("Задайте отбор и нажмите «Применить»")</div>
+                @Tr.T("Выберите фирму и период.")
+            </div>
+        }
+        else
+        {
+            <dl class="totals">
+                <div><dt>@Tr.T("На начало интервала")</dt><dd>@_result.StartBalance.ToString("C")</dd></div>
+                <div><dt>@Tr.T("Платежей за период")</dt><dd>@_result.PaymentsTotal.ToString("C")</dd></div>
+                <div><dt>@Tr.T("Акций за период")</dt><dd>@_result.ActionsTotal.ToString("C")</dd></div>
+                <div class="total-end"><dt>@Tr.T("На окончание интервала")</dt><dd>@_result.EndBalance.ToString("C")</dd></div>
+            </dl>
+
+            <div class="lists">
+                <section>
+                    <h2>@Tr.T("Акции") <span class="count">@_result.Actions.Rows.Count</span></h2>
+                    <ExportableList Entity="_result.ActionEntity" Data="_result.Actions" Title="@(Tr.T("Акции"))"
+                                    Changed="Reload" Failed="e => _error = e" />
+                </section>
+                <section>
+                    <h2>@Tr.T("Платежи") <span class="count">@_result.Payments.Rows.Count</span></h2>
+                    @* В десктопе у списка платежей меню выключено (grdPayment.MenuEnabled = false). *@
+                    <ExportableList Entity="_result.PaymentEntity" Data="_result.Payments" Title="@(Tr.T("Платежи"))"
+                                    ReadOnly="true" />
+                </section>
+            </div>
+        }
+    </div>
+}
+
+@code {
+    /// <summary>Ключ экрана в FilterMemory — его же ставит «Перейти к балансу для фирмы».</summary>
+    public const string Screen = "firm-balance";
+
+    [SupplyParameterFromQuery(Name = "show")] public int? AutoShow { get; set; }
+
+    private const string ManagersTable = "firmManager";
+
+    // Разметка отбора: у FrmFirmBalance контролы нарисованы на форме, метаданных нет. Имена полей —
+    // параметры процедур (FirmBalanceReport.ParamNames); менеджеры — свой набор, он пересобирается
+    // при смене фирмы (FirmManagers), как opUsers десктопа. Агентства обязательны: пустая строка
+    // для процедур — «ни одного агентства», десктоп в этом случае молча показывал нули.
+    private static readonly string FilterXml =
+        "<filter><page caption=\"Общие\">" // i18n-ok: подпись XML отбора, переводит PassportSchema.Parse
+        + "<field caption=\"Начало интервала:\" name=\"" + FirmBalanceReport.ParamNames.StartOfInterval + "\" type=\"df_date\" mandatory=\"true\"/>" // i18n-ok: подпись XML отбора, переводит PassportSchema.Parse
+        + "<field caption=\"Окончание интервала:\" name=\"" + FirmBalanceReport.ParamNames.EndOfInterval + "\" type=\"df_date\" value=\"TODAY\" mandatory=\"true\"/>" // i18n-ok: подпись XML отбора, переводит PassportSchema.Parse
+        + "<objectPicker caption=\"Фирма-заказчик:\" name=\"" + FirmBalanceReport.ParamNames.FirmId + "\" source=\"firm\" entity=\"Firm\" mandatory=\"true\"/>" // i18n-ok: подпись XML отбора, переводит PassportSchema.Parse
+        + "<objectPicker caption=\"Менеджер:\" name=\"" + FirmBalanceReport.ParamNames.ManagerId + "\" source=\"" + ManagersTable + "\" entity=\"user\"/>" // i18n-ok: подпись XML отбора, переводит PassportSchema.Parse
+        + "<selector caption=\"Агентства:\" name=\"" + FirmBalanceReport.ParamNames.Agencies + "\" source=\"agency\" entity=\"agency\" multiselect=\"true\" mandatory=\"true\"/>" // i18n-ok: подпись XML отбора, переводит PassportSchema.Parse
+        + "<field caption=\"Показывать с оплатой\" name=\"" + FirmBalanceReport.ParamNames.ShowWhite + "\" type=\"boolean\" value=\"true\"/>" // i18n-ok: подпись XML отбора, переводит PassportSchema.Parse
+        + "<field caption=\"Показывать без оплаты\" name=\"" + FirmBalanceReport.ParamNames.ShowBlack + "\" type=\"boolean\" value=\"true\"/>" // i18n-ok: подпись XML отбора, переводит PassportSchema.Parse
+        + "</page></filter>";
+
+    private string _title = Tr.T("Баланс для фирмы");
+    private JournalAccess _access = JournalAccess.Allowed;
+    private string? _error;
+
+    private FilterPanel? _filterPanel;
+    private IReadOnlyList<PassportPage> _filterPages = Array.Empty<PassportPage>();
+    private readonly Dictionary<string, object> _filterValues = new(StringComparer.InvariantCultureIgnoreCase);
+    private DataSet? _filterData;
+    private object? _managersFor;
+
+    private FirmBalanceReport.Filter? _shown;
+    private FirmBalanceReport.Result? _result;
+    private bool _initialized;
+    private bool _autoShowPending;
+
+    protected override async Task OnParametersSetAsync()
+    {
+        if (SecurityManager.LoggedUser == null || _initialized)
+            return;
+        _initialized = true;
+
+        // Пункт меню — «Бухгалтерия → Баланс для конкретной фирмы-заказчика». Из «Баланса для всех
+        // фирм» десктоп открывает форму без проверки этого пункта — пускаем и по правам того журнала.
+        _access = Access.CheckScreen(ScreenRoutes.FirmBalance);
+        if (_access != JournalAccess.Allowed && AutoShow == 1
+            && (Access.CheckScreen("miBalance") == JournalAccess.Allowed || Access.CheckScreen("miBalanceFromRSection") == JournalAccess.Allowed))
+            _access = JournalAccess.Allowed;
+        if (_access != JournalAccess.Allowed)
+            return;
+
+        _title = Access.MenuText(ScreenRoutes.FirmBalance) ?? Tr.T("Баланс для фирмы");
+        await Busy.RunAsync(() => Try(() =>
+        {
+            Entity entity = EntityManager.GetEntity((int)Merlin.Entities.BalanceIssues);
+            _filterPages = PassportSchema.Parse(FilterXml, entity, pageType: PageTypes.Filter);
+
+            DataSet data = FirmBalanceReport.LoadFilterData();
+            data.Tables.Add(new DataTable(ManagersTable));
+            _filterData = data;
+
+            _filterValues.Clear();
+            Globals.ResolveFilterInitialValues(_filterValues, FilterXml);
+            // FrmFirmBalance.InitOnLoad: полгода до сегодня.
+            _filterValues[FirmBalanceReport.ParamNames.StartOfInterval] = DateTime.Today.AddMonths(-6);
+            Filters.Restore(Screen, _filterValues);
+            ReloadManagers();
+        }));
+
+        // Переход «Перейти к балансу для фирмы»: показать сразу, если отбор полный; иначе панель
+        // откроется с подсвеченным полем (проверка — после отрисовки, когда панель уже есть).
+        _autoShowPending = AutoShow == 1 && FirmId() != null;
+    }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (!_autoShowPending || _filterPanel == null)
+            return;
+        _autoShowPending = false;
+        if (_filterPanel.Validate())
+        {
+            await Show();
+            StateHasChanged();
+        }
+    }
+
+    private void Try(System.Action work)
+    {
+        try
+        {
+            _error = null;
+            work();
+        }
+        catch (Exception ex)
+        {
+            _error = ErrorPresenter.Describe(ex);
+        }
+    }
+
+    private object? FirmId() =>
+        _filterValues.TryGetValue(FirmBalanceReport.ParamNames.FirmId, out object? id) && id != null && id != DBNull.Value ? id : null;
+
+    /// <summary>Сменилась фирма — менеджеры только её (FirmManagers), выбранный чужой снимается.</summary>
+    private Task FilterChanged(string name) =>
+        string.Equals(name, FirmBalanceReport.ParamNames.FirmId, StringComparison.OrdinalIgnoreCase)
+            ? Busy.RunAsync(() => Try(ReloadManagers))
+            : Task.CompletedTask;
+
+    private void ReloadManagers()
+    {
+        object? firmId = FirmId();
+        if (Equals(firmId, _managersFor) && _managersFor != null)
+            return;
+        _managersFor = firmId;
+
+        DataTable target = _filterData!.Tables[ManagersTable]!;
+        target.Clear();
+        if (firmId != null)
+        {
+            DataTable managers = FirmBalanceReport.LoadManagers(firmId);
+            if (target.Columns.Count == 0)
+                foreach (DataColumn c in managers.Columns)
+                    target.Columns.Add(c.ColumnName, c.DataType);
+            foreach (DataRow row in managers.Rows)
+                target.ImportRow(row);
+        }
+
+        if (_filterValues.TryGetValue(FirmBalanceReport.ParamNames.ManagerId, out object? manager)
+            && !target.Rows.Cast<DataRow>().Any(r => r[SecurityManager.ParamNames.UserId]?.ToString() == manager?.ToString()))
+            _filterValues.Remove(FirmBalanceReport.ParamNames.ManagerId);
+    }
+
+    /// <summary>«Применить» (FilterPanel уже проверила обязательные поля).</summary>
+    private Task Show()
+    {
+        DateTime? start = TryDate(FirmBalanceReport.ParamNames.StartOfInterval);
+        DateTime? finish = TryDate(FirmBalanceReport.ParamNames.EndOfInterval);
+        if (start == null || finish == null || FirmId() == null)
+            return Task.CompletedTask;
+        if (start > finish)
+        {
+            _error = Tr.T("Дата начала периода позже даты окончания.");
+            return Task.CompletedTask;
+        }
+
+        _shown = new FirmBalanceReport.Filter
+        {
+            Start = start.Value,
+            Finish = finish.Value,
+            FirmId = FirmId(),
+            ManagerId = _filterValues.TryGetValue(FirmBalanceReport.ParamNames.ManagerId, out object? m) && m != DBNull.Value ? m : null,
+            Agencies = _filterValues.TryGetValue(FirmBalanceReport.ParamNames.Agencies, out object? a) ? a?.ToString() ?? "" : "",
+            ShowWhite = Flag(FirmBalanceReport.ParamNames.ShowWhite),
+            ShowBlack = Flag(FirmBalanceReport.ParamNames.ShowBlack),
+        };
+        Filters.Remember(Screen, _filterValues);
+        return Reload();
+    }
+
+    /// <summary>«Обновить» читает текущий отбор — с той же проверкой, что «Применить».</summary>
+    private Task Refresh() => _filterPanel?.Validate() == false ? Task.CompletedTask : Show();
+
+    private Task Reload() => _shown == null ? Task.CompletedTask : Busy.RunAsync(() => Try(() => _result = FirmBalanceReport.Load(_shown)));
+
+    private DateTime? TryDate(string name) =>
+        _filterValues.TryGetValue(name, out object? v) && DateTime.TryParse(v?.ToString(), out DateTime d) ? d.Date : null;
+
+    private bool Flag(string name) =>
+        _filterValues.TryGetValue(name, out object? v) && bool.TryParse(v?.ToString(), out bool b) && b;
+}
