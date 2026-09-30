@@ -375,6 +375,9 @@ public sealed partial class ObjectActions
 		{
 			[Merlin.Classes.SponsorCampaignPartView.ShowDaysAction] = (s, t) => s.SwitchSponsorPartView(t, Merlin.Classes.SponsorCampaignPartView.ShowDaysAction),
 			[Merlin.Classes.SponsorCampaignPartView.ShowProgramsAction] = (s, t) => s.SwitchSponsorPartView(t, Merlin.Classes.SponsorCampaignPartView.ShowProgramsAction),
+			// «Назначить предмет рекламы выпускам спонсорских программ» — именованный паспорт
+			// ChangeAdvertTypeForSponsorIssues: предмет рекламы + дерево «день → выпуски».
+			[Merlin.Classes.SponsorCampaignPartView.SetAdvertTypeAction] = (s, t) => s.SetSponsorIssuesAdvertType((PresentationObject)t),
 		},
 		["RollerPartOfSponsorCampaign"] = new()
 		{
@@ -404,6 +407,36 @@ public sealed partial class ObjectActions
 
 	private Task<ActionEffect> SwitchSponsorPartView(object part, string actionName) =>
 		Changed(() => Merlin.Classes.SponsorCampaignPartView.SwitchView((PresentationObject)part, actionName));
+
+	/// <summary>
+	/// ProgramPartOfSponsorCampaign.SetAdvertType — веб-аналог SponsorCampaignSetAdertTypeForm:
+	/// именованный паспорт с данными своей процедуры (CampaignDaysTreePassport), проверки и
+	/// запись — ядро. Черновик — носитель значений паспорта (выпуск программы), сама часть
+	/// кампании не трогается: отметки дерева лежат значением поля.
+	/// </summary>
+	private async Task<ActionEffect> SetSponsorIssuesAdvertType(PresentationObject programs)
+	{
+		DataSet data = await _busy.RunAsync(() => Merlin.Classes.SponsorCampaignPartView.LoadAdvertTypeData(programs));
+		PresentationObject template = EntityManager.GetEntity((int)Merlin.Entities.ProgramIssue).NewObject;
+		template[Merlin.Classes.SponsorCampaignPartView.NameWithGroupField] = Merlin.Classes.SponsorCampaignPartView.AdvertTypeCaption(programs);
+
+		List<int> issueIds = new();
+		int advertTypeId = 0;
+		bool ok = await _namedPassports.ShowAsync(template, Merlin.Classes.SponsorCampaignPartView.AdvertTypePassport,
+			Tr.T("Предметы рекламы"), isNew: false,
+			values =>
+			{
+				values.TryGetValue(Merlin.Classes.SponsorCampaignPartView.AdvertTypeField, out object? advertType);
+				string? error = Merlin.Classes.SponsorCampaignPartView.ValidateAdvertType(advertType,
+					TreeSelection.AddedIDsOf(values, Merlin.Classes.SponsorCampaignPartView.DaysField), out issueIds);
+				if (error == null)
+					advertTypeId = Convert.ToInt32(advertType);
+				return error;
+			},
+			_ => Merlin.Classes.SponsorCampaignPartView.ApplyAdvertType(programs, issueIds, advertTypeId),
+			data);
+		return ok ? ActionEffect.Changed : ActionEffect.None;
+	}
 
 	/// <summary>
 	/// Предметные действия, которые десктопный DoAction класса передаёт общему.

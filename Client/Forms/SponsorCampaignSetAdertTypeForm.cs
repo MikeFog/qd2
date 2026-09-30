@@ -27,7 +27,7 @@ namespace Merlin.Forms
 		}
 
 		public SponsorCampaignSetAdertTypeForm(Campaign campaign)
-			: base(PassportLoader.Load("ChangeAdvertTypeForSponsorIssues"))
+			: base(PassportLoader.Load(ProgramPartOfSponsorCampaign.AdvertTypePassport))
 		{
             Text = "Предметы рекламы";
             _campaign = campaign;
@@ -42,7 +42,7 @@ namespace Merlin.Forms
 			{
 				Cursor.Current = Cursors.WaitCursor;
 				base.OnLoad(e);
-                _opAdvertType = FindControl("advertTypeID") as ObjectPicker2;
+                _opAdvertType = FindControl(ProgramPartOfSponsorCampaign.AdvertTypeParams.AdvertTypeId) as ObjectPicker2;
             }
 			finally { Cursor.Current = Cursors.Default; }
 		}
@@ -56,50 +56,33 @@ namespace Merlin.Forms
         private Dictionary<string, object> CreateParameters()
 		{
 			Dictionary<string, object> parameters = DataAccessor.CreateParametersDictionary();
-			parameters["nameWithGroup"] = ((CampaignOnSingleMassmedia)_campaign).MassmediaNameWithGroup;
+			parameters[ProgramPartOfSponsorCampaign.AdvertTypeParams.NameWithGroup] = ProgramPartOfSponsorCampaign.AdvertTypePassportCaption(_campaign);
 			return parameters;
 		}
 
+		// Данные, подпись и проверка — в ядре (ProgramPartOfSponsorCampaign), их зовёт и веб.
 		private DataSet LoadData()
 		{
-			Dictionary<string, object> procParameters = DataAccessor.CreateParametersDictionary();
-
-			procParameters[Campaign.ParamNames.CampaignId] = _campaign.CampaignId;
-			procParameters[Campaign.ParamNames.CampaignTypeId] = 100;// (int)_campaign.CampaignType;
-			return DataAccessor.LoadDataSet("CampaignDaysTreePassport", procParameters);
+			return ProgramPartOfSponsorCampaign.LoadAdvertTypePassportData(_campaign);
 		}
 
 		protected override void ApplyChanges(Button clickedButton)
 		{
 			try
 			{
-                if (_opAdvertType.SelectedObject == null)
+                object advertTypeId = _opAdvertType.SelectedObject?.IDs[0];
+                TreeView2 tvSelector = FindControl(ProgramPartOfSponsorCampaign.AdvertTypeParams.Days) as TreeView2;
+                string error = ProgramPartOfSponsorCampaign.ValidateAdvertTypeAssignment(advertTypeId, tvSelector.AddedIDs, out List<int> issueIds);
+                if (error != null)
                 {
                     DialogResult = DialogResult.None;
-                    UserMessage.ShowExclamation(Properties.Resources.AdvertTypeNotSelected);
+                    UserMessage.ShowExclamation(error);
                     return;
                 }
 
-                _advertTypeId = int.Parse(_opAdvertType.SelectedObject.IDs[0].ToString());
-
-                Application.DoEvents();
-                Cursor = Cursors.WaitCursor;
-
-                TreeView2 tvSelector = FindControl("days") as TreeView2;
-                //  В AddedIDs будут IssueID - они целочисленные, и идентификаторы дней, так как у дней в дереве тоже можно
-                // галочку поставить. В качестве ID дня используется дата. Нам нужны только рекламные выпуски
-                foreach (object id in tvSelector.AddedIDs)
-                {
-                    if (id != null && int.TryParse(id.ToString(), out int issueId))
-                        SelectedIDs.Add(issueId);
-                }
-
-                if (SelectedIDs.Count == 0)
-                {
-                    UserMessage.ShowExclamation(MessageAccessor.GetMessage("NoIssuesSelected"));
-                    DialogResult = DialogResult.None;
-                    return;
-                }
+                _advertTypeId = int.Parse(advertTypeId.ToString());
+                foreach (int issueId in issueIds)
+                    SelectedIDs.Add(issueId);
             }
             catch (Exception ex)
 			{

@@ -65,6 +65,49 @@ namespace Merlin.Classes
             return base.IsActionEnabled(actionName, type);
         }
 
+        /// <summary>Именованный паспорт окна «Назначить предмет рекламы» (iPassport).</summary>
+        internal const string AdvertTypePassport = "ChangeAdvertTypeForSponsorIssues";
+
+        internal struct AdvertTypeParams
+        {
+            public const string NameWithGroup = "nameWithGroup";
+            public const string AdvertTypeId = "advertTypeID";
+            public const string Days = "days";
+        }
+
+        /// <summary>
+        /// Данные окна: дерево «день → выпуски программ» (набор «days» для treeselector).
+        /// campaignTypeID = 100 — ветка процедуры для выпусков спонсорских программ.
+        /// </summary>
+        internal static DataSet LoadAdvertTypePassportData(Campaign campaign)
+        {
+            Dictionary<string, object> procParameters = DataAccessor.CreateParametersDictionary();
+            procParameters[Campaign.ParamNames.CampaignId] = campaign.CampaignId;
+            procParameters[Campaign.ParamNames.CampaignTypeId] = 100;
+            return DataAccessor.LoadDataSet("CampaignDaysTreePassport", procParameters);
+        }
+
+        internal static string AdvertTypePassportCaption(Campaign campaign) =>
+            ((CampaignOnSingleMassmedia)campaign).MassmediaNameWithGroup;
+
+        /// <summary>
+        /// Проверка окна в порядке десктопа: предмет рекламы → хотя бы один выпуск. В
+        /// отметках дерева есть и дни (id — дата строкой) — берутся только целые id выпусков.
+        /// </summary>
+        internal static string ValidateAdvertTypeAssignment(object advertTypeId, IEnumerable<object> checkedIds, out List<int> issueIds)
+        {
+            issueIds = new List<int>();
+            if (advertTypeId == null || advertTypeId == DBNull.Value)
+                return Tr.T(Properties.Resources.AdvertTypeNotSelected);
+
+            foreach (object id in checkedIds)
+                if (id != null && int.TryParse(id.ToString(), out int issueId))
+                    issueIds.Add(issueId);
+            if (issueIds.Count == 0)
+                return MessageAccessor.GetMessage("NoIssuesSelected");
+            return null;
+        }
+
         /// <summary>Назначает предмет рекламы выбранным выпускам программы.</summary>
         internal void ApplyAdvertTypeToIssues(IEnumerable<int> selectedIds, int advertTypeId)
         {
@@ -108,5 +151,24 @@ namespace Merlin.Classes
 			else
 				((RollerPartOfSponsorCampaign)part).TrySwitchView(actionName);
 		}
+
+		// «Назначить предмет рекламы выпускам спонсорских программ» (узел «Программы для спонсоров»).
+		public const string SetAdvertTypeAction = Action.ActionNames.SetAdvertType;
+		public const string AdvertTypePassport = ProgramPartOfSponsorCampaign.AdvertTypePassport;
+		public const string NameWithGroupField = ProgramPartOfSponsorCampaign.AdvertTypeParams.NameWithGroup;
+		public const string AdvertTypeField = ProgramPartOfSponsorCampaign.AdvertTypeParams.AdvertTypeId;
+		public const string DaysField = ProgramPartOfSponsorCampaign.AdvertTypeParams.Days;
+
+		public static DataSet LoadAdvertTypeData(PresentationObject programs) =>
+			ProgramPartOfSponsorCampaign.LoadAdvertTypePassportData(((ProgramPartOfSponsorCampaign)programs).Campaign);
+
+		public static string AdvertTypeCaption(PresentationObject programs) =>
+			ProgramPartOfSponsorCampaign.AdvertTypePassportCaption(((ProgramPartOfSponsorCampaign)programs).Campaign);
+
+		public static string ValidateAdvertType(object advertTypeId, IEnumerable<object> checkedIds, out List<int> issueIds) =>
+			ProgramPartOfSponsorCampaign.ValidateAdvertTypeAssignment(advertTypeId, checkedIds, out issueIds);
+
+		public static void ApplyAdvertType(PresentationObject programs, IEnumerable<int> issueIds, int advertTypeId) =>
+			((ProgramPartOfSponsorCampaign)programs).ApplyAdvertTypeToIssues(issueIds, advertTypeId);
 	}
 }
