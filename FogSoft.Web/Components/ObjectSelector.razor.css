@@ -4,6 +4,11 @@
     max-height: 55vh;
 }
 
+/* Список с поиском: высота постоянная, чтобы окно не сжималось, когда поиск сужает строки. */
+.picker-table-fixed {
+    height: 55vh;
+}
+
 ::deep tbody tr {
     cursor: pointer;
 }

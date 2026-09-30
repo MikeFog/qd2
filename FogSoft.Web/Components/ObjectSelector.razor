@@ -29,20 +29,30 @@ else
 {
     // Сначала отбор строк: он же считает совпадения для счётчика в строке поиска.
     var shown = Shown();
-    @if (_data.Rows.Count > SearchThreshold)
+    // Длинный список — с поиском. Тогда окно не должно менять высоту от поиска: пометка «показаны
+    // первые N» занимает строку всегда (пустую, если показано всё), таблица — постоянной высоты.
+    bool searchable = _data.Rows.Count > SearchThreshold;
+    @if (searchable)
     {
         <QuickSearchBox Text="@_search" TextChanged="Search" Matched="_matched" Total="_data.Rows.Count"
                         ColumnCaption="@SearchColumnCaption" ScopeReset="() => _searchColumn = null" />
+        <div class="text-muted small picker-note">
+            @if (_matched > shown.Count)
+            {
+                @Tr.Format("Показаны первые {0} из {1} — уточните поиск.", shown.Count, _matched)
+            }
+            else
+            {
+                @:&nbsp;
+            }
+        </div>
     }
-    @if (_matched > shown.Count)
-    {
-        <div class="text-muted small picker-note">@Tr.Format("Показаны первые {0} из {1} — уточните поиск.", shown.Count, _matched)</div>
-    }
-    @if (Multiselect && _selectedRows.Count > 0)
+    @* Счётчик виден всегда, с нуля: строка, появлявшаяся с первой галочкой, меняла высоту окна. *@
+    @if (Multiselect)
     {
         <div class="text-muted small picker-note">@Tr.Format("Отмечено: {0}", _selectedRows.Count)</div>
     }
-    <div class="data-table picker-table">
+    <div class="data-table picker-table @(searchable ? "picker-table-fixed" : null)">
         <table class="table table-hover">
             <thead>
                 <tr>
