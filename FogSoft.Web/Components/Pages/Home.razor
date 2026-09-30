@@ -50,21 +50,6 @@ else
 
     <div class="state">
         <div class="state-title">@Tr.T("Выберите раздел в меню слева")</div>
-        @Tr.T("Перенесены журналы, карточки объектов и фильтры.")
-        @Tr.T("Экраны, которых ещё нет, сообщают об этом при открытии.")
-    </div>
-
-    @* Диагностика вертикального среза: проверяет, что пользователь пережил
-       переход между двумя действиями, то есть что контекст circuit работает.
-       Кандидат на удаление, когда каркас перестанет быть новым. *@
-    <div class="diagnostics">
-        <button class="btn btn-sm btn-outline-secondary" @onclick="CheckMetadata">
-            @Tr.T("Проверить загрузку метаданных")
-        </button>
-        @if (_metadata != null)
-        {
-            <pre class="diagnostics-output">@_metadata</pre>
-        }
     </div>
 }
 
@@ -72,7 +57,6 @@ else
     private string _login = "";
     private string _password = "";
     private string? _error;
-    private string? _metadata;
     private bool _busy;
 
     private static string Title =>
@@ -96,28 +80,6 @@ else
         finally
         {
             _busy = false;
-        }
-    }
-
-    /// <summary>
-    /// Метаданные требуют залогиненного пользователя — поэтому это и есть
-    /// проверка того, что пользователь пережил переход между двумя разными
-    /// действиями (вход и этот клик), то есть что контекст circuit работает.
-    /// </summary>
-    private void CheckMetadata()
-    {
-        try
-        {
-            Entity entity = EntityManager.GetEntity(17);
-            _metadata =
-                Tr.Format("Сущность {0}: {1}", entity.Id, Tr.T(entity.Name)) + "\n" +
-                Tr.Format("Атрибутов: {0}", entity.SortedAttributes.Count) + "\n" +
-                Tr.Format("Паспорт: {0}", string.IsNullOrEmpty(entity.XmlPassport) ? Tr.T("нет") : Tr.Format("есть, {0} симв.", entity.XmlPassport.Length)) + "\n" +
-                Tr.Format("Фильтр: {0}", string.IsNullOrEmpty(entity.XmlFilter) ? Tr.T("нет") : Tr.Format("есть, {0} симв.", entity.XmlFilter.Length));
-        }
-        catch (Exception ex)
-        {
-            _metadata = ErrorPresenter.Describe(ex);
         }
     }
 }
