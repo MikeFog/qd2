@@ -251,6 +251,13 @@ namespace FogSoft.WinForm.Controls
                 List<ColumnLayout> columnLayouts = SaveColumnLayouts();
 
                 Clear();
+                // AdjustColumnsWidthExt (его зовёт и AddRow) переводит весь грид на ручные ширины
+                // (None) и шапку в 60 px — раскладка для колонок, что были тогда. Новые колонки
+                // унаследовали бы None и ширину по умолчанию 100 px: после добавления объекта в
+                // дереве все следующие списки разъезжались. Поэтому — снова автоподбор, как в
+                // дизайнере; ручные ширины тех же колонок вернёт RestoreColumnLayouts.
+                dataGrid.AutoSizeColumnsMode = DataGridViewAutoSizeColumnsMode.DisplayedCells;
+                dataGrid.ColumnHeadersHeightSizeMode = DataGridViewColumnHeadersHeightSizeMode.AutoSize;
                 if (value == null) return;
 
                 if (entity != null)
