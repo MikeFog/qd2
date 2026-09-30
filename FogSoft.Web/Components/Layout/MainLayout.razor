@@ -19,12 +19,20 @@
 *@
 
 <div class="shell">
-    <aside class="shell-nav">
-        <NavMenu />
-    </aside>
+    @if (!_navHidden)
+    {
+        <aside class="shell-nav">
+            <NavMenu />
+        </aside>
+    }
 
     <div class="shell-main">
         <header class="shell-top">
+            <button type="button" class="shell-nav-toggle" @onclick="ToggleNav"
+                    title="@(_navHidden ? Tr.T("Показать меню") : Tr.T("Скрыть меню"))"
+                    aria-label="@(_navHidden ? Tr.T("Показать меню") : Tr.T("Скрыть меню"))">
+                <i class="bi @(_navHidden ? "bi-chevron-double-right" : "bi-chevron-double-left")" aria-hidden="true"></i>
+            </button>
             @if (Session.User is { } user)
             {
                 <div class="shell-user">
@@ -82,7 +90,28 @@
         Busy.Changed += OnBusyChanged;
     }
 
-    private void OnSessionChanged() => InvokeAsync(StateHasChanged);
+    // Скрыто ли меню — настройка пользователя, как язык: читается один раз
+    // на вход (Session.Changed срабатывает и от смены языка).
+    private const string NavHiddenSetting = "web.navHidden";
+    private bool _navHidden;
+    private int? _navLoadedFor;
+
+    private void OnSessionChanged()
+    {
+        int? userId = Session.User?.Id;
+        if (userId != _navLoadedFor)
+        {
+            _navLoadedFor = userId;
+            _navHidden = userId != null && UserSettings.Load(NavHiddenSetting) == "1";
+        }
+        InvokeAsync(StateHasChanged);
+    }
+
+    private void ToggleNav()
+    {
+        _navHidden = !_navHidden;
+        UserSettings.Save(NavHiddenSetting, _navHidden ? "1" : "0");
+    }
 
     // После первой интерактивной отрисовки, а не в OnInitialized: тот вызывается
     // ещё и при пререндере, где circuit нет и входить некуда.
