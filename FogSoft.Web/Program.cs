@@ -12,6 +12,12 @@ System.Text.Encoding.RegisterProvider(System.Text.CodePagesEncodingProvider.Inst
 
 var builder = WebApplication.CreateBuilder(args);
 
+// На проде — служба Windows (Deploy/web-deploy.md): отвечает диспетчеру служб на
+// старт и остановку. При обычном запуске (dotnet run, отладчик) ничего не делает.
+// Content root у службы — папка приложения: текущий каталог службы System32, и
+// хост в этом случае сам берёт AppContext.BaseDirectory.
+builder.Services.AddWindowsService();
+
 builder.Services.AddRazorComponents()
     .AddInteractiveServerComponents();
 

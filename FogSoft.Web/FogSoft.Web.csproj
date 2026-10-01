@@ -4,6 +4,11 @@
     <ProjectReference Include="..\FogSoft.Core\FogSoft.Core.csproj" />
   </ItemGroup>
 
+  <ItemGroup>
+    <!-- На проде веб работает службой Windows: Deploy/web-deploy.md -->
+    <PackageReference Include="Microsoft.Extensions.Hosting.WindowsServices" Version="10.0.0" />
+  </ItemGroup>
+
   <PropertyGroup>
     <TargetFramework>net10.0</TargetFramework>
     <Nullable>enable</Nullable>
