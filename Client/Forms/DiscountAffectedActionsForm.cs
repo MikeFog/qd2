@@ -69,7 +69,6 @@ namespace Merlin.Forms
 			if (byCampaign)
 			{
 				attributes.Add(new Entity.Attribute("massmedia", "Радиостанция", "nvarchar"));
-				attributes.Add(new Entity.Attribute("campaignID", "Кампания", "int"));
 			}
 			attributes.Add(new Entity.Attribute("discount", byCampaign ? "Скидка кампании" : "Пакетная скидка", "float"));
 
@@ -85,29 +84,42 @@ namespace Merlin.Forms
 				Dock = DockStyle.Fill,
 				Padding = new Padding(0, 0, 0, 6),
 				Text = string.Format(
-					"Скидка уже посчитана в {0} ({1}), и изменение может её поменять.{2}" +
+					"Скидка уже используется в {0}. Внесённые изменения могут повлиять на сумму {1}.{2}" +
 					"Сами акции сейчас не пересчитываются: скидка у них может измениться при следующем пересчёте " +
 					"(любая правка выпусков).{2}Сохранить изменения?",
-					byCampaign ? "кампаниях" : "акциях", affected.Rows.Count, Environment.NewLine)
+					byCampaign ? "рекламных кампаниях" : "акциях",
+					byCampaign ? "этих кампаний и акций" : "этих акций",
+					Environment.NewLine)
 			};
 
 			Button btnOk = new Button { Text = "Сохранить", Size = new Size(100, 33), DialogResult = DialogResult.OK, FlatStyle = FlatStyle.System };
 			Button btnCancel = new Button { Text = "Отмена", Size = new Size(100, 33), DialogResult = DialogResult.Cancel, FlatStyle = FlatStyle.System };
-			Button btnExcel = new Button { Text = "В Excel", Size = new Size(100, 33), FlatStyle = FlatStyle.System };
-			btnExcel.Click += (s, e) => ExportExcel();
+
+			ToolStripButton tsbExcel = new ToolStripButton
+			{
+				DisplayStyle = ToolStripItemDisplayStyle.Image,
+				ImageTransparentColor = Color.Magenta,
+				Image = Globals.GetImage(Constants.ActionsImages.ExportExcel),
+				Name = "tsbExcel",
+				ToolTipText = "Экспорт таблицы"
+			};
+			tsbExcel.Click += (s, e) => ExportExcel();
+			ToolStrip toolbar = new ToolStrip { Dock = DockStyle.Fill, ImageScalingSize = new Size(20, 20), GripStyle = ToolStripGripStyle.Hidden };
+			toolbar.Items.Add(tsbExcel);
 
 			FlowLayoutPanel buttons = new FlowLayoutPanel { Dock = DockStyle.Fill, AutoSize = true, FlowDirection = FlowDirection.RightToLeft };
 			buttons.Controls.Add(btnCancel);
 			buttons.Controls.Add(btnOk);
-			buttons.Controls.Add(btnExcel);
 
-			TableLayoutPanel layout = new TableLayoutPanel { Dock = DockStyle.Fill, Padding = new Padding(12), ColumnCount = 1, RowCount = 3 };
+			TableLayoutPanel layout = new TableLayoutPanel { Dock = DockStyle.Fill, Padding = new Padding(12), ColumnCount = 1, RowCount = 4 };
+			layout.RowStyles.Add(new RowStyle());
 			layout.RowStyles.Add(new RowStyle());
 			layout.RowStyles.Add(new RowStyle(SizeType.Percent, 100F));
 			layout.RowStyles.Add(new RowStyle());
 			layout.Controls.Add(label, 0, 0);
-			layout.Controls.Add(grid, 0, 1);
-			layout.Controls.Add(buttons, 0, 2);
+			layout.Controls.Add(toolbar, 0, 1);
+			layout.Controls.Add(grid, 0, 2);
+			layout.Controls.Add(buttons, 0, 3);
 
 			Text = "Изменение затронет акции";
 			Font = new Font("Segoe UI Variable Text", 9F, FontStyle.Regular, GraphicsUnit.Point, 204);
