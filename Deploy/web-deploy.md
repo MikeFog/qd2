@@ -67,6 +67,8 @@ Production стартует, отдаёт страницу, стили и `blazo
    ...
    <add name="Main" connectionString="user id=AdvertAgUser; password=<…>; server=lpc:.\SQLEXPRESS; database=Artvis" />
    ```
+   Ключа `Languages` (он есть в сборке, настройка разработчика) на проде быть не должно:
+   без него доступен только язык `Language`, и переключателя языка в шапке нет.
    `lpc:` — если веб на той же машине, что SQL (SQLBrowser отключён). Если на другой — `tcp:<сервер>,<порт>`.
    Вместо открытого пароля можно, как в десктопе, положить зашифрованную строку в
    `appSettings` ключом `ConnectionString_Main` (`ConfigurationUtil` понимает оба варианта) —

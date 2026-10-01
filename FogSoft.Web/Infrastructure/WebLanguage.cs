@@ -9,6 +9,7 @@ namespace FogSoft.Web.Infrastructure;
 ///
 /// Язык — свойство пользователя (<see cref="UserSession.Language"/>, хранится
 /// в UserSetting), по умолчанию — язык установки (<c>Language</c> в App.config).
+/// Выбор — из языков установки (<c>Languages</c>), переключатель только при двух и более.
 /// Формат дат, чисел и валюта от языка НЕ зависят: это свойство установки
 /// (<c>Culture</c> в App.config), выставляется на весь процесс в Program.cs.
 ///
@@ -34,23 +35,54 @@ public static class WebLanguage
 
 	public static bool PseudoEnabled { get; set; }
 
+	// Названия языков — каждое на своём языке, не переводятся.
+	private static readonly (string Code, string Name)[] Known =
+		{ (Russian, "Русский"), (Spanish, "Español") }; // i18n-ok
+
 	/// <summary>Язык установки.</summary>
 	public static string Default { get; } =
-		Normalize(System.Configuration.ConfigurationManager.AppSettings["Language"]) ?? Russian;
+		KnownCode(System.Configuration.ConfigurationManager.AppSettings["Language"]) ?? Russian;
 
-	// Названия языков — каждое на своём языке, не переводятся.
+	/// <summary>
+	/// Языки установки: <c>Languages</c> в App.config через запятую. Нет
+	/// настройки — только язык установки. Установка работает в одной стране,
+	/// поэтому на проде настройки обычно нет, и переключателя не видно.
+	/// </summary>
+	private static readonly (string Code, string Name)[] Installed = LoadInstalled();
+
+	/// <summary>Показывать ли переключатель языка: выбирать есть из чего.</summary>
+	public static bool CanSwitch => Installed.Length > 1;
+
+	// Псевдоязык — только при переключателе, иначе с него не уйти.
 	public static IReadOnlyList<(string Code, string Name)> Available =>
-		PseudoEnabled
-			? new[] { (Russian, "Русский"), (Spanish, "Español"), (Pseudo, "[·Псевдо·]") } // i18n-ok
-			: new[] { (Russian, "Русский"), (Spanish, "Español") }; // i18n-ok
+		PseudoEnabled && CanSwitch
+			? Installed.Append((Pseudo, "[·Псевдо·]")).ToArray() // i18n-ok
+			: Installed;
 
-	/// <summary>Код языка, если он поддерживается; иначе null.</summary>
+	/// <summary>Код языка, если он доступен в установке; иначе null.</summary>
 	public static string? Normalize(string? code)
 	{
 		code = code?.Trim().ToLowerInvariant();
-		if (code == Russian || code == Spanish || (code == Pseudo && PseudoEnabled))
-			return code;
-		return null;
+		return Available.Any(l => l.Code == code) ? code : null;
+	}
+
+	private static string? KnownCode(string? code)
+	{
+		code = code?.Trim().ToLowerInvariant();
+		return Known.Any(l => l.Code == code) ? code : null;
+	}
+
+	private static (string Code, string Name)[] LoadInstalled()
+	{
+		var codes = (System.Configuration.ConfigurationManager.AppSettings["Languages"] ?? "")
+			.Split(',')
+			.Select(KnownCode)
+			.Where(c => c != null)
+			.ToList();
+		// Язык установки доступен всегда, даже если в списке его забыли.
+		if (!codes.Contains(Default))
+			codes.Insert(0, Default);
+		return Known.Where(l => codes.Contains(l.Code)).ToArray();
 	}
 }
 

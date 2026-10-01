@@ -37,13 +37,16 @@
             {
                 <div class="shell-user">
                     <span class="shell-user-name">@UserName(user)</span>
-                    <select class="form-select form-select-sm shell-language" aria-label="@(Tr.T("Язык интерфейса"))"
-                            value="@Language" @onchange="ChangeLanguage">
-                        @foreach (var language in WebLanguage.Available)
-                        {
-                            <option value="@language.Code">@language.Name</option>
-                        }
-                    </select>
+                    @if (WebLanguage.CanSwitch)
+                    {
+                        <select class="form-select form-select-sm shell-language" aria-label="@(Tr.T("Язык интерфейса"))"
+                                value="@Language" @onchange="ChangeLanguage">
+                            @foreach (var language in WebLanguage.Available)
+                            {
+                                <option value="@language.Code">@language.Name</option>
+                            }
+                        </select>
+                    }
                     <button type="button" class="btn btn-sm btn-outline-secondary" @onclick="Logout"><i class="bi bi-box-arrow-right" aria-hidden="true"></i>@Tr.T("Выйти")</button>
                 </div>
             }
