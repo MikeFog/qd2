@@ -1,5 +1,5 @@
 ﻿/*
-    ДЕПЛОЙ: переводы веб-версии на язык «es» (1778 строк). docs/tasks/web-i18n.md, этап 5.
+    ДЕПЛОЙ: переводы веб-версии на язык «es» (1792 строк). docs/tasks/web-i18n.md, этап 5.
     СГЕНЕРИРОВАН из ArtvisDB/Scripts/i18n/es.tsv скриптом build-seed.py — руками не править.
 
     ПРЕДУСЛОВИЕ     накачен web-i18n-translation-deploy.sql (таблица iTranslation).
@@ -1798,7 +1798,21 @@ INSERT INTO #t ([source], [text]) VALUES
 (N'Выберите агентство и период.', N'Seleccione la agencia y el período.'),
 (N'За период выполненных работ нет.', N'No hay trabajos realizados en el período.'),
 (N'Итого', N'Total'),
-(N'В данной распечатке акта выполненных работ присутствуют выпуски на радиостанциях, которые не были отмечены как обработанные трафик-менеджером.', N'En esta acta de trabajos realizados hay emisiones en emisoras que el gestor de tráfico no ha marcado como procesadas.');
+(N'В данной распечатке акта выполненных работ присутствуют выпуски на радиостанциях, которые не были отмечены как обработанные трафик-менеджером.', N'En esta acta de trabajos realizados hay emisiones en emisoras que el gestor de tráfico no ha marcado como procesadas.'),
+(N'Сменить цену...', N'Cambiar precio...'),
+(N'Сменить цену', N'Cambiar precio'),
+(N'Тарифов', N'Tarifas'),
+(N'Из них с окнами', N'Con ventanas'),
+(N'Новая цена', N'Precio nuevo'),
+(N'Новая цена вместо {0}', N'Precio nuevo en lugar de {0}'),
+(N'Введите новую цену.', N'Ingrese el precio nuevo.'),
+(N'Цена не может быть отрицательной.', N'El precio no puede ser negativo.'),
+(N'Изменено тарифов: {0}', N'Tarifas modificadas: {0}'),
+(N'Изменено тарифов: {0}, не изменено: {1}', N'Tarifas modificadas: {0}, no modificadas: {1}'),
+(N'Новая цена заменит старую во всех тарифах прайс-листа. Тарифы со сгенерированными окнами не меняются.', N'El precio nuevo reemplazará al anterior en todas las tarifas de la lista de precios. Las tarifas con ventanas generadas no se modifican.'),
+(N'{0:HH:mm}, цена {1:N2}: у тарифа есть сгенерированные окна - цена не изменена', N'{0:HH:mm}, precio {1:N2}: la tarifa tiene ventanas generadas; el precio no se modificó'),
+(N'В цене не больше двух знаков после запятой.', N'El precio admite como máximo dos decimales.'),
+(N'Слишком большая цена.', N'El precio es demasiado alto.');
 GO
 
 BEGIN TRANSACTION;

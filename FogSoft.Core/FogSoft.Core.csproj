@@ -191,6 +191,7 @@
     <Compile Include="..\Client\Classes\TariffWindowWithRollerIssues.cs" Link="Domain\TariffWindowWithRollerIssues.cs" />
     <Compile Include="..\Client\Classes\TariffWindowWeek.cs" Link="Domain\TariffWindowWeek.cs" />
     <Compile Include="..\Client\Classes\PricelistWindows.cs" Link="Domain\PricelistWindows.cs" />
+    <Compile Include="..\Client\Classes\PricelistPrices.cs" Link="Domain\PricelistPrices.cs" />
     <Compile Include="..\Client\Classes\TrafficManagement.cs" Link="Domain\TrafficManagement.cs" />
     <Compile Include="..\Client\Classes\RollerStatisticQuery.cs" Link="Domain\RollerStatisticQuery.cs" />
     <Compile Include="..\Client\Classes\BroadcastGrid.cs" Link="Domain\BroadcastGrid.cs" />

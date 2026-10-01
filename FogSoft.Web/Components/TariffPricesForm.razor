@@ -1,0 +1,80 @@
+@using System.Data
+@using FogSoft.WinForm.Classes
+@using Merlin.Classes
+
+@*
+    Содержимое диалога «Сменить цену» у прайс-листа — веб-аналог десктопной
+    ChangeTariffPricesForm: слева все разные цены тарифов прайс-листа, справа — новая
+    цена (предзаполнена старой). Значения пишутся прямо в модель; замена — по «ОК»
+    в ObjectActions (PricelistPrices.Apply).
+*@
+
+@if (Value.Message != null)
+{
+    <div class="alert alert-danger">@Value.Message</div>
+}
+
+<p class="text-muted hint">
+    @Tr.T("Новая цена заменит старую во всех тарифах прайс-листа. Тарифы со сгенерированными окнами не меняются.")
+</p>
+
+<div class="list">
+    <table class="table table-sm">
+        <thead>
+            <tr>
+                <th class="num">@Tr.T("Цена")</th>
+                <th class="num">@Tr.T("Тарифов")</th>
+                <th class="num">@Tr.T("Из них с окнами")</th>
+                <th class="num">@Tr.T("Новая цена")</th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (Row row in Value.Rows)
+            {
+                <tr>
+                    <td class="num tabular">@row.Price.ToString("C")</td>
+                    <td class="num tabular">@row.TariffsCount</td>
+                    <td class="num tabular">@(row.WithWindowsCount > 0 ? row.WithWindowsCount.ToString() : "")</td>
+                    <td class="col-new">
+                        <input type="number" class="form-control form-control-sm tabular" min="0" step="0.01"
+                               aria-label="@(Tr.Format("Новая цена вместо {0}", row.Price.ToString("C")))"
+                               @bind="row.NewPrice" />
+                    </td>
+                </tr>
+            }
+        </tbody>
+    </table>
+</div>
+
+@code {
+    [Parameter, EditorRequired] public Model Value { get; set; } = default!;
+
+    public sealed class Row
+    {
+        public decimal Price { get; init; }
+        public int TariffsCount { get; init; }
+        public int WithWindowsCount { get; init; }
+        public decimal? NewPrice { get; set; }
+    }
+
+    public sealed class Model
+    {
+        public Model(DataTable prices)
+        {
+            foreach (DataRow r in prices.Rows)
+            {
+                decimal price = Convert.ToDecimal(r[PricelistPrices.Columns.Price]);
+                Rows.Add(new Row
+                {
+                    Price = price,
+                    TariffsCount = Convert.ToInt32(r[PricelistPrices.Columns.TariffsCount]),
+                    WithWindowsCount = Convert.ToInt32(r[PricelistPrices.Columns.WithWindowsCount]),
+                    NewPrice = price,
+                });
+            }
+        }
+
+        public List<Row> Rows { get; } = new();
+        public string? Message { get; set; }
+    }
+}

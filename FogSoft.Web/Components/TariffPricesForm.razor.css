@@ -1,0 +1,37 @@
+.hint {
+    margin: 0 0 var(--s-2);
+    max-width: 520px;
+}
+
+.list {
+    max-height: 50vh;
+    overflow: auto;
+    border: 1px solid var(--c-border);
+    border-radius: 6px;
+}
+
+.list table {
+    margin: 0;
+}
+
+.list th {
+    position: sticky;
+    top: 0;
+    background: var(--c-surface);
+}
+
+.num {
+    text-align: right;
+}
+
+.col-new {
+    width: 160px;
+}
+
+.col-new input {
+    text-align: right;
+}
+
+.tabular {
+    font-variant-numeric: tabular-nums;
+}

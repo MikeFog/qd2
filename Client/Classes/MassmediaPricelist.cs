@@ -91,7 +91,7 @@ namespace Merlin.Classes
 		{
 			if(actionName == Constants.EntityActions.AssignNew)
 				return ChildEntity != null && (ChildEntity.Id == (int)Entities.Tariff || ChildEntity.Id == (int)Entities.SponsorTariff);
-			else if(actionName == Actions.AddTariffsMass)
+			else if(actionName == Actions.AddTariffsMass || actionName == PricelistPrices.ActionName)
 				return ChildEntity != null && ChildEntity.Id == (int)Entities.Tariff;
 			else if(actionName == Actions.GenerateWindows 
 				|| actionName == Actions.DeleteGeneratedWindows

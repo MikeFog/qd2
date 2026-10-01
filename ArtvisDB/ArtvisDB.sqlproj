@@ -416,6 +416,8 @@
     <Build Include="dbo\Stored Procedures\GetMuteRoller.sql" />
     <Build Include="dbo\Stored Procedures\TariffPassport.sql" />
     <Build Include="dbo\Stored Procedures\TariffSimilar.sql" />
+    <Build Include="dbo\Stored Procedures\PricelistTariffPrices.sql" />
+    <Build Include="dbo\Stored Procedures\PricelistTariffPricesChange.sql" />
     <Build Include="dbo\Stored Procedures\ActionActivate.sql" />
     <Build Include="dbo\Stored Procedures\AgitationFraming.sql" />
     <Build Include="dbo\Stored Procedures\SponsorPricelists.sql" />

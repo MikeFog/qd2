@@ -276,6 +276,7 @@ public sealed partial class ObjectActions
 		["MassmediaPricelist"] = new()
 		{
 			["AddTariffsMass"] = (s, t) => s.AddTariffsMass((Merlin.Classes.Pricelist)t),
+			[Merlin.Classes.PricelistPrices.ActionName] = (s, t) => s.ChangeTariffPrices(t),
 			[Merlin.Classes.PricelistWindows.ActionNames.GenerateWindows] = (s, t) => s.GenerateWindows(t),
 			[Merlin.Classes.PricelistWindows.ActionNames.DeleteGeneratedWindows] = (s, t) => s.DeleteGeneratedWindows(t, null),
 			[Merlin.Classes.PricelistWindows.ActionNames.DisabledTariffWindows] = (s, t) =>
@@ -1024,6 +1025,47 @@ public sealed partial class ObjectActions
 			await ShowInfo(Tr.T("Готово"), Tr.Format("Создано тарифов: {0}", created));
 
 		return ActionEffect.ChildAdded;
+	}
+
+	/// <summary>
+	/// «Сменить цену» — веб-аналог MassmediaPricelist.WinForms.ChangeTariffPrices: все
+	/// разные цены тарифов прайс-листа и новая цена у каждой (TariffPricesForm), замена —
+	/// одним UPDATE (PricelistPrices.Apply). Тарифы со сгенерированными окнами процедура
+	/// пропускает — таблицей, как ошибки «Добавить тариф массово» выше. Эффект — ChildAdded
+	/// (перечитать тарифы прайс-листа), только если что-то изменилось.
+	/// </summary>
+	private async Task<ActionEffect> ChangeTariffPrices(object pricelist)
+	{
+		var model = await _busy.RunAsync(() => new TariffPricesForm.Model(Merlin.Classes.PricelistPrices.Load(pricelist)));
+
+		while (true)
+		{
+			if (await _dialogs.ShowAsync(Tr.T("Сменить цену"), builder =>
+				{
+					builder.OpenComponent<TariffPricesForm>(0);
+					builder.AddComponentParameter(1, nameof(TariffPricesForm.Value), model);
+					builder.CloseComponent();
+				}, okText: Tr.T("Сменить")) != DialogOutcome.Ok)
+				return ActionEffect.None;
+
+			model.Message = model.Rows.Any(r => r.NewPrice == null) ? Tr.T("Введите новую цену.")
+				: model.Rows.Select(r => Merlin.Classes.PricelistPrices.ValidateNewPrice(r.NewPrice!.Value)).FirstOrDefault(e => e != null);
+			if (model.Message == null)
+				break;
+		}
+
+		DataTable? tableErrors = null;
+		int changed = await _busy.RunAsync(() => Merlin.Classes.PricelistPrices.Apply(pricelist,
+			model.Rows.ToDictionary(r => r.Price, r => r.NewPrice!.Value), out tableErrors));
+
+		if (tableErrors is { Rows.Count: > 0 })
+			await _tables.ShowAsync(
+				Tr.Format("Изменено тарифов: {0}, не изменено: {1}", changed, tableErrors.Rows.Count),
+				tableErrors, new Entity.Attribute("description", "Ошибка", "nvarchar")); // i18n-ok: Alias переводится при показе (ObjectList)
+		else if (changed > 0)
+			await ShowInfo(Tr.T("Готово"), Tr.Format("Изменено тарифов: {0}", changed));
+
+		return changed > 0 ? ActionEffect.ChildAdded : ActionEffect.None;
 	}
 
 	/// <summary>

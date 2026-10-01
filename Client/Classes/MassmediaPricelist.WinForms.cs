@@ -41,6 +41,8 @@ namespace Merlin.Classes
 				ChangeTariffWindowsMarkedStatus(owner, false);
 			else if (actionName == Actions.AddTariffsMass)
 				AddTariffsMass(owner);
+			else if (actionName == PricelistPrices.ActionName)
+				ChangeTariffPrices(owner);
 			else
 				base.DoAction(actionName, owner, interfaceObject);
 		}
@@ -94,6 +96,42 @@ namespace Merlin.Classes
 					UserMessage.ShowInformation(string.Format("Создано тарифов: {0}", created));
 
 				FireContainerRefreshed();
+			}
+			catch (Exception e)
+			{
+				ErrorManager.PublishError(e);
+			}
+			finally
+			{
+				Cursor.Current = Cursors.Default;
+			}
+		}
+
+		/// <summary>
+		/// «Сменить цену»: все разные цены тарифов прайс-листа и поле новой цены у каждой
+		/// (ChangeTariffPricesForm), замена — одним UPDATE (PricelistPrices.Apply). Тарифы
+		/// со сгенерированными окнами пропускаются — журналом.
+		/// </summary>
+		private void ChangeTariffPrices(IWin32Window owner)
+		{
+			try
+			{
+				ChangeTariffPricesForm form = new ChangeTariffPricesForm(PricelistPrices.Load(this));
+				if (form.ShowDialog(owner) != DialogResult.OK) return;
+
+				Application.DoEvents();
+				Cursor.Current = Cursors.WaitCursor;
+				DataTable tableErrors;
+				int changed = PricelistPrices.Apply(this, form.NewPrices, out tableErrors);
+
+				if (tableErrors.Rows.Count > 0)
+					Globals.ShowSimpleJournal(EntityManager.GetEntity((int)Entities.ErrTmplGen),
+						string.Format("Изменено тарифов: {0}, не изменено: {1}", changed, tableErrors.Rows.Count), tableErrors);
+				else if (changed > 0)
+					UserMessage.ShowInformation(string.Format("Изменено тарифов: {0}", changed));
+
+				if (changed > 0)
+					FireContainerRefreshed();
 			}
 			catch (Exception e)
 			{

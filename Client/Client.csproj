@@ -708,6 +708,7 @@
     <Compile Include="Classes\TariffWindowWithRollerIssues.WinForms.cs" />
     <Compile Include="Classes\TariffWindowWeek.cs" />
     <Compile Include="Classes\PricelistWindows.cs" />
+    <Compile Include="Classes\PricelistPrices.cs" />
     <Compile Include="Classes\TrafficManagement.cs" />
     <Compile Include="Classes\RollerStatisticQuery.cs" />
     <Compile Include="Classes\BroadcastGrid.cs" />
@@ -1091,6 +1092,9 @@
     </Compile>
     <Compile Include="Forms\SelectCampaignsForm.Designer.cs">
       <DependentUpon>SelectCampaignsForm.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Forms\ChangeTariffPricesForm.cs">
+      <SubType>Form</SubType>
     </Compile>
     <Compile Include="Forms\ChangePaymentTypeMassForm.cs">
       <SubType>Form</SubType>
