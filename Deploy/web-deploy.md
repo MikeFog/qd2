@@ -61,14 +61,14 @@ Production стартует, отдаёт страницу, стили и `blazo
 1. Распаковать архив в `C:\qd2web`.
 2. **`FogSoft.Web.dll.config`** — строка подключения к проду и параметры установки:
    ```xml
-   <add key="Language" value="ru" />
    <add key="Culture" value="ru-RU" />
    <add key="Title" value="АРТВИС" />
    ...
    <add name="Main" connectionString="user id=AdvertAgUser; password=<…>; server=lpc:.\SQLEXPRESS; database=Artvis" />
    ```
-   Ключа `Languages` (он есть в сборке, настройка разработчика) на проде быть не должно:
-   без него доступен только язык `Language`, и переключателя языка в шапке нет.
+   Язык интерфейса — ключ `Languages` (через запятую, первый — по умолчанию). Без ключа — русский;
+   для испаноязычной установки — `<add key="Languages" value="es" />`. Больше одного языка на проде не
+   указывать: в сборке `ru,es` — настройка разработчика, с ней в шапке появляется переключатель языка.
    `lpc:` — если веб на той же машине, что SQL (SQLBrowser отключён). Если на другой — `tcp:<сервер>,<порт>`.
    Вместо открытого пароля можно, как в десктопе, положить зашифрованную строку в
    `appSettings` ключом `ConnectionString_Main` (`ConfigurationUtil` понимает оба варианта) —
