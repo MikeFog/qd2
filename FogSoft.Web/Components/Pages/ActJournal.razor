@@ -1,0 +1,149 @@
+@page "/act-journal"
+@using System.Data
+@using FogSoft.Web.Infrastructure
+@using FogSoft.WinForm
+@using FogSoft.WinForm.Classes
+@using FogSoft.WinForm.Passport.Classes
+@using Merlin.Classes
+@inject MenuAccess Access
+@inject BusyService Busy
+@inject FilterMemory Filters
+
+@*
+    «Выписать акт выполненных работ» — веб-экран вместо ActJournalForm. Отбор — панель журналов
+    (FilterPanel) по iEntity.filter сущности 156: период, агентство (процедура без него отказывает),
+    фирма, «с оплатой / без оплаты». Данные — только по «Применить»: десктоп открывает журнал с
+    doNotRefresh, процедура на проде работает до десятков секунд. Результат пересобирает ядро
+    (Merlin.Classes.ActJournal.Prepare, то же, что десктопный PopulateDataGrid): сумма по акции, гашение повторов,
+    жирная строка «Итого». У строки — эфирная справка и график размещения по кампании
+    (ObjectActions, ClassActions["ActJournalRow"]).
+*@
+
+<PageTitle>@_title</PageTitle>
+
+@if (SecurityManager.LoggedUser == null)
+{
+    <div class="state">
+        <div class="state-title">@Tr.T("Вы не вошли в систему")</div>
+        <a href="/">@Tr.T("Перейти к входу")</a>
+    </div>
+}
+else if (_access != JournalAccess.Allowed)
+{
+    <div class="state">
+        <div class="state-title">@Tr.T("Доступ закрыт")</div>
+        @Tr.T("Этот экран вам не разрешён. Права на экраны выдаются вместе с пунктами меню — обратитесь к администратору системы.")
+    </div>
+}
+else
+{
+    <div class="act-journal">
+        <ScreenToolbar Title="@_title" Count="@(_data == null ? null : Math.Max(0, _data.Rows.Count - 1))">
+            <button class="btn btn-sm btn-outline-secondary" @onclick="Refresh">
+                <i class="bi bi-arrow-clockwise" aria-hidden="true"></i>@Tr.T("Обновить")
+            </button>
+            <button class="btn btn-sm btn-outline-secondary" disabled="@(_data == null)" @onclick="ExportExcel">
+                <i class="bi bi-download" aria-hidden="true"></i>@Tr.T("Экспорт в Excel")
+            </button>
+        </ScreenToolbar>
+
+        <FilterPanel @ref="_filterPanel" Pages="_filterPages" Values="_filterValues" FilterData="_filterData"
+                     Apply="Show" Screen="@Screen" InitiallyOpen="true" />
+
+        @if (_error != null)
+        {
+            <div class="alert alert-danger">@_error</div>
+        }
+        @if (_unprocessedMassmedia)
+        {
+            <div class="alert alert-warning">@Merlin.Classes.ActJournal.UnprocessedMassmediaMessage</div>
+        }
+
+        @if (_data == null)
+        {
+            <div class="state">
+                <div class="state-title">@Tr.T("Задайте отбор и нажмите «Применить»")</div>
+                @Tr.T("Выберите агентство и период.")
+            </div>
+        }
+        else
+        {
+            <section class="rows">
+                <ObjectList @ref="_list" Entity="_entity" Data="_data" QuickSearch="true"
+                            EmptyText="@(Tr.T("За период выполненных работ нет."))"
+                            Failed="e => _error = e" />
+            </section>
+        }
+    </div>
+}
+
+@code {
+    public const string Screen = "act-journal";
+
+    private string _title = Tr.T("Акт выполненных работ");
+    private JournalAccess _access = JournalAccess.Allowed;
+    private string? _error;
+    private bool _unprocessedMassmedia;
+
+    private FilterPanel? _filterPanel;
+    private IReadOnlyList<PassportPage> _filterPages = Array.Empty<PassportPage>();
+    private readonly Dictionary<string, object> _filterValues = new(StringComparer.InvariantCultureIgnoreCase);
+    private DataSet? _filterData;
+
+    private Entity? _entityCache;
+    private Entity _entity => _entityCache ??= EntityManager.GetEntity((int)Merlin.Entities.ActJournalRow);
+    private DataTable? _data;
+    private ObjectList? _list;
+    private bool _initialized;
+
+    protected override async Task OnParametersSetAsync()
+    {
+        if (SecurityManager.LoggedUser == null || _initialized)
+            return;
+        _initialized = true;
+
+        _access = Access.CheckScreen(ScreenRoutes.ActJournal);
+        if (_access != JournalAccess.Allowed)
+            return;
+
+        _title = Access.MenuText(ScreenRoutes.ActJournal) ?? Tr.T("Акт выполненных работ");
+        await Busy.RunAsync(() => Try(() =>
+        {
+            _filterPages = PassportSchema.Parse(_entity.XmlFilter, _entity, pageType: PageTypes.Filter);
+            _filterData = Globals.PrepareForFilter(_entity);
+
+            _filterValues.Clear();
+            Globals.ResolveFilterInitialValues(_filterValues, _entity.XmlFilter);
+            Filters.Restore(Screen, _filterValues);
+        }));
+    }
+
+    private void Try(System.Action work)
+    {
+        try
+        {
+            _error = null;
+            work();
+        }
+        catch (Exception ex)
+        {
+            _error = ErrorPresenter.Describe(ex);
+        }
+    }
+
+    /// <summary>«Применить» (FilterPanel уже проверила заполненность).</summary>
+    private Task Show() => Busy.RunAsync(() => Try(() =>
+    {
+        _unprocessedMassmedia = false;
+        DataTable data = _entity.GetContent(new Dictionary<string, object>(_filterValues, StringComparer.InvariantCultureIgnoreCase));
+        Merlin.Classes.ActJournal.Prepare(data);
+        _unprocessedMassmedia = Merlin.Classes.ActJournal.HasUnprocessedMassmedia(data);
+        _data = data;
+        Filters.Remember(Screen, _filterValues);
+    }));
+
+    /// <summary>«Обновить» читает текущий отбор — с той же проверкой, что «Применить».</summary>
+    private Task Refresh() => _filterPanel?.Validate() == false ? Task.CompletedTask : Show();
+
+    private Task ExportExcel() => _list?.ExportToExcelAsync(_title) ?? Task.CompletedTask;
+}

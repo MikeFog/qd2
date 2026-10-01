@@ -1772,3 +1772,8 @@ code	На окончание интервала	Al final del intervalo
 code	Акции	Campañas
 code	Платежи	Pagos
 caption	Агентства:	Agencias:
+code	Акт выполненных работ	Acta de trabajos realizados
+code	Выберите агентство и период.	Seleccione la agencia y el período.
+code	За период выполненных работ нет.	No hay trabajos realizados en el período.
+code	Итого	Total
+code	В данной распечатке акта выполненных работ присутствуют выпуски на радиостанциях, которые не были отмечены как обработанные трафик-менеджером.	En esta acta de trabajos realizados hay emisiones en emisoras que el gestor de tráfico no ha marcado como procesadas.

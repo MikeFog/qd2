@@ -212,6 +212,15 @@
 
     private void Changed(string name) => _ = ValueChanged.InvokeAsync(name);
 
+    /// <summary>
+    /// Панель раскрыта при открытии экрана. По умолчанию свёрнута (решение владельца); раскрыта —
+    /// у экранов, где без отбора смотреть нечего: «Выписать акт выполненных работ» ничего не
+    /// покажет, пока не выбрано агентство.
+    /// </summary>
+    [Parameter] public bool InitiallyOpen { get; set; }
+
+    protected override void OnInitialized() => _filterOpen = InitiallyOpen;
+
     private bool _filterOpen;
 
     // Открытая вкладка — аналог tabPassport.SelectedIndex. Значения полей

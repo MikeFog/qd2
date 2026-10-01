@@ -1,5 +1,5 @@
 ﻿/*
-    ДЕПЛОЙ: переводы веб-версии на язык «es» (1773 строк). docs/tasks/web-i18n.md, этап 5.
+    ДЕПЛОЙ: переводы веб-версии на язык «es» (1778 строк). docs/tasks/web-i18n.md, этап 5.
     СГЕНЕРИРОВАН из ArtvisDB/Scripts/i18n/es.tsv скриптом build-seed.py — руками не править.
 
     ПРЕДУСЛОВИЕ     накачен web-i18n-translation-deploy.sql (таблица iTranslation).
@@ -1793,7 +1793,12 @@ INSERT INTO #t ([source], [text]) VALUES
 (N'На окончание интервала', N'Al final del intervalo'),
 (N'Акции', N'Campañas'),
 (N'Платежи', N'Pagos'),
-(N'Агентства:', N'Agencias:');
+(N'Агентства:', N'Agencias:'),
+(N'Акт выполненных работ', N'Acta de trabajos realizados'),
+(N'Выберите агентство и период.', N'Seleccione la agencia y el período.'),
+(N'За период выполненных работ нет.', N'No hay trabajos realizados en el período.'),
+(N'Итого', N'Total'),
+(N'В данной распечатке акта выполненных работ присутствуют выпуски на радиостанциях, которые не были отмечены как обработанные трафик-менеджером.', N'En esta acta de trabajos realizados hay emisiones en emisoras que el gestor de tráfico no ha marcado como procesadas.');
 GO
 
 BEGIN TRANSACTION;

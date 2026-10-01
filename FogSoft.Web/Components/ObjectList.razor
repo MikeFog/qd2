@@ -447,6 +447,10 @@ else
             decimal sum = 0;
             foreach (DataRow row in _rows)
             {
+                // Итоговые строки (row_style = bold: «Итого» акта выполненных работ, итоги групп
+                // статистики) уже сумма — иначе Σ посчитал бы их второй раз.
+                if (RowStyle.IsBold(row))
+                    continue;
                 object v = row[column];
                 if (v == DBNull.Value)
                     continue;

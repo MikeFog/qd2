@@ -1,9 +1,8 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Data;
+﻿using System.Collections.Generic;
 using System.Drawing;
 using FogSoft.WinForm.Classes;
 using FogSoft.WinForm.Forms;
+using Merlin.Classes;
 using Merlin.Properties;
 
 namespace Merlin.Forms
@@ -20,44 +19,16 @@ namespace Merlin.Forms
 			FilterBtn.Enabled = false;
 		}
 
+		// Пересборка таблицы (итоги по акции, гашение повторов, «Итого») — ядро ActJournal, его
+		// зовёт и веб-экран.
 		protected override void PopulateDataGrid()
 		{
-			string actionId = null;
-			DateTime datetime = DateTime.MinValue;
-			DataRow firstActionRow = null;
-			decimal total = 0;
-			foreach (DataRow row in _dtData.Rows)
-			{
-				total += decimal.Parse(row["campaignTotal"].ToString());
-				if (actionId != row["actionId"].ToString())
-				{
-					actionId = row["actionId"].ToString();
-					row["total"] = decimal.Parse(row["campaignTotal"].ToString()) + decimal.Parse(row["mistake"].ToString());
-					firstActionRow = row;
-				}
-				else
-				{
-					row["actionId"] = row["firmName"] = DBNull.Value;
-					firstActionRow["total"] =
-						decimal.Parse(firstActionRow["total"].ToString()) + decimal.Parse(row["campaignTotal"].ToString());
-				}
-				if (datetime != DateTime.Parse(row["currentDate"].ToString()))
-					datetime = DateTime.Parse(row["currentDate"].ToString());
-				else
-					row["currentDate"] = DBNull.Value;
-			}
-			object[] rowSum = new object[_dtData.Columns.Count];
-			rowSum[_dtData.Columns.IndexOf("firmName")] = "Итого";
-			rowSum[_dtData.Columns.IndexOf("total")] = total;
-			rowSum[_dtData.Columns.IndexOf("campaignId")] = 0;
-			rowSum[_dtData.Columns.IndexOf("currentDate2")] = DateTime.Now;
-			rowSum[_dtData.Columns.IndexOf("massmediaId")] = 0;
-			_dtData.Rows.Add(rowSum);
+			ActJournal.Prepare(_dtData);
 			base.PopulateDataGrid();
 			Grid.InternalGrid.Rows[Grid.InternalGrid.Rows.Count - 1].DefaultCellStyle.Font 
 				= new Font(Grid.InternalGrid.DefaultCellStyle.Font, FontStyle.Bold);
 
-			if (_dtData.DataSet != null && _dtData.DataSet.Tables.Count > 1 && _dtData.DataSet.Tables[1].Rows.Count > 0)
+			if (ActJournal.HasUnprocessedMassmedia(_dtData))
 				UserMessage.ShowInformation(Resources.ActJournalMassmediaExplamation);
 		}
 	}

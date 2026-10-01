@@ -217,6 +217,9 @@ public static class ScreenRoutes
 	/// <summary>«Баланс для конкретной фирмы-заказчика» из «Бухгалтерии».</summary>
 	public const string FirmBalance = "miFirmBalance";
 
+	/// <summary>«Выписать акт выполненных работ» из «Бухгалтерии».</summary>
+	public const string ActJournal = "miActPrint";
+
 	public static readonly IReadOnlyDictionary<string, string> Screens =
 		new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase)
 		{
@@ -249,6 +252,9 @@ public static class ScreenRoutes
 			// Десктоп — FrmFirmIssuesBalance (контролы на форме, без метаданных); в вебе — отбор на
 			// FilterPanel, итоги и два списка. Данные — ядро FirmBalanceReport.
 			{ FirmBalance, "/firm-balance" },
+			// Десктоп — ActJournalForm (журнал сущности 156 с doNotRefresh и пересборкой таблицы); в
+			// вебе — свой экран: данные только по «Применить», пересборка — ядро ActJournal.
+			{ ActJournal, "/act-journal" },
 		};
 }
 
