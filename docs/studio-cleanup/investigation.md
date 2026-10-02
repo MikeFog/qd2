@@ -402,3 +402,7 @@ Merlin.Classes.Domain.StudioOrder.*`, которого **нет в сборке*
   `ArtvisDev`: проходит целиком без ошибок и откатывается** (2026-09-08). Для
   боевого применения — сверить РАЗДЕЛ 0 на `Artvis`, снять `BACKUP DATABASE`,
   заменить `ROLLBACK` на `COMMIT`.
+
+- `studio-cleanup-01-alter-shared-procs.sql` + `studio-cleanup-02-drop-deploy.sql` (эта папка) —
+  боевой деплой для остальных баз (Belgorod, Tumen, Univer…), по шагам; на `Artvis` и `ArtvisDev`
+  уже применено 10.09.2026. Шаг 1 сверен с `ArtvisDB` 02.10.2026.
