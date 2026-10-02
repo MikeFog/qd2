@@ -46,7 +46,7 @@ else
         <ScreenToolbar Title="@_title" />
 
         <FilterPanel Pages="_pages" Values="_values" Apply="Export" Screen="@ScreenRoutes.ExportGrid"
-                     ApplyText="@(Tr.T("Выгрузить в папку…"))" ApplyIcon="bi-folder-symlink" />
+                     ApplyText="@(Tr.T("Выгрузить в папку…"))" ApplyIcon="bi-folder-symlink" InitiallyOpen="true" />
 
         @if (_error != null)
         {
