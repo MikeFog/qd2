@@ -498,31 +498,16 @@ namespace Merlin.Controls
 		{
 			try
 			{
-				DataRow row = dtGrid.Rows[CurrentRowIndex];
-				// строки типа "25:15" надо привести к нормальному виду
-				string time = row[ColTime].ToString();
-				string[] parts = time.Split(':');
-				int hour = int.Parse(parts[0].ToString());
-				if (hour > 23)
-					time = string.Format("{0}:{1}", hour - 24, parts[1]);
-
-				string filter = string.Format("price = {0} And time = '1900-01-01 {1}'", row[ColPrice].ToString().Replace(",", "."), time);
-				DataRow[] rows = Pricelist.GetTariffList().Select(filter);
-				if (rows.Length == 0)
-				{
-					UserMessage.ShowExclamation(Properties.Resources.TariffNotFound);
-					return;
-				}
-
-				Tariff tariff = new Tariff(rows[0]);
+				// Тариф по (цена + время) не ищем: цену окон могли перебить (TariffWindowChangePrice),
+				// а на одном времени бывает несколько тарифов. Процедура тариф не использует —
+				// новые значения только предзаполняем самыми частыми по окнам этой строки.
+				GetMostCommonDurations(CurrentRowIndex, out int duration, out int durationTotal);
 
 				string currentDateTime = GetNormalTimeString(dtGrid.Rows[CurrentRowIndex][ColTime].ToString());
 				Dictionary<string, object> dictionary = DataAccessor.CreateParametersDictionary();
 				dictionary.Add("time", currentDateTime);
-				dictionary.Add("duration", tariff.Duration);
-				dictionary.Add("newduration", tariff.Duration);
-                dictionary.Add("duration_total", tariff.DurationTotal);
-                dictionary.Add("newduration_total", tariff.DurationTotal);
+				dictionary.Add("newduration", duration);
+                dictionary.Add("newduration_total", durationTotal);
                 AddDefaultPeriod(dictionary);
 				dictionary.Add("pricelistid", Pricelist.PricelistId);
 				ShowUniversalPassport(dictionary, UniversalPassportForm.PassportNames.ChangeDuration, UniversalPassportForm.ProcedureNames.ChangeDuration,
@@ -538,6 +523,34 @@ namespace Merlin.Controls
             }
         }
 
+
+		// Самая частая пара (продолжительность, полная) среди окон строки на показанной неделе.
+		// Окон нет — нули (пользователь введёт сам).
+		private void GetMostCommonDurations(int rowIndex, out int duration, out int durationTotal)
+		{
+			Dictionary<(int, int), int> counts = new Dictionary<(int, int), int>();
+			for (int columnIndex = FixedCols; columnIndex < RawDataGridView.ColumnCount; columnIndex++)
+			{
+				if (!(GetTariffWindow(rowIndex, columnIndex) is TariffWindow window))
+					continue;
+
+				(int, int) key = (window.Duration, window.DurationTotal);
+				counts.TryGetValue(key, out int count);
+				counts[key] = count + 1;
+			}
+
+			(int, int) best = (0, 0);
+			int bestCount = 0;
+			foreach (KeyValuePair<(int, int), int> pair in counts)
+				if (pair.Value > bestCount)
+				{
+					best = pair.Key;
+					bestCount = pair.Value;
+				}
+
+			duration = best.Item1;
+			durationTotal = best.Item2;
+		}
 
         private void MiCorrectTime_Click(object sender, EventArgs e)
 		{
