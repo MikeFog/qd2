@@ -20,6 +20,8 @@ namespace Merlin.Controls
 		private DataTable _dtWindowsWithAdvertType;
 		private bool showRollerNumbers;
 		private Dictionary<int, int> rollerNumbers;
+		// windowId -> ролики чужих кампаний той же фирмы (бирюзовые ячейки), см. AddIssues2Grid.
+		private Dictionary<int, List<int>> _otherFirmRollersByWindow = new Dictionary<int, List<int>>();
 
         public RollerIssuesGrid3()
 			: this(true)
@@ -318,6 +320,22 @@ namespace Merlin.Controls
 					MarkCellAsHavingCurrentCampaignIssues(cell);
 			}
 
+            // Четвёртая выборка Grid (ролики чужих кампаний фирмы) — старая процедура её не отдаёт.
+            _otherFirmRollersByWindow = new Dictionary<int, List<int>>();
+            if (ds.Tables.Count > 3)
+                foreach (DataRow row in ds.Tables[3].Rows)
+                {
+                    int windowId = ParseHelper.GetInt32FromObject(row[TariffWindow.ParamNames.WindowId], 0);
+                    int rollerId = ParseHelper.GetInt32FromObject(row[TariffWindow.ParamNames.RollerID], 0);
+                    if (windowId == 0 || rollerId == 0)
+                        continue;
+
+                    if (!_otherFirmRollersByWindow.TryGetValue(windowId, out List<int> rollers))
+                        _otherFirmRollersByWindow[windowId] = rollers = new List<int>();
+                    if (!rollers.Contains(rollerId))
+                        rollers.Add(rollerId);
+                }
+
             DataTable dtCounts = ds.Tables[1];
 			foreach (DataRow row in dtCounts.Rows)
 			{
@@ -371,14 +389,28 @@ namespace Merlin.Controls
 
 			int windowId = int.Parse(obj[TariffWindow.ParamNames.WindowId].ToString());
 			DataRow[] issueRows = _dtIssue.Select(TariffWindow.ParamNames.OriginalWindowId + " = " + windowId);
-			if (issueRows.Length == 0) return null;
 
 			List<string> numbers = new List<string>();
+			HashSet<int> covered = new HashSet<int>();
 			foreach (DataRow issueRow in issueRows)
 			{
 				int rollerId = ParseHelper.GetInt32FromObject(issueRow[TariffWindow.ParamNames.RollerID], 0);
+				covered.Add(rollerId);
 				if (rollerNumbers.TryGetValue(rollerId, out int number))
 					numbers.Add(number.ToString());
+			}
+
+			// Бирюзовые ячейки — чужая кампания ТОЙ ЖЕ фирмы: ролики из того же фирменного
+			// списка, номера те же (как в веере, TariffWithRangeGrid). Идут после своих,
+			// по возрастанию номера; ролик, уже показанный как свой, не дублируется.
+			if (_otherFirmRollersByWindow.TryGetValue(windowId, out List<int> firmRollers))
+			{
+				List<int> otherNumbers = new List<int>();
+				foreach (int rollerId in firmRollers)
+					if (!covered.Contains(rollerId) && rollerNumbers.TryGetValue(rollerId, out int number))
+						otherNumbers.Add(number);
+				otherNumbers.Sort();
+				numbers.AddRange(otherNumbers.ConvertAll(n => n.ToString()));
 			}
 			return numbers.Count > 0 ? string.Join(", ", numbers) : null;
 		}

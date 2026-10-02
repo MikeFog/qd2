@@ -121,7 +121,7 @@ GridRefreshed event → обработчик из SetEventHandlersFromGridEvents
 |---|---|---|---|
 | `[dbo].[PricelistByDate]` | `Massmedia.GetPriceList` | Прайс-лист на дату (неделю) | Pricelist + Grid(3) + Load(4) |
 | `[dbo].[TariffWindowRetrieve]` | `PricelistOnMassmedia.GetTariffWindows` | Структура сетки: сетка часов + окна недели | по имени |
-| `[dbo].[Grid]` | `Massmedia.GetRollerCells` | Выпуски в окнах + счётчики по дням + окна фирмы | GridCell(85) + Grid(3) + Load(4) |
+| `[dbo].[Grid]` | `Massmedia.GetRollerCells` | Выпуски в окнах + счётчики по дням + окна фирмы + (4-я выборка) ролики чужих кампаний фирмы по окнам — для номеров роликов в бирюзовых ячейках | GridCell(85) + Grid(3) + Load(4) |
 | `[dbo].[ActionRollers]` | `grdRollers.Entity` (InitRollersList) | Список роликов акции | по сущности |
 | Campaign passport / `DisplayCampaignData` | конструктор + Load-шаг | Поля кампании, статистика в `lstStat` | — |
 

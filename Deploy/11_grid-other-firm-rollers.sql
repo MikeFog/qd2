@@ -1,4 +1,7 @@
-﻿CREATE PROC [dbo].[Grid]
+﻿SET ANSI_NULLS ON;
+SET QUOTED_IDENTIFIER ON;
+GO
+ALTER PROC [dbo].[Grid]
 (
     @massmediaID smallint,
     @startDate datetime,
