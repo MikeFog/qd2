@@ -147,7 +147,7 @@ BEGIN
                 inner join Issue i on i.actualWindowID = tw.windowId
                 inner join Campaign c on i.campaignID = c.campaignID
                 inner join [Action] a on c.actionID = a.actionID
-                inner join Roller r on i.rollerID = r.rollerID and r.rolActionTypeID = 1
+                inner join Roller r on i.rollerID = r.rollerID and r.rolActionTypeID in (1, 8, 9)
                 inner join #available r1 ON r1.mmid = tw.massmediaID
             where tw.massmediaID = coalesce(@massmediaID, tw.massmediaID)
                 and i.isConfirmed = 1
@@ -234,7 +234,7 @@ BEGIN
                 inner join Issue i on i.actualWindowID = tw.windowId
                 inner join Campaign c on i.campaignID = c.campaignID
                 inner join [Action] a on c.actionID = a.actionID
-                inner join Roller r on i.rollerID = r.rollerID and r.rolActionTypeID = 1
+                inner join Roller r on i.rollerID = r.rollerID and r.rolActionTypeID in (1, 8, 9)
             where tw.massmediaID = coalesce(@massmediaID, tw.massmediaID)
                 and i.isConfirmed = 1
                 and tw.dayActual BETWEEN COALESCE(@StartDay, @MinDate) AND COALESCE(@FinishDay, @MaxDate)
@@ -318,7 +318,7 @@ BEGIN
                 inner join Issue i on i.actualWindowID = tw.windowId
                 inner join Campaign c on i.campaignID = c.campaignID
                 inner join [Action] a on c.actionID = a.actionID
-                inner join Roller r on i.rollerID = r.rollerID and r.rolActionTypeID = 1
+                inner join Roller r on i.rollerID = r.rollerID and r.rolActionTypeID in (1, 8, 9)
                 inner join #availableByDays r1 ON r1.mmid = tw.massmediaID and r1.[date] = tw.dayActual
             where tw.massmediaID = coalesce(@massmediaID, tw.massmediaID)
                 and i.isConfirmed = 1
@@ -404,7 +404,7 @@ BEGIN
                 inner join Issue i on i.actualWindowID = tw.windowId
                 inner join Campaign c on i.campaignID = c.campaignID
                 inner join [Action] a on c.actionID = a.actionID
-                inner join Roller r on i.rollerID = r.rollerID and r.rolActionTypeID = 1
+                inner join Roller r on i.rollerID = r.rollerID and r.rolActionTypeID in (1, 8, 9)
             where tw.massmediaID = coalesce(@massmediaID, tw.massmediaID)
                 and i.isConfirmed = 1
                 and tw.dayActual BETWEEN COALESCE(@StartDay, @MinDate) AND COALESCE(@FinishDay, @MaxDate)

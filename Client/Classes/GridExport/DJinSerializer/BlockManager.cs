@@ -18,6 +18,8 @@ namespace Merlin.Classes.GridExport.DJinSerializer
         private const string TypeAgitFederalSmi = "c-type-55";
         private const string TypeAgitAnnounce = "c-type-7";
         private const string TypeAgitation = "c-type-6";
+        private const string TypePromoSponsor = "c-type-8";
+        private const string TypePromoNoSponsor = "c-type-9";
 
         private class Block
         {
@@ -120,6 +122,8 @@ namespace Merlin.Classes.GridExport.DJinSerializer
             string agitFederalLine = null;
             string agitAnnounceLine = null;
             var agitationLines = new List<string>();
+            var promoSponsorLines = new List<string>();
+            var promoNoSponsorLines = new List<string>();
             var otherLines = new List<string>();
 
             foreach (var line in middle)
@@ -138,79 +142,89 @@ namespace Merlin.Classes.GridExport.DJinSerializer
                     agitAnnounceLine = line;
                 else if (col1 == TypeAgitation)
                     agitationLines.Add(line);
+                else if (col1 == TypePromoSponsor)
+                    promoSponsorLines.Add(line);
+                else if (col1 == TypePromoNoSponsor)
+                    promoNoSponsorLines.Add(line);
                 else
                     otherLines.Add(line);
             }
 
             bool hasAgitation = agitLocalLine != null || agitFederalLine != null
                                 || agitAnnounceLine != null || agitationLines.Count > 0;
+            bool hasPromo = promoSponsorLines.Count > 0 || promoNoSponsorLines.Count > 0;
 
-            // Si el bloque NO tiene c-type-4 ni c-type-5 ni política → dejar todo igual
-            if (cType4Line == null && cType5Line == null && !hasAgitation)
+            // Si el bloque NO tiene c-type-4 ni c-type-5 ni política ni промо → dejar todo igual
+            if (cType4Line == null && cType5Line == null && !hasAgitation && !hasPromo)
             {
                 return original;
             }
 
-            // ¿Hay otras líneas que empiecen con "c" (aparte de c-type-4/5)?
-            // Ролик агитации - обычный рекламный ролик, поэтому тоже считается;
-            // идентификаторы СМИ и анонс - нет, как и ручные 4/5
-            bool hasRealRollers = agitationLines.Count > 0 || otherLines.Any(line =>
-                !GetTypeMarker(line).StartsWith("j", StringComparison.OrdinalIgnoreCase));
+            // Голова - служебные строки, что стояли в начале блока до первого ролика:
+            // это джингл влёта (In). Считаем по исходному порядку, а не считаем первую
+            // строку джинглом влёта: у блока может не быть влёта (тариф с
+            // needInJingle = 0), и тогда единственная служебная строка - это аут,
+            // его место в конце. Служебные строки все попали в otherLines, поэтому
+            // первые headCount из них - ровно эти строки.
+            int headCount = 0;
+            while (headCount < middle.Count && IsServiceLine(middle[headCount]))
+                headCount++;
 
-            // Si no hay otras "c" y sí hay c-type-4 o c-type-5,
-            // entonces eliminamos todas las líneas con "j"
+            // Хвост - всё, что идёт после последнего обычного ролика (аут, добивка).
+            int tailStart = otherLines.Count;
+            while (tailStart > 0 && IsServiceLine(otherLines[tailStart - 1]))
+                tailStart--;
+
+            // Обычных роликов в блоке нет - всё служебное после влёта уходит в хвост
+            tailStart = Math.Max(tailStart, Math.Min(headCount, otherLines.Count));
+
+            var headLines = otherLines.Take(headCount).ToList();
+            var bodyLines = otherLines.Skip(headCount).Take(tailStart - headCount).ToList();
+            var tailLines = otherLines.Skip(tailStart).ToList();
+
+            // Есть ли в блоке реклама, кроме служебных строк?
+            // Ролики агитации и промо со спонсором - обычные рекламные ролики,
+            // поэтому тоже считаются; идентификаторы СМИ, анонс и промо без
+            // спонсора - нет, как и ручные 4/5
+            bool hasRealRollers = agitationLines.Count > 0 || promoSponsorLines.Count > 0
+                                  || bodyLines.Any(line => !IsServiceLine(line));
+
+            // Рекламы нет - джинглы влёта и аута (In/Out) не нужны
             if (!hasRealRollers)
             {
-                otherLines = otherLines
-                    .Where(line => GetTypeMarker(line) != "j")
-                    .ToList();
+                headLines = headLines.Where(line => GetTypeMarker(line) != DJinParam.strJingle).ToList();
+                bodyLines = bodyLines.Where(line => GetTypeMarker(line) != DJinParam.strJingle).ToList();
+                tailLines = tailLines.Where(line => GetTypeMarker(line) != DJinParam.strJingle).ToList();
             }
 
             // Порядок внутри блока:
             // 1) BT (вне этого списка)
             // 2) c-type-4 - ручной идентификатор локального СМИ, если есть
-            // 3) джингл влёта
-            // 4) обычные ролики в исходном порядке (позиционирование не трогаем)
-            // 5) политическая часть: локальное СМИ (44) -> анонс (7) -> ролики
+            // 3) локальное промо без спонсора (9) - до влёта
+            // 4) джингл влёта (In)
+            // 5) локальное промо со спонсором (8) - сразу за влётом, а без влёта -
+            //    сразу за промо без спонсора
+            // 6) обычные ролики в исходном порядке (позиционирование не трогаем)
+            // 7) политическая часть: локальное СМИ (44) -> анонс (7) -> ролики
             //    агитации (6) -> федеральное СМИ (55).
             //    44/55 обрамляют только агитацию; их не будет, если блок уже
             //    обрамлён ручными 4/5 (тогда агитация идёт перед закрывающим 5)
-            // 6) джингл аута и музыкальная добивка - остаются в конце блока
-            // 7) c-type-5 - ручной идентификатор федерального СМИ, если есть
-            // 8) E (вне этого списка)
-
-            // Служебные строки (джингл влёта в начале, джингл аута и добивка в
-            // конце) остаются на своих местах: политическая часть встаёт между
-            // обычными роликами и аутом, а не после него.
-            // Хвост - всё, что идёт после последнего обычного ролика.
-            int tailStart = otherLines.Count;
-            while (tailStart > 0 && IsServiceLine(otherLines[tailStart - 1]))
-                tailStart--;
-
-            if (tailStart == 0)
-            {
-                // Обычных роликов в блоке нет (окно целиком под агитацию). Голова -
-                // ровно те служебные строки, что стояли в начале блока. Считаем их
-                // по исходному порядку, а не считаем первую строку джинглом влёта:
-                // у блока может не быть влёта (тариф с needInJingle = 0), и тогда
-                // единственная служебная строка - это аут, его место в конце
-                int headCount = 0;
-                while (headCount < middle.Count && IsServiceLine(middle[headCount]))
-                    headCount++;
-
-                tailStart = Math.Min(headCount, otherLines.Count);
-            }
+            // 8) джингл аута и музыкальная добивка - остаются в конце блока
+            // 9) c-type-5 - ручной идентификатор федерального СМИ, если есть
+            // 10) E (вне этого списка)
+            // Несколько промо одного вида идут в исходном порядке.
 
             var newMiddle = new List<string>();
 
             if (cType4Line != null)
                 newMiddle.Add(cType4Line);
 
+            newMiddle.AddRange(promoNoSponsorLines);
+            newMiddle.AddRange(headLines);
+            newMiddle.AddRange(promoSponsorLines);
+
             // Mantener orden original en las "otras"
-            for (int i = 0; i < tailStart; i++)
-            {
-                newMiddle.Add(otherLines[i]);
-            }
+            newMiddle.AddRange(bodyLines);
 
             if (agitLocalLine != null)
                 newMiddle.Add(agitLocalLine);
@@ -226,10 +240,7 @@ namespace Merlin.Classes.GridExport.DJinSerializer
             if (agitFederalLine != null)
                 newMiddle.Add(agitFederalLine);
 
-            for (int i = tailStart; i < otherLines.Count; i++)
-            {
-                newMiddle.Add(otherLines[i]);
-            }
+            newMiddle.AddRange(tailLines);
 
             if (cType5Line != null)
                 newMiddle.Add(cType5Line);
@@ -262,7 +273,7 @@ namespace Merlin.Classes.GridExport.DJinSerializer
         }
 
         /// <summary>
-        /// Убирает служебные метки политической обвязки: они нужны только для
+        /// Убирает служебные метки политической обвязки и промо: они нужны только для
         /// сортировки выше. В файл все они пишутся как обычные рекламные ролики -
         /// метки 4/5 не ставим специально, чтобы DJin не принял авто-обвязку за
         /// ручные идентификаторы СМИ.
@@ -272,7 +283,8 @@ namespace Merlin.Classes.GridExport.DJinSerializer
             string marker = GetTypeMarker(line);
 
             if (marker == TypeAgitLocalSmi || marker == TypeAgitFederalSmi
-                || marker == TypeAgitAnnounce || marker == TypeAgitation)
+                || marker == TypeAgitAnnounce || marker == TypeAgitation
+                || marker == TypePromoSponsor || marker == TypePromoNoSponsor)
                 return ReplaceTypeMarker(line, DJinParam.strRoller);
 
             return line;

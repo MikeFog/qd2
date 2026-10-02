@@ -487,8 +487,10 @@ BEGIN
         FROM @grid2
         -- Тип 6 (политическая агитация) - обычный оплаченный ролик: он может стоять
         -- в окне несколько раз, поэтому идёт в ветку БЕЗ DISTINCT. Иначе два
-        -- одинаковых ролика кандидата в одном окне схлопывались бы в один выход
-        WHERE ([rolActionTypeID] = 1 OR [rolActionTypeID] = 6 OR [rolActionTypeID] IS NULL)
+        -- одинаковых ролика кандидата в одном окне схлопывались бы в один выход.
+        -- Типы 8/9 (локальное промо со спонсором / без) - по той же причине:
+        -- число промо в окне не ограничено, один ролик может стоять дважды
+        WHERE ([rolActionTypeID] IN (1, 6, 8, 9) OR [rolActionTypeID] IS NULL)
 
         UNION ALL
 
@@ -529,7 +531,7 @@ BEGIN
         FROM @grid2
         -- DISTINCT здесь защищает служебные строки (новости, программы,
         -- идентификаторы СМИ, анонс агитации) - они по одной на окно
-        WHERE ([rolActionTypeID] = 2 OR ([rolActionTypeID] >= 3 AND [rolActionTypeID] <> 6))
+        WHERE ([rolActionTypeID] = 2 OR ([rolActionTypeID] >= 3 AND [rolActionTypeID] NOT IN (6, 8, 9)))
     ) X
     ORDER BY
         CASE WHEN [Time] < broadcastStart THEN '1' ELSE '0' END + [tariffTime],

@@ -157,7 +157,7 @@ if (@needByTypeVerify = 0 or @campaignTypeID in (1,2))
 			when (@actionName = 'AddItem' Or @isConfirmed = 1) And @deadLine is not null and tw.dayActual <= @deadLine And @isAdmin = 0 And @isTrafficManager = 0 then 'DeadLineViolation' 
 			when (@actionName = 'AddItem' Or @isConfirmed = 1) And tw.dayOriginal < @tomorrow And @RightToGoBack <> 1 And @isTrafficManager = 0 then 'IncorrectIssueDate'
 			when tw.isDisabled = 1 then 'DisabledInsertRoller'
-			when @rollerActionTypeID = 1 and tw.maxCapacity > 0 then 'DisabledInsertSimpleRoller'
+			when @rollerActionTypeID in (1, 8, 9) and tw.maxCapacity > 0 then 'DisabledInsertSimpleRoller'
 			when (( tw.isFirstPositionOccupied = 1 And @positionId = -20) 
 					or (tw.isSecondPositionOccupied = 1	And @positionId = -10)
 					or (tw.isLastPositionOccupied = 1	And @positionId = 10)) then 'FirstLastIssueError'
@@ -174,7 +174,7 @@ else if @needByTypeVerify = 1 and @campaignTypeID = 3
 			when (@actionName = 'AddItem' Or @isConfirmed = 1) And @deadLine is not null and tw.dayActual <= @deadLine And @isAdmin = 0 And @isTrafficManager = 0 then 'DeadLineViolation' 
 			when (@actionName = 'AddItem' Or @isConfirmed = 1) And tw.dayOriginal < @tomorrow And @RightToGoBack <> 1 And @isTrafficManager = 0 then 'IncorrectIssueDate'
 			when tw.isDisabled = 1 then 'DisabledInsertRoller'
-			when @rollerActionTypeID = 1 and tw.maxCapacity > 0 then 'DisabledInsertSimpleRoller'
+			when @rollerActionTypeID in (1, 8, 9) and tw.maxCapacity > 0 then 'DisabledInsertSimpleRoller'
 			when (( tw.isFirstPositionOccupied = 1 And @positionId = -20) 
 					or (tw.isSecondPositionOccupied = 1	And @positionId = -10)
 					or (tw.isLastPositionOccupied = 1	And @positionId = 10)) then 'FirstLastIssueError'
@@ -222,7 +222,7 @@ else if @needByTypeVerify = 1 and @campaignTypeID = 4
 		select top 1 @msgError = 
 			case 
 				when tw.isDisabled = 1 then 'DisabledInsertRoller'
-				when @rollerActionTypeID = 1 and tw.maxCapacity > 0 then 'DisabledInsertSimpleRoller'
+				when @rollerActionTypeID in (1, 8, 9) and tw.maxCapacity > 0 then 'DisabledInsertSimpleRoller'
 				when @positionId <> 0 and (( tw.isFirstPositionOccupied = 1 And @positionId = -20) 
 						or (tw.isSecondPositionOccupied = 1	And @positionId = -10)
 						or (tw.isLastPositionOccupied = 1	And @positionId = 10)) then 'FirstLastIssueError'

@@ -73,7 +73,7 @@ BEGIN
 		case 
 			when c.finishDate < @tomorrow and c.campaignTypeID <> 2 and @rightToGoBack <> 1 then 'CampaignAlreadyFinished' 
 			when (tw.isDisabled = 1) then 'DisabledInsertRoller' 
-			when (r.rolActionTypeID = 1 and tw.maxCapacity > 0) then 'DisabledInsertSimpleRoller' 
+			when (r.rolActionTypeID in (1, 8, 9) and tw.maxCapacity > 0) then 'DisabledInsertSimpleRoller' 
 			when ((tw.isFirstPositionOccupied = 1 And i.positionId = -20) 
 					or (tw.isSecondPositionOccupied = 1	And i.positionId = -10)
 					or (tw.isLastPositionOccupied = 1	And i.positionId = 10)) then 'FirstLastIssueError' 
@@ -312,7 +312,7 @@ BEGIN
 							WHERE it2.windowId = tw.windowId
 								AND it2.statusDescription = 'OK')))
 				AND NOT (c.finishDate < @tomorrow and c.campaignTypeID <> 2 and @rightToGoBack <> 1)
-				AND NOT (r.rolActionTypeID = 1 and tw.maxCapacity > 0)
+				AND NOT (r.rolActionTypeID in (1, 8, 9) and tw.maxCapacity > 0)
 				AND NOT ((tw.isFirstPositionOccupied = 1 And @transferPositionID = -20)
 					or (tw.isSecondPositionOccupied = 1 And @transferPositionID = -10)
 					or (tw.isLastPositionOccupied = 1 And @transferPositionID = 10))

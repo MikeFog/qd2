@@ -40,7 +40,7 @@ select top 1 @msgError =
 	case
 		when mm.deadLine is not null and tw.dayActual <= mm.deadLine and @isAdmin = 0 and @IsTrafficManager = 0 then 'DeadLineViolationTransfer' 
 		when tw.isDisabled = 1 then 'DisabledInsertRoller'
-		when r.rolActionTypeID = 1 and tw.maxCapacity > 0 then 'DisabledInsertSimpleRoller'
+		when r.rolActionTypeID in (1, 8, 9) and tw.maxCapacity > 0 then 'DisabledInsertSimpleRoller'
 		when (( tw.isFirstPositionOccupied = 1 And @newPosition = -20) 
 				or (tw.isSecondPositionOccupied = 1	And @newPosition = -10)
 				or (tw.isLastPositionOccupied = 1	And @newPosition = 10)) then 'FirstLastIssueErrorTransfer'
