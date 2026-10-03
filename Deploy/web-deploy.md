@@ -103,7 +103,9 @@ Production стартует, отдаёт страницу, стили и `blazo
    New-NetFirewallRule -DisplayName "qd2 web 5051 (test)" -Direction Inbound -Protocol TCP -LocalPort 5051 -RemoteAddress <IP Миши> -Action Allow -Profile Any
    ```
    Если адрес сменился (домашний IP бывает динамическим):
-   `Set-NetFirewallAddressFilter -AssociatedNetFirewallRule (Get-NetFirewallRule -DisplayName "qd2 web 5051 (test)") -RemoteAddress <новый IP>`.
+   `Set-NetFirewallRule -DisplayName "qd2 web 5051 (test)" -RemoteAddress <новый IP>` (у
+   `Set-NetFirewallAddressFilter` параметра `-AssociatedNetFirewallRule` нет). Признак смены адреса — в браузере
+   `ERR_CONNECTION_TIMED_OUT`, а локально на сервере порт отвечает.
    Если перед сервером роутер с NAT — на нём ещё нужен проброс порта 5051 на сервер.
 6. `sc.exe start qd2web`.
 
