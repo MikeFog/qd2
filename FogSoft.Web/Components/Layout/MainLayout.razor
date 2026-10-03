@@ -95,9 +95,11 @@
         Busy.Changed += OnBusyChanged;
     }
 
-    // Скрыто ли меню — настройка пользователя, как язык: читается один раз
-    // на вход (Session.Changed срабатывает и от смены языка).
-    private const string NavHiddenSetting = "web.navHidden";
+    // Скрыто ли меню — только до конца сеанса: после входа меню всегда видно
+    // (решение владельца 2026-10-03; раньше скрытие запоминалось настройкой
+    // web.navHidden, и после входа пользователь видел пустой экран с «Выберите
+    // раздел в меню слева»). Сбрасывается при смене пользователя, а не от смены
+    // языка — Session.Changed срабатывает и от неё.
     private bool _navHidden;
     private int? _navLoadedFor;
 
@@ -107,16 +109,12 @@
         if (userId != _navLoadedFor)
         {
             _navLoadedFor = userId;
-            _navHidden = userId != null && UserSettings.Load(NavHiddenSetting) == "1";
+            _navHidden = false;
         }
         InvokeAsync(StateHasChanged);
     }
 
-    private void ToggleNav()
-    {
-        _navHidden = !_navHidden;
-        UserSettings.Save(NavHiddenSetting, _navHidden ? "1" : "0");
-    }
+    private void ToggleNav() => _navHidden = !_navHidden;
 
     // После первой интерактивной отрисовки, а не в OnInitialized: тот вызывается
     // ещё и при пререндере, где circuit нет и входить некуда.
