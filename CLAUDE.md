@@ -36,6 +36,7 @@ Important project documents:
 - `broadcastStart` reference: `docs/broadcast-start.md` — legacy "broadcast day start" field in `Pricelist`/`SponsorProgramPricelist`; full inventory of ~50 dependent DB objects and 7 C# files grouped by removal cost, data-state evidence that the field is dormant, and a staged removal plan. Read before touching anything that shifts `issueDate` by `broadcastStart`.
 - Media plan («График размещения») reference: `docs/mediaplan.md` — all 21 print actions + menu/ActionForm entry points, two sheet layouts (by campaign / by agency-station), block layout, SQL (`MediaPlanRetrieve_v2`), settings, pitfalls, real usage from logs. Web port plan: `docs/tasks/web-mediaplan.md`.
 - Mass operations on selected tariff-grid windows: `docs/mass-window-operations.md` — Del / Insert / Ctrl+R (roller replace) / roller checklist in linear `CampaignForm` and veer `EditIssuesForm`; where enabled, implementation differences, why linear replace goes per issue.
+- Action/campaign forms reference: `docs/action-forms.md` — how actions and campaigns are created and edited in the desktop (`ActionForm`, the `CampaignForm` "superform" in five modes, veer `EditIssuesForm`, combo `ComboModulePlacementForm`, three creation paths), feature matrices, usage stats, defects Д-1…Д-16. Web plan (action page with placement tabs by kind of place, one creation wizard): `docs/tasks/web-action-forms.md`.
 ## Scenario maps
 
 Detailed scenario investigations are stored in:
