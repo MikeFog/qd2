@@ -66,6 +66,14 @@ namespace Merlin.Forms.CreateActionMaster
 		/// </summary>
 		private ActionOnMassmedia _action;
 
+		/// <summary>
+		/// Параметры несохранённой акции, пришедшей из карточки, - снимок до её вставки в
+		/// EnsureAction. Объект общий с карточкой: если транзакция первого клика откатится,
+		/// его надо вернуть в «несохранённое» состояние, иначе карточка останется с номером
+		/// откаченной акции (Д-5).
+		/// </summary>
+		private Dictionary<string, object> _actionDraft;
+
 		private readonly Dictionary<int, Campaign> _campaignByMassmedia = new Dictionary<int, Campaign>();
 
 		/// <summary>Модульные кампании готовой акции подгружены в _campaignByMassmedia (один раз).</summary>
@@ -340,7 +348,15 @@ namespace Merlin.Forms.CreateActionMaster
 				// созданное внутри откаченной транзакции в базе не осталось - забываем и в памяти
 				if (actionCreated)
 				{
-					_action = null;
+					if (_actionDraft != null)
+					{
+						// акция карточки: объект не бросаем, а возвращаем в «несохранённое»
+						// состояние - следующий клик вставит её заново, и карточка её увидит
+						_action.Parameters = _actionDraft;
+						_action.IsNew = true;   // после Parameters: его сеттер помечает объект сохранённым
+					}
+					else
+						_action = null;
 					_campaignByMassmedia.Clear();
 					_campaignsCreatedThisSession.Clear();
 				}
@@ -365,6 +381,8 @@ namespace Merlin.Forms.CreateActionMaster
 
 			if (_action == null)
 				_action = new ActionOnMassmedia(_firm);
+			else
+				_actionDraft = _action.Parameters;   // акция карточки - снимок на случай отката (копия)
 
 			_action[Classes.Action.ParamNames.IsConfirmed] = false;
 			_action.Update();
