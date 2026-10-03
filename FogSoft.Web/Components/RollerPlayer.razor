@@ -4,15 +4,16 @@
 @using Merlin.Classes
 @inject IJSRuntime JS
 @inject BusyService Busy
+@inject RollerPlayback Playback
 @implements IAsyncDisposable
 
 @*
-    Прослушивание ролика — веб-аналог MediaControl десктопа («Прослушать» / «Остановить» в
-    журнале роликов). Полоса с названием ролика и обычным <audio controls>: пауза, перемотка
-    и громкость — у самого проигрывателя браузера. Файл читается сервером по пути из базы и
-    уходит потоком в circuit (wwwroot/js/audio.js), отдельного адреса у файла нет.
-
-    Пока ничего не играли, полосы нет. Владелец экрана зовёт PlayAsync с объектом ролика.
+    Прослушивание ролика — веб-аналог MediaControl десктопа. Один на приложение: стоит в верхней
+    полосе MainLayout и продолжает играть при переходе между экранами; зовут его через
+    RollerPlayback (журналы роликов, «Прослушать ролик» в дереве кампании). Название ролика и
+    обычный <audio controls>: пауза, перемотка и громкость — у проигрывателя браузера. Файл
+    читается сервером по пути из базы и уходит потоком в circuit (wwwroot/js/audio.js),
+    отдельного адреса у файла нет. Пока ничего не играли, проигрывателя не видно.
 *@
 
 <div class="roller-player @(_name == null ? "d-none" : null)">
@@ -26,29 +27,27 @@
 </div>
 
 @code {
-    /// <summary>Отказ (нет файла, не читается) — показывает владелец экрана.</summary>
-    [Parameter] public EventCallback<string> Failed { get; set; }
-
     private ElementReference _audio;
     private IJSObjectReference? _module;
     private string? _name;
     private string? _path;
 
+    protected override void OnInitialized() => Playback.Attach(PlayAsync);
+
     /// <summary>
     /// Проиграть файл ролика. Нет пути — молча ничего (как MediaControl.Play), нет файла —
-    /// то же сообщение RollerFileNotFound, что в десктопе.
+    /// то же сообщение RollerFileNotFound, что в десктопе. Возвращает отказ или null.
     /// </summary>
-    public async Task PlayAsync(PresentationObject roller)
+    private async Task<string?> PlayAsync(PresentationObject roller)
     {
         string path = Convert.ToString(roller[Roller.ParamNames.Path]) ?? "";
         if (path.Length == 0)
-            return;
+            return null;
 
         if (!File.Exists(path))
         {
             MessageAccessor.Parameters = roller.Parameters;
-            await Failed.InvokeAsync(MessageAccessor.GetMessage("RollerFileNotFound"));
-            return;
+            return MessageAccessor.GetMessage("RollerFileNotFound");
         }
 
         try
@@ -56,16 +55,17 @@
             byte[] content = await Busy.RunAsync(() => File.ReadAllBytes(path));
             _name = roller.Name;
             _path = path;
-            StateHasChanged();
+            await InvokeAsync(StateHasChanged);
 
             using var stream = new MemoryStream(content);
             using var reference = new DotNetStreamReference(stream);
             _module ??= await JS.InvokeAsync<IJSObjectReference>("import", "./js/audio.js");
             await _module.InvokeVoidAsync("play", _audio, reference, RollerFiles.ContentType(path));
+            return null;
         }
         catch (Exception ex)
         {
-            await Failed.InvokeAsync(ErrorPresenter.Describe(ex));
+            return ErrorPresenter.Describe(ex);
         }
     }
 
@@ -79,6 +79,7 @@
 
     public async ValueTask DisposeAsync()
     {
+        Playback.Detach();
         if (_module != null)
         {
             try

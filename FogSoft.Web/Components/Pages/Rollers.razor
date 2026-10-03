@@ -14,13 +14,14 @@
 @inject ProgressDialog Progress
 @inject TableDialog Tables
 @inject DialogService Dialogs
+@inject RollerPlayback Playback
 
 @*
     «Журнал рекламных роликов» — веб-экран вместо AudioJournalForm (Режиссёр → miRoller): журнал
     сущности Roller (20) с её отбором и своим тулбаром. Файлы роликов лежат на той же машине,
     что веб (RollerFiles), поэтому всё, что десктоп делал с файлами под RDP, делает сервер:
-    - «Прослушать» — RollerPlayer, по выбранной щелчком строке (карточка — из «⋯», как в
-      журнале оплат);
+    - «Прослушать» — общий проигрыватель в верхней полосе (RollerPlayback), по выбранной
+      щелчком строке (карточка — из «⋯», как в журнале оплат);
     - «Сохранить файлы» — копии файлов в папку на компьютере пользователя (RollersCopyFrm);
     - «Удалить с файлами» — только администратору, ролики и их файлы (RollersDeleteFrm);
     - «Загрузить с диска» в карточке — RollerFileField (через PassportRules).
@@ -92,8 +93,6 @@ else
             <div class="alert alert-success">@_info</div>
         }
 
-        <RollerPlayer @ref="_player" Failed="ShowError" />
-
         <section class="rollers-list">
             <ObjectList @ref="_list" Entity="_entity" Data="_data" QuickSearch="true" Selectable="true"
                         RowClick="Select" ActiveRow="_active" SelectionChanged="n => _checked = n"
@@ -122,7 +121,6 @@ else
 
     private DataTable? _data;
     private ObjectList? _list;
-    private RollerPlayer? _player;
     private DataRow? _active;
     private int _checked;
 
@@ -200,12 +198,11 @@ else
 
     private Task ExportExcel() => _list?.ExportToExcelAsync(_title) ?? Task.CompletedTask;
 
-    private Task Play()
+    private async Task Play()
     {
         _error = null;
-        return _active == null || _player == null
-            ? Task.CompletedTask
-            : _player.PlayAsync(_entity!.CreateObject(_active));
+        if (_active != null)
+            _error = await Playback.PlayAsync(_entity!.CreateObject(_active));
     }
 
     /// <summary>Отмеченные строки в порядке списка.</summary>

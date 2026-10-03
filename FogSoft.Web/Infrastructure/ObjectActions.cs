@@ -99,15 +99,17 @@ public sealed partial class ObjectActions
 	private readonly PeriodDialog _periods;
 	private readonly ProgressDialog _progress;
 	private readonly FileSaver _saver;
+	private readonly RollerPlayback _playback;
 
 	private readonly FilterMemory _filters;
 	private readonly MenuAccess _menuAccess;
 	private readonly NavigationManager _navigation;
 
 	public ObjectActions(PassportDialog passports, NamedPassportDialog namedPassports, DialogService dialogs, TableDialog tables,
-		BusyService busy, PeriodDialog periods, ProgressDialog progress, FileSaver saver,
+		BusyService busy, PeriodDialog periods, ProgressDialog progress, FileSaver saver, RollerPlayback playback,
 		FilterMemory filters, MenuAccess menuAccess, NavigationManager navigation)
 	{
+		_playback = playback;
 		_filters = filters;
 		_menuAccess = menuAccess;
 		_navigation = navigation;
@@ -225,6 +227,12 @@ public sealed partial class ObjectActions
 			[Merlin.Classes.HeadCompanyView.ShowFirmsAction] = (s, t) => s.Changed(() => Merlin.Classes.HeadCompanyView.ShowFirms((PresentationObject)t)),
 			[Merlin.Classes.HeadCompanyView.ShowActionsAction] = (s, t) => s.Changed(() => Merlin.Classes.HeadCompanyView.ShowActions((PresentationObject)t)),
 		},
+		// PackModuleIssue.DoAction: «Прослушать ролик» — MediaControl.Current.Play(this), в вебе —
+		// общий проигрыватель (RollerPlayback). Ловит и выпуск пакета в CampaignForm (1247).
+		["PackModuleIssue"] = new()
+		{
+			[Constants.Actions.PlayRoller] = (s, t) => s.PlayRoller((PresentationObject)t),
+		},
 		// Announcement.DoAction: «Пометить как прочтенное». Доступность гасит
 		// Announcement.IsActionEnabled (у прочитанного — серый).
 		["Announcement"] = new()
@@ -303,9 +311,12 @@ public sealed partial class ObjectActions
 		// базовым классам. Выпуск ролика (98) и выпуск модуля (130) — другие классы со
 		// своей заменой одного выпуска, сюда не попадают. Сам класс internal, поэтому
 		// цель — PresentationObject, а операция — публичный RollerSubstitution.
+		// «Прослушать ролик» — как у PackModuleIssue выше; у пустышки пункт серый
+		// (CampaignRoller.IsActionEnabled). Наследники — ролики внутри дня (97, 215).
 		["CampaignRoller"] = new()
 		{
 			[Constants.Actions.Substitute] = (s, t) => s.SubstituteRoller((PresentationObject)t),
+			[Constants.Actions.PlayRoller] = (s, t) => s.PlayRoller((PresentationObject)t),
 		},
 		// ActionRollerInStatJournal.WinForms.cs, DoAction: «Назначить предмет рекламы» у
 		// строки «Журнала использования роликов» (139). Ролик акции (ActionRoller) с тем же
@@ -693,6 +704,17 @@ public sealed partial class ObjectActions
 	{
 		for (Type? t = target.GetType(); t != null && t != typeof(object); t = t.BaseType)
 			yield return t.Name;
+	}
+
+	/// <summary>
+	/// Строка несёт путь к файлу ролика (CampaignRollers, PackModuleIssueRetrieve отдают path) —
+	/// играем её саму, как десктоп. Отказ (нет файла) — сообщением.
+	/// </summary>
+	private async Task<ActionEffect> PlayRoller(PresentationObject issue)
+	{
+		if (await _playback.PlayAsync(issue) is { } refusal)
+			await ShowInfo(Tr.T("Прослушать ролик"), refusal);
+		return ActionEffect.None;
 	}
 
 	private async Task<ActionEffect> OpenPassport(object target)

@@ -9,13 +9,14 @@
 @inject BusyService Busy
 @inject NavigationManager Nav
 @inject FilterMemory Filters
+@inject RollerPlayback Playback
 
 @*
     «Журнал использования роликов» — веб-экран вместо RollerStatisticForm. Сверху отбор — та же
     панель, что у журналов (FilterPanel), по iEntity.filter сущности 139: период, станции
     (выбор нескольких), менеджер, фирма, группа компаний, предмет рекламы, оплата, разбивки.
     Ниже ролики с количеством выпусков, справа — акции выбранного ролика (в десктопе — нижняя
-    таблица). «Прослушать» — выбранный щелчком ролик (RollerPlayer, как в журнале роликов).
+    таблица). «Прослушать» — выбранный щелчком ролик (общий проигрыватель, RollerPlayback).
 
     Два пункта меню — «Трафик» и «Рекламный отдел» — отличаются только менеджером по
     умолчанию (MDIForm.ShowRollerStatistic(setuser)); пункт приходит в адресе (?menu=).
@@ -60,8 +61,6 @@ else
         {
             <div class="alert alert-danger">@_error</div>
         }
-
-        <RollerPlayer @ref="_player" Failed="e => _error = e" />
 
         <div class="roller-stat-body @(_roller != null ? "with-panel" : null)">
             <section class="rollers">
@@ -247,19 +246,17 @@ else
 
     private Task ExportExcel() => _list?.ExportToExcelAsync(_title) ?? Task.CompletedTask;
 
-    private RollerPlayer? _player;
-
     /// <summary>В строке статистики пути к файлу нет — ролик читается по ключу.</summary>
     private async Task Play()
     {
         _error = null;
-        if (_roller == null || _player == null)
+        if (_roller == null)
             return;
 
         int rollerId = Convert.ToInt32(_roller[Roller.ParamNames.RollerId]);
         Roller? roller = null;
         await Busy.RunAsync(() => Try(() => roller = new Roller(rollerId)));
         if (roller != null)
-            await _player.PlayAsync(roller);
+            _error = await Playback.PlayAsync(roller);
     }
 }

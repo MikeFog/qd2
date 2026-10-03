@@ -1,12 +1,11 @@
-/* Полоса прослушивания ролика: название и проигрыватель браузера. */
+/* Проигрыватель ролика в верхней полосе приложения: название и проигрыватель браузера. */
 
 .roller-player {
-    flex: 0 0 auto;
+    flex: 0 1 520px;
     display: flex;
     align-items: center;
     gap: var(--s-2);
-    padding: var(--s-1) var(--s-3);
-    margin-bottom: var(--s-2);
+    padding: 2px var(--s-2);
     background: var(--c-accent-soft);
     border: 1px solid var(--c-border);
     border-radius: 4px;
@@ -23,10 +22,11 @@
     overflow: hidden;
     text-overflow: ellipsis;
     min-width: 0;
+    max-width: 160px;
 }
 
 .roller-player audio {
     flex: 1 1 auto;
-    min-width: 160px;
+    min-width: 120px;
     height: 32px;
 }

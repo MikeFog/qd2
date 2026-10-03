@@ -33,6 +33,8 @@
                     aria-label="@(_navHidden ? Tr.T("Показать меню") : Tr.T("Скрыть меню"))">
                 <i class="bi @(_navHidden ? "bi-chevron-double-right" : "bi-chevron-double-left")" aria-hidden="true"></i>
             </button>
+            @* Проигрыватель роликов — один на приложение, играет и при смене экрана (RollerPlayback). *@
+            <RollerPlayer />
             @if (Session.User is { } user)
             {
                 <div class="shell-user">
