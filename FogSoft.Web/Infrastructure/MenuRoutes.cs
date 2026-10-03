@@ -183,6 +183,9 @@ public static class ScreenRoutes
 {
 	public const string TrafficManagement = "miTrafficManagement";
 
+	/// <summary>«Журнал рекламных роликов» из «Режиссёра»: журнал сущности 20 с файлами роликов.</summary>
+	public const string Rollers = "miRoller";
+
 	/// <summary>«Журнал использования роликов» из «Трафика»: менеджер по умолчанию — все.</summary>
 	public const string RollerStatistic = "miRollerStatistic";
 
@@ -226,6 +229,9 @@ public static class ScreenRoutes
 			// Десктоп — TrafficManagementForm + TrafficGrid; в вебе — свой экран по решениям
 			// владельца 2026-09-23 (docs/tasks/web-tariffgrid.md, §9).
 			{ TrafficManagement, "/traffic" },
+			// Десктоп — AudioJournalForm (журнал сущности 20 + прослушивание, сохранение и удаление
+			// файлов); в вебе — журнал со своим тулбаром, файлы читает сервер (RollerFiles).
+			{ Rollers, "/rollers" },
 			// Десктоп — RollerStatisticForm (MDIForm.ShowRollerStatistic(setuser)); пункты
 			// различаются только менеджером по умолчанию, поэтому пункт едет в адресе.
 			{ RollerStatistic, "/roller-statistic?menu=" + RollerStatistic },

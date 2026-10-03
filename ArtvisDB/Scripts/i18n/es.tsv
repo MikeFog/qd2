@@ -1791,3 +1791,35 @@ code	Новая цена заменит старую во всех тарифа�
 code	{0:HH:mm}, цена {1:N2}: у тарифа есть сгенерированные окна - цена не изменена	{0:HH:mm}, precio {1:N2}: la tarifa tiene ventanas generadas; el precio no se modificó
 code	В цене не больше двух знаков после запятой.	El precio admite como máximo dos decimales.
 code	Слишком большая цена.	El precio es demasiado alto.
+code	Выбрать в папке роликов	Elegir en la carpeta de spots
+code	Загрузить с компьютера	Subir desde la computadora
+code	Записей нет. Измените условия отбора.	No hay registros. Cambie las condiciones del filtro.
+code	Изменён	Modificado
+code	Используется	En uso
+code	Не сохранено файлов: {0}	Archivos no guardados: {0}
+code	Не существует	No existe
+code	Не удалось определить длительность файла.	No se pudo determinar la duración del archivo.
+code	Нужен звуковой файл: {0}.	Se necesita un archivo de audio: {0}.
+code	Оставлен: нужен другому ролику	Conservado: lo usa otro spot
+code	Остановить прослушивание	Detener la reproducción
+code	Остановлено: обработано {0} из {1}.	Detenido: procesados {0} de {1}.
+code	Отметьте ролики галочками	Marque los spots con las casillas
+code	Папка роликов {0} недоступна.	La carpeta de spots {0} no está disponible.
+code	Папка роликов не задана: ключ {0} в настройках веба.	La carpeta de spots no está configurada: clave {0} en la configuración web.
+code	Прослушать	Escuchar
+code	Размер, КБ	Tamaño, KB
+code	Сохранение файлов роликов	Guardando archivos de spots
+code	Сохранено файлов: {0}.	Archivos guardados: {0}.
+code	Сохранить файлы ({0})	Guardar archivos ({0})
+code	Удален	Eliminado
+code	Удаление остановлено.	Eliminación detenida.
+code	Удаление роликов	Eliminación de spots
+code	Удалено роликов: {0} из {1}.	Spots eliminados: {0} de {1}.
+code	Удалить отмеченные ролики ({0}) вместе с физическими файлами?	¿Eliminar los spots marcados ({0}) junto con sus archivos físicos?
+code	Удалить с файлами ({0})	Eliminar con archivos ({0})
+code	Файл {0} уже есть в папке роликов. Выберите его из списка или переименуйте файл.	El archivo {0} ya existe en la carpeta de spots. Elíjalo de la lista o cambie el nombre del archivo.
+code	Файл больше {0} МБ.	El archivo supera {0} MB.
+code	Файл не выбран.	No se eligió ningún archivo.
+code	Файл ролика	Archivo del spot
+code	Файла нет	No hay archivo
+code	Щелкните по ролику в списке	Haga clic en un spot de la lista

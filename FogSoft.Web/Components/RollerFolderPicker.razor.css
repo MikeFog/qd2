@@ -1,0 +1,11 @@
+/* Высота постоянная: окно не прыгает от поиска. */
+
+.folder-note {
+    margin: var(--s-1) 0;
+    word-break: break-all;
+}
+
+.folder-table {
+    height: 55vh;
+    overflow: auto;
+}

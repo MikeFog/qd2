@@ -1,0 +1,120 @@
+@using FogSoft.Web.Infrastructure
+@using FogSoft.WinForm.Classes
+@using Merlin.Classes
+@inject DialogService Dialogs
+@inject BusyService Busy
+
+@*
+    «Загрузить с диска» в карточке ролика (RollerPassportForm.OnLoadButtonClicked). В десктопе
+    пользователь под RDP выбирал файл прямо в папке роликов на сервере — туда файлы приходят по
+    FTP. В вебе два пути (решение владельца 2026-10-02): выбрать файл в той же папке или
+    загрузить с компьютера в неё; файл с таким именем уже есть — отказ, чужой не затирается.
+
+    Дальше — как в десктопе: путь к файлу, название = имя файла без расширения, продолжительность
+    по файлу. Не удалось определить продолжительность — сообщение, путь и название всё равно
+    ставятся.
+*@
+
+<div class="roller-file">
+    <div class="roller-file-path @(Path.Length == 0 ? "text-muted" : null)" title="@Path">
+        @(Path.Length == 0 ? Tr.T("Файл не выбран.") : Path)
+    </div>
+    <div class="roller-file-buttons">
+        <button type="button" class="btn btn-sm btn-outline-secondary" disabled="@_uploading" @onclick="PickOnServer">
+            <i class="bi bi-folder2-open" aria-hidden="true"></i>@Tr.T("Выбрать в папке роликов")
+        </button>
+        <label class="btn btn-sm btn-outline-secondary mb-0 @(_uploading ? "disabled" : null)">
+            <i class="bi bi-upload" aria-hidden="true"></i>@(_uploading ? Tr.T("Загрузка…") : Tr.T("Загрузить с компьютера"))
+            <InputFile class="d-none" accept="@RollerFiles.Accept" disabled="@_uploading" OnChange="Upload" />
+        </label>
+    </div>
+    @if (_error != null)
+    {
+        <div class="text-danger small mt-1">@_error</div>
+    }
+</div>
+
+@code {
+    [Parameter, EditorRequired] public Roller Roller { get; set; } = default!;
+
+    /// <summary>Перерисовать карточку: поменялись название и продолжительность.</summary>
+    [Parameter] public System.Action? Changed { get; set; }
+
+    private string? _error;
+    private bool _uploading;
+
+    private string Path => Convert.ToString(Roller[Roller.ParamNames.Path]) ?? "";
+
+    private async Task PickOnServer()
+    {
+        _error = RollerFiles.FolderProblem();
+        if (_error != null)
+            return;
+
+        var selection = new RollerFolderPicker.Selection();
+        if (await Dialogs.ShowAsync(Tr.T("Файл ролика"),
+                builder =>
+                {
+                    builder.OpenComponent<RollerFolderPicker>(0);
+                    builder.AddComponentParameter(1, nameof(RollerFolderPicker.Value), selection);
+                    builder.CloseComponent();
+                },
+                okText: Tr.T("Выбрать"), wide: true) != DialogOutcome.Ok
+            || selection.Path == null)
+            return;
+
+        await Busy.RunAsync(() => Apply(selection.Path));
+    }
+
+    private async Task Upload(InputFileChangeEventArgs args)
+    {
+        _error = RollerFiles.FolderProblem();
+        if (_error != null)
+            return;
+
+        IBrowserFile file = args.File;
+        if (file.Size > RollerFiles.MaxUploadBytes)
+        {
+            _error = Tr.Format("Файл больше {0} МБ.", RollerFiles.MaxUploadBytes / 1024 / 1024);
+            return;
+        }
+
+        _uploading = true;
+        try
+        {
+            await using Stream source = file.OpenReadStream(RollerFiles.MaxUploadBytes);
+            (string? path, string? refusal) = await RollerFiles.SaveUploadAsync(file.Name, source);
+            if (refusal != null)
+                _error = refusal;
+            else
+                await Busy.RunAsync(() => Apply(path!));
+        }
+        catch (Exception ex)
+        {
+            _error = ErrorPresenter.Describe(ex);
+        }
+        finally
+        {
+            _uploading = false;
+        }
+    }
+
+    private void Apply(string path)
+    {
+        _error = null;
+        try
+        {
+            Roller[Roller.ParamNames.Duration] = RollerFiles.DurationSeconds(path);
+        }
+        catch (Exception ex)
+        {
+            // RollerPassportForm.GetFileDuration: сообщение, а файл всё равно выбран.
+            ErrorManager.Log.Warn($"Продолжительность файла ролика {path}: {ex.Message}"); // i18n-ok: лог
+            _error = Tr.T("Не удалось определить длительность файла.") + " " + ex.Message;
+        }
+
+        Roller[Roller.ParamNames.Path] = path;
+        Roller["name"] = System.IO.Path.GetFileNameWithoutExtension(path);
+        Changed?.Invoke();
+    }
+}

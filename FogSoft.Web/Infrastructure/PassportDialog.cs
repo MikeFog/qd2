@@ -41,6 +41,7 @@ public sealed class PassportDialog
 		// Справочники грузятся один раз на открытие карточки — там же, где их
 		// берёт десктоп.
 		DataSet? data = await _busy.RunAsync(obj.LoadPassportData);
+		PassportRules? rules = await _busy.RunAsync(() => PassportRules.For(obj, isNew));
 
 		// Заголовок — как в PassportForm.SetFormCaption.
 		string title = isNew
@@ -70,7 +71,9 @@ public sealed class PassportDialog
 				builder.AddComponentParameter(7, nameof(Passport.IsNew), isNew);
 				builder.AddComponentParameter(8, nameof(Passport.Data), data);
 				builder.AddComponentParameter(9, nameof(Passport.InvalidField), invalidField);
-				builder.AddComponentReferenceCapture(10, c => passport = (Passport)c);
+				builder.AddComponentParameter(10, nameof(Passport.FieldDisabled), rules?.FieldDisabled);
+				builder.AddComponentParameter(11, nameof(Passport.CustomControl), rules?.Control);
+				builder.AddComponentReferenceCapture(12, c => passport = (Passport)c);
 				builder.CloseComponent();
 			};
 
@@ -81,7 +84,7 @@ public sealed class PassportDialog
 			// ValidateUserInput в ApplyChanges.
 			// Проверяется то, что ввёл пользователь: подстановка значений
 			// нетронутых полей живёт в ApplyChanges и идёт после проверки.
-			message = passport?.Validate(out invalidField);
+			message = passport?.Validate(out invalidField) ?? rules?.Validate?.Invoke();
 			if (message != null)
 				continue;
 

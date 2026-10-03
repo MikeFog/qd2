@@ -37,8 +37,20 @@ public sealed class ProgressDialog
 	/// <param name="steps">Порции операции.</param>
 	/// <param name="describe">Подпись текущей порции, например «неделя 01.09 – 07.09».</param>
 	/// <param name="work">Выполнение одной порции — синхронный вызов ядра.</param>
+	public Task<ProgressOutcome> RunAsync<T>(string title, IReadOnlyList<T> steps,
+		Func<T, string> describe, Action<T> work) =>
+		RunAsync(title, steps, describe, step =>
+		{
+			work(step);
+			return Task.CompletedTask;
+		});
+
+	/// <summary>
+	/// То же для порции, которой нужен браузер (запись файла в выбранную папку, «Сохранить»
+	/// журнала роликов).
+	/// </summary>
 	public async Task<ProgressOutcome> RunAsync<T>(string title, IReadOnlyList<T> steps,
-		Func<T, string> describe, Action<T> work)
+		Func<T, string> describe, Func<T, Task> work)
 	{
 		var state = new State { Total = steps.Count };
 		Task<DialogOutcome> dialog = _dialogs.ShowAsync(title, builder => Render(builder, state),
@@ -58,7 +70,7 @@ public sealed class ProgressDialog
 
 			try
 			{
-				work(steps[i]);
+				await work(steps[i]);
 			}
 			catch
 			{

@@ -1,0 +1,92 @@
+@using FogSoft.Web.Infrastructure
+@using FogSoft.WinForm.Classes
+@using FogSoft.WinForm.DataAccess
+@using Merlin.Classes
+@inject IJSRuntime JS
+@inject BusyService Busy
+@implements IAsyncDisposable
+
+@*
+    Прослушивание ролика — веб-аналог MediaControl десктопа («Прослушать» / «Остановить» в
+    журнале роликов). Полоса с названием ролика и обычным <audio controls>: пауза, перемотка
+    и громкость — у самого проигрывателя браузера. Файл читается сервером по пути из базы и
+    уходит потоком в circuit (wwwroot/js/audio.js), отдельного адреса у файла нет.
+
+    Пока ничего не играли, полосы нет. Владелец экрана зовёт PlayAsync с объектом ролика.
+*@
+
+<div class="roller-player @(_name == null ? "d-none" : null)">
+    <i class="bi bi-music-note-beamed" aria-hidden="true"></i>
+    <span class="roller-player-name" title="@_path">@_name</span>
+    <audio @ref="_audio" controls preload="none"></audio>
+    <button type="button" class="btn btn-sm btn-outline-secondary" title="@(Tr.T("Остановить прослушивание"))"
+            aria-label="@(Tr.T("Остановить прослушивание"))" @onclick="StopAsync">
+        <i class="bi bi-x-lg" aria-hidden="true"></i>
+    </button>
+</div>
+
+@code {
+    /// <summary>Отказ (нет файла, не читается) — показывает владелец экрана.</summary>
+    [Parameter] public EventCallback<string> Failed { get; set; }
+
+    private ElementReference _audio;
+    private IJSObjectReference? _module;
+    private string? _name;
+    private string? _path;
+
+    /// <summary>
+    /// Проиграть файл ролика. Нет пути — молча ничего (как MediaControl.Play), нет файла —
+    /// то же сообщение RollerFileNotFound, что в десктопе.
+    /// </summary>
+    public async Task PlayAsync(PresentationObject roller)
+    {
+        string path = Convert.ToString(roller[Roller.ParamNames.Path]) ?? "";
+        if (path.Length == 0)
+            return;
+
+        if (!File.Exists(path))
+        {
+            MessageAccessor.Parameters = roller.Parameters;
+            await Failed.InvokeAsync(MessageAccessor.GetMessage("RollerFileNotFound"));
+            return;
+        }
+
+        try
+        {
+            byte[] content = await Busy.RunAsync(() => File.ReadAllBytes(path));
+            _name = roller.Name;
+            _path = path;
+            StateHasChanged();
+
+            using var stream = new MemoryStream(content);
+            using var reference = new DotNetStreamReference(stream);
+            _module ??= await JS.InvokeAsync<IJSObjectReference>("import", "./js/audio.js");
+            await _module.InvokeVoidAsync("play", _audio, reference, RollerFiles.ContentType(path));
+        }
+        catch (Exception ex)
+        {
+            await Failed.InvokeAsync(ErrorPresenter.Describe(ex));
+        }
+    }
+
+    private async Task StopAsync()
+    {
+        if (_module != null)
+            await _module.InvokeVoidAsync("stop", _audio);
+        _name = null;
+        _path = null;
+    }
+
+    public async ValueTask DisposeAsync()
+    {
+        if (_module != null)
+        {
+            try
+            {
+                await _module.InvokeVoidAsync("stop", _audio);
+                await _module.DisposeAsync();
+            }
+            catch (JSDisconnectedException) { }
+        }
+    }
+}

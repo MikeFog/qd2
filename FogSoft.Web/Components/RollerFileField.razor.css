@@ -1,0 +1,10 @@
+.roller-file-path {
+    padding: var(--s-1) 0;
+    word-break: break-all;
+}
+
+.roller-file-buttons {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--s-2);
+}
