@@ -165,6 +165,12 @@ begin
 			RETURN 1
 		End
 
+	-- Локальное промо (8/9) не позиционируется: выпуск с позицией на промо не меняем
+	If @newRollerActionTypeID In (8, 9) And IsNull(@position, 0) <> 0
+	begin
+		select @msgError = 'PromoPositionForbidden'
+	end
+
 	If @isAdmin = 0 And	@isConfirmed = 1 And @isTrafficManager = 0 And @date <= IsNull(@deadLine, Convert(datetime, '19000101',112))
 	begin
 		select @msgError = 'DeadLineViolation'

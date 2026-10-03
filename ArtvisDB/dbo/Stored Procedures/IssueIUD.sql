@@ -349,6 +349,9 @@ ELSE IF @actionName = 'UpdateItem' BEGIN
 		INNER JOIN [TariffWindow] tw ON i.[actualWindowID] = tw.[windowId]
 	WHERE 
 		i.[issueID] = @issueID	
+
+	-- @rollerID мог прийти пустым и быть взят из выпуска выше: тип ролика - по нему
+	SELECT @rolActionTypeID = [rolActionTypeID] FROM [Roller] WHERE [rollerID] = @rollerID
 	
 	Exec @res = hlp_IssueVerify	
 		@issueID,
