@@ -47,6 +47,13 @@ FROM
 WHERE 
 	c.campaignID = @campaignID	
 
+-- Длительность ролика и цена пакета при добавлении - из базы, а не от клиента (как в IssueIUD)
+if @actionName = 'AddItem'
+begin
+	select @rollerDuration = duration from Roller where rollerID = @rollerId
+	select @tariffPrice = price from PackModulePriceList where pricelistID = @pricelistId
+end
+
 if @actionName in ('AddItem', 'UpdateItem') 
 	and dbo.[fn_IsAcceptRatioForUser](@loggedUserId, @managerDiscount, @campaignStartDate, @campaignFinishDate) = 0
 begin 

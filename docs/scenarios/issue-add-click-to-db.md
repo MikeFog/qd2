@@ -43,6 +43,9 @@ RollerIssuesGrid3.AddIssue(cell, tariffWindow)           [RollerIssuesGrid3.cs:1
   │       │     rollerDuration, isConfirmed,
   │       │     positionId, grantorID
   │       │     ratio = 1  (дефолт процедуры)
+  │       │   С 2026-10-03 rollerDuration и tariffWindowPrice процедура
+  │       │   берёт из Roller.duration и TariffWindow.price, присланные
+  │       │   игнорирует (форма могла держать устаревшие значения)
   │       ▼
   │     issue.Update()                                   [PresentationObject.cs:152]
   │       │   actionName = "AddItem"  (IsNew = true)

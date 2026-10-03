@@ -56,6 +56,10 @@ declare
 	@isTrafficManager bit,
 	@newRollerActionTypeID int
 
+-- Длительности - из базы, а не от клиента (как и в IssueIUD): присланные могли устареть
+select @oldDuration = duration From Roller where rollerID = @oldRollerID
+select @newDuration = duration From Roller where rollerID = @newRollerID
+
 set @diffDuration = @newDuration - @oldDuration
 select @isConfirmed = a.isConfirmed From Action a Inner Join Campaign c On a.actionID = c.actionID Where c.campaignID = @campaignID
 select @newRollerActionTypeID = rolActionTypeID From Roller where rollerID = @newRollerID

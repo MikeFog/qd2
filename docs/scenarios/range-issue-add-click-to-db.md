@@ -68,6 +68,8 @@ TariffWithRangeGrid.AddIssuesRange(DateTime windowDate, bool ignoreWindowsWithTh
   │               @issueDate = windowDateActual,
   │               @positionId, @ratio = 1 (hardcode в SQL),
   │               @loggedUserId, @massmediaID, @grantorID
+  │               (@rollerDuration и @tariffWindowPrice с 2026-10-03
+  │               IssueIUD берёт из Roller и TariffWindow сама)
   │
   ├── _action.Recalculate()  [refreshFlag = true, по умолчанию]
   │       │                                               [ActionOnMassmedia.cs:564]
