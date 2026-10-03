@@ -153,16 +153,33 @@ namespace Merlin.Forms
 
                     if (_action.IsNew) _action.Update();
 
+					// каждая станция пишется отдельно: отказ по одной (например, такая кампания
+					// уже есть в акции) не мешает остальным, неудавшиеся перечисляем в конце
+					List<string> failed = new List<string>();
 					foreach (Campaign campaign in fNewCampaign.Campaigns)
 					{
-						campaign.Action = _action;
-						campaign.Update();
+						string name = campaign[Campaign.ParamNames.MassmediaName] as string ?? "Пакетная кампания";
+						try
+						{
+							campaign.Action = _action;
+							campaign.Update();
+						}
+						catch (Exception ex)
+						{
+							if (!(ex is System.Data.SqlClient.SqlException))   // SQL-отказы уже в логе (DataAccessor)
+								ErrorManager.LogError("Добавление кампании: " + name, ex);
+							failed.Add(name + " - " + (ErrorManager.GetErrorMessage(ex) ?? ex.Message));
+							continue;
+						}
 
 						grdCampaign.AddRow(campaign);
                         grdCampaign.AdjustColumnsWidthExt();
                     }
 
 					EnableComboModulesButton();
+
+					if (failed.Count > 0)
+						UserMessage.ShowExclamation("Не добавлены:\r\n" + string.Join("\r\n", failed));
 				}
 			}
 			catch (Exception ex)

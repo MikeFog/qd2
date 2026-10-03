@@ -1374,7 +1374,7 @@ INSERT INTO #t ([source], [text]) VALUES
 (N'Рекламная акция восстановлена и доступна для активации в журнале макетов рекламных акций.', N'La campaña publicitaria se restauró y está disponible para su activación en el registro de borradores de campañas publicitarias.'),
 (N'Рекламная кампания на радиостанции ''{0}'' содержит только 1 ролик, операция разделения "по роликам" невозможна.', N'La pauta publicitaria en la emisora ''{0}'' contiene solo 1 spot; no es posible la división "por spots".'),
 (N'Рекламная кампания не может иметь  цену {0}, так как она слишком мала. Операция прервана.', N'La pauta publicitaria no puede tener un precio de {0} porque es demasiado bajo. Operación cancelada.'),
-(N'Рекламная кампания такого типа, с таким типом оплаты и радиостанцией уже присутствует в данной рекламной акции. Операция прервана.', N'Ya existe en esta campaña publicitaria una pauta de este tipo, con este tipo de pago y esta emisora. Operación cancelada.'),
+(N'Рекламная кампания такого типа, с таким типом оплаты и радиостанцией уже присутствует в данной рекламной акции.', N'Ya existe en esta campaña publicitaria una pauta de este tipo, con este tipo de pago y esta emisora.'),
 (N'Рекламное окно не найдено.', N'No se encontró la ventana publicitaria.'),
 (N'Рекламный ролик  не может быть добавлен так как в этом случае будет превышено максимально возможное время рекламы в данном окне.  Операция прервана.', N'No es posible agregar el spot publicitario porque se superaría el tiempo máximo de publicidad permitido en esta ventana.  Operación cancelada.'),
 (N'Рекламный ролик не может быть добавлен первым/последним. Операция прервана.', N'No es posible agregar el spot publicitario en primera/última posición. Operación cancelada.'),
