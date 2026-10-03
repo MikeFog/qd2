@@ -9,13 +9,14 @@
 @inject BusyService Busy
 @inject NavigationManager Nav
 @inject FilterMemory Filters
+@inject RollerPlayback Playback
 
 @*
     «Журнал использования роликов» — веб-экран вместо RollerStatisticForm. Сверху отбор — та же
     панель, что у журналов (FilterPanel), по iEntity.filter сущности 139: период, станции
     (выбор нескольких), менеджер, фирма, группа компаний, предмет рекламы, оплата, разбивки.
     Ниже ролики с количеством выпусков, справа — акции выбранного ролика (в десктопе — нижняя
-    таблица). Прослушивание ролика отложено (решение владельца 2026-09-24: в конец переноса).
+    таблица). «Прослушать» — выбранный щелчком ролик (общий проигрыватель, RollerPlayback).
 
     Два пункта меню — «Трафик» и «Рекламный отдел» — отличаются только менеджером по
     умолчанию (MDIForm.ShowRollerStatistic(setuser)); пункт приходит в адресе (?menu=).
@@ -46,6 +47,10 @@ else
             </button>
             <button class="btn btn-sm btn-outline-secondary" disabled="@(_result == null || _result.Data.Rows.Count == 0)" @onclick="ExportExcel">
                 <i class="bi bi-download" aria-hidden="true"></i>@Tr.T("Экспорт в Excel")
+            </button>
+            <button class="btn btn-sm btn-outline-secondary" disabled="@(_roller == null)" @onclick="Play"
+                    title="@(_roller == null ? Tr.T("Щелкните по ролику в списке") : null)">
+                <i class="bi bi-play-fill" aria-hidden="true"></i>@Tr.T("Прослушать")
             </button>
         </ScreenToolbar>
 
@@ -240,4 +245,18 @@ else
     }
 
     private Task ExportExcel() => _list?.ExportToExcelAsync(_title) ?? Task.CompletedTask;
+
+    /// <summary>В строке статистики пути к файлу нет — ролик читается по ключу.</summary>
+    private async Task Play()
+    {
+        _error = null;
+        if (_roller == null)
+            return;
+
+        int rollerId = Convert.ToInt32(_roller[Roller.ParamNames.RollerId]);
+        Roller? roller = null;
+        await Busy.RunAsync(() => Try(() => roller = new Roller(rollerId)));
+        if (roller != null)
+            _error = await Playback.PlayAsync(roller);
+    }
 }

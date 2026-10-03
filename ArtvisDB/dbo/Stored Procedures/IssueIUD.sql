@@ -113,6 +113,24 @@ begin
 	 return
 end
 
+-- Длительность ролика и цена окна при добавлении - из базы, а не от клиента: в открытой
+-- давно форме кампании они могли устареть, и цена с проверкой окна разошлись бы с
+-- занятостью окна, которую процедура всё равно считает по Roller.duration.
+if @actionName = 'AddItem'
+begin
+	SELECT @rollerDuration = [duration] FROM [Roller] WHERE [rollerID] = @rollerID
+	SELECT @tariffWindowPrice = [price] FROM [TariffWindow] WHERE [windowId] = @windowID
+end
+
+-- Ролик выпуска здесь не меняется: цена и проверка окна в ветке UpdateItem считаются по
+-- ролику выпуска. Замена ролика - RollerSubstitute.
+if @actionName = 'UpdateItem' and @rollerID is not null
+	and not exists (select 1 from [Issue] where [issueID] = @issueID and [rollerID] = @rollerID)
+begin
+	raiserror('InternalError', 16, 1)
+	return
+end
+
 if @actionName in ('AddItem', 'UpdateItem')
 	SELECT @rolActionTypeID = [rolActionTypeID] FROM [Roller] WHERE [rollerID] = @rollerID
 
@@ -331,6 +349,9 @@ ELSE IF @actionName = 'UpdateItem' BEGIN
 		INNER JOIN [TariffWindow] tw ON i.[actualWindowID] = tw.[windowId]
 	WHERE 
 		i.[issueID] = @issueID	
+
+	-- @rollerID мог прийти пустым и быть взят из выпуска выше: тип ролика - по нему
+	SELECT @rolActionTypeID = [rolActionTypeID] FROM [Roller] WHERE [rollerID] = @rollerID
 	
 	Exec @res = hlp_IssueVerify	
 		@issueID,

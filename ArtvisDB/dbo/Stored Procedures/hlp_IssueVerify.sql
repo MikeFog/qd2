@@ -125,6 +125,14 @@ If @rollerActionTypeID In (6, 7, 44, 55) And IsNull(@positionId, 0) <> 0
 		RETURN 1
 	End
 
+-- Локальное промо (8 - со спонсором, 9 - без спонсора) не позиционируется:
+-- место в блоке ему задаёт тип ролика при выгрузке
+If @rollerActionTypeID In (8, 9) And IsNull(@positionId, 0) <> 0
+	Begin
+		set @msgError = 'PromoPositionForbidden'
+		RETURN 1
+	End
+
 if	@campaignFinishDate < @tomorrow and @campaignTypeID <> 2 And @RightToGoBack <> 1 And @isTrafficManager = 0
 	set @msgError = 'CampaignAlreadyFinished'
 else if @campaignTypeID = 2 

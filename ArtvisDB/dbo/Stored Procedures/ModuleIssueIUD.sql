@@ -68,6 +68,13 @@ From
 Where
 	modulePriceListID = @modulePricelistID
 
+-- Длительность ролика и цена модуля при добавлении - из базы, а не от клиента (как в IssueIUD)
+if @actionName = 'AddItem'
+begin
+	select @rollerDuration = duration from Roller where rollerID = @rollerID
+	select @tariffPrice = price from ModulePriceList where modulePriceListID = @modulePricelistID
+end
+
 if @actionName in ('AddItem', 'UpdateItem') 
 	and dbo.[fn_IsAcceptRatioForUser](@loggedUserId, @managerDiscount, @campaignStartDate, @campaignFinishDate) = 0
 begin 

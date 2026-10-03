@@ -1,0 +1,85 @@
+@using FogSoft.Web.Infrastructure
+@using FogSoft.WinForm.Classes
+@inject DialogService Dialogs
+
+@*
+    Выбор файла в папке роликов на сервере — веб-замена OpenFileDialog десктопной карточки
+    ролика (под RDP пользователь открывал C:\FTP\Repository). Новые файлы сверху: обычно нужен
+    только что пришедший по FTP. Щелчок выбирает, двойной щелчок — выбрать и закрыть.
+*@
+
+<QuickSearchBox Text="@_search" TextChanged="Search" Matched="_matched.Count" Total="_files.Count" />
+<div class="text-muted small folder-note">
+    @if (_matched.Count > Limit)
+    {
+        @Tr.Format("Показаны первые {0} из {1} — уточните поиск.", Limit, _matched.Count)
+    }
+    else
+    {
+        @RollerFiles.Folder
+    }
+</div>
+<div class="data-table folder-table">
+    <table class="table table-hover">
+        <thead>
+            <tr>
+                <th>@Tr.T("Файл")</th>
+                <th>@Tr.T("Изменён")</th>
+                <th class="text-end">@Tr.T("Размер, КБ")</th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (FileInfo file in _matched.Take(Limit))
+            {
+                <tr class="@(file.FullName == Value.Path ? "table-primary" : null)" style="cursor:pointer"
+                    @onclick="() => Value.Path = file.FullName"
+                    @ondblclick="() => Choose(file)">
+                    <td>@file.Name</td>
+                    <td class="tabular">@file.LastWriteTime.ToString("g")</td>
+                    <td class="tabular text-end">@((file.Length + 1023) / 1024)</td>
+                </tr>
+            }
+        </tbody>
+    </table>
+    @if (_matched.Count == 0)
+    {
+        <div class="state">@Tr.T("Ничего не найдено.")</div>
+    }
+</div>
+
+@code {
+    /// <summary>Выбранный файл — читает тот, кто открыл диалог, после «Выбрать».</summary>
+    public sealed class Selection
+    {
+        public string? Path;
+    }
+
+    [Parameter, EditorRequired] public Selection Value { get; set; } = default!;
+
+    // В папке прода — тысячи файлов; рисовать все незачем, как и в ObjectSelector.
+    private const int Limit = 200;
+
+    private List<FileInfo> _files = new();
+    private List<FileInfo> _matched = new();
+    private string _search = "";
+
+    protected override void OnInitialized()
+    {
+        _files = RollerFiles.List();
+        _matched = _files;
+    }
+
+    private void Search(string text)
+    {
+        _search = text;
+        _matched = text.Length == 0
+            ? _files
+            : _files.Where(f => f.Name.Contains(text, StringComparison.OrdinalIgnoreCase)).ToList();
+    }
+
+    private Task Choose(FileInfo file)
+    {
+        Value.Path = file.FullName;
+        return Dialogs.CloseAsync(DialogOutcome.Ok);
+    }
+}

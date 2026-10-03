@@ -1,5 +1,5 @@
 ﻿/*
-    ДЕПЛОЙ: переводы веб-версии на язык «es» (1792 строк). docs/tasks/web-i18n.md, этап 5.
+    ДЕПЛОЙ: переводы веб-версии на язык «es» (1825 строк). docs/tasks/web-i18n.md, этап 5.
     СГЕНЕРИРОВАН из ArtvisDB/Scripts/i18n/es.tsv скриптом build-seed.py — руками не править.
 
     ПРЕДУСЛОВИЕ     накачен web-i18n-translation-deploy.sql (таблица iTranslation).
@@ -1812,7 +1812,40 @@ INSERT INTO #t ([source], [text]) VALUES
 (N'Новая цена заменит старую во всех тарифах прайс-листа. Тарифы со сгенерированными окнами не меняются.', N'El precio nuevo reemplazará al anterior en todas las tarifas de la lista de precios. Las tarifas con ventanas generadas no se modifican.'),
 (N'{0:HH:mm}, цена {1:N2}: у тарифа есть сгенерированные окна - цена не изменена', N'{0:HH:mm}, precio {1:N2}: la tarifa tiene ventanas generadas; el precio no se modificó'),
 (N'В цене не больше двух знаков после запятой.', N'El precio admite como máximo dos decimales.'),
-(N'Слишком большая цена.', N'El precio es demasiado alto.');
+(N'Слишком большая цена.', N'El precio es demasiado alto.'),
+(N'Для роликов локального промо позиционирование не применяется. Операция прервана.', N'El posicionamiento no se aplica a los spots de promoción local. Operación cancelada.'),
+(N'Выбрать в папке роликов', N'Elegir en la carpeta de spots'),
+(N'Загрузить с компьютера', N'Subir desde la computadora'),
+(N'Записей нет. Измените условия отбора.', N'No hay registros. Cambie las condiciones del filtro.'),
+(N'Изменён', N'Modificado'),
+(N'Используется', N'En uso'),
+(N'Не сохранено файлов: {0}', N'Archivos no guardados: {0}'),
+(N'Не существует', N'No existe'),
+(N'Не удалось определить длительность файла.', N'No se pudo determinar la duración del archivo.'),
+(N'Нужен звуковой файл: {0}.', N'Se necesita un archivo de audio: {0}.'),
+(N'Оставлен: нужен другому ролику', N'Conservado: lo usa otro spot'),
+(N'Остановить прослушивание', N'Detener la reproducción'),
+(N'Остановлено: обработано {0} из {1}.', N'Detenido: procesados {0} de {1}.'),
+(N'Отметьте ролики галочками', N'Marque los spots con las casillas'),
+(N'Папка роликов {0} недоступна.', N'La carpeta de spots {0} no está disponible.'),
+(N'Папка роликов не задана: ключ {0} в настройках веба.', N'La carpeta de spots no está configurada: clave {0} en la configuración web.'),
+(N'Прослушать', N'Escuchar'),
+(N'Размер, КБ', N'Tamaño, KB'),
+(N'Сохранение файлов роликов', N'Guardando archivos de spots'),
+(N'Сохранено файлов: {0}.', N'Archivos guardados: {0}.'),
+(N'Сохранить файлы ({0})', N'Guardar archivos ({0})'),
+(N'Удален', N'Eliminado'),
+(N'Удаление остановлено.', N'Eliminación detenida.'),
+(N'Удаление роликов', N'Eliminación de spots'),
+(N'Удалено роликов: {0} из {1}.', N'Spots eliminados: {0} de {1}.'),
+(N'Удалить отмеченные ролики ({0}) вместе с физическими файлами?', N'¿Eliminar los spots marcados ({0}) junto con sus archivos físicos?'),
+(N'Удалить с файлами ({0})', N'Eliminar con archivos ({0})'),
+(N'Файл {0} уже есть в папке роликов. Выберите его из списка или переименуйте файл.', N'El archivo {0} ya existe en la carpeta de spots. Elíjalo de la lista o cambie el nombre del archivo.'),
+(N'Файл больше {0} МБ.', N'El archivo supera {0} MB.'),
+(N'Файл не выбран.', N'No se eligió ningún archivo.'),
+(N'Файл ролика', N'Archivo del spot'),
+(N'Файла нет', N'No hay archivo'),
+(N'Щелкните по ролику в списке', N'Haga clic en un spot de la lista');
 GO
 
 BEGIN TRANSACTION;

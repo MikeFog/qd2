@@ -1,0 +1,381 @@
+@page "/rollers"
+@using System.Data
+@using FogSoft.Web.Infrastructure
+@using FogSoft.WinForm
+@using FogSoft.WinForm.Classes
+@using FogSoft.WinForm.Passport.Classes
+@using Merlin.Classes
+@using Merlin.Classes.GridExport
+@inject MenuAccess Access
+@inject BusyService Busy
+@inject PassportDialog Passports
+@inject FilterMemory Filters
+@inject FileSaver Saver
+@inject ProgressDialog Progress
+@inject TableDialog Tables
+@inject DialogService Dialogs
+@inject RollerPlayback Playback
+
+@*
+    «Журнал рекламных роликов» — веб-экран вместо AudioJournalForm (Режиссёр → miRoller): журнал
+    сущности Roller (20) с её отбором и своим тулбаром. Файлы роликов лежат на той же машине,
+    что веб (RollerFiles), поэтому всё, что десктоп делал с файлами под RDP, делает сервер:
+    - «Прослушать» — общий проигрыватель в верхней полосе (RollerPlayback), по выбранной
+      щелчком строке (карточка — из «⋯», как в журнале оплат);
+    - «Сохранить файлы» — копии файлов в папку на компьютере пользователя (RollersCopyFrm);
+    - «Удалить с файлами» — только администратору, ролики и их файлы (RollersDeleteFrm);
+    - «Загрузить с диска» в карточке — RollerFileField (через PassportRules).
+    Десктоп сохранял и удалял все показанные ролики; здесь — отмеченные галочками: невидимое
+    выделение для необратимого действия недопустимо (решение владельца 2026-09-22), а
+    «отметить все» — одна галочка в заголовке. «Импортировать» из старой базы не переносится:
+    кнопка жила только при LegacyDBConnectionString.
+*@
+
+<PageTitle>@_title</PageTitle>
+
+@if (SecurityManager.LoggedUser == null)
+{
+    <div class="state">
+        <div class="state-title">@Tr.T("Вы не вошли в систему")</div>
+        <a href="/">@Tr.T("Перейти к входу")</a>
+    </div>
+}
+else if (_access != JournalAccess.Allowed)
+{
+    <div class="state">
+        <div class="state-title">@Tr.T("Доступ закрыт")</div>
+        @Tr.T("Этот экран вам не разрешён. Права на экраны выдаются вместе с пунктами меню — обратитесь к администратору системы.")
+    </div>
+}
+else if (_entity == null)
+{
+    @if (_error != null)
+    {
+        <div class="alert alert-danger">@_error</div>
+    }
+    else
+    {
+        <div class="state">@Tr.T("Загрузка…")</div>
+    }
+}
+else
+{
+    <div class="rollers-journal">
+        <ScreenToolbar Title="@_title" Count="@(_data?.Rows.Count ?? 0)">
+            <button class="btn btn-primary btn-sm" disabled="@(!_canAdd)" @onclick="AddNew"><i class="bi bi-plus-lg" aria-hidden="true"></i>@Tr.T("Добавить")</button>
+            <button class="btn btn-sm btn-outline-secondary" @onclick="Refresh"><i class="bi bi-arrow-clockwise" aria-hidden="true"></i>@Tr.T("Обновить")</button>
+            <button class="btn btn-sm btn-outline-secondary" disabled="@(_data == null || _data.Rows.Count == 0)" @onclick="ExportExcel"><i class="bi bi-download" aria-hidden="true"></i>@Tr.T("Экспорт в Excel")</button>
+            <button class="btn btn-sm btn-outline-secondary" disabled="@(_active == null)" @onclick="Play"
+                    title="@(_active == null ? Tr.T("Щелкните по ролику в списке") : null)">
+                <i class="bi bi-play-fill" aria-hidden="true"></i>@Tr.T("Прослушать")
+            </button>
+            <button class="btn btn-sm btn-outline-secondary" disabled="@(_checked == 0)" @onclick="SaveFiles"
+                    title="@(_checked == 0 ? Tr.T("Отметьте ролики галочками") : null)">
+                <i class="bi bi-floppy" aria-hidden="true"></i>@Tr.Format("Сохранить файлы ({0})", _checked)
+            </button>
+            @if (_isAdmin)
+            {
+                <button class="btn btn-sm btn-outline-danger" disabled="@(_checked == 0)" @onclick="DeleteWithFiles"
+                        title="@(_checked == 0 ? Tr.T("Отметьте ролики галочками") : null)">
+                    <i class="bi bi-trash" aria-hidden="true"></i>@Tr.Format("Удалить с файлами ({0})", _checked)
+                </button>
+            }
+        </ScreenToolbar>
+
+        <FilterPanel @ref="_filterPanel" Pages="_filterPages" Values="_filterValues" FilterData="_filterData" Apply="Load" Screen="@MenuCode" />
+
+        @if (_error != null)
+        {
+            <div class="alert alert-danger">@_error</div>
+        }
+        @if (_info != null)
+        {
+            <div class="alert alert-success">@_info</div>
+        }
+
+        <section class="rollers-list">
+            <ObjectList @ref="_list" Entity="_entity" Data="_data" QuickSearch="true" Selectable="true"
+                        RowClick="Select" ActiveRow="_active" SelectionChanged="n => _checked = n"
+                        EmptyText="@(Tr.T("Записей нет. Измените условия отбора."))"
+                        Changed="Load" Failed="ShowError" />
+        </section>
+    </div>
+}
+
+@code {
+    private const string MenuCode = ScreenRoutes.Rollers;
+
+    private string _title = Tr.T("Журнал рекламных роликов");
+    private JournalAccess _access = JournalAccess.Allowed;
+    private string? _error;
+    private string? _info;
+
+    private Entity? _entity;
+    private bool _canAdd;
+    private bool _isAdmin;
+
+    private FilterPanel? _filterPanel;
+    private IReadOnlyList<PassportPage> _filterPages = Array.Empty<PassportPage>();
+    private readonly Dictionary<string, object> _filterValues = new(StringComparer.InvariantCultureIgnoreCase);
+    private DataSet? _filterData;
+
+    private DataTable? _data;
+    private ObjectList? _list;
+    private DataRow? _active;
+    private int _checked;
+
+    protected override async Task OnInitializedAsync()
+    {
+        if (SecurityManager.LoggedUser == null)
+            return;
+
+        _access = Access.CheckScreen(MenuCode);
+        if (_access != JournalAccess.Allowed)
+            return;
+
+        _title = Access.MenuText(MenuCode) ?? _title;
+        _isAdmin = SecurityManager.LoggedUser.IsAdmin;
+        await Busy.RunAsync(() => Try(() =>
+        {
+            Entity entity = Roller.GetEntity();
+            _canAdd = entity.IsActionEnabled(Constants.EntityActions.AddNew, ViewType.Journal);
+            _filterPages = PassportSchema.Parse(entity.XmlFilter, entity, pageType: PageTypes.Filter);
+            _filterData = Globals.PrepareForFilter(entity);
+
+            _filterValues.Clear();
+            Globals.ResolveFilterInitialValues(_filterValues, entity.XmlFilter);
+            Filters.Restore(MenuCode, _filterValues);
+
+            _entity = entity;
+            LoadData();
+        }));
+    }
+
+    private void Try(System.Action work)
+    {
+        try
+        {
+            _error = null;
+            _info = null;
+            work();
+        }
+        catch (Exception ex)
+        {
+            _error = ErrorPresenter.Describe(ex);
+        }
+    }
+
+    private Task Load() => Busy.RunAsync(() => Try(LoadData));
+
+    private Task Refresh() => _filterPanel?.Validate() == false ? Task.CompletedTask : Load();
+
+    /// <summary>Перечитать по отбору. Отметки и выбранная строка уходят вместе со старыми строками.</summary>
+    private void LoadData()
+    {
+        _active = null;
+        _checked = 0;
+        _entity!.ClearCache();
+        _data = _entity.GetContent(_filterValues);
+        Filters.Remember(MenuCode, _filterValues);
+    }
+
+    private void Select(DataRow row) => _active = row;
+
+    private void ShowError(string message) => _error = message;
+
+    private async Task AddNew()
+    {
+        try
+        {
+            if (await Passports.ShowAsync(_entity!.NewObject, isNew: true))
+                await Load();
+        }
+        catch (Exception ex)
+        {
+            _error = ErrorPresenter.Describe(ex);
+        }
+    }
+
+    private Task ExportExcel() => _list?.ExportToExcelAsync(_title) ?? Task.CompletedTask;
+
+    private async Task Play()
+    {
+        _error = null;
+        if (_active != null)
+            _error = await Playback.PlayAsync(_entity!.CreateObject(_active));
+    }
+
+    /// <summary>Отмеченные строки в порядке списка.</summary>
+    private List<DataRow> CheckedRows() =>
+        _data!.Rows.Cast<DataRow>().Where(_list!.SelectedRows.Contains).ToList();
+
+    private static string PathOf(DataRow row) => Convert.ToString(row[Roller.ParamNames.Path]) ?? "";
+
+    /// <summary>
+    /// RollersCopyFrm: файлы отмеченных роликов (у кого путь есть) — в папку, выбранную в
+    /// браузере. Файл с тем же именем в папке заменяется, как File.Copy поверх нет — десктоп
+    /// писал «Не удалось», браузерная запись просто перезаписывает.
+    /// </summary>
+    private async Task SaveFiles()
+    {
+        _error = null;
+        _info = null;
+        try
+        {
+            if (await Saver.UnsupportedReasonAsync() is { } reason)
+            {
+                _error = reason;
+                return;
+            }
+            if (!await Saver.PickFolderAsync())
+                return;
+
+            List<string> paths = CheckedRows().Select(PathOf).Where(p => p.Length > 0).Distinct(StringComparer.OrdinalIgnoreCase).ToList();
+            DataTable failed = StatusTable("path", "status");
+            int saved = 0;
+
+            ProgressOutcome outcome = await Progress.RunAsync(Tr.T("Сохранение файлов роликов"), paths, Path.GetFileName, async path =>
+            {
+                if (!File.Exists(path))
+                {
+                    failed.Rows.Add(path, Tr.T("Файла нет"));
+                    return;
+                }
+                try
+                {
+                    await Saver.WriteToFolderAsync(new ExportFile { Name = Path.GetFileName(path), Content = await File.ReadAllBytesAsync(path) });
+                    saved++;
+                }
+                catch (Exception ex)
+                {
+                    failed.Rows.Add(path, ErrorPresenter.Describe(ex));
+                }
+            });
+
+            _info = Tr.Format("Сохранено файлов: {0}.", saved)
+                + (outcome.Stopped ? " " + Tr.Format("Остановлено: обработано {0} из {1}.", outcome.Done, paths.Count) : "");
+            await Tables.ShowAsync(Tr.Format("Не сохранено файлов: {0}", failed.Rows.Count), failed,
+                new Entity.Attribute("path", "Файл", "nvarchar"), // i18n-ok: заголовок колонки переводит ObjectList при выводе
+                new Entity.Attribute("status", "Причина", "nvarchar")); // i18n-ok: заголовок колонки переводит ObjectList при выводе
+        }
+        catch (Exception ex)
+        {
+            _error = ErrorPresenter.Describe(ex);
+        }
+    }
+
+    /// <summary>
+    /// RollersDeleteFrm: отмеченные ролики удаляются из базы, затем их файлы. Отличия от десктопа:
+    /// используемый ролик не трогаем вовсе (GetRollerIsUsed), а не ловим отказ процедуры; файл
+    /// удаляется, только если на него не ссылается ни один оставшийся ролик — иначе удаление
+    /// ролика, делящего файл с другим (в базе такие пути есть), ломало бы второй.
+    /// </summary>
+    private async Task DeleteWithFiles()
+    {
+        _error = null;
+        _info = null;
+        List<DataRow> rows = CheckedRows();
+        if (await Dialogs.ShowAsync(Tr.T("Удаление роликов"),
+                builder => builder.AddContent(0, Tr.Format("Удалить отмеченные ролики ({0}) вместе с физическими файлами?", rows.Count)),
+                okText: Tr.T("Удалить")) != DialogOutcome.Ok)
+            return;
+
+        DataTable result = StatusTable("name", "path", "dbStatus", "fileStatus");
+        try
+        {
+            // Строки итога у роликов, удалённых из базы: их файлы — следующим шагом.
+            var deleted = new List<DataRow>();
+            ProgressOutcome outcome = await Progress.RunAsync(Tr.T("Удаление роликов"), rows,
+                row => Convert.ToString(row[Roller.ParamNames.Path]) is { Length: > 0 } p ? Path.GetFileName(p) : row["name"].ToString()!,
+                row =>
+                {
+                    var roller = (Roller)_entity!.CreateObject(row);
+                    DataRow line = result.Rows.Add(roller.Name, PathOf(row), "", "");
+                    try
+                    {
+                        if (roller.IsUsed)
+                        {
+                            line["dbStatus"] = Tr.T("Используется");
+                            return;
+                        }
+                        roller.Delete(silenceFlag: true);
+                        line["dbStatus"] = Tr.T("Удален");
+                        deleted.Add(line);
+                    }
+                    catch (Exception ex)
+                    {
+                        line["dbStatus"] = ErrorPresenter.Describe(ex);
+                    }
+                });
+
+            await Busy.RunAsync(() => DeleteFiles(deleted));
+            _info = Tr.Format("Удалено роликов: {0} из {1}.", deleted.Count, rows.Count)
+                + (outcome.Stopped ? " " + Tr.T("Удаление остановлено.") : "");
+            await Tables.ShowAsync(Tr.T("Удаление роликов"), result,
+                new Entity.Attribute("name", "Имя", "nvarchar"), // i18n-ok: заголовок колонки переводит ObjectList при выводе
+                new Entity.Attribute("path", "Путь", "nvarchar"), // i18n-ok: заголовок колонки переводит ObjectList при выводе
+                new Entity.Attribute("dbStatus", "Ролик", "nvarchar"), // i18n-ok: заголовок колонки переводит ObjectList при выводе
+                new Entity.Attribute("fileStatus", "Файл", "nvarchar")); // i18n-ok: заголовок колонки переводит ObjectList при выводе
+        }
+        catch (Exception ex)
+        {
+            _error = ErrorPresenter.Describe(ex);
+        }
+
+        string? error = _error;
+        string? info = _info;
+        await Load();
+        _error = error;
+        _info = info;
+    }
+
+    /// <summary>Файлы удалённых роликов — кроме тех, на которые ссылаются оставшиеся ролики.</summary>
+    private void DeleteFiles(List<DataRow> deleted)
+    {
+        if (deleted.Count == 0)
+            return;
+
+        // Все оставшиеся ролики, какой бы ни был отбор: активные и нет, используемые и нет, пустышки.
+        var all = new Dictionary<string, object>(StringComparer.InvariantCultureIgnoreCase)
+        {
+            ["ShowActive"] = true,
+            ["ShowInactive"] = true,
+            ["showUsed"] = true,
+            ["showUnused"] = true,
+            ["showMuteRollers"] = true,
+        };
+        _entity!.ClearCache();
+        var stillUsed = new HashSet<string>(
+            _entity.GetContent(all).Rows.Cast<DataRow>().Select(PathOf).Where(p => p.Length > 0),
+            StringComparer.OrdinalIgnoreCase);
+
+        foreach (DataRow line in deleted)
+        {
+            string path = (string)line["path"];
+            if (path.Length == 0 || !File.Exists(path))
+                line["fileStatus"] = Tr.T("Не существует");
+            else if (stillUsed.Contains(path))
+                line["fileStatus"] = Tr.T("Оставлен: нужен другому ролику");
+            else
+            {
+                try
+                {
+                    File.Delete(path);
+                    line["fileStatus"] = Tr.T("Удален");
+                }
+                catch (Exception ex)
+                {
+                    line["fileStatus"] = ErrorPresenter.Describe(ex);
+                }
+            }
+        }
+    }
+
+    private static DataTable StatusTable(params string[] columns)
+    {
+        var table = new DataTable();
+        foreach (string column in columns)
+            table.Columns.Add(column, typeof(string));
+        return table;
+    }
+}

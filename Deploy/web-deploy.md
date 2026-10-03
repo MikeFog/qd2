@@ -6,7 +6,7 @@
 
 | База | Папка | Служба | Порт | Сборка | Доступ | Когда |
 |---|---|---|---|---|---|---|
-| `Artvis` | `C:\qd2web\artvis` | `qd2web-artvis` (`NT SERVICE\qd2web-artvis`) | 5051 | `bf470bd` | **пробный:** только IP Миши (правило «qd2 web 5051 (test)») | 2026-10-01 |
+| `Artvis` | `C:\qd2web\artvis` | `qd2web-artvis` (`NT SERVICE\qd2web-artvis`) | 5051 | `4615c97` (обновлено пакетом изменённых файлов, `RollerFolder` и права на `C:\FTP\Repository` выданы) | **пробный:** только IP Миши (правило «qd2 web 5051 (test)») | 2026-10-01, обновление 2026-10-03 |
 | `Tumen`, `Belgorod` | — | — | 5052, 5053 | — | — | не развёрнуто |
 
 2026-10-01 пройдено по шагам: `document-templates-deploy.sql` на `Artvis` без ошибок; ручной запуск
@@ -66,6 +66,8 @@ Production стартует, отдаёт страницу, стили и `blazo
    ...
    <add name="Main" connectionString="user id=AdvertAgUser; password=<…>; server=lpc:.\SQLEXPRESS; database=Artvis" />
    ```
+   Папка файлов роликов — ключ `RollerFolder` (выбор и загрузка файла в карточке ролика):
+   `<add key="RollerFolder" value="C:\FTP\Repository" />`.
    Язык интерфейса — ключ `Languages` (через запятую, первый — по умолчанию). Без ключа — русский;
    для испаноязычной установки — `<add key="Languages" value="es" />`. Больше одного языка на проде не
    указывать: в сборке `ru,es` — настройка разработчика, с ней в шапке появляется переключатель языка.
@@ -91,6 +93,9 @@ Production стартует, отдаёт страницу, стили и `blazo
    New-Item -ItemType Directory -Force C:\qd2web\logs | Out-Null
    icacls C:\qd2web /grant "NT SERVICE\qd2web:(OI)(CI)RX"
    icacls C:\qd2web\logs /grant "NT SERVICE\qd2web:(OI)(CI)M"
+   # Журнал роликов: прослушивание и «Сохранить файлы» читают файлы по пути из базы, карточка
+   # загружает файлы в папку роликов, «Удалить с файлами» удаляет их — нужно изменение.
+   icacls C:\FTP\Repository /grant "NT SERVICE\qd2web:(OI)(CI)M"
    ```
 5. Брандмауэр. **Пробный этап (решение 2026-09-30): только с одного внешнего адреса** — машины Миши;
    безопасность для промышленного запуска — отдельно (см. «Блокеры доступа из интернета»).
@@ -98,7 +103,9 @@ Production стартует, отдаёт страницу, стили и `blazo
    New-NetFirewallRule -DisplayName "qd2 web 5051 (test)" -Direction Inbound -Protocol TCP -LocalPort 5051 -RemoteAddress <IP Миши> -Action Allow -Profile Any
    ```
    Если адрес сменился (домашний IP бывает динамическим):
-   `Set-NetFirewallAddressFilter -AssociatedNetFirewallRule (Get-NetFirewallRule -DisplayName "qd2 web 5051 (test)") -RemoteAddress <новый IP>`.
+   `Set-NetFirewallRule -DisplayName "qd2 web 5051 (test)" -RemoteAddress <новый IP>` (у
+   `Set-NetFirewallAddressFilter` параметра `-AssociatedNetFirewallRule` нет). Признак смены адреса — в браузере
+   `ERR_CONNECTION_TIMED_OUT`, а локально на сервере порт отвечает.
    Если перед сервером роутер с NAT — на нём ещё нужен проброс порта 5051 на сервер.
 6. `sc.exe start qd2web`.
 
@@ -129,6 +136,25 @@ sc.exe start qd2web
   (`iTranslation`) веб нужно перезапустить — кэши метаданных и переводов статические.
 - Откат: `sc stop`, вернуть `C:\qd2web-prev-<дата>` на место, `sc start`. Если вместе с вебом катился SQL —
   откатывать по шапке соответствующего скрипта.
+- **Обновление только изменёнными файлами** (2026-10-03, вместо целого архива ~135 МБ). Среда .NET и сторонние
+  библиотеки от сборки к сборке не меняются, пока не обновился SDK на машине разработчика, поэтому
+  пакет — разница двух публикаций: той, что стоит на сервере (`publish\web-<старый>` хранится), и новой.
+  Сравнивать по содержимому файлов (md5), а не по списку «что вроде менялось»: файлы рантайма после обновления
+  SDK, `FogSoft.Web.staticwebassets.endpoints.json` (отпечатки статики) и сжатые `.br`/`.gz` тогда попадут
+  в пакет сами. Конфиги (`FogSoft.Web.dll.config`, `appsettings.json`, `App.config`) в пакет не класть.
+  Разница `bf470bd` → `4615c97` — 13 файлов, 3,9 МБ (`publish\patch-bf470bd-4615c97.zip`). На сервере:
+  ```powershell
+  sc.exe stop qd2web-artvis
+  Copy-Item -Recurse C:\qd2web\artvis C:\qd2web\artvis-prev-<дата>   # откат — вернуть папку
+  Expand-Archive patch-<старый>-<новый>.zip C:\qd2web\artvis -Force
+  sc.exe start qd2web-artvis
+  ```
+  Следующий пакет считать от сборки, которая реально стоит на сервере (столбец «Сборка» в таблице выше).
+- **Первое обновление с журналом роликов (2026-10-02):** конфиг берётся от прошлой версии, поэтому один раз
+  дописать в `FogSoft.Web.dll.config` ключ `RollerFolder` и выдать службе права на папку роликов (оба — п. 2
+  и п. 4 первой установки). Без ключа журнал работает, но в карточке ролика нельзя выбрать или загрузить файл;
+  без прав — не играет и не сохраняет файлы. На `Artvis` учётка службы — `NT SERVICE\qd2web-artvis`:
+  `icacls C:\FTP\Repository /grant "NT SERVICE\qd2web-artvis:(OI)(CI)M"`.
 
 ## 5. Что сознательно не сделано
 

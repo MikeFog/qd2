@@ -43,6 +43,8 @@ builder.Services.AddScoped<PeriodDialog>();
 builder.Services.AddScoped<ProgressDialog>();
 // Сохранение файлов на компьютер пользователя диалогом браузера (выгрузка сеток для эфира).
 builder.Services.AddScoped<FileSaver>();
+// Проигрыватель роликов: один на circuit, зовут журналы и действия строк. См. RollerPlayer.
+builder.Services.AddScoped<RollerPlayback>();
 builder.Services.AddScoped<ObjectActions>();
 builder.Services.AddScoped<ActionMenuService>();
 // Курсор ожидания на время долгой загрузки — тоже свой на circuit.

@@ -7,6 +7,8 @@
   <ItemGroup>
     <!-- На проде веб работает службой Windows: Deploy/web-deploy.md -->
     <PackageReference Include="Microsoft.Extensions.Hosting.WindowsServices" Version="10.0.0" />
+    <!-- Продолжительность файла ролика (RollerFiles.DurationSeconds) — та же версия, что у десктопа -->
+    <PackageReference Include="NAudio.Core" Version="2.2.1" />
   </ItemGroup>
 
   <PropertyGroup>

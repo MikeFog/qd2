@@ -56,6 +56,10 @@ declare
 	@isTrafficManager bit,
 	@newRollerActionTypeID int
 
+-- Длительности - из базы, а не от клиента (как и в IssueIUD): присланные могли устареть
+select @oldDuration = duration From Roller where rollerID = @oldRollerID
+select @newDuration = duration From Roller where rollerID = @newRollerID
+
 set @diffDuration = @newDuration - @oldDuration
 select @isConfirmed = a.isConfirmed From Action a Inner Join Campaign c On a.actionID = c.actionID Where c.campaignID = @campaignID
 select @newRollerActionTypeID = rolActionTypeID From Roller where rollerID = @newRollerID
@@ -160,6 +164,12 @@ begin
 				RAISERROR('RolType7AlreadyExistInWindow', 16, 1)
 			RETURN 1
 		End
+
+	-- Локальное промо (8/9) не позиционируется: выпуск с позицией на промо не меняем
+	If @newRollerActionTypeID In (8, 9) And IsNull(@position, 0) <> 0
+	begin
+		select @msgError = 'PromoPositionForbidden'
+	end
 
 	If @isAdmin = 0 And	@isConfirmed = 1 And @isTrafficManager = 0 And @date <= IsNull(@deadLine, Convert(datetime, '19000101',112))
 	begin

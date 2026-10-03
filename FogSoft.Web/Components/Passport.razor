@@ -63,7 +63,11 @@ else
             </label>
 
             <div class="passport-control @(wide ? "passport-control-wide" : "")">
-                @if (field.Unsupported != null)
+                @if (CustomControl?.Invoke(field.Name, StateHasChanged) is { } custom)
+                {
+                    @custom
+                }
+                else if (field.Unsupported != null)
                 {
                     <div class="alert alert-secondary mb-0">
                         @Tr.T("Контрол") <code>@field.Unsupported</code> @Tr.T("пока не поддержан (этап 2).")
@@ -299,6 +303,12 @@ else
     /// null — доступно всё.
     /// </summary>
     [Parameter] public Func<string, bool>? FieldDisabled { get; set; }
+
+    /// <summary>
+    /// Свой контрол вместо поля по имени — см. PassportRules.Control (кнопка «Загрузить с
+    /// диска» у ролика). Второй аргумент перерисовывает карточку. null — свой контрол не нужен.
+    /// </summary>
+    [Parameter] public Func<string, Action, RenderFragment?>? CustomControl { get; set; }
 
     private bool IsDisabled(PassportField field) =>
         field.Locked || (FieldDisabled != null && field.Name.Length > 0 && FieldDisabled(field.Name));
