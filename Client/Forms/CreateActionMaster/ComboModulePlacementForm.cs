@@ -26,10 +26,15 @@ namespace Merlin.Forms.CreateActionMaster
 	{
 		private const string SETTING_PERIOD_MODE = "ComboModulePlacementPeriodMode";
 
+		// колонки Campaigns, по которым подписывается строка грида
+		private const string COLUMN_PAYMENT_TYPE_NAME = "paymentTypeName";
+		private const string COLUMN_AGENCY_NAME = "agencyName";
+
 		private readonly Firm _firm;
 		private readonly int _comboModuleID;
 		private readonly string _comboModuleName;
 		private readonly int _paymentTypeID;
+		private readonly string _paymentTypeName;
 		private readonly Dictionary<int, int> _agencyByMassmedia;
 
 		/// <summary>
@@ -48,9 +53,9 @@ namespace Merlin.Forms.CreateActionMaster
 		private readonly bool _reconstructFromComboModule;
 
 		/// <summary>
-		/// Радиостанции кампаний, созданных в этой сессии (режим комбо-модуля на готовой
-		/// акции). Только их можно молча удалить, если остались без выпусков: ранее
-		/// существовавшие кампании акции трогать нельзя - их мог наполнять кто-то ещё.
+		/// Кампании (campaignID), созданные в этой сессии. Только их можно молча удалить, если
+		/// остались без выпусков: ранее существовавшие кампании акции трогать нельзя - их мог
+		/// наполнять кто-то ещё.
 		/// </summary>
 		private readonly HashSet<int> _campaignsCreatedThisSession = new HashSet<int>();
 
@@ -74,13 +79,20 @@ namespace Merlin.Forms.CreateActionMaster
 		/// </summary>
 		private Dictionary<string, object> _actionDraft;
 
-		private readonly Dictionary<int, Campaign> _campaignByMassmedia = new Dictionary<int, Campaign>();
+		/// <summary>Объекты модульных кампаний акции, к которым уже обращались, - по campaignID.</summary>
+		private readonly Dictionary<int, Campaign> _campaigns = new Dictionary<int, Campaign>();
 
-		/// <summary>Модульные кампании готовой акции подгружены в _campaignByMassmedia (один раз).</summary>
-		private bool _existingModuleCampaignsLoaded;
+		/// <summary>
+		/// Модульные кампании акции (строки Campaigns: станция, тип оплаты, агентство и их
+		/// названия). null - перечитать: сбрасывается, когда форма создаёт или удаляет кампанию.
+		/// </summary>
+		private DataTable _moduleCampaigns;
 
 		/// <summary>Выпуски акции, показанные в панели, - из них же берём удаляемые по Del.</summary>
 		private DataTable _issues;
+
+		/// <summary>Выпуски, прочитанные при построении строк грида, - их же раздаёт OnGridRefreshed.</summary>
+		private DataTable _issuesForGrid;
 
 		/// <summary>
 		/// Выпуски, добавленные последним действием (клик по ячейке или Insert по выделению) -
@@ -134,6 +146,7 @@ namespace Merlin.Forms.CreateActionMaster
 			_comboModuleID = step.ComboModuleID;
 			_comboModuleName = step.ComboModuleName;
 			_paymentTypeID = step.PaymentTypeID;
+			_paymentTypeName = step.PaymentTypeName;
 			_agencyByMassmedia = step.AgencyByMassmedia;
 		}
 
@@ -164,6 +177,7 @@ namespace Merlin.Forms.CreateActionMaster
 			_comboModuleID = step.ComboModuleID;
 			_comboModuleName = step.ComboModuleName;
 			_paymentTypeID = step.PaymentTypeID;
+			_paymentTypeName = step.PaymentTypeName;
 			_agencyByMassmedia = step.AgencyByMassmedia;
 			_isExistingAction = true;
 			_reconstructFromComboModule = true;
@@ -216,6 +230,7 @@ namespace Merlin.Forms.CreateActionMaster
 		private void InitComboModuleGrid()
 		{
 			comboModuleGrid.ComboModuleID = _comboModuleID;
+			comboModuleGrid.RowsProvider = BuildGridRows;
 			if (_action != null)
 			{
 				comboModuleGrid.ActionID = _action.ActionId;
@@ -277,12 +292,162 @@ namespace Merlin.Forms.CreateActionMaster
 				if (_comboModuleModuleIDs == null)
 				{
 					_comboModuleModuleIDs = new HashSet<int>();
-					foreach (DataRow row in ComboModule.LoadContent(_comboModuleID).Rows)
+					foreach (DataRow row in ComboModuleContent.Rows)
 						_comboModuleModuleIDs.Add(Convert.ToInt32(row[ComboModule.ParamNames.ModuleId]));
 				}
 				return _comboModuleModuleIDs;
 			}
 		}
+
+		/// <summary>Состав комбо-модуля (модули и их станции) - читается один раз.</summary>
+		private DataTable ComboModuleContent
+		{
+			get
+			{
+				if (_comboModuleContent == null)
+					_comboModuleContent = ComboModule.LoadContent(_comboModuleID);
+				return _comboModuleContent;
+			}
+		}
+		private DataTable _comboModuleContent;
+
+		#region Строки грида: модуль в разрезе кампаний (Д-7) --
+
+		/// <summary>
+		/// Строки грида - модуль в разрезе модульных кампаний акции: у станции их может быть
+		/// несколько (UIX_Campaign различает тип оплаты и агентство), у каждой своя строка, и
+		/// клик или перенос попадает в кампанию строки.
+		/// - кампании, где модуль уже стоит, - из выпусков акции (оба режима карточки);
+		/// - с комбо-модулем (мастер или ответ «Да») - ещё строка каждого модуля с типом оплаты
+		///   и агентством из шага, если её нет среди уже размещённых; кампании под неё может
+		///   ещё не быть - она создаётся по первому клику.
+		/// Прочитанные здесь выпуски раздаёт OnGridRefreshed - второй раз не читаем.
+		/// </summary>
+		private DataTable BuildGridRows()
+		{
+			DataTable issues;
+			if (_issuesForFirstRefresh != null)
+			{
+				issues = _issuesForFirstRefresh;
+				_issuesForFirstRefresh = null;
+			}
+			else
+				issues = _action == null ? null : LoadActionModuleIssues();
+			_issuesForGrid = issues;
+
+			DataTable rows = new DataTable();
+			rows.Columns.Add(ComboModuleGrid.RowColumns.ModuleId, typeof(int));
+			rows.Columns.Add(ComboModuleGrid.RowColumns.ModuleName, typeof(string));
+			rows.Columns.Add(ComboModuleGrid.RowColumns.MassmediaId, typeof(int));
+			rows.Columns.Add(ComboModuleGrid.RowColumns.MassmediaName, typeof(string));
+			rows.Columns.Add(ComboModuleGrid.RowColumns.CampaignId, typeof(int));
+			rows.Columns.Add(ComboModuleGrid.RowColumns.PaymentTypeId, typeof(int));
+			rows.Columns.Add(ComboModuleGrid.RowColumns.AgencyId, typeof(int));
+			rows.Columns.Add(ComboModuleGrid.RowColumns.PaymentTypeName, typeof(string));
+			rows.Columns.Add(COLUMN_AGENCY_NAME, typeof(string));   // для подписи, если тип оплаты совпал
+
+			DataTable campaigns = ModuleCampaigns;
+			HashSet<string> added = new HashSet<string>();
+
+			if (issues != null)
+				foreach (DataRow issue in issues.Rows)
+				{
+					int moduleID = Convert.ToInt32(issue[ComboModule.ParamNames.ModuleId]);
+					int campaignID = Convert.ToInt32(issue[Campaign.ParamNames.CampaignId]);
+					if (!added.Add(moduleID + "|" + campaignID)) continue;
+
+					DataRow campaign = FindCampaignRow(campaigns, campaignID);
+					if (campaign == null) continue;
+
+					rows.Rows.Add(moduleID, issue[ComboModule.ParamNames.ModuleName],
+						issue[ComboModule.ParamNames.MassmediaId], issue[Campaign.ParamNames.MassmediaName],
+						campaignID, campaign[Campaign.ParamNames.PaymentTypeID], campaign[Campaign.ParamNames.AgencyID],
+						campaign[COLUMN_PAYMENT_TYPE_NAME], campaign[COLUMN_AGENCY_NAME]);
+				}
+
+			if (_comboModuleID > 0)
+				foreach (DataRow module in ComboModuleContent.Rows)
+				{
+					int moduleID = Convert.ToInt32(module[ComboModule.ParamNames.ModuleId]);
+					int massmediaID = Convert.ToInt32(module[ComboModule.ParamNames.MassmediaId]);
+					int agencyID;
+					_agencyByMassmedia.TryGetValue(massmediaID, out agencyID);
+
+					DataRow campaign = FindModuleCampaignRow(campaigns, massmediaID, _paymentTypeID, agencyID);
+					object campaignID = campaign == null ? (object) DBNull.Value : campaign[Campaign.ParamNames.CampaignId];
+					if (campaign != null && added.Contains(moduleID + "|" + campaignID)) continue;
+
+					rows.Rows.Add(moduleID, module[ComboModule.ParamNames.ModuleName], massmediaID,
+						module[ComboModule.ParamNames.MassmediaName], campaignID, _paymentTypeID, agencyID,
+						_paymentTypeName, campaign == null ? DBNull.Value : campaign[COLUMN_AGENCY_NAME]);
+				}
+
+			// один и тот же тип оплаты у двух строк модуля (кампании различаются агентством) -
+			// подписываем агентство, иначе строки не отличить
+			foreach (DataRow row in rows.Rows)
+				if (rows.Select(string.Format("{0} = {1} AND {2} = '{3}'",
+						ComboModuleGrid.RowColumns.ModuleId, row[ComboModuleGrid.RowColumns.ModuleId],
+						ComboModuleGrid.RowColumns.PaymentTypeName,
+						row[ComboModuleGrid.RowColumns.PaymentTypeName].ToString().Replace("'", "''"))).Length > 1)
+				{
+					if (row[COLUMN_AGENCY_NAME] == DBNull.Value)   // кампании ещё нет - имя агентства читаем только здесь
+						row[COLUMN_AGENCY_NAME] = GetAgencyName(Convert.ToInt32(row[ComboModuleGrid.RowColumns.AgencyId]));
+					row[ComboModuleGrid.RowColumns.PaymentTypeName] += ", " + row[COLUMN_AGENCY_NAME];
+				}
+
+			rows.DefaultView.Sort = string.Format("{0}, {1}, {2}", ComboModuleGrid.RowColumns.MassmediaName,
+				ComboModuleGrid.RowColumns.ModuleName, ComboModuleGrid.RowColumns.PaymentTypeName);
+			return rows.DefaultView.ToTable();
+		}
+
+		/// <summary>
+		/// Модульные кампании акции - строки Campaigns (станция, тип оплаты, агентство, их
+		/// названия). Пока акции в базе нет - null; кэш сбрасывается
+		/// (<see cref="_moduleCampaigns"/> = null), когда форма создаёт или удаляет кампанию.
+		/// </summary>
+		private DataTable ModuleCampaigns
+		{
+			get
+			{
+				if (_action == null || _action.IsNew)
+					return null;
+
+				if (_moduleCampaigns == null)
+				{
+					DataTable all = _action.Campaigns(true);
+					_moduleCampaigns = all.Clone();
+					foreach (DataRow row in all.Rows)
+						if (ParseHelper.GetInt32FromObject(row[Campaign.ParamNames.CampaignTypeId], 0)
+							== (int) Campaign.CampaignTypes.Module)
+							_moduleCampaigns.ImportRow(row);
+				}
+				return _moduleCampaigns;
+			}
+		}
+
+		private static DataRow FindCampaignRow(DataTable campaigns, int campaignID)
+		{
+			if (campaigns == null) return null;
+			DataRow[] found = campaigns.Select(string.Format("{0} = {1}", Campaign.ParamNames.CampaignId, campaignID));
+			return found.Length > 0 ? found[0] : null;
+		}
+
+		private static DataRow FindModuleCampaignRow(DataTable campaigns, int massmediaID, int paymentTypeID, int agencyID)
+		{
+			if (campaigns == null) return null;
+			DataRow[] found = campaigns.Select(string.Format("{0} = {1} AND {2} = {3} AND {4} = {5}",
+				Campaign.ParamNames.MassmediaId, massmediaID,
+				Campaign.ParamNames.PaymentTypeID, paymentTypeID,
+				Campaign.ParamNames.AgencyID, agencyID));
+			return found.Length > 0 ? found[0] : null;
+		}
+
+		private static string GetAgencyName(int agencyID)
+		{
+			return agencyID == 0 ? string.Empty : Agency.GetAgencyByID(agencyID).Name;
+		}
+
+		#endregion
 
 		#region Добавление выпуска ----------------------------
 
@@ -323,12 +488,13 @@ namespace Merlin.Forms.CreateActionMaster
 		{
 			bool actionCreated = false;
 			bool campaignCreated = false;
+			Campaign campaign = null;
 
 			DataAccessor.BeginTransaction();
 			try
 			{
 				actionCreated = EnsureAction();
-				Campaign campaign = EnsureCampaign(day.MassmediaID, out campaignCreated);
+				campaign = EnsureCampaign(day, out campaignCreated);
 
 				ModuleIssue issue = campaign.AddModuleIssue(
 					GetModule(day), roller, GetModulePricelist(day), day.Date, _position, null);
@@ -357,14 +523,15 @@ namespace Merlin.Forms.CreateActionMaster
 					}
 					else
 						_action = null;
-					_campaignByMassmedia.Clear();
+					_campaigns.Clear();
 					_campaignsCreatedThisSession.Clear();
 				}
 				else if (campaignCreated)
 				{
-					_campaignByMassmedia.Remove(day.MassmediaID);
-					_campaignsCreatedThisSession.Remove(day.MassmediaID);
+					_campaigns.Remove(campaign.CampaignId);
+					_campaignsCreatedThisSession.Remove(campaign.CampaignId);
 				}
+				_moduleCampaigns = null;
 
 				throw;
 			}
@@ -389,16 +556,24 @@ namespace Merlin.Forms.CreateActionMaster
 			return true;
 		}
 
-		/// <summary>Создаёт модульную кампанию на радиостанции модуля, если её ещё нет.</summary>
-		private Campaign EnsureCampaign(int massmediaID, out bool created)
+		/// <summary>
+		/// Кампания строки грида. У строки комбо-модуля с типом оплаты из шага кампании может
+		/// ещё не быть (или она появилась после построения грида) - тогда ищем по станции, типу
+		/// оплаты и агентству строки, а не найдя, создаём.
+		/// </summary>
+		private Campaign EnsureCampaign(ComboModuleDay day, out bool created)
 		{
 			created = false;
 
-			LoadExistingModuleCampaigns();
-
-			Campaign campaign;
-			if (_campaignByMassmedia.TryGetValue(massmediaID, out campaign))
-				return campaign;
+			int? campaignID = day.CampaignID;
+			if (!campaignID.HasValue)
+			{
+				DataRow existing = FindModuleCampaignRow(ModuleCampaigns, day.MassmediaID, day.PaymentTypeID, day.AgencyID);
+				if (existing != null)
+					campaignID = Convert.ToInt32(existing[Campaign.ParamNames.CampaignId]);
+			}
+			if (campaignID.HasValue)
+				return GetCampaign(campaignID.Value);
 
 			// правка готовой акции «как есть» - кампании не создаём (их состав не наш);
 			// в режиме комбо-модуля недостающую кампанию, наоборот, достраиваем
@@ -406,55 +581,36 @@ namespace Merlin.Forms.CreateActionMaster
 				throw new InvalidOperationException(
 					"В акции нет модульной кампании на этой радиостанции - выпуск добавить некуда.");
 
-			int agencyID;
-			if (!_agencyByMassmedia.TryGetValue(massmediaID, out agencyID))
+			if (day.AgencyID == 0)
 				throw new InvalidOperationException("Для радиостанции модуля не выбрано агентство.");
 
 			// Именно ModuleCampaign, а не общая CampaignOnMassmedia: процедуры CampaignIUD
 			// привязаны к сущностям конкретных типов кампаний (91 линейная, 92 модульная,
 			// 93 спонсорская, 171 пакетная) - так же выбирает сущность Campaign.SelectEntity.
-			campaign = new Campaign(EntityManager.GetEntity((int) Entities.ModuleCampaign));
+			Campaign campaign = new Campaign(EntityManager.GetEntity((int) Entities.ModuleCampaign));
 			campaign.Action = _action;
 			campaign[Campaign.ParamNames.CampaignTypeId] = (int) Campaign.CampaignTypes.Module;
-			campaign[Campaign.ParamNames.MassmediaId] = massmediaID;
-			campaign[Campaign.ParamNames.PaymentTypeID] = _paymentTypeID;
-			campaign[Campaign.ParamNames.AgencyID] = agencyID;
+			campaign[Campaign.ParamNames.MassmediaId] = day.MassmediaID;
+			campaign[Campaign.ParamNames.PaymentTypeID] = day.PaymentTypeID;
+			campaign[Campaign.ParamNames.AgencyID] = day.AgencyID;
 			campaign.Update();
 
-			_campaignByMassmedia[massmediaID] = campaign;
-			_campaignsCreatedThisSession.Add(massmediaID);
+			_campaigns[campaign.CampaignId] = campaign;
+			_campaignsCreatedThisSession.Add(campaign.CampaignId);
+			_moduleCampaigns = null;
 			created = true;
 			return campaign;
 		}
 
-		/// <summary>
-		/// Подтягивает уже существующие модульные кампании акции в _campaignByMassmedia.
-		/// RememberCampaigns находит кампанию только по её выпускам, поэтому пустую
-		/// модульную кампанию (заведённую в карточке акции, но ещё без выпусков) не видит -
-		/// и EnsureCampaign пытается создать дубль, упираясь в уникальный индекс
-		/// (campaignTypeID + paymentTypeID + massmediaID). Не помечаем их как созданные
-		/// в этой сессии - удалять пустыми их нельзя.
-		/// </summary>
-		private void LoadExistingModuleCampaigns()
+		private Campaign GetCampaign(int campaignID)
 		{
-			if (_existingModuleCampaignsLoaded) return;
-			_existingModuleCampaignsLoaded = true;
-
-			if (_action == null || _action.IsNew) return;
-
-			foreach (DataRow row in _action.Campaigns(true).Rows)
+			Campaign campaign;
+			if (!_campaigns.TryGetValue(campaignID, out campaign))
 			{
-				if (ParseHelper.GetInt32FromObject(row[Campaign.ParamNames.CampaignTypeId], 0)
-					!= (int) Campaign.CampaignTypes.Module)
-					continue;
-
-				int massmediaID = ParseHelper.GetInt32FromObject(row[Campaign.ParamNames.MassmediaId], 0);
-				if (massmediaID == 0 || _campaignByMassmedia.ContainsKey(massmediaID))
-					continue;
-
-				_campaignByMassmedia[massmediaID] =
-					new Campaign(ParseHelper.GetInt32FromObject(row[Campaign.ParamNames.CampaignId], 0));
+				campaign = new Campaign(campaignID);
+				_campaigns[campaignID] = campaign;
 			}
+			return campaign;
 		}
 
 		// Модуль и прайс-лист собираем из данных ячейки: ModuleIssue берёт у них только
@@ -754,7 +910,8 @@ namespace Merlin.Forms.CreateActionMaster
 		{
 			HashSet<string> selected = new HashSet<string>();
 			foreach (ComboModuleDay day in days)
-				selected.Add(MakeDayKey(day.ModuleID, day.Date));
+				if (day.CampaignID.HasValue)   // у строки без кампании выпусков нет
+					selected.Add(MakeDayKey(day.ModuleID, day.CampaignID.Value, day.Date));
 
 			Entity issueEntity = ModuleIssue.GetEntity();
 			List<PresentationObject> issues = new List<PresentationObject>();
@@ -762,6 +919,7 @@ namespace Merlin.Forms.CreateActionMaster
 			{
 				string key = MakeDayKey(
 					Convert.ToInt32(row[ComboModule.ParamNames.ModuleId]),
+					Convert.ToInt32(row[Campaign.ParamNames.CampaignId]),
 					Convert.ToDateTime(row[ComboModule.ParamNames.IssueDate]));
 
 				if (selected.Contains(key))
@@ -770,9 +928,9 @@ namespace Merlin.Forms.CreateActionMaster
 			return issues;
 		}
 
-		private static string MakeDayKey(int moduleID, DateTime date)
+		private static string MakeDayKey(int moduleID, int campaignID, DateTime date)
 		{
-			return string.Format("{0}|{1:yyyyMMdd}", moduleID, date.Date);
+			return string.Format("{0}|{1}|{2:yyyyMMdd}", moduleID, campaignID, date.Date);
 		}
 
 
@@ -834,24 +992,22 @@ namespace Merlin.Forms.CreateActionMaster
 			DataAccessor.BeginTransaction();
 			try
 			{
-				foreach (KeyValuePair<int, Campaign> pair in new List<KeyValuePair<int, Campaign>>(_campaignByMassmedia))
+				// трогаем только кампании, созданные в этой сессии: ранее существовавшие мог
+				// наполнять кто-то ещё (в мастере других кампаний у акции и нет)
+				foreach (int campaignID in new List<int>(_campaignsCreatedThisSession))
 				{
-					// в готовой акции трогаем только кампании, созданные в этой сессии:
-					// ранее существовавшие мог наполнять кто-то ещё
-					if (_reconstructFromComboModule && !_campaignsCreatedThisSession.Contains(pair.Key))
-						continue;
-
 					if (issues.Select(string.Format("{0} = {1}",
-							Campaign.ParamNames.CampaignId, pair.Value.CampaignId)).Length > 0)
+							Campaign.ParamNames.CampaignId, campaignID)).Length > 0)
 						continue;
 
-					pair.Value.Delete(true);
-					_campaignByMassmedia.Remove(pair.Key);
-					_campaignsCreatedThisSession.Remove(pair.Key);
+					GetCampaign(campaignID).Delete(true);
+					_campaigns.Remove(campaignID);
+					_campaignsCreatedThisSession.Remove(campaignID);
+					_moduleCampaigns = null;
 				}
 
 				// саму акцию удаляем только если это мы её завели (мастер), а не открыли готовую
-				if (!_isExistingAction && _campaignByMassmedia.Count == 0)
+				if (!_isExistingAction && _campaignsCreatedThisSession.Count == 0)
 				{
 					_action.Delete(true);
 					_action = null;
@@ -871,19 +1027,21 @@ namespace Merlin.Forms.CreateActionMaster
 		#region Drag-and-drop переноса выпуска между ячейками -
 
 		/// <summary>
-		/// Груз переноса: модуль и день ячейки-источника + строки выпусков акции из неё.
+		/// Груз переноса: модуль, кампания и день ячейки-источника + строки выпусков акции из неё.
 		/// Единый тип для обоих источников drag - строки панели «Добавленные выпуски»
 		/// (один выпуск) и синей ячейки грида (все выпуски акции в этой ячейке).
 		/// </summary>
 		private class IssueDragPayload
 		{
 			public readonly int SourceModuleID;
+			public readonly int SourceCampaignID;
 			public readonly DateTime SourceDate;
 			public readonly List<DataRow> IssueRows;
 
-			public IssueDragPayload(int sourceModuleID, DateTime sourceDate, List<DataRow> issueRows)
+			public IssueDragPayload(int sourceModuleID, int sourceCampaignID, DateTime sourceDate, List<DataRow> issueRows)
 			{
 				SourceModuleID = sourceModuleID;
+				SourceCampaignID = sourceCampaignID;
 				SourceDate = sourceDate;
 				IssueRows = issueRows;
 			}
@@ -939,6 +1097,7 @@ namespace Merlin.Forms.CreateActionMaster
 
 			IssueDragPayload payload = new IssueDragPayload(
 				Convert.ToInt32(row[ComboModule.ParamNames.ModuleId]),
+				Convert.ToInt32(row[Campaign.ParamNames.CampaignId]),
 				Convert.ToDateTime(row[ComboModule.ParamNames.IssueDate]).Date,
 				new List<DataRow> { row });
 			grdAddedIssues.InternalGrid.DoDragDrop(payload, DragDropEffects.Move);
@@ -973,7 +1132,7 @@ namespace Merlin.Forms.CreateActionMaster
 			List<DataRow> rows = GetIssueRowsInDay(day);
 			if (rows.Count == 0) return;
 
-			IssueDragPayload payload = new IssueDragPayload(day.ModuleID, day.Date.Date, rows);
+			IssueDragPayload payload = new IssueDragPayload(day.ModuleID, day.CampaignID.Value, day.Date.Date, rows);
 			((DataGridView) sender).DoDragDrop(payload, DragDropEffects.Move);
 		}
 
@@ -984,15 +1143,16 @@ namespace Merlin.Forms.CreateActionMaster
 				|| Math.Abs(e.Y - _dragStartPoint.Y) > dragSize.Height;
 		}
 
-		/// <summary>Строки панели с выпусками акции в этой ячейке (тот же модуль и день).</summary>
+		/// <summary>Строки панели с выпусками акции в этой ячейке (тот же модуль, кампания и день).</summary>
 		private List<DataRow> GetIssueRowsInDay(ComboModuleDay day)
 		{
 			List<DataRow> rows = new List<DataRow>();
-			if (_issues == null) return rows;
+			if (_issues == null || !day.CampaignID.HasValue) return rows;
 
 			foreach (DataRow row in _issues.Rows)
 			{
 				if (Convert.ToInt32(row[ComboModule.ParamNames.ModuleId]) != day.ModuleID) continue;
+				if (Convert.ToInt32(row[Campaign.ParamNames.CampaignId]) != day.CampaignID.Value) continue;
 				if (Convert.ToDateTime(row[ComboModule.ParamNames.IssueDate]).Date != day.Date.Date) continue;
 				rows.Add(row);
 			}
@@ -1026,8 +1186,8 @@ namespace Merlin.Forms.CreateActionMaster
 				ComboModuleDay target = ResolveDropTarget(payload, e);
 				if (target == null) return;
 
-				string where = string.Format("модуль «{0}» ({1}), {2:dd.MM.yyyy}",
-					target.ModuleName, target.MassmediaName, target.Date);
+				string where = string.Format("модуль «{0}» ({1}, {2}), {3:dd.MM.yyyy}",
+					target.ModuleName, target.MassmediaName, target.PaymentTypeName, target.Date);
 				string question = payload.IssueRows.Count == 1
 					? string.Format("Перенести выпуск в {0}?", where)
 					: string.Format("Перенести выпуски ({0} шт.) в {1}?", payload.IssueRows.Count, where);
@@ -1061,8 +1221,9 @@ namespace Merlin.Forms.CreateActionMaster
 			ComboModuleDay target = comboModuleGrid.GetDayAt(hit.RowIndex, hit.ColumnIndex);
 			if (target == null) return null;
 
-			// та же ячейка (тот же модуль и день) - переносить некуда
-			if (target.ModuleID == payload.SourceModuleID && target.Date.Date == payload.SourceDate.Date)
+			// та же ячейка (тот же модуль, кампания и день) - переносить некуда
+			if (target.ModuleID == payload.SourceModuleID && target.CampaignID == payload.SourceCampaignID
+				&& target.Date.Date == payload.SourceDate.Date)
 				return null;
 
 			return target;
@@ -1097,9 +1258,11 @@ namespace Merlin.Forms.CreateActionMaster
 					if (!issueEntity.CreateObject(row).Delete(true))
 						throw new InvalidOperationException("Не удалось удалить выпуск из исходной ячейки.");
 
+					// в кампанию строки, куда отпустили (Д-7): между строками одного модуля
+					// выпуск меняет кампанию - это видно по колонке «Тип оплаты»
 					bool campaignCreated;
-					Campaign campaign = EnsureCampaign(target.MassmediaID, out campaignCreated);
-					if (campaignCreated) campaignsCreated.Add(target.MassmediaID);
+					Campaign campaign = EnsureCampaign(target, out campaignCreated);
+					if (campaignCreated) campaignsCreated.Add(campaign.CampaignId);
 
 					ModuleIssue moved = campaign.AddModuleIssue(
 						GetModule(target), roller, GetModulePricelist(target), target.Date, position, null);
@@ -1117,11 +1280,12 @@ namespace Merlin.Forms.CreateActionMaster
 				DataAccessor.RollbackTransaction();
 
 				// кампании, заведённые в откаченной транзакции, в базе не остались - забываем и в памяти
-				foreach (int massmediaID in campaignsCreated)
+				foreach (int campaignID in campaignsCreated)
 				{
-					_campaignByMassmedia.Remove(massmediaID);
-					_campaignsCreatedThisSession.Remove(massmediaID);
+					_campaigns.Remove(campaignID);
+					_campaignsCreatedThisSession.Remove(campaignID);
 				}
+				_moduleCampaigns = null;
 				throw;
 			}
 
@@ -1146,40 +1310,13 @@ namespace Merlin.Forms.CreateActionMaster
 		/// </summary>
 		private void OnGridRefreshed()
 		{
-			DataTable issues;
-			if (_issuesForFirstRefresh != null)
-			{
-				issues = _issuesForFirstRefresh;
-				_issuesForFirstRefresh = null;
-			}
-			else
-				issues = _action == null ? null : LoadActionModuleIssues();
-
+			// выпуски прочитаны при построении строк грида (BuildGridRows)
+			DataTable issues = _issuesForGrid;
 			_issues = issues;
 
-			RememberCampaigns(issues);
 			comboModuleGrid.MarkIssues(issues);
 			ShowIssuesCount(issues);
 			ShowAddedIssues(issues);
-		}
-
-		/// <summary>
-		/// Кампании готовой акции запоминаем из её выпусков: там есть и радиостанция, и
-		/// кампания. Так при редактировании выпуск ложится в существующую кампанию, а не
-		/// создаёт новую.
-		/// </summary>
-		private void RememberCampaigns(DataTable issues)
-		{
-			if (issues == null) return;
-
-			foreach (DataRow row in issues.Rows)
-			{
-				int massmediaID = Convert.ToInt32(row[ComboModule.ParamNames.MassmediaId]);
-				if (_campaignByMassmedia.ContainsKey(massmediaID)) continue;
-
-				_campaignByMassmedia[massmediaID] =
-					new Campaign(Convert.ToInt32(row[Campaign.ParamNames.CampaignId]));
-			}
 		}
 
 		private void ShowAddedIssues(DataTable issues)

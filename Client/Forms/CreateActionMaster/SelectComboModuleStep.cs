@@ -20,6 +20,7 @@ namespace Merlin.Forms.CreateActionMaster
 	public partial class SelectComboModuleStep : Form
 	{
 		private readonly Dictionary<int, int> _agencyByMassmedia = new Dictionary<int, int>();
+		private DataTable _paymentTypes;
 
 		public SelectComboModuleStep()
 		{
@@ -33,6 +34,9 @@ namespace Merlin.Forms.CreateActionMaster
 		public string ComboModuleName { get; private set; }
 
 		public int PaymentTypeID { get; private set; }
+
+		/// <summary>Название выбранного типа оплаты - колонка «Тип оплаты» формы размещения.</summary>
+		public string PaymentTypeName { get; private set; }
 
 		/// <summary>Агентство для каждой радиостанции комбо-модуля.</summary>
 		public Dictionary<int, int> AgencyByMassmedia
@@ -60,10 +64,10 @@ namespace Merlin.Forms.CreateActionMaster
 		{
 			Dictionary<string, object> procParameters = DataAccessor.CreateParametersDictionary();
 			procParameters["ShowActive"] = true;
-			DataTable paymentTypes = DataAccessor.LoadDataSet("PaymentTypesLoad", procParameters).Tables[0];
+			_paymentTypes = DataAccessor.LoadDataSet("PaymentTypesLoad", procParameters).Tables[0];
 
 			lookUpPaymentType.ColumnWithID = Campaign.ParamNames.PaymentTypeID;
-			lookUpPaymentType.DataSource = paymentTypes.DefaultView;
+			lookUpPaymentType.DataSource = _paymentTypes.DefaultView;
 		}
 
 		private void DisplayComboModules()
@@ -104,6 +108,8 @@ namespace Merlin.Forms.CreateActionMaster
 				ComboModuleID = int.Parse(comboModule.IDs[0].ToString());
 				ComboModuleName = comboModule.Name;
 				PaymentTypeID = int.Parse(lookUpPaymentType.SelectedValue.ToString());
+				DataRow[] selected = _paymentTypes.Select(Campaign.ParamNames.PaymentTypeID + " = " + PaymentTypeID);
+				PaymentTypeName = selected.Length > 0 ? selected[0]["name"].ToString() : string.Empty;
 			}
 			catch (Exception ex)
 			{

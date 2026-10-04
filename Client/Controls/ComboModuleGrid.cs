@@ -31,6 +31,17 @@ namespace Merlin.Controls
 		/// <summary>Выбранный предмет рекламы (есть/нет) выполняется во всех окнах модуля.</summary>
 		public bool AdvertTypeFree;
 
+		// Строка грида - модуль в конкретной модульной кампании: у станции их может быть
+		// несколько (UIX_Campaign различает тип оплаты и агентство), и клик/перенос должны
+		// попадать именно в кампанию строки (Д-7).
+		/// <summary>Кампания строки; null - кампании с этими типом оплаты и агентством ещё нет
+		/// (строка комбо-модуля с типом оплаты из шага), она создаётся по первому клику.</summary>
+		public int? CampaignID;
+		public int PaymentTypeID;
+		public int AgencyID;
+		/// <summary>Текст колонки «Тип оплаты» строки.</summary>
+		public string PaymentTypeName;
+
 		/// <summary>Текст ячейки - как в обычном гриде: «02:30» либо «02:30 [3/5]».</summary>
 		public string CellText
 		{
@@ -53,8 +64,9 @@ namespace Merlin.Controls
 	}
 
 	/// <summary>
-	/// Грид размещения комбо-модулями: строка - модуль комбо-модуля, колонка - день,
-	/// в ячейке - остаток времени в самом заполненном окне модуля за этот день.
+	/// Грид размещения комбо-модулями: строка - модуль в модульной кампании (тип оплаты -
+	/// отдельной колонкой), колонка - день, в ячейке - остаток времени в самом заполненном
+	/// окне модуля за этот день. Строки строит форма (<see cref="RowsProvider"/>).
 	///
 	/// От TariffGrid отличается тем, что колонок не всегда семь (режим месяца) и строка -
 	/// не тарифное окно, а модуль, поэтому наследоваться от него смысла нет: там и сетка
@@ -64,14 +76,29 @@ namespace Merlin.Controls
 	{
 		#region Constants -------------------------------------
 
-		private const int FIXED_COLS = 2;   // радиостанция, модуль
+		private const int FIXED_COLS = 3;   // радиостанция, модуль, тип оплаты
 		private const int FIXED_ROWS = 2;   // даты, число выпусков
 		private const int ROW_DATE = 0;
 		private const int ROW_ISSUES_COUNT = 1;
 
 		private const string COLUMN_MASSMEDIA = "massmedia";
 		private const string COLUMN_MODULE = "module";
+		private const string COLUMN_PAYMENT = "payment";
 		private const string COLUMN_DAY_PREFIX = "day";
+
+		/// <summary>Колонки таблицы строк, которую отдаёт <see cref="RowsProvider"/>.</summary>
+		public struct RowColumns
+		{
+			// модуль и станция - те же имена, что у ComboModuleContentRetrieve
+			public const string ModuleId = ComboModule.ParamNames.ModuleId;
+			public const string ModuleName = ComboModule.ParamNames.ModuleName;
+			public const string MassmediaId = ComboModule.ParamNames.MassmediaId;
+			public const string MassmediaName = ComboModule.ParamNames.MassmediaName;
+			public const string CampaignId = "campaignID";          // DBNull - кампании ещё нет
+			public const string PaymentTypeId = "paymentTypeID";
+			public const string AgencyId = "agencyID";
+			public const string PaymentTypeName = "paymentTypeName"; // текст колонки «Тип оплаты»
+		}
 
 		#endregion
 
@@ -87,7 +114,8 @@ namespace Merlin.Controls
 		private DataTable _modules;
 		private DataTable _dtGrid;
 		private ComboModuleDay[,] _days;
-		private readonly Dictionary<int, int> _rowByModule = new Dictionary<int, int>();
+		/// <summary>Индекс строки по модулю и кампании (<see cref="MakeRowKey"/>) - для отметки выпусков.</summary>
+		private readonly Dictionary<string, int> _rowByModuleAndCampaign = new Dictionary<string, int>();
 		private bool _editMode;
 		private RollerPositions _rollerPosition = RollerPositions.Undefined;
 		private PresentationObject _advertType;
@@ -146,6 +174,14 @@ namespace Merlin.Controls
 				_modules = null;
 			}
 		}
+
+		/// <summary>
+		/// Строки грида (колонки - <see cref="RowColumns"/>): модули в разрезе модульных кампаний
+		/// акции. Строит форма - ей известны и выпуски акции, и тип оплаты из шага; грид
+		/// вызывает провайдер на каждое обновление. ComboModuleID/ActionID по-прежнему
+		/// задают, по каким модулям считать остаток.
+		/// </summary>
+		public Func<DataTable> RowsProvider { get; set; }
 
 		public ComboModulePeriodMode PeriodMode
 		{
@@ -340,14 +376,11 @@ namespace Merlin.Controls
 
 		#region Построение сетки ------------------------------
 
-		// Список модулей перечитываем на каждое обновление, а не кэшируем: в режиме готовой
-		// акции он выводится из выпусков, и после удаления последнего выпуска модуля строка
-		// должна пропасть. Запрос дешёвый - модулей единицы.
+		// Список строк перечитываем на каждое обновление, а не кэшируем: он выводится из
+		// выпусков акции, и после удаления последнего выпуска строка должна пропасть.
 		private void LoadModules()
 		{
-			_modules = _comboModuleID > 0
-				? ComboModule.LoadContent(_comboModuleID)
-				: ComboModule.LoadActionModules(_actionID);
+			_modules = RowsProvider();
 		}
 
 		private void CreateColumns()
@@ -356,6 +389,7 @@ namespace Merlin.Controls
 
 			AddColumn(COLUMN_MASSMEDIA, "Радиостанция");
 			AddColumn(COLUMN_MODULE, "Модуль");
+			AddColumn(COLUMN_PAYMENT, "Тип оплаты");
 
 			for (int i = 0; i < DayCount; i++)
 			{
@@ -381,6 +415,7 @@ namespace Merlin.Controls
 			_dtGrid = new DataSet().Tables.Add();
 			_dtGrid.Columns.Add(COLUMN_MASSMEDIA);
 			_dtGrid.Columns.Add(COLUMN_MODULE);
+			_dtGrid.Columns.Add(COLUMN_PAYMENT);
 			for (int i = 0; i < DayCount; i++)
 				_dtGrid.Columns.Add(COLUMN_DAY_PREFIX + i);
 
@@ -396,15 +431,19 @@ namespace Merlin.Controls
 				row[FIXED_COLS + i] = 0;
 			_dtGrid.Rows.Add(row);
 
-			_rowByModule.Clear();
+			_rowByModuleAndCampaign.Clear();
 			for (int moduleIndex = 0; moduleIndex < _modules.Rows.Count; moduleIndex++)
 			{
 				DataRow moduleRow = _modules.Rows[moduleIndex];
 				row = _dtGrid.NewRow();
-				row[COLUMN_MASSMEDIA] = moduleRow[ComboModule.ParamNames.MassmediaName];
-				row[COLUMN_MODULE] = moduleRow[ComboModule.ParamNames.ModuleName];
+				row[COLUMN_MASSMEDIA] = moduleRow[RowColumns.MassmediaName];
+				row[COLUMN_MODULE] = moduleRow[RowColumns.ModuleName];
+				row[COLUMN_PAYMENT] = moduleRow[RowColumns.PaymentTypeName];
 				_dtGrid.Rows.Add(row);
-				_rowByModule[Convert.ToInt32(moduleRow[ComboModule.ParamNames.ModuleId])] = moduleIndex;
+
+				int? campaignID = GetNullableInt(moduleRow, RowColumns.CampaignId);
+				if (campaignID.HasValue)
+					_rowByModuleAndCampaign[MakeRowKey(Convert.ToInt32(moduleRow[RowColumns.ModuleId]), campaignID.Value)] = moduleIndex;
 			}
 
 			_days = new ComboModuleDay[_modules.Rows.Count, DayCount];
@@ -424,7 +463,7 @@ namespace Merlin.Controls
 			for (int moduleIndex = 0; moduleIndex < _modules.Rows.Count; moduleIndex++)
 			{
 				DataRow moduleRow = _modules.Rows[moduleIndex];
-				int moduleID = Convert.ToInt32(moduleRow[ComboModule.ParamNames.ModuleId]);
+				int moduleID = Convert.ToInt32(moduleRow[RowColumns.ModuleId]);
 
 				for (int dayIndex = 0; dayIndex < DayCount; dayIndex++)
 				{
@@ -436,9 +475,13 @@ namespace Merlin.Controls
 					ComboModuleDay day = new ComboModuleDay
 					{
 						ModuleID = moduleID,
-						MassmediaID = Convert.ToInt32(moduleRow[ComboModule.ParamNames.MassmediaId]),
-						MassmediaName = moduleRow[ComboModule.ParamNames.MassmediaName].ToString(),
-						ModuleName = moduleRow[ComboModule.ParamNames.ModuleName].ToString(),
+						MassmediaID = Convert.ToInt32(moduleRow[RowColumns.MassmediaId]),
+						MassmediaName = moduleRow[RowColumns.MassmediaName].ToString(),
+						ModuleName = moduleRow[RowColumns.ModuleName].ToString(),
+						CampaignID = GetNullableInt(moduleRow, RowColumns.CampaignId),
+						PaymentTypeID = Convert.ToInt32(moduleRow[RowColumns.PaymentTypeId]),
+						AgencyID = Convert.ToInt32(moduleRow[RowColumns.AgencyId]),
+						PaymentTypeName = moduleRow[RowColumns.PaymentTypeName].ToString(),
 						ModulePriceListID = Convert.ToInt32(row[ComboModule.ParamNames.ModulePriceListId]),
 						Price = Convert.ToDecimal(row[ComboModule.ParamNames.Price]),
 						Date = date,
@@ -463,6 +506,11 @@ namespace Merlin.Controls
 		private static string MakeKey(int moduleID, DateTime date)
 		{
 			return string.Format("{0}|{1:yyyyMMdd}", moduleID, date);
+		}
+
+		private static string MakeRowKey(int moduleID, int campaignID)
+		{
+			return string.Format("{0}|{1}", moduleID, campaignID);
 		}
 
 		private void SetFrozenRowsAndColumns()
@@ -525,7 +573,7 @@ namespace Merlin.Controls
 			bool useAlt = false;
 			for (int moduleIndex = 0; moduleIndex < _modules.Rows.Count; moduleIndex++)
 			{
-				int massmediaID = Convert.ToInt32(_modules.Rows[moduleIndex][ComboModule.ParamNames.MassmediaId]);
+				int massmediaID = Convert.ToInt32(_modules.Rows[moduleIndex][RowColumns.MassmediaId]);
 				if (massmediaID != lastMassmediaID)
 				{
 					useAlt = !useAlt;
@@ -614,8 +662,9 @@ namespace Merlin.Controls
 				foreach (DataRow row in issues.Rows)
 				{
 					int moduleIndex;
-					if (!_rowByModule.TryGetValue(
-							Convert.ToInt32(row[ComboModule.ParamNames.ModuleId]), out moduleIndex))
+					if (!_rowByModuleAndCampaign.TryGetValue(MakeRowKey(
+							Convert.ToInt32(row[ComboModule.ParamNames.ModuleId]),
+							Convert.ToInt32(row[RowColumns.CampaignId])), out moduleIndex))
 						continue;
 
 					int dayIndex = (int)(Convert.ToDateTime(row[ComboModule.ParamNames.IssueDate]).Date - _startDate).TotalDays;
@@ -657,7 +706,7 @@ namespace Merlin.Controls
 					string text = day.CellText;
 					if (_showRollerNumbers)
 					{
-						string numbers = GetRollerNumbersText(day.ModuleID, day.Date);
+						string numbers = GetRollerNumbersText(day);
 						if (numbers != null) text = numbers;
 					}
 
@@ -665,17 +714,18 @@ namespace Merlin.Controls
 				}
 		}
 
-		// Номера роликов акции в этом модуле за этот день (через запятую, в порядке из
-		// таблицы выпусков), или null - выпусков нет / номер ролика не известен.
-		private string GetRollerNumbersText(int moduleID, DateTime date)
+		// Номера роликов акции в этом модуле этой кампании за этот день (через запятую, в
+		// порядке из таблицы выпусков), или null - выпусков нет / номер ролика не известен.
+		private string GetRollerNumbersText(ComboModuleDay day)
 		{
-			if (_markedIssues == null || _rollerNumbers == null) return null;
+			if (_markedIssues == null || _rollerNumbers == null || !day.CampaignID.HasValue) return null;
 
 			List<string> numbers = new List<string>();
 			foreach (DataRow row in _markedIssues.Rows)
 			{
-				if (Convert.ToInt32(row[ComboModule.ParamNames.ModuleId]) != moduleID) continue;
-				if (Convert.ToDateTime(row[ComboModule.ParamNames.IssueDate]).Date != date.Date) continue;
+				if (Convert.ToInt32(row[ComboModule.ParamNames.ModuleId]) != day.ModuleID) continue;
+				if (Convert.ToInt32(row[RowColumns.CampaignId]) != day.CampaignID.Value) continue;
+				if (Convert.ToDateTime(row[ComboModule.ParamNames.IssueDate]).Date != day.Date.Date) continue;
 
 				int rollerId = ParseHelper.GetInt32FromObject(row[Roller.ParamNames.RollerId], 0);
 				if (_rollerNumbers.TryGetValue(rollerId, out int number))

@@ -40,18 +40,6 @@ namespace Merlin.Classes
 		}
 
 		/// <summary>
-		/// Модули, уже размещённые в акции, - строки грида при редактировании готовой акции.
-		/// Модульная кампания без выпусков сюда не попадёт: связи кампании с модулем в схеме
-		/// нет, она выводится через выпуски.
-		/// </summary>
-		public static DataTable LoadActionModules(int actionID)
-		{
-			Dictionary<string, object> procParameters = DataAccessor.CreateParametersDictionary();
-			procParameters[Merlin.Classes.Action.ParamNames.ActionId] = actionID;
-			return DataAccessor.LoadDataSet("ComboModuleActionModulesRetrieve", procParameters).Tables[0];
-		}
-
-		/// <summary>
 		/// Остаток времени по модулям за период: строка на (модуль, день), и только для тех
 		/// дней, когда модуль есть целиком. Дни без строки - пустые ячейки грида.
 		/// </summary>
