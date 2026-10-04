@@ -111,11 +111,11 @@ IF NOT EXISTS (SELECT 1 FROM [dbo].[iEntityAction] WHERE entityID = @entPricelis
 	INSERT INTO [dbo].[iEntityAction]
 		(entityID, alias, name, ordinal_position, isHidden, isGrantingAllowed, imgResourceName, parentID)
 	VALUES
-		(@entPricelist, N'Сменить цену...', 'ChangeTariffPrices', 25, 0, 1, NULL, NULL);
+		(@entPricelist, N'Сменить цену', 'ChangeTariffPrices', 25, 0, 1, NULL, NULL);
 
 UPDATE [dbo].[iEntityAction]
-SET alias = N'Сменить цену...'
-WHERE entityID = @entPricelist AND name = 'ChangeTariffPrices' AND alias <> N'Сменить цену...';
+SET alias = N'Сменить цену'
+WHERE entityID = @entPricelist AND name = 'ChangeTariffPrices' AND alias <> N'Сменить цену';
 
 DECLARE @newActionID SMALLINT =
 	(SELECT entityActionID FROM [dbo].[iEntityAction] WHERE entityID = @entPricelist AND name = 'ChangeTariffPrices');

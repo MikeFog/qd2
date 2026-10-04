@@ -25,7 +25,8 @@ action	Договор	Contrato
 action	Заменить рекламный ролик	Sustituir spot publicitario
 action	Запретить внесение в окна (по шаблону)	Prohibir inclusión en ventanas (por plantilla)
 action	Изменить позиционирование	Modificar posicionamiento
-action	Изменить похожие тарифы...	Modificar tarifas similares...
+action	Изменить похожие тарифы	Modificar tarifas similares
+action	Клонировать массово	Clonar en lote
 action	Изменить предмет рекламы	Modificar rubro publicitario
 action,code	Клонировать	Clonar
 action	Назначить предмет рекламы	Asignar rubro publicitario
@@ -1777,8 +1778,7 @@ code	Выберите агентство и период.	Seleccione la agencia 
 code	За период выполненных работ нет.	No hay trabajos realizados en el período.
 code	Итого	Total
 code	В данной распечатке акта выполненных работ присутствуют выпуски на радиостанциях, которые не были отмечены как обработанные трафик-менеджером.	En esta acta de trabajos realizados hay emisiones en emisoras que el gestor de tráfico no ha marcado como procesadas.
-action	Сменить цену...	Cambiar precio...
-code	Сменить цену	Cambiar precio
+action,code	Сменить цену	Cambiar precio
 code	Тарифов	Tarifas
 code	Из них с окнами	Con ventanas
 code	Новая цена	Precio nuevo

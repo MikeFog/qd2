@@ -32,6 +32,10 @@ namespace Merlin.Classes
 					EditSimilarTariffs(owner);
 					break;
 
+				case ActionNames.CloneMass:
+					CloneTariffsMass(owner);
+					break;
+
 				default:
 					base.DoAction(actionName, owner, interfaceObject);
 					break;
@@ -41,8 +45,10 @@ namespace Merlin.Classes
 		private struct ActionNames
 		{
 			public const string EditSimilar = "EditSimilarTariffs";
+			public const string CloneMass = "CloneTariffsMass";
 		}
 
+		private const string CloneMassPassportName = "TariffMass";
 		private const string EditSimilarPassportName = "TariffMassEdit";
 		private const string MassMinuteParam = "tariffMinute";
 		private const string MassHourFromParam = "hourFrom";
@@ -118,6 +124,74 @@ namespace Merlin.Classes
 				else
 					UserMessage.ShowInformation(string.Format("Изменено тарифов: {0}, создано новых: {1}",
 						changed.Count, added.Count));
+			}
+			catch (Exception ex)
+			{
+				ErrorManager.PublishError(ex);
+			}
+			finally
+			{
+				Cursor.Current = Cursors.Default;
+			}
+		}
+
+		/// <summary>
+		/// «Клонировать массово»: форма «Добавить тариф массово» (паспорт TariffMass),
+		/// предзаполненная значениями этого тарифа; интервал часов по умолчанию 0-23.
+		/// По «ОК» - по тарифу в каждом часе интервала с указанной минутой и значениями
+		/// формы (Tariff.CreateMass, по одному TariffIUD, сбои - журналом).
+		/// </summary>
+		private void CloneTariffsMass(IWin32Window owner)
+		{
+			try
+			{
+				Tariff template = (Tariff)CreateCloneDraft();
+				template[MassMinuteParam] = Time.Minute;
+				template[MassHourFromParam] = 0;
+				template[MassHourToParam] = 23;
+
+				// Данные паспорта (справочник типов блока) - та же процедура, что у обычной карточки тарифа.
+				Dictionary<string, object> procParameters = template.Parameters;
+				DataAccessor.PrepareParameters(procParameters, entity, InterfaceObjects.PropertyPage, Constants.Actions.Load);
+				DataSet ds = DataAccessor.IsProcedureExist(procParameters) ? DataAccessor.DoAction(procParameters) as DataSet : null;
+
+				int created = 0;
+				DataTable tableErrors = null;
+
+				UniversalPassportForm form = new UniversalPassportForm(template, CloneMassPassportName,
+					"Клонировать тариф массово", entity, ds,
+					parameters =>
+					{
+						string error = ValidateMassCreateHours(
+							Convert.ToInt32(parameters[MassHourFromParam]), Convert.ToInt32(parameters[MassHourToParam]));
+						if (error == null) return true;
+
+						UserMessage.ShowExclamation(error);
+						return false;
+					},
+					parameters =>
+					{
+						Application.DoEvents();
+						Cursor.Current = Cursors.WaitCursor;
+						created = CreateMass(parameters,
+							Convert.ToInt32(parameters[MassHourFromParam]),
+							Convert.ToInt32(parameters[MassHourToParam]),
+							Convert.ToInt32(parameters[MassMinuteParam]),
+							out tableErrors);
+					});
+
+				if (form.ShowDialog(owner) != DialogResult.OK || tableErrors == null) return;
+
+				// Список перечитываем одним разом (как после массового создания и правки): у пункта на
+				// строке нет ссылки на контейнер, поэтому сообщаем «изменился родитель - прайс-лист».
+				if (created > 0)
+					OnParentChanged(this, po => po is Pricelist);
+
+				if (tableErrors.Rows.Count > 0)
+					Globals.ShowSimpleJournal(EntityManager.GetEntity((int)Entities.ErrTmplGen),
+						string.Format("Создано тарифов: {0}, не создано: {1}", created, tableErrors.Rows.Count), tableErrors);
+				else
+					UserMessage.ShowInformation(string.Format("Создано тарифов: {0}", created));
 			}
 			catch (Exception ex)
 			{
