@@ -63,30 +63,78 @@ BEGIN
             (@sunday    = 1 AND DATEPART(dw, tw.dayOriginal) = 7)
         );
 
-    -- Порядок цепочки по будущему факт. времени: голова строго раньше хвоста.
-    -- Драйвер — @moved (мало строк), соседи — по PK. Полусвязи не ловятся.
-    IF EXISTS (
-        SELECT 1
-        FROM @moved m
-            INNER JOIN TariffWindow cur ON cur.windowId = m.windowId
-            LEFT JOIN TariffWindow p  ON p.windowId = cur.windowPrevId
-            LEFT JOIN @moved mp       ON mp.windowId = p.windowId
-            LEFT JOIN TariffWindow n  ON n.windowId = cur.windowNextId
-            LEFT JOIN @moved mn       ON mn.windowId = n.windowId
-        WHERE
-            (p.windowId IS NOT NULL
-                AND COALESCE(mp.newActual, p.windowDateActual) >= m.newActual)
-            OR
-            (n.windowId IS NOT NULL
-                AND m.newActual >= COALESCE(mn.newActual, n.windowDateActual))
-    )
-    BEGIN
-        RAISERROR('LinkedWindowsWrongOrder', 16, 1);
-        RETURN;
-    END
+    -- Соседи переносимых окон по объединению, см. docs/window-merging.md §3 (#1):
+    -- цепочка окон (windowPrevId/windowNextId) и объединение тарифов (TariffUnion —
+    -- окно тарифа и окно его тарифа-продолжения в тот же день).
+    -- Драйвер — @moved (мало строк), соседи — по PK и (tariffId, dayOriginal).
+    -- Полусвязи цепочки не ловятся.
+    DECLARE @links TABLE (windowId int NOT NULL, neighborId int NOT NULL, isNext bit NOT NULL, isTariffUnion bit NOT NULL);
+
+    INSERT INTO @links (windowId, neighborId, isNext, isTariffUnion)
+    SELECT m.windowId, cur.windowPrevId, 0, 0
+    FROM @moved m
+        INNER JOIN TariffWindow cur ON cur.windowId = m.windowId
+    WHERE cur.windowPrevId IS NOT NULL
+    UNION ALL
+    SELECT m.windowId, cur.windowNextId, 1, 0
+    FROM @moved m
+        INNER JOIN TariffWindow cur ON cur.windowId = m.windowId
+    WHERE cur.windowNextId IS NOT NULL
+    UNION ALL
+    SELECT m.windowId, p.windowId, 0, 1
+    FROM @moved m
+        INNER JOIN TariffWindow cur ON cur.windowId = m.windowId
+        INNER JOIN TariffUnion tu ON tu.tariffUnionID = cur.tariffId
+        INNER JOIN TariffWindow p ON p.tariffId = tu.tariffID AND p.dayOriginal = cur.dayOriginal
+    UNION ALL
+    SELECT m.windowId, n.windowId, 1, 1
+    FROM @moved m
+        INNER JOIN TariffWindow cur ON cur.windowId = m.windowId
+        INNER JOIN TariffUnion tu ON tu.tariffID = cur.tariffId
+        INNER JOIN TariffWindow n ON n.tariffId = tu.tariffUnionID AND n.dayOriginal = cur.dayOriginal;
+
+    -- Окна, перенос которых нарушил бы порядок объединённых окон по будущему факт.
+    -- времени (предыдущее строго раньше, следующее строго позже), не переносятся;
+    -- остальные переносятся. На окно — одна строка: первый нарушенный сосед.
+    DECLARE @skipped TABLE (windowId int PRIMARY KEY, neighborId int NOT NULL, neighborActual datetime NOT NULL,
+        isNext bit NOT NULL, isTariffUnion bit NOT NULL);
+
+    INSERT INTO @skipped (windowId, neighborId, neighborActual, isNext, isTariffUnion)
+    SELECT windowId, neighborId, neighborActual, isNext, isTariffUnion
+    FROM (
+        SELECT l.windowId, l.neighborId, l.isNext, l.isTariffUnion,
+            COALESCE(mn.newActual, n.windowDateActual) AS neighborActual,
+            ROW_NUMBER() OVER (PARTITION BY l.windowId ORDER BY l.isTariffUnion, l.isNext) AS rn
+        FROM @links l
+            INNER JOIN @moved m ON m.windowId = l.windowId
+            INNER JOIN TariffWindow n ON n.windowId = l.neighborId
+            LEFT JOIN @moved mn ON mn.windowId = n.windowId
+        WHERE (l.isNext = 0 AND COALESCE(mn.newActual, n.windowDateActual) >= m.newActual)
+            OR (l.isNext = 1 AND m.newActual >= COALESCE(mn.newActual, n.windowDateActual))
+    ) v
+    WHERE v.rn = 1;
+
+    DELETE m
+    FROM @moved m
+        INNER JOIN @skipped s ON s.windowId = m.windowId;
 
     UPDATE tw
     SET tw.windowDateActual = m.newActual
     FROM TariffWindow tw
         INNER JOIN @moved m ON m.windowId = tw.windowId;
+
+    SELECT movedCount = COUNT(*) FROM @moved;
+
+    -- Не перенесённые окна и нарушенный сосед (время оригинальное — как в сетке
+    -- трафика, у соседа и фактическое).
+    SELECT
+        cur.windowDateOriginal,
+        neighborDateOriginal = n.windowDateOriginal,
+        s.neighborActual,
+        s.isNext,
+        s.isTariffUnion
+    FROM @skipped s
+        INNER JOIN TariffWindow cur ON cur.windowId = s.windowId
+        INNER JOIN TariffWindow n ON n.windowId = s.neighborId
+    ORDER BY cur.windowDateOriginal;
 END

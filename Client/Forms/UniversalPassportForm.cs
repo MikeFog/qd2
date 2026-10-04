@@ -24,7 +24,6 @@ namespace Merlin.Forms
 
         public struct ProcedureNames
         {
-            public const string MoveTime = "TariffWindowMoveTime";
 			public const string ChangeDuration = "TariffWindowChangeDuration";
             public const string ChangeDurationInDay = "TariffWindowChangeDurationInDay";
 			public const string ChangePrice = "TariffWindowChangePrice";

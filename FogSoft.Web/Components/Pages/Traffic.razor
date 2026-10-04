@@ -551,6 +551,8 @@ else
             await Dialogs.RefreshAsync();
         });
 
+        int moved = 0;
+        DataTable? notMoved = null;
         while (true)
         {
             if (await Dialogs.ShowAsync(Tr.T("Изменить окна"), b =>
@@ -572,7 +574,7 @@ else
 
             try
             {
-                await Busy.RunAsync(() => TrafficManagement.Apply(model.Target!, change));
+                await Busy.RunAsync(() => moved = TrafficManagement.Apply(model.Target!, change, out notMoved));
                 break;
             }
             catch (Exception ex)
@@ -582,6 +584,12 @@ else
         }
 
         await Busy.RunAsync(() => Try(ReloadWeek));
+
+        // Окна, перенос которых нарушил бы порядок объединённых окон, процедура пропускает.
+        if (notMoved is { Rows.Count: > 0 })
+            await Tables.ShowAsync(TrafficManagement.NotMovedCaption(moved, notMoved), notMoved,
+                new Entity.Attribute("name", "Окно", "nvarchar"), // i18n-ok: заголовок колонки переводит ObjectList при выводе (Tr.T(a.Alias))
+                new Entity.Attribute("description", "Причина", "nvarchar")); // i18n-ok: заголовок колонки переводит ObjectList при выводе (Tr.T(a.Alias))
     }
 
     /// <summary>Поля диалога → правка; текст ошибки ввода или null.</summary>

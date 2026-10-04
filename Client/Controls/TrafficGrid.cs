@@ -564,8 +564,22 @@ namespace Merlin.Controls
 				AddDefaultPeriod(dictionary);
 				dictionary.Add("pricelistid", Pricelist.PricelistId);
 
-				ShowUniversalPassport(dictionary, UniversalPassportForm.PassportNames.MoveTime, UniversalPassportForm.ProcedureNames.MoveTime,
-					"Перенос времени выхода", ValidatePassportDates);
+				// Окна, перенос которых нарушил бы порядок объединённых окон, процедура пропускает — журналом.
+				int moved = 0;
+				DataTable notMoved = TrafficManagement.CreateNotMovedTable();
+				UniversalPassportForm frm = new UniversalPassportForm(dictionary, UniversalPassportForm.PassportNames.MoveTime,
+					parameters => moved = TrafficManagement.MoveTime(parameters, notMoved), "Перенос времени выхода", ValidatePassportDates);
+				if (frm.ShowDialog(this) != DialogResult.OK)
+					return;
+
+				RefreshGrid();
+				if (notMoved.Rows.Count > 0)
+				{
+					DataTable errors = SmartGrid.CreateDeleteErrorsTable();
+					foreach (DataRow row in notMoved.Rows)
+						SmartGrid.AddDeleteError(errors, errors.Rows.Count + 1, (string)row["name"], (string)row["description"]);
+					SmartGrid.ShowDeleteErrors(errors, TrafficManagement.NotMovedCaption(moved, notMoved));
+				}
 			}
             catch (Exception ex)
             {

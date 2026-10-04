@@ -1821,3 +1821,10 @@ code	Файл не выбран.	No se eligió ningún archivo.
 code	Файл ролика	Archivo del spot
 code	Файла нет	No hay archivo
 code	Щелкните по ролику в списке	Haga clic en un spot de la lista
+code	Перенесено окон: {0}, не перенесено: {1}	Ventanas trasladadas: {0}, no trasladadas: {1}
+code	{0:HH:mm} (выходит в {1:HH:mm})	{0:HH:mm} (sale al aire a las {1:HH:mm})
+code	Тариф объединён со следующим {0} — окно должно выйти раньше	Tarifa unida con la siguiente {0}: la ventana debe salir antes
+code	Тариф объединён с предыдущим {0} — окно должно выйти позже	Tarifa unida con la anterior {0}: la ventana debe salir después
+code	Окно объединено со следующим {0} — должно выйти раньше	Ventana unida con la siguiente {0}: debe salir antes
+code	Окно объединено с предыдущим {0} — должно выйти позже	Ventana unida con la anterior {0}: debe salir después
+message	Перенос не выполнен: окно относится к объединённым тарифам, и после переноса их окна вышли бы в эфир в неправильном порядке — окно, которое должно идти позже, оказалось бы раньше. Переносите окна объединённых тарифов по очереди так, чтобы порядок сохранялся.	No se realizó el traslado: la ventana pertenece a tarifas unidas y, después del traslado, sus ventanas saldrían al aire en un orden incorrecto — la ventana que debe ir después quedaría antes. Traslade las ventanas de las tarifas unidas una por una de modo que se mantenga el orden.

@@ -1,5 +1,5 @@
 ﻿/*
-    ДЕПЛОЙ: переводы веб-версии на язык «es» (1822 строк). docs/tasks/web-i18n.md, этап 5.
+    ДЕПЛОЙ: переводы веб-версии на язык «es» (1829 строк). docs/tasks/web-i18n.md, этап 5.
     СГЕНЕРИРОВАН из ArtvisDB/Scripts/i18n/es.tsv скриптом build-seed.py — руками не править.
 
     ПРЕДУСЛОВИЕ     накачен web-i18n-translation-deploy.sql (таблица iTranslation).
@@ -1842,7 +1842,14 @@ INSERT INTO #t ([source], [text]) VALUES
 (N'Файл не выбран.', N'No se eligió ningún archivo.'),
 (N'Файл ролика', N'Archivo del spot'),
 (N'Файла нет', N'No hay archivo'),
-(N'Щелкните по ролику в списке', N'Haga clic en un spot de la lista');
+(N'Щелкните по ролику в списке', N'Haga clic en un spot de la lista'),
+(N'Перенесено окон: {0}, не перенесено: {1}', N'Ventanas trasladadas: {0}, no trasladadas: {1}'),
+(N'{0:HH:mm} (выходит в {1:HH:mm})', N'{0:HH:mm} (sale al aire a las {1:HH:mm})'),
+(N'Тариф объединён со следующим {0} — окно должно выйти раньше', N'Tarifa unida con la siguiente {0}: la ventana debe salir antes'),
+(N'Тариф объединён с предыдущим {0} — окно должно выйти позже', N'Tarifa unida con la anterior {0}: la ventana debe salir después'),
+(N'Окно объединено со следующим {0} — должно выйти раньше', N'Ventana unida con la siguiente {0}: debe salir antes'),
+(N'Окно объединено с предыдущим {0} — должно выйти позже', N'Ventana unida con la anterior {0}: debe salir después'),
+(N'Перенос не выполнен: окно относится к объединённым тарифам, и после переноса их окна вышли бы в эфир в неправильном порядке — окно, которое должно идти позже, оказалось бы раньше. Переносите окна объединённых тарифов по очереди так, чтобы порядок сохранялся.', N'No se realizó el traslado: la ventana pertenece a tarifas unidas y, después del traslado, sus ventanas saldrían al aire en un orden incorrecto — la ventana que debe ir después quedaría antes. Traslade las ventanas de las tarifas unidas una por una de modo que se mantenga el orden.');
 GO
 
 BEGIN TRANSACTION;

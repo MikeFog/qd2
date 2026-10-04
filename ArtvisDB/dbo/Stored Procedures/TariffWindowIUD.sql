@@ -100,6 +100,26 @@ begin
 		end
 	end
 
+	-- Окно объединённого тарифа (TariffUnion): окно тарифа, с которым объединён этот,
+	-- в тот же день должно выйти раньше, окно тарифа-продолжения — позже.
+	declare @tariffId int, @dayOriginal datetime, @actualBefore datetime
+	select @tariffId = tariffId, @dayOriginal = dayOriginal, @actualBefore = windowDateActual
+	from [TariffWindow] where windowId = @windowId
+
+	if @tariffId is not null and @windowDateActual <> @actualBefore
+		and (exists (select 1
+				from TariffUnion tu
+					inner join [TariffWindow] p on p.tariffId = tu.tariffID and p.dayOriginal = @dayOriginal
+				where tu.tariffUnionID = @tariffId and p.windowDateActual >= @windowDateActual)
+			or exists (select 1
+				from TariffUnion tu
+					inner join [TariffWindow] n on n.tariffId = tu.tariffUnionID and n.dayOriginal = @dayOriginal
+				where tu.tariffID = @tariffId and n.windowDateActual <= @windowDateActual))
+	begin
+		raiserror('UnitedTariffWindowsWrongOrder', 16, 1)
+		return
+	end
+
 	UPDATE	
 		tw
 	SET			

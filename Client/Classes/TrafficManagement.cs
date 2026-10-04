@@ -161,22 +161,26 @@ namespace Merlin.Classes
 		/// TariffWindowChangeDuration (продолжительность и полная — процедура пишет обе сразу,
 		/// поэтому незаполненная берётся у окна своя). У «повторить на период» процедура
 		/// вызывается одна на время, если у всех его окон получаются одинаковые значения; иначе —
-		/// по окну. Ошибка любой записи откатывает всё.
+		/// по окну. Ошибка любой записи откатывает всё. Возвращает число окон с перенесённым
+		/// временем; окна, перенос которых нарушил бы порядок объединённых окон, не переносятся —
+		/// они в <paramref name="notMoved"/> (CreateNotMovedTable).
 		/// </summary>
-		public static void Apply(WindowChangeTarget target, WindowChange change)
+		public static int Apply(WindowChangeTarget target, WindowChange change, out DataTable notMoved)
 		{
 			string error = Validate(target, change);
 			if (error != null)
 				throw new InvalidOperationException(error);
 
+			notMoved = CreateNotMovedTable();
+			int moved = 0;
 			DataAccessor.BeginTransaction();
 			try
 			{
 				if (target.Period != null)
-					ApplyPeriod(target, change);
+					moved = ApplyPeriod(target, change, notMoved);
 				else
 					foreach (DataRow w in target.Rows)
-						ApplyWindow(target.PricelistId, w, change);
+						moved += ApplyWindow(target.PricelistId, w, change, notMoved);
 
 				DataAccessor.CommitTransaction();
 			}
@@ -185,10 +189,12 @@ namespace Merlin.Classes
 				DataAccessor.RollbackTransaction();
 				throw;
 			}
+			return moved;
 		}
 
-		private static void ApplyPeriod(WindowChangeTarget target, WindowChange change)
+		private static int ApplyPeriod(WindowChangeTarget target, WindowChange change, DataTable notMoved)
 		{
+			int moved = 0;
 			WindowChangePeriod period = target.Period;
 			foreach (TimeSpan time in period.Times)
 			{
@@ -197,7 +203,7 @@ namespace Merlin.Classes
 					continue;
 
 				if (change.NewTime.HasValue)
-					MoveTime(target.PricelistId, time, change.NewTime.Value, period.Start, period.Finish, period.Days);
+					moved += MoveTime(target.PricelistId, time, change.NewTime.Value, period.Start, period.Finish, period.Days, notMoved);
 
 				if (!change.NewDuration.HasValue && !change.NewTotal.HasValue)
 					continue;
@@ -214,26 +220,76 @@ namespace Merlin.Classes
 						ChangeDuration(target.PricelistId, time, NewDuration(w, change), NewTotal(w, change),
 							OriginalDay(w), OriginalDay(w), AllDays);
 			}
+			return moved;
 		}
 
-		private static void ApplyWindow(int pricelistId, DataRow w, WindowChange change)
+		private static int ApplyWindow(int pricelistId, DataRow w, WindowChange change, DataTable notMoved)
 		{
+			int moved = 0;
 			TimeSpan time = OriginalTime(w);
 			DateTime day = OriginalDay(w);
 			if (change.NewTime.HasValue)
-				MoveTime(pricelistId, time, change.NewTime.Value, day, day, AllDays);
+				moved = MoveTime(pricelistId, time, change.NewTime.Value, day, day, AllDays, notMoved);
 			if (change.NewDuration.HasValue || change.NewTotal.HasValue)
 				ChangeDuration(pricelistId, time, NewDuration(w, change), NewTotal(w, change), day, day, AllDays);
+			return moved;
 		}
 
 		private static readonly bool[] AllDays = { true, true, true, true, true, true, true };
 		private static readonly string[] DayParams = { "monday", "tuesday", "wednesday", "thursday", "friday", "saturday", "sunday" };
 
-		private static void MoveTime(int pricelistId, TimeSpan time, TimeSpan newTime, DateTime start, DateTime finish, bool[] days)
+		private static int MoveTime(int pricelistId, TimeSpan time, TimeSpan newTime, DateTime start, DateTime finish, bool[] days,
+			DataTable notMoved)
 		{
 			Dictionary<string, object> parameters = PeriodParameters(pricelistId, time, start, finish, days);
 			parameters["newtime"] = new DateTime(1900, 1, 1).Add(newTime);
-			DataAccessor.ExecuteNonQuery("TariffWindowMoveTime", parameters);
+			return MoveTime(parameters, notMoved);
+		}
+
+		/// <summary>
+		/// Перенос времени выхода — TariffWindowMoveTime с параметрами процедуры (десктопный паспорт
+		/// «Перенос времени выхода» отдаёт их готовыми). Окна, перенос которых нарушил бы порядок
+		/// объединённых окон (цепочка windowPrevId/windowNextId или объединение тарифов TariffUnion,
+		/// docs/window-merging.md), процедура не переносит — они добавляются в <paramref name="notMoved"/>.
+		/// Возвращает число перенесённых окон.
+		/// </summary>
+		public static int MoveTime(Dictionary<string, object> parameters, DataTable notMoved)
+		{
+			DataSet ds = DataAccessor.LoadDataSet("TariffWindowMoveTime", parameters);
+			foreach (DataRow row in ds.Tables[1].Rows)
+				notMoved.Rows.Add(((DateTime)row["windowDateOriginal"]).ToString("dd.MM.yyyy HH:mm"), NotMovedReason(row));
+			return Convert.ToInt32(ds.Tables[0].Rows[0]["movedCount"]);
+		}
+
+		/// <summary>Окна, время выхода которых не перенесено: name — окно, description — причина.</summary>
+		public static DataTable CreateNotMovedTable()
+		{
+			DataTable table = new DataTable();
+			table.Columns.Add("name", typeof(string));
+			table.Columns.Add("description", typeof(string));
+			return table;
+		}
+
+		/// <summary>Заголовок итога переноса, когда часть окон не перенесена.</summary>
+		public static string NotMovedCaption(int moved, DataTable notMoved) =>
+			Tr.Format("Перенесено окон: {0}, не перенесено: {1}", moved, notMoved.Rows.Count);
+
+		private static string NotMovedReason(DataRow row)
+		{
+			DateTime original = (DateTime)row["neighborDateOriginal"];
+			DateTime actual = (DateTime)row["neighborActual"];
+			string neighbor = original == actual
+				? original.ToString("HH:mm")
+				: Tr.Format("{0:HH:mm} (выходит в {1:HH:mm})", original, actual);
+
+			bool isNext = Convert.ToBoolean(row["isNext"]);
+			if (Convert.ToBoolean(row["isTariffUnion"]))
+				return isNext
+					? Tr.Format("Тариф объединён со следующим {0} — окно должно выйти раньше", neighbor)
+					: Tr.Format("Тариф объединён с предыдущим {0} — окно должно выйти позже", neighbor);
+			return isNext
+				? Tr.Format("Окно объединено со следующим {0} — должно выйти раньше", neighbor)
+				: Tr.Format("Окно объединено с предыдущим {0} — должно выйти позже", neighbor);
 		}
 
 		private static void ChangeDuration(int pricelistId, TimeSpan time, int duration, int total,

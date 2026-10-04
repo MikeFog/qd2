@@ -67,6 +67,11 @@ FK tariffUnionID → Tariff  (без каскада)
     `TOP 1`, [TariffIUD.sql:92-131](../ArtvisDB/dbo/Stored Procedures/TariffIUD.sql)).
   - `TariffChainWrongUpdate` — после правки тарифа из цепочки механический «next»
     (`fn_FindTariffIDForChain`) обязан совпасть с сохранённым `tariffUnionID`.
+- Порядок окон объединённых тарифов в эфире (с 04.10.2026): окно тарифа-продолжения в
+  тот же день (`dayOriginal`) должно выйти строго позже окна тарифа, с которым оно
+  объединено. Проверяют `TariffWindowMoveTime` (окно не переносится, попадает в журнал)
+  и `TariffWindowIUD` `UpdateItem` (`UnitedTariffWindowsWrongOrder`) — см. §3,
+  «Внесённые ограничения».
 - `fn_GetTariffTimesWithBroadcast(@time, @broadcastStart)` — вспомогательная: время
   ДО начала вещания сдвигается на +1 день, чтобы «ночной» хвост суток сортировался
   после вечера.
@@ -217,8 +222,8 @@ IX_TariffWindow_Prev (windowPrevId), IX_TariffWindow_Next (windowNextId)
 
 | # | Сценарий | Что ломается | Где | Защита / статус |
 |---|---|---|---|---|
-| 1 | **`MoveTime` инвертирует цепочку**: фактическое время хвоста делают раньше головы | DJin-выгрузка: пара выходит **двумя отдельными блоками в обратном порядке**, хвост — без заголовка `B…T` и входного джингла, суммирование длительности (`GetNextWindowsDuration` идёт вперёд по строкам) партнёра не находит. `AgitationFraming`: лок. идентификатор СМИ (44) в голове, фед. (55) в хвосте — в эфире звучат в обратном порядке. Зона политагитации. | [TariffWindowMoveTime.sql](../ArtvisDB/dbo/Stored Procedures/TariffWindowMoveTime.sql), [TariffWindowIUD.sql](../ArtvisDB/dbo/Stored Procedures/TariffWindowIUD.sql), [ExportDocument.cs:63-235](../Client/Classes/GridExport/ExportDocument.cs), [AgitationFraming.sql:88-102](../ArtvisDB/dbo/Stored Procedures/AgitationFraming.sql) | **закрыто** (deploy `window-chain-guards`): `MoveTime` и `TariffWindowIUD.UpdateItem` (паспорт «Свойства») проверяют порядок цепочки по будущему факт. времени → `LinkedWindowsWrongOrder`. Полусвязи (#6) обходят проверку |
-| 2 | `MoveTime` — **массовая** операция (диапазон дат + маска дней недели) | цепочка, склеенная на конкретный день, попадает под общий сдвиг без всякого учёта | [TrafficGrid.cs:544-568](../Client/Controls/TrafficGrid.cs) | нет |
+| 1 | **`MoveTime` инвертирует цепочку**: фактическое время хвоста делают раньше головы | DJin-выгрузка: пара выходит **двумя отдельными блоками в обратном порядке**, хвост — без заголовка `B…T` и входного джингла, суммирование длительности (`GetNextWindowsDuration` идёт вперёд по строкам) партнёра не находит. `AgitationFraming`: лок. идентификатор СМИ (44) в голове, фед. (55) в хвосте — в эфире звучат в обратном порядке. Зона политагитации. | [TariffWindowMoveTime.sql](../ArtvisDB/dbo/Stored Procedures/TariffWindowMoveTime.sql), [TariffWindowIUD.sql](../ArtvisDB/dbo/Stored Procedures/TariffWindowIUD.sql), [ExportDocument.cs:63-235](../Client/Classes/GridExport/ExportDocument.cs), [AgitationFraming.sql:88-102](../ArtvisDB/dbo/Stored Procedures/AgitationFraming.sql) | **закрыто** (deploy `window-chain-guards`, 04.10.2026 — `Deploy/14`): `TariffWindowIUD.UpdateItem` (паспорт «Свойства») проверяет порядок цепочки по будущему факт. времени → `LinkedWindowsWrongOrder`; `MoveTime` такие окна не переносит и возвращает журналом. То же для объединённых тарифов (`TariffUnion`) — их окна до 04.10.2026 не проверялись вовсе. Полусвязи (#6) обходят проверку |
+| 2 | `MoveTime` — **массовая** операция (диапазон дат + маска дней недели) | цепочка, склеенная на конкретный день, попадает под общий сдвиг без всякого учёта | [TrafficGrid.cs:544-568](../Client/Controls/TrafficGrid.cs) | частично (04.10.2026): окна, у которых сдвиг нарушил бы порядок, пропускаются, остальные переносятся; пропущенные — журналом «Перенесено окон: N, не перенесено: M» |
 | 3 | **Нет инварианта непрерывности** | `windowPrevId`/`windowNextId` нигде не проверяет, что голова кончается там, где начинается хвост. `ChangeDuration` растягивает/сжимает звено → «непрерывный кусок эфира» разъезжается (наложение или дыра). `CheckWindowOverflow` в гриде — на окно, не на цепочку | [TariffWindowChangeDuration.sql](../ArtvisDB/dbo/Stored Procedures/TariffWindowChangeDuration.sql) | нет. Запрет менять продолжительность объединённого окна был реализован (`CannotChangeDurationOfLinkedWindow`), но **снят** — заказчик не подтвердил потребность (обсуждается) |
 | 4 | `ChangeDuration` / `ChangeDurationInDay` **не знают о цепочках**, не зовут `CheckLinkedWindows`. `ChangeDurationInDay` вдобавок не трогает `duration_total` | рассинхрон `duration` vs `duration_total`, а выгрузка суммирует `duration_total` | [TariffWindowChangeDurationInDay.sql](../ArtvisDB/dbo/Stored Procedures/TariffWindowChangeDurationInDay.sql) | нет (см. #3) |
 | 5 | **Регенерация окон стирает цепочки** (не `TariffUnion`) | `CheckLinkedWindows` обнуляет обе стороны + шлёт уведомление трафику; оператор склеивает заново после каждой регенерации. Легко забыть → цепочка тихо исчезает перед эфиром | [CheckLinkedWindows.sql](../ArtvisDB/dbo/Stored Procedures/CheckLinkedWindows.sql), [GenerateTariffWindows.sql](../ArtvisDB/dbo/Stored Procedures/GenerateTariffWindows.sql) (проверки цепочек нет) | уведомление, не блокировка |
@@ -240,14 +245,18 @@ IX_TariffWindow_Prev (windowPrevId), IX_TariffWindow_Next (windowNextId)
 ### Внесённые ограничения (deploy `window-chain-guards`)
 
 Реализован **только запрет #1** — перенос объединённого окна в неправильный
-порядок. `ArtvisDB/Scripts/window-chain-guards-deploy.sql` (2 процедуры
-`CREATE OR ALTER` + 1 строка `iMessage`). C# не трогали. Тестирование:
-`docs/tasks/window-chain-guards-testing.md`.
+порядок. Первая версия — `ArtvisDB/Scripts/window-chain-guards-deploy.sql`
+(09.09.2026, только цепочка окон), тестирование —
+`docs/tasks/window-chain-guards-testing.md`. 04.10.2026 (`Deploy/14_united-tariff-windows-order.sql`,
+жалоба заказчика 6.1): проверка распространена на **объединённые тарифы** (`TariffUnion`:
+окно тарифа и окно его тарифа-продолжения в тот же `dayOriginal`), а массовый перенос
+больше не отменяется целиком — нарушающие окна пропускаются.
 
 | Что | Как | Отказ |
 |---|---|---|
-| `TariffWindowMoveTime` (шаблонный перенос из сетки трафика) | перед переносом проверяет, что порядок каждой затронутой цепочки по **будущему** факт. времени сохранится (голова строго раньше хвоста) | `LinkedWindowsWrongOrder` |
-| `TariffWindowIUD` `UpdateItem` (паспорт окна «Свойства» → «Время выхода реальное»; там же пишутся связи при объединении/отмене) | та же проверка порядка. Срабатывает только при реальном изменении `windowDateActual` ИЛИ при установке связи; правки `isDisabled`/`price`/продолжительности объединение не задевают | `LinkedWindowsWrongOrder` |
+| `TariffWindowMoveTime` — массовый перенос: десктоп «Перенос времени выхода» (меню строки сетки трафика), веб «Изменить окна» (`TrafficManagement.Apply`) | по **будущему** факт. времени: предыдущее окно (цепочки или объединённого тарифа) строго раньше, следующее строго позже. Нарушающие окна не переносятся, остальные переносятся. Процедура возвращает `movedCount` и список пропущенных (окно, нарушенный сосед, вид объединения) | без отказа: журнал «Перенесено окон: N, не перенесено: M» (десктоп `SmartGrid.ShowDeleteErrors`, веб `TableDialog`) |
+| `TariffWindowIUD` `UpdateItem` (паспорт окна «Свойства» → «Время выхода реальное»; там же пишутся связи при объединении/отмене) | цепочка окон: та же проверка, срабатывает только при реальном изменении `windowDateActual` ИЛИ при установке связи; правки `isDisabled`/`price`/продолжительности объединение не задевают | `LinkedWindowsWrongOrder` |
+| то же | объединённые тарифы: только при реальном изменении `windowDateActual` | `UnitedTariffWindowsWrongOrder` |
 
 **Обсуждается с заказчиком (не реализовано):**
 - #3 — запрет менять продолжительность объединённого окна (был сделан, снят);
