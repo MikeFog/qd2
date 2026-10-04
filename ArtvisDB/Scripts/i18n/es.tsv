@@ -27,6 +27,7 @@ action	Запретить внесение в окна (по шаблону)	Pro
 action	Изменить позиционирование	Modificar posicionamiento
 action	Изменить похожие тарифы	Modificar tarifas similares
 action	Клонировать массово	Clonar en lote
+code	Клонировать тариф массово	Clonar tarifa en lote
 action	Изменить предмет рекламы	Modificar rubro publicitario
 action,code	Клонировать	Clonar
 action	Назначить предмет рекламы	Asignar rubro publicitario

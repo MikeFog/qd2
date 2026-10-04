@@ -1,5 +1,5 @@
 ﻿/*
-    ДЕПЛОЙ: переводы веб-версии на язык «es» (1825 строк). docs/tasks/web-i18n.md, этап 5.
+    ДЕПЛОЙ: переводы веб-версии на язык «es» (1826 строк). docs/tasks/web-i18n.md, этап 5.
     СГЕНЕРИРОВАН из ArtvisDB/Scripts/i18n/es.tsv скриптом build-seed.py — руками не править.
 
     ПРЕДУСЛОВИЕ     накачен web-i18n-translation-deploy.sql (таблица iTranslation).
@@ -43,6 +43,7 @@ INSERT INTO #t ([source], [text]) VALUES
 (N'Изменить позиционирование', N'Modificar posicionamiento'),
 (N'Изменить похожие тарифы', N'Modificar tarifas similares'),
 (N'Клонировать массово', N'Clonar en lote'),
+(N'Клонировать тариф массово', N'Clonar tarifa en lote'),
 (N'Изменить предмет рекламы', N'Modificar rubro publicitario'),
 (N'Клонировать', N'Clonar'),
 (N'Назначить предмет рекламы', N'Asignar rubro publicitario'),
@@ -513,10 +514,10 @@ INSERT INTO #t ([source], [text]) VALUES
 (N'Атрибутов: {0}', N'Atributos: {0}'),
 (N'В окне уже есть ролик «{0}».', N'La ventana ya contiene el spot «{0}».'),
 (N'В окне уже есть ролики фирмы «{0}».', N'La ventana ya contiene spots de la empresa «{0}».'),
-(N'Введите имя пользователя и пароль', N'Ingrese el nombre de usuario y la contraseña'),
-(N'Войти', N'Iniciar sesión');
+(N'Введите имя пользователя и пароль', N'Ingrese el nombre de usuario y la contraseña');
 GO
 INSERT INTO #t ([source], [text]) VALUES
+(N'Войти', N'Iniciar sesión'),
 (N'Восстанавливаем связь с сервером…', N'Restableciendo la conexión con el servidor…'),
 (N'Время', N'Hora'),
 (N'Время выхода', N'Hora de emisión'),
@@ -1015,10 +1016,10 @@ INSERT INTO #t ([source], [text]) VALUES
 (N'Налог для агентства', N'Impuesto de la agencia'),
 (N'Объем реализации по месяцам', N'Volumen de ventas por meses'),
 (N'Оплата акции', N'Pago de campaña'),
-(N'Пакетная рекламная компания', N'Pauta publicitaria en paquete'),
-(N'Пакетные модули кампании', N'Módulos en paquete de la pauta');
+(N'Пакетная рекламная компания', N'Pauta publicitaria en paquete');
 GO
 INSERT INTO #t ([source], [text]) VALUES
+(N'Пакетные модули кампании', N'Módulos en paquete de la pauta'),
 (N'Перенос выпуска', N'Traslado de emisión'),
 (N'Платеж', N'Pago'),
 (N'Пользователь в группе', N'Usuario en grupo'),
@@ -1517,10 +1518,10 @@ INSERT INTO #t ([source], [text]) VALUES
 (N'График размещения для рекламной акции № {0} для {1}.xlsx', N'Plan de colocación de la campaña publicitaria N.º {0} para {1}.xlsx'),
 (N'График размещения по нескольким акциям № {0}', N'Plan de colocación de varias campañas N.º {0}'),
 (N'График размещения для рекламной акции № {0}', N'Plan de colocación de la campaña publicitaria N.º {0}'),
-(N'Частичный график размещения для рекламной акции № {0}', N'Plan de colocación parcial de la campaña publicitaria N.º {0}'),
-(N'Программы:', N'Programas:');
+(N'Частичный график размещения для рекламной акции № {0}', N'Plan de colocación parcial de la campaña publicitaria N.º {0}');
 GO
 INSERT INTO #t ([source], [text]) VALUES
+(N'Программы:', N'Programas:'),
 (N'Всего трансляций: {0}', N'Total de emisiones: {0}'),
 (N'Время трансляций: {0}', N'Tiempo de emisión: {0}'),
 (N'Стоимость спланированной рекламы: {0:c}', N'Costo de la publicidad planificada: {0:c}'),
