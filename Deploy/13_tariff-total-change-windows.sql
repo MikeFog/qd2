@@ -1,4 +1,20 @@
-﻿CREATE PROCEDURE [dbo].[TariffIUD]
+﻿-- TariffIUD: смена полной продолжительности у тарифа не должна давать окнам «продолжительность больше полной».
+--
+-- При правке тарифа новая полная переписывается окнам, у которых была прежняя полная. Продолжительность у окна
+-- бывает своя (трафик-менеджмент), больше тарифной, — и окно молча становилось, например, 2:00/1:30.
+-- Теперь такая правка отклоняется ошибкой DurationExceedsTotal (сообщение в iMessage есть с 20.09.2026).
+-- Нулевая полная по-прежнему означает «не задана» и не проверяется.
+--
+-- Идемпотентен (CREATE OR ALTER), права сохраняются, данные не трогает. Клиент не нужен.
+--   sqlcmd -S <сервер> -d <база> -E -f 65001 -I -b -i 13_tariff-total-change-windows.sql
+
+SET NOCOUNT ON;
+GO
+SET ANSI_NULLS ON;
+GO
+SET QUOTED_IDENTIFIER ON;
+GO
+CREATE OR ALTER PROCEDURE [dbo].[TariffIUD]
 (
 @tariffID int = NULL,
 @pricelistID smallint = NULL,
@@ -316,3 +332,9 @@ ELSE IF @actionName = 'UpdateItem' BEGIN
 
 	EXEC Tariffs @TariffID = @TariffID
 	END
+GO
+
+PRINT '--- Проверка ---';
+SELECT 'TariffIUD' AS [процедура],
+       CASE WHEN OBJECT_DEFINITION(OBJECT_ID('dbo.TariffIUD')) LIKE '%duration_total = @oldDurationTotal And duration > @duration_total%'
+            THEN 'OK' ELSE 'НЕТ' END AS [состояние];

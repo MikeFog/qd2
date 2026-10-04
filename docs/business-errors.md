@@ -51,7 +51,7 @@
 
 | Ключ | Где проверяется | Смысл |
 |---|---|---|
-| `DurationExceedsTotal` | `TariffIUD` (Add/Update/Clone), `TariffWindowIUD` (Add/Update), `TariffWindowChangeDuration`, `TariffWindowChangeDurationInDay`, `GenerateTariffWindowByTemplate` | `duration` не больше `duration_total`; `duration_total = 0` — «не задана», проверки нет. Деплой: `ArtvisDB/Scripts/duration-not-above-total-deploy.sql` |
+| `DurationExceedsTotal` | `TariffIUD` (Add/Update/Clone), `TariffWindowIUD` (Add/Update), `TariffWindowChangeDuration`, `TariffWindowChangeDurationInDay`, `GenerateTariffWindowByTemplate` | `duration` не больше `duration_total`; `duration_total = 0` — «не задана», проверки нет. В `TariffIUD` UpdateItem при смене полной проверяются и окна тарифа, которым она уходит (у окна продолжительность бывает своя). Деплой: `ArtvisDB/Scripts/duration-not-above-total-deploy.sql`, затем `Deploy/13_tariff-total-change-windows.sql` |
 | `TariffInUse` | `TariffIUD` Update | у тарифа уже есть окна, менять время/цену/дни/длительность нельзя |
 | `TariffAlreadyExists`, `TariffConflictsWithSponsorTariff`, `TariffChainDamage` | `TariffIUD` | дубль, конфликт со спонсорским, разрыв цепочки `TariffUnion` |
 | `DiscountReleaseInUse` | `DiscountReleaseIUD` Delete | по набору объёмной скидки уже посчитаны кампании (`Campaign.discountReleaseID`). Правки использованной скидки не запрещены, а подтверждаются в qd2 окном `DiscountAffectedActionsForm` (процедура `DiscountChangeAffectedActions`). Деплой: `ArtvisDB/Scripts/discount-applied-pricelist-id-deploy.sql` |
