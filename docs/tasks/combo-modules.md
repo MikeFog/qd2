@@ -88,7 +88,7 @@ sqlcmd -S <сервер> -d <база> -E -f 65001 -I -i ArtvisDB\Scripts\combo-
 7. `dbo\Stored Procedures\ComboModuleContentPassport.sql`
 8. `dbo\Stored Procedures\ComboModuleFreeTimeRetrieve.sql`
 9. `dbo\Stored Procedures\ComboModuleIssuesRetrieve.sql`
-10. `dbo\Stored Procedures\ComboModuleActionModulesRetrieve.sql`
+10. ~~`dbo\Stored Procedures\ComboModuleActionModulesRetrieve.sql`~~ — удалена 04.10.2026 (Д-7, строки грида строит форма)
 
 Таблицы разворачивать до скрипта метаданных не обязательно, но до первого
 запуска клиента — обязательно.
@@ -413,7 +413,8 @@ sqlcmd -S <сервер> -d <база> -E -f 65001 -I -i ArtvisDB\Scripts\combo-
   выбранного комбо-модуля**, достраивая модули, которых в акции ещё нет. См.
   «Достройка по комбо-модулю» ниже.
 
-- Набор модулей даёт `ComboModuleActionModulesRetrieve`, остатки —
+- Набор модулей (строки) форма собирает из выпусков и кампаний акции (с 04.10.2026, Д-7;
+  раньше — `ComboModuleActionModulesRetrieve`, удалена), остатки —
   `ComboModuleFreeTimeRetrieve` с параметром `@actionID` вместо
   `@comboModuleID` (список модулей внутри процедуры собирается в табличную
   переменную, дальше расчёт общий).

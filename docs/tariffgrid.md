@@ -183,7 +183,7 @@ UserControl
 | спонсорская | `SponsorPricelistByDate`, `SponsorTariffList`, `ProgramIssues` |
 | пакетная | `PackModulePricelistByDate`, `PackModuleTariffWindowsRetrieve`, `PackModuleIssueRetrieve` |
 | веер | `TariffWindowWithRange` (5 наборов: слоты, границы вещания, строки времени, чужие акции фирмы, их ролики), `RangeSlotIssues`, `RangeSlotFirmConflict`; «Добавленные выпуски» — `Action.BuildAddedIssuesTable` |
-| комбо | `ComboModuleContentRetrieve` / `ComboModuleActionModulesRetrieve`, `ComboModuleFreeTimeRetrieve`, `ComboModuleIssuesRetrieve` |
+| комбо | `ComboModuleContentRetrieve`, `ComboModuleFreeTimeRetrieve`, `ComboModuleIssuesRetrieve` |
 
 **Запись** — только через IUD-процедуры: они же ведут счётчики занятости прямо в строке
 `TariffWindow` (`timeInUse*`, `capacityInUse*`, `is*PositionOccupied`, `*PositionsUnconfirmed`),
