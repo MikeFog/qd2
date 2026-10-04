@@ -262,15 +262,6 @@ namespace Merlin.Properties {
         }
         
         /// <summary>
-        ///   Looks up a localized string similar to Проблемы при экспорте.
-        /// </summary>
-        public static string ExportProblemTitle {
-            get {
-                return ResourceManager.GetString("ExportProblemTitle", resourceCulture);
-            }
-        }
-        
-        /// <summary>
         ///   Looks up a localized resource of type System.Byte[].
         /// </summary>
         public static byte[] Fan {

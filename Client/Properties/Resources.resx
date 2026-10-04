@@ -282,9 +282,6 @@
   <data name="DummyRollerWithZeroDuration" xml:space="preserve">
     <value>Вы пытаетесь создать ролик-пустышку с нулевой прододжительностью. Это запрещено.</value>
   </data>
-  <data name="ExportProblemTitle" xml:space="preserve">
-    <value>Проблемы при экспорте</value>
-  </data>
   <data name="CheckNewMessage" xml:space="preserve">
     <value>Проверка новых сообщений в системе...</value>
   </data>

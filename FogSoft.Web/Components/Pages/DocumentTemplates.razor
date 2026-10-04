@@ -233,7 +233,7 @@ else
             return;
         }
         await Saver.SaveAsAsync(file, async () =>
-            await Dialogs.ShowAsync(Tr.T("Файл готов"), b => b.AddContent(0, Tr.T("Выберите, куда сохранить файл.")),
+            await Dialogs.ShowAsync(file.Name, b => b.AddContent(0, Tr.T("Файл готов. Выберите, куда сохранить файл.")),
                 okText: Tr.T("Сохранить…")) == DialogOutcome.Ok);
     }
 

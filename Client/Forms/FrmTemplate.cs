@@ -2,6 +2,7 @@
 using System.Windows.Forms;
 using FogSoft.WinForm.Classes;
 using Merlin.Classes;
+using FogSoft.WinForm.Forms;
 
 namespace Merlin.Forms
 {
@@ -102,7 +103,7 @@ namespace Merlin.Forms
         {
 			if (!rbModeAdd.Checked && !rbModeDelete.Checked)
 			{
-				MessageBox.Show("Надо выбрать что вы собираетесь делать: добавить или удалить рекламные выпуски!", Application.ProductName, MessageBoxButtons.OK, MessageBoxIcon.Warning);
+				UserMessage.ShowExclamation("Надо выбрать что вы собираетесь делать: добавить или удалить рекламные выпуски!");
 				this.DialogResult = DialogResult.None;
             }
 			_template.IsModeAdd = rbModeAdd.Checked;

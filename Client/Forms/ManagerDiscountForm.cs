@@ -3,6 +3,7 @@ using Merlin.Classes;
 using System;
 using System.Data;
 using System.Windows.Forms;
+using FogSoft.WinForm.Forms;
 
 namespace Merlin.Forms
 {
@@ -155,7 +156,7 @@ namespace Merlin.Forms
         {
             if (cmbReason.Visible && Convert.ToInt32(cmbReason.SelectedValue) == 0)
             {
-                MessageBox.Show("Необходимо выбрать причину выдачи скидки.", "Ошибка", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                UserMessage.ShowExclamation("Необходимо выбрать причину выдачи скидки.");
                 return false;
             }
             return true;

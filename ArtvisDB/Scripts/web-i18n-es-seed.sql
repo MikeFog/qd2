@@ -1,5 +1,5 @@
 ﻿/*
-    ДЕПЛОЙ: переводы веб-версии на язык «es» (1826 строк). docs/tasks/web-i18n.md, этап 5.
+    ДЕПЛОЙ: переводы веб-версии на язык «es» (1822 строк). docs/tasks/web-i18n.md, этап 5.
     СГЕНЕРИРОВАН из ArtvisDB/Scripts/i18n/es.tsv скриптом build-seed.py — руками не править.
 
     ПРЕДУСЛОВИЕ     накачен web-i18n-translation-deploy.sql (таблица iTranslation).
@@ -552,7 +552,6 @@ INSERT INTO #t ([source], [text]) VALUES
 (N'Выпуски станции по эту дату после отметки сможет менять только трафик-менеджер и администратор. Дата раньше текущей снимает отметку с последующих дней.', N'Una vez marcadas, las emisiones de la emisora hasta esta fecha solo podrán ser modificadas por el gestor de tráfico y el administrador. Una fecha anterior a la actual quita la marca de los días posteriores.'),
 (N'Генерация рекламных окон', N'Generación de ventanas publicitarias'),
 (N'Гибрид — модульные тарифы один в один, остальные с учётом правок окон.', N'Híbrido — las tarifas modulares se copian tal cual, las demás teniendo en cuenta los cambios de ventanas.'),
-(N'Готово', N'Listo'),
 (N'Группа компаний', N'Grupo de empresas'),
 (N'Да', N'Sí'),
 (N'Дата выпуска', N'Fecha de emisión'),
@@ -568,7 +567,6 @@ INSERT INTO #t ([source], [text]) VALUES
 (N'Загрузка…', N'Cargando…'),
 (N'Задайте значение или снимите галочку.', N'Indique un valor o desmarque la casilla.'),
 (N'Закрыть', N'Cerrar'),
-(N'Замена ролика', N'Sustitución del spot'),
 (N'Записей нет.', N'No hay registros.'),
 (N'Заполните хотя бы одно: время выхода, продолжительность или полную продолжительность.', N'Complete al menos uno: hora de emisión, duración o duración total.'),
 (N'Запретить вносить выпуски в окна', N'Prohibir agregar emisiones a las ventanas'),
@@ -1016,11 +1014,11 @@ INSERT INTO #t ([source], [text]) VALUES
 (N'Налог для агентства', N'Impuesto de la agencia'),
 (N'Объем реализации по месяцам', N'Volumen de ventas por meses'),
 (N'Оплата акции', N'Pago de campaña'),
-(N'Пакетная рекламная компания', N'Pauta publicitaria en paquete');
+(N'Пакетная рекламная компания', N'Pauta publicitaria en paquete'),
+(N'Пакетные модули кампании', N'Módulos en paquete de la pauta'),
+(N'Перенос выпуска', N'Traslado de emisión');
 GO
 INSERT INTO #t ([source], [text]) VALUES
-(N'Пакетные модули кампании', N'Módulos en paquete de la pauta'),
-(N'Перенос выпуска', N'Traslado de emisión'),
 (N'Платеж', N'Pago'),
 (N'Пользователь в группе', N'Usuario en grupo'),
 (N'Пользовательский коэффициент', N'Coeficiente de usuario'),
@@ -1485,7 +1483,7 @@ INSERT INTO #t ([source], [text]) VALUES
 (N'Отметить все найденные', N'Marcar todos los encontrados'),
 (N'Радиостанции: ', N'Emisoras: '),
 (N'Без выпусков в этот день (файла для эфира нет): {0}.', N'Sin emisiones ese día (no hay archivo para emisión): {0}.'),
-(N'Выберите, куда сохранить файл.', N'Elija dónde guardar el archivo.'),
+(N'Файл готов. Выберите, куда сохранить файл.', N'El archivo está listo. Elija dónde guardarlo.'),
 (N'Выгружать нечего: в этот день на станции нет выпусков.', N'No hay nada que exportar: la emisora no tiene emisiones ese día.'),
 (N'Выгрузить в папку…', N'Exportar a carpeta…'),
 (N'Выгрузка остановлена: обработано станций {0} из {1}.', N'Exportación detenida: emisoras procesadas {0} de {1}.'),
@@ -1497,7 +1495,6 @@ INSERT INTO #t ([source], [text]) VALUES
 (N'Отметьте станции и дату, затем выберите папку: для каждой станции туда запишутся файл для эфирной программы (DJin) и сетка в Word. Файлы с теми же именами заменяются.', N'Marque las emisoras y la fecha y luego elija la carpeta: para cada emisora se guardarán el archivo para el programa de emisión (DJin) y la parrilla en Word. Los archivos con el mismo nombre se reemplazan.'),
 (N'Отметьте, что выгружать: файлы для эфира, сетки в Word или то и другое.', N'Marque qué exportar: archivos para emisión, parrillas en Word o ambos.'),
 (N'Сохранить…', N'Guardar…'),
-(N'Файл готов', N'El archivo está listo'),
 (N'Файл сетки для эфирной программы (DJin)', N'Archivo de la parrilla para el programa de emisión (DJin)'),
 (N'Сетки в Word', N'Parrillas en Word'),
 (N'Файлы для эфира (DJin)', N'Archivos para emisión (DJin)'),
@@ -1518,12 +1515,12 @@ INSERT INTO #t ([source], [text]) VALUES
 (N'График размещения для рекламной акции № {0} для {1}.xlsx', N'Plan de colocación de la campaña publicitaria N.º {0} para {1}.xlsx'),
 (N'График размещения по нескольким акциям № {0}', N'Plan de colocación de varias campañas N.º {0}'),
 (N'График размещения для рекламной акции № {0}', N'Plan de colocación de la campaña publicitaria N.º {0}'),
-(N'Частичный график размещения для рекламной акции № {0}', N'Plan de colocación parcial de la campaña publicitaria N.º {0}');
-GO
-INSERT INTO #t ([source], [text]) VALUES
+(N'Частичный график размещения для рекламной акции № {0}', N'Plan de colocación parcial de la campaña publicitaria N.º {0}'),
 (N'Программы:', N'Programas:'),
 (N'Всего трансляций: {0}', N'Total de emisiones: {0}'),
-(N'Время трансляций: {0}', N'Tiempo de emisión: {0}'),
+(N'Время трансляций: {0}', N'Tiempo de emisión: {0}');
+GO
+INSERT INTO #t ([source], [text]) VALUES
 (N'Стоимость спланированной рекламы: {0:c}', N'Costo de la publicidad planificada: {0:c}'),
 (N'Стоимость спланированной рекламы по тарифам: {0:c}', N'Costo de la publicidad planificada según tarifas: {0:c}'),
 (N'Стоимость спланированной рекламы с учетом скидки: {0:c}', N'Costo de la publicidad planificada con descuento: {0:c}'),
@@ -1737,7 +1734,6 @@ INSERT INTO #t ([source], [text]) VALUES
 (N'Включать цену', N'Incluir precio'),
 (N'Счёт № {0} от {1}{2} к акции № {3}', N'Factura n.º {0} del {1}{2} de la campaña n.º {3}'),
 (N'за месяц {0} года', N'del mes de {0}'),
-(N'Объединить с ...', N'Combinar con...'),
 (N'Объединить', N'Combinar'),
 (N'Разделить', N'Dividir'),
 (N'Выберите рекламные кампании, которые хотите перенести в новую акцию', N'Seleccione las pautas publicitarias que desea trasladar a una nueva campaña'),

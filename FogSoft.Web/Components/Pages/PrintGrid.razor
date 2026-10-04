@@ -318,7 +318,7 @@ else
         }
         catch (JSException ex) when (ex.Message.Contains("SecurityError") || ex.Message.Contains("user activation"))
         {
-            if (await Dialogs.ShowAsync(Tr.T("Файл готов"), b => b.AddContent(0, Tr.T("Выберите, куда сохранить файл.")),
+            if (await Dialogs.ShowAsync(Tr.T("Сетка вещания"), b => b.AddContent(0, Tr.T("Файл готов. Выберите, куда сохранить файл.")),
                     okText: Tr.T("Сохранить…")) != DialogOutcome.Ok)
                 return false;
             return await pick();

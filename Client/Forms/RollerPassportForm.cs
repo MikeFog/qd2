@@ -123,10 +123,7 @@ namespace Merlin.Forms
             }
             catch (Exception ex)
             {
-                MessageBox.Show("Не удалось определить длительность файла.\n" + ex.Message,
-                                "Ошибка",
-                                MessageBoxButtons.OK,
-                                MessageBoxIcon.Error);
+                UserMessage.ShowExclamation("Не удалось определить длительность файла.\n" + ex.Message);
             }
         }
 

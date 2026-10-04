@@ -147,6 +147,6 @@ public sealed partial class ObjectActions
 	/// <summary>Готовый файл — «Сохранить как» браузера.</summary>
 	internal Task SaveMediaPlan(ExportFile file) =>
 		_saver.SaveAsAsync(file, async () =>
-			await _dialogs.ShowAsync(Tr.T("Файл готов"), b => b.AddContent(0, Tr.T("Выберите, куда сохранить файл.")),
+			await _dialogs.ShowAsync(Tr.T("График размещения"), b => b.AddContent(0, Tr.T("Файл готов. Выберите, куда сохранить файл.")),
 				okText: Tr.T("Сохранить…")) == DialogOutcome.Ok);
 }

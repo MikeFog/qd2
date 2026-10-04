@@ -84,7 +84,7 @@ namespace Merlin.Forms.GridReport
 				backgroundWorker.RunWorkerAsync(grdRadiostations.Added2Checked);
 			}
 			else
-				UserMessage.ShowExclamation(Resources.ExportProblemTitle, Resources.ExportProblemDirectoryDosntExist);
+				UserMessage.ShowExclamation(Resources.ExportProblemDirectoryDosntExist);
 		}
 
 		private void SetControlStatus(bool enabled)
@@ -156,7 +156,7 @@ namespace Merlin.Forms.GridReport
 			if (!result && ExportHelper.OpenFolderOnFinish)
 				Process.Start(txtPath2SaveTxt.Text);
 			if (result)
-				UserMessage.ShowExclamation(Resources.ExportProblemTitle, Resources.ExportProblem);
+				UserMessage.ShowExclamation(Resources.ExportProblem);
 		}
 
 		private void textBoxSelectedPath_TextChanged(object sender, EventArgs e)

@@ -1045,7 +1045,7 @@ public sealed partial class ObjectActions
 				Tr.Format("Создано тарифов: {0}, не создано: {1}", created, tableErrors.Rows.Count),
 				tableErrors, new Entity.Attribute("description", "Ошибка", "nvarchar")); // i18n-ok: Alias переводится при показе (ObjectList)
 		else
-			await ShowInfo(Tr.T("Готово"), Tr.Format("Создано тарифов: {0}", created));
+			await ShowInfo(Tr.T("Добавить тариф массово"), Tr.Format("Создано тарифов: {0}", created));
 
 		return ActionEffect.ChildAdded;
 	}
@@ -1086,7 +1086,7 @@ public sealed partial class ObjectActions
 				Tr.Format("Изменено тарифов: {0}, не изменено: {1}", changed, tableErrors.Rows.Count),
 				tableErrors, new Entity.Attribute("description", "Ошибка", "nvarchar")); // i18n-ok: Alias переводится при показе (ObjectList)
 		else if (changed > 0)
-			await ShowInfo(Tr.T("Готово"), Tr.Format("Изменено тарифов: {0}", changed));
+			await ShowInfo(Tr.T("Сменить цену"), Tr.Format("Изменено тарифов: {0}", changed));
 
 		return changed > 0 ? ActionEffect.ChildAdded : ActionEffect.None;
 	}
@@ -1153,7 +1153,7 @@ public sealed partial class ObjectActions
 					changed!.Count, added!.Count, tableErrors.Rows.Count),
 				tableErrors, new Entity.Attribute("description", "Ошибка", "nvarchar")); // i18n-ok: Alias переводится при показе (ObjectList)
 		else
-			await ShowInfo(Tr.T("Готово"), Tr.Format("Изменено тарифов: {0}, создано новых: {1}", changed!.Count, added!.Count));
+			await ShowInfo(Tr.T("Изменить похожие тарифы"), Tr.Format("Изменено тарифов: {0}, создано новых: {1}", changed!.Count, added!.Count));
 
 		return changed!.Count + added!.Count > 0 ? ActionEffect.SiblingAdded : ActionEffect.None;
 	}
@@ -1194,7 +1194,7 @@ public sealed partial class ObjectActions
 				Tr.Format("Создано тарифов: {0}, не создано: {1}", created, tableErrors.Rows.Count),
 				tableErrors, new Entity.Attribute("description", "Ошибка", "nvarchar")); // i18n-ok: Alias переводится при показе (ObjectList)
 		else
-			await ShowInfo(Tr.T("Готово"), Tr.Format("Создано тарифов: {0}", created));
+			await ShowInfo(Tr.T("Клонировать массово"), Tr.Format("Создано тарифов: {0}", created));
 
 		return created > 0 ? ActionEffect.SiblingAdded : ActionEffect.None;
 	}
@@ -1233,7 +1233,7 @@ public sealed partial class ObjectActions
 		DataTable? unsubstituted = null;
 
 		bool ok = await _namedPassports.ShowAsync(template, Merlin.Classes.RollerSubstitution.PassportName,
-			Tr.T("Замена ролика"), isNew: false,
+			Tr.T("Заменить рекламный ролик"), isNew: false,
 			values => ValidateSubstitution(substitution, values, out selectedDays, out newRoller),
 			_ => unsubstituted = substitution.Apply(newRoller!, selectedDays!),
 			data, name => SubstitutionFieldDisabled(name, template, hasRollers));
@@ -1247,7 +1247,7 @@ public sealed partial class ObjectActions
 				new Entity.Attribute("message", "Ошибка", "nvarchar")); // i18n-ok: Alias переводится при показе (ObjectList)
 
 		if (substitution.PriceMayChange(newRoller!))
-			await ShowInfo(Tr.T("Замена ролика"), await _busy.RunAsync(substitution.RecalculateAction));
+			await ShowInfo(Tr.T("Заменить рекламный ролик"), await _busy.RunAsync(substitution.RecalculateAction));
 
 		return ActionEffect.SiblingAdded;
 	}
@@ -1562,7 +1562,7 @@ public sealed partial class ObjectActions
 	/// </summary>
 	private async Task<ActionEffect> MergeActions(Merlin.Classes.ActionOnMassmedia action)
 	{
-		string caption = Tr.T("Объединить с ...");
+		string caption = Tr.T("Объединить рекламную акцию");
 		if (!action.CanSplitOrMerge(action.StartDate.Date, out string messageKey))
 		{
 			await ShowInfo(caption, MessageAccessor.GetMessage(messageKey));
@@ -2002,7 +2002,7 @@ public sealed partial class ObjectActions
 	{
 		Entity rollers = EntityManager.GetEntity((int)Merlin.Entities.Roller);
 		DataTable candidates = await _busy.RunAsync(() => Merlin.Classes.ActionRollerChange.SubstituteCandidates(roller));
-		DataRow? picked = (await PickAsync(Tr.T("Замена ролика"), rollers, candidates, Tr.T("Заменить")))?[0];
+		DataRow? picked = (await PickAsync(Tr.T("Заменить рекламный ролик"), rollers, candidates, Tr.T("Заменить")))?[0];
 		if (picked == null)
 			return ActionEffect.None;
 
@@ -2013,7 +2013,7 @@ public sealed partial class ObjectActions
 			await _tables.ShowAsync(Tr.T("Незамененные ролики"), unsubstituted,
 				new Entity.Attribute("windowDateOriginal", "Дата выпуска", "datetime"), // i18n-ok: Alias переводится при показе (ObjectList)
 				new Entity.Attribute("message", "Ошибка", "nvarchar")); // i18n-ok: Alias переводится при показе (ObjectList)
-		await ShowInfo(Tr.T("Замена ролика"), priceMessage);
+		await ShowInfo(Tr.T("Заменить рекламный ролик"), priceMessage);
 		return ActionEffect.Changed;
 	}
 

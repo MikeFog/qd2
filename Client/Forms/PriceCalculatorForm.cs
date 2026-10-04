@@ -471,7 +471,7 @@ namespace Merlin.Forms
             // Обычная логика сохранения нового варианта
             if (_saved.Contains(snapshot))
             {
-                MessageBox.Show("Данный вариант уже добавлен.", "Сохранение не требуется", MessageBoxButtons.OK, MessageBoxIcon.Stop);
+                UserMessage.ShowInformation("Данный вариант уже добавлен.");
                 return;
             }
             
@@ -934,13 +934,13 @@ namespace Merlin.Forms
                 var list = GetCheckedSnapshots();
                 if (!list.Any())
                 {
-                    MessageBox.Show("Нет отмеченных вариантов для создания коммерческого предложения.", "Создание КП", MessageBoxButtons.OK, MessageBoxIcon.Information); 
+                    UserMessage.ShowExclamation("Нет отмеченных вариантов для создания коммерческого предложения.");
                     return;
                 }
 
                 if (cmbAgency.SelectedValue == null)
                 {
-                    MessageBox.Show("Пожалуйста, выберите агентство.", "Создание КП", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                    UserMessage.ShowExclamation("Пожалуйста, выберите агентство.");
                     return;
                 }
 
@@ -948,7 +948,7 @@ namespace Merlin.Forms
                 var templatePath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, ConfigurationUtil.ProposalTemplateFolder, agency[Agency.ParamNames.Path2ProposalTemplate].ToString());
                 if (!File.Exists(templatePath))
                 {
-                    MessageBox.Show($"Шаблон коммерческого предложения для агентства «{agency.Name}» не найден по пути:\n{templatePath}", "Создание КП", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                    UserMessage.ShowExclamation($"Шаблон коммерческого предложения для агентства «{agency.Name}» не найден по пути:\n{templatePath}");
                     return;
                 }
 

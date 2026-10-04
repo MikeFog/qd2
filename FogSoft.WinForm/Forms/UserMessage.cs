@@ -38,11 +38,6 @@ namespace FogSoft.WinForm.Forms
 			Show(null, text, MessageBoxButtons.OK, MessageBoxIcon.Information);
 		}
 
-		public static void ShowExclamation(string title, string text)
-		{
-			Show(title, text, MessageBoxButtons.OK, MessageBoxIcon.Warning);
-		}
-
 		public static void ShowExclamation(string text)
 		{
 			Show(null, text, MessageBoxButtons.OK, MessageBoxIcon.Warning);
