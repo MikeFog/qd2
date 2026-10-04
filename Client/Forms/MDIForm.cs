@@ -689,13 +689,11 @@ namespace Merlin.Forms
 
 		// То же для рекламного отдела: акции отмечаются в списке по фильтру
 		// (только доступные пользователю), номера вручную не вводятся.
+		// «Ок» в форме печатает и не закрывает её — печатают по очереди для разных комбинаций.
 		private void ShowMultiActionMediaPlanSelect()
 		{
-			using (FrmActionsSelector f = new FrmActionsSelector())
-			{
-				if (f.ShowDialog(this) != DialogResult.OK) return;
-				PrintMultiActionMediaPlan(f.ActionIds);
-			}
+			using (FrmActionsSelector f = new FrmActionsSelector(PrintMultiActionMediaPlan))
+				f.ShowDialog(this);
 		}
 
 		private static void PrintMultiActionMediaPlan(IList<int> actionIds)
