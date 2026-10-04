@@ -41,7 +41,8 @@ INSERT INTO #t ([source], [text]) VALUES
 (N'Заменить рекламный ролик', N'Sustituir spot publicitario'),
 (N'Запретить внесение в окна (по шаблону)', N'Prohibir inclusión en ventanas (por plantilla)'),
 (N'Изменить позиционирование', N'Modificar posicionamiento'),
-(N'Изменить похожие тарифы...', N'Modificar tarifas similares...'),
+(N'Изменить похожие тарифы', N'Modificar tarifas similares'),
+(N'Клонировать массово', N'Clonar en lote'),
 (N'Изменить предмет рекламы', N'Modificar rubro publicitario'),
 (N'Клонировать', N'Clonar'),
 (N'Назначить предмет рекламы', N'Asignar rubro publicitario'),
@@ -513,10 +514,10 @@ INSERT INTO #t ([source], [text]) VALUES
 (N'В окне уже есть ролик «{0}».', N'La ventana ya contiene el spot «{0}».'),
 (N'В окне уже есть ролики фирмы «{0}».', N'La ventana ya contiene spots de la empresa «{0}».'),
 (N'Введите имя пользователя и пароль', N'Ingrese el nombre de usuario y la contraseña'),
-(N'Войти', N'Iniciar sesión'),
-(N'Восстанавливаем связь с сервером…', N'Restableciendo la conexión con el servidor…');
+(N'Войти', N'Iniciar sesión');
 GO
 INSERT INTO #t ([source], [text]) VALUES
+(N'Восстанавливаем связь с сервером…', N'Restableciendo la conexión con el servidor…'),
 (N'Время', N'Hora'),
 (N'Время выхода', N'Hora de emisión'),
 (N'Время выхода меняется только для одной строки времени — выделите окна одного времени.', N'La hora de emisión solo se modifica para una fila horaria: seleccione ventanas de una misma hora.'),
@@ -1015,10 +1016,10 @@ INSERT INTO #t ([source], [text]) VALUES
 (N'Объем реализации по месяцам', N'Volumen de ventas por meses'),
 (N'Оплата акции', N'Pago de campaña'),
 (N'Пакетная рекламная компания', N'Pauta publicitaria en paquete'),
-(N'Пакетные модули кампании', N'Módulos en paquete de la pauta'),
-(N'Перенос выпуска', N'Traslado de emisión');
+(N'Пакетные модули кампании', N'Módulos en paquete de la pauta');
 GO
 INSERT INTO #t ([source], [text]) VALUES
+(N'Перенос выпуска', N'Traslado de emisión'),
 (N'Платеж', N'Pago'),
 (N'Пользователь в группе', N'Usuario en grupo'),
 (N'Пользовательский коэффициент', N'Coeficiente de usuario'),
@@ -1517,10 +1518,10 @@ INSERT INTO #t ([source], [text]) VALUES
 (N'График размещения по нескольким акциям № {0}', N'Plan de colocación de varias campañas N.º {0}'),
 (N'График размещения для рекламной акции № {0}', N'Plan de colocación de la campaña publicitaria N.º {0}'),
 (N'Частичный график размещения для рекламной акции № {0}', N'Plan de colocación parcial de la campaña publicitaria N.º {0}'),
-(N'Программы:', N'Programas:'),
-(N'Всего трансляций: {0}', N'Total de emisiones: {0}');
+(N'Программы:', N'Programas:');
 GO
 INSERT INTO #t ([source], [text]) VALUES
+(N'Всего трансляций: {0}', N'Total de emisiones: {0}'),
 (N'Время трансляций: {0}', N'Tiempo de emisión: {0}'),
 (N'Стоимость спланированной рекламы: {0:c}', N'Costo de la publicidad planificada: {0:c}'),
 (N'Стоимость спланированной рекламы по тарифам: {0:c}', N'Costo de la publicidad planificada según tarifas: {0:c}'),
@@ -1799,7 +1800,6 @@ INSERT INTO #t ([source], [text]) VALUES
 (N'За период выполненных работ нет.', N'No hay trabajos realizados en el período.'),
 (N'Итого', N'Total'),
 (N'В данной распечатке акта выполненных работ присутствуют выпуски на радиостанциях, которые не были отмечены как обработанные трафик-менеджером.', N'En esta acta de trabajos realizados hay emisiones en emisoras que el gestor de tráfico no ha marcado como procesadas.'),
-(N'Сменить цену...', N'Cambiar precio...'),
 (N'Сменить цену', N'Cambiar precio'),
 (N'Тарифов', N'Tarifas'),
 (N'Из них с окнами', N'Con ventanas'),

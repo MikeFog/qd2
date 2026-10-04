@@ -39,13 +39,23 @@ namespace Merlin.Forms
 		private Button btnOk;
 		private Button btnCancel;
 
-		private readonly Entity _entity = EntityManager.GetEntity((int)Entities.Action);
+		// Селектор атрибутов сущности 77 для этого списка: после номера акции — даты
+		// начала и окончания (ArtvisDB/Scripts/multi-action-media-plan-select-columns-seed.sql).
+		private const int ColumnsSelector = 1;
+
+		// Клон: AttributeSelector меняет общую кэшированную сущность, если ставить его на оригинал.
+		private readonly Entity _entity = (Entity)EntityManager.GetEntity((int)Entities.Action).Clone();
 		private readonly Dictionary<string, object> _filter = DataAccessor.CreateParametersDictionary();
 		private readonly SortedSet<int> _selectedIds = new SortedSet<int>();
+		private readonly Action<IList<int>> _print;
 
-		public FrmActionsSelector()
+		/// <param name="print">Печать по отмеченным акциям. Вызывается по «Ок», форма при этом
+		/// остаётся открытой — можно сразу выбрать другую комбинацию акций.</param>
+		public FrmActionsSelector(Action<IList<int>> print)
 		{
+			_print = print;
 			InitializeComponent();
+			_entity.AttributeSelector = ColumnsSelector;
 			grid.Entity = _entity;
 			Globals.ResolveFilterInitialValues(_filter, _entity.XmlFilter);
 		}
@@ -178,7 +188,15 @@ namespace Merlin.Forms
 				UserMessage.ShowExclamation("Отметьте хотя бы одну рекламную акцию.");
 				return;
 			}
-			DialogResult = DialogResult.OK;
+
+			try
+			{
+				_print(ActionIds);
+			}
+			catch (Exception ex)
+			{
+				ErrorManager.PublishError(ex);
+			}
 		}
 
 		private void InitializeComponent()
@@ -310,7 +328,7 @@ namespace Merlin.Forms
 			this.btnCancel.Name = "btnCancel";
 			this.btnCancel.Size = new System.Drawing.Size(100, 33);
 			this.btnCancel.TabIndex = 1;
-			this.btnCancel.Text = "Отмена";
+			this.btnCancel.Text = "Закрыть";
 			this.btnCancel.UseVisualStyleBackColor = true;
 			//
 			// FrmActionsSelector

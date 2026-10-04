@@ -23,6 +23,7 @@ namespace Merlin.Classes
 		private readonly MediaPlanBuilder _builder;
 		private PrintSettings _printSettings;
 		private string _savedFilePath;
+		private static bool _isShowing;
 
 		#region Singleton
 
@@ -79,6 +80,25 @@ namespace Merlin.Classes
 		// Медиаплан всегда строится по фактическим окнам выпусков (@isFact = 1 в
 		// процедурах). Раньше Show принимал isFact и тут же перезаписывал его на true.
 		public void Show()
+		{
+			// Show гоняет сообщения (DoEvents) и долго строит книгу на UI-потоке: клики,
+			// накопившиеся за это время (повторный щелчок по «Печать» / «Ок»), отрабатывали
+			// бы вторым вложенным Show — со вторым диалогом настроек и вторым файлом.
+			if (_isShowing) return;
+			_isShowing = true;
+			try
+			{
+				ShowCore();
+			}
+			finally
+			{
+				// Накопившиеся клики вычитываем, пока флаг ещё поднят: они вернутся сразу.
+				Application.DoEvents();
+				_isShowing = false;
+			}
+		}
+
+		private void ShowCore()
 		{
 			_savedFilePath = null;
             CultureInfo oldCulture = Thread.CurrentThread.CurrentCulture;

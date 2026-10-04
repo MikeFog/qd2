@@ -1,4 +1,4 @@
-﻿-- Массовое редактирование тарифов («Изменить похожие тарифы...»): развёртывание.
+﻿-- Массовое редактирование тарифов («Изменить похожие тарифы»): развёртывание.
 --
 -- Пункт на тарифе (сущность 81) открывает паспорт TariffMassEdit (iPassport), предзаполненный значениями
 -- тарифа. «Похожие» тарифы (та же минута, все прочие атрибуты и дни совпадают) ищет процедура TariffSimilar.
@@ -127,11 +127,11 @@ IF NOT EXISTS (SELECT 1 FROM [dbo].[iEntityAction] WHERE entityID = @entTariff A
 	INSERT INTO [dbo].[iEntityAction]
 		(entityID, alias, name, ordinal_position, isHidden, isGrantingAllowed, imgResourceName, parentID)
 	VALUES
-		(@entTariff, N'Изменить похожие тарифы...', 'EditSimilarTariffs', 17, 0, 1, NULL, NULL);
+		(@entTariff, N'Изменить похожие тарифы', 'EditSimilarTariffs', 17, 0, 1, NULL, NULL);
 
 UPDATE [dbo].[iEntityAction]
-SET alias = N'Изменить похожие тарифы...'
-WHERE entityID = @entTariff AND name = 'EditSimilarTariffs' AND alias <> N'Изменить похожие тарифы...';
+SET alias = N'Изменить похожие тарифы'
+WHERE entityID = @entTariff AND name = 'EditSimilarTariffs' AND alias <> N'Изменить похожие тарифы';
 
 DECLARE @newActionID SMALLINT =
 	(SELECT entityActionID FROM [dbo].[iEntityAction] WHERE entityID = @entTariff AND name = 'EditSimilarTariffs');

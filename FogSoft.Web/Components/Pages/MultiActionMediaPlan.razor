@@ -112,8 +112,17 @@ else
     private string _idsText = "";
 
     // Лениво: страница создаётся и при пререндере, до входа пользователя.
+    // Клон с селектором 1: после номера акции — даты начала и окончания, как в десктопе
+    // (FrmActionsSelector.ColumnsSelector). Клон — чтобы не менять общую кэшированную сущность.
     private Entity? _entityCache;
-    private Entity _entity => _entityCache ??= EntityManager.GetEntity((int)Merlin.Entities.Action);
+    private Entity _entity => _entityCache ??= CreateEntity();
+
+    private static Entity CreateEntity()
+    {
+        Entity entity = (Entity)EntityManager.GetEntity((int)Merlin.Entities.Action).Clone();
+        entity.AttributeSelector = 1;
+        return entity;
+    }
     private FilterPanel? _filterPanel;
     private IReadOnlyList<PassportPage> _filterPages = Array.Empty<PassportPage>();
     private readonly Dictionary<string, object> _filterValues = new(StringComparer.InvariantCultureIgnoreCase);
