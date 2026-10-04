@@ -304,6 +304,7 @@ public sealed partial class ObjectActions
 		["Tariff"] = new()
 		{
 			["EditSimilarTariffs"] = (s, t) => s.EditSimilarTariffs((Merlin.Classes.Tariff)t),
+			["CloneTariffsMass"] = (s, t) => s.CloneTariffsMass((Merlin.Classes.Tariff)t),
 		},
 		// CampaignRoller.WinForms.cs, DoAction: «Заменить рекламный ролик» — именованный
 		// паспорт RollerSubstitute (дерево выпусков — treeselector). Ловит и
@@ -1155,6 +1156,47 @@ public sealed partial class ObjectActions
 			await ShowInfo(Tr.T("Готово"), Tr.Format("Изменено тарифов: {0}, создано новых: {1}", changed!.Count, added!.Count));
 
 		return changed!.Count + added!.Count > 0 ? ActionEffect.SiblingAdded : ActionEffect.None;
+	}
+
+	/// <summary>
+	/// «Клонировать массово» — веб-аналог Tariff.WinForms.CloneTariffsMass: паспорт
+	/// TariffMass («Добавить тариф массово»), засеянный значениями этого тарифа
+	/// (CreateCloneDraft — копия без ключа), интервал часов по умолчанию 0-23. По «ОК»
+	/// Tariff.CreateMass ставит по тарифу в каждый час интервала (один TariffIUD на час,
+	/// best-effort), сбои — таблицей.
+	///
+	/// Эффект — SiblingAdded, как у «Изменить похожие тарифы»: действие вызвано на тарифе,
+	/// новые тарифы встают рядом с ним (десктоп — OnParentChanged(this, Pricelist)).
+	/// Перечитываем, только если что-то создалось.
+	/// </summary>
+	private async Task<ActionEffect> CloneTariffsMass(Merlin.Classes.Tariff tariff)
+	{
+		Merlin.Classes.Tariff template = (Merlin.Classes.Tariff)tariff.CreateCloneDraft();
+		template[MassMinuteParam] = Convert.ToDateTime(tariff.Parameters[Merlin.Classes.Tariff.ParamNames.Time]).Minute;
+		template[MassHourFromParam] = 0;
+		template[MassHourToParam] = 23;
+
+		int created = 0;
+		DataTable? tableErrors = null;
+
+		bool ok = await _namedPassports.ShowAsync(template, "TariffMass", Tr.T("Клонировать тариф массово"), isNew: true,
+			edited => Merlin.Classes.Tariff.ValidateMassCreateHours(
+				Convert.ToInt32(edited[MassHourFromParam]), Convert.ToInt32(edited[MassHourToParam])),
+			edited => created = Merlin.Classes.Tariff.CreateMass(edited,
+				Convert.ToInt32(edited[MassHourFromParam]), Convert.ToInt32(edited[MassHourToParam]),
+				Convert.ToInt32(edited[MassMinuteParam]), out tableErrors));
+
+		if (!ok || tableErrors == null)
+			return ActionEffect.None;
+
+		if (tableErrors.Rows.Count > 0)
+			await _tables.ShowAsync(
+				Tr.Format("Создано тарифов: {0}, не создано: {1}", created, tableErrors.Rows.Count),
+				tableErrors, new Entity.Attribute("description", "Ошибка", "nvarchar")); // i18n-ok: Alias переводится при показе (ObjectList)
+		else
+			await ShowInfo(Tr.T("Готово"), Tr.Format("Создано тарифов: {0}", created));
+
+		return created > 0 ? ActionEffect.SiblingAdded : ActionEffect.None;
 	}
 
 	/// <summary>
