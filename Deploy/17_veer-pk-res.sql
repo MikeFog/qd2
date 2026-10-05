@@ -1,4 +1,23 @@
-﻿CREATE PROCEDURE [dbo].[TariffWindowWithRange]
+﻿-- Веер: ошибка «В базе данных уже существует объект с именем "PK_res"» (2714) при открытии и обновлении сетки.
+--
+-- TariffWindowWithRange создаёт временную таблицу #res с первичным ключом, у которого было имя PK_res. Имя
+-- ограничения у временной таблицы не делается уникальным для сессии, а должно быть уникальным во всей tempdb
+-- (общей для всех баз инстанса — Artvis, Tumen, Belgorod). Поэтому, пока веер выполняется в одной сессии,
+-- такой же вызов из другой падал. На проде — agv 02.10.2026 13:11 и 13:13 (после «до пересечения» и Insert
+-- в веере); на ArtvisDev воспроизведено: вторая сессия держит #-таблицу с PK_res, вызов веера падает с 2714.
+-- Теперь ключ без имени; больше в процедуре ничего не менялось (тело = master).
+--
+-- Идемпотентен (CREATE OR ALTER), данные не трогает, клиент не нужен.
+--   sqlcmd -S <сервер> -d <база> -E -f 65001 -I -b -i 17_veer-pk-res.sql
+
+SET NOCOUNT ON;
+GO
+SET ANSI_NULLS ON;
+GO
+SET QUOTED_IDENTIFIER ON;
+GO
+
+CREATE OR ALTER PROCEDURE [dbo].[TariffWindowWithRange]
 (
     @actionID  int,
     @dateStart datetime,
@@ -415,3 +434,7 @@ BEGIN
     GROUP BY [date], rollerID, positionId
     ORDER BY [date], rollerID, positionId;
 END
+GO
+
+PRINT N'=== ГОТОВО: TariffWindowWithRange обновлена (ключ #res без имени).';
+GO
