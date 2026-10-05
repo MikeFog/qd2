@@ -203,17 +203,19 @@ namespace Merlin.Controls
         void TariffWindowUngrouped(bool isWithPrev, bool isUngroup)
 		{
 			TariffWindow window = isWithPrev ? FindPrevWindowInDay() : FindNextWindowInDay();
-            int rowIndex2 = GetCell(window).RowIndex;
+            // Соседнего окна в этой колонке может не быть (склеенное — в другом дне или не на
+            // экране): связь в базе уже записана, перекрашиваем только текущую ячейку.
+            int rowIndex2 = window == null ? -1 : GetCell(window).RowIndex;
 
             if (isUngroup)
 			{
                 SetCellBackColor(CurrentRowIndex, CurrentColumnIndex, SystemColors.Window);
-                SetCellBackColor(rowIndex2, CurrentColumnIndex, SystemColors.Window);
+                if (rowIndex2 >= 0) SetCellBackColor(rowIndex2, CurrentColumnIndex, SystemColors.Window);
             }
 			else
 			{
 				MarkCellAsGroup(CurrentRowIndex, CurrentColumnIndex);
-                MarkCellAsGroup(rowIndex2, CurrentColumnIndex);
+                if (rowIndex2 >= 0) MarkCellAsGroup(rowIndex2, CurrentColumnIndex);
             }
 
 			MarkCellsWithOverflow();

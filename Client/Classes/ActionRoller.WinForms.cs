@@ -31,7 +31,8 @@ namespace Merlin.Classes
 				ActionOnMassmedia action = ActionOfRoller();
 
 				SelectionForm form = new SelectionForm(entity, action.Firm.GetRollers().DefaultView, "Замена ролика");
-				if (form.ShowDialog(owner) == DialogResult.OK)
+				// «ОК» без выбранной строки (например, у фирмы нет роликов) — как «Отмена».
+				if (form.ShowDialog(owner) == DialogResult.OK && form.SelectedObject != null)
 				{
 					owner.UseWaitCursor = true;
 					Application.DoEvents();
@@ -55,7 +56,8 @@ namespace Merlin.Classes
 			{
 				Entity entity = EntityManager.GetEntity((int)Entities.AdvertTypeChild);
 				SelectionForm form = new SelectionForm(entity, entity.GetContent().DefaultView, "Выбор предмета рекламы");
-				if (form.ShowDialog(owner) == DialogResult.OK)
+				// «ОК» без выбранной строки — как «Отмена».
+				if (form.ShowDialog(owner) == DialogResult.OK && form.SelectedObject != null)
 				{
 					owner.UseWaitCursor = true;
 					Application.DoEvents();

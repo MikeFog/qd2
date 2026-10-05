@@ -160,6 +160,7 @@ namespace Merlin.Classes
 				foreach (PresentationObject po in agencies)
 				{
 					PresentationObject bill = GetBill((Agency)po, owner);
+					if (bill == null) continue;
 					foreach (DateTime month in months)
 					{
 						Application.DoEvents();
