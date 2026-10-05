@@ -86,9 +86,17 @@ namespace Merlin.Classes
 			get { return IsInGroupWithNext || IsInGroupWithPrev; }
 		}
 
+        /// <summary>
+        /// Тариф окна объединён (TariffUnion). Колонку даёт только TariffWindowRetrieve; после Update()
+        /// окно перечитано из TariffWindowIUD без неё — тогда false, а не NRE.
+        /// </summary>
         public bool IsTariffUnited
         {
-            get { return (int)this["IsTariffUnited"] == 1; }
+            get
+            {
+                object value = this["IsTariffUnited"];
+                return value != null && value != DBNull.Value && Convert.ToInt32(value) == 1;
+            }
         }
 
         private bool IsInGroupWithPrev

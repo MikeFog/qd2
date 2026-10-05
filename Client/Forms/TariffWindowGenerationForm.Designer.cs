@@ -27,6 +27,7 @@
 		this.splitContainer1 = new System.Windows.Forms.SplitContainer();
 		this.tvwStructure = new FogSoft.WinForm.Controls.TreeView2();
 		this.tsbFilter = new System.Windows.Forms.ToolStripButton();
+		this.tsbShowDisabled = new System.Windows.Forms.ToolStripButton();
 		this.windowGrid = new Merlin.Controls.TariffWindowGrid();
 		this.tsJournal.SuspendLayout();
 		this.splitContainer1.Panel1.SuspendLayout();
@@ -43,7 +44,8 @@
             this.toolStripSeparator1,
             this.tsbExcel,
             this.tsbFilter,
-            this.tsJump2Date});
+            this.tsJump2Date,
+            this.tsbShowDisabled});
 		this.tsJournal.Location = new System.Drawing.Point(0, 0);
 		this.tsJournal.Name = "tsJournal";
 		this.tsJournal.Size = new System.Drawing.Size(716, 25);
@@ -137,6 +139,19 @@
 		this.tsbFilter.ToolTipText = "Установить Фильтр";
 		this.tsbFilter.Click += new System.EventHandler(this.tsbFilter_Click);
 		// 
+		// tsbShowDisabled
+		// 
+		this.tsbShowDisabled.Checked = true;
+		this.tsbShowDisabled.CheckOnClick = true;
+		this.tsbShowDisabled.CheckState = System.Windows.Forms.CheckState.Checked;
+		this.tsbShowDisabled.DisplayStyle = System.Windows.Forms.ToolStripItemDisplayStyle.Image;
+		this.tsbShowDisabled.ImageTransparentColor = System.Drawing.Color.Magenta;
+		this.tsbShowDisabled.Name = "tsbShowDisabled";
+		this.tsbShowDisabled.Size = new System.Drawing.Size(23, 22);
+		this.tsbShowDisabled.Text = "Показать заблокированные";
+		this.tsbShowDisabled.ToolTipText = "Показать заблокированные окна";
+		this.tsbShowDisabled.CheckedChanged += new System.EventHandler(this.tsbShowDisabled_CheckedChanged);
+		// 
 		// windowGrid
 		// 
 		this.windowGrid.Campaign = null;
@@ -190,5 +205,6 @@
 	private Controls.TariffWindowGrid windowGrid;
 	private System.Windows.Forms.ToolStripButton tsJump2Date;
 	private System.Windows.Forms.ToolStripButton tsbFilter;
+	private System.Windows.Forms.ToolStripButton tsbShowDisabled;
   }
 }

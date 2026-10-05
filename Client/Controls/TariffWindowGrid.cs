@@ -29,6 +29,13 @@ namespace Merlin.Controls
         /// Перенос предполагается в пределах того же дня, поэтому день недели/счётчики не меняются.
         /// </summary>
         protected virtual bool UseActualTime => false;
+
+        /// <summary>
+        /// Генерация окон: после загрузки красить состояние окон — заблокированные
+        /// (HighlightDisabledWindows) и объединённые (MarkLinkedWindows), как в трафик-менеджменте.
+        /// Сетки макетирования и трафик красят сами.
+        /// </summary>
+        public bool ShowWindowStates { get; set; }
         
         protected Point mouseClickPoint;
         private readonly ToolStripMenuItem miChangePrice = new ToolStripMenuItem();
@@ -54,6 +61,42 @@ namespace Merlin.Controls
         public TariffWindowGrid(bool showTrafficWindows) : this ()
         {
             this.showTrafficWindows = showTrafficWindows;
+        }
+
+        /// <summary>Перекрасить состояние окон без перечитывания (переключили замочек и т. п.).</summary>
+        public void RefreshStateColors()
+        {
+            RefreshWindowsColors();
+            MarkLinkedWindows();
+        }
+
+        /// <summary>
+        /// Объединённые окна — как в трафик-менеджменте: объединённые вручную (windowPrevId/windowNextId)
+        /// — бирюзовым, окна объединённых тарифов (TariffUnion) — бледно-зелёным. Поверх подсветки
+        /// RefreshWindowsColors (заблокированные, помеченные). docs/window-merging.md.
+        /// </summary>
+        protected void MarkLinkedWindows()
+        {
+            if (_tariffWindows == null)
+                return;
+
+            for (int rowIndex = FIXED_ROWS; rowIndex < RawDataGridView.RowCount; rowIndex++)
+                for (int columnIndex = FixedCols; columnIndex < RawDataGridView.ColumnCount; columnIndex++)
+                    if (GetTariffWindow(rowIndex, columnIndex) is TariffWindowWithRollerIssues window)
+                    {
+                        if (window.IsInGroup) MarkCellAsGroup(rowIndex, columnIndex);
+                        if (window.IsTariffUnited) MarkCellAsUnited(rowIndex, columnIndex);
+                    }
+        }
+
+        protected void MarkCellAsGroup(int rowIndex, int columnIndex)
+        {
+            SetCellBackColor(rowIndex, columnIndex, Color.LightSeaGreen);
+        }
+
+        protected void MarkCellAsUnited(int rowIndex, int columnIndex)
+        {
+            SetCellBackColor(rowIndex, columnIndex, FogSoft.WinForm.Controls.SmartGrid.UnitedBackColor);
         }
 
         private DateTime CurrentWindowDate
@@ -248,6 +291,8 @@ namespace Merlin.Controls
 			onGridPopulated += delegate 
 			{
                 SetContextMenu();
+                if (ShowWindowStates)
+                    RefreshStateColors();
             };
 
 			RawDataGridView.MouseDown += delegate(object sender, MouseEventArgs e)
@@ -300,7 +345,8 @@ namespace Merlin.Controls
 		private void OnTariffWindowChanged(PresentationObject presentationObject)
 		{
 			TariffWindowWithRollerIssues window = (TariffWindowWithRollerIssues)presentationObject;
-			if (window.Price != CurrentRowPrice || window.WindowDate != CurrentWindowDate)
+			// В генерации перечитываем всегда: карточка могла заблокировать окно, а цвет держит сетка.
+			if (ShowWindowStates || window.Price != CurrentRowPrice || window.WindowDate != CurrentWindowDate)
 			{
 				selectedWindow = window;
 				RefreshGrid();

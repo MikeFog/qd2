@@ -128,6 +128,11 @@ namespace Merlin.Controls
 
         public bool ShowPrimeWindows { get; set; }
         public bool ShowDisabledWindows { get; set; } = true;
+        /// <summary>
+        /// Красить загруженные заблокированные окна (ShowDisabledWindows их загружает). Генерация окон
+        /// снимает только подсветку — окна в сетке остаются; в макетировании оба флага идут вместе.
+        /// </summary>
+        public bool HighlightDisabledWindows { get; set; } = true;
         public bool ShowMarkedWindows { get; set; }
 
         #endregion
@@ -771,7 +776,7 @@ namespace Merlin.Controls
 
                     Color color = InternalGrid.DefaultCellStyle.BackColor;
 
-                    if (ShowDisabledWindows && window.IsDisabled)
+                    if (ShowDisabledWindows && HighlightDisabledWindows && window.IsDisabled)
                         color = Color.FromArgb(255, 231, 234);
                     else if (ShowMarkedWindows && window.IsMarked)
                         color = Color.LightSteelBlue;

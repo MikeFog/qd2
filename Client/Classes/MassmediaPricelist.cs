@@ -8,7 +8,7 @@ using FogSoft.WinForm.DataAccess;
 
 namespace Merlin.Classes
 {
-	// UI-часть (DoAction, ShowDisabledWindows, ChangeTariffWindowsMarkedStatus,
+	// UI-часть (DoAction, ChangeTariffWindowsMarkedStatus,
 	// ChangeTariffWindowsDisabedStatus, диалоговые обёртки GenerateTariffWindows/
 	// DeleteGeneratedWindows, CreateSpecialTariffWindow) — в
 	// MassmediaPricelist.WinForms.cs. Туда же ушли и сами колбэки
@@ -36,7 +36,6 @@ namespace Merlin.Classes
 			public const string DeleteGeneratedWindows = "DeleteGeneratedWindows";
 			public const string DisabledTariffWindows = "DisabledTariffWindows";
 			public const string EnabledTariffWindows = "EnabledTariffWindows";
-			public const string ShowDisabledWindows = "ShowDisabledWindows";
             public const string MarkWindows = "MarkWindows";
             public const string UnmarkWindows = "UnmarkWindows";
 			public const string AddTariffsMass = "AddTariffsMass";
@@ -85,7 +84,7 @@ namespace Merlin.Classes
 			get { return int.Parse(this[Massmedia.ParamNames.MassmediaId].ToString()); }
 		}
 
-		// DoAction и ShowDisabledWindows переехали в MassmediaPricelist.WinForms.cs.
+		// DoAction переехал в MassmediaPricelist.WinForms.cs.
 
 		public override bool IsActionEnabled(string actionName, ViewType type)
 		{
@@ -96,7 +95,6 @@ namespace Merlin.Classes
 			else if(actionName == Actions.GenerateWindows 
 				|| actionName == Actions.DeleteGeneratedWindows
 				|| actionName == Actions.EnabledTariffWindows
-				|| actionName == Actions.ShowDisabledWindows
 				|| actionName == Actions.DisabledTariffWindows)
 				return ChildEntity != null && ChildEntity.Id == (int)Entities.TariffWindow;
 			else if(actionName == Constants.EntityActions.Clone)

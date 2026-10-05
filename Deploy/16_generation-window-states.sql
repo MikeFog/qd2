@@ -1,5 +1,30 @@
-﻿
-CREATE PROC [dbo].[TariffWindowRetrieve]
+﻿-- Генерация рекламных окон: заблокированные и объединённые окна видны в сетке (пункты 6.4 и 6.5, 04.10.2026).
+--
+--   1. TariffWindowRetrieve: колонка IsTariffUnited (тариф окна объединён — TariffUnion) теперь и во второй
+--      ветке (@excludeSpecialWindows = 1, ей пользуются генерация окон в десктопе и вкладка «Рекламные окна»
+--      в вебе). Раньше её отдавала только первая ветка (трафик-менеджмент). Через EXISTS — строки окна не
+--      размножаются. Остальные колонки и порядок — без изменений.
+--   2. Пункт прайс-листа «Показать заблокированные окна» убран: заблокированные окна подсвечены прямо в
+--      сетке генерации (замочек на тулбаре, включён по умолчанию), в вебе вкладка «Рекламные окна» показывает
+--      их всегда. Удаляются iEntityAction сущности 80 ShowDisabledWindows (права GroupRight/UserAdditionRight —
+--      каскадом) и процедура ShowDisabledWindows (её вызывал только этот пункт).
+--
+-- Идемпотентен, применяется сразу (COMMIT в конце). Подсветку рисуют новые Merlin.exe и веб; старый клиент
+-- лишнюю колонку игнорирует, а пункт меню просто не покажет. После наката перезапустить qd2 и веб.
+--   sqlcmd -S <сервер> -d <база> -E -f 65001 -I -b -i 16_generation-window-states.sql
+
+SET NOCOUNT ON;
+GO
+SET ANSI_NULLS ON;
+GO
+SET QUOTED_IDENTIFIER ON;
+GO
+
+-- =====================================================================
+-- 1. TariffWindowRetrieve
+-- =====================================================================
+
+CREATE OR ALTER PROC [dbo].[TariffWindowRetrieve]
 (
     @pricelistId int = null,
     @broadcastStart datetime = null,
@@ -199,3 +224,29 @@ BEGIN
 
     DROP TABLE #tmpWindow;
 END
+GO
+
+-- =====================================================================
+-- 2. Пункт «Показать заблокированные окна» и процедура ShowDisabledWindows
+-- =====================================================================
+SET XACT_ABORT ON;
+BEGIN TRANSACTION;
+
+DELETE FROM dbo.iEntityAction WHERE entityID = 80 AND name = 'ShowDisabledWindows';
+PRINT CONCAT(N'iEntityAction удалено строк: ', @@ROWCOUNT);
+
+IF OBJECT_ID(N'dbo.ShowDisabledWindows', N'P') IS NOT NULL
+BEGIN
+    DROP PROCEDURE dbo.ShowDisabledWindows;
+    PRINT N'Процедура ShowDisabledWindows удалена';
+END
+
+COMMIT TRANSACTION;
+PRINT N'=== ГОТОВО: изменения применены и зафиксированы (COMMIT). Перезапустить qd2 и веб.';
+GO
+
+-- Проверка: две пустые выборки и дата изменения TariffWindowRetrieve
+SELECT entityActionID, alias FROM dbo.iEntityAction WHERE name = 'ShowDisabledWindows';
+SELECT name FROM sys.procedures WHERE name = N'ShowDisabledWindows';
+SELECT name, modify_date FROM sys.procedures WHERE name = N'TariffWindowRetrieve';
+GO

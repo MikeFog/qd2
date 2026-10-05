@@ -163,6 +163,12 @@
     background: var(--c-accent-soft);
 }
 
+/* Объединённый тариф (TariffUnion) — цвет десктопа (SmartGrid.UnitedBackColor, TrafficGrid). */
+.cell-united,
+.table > tbody > tr > td.cell-united {
+    background: #d9f2d0;
+}
+
 .table > tbody > tr > td.selected,
 .table > tbody > tr > td.selected:hover {
     box-shadow: inset 0 0 0 2px var(--c-accent);

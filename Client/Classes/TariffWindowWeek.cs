@@ -252,7 +252,8 @@ namespace Merlin.Classes
 					w)
 				{
 					IsOverflow = mode == TariffWindowWeekMode.Traffic && IsOverflow(w),
-					LinkNote = mode == TariffWindowWeekMode.Traffic ? LinkNote(w) : null
+					LinkNote = LinkNote(w),
+					IsTariffUnited = IsTariffUnited(w)
 				};
 				perDay[day]++;
 			}
@@ -300,6 +301,11 @@ namespace Merlin.Classes
 			return (maxCapacity > 0 && IntOrZero(w[TariffWindowWithRollerIssues.ParamNames.CapacityInUseConfirmed]) > maxCapacity)
 				|| IntOrZero(w[TariffWindow.ParamNames.TimeInUseConfirmed]) > IntOrZero(w[TariffWindow.ParamNames.Duration]);
 		}
+
+		/// <summary>Тариф окна объединён с соседним (TariffUnion, «Объединить с блоком»).</summary>
+		private static bool IsTariffUnited(DataRow w) =>
+			w.Table.Columns.Contains("IsTariffUnited") && w["IsTariffUnited"] != DBNull.Value
+			&& Convert.ToInt32(w["IsTariffUnited"]) == 1;
 
 		/// <summary>Склейка с соседним окном (windowPrevId / windowNextId, docs/window-merging.md).</summary>
 		private static string LinkNote(DataRow w)
@@ -496,8 +502,11 @@ namespace Merlin.Classes
 		/// <summary>Трафик: занято подтверждёнными больше, чем есть.</summary>
 		public bool IsOverflow { get; internal set; }
 
-		/// <summary>Трафик: склеено с соседним окном — пояснение; null — не склеено.</summary>
+		/// <summary>Склеено с соседним окном — пояснение; null — не склеено.</summary>
 		public string LinkNote { get; internal set; }
+
+		/// <summary>Тариф окна объединён с соседним (TariffUnion) — фон, как в десктопе.</summary>
+		public bool IsTariffUnited { get; internal set; }
 
 		/// <summary>Строка TariffWindowRetrieve — из неё поднимается объект окна.</summary>
 		internal DataRow Row { get; }

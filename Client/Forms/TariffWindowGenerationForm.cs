@@ -14,6 +14,7 @@ namespace Merlin.Forms
 		{
 			InitializeComponent();
 			InitializeToolbar();
+			windowGrid.ShowWindowStates = true;
 			tvwStructure.Root =	new FakeContainer("Радиостанция", null, RelationManager.GetScenario(RelationScenarios.TariffWindows));
 		}
 
@@ -25,6 +26,24 @@ namespace Merlin.Forms
 			tsbExcel.Image = Resources.ExportExcel;
 			tsJump2Date.Image = Properties.Resources.calendar;
 			tsbFilter.Image = Resources.Filter;
+			tsbShowDisabled.Image = Properties.Resources.@lock;
+		}
+
+		/// <summary>
+		/// Замочек «Показать заблокированные окна» (как в макетировании акции, но включён сразу).
+		/// Выключенный только снимает подсветку: заблокированные окна остаются в сетке.
+		/// </summary>
+		private void tsbShowDisabled_CheckedChanged(object sender, EventArgs e)
+		{
+			try
+			{
+				windowGrid.HighlightDisabledWindows = tsbShowDisabled.Checked;
+				windowGrid.RefreshStateColors();
+			}
+			catch (Exception ex)
+			{
+				ErrorManager.PublishError(ex);
+			}
 		}
 
 		private void tvwStructure_ContainerSelected(IObjectContainer container)

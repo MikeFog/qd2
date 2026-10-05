@@ -200,16 +200,6 @@ namespace Merlin.Controls
                 }
         }
 
-        protected void MarkCellAsGroup(int rowIndex, int columnIndex)
-        {
-            SetCellBackColor(rowIndex, columnIndex, Color.LightSeaGreen);
-        }
-
-        protected void MarkCellAsUnited(int rowIndex, int columnIndex)
-        {
-            SetCellBackColor(rowIndex, columnIndex, SmartGrid.UnitedBackColor);
-        }
-
         void TariffWindowUngrouped(bool isWithPrev, bool isUngroup)
 		{
 			TariffWindow window = isWithPrev ? FindPrevWindowInDay() : FindNextWindowInDay();

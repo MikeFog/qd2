@@ -39,10 +39,11 @@
         <div class="legend">
             <span><i class="swatch cell-disabled"></i>@Tr.T("недоступно")</span>
             <span><i class="swatch cell-marked"></i>@Tr.T("помечено")</span>
+            <span title="@(Tr.T("Окно склеено с соседним"))"><i class="swatch swatch-linked"></i>@Tr.T("склеено")</span>
+            <span title="@(Tr.T("Тариф окна объединён с соседним («Объединить с блоком»)"))"><i class="swatch cell-united"></i>@Tr.T("объединённый тариф")</span>
             @if (IsTraffic)
             {
                 <span title="@(Tr.T("Занято подтверждёнными выпусками больше, чем есть в окне"))"><i class="swatch cell-overflow"></i>@Tr.T("переполнено")</span>
-                <span title="@(Tr.T("Окно склеено с соседним"))"><i class="swatch swatch-linked"></i>@Tr.T("склеено")</span>
                 <span title="@(Tr.T("День обработан: выпуски менять может только трафик-менеджер и администратор"))"><i class="swatch cell-closed"></i>@Tr.T("день обработан")</span>
             }
             <span title="@(Tr.T("Окно изменено точечно: продолжительность, цена, время выхода или вместимость не как в тарифе"))">
@@ -199,6 +200,8 @@
     {
         string css = "cell";
         if (cell.IsOverflow) css += " cell-overflow";
+        // Объединённый тариф перекрывает «недоступно» и «помечено» — как в десктопе (TrafficGrid).
+        else if (cell.IsTariffUnited) css += " cell-united";
         else if (cell.IsDisabled) css += " cell-disabled";
         else if (cell.IsMarked) css += " cell-marked";
         if (Week!.IsClosed(day)) css += " closed";
@@ -213,8 +216,9 @@
         DisplayFormat.DateAndTime(cell.WindowDate) + StatusText(cell)
         + (cell.IsModified ? "\n" + Tr.T("Не как в тарифе:") + "\n• " + string.Join("\n• ", cell.Deviations) : "");
 
-    /// <summary>Состояние окна одной строкой: недоступно, помечено, переполнено, склеено.</summary>
+    /// <summary>Состояние окна одной строкой: недоступно, помечено, переполнено, склеено, объединённый тариф.</summary>
     public static string StatusText(TariffWindowCell cell) =>
         (cell.IsDisabled ? " · " + Tr.T("недоступно") : "") + (cell.IsMarked ? " · " + Tr.T("помечено") : "")
-        + (cell.IsOverflow ? " · " + Tr.T("переполнено") : "") + (cell.LinkNote != null ? " · " + cell.LinkNote : "");
+        + (cell.IsOverflow ? " · " + Tr.T("переполнено") : "") + (cell.LinkNote != null ? " · " + cell.LinkNote : "")
+        + (cell.IsTariffUnited ? " · " + Tr.T("объединённый тариф") : "");
 }

@@ -295,7 +295,6 @@ public sealed partial class ObjectActions
 				s.ChangeWindowsStatus(t, Merlin.Classes.PricelistWindows.ActionNames.MarkWindows, Tr.T("Пометить окна цветом")),
 			[Merlin.Classes.PricelistWindows.ActionNames.UnmarkWindows] = (s, t) =>
 				s.ChangeWindowsStatus(t, Merlin.Classes.PricelistWindows.ActionNames.UnmarkWindows, Tr.T("Снять пометку окон цветом")),
-			[Merlin.Classes.PricelistWindows.ActionNames.ShowDisabledWindows] = (s, t) => s.ShowDisabledWindows(t),
 		},
 		// Tariff.WinForms.cs, DoAction: «Изменить похожие тарифы» — второй именованный
 		// паспорт (TariffMassEdit). "Clone" у Tariff не задет: ClassActions проверяется по
@@ -1405,30 +1404,6 @@ public sealed partial class ObjectActions
 			values => Merlin.Classes.PricelistWindows.ChangeStatus(pricelist, actionName, values),
 			data: new DataSet());
 		return ok ? ActionEffect.Changed : ActionEffect.None;
-	}
-
-	/// <summary>«Показать заблокированные окна» — MassmediaPricelist.WinForms.ShowDisabledWindows.</summary>
-	private async Task<ActionEffect> ShowDisabledWindows(object pricelist)
-	{
-		var period = await _periods.ShowAsync(Tr.T("Выбрать период отчёта"),
-			Merlin.Classes.PricelistWindows.StartDate(pricelist), Merlin.Classes.PricelistWindows.FinishDate(pricelist),
-			Tr.T("Показать"), (a, b) => a > b ? MessageAccessor.GetMessage("StartFinishWindowTimeError") : null);
-		if (period is not { } p)
-			return ActionEffect.None;
-
-		DataTable table = await _busy.RunAsync(() => Merlin.Classes.PricelistWindows.DisabledWindows(pricelist, p.Start, p.Finish));
-		if (table.Rows.Count == 0)
-		{
-			await ShowInfo(Tr.T("Заблокированные окна"), Tr.T("Недоступных для внесения окон за этот период нет."));
-			return ActionEffect.None;
-		}
-
-		await _tables.ShowAsync(Tr.Format("Заблокированные окна: {0}", table.Rows.Count), table,
-			new Entity.Attribute(Merlin.Classes.TariffWindow.ParamNames.WindowDateOriginal, "Время выхода", "datetime"), // i18n-ok: Alias переводится при показе (ObjectList)
-			new Entity.Attribute(Merlin.Classes.TariffWindow.ParamNames.WindowDateActual, "Время выхода реальное", "datetime"), // i18n-ok: Alias переводится при показе (ObjectList)
-			new Entity.Attribute("durationString", "Продолжительность", "nvarchar"), // i18n-ok: Alias переводится при показе (ObjectList)
-			new Entity.Attribute(Merlin.Classes.TariffWindow.ParamNames.Price, "Цена", "money")); // i18n-ok: Alias переводится при показе (ObjectList)
-		return ActionEffect.None;
 	}
 
 	/// <summary>

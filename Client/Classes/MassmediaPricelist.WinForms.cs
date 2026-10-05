@@ -12,7 +12,7 @@ using Merlin.Forms;
 namespace Merlin.Classes
 {
 	// UI-часть MassmediaPricelist: диспетчеризация и диалоги генерации/удаления
-	// окон, смены статуса, отчёт по заблокированным выпускам. Бизнес-часть
+	// окон, смены статуса. Бизнес-часть
 	// длительных операций (GenerateTariffWindows(object,DoWorkEventArgs),
 	// DeleteGeneratedTariffWindows, CheckLinkedWindows) — в
 	// MassmediaPricelist.cs, они не показывают диалог сами и не нуждаются в UI
@@ -33,8 +33,6 @@ namespace Merlin.Classes
 				ChangeTariffWindowsDisabedStatus(owner, false);
 			else if (actionName == Actions.DisabledTariffWindows)
 				ChangeTariffWindowsDisabedStatus(owner, true);
-			else if (actionName == Actions.ShowDisabledWindows)
-				ShowDisabledWindows();
 			else if (actionName == Actions.MarkWindows)
 				ChangeTariffWindowsMarkedStatus(owner, true);
 			else if (actionName == Actions.UnmarkWindows)
@@ -151,22 +149,6 @@ namespace Merlin.Classes
 
 			UserMessage.ShowExclamation(error);
 			return false;
-		}
-
-		private void ShowDisabledWindows()
-		{
-			FrmDateSelector selector = new FrmDateSelector(StartDate, FinishDate, "Выбрать период отчета");
-			if (selector.ShowDialog(Globals.MdiParent) == DialogResult.OK)
-			{
-				DataSet ds = DataAccessor.LoadDataSet("ShowDisabledWindows",
-										 new Dictionary<string, object>
-										 	{
-										 		{"priceListID", PricelistId},
-										 		{"startDate", selector.StartDate},
-										 		{"finishDate", selector.FinishDate}
-										 	});
-				Globals.ShowSimpleJournal(EntityManager.GetEntity((int)Entities.TariffWindow), "Заблокированные выпуски", ds.Tables[0]);
-			}
 		}
 
 		private void ChangeTariffWindowsMarkedStatus(IWin32Window owner, bool isSpecial)

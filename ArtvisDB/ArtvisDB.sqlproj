@@ -287,7 +287,6 @@
     <Build Include="dbo\Stored Procedures\UserListByRights.sql" />
     <Build Include="dbo\Stored Procedures\AgencyTaxRetrieve.sql" />
     <Build Include="dbo\Stored Procedures\GroupListByRights.sql" />
-    <Build Include="dbo\Stored Procedures\ShowDisabledWindows.sql" />
     <Build Include="dbo\Stored Procedures\GroupRightID.sql" />
     <Build Include="dbo\Stored Procedures\TaxRetrieve.sql" />
     <Build Include="dbo\Stored Procedures\CampaignsForActJournalRetrieve.sql" />

@@ -27,14 +27,13 @@ namespace Merlin.Classes
 			public const string DeleteGeneratedWindows = "DeleteGeneratedWindows";
 			public const string DisabledTariffWindows = "DisabledTariffWindows";
 			public const string EnabledTariffWindows = "EnabledTariffWindows";
-			public const string ShowDisabledWindows = "ShowDisabledWindows";
 			public const string MarkWindows = "MarkWindows";
 			public const string UnmarkWindows = "UnmarkWindows";
 
 			public static readonly string[] All =
 			{
 				GenerateWindows, DeleteGeneratedWindows, DisabledTariffWindows, EnabledTariffWindows,
-				ShowDisabledWindows, MarkWindows, UnmarkWindows
+				MarkWindows, UnmarkWindows
 			};
 		}
 
@@ -196,29 +195,5 @@ namespace Merlin.Classes
 		}
 
 		private static string DayParam(DayOfWeek day) => day.ToString("g").ToLower();
-
-		// ---------- Заблокированные окна ----------
-
-		/// <summary>
-		/// Недоступные для внесения окна прайс-листа за период — ShowDisabledWindows, как
-		/// MassmediaPricelist.WinForms.ShowDisabledWindows. Добавлена колонка с длительностью
-		/// в виде «мм:сс».
-		/// </summary>
-		public static DataTable DisabledWindows(object pricelist, DateTime start, DateTime finish)
-		{
-			DataTable table = DataAccessor.LoadDataSet("ShowDisabledWindows", new Dictionary<string, object>
-			{
-				{ "priceListID", ((Pricelist)pricelist).PricelistId },
-				{ "startDate", start },
-				{ "finishDate", finish }
-			}).Tables[0];
-
-			table.Columns.Add("durationString", typeof(string));
-			foreach (DataRow row in table.Rows)
-				row["durationString"] = row[TariffWindow.ParamNames.Duration] == DBNull.Value
-					? string.Empty
-					: DateTimeUtils.Time2String(Convert.ToInt32(row[TariffWindow.ParamNames.Duration]));
-			return table;
-		}
 	}
 }

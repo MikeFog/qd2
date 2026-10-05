@@ -47,7 +47,6 @@ action	Пересчитать	Recalcular
 action	Показать акции	Mostrar campañas
 action	Показать дни выхода	Mostrar días de emisión
 action	Показать дни выхода в эфир	Mostrar días de salida al aire
-action	Показать заблокированные окна	Mostrar ventanas bloqueadas
 action	Показать модули	Mostrar módulos
 action	Показать пакетные модули	Mostrar módulos en paquete
 action	Показать пользователей	Mostrar usuarios
@@ -527,7 +526,6 @@ code	Выбирать не из чего: список пуст.	No hay nada que
 code	Выбрано станций: {0}	Emisoras seleccionadas: {0}
 code	Выбрать	Seleccionar
 code	Выбрать объект	Seleccionar objeto
-code	Выбрать период отчёта	Seleccionar período del informe
 code	Выделено окон: {0}	Ventanas seleccionadas: {0}
 code	Выделить строку	Seleccionar fila
 code	Выйти	Salir
@@ -544,8 +542,6 @@ code	Добавить	Agregar
 code	Доступ закрыт	Acceso denegado
 code	Журнал	Registro
 code	Журнала сущности {0} в вебе пока нет — на неё не ведёт ни один перенесённый пункт меню.	El registro de la entidad {0} aún no existe en la web — ningún elemento de menú migrado conduce a ella.
-code	Заблокированные окна	Ventanas bloqueadas
-code	Заблокированные окна: {0}	Ventanas bloqueadas: {0}
 code	Загрузка…	Cargando…
 code	Задайте значение или снимите галочку.	Indique un valor o desmarque la casilla.
 code	Закрыть	Cerrar
@@ -603,7 +599,6 @@ code	Не удалось восстановить связь.	No se pudo restabl
 code	Не удалось удалить объект '{0}'.	No se pudo eliminar el objeto '{0}'.
 code	Неверный логин или пароль.	Nombre de usuario o contraseña incorrectos.
 code	Недостаточно прав: действие «{0}» для «{1}» вам не разрешено.	Permisos insuficientes: la acción «{0}» para «{1}» no le está permitida.
-code	Недоступных для внесения окон за этот период нет.	No hay ventanas no disponibles para agregar emisiones en este período.
 code	Незамененные ролики	Spots no sustituidos
 code	Нельзя добавить день недели, которого нет у исходного тарифа: дни задают область применения.	No se puede agregar un día de la semana que no tenga la tarifa original: los días definen el ámbito de aplicación.
 code	Необходимо выбрать хотя бы одну радиостанцию.	Es necesario seleccionar al menos una emisora.
@@ -1828,3 +1823,5 @@ code	Тариф объединён с предыдущим {0} — окно до
 code	Окно объединено со следующим {0} — должно выйти раньше	Ventana unida con la siguiente {0}: debe salir antes
 code	Окно объединено с предыдущим {0} — должно выйти позже	Ventana unida con la anterior {0}: debe salir después
 message	Перенос не выполнен: окно относится к объединённым тарифам, и после переноса их окна вышли бы в эфир в неправильном порядке — окно, которое должно идти позже, оказалось бы раньше. Переносите окна объединённых тарифов по очереди так, чтобы порядок сохранялся.	No se realizó el traslado: la ventana pertenece a tarifas unidas y, después del traslado, sus ventanas saldrían al aire en un orden incorrecto — la ventana que debe ir después quedaría antes. Traslade las ventanas de las tarifas unidas una por una de modo que se mantenga el orden.
+code	Тариф окна объединён с соседним («Объединить с блоком»)	La tarifa de la ventana está unida con la vecina («Unir con el bloque»)
+code	объединённый тариф	tarifa unida

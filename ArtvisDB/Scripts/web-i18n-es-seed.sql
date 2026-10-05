@@ -1,5 +1,5 @@
 ﻿/*
-    ДЕПЛОЙ: переводы веб-версии на язык «es» (1829 строк). docs/tasks/web-i18n.md, этап 5.
+    ДЕПЛОЙ: переводы веб-версии на язык «es» (1826 строк). docs/tasks/web-i18n.md, этап 5.
     СГЕНЕРИРОВАН из ArtvisDB/Scripts/i18n/es.tsv скриптом build-seed.py — руками не править.
 
     ПРЕДУСЛОВИЕ     накачен web-i18n-translation-deploy.sql (таблица iTranslation).
@@ -63,7 +63,6 @@ INSERT INTO #t ([source], [text]) VALUES
 (N'Показать акции', N'Mostrar campañas'),
 (N'Показать дни выхода', N'Mostrar días de emisión'),
 (N'Показать дни выхода в эфир', N'Mostrar días de salida al aire'),
-(N'Показать заблокированные окна', N'Mostrar ventanas bloqueadas'),
 (N'Показать модули', N'Mostrar módulos'),
 (N'Показать пакетные модули', N'Mostrar módulos en paquete'),
 (N'Показать пользователей', N'Mostrar usuarios'),
@@ -514,10 +513,10 @@ INSERT INTO #t ([source], [text]) VALUES
 (N'Атрибутов: {0}', N'Atributos: {0}'),
 (N'В окне уже есть ролик «{0}».', N'La ventana ya contiene el spot «{0}».'),
 (N'В окне уже есть ролики фирмы «{0}».', N'La ventana ya contiene spots de la empresa «{0}».'),
-(N'Введите имя пользователя и пароль', N'Ingrese el nombre de usuario y la contraseña');
+(N'Введите имя пользователя и пароль', N'Ingrese el nombre de usuario y la contraseña'),
+(N'Войти', N'Iniciar sesión');
 GO
 INSERT INTO #t ([source], [text]) VALUES
-(N'Войти', N'Iniciar sesión'),
 (N'Восстанавливаем связь с сервером…', N'Restableciendo la conexión con el servidor…'),
 (N'Время', N'Hora'),
 (N'Время выхода', N'Hora de emisión'),
@@ -545,7 +544,6 @@ INSERT INTO #t ([source], [text]) VALUES
 (N'Выбрано станций: {0}', N'Emisoras seleccionadas: {0}'),
 (N'Выбрать', N'Seleccionar'),
 (N'Выбрать объект', N'Seleccionar objeto'),
-(N'Выбрать период отчёта', N'Seleccionar período del informe'),
 (N'Выделено окон: {0}', N'Ventanas seleccionadas: {0}'),
 (N'Выделить строку', N'Seleccionar fila'),
 (N'Выйти', N'Salir'),
@@ -562,8 +560,6 @@ INSERT INTO #t ([source], [text]) VALUES
 (N'Доступ закрыт', N'Acceso denegado'),
 (N'Журнал', N'Registro'),
 (N'Журнала сущности {0} в вебе пока нет — на неё не ведёт ни один перенесённый пункт меню.', N'El registro de la entidad {0} aún no existe en la web — ningún elemento de menú migrado conduce a ella.'),
-(N'Заблокированные окна', N'Ventanas bloqueadas'),
-(N'Заблокированные окна: {0}', N'Ventanas bloqueadas: {0}'),
 (N'Загрузка…', N'Cargando…'),
 (N'Задайте значение или снимите галочку.', N'Indique un valor o desmarque la casilla.'),
 (N'Закрыть', N'Cerrar'),
@@ -621,7 +617,6 @@ INSERT INTO #t ([source], [text]) VALUES
 (N'Не удалось удалить объект ''{0}''.', N'No se pudo eliminar el objeto ''{0}''.'),
 (N'Неверный логин или пароль.', N'Nombre de usuario o contraseña incorrectos.'),
 (N'Недостаточно прав: действие «{0}» для «{1}» вам не разрешено.', N'Permisos insuficientes: la acción «{0}» para «{1}» no le está permitida.'),
-(N'Недоступных для внесения окон за этот период нет.', N'No hay ventanas no disponibles para agregar emisiones en este período.'),
 (N'Незамененные ролики', N'Spots no sustituidos'),
 (N'Нельзя добавить день недели, которого нет у исходного тарифа: дни задают область применения.', N'No se puede agregar un día de la semana que no tenga la tarifa original: los días definen el ámbito de aplicación.'),
 (N'Необходимо выбрать хотя бы одну радиостанцию.', N'Es necesario seleccionar al menos una emisora.'),
@@ -1016,14 +1011,14 @@ INSERT INTO #t ([source], [text]) VALUES
 (N'Оплата акции', N'Pago de campaña'),
 (N'Пакетная рекламная компания', N'Pauta publicitaria en paquete'),
 (N'Пакетные модули кампании', N'Módulos en paquete de la pauta'),
-(N'Перенос выпуска', N'Traslado de emisión');
-GO
-INSERT INTO #t ([source], [text]) VALUES
+(N'Перенос выпуска', N'Traslado de emisión'),
 (N'Платеж', N'Pago'),
 (N'Пользователь в группе', N'Usuario en grupo'),
 (N'Пользовательский коэффициент', N'Coeficiente de usuario'),
 (N'Пользовательский коэффициент (массовый)', N'Coeficiente de usuario (masivo)'),
-(N'Права группы', N'Permisos del grupo'),
+(N'Права группы', N'Permisos del grupo');
+GO
+INSERT INTO #t ([source], [text]) VALUES
 (N'Прайс-Лист (Пакетная скидка)', N'Lista de precios (descuento por paquete)'),
 (N'Прайс-лист', N'Lista de precios'),
 (N'Прайс-лист для Пакетных модулей', N'Lista de precios para módulos en paquete'),
@@ -1518,14 +1513,14 @@ INSERT INTO #t ([source], [text]) VALUES
 (N'Частичный график размещения для рекламной акции № {0}', N'Plan de colocación parcial de la campaña publicitaria N.º {0}'),
 (N'Программы:', N'Programas:'),
 (N'Всего трансляций: {0}', N'Total de emisiones: {0}'),
-(N'Время трансляций: {0}', N'Tiempo de emisión: {0}');
-GO
-INSERT INTO #t ([source], [text]) VALUES
+(N'Время трансляций: {0}', N'Tiempo de emisión: {0}'),
 (N'Стоимость спланированной рекламы: {0:c}', N'Costo de la publicidad planificada: {0:c}'),
 (N'Стоимость спланированной рекламы по тарифам: {0:c}', N'Costo de la publicidad planificada según tarifas: {0:c}'),
 (N'Стоимость спланированной рекламы с учетом скидки: {0:c}', N'Costo de la publicidad planificada con descuento: {0:c}'),
 (N'Скидка: {0}', N'Descuento: {0}'),
-(N'В том числе НДС ({0:0.##}%): {1:c}', N'IVA incluido ({0:0.##} %): {1:c}'),
+(N'В том числе НДС ({0:0.##}%): {1:c}', N'IVA incluido ({0:0.##} %): {1:c}');
+GO
+INSERT INTO #t ([source], [text]) VALUES
 (N'В том числе НДС: {0:c}', N'IVA incluido: {0:c}'),
 (N'Исполнитель:', N'Contratista:'),
 (N'Заказчик:', N'Cliente:'),
@@ -1849,7 +1844,9 @@ INSERT INTO #t ([source], [text]) VALUES
 (N'Тариф объединён с предыдущим {0} — окно должно выйти позже', N'Tarifa unida con la anterior {0}: la ventana debe salir después'),
 (N'Окно объединено со следующим {0} — должно выйти раньше', N'Ventana unida con la siguiente {0}: debe salir antes'),
 (N'Окно объединено с предыдущим {0} — должно выйти позже', N'Ventana unida con la anterior {0}: debe salir después'),
-(N'Перенос не выполнен: окно относится к объединённым тарифам, и после переноса их окна вышли бы в эфир в неправильном порядке — окно, которое должно идти позже, оказалось бы раньше. Переносите окна объединённых тарифов по очереди так, чтобы порядок сохранялся.', N'No se realizó el traslado: la ventana pertenece a tarifas unidas y, después del traslado, sus ventanas saldrían al aire en un orden incorrecto — la ventana que debe ir después quedaría antes. Traslade las ventanas de las tarifas unidas una por una de modo que se mantenga el orden.');
+(N'Перенос не выполнен: окно относится к объединённым тарифам, и после переноса их окна вышли бы в эфир в неправильном порядке — окно, которое должно идти позже, оказалось бы раньше. Переносите окна объединённых тарифов по очереди так, чтобы порядок сохранялся.', N'No se realizó el traslado: la ventana pertenece a tarifas unidas y, después del traslado, sus ventanas saldrían al aire en un orden incorrecto — la ventana que debe ir después quedaría antes. Traslade las ventanas de las tarifas unidas una por una de modo que se mantenga el orden.'),
+(N'Тариф окна объединён с соседним («Объединить с блоком»)', N'La tarifa de la ventana está unida con la vecina («Unir con el bloque»)'),
+(N'объединённый тариф', N'tarifa unida');
 GO
 
 BEGIN TRANSACTION;
