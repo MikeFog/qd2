@@ -261,7 +261,7 @@ namespace Merlin.Classes
 			return Convert.ToInt32(ds.Tables[0].Rows[0]["movedCount"]);
 		}
 
-		/// <summary>Окна, время выхода которых не перенесено: name — окно, description — причина.</summary>
+		/// <summary>Окна, время выхода которых не перенесено: name — рекламное окно, description — причина.</summary>
 		public static DataTable CreateNotMovedTable()
 		{
 			DataTable table = new DataTable();

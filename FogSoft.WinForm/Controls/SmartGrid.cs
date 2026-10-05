@@ -50,6 +50,13 @@ namespace FogSoft.WinForm.Controls
         public const string COL_IsSelected = "isObjectSelected";
         private const string COL_RowNumber = "smartGridRowNumber";
         private const string ROW_STYLE = "row_style";
+
+        /// <summary>
+        /// Фон строки row_style = 'united' — объединённые тарифы (TariffUnion). Тот же цвет у ячеек
+        /// объединённых тарифов в трафик-менеджменте (TrafficGrid.MarkCellAsUnited).
+        /// </summary>
+        public static readonly Color UnitedBackColor = Color.FromArgb(217, 242, 208);
+
         private const string MASS_DELETE_ERROR_ENTITY_PK = "__id";
         private const string MASS_DELETE_ERROR_NAME = "name";
         private const string MASS_DELETE_ERROR_TEXT = "error";
@@ -1450,6 +1457,7 @@ namespace FogSoft.WinForm.Controls
                 return;
 
             PresentationObject presentationObject = SelectedObject;
+            SubscribeParentChange(presentationObject);
             if (presentationObject != null && presentationObject.IsActionEnabled(Constants.EntityActions.ShowPassport, ViewType.Journal) &&
                isMenuEnabled &&
                presentationObject.ShowPassport(this))
@@ -1798,9 +1806,11 @@ namespace FogSoft.WinForm.Controls
         /// DeleteSelectedObjects для переиспользования внешними сценариями (например, удаление
         /// выпусков по выбранным окнам тарифной сетки или массовое добавление по Insert) - имя
         /// осталось от первого сценария (удаления), caption позволяет назвать журнал правильно
-        /// для любой другой массовой операции.
+        /// для любой другой массовой операции. nameCaption / errorCaption — подписи колонок, когда
+        /// «Название» / «Ошибка» не про то (у переноса времени выхода — «Рекламное окно» / «Причина»).
         /// </summary>
-        public static void ShowDeleteErrors(DataTable deleteErrors, string caption = "Ошибки массового удаления")
+        public static void ShowDeleteErrors(DataTable deleteErrors, string caption = "Ошибки массового удаления",
+            string nameCaption = "Название", string errorCaption = "Ошибка")
         {
             if (deleteErrors == null || deleteErrors.Rows.Count == 0)
                 return;
@@ -1810,8 +1820,8 @@ namespace FogSoft.WinForm.Controls
                 caption,
                 "MassDeleteErrors",
                 MASS_DELETE_ERROR_ENTITY_PK,
-                new Entity.Attribute(MASS_DELETE_ERROR_NAME, "Название", "nvarchar"),
-                new Entity.Attribute(MASS_DELETE_ERROR_TEXT, "Ошибка", "nvarchar"));
+                new Entity.Attribute(MASS_DELETE_ERROR_NAME, nameCaption, "nvarchar"),
+                new Entity.Attribute(MASS_DELETE_ERROR_TEXT, errorCaption, "nvarchar"));
 
             Globals.ShowSimpleJournal(errorEntity, caption, deleteErrors, true);
         }
@@ -1897,9 +1907,25 @@ namespace FogSoft.WinForm.Controls
                     presentationObject.DoAction(Constants.EntityActions.Edit, Globals.MdiParent, InterfaceObjects.PropertyPage);
                     //UpdateRow(presentationObject);
                 }
-                else if (presentationObject.ShowPassport(ParentForm))
-                    UpdateRow(presentationObject);
+                else
+                {
+                    SubscribeParentChange(presentationObject);
+                    if (presentationObject.ShowPassport(ParentForm))
+                        UpdateRow(presentationObject);
+                }
             }
+        }
+
+        /// <summary>
+        /// Карточка, открытая двойным щелчком или кнопкой «Изменить», может попросить перечитать
+        /// родителя (OnParentChanged(po, isParent)) — как и при открытии из меню (MenuItemClick):
+        /// например, тариф после смены объединения, чтобы подсветка обновилась и у соседнего тарифа.
+        /// </summary>
+        private void SubscribeParentChange(PresentationObject presentationObject)
+        {
+            if (presentationObject == null) return;
+            presentationObject.ParentChanged2 -= OnObjectParentChange2;
+            presentationObject.ParentChanged2 += OnObjectParentChange2;
         }
 
         private bool _lockMultiSelect = false;
@@ -1933,6 +1959,17 @@ namespace FogSoft.WinForm.Controls
                             if (dataRow[ROW_STYLE].ToString() == "bold")
                                 dataGrid.Rows[e.RowIndex].Cells[i].Style.Font = new Font(dataGrid.Font, FontStyle.Bold);
                         }
+                    }
+
+                    // 'united' — фоном; строку, переставшую быть такой (UpdateRow), возвращаем к обычной.
+                    if (dataRow.Table.Columns.Contains(ROW_STYLE))
+                    {
+                        // Явный цвет ячейки (быстрый поиск, HighlightRows) по-прежнему сильнее фона строки.
+                        Color back = dataRow[ROW_STYLE] is string style && style == "united" ? UnitedBackColor
+                            : row.DefaultCellStyle.BackColor == UnitedBackColor ? Color.Empty
+                            : row.DefaultCellStyle.BackColor;
+                        if (row.DefaultCellStyle.BackColor != back)
+                            row.DefaultCellStyle.BackColor = back;
                     }
                 }
             }

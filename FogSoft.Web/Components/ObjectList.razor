@@ -381,6 +381,8 @@ else
         string css = ReferenceEquals(row, _menuRow) ? "row-menu-open" : "";
         if (ReferenceEquals(row, ActiveRow))
             css += " row-active";
+        if (RowStyle.IsUnited(row))
+            css += " row-united";
         return RowStyle.IsBold(row) ? css + " row-bold" : css;
     }
 

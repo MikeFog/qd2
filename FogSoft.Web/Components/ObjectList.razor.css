@@ -76,6 +76,12 @@
     cursor: default;
 }
 
+/* Объединённые тарифы (row_style = 'united') — цвет десктопа (SmartGrid.UnitedBackColor,
+   TrafficGrid). Выше правила выбранной строки: выбор перекрывает. */
+::deep tbody tr.row-united > td {
+    background: #d9f2d0;
+}
+
 /* Строка, у которой открыто меню, и строка, выбранная владельцем (RowClick), подсвечены. */
 ::deep tbody tr.row-active > td,
 ::deep tbody tr.row-menu-open > td {

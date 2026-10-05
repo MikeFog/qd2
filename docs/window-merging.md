@@ -93,8 +93,8 @@ FK tariffUnionID → Tariff  (без каскада)
 |---|---|
 | [`TariffWindowRetrieve.sql`](../ArtvisDB/dbo/Stored Procedures/TariffWindowRetrieve.sql):155 | флаг `IsTariffUnited` (1, если тариф участвует в союзе **любой** стороной: `f.tariffId = tu.tariffID OR f.tariffId = tu.tariffUnionID`) |
 | [`rpt_Grid.sql`](../ArtvisDB/dbo/Stored Procedures/rpt_Grid.sql) / `rpt_Grid_v2` / `rpt_Grid_v3` | `LEFT JOIN … ON t.tariffID = tu.tariffID`, прокидывают колонку `tariffUnionID` в грид/выгрузку; `ORDER BY … windowPrevId` |
-| [`ModuleTariffs.sql`](../ArtvisDB/dbo/Stored Procedures/ModuleTariffs.sql), [`sl_TariffRetrieve.sql`](../ArtvisDB/dbo/Stored Procedures/sl_TariffRetrieve.sql) | отдают `isUnionEnable` / `tariffUnionID` для списков тарифов модуля |
-| [`TrafficGrid.cs`](../Client/Controls/TrafficGrid.cs):198 | `IsTariffUnited` → красит ячейку в бледно-зелёный (`MarkCellAsUnited`, `Color.FromArgb(217,242,208)`) |
+| [`ModuleTariffs.sql`](../ArtvisDB/dbo/Stored Procedures/ModuleTariffs.sql), [`sl_TariffRetrieve.sql`](../ArtvisDB/dbo/Stored Procedures/sl_TariffRetrieve.sql) | отдают `isUnionEnable` / `tariffUnionID` для списков тарифов модуля; `sl_TariffRetrieve` (список тарифов прайс-листа, `Tariffs`) с 04.10.2026 ещё и `row_style = 'united'` у тарифа, объединённого любой стороной, — строка списка бледно-зелёная (`SmartGrid.UnitedBackColor`, веб `ObjectList` `row-united`), как ячейка в трафике |
+| [`TrafficGrid.cs`](../Client/Controls/TrafficGrid.cs):198 | `IsTariffUnited` → красит ячейку в бледно-зелёный (`MarkCellAsUnited`, `SmartGrid.UnitedBackColor` = `Color.FromArgb(217,242,208)`) |
 | [`ExportDocument.cs`](../Client/Classes/GridExport/ExportDocument.cs) | **основной потребитель** — см. ниже |
 
 ### Семантика в DJin-выгрузке

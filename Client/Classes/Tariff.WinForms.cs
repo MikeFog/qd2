@@ -42,6 +42,28 @@ namespace Merlin.Classes
 			}
 		}
 
+		/// <summary>
+		/// Сменилось объединение тарифа («Объединить с блоком») — список перечитываем целиком:
+		/// подсветка объединённых тарифов (row_style 'united' из sl_TariffRetrieve) меняется и у
+		/// соседнего тарифа, а после карточки список обновляет только эту строку.
+		/// </summary>
+		public override bool ShowPassport(IWin32Window parentForm)
+		{
+			object unionBefore = UnionTariffId();
+			if (!base.ShowPassport(parentForm))
+				return false;
+
+			if (!Equals(unionBefore, UnionTariffId()))
+				OnParentChanged(this, po => po is Pricelist);
+			return true;
+		}
+
+		private object UnionTariffId()
+		{
+			object value = this["tariffUnionID"];
+			return value == null || value == DBNull.Value ? null : (object)Convert.ToInt32(value);
+		}
+
 		private struct ActionNames
 		{
 			public const string EditSimilar = "EditSimilarTariffs";

@@ -207,7 +207,7 @@ namespace Merlin.Controls
 
         protected void MarkCellAsUnited(int rowIndex, int columnIndex)
         {
-            SetCellBackColor(rowIndex, columnIndex, Color.FromArgb(217, 242, 208));
+            SetCellBackColor(rowIndex, columnIndex, SmartGrid.UnitedBackColor);
         }
 
         void TariffWindowUngrouped(bool isWithPrev, bool isUngroup)
@@ -578,7 +578,8 @@ namespace Merlin.Controls
 					DataTable errors = SmartGrid.CreateDeleteErrorsTable();
 					foreach (DataRow row in notMoved.Rows)
 						SmartGrid.AddDeleteError(errors, errors.Rows.Count + 1, (string)row["name"], (string)row["description"]);
-					SmartGrid.ShowDeleteErrors(errors, TrafficManagement.NotMovedCaption(moved, notMoved));
+					SmartGrid.ShowDeleteErrors(errors, TrafficManagement.NotMovedCaption(moved, notMoved),
+						"Рекламное окно", "Причина");
 				}
 			}
             catch (Exception ex)

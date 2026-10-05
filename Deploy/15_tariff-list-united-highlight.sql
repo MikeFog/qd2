@@ -1,6 +1,24 @@
-﻿
+﻿-- Список тарифов прайс-листа: объединённые тарифы (TariffUnion, «Объединить с блоком») подсвечены.
+--
+-- Раньше увидеть объединение можно было только в карточке каждого тарифа. Теперь sl_TariffRetrieve
+-- (её вызывает Tariffs — список тарифов, сущность 81, и ответ TariffIUD после сохранения) отдаёт служебную
+-- колонку row_style = 'united' для тарифа, объединённого любой стороной; список красит строку тем же
+-- бледно-зелёным, что ячейку объединённого тарифа в трафик-менеджменте. Колонки нет в метаданных — в
+-- таблице она не видна. Строки объединённых тарифов бывают не подряд (будни/выходные на одно время).
+--
+-- Идемпотентен (CREATE OR ALTER), данные не трогает. Подсветку рисуют новые Merlin.exe и веб; старый
+-- клиент колонку игнорирует.
+--   sqlcmd -S <сервер> -d <база> -E -f 65001 -I -b -i 15_tariff-list-united-highlight.sql
 
-CREATE     PROCEDURE [dbo].[sl_TariffRetrieve]
+SET NOCOUNT ON;
+GO
+SET ANSI_NULLS ON;
+GO
+SET QUOTED_IDENTIFIER ON;
+GO
+
+
+CREATE OR ALTER PROCEDURE [dbo].[sl_TariffRetrieve]
 AS
 SET NOCOUNT ON
 
@@ -30,7 +48,4 @@ ORDER BY
 		WHEN t.sunday = 1 THEN 7 ELSE 8 END asc,
 	t.tariffID asc
 Drop Table #Tariff
-
-
-
-
+GO
