@@ -1,0 +1,34 @@
+/* Ручка занимает место прежнего зазора между панелями; линия — по наведению и фокусу. */
+.pane-splitter {
+    flex: 0 0 var(--s-4);
+    align-self: stretch;
+    position: relative;
+    cursor: col-resize;
+    touch-action: none;
+    outline: none;
+}
+
+.pane-splitter::after {
+    content: "";
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    left: 50%;
+    width: 3px;
+    margin-left: -1px;
+    border-radius: 2px;
+    background: transparent;
+    transition: background-color .15s;
+}
+
+.pane-splitter:hover::after,
+.pane-splitter:focus-visible::after {
+    background: var(--c-accent);
+}
+
+/* Узкий экран — панели колонкой, тянуть нечего. */
+@media (max-width: 900px) {
+    .pane-splitter {
+        display: none;
+    }
+}

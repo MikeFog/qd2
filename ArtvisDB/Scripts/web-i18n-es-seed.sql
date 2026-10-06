@@ -1,5 +1,5 @@
 ﻿/*
-    ДЕПЛОЙ: переводы веб-версии на язык «es» (1969 строк). docs/tasks/web-i18n.md, этап 5.
+    ДЕПЛОЙ: переводы веб-версии на язык «es» (1971 строк). docs/tasks/web-i18n.md, этап 5.
     СГЕНЕРИРОВАН из ArtvisDB/Scripts/i18n/es.tsv скриптом build-seed.py — руками не править.
 
     ПРЕДУСЛОВИЕ     накачен web-i18n-translation-deploy.sql (таблица iTranslation).
@@ -1989,7 +1989,9 @@ INSERT INTO #t ([source], [text]) VALUES
 (N'отмеченное окно', N'ventana marcada'),
 (N'подходит под отбор', N'cumple el filtro'),
 (N'прайм-тайм', N'prime time'),
-(N'Выпуск изменили или удалили, пока выбиралось окно. Выберите выпуски заново.', N'La emisión fue modificada o eliminada mientras se elegía la ventana. Vuelva a seleccionar las emisiones.');
+(N'Выпуск изменили или удалили, пока выбиралось окно. Выберите выпуски заново.', N'La emisión fue modificada o eliminada mientras se elegía la ventana. Vuelva a seleccionar las emisiones.'),
+(N'Граница между панелями', N'Límite entre paneles'),
+(N'Потяните, чтобы изменить ширину. Двойной щелчок — исходная ширина', N'Arrastre para cambiar el ancho. Doble clic: ancho inicial');
 GO
 
 BEGIN TRANSACTION;

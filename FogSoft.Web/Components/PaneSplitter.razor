@@ -1,0 +1,47 @@
+@using FogSoft.WinForm.Classes
+@implements IAsyncDisposable
+@inject IJSRuntime JS
+
+@*
+    Перетаскиваемая граница между двумя панелями — как разделитель десктопного ExplorerForm.
+    Ставится сразу после левой панели; её ширину меняет js/splitter.js (CSS-переменная
+    --pane-width на панели), на сервер во время перетаскивания ничего не уходит. Ширина
+    запоминается в браузере пользователя отдельно для каждого экрана (StorageKey).
+*@
+
+<div class="pane-splitter" role="separator" aria-orientation="vertical" tabindex="0" @ref="_handle"
+     aria-label="@(Tr.T("Граница между панелями"))"
+     title="@(Tr.T("Потяните, чтобы изменить ширину. Двойной щелчок — исходная ширина"))"></div>
+
+@code {
+    /// <summary>Ключ, под которым запоминается ширина (экран).</summary>
+    [Parameter, EditorRequired] public string StorageKey { get; set; } = "";
+
+    private ElementReference _handle;
+    private IJSObjectReference? _module;
+    private string? _attachedKey;
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (_attachedKey == StorageKey)
+            return;
+        try
+        {
+            _module ??= await JS.InvokeAsync<IJSObjectReference>("import", "./js/splitter.js");
+            await _module.InvokeVoidAsync("attach", _handle, StorageKey);
+            _attachedKey = StorageKey;
+        }
+        catch (JSDisconnectedException)
+        {
+            // Вкладку закрыли во время отрисовки — подключать нечего.
+        }
+    }
+
+    public async ValueTask DisposeAsync()
+    {
+        if (_module == null)
+            return;
+        try { await _module.DisposeAsync(); }
+        catch (JSDisconnectedException) { }
+    }
+}

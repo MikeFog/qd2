@@ -1,6 +1,6 @@
 /*
     Древовидный экран: дерево слева, список справа — раскладка ExplorerForm
-    с её разделителем, только фиксированной ширины.
+    с её разделителем: ширину дерева меняет PaneSplitter (--pane-width).
 */
 
 .browser {
@@ -19,13 +19,15 @@
 .browser-body {
     flex: 1 1 auto;
     display: flex;
-    gap: var(--s-4);
     min-height: 0;
 }
 
+/* Зазор между деревом и списком — сама ручка PaneSplitter. */
 .browser-tree {
-    flex: 0 0 320px;
-    width: 320px;
+    flex: 0 0 var(--pane-width, 320px);
+    width: var(--pane-width, 320px);
+    min-width: 200px;
+    max-width: 60%;
     overflow: auto;
     background: var(--c-surface);
     border: 1px solid var(--c-border);
@@ -49,11 +51,14 @@
 @media (max-width: 900px) {
     .browser-body {
         flex-direction: column;
+        gap: var(--s-4);
     }
 
     .browser-tree {
         flex: 0 0 auto;
         width: 100%;
+        min-width: 0;
+        max-width: none;
         max-height: 40vh;
     }
 }

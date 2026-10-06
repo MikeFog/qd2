@@ -99,6 +99,9 @@ else
                 <BrowserNodeView Node="_root" Selected="_selected" MenuNode="_menuNode"
                                  OnToggle="ToggleNode" OnSelect="SelectNode" OnMenu="OpenNodeMenu" />
             </nav>
+            @* Ширину дерева можно менять, как разделитель ExplorerForm: длинные узлы (акция
+               с датами в скобках) иначе обрезаются. Запоминается по экрану. *@
+            <PaneSplitter StorageKey="@($"browser:{Code}")" />
 
             <div class="browser-list">
                 @if (_hasWindows)

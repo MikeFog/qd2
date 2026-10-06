@@ -393,3 +393,11 @@ a:hover {
     color: var(--c-accent);
     font-weight: 700;
 }
+
+/* Перетаскивание границы панелей (PaneSplitter, js/splitter.js): курсор не мигает над
+   соседними элементами, текст не выделяется. */
+body.pane-resizing,
+body.pane-resizing * {
+    cursor: col-resize !important;
+    user-select: none !important;
+}
