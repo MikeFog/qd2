@@ -1,4 +1,24 @@
-﻿CREATE   PROCEDURE [dbo].[PaymentCommonActions]
+﻿-- Журнал оплат, нижняя таблица (оплаты акций платежа, сущность 146 PaymentCommonAction):
+-- колонки «№ счёта» и «Дата счёта» сразу после «№ Акции».
+--
+-- PaymentCommonActions добавляет billNo/billDate из Bill по акции и агентству ПЛАТЕЖА (left join;
+-- в Bill ключ — actionID+agencyID, строки не размножаются). Нет счёта этому агентству — пусто.
+-- Процедуру зовут только журналы сущности 146: «Журнал оплат» (Бухгалтерия, Рекламный отдел),
+-- «Журнал оплат по менеджерам», баланс фирмы (берёт только summa); десктоп и веб.
+-- Метаданные: две строки iEntityAttribute (ordinal 2 и 3, «№ Акции» = 1) + испанский для веба.
+--
+-- Идемпотентен. Клиент не нужен: колонки рисуют и текущий Merlin.exe, и веб (после наката —
+-- перезапустить qd2 и веб, метаданные читаются при старте).
+--   sqlcmd -S <сервер> -d <база> -E -f 65001 -I -b -i 21_payment-actions-bill-no.sql
+
+SET NOCOUNT ON;
+GO
+SET ANSI_NULLS ON;
+GO
+SET QUOTED_IDENTIFIER ON;   -- iTranslation.sourceHash - вычисляемая колонка
+GO
+
+CREATE OR ALTER PROCEDURE [dbo].[PaymentCommonActions]
 (
 @paymentID int = null,
 @managerID smallint = null,
@@ -89,3 +109,34 @@ where
 	(pt.IsHidden = 0 and @showWhite = 1)) 
 ORDER BY
 	psoa.actionID desc
+
+GO
+
+-- =====================================================================
+-- Метаданные: колонки сущности 146
+-- =====================================================================
+IF NOT EXISTS (SELECT * FROM dbo.iEntityAttribute WHERE entityID = 146 AND name = 'billNo')
+    INSERT INTO dbo.iEntityAttribute (entityID, alias, name, ordinal_position, selector, dataType)
+    VALUES (146, N'№ счёта', 'billNo', 2, 0, NULL);
+IF NOT EXISTS (SELECT * FROM dbo.iEntityAttribute WHERE entityID = 146 AND name = 'billDate')
+    INSERT INTO dbo.iEntityAttribute (entityID, alias, name, ordinal_position, selector, dataType)
+    VALUES (146, N'Дата счёта', 'billDate', 3, 0, 'date2');
+
+IF OBJECT_ID('dbo.iTranslation') IS NOT NULL
+    MERGE dbo.iTranslation AS dst
+    USING (VALUES ('es', '', N'№ счёта', N'N.º de factura'),
+                  ('es', '', N'Дата счёта', N'Fecha de factura')) AS src (lang, context, [source], [text])
+       ON dst.lang = src.lang AND dst.context = src.context
+      AND dst.sourceHash = CONVERT(binary(32), HASHBYTES('SHA2_256', src.[source]))
+    WHEN MATCHED AND dst.[text] <> src.[text] COLLATE Latin1_General_BIN THEN
+        UPDATE SET [text] = src.[text]
+    WHEN NOT MATCHED BY TARGET THEN
+        INSERT (lang, context, [source], [text]) VALUES (src.lang, src.context, src.[source], src.[text]);
+GO
+
+-- =====================================================================
+-- Проверка
+-- =====================================================================
+SELECT entityID, alias, name, ordinal_position, dataType FROM dbo.iEntityAttribute WHERE entityID = 146 ORDER BY ordinal_position;
+SELECT o.name, o.modify_date FROM sys.objects o WHERE o.name = 'PaymentCommonActions';
+GO
