@@ -15,15 +15,14 @@
 }
 
 <dl class="facts">
-    <div><dt>@Tr.T("По тарифам")</dt><dd>@Value.Info.TariffPrice.ToString("C")</dd></div>
-    <div><dt>@Tr.T("Сейчас итого")</dt><dd>@Value.Info.TotalPrice.ToString("C")</dd></div>
-    <div><dt>@Tr.T("Средняя менеджерская скидка")</dt><dd>@Value.Info.AverageRatio.ToString("0.0000")</dd></div>
+    <div><dt>@Tr.T("Стоимость без скидок")</dt><dd>@Value.Info.TariffPrice.ToString("C")</dd></div>
+    <div><dt>@Tr.T("Стоимость со всеми скидками")</dt><dd>@Value.Info.TotalPrice.ToString("C")</dd></div>
 </dl>
 
 <div class="mode">
     <label class="form-check">
         <input type="radio" class="form-check-input" name="action-price-mode" checked="@Value.ByRatio" @onchange="() => Value.ByRatio = true" />
-        @Tr.T("Менеджерская скидка у всех кампаний:")
+        @Tr.T("Менеджерская скидка:")
     </label>
     <input type="number" class="form-control form-control-sm tabular" min="0" max="1000" step="0.0001"
            disabled="@(!Value.ByRatio)" aria-label="@(Tr.T("Менеджерская скидка"))"
@@ -58,7 +57,7 @@
     <div class="past">
         <label class="form-check">
             <input type="checkbox" class="form-check-input" @bind="Value.UseDate" />
-            @Tr.T("Изменить цену в прошлом, на дату:")
+            @Tr.T("Изменить цену в прошлом:")
         </label>
         <input type="date" class="form-control form-control-sm" disabled="@(!Value.UseDate)" @bind="Value.Date" />
     </div>

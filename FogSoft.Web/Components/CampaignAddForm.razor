@@ -44,7 +44,7 @@
     @if (Value.CampaignTypeId != null && !Value.IsPack)
     {
         <label class="field">
-            @Tr.T("Группа радиостанций")
+            @Tr.T("Группа")
             <select class="form-select form-select-sm" @bind="Value.GroupId">
                 @foreach (DataRow g in Value.Choices.StationGroups.Rows)
                 {
@@ -62,7 +62,7 @@
 }
 else if (Value.IsPack)
 {
-    <p class="text-muted hint">@Tr.T("У пакетной кампании нет радиостанции: она одна на акцию, агентство — из ваших агентств.")</p>
+    <p class="text-muted hint">@Tr.T("У пакетной рекламной кампании нет радиостанции: она одна на акцию, агентство — из ваших агентств.")</p>
     <label class="field">
         @Tr.T("Агентство")
         <select class="form-select form-select-sm" @bind="Value.PackAgencyId">
@@ -76,11 +76,11 @@ else if (Value.IsPack)
 }
 else if (Value.Choices.Stations.Rows.Count == 0)
 {
-    <div class="state">@Tr.T("Нет радиостанций, на которые вам разрешено ставить кампании.")</div>
+    <div class="state">@Tr.T("Нет радиостанций, на которые вам разрешено ставить рекламные кампании.")</div>
 }
 else
 {
-    <p class="text-muted hint">@Tr.T("Отметьте радиостанции — на каждую будет своя кампания.")</p>
+    <p class="text-muted hint">@Tr.T("Выберите радиостанции — на каждую будет своя рекламная кампания.")</p>
     <div class="stations">
         <table class="table table-sm">
             <thead>
@@ -106,7 +106,7 @@ else
                             @station["name"]
                             @if (Value.InAction(id))
                             {
-                                <span class="in-action" title="@(Tr.T("На этой радиостанции такая кампания в акции уже есть. Вторая возможна только с другим типом оплаты или агентством."))">@Tr.T("есть в акции")</span>
+                                <span class="in-action" title="@(Tr.T("На этой радиостанции такая рекламная кампания в акции уже есть. Вторая возможна только с другим типом оплаты или агентством."))">@Tr.T("есть в акции")</span>
                             }
                         </td>
                         <td>@station["groupName"]</td>
@@ -120,7 +120,7 @@ else
     @if (Value.NeedingAgency.Count > 0)
     {
         <div class="agencies">
-            <div class="agencies-title">@Tr.T("У этих радиостанций несколько агентств — выберите, через какое пойдёт кампания:")</div>
+            <div class="agencies-title">@Tr.T("Выбор агентства — у этих радиостанций их несколько:")</div>
             @foreach (StationChoice choice in Value.NeedingAgency)
             {
                 <label class="agency-row">
@@ -139,7 +139,7 @@ else
     @if (Value.WithoutAgency.Count > 0)
     {
         <div class="text-danger without-agency">
-            @Tr.Format("У радиостанций нет агентства, кампаний на них не будет: {0}.", string.Join(", ", Value.WithoutAgency.Select(c => Model.StationLabel(c.Station))))
+            @Tr.Format("У радиостанций нет агентства, рекламных кампаний на них не будет: {0}.", string.Join(", ", Value.WithoutAgency.Select(c => Model.StationLabel(c.Station))))
         </div>
     }
 }
@@ -274,7 +274,7 @@ else
                 .Select(c => StationLabel(c.Station))
                 .ToList();
             if (noChoice.Count > 0)
-                return Tr.Format("Выберите агентство: {0}.", string.Join(", ", noChoice));
+                return Tr.Format("Необходимо выбрать агентство: {0}.", string.Join(", ", noChoice));
             if (Selected.Values.All(c => c.Agencies.Rows.Count == 0))
                 return Tr.T("Ни у одной отмеченной радиостанции нет агентства — добавлять нечего.");
             return null;

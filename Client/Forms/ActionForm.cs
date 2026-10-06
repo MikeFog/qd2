@@ -286,7 +286,7 @@ namespace Merlin.Forms
 		{
 			if (campaign == null || campaign.TariffPrice == 0)
 			{
-                UserMessage.ShowExclamation("Невозможно установить итоговую стоимость компании и менеджерскую скидку, так как стоимость компании по тарифам равна нулю.");
+                UserMessage.ShowExclamation("Невозможно установить итоговую стоимость кампании и менеджерскую скидку, так как стоимость кампании по тарифам равна нулю.");
                 return false;
             }
 

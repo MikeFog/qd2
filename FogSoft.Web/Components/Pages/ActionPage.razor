@@ -96,15 +96,15 @@ else
             <dl class="totals">
                 <div><dt>@Tr.T("Период")</dt><dd>@Period</dd></div>
                 <div><dt>@Tr.T("Создатель")</dt><dd>@(_action.User?.FullName)</dd></div>
-                <div><dt>@Tr.T("По тарифам")</dt><dd>@_action.TariffPrice.ToString("C")</dd></div>
-                <div><dt>@Tr.T("Коэффициент скидок")</dt><dd>@Ratio</dd></div>
-                <div class="total-end"><dt>@Tr.T("Итого")</dt><dd>@_action.TotalPrice.ToString("C")</dd></div>
+                <div><dt>@Tr.T("Стоимость без скидок")</dt><dd>@_action.TariffPrice.ToString("C")</dd></div>
+                <div><dt>@Tr.T("Все скидки (коэффициент)")</dt><dd>@Ratio</dd></div>
+                <div class="total-end"><dt>@Tr.T("Стоимость со всеми скидками")</dt><dd>@_action.TotalPrice.ToString("C")</dd></div>
             </dl>
         </header>
 
         <div class="tabs" role="tablist">
             <button type="button" role="tab" class="tab tab-active" aria-selected="true">
-                @Tr.T("Кампании") <span class="count">@(_campaigns?.Rows.Count ?? 0)</span>
+                @Tr.T("Рекламные кампании") <span class="count">@(_campaigns?.Rows.Count ?? 0)</span>
             </button>
             @foreach ((ActionWorkspace.PlaceKinds kind, string caption) in PlacementTabs)
             {
@@ -118,12 +118,12 @@ else
         <section class="campaigns">
             <div class="campaigns-toolbar">
                 <button type="button" class="btn btn-primary btn-sm" disabled="@(!_canAddCampaigns)" @onclick="AddCampaigns"
-                        title="@(_canAddCampaigns ? null : Tr.T("Нет права добавлять кампании в эту акцию."))">
-                    <i class="bi bi-plus-lg" aria-hidden="true"></i>@Tr.T("Добавить кампании…")
+                        title="@(_canAddCampaigns ? null : Tr.T("Нет права добавлять рекламные кампании в эту акцию."))">
+                    <i class="bi bi-plus-lg" aria-hidden="true"></i>@Tr.T("Добавить рекламные кампании")
                 </button>
                 <button type="button" class="btn btn-sm btn-outline-secondary" disabled="@(!CanSetActionPrice)" @onclick="SetActionPrice"
                         title="@ActionPriceHint">
-                    <i class="bi bi-currency-exchange" aria-hidden="true"></i>@Tr.T("Цена акции…")
+                    <i class="bi bi-currency-exchange" aria-hidden="true"></i>@Tr.T("Установить цену акции")
                 </button>
                 @if (_selectedCount > 0)
                 {
@@ -138,13 +138,13 @@ else
             {
                 <div class="empty-note">
                     <i class="bi bi-info-circle" aria-hidden="true"></i>
-                    <span>@Tr.Format("Кампаний без выпусков: {0} — {1}.", _emptyRows.Count, string.Join(", ", _emptyRows.Select(ActionWorkspace.CampaignName)))</span>
+                    <span>@Tr.Format("Рекламных кампаний без выпусков: {0} — {1}.", _emptyRows.Count, string.Join(", ", _emptyRows.Select(ActionWorkspace.CampaignName)))</span>
                     <button type="button" class="btn btn-link btn-sm" @onclick="SelectEmpty">@Tr.T("Отметить их")</button>
                 </div>
             }
 
             <ObjectList @ref="_list" Entity="_campaignEntity!" Data="_campaigns" Selectable="_canEdit"
-                        EmptyText="@(Tr.T("В акции пока нет кампаний. Добавьте их кнопкой «Добавить кампании…»."))"
+                        EmptyText="@(Tr.T("В акции пока нет рекламных кампаний. Добавьте их кнопкой «Добавить рекламные кампании»."))"
                         ScreenActions="CampaignScreenActions" ScreenAction="OnCampaignScreenAction"
                         Changed="Load" Failed="ShowError" SelectionChanged="c => _selectedCount = c" />
         </section>
@@ -183,10 +183,10 @@ else
 
     private IEnumerable<(ActionWorkspace.PlaceKinds, string)> PlacementTabs => new[]
     {
-        (ActionWorkspace.PlaceKinds.Windows, Tr.T("Окна")),
+        (ActionWorkspace.PlaceKinds.Windows, Tr.T("Рекламные окна")),
         (ActionWorkspace.PlaceKinds.Modules, Tr.T("Модули")),
         (ActionWorkspace.PlaceKinds.Sponsorship, Tr.T("Спонсорство")),
-        (ActionWorkspace.PlaceKinds.Packs, Tr.T("Пакеты")),
+        (ActionWorkspace.PlaceKinds.Packs, Tr.T("Пакетные модули")),
     };
 
     private string StateText => _action == null ? ""
@@ -210,7 +210,7 @@ else
 
     private string? ActionPriceHint =>
         !_canEdit ? Tr.T("Нет права «Редактировать» на эту акцию.")
-        : _action?.TariffPrice == 0 ? Tr.T("Цена акции по тарифам равна нулю — нечего распределять.")
+        : _action?.TariffPrice == 0 ? Tr.T("Невозможно установить итоговую стоимость акции и менеджерскую скидку, так как стоимость акции по тарифам равна нулю.")
         : null;
 
     protected override async Task OnParametersSetAsync()
@@ -312,13 +312,13 @@ else
             new ActionMenuItem
             {
                 Name = ManagerDiscountAction,
-                Text = Tr.T("Скидка менеджера…"),
+                Text = Tr.T("Установить менеджерскую скидку"),
                 Icon = "bi-percent",
                 Enabled = enabled,
                 Ported = true,
                 DisabledReason = enabled ? null
                     : !_canEdit ? Tr.T("Нет права «Редактировать» на эту акцию.")
-                    : Tr.T("Цена кампании по тарифам равна нулю: скидку ставить не на что."),
+                    : Tr.T("Невозможно установить итоговую стоимость кампании и менеджерскую скидку, так как стоимость кампании по тарифам равна нулю."),
             },
         };
     }
@@ -347,7 +347,7 @@ else
 
             while (true)
             {
-                if (await Dialogs.ShowAsync(Tr.T("Добавить кампании"), builder =>
+                if (await Dialogs.ShowAsync(Tr.T("Добавить рекламные кампании"), builder =>
                     {
                         builder.OpenComponent<CampaignAddForm>(0);
                         builder.AddComponentParameter(1, nameof(CampaignAddForm.Value), model);
@@ -366,13 +366,19 @@ else
 
             await Load();
 
-            var problems = new List<string>();
-            if (skipped.Count > 0)
-                problems.Add(Tr.Format("Нет агентства, радиостанции пропущены: {0}.", string.Join(", ", skipped)));
-            if (failed.Count > 0)
-                problems.Add(Tr.T("Не добавлены:") + " " + string.Join("; ", failed));
-            if (problems.Count > 0)
-                await ShowInfo(Tr.T("Добавить кампании"), string.Join(" ", problems));
+            // Итог — только при отказах (всё добавленное и так видно в списке): таблица, в заголовке
+            // строка-счётчик (docs/UI_RULES.md, п. 2.2). Станции без агентств — тоже отказ.
+            int notAdded = skipped.Count + failed.Count;
+            if (notAdded > 0)
+            {
+                DataTable errors = ErrorManager.CreateErrorsTable();
+                foreach (string station in skipped)
+                    ErrorManager.AddErrorRow(errors, DateTime.Now, Tr.Format("{0} - нет агентства", station));
+                foreach (string failure in failed)
+                    ErrorManager.AddErrorRow(errors, DateTime.Now, failure);
+                await Tables.ShowAsync(Tr.Format("Добавлено рекламных кампаний: {0}, не добавлено: {1}", campaigns.Count - failed.Count, notAdded),
+                    errors, new Entity.Attribute("description", "Ошибка", "nvarchar")); // i18n-ok: Alias переводится при показе (ObjectList)
+            }
         }
         catch (Exception ex)
         {
@@ -392,7 +398,7 @@ else
 
         IReadOnlyList<PresentationObject> campaigns = _list.SelectedObjects;
         if (await Dialogs.ShowAsync(Tr.T("Удаление"),
-                builder => builder.AddContent(0, Tr.Format("Удалить отмеченные кампании ({0}) вместе с их выпусками?", campaigns.Count)),
+                builder => builder.AddContent(0, Tr.Format("Удалить отмеченные рекламные кампании ({0}) вместе с их выпусками?", campaigns.Count)),
                 okText: Tr.T("Удалить")) != DialogOutcome.Ok)
             return;
 
@@ -403,7 +409,7 @@ else
             await Load();
 
             if (errors.Rows.Count > 0)
-                await Tables.ShowAsync(Tr.T("Ошибки удаления кампаний"), errors,
+                await Tables.ShowAsync(Tr.Format("Удалено рекламных кампаний: {0}, не удалено: {1}", campaigns.Count - errors.Rows.Count, errors.Rows.Count), errors,
                     new Entity.Attribute("description", "Ошибка", "nvarchar")); // i18n-ok: Alias переводится при показе (ObjectList)
             if (priceMessage != null)
                 await ShowInfo(Tr.T("Удаление"), priceMessage);
@@ -444,7 +450,7 @@ else
 
             while (true)
             {
-                if (await Dialogs.ShowAsync(Tr.T("Менеджерская скидка"), builder =>
+                if (await Dialogs.ShowAsync(Tr.T("Установить менеджерскую скидку"), builder =>
                     {
                         builder.OpenComponent<ManagerDiscountForm>(0);
                         builder.AddComponentParameter(1, nameof(ManagerDiscountForm.Value), model);
@@ -502,7 +508,7 @@ else
 
             while (true)
             {
-                if (await Dialogs.ShowAsync(Tr.T("Цена рекламной акции"), builder =>
+                if (await Dialogs.ShowAsync(Tr.T("Установить цену акции"), builder =>
                     {
                         builder.OpenComponent<ActionPriceForm>(0);
                         builder.AddComponentParameter(1, nameof(ActionPriceForm.Value), model);

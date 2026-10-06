@@ -1829,55 +1829,29 @@ code	Акции открываются из журналов рекламных 
 code	Акция № {0}	Campaña n.º {0}
 code	Акция № {0} · {1}	Campaña n.º {0} · {1}
 code	Акция № {0} не найдена	Campaña n.º {0} no encontrada
-code	В акции пока нет кампаний. Добавьте их кнопкой «Добавить кампании…».	La campaña aún no tiene pautas. Agréguelas con el botón «Agregar pautas…».
 code	В вебе пока нет: размещение — в десктопе.	Aún no está en la web: la colocación se hace en la aplicación de escritorio.
 code	Вернуться назад	Volver
-code	Выберите агентство: {0}.	Seleccione la agencia: {0}.
 code	Действия с акцией	Acciones con la campaña
 code	Добавить в группу	Agregar al grupo
-code	Добавить кампании	Agregar pautas
-code	Добавить кампании…	Agregar pautas…
 code	Её нет в базе или она вам не видна.	No existe en la base o no le es visible.
-code	Изменить цену в прошлом, на дату:	Cambiar el precio en el pasado, a la fecha:
 code	Итоговая стоимость	Costo total
 code	Итоговая стоимость:	Costo total:
 code	Итоговая цена акции равна нулю: распределить новую цену пропорционально нечему. Задайте цену через коэффициент.	El precio total de la campaña es cero: no hay base para distribuir el nuevo precio proporcionalmente. Indique el precio mediante el coeficiente.
-code	Кампании	Pautas
-code	Кампаний без выпусков: {0} — {1}.	Pautas sin emisiones: {0} — {1}.
-code	Кампания	Pauta
-code	Коэффициент скидок	Coeficiente de descuentos
-code	Менеджерская скидка (коэффициент)	Descuento del gerente (coeficiente)
-code	Менеджерская скидка у всех кампаний:	Descuento del gerente en todas las pautas:
 code	Модули	Módulos
 code	Назад	Atrás
-code	Не добавлены:	No agregadas:
 code	Необходимо выбрать причину выдачи скидки.	Debe seleccionar el motivo del descuento.
 code	Нет доступа к журналу подтверждённых рекламных акций.	No tiene acceso al registro de campañas publicitarias confirmadas.
 code	Нет права «Редактировать» на эту акцию.	No tiene el permiso «Editar» para esta campaña.
-code	Нет права добавлять кампании в эту акцию.	No tiene permiso para agregar pautas a esta campaña.
-code	Окна	Ventanas
 code	Окончательная цена	Precio final
 code	Открыть акцию	Abrir campaña
 code	Отметить их	Marcarlas
-code	Ошибки удаления кампаний	Errores al eliminar pautas
-code	Пакетная	De paquete
 code	Пакетная кампания	Pauta de paquete
-code	Пакеты	Paquetes
-code	По тарифам	Según tarifas
 code	Причина выдачи скидки	Motivo del descuento
-code	Сейчас итого	Total actual
-code	Скидка менеджера…	Descuento del gerente…
 code	Спонсорство	Patrocinio
-code	Средняя менеджерская скидка	Descuento del gerente promedio
 code	Тарифы для модуля	Tarifas del módulo
 code	У вас нет права «Редактировать» на эту акцию — страница открыта на просмотр.	No tiene el permiso «Editar» para esta campaña: la página se abrió solo para consulta.
-code	Удалить отмеченные кампании ({0}) вместе с их выпусками?	¿Eliminar las pautas marcadas ({0}) junto con sus emisiones?
 code	Установить	Establecer
-code	Цена акции по тарифам равна нулю — нечего распределять.	El precio de la campaña según tarifas es cero: no hay nada que distribuir.
-code	Цена акции…	Precio de la campaña…
 code	Цена и коэффициент не могут быть отрицательными.	El precio y el coeficiente no pueden ser negativos.
-code	Цена кампании по тарифам равна нулю: скидку ставить не на что.	El precio de la pauta según tarifas es cero: no hay sobre qué aplicar el descuento.
-code	Цена рекламной акции	Precio de la campaña publicitaria
 code	есть в акции	ya en la campaña
 code	макет	borrador
 code	нет выпусков	sin emisiones
@@ -1886,13 +1860,31 @@ code	только просмотр	solo consulta
 code	удалена	eliminada
 code	Тип рекламной кампании	Tipo de pauta publicitaria
 code	Выберите тип рекламной кампании.	Seleccione el tipo de pauta publicitaria.
-code	У пакетной кампании нет радиостанции: она одна на акцию, агентство — из ваших агентств.	La pauta de paquete no tiene emisora: hay una por campaña y la agencia se elige entre sus agencias.
-code	Нет радиостанций, на которые вам разрешено ставить кампании.	No hay emisoras en las que se le permita colocar pautas.
-code	Отметьте радиостанции — на каждую будет своя кампания.	Marque las emisoras: cada una tendrá su propia pauta.
-code	На этой радиостанции такая кампания в акции уже есть. Вторая возможна только с другим типом оплаты или агентством.	Esta emisora ya tiene una pauta de este tipo en la campaña. Una segunda solo es posible con otro tipo de pago u otra agencia.
 code	Отмечено радиостанций: {0}	Emisoras marcadas: {0}
-code	У этих радиостанций несколько агентств — выберите, через какое пойдёт кампания:	Estas emisoras tienen varias agencias: elija por cuál irá la pauta:
-code	У радиостанций нет агентства, кампаний на них не будет: {0}.	Las emisoras no tienen agencia, no habrá pautas en ellas: {0}.
 code	Отметьте хотя бы одну радиостанцию.	Marque al menos una emisora.
 code	Ни у одной отмеченной радиостанции нет агентства — добавлять нечего.	Ninguna de las emisoras marcadas tiene agencia: no hay nada que agregar.
-code	Нет агентства, радиостанции пропущены: {0}.	Sin agencia, emisoras omitidas: {0}.
+code	Стоимость без скидок	Costo sin descuentos
+code	Стоимость со всеми скидками	Costo con todos los descuentos
+code	Рекламные кампании	Pautas publicitarias
+code	Нет права добавлять рекламные кампании в эту акцию.	No tiene permiso para agregar pautas publicitarias a esta campaña.
+code	Добавить рекламные кампании	Agregar pautas publicitarias
+code	Установить цену акции	Establecer el precio de la campaña
+code	Рекламных кампаний без выпусков: {0} — {1}.	Pautas publicitarias sin emisiones: {0} — {1}.
+code	В акции пока нет рекламных кампаний. Добавьте их кнопкой «Добавить рекламные кампании».	La campaña aún no tiene pautas publicitarias. Agréguelas con el botón «Agregar pautas publicitarias».
+code	Невозможно установить итоговую стоимость акции и менеджерскую скидку, так как стоимость акции по тарифам равна нулю.	No se puede establecer el costo total de la campaña ni el descuento del gerente: el costo de la campaña según tarifas es cero.
+code	Установить менеджерскую скидку	Establecer el descuento del gerente
+code	Невозможно установить итоговую стоимость кампании и менеджерскую скидку, так как стоимость кампании по тарифам равна нулю.	No se puede establecer el costo total de la pauta ni el descuento del gerente: el costo de la pauta según tarifas es cero.
+code	{0} - нет агентства	{0} - sin agencia
+code	Добавлено рекламных кампаний: {0}, не добавлено: {1}	Pautas publicitarias agregadas: {0}, no agregadas: {1}
+code	Удалить отмеченные рекламные кампании ({0}) вместе с их выпусками?	¿Eliminar las pautas publicitarias marcadas ({0}) junto con sus emisiones?
+code	Удалено рекламных кампаний: {0}, не удалено: {1}	Pautas publicitarias eliminadas: {0}, no eliminadas: {1}
+code	Изменить цену акции в прошлом:	Cambiar el precio de la campaña en el pasado:
+code	Изменить цену в прошлом:	Cambiar el precio en el pasado:
+code	У пакетной рекламной кампании нет радиостанции: она одна на акцию, агентство — из ваших агентств.	La pauta publicitaria de paquete no tiene emisora: hay una por campaña y la agencia se elige entre sus agencias.
+code	Нет радиостанций, на которые вам разрешено ставить рекламные кампании.	No hay emisoras en las que se le permita colocar pautas publicitarias.
+code	Выберите радиостанции — на каждую будет своя рекламная кампания.	Seleccione las emisoras: cada una tendrá su propia pauta publicitaria.
+code	На этой радиостанции такая рекламная кампания в акции уже есть. Вторая возможна только с другим типом оплаты или агентством.	Esta emisora ya tiene una pauta publicitaria de este tipo en la campaña. Una segunda solo es posible con otro tipo de pago u otra agencia.
+code	Выбор агентства — у этих радиостанций их несколько:	Selección de agencia: estas emisoras tienen varias:
+code	У радиостанций нет агентства, рекламных кампаний на них не будет: {0}.	Las emisoras no tienen agencia, no habrá pautas publicitarias en ellas: {0}.
+code	Необходимо выбрать агентство: {0}.	Debe seleccionar la agencia: {0}.
+code	Пакетная	De paquete
