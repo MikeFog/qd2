@@ -1,7 +1,23 @@
+﻿-- Наборы скидок радиостанции (сущность 22): наборы для РАЗНЫХ типов кампаний одной станции могут действовать
+-- одновременно. DiscountReleaseIUD отказывал с PLPeriodIntersection при любом пересечении периодов одной станции,
+-- хотя скидка (hlp_CompanyDiscountCalculate) всегда выбиралась с учётом типа кампании. Так устроены скидки в Тюмени:
+-- на 6 станциях с 01.01.2026 параллельно набор для линейных (тип 1) и набор для модульных (тип 3) — на них
+-- 06.10.2026 упал перенос данных discount-release-finish-date-deploy.sql (исправлен тем же коммитом).
+-- Теперь пересекаться не могут только периоды наборов одной станции с общим типом (isForType1/2/3).
+-- Тело = master (с проверкой DiscountReleaseInUse при удалении).
+--
+-- Предусловие: накачены discount-release-finish-date-deploy.sql и discount-applied-pricelist-id-deploy.sql
+-- (на Artvis — с 29.09.2026). Идемпотентен (CREATE OR ALTER), данные не трогает, клиент не нужен.
+--   sqlcmd -S <сервер> -d <база> -E -f 65001 -I -b -i 19_discount-release-type-intersection.sql
 
+SET NOCOUNT ON;
+GO
+SET ANSI_NULLS ON;
+GO
+SET QUOTED_IDENTIFIER ON;
+GO
 
-
-CREATE    PROCEDURE [dbo].[DiscountReleaseIUD]
+CREATE OR ALTER PROCEDURE [dbo].[DiscountReleaseIUD]
 (
 @discountReleaseID smallint = NULL,
 @massmediaID smallint = NULL,
@@ -115,4 +131,4 @@ GO
 GRANT EXECUTE
     ON OBJECT::[dbo].[DiscountReleaseIUD] TO PUBLIC
     AS [dbo];
-
+GO

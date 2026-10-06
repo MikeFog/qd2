@@ -16,6 +16,7 @@
 --   sqlcmd -S <сервер> -d <база> -E -f 65001 -I -i multi-action-media-plan-select-columns-seed.sql
 
 SET NOCOUNT ON;
+GO
 
 DECLARE @entAction INT = 77;
 DECLARE @selector TINYINT = 1;

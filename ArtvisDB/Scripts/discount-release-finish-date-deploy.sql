@@ -8,12 +8,15 @@
 
     ЧТО ДЕЛАЕТ
       1. Данные (один раз, пока колонка допускает NULL), в одной транзакции:
-         - набор, за которым есть следующий: finishDate = начало следующего − 1 день;
+         - набор, за которым есть следующий (той же радиостанции с общим типом кампаний):
+           finishDate = начало следующего − 1 день;
          - последний набор с NULL: finishDate = 31.12.2026 (если начинается позже — 31.12 года начала);
          - последний набор с уже заполненной датой: finishDate − 1 день (как сейчас и считается);
          - finishDate NOT NULL; проверка «нет перевёрнутых и пересекающихся периодов», иначе откат.
+         Пересекаться не могут наборы одной радиостанции с общим типом кампаний (isForType1/2/3):
+         в Тюмени на станции параллельно действуют набор для типа 1 и набор для типа 3.
       2. dbo.DiscountReleaseIUD — @finishDate; AddItem/UpdateItem/Clone проверяют порядок дат
-         (StartFinishDateError) и пересечение (PLPeriodIntersection); соседние наборы больше
+         (StartFinishDateError) и пересечение с наборами общего типа (PLPeriodIntersection); соседние наборы больше
          не подгоняются, DeleteItem только удаляет.
       3. dbo.hlp_CompanyDiscountCalculate — дата окончания входит в период.
       4. dbo.DiscountReleases — фильтр «скрыть прошедшие» по включительной дате.
@@ -56,7 +59,9 @@ BEGIN
     FROM dbo.DiscountRelease dr
     OUTER APPLY (SELECT MIN(n.startDate) AS nextStart
                  FROM dbo.DiscountRelease n
-                 WHERE n.massmediaID = dr.massmediaID AND n.startDate > dr.startDate) nx;
+                 WHERE n.massmediaID = dr.massmediaID AND n.startDate > dr.startDate
+                     AND ((n.isForType1 = 1 AND dr.isForType1 = 1) OR (n.isForType2 = 1 AND dr.isForType2 = 1)
+                          OR (n.isForType3 = 1 AND dr.isForType3 = 1))) nx;
 
     PRINT 'DiscountRelease: даты окончания выставлены — ' + CAST(@@ROWCOUNT AS varchar(10));
 
@@ -66,7 +71,9 @@ BEGIN
        OR EXISTS(SELECT * FROM dbo.DiscountRelease a
                  JOIN dbo.DiscountRelease b ON b.massmediaID = a.massmediaID
                      AND b.discountReleaseID <> a.discountReleaseID
-                     AND b.startDate <= a.finishDate AND b.finishDate >= a.startDate)
+                     AND b.startDate <= a.finishDate AND b.finishDate >= a.startDate
+                     AND ((b.isForType1 = 1 AND a.isForType1 = 1) OR (b.isForType2 = 1 AND a.isForType2 = 1)
+                          OR (b.isForType3 = 1 AND a.isForType3 = 1)))
     BEGIN
         ROLLBACK TRANSACTION;
         RAISERROR('После переноса есть перевёрнутые или пересекающиеся периоды — всё откатено. Деплой прерван.', 16, 1);
@@ -96,8 +103,8 @@ as
 set nocount on
 
 -- Набор скидок действует с startDate по finishDate включительно, обе даты задаются явно
--- (как у прайс-листов). Соседние наборы не подгоняются, периоды одной радиостанции
--- пересекаться не могут.
+-- (как у прайс-листов). Соседние наборы не подгоняются, периоды наборов одной радиостанции
+-- с общим типом кампаний пересекаться не могут (наборы для разных типов действуют параллельно).
 IF @actionName = 'Clone'
 	SELECT @massmediaID = massmediaID FROM DiscountRelease WHERE discountReleaseID = @sourceDiscountReleaseID
 ELSE IF @actionName = 'UpdateItem'
@@ -123,6 +130,7 @@ IF @actionName IN ('AddItem', 'UpdateItem', 'Clone') BEGIN
 			massmediaID = @massmediaID AND
 			startDate <= @finishDate AND
 			finishDate >= @startDate AND
+			((isForType1 = 1 AND @isForType1 = 1) OR (isForType2 = 1 AND @isForType2 = 1) OR (isForType3 = 1 AND @isForType3 = 1)) AND
 			(@actionName <> 'UpdateItem' OR discountReleaseID <> @discountReleaseID)
 		) BEGIN
 		raiserror('PLPeriodIntersection', 16, 1)

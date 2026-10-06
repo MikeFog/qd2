@@ -671,8 +671,8 @@ as
 set nocount on
 
 -- Набор скидок действует с startDate по finishDate включительно, обе даты задаются явно
--- (как у прайс-листов). Соседние наборы не подгоняются, периоды одной радиостанции
--- пересекаться не могут.
+-- (как у прайс-листов). Соседние наборы не подгоняются, периоды наборов одной радиостанции
+-- с общим типом кампаний пересекаться не могут (наборы для разных типов действуют параллельно).
 IF @actionName = 'Clone'
 	SELECT @massmediaID = massmediaID FROM DiscountRelease WHERE discountReleaseID = @sourceDiscountReleaseID
 ELSE IF @actionName = 'UpdateItem'
@@ -698,6 +698,7 @@ IF @actionName IN ('AddItem', 'UpdateItem', 'Clone') BEGIN
 			massmediaID = @massmediaID AND
 			startDate <= @finishDate AND
 			finishDate >= @startDate AND
+			((isForType1 = 1 AND @isForType1 = 1) OR (isForType2 = 1 AND @isForType2 = 1) OR (isForType3 = 1 AND @isForType3 = 1)) AND
 			(@actionName <> 'UpdateItem' OR discountReleaseID <> @discountReleaseID)
 		) BEGIN
 		raiserror('PLPeriodIntersection', 16, 1)
