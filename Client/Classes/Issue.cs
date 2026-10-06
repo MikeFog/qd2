@@ -59,7 +59,31 @@ namespace Merlin.Classes
 		public void SetPosition(RollerPositions pos)
 		{
             this[ParamNames.PositionId] = pos;
+            // IssueIUD без @windowID берёт исходное окно выпуска и пишет его в actualWindowID:
+            // выпуск, перенесённый трафик-менеджером, молча вернулся бы в исходное окно.
+            // Позиция меняется там, где выпуск стоит сейчас. Окно читается из базы перед записью:
+            // строка списка могла устареть (выпуск перенесли уже после её загрузки). Строки выпусков
+            // роликов (WindowIssuesRetrieve, IssuesByDate) несут i.*, у выпусков модулей и пакетов
+            // actualWindowID нет — им окно не нужно.
+            if (parameters.ContainsKey(ActualWindowIdParam) && parameters.ContainsKey(ParamNames.IssueId))
+            {
+                DataRow fresh = LoadRow(Convert.ToInt32(this[ParamNames.IssueId]));
+                object windowId = fresh != null ? fresh[ActualWindowIdParam] : parameters[ActualWindowIdParam];
+                if (windowId != DBNull.Value)
+                    this[TariffWindow.ParamNames.WindowId] = windowId;
+            }
             Update();
+        }
+
+        internal const string ActualWindowIdParam = "actualWindowID";
+
+        /// <summary>Строка выпуска из базы (IssuesByDate @issueId: i.*); null — выпуска нет.</summary>
+        internal static DataRow LoadRow(int issueId)
+        {
+            Dictionary<string, object> procParameters = DataAccessor.CreateParametersDictionary();
+            procParameters[ParamNames.IssueId] = issueId;
+            DataSet ds = DataAccessor.LoadDataSet("IssuesByDate", procParameters);
+            return ds.Tables.Count > 0 && ds.Tables[0].Rows.Count > 0 ? ds.Tables[0].Rows[0] : null;
         }
 
 		public override bool IsActionHidden(string actionName, ViewType type)

@@ -50,6 +50,14 @@
     --c-ok: #1e6b3a;
     --c-ok-soft: #e9f5ed;
 
+    /* Сетка размещения (PlacementGrid): смысл тот же, что у цветов десктопной сетки
+       (TariffGrid) — выпуски кампании синим, фирмы бирюзовым, фон прайма сиреневый,
+       отмеченного окна — стальной; тона приглушены под палитру веба. */
+    --c-place-mine: #0b4fc4;
+    --c-place-firm: #0d8078;
+    --c-prime-soft: #ede5f7;
+    --c-marked-soft: #dde6f0;
+
     /* Оболочка */
     --shell-nav-width: 260px;
     --shell-top-height: 48px;

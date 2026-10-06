@@ -1,0 +1,1102 @@
+@using System.Data
+@using FogSoft.Web.Infrastructure
+@using FogSoft.WinForm
+@using FogSoft.WinForm.Classes
+@using Merlin.Classes
+@inject BusyService Busy
+@inject DialogService Dialogs
+@inject TableDialog Tables
+@inject ObjectActions Actions
+@inject ActionMenuService Menu
+@inject RollerPlayback Playback
+
+@*
+    Вкладка «Рекламные окна» страницы акции (docs/tasks/web-action-forms.md, этап 2): линейные
+    кампании акции галочками; отмечена одна — неделя рекламных окон её радиостанции, как десктопный
+    CampaignForm с RollerIssuesGrid3 (режим — по числу отмеченных, решение В-3; несколько — веер,
+    этап 4). Слева «Ролики» (кисть), в центре сетка, справа — выпуски выбранного окна.
+
+    Клик по окну: в «Режиме добавления» ставит ролик кисти с позицией «Позиционирования», иначе
+    выбирает окно (Shift/Ctrl — несколько) и показывает его выпуски. По выделенным окнам —
+    «Разместить ролик», «Удалить выпуски», «Заменить ролики» (десктоп — Insert, Del, Ctrl+R);
+    перенос выпусков — «Перенести в окно» из панели (десктоп — перетаскивание). Запись и права —
+    в ядре (WindowsSource), одно действие — одна транзакция и один пересчёт акции; после записи
+    страница перечитывает шапку (Changed).
+*@
+
+<div class="windows-tab">
+    @if (_error != null)
+    {
+        <div class="alert alert-danger alert-dismissible tab-error" role="alert">
+            @_error
+            <button type="button" class="btn-close" aria-label="@(Tr.T("Закрыть"))" @onclick="() => _error = null"></button>
+        </div>
+    }
+
+    <div class="windows-body @(_selected != null && _open != null ? "with-panel" : null)">
+        <aside class="side">
+            <section class="side-block">
+                <div class="side-title">@Tr.T("Рекламные кампании")</div>
+                <ul class="campaign-list">
+                    @foreach (DataRow row in LinearRows)
+                    {
+                        int id = WindowsSource.CampaignIdOf(row);
+                        bool on = _checked.Contains(id);
+                        <li class="@(on ? "on" : null)">
+                            <input type="checkbox" class="form-check-input" checked="@on" aria-label="@WindowsSource.CampaignCaption(row)"
+                                   @onchange="e => ToggleCampaign(id, e.Value is true)" />
+                            <button type="button" class="campaign" title="@(Tr.T("Показать только эту кампанию"))" @onclick="() => CheckOnly(id)">
+                                @WindowsSource.CampaignCaption(row)
+                            </button>
+                        </li>
+                    }
+                </ul>
+                @if (OpenRow is { } openRow)
+                {
+                    <dl class="stats">
+                        @foreach (KeyValuePair<string, string> stat in WindowsSource.CampaignStats(openRow))
+                        {
+                            <div><dt>@stat.Key</dt><dd>@stat.Value</dd></div>
+                        }
+                    </dl>
+                }
+            </section>
+
+            @if (_open != null)
+            {
+                <section class="side-block rollers">
+                    <div class="side-title">
+                        @Tr.T("Ролики")
+                        <span class="side-actions">
+                            <button type="button" class="btn btn-sm btn-outline-secondary" title="@(Tr.T("Прослушать ролик"))" aria-label="@(Tr.T("Прослушать ролик"))"
+                                    disabled="@(BrushRow is not { } br || WindowsSource.IsDummy(br))" @onclick="PlayRoller">
+                                <i class="bi bi-play-fill" aria-hidden="true"></i>
+                            </button>
+                            <button type="button" class="btn btn-sm btn-outline-secondary" aria-label="@(Tr.T("Добавить ролик - пустышку"))"
+                                    title="@(_open.CanEdit ? Tr.T("Добавить ролик - пустышку") : NoRightText)"
+                                    disabled="@(!_open.CanEdit)" @onclick="() => Exclusive(AddDummy)">
+                                <i class="bi bi-file-earmark-plus" aria-hidden="true"></i>
+                            </button>
+                        </span>
+                    </div>
+                    @if (_rollers == null)
+                    {
+                        <div class="state">@Tr.T("Загрузка…")</div>
+                    }
+                    else if (_rollers.Rows.Count == 0)
+                    {
+                        <div class="text-muted small">@Tr.T("У фирмы нет активных роликов. Можно добавить ролик-пустышку.")</div>
+                    }
+                    else
+                    {
+                        <div class="data-table roller-table">
+                            <table class="table table-hover">
+                                <thead>
+                                    <tr>
+                                        <th class="col-num">№</th>
+                                        <th>@Tr.T("Ролик")</th>
+                                        <th>@Tr.T("Предмет рекламы")</th>
+                                        <th>@Tr.T("Продолжительность")</th>
+                                        <th class="col-menu"></th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    @foreach (DataRow row in _rollers.Rows)
+                                    {
+                                        int rollerId = WindowsSource.RollerIdOf(row);
+                                        <tr class="@(rollerId == _brushRollerId ? "row-active" : null)" @onclick="() => _brushRollerId = rollerId">
+                                            <td class="col-num tabular">@row[WindowsSource.RollerNumberColumn]</td>
+                                            <td>@WindowsSource.RollerName(row)</td>
+                                            <td>@row[Roller.ParamNames.AdvertTypeName]</td>
+                                            <td class="tabular">@WindowsSource.RollerDuration(row)</td>
+                                            <td class="col-menu">
+                                                <button type="button" class="row-btn" title="@(Tr.T("Действия с роликом"))" aria-label="@(Tr.T("Действия с роликом"))"
+                                                        aria-haspopup="menu" @onclick="e => OpenRollerMenu(row, e)" @onclick:stopPropagation="true">
+                                                    <i class="bi bi-three-dots" aria-hidden="true"></i>
+                                                </button>
+                                            </td>
+                                        </tr>
+                                    }
+                                </tbody>
+                            </table>
+                        </div>
+                    }
+                </section>
+            }
+        </aside>
+
+        <section class="center">
+            @if (_checked.Count == 0)
+            {
+                <div class="state">
+                    <div class="state-title">@Tr.T("Отметьте рекламную кампанию слева")</div>
+                    @(LinearRows.Any()
+                        ? Tr.T("Одна кампания — неделя рекламных окон её радиостанции: ставить ролики, смотреть выпуски окна, переносить их.")
+                        : Tr.T("В акции нет линейных рекламных кампаний."))
+                </div>
+            }
+            else if (_checked.Count > 1)
+            {
+                <div class="state">
+                    <div class="state-title">@Tr.Format("Отмечено рекламных кампаний: {0}", _checked.Count)</div>
+                    @Tr.T("Размещение сразу по нескольким радиостанциям (веер) в вебе появится позже — пока отметьте одну кампанию.")
+                </div>
+            }
+            else if (_open == null)
+            {
+                <div class="state">@Tr.T("Загрузка…")</div>
+            }
+            else
+            {
+                <div class="mode-caption">@Tr.Format("Рекламные окна: {0}", OpenCaption)</div>
+
+                <div class="toolbar">
+                    <button type="button" class="btn btn-sm @(_brushOn ? "btn-primary" : "btn-outline-secondary")" aria-pressed="@_brushOn"
+                            disabled="@(!CanBrush)" title="@BrushHint" @onclick="ToggleBrush">
+                        <i class="bi bi-brush" aria-hidden="true"></i>@Tr.T("Режим добавления")
+                    </button>
+                    @if (BrushRow is { } brush)
+                    {
+                        <span class="brush-roller" title="@(Tr.T("Ролик, который ставится в окна, — выбран в списке «Ролики»"))">
+                            <b class="tabular">@brush[WindowsSource.RollerNumberColumn]</b> @WindowsSource.RollerName(brush) · <span class="tabular">@WindowsSource.RollerDuration(brush)</span>
+                        </span>
+                    }
+                    <button type="button" class="btn btn-sm btn-outline-secondary dropdown-toggle" title="@(Tr.T("Позиция в блоке"))"
+                            aria-haspopup="menu" @onclick="OpenPositionMenu">
+                        @PositionText
+                    </button>
+                    <button type="button" class="btn btn-sm btn-outline-secondary dropdown-toggle" title="@(Tr.T("Предметы рекламы"))"
+                            aria-haspopup="menu" @onclick="OpenAdvertTypeMenu">
+                        @AdvertTypeText
+                    </button>
+
+                    <span class="toggles">
+                        <button type="button" class="btn btn-sm btn-outline-secondary @(_view.ShowUnconfirmed ? "active" : null)" aria-pressed="@_view.ShowUnconfirmed"
+                                title="@(Tr.T("Показывать неподтвержденные выпуски"))" @onclick="ToggleUnconfirmed">
+                            @Tr.T("Учитывать макеты")
+                        </button>
+                        <button type="button" class="btn btn-sm btn-outline-secondary @(_showNumbers ? "active" : null)" aria-pressed="@_showNumbers"
+                                title="@(Tr.T("Показывать в окнах номера роликов текущей кампании вместо остатка времени"))" @onclick="() => _showNumbers = !_showNumbers">
+                            @Tr.T("Номера роликов")
+                        </button>
+                        <button type="button" class="btn btn-sm btn-outline-secondary @(_showPrime ? "active" : null)" aria-pressed="@_showPrime"
+                                title="@(Tr.T("Показать окна прайм-тайм"))" @onclick="() => _showPrime = !_showPrime">
+                            @Tr.T("Видеть прайм")
+                        </button>
+                        <button type="button" class="btn btn-sm btn-outline-secondary @(_showMarked ? "active" : null)" aria-pressed="@_showMarked"
+                                title="@(Tr.T("Показать отмеченные окна"))" aria-label="@(Tr.T("Показать отмеченные окна"))" @onclick="() => _showMarked = !_showMarked">
+                            <i class="bi bi-check2-square" aria-hidden="true"></i>
+                        </button>
+                        <button type="button" class="btn btn-sm btn-outline-secondary @(_view.ShowDisabled ? "active" : null)" aria-pressed="@_view.ShowDisabled"
+                                title="@(Tr.T("Показать заблокированные окна"))" aria-label="@(Tr.T("Показать заблокированные окна"))" @onclick="ToggleDisabled">
+                            <i class="bi bi-lock" aria-hidden="true"></i>
+                        </button>
+                        <button type="button" class="btn btn-sm btn-outline-secondary" title="@(Tr.T("Обновить информацию"))" aria-label="@(Tr.T("Обновить информацию"))"
+                                @onclick="RefreshAll">
+                            <i class="bi bi-arrow-clockwise" aria-hidden="true"></i>
+                        </button>
+                    </span>
+                </div>
+
+                @* Esc снимает выделение и отменяет перенос: клавиши ловит обёртка сетки, фокус ставит клик. *@
+                <div class="grid-box" tabindex="-1" @ref="_gridBox" @onkeydown="GridKey">
+                    <PlacementGrid Model="_week" Date="_date" SelectedKeys="_selection.Keys" Brush="_brushOn && _transfer == null"
+                                   ShownBackgrounds="ShownBackgrounds" CellText="CellText" CellTitle="CellTitle" ExtraCellClass="TransferCellClass"
+                                   DayTotalTitle="@(Tr.T("Выпусков этой кампании за день"))"
+                                   OnPrevious="PreviousWeek" OnNext="NextWeek" OnJump="JumpTo" OnCellClick="ClickCell">
+                        <Legend>
+                            <div class="legend">
+                                <span><i class="sample mine">00:30</i>@Tr.T("выпуски этой кампании")</span>
+                                <span><i class="sample firm">00:30</i>@Tr.T("выпуски фирмы в других кампаниях")</span>
+                                @if (_showPrime)
+                                {
+                                    <span><i class="swatch bg-prime"></i>@Tr.T("прайм-тайм")</span>
+                                }
+                                @if (_showMarked)
+                                {
+                                    <span><i class="swatch bg-marked"></i>@Tr.T("отмеченное окно")</span>
+                                }
+                                @if (_view.ShowDisabled)
+                                {
+                                    <span><i class="swatch bg-disabled"></i>@Tr.T("заблокированное окно")</span>
+                                }
+                                @if (_view.Position != 0 || _view.AdvertTypeId != null)
+                                {
+                                    <span><i class="sample match">00:30</i>@Tr.T("подходит под отбор")</span>
+                                }
+                            </div>
+                        </Legend>
+                        <Toolbar>
+                            @if (_transfer != null)
+                            {
+                                <div class="transfer-bar">
+                                    <i class="bi bi-box-arrow-right" aria-hidden="true"></i>
+                                    <span>
+                                        @Tr.Format("Перенос выпусков ({0}) из окна", _transfer.Issues.Count)
+                                        <b class="tabular">@DisplayFormat.DayMonthTime(_transfer.Source.Date)</b> —
+                                        @Tr.T("щёлкните окно, куда перенести")
+                                    </span>
+                                    <button type="button" class="btn btn-sm btn-outline-secondary" title="@(Tr.T("Отменить перенос (Esc)"))" @onclick="CancelTransfer">
+                                        @Tr.T("Отмена")
+                                    </button>
+                                </div>
+                            }
+                            else if (!_brushOn && _selection.Count > 0)
+                            {
+                                <div class="selection-bar">
+                                    <span class="selection-count">@Tr.Format("Выделено окон: {0}", _selection.Count)</span>
+                                    <button type="button" class="btn btn-sm btn-primary" disabled="@(!CanBrush)" title="@BrushHint" @onclick="() => Exclusive(PlaceSelected)">
+                                        <i class="bi bi-plus-lg" aria-hidden="true"></i>@Tr.T("Разместить ролик")
+                                    </button>
+                                    <button type="button" class="btn btn-sm btn-outline-secondary" disabled="@(!_open.CanEdit)"
+                                            title="@(_open.CanEdit ? null : NoRightText)" @onclick="() => Exclusive(RemoveSelected)">
+                                        <i class="bi bi-trash3" aria-hidden="true"></i>@Tr.T("Удалить выпуски")
+                                    </button>
+                                    <button type="button" class="btn btn-sm btn-outline-secondary" disabled="@(!CanReplace)" title="@ReplaceHint" @onclick="() => Exclusive(ReplaceSelected)">
+                                        <i class="bi bi-arrow-left-right" aria-hidden="true"></i>@Tr.T("Заменить ролики")
+                                    </button>
+                                    <button type="button" class="btn btn-sm btn-outline-secondary" title="@(Tr.T("Снять выделение (Esc)"))" aria-label="@(Tr.T("Снять выделение"))"
+                                            @onclick="ClearSelection">
+                                        <i class="bi bi-x-lg" aria-hidden="true"></i>
+                                    </button>
+                                </div>
+                            }
+                        </Toolbar>
+                    </PlacementGrid>
+                </div>
+            }
+        </section>
+
+        @if (_selected != null && _open != null)
+        {
+            <aside class="window-panel">
+                <div class="panel-head">
+                    <div>
+                        <div class="panel-title tabular">@Tr.Format("Окно {0}", DisplayFormat.DateAndTime(_selected.Date))</div>
+                        <div class="panel-sub tabular">@_selected.Text@StatusText(_selected)</div>
+                    </div>
+                    <button type="button" class="btn btn-sm btn-outline-secondary" title="@(Tr.T("Закрыть"))" aria-label="@(Tr.T("Закрыть"))" @onclick="ClosePanel">
+                        <i class="bi bi-x-lg" aria-hidden="true"></i>
+                    </button>
+                </div>
+
+                <div class="panel-section-title">@Tr.T("Выходы в эфир этой кампании")</div>
+                @if (_panel is { Campaign.Rows.Count: > 0 } && _open.CanEdit)
+                {
+                    <div class="panel-bar">
+                        @if (_checkedIssues > 0)
+                        {
+                            <span>@Tr.Format("Отмечено: {0}", _checkedIssues)</span>
+                            <button type="button" class="btn btn-sm btn-primary" disabled="@(_transfer != null)" @onclick="StartTransfer">
+                                <i class="bi bi-box-arrow-right" aria-hidden="true"></i>@Tr.T("Перенести в окно")
+                            </button>
+                        }
+                        else
+                        {
+                            <span class="text-muted">@Tr.T("Отметьте выпуски, чтобы перенести их в другое окно.")</span>
+                        }
+                    </div>
+                }
+                <div class="panel-list">
+                    <ObjectList @ref="_campaignIssueList" Entity="_campaignIssueEntity" Data="_panel?.Campaign" Selectable="_open.CanEdit"
+                                ReadOnly="_transfer != null"
+                                SelectionChanged="n => _checkedIssues = n" Changed="AfterIssueAction" Failed="ShowError"
+                                EmptyText="@(Tr.T("В окне нет выпусков этой кампании."))" />
+                </div>
+
+                <div class="panel-section-title">@Tr.T("Все выходы в эфир")</div>
+                <div class="panel-list">
+                    <ObjectList Entity="_allIssueEntity" Data="_panel?.All" ReadOnly="true" EmptyText="@(Tr.T("В окне нет выпусков."))" />
+                </div>
+            </aside>
+        }
+    </div>
+</div>
+
+@code {
+    /// <summary>Акция страницы.</summary>
+    [Parameter, EditorRequired] public ActionOnMassmedia Action { get; set; } = default!;
+
+    /// <summary>Кампании акции (Campaigns) — страница перечитывает их после каждой операции.</summary>
+    [Parameter, EditorRequired] public DataTable Campaigns { get; set; } = default!;
+
+    /// <summary>Отметить только эту кампанию (вход «Редактировать» у кампании); применяется при смене <see cref="RequestVersion"/>.</summary>
+    [Parameter] public int? RequestedCampaignId { get; set; }
+
+    [Parameter] public int RequestVersion { get; set; }
+
+    /// <summary>Размещение изменилось — страница перечитывает шапку и кампании.</summary>
+    [Parameter] public EventCallback Changed { get; set; }
+
+    private readonly List<int> _checked = new();
+    private int _appliedRequest = -1;
+    private bool _initialized;
+
+    private WindowsSource.OpenCampaign? _open;
+    private readonly WindowsSource.WeekView _view = new();
+    private DateTime _date = DateTime.Today;
+    private bool _dateChosen;
+    private PlacementWeek? _week;
+    private string? _error;
+
+    private DataTable? _rollers;
+    private int? _brushRollerId;
+    private Dictionary<int, int> _numbers = new();
+    private bool _brushOn;
+    private string? _advertTypeName;
+
+    private bool _showNumbers;
+    private bool _showPrime;
+    private bool _showMarked;
+
+    private readonly PlacementSelection _selection = new();
+    private ElementReference _gridBox;
+
+    // Окно в правой панели и его выпуски (WindowIssuesRetrieve).
+    private PlacementCell? _selected;
+    private WindowsSource.WindowIssues? _panel;
+    private ObjectList? _campaignIssueList;
+    private int _checkedIssues;
+    private readonly Entity _campaignIssueEntity = WindowsSource.IssueEntity(full: false);
+    private readonly Entity _allIssueEntity = WindowsSource.IssueEntity(full: true);
+
+    // Перенос: отмеченные в панели выпуски ждут щелчка по окну-приёмнику.
+    private TransferSource? _transfer;
+    private sealed record TransferSource(PlacementCell Source, IReadOnlyList<PresentationObject> Issues);
+
+    private static string NoRightText => Tr.T("Нет права «Редактировать» на эту кампанию.");
+
+    private IEnumerable<DataRow> LinearRows => Campaigns.Rows.Cast<DataRow>().Where(WindowsSource.IsLinear);
+
+    private DataRow? RowOf(int campaignId) =>
+        LinearRows.FirstOrDefault(r => WindowsSource.CampaignIdOf(r) == campaignId);
+
+    private DataRow? OpenRow => _open == null ? null : RowOf(_open.CampaignId);
+
+    private string OpenCaption => OpenRow is { } row ? WindowsSource.CampaignCaption(row) : "";
+
+    private DataRow? BrushRow => _rollers == null || _brushRollerId == null ? null
+        : _rollers.Rows.Cast<DataRow>().FirstOrDefault(r => WindowsSource.RollerIdOf(r) == _brushRollerId);
+
+    private bool CanBrush => _open is { CanEdit: true } && BrushRow != null;
+
+    private string? BrushHint =>
+        _open is not { CanEdit: true } ? NoRightText
+        : BrushRow == null ? Tr.T("Не выбран рекламный ролик.")
+        : null;
+
+    private bool CanReplace => CanBrush && _showNumbers;
+
+    private string? ReplaceHint =>
+        !_showNumbers ? Tr.T("Замена роликов доступна только при включённом показе номеров роликов (кнопка \"Номера роликов\") — так видно, что вы меняете.")
+        : BrushHint ?? Tr.T("Заменить ролики в выделенных окнах на ролик, выбранный в списке \"Ролики\"");
+
+    private PlacementFlags ShownBackgrounds =>
+        PlacementFlags.Disabled | (_showMarked ? PlacementFlags.Marked : 0) | (_showPrime ? PlacementFlags.Prime : 0);
+
+    // ---------- Кампании ----------
+
+    protected override async Task OnParametersSetAsync()
+    {
+        // Удалённые кампании — из отметок долой (страница перечитала список после операции).
+        int before = _checked.Count;
+        _checked.RemoveAll(id => RowOf(id) == null);
+
+        // Фирму акции сменили («Сменить фирму-заказчика» в меню шапки) — ролики кисти другие,
+        // кампания открывается заново.
+        if (_open != null && _open.FirmId != Action.FirmID)
+        {
+            _open = null;
+            await ApplyChecked();
+        }
+
+        if (RequestVersion != _appliedRequest)
+        {
+            _appliedRequest = RequestVersion;
+            if (RequestedCampaignId is { } requested && RowOf(requested) != null)
+            {
+                _checked.Clear();
+                _checked.Add(requested);
+            }
+            else if (!_initialized && LinearRows.Count() == 1)
+            {
+                _checked.Add(WindowsSource.CampaignIdOf(LinearRows.First()));
+            }
+            _initialized = true;
+            await ApplyChecked();
+        }
+        else if (_checked.Count != before)
+            await ApplyChecked();
+    }
+
+    private Task ToggleCampaign(int id, bool on)
+    {
+        if (on && !_checked.Contains(id)) _checked.Add(id);
+        if (!on) _checked.Remove(id);
+        return ApplyChecked();
+    }
+
+    private Task CheckOnly(int id)
+    {
+        _checked.Clear();
+        _checked.Add(id);
+        return ApplyChecked();
+    }
+
+    /// <summary>Отмечена одна кампания — открыть её (если ещё не открыта), иначе закрыть сетку.</summary>
+    private async Task ApplyChecked()
+    {
+        int? single = _checked.Count == 1 ? _checked[0] : null;
+        if (single == _open?.CampaignId)
+            return;
+
+        _open = null;
+        _week = null;
+        _rollers = null;
+        _brushOn = false;
+        _transfer = null;
+        _selected = null;
+        _panel = null;
+        _selection.Clear();
+        if (single == null)
+            return;
+
+        await Run(() =>
+        {
+            _open = WindowsSource.Open(Action, single.Value);
+            if (_open == null)
+                return;
+            // Первая открытая кампания — с недели её первого выпуска, как десктоп (у пустой — завтра);
+            // дальше неделя сохраняется при смене кампании: станции одной акции сравнивают за один период.
+            if (!_dateChosen)
+            {
+                _date = _open.FirstIssueDate ?? DateTime.Today.AddDays(1);
+                _dateChosen = true;
+            }
+            LoadRollersCore();
+            ReloadWeekCore();
+        });
+        if (_open == null && _error == null)
+            _error = Tr.T("Рекламная кампания не найдена — её удалили. Обновите страницу.");
+    }
+
+    // ---------- Неделя ----------
+
+    private Task Run(System.Action work) => Busy.RunAsync(() =>
+    {
+        try
+        {
+            _error = null;
+            work();
+        }
+        catch (Exception ex)
+        {
+            _error = ErrorPresenter.Describe(ex);
+        }
+    });
+
+    private void ReloadWeekCore()
+    {
+        _week = WindowsSource.LoadWeek(_open!, _date, _view);
+        _selection.Retain(_week);
+        _selected = _selected == null ? null : _week.Find(_selected.Key);
+        if (_selected == null)
+            _panel = null;
+    }
+
+    private Task ReloadWeek() => Run(ReloadWeekCore);
+
+    private Task PreviousWeek()
+    {
+        if (_week == null) return Task.CompletedTask;
+        _selection.Clear();
+        _date = _week.StartDate.AddDays(-1);
+        return ReloadWeek();
+    }
+
+    private Task NextWeek()
+    {
+        if (_week == null) return Task.CompletedTask;
+        _selection.Clear();
+        _date = _week.FinishDate.AddDays(1);
+        return ReloadWeek();
+    }
+
+    private Task JumpTo(DateTime date)
+    {
+        _selection.Clear();
+        _date = date;
+        return ReloadWeek();
+    }
+
+    private Task RefreshAll() => Run(() =>
+    {
+        LoadRollersCore();
+        ReloadWeekCore();
+        if (_selected != null)
+            _panel = WindowsSource.LoadWindowIssues(_open!, _selected, _view.ShowUnconfirmed);
+    });
+
+    private Task ToggleUnconfirmed()
+    {
+        _view.ShowUnconfirmed = !_view.ShowUnconfirmed;
+        return Run(() =>
+        {
+            ReloadWeekCore();
+            if (_selected != null)
+                _panel = WindowsSource.LoadWindowIssues(_open!, _selected, _view.ShowUnconfirmed);
+        });
+    }
+
+    private Task ToggleDisabled()
+    {
+        _view.ShowDisabled = !_view.ShowDisabled;
+        return ReloadWeek();
+    }
+
+    // ---------- Отбор: позиционирование и предметы рекламы ----------
+
+    private static readonly (int Position, string Text)[] Positions =
+    {
+        (0, "Показывать всё"), // i18n-ok: переводится при показе (Tr.T)
+        ((int)Merlin.RollerPositions.First, "Показывать первые"), // i18n-ok: переводится при показе (Tr.T)
+        ((int)Merlin.RollerPositions.Second, "Показывать вторые"), // i18n-ok: переводится при показе (Tr.T)
+        ((int)Merlin.RollerPositions.Last, "Показывать последние"), // i18n-ok: переводится при показе (Tr.T)
+    };
+
+    /// <summary>Подпись кнопки — выбранный пункт, как в десктопе; до выбора — «Позиционирование».</summary>
+    private string PositionText => _view.Position == 0 ? Tr.T("Позиционирование") : Tr.T(Positions.First(p => p.Position == _view.Position).Text);
+
+    private async Task OpenPositionMenu(MouseEventArgs e)
+    {
+        var items = Positions.Select(p => new ActionMenuItem
+        {
+            Name = p.Position.ToString(),
+            Text = Tr.T(p.Text),
+            Icon = p.Position == _view.Position ? "bi-check2" : null,
+            Enabled = true,
+            Ported = true,
+        }).ToList();
+        string? picked = await Menu.ShowAsync(items, e.ClientX, e.ClientY, fromButton: true);
+        if (picked == null || !int.TryParse(picked, out int position) || position == _view.Position)
+            return;
+        _view.Position = position;
+        await ReloadWeek();
+    }
+
+    private const string AdvertAll = "all";
+    private const string AdvertExists = "exists";
+    private const string AdvertNotExists = "notExists";
+
+    private string AdvertTypeText =>
+        _view.AdvertTypeId == null ? Tr.T("Предметы рекламы")
+        : _view.AdvertTypeExists ? Tr.Format("Есть {0}", _advertTypeName)
+        : Tr.Format("Нет {0}", _advertTypeName);
+
+    /// <summary>«Предметы рекламы»: «есть / нет» — выбор из дерева предметов, как TreeViewSelector десктопа.</summary>
+    private async Task OpenAdvertTypeMenu(MouseEventArgs e)
+    {
+        var items = new[]
+        {
+            new ActionMenuItem { Name = AdvertAll, Text = Tr.T("Показывать всё"), Enabled = true, Ported = true },
+            new ActionMenuItem { Name = AdvertExists, Text = Tr.T("Показывать все где есть предмет рекламы"), Enabled = true, Ported = true },
+            new ActionMenuItem { Name = AdvertNotExists, Text = Tr.T("Показывать все где нет предмета рекламы"), Enabled = true, Ported = true },
+        };
+        string? picked = await Menu.ShowAsync(items, e.ClientX, e.ClientY, fromButton: true);
+        if (picked == null)
+            return;
+
+        if (picked == AdvertAll)
+        {
+            if (_view.AdvertTypeId == null)
+                return;
+            _view.AdvertTypeId = null;
+            _advertTypeName = null;
+            await ReloadWeek();
+            return;
+        }
+
+        ScenarioTreePicker? picker = null;
+        if (await Dialogs.ShowAsync(Tr.T("Предметы рекламы"), builder =>
+            {
+                builder.OpenComponent<ScenarioTreePicker>(0);
+                builder.AddComponentParameter(1, nameof(ScenarioTreePicker.Scenario), Merlin.RelationScenarios.AdvertTypes);
+                builder.AddComponentReferenceCapture(2, c => picker = (ScenarioTreePicker)c);
+                builder.CloseComponent();
+            }, okText: Tr.T("Выбрать")) != DialogOutcome.Ok)
+            return;
+
+        PresentationObject? advertType = picker?.SelectedObject;
+        if (advertType == null)
+            return;
+        _view.AdvertTypeId = Convert.ToInt32(advertType.IDs[0]);
+        _view.AdvertTypeExists = picked == AdvertExists;
+        _advertTypeName = advertType.Name;
+        await ReloadWeek();
+    }
+
+    // ---------- Ячейка ----------
+
+    private string? CellText(PlacementCell cell) => _showNumbers ? cell.NumbersText(_numbers) : null;
+
+    private string CellTitle(PlacementCell cell) => DisplayFormat.DateAndTime(cell.Date) + StatusText(cell);
+
+    /// <summary>Состояние окна одной строкой — подсказка ячейки и подпись панели.</summary>
+    private string StatusText(PlacementCell cell) =>
+        (cell.Has(PlacementFlags.Mine) ? " · " + Tr.T("выпуски этой кампании")
+            : cell.Has(PlacementFlags.FirmHere) ? " · " + Tr.T("выпуски фирмы в других кампаниях") : "")
+        + (cell.Has(PlacementFlags.Disabled) ? " · " + Tr.T("заблокированное окно") : "")
+        + (cell.Has(PlacementFlags.Marked) ? " · " + Tr.T("отмеченное окно") : "")
+        + (cell.Has(PlacementFlags.Prime) ? " · " + Tr.T("прайм-тайм") : "");
+
+    private async Task ClickCell(PlacementGrid.CellEvent e)
+    {
+        if (_transfer != null)
+        {
+            if (e.Mouse.Detail <= 1 && TransferCellClass(e.Cell) == TargetClass)
+                await Exclusive(() => TransferTo(e.Cell));
+            return;
+        }
+
+        if (_brushOn)
+        {
+            // Второй щелчок двойного (detail > 1) второй выпуск не ставит: Blazor выполняет события
+            // по очереди, и без этой проверки он пришёл бы уже после первой постановки. Осознанный
+            // повторный щелчок по тому же окну — отдельный щелчок, он ставит ещё один выпуск.
+            if (e.Mouse.Detail <= 1)
+                await PlaceOne(e.Cell);
+            return;
+        }
+
+        _selection.Click(_week!, e.Cell, e.Mouse.ShiftKey, e.Mouse.CtrlKey || e.Mouse.MetaKey);
+        await SelectCell(e.Cell);
+        await FocusGrid();
+    }
+
+    private async Task FocusGrid()
+    {
+        try { await _gridBox.FocusAsync(preventScroll: true); }
+        catch (Exception) { /* сетка уже убрана со страницы — фокус не нужен */ }
+    }
+
+    private void GridKey(KeyboardEventArgs e)
+    {
+        if (e.Key != "Escape")
+            return;
+        if (_transfer != null)
+            _transfer = null;
+        else
+            _selection.Clear();
+    }
+
+    private void ClearSelection() => _selection.Clear();
+
+    // ---------- Режим добавления ----------
+
+    private void ToggleBrush()
+    {
+        _brushOn = !_brushOn;
+        if (_brushOn)
+            _selection.Clear();
+    }
+
+    /// <summary>
+    /// Клик «Режима добавления»: ролик кисти с позицией «Позиционирования» в окно. Ячейка и
+    /// счётчик дня обновляются на месте, панель окна не перечитывается (если это не её окно).
+    /// Отказ процедуры — сообщением над сеткой.
+    /// </summary>
+    private async Task PlaceOne(PlacementCell cell)
+    {
+        if (!CanBrush || _week == null)
+            return;
+
+        bool placed = false;
+        int rollerId = _brushRollerId!.Value;
+        int position = _view.Position;
+        PlacementWeek week = _week;
+        await Run(() =>
+        {
+            WindowsSource.PlaceOne(_open!, week, cell, rollerId, position, _view);
+            placed = true;
+            if (_selected?.Key == cell.Key)
+                _panel = WindowsSource.LoadWindowIssues(_open!, cell, _view.ShowUnconfirmed);
+        });
+        if (placed)
+            await Changed.InvokeAsync();
+    }
+
+    // ---------- Выпуски окна ----------
+
+    private Task SelectCell(PlacementCell cell)
+    {
+        _selected = cell;
+        _checkedIssues = 0;
+        return Run(() => _panel = WindowsSource.LoadWindowIssues(_open!, cell, _view.ShowUnconfirmed));
+    }
+
+    private void ClosePanel()
+    {
+        _selected = null;
+        _panel = null;
+        _transfer = null;
+    }
+
+    /// <summary>Действие над выпуском в панели (позиция, замена, удаление) — перечитать окно, неделю и шапку.</summary>
+    private async Task AfterIssueAction()
+    {
+        await Run(() =>
+        {
+            ReloadWeekCore();
+            if (_selected != null)
+                _panel = WindowsSource.LoadWindowIssues(_open!, _selected, _view.ShowUnconfirmed);
+        });
+        await Changed.InvokeAsync();
+    }
+
+    private void ShowError(string message) => _error = message;
+
+    // ---------- Массовые операции по выделенным окнам ----------
+
+    /// <summary>«Разместить ролик» (десктоп — Insert): ролик кисти во все выделенные окна.</summary>
+    private async Task PlaceSelected()
+    {
+        if (!CanBrush || _week == null || _selection.Count == 0)
+            return;
+
+        IReadOnlyList<PlacementCell> cells = _selection.Selected(_week);
+        if (!await Confirm(Tr.T("Разместить ролик"), Tr.Format("Разместить ролик в выбранных окнах? ({0} шт.)", cells.Count), Tr.T("Разместить")))
+            return;
+
+        WindowsSource.BatchResult? result = null;
+        int rollerId = _brushRollerId!.Value;
+        int position = _view.Position;
+        await Run(() =>
+        {
+            result = WindowsSource.Place(_open!, cells, rollerId, position);
+            ReloadWeekCore();
+            if (_selected != null)
+                _panel = WindowsSource.LoadWindowIssues(_open!, _selected, _view.ShowUnconfirmed);
+        });
+        await AfterBatch(result, done => Tr.Format("Добавлено выпусков: {0}, не добавлено: {1}", done, result!.Failed), "Рекламное окно"); // i18n-ok: заголовок колонки переводит ObjectList при выводе
+    }
+
+    /// <summary>
+    /// «Удалить выпуски» (десктоп — Del): выпуски этой кампании в выделенных окнах. Роликов
+    /// несколько — чек-лист «Какие ролики удалить», один — вопрос.
+    /// </summary>
+    private async Task RemoveSelected()
+    {
+        if (_open is not { CanEdit: true } || _week == null || _selection.Count == 0)
+            return;
+
+        IReadOnlyList<PlacementCell> cells = _selection.Selected(_week);
+        WindowsSource.CampaignIssues? issues = null;
+        await Run(() => issues = WindowsSource.IssuesInWindows(_open, cells));
+        if (issues == null)
+            return;
+        if (issues.Count == 0)
+        {
+            await ShowInfo(Tr.T("Удалить выпуски"), Tr.T("В выбранных окнах нет выпусков текущей кампании."));
+            return;
+        }
+
+        if (issues.RollerIds.Count > 1)
+        {
+            IReadOnlyCollection<int>? chosen = await ChooseRollers(Tr.T("Удалить выпуски"), Tr.T("Какие ролики удалить в выбранных окнах?"),
+                issues.RollerIds, Tr.T("Удалить"));
+            if (chosen == null)
+                return;
+            issues = issues.Only(chosen);
+        }
+        else if (!await Confirm(Tr.T("Удалить выпуски"), Tr.Format("Удалить выпуски текущей кампании в выбранных окнах? ({0} шт.)", issues.Count), Tr.T("Удалить")))
+            return;
+
+        WindowsSource.BatchResult? result = null;
+        WindowsSource.CampaignIssues toRemove = issues;
+        await Run(() =>
+        {
+            result = WindowsSource.Remove(_open, toRemove);
+            ReloadWeekCore();
+            if (_selected != null)
+                _panel = WindowsSource.LoadWindowIssues(_open, _selected, _view.ShowUnconfirmed);
+        });
+        await AfterBatch(result, done => Tr.Format("Удалено выпусков: {0}, не удалено: {1}", done, result!.Failed), "Выпуск"); // i18n-ok: заголовок колонки переводит ObjectList при выводе
+    }
+
+    /// <summary>
+    /// «Заменить ролики» (десктоп — Ctrl+R): ролики этой кампании в выделенных окнах — на ролик
+    /// кисти. Как в десктопе, только при «Номерах роликов»: видно, что меняется.
+    /// </summary>
+    private async Task ReplaceSelected()
+    {
+        if (!CanReplace || _week == null || _selection.Count == 0 || BrushRow is not { } brush)
+            return;
+
+        int newRollerId = WindowsSource.RollerIdOf(brush);
+        string newName = WindowsSource.RollerName(brush);
+        string newDuration = WindowsSource.RollerDuration(brush);
+        IReadOnlyList<PlacementCell> cells = _selection.Selected(_week);
+        WindowsSource.CampaignIssues? issues = null;
+        await Run(() => issues = WindowsSource.IssuesInWindows(_open!, cells).Without(newRollerId));
+        if (issues == null)
+            return;
+        if (issues.Count == 0)
+        {
+            await ShowInfo(Tr.T("Заменить ролики"), Tr.T("В выделенных окнах нечего заменять."));
+            return;
+        }
+
+        if (issues.RollerIds.Count > 1)
+        {
+            IReadOnlyCollection<int>? chosen = await ChooseRollers(Tr.T("Заменить ролики"),
+                Tr.Format("Какие ролики заменить на «{0}» ({1})?", newName, newDuration), issues.RollerIds, Tr.T("Заменить"));
+            if (chosen == null)
+                return;
+            issues = issues.Only(chosen);
+        }
+        else if (!await Confirm(Tr.T("Заменить ролики"),
+                     Tr.Format("Заменить ролики на «{0}» ({1}) в выделенных окнах? ({2} шт.)", newName, newDuration, issues.Count), Tr.T("Заменить")))
+            return;
+
+        WindowsSource.BatchResult? result = null;
+        WindowsSource.CampaignIssues toReplace = issues;
+        await Run(() =>
+        {
+            result = WindowsSource.Replace(_open!, toReplace, newRollerId);
+            ReloadWeekCore();
+            if (_selected != null)
+                _panel = WindowsSource.LoadWindowIssues(_open!, _selected, _view.ShowUnconfirmed);
+        });
+        await AfterBatch(result, done => Tr.Format("Заменено роликов: {0}, не заменено: {1}", done, result!.Failed), "Выпуск"); // i18n-ok: заголовок колонки переводит ObjectList при выводе
+    }
+
+    /// <summary>
+    /// После пачки: шапка страницы перечитывается; отказы — таблицей, в заголовке строка-счётчик
+    /// (docs/UI_RULES.md, п. 2.2). Об успехе отдельно не сообщаем — сетка уже показывает итог
+    /// (решение 2026-09-22 для массовых операций веба).
+    /// </summary>
+    private async Task AfterBatch(WindowsSource.BatchResult? result, Func<int, string> caption, string nameColumn)
+    {
+        if (result == null)
+            return;
+        if (result.Done > 0)
+            await Changed.InvokeAsync();
+        if (result.Failed > 0)
+            await Tables.ShowAsync(caption(result.Done), result.Errors,
+                new Entity.Attribute("name", nameColumn, "nvarchar"),
+                new Entity.Attribute("description", "Ошибка", "nvarchar")); // i18n-ok: заголовок колонки переводит ObjectList при выводе
+    }
+
+    /// <summary>Чек-лист роликов; null — отмена. Пустой выбор не принимается.</summary>
+    private async Task<IReadOnlyCollection<int>?> ChooseRollers(string title, string question, IReadOnlyList<int> rollerIds, string okText)
+    {
+        var model = new RollerChecklistForm.Model { Question = question, Multiple = true };
+        await Run(() => model.Rollers = WindowsSource.RollerRows(_open!, rollerIds));
+        if (_error != null)
+            return null;
+
+        while (true)
+        {
+            if (await Dialogs.ShowAsync(title, builder =>
+                {
+                    builder.OpenComponent<RollerChecklistForm>(0);
+                    builder.AddComponentParameter(1, nameof(RollerChecklistForm.Value), model);
+                    builder.CloseComponent();
+                }, okText: okText, wide: true) != DialogOutcome.Ok)
+                return null;
+            if (model.Selected.Count > 0)
+                return model.Selected;
+            model.Message = Tr.T("Отметьте хотя бы один ролик.");
+        }
+    }
+
+    // ---------- Перенос выпусков ----------
+
+    private const string TargetClass = "cell-target";
+
+    /// <summary>«Перенести в окно»: отмеченные в панели выпуски ждут щелчка по окну-приёмнику; недели листать можно.</summary>
+    private async Task StartTransfer()
+    {
+        if (_selected == null || _campaignIssueList == null || _checkedIssues == 0)
+            return;
+        _brushOn = false;
+        _selection.Clear();
+        _transfer = new TransferSource(_selected, _campaignIssueList.SelectedObjects);
+        await FocusGrid();
+    }
+
+    private void CancelTransfer() => _transfer = null;
+
+    private string? TransferCellClass(PlacementCell cell)
+    {
+        if (_transfer == null)
+            return null;
+        if (cell.Key == _transfer.Source.Key)
+            return "cell-source";
+        // Заблокированное окно процедура не примет (DisabledInsertRoller) — не предлагаем.
+        return cell.Has(PlacementFlags.Disabled) ? "cell-unavailable" : TargetClass;
+    }
+
+    /// <summary>
+    /// Перенос как десктопное перетаскивание: одно подтверждение (вопрос десктопа и предупреждения
+    /// «в окне уже есть ролик / ролики фирмы»), затем удаление и постановка в окно-приёмник одной
+    /// транзакцией — всё или ничего.
+    /// </summary>
+    private async Task TransferTo(PlacementCell target)
+    {
+        TransferSource source = _transfer!;
+        WindowsSource.MovePlan? plan = null;
+        await Run(() => plan = WindowsSource.PlanMove(_open!, source.Issues, target));
+        if (plan == null)
+            return;
+
+        string targetText = DisplayFormat.DateAndTime(target.Date);
+        string question = plan.Count == 1
+            ? Tr.Format("Перенести выпуск в окно '{0}'?", targetText)
+            : Tr.Format("Перенести выпуски ({0} шт.) в окно '{1}'?", plan.Count, targetText);
+        if (await Dialogs.ShowAsync(Tr.T("Перенести в окно"), b =>
+            {
+                b.OpenElement(0, "p");
+                b.AddContent(1, question);
+                b.CloseElement();
+                if (plan.Warnings.Count > 0)
+                {
+                    b.OpenElement(2, "ul");
+                    b.AddAttribute(3, "class", "text-warning-emphasis");
+                    foreach (string w in plan.Warnings)
+                    {
+                        b.OpenElement(4, "li");
+                        b.AddContent(5, w);
+                        b.CloseElement();
+                    }
+                    b.CloseElement();
+                }
+            }, okText: Tr.T("Перенести")) != DialogOutcome.Ok)
+            return;
+
+        bool moved = false;
+        await Run(() =>
+        {
+            WindowsSource.Move(_open!, plan);
+            moved = true;
+        });
+        // Отказ (прошлое, закрытый день, позиция…) — сообщение над сеткой, режим переноса остаётся:
+        // можно выбрать другое окно или отменить.
+        if (!moved)
+            return;
+
+        _transfer = null;
+        await Run(() =>
+        {
+            ReloadWeekCore();
+            if (_selected != null)
+                _panel = WindowsSource.LoadWindowIssues(_open!, _selected, _view.ShowUnconfirmed);
+        });
+        await Changed.InvokeAsync();
+    }
+
+    // ---------- Ролики ----------
+
+    private void LoadRollersCore()
+    {
+        _rollers = WindowsSource.LoadRollers(_open!);
+        _numbers = _rollers.Rows.Cast<DataRow>().ToDictionary(WindowsSource.RollerIdOf, r => Convert.ToInt32(r[WindowsSource.RollerNumberColumn]));
+        // Выбор сохраняется, если ролик остался в списке; иначе — первый, как в десктопе.
+        if (_brushRollerId == null || !_numbers.ContainsKey(_brushRollerId.Value))
+            _brushRollerId = _rollers.Rows.Count > 0 ? WindowsSource.RollerIdOf(_rollers.Rows[0]) : null;
+        if (_rollers.Rows.Count == 0)
+            _brushOn = false;
+    }
+
+    private async Task PlayRoller()
+    {
+        if (BrushRow is not { } row)
+            return;
+        if (await Playback.PlayAsync(WindowsSource.RollerListEntity().CreateObject(row)) is { } refusal)
+            await ShowInfo(Tr.T("Прослушать ролик"), refusal);
+    }
+
+    /// <summary>«Добавить ролик - пустышку»: длительность → GetMuteRoller → пустышка становится роликом кисти.</summary>
+    private async Task AddDummy()
+    {
+        if (_open is not { CanEdit: true })
+            return;
+
+        var model = new DummyRollerForm.Model();
+        while (true)
+        {
+            if (await Dialogs.ShowAsync(Tr.T("Добавить ролик - пустышку"), builder =>
+                {
+                    builder.OpenComponent<DummyRollerForm>(0);
+                    builder.AddComponentParameter(1, nameof(DummyRollerForm.Value), model);
+                    builder.CloseComponent();
+                }, okText: Tr.T("Добавить")) != DialogOutcome.Ok)
+                return;
+            model.Message = model.Validate();
+            if (model.Message == null)
+                break;
+        }
+
+        await Run(() =>
+        {
+            int rollerId = WindowsSource.CreateDummyRoller(_open, model.TotalSeconds);
+            _brushRollerId = rollerId;
+            LoadRollersCore();
+        });
+    }
+
+    /// <summary>«⋯» у ролика — меню сущности 1244, как у списка «Ролики» десктопа.</summary>
+    private async Task OpenRollerMenu(DataRow row, MouseEventArgs e)
+    {
+        try
+        {
+            PresentationObject roller = WindowsSource.RollerListEntity().CreateObject(row);
+            IReadOnlyList<ActionMenuItem> items = Actions.BuildMenu(roller, ViewType.Journal);
+            string? picked = await Menu.ShowAsync(items, e.ClientX, e.ClientY, fromButton: true);
+            if (picked == null)
+                return;
+            ActionEffect? effect = await Actions.ExecuteAsync(roller, picked, ViewType.Journal);
+            // Предмет рекламы ролика мог смениться — список и отбор по предмету перечитать.
+            if (effect is not null and not ActionEffect.None)
+                await Run(() =>
+                {
+                    LoadRollersCore();
+                    ReloadWeekCore();
+                });
+        }
+        catch (Exception ex)
+        {
+            _error = ErrorPresenter.Describe(ex);
+        }
+    }
+
+    // ---------- Диалоги ----------
+
+    private bool _operating;
+
+    /// <summary>
+    /// Операция с вопросом пользователю (пачки, перенос, пустышка) — одна за раз. Повторный щелчок
+    /// по той же кнопке или окну, пришедший, пока открыт вопрос, иначе открыл бы второй такой же
+    /// вопрос, и подтверждение обоих записало бы дважды.
+    /// </summary>
+    private async Task Exclusive(Func<Task> operation)
+    {
+        if (_operating)
+            return;
+        _operating = true;
+        try
+        {
+            await operation();
+        }
+        finally
+        {
+            _operating = false;
+        }
+    }
+
+    private async Task<bool> Confirm(string title, string text, string okText) =>
+        await Dialogs.ShowAsync(title, b => b.AddContent(0, text), okText: okText) == DialogOutcome.Ok;
+
+    private Task ShowInfo(string caption, string text) =>
+        Dialogs.ShowAsync(caption, builder => builder.AddContent(0, text), okText: Tr.T("Ок"), showCancel: false);
+}

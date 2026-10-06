@@ -1,0 +1,427 @@
+/*
+    Вкладка «Рекламные окна» страницы акции: кампании и ролики слева, неделя окон в центре,
+    выпуски выбранного окна справа. Раскладка — как у экрана «Трафик» (Traffic.razor.css).
+*/
+
+.windows-tab {
+    flex: 1 1 auto;
+    display: flex;
+    flex-direction: column;
+    gap: var(--s-2);
+    min-height: 0;
+}
+
+.tab-error {
+    margin: 0;
+}
+
+.windows-body {
+    flex: 1 1 auto;
+    display: grid;
+    grid-template-columns: 280px minmax(0, 1fr);
+    grid-template-rows: minmax(0, 1fr);
+    gap: var(--s-3);
+    min-height: 0;
+}
+
+.windows-body.with-panel {
+    grid-template-columns: 280px minmax(0, 1fr) 320px;
+}
+
+/* ---------- Левая колонка: кампании, статистика, ролики ---------- */
+
+.side {
+    grid-column: 1;
+    grid-row: 1 / -1;
+    display: flex;
+    flex-direction: column;
+    gap: var(--s-3);
+    min-height: 0;
+}
+
+.side-block {
+    display: flex;
+    flex-direction: column;
+    gap: var(--s-1);
+    padding: var(--s-2);
+    background: var(--c-surface);
+    border: 1px solid var(--c-border);
+    border-radius: 6px;
+}
+
+.side-title {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--s-2);
+    font-weight: 600;
+}
+
+.side-actions {
+    display: inline-flex;
+    gap: var(--s-1);
+}
+
+.campaign-list {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    max-height: 30vh;
+    overflow: auto;
+}
+
+.campaign-list li {
+    display: flex;
+    align-items: center;
+    gap: var(--s-2);
+    padding: 2px var(--s-1);
+    border-radius: 4px;
+}
+
+.campaign-list li.on {
+    background: var(--c-accent-soft);
+}
+
+.campaign {
+    flex: 1 1 auto;
+    padding: 0;
+    border: none;
+    background: none;
+    text-align: left;
+    color: var(--c-text);
+}
+
+.campaign:hover {
+    color: var(--c-accent);
+}
+
+.stats {
+    display: grid;
+    grid-template-columns: auto 1fr;
+    gap: 2px var(--s-3);
+    margin: var(--s-2) 0 0;
+    font-size: 13px;
+}
+
+.stats > div {
+    display: contents;
+}
+
+.stats dt {
+    font-weight: 400;
+    color: var(--c-text-muted);
+}
+
+.stats dd {
+    margin: 0;
+    text-align: right;
+    font-variant-numeric: tabular-nums;
+}
+
+.rollers {
+    flex: 1 1 auto;
+    min-height: 160px;
+}
+
+.roller-table {
+    flex: 1 1 auto;
+    min-height: 0;
+    overflow: auto;
+    font-size: 13px;
+}
+
+.roller-table tbody tr {
+    cursor: pointer;
+}
+
+/* Узкая колонка: плотнее, чем журнал, длинные имена и предметы рекламы переносятся. */
+.roller-table .table > thead > tr > th,
+.roller-table .table > tbody > tr > td {
+    padding: 4px var(--s-1);
+    white-space: normal;
+    overflow-wrap: break-word;
+}
+
+.roller-table tbody tr.row-active > td {
+    background: var(--c-accent-soft);
+}
+
+.col-num {
+    width: 32px;
+    text-align: right;
+}
+
+.col-menu {
+    width: 28px;
+}
+
+.row-btn {
+    visibility: hidden;
+    width: 24px;
+    height: 22px;
+    padding: 0;
+    border: none;
+    border-radius: 4px;
+    background: none;
+    color: var(--c-text-muted);
+}
+
+tbody tr:hover .row-btn,
+tbody tr:focus-within .row-btn {
+    visibility: visible;
+}
+
+.row-btn:hover {
+    background: var(--c-border);
+    color: var(--c-text);
+}
+
+@media (hover: none) {
+    .row-btn {
+        visibility: visible;
+    }
+}
+
+/* ---------- Центр: тулбар и сетка ---------- */
+
+.center {
+    grid-column: 2;
+    grid-row: 1;
+    min-width: 0;
+    min-height: 0;
+    display: flex;
+    flex-direction: column;
+    gap: var(--s-2);
+}
+
+.mode-caption {
+    font-weight: 600;
+}
+
+.toolbar {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: var(--s-2);
+}
+
+.toolbar .btn {
+    white-space: nowrap;
+}
+
+.toolbar .btn > .bi {
+    margin-right: var(--s-1);
+}
+
+.toolbar .btn > .bi:only-child {
+    margin-right: 0;
+}
+
+.brush-roller {
+    max-width: 280px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    font-size: 13px;
+    color: var(--c-text-muted);
+}
+
+.toggles {
+    display: inline-flex;
+    flex-wrap: wrap;
+    gap: var(--s-1);
+    margin-left: auto;
+}
+
+.toggles .btn.active {
+    background: var(--c-accent-soft);
+    border-color: var(--c-accent);
+    color: var(--c-accent);
+}
+
+.grid-box {
+    flex: 1 1 auto;
+    min-height: 0;
+    display: flex;
+    flex-direction: column;
+    outline: none;
+}
+
+.legend {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--s-1) var(--s-4);
+    color: var(--c-text-muted);
+    font-size: 13px;
+}
+
+.legend span {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--s-1);
+}
+
+.sample {
+    font-style: normal;
+    font-variant-numeric: tabular-nums;
+}
+
+.sample.mine {
+    color: var(--c-place-mine);
+}
+
+.sample.firm {
+    color: var(--c-place-firm);
+}
+
+.sample.match {
+    font-weight: 700;
+    color: var(--c-text);
+}
+
+.swatch {
+    display: inline-block;
+    width: 14px;
+    height: 14px;
+    border: 1px solid var(--c-border-strong);
+    border-radius: 3px;
+}
+
+.swatch.bg-prime {
+    background: var(--c-prime-soft);
+}
+
+.swatch.bg-marked {
+    background: var(--c-marked-soft);
+}
+
+.swatch.bg-disabled {
+    background: var(--c-danger-soft);
+}
+
+.selection-bar {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: var(--s-2);
+    padding: var(--s-1) var(--s-2);
+    border-radius: 6px;
+    background: var(--c-bg);
+}
+
+.selection-count {
+    font-weight: 600;
+    white-space: nowrap;
+}
+
+.selection-bar .btn {
+    white-space: nowrap;
+}
+
+.selection-bar .btn > .bi {
+    margin-right: var(--s-1);
+}
+
+.transfer-bar {
+    display: flex;
+    align-items: center;
+    gap: var(--s-2);
+    padding: var(--s-1) var(--s-2);
+    border-radius: 6px;
+    background: var(--c-accent-soft);
+    font-size: 13px;
+}
+
+.transfer-bar .btn {
+    margin-left: auto;
+    white-space: nowrap;
+}
+
+/* ---------- Правая панель: выпуски окна ---------- */
+
+.window-panel {
+    grid-column: 3;
+    grid-row: 1;
+    display: flex;
+    flex-direction: column;
+    gap: var(--s-2);
+    min-height: 0;
+}
+
+.panel-head {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: var(--s-2);
+    padding: var(--s-2) var(--s-3);
+    background: var(--c-surface);
+    border: 1px solid var(--c-border);
+    border-radius: 6px;
+}
+
+.panel-title {
+    font-weight: 600;
+}
+
+.panel-sub {
+    color: var(--c-text-muted);
+    font-size: 13px;
+}
+
+.panel-section-title {
+    font-weight: 600;
+    font-size: 13px;
+}
+
+.panel-bar {
+    min-height: 31px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--s-2);
+    font-size: 13px;
+}
+
+.panel-bar .btn > .bi {
+    margin-right: var(--s-1);
+}
+
+.panel-list {
+    flex: 1 1 0;
+    min-height: 0;
+    display: flex;
+    flex-direction: column;
+}
+
+.panel-list ::deep .data-table {
+    flex: 1 1 auto;
+    min-height: 100px;
+}
+
+/* Неделе нужно ~660px. Когда рядом не помещается панель окна, она встаёт под сетку. */
+@media (max-width: 1500px) {
+    .windows-body.with-panel {
+        grid-template-columns: 280px minmax(0, 1fr);
+        grid-template-rows: minmax(0, 1fr) minmax(220px, 38%);
+    }
+
+    .window-panel {
+        grid-column: 2;
+        grid-row: 2;
+    }
+}
+
+@media (max-width: 900px) {
+    .windows-body,
+    .windows-body.with-panel {
+        grid-template-columns: minmax(0, 1fr);
+        grid-template-rows: auto;
+    }
+
+    .side,
+    .center,
+    .window-panel {
+        grid-column: 1;
+        grid-row: auto;
+    }
+}

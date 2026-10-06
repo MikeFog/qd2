@@ -1,0 +1,25 @@
+.question {
+    margin: 0 0 var(--s-2);
+}
+
+.roller-check {
+    max-height: 50vh;
+    overflow: auto;
+}
+
+.roller-check tbody tr {
+    cursor: pointer;
+}
+
+.roller-check tbody tr.row-on > td {
+    background: var(--c-accent-soft);
+}
+
+.col-check {
+    width: 32px;
+}
+
+.col-num {
+    width: 40px;
+    text-align: right;
+}

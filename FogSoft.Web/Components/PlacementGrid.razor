@@ -1,0 +1,179 @@
+@using System.Globalization
+@using Merlin.Classes
+@using FogSoft.WinForm.Classes
+
+@*
+    Сетка размещения «строки × дни» (docs/tasks/web-action-forms.md §3.8, web-tariffgrid.md §3.3):
+    рисует модель PlacementWeek — признаки места (PlacementFlags) превращаются в классы ячейки, о
+    типах кампаний компонент не знает. Данные, текст ячейки в особых режимах (номера роликов),
+    легенда и действия — у владельца.
+
+    Обычная таблица без виртуализации (до ~80 строк × 7 дней), липкие шапка и две левые колонки.
+    Наведение — только CSS. Шапка дня: день недели, дата и число выпусков кампании за день.
+*@
+
+<div class="pgrid @(Brush ? "brush" : null)">
+    <div class="pgrid-bar">
+        <div class="pgrid-nav">
+            <button type="button" class="btn btn-sm btn-outline-secondary" title="@(Tr.T("Предыдущая неделя"))"
+                    disabled="@(Model == null)" @onclick="OnPrevious">
+                <i class="bi bi-chevron-left" aria-hidden="true"></i>
+            </button>
+            <span class="pgrid-caption tabular">
+                @if (Model != null)
+                {
+                    @($"{DisplayFormat.Date(Model.StartDate)} – {DisplayFormat.Date(Model.FinishDate)}")
+                }
+            </span>
+            <button type="button" class="btn btn-sm btn-outline-secondary" title="@(Tr.T("Следующая неделя"))"
+                    disabled="@(Model == null)" @onclick="OnNext">
+                <i class="bi bi-chevron-right" aria-hidden="true"></i>
+            </button>
+            <label class="jump" title="@(Tr.T("Переход к выбранной дате"))">
+                <input type="date" class="form-control form-control-sm" value="@Date.ToString("yyyy-MM-dd")"
+                       aria-label="@(Tr.T("Переход к выбранной дате"))" @onchange="Jump" />
+            </label>
+            @if (Model is { NoPricelist: false })
+            {
+                <span class="pricelist tabular">@Tr.Format("Прайс-лист: {0} - {1}", DisplayFormat.Date(Model.PricelistStart), DisplayFormat.Date(Model.PricelistFinish))</span>
+            }
+        </div>
+        @Legend
+    </div>
+
+    @Toolbar
+
+    @if (Model == null)
+    {
+        <div class="state">@Tr.T("Загрузка…")</div>
+    }
+    else if (Model.NoPricelist)
+    {
+        <div class="state">
+            <div class="state-title">@Tr.T("На эту неделю у станции нет прайс-листа")</div>
+            @Tr.T("Рекламные окна строятся по прайс-листу — перейдите к другой дате.")
+        </div>
+    }
+    else if (Model.Rows.Count == 0)
+    {
+        <div class="state">
+            <div class="state-title">@Tr.T("На этой неделе рекламных окон нет")</div>
+            @Tr.T("Окна появляются после генерации по тарифам прайс-листа.")
+        </div>
+    }
+    else
+    {
+        <div class="data-table pgrid-table">
+            <table class="table">
+                <thead>
+                    <tr>
+                        <th class="col-price">@Tr.T("Цена")</th>
+                        <th class="col-time">@Tr.T("Время")</th>
+                        @for (int d = 0; d < PlacementWeek.DaysInWeek; d++)
+                        {
+                            int day = d;
+                            <th class="col-day @(Model.IsInRange(day) ? null : "out")">
+                                <span class="day-name">@DayNames[day]</span>
+                                <span class="day-date">@DisplayFormat.DayMonth(Model.Day(day))</span>
+                                @if (Model.DayTotals[day] is { } total)
+                                {
+                                    <span class="day-count" title="@DayTotalTitle">@total</span>
+                                }
+                            </th>
+                        }
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (PlacementRow row in Model.Rows)
+                    {
+                        <tr>
+                            <td class="col-price">@row.Price.ToString("C")</td>
+                            <td class="col-time">@row.Time</td>
+                            @for (int d = 0; d < PlacementWeek.DaysInWeek; d++)
+                            {
+                                int day = d;
+                                PlacementCell? cell = row.Cells[day];
+                                if (cell == null)
+                                {
+                                    <td class="cell empty @(Model.IsInRange(day) ? null : "out")"></td>
+                                }
+                                else
+                                {
+                                    <td class="@CellClass(cell)" title="@CellTitle?.Invoke(cell)"
+                                        @onclick="e => OnCellClick.InvokeAsync(new CellEvent(cell, e))">@(CellText?.Invoke(cell) ?? cell.Text)</td>
+                                }
+                            }
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    }
+</div>
+
+@code {
+    /// <summary>Неделя; null — загружается.</summary>
+    [Parameter] public PlacementWeek? Model { get; set; }
+
+    /// <summary>Дата в поле перехода.</summary>
+    [Parameter] public DateTime Date { get; set; }
+
+    /// <summary>Выделенные места (ключи) — рамкой.</summary>
+    [Parameter] public IReadOnlyCollection<int>? SelectedKeys { get; set; }
+
+    /// <summary>Какие фоновые признаки показывать (прайм, отмеченные — переключатели вида владельца).</summary>
+    [Parameter] public PlacementFlags ShownBackgrounds { get; set; } = PlacementFlags.Disabled;
+
+    /// <summary>Текст ячейки вместо остатка (номера роликов); null из функции — остаток.</summary>
+    [Parameter] public Func<PlacementCell, string?>? CellText { get; set; }
+
+    [Parameter] public Func<PlacementCell, string?>? CellTitle { get; set; }
+
+    /// <summary>Дополнительный класс ячейки — режимы владельца (выбор окна-приёмника и т. п.).</summary>
+    [Parameter] public Func<PlacementCell, string?>? ExtraCellClass { get; set; }
+
+    /// <summary>Подсказка к числу под датой.</summary>
+    [Parameter] public string? DayTotalTitle { get; set; }
+
+    /// <summary>Клик ставит выпуск («Режим добавления») — курсор-кисть над местами.</summary>
+    [Parameter] public bool Brush { get; set; }
+
+    [Parameter] public RenderFragment? Legend { get; set; }
+
+    /// <summary>Полоса между навигацией и сеткой (выделение, режимы).</summary>
+    [Parameter] public RenderFragment? Toolbar { get; set; }
+
+    [Parameter] public EventCallback OnPrevious { get; set; }
+    [Parameter] public EventCallback OnNext { get; set; }
+    [Parameter] public EventCallback<DateTime> OnJump { get; set; }
+    [Parameter] public EventCallback<CellEvent> OnCellClick { get; set; }
+
+    public sealed record CellEvent(PlacementCell Cell, MouseEventArgs Mouse);
+
+    private static string[] DayNames => DisplayFormat.WeekDaysFromMonday();
+
+    private Task Jump(ChangeEventArgs e)
+    {
+        if (!DateTime.TryParseExact(e.Value?.ToString(), "yyyy-MM-dd", CultureInfo.InvariantCulture, DateTimeStyles.None, out DateTime date))
+            return Task.CompletedTask;
+        return OnJump.InvokeAsync(date);
+    }
+
+    private string CellClass(PlacementCell cell)
+    {
+        string css = "cell";
+        // Цвет текста: свои выпуски перекрывают выпуски фирмы (как в десктопе).
+        if (cell.Has(PlacementFlags.Mine)) css += " mine";
+        else if (cell.Has(PlacementFlags.FirmHere)) css += " firm";
+        if (cell.Has(PlacementFlags.Match)) css += " match";
+        // Фон — по приоритету десктопа: заблокировано, отмечено, прайм.
+        if (Shown(cell, PlacementFlags.Disabled)) css += " bg-disabled";
+        else if (Shown(cell, PlacementFlags.Marked)) css += " bg-marked";
+        else if (Shown(cell, PlacementFlags.Prime)) css += " bg-prime";
+        if (SelectedKeys != null && SelectedKeys.Contains(cell.Key)) css += " selected";
+        if (ExtraCellClass?.Invoke(cell) is { } extra) css += " " + extra;
+        return css;
+    }
+
+    private bool Shown(PlacementCell cell, PlacementFlags flag) => (ShownBackgrounds & flag) == flag && cell.Has(flag);
+}

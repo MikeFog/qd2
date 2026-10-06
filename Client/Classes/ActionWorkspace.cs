@@ -83,6 +83,16 @@ namespace Merlin.Classes
 			public const string CampaignTypeId = Campaign.ParamNames.CampaignTypeId;
 		}
 
+		/// <summary>
+		/// «Редактировать» у кампании в вебе есть только у линейной — её размещение на вкладке
+		/// «Рекламные окна»; у остальных видов вкладок пока нет (пункт серый).
+		/// </summary>
+		public static bool IsLinearCampaign(PresentationObject campaign) =>
+			campaign is Campaign c && c.CampaignType == Campaign.CampaignTypes.Simple;
+
+		/// <summary>Акция кампании — для перехода на страницу акции; null — кампания без акции.</summary>
+		public static int? ActionIdOf(PresentationObject campaign) => ((Campaign)campaign).ActionId;
+
 		/// <summary>Кампании акции (Campaigns @actionID), мимо кэша — после каждой операции свежие.</summary>
 		public static DataTable LoadCampaigns(ActionOnMassmedia action) => action.Campaigns(forceLoad: true);
 

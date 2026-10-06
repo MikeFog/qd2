@@ -200,18 +200,50 @@ namespace FogSoft.WinForm.DataAccess
 			SqlConnection connection = new SqlConnection(ConnectionString);
 			connection.Open();
 			_transaction = connection.BeginTransaction();
+			_transactionConnection = connection;
+        }
+
+        // Соединение транзакции открывает BeginTransaction, и закрывать его должен тот, кто
+        // транзакцию завершает: без Close оно возвращалось в пул только после сборки мусора
+        // (в вебе пул общий на всех пользователей). Ссылка хранится отдельно: у транзакции,
+        // которую уже откатил сервер (взаимоблокировка), Connection — null.
+        private static readonly AsyncLocal<SqlConnection> _transactionConnectionSlot = new AsyncLocal<SqlConnection>();
+
+        private static SqlConnection _transactionConnection
+        {
+            get { return _transactionConnectionSlot.Value; }
+            set { _transactionConnectionSlot.Value = value; }
         }
 
         public static void CommitTransaction()
         {
+            // Если Commit упал, транзакция остаётся — вызывающий откатит её в catch.
             _transaction.Commit();
 			_transaction = null;
+			CloseTransactionConnection();
         }
 
         public static void RollbackTransaction()
         {
-            _transaction.Rollback();
-            _transaction = null;
+            try
+            {
+                _transaction.Rollback();
+            }
+            finally
+            {
+                // Rollback бросает, если сервер уже откатил транзакцию сам; без обнуления
+                // следующие вызовы в этом потоке пошли бы в мёртвую транзакцию.
+                _transaction = null;
+                CloseTransactionConnection();
+            }
+        }
+
+        private static void CloseTransactionConnection()
+        {
+            SqlConnection connection = _transactionConnection;
+            _transactionConnection = null;
+            if (connection != null)
+                connection.Dispose();
         }
 
         public static object DoAction(Dictionary<string, object> parameters, bool forceFlag = false)

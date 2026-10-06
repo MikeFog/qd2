@@ -169,3 +169,16 @@
     flex: 1 1 auto;
     min-height: 160px;
 }
+
+/* Вкладка размещения (ActionWindowsTab) живёт скрытой после первого открытия; высоту ей задаёт
+   страница — сетка и панель окна прокручиваются внутри, как в Browser.razor.css. */
+.tab-pane {
+    flex: 1 1 auto;
+    display: flex;
+    flex-direction: column;
+    min-height: 0;
+}
+
+.tab-pane[hidden] {
+    display: none;
+}

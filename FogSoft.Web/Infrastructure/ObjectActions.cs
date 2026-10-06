@@ -380,6 +380,10 @@ public sealed partial class ObjectActions
 			// CampaignPart.DoAction(Delete): удалить, пересчитать акцию, сказать о цене. Своё
 			// удаление остальных наследников CampaignPart (выпуски) по-прежнему серое (DesktopOverrides).
 			[Constants.EntityActions.Delete] = (s, t) => s.DeleteCampaign((PresentationObject)t),
+			// «Редактировать» (десктоп — CampaignForm): размещение на странице акции. Пока только у
+			// линейной — вкладка «Рекламные окна» (web-action-forms.md, этап 2); у модульной,
+			// спонсорской и пакетной пункт серый (ClassActionApplies).
+			[Constants.EntityActions.Edit] = (s, t) => s.OpenCampaignWindows((PresentationObject)t),
 			[Merlin.Classes.CampaignChange.ChangeAgencyAction] = (s, t) => s.ChangeCampaignAgency((PresentationObject)t),
 			[Merlin.Classes.CampaignChange.ChangePaymentTypeAction] = (s, t) => s.ChangeCampaignPaymentType((PresentationObject)t),
 			[Merlin.Classes.CampaignChange.PrintTransfersAction] = (s, t) => s.ShowCampaignTransfers((PresentationObject)t),
@@ -415,6 +419,19 @@ public sealed partial class ObjectActions
 		["CampaignDay"] = new()
 		{
 			[Merlin.Classes.CampaignDayTransfer.TransferAction] = (s, t) => s.TransferDay((PresentationObject)t),
+		},
+		// Issue.DoAction и CampaignPart.DoAction у выпуска ролика (98) — меню «Выходы в эфир этой
+		// кампании» на вкладке «Рекламные окна»: позиция в блоке, замена ролика, удаление. Запись,
+		// пересчёт акции и права — RollerIssueChange; после действия — сообщение о цене акции, как
+		// в десктопе. Доступность — Issue.IsActionEnabled (права и текущая позиция).
+		["RollerIssue"] = new()
+		{
+			[Merlin.Classes.RollerIssueChange.SetFirstAction] = (s, t) => s.SetIssuePosition((PresentationObject)t, Merlin.Classes.RollerIssueChange.SetFirstAction),
+			[Merlin.Classes.RollerIssueChange.SetSecondAction] = (s, t) => s.SetIssuePosition((PresentationObject)t, Merlin.Classes.RollerIssueChange.SetSecondAction),
+			[Merlin.Classes.RollerIssueChange.SetLastAction] = (s, t) => s.SetIssuePosition((PresentationObject)t, Merlin.Classes.RollerIssueChange.SetLastAction),
+			[Merlin.Classes.RollerIssueChange.SetUnknownAction] = (s, t) => s.SetIssuePosition((PresentationObject)t, Merlin.Classes.RollerIssueChange.SetUnknownAction),
+			[Merlin.Classes.RollerIssueChange.SubstituteAction] = (s, t) => s.SubstituteIssueRoller((PresentationObject)t),
+			[Constants.EntityActions.Delete] = (s, t) => s.DeleteIssue((PresentationObject)t),
 		},
 		// ActionRoller.WinForms.cs, DoAction: строки окна роликов акции. CommonRoller (ролик
 		// «для всех фирм») — наследник, отличие внутри ActionRollerChange.SetAdvertType.
@@ -682,11 +699,25 @@ public sealed partial class ObjectActions
 	/// <summary>Есть ли у веба обработчик этого действия для этого объекта.</summary>
 	public bool IsPorted(object target, string actionName) => FindHandler(target, actionName) != null;
 
+	/// <summary>
+	/// Обработчик <see cref="ClassActions"/>, перенесённый только для части объектов класса:
+	/// ключ — «класс.действие». Не подошёл объект — обработчика у него нет (пункт серый).
+	/// </summary>
+	private static readonly Dictionary<string, Func<object, bool>> ClassActionApplies = new()
+	{
+		// Размещение в вебе пока есть только у линейной кампании (вкладка «Рекламные окна»).
+		["Campaign." + Constants.EntityActions.Edit] = t => Merlin.Classes.ActionWorkspace.IsLinearCampaign((PresentationObject)t),
+	};
+
 	private static Handler? FindHandler(object target, string actionName)
 	{
 		foreach (string cls in ClassNames(target))
 			if (ClassActions.TryGetValue(cls, out var own) && own.TryGetValue(actionName, out Handler? ownHandler))
+			{
+				if (ClassActionApplies.TryGetValue(cls + "." + actionName, out Func<object, bool>? applies) && !applies(target))
+					return null;
 				return ownHandler;
+			}
 
 		string effective = actionName;
 		foreach (string cls in ClassNames(target))
@@ -2040,6 +2071,90 @@ public sealed partial class ObjectActions
 
 		await ShowInfo(Tr.T("Удаление"), priceMessage);
 		return ActionEffect.Deleted;
+	}
+
+	/// <summary>
+	/// «Редактировать» у линейной кампании (журналы акций, список кампаний страницы акции) —
+	/// страница акции на вкладке «Рекламные окна» с отмеченной кампанией.
+	/// </summary>
+	private Task<ActionEffect> OpenCampaignWindows(PresentationObject campaign)
+	{
+		int? actionId = Merlin.Classes.ActionWorkspace.ActionIdOf(campaign);
+		if (actionId != null)
+			_navigation.NavigateTo(FogSoft.Web.Components.Pages.ActionPage.WindowsUrl(actionId.Value, Convert.ToInt32(campaign.IDs[0])));
+		return Task.FromResult(ActionEffect.None);
+	}
+
+	/// <summary>Issue.UpdatePosition: позиция, пересчёт акции и сообщение о её цене.</summary>
+	private async Task<ActionEffect> SetIssuePosition(PresentationObject issue, string actionName)
+	{
+		string priceMessage = await _busy.RunAsync(() => Merlin.Classes.RollerIssueChange.SetPosition(issue, actionName));
+		await ShowInfo(Tr.T(issue.Entity.ActionList?.FirstOrDefault(a => a.Name == actionName)?.Alias ?? actionName), priceMessage);
+		return ActionEffect.Changed;
+	}
+
+	/// <summary>CampaignPart.DoAction(Delete) у выпуска: вопрос, удаление и пересчёт одной транзакцией, сообщение о цене.</summary>
+	private async Task<ActionEffect> DeleteIssue(PresentationObject issue)
+	{
+		if (await _dialogs.ShowAsync(
+				Tr.T("Удаление"),
+				builder => builder.AddContent(0, issue.DeleteConfirmationText),
+				okText: Tr.T("Удалить")) != DialogOutcome.Ok)
+			return ActionEffect.None;
+
+		string priceMessage = await _busy.RunAsync(() => Merlin.Classes.RollerIssueChange.Delete(issue));
+		await ShowInfo(Tr.T("Удаление"), priceMessage);
+		return ActionEffect.Deleted;
+	}
+
+	/// <summary>
+	/// CampaignPart.SubstituteRollerForSingleIssue: выбор ролика фирмы («Выберите ролик для
+	/// замены.»), замена в одном выпуске, пересчёт; незаменённое — первой строкой причины.
+	/// </summary>
+	private async Task<ActionEffect> SubstituteIssueRoller(PresentationObject issue)
+	{
+		string title = Tr.T("Заменить рекламный ролик");
+		DataTable? candidates = await _busy.RunAsync(() => Merlin.Classes.RollerIssueChange.SubstituteCandidates(issue));
+		if (candidates == null)
+		{
+			await ShowInfo(title, Tr.T("Нет роликов на замену для данной фирмы."));
+			return ActionEffect.None;
+		}
+
+		var model = new RollerChecklistForm.Model
+		{
+			Rollers = candidates,
+			Multiple = false,
+			Question = Tr.T("Выберите ролик для замены."),
+		};
+		while (true)
+		{
+			if (await _dialogs.ShowAsync(title, builder =>
+				{
+					builder.OpenComponent<RollerChecklistForm>(0);
+					builder.AddComponentParameter(1, nameof(RollerChecklistForm.Value), model);
+					builder.CloseComponent();
+				}, okText: Tr.T("Заменить"), wide: true) != DialogOutcome.Ok)
+				return ActionEffect.None;
+			if (model.Selected.Count > 0)
+				break;
+			model.Message = Tr.T("Выберите ролик для замены.");
+		}
+
+		string? warning = null;
+		string priceMessage = await _busy.RunAsync(() => Merlin.Classes.RollerIssueChange.Substitute(issue, model.Selected.First(), out warning));
+		// Незаменённое (прошлое, закрытый день…) — первой строкой, как в десктопе, затем цена акции.
+		await _dialogs.ShowAsync(title, builder =>
+		{
+			if (warning != null)
+			{
+				builder.OpenElement(0, "p");
+				builder.AddContent(1, warning);
+				builder.CloseElement();
+			}
+			builder.AddContent(2, priceMessage);
+		}, okText: Tr.T("Ок"), showCancel: false);
+		return ActionEffect.Changed;
 	}
 
 	/// <summary>Campaign.ChangeAgency: правило «можно ли», агентства по правам, запись.</summary>

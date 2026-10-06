@@ -1,0 +1,42 @@
+@using FogSoft.WinForm.Classes
+
+@*
+    Длительность пустышки — содержимое диалога «Добавить ролик - пустышку» на вкладке «Рекламные
+    окна» (десктоп — RollerMuteSelect «Выбор продолжительности ролика»: поля «мин.» и «сек.»).
+*@
+
+@if (Value.Message != null)
+{
+    <div class="alert alert-danger">@Value.Message</div>
+}
+
+<p class="hint">@Tr.T("Выбор продолжительности ролика")</p>
+<div class="duration">
+    <label>
+        <input type="number" class="form-control form-control-sm" min="0" max="59" @bind="Value.Minutes" />
+        @Tr.T("мин.")
+    </label>
+    <label>
+        <input type="number" class="form-control form-control-sm" min="0" max="59" @bind="Value.Seconds" />
+        @Tr.T("сек.")
+    </label>
+</div>
+
+@code {
+    [Parameter, EditorRequired] public Model Value { get; set; } = default!;
+
+    public sealed class Model
+    {
+        public int Minutes { get; set; }
+        public int Seconds { get; set; } = 30;
+        public string? Message { get; set; }
+
+        public int TotalSeconds => Minutes * 60 + Seconds;
+
+        /// <summary>Текст ошибки ввода или null (десктоп не даёт нажать «ОК» при нулевой длине).</summary>
+        public string? Validate() =>
+            Minutes < 0 || Seconds < 0 || Seconds > 59 ? Tr.T("Минуты и секунды — неотрицательные числа, секунд не больше 59.")
+            : TotalSeconds <= 0 ? Tr.T("Укажите продолжительность ролика.")
+            : null;
+    }
+}

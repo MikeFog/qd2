@@ -207,6 +207,10 @@
     <Compile Include="..\Client\Classes\ManagerChoice.cs" Link="Domain\ManagerChoice.cs" />
     <!-- Страница акции в вебе (docs/tasks/web-action-forms.md, этап 1). Только веб: в Client.csproj не входит. -->
     <Compile Include="..\Client\Classes\ActionWorkspace.cs" Link="Domain\ActionWorkspace.cs" />
+    <!-- Вкладка «Рекламные окна» страницы акции (этап 2). Только веб, в Client.csproj не входят. -->
+    <Compile Include="..\Client\Classes\PlacementWeek.cs" Link="Domain\PlacementWeek.cs" />
+    <Compile Include="..\Client\Classes\WindowsSource.cs" Link="Domain\WindowsSource.cs" />
+    <Compile Include="..\Client\Classes\RollerIssueChange.cs" Link="Domain\RollerIssueChange.cs" />
     <!-- Документы из Word-шаблонов (docs/tasks/web-reports.md §8). Только веб: десктоп
          печатает через Crystal до решения о переводе (§7 п.1), в Client.csproj не входят. -->
     <Compile Include="..\Client\Classes\Documents\DocumentData.cs" Link="Domain\Documents\DocumentData.cs" />

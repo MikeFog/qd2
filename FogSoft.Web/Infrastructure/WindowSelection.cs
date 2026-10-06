@@ -12,7 +12,12 @@ namespace FogSoft.Web.Infrastructure;
 public sealed class WindowSelection
 {
 	private readonly HashSet<int> _ids = new();
+
+	// Якорь Shift-прямоугольника: окно и позиция. После перечитывания недели («Изменить окна»
+	// сдвигает время, строки меняются) позиция ищется заново по окну — иначе номер строки указал бы
+	// на чужую строку или за конец списка (исключение в обработчике клика роняет circuit).
 	private (int Row, int Day)? _anchor;
+	private int? _anchorId;
 
 	public IReadOnlyCollection<int> Ids => _ids;
 	public int Count => _ids.Count;
@@ -23,11 +28,14 @@ public sealed class WindowSelection
 		if (position == null)
 			return;
 
-		if (shift && _anchor != null)
+		(int Row, int Day)? anchor = _anchorId == null ? _anchor : Locate(week, _anchorId.Value);
+		if (anchor != null && anchor.Value.Row >= week.Rows.Count)
+			anchor = null;
+		if (shift && anchor != null)
 		{
 			if (!ctrl)
 				_ids.Clear();
-			AddRectangle(week, _anchor.Value, position.Value);
+			AddRectangle(week, anchor.Value, position.Value);
 			return;
 		}
 
@@ -42,6 +50,7 @@ public sealed class WindowSelection
 			_ids.Add(cell.WindowId);
 		}
 		_anchor = position;
+		_anchorId = cell.WindowId;
 	}
 
 	/// <summary>Вся строка времени недели.</summary>
@@ -49,11 +58,12 @@ public sealed class WindowSelection
 	{
 		_ids.Clear();
 		_anchor = null;
+		_anchorId = null;
 		int rowIndex = IndexOf(week, row);
 		foreach (TariffWindowCell? cell in row.Cells)
 			if (cell != null)
 				_ids.Add(cell.WindowId);
-		if (rowIndex >= 0)
+		if (rowIndex >= 0 && rowIndex < week.Rows.Count)
 			_anchor = (rowIndex, 0);
 	}
 
@@ -61,6 +71,7 @@ public sealed class WindowSelection
 	{
 		_ids.Clear();
 		_anchor = null;
+		_anchorId = null;
 	}
 
 	/// <summary>После перечитывания недели — оставить только окна, которые в ней есть.</summary>
@@ -69,7 +80,10 @@ public sealed class WindowSelection
 		var present = new HashSet<int>(Cells(week).Select(c => c.WindowId));
 		_ids.IntersectWith(present);
 		if (_ids.Count == 0)
+		{
 			_anchor = null;
+			_anchorId = null;
+		}
 	}
 
 	/// <summary>Выделенные окна недели в порядке сетки (строки сверху вниз, дни слева направо).</summary>

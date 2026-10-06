@@ -1888,3 +1888,83 @@ code	Выбор агентства — у этих радиостанций их
 code	У радиостанций нет агентства, рекламных кампаний на них не будет: {0}.	Las emisoras no tienen agencia, no habrá pautas publicitarias en ellas: {0}.
 code	Необходимо выбрать агентство: {0}.	Debe seleccionar la agencia: {0}.
 code	Пакетная	De paquete
+code	В акции нет линейных рекламных кампаний.	La campaña no tiene pautas publicitarias lineales.
+code	В выбранных окнах нет выпусков текущей кампании.	En las ventanas seleccionadas no hay emisiones de esta pauta.
+code	В выделенных окнах нечего заменять.	En las ventanas seleccionadas no hay nada que sustituir.
+code	В окне нет выпусков этой кампании.	La ventana no tiene emisiones de esta pauta.
+code	В окне нет выпусков.	La ventana no tiene emisiones.
+code	Видеть прайм	Ver prime time
+code	Все выходы в эфир	Todas las salidas al aire
+code	Выберите ролик для замены.	Seleccione el spot de reemplazo.
+code	Выбор продолжительности ролика	Duración del spot
+code	Выпуск	Emisión
+code	Выпусков	Emisiones
+code	Выпусков этой кампании за день	Emisiones de esta pauta en el día
+code	Выходы в эфир этой кампании	Salidas al aire de esta pauta
+code	Действия с роликом	Acciones con el spot
+code	Добавить ролик - пустышку	Agregar spot vacío
+code	Добавлено выпусков: {0}, не добавлено: {1}	Emisiones agregadas: {0}, no agregadas: {1}
+code	Есть {0}	Con {0}
+code	Замена роликов доступна только при включённом показе номеров роликов (кнопка "Номера роликов") — так видно, что вы меняете.	La sustitución de spots solo está disponible con los números de spots visibles (botón "Números de spots"): así se ve qué se cambia.
+code	Заменено роликов: {0}, не заменено: {1}	Spots sustituidos: {0}, no sustituidos: {1}
+code	Заменить ролики	Sustituir spots
+code	Заменить ролики в выделенных окнах на ролик, выбранный в списке "Ролики"	Sustituir los spots de las ventanas seleccionadas por el spot elegido en la lista "Spots"
+code	Заменить ролики на «{0}» ({1}) в выделенных окнах? ({2} шт.)	¿Sustituir los spots por «{0}» ({1}) en las ventanas seleccionadas? ({2} uds.)
+code	Какие ролики заменить на «{0}» ({1})?	¿Qué spots sustituir por «{0}» ({1})?
+code	Какие ролики удалить в выбранных окнах?	¿Qué spots eliminar en las ventanas seleccionadas?
+code	Минуты и секунды — неотрицательные числа, секунд не больше 59.	Minutos y segundos: números no negativos, segundos no más de 59.
+code	Нет {0}	Sin {0}
+code	Нет права «Редактировать» на эту кампанию.	No tiene el permiso «Editar» para esta pauta.
+code	Номера роликов	Números de spots
+code	Обновить информацию	Actualizar información
+code	Одна кампания — неделя рекламных окон её радиостанции: ставить ролики, смотреть выпуски окна, переносить их.	Una pauta: la semana de ventanas publicitarias de su emisora; colocar spots, ver las emisiones de la ventana, trasladarlas.
+code	Отменить перенос (Esc)	Cancelar el traslado (Esc)
+code	Отметьте рекламную кампанию слева	Marque una pauta publicitaria a la izquierda
+code	Отмечено рекламных кампаний: {0}	Pautas publicitarias marcadas: {0}
+code	Перенести в окно	Trasladar a la ventana
+code	Перенести выпуск в окно '{0}'?	¿Trasladar la emisión a la ventana '{0}'?
+code	Перенести выпуски ({0} шт.) в окно '{1}'?	¿Trasladar las emisiones ({0} uds.) a la ventana '{1}'?
+code	Переносить можно только выпуски этой кампании.	Solo se pueden trasladar emisiones de esta pauta.
+code	Переход к выбранной дате	Ir a la fecha seleccionada
+code	Позиционирование	Posicionamiento
+code	Позиция в блоке	Posición en el bloque
+code	Показать заблокированные окна	Mostrar ventanas bloqueadas
+code	Показать окна прайм-тайм	Mostrar ventanas de prime time
+code	Показать отмеченные окна	Mostrar ventanas marcadas
+code	Показать только эту кампанию	Mostrar solo esta pauta
+code	Показывать в окнах номера роликов текущей кампании вместо остатка времени	Mostrar en las ventanas los números de spots de esta pauta en lugar del tiempo restante
+code	Показывать все где есть предмет рекламы	Mostrar todas con el rubro publicitario
+code	Показывать все где нет предмета рекламы	Mostrar todas sin el rubro publicitario
+code	Показывать всё	Mostrar todo
+code	Показывать вторые	Mostrar segundas
+code	Показывать неподтвержденные выпуски	Mostrar emisiones no confirmadas
+code	Показывать первые	Mostrar primeras
+code	Показывать последние	Mostrar últimas
+code	Прайс-лист: {0} - {1}	Lista de precios: {0} - {1}
+code	Предыдущая неделя	Semana anterior
+code	Разместить	Colocar
+code	Разместить ролик	Colocar spot
+code	Разместить ролик в выбранных окнах? ({0} шт.)	¿Colocar el spot en las ventanas seleccionadas? ({0} uds.)
+code	Размещение сразу по нескольким радиостанциям (веер) в вебе появится позже — пока отметьте одну кампанию.	La colocación en varias emisoras a la vez (abanico) llegará a la web más adelante; por ahora marque una sola pauta.
+code	Режим добавления	Modo de agregado
+code	Рекламная кампания не найдена — её удалили. Обновите страницу.	No se encontró la pauta publicitaria: fue eliminada. Actualice la página.
+code	Рекламная кампания удалена. Обновите страницу.	La pauta publicitaria fue eliminada. Actualice la página.
+code	Рекламные окна: {0}	Ventanas publicitarias: {0}
+code	Ролик, который ставится в окна, — выбран в списке «Ролики»	Spot que se coloca en las ventanas: el elegido en la lista «Spots»
+code	Ролика нет в списке роликов фирмы. Обновите страницу.	El spot no está en la lista de spots de la empresa. Actualice la página.
+code	Следующая неделя	Semana siguiente
+code	Снять выделение (Esc)	Quitar selección (Esc)
+code	У фирмы нет активных роликов. Можно добавить ролик-пустышку.	La empresa no tiene spots activos. Puede agregar un spot vacío.
+code	Удалено выпусков: {0}, не удалено: {1}	Emisiones eliminadas: {0}, no eliminadas: {1}
+code	Удалить выпуски	Eliminar emisiones
+code	Удалить выпуски текущей кампании в выбранных окнах? ({0} шт.)	¿Eliminar las emisiones de esta pauta en las ventanas seleccionadas? ({0} uds.)
+code	Укажите продолжительность ролика.	Indique la duración del spot.
+code	Учитывать макеты	Considerar borradores
+code	выпуски фирмы в других кампаниях	emisiones de la empresa en otras pautas
+code	выпуски этой кампании	emisiones de esta pauta
+code	заблокированное окно	ventana bloqueada
+code	мин.	min.
+code	отмеченное окно	ventana marcada
+code	подходит под отбор	cumple el filtro
+code	прайм-тайм	prime time
+code	Выпуск изменили или удалили, пока выбиралось окно. Выберите выпуски заново.	La emisión fue modificada o eliminada mientras se elegía la ventana. Vuelva a seleccionar las emisiones.

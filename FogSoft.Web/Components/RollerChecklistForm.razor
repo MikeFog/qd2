@@ -1,0 +1,89 @@
+@using System.Data
+@using Merlin.Classes
+@using FogSoft.WinForm.Classes
+
+@*
+    Выбор роликов в диалоге: чек-лист «Какие ролики удалить / заменить…» массовых операций на
+    вкладке «Рекламные окна» (десктоп — CampaignForm.SelectRollers) и выбор одного ролика для
+    «Заменить рекламный ролик» у выпуска. Колонки — как список «Ролики»; номер — из него же
+    (у роликов, которых в списке нет, номера нет). Отметки пишутся прямо в модель.
+*@
+
+@if (Value.Message != null)
+{
+    <div class="alert alert-danger">@Value.Message</div>
+}
+
+@if (Value.Question != null)
+{
+    <p class="question">@Value.Question</p>
+}
+
+<div class="data-table roller-check">
+    <table class="table table-hover">
+        <thead>
+            <tr>
+                <th class="col-check"></th>
+                @if (HasNumbers)
+                {
+                    <th class="col-num">№</th>
+                }
+                <th>@Tr.T("Ролик")</th>
+                <th>@Tr.T("Предмет рекламы")</th>
+                <th>@Tr.T("Продолжительность")</th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (DataRow row in Value.Rollers.Rows)
+            {
+                int id = WindowsSource.RollerIdOf(row);
+                bool on = Value.Selected.Contains(id);
+                <tr class="@(on ? "row-on" : null)" @onclick="() => Toggle(id)">
+                    <td class="col-check">
+                        <input type="@(Value.Multiple ? "checkbox" : "radio")" class="form-check-input" checked="@on"
+                               aria-label="@WindowsSource.RollerName(row)" @onclick:stopPropagation="true" @onchange="() => Toggle(id)" />
+                    </td>
+                    @if (HasNumbers)
+                    {
+                        <td class="col-num tabular">@row[WindowsSource.RollerNumberColumn]</td>
+                    }
+                    <td>@WindowsSource.RollerName(row)</td>
+                    <td>@row[Roller.ParamNames.AdvertTypeName]</td>
+                    <td class="tabular">@WindowsSource.RollerDuration(row)</td>
+                </tr>
+            }
+        </tbody>
+    </table>
+</div>
+
+@code {
+    [Parameter, EditorRequired] public Model Value { get; set; } = default!;
+
+    public sealed class Model
+    {
+        /// <summary>Строки роликов: rollerID, name, advertTypeName, durationString и, если есть, rollerNumber.</summary>
+        public DataTable Rollers { get; set; } = new();
+
+        /// <summary>Галочки (несколько роликов) или выбор одного.</summary>
+        public bool Multiple { get; set; } = true;
+
+        public HashSet<int> Selected { get; } = new();
+
+        public string? Question { get; set; }
+        public string? Message { get; set; }
+    }
+
+    private bool HasNumbers => Value.Rollers.Columns.Contains(WindowsSource.RollerNumberColumn);
+
+    private void Toggle(int id)
+    {
+        if (!Value.Multiple)
+        {
+            Value.Selected.Clear();
+            Value.Selected.Add(id);
+        }
+        else if (!Value.Selected.Remove(id))
+            Value.Selected.Add(id);
+        Value.Message = null;
+    }
+}

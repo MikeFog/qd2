@@ -1,0 +1,197 @@
+/*
+    Сетка размещения (PlacementGrid): панель недели сверху, матрица «время × дни» на остаток
+    высоты. Раскладка — как у недели окон (WindowWeekGrid.razor.css), признаки места — свои.
+*/
+
+.pgrid {
+    flex: 1 1 auto;
+    display: flex;
+    flex-direction: column;
+    gap: var(--s-2);
+    min-height: 0;
+    min-width: 0;
+}
+
+.pgrid-bar {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--s-2) var(--s-4);
+}
+
+.pgrid-nav {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: var(--s-2);
+}
+
+.pgrid-caption {
+    min-width: 170px;
+    text-align: center;
+    font-weight: 600;
+}
+
+.jump {
+    margin: 0;
+}
+
+.jump input {
+    width: auto;
+}
+
+.pricelist {
+    color: var(--c-text-muted);
+    font-size: 13px;
+}
+
+.pgrid-table {
+    flex: 1 1 auto;
+    min-height: 140px;
+}
+
+.pgrid-table .table {
+    width: auto;
+    border-collapse: separate;
+    border-spacing: 0;
+}
+
+.col-price,
+.col-time {
+    position: sticky;
+    background: var(--c-surface);
+    z-index: 1;
+    white-space: nowrap;
+}
+
+.col-price {
+    left: 0;
+    min-width: 88px;
+    text-align: right;
+}
+
+.col-time {
+    left: 88px;
+    min-width: 64px;
+    text-align: right;
+    font-weight: 600;
+    border-right: 1px solid var(--c-border-strong);
+}
+
+.table > thead > tr > th.col-price,
+.table > thead > tr > th.col-time {
+    z-index: 2;
+    background: var(--c-bg);
+}
+
+.table > thead > tr > th.col-day {
+    text-align: center;
+    min-width: 72px;
+    line-height: 1.25;
+}
+
+.day-name,
+.day-date,
+.day-count {
+    display: block;
+}
+
+.day-date {
+    text-transform: none;
+    color: var(--c-text);
+}
+
+.day-count {
+    font-weight: 600;
+    text-transform: none;
+    color: var(--c-place-mine);
+}
+
+.table > thead > tr > th.out {
+    opacity: .5;
+}
+
+.table > tbody > tr > td.cell {
+    text-align: center;
+    white-space: nowrap;
+    cursor: pointer;
+    border-left: 1px solid var(--c-border);
+    user-select: none;
+    font-variant-numeric: tabular-nums;
+}
+
+.table > tbody > tr > td.cell:hover {
+    box-shadow: inset 0 0 0 1px var(--c-accent);
+}
+
+.table > tbody > tr > td.empty {
+    cursor: default;
+}
+
+.table > tbody > tr > td.empty:hover {
+    box-shadow: none;
+}
+
+.table > tbody > tr > td.out {
+    background: var(--c-bg);
+}
+
+/* Признаки места. Текст: выпуски кампании — синий, фирмы — бирюзовый (десктопные цвета
+   TariffGrid). Жирный — подходит под «Позиционирование» / «Предметы рекламы». */
+.table > tbody > tr > td.mine {
+    color: var(--c-place-mine);
+}
+
+.table > tbody > tr > td.firm {
+    color: var(--c-place-firm);
+}
+
+.table > tbody > tr > td.match {
+    font-weight: 700;
+}
+
+.table > tbody > tr > td.bg-disabled {
+    background: var(--c-danger-soft);
+}
+
+.table > tbody > tr > td.bg-marked {
+    background: var(--c-marked-soft);
+}
+
+.table > tbody > tr > td.bg-prime {
+    background: var(--c-prime-soft);
+}
+
+/* Выделение — рамкой, без жирного: жирный занят признаком «подходит». */
+.table > tbody > tr > td.selected,
+.table > tbody > tr > td.selected:hover {
+    box-shadow: inset 0 0 0 2px var(--c-accent);
+}
+
+/* «Режим добавления»: курсор-кисть над окнами. */
+.brush .table > tbody > tr > td.cell:not(.empty) {
+    cursor: copy;
+}
+
+/* Перенос выпусков: окно-источник, возможные приёмники и недоступные. */
+.table > tbody > tr > td.cell-source,
+.table > tbody > tr > td.cell-source:hover {
+    outline: 2px dashed var(--c-accent);
+    outline-offset: -3px;
+    cursor: default;
+}
+
+.table > tbody > tr > td.cell-target:hover {
+    background: var(--c-accent-soft);
+    box-shadow: inset 0 0 0 2px var(--c-accent);
+}
+
+.table > tbody > tr > td.cell-unavailable {
+    opacity: .35;
+    cursor: not-allowed;
+}
+
+.table > tbody > tr > td.cell-unavailable:hover {
+    box-shadow: none;
+}
