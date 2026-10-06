@@ -1825,3 +1825,74 @@ code	Окно объединено с предыдущим {0} — должно 
 message	Перенос не выполнен: окно относится к объединённым тарифам, и после переноса их окна вышли бы в эфир в неправильном порядке — окно, которое должно идти позже, оказалось бы раньше. Переносите окна объединённых тарифов по очереди так, чтобы порядок сохранялся.	No se realizó el traslado: la ventana pertenece a tarifas unidas y, después del traslado, sus ventanas saldrían al aire en un orden incorrecto — la ventana que debe ir después quedaría antes. Traslade las ventanas de las tarifas unidas una por una de modo que se mantenga el orden.
 code	Тариф окна объединён с соседним («Объединить с блоком»)	La tarifa de la ventana está unida con la vecina («Unir con el bloque»)
 code	объединённый тариф	tarifa unida
+code	Акции открываются из журналов рекламных акций, а ни один из них вам не разрешён. Права на экраны выдаются вместе с пунктами меню — обратитесь к администратору системы.	Las campañas se abren desde los registros de campañas publicitarias, y no tiene permiso para ninguno de ellos. Los permisos de pantallas se otorgan junto con los elementos del menú: consulte al administrador del sistema.
+code	Акция № {0}	Campaña n.º {0}
+code	Акция № {0} · {1}	Campaña n.º {0} · {1}
+code	Акция № {0} не найдена	Campaña n.º {0} no encontrada
+code	В акции пока нет кампаний. Добавьте их кнопкой «Добавить кампании…».	La campaña aún no tiene pautas. Agréguelas con el botón «Agregar pautas…».
+code	В вебе пока нет: размещение — в десктопе.	Aún no está en la web: la colocación se hace en la aplicación de escritorio.
+code	Вернуться назад	Volver
+code	Выберите агентство: {0}.	Seleccione la agencia: {0}.
+code	Действия с акцией	Acciones con la campaña
+code	Добавить в группу	Agregar al grupo
+code	Добавить кампании	Agregar pautas
+code	Добавить кампании…	Agregar pautas…
+code	Её нет в базе или она вам не видна.	No existe en la base o no le es visible.
+code	Изменить цену в прошлом, на дату:	Cambiar el precio en el pasado, a la fecha:
+code	Итоговая стоимость	Costo total
+code	Итоговая стоимость:	Costo total:
+code	Итоговая цена акции равна нулю: распределить новую цену пропорционально нечему. Задайте цену через коэффициент.	El precio total de la campaña es cero: no hay base para distribuir el nuevo precio proporcionalmente. Indique el precio mediante el coeficiente.
+code	Кампании	Pautas
+code	Кампаний без выпусков: {0} — {1}.	Pautas sin emisiones: {0} — {1}.
+code	Кампания	Pauta
+code	Коэффициент скидок	Coeficiente de descuentos
+code	Менеджерская скидка (коэффициент)	Descuento del gerente (coeficiente)
+code	Менеджерская скидка у всех кампаний:	Descuento del gerente en todas las pautas:
+code	Модули	Módulos
+code	Назад	Atrás
+code	Не добавлены:	No agregadas:
+code	Необходимо выбрать причину выдачи скидки.	Debe seleccionar el motivo del descuento.
+code	Нет доступа к журналу подтверждённых рекламных акций.	No tiene acceso al registro de campañas publicitarias confirmadas.
+code	Нет права «Редактировать» на эту акцию.	No tiene el permiso «Editar» para esta campaña.
+code	Нет права добавлять кампании в эту акцию.	No tiene permiso para agregar pautas a esta campaña.
+code	Окна	Ventanas
+code	Окончательная цена	Precio final
+code	Открыть акцию	Abrir campaña
+code	Отметить их	Marcarlas
+code	Ошибки удаления кампаний	Errores al eliminar pautas
+code	Пакетная	De paquete
+code	Пакетная кампания	Pauta de paquete
+code	Пакеты	Paquetes
+code	По тарифам	Según tarifas
+code	Причина выдачи скидки	Motivo del descuento
+code	Сейчас итого	Total actual
+code	Скидка менеджера…	Descuento del gerente…
+code	Спонсорство	Patrocinio
+code	Средняя менеджерская скидка	Descuento del gerente promedio
+code	Тарифы для модуля	Tarifas del módulo
+code	У вас нет права «Редактировать» на эту акцию — страница открыта на просмотр.	No tiene el permiso «Editar» para esta campaña: la página se abrió solo para consulta.
+code	Удалить отмеченные кампании ({0}) вместе с их выпусками?	¿Eliminar las pautas marcadas ({0}) junto con sus emisiones?
+code	Установить	Establecer
+code	Цена акции по тарифам равна нулю — нечего распределять.	El precio de la campaña según tarifas es cero: no hay nada que distribuir.
+code	Цена акции…	Precio de la campaña…
+code	Цена и коэффициент не могут быть отрицательными.	El precio y el coeficiente no pueden ser negativos.
+code	Цена кампании по тарифам равна нулю: скидку ставить не на что.	El precio de la pauta según tarifas es cero: no hay sobre qué aplicar el descuento.
+code	Цена рекламной акции	Precio de la campaña publicitaria
+code	есть в акции	ya en la campaña
+code	макет	borrador
+code	нет выпусков	sin emisiones
+code	подтверждена	confirmada
+code	только просмотр	solo consulta
+code	удалена	eliminada
+code	Тип рекламной кампании	Tipo de pauta publicitaria
+code	Выберите тип рекламной кампании.	Seleccione el tipo de pauta publicitaria.
+code	У пакетной кампании нет радиостанции: она одна на акцию, агентство — из ваших агентств.	La pauta de paquete no tiene emisora: hay una por campaña y la agencia se elige entre sus agencias.
+code	Нет радиостанций, на которые вам разрешено ставить кампании.	No hay emisoras en las que se le permita colocar pautas.
+code	Отметьте радиостанции — на каждую будет своя кампания.	Marque las emisoras: cada una tendrá su propia pauta.
+code	На этой радиостанции такая кампания в акции уже есть. Вторая возможна только с другим типом оплаты или агентством.	Esta emisora ya tiene una pauta de este tipo en la campaña. Una segunda solo es posible con otro tipo de pago u otra agencia.
+code	Отмечено радиостанций: {0}	Emisoras marcadas: {0}
+code	У этих радиостанций несколько агентств — выберите, через какое пойдёт кампания:	Estas emisoras tienen varias agencias: elija por cuál irá la pauta:
+code	У радиостанций нет агентства, кампаний на них не будет: {0}.	Las emisoras no tienen agencia, no habrá pautas en ellas: {0}.
+code	Отметьте хотя бы одну радиостанцию.	Marque al menos una emisora.
+code	Ни у одной отмеченной радиостанции нет агентства — добавлять нечего.	Ninguna de las emisoras marcadas tiene agencia: no hay nada que agregar.
+code	Нет агентства, радиостанции пропущены: {0}.	Sin agencia, emisoras omitidas: {0}.

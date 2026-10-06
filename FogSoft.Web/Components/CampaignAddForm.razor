@@ -1,0 +1,313 @@
+@using System.Data
+@using FogSoft.Web.Infrastructure
+@using FogSoft.WinForm.Classes
+@using Merlin.Classes
+@inject BusyService Busy
+
+@*
+    «Добавить кампании…» на странице акции — шаги 2–3 будущего мастера /action/new
+    (docs/tasks/web-action-forms.md §3.7): тип рекламной кампании, тип оплаты один на всё,
+    радиостанции галочками (десктоп — CampaignNewForm, те же колонки «название» и «группа»).
+    Агентство кампании — агентство радиостанции: единственное подставляется молча, без
+    агентств станция пропускается, а выбор появляется только у станций с несколькими
+    агентствами — как окно выбора агентства в десктопе (CampaignNewForm.GetAgencyId), блоком
+    под таблицей. У пакетной кампании радиостанции нет — агентство из агентств пользователя.
+    Значения пишутся в модель, её читает страница по «ОК».
+*@
+
+@if (Value.Message != null)
+{
+    <div class="alert alert-danger">@Value.Message</div>
+}
+
+<div class="add-head">
+    <label class="field">
+        @Tr.T("Тип рекламной кампании")
+        <select class="form-select form-select-sm" value="@Value.CampaignTypeId" @onchange="TypeChanged">
+            <option value="">@Tr.T("— выберите —")</option>
+            @foreach (DataRow t in Value.Choices.CampaignTypes.Rows)
+            {
+                <option value="@t["id"]">@Tr.T(Convert.ToString(t["name"]))</option>
+            }
+        </select>
+    </label>
+    <label class="field">
+        @Tr.T("Тип оплаты")
+        <select class="form-select form-select-sm" @bind="Value.PaymentTypeId">
+            <option value="">@Tr.T("— выберите —")</option>
+            @foreach (DataRow t in Value.Choices.PaymentTypes.Rows)
+            {
+                <option value="@t["id"]">@t["name"]</option>
+            }
+        </select>
+    </label>
+    @if (Value.CampaignTypeId != null && !Value.IsPack)
+    {
+        <label class="field">
+            @Tr.T("Группа радиостанций")
+            <select class="form-select form-select-sm" @bind="Value.GroupId">
+                @foreach (DataRow g in Value.Choices.StationGroups.Rows)
+                {
+                    @* Строка «все» приходит из SQL по-русски (sl_LookupMassmediaGroupd), города — данные. *@
+                    <option value="@g["id"]">@(Convert.ToInt32(g["id"]) == 0 ? Tr.T("Показать все") : g["name"])</option>
+                }
+            </select>
+        </label>
+    }
+</div>
+
+@if (Value.CampaignTypeId == null)
+{
+    <p class="text-muted hint">@Tr.T("Выберите тип рекламной кампании.")</p>
+}
+else if (Value.IsPack)
+{
+    <p class="text-muted hint">@Tr.T("У пакетной кампании нет радиостанции: она одна на акцию, агентство — из ваших агентств.")</p>
+    <label class="field">
+        @Tr.T("Агентство")
+        <select class="form-select form-select-sm" @bind="Value.PackAgencyId">
+            <option value="">@Tr.T("— выберите —")</option>
+            @foreach (DataRow a in Value.PackAgencies.Rows)
+            {
+                <option value="@a["agencyID"]">@a["name"]</option>
+            }
+        </select>
+    </label>
+}
+else if (Value.Choices.Stations.Rows.Count == 0)
+{
+    <div class="state">@Tr.T("Нет радиостанций, на которые вам разрешено ставить кампании.")</div>
+}
+else
+{
+    <p class="text-muted hint">@Tr.T("Отметьте радиостанции — на каждую будет своя кампания.")</p>
+    <div class="stations">
+        <table class="table table-sm">
+            <thead>
+                <tr>
+                    <th class="col-check">
+                        <input type="checkbox" class="form-check-input" title="@(Tr.T("Отметить все"))"
+                               checked="@AllVisibleSelected" @onchange="ToggleAll" />
+                    </th>
+                    <th>@Tr.T("Радиостанция")</th>
+                    <th>@Tr.T("Группа")</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (DataRow station in VisibleStations)
+                {
+                    int id = StationId(station);
+                    bool selected = Value.Selected.ContainsKey(id);
+                    <tr class="@(selected ? "row-selected" : "")" @onclick="() => Toggle(station, !selected)">
+                        <td class="col-check" @onclick:stopPropagation="true">
+                            <input type="checkbox" class="form-check-input" checked="@selected" @onchange="e => Toggle(station, e.Value is true)" />
+                        </td>
+                        <td>
+                            @station["name"]
+                            @if (Value.InAction(id))
+                            {
+                                <span class="in-action" title="@(Tr.T("На этой радиостанции такая кампания в акции уже есть. Вторая возможна только с другим типом оплаты или агентством."))">@Tr.T("есть в акции")</span>
+                            }
+                        </td>
+                        <td>@station["groupName"]</td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+    <div class="text-muted selected-count">@Tr.Format("Отмечено радиостанций: {0}", Value.Selected.Count)</div>
+
+    @if (Value.NeedingAgency.Count > 0)
+    {
+        <div class="agencies">
+            <div class="agencies-title">@Tr.T("У этих радиостанций несколько агентств — выберите, через какое пойдёт кампания:")</div>
+            @foreach (StationChoice choice in Value.NeedingAgency)
+            {
+                <label class="agency-row">
+                    <span class="agency-station">@choice.Station["name"] <span class="text-muted">@choice.Station["groupName"]</span></span>
+                    <select class="form-select form-select-sm" @bind="choice.AgencyId">
+                        <option value="">@Tr.T("— выберите —")</option>
+                        @foreach (DataRow a in choice.Agencies.Rows)
+                        {
+                            <option value="@a["agencyID"]">@a["name"]</option>
+                        }
+                    </select>
+                </label>
+            }
+        </div>
+    }
+    @if (Value.WithoutAgency.Count > 0)
+    {
+        <div class="text-danger without-agency">
+            @Tr.Format("У радиостанций нет агентства, кампаний на них не будет: {0}.", string.Join(", ", Value.WithoutAgency.Select(c => Model.StationLabel(c.Station))))
+        </div>
+    }
+}
+
+@code {
+    [Parameter, EditorRequired] public Model Value { get; set; } = default!;
+
+    private IEnumerable<DataRow> VisibleStations =>
+        Value.Choices.Stations.Rows.Cast<DataRow>()
+            .Where(s => Value.GroupId == 0 || Convert.ToInt32(s["groupID"]) == Value.GroupId);
+
+    private bool AllVisibleSelected => VisibleStations.Any() && VisibleStations.All(s => Value.Selected.ContainsKey(StationId(s)));
+
+    private static int StationId(DataRow station) => Convert.ToInt32(station["massmediaID"]);
+
+    private async Task TypeChanged(ChangeEventArgs e)
+    {
+        Value.CampaignTypeId = int.TryParse(e.Value?.ToString(), out int type) ? type : null;
+        if (Value.IsPack && Value.PackAgencies.Rows.Count == 0)
+        {
+            Value.PackAgencies = await Busy.RunAsync(ActionWorkspace.UserAgencies);
+            if (Value.PackAgencies.Rows.Count == 1)
+                Value.PackAgencyId = Convert.ToInt32(Value.PackAgencies.Rows[0]["agencyID"]);
+        }
+    }
+
+    /// <summary>Отметка — галочкой или щелчком по строке: карточки у строки здесь нет.</summary>
+    private Task Toggle(DataRow station, bool check) =>
+        check ? Select(new[] { station }) : Unselect(new[] { station });
+
+    private Task ToggleAll(ChangeEventArgs e) =>
+        e.Value is true ? Select(VisibleStations.ToList()) : Unselect(VisibleStations.ToList());
+
+    /// <summary>Агентства радиостанций читаются при отметке — как окно выбора в десктопе, по станции.</summary>
+    private async Task Select(IReadOnlyList<DataRow> stations)
+    {
+        List<DataRow> toLoad = stations.Where(s => !Value.Selected.ContainsKey(StationId(s))).ToList();
+        if (toLoad.Count == 0)
+            return;
+
+        Dictionary<int, DataTable> agencies = await Busy.RunAsync(() =>
+            toLoad.ToDictionary(StationId, s => Value.AgencyCache.TryGetValue(StationId(s), out DataTable? cached)
+                ? cached : ActionWorkspace.StationAgencies(s)));
+
+        foreach (DataRow station in toLoad)
+        {
+            int id = StationId(station);
+            DataTable list = agencies[id];
+            Value.AgencyCache[id] = list;
+            Value.Selected[id] = new StationChoice
+            {
+                Station = station,
+                Agencies = list,
+                AgencyId = list.Rows.Count == 1 ? Convert.ToInt32(list.Rows[0]["agencyID"]) : null,
+            };
+        }
+    }
+
+    private Task Unselect(IReadOnlyList<DataRow> stations)
+    {
+        foreach (DataRow station in stations)
+            Value.Selected.Remove(StationId(station));
+        return Task.CompletedTask;
+    }
+
+    public sealed class StationChoice
+    {
+        public DataRow Station { get; init; } = default!;
+        public DataTable Agencies { get; init; } = new();
+        public int? AgencyId { get; set; }
+    }
+
+    public sealed class Model
+    {
+        public ActionWorkspace.NewCampaignChoices Choices { get; init; } = default!;
+
+        /// <summary>Радиостанции и типы кампаний, которые в акции уже есть, — для пометки «есть в акции».</summary>
+        public HashSet<(int MassmediaId, int CampaignTypeId)> Existing { get; init; } = new();
+
+        public int? CampaignTypeId { get; set; }
+        public int? PaymentTypeId { get; set; }
+        public int GroupId { get; set; }
+
+        /// <summary>Отмеченные радиостанции: massmediaID → станция, её агентства и выбранное.</summary>
+        public Dictionary<int, StationChoice> Selected { get; } = new();
+
+        /// <summary>Агентства станций, уже прочитанные за этот показ окна.</summary>
+        public Dictionary<int, DataTable> AgencyCache { get; } = new();
+
+        public DataTable PackAgencies { get; set; } = new();
+        public int? PackAgencyId { get; set; }
+
+        public string? Message { get; set; }
+
+        public bool IsPack => CampaignTypeId == ActionWorkspace.PackModuleCampaignType;
+
+        public bool InAction(int massmediaId) =>
+            CampaignTypeId is int type && Existing.Contains((massmediaId, type));
+
+        /// <summary>Отмеченные станции с несколькими агентствами — выбор под таблицей, в порядке списка.</summary>
+        public IReadOnlyList<StationChoice> NeedingAgency => InListOrder().Where(c => c.Agencies.Rows.Count > 1).ToList();
+
+        /// <summary>Отмеченные станции без агентств — кампаний на них не будет.</summary>
+        public IReadOnlyList<StationChoice> WithoutAgency => InListOrder().Where(c => c.Agencies.Rows.Count == 0).ToList();
+
+        /// <summary>Подпись радиостанции в тексте сообщения: «название (группа)».</summary>
+        public static string StationLabel(DataRow station) => Convert.ToString(station["nameWithGroup"]) ?? "";
+
+        private IEnumerable<StationChoice> InListOrder() =>
+            Choices.Stations.Rows.Cast<DataRow>()
+                .Select(s => Selected.TryGetValue(Convert.ToInt32(s["massmediaID"]), out StationChoice? c) ? c : null)
+                .Where(c => c != null)
+                .Select(c => c!);
+
+        /// <summary>
+        /// Проверка «ОК»: текст ошибки или null. Радиостанции без агентств проверку проходят —
+        /// они пропускаются (как в десктопе), их перечислит итог.
+        /// </summary>
+        public string? Validate()
+        {
+            if (CampaignTypeId == null)
+                return Tr.T("Выберите тип рекламной кампании.");
+            if (PaymentTypeId == null)
+                return Tr.T("Выберите тип оплаты.");
+            if (IsPack)
+                return PackAgencyId == null ? Tr.T(Merlin.Properties.Resources.AgencyIsRequied) : null;
+            if (Selected.Count == 0)
+                return Tr.T("Отметьте хотя бы одну радиостанцию.");
+
+            List<string> noChoice = NeedingAgency
+                .Where(c => c.AgencyId == null)
+                .Select(c => StationLabel(c.Station))
+                .ToList();
+            if (noChoice.Count > 0)
+                return Tr.Format("Выберите агентство: {0}.", string.Join(", ", noChoice));
+            if (Selected.Values.All(c => c.Agencies.Rows.Count == 0))
+                return Tr.T("Ни у одной отмеченной радиостанции нет агентства — добавлять нечего.");
+            return null;
+        }
+
+        /// <summary>Кампании к записи; радиостанции без агентств — в <paramref name="skipped"/>.</summary>
+        public List<ActionWorkspace.NewCampaign> Build(out List<string> skipped)
+        {
+            skipped = new List<string>();
+            var result = new List<ActionWorkspace.NewCampaign>();
+            if (IsPack)
+            {
+                result.Add(new ActionWorkspace.NewCampaign { AgencyId = PackAgencyId!.Value });
+                return result;
+            }
+
+            // В порядке списка радиостанций, а не отметок: в этом порядке кампании и встанут в акции.
+            foreach (StationChoice choice in InListOrder())
+            {
+                string name = StationLabel(choice.Station);
+                if (choice.AgencyId == null)
+                {
+                    skipped.Add(name);
+                    continue;
+                }
+                result.Add(new ActionWorkspace.NewCampaign
+                {
+                    MassmediaId = Convert.ToInt32(choice.Station["massmediaID"]),
+                    StationName = name,
+                    AgencyId = choice.AgencyId.Value,
+                });
+            }
+            return result;
+        }
+    }
+}

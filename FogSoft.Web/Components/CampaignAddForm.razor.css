@@ -1,0 +1,96 @@
+.add-head {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--s-3) var(--s-4);
+    margin-bottom: var(--s-2);
+}
+
+.field {
+    display: flex;
+    flex-direction: column;
+    gap: var(--s-1);
+    min-width: 220px;
+    max-width: 320px;
+    color: var(--c-text-muted);
+}
+
+.hint {
+    margin: var(--s-3) 0 var(--s-2);
+}
+
+/* Станций у администратора — десятки: список прокручивается, шапка на месте. */
+.stations {
+    max-height: 46vh;
+    overflow: auto;
+    border: 1px solid var(--c-border);
+    border-radius: 6px;
+}
+
+.stations table {
+    margin: 0;
+}
+
+.stations thead th {
+    position: sticky;
+    top: 0;
+    z-index: 1;
+    background: var(--c-surface);
+}
+
+.col-check {
+    width: 32px;
+}
+
+/* Отмечают и щелчком по строке: карточки у строки в этом окне нет. */
+.stations tbody tr {
+    cursor: pointer;
+}
+
+.row-selected td {
+    background: var(--c-accent-soft);
+}
+
+.in-action {
+    margin-left: var(--s-2);
+    padding: 0 var(--s-1);
+    font-size: 12px;
+    color: var(--c-warn);
+    background: var(--c-warn-soft);
+    border-radius: 3px;
+}
+
+.selected-count {
+    margin-top: var(--s-2);
+    font-size: 13px;
+}
+
+/* Выбор агентства — только у отмеченных радиостанций, где агентств несколько (как окно выбора
+   агентства в десктопе); у остальных агентство единственное и подставляется молча. */
+.agencies {
+    margin-top: var(--s-3);
+    padding: var(--s-3);
+    background: var(--c-bg);
+    border-radius: 6px;
+}
+
+.agencies-title {
+    margin-bottom: var(--s-2);
+    color: var(--c-text-muted);
+}
+
+.agency-row {
+    display: grid;
+    grid-template-columns: minmax(200px, 1fr) minmax(220px, 320px);
+    align-items: center;
+    gap: var(--s-3);
+    margin-bottom: var(--s-2);
+}
+
+.agency-station .text-muted {
+    margin-left: var(--s-1);
+}
+
+.without-agency {
+    margin-top: var(--s-2);
+    font-size: 13px;
+}

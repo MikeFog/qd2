@@ -398,6 +398,28 @@ namespace Merlin.Classes
 			Refresh();
 		}
 
+		/// <summary>
+		/// «Менеджерская скидка»: итоговая цена кампании и пересчёт акции на ту же дату —
+		/// одной транзакцией. Лимит коэффициента проверяет CampaignSetFinalPrice
+		/// (MaxRatioExcess); <paramref name="grantorId"/> — «разрешающий», есть только в
+		/// десктопе (в веб не переносится, решение 21.08.2026).
+		/// </summary>
+		internal void ApplyManagerDiscount(decimal finalPrice, DateTime todayDate, int? grantorId, int? managerDiscountReasonId)
+		{
+			DataAccessor.BeginTransaction();
+			try
+			{
+				SetFinalPrice(finalPrice, todayDate, grantorId, managerDiscountReasonId);
+				Action.Recalculate(refreshFlag: false, todayDate: todayDate);
+				DataAccessor.CommitTransaction();
+			}
+			catch
+			{
+				DataAccessor.RollbackTransaction();
+				throw;
+			}
+		}
+
 		/// <summary>«Показать дни выхода» у линейной и спонсорской кампании.</summary>
 		internal void ShowDaysView()
 		{

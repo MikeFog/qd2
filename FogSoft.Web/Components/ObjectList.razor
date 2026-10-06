@@ -233,6 +233,17 @@ else
     [Parameter] public bool Selectable { get; set; }
 
     /// <summary>
+    /// Действия экрана в меню строки — сверх метаданных (iEntityAction): то, что владелец
+    /// экрана делает со строкой сам («Скидка менеджера…» на странице акции). Пункты встают под
+    /// «Открыть карточку» отдельной группой, выбор уходит в <see cref="ScreenAction"/>, а не в
+    /// ObjectActions. Набор считается по строке: доступность может зависеть от её данных.
+    /// </summary>
+    [Parameter] public Func<DataRow, IReadOnlyList<ActionMenuItem>>? ScreenActions { get; set; }
+
+    /// <summary>Выбран пункт из <see cref="ScreenActions"/>: строка и имя пункта.</summary>
+    [Parameter] public EventCallback<(DataRow Row, string Action)> ScreenAction { get; set; }
+
+    /// <summary>
     /// Колонки — атрибуты сущности, у которых есть соответствующая колонка в
     /// пришедших строках. Метаданные (iEntityAttribute) могут объявлять
     /// колонку, которой нет в конкретной процедуре загрузки списка — например,
@@ -773,6 +784,8 @@ else
     {
         if (Data == null || Data.Rows.Count == 0)
             return false;
+        if (ScreenActions != null)
+            return true;
 
         try
         {
@@ -815,7 +828,8 @@ else
         try
         {
             PresentationObject obj = Entity.CreateObject(row);
-            IReadOnlyList<ActionMenuItem> items = Actions.BuildMenu(obj, ViewType.Journal);
+            IReadOnlyList<ActionMenuItem> screenItems = ScreenActions?.Invoke(row) ?? Array.Empty<ActionMenuItem>();
+            IReadOnlyList<ActionMenuItem> items = WithScreenActions(Actions.BuildMenu(obj, ViewType.Journal), screenItems);
             if (!items.Any(i => !i.IsSeparator))
                 return;
 
@@ -825,7 +839,11 @@ else
             _menuRow = null;
             StateHasChanged();
 
-            if (picked != null)
+            if (picked == null)
+                return;
+            if (screenItems.Any(i => i.Name == picked))
+                await ScreenAction.InvokeAsync((row, picked));
+            else
                 await Execute(obj, picked, reportUnavailable: false);
         }
         catch (Exception ex)
@@ -858,6 +876,23 @@ else
         {
             await Failed.InvokeAsync(ErrorPresenter.Describe(ex));
         }
+    }
+
+    /// <summary>Действия экрана — группой сразу под «Открыть карточку» (или первыми, если её нет).</summary>
+    private static IReadOnlyList<ActionMenuItem> WithScreenActions(IReadOnlyList<ActionMenuItem> items, IReadOnlyList<ActionMenuItem> screenItems)
+    {
+        if (screenItems.Count == 0)
+            return items;
+
+        int at = items.Count > 0 && items[0].Name == Constants.EntityActions.ShowPassport ? 1 : 0;
+        var result = new List<ActionMenuItem>(items.Take(at));
+        if (at > 0)
+            result.Add(ActionMenuItem.Separator);
+        result.AddRange(screenItems);
+        if (items.Count > at)
+            result.Add(ActionMenuItem.Separator);
+        result.AddRange(items.Skip(at));
+        return result;
     }
 
     /// <summary>

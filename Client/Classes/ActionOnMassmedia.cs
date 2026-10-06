@@ -310,6 +310,131 @@ namespace Merlin.Classes
             }
         }
 
+        // ---- Карточка акции: кампании и цена (ActionForm в десктопе, страница акции в вебе) ----
+
+        /// <summary>
+        /// Добавляет кампании в акцию по одной: отказ по одной станции (например, такая
+        /// кампания уже есть в акции — UIX_Campaign) не мешает остальным (решение по Д-4,
+        /// docs/action-forms.md §10). Новая акция сначала записывается. Пересчёта нет:
+        /// у кампании без выпусков нет цены.
+        /// </summary>
+        /// <param name="added">Записанные кампании, в порядке <paramref name="campaigns"/>.</param>
+        /// <returns>Не добавленные — «станция - причина»; пустой список — добавлены все.</returns>
+        internal List<string> AddCampaigns(IEnumerable<Campaign> campaigns, out List<Campaign> added)
+        {
+            if (IsNew) Update();
+
+            added = new List<Campaign>();
+            List<string> failed = new List<string>();
+            foreach (Campaign campaign in campaigns)
+            {
+                string name = campaign[Campaign.ParamNames.MassmediaName] as string ?? Tr.T("Пакетная кампания");
+                try
+                {
+                    campaign.Action = this;
+                    campaign.Update();
+                }
+                catch (Exception ex)
+                {
+                    if (!(ex is System.Data.SqlClient.SqlException))   // SQL-отказы уже в логе (DataAccessor)
+                        ErrorManager.LogError("Добавление кампании: " + name, ex); // i18n-ok: лог
+                    failed.Add(name + " - " + (ErrorManager.GetErrorMessage(ex) ?? ex.Message));
+                    continue;
+                }
+                added.Add(campaign);
+            }
+            return failed;
+        }
+
+        /// <summary>
+        /// Цена акции при одном менеджерском коэффициенте <paramref name="ratio"/> у всех
+        /// кампаний: сумма кампаний со всеми скидками, кроме менеджерской, умноженная на него.
+        /// </summary>
+        internal static decimal PriceWithManagerRatio(DataTable campaigns, decimal ratio)
+        {
+            decimal price = 0;
+            foreach (DataRow row in campaigns.Rows)
+            {
+                Campaign campaign = new Campaign(row);
+                price += campaign.Discount * campaign.PackDiscount * campaign.TariffPrice * ratio;
+            }
+            return price;
+        }
+
+        /// <summary>
+        /// Менеджерская скидка хранится на кампании, у акции её нет — усреднённая: итоговая
+        /// цена акции / сумма кампаний со всеми скидками, кроме менеджерской, 4 знака.
+        /// </summary>
+        internal decimal AverageManagerRatio(DataTable campaigns)
+        {
+            decimal priceWithoutManagerDiscount = PriceWithManagerRatio(campaigns, 1);
+            return priceWithoutManagerDiscount == 0
+                ? 0
+                : Math.Round(TotalPrice / priceWithoutManagerDiscount, 4, MidpointRounding.AwayFromZero);
+        }
+
+        /// <summary>
+        /// «Цена рекламной акции»: итоговая цена распределяется по кампаниям с ненулевой ценой
+        /// по тарифам, затем пересчёт акции — одной транзакцией. Последняя кампания забирает
+        /// остаток, чтобы сумма сходилась до копейки.
+        /// </summary>
+        /// <param name="byRatio">true — у всех кампаний один менеджерский коэффициент
+        /// <paramref name="ratio"/>; false — <paramref name="finalPrice"/> делится пропорционально
+        /// нынешним итогам кампаний.</param>
+        /// <param name="todayDate">Дата, на которую ставится скидка (бухгалтер и администратор
+        /// выбирают её сами, остальным — сегодня).</param>
+        internal void ApplyFinalPrice(decimal finalPrice, bool byRatio, decimal ratio, DateTime todayDate, int? managerDiscountReasonId)
+        {
+            if (!byRatio && TotalPrice == 0)
+                throw new InvalidOperationException(Tr.T("Итоговая цена акции равна нулю: распределить новую цену пропорционально нечему. Задайте цену через коэффициент."));
+
+            DataTable dataTable = Campaigns();
+            // exclude campaigns with zero tariff price, as they won't be affected by discount and caused SQL error
+            DataRow[] rows = dataTable.Select("TariffPrice <> 0");
+            dataTable = rows.Length > 0
+                ? rows.CopyToDataTable()
+                : dataTable.Clone();
+
+            DataAccessor.BeginTransaction();
+            try
+            {
+                decimal distributedSoFar = 0m;
+                int rowCount = dataTable.Rows.Count;
+
+                for (int i = 0; i < rowCount; i++)
+                {
+                    Campaign campaign = new Campaign(dataTable.Rows[i]);
+                    if (campaign.TariffPrice == 0) continue;
+
+                    decimal newP;
+                    if (i == rowCount - 1)
+                    {
+                        // ПОСЛЕДНЯЯ СТРОКА: забирает всё, что осталось от целевой суммы
+                        newP = finalPrice - distributedSoFar;
+                    }
+                    else
+                    {
+                        // ОБЫЧНАЯ СТРОКА: считаем долю и жестко округляем до копеек
+                        decimal rawP = byRatio
+                            ? ratio * campaign.Discount * campaign.PackDiscount * campaign.TariffPrice
+                            : finalPrice * campaign.FullPrice / TotalPrice;
+
+                        newP = Math.Round(rawP, 2, MidpointRounding.AwayFromZero);
+                        distributedSoFar += newP;
+                    }
+
+                    campaign.SetFinalPrice(newP, todayDate, SecurityManager.LoggedUser.Id, managerDiscountReasonId);
+                }
+                Recalculate(refreshFlag: true, todayDate: todayDate);
+                DataAccessor.CommitTransaction();
+            }
+            catch
+            {
+                DataAccessor.RollbackTransaction();
+                throw;
+            }
+        }
+
         /// <summary>
         /// Клонирует акцию с выбранными кампаниями (<paramref name="selectedItems"/> —
         /// дата клонирования и исходная кампания). Возвращает новую акцию;

@@ -1,0 +1,171 @@
+/*
+    Страница акции: шапка с итогами, вкладки, под ними содержимое вкладки. Итоги — тот же вид,
+    что у «Баланса для фирмы» (FirmBalance.razor.css), вкладки — как у карточки и дерева.
+*/
+
+.action-page {
+    flex: 1 1 auto;
+    display: flex;
+    flex-direction: column;
+    gap: var(--s-3);
+    min-height: 0;
+}
+
+.head-line {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: var(--s-2) var(--s-3);
+    margin-bottom: var(--s-3);
+}
+
+.head-line h3 {
+    margin: 0;
+    font-size: 18px;
+    font-weight: 600;
+}
+
+.firm {
+    font-size: 15px;
+    color: var(--c-text);
+}
+
+.head-actions {
+    display: flex;
+    gap: var(--s-2);
+    margin-left: auto;
+}
+
+.badge-state {
+    padding: 1px var(--s-2);
+    font-size: 12px;
+    border-radius: 10px;
+    white-space: nowrap;
+}
+
+.state-draft {
+    color: var(--c-warn);
+    background: var(--c-warn-soft);
+}
+
+.state-confirmed {
+    color: var(--c-ok);
+    background: var(--c-ok-soft);
+}
+
+.state-deleted {
+    color: var(--c-danger);
+    background: var(--c-danger-soft);
+}
+
+.state-readonly {
+    color: var(--c-text-muted);
+    background: var(--c-bg);
+    border: 1px solid var(--c-border);
+}
+
+.totals {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--s-2) var(--s-5);
+    margin: 0;
+    padding: var(--s-3) var(--s-4);
+    background: var(--c-surface);
+    border: 1px solid var(--c-border);
+    border-radius: 6px;
+}
+
+.totals dt {
+    font-size: 12px;
+    font-weight: 400;
+    color: var(--c-text-muted);
+}
+
+.totals dd {
+    margin: 0;
+    font-size: 15px;
+    font-weight: 600;
+    font-variant-numeric: tabular-nums;
+}
+
+.totals .total-end dd {
+    color: var(--c-accent);
+}
+
+.tabs {
+    display: flex;
+    gap: 2px;
+    border-bottom: 1px solid var(--c-border);
+}
+
+.tab {
+    padding: var(--s-2) var(--s-3);
+    border: none;
+    border-bottom: 2px solid transparent;
+    background: none;
+    font-size: 13px;
+    color: var(--c-text-muted);
+    white-space: nowrap;
+}
+
+.tab:hover:not(:disabled) {
+    color: var(--c-text);
+}
+
+.tab:disabled {
+    color: var(--c-border-strong);
+    cursor: not-allowed;
+}
+
+.tab-active {
+    color: var(--c-accent);
+    border-bottom-color: var(--c-accent);
+    font-weight: 600;
+}
+
+.tab .count {
+    margin-left: var(--s-1);
+    font-weight: 400;
+    color: var(--c-text-muted);
+}
+
+.campaigns {
+    flex: 1 1 auto;
+    display: flex;
+    flex-direction: column;
+    gap: var(--s-2);
+    min-height: 0;
+}
+
+.campaigns-toolbar {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--s-2);
+}
+
+.empty-note {
+    display: flex;
+    align-items: baseline;
+    gap: var(--s-2);
+    padding: var(--s-2) var(--s-3);
+    color: var(--c-warn);
+    background: var(--c-warn-soft);
+    border-radius: 6px;
+    font-size: 13px;
+}
+
+.empty-note span {
+    flex: 1 1 auto;
+}
+
+.empty-note .btn-link {
+    flex: 0 0 auto;
+    padding: 0;
+    white-space: nowrap;
+}
+
+/* Список — чужой компонент, поэтому размер задаём через ::deep. */
+.campaigns ::deep .data-table {
+    flex: 1 1 auto;
+    min-height: 160px;
+}

@@ -1,0 +1,98 @@
+@using System.Data
+@using FogSoft.WinForm.Classes
+@using Merlin.Classes
+
+@*
+    «Менеджерская скидка» кампании — веб-аналог десктопной ManagerDiscountForm: цены и скидки
+    кампании, коэффициент и окончательная цена (связаны: правишь одно — пересчитывается другое),
+    причина скидки (у всех, кроме создателя акции) и дата «в прошлом» (бухгалтер и
+    администратор). «Разрешающего» при скидке сверх лимита нет (решение 21.08.2026): лимит
+    проверяет процедура, отказ — сообщением. Значения — в модели, запись — по «ОК» на странице.
+*@
+
+@if (Value.Message != null)
+{
+    <div class="alert alert-danger">@Value.Message</div>
+}
+
+<dl class="facts">
+    <div class="fact-wide"><dt>@Tr.T("Кампания")</dt><dd>@Value.Info.CampaignName</dd></div>
+    <div><dt>@Tr.T("Цена по тарифам")</dt><dd>@Value.Info.TariffPrice.ToString("C")</dd></div>
+    <div><dt>@Tr.T("Объёмная скидка")</dt><dd>@Value.Info.Discount.ToString("F")</dd></div>
+    <div><dt>@Tr.T("Пакетная скидка")</dt><dd>@Value.Info.PackDiscount.ToString("F")</dd></div>
+</dl>
+
+<div class="pair">
+    <label class="field">
+        @Tr.T("Менеджерская скидка (коэффициент)")
+        <input type="number" class="form-control form-control-sm tabular" min="0" max="1000" step="0.01"
+               @bind="Value.Ratio" @bind:after="RatioChanged" />
+    </label>
+    <label class="field">
+        @Tr.T("Окончательная цена")
+        <input type="number" class="form-control form-control-sm tabular" min="0" step="0.01"
+               @bind="Value.FinalPrice" @bind:after="PriceChanged" />
+    </label>
+</div>
+
+@if (Value.NeedsReason)
+{
+    <label class="field">
+        @Tr.T("Причина выдачи скидки")
+        <select class="form-select form-select-sm" @bind="Value.ReasonId">
+            <option value="">@Tr.T("— выберите —")</option>
+            @foreach (DataRow r in Value.Reasons.Rows)
+            {
+                <option value="@r["ManagerDiscountReasonId"]">@r["name"]</option>
+            }
+        </select>
+    </label>
+}
+
+@if (Value.CanChooseDate)
+{
+    <div class="past">
+        <label class="form-check">
+            <input type="checkbox" class="form-check-input" @bind="Value.UseDate" />
+            @Tr.T("Изменить цену в прошлом, на дату:")
+        </label>
+        <input type="date" class="form-control form-control-sm" disabled="@(!Value.UseDate)" @bind="Value.Date" />
+    </div>
+}
+
+@code {
+    [Parameter, EditorRequired] public Model Value { get; set; } = default!;
+
+    private void RatioChanged() =>
+        Value.FinalPrice = Math.Round(Value.Info.PriceForRatio(Value.Ratio), 2, MidpointRounding.AwayFromZero);
+
+    private void PriceChanged() =>
+        Value.Ratio = Math.Round(Value.Info.RatioForPrice(Value.FinalPrice), 2, MidpointRounding.AwayFromZero);
+
+    public sealed class Model
+    {
+        public ActionWorkspace.ManagerDiscountInfo Info { get; init; } = default!;
+        public decimal Ratio { get; set; }
+        public decimal FinalPrice { get; set; }
+
+        public bool NeedsReason { get; init; }
+        public DataTable Reasons { get; init; } = new();
+        public int? ReasonId { get; set; }
+
+        public bool CanChooseDate { get; init; }
+        public bool UseDate { get; set; }
+        public DateTime Date { get; set; } = DateTime.Today;
+
+        public string? Message { get; set; }
+
+        /// <summary>Проверка «ОК»: текст ошибки или null.</summary>
+        public string? Validate()
+        {
+            if (FinalPrice < 0 || Ratio < 0)
+                return Tr.T("Цена и коэффициент не могут быть отрицательными.");
+            if (NeedsReason && ReasonId == null)
+                return Tr.T("Необходимо выбрать причину выдачи скидки.");
+            return null;
+        }
+    }
+}

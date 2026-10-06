@@ -355,8 +355,13 @@ public sealed partial class ObjectActions
 		// ActionOnMassmedia.WinForms.cs, DoAction: операции журнала акций, которые решаются
 		// вопросом, выбором из списка или небольшим окном. «Восстановить» ловит и удалённую акцию
 		// (ActionDeleted — наследник). «Разделить кампании» и клон — следующая партия.
+		// «Редактировать» и карточка (в десктопе обе открывают ActionForm) — страница акции
+		// /action/{id} (docs/tasks/web-action-forms.md, этап 1); без права «Редактировать» она
+		// открывается на просмотр, поэтому карточка доступна всем, кому акция видна (IsEnabled).
 		["ActionOnMassmedia"] = new()
 		{
+			[Constants.EntityActions.Edit] = (s, t) => s.OpenActionPage((Merlin.Classes.ActionOnMassmedia)t),
+			[Constants.EntityActions.ShowPassport] = (s, t) => s.OpenActionPage((Merlin.Classes.ActionOnMassmedia)t),
 			[Merlin.Classes.Action.ActionNames.Recalculate] = (s, t) => s.RecalculateAction((Merlin.Classes.ActionOnMassmedia)t),
 			[Merlin.Classes.Action.ActionNames.Deactivate] = (s, t) => s.DeactivateAction((Merlin.Classes.ActionOnMassmedia)t),
 			[Merlin.Classes.Action.ActionNames.Merge] = (s, t) => s.MergeActions((Merlin.Classes.ActionOnMassmedia)t),
@@ -372,6 +377,9 @@ public sealed partial class ObjectActions
 		// вход через CampaignChange.
 		["Campaign"] = new()
 		{
+			// CampaignPart.DoAction(Delete): удалить, пересчитать акцию, сказать о цене. Своё
+			// удаление остальных наследников CampaignPart (выпуски) по-прежнему серое (DesktopOverrides).
+			[Constants.EntityActions.Delete] = (s, t) => s.DeleteCampaign((PresentationObject)t),
 			[Merlin.Classes.CampaignChange.ChangeAgencyAction] = (s, t) => s.ChangeCampaignAgency((PresentationObject)t),
 			[Merlin.Classes.CampaignChange.ChangePaymentTypeAction] = (s, t) => s.ChangeCampaignPaymentType((PresentationObject)t),
 			[Merlin.Classes.CampaignChange.PrintTransfersAction] = (s, t) => s.ShowCampaignTransfers((PresentationObject)t),
@@ -488,9 +496,8 @@ public sealed partial class ObjectActions
 	/// </summary>
 	private static readonly Dictionary<string, string[]> DesktopOverrides = new()
 	{
-		// «Свойства» открывают форму редактирования акции (ActionForm) — этап 3.
-		["ActionOnMassmedia"] = new[] { Constants.EntityActions.ShowPassport },
-		// Своё удаление: пересчёт, каскад, подтверждение другим текстом.
+		// Своё удаление: пересчёт, каскад, подтверждение другим текстом. У кампании (Campaign)
+		// оно уже перенесено — ClassActions проверяются раньше.
 		["MasterIssue"] = new[] { Constants.EntityActions.Delete },
 		["ModuleIssue"] = new[] { Constants.EntityActions.Delete },
 		["CampaignPart"] = new[] { Constants.EntityActions.Delete },
@@ -547,6 +554,19 @@ public sealed partial class ObjectActions
 			else
 				middle.Add(item);
 		}
+
+		// У акции «Свойств» в метаданных нет, а карточка — страница акции (IsEnabled): пункт
+		// нужен тем, у кого «Редактировать» погашено, — им страница открывается на просмотр.
+		if (properties == null && target is Merlin.Classes.ActionOnMassmedia && FindHandler(target, Constants.EntityActions.ShowPassport) != null)
+			properties = new ActionMenuItem
+			{
+				Name = Constants.EntityActions.ShowPassport,
+				Text = Tr.T("Открыть акцию"),
+				Hint = view == ViewType.Journal ? Tr.T("клик") : null,
+				Icon = ActionIcons.For(Constants.EntityActions.ShowPassport, null),
+				Enabled = IsEnabled(target, Constants.EntityActions.ShowPassport, view),
+				Ported = true,
+			};
 
 		var result = new List<ActionMenuItem>();
 		if (properties != null)
@@ -1992,6 +2012,36 @@ public sealed partial class ObjectActions
 		return ActionEffect.Changed;
 	}
 
+	/// <summary>
+	/// ActionOnMassmedia «Редактировать» / карточка — страница акции. В десктопе это модальная
+	/// ActionForm поверх журнала; здесь переход внутри приложения (circuit тот же, вход не нужен).
+	/// </summary>
+	private Task<ActionEffect> OpenActionPage(Merlin.Classes.ActionOnMassmedia action)
+	{
+		_navigation.NavigateTo(FogSoft.Web.Components.Pages.ActionPage.Url(action.ActionId));
+		return Task.FromResult(ActionEffect.None);
+	}
+
+	/// <summary>
+	/// CampaignPart.DoAction(Delete) у кампании: вопрос тем же текстом, удаление, пересчёт акции
+	/// и сообщение о её цене — как в десктопе (RecalculateAndShowPriceChange).
+	/// </summary>
+	private async Task<ActionEffect> DeleteCampaign(PresentationObject campaign)
+	{
+		if (await _dialogs.ShowAsync(
+				Tr.T("Удаление"),
+				builder => builder.AddContent(0, campaign.DeleteConfirmationText),
+				okText: Tr.T("Удалить")) != DialogOutcome.Ok)
+			return ActionEffect.None;
+
+		string? priceMessage = await _busy.RunAsync(() => Merlin.Classes.ActionWorkspace.DeleteCampaign(campaign));
+		if (priceMessage == null)
+			return ActionEffect.None;
+
+		await ShowInfo(Tr.T("Удаление"), priceMessage);
+		return ActionEffect.Deleted;
+	}
+
 	/// <summary>Campaign.ChangeAgency: правило «можно ли», агентства по правам, запись.</summary>
 	private async Task<ActionEffect> ChangeCampaignAgency(PresentationObject campaign)
 	{
@@ -2115,6 +2165,11 @@ public sealed partial class ObjectActions
 
 	private static bool IsEnabled(object target, string actionName, ViewType view) => target switch
 	{
+		// Карточка акции — страница акции: в метаданных у сущности 77 «Свойств» нет, а десктоп
+		// открывает ActionForm без проверки (TreeView2.EditCurrentObject: нет «Редактировать» —
+		// ShowPassport). Видна акция — страница открывается, без права правки — на просмотр.
+		Merlin.Classes.ActionOnMassmedia action when actionName == Constants.EntityActions.ShowPassport
+			=> Merlin.Classes.ActionWorkspace.CanView(action),
 		PresentationObject po => po.IsActionEnabled(actionName, view),
 		FakeContainer fc => fc.IsActionEnabled(actionName, view),
 		_ => false

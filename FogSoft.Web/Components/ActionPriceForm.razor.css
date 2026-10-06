@@ -1,0 +1,62 @@
+.facts {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--s-2) var(--s-5);
+    margin: 0 0 var(--s-4);
+    padding: var(--s-3) var(--s-4);
+    background: var(--c-bg);
+    border-radius: 6px;
+}
+
+.facts dt {
+    font-size: 12px;
+    font-weight: 400;
+    color: var(--c-text-muted);
+}
+
+.facts dd {
+    margin: 0;
+    font-weight: 600;
+    font-variant-numeric: tabular-nums;
+}
+
+.mode {
+    display: grid;
+    grid-template-columns: minmax(260px, auto) 200px;
+    align-items: center;
+    gap: var(--s-3);
+    margin-bottom: var(--s-2);
+}
+
+.mode .form-check {
+    margin: 0;
+}
+
+.field {
+    display: flex;
+    flex-direction: column;
+    gap: var(--s-1);
+    max-width: 320px;
+    margin: var(--s-3) 0;
+    color: var(--c-text-muted);
+}
+
+.tabular {
+    font-variant-numeric: tabular-nums;
+}
+
+.past {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: var(--s-2) var(--s-3);
+    margin-top: var(--s-3);
+}
+
+.past .form-check {
+    margin: 0;
+}
+
+.past input[type="date"] {
+    width: 170px;
+}

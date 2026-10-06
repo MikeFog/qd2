@@ -1,0 +1,539 @@
+@page "/action/{ActionId:int}"
+@using System.Data
+@using FogSoft.Web.Infrastructure
+@using FogSoft.WinForm
+@using FogSoft.WinForm.Classes
+@using Merlin.Classes
+@inject ObjectActions Actions
+@inject ActionMenuService Menu
+@inject MenuAccess Access
+@inject BusyService Busy
+@inject DialogService Dialogs
+@inject TableDialog Tables
+@inject IJSRuntime JS
+
+@*
+    Страница акции — единое рабочее место вместо пяти десктопных форм (docs/tasks/web-action-forms.md,
+    решения В-1, В-2 от 05.10.2026). Этап 1 — то, что делает карточка ActionForm, кроме размещения:
+    шапка с итогами и меню акции (то же «⋯», что в журнале), вкладка «Кампании» — добавить и
+    удалить кампании, скидка менеджера, цена акции. Вкладки размещения по виду места (Окна /
+    Модули / Спонсорство / Пакеты) видны для тех видов, что есть в акции, и пока серые.
+
+    Входы: «Редактировать» у акции в журналах и щелчок по акции в списке (ObjectActions). Права
+    проверяет ядро (ActionWorkspace) перед каждой записью; без права «Редактировать» страница
+    открывается на просмотр (В-7). Пустые кампании не удаляются сами — плашка «без выпусков»
+    отмечает их, удаление — общей кнопкой (В-6).
+*@
+
+<PageTitle>@_title</PageTitle>
+
+@if (SecurityManager.LoggedUser == null)
+{
+    <div class="state">
+        <div class="state-title">@Tr.T("Вы не вошли в систему")</div>
+        <a href="/">@Tr.T("Перейти к входу")</a>
+    </div>
+}
+else if (!_journalAccess)
+{
+    <div class="state">
+        <div class="state-title">@Tr.T("Доступ закрыт")</div>
+        @Tr.T("Акции открываются из журналов рекламных акций, а ни один из них вам не разрешён. Права на экраны выдаются вместе с пунктами меню — обратитесь к администратору системы.")
+    </div>
+}
+else if (_notFound)
+{
+    <div class="state">
+        <div class="state-title">@Tr.Format("Акция № {0} не найдена", ActionId)</div>
+        @Tr.T("Её нет в базе или она вам не видна.")
+        <button type="button" class="btn btn-link btn-sm" @onclick="Back">@Tr.T("Вернуться назад")</button>
+    </div>
+}
+else if (_action == null)
+{
+    @if (_error != null)
+    {
+        <div class="alert alert-danger">@_error</div>
+    }
+    else
+    {
+        <div class="state">@Tr.T("Загрузка…")</div>
+    }
+}
+else
+{
+    @if (_error != null)
+    {
+        <div class="alert alert-danger alert-dismissible screen-error" role="alert">
+            @_error
+            <button type="button" class="btn-close" aria-label="@(Tr.T("Закрыть"))" @onclick="() => _error = null"></button>
+        </div>
+    }
+
+    <div class="action-page">
+        <header class="action-head">
+            <div class="head-line">
+                <button type="button" class="btn btn-sm btn-outline-secondary" title="@(Tr.T("Назад"))" aria-label="@(Tr.T("Назад"))" @onclick="Back">
+                    <i class="bi bi-arrow-left" aria-hidden="true"></i>
+                </button>
+                <h3>@Tr.Format("Акция № {0}", ActionId)</h3>
+                <span class="firm">@_action.FirmName</span>
+                <span class="badge-state @StateClass">@StateText</span>
+                @if (!_canEdit && !ActionWorkspace.IsDeleted(_action))
+                {
+                    <span class="badge-state state-readonly" title="@(Tr.T("У вас нет права «Редактировать» на эту акцию — страница открыта на просмотр."))">@Tr.T("только просмотр")</span>
+                }
+                <div class="head-actions">
+                    <button type="button" class="btn btn-sm btn-outline-secondary" @onclick="Load">
+                        <i class="bi bi-arrow-clockwise" aria-hidden="true"></i>@Tr.T("Обновить")
+                    </button>
+                    <button type="button" class="btn btn-sm btn-outline-secondary" title="@(Tr.T("Действия с акцией"))" aria-label="@(Tr.T("Действия с акцией"))" aria-haspopup="menu"
+                            @onclick="OpenActionMenu">
+                        <i class="bi bi-three-dots" aria-hidden="true"></i>
+                    </button>
+                </div>
+            </div>
+            <dl class="totals">
+                <div><dt>@Tr.T("Период")</dt><dd>@Period</dd></div>
+                <div><dt>@Tr.T("Создатель")</dt><dd>@(_action.User?.FullName)</dd></div>
+                <div><dt>@Tr.T("По тарифам")</dt><dd>@_action.TariffPrice.ToString("C")</dd></div>
+                <div><dt>@Tr.T("Коэффициент скидок")</dt><dd>@Ratio</dd></div>
+                <div class="total-end"><dt>@Tr.T("Итого")</dt><dd>@_action.TotalPrice.ToString("C")</dd></div>
+            </dl>
+        </header>
+
+        <div class="tabs" role="tablist">
+            <button type="button" role="tab" class="tab tab-active" aria-selected="true">
+                @Tr.T("Кампании") <span class="count">@(_campaigns?.Rows.Count ?? 0)</span>
+            </button>
+            @foreach ((ActionWorkspace.PlaceKinds kind, string caption) in PlacementTabs)
+            {
+                @if (_kinds.HasFlag(kind))
+                {
+                    <button type="button" role="tab" class="tab" disabled title="@(Tr.T("В вебе пока нет: размещение — в десктопе."))">@caption</button>
+                }
+            }
+        </div>
+
+        <section class="campaigns">
+            <div class="campaigns-toolbar">
+                <button type="button" class="btn btn-primary btn-sm" disabled="@(!_canAddCampaigns)" @onclick="AddCampaigns"
+                        title="@(_canAddCampaigns ? null : Tr.T("Нет права добавлять кампании в эту акцию."))">
+                    <i class="bi bi-plus-lg" aria-hidden="true"></i>@Tr.T("Добавить кампании…")
+                </button>
+                <button type="button" class="btn btn-sm btn-outline-secondary" disabled="@(!CanSetActionPrice)" @onclick="SetActionPrice"
+                        title="@ActionPriceHint">
+                    <i class="bi bi-currency-exchange" aria-hidden="true"></i>@Tr.T("Цена акции…")
+                </button>
+                @if (_selectedCount > 0)
+                {
+                    <button type="button" class="btn btn-sm btn-danger" disabled="@(!_canEdit)" @onclick="DeleteSelected">
+                        <i class="bi bi-trash3" aria-hidden="true"></i>@Tr.Format("Удалить ({0})", _selectedCount)
+                    </button>
+                    <button type="button" class="btn btn-sm btn-outline-secondary" @onclick="ClearSelection">@Tr.T("Снять выделение")</button>
+                }
+            </div>
+
+            @if (_emptyRows.Count > 0 && _canEdit)
+            {
+                <div class="empty-note">
+                    <i class="bi bi-info-circle" aria-hidden="true"></i>
+                    <span>@Tr.Format("Кампаний без выпусков: {0} — {1}.", _emptyRows.Count, string.Join(", ", _emptyRows.Select(ActionWorkspace.CampaignName)))</span>
+                    <button type="button" class="btn btn-link btn-sm" @onclick="SelectEmpty">@Tr.T("Отметить их")</button>
+                </div>
+            }
+
+            <ObjectList @ref="_list" Entity="_campaignEntity!" Data="_campaigns" Selectable="_canEdit"
+                        EmptyText="@(Tr.T("В акции пока нет кампаний. Добавьте их кнопкой «Добавить кампании…»."))"
+                        ScreenActions="CampaignScreenActions" ScreenAction="OnCampaignScreenAction"
+                        Changed="Load" Failed="ShowError" SelectionChanged="c => _selectedCount = c" />
+        </section>
+    </div>
+}
+
+@code {
+    [Parameter] public int ActionId { get; set; }
+
+    /// <summary>Адрес страницы акции — для переходов из журналов (ObjectActions).</summary>
+    public static string Url(int actionId) => $"/action/{actionId}";
+
+    // Пункты меню журналов акций: страница открывается из них, право на любой из них — право на
+    // экран (MenuAccess знает только пункты меню). Видимость самой акции — ActionWorkspace.CanView.
+    private static readonly string[] JournalMenus =
+        { "miActionJournal", "miActionJournalBuh", "miActionJournalTraffic", "miActionJournalUnconfirmed", "miActionJournalDeleted" };
+
+    private const string ManagerDiscountAction = "SetManagerDiscount";
+
+    private string _title = Tr.T("Рекламная акция");
+    private bool _journalAccess = true;
+    private bool _notFound;
+    private string? _error;
+    private int _loadedId;
+
+    private ActionOnMassmedia? _action;
+    private bool _canEdit;
+    private bool _canAddCampaigns;
+
+    private Entity? _campaignEntity;
+    private DataTable? _campaigns;
+    private ActionWorkspace.PlaceKinds _kinds;
+    private List<DataRow> _emptyRows = new();
+    private ObjectList? _list;
+    private int _selectedCount;
+
+    private IEnumerable<(ActionWorkspace.PlaceKinds, string)> PlacementTabs => new[]
+    {
+        (ActionWorkspace.PlaceKinds.Windows, Tr.T("Окна")),
+        (ActionWorkspace.PlaceKinds.Modules, Tr.T("Модули")),
+        (ActionWorkspace.PlaceKinds.Sponsorship, Tr.T("Спонсорство")),
+        (ActionWorkspace.PlaceKinds.Packs, Tr.T("Пакеты")),
+    };
+
+    private string StateText => _action == null ? ""
+        : ActionWorkspace.IsDeleted(_action) ? Tr.T("удалена")
+        : _action.IsConfirmed ? Tr.T("подтверждена")
+        : Tr.T("макет");
+
+    private string StateClass => _action == null ? ""
+        : ActionWorkspace.IsDeleted(_action) ? "state-deleted"
+        : _action.IsConfirmed ? "state-confirmed"
+        : "state-draft";
+
+    private string Period => _action == null || _action.StartDate == DateTime.MinValue
+        ? Tr.T("нет выпусков")
+        : $"{DisplayFormat.Date(_action.StartDate)} – {DisplayFormat.Date(_action.FinishDate)}";
+
+    private string Ratio => _action == null ? ""
+        : ParseHelper.GetDecimalFromObject(_action[Merlin.Classes.Action.ParamNames.Ratio], 1).ToString("F");
+
+    private bool CanSetActionPrice => _canEdit && _action != null && _action.TariffPrice != 0;
+
+    private string? ActionPriceHint =>
+        !_canEdit ? Tr.T("Нет права «Редактировать» на эту акцию.")
+        : _action?.TariffPrice == 0 ? Tr.T("Цена акции по тарифам равна нулю — нечего распределять.")
+        : null;
+
+    protected override async Task OnParametersSetAsync()
+    {
+        if (SecurityManager.LoggedUser == null || ActionId == _loadedId)
+            return;
+
+        // Отметка до чтения: второй проход параметров на тот же переход не перечитывает акцию.
+        _loadedId = ActionId;
+        _journalAccess = JournalMenus.Any(code => Access.CheckBrowser(code) == JournalAccess.Allowed);
+        if (_journalAccess)
+            await Load();
+    }
+
+    private async Task Load()
+    {
+        _error = null;
+        try
+        {
+            await Busy.RunAsync(() =>
+            {
+                ActionOnMassmedia? action = ActionWorkspace.Load(ActionId);
+                if (action == null || !ActionWorkspace.CanView(action))
+                {
+                    _action = null;
+                    _notFound = true;
+                    return;
+                }
+
+                _notFound = false;
+                _action = action;
+                _canEdit = ActionWorkspace.CanEdit(action);
+                _canAddCampaigns = ActionWorkspace.CanAddCampaigns(action);
+                _campaignEntity ??= ActionWorkspace.CampaignListEntity();
+                _campaigns = ActionWorkspace.LoadCampaigns(action);
+                _kinds = ActionWorkspace.KindsOf(_campaigns);
+                _emptyRows = _campaigns.Rows.Cast<DataRow>().Where(ActionWorkspace.IsEmpty).ToList();
+            });
+            _title = _action == null ? Tr.T("Рекламная акция") : Tr.Format("Акция № {0} · {1}", ActionId, _action.FirmName);
+        }
+        catch (Exception ex)
+        {
+            _error = ErrorPresenter.Describe(ex);
+        }
+
+        // Обработчик операции после перечитывания ещё показывает итог (цена акции, отказы) —
+        // без явной перерисовки этот итог висел бы над прежним списком до его закрытия.
+        StateHasChanged();
+    }
+
+    private void ShowError(string message) => _error = message;
+
+    private async Task Back()
+    {
+        try { await JS.InvokeVoidAsync("history.back"); }
+        catch (JSDisconnectedException) { }
+    }
+
+    // ---------- Меню акции ----------
+
+    /// <summary>
+    /// То же меню, что у акции в журнале, — без «Редактировать» и «Открыть акцию»: страница уже
+    /// открыта. После любого действия страница перечитывает акцию и кампании (у удалённой или
+    /// объединённой акции — состояние «не найдена»).
+    /// </summary>
+    private async Task OpenActionMenu(MouseEventArgs e)
+    {
+        if (_action == null)
+            return;
+
+        try
+        {
+            PresentationObject target = ActionWorkspace.MenuTarget(_action);
+            IReadOnlyList<ActionMenuItem> items = Actions.BuildMenu(target, ViewType.Journal)
+                .Where(i => i.Name != Constants.EntityActions.Edit && i.Name != Constants.EntityActions.ShowPassport)
+                .ToList();
+            string? picked = await Menu.ShowAsync(items, e.ClientX, e.ClientY, fromButton: true);
+            if (picked == null)
+                return;
+
+            ActionEffect? effect = await Actions.ExecuteAsync(target, picked, ViewType.Journal);
+            if (effect is not null and not ActionEffect.None)
+                await Load();
+        }
+        catch (Exception ex)
+        {
+            _error = ErrorPresenter.Describe(ex);
+        }
+    }
+
+    // ---------- Кампании ----------
+
+    private IReadOnlyList<ActionMenuItem> CampaignScreenActions(DataRow row)
+    {
+        bool zeroPrice = ParseHelper.GetDecimalFromObject(row[ActionWorkspace.CampaignColumns.TariffPrice], 0) == 0;
+        bool enabled = _canEdit && !zeroPrice;
+        return new[]
+        {
+            new ActionMenuItem
+            {
+                Name = ManagerDiscountAction,
+                Text = Tr.T("Скидка менеджера…"),
+                Icon = "bi-percent",
+                Enabled = enabled,
+                Ported = true,
+                DisabledReason = enabled ? null
+                    : !_canEdit ? Tr.T("Нет права «Редактировать» на эту акцию.")
+                    : Tr.T("Цена кампании по тарифам равна нулю: скидку ставить не на что."),
+            },
+        };
+    }
+
+    private async Task OnCampaignScreenAction((DataRow Row, string Action) args)
+    {
+        if (args.Action == ManagerDiscountAction)
+            await SetManagerDiscount(args.Row);
+    }
+
+    private async Task AddCampaigns()
+    {
+        if (_action == null || _campaigns == null)
+            return;
+
+        try
+        {
+            var model = await Busy.RunAsync(() => new CampaignAddForm.Model
+            {
+                Choices = ActionWorkspace.LoadNewCampaignChoices(),
+                Existing = _campaigns.Rows.Cast<DataRow>()
+                    .Where(r => r[ActionWorkspace.CampaignColumns.MassmediaId] != DBNull.Value)
+                    .Select(r => (Convert.ToInt32(r[ActionWorkspace.CampaignColumns.MassmediaId]), Convert.ToInt32(r[ActionWorkspace.CampaignColumns.CampaignTypeId])))
+                    .ToHashSet(),
+            });
+
+            while (true)
+            {
+                if (await Dialogs.ShowAsync(Tr.T("Добавить кампании"), builder =>
+                    {
+                        builder.OpenComponent<CampaignAddForm>(0);
+                        builder.AddComponentParameter(1, nameof(CampaignAddForm.Value), model);
+                        builder.CloseComponent();
+                    }, okText: Tr.T("Добавить"), wide: true) != DialogOutcome.Ok)
+                    return;
+
+                model.Message = model.Validate();
+                if (model.Message == null)
+                    break;
+            }
+
+            List<ActionWorkspace.NewCampaign> campaigns = model.Build(out List<string> skipped);
+            IReadOnlyList<string> failed = await Busy.RunAsync(() =>
+                ActionWorkspace.AddCampaigns(_action, model.CampaignTypeId!.Value, model.PaymentTypeId!.Value, campaigns));
+
+            await Load();
+
+            var problems = new List<string>();
+            if (skipped.Count > 0)
+                problems.Add(Tr.Format("Нет агентства, радиостанции пропущены: {0}.", string.Join(", ", skipped)));
+            if (failed.Count > 0)
+                problems.Add(Tr.T("Не добавлены:") + " " + string.Join("; ", failed));
+            if (problems.Count > 0)
+                await ShowInfo(Tr.T("Добавить кампании"), string.Join(" ", problems));
+        }
+        catch (Exception ex)
+        {
+            _error = ErrorPresenter.Describe(ex);
+            await Load();
+        }
+    }
+
+    /// <summary>
+    /// Удаление отмеченных: один вопрос на пачку, удаление по одной (отказ одной не мешает
+    /// остальным), один пересчёт акции; отказы — таблицей, затем сообщение о цене, как в десктопе.
+    /// </summary>
+    private async Task DeleteSelected()
+    {
+        if (_action == null || _list == null || _list.SelectedObjects.Count == 0)
+            return;
+
+        IReadOnlyList<PresentationObject> campaigns = _list.SelectedObjects;
+        if (await Dialogs.ShowAsync(Tr.T("Удаление"),
+                builder => builder.AddContent(0, Tr.Format("Удалить отмеченные кампании ({0}) вместе с их выпусками?", campaigns.Count)),
+                okText: Tr.T("Удалить")) != DialogOutcome.Ok)
+            return;
+
+        try
+        {
+            string? priceMessage = null;
+            DataTable errors = await Busy.RunAsync(() => ActionWorkspace.DeleteCampaigns(_action, campaigns, out priceMessage));
+            await Load();
+
+            if (errors.Rows.Count > 0)
+                await Tables.ShowAsync(Tr.T("Ошибки удаления кампаний"), errors,
+                    new Entity.Attribute("description", "Ошибка", "nvarchar")); // i18n-ok: Alias переводится при показе (ObjectList)
+            if (priceMessage != null)
+                await ShowInfo(Tr.T("Удаление"), priceMessage);
+        }
+        catch (Exception ex)
+        {
+            _error = ErrorPresenter.Describe(ex);
+            await Load();
+        }
+    }
+
+    private Task ClearSelection() => _list?.ClearSelection() ?? Task.CompletedTask;
+
+    private Task SelectEmpty() => _list?.SelectRows(_emptyRows) ?? Task.CompletedTask;
+
+    private async Task SetManagerDiscount(DataRow row)
+    {
+        if (_action == null || _campaignEntity == null)
+            return;
+
+        try
+        {
+            PresentationObject campaign = _campaignEntity.CreateObject(row);
+            var model = await Busy.RunAsync(() =>
+            {
+                ActionWorkspace.ManagerDiscountInfo info = ActionWorkspace.LoadManagerDiscount(campaign);
+                bool needsReason = ActionWorkspace.NeedsDiscountReason(_action);
+                return new ManagerDiscountForm.Model
+                {
+                    Info = info,
+                    Ratio = Math.Round(info.ManagerDiscount, 2, MidpointRounding.AwayFromZero),
+                    FinalPrice = info.FullPrice,
+                    NeedsReason = needsReason,
+                    Reasons = needsReason ? ActionWorkspace.DiscountReasons() : new DataTable(),
+                    CanChooseDate = ActionWorkspace.CanChooseDiscountDate,
+                };
+            });
+
+            while (true)
+            {
+                if (await Dialogs.ShowAsync(Tr.T("Менеджерская скидка"), builder =>
+                    {
+                        builder.OpenComponent<ManagerDiscountForm>(0);
+                        builder.AddComponentParameter(1, nameof(ManagerDiscountForm.Value), model);
+                        builder.CloseComponent();
+                    }, okText: Tr.T("Установить")) != DialogOutcome.Ok)
+                    return;
+
+                model.Message = model.Validate();
+                if (model.Message != null)
+                    continue;
+
+                try
+                {
+                    await Busy.RunAsync(() => ActionWorkspace.ApplyManagerDiscount(_action, campaign, model.FinalPrice,
+                        model.UseDate ? model.Date : null, model.ReasonId));
+                    break;
+                }
+                catch (Exception ex)
+                {
+                    // Отказ процедуры (лимит коэффициента, кампания закончилась, цена ниже
+                    // уже прошедшего) — в том же окне: можно поправить и повторить.
+                    model.Message = ErrorPresenter.Describe(ex);
+                }
+            }
+
+            await Load();
+        }
+        catch (Exception ex)
+        {
+            _error = ErrorPresenter.Describe(ex);
+        }
+    }
+
+    private async Task SetActionPrice()
+    {
+        if (_action == null || !CanSetActionPrice)
+            return;
+
+        try
+        {
+            var model = await Busy.RunAsync(() =>
+            {
+                ActionWorkspace.ActionPriceInfo info = ActionWorkspace.LoadActionPrice(_action);
+                bool needsReason = ActionWorkspace.NeedsDiscountReason(_action);
+                return new ActionPriceForm.Model
+                {
+                    Info = info,
+                    Ratio = info.AverageRatio,
+                    FinalPrice = info.TotalPrice,
+                    NeedsReason = needsReason,
+                    Reasons = needsReason ? ActionWorkspace.DiscountReasons() : new DataTable(),
+                    CanChooseDate = ActionWorkspace.CanChooseDiscountDate,
+                };
+            });
+
+            while (true)
+            {
+                if (await Dialogs.ShowAsync(Tr.T("Цена рекламной акции"), builder =>
+                    {
+                        builder.OpenComponent<ActionPriceForm>(0);
+                        builder.AddComponentParameter(1, nameof(ActionPriceForm.Value), model);
+                        builder.CloseComponent();
+                    }, okText: Tr.T("Установить")) != DialogOutcome.Ok)
+                    return;
+
+                model.Message = model.Validate();
+                if (model.Message != null)
+                    continue;
+
+                try
+                {
+                    await Busy.RunAsync(() => ActionWorkspace.ApplyActionPrice(_action, model.FinalPrice, model.ByRatio, model.Ratio,
+                        model.UseDate ? model.Date : null, model.ReasonId));
+                    break;
+                }
+                catch (Exception ex)
+                {
+                    model.Message = ErrorPresenter.Describe(ex);
+                }
+            }
+
+            await Load();
+        }
+        catch (Exception ex)
+        {
+            _error = ErrorPresenter.Describe(ex);
+        }
+    }
+
+    private Task ShowInfo(string caption, string text) =>
+        Dialogs.ShowAsync(caption, builder => builder.AddContent(0, text), okText: Tr.T("Ок"), showCancel: false);
+}

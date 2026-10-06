@@ -32,12 +32,8 @@ namespace Merlin.Forms
             txtFinalPrice.Value = action.TotalPrice;
             _action = action;
             _campaignsTable = action.Campaigns();
-            // Менеджерская скидка хранится на кампании, у акции её нет — показываем усреднённую:
-            // итоговая цена акции / сумма кампаний со всеми скидками, кроме менеджерской.
-            decimal priceWithoutManagerDiscount = CalculateFinalPrice(1);
-            txtRatio.Value = priceWithoutManagerDiscount == 0
-                ? 0
-                : Math.Round(action.TotalPrice / priceWithoutManagerDiscount, 4, MidpointRounding.AwayFromZero);
+            // Менеджерская скидка хранится на кампании, у акции её нет — показываем усреднённую.
+            txtRatio.Value = action.AverageManagerRatio(_campaignsTable);
         }
 
         protected override void OnLoad(EventArgs e)
@@ -123,13 +119,7 @@ namespace Merlin.Forms
 
         private decimal CalculateFinalPrice(decimal ratio)
         {
-            decimal finalPrice = 0;
-            foreach (DataRow row in _campaignsTable.Rows)
-            {
-                Campaign campaign = new Campaign(row);
-                finalPrice += campaign.Discount * campaign.PackDiscount * campaign.TariffPrice * ratio;
-            }
-            return finalPrice;
+            return ActionOnMassmedia.PriceWithManagerRatio(_campaignsTable, ratio);
         }
     }
 }

@@ -1,13 +1,11 @@
 ﻿using FogSoft.WinForm;
 using FogSoft.WinForm.Classes;
-using FogSoft.WinForm.DataAccess;
 using Merlin.Classes;
 using Merlin.Forms.CreateActionMaster;
 using Merlin.Forms.CreateCampaign;
 using System;
 using System.Collections.Generic;
 using System.Data;
-using System.Diagnostics;
 using System.Windows.Forms;
 using FogSoft.WinForm.Forms;
 using Action = Merlin.Classes.Action;
@@ -151,27 +149,11 @@ namespace Merlin.Forms
 					this.UseWaitCursor = true;
                     Application.DoEvents();
 
-                    if (_action.IsNew) _action.Update();
-
 					// каждая станция пишется отдельно: отказ по одной (например, такая кампания
 					// уже есть в акции) не мешает остальным, неудавшиеся перечисляем в конце
-					List<string> failed = new List<string>();
-					foreach (Campaign campaign in fNewCampaign.Campaigns)
+					List<string> failed = _action.AddCampaigns(fNewCampaign.Campaigns, out List<Campaign> added);
+					foreach (Campaign campaign in added)
 					{
-						string name = campaign[Campaign.ParamNames.MassmediaName] as string ?? "Пакетная кампания";
-						try
-						{
-							campaign.Action = _action;
-							campaign.Update();
-						}
-						catch (Exception ex)
-						{
-							if (!(ex is System.Data.SqlClient.SqlException))   // SQL-отказы уже в логе (DataAccessor)
-								ErrorManager.LogError("Добавление кампании: " + name, ex);
-							failed.Add(name + " - " + (ErrorManager.GetErrorMessage(ex) ?? ex.Message));
-							continue;
-						}
-
 						grdCampaign.AddRow(campaign);
                         grdCampaign.AdjustColumnsWidthExt();
                     }
@@ -316,15 +298,8 @@ namespace Merlin.Forms
 
 				try
 				{
-					DataAccessor.BeginTransaction();
-					campaign.SetFinalPrice(fDiscount.FinalPrice, fDiscount.CurrentDate, fDiscount.Grantor == null ? null : (int?)fDiscount.Grantor.Id, fDiscount.ManagerDiscountReasonId	);
-					campaign.Action.Recalculate(refreshFlag: false, todayDate: fDiscount.CurrentDate);
-					DataAccessor.CommitTransaction();
-				}
-				catch
-				{
-					DataAccessor.RollbackTransaction();
-					throw;
+					campaign.ApplyManagerDiscount(fDiscount.FinalPrice, fDiscount.CurrentDate,
+						fDiscount.Grantor == null ? null : (int?)fDiscount.Grantor.Id, fDiscount.ManagerDiscountReasonId);
 				}
 				finally
 				{
@@ -446,52 +421,8 @@ namespace Merlin.Forms
 
             try
             {
-                DataTable dataTable = action.Campaigns();
-                // exclude campaigns with zero tariff price, as they won't be affected by discount and caused SQL error
-                DataRow[] rows = dataTable.Select("TariffPrice <> 0");
-
-                dataTable = rows.Length > 0
-                    ? rows.CopyToDataTable()
-                    : dataTable.Clone();
-
-                DataAccessor.BeginTransaction();
-                decimal distributedSoFar = 0m;
-                int rowCount = dataTable.Rows.Count;
-
-                for (int i = 0; i < rowCount; i++)
-                {
-                    DataRow row = dataTable.Rows[i];
-                    Campaign campaign = new Campaign(row);
-                    if (campaign.TariffPrice == 0) continue;
-
-                    decimal newP;
-
-                    if (i == rowCount - 1)
-                    {
-                        // ПОСЛЕДНЯЯ СТРОКА: забирает всё, что осталось от целевой суммы
-                        newP = form.FinalPrice - distributedSoFar;
-                    }
-                    else
-                    {
-                        // ОБЫЧНАЯ СТРОКА: считаем долю и жестко округляем до копеек
-                        decimal rawP = form.IsManagerDiscount
-                            ? form.ManagerDiscount * campaign.Discount * campaign.PackDiscount * campaign.TariffPrice
-                            : form.FinalPrice * campaign.FullPrice / action.TotalPrice;
-
-                        newP = Math.Round(rawP, 2, MidpointRounding.AwayFromZero);
-                        distributedSoFar += newP;
-                    }
-
-                    Debug.WriteLine($"Campaign {i}: {newP}");
-                    campaign.SetFinalPrice(newP, form.SelectedDate, SecurityManager.LoggedUser.Id, form.ManagerDiscountReasonId);
-                }
-                action.Recalculate(refreshFlag: true, todayDate: form.SelectedDate);
-                DataAccessor.CommitTransaction();
-            }
-            catch
-            {
-                DataAccessor.RollbackTransaction();
-                throw;
+                action.ApplyFinalPrice(form.FinalPrice, form.IsManagerDiscount, form.ManagerDiscount,
+                    form.SelectedDate, form.ManagerDiscountReasonId);
             }
             finally
             {
