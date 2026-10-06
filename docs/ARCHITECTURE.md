@@ -446,7 +446,7 @@ Main classes/forms:
 - `Client/Forms/RollerStatisticForm.cs`
 
 Main stored procedures:
-- `rpt_Grid_v3`, `rpt_Grid` (legacy creator), `stat_FillPercentage`, `rpt_OrderActionBill`, `OnAirInquireReport`.
+- `rpt_Grid_v3`, `stat_FillPercentage`, `rpt_OrderActionBill`, `OnAirInquireReport`.
 
 Important tables:
 - Report source domain tables under campaign/issues/payments/tariffs.

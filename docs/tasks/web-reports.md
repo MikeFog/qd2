@@ -21,8 +21,8 @@
 **Мёртвое (в `csproj` нет, не компилируется):** `ActionAgreementAudio/Video.rpt`,
 `ActionSponsorAgreementAudio/Video.rpt`, `AdditionalAgreement.rpt` (+ их
 `.cs`), `ActionAgreementReport.cs` (ссылается на несуществующие переменные),
-`GenericBillReport.cs` (вызывает несуществующие конструкторы),
-`Forms/GridReport/GridReportCreater.cs` (старая копия с опечаткой в имени).
+`GenericBillReport.cs` (вызывает несуществующие конструкторы).
+(`Forms/GridReport/GridReportCreater.cs` — старая копия с опечаткой — удалена 06.10.2026.)
 Переносить нечего; удалить — отдельной чисткой.
 
 Права на ArtvisDev: все печатные действия выданы 6 группам (переносы — 5,
@@ -238,7 +238,7 @@ Word-шаблона: файл `Templates\Шаблон КП.docx` (свой на 
 ### 6.2. Решение: НДС без строки ставки (2026-09-28)
 
 **Правило остаётся: нет строки `AgencyTax` на дату — НДС не облагается.**
-Так уже считают деньги везде: `GetPriceByPeriod`, `fn_GetPriceByPeriod`,
+Так уже считают деньги везде: `GetPriceByPeriod`,
 `rpt_GenericBill` (`LEFT JOIN AgencyTax`), `Agency.GetTaxValue` возвращает 0.
 Явную ставку 0% завести нельзя — `GetTaxValue` бросает исключение при
 `divisor <= 1`, так что «не облагается» и выражается отсутствием строки.

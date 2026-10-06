@@ -1,6 +1,7 @@
 > Исследование проведено 21.09.2026. Шаг 1 (обнуление спонсорских `03:00`) — на проде
 > с 22.09.2026, закрытие сентября прошло без проблем. Инвентарь сверен с кодом и базами
-> заново 06.10.2026. Код пока не менялся.
+> заново 06.10.2026. Шаг 2 (удаление мёртвых объектов) — 06.10.2026, `Deploy/20`, на
+> ArtvisDev применён, на прод ещё не выкладывался.
 
 # `broadcastStart` — справочник и оценка удаления
 
@@ -109,7 +110,7 @@ OR
 ## 4. Полный список объектов по слоям
 
 Всего: **49 объектов БД** (40 процедур + 9 функций, включая `fn_GetTimeString`),
-**2 таблицы**, **11 файлов C#**, **1 атрибут метаданных**. Список объектов сверен
+**2 таблицы**, **11 файлов C#** (из них 2 не компилируются), **1 атрибут метаданных**. Список объектов сверен
 06.10.2026 по `sys.sql_modules` на `ArtvisDev`, `Artvis` и `Tumen` — во всех трёх базах
 он один и тот же и совпадает с файлами в `ArtvisDB/dbo`. В Crystal-отчётах (`.rpt`) —
 **ноль**.
@@ -122,6 +123,10 @@ OR
 `ExportDocument.ExportToMemory`). Правка этих файлов меняет поведение обеих версий сразу.
 
 ### Слой 0 — кандидаты в мёртвые (удалять целиком, не править)
+
+> **Удалены 06.10.2026** скриптом [`Deploy/20_broadcast-start-dead-objects-drop.sql`](../Deploy/20_broadcast-start-dead-objects-drop.sql)
+> (на ArtvisDev применён; на прод и в Tumen — по `Deploy/README.md`). Файлы убраны из
+> `ArtvisDB/dbo` и `ArtvisDB.sqlproj`. Таблица ниже оставлена как обоснование.
 
 Проверено 06.10.2026 на `ArtvisDev`: ноль зависимостей в БД
 (`sys.sql_expression_dependencies`), имя не встречается в тексте других модулей (это
@@ -206,7 +211,7 @@ OR
 | [`ExportDocument.cs:48`](../Client/Classes/GridExport/ExportDocument.cs) | да | `ExportToMemory`: `broadcastTime = BroadcastStart.ToString("HHmm")` → **имя файла DJin**, см. §5 |
 | [`ExportDocument.WinForms.cs:22`](../Client/Classes/GridExport/ExportDocument.WinForms.cs) | — | то же для десктопной выгрузки в папку (вынесено из `ExportDocument.cs` при переносе в веб) |
 | [`DJinExportDocument.cs:21,29`](../Client/Classes/GridExport/DJinSerializer/DJinExportDocument.cs) | да | собирает имена файлов, см. [DJin-01] |
-| [`VectorBoxExportDocument.cs`](../Client/Classes/GridExport/VectorBoxSerializer/VectorBoxExportDocument.cs), [`VideoDJExportDocument.cs`](../Client/Classes/GridExport/VideoDJSerializer/VideoDJExportDocument.cs) | — | параметр `broadcastTime` принимают, но не используют |
+| [`VectorBoxExportDocument.cs`](../Client/Classes/GridExport/VectorBoxSerializer/VectorBoxExportDocument.cs), [`VideoDJExportDocument.cs`](../Client/Classes/GridExport/VideoDJSerializer/VideoDJExportDocument.cs) | — | параметр `broadcastTime` принимают, но не используют; **оба файла не входят в `Client.csproj`** (мёртвые, см. `docs/roller-types.md` Н-12) |
 | [`Massmedia.cs:256`](../Client/Classes/Massmedia.cs) | — | мёртвый код (применение закомментировано) |
 
 Новый код уже опирается на календарные сутки: [`TariffWindowWeek.cs:32`](../Client/Classes/TariffWindowWeek.cs)
@@ -383,6 +388,15 @@ FROM SponsorProgramPricelist GROUP BY CONVERT(varchar(8), broadcastStart, 108);
 слоя 0 + `stat_VolumeOfRealization2` / `stat_VolumeOfRealizationByMonth2` (единственные
 вызывающие `fn_statGetPrice*`) + файл `Client/Forms/GridReport/GridReportCreater.cs`
 (не компилируется, единственный вызов `rpt_Grid`).
+
+> **Статус: сделано 06.10.2026** — [`Deploy/20_broadcast-start-dead-objects-drop.sql`](../Deploy/20_broadcast-start-dead-objects-drop.sql).
+> Скрипт сам повторяет проверку ссылок, вырезая комментарии (`/* */`, `--`): имена
+> встречаются только в комментариях `stat_GetPrice_proc`, `stat_GetPriceByMonth_proc`,
+> `stat_VolumeOfRealization3`, `…ByMonth3`, `rpt_Grid_v3`. Проверен отрицательным тестом
+> (процедура с настоящим вызовом `rpt_Grid_v2` — остановка, комментарии — пропуск) и на
+> ArtvisDev: удалено 10, повторный запуск — без изменений; `rpt_Grid_v3`,
+> `stat_VolumeOfRealization3`, `stat_VolumeOfRealizationByMonth3` после удаления
+> выполняются, неразрешённых ссылок на удалённые имена в базе нет.
 
 ### Шаг 3 — схлопнуть слой 1
 

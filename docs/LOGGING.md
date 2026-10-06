@@ -206,7 +206,7 @@ Crystal Reports `InitReport` (`GenericReport`), и движок гасит ис�
 | `FogSoft.WinForm.Classes.ConfigurationUtil` | ConfigurationUtil.cs | ERROR |
 | `Merlin.Forms.FrmGenerator` | FrmGenerator.cs | INFO |
 | `FogSoft.WinForm.Classes.OperationScope` | OperationScope.cs | DEBUG (выключен) |
-| `Merlin.Forms.GridReport.*` | GridReportCreater.cs | INFO |
+| `Merlin.Forms.GridReport.*` | GridReportCreator.cs | INFO |
 | `DAL` | (конфиг app.config) | DEBUG — особый логгер |
 
 ## Файлы

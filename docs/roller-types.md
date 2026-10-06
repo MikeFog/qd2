@@ -277,8 +277,8 @@
 
 Не живой код: `VideoDJExportDocument`, `VectorBoxExportDocument` (формат `PLX`),
 `DJinReaderDocument` (склейка файлов DJin), `ExportType.VectorBox/VideoDJ` — не входят в
-`Client.csproj`; единственный формат — DJin (`ExportDocument.GetDocument`). Также не из C#
-вызываются `rpt_Grid` (legacy), `rpt_Grid_v2`; `GridReportCreater.cs` (с опечаткой) не собирается.
+`Client.csproj`; единственный формат — DJin (`ExportDocument.GetDocument`). `rpt_Grid` (legacy),
+`rpt_Grid_v2` и `GridReportCreater.cs` (с опечаткой) удалены 06.10.2026 (`Deploy/20`).
 
 ## 8. Находки
 
@@ -297,7 +297,7 @@
 | Н-9 | Новый тип по умолчанию: попадает в DISTINCT-ветку сетки, получает суффикс даты в DJin, метку `c`, в «Заполняемость» и «Фактическое время рекламы» не входит, позиционируется | при добавлении типа легко забыть одно из мест (раздел 10) |
 | Н-10 | Названия типов 6 и 7 в базе («Агитационные материалы», «Отбивка политической агитации») ≠ seed («Политическая агитация», «Анонс политической агитации»); текст `RolType7AlreadyExistInWindow` ссылается на старое имя | косметика, но пользователь видит оба |
 | Н-11 | Название блока DJin «Реклама» только если первый ролик — «Реклама» (1) (раздел 7, п. 7) | возможно, неожиданные имена блоков в файлах для эфира |
-| Н-12 | Мёртвый код: VideoDJ/VectorBox/DJinReader, `rpt_Grid`, `rpt_Grid_v2`, `GridReportCreater.cs`, параметр `@showSimpleRollers` в `Rollers` (нигде не передаётся) | шум при чтении; в этом документе не учитывается |
+| Н-12 | Мёртвый код: VideoDJ/VectorBox/DJinReader, параметр `@showSimpleRollers` в `Rollers` (нигде не передаётся) | шум при чтении; в этом документе не учитывается |
 
 ## 9. Где живут литералы типов
 

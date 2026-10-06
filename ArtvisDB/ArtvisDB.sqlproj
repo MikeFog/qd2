@@ -232,15 +232,10 @@
     <Build Include="dbo\Functions\f_IsAdmin.sql" />
     <Build Include="dbo\Functions\fn_CreateTableFromString.sql" />
     <Build Include="dbo\Functions\fn_GetMassmediasForUser.sql" />
-    <Build Include="dbo\Functions\fn_GetPriceByPeriod.sql" />
-    <Build Include="dbo\Functions\fn_GetPriceByPeriod1.sql" />
-    <Build Include="dbo\Functions\fn_statGetPrice.sql" />
     <Build Include="dbo\Functions\f_range.sql" />
     <Build Include="dbo\Functions\f_months.sql" />
-    <Build Include="dbo\Functions\fn_statGetPriceByMonth.sql" />
     <Build Include="dbo\Functions\fn_GetUserGroups.sql" />
     <Build Include="dbo\Functions\fn_GetMassmediasForUserMassmedia.sql" />
-    <Build Include="dbo\Functions\fn_GetPrice.sql" />
     <Build Include="dbo\Stored Procedures\UserMassmediaAddID.sql" />
     <Build Include="dbo\Stored Procedures\ModuleTariffs.sql" />
     <Build Include="dbo\Stored Procedures\StatVolumeOfRealizationSecFilter.sql" />
@@ -379,7 +374,6 @@
     <Build Include="dbo\Stored Procedures\Firms.sql" />
     <Build Include="dbo\Stored Procedures\UserDiscounts.sql" />
     <Build Include="dbo\Stored Procedures\ProgramIssues.sql" />
-    <Build Include="dbo\Stored Procedures\rpt_Grid.sql" />
     <Build Include="dbo\Stored Procedures\CheckRatioForUser.sql" />
     <Build Include="dbo\Stored Procedures\AnnouncementList.sql" />
     <Build Include="dbo\Stored Procedures\bankImport.sql" />
@@ -393,7 +387,6 @@
     <Build Include="dbo\Stored Procedures\HeadCompanyIUD.sql" />
     <Build Include="dbo\Stored Procedures\HeadCompaniesWithActions.sql" />
     <Build Include="dbo\Stored Procedures\SponsorTariffIUD.sql" />
-    <Build Include="dbo\Stored Procedures\hlp_GetStartFinishFromIssueDateAndBroadcastStart.sql" />
     <Build Include="dbo\Stored Procedures\GroupMemberID.sql" />
     <Build Include="dbo\Stored Procedures\sp_DBVersion.sql" />
     <Build Include="dbo\Stored Procedures\GetRollerIsUsed.sql" />
@@ -486,7 +479,6 @@
     <Build Include="dbo\Stored Procedures\LogDeletedIssueInsert.sql" />
     <Build Include="dbo\Stored Procedures\stat_VolumeOfRealization.sql" />
     <Build Include="dbo\Stored Procedures\ModuleCampaignRollers.sql" />
-    <Build Include="dbo\Stored Procedures\rpt_Grid_v2.sql" />
     <Build Include="dbo\Stored Procedures\PackIssuesDays.sql" />
     <Build Include="dbo\Stored Procedures\AdvertTypes.sql" />
     <Build Include="dbo\Stored Procedures\statFactorAnalysisFilter.sql" />
@@ -547,7 +539,6 @@
     <Build Include="dbo\Stored Procedures\hlp_PopulateTableFromCommaSeparatedString.sql" />
     <Build Include="dbo\Stored Procedures\statBalanceAgencyFilter.sql" />
     <Build Include="dbo\Stored Procedures\SysParams.sql" />
-    <Build Include="dbo\Stored Procedures\stat_VolumeOfRealization2.sql" />
     <Build Include="dbo\Stored Procedures\CampaignModuleIssuesRetrieve.sql" />
     <Build Include="dbo\Stored Procedures\CampaignTransferDay.sql" />
     <Build Include="dbo\Stored Procedures\ModuleList.sql" />
@@ -568,7 +559,6 @@
     <Build Include="dbo\Stored Procedures\sp_GetAgencyPaintings.sql" />
     <Build Include="dbo\Stored Procedures\IsModuleExist.sql" />
     <Build Include="dbo\Stored Procedures\TransferLogRetrieve.sql" />
-    <Build Include="dbo\Stored Procedures\stat_VolumeOfRealizationByMonth2.sql" />
     <Build Include="dbo\Stored Procedures\DiscountValues.sql" />
     <Build Include="dbo\Stored Procedures\sp_ChangeTariffWindowMarkedStatus.sql" />
     <Build Include="dbo\Stored Procedures\CampaignsIssueDelete.sql" />
