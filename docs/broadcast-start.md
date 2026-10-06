@@ -1,4 +1,6 @@
-> Исследование проведено 21.09.2026. Ничего в коде и данных не менялось.
+> Исследование проведено 21.09.2026. Шаг 1 (обнуление спонсорских `03:00`) — на проде
+> с 22.09.2026, закрытие сентября прошло без проблем. Инвентарь сверен с кодом и базами
+> заново 06.10.2026. Код пока не менялся.
 
 # `broadcastStart` — справочник и оценка удаления
 
@@ -8,7 +10,7 @@
 понедельник. От такой модели суток в своё время отказались, но поле и вся обслуживающая
 его арифметика остались и разошлись по системе.
 
-**Краткий вывод:** поле мертво в данных на обеих доступных инсталляциях, выигрыша в
+**Краткий вывод:** поле мертво в данных на всех проверенных инсталляциях, выигрыша в
 быстродействии от его удаления практически нет, а основная выгода — минус ~50 объектов
 нечитаемой арифметики и закрытие целого класса багов «сетка уехала на день». Риск
 низкий при условии, что проверены все инсталляции (см. [Шаг 0](#шаг-0--проверка-обязательно)).
@@ -48,18 +50,20 @@ OR
 
 ## 2. Состояние данных
 
-Проверено на `ArtvisDev` и `Artvis` (вторая локальная база). `Belgorod` и `Tumen` на
-сервере есть, но **OFFLINE — не проверялись**.
+Проверено на `ArtvisDev` и `Artvis` (копия прода) 21.09.2026, на `Tumen` (локальная
+копия, доведённая до уровня ArtvisDev) 06.10.2026. Значения — до шага 1.
+`Belgorod` на сервере есть, но **OFFLINE — не проверялась**; `Univer` и `Artvis2` на
+локальном сервере больше нет.
 
-| Проверка | ArtvisDev | Artvis |
-|---|---|---|
-| `Pricelist.broadcastStart` | **138 из 138 = 00:00** | **136 из 136 = 00:00** |
-| `SponsorProgramPricelist.broadcastStart` | 39 = 03:00, 1 = 00:00 | 39 = 03:00, 1 = 00:00 |
-| `SponsorTariff` с `time < 03:00` | **0** | — |
-| `ProgramIssue` в зоне 00:00–03:00 | **0** из 2857 | — |
-| `TariffWindow`: `dayActual` ≠ дате `windowDateActual` | **0 из 2 010 628** | — |
-| `TariffWindow`: `dayOriginal` ≠ дате `windowDateOriginal` | **0 из 2 010 628** | — |
-| `Campaign` с ненулевым временем в `startDate`/`finishDate` | **0 из 38 577** | — |
+| Проверка | ArtvisDev | Artvis | Tumen |
+|---|---|---|---|
+| `Pricelist.broadcastStart` | **138 из 138 = 00:00** | **136 из 136 = 00:00** | **12 из 12 = 00:00** |
+| `SponsorProgramPricelist.broadcastStart` | 39 = 03:00, 1 = 00:00 | 39 = 03:00, 1 = 00:00 | 6 = 03:00 |
+| `SponsorTariff` с `time < 03:00` | **0** | — | **0** |
+| `ProgramIssue` в зоне 00:00–03:00 | **0** из 2857 | — | **0** (спонсорских выпусков нет вообще) |
+| `TariffWindow`: `dayActual` ≠ дате `windowDateActual` | **0 из 2 010 628** | — | **0 из 229 389** |
+| `TariffWindow`: `dayOriginal` ≠ дате `windowDateOriginal` | **0 из 2 010 628** | — | **0 из 229 389** |
+| `Campaign` с ненулевым временем в `startDate`/`finishDate` | **0 из 38 577** | — | **0** |
 
 Последние три строки — решающие. `dayActual` / `dayOriginal` **персистентны** и пишутся
 формулой «минус `broadcastStart`» ([`TariffWindowIUD`](../ArtvisDB/dbo/Stored%20Procedures/TariffWindowIUD.sql)).
@@ -86,8 +90,9 @@ OR
 В метаданных ровно один атрибут — сущность **80 «Прайс-лист»**, `broadcastStartString`
 («Начало эфирного дня»), и он **только для показа**: вычисляется в
 [`Pricelists`](../ArtvisDB/dbo/Stored%20Procedures/Pricelists.sql) как
-`CONVERT(varchar(5), pl.broadcastStart, 114)`. У спонсорского прайс-листа (сущность 12)
-атрибута нет вообще.
+`CONVERT(varchar(5), pl.broadcastStart, 114)`. Атрибут виден и в вебе (журнал строится по
+метаданным; есть испанский перевод в `iTranslation`). У спонсорского прайс-листа
+(сущность 12) атрибута нет вообще.
 
 В C# **нет ни одного места, которое пишет `broadcastStart`** в IUD-процедуру — только
 чтение. Новый прайс-лист всегда получает `DEFAULT '19000101'`.
@@ -95,7 +100,7 @@ OR
 Демонтаж уже начинали руками:
 - [`Massmedia.cs:256`](../Client/Classes/Massmedia.cs) — `broadcastStart` читается, обе
   строки применения закомментированы, переменная мёртвая;
-- [`TariffWindowWithRange.sql:56`](../ArtvisDB/dbo/Stored%20Procedures/TariffWindowWithRange.sql) —
+- [`TariffWindowWithRange.sql:59`](../ArtvisDB/dbo/Stored%20Procedures/TariffWindowWithRange.sql) —
   минуты принудительно занулены с комментарием *«проблема из-за минут при редактировании
   веерной акции»*.
 
@@ -103,28 +108,43 @@ OR
 
 ## 4. Полный список объектов по слоям
 
-Всего: **49 объектов БД** (41 процедура + 8 функций) + `fn_GetTimeString`, **2 таблицы**,
-**7 файлов C#**, **1 атрибут метаданных**. В веб-версии (`FogSoft.Web`) — **ноль**
-упоминаний. В Crystal-отчётах (`.rpt`) — **ноль**.
+Всего: **49 объектов БД** (40 процедур + 9 функций, включая `fn_GetTimeString`),
+**2 таблицы**, **11 файлов C#**, **1 атрибут метаданных**. Список объектов сверен
+06.10.2026 по `sys.sql_modules` на `ArtvisDev`, `Artvis` и `Tumen` — во всех трёх базах
+он один и тот же и совпадает с файлами в `ArtvisDB/dbo`. В Crystal-отчётах (`.rpt`) —
+**ноль**.
+
+Веб (`FogSoft.Web`) своего кода с `broadcastStart` не имеет, но **использует общий код
+десктопа** — файлы подключены ссылками в `FogSoft.Core.csproj`: `MassmediaPricelist.cs` и
+`SpecialTariffWindow.cs` с 21.08.2026 (в исследовании 21.09 это было упущено),
+`GridExport/ExportDocument.cs` и `DJinExportDocument.cs` с 25.09.2026. Через последние
+идёт веб-выгрузка в эфир (`ExportGrid.razor` → `BroadcastGridExport.DJin` →
+`ExportDocument.ExportToMemory`). Правка этих файлов меняет поведение обеих версий сразу.
 
 ### Слой 0 — кандидаты в мёртвые (удалять целиком, не править)
 
-Ноль зависимостей в БД (`sys.sql_expression_dependencies`), ноль вызовов по имени из C#,
-отсутствуют в `iStoredProcedure`.
+Проверено 06.10.2026 на `ArtvisDev`: ноль зависимостей в БД
+(`sys.sql_expression_dependencies`), имя не встречается в тексте других модулей (это
+ловит и динамический SQL), ни одного вызова из компилируемого C#
+(`Client`, `FogSoft.Core`, `FogSoft.Web`, `FogSoft.WinForm`), нет ни в `iStoredProcedure`,
+ни в одной строковой колонке таблиц метаданных `i*`.
 
 | Объект | Примечание |
 |---|---|
 | `hlp_GetStartFinishFromIssueDateAndBroadcastStart` | процедура целиком про `broadcastStart` |
 | `rpt_Grid_v2` | вытеснена `rpt_Grid_v3` |
-| `MediaPlanRetrieve` (v1) | вытеснена `MediaPlanRetrieve_v2` |
-| `fn_GetPriceByPeriod1` | |
-| `fn_GetPrice` | вытеснена `stat_GetPrice_proc`? |
+| `rpt_Grid` | вытеснена `rpt_Grid_v3`. Единственный вызов — [`GridReportCreater.cs`](../Client/Forms/GridReport/GridReportCreater.cs), файл не входит в `Client.csproj` (живой — `GridReportCreator.cs` → `rpt_Grid_v3`); удалить вместе с ним |
+| `fn_GetPrice` | |
 | `fn_GetPriceByPeriod` | |
-| `fn_statGetPrice` | вытеснена `stat_GetPrice_proc`? |
-| `fn_statGetPriceByMonth` | вытеснена `stat_GetPriceByMonth_proc`? |
+| `fn_GetPriceByPeriod1` | |
+| `fn_statGetPrice` | зовётся **динамическим SQL** из `stat_VolumeOfRealization2`, а та сама мертва (нет в `iStoredProcedure` и в C#; работает `stat_VolumeOfRealization3`). Удалять парой |
+| `fn_statGetPriceByMonth` | то же с `stat_VolumeOfRealizationByMonth2` (работает `…ByMonth3`) |
 
-> Перед удалением подтвердить, что их не зовут из динамического SQL — зависимости
-> SQL Server его не видят.
+Сами `stat_VolumeOfRealization2` / `stat_VolumeOfRealizationByMonth2` `broadcastStart` не
+содержат и в счёт 49 не входят, но без них функции не удалить.
+
+`MediaPlanRetrieve` (v1) из этого списка уже удалён — 28.09.2026 в этапе 1 медиаплана
+(`230db73`).
 
 ### Слой 1 — тождественный сдвиг (приём A), правка механическая
 
@@ -134,7 +154,14 @@ OR
 `stat_GetPrice_proc` · `stat_GetPriceByMonth_proc` · `stat_Bonuses` · `rpt_GenericBill` ·
 `CampaignsForActJournalRetrieve` · `SponsorCampaignPrograms` ·
 `SponsorCampaignProgramDelete` · `ProgramIssues` · `ProgramIssuesDays` ·
-`SponsorPricelistByDate` · `sponsorPLIUD`
+`SponsorPricelistByDate` · `sponsorPLIUD` · `stat_SponsorBusiness` · `ProgramIssueIUD`
+
+`ProgramIssueIUD` — **write-path спонсорского выпуска** (добавлен в список 06.10.2026):
+проверка `ProgramNotExists` подбирает тариф по дню недели с ветвлением приёма B
+(`@issueDate < ToShortDate(@issueDate) + broadcastStart` → день недели назад). У
+`stat_SponsorBusiness` то же ветвление плюс сдвиг границ периода (приём A). В спонсорском
+тракте после шага 1 все значения `00:00`, поэтому вторая ветка здесь недостижима и
+правка остаётся механической, несмотря на приём B.
 
 **Линейный/модульный тракт** (`Pricelist`):
 
@@ -153,7 +180,7 @@ OR
 |---|---|
 | `TariffWindowWithRange` | `@minBroadcast`/`@maxBroadcast` задают **размерность сетки веера** |
 | `TariffWindowRetrieve` | параметр `@broadcastStart` + флаг сортировки часов |
-| `rpt_Grid_v3`, `rpt_Grid` | отдают `broadcastStart` **наружу колонкой**, `fn_GetTimeString` в предикате JOIN, `ORDER BY CASE WHEN Time < broadcastStart` |
+| `rpt_Grid_v3` | отдаёт `broadcastStart` **наружу колонкой**, `fn_GetTimeString` в предикате JOIN, `ORDER BY CASE WHEN Time < broadcastStart`, `isToday` для выгрузки DJin. Читают и десктоп, и веб (`BroadcastGrid`, `BroadcastGridExport`) |
 | `sl_GenerateTariffWindowsDay` | ветвление дня недели + сдвиг даты при генерации окон |
 | `GenerateTariffWindows` | пробрасывает параметр в предыдущую |
 | `GenerateTariffWindowByTemplate` | ветвление при генерации по шаблону |
@@ -167,13 +194,24 @@ OR
 
 | Файл | Что делает |
 |---|---|
-| [`MassmediaPricelist.cs`](../Client/Classes/MassmediaPricelist.cs) | `ParamNames.BroadcastStart`, свойство `BroadcastStart`, передача в `GetTariffWindows`, сдвиг границ в `CheckLinkedWindows` |
-| [`MassmediaPricelist.WinForms.cs:167`](../Client/Classes/MassmediaPricelist.WinForms.cs) | `new SpecialTariffWindow(BroadcastStart)` |
-| [`SpecialTariffWindow.cs:34`](../Client/Classes/SpecialTariffWindow.cs) | `if (time < broadcastStart) WindowDate = WindowDate.AddDays(1)` |
-| [`TariffWindowGrid.cs:393,426`](../Client/Controls/TariffWindowGrid.cs) | раскладка часов (`hour + 24`) и колонок по дням недели |
-| [`TariffWithRangeGrid.cs`](../Client/Controls/TariffWithRangeGrid.cs) | `MinBroadCast`/`MaxBroadCast`: размер массива окон, `GetTimeString`, гард в `PopulateGridTable` |
-| [`ExportDocument.cs:29,57`](../Client/Classes/GridExport/ExportDocument.cs) | `broadcastTime = BroadcastStart.ToString("HHmm")` → **выгрузка в DJin**, см. §5 |
-| [`Massmedia.cs:256`](../Client/Classes/Massmedia.cs) | мёртвый код (применение закомментировано) |
+Строки сверены 06.10.2026. «Веб» — файл подключён в `FogSoft.Core` и работает в обеих версиях.
+
+| Файл | Веб | Что делает |
+|---|---|---|
+| [`MassmediaPricelist.cs`](../Client/Classes/MassmediaPricelist.cs) | да | `ParamNames.BroadcastStart` (:27), свойство `BroadcastStart` (:73), передача в `TariffWindowRetrieve` из `GetTariffWindows` (:136), сдвиг границ в `CheckLinkedWindows` (:178–179) |
+| [`MassmediaPricelist.WinForms.cs:259`](../Client/Classes/MassmediaPricelist.WinForms.cs) | — | `new SpecialTariffWindow(BroadcastStart)` |
+| [`SpecialTariffWindow.cs:34`](../Client/Classes/SpecialTariffWindow.cs) | да | `if (time < broadcastStart) WindowDate = WindowDate.AddDays(1)` |
+| [`TariffWindowGrid.cs:439,472`](../Client/Controls/TariffWindowGrid.cs) | — | раскладка часов (`hour + 24`) и колонок по дням недели |
+| [`TariffWithRangeGrid.cs`](../Client/Controls/TariffWithRangeGrid.cs) | — | `MinBroadCast`/`MaxBroadCast` (:172–203): размер массива окон, `GetTimeString` (:792), гард в `PopulateGridTable` |
+| [`ExportDocument.cs:48`](../Client/Classes/GridExport/ExportDocument.cs) | да | `ExportToMemory`: `broadcastTime = BroadcastStart.ToString("HHmm")` → **имя файла DJin**, см. §5 |
+| [`ExportDocument.WinForms.cs:22`](../Client/Classes/GridExport/ExportDocument.WinForms.cs) | — | то же для десктопной выгрузки в папку (вынесено из `ExportDocument.cs` при переносе в веб) |
+| [`DJinExportDocument.cs:21,29`](../Client/Classes/GridExport/DJinSerializer/DJinExportDocument.cs) | да | собирает имена файлов, см. [DJin-01] |
+| [`VectorBoxExportDocument.cs`](../Client/Classes/GridExport/VectorBoxSerializer/VectorBoxExportDocument.cs), [`VideoDJExportDocument.cs`](../Client/Classes/GridExport/VideoDJSerializer/VideoDJExportDocument.cs) | — | параметр `broadcastTime` принимают, но не используют |
+| [`Massmedia.cs:256`](../Client/Classes/Massmedia.cs) | — | мёртвый код (применение закомментировано) |
+
+Новый код уже опирается на календарные сутки: [`TariffWindowWeek.cs:32`](../Client/Classes/TariffWindowWeek.cs)
+(04.10.2026, генерация и трафик) прямо пишет в комментарии, что `broadcastStart` у всех
+00:00, и сдвиг не учитывает.
 
 ---
 
@@ -198,6 +236,12 @@ string fileSecond = string.Format("{0}_{1}_0000-{2}.txt", fileName, date.AddDays
 > в DJin. Его нужно сохранить буквально (захардкодить), а не «упростить». Ветку второго
 > файла можно удалять — она недостижима.
 
+С 25.09.2026 тот же код формирует имена и в веб-выгрузке (`ExportDocument.ExportToMemory`),
+так что одна правка закрывает обе версии. Веб-вариант дополнительно при отсутствии
+прайс-листа на дату подставляет пустую строку (`..._-2359.txt`); на практике недостижимо —
+без прайс-листа нет окон и выпусков, файл не пишется, — но захардкоженный `0000` убирает
+и это.
+
 ### [SQL-BS-01] Тариф ровно в полночь выпадает из отчётов загрузки
 
 `stat_ModuleLoading` и `stat_PackModuleLoading` используют **строгие** неравенства:
@@ -219,7 +263,9 @@ or (t.[time] > pl.broadcastStart and (...дни недели без сдвига
 Процедура объявляет `@broadcastStart smalldatetime = null` и выполняет
 `UPDATE SponsorProgramPricelist SET ... broadcastStart = @broadcastStart`, тогда как
 колонка `NOT NULL`. У сущности 12 атрибута `broadcastStart` нет — значит клиент параметр
-не передаёт. Требует отдельной проверки, к удалению поля отношения не имеет.
+не передаёт. Требует отдельной проверки, к удалению поля отношения не имеет. На 06.10.2026
+код процедуры тот же. Шаг 3 всё равно трогает `sponsorPLIUD` — естественно перестать
+писать колонку там же.
 
 ---
 
@@ -242,13 +288,14 @@ or (t.[time] > pl.broadcastStart and (...дни недели без сдвига
 
 **Настоящая выгода — упрощение**: минус ~50 объектов с трёхэтажными `DATEADD`, закрытие
 класса багов «сетка уехала на день» / «пустая сетка веера», и одним понятием меньше при
-переносе в веб (куда его и не переносили).
+переносе в веб (своего кода там нет, но через общие файлы `FogSoft.Core` поле уже
+просочилось — см. §4).
 
 ### Риски
 
 | Риск | Оценка |
 |---|---|
-| Другие инсталляции (`Belgorod`, `Tumen`) с ненулевым `Pricelist.broadcastStart` | **главный.** 137 063 окна раньше 06:00 уехали бы на сутки |
+| Другие инсталляции с ненулевым `Pricelist.broadcastStart` | **главный.** 137 063 окна раньше 06:00 уехали бы на сутки. `Tumen` проверена 06.10.2026 — чисто; открытой осталась только `Belgorod` |
 | Слой 1 | минимальный — арифметическое тождество |
 | Слой 2–3 | средний, но ломает **экран**, а не данные: видно сразу, откатывается пересборкой |
 | Формат имени файла DJin | средний — внешний интерфейс, см. [DJin-01] |
@@ -271,6 +318,10 @@ FROM SponsorProgramPricelist GROUP BY CONVERT(varchar(8), broadcastStart, 108);
 ```
 
 Любое ненулевое значение в `Pricelist` — **стоп**, поле живое, дальше не идти.
+
+> **Статус:** прод `Artvis` — пройден 22.09.2026; `Tumen` — пройден 06.10.2026 на
+> локальной копии (результаты в §2); `Belgorod` — **не проверена** (OFFLINE). Пока она не
+> проверена, изменения шагов 3–5 в Белгород не выкладывать.
 
 ### Шаг 1 — главный тест ценой одной строки
 
@@ -305,7 +356,12 @@ FROM SponsorProgramPricelist GROUP BY CONVERT(varchar(8), broadcastStart, 108);
 
 > **Статус: применено на `ArtvisDev` 21.09.2026** (39 строк) и на **проде 22.09.2026**
 > (39 строк). На проде подтверждено запросом: `SponsorProgramPricelist` — 40 из 40 =
-> `00:00`, `dbo.bak_SponsorProgramPricelist_broadcastStart` — 40 строк.
+> `00:00`, `dbo.bak_SponsorProgramPricelist_broadcastStart` — 40 строк. На проде две
+> недели без замечаний, **закрытие сентября по спонсорским кампаниям прошло без проблем**
+> (Миша, 06.10.2026) — условие перехода к шагам 2–3 выполнено.
+>
+> На `Tumen` шаг 1 **не применялся** (6 × `03:00`). Спонсорских выпусков там нет вообще,
+> поэтому на результат это не влияет; применить можно для единообразия.
 
 **Результат контрольного замера.** До и после применения снят снимок из 15 324 строк:
 привязка выпуска к прайс-листу (JOIN по `broadcastStart`), приведение к эфирному дню,
@@ -316,19 +372,25 @@ FROM SponsorProgramPricelist GROUP BY CONVERT(varchar(8), broadcastStart, 108);
 
 Различий по существу — **ноль**. Единственное изменение: 12 строк `rpt_Grid_v3`, где
 поменялось **само значение** колонки `broadcastStart` (`03:00` → `00:00`) при полностью
-идентичных остальных полях. Эта колонка в клиенте не читается: `GridReportCreater`
+идентичных остальных полях. Эта колонка в клиенте не читается: `GridReportCreator`
 отдаёт датасет в Crystal-отчёт `Grid`, а поиск по всем 10 файлам `.rpt` (ASCII и UTF-16)
 её не находит. Выгрузка в DJin берёт `broadcastStart` из `Pricelist` (линейный прайс-лист),
 а не из спонсорского, поэтому имена файлов не затронуты.
 
 ### Шаг 2 — удалить мёртвые объекты
 
-Слой 0. Независимо от остального, чистая уборка.
+Слой 0. Независимо от остального, чистая уборка. Состав на 06.10.2026: 8 объектов
+слоя 0 + `stat_VolumeOfRealization2` / `stat_VolumeOfRealizationByMonth2` (единственные
+вызывающие `fn_statGetPrice*`) + файл `Client/Forms/GridReport/GridReportCreater.cs`
+(не компилируется, единственный вызов `rpt_Grid`).
 
 ### Шаг 3 — схлопнуть слой 1
 
-Механическая замена сдвигов на `dbo.ToShortDate(...)`. Колонку **оставить**. Начинать с
-`TariffWindowIUD` (write-path) и сверять `dayActual`/`dayOriginal` до и после.
+Механическая замена сдвигов на `dbo.ToShortDate(...)`, а в спонсорском тракте — снятие
+недостижимой второй ветки дня недели. Колонку **оставить**. Начинать с write-path:
+`TariffWindowIUD` (сверять `dayActual`/`dayOriginal` до и после) и `ProgramIssueIUD`.
+Остальное сверять тем же контрольным замером, что и шаг 1 (сам скрипт замера тогда в
+репозиторий не попал — собрать заново по описанию выше и положить в `ArtvisDB/Scripts`).
 
 ### Шаг 4 — слой 2 и 3
 
