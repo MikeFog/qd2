@@ -77,7 +77,10 @@ else
         </div>
     }
 
-    <div class="action-page">
+    @* Плотная раскладка (отступ страницы меньше, шапка в одну строку с вкладками): на вкладках
+       размещения сетке окон нужна вся высота — в дне ~40 окон. Полные итоги — на «Рекламных
+       кампаниях», на вкладках размещения в шапке период и итог. *@
+    <div class="action-page screen-dense">
         <header class="action-head">
             <div class="head-line">
                 <button type="button" class="btn btn-sm btn-outline-secondary" title="@(Tr.T("Назад"))" aria-label="@(Tr.T("Назад"))" @onclick="Back">
@@ -90,6 +93,35 @@ else
                 {
                     <span class="badge-state state-readonly" title="@(Tr.T("У вас нет права «Редактировать» на эту акцию — страница открыта на просмотр."))">@Tr.T("только просмотр")</span>
                 }
+                @if (_tab != PageTab.Campaigns)
+                {
+                    <span class="head-brief tabular">
+                        <span title="@(Tr.T("Период"))">@Period</span>
+                        <span class="brief-total" title="@(Tr.T("Стоимость со всеми скидками"))">@_action.TotalPrice.ToString("C")</span>
+                    </span>
+                }
+
+                <div class="tabs" role="tablist">
+                    <button type="button" role="tab" class="tab @(_tab == PageTab.Campaigns ? "tab-active" : null)" aria-selected="@(_tab == PageTab.Campaigns)"
+                            @onclick="() => SwitchTab(PageTab.Campaigns)">
+                        @Tr.T("Рекламные кампании") <span class="count">@(_campaigns?.Rows.Count ?? 0)</span>
+                    </button>
+                    @foreach ((ActionWorkspace.PlaceKinds kind, string caption) in PlacementTabs)
+                    {
+                        if (!_kinds.HasFlag(kind))
+                            continue;
+                        if (kind == ActionWorkspace.PlaceKinds.Windows)
+                        {
+                            <button type="button" role="tab" class="tab @(_tab == PageTab.Windows ? "tab-active" : null)" aria-selected="@(_tab == PageTab.Windows)"
+                                    @onclick="() => SwitchTab(PageTab.Windows)">@caption</button>
+                        }
+                        else
+                        {
+                            <button type="button" role="tab" class="tab" disabled title="@(Tr.T("В вебе пока нет: размещение — в десктопе."))">@caption</button>
+                        }
+                    }
+                </div>
+
                 <div class="head-actions">
                     <button type="button" class="btn btn-sm btn-outline-secondary" @onclick="Load">
                         <i class="bi bi-arrow-clockwise" aria-hidden="true"></i>@Tr.T("Обновить")
@@ -100,6 +132,9 @@ else
                     </button>
                 </div>
             </div>
+        </header>
+
+        <section class="campaigns" hidden="@(_tab != PageTab.Campaigns)">
             <dl class="totals">
                 <div><dt>@Tr.T("Период")</dt><dd>@Period</dd></div>
                 <div><dt>@Tr.T("Создатель")</dt><dd>@(_action.User?.FullName)</dd></div>
@@ -107,30 +142,7 @@ else
                 <div><dt>@Tr.T("Все скидки (коэффициент)")</dt><dd>@Ratio</dd></div>
                 <div class="total-end"><dt>@Tr.T("Стоимость со всеми скидками")</dt><dd>@_action.TotalPrice.ToString("C")</dd></div>
             </dl>
-        </header>
 
-        <div class="tabs" role="tablist">
-            <button type="button" role="tab" class="tab @(_tab == PageTab.Campaigns ? "tab-active" : null)" aria-selected="@(_tab == PageTab.Campaigns)"
-                    @onclick="() => SwitchTab(PageTab.Campaigns)">
-                @Tr.T("Рекламные кампании") <span class="count">@(_campaigns?.Rows.Count ?? 0)</span>
-            </button>
-            @foreach ((ActionWorkspace.PlaceKinds kind, string caption) in PlacementTabs)
-            {
-                if (!_kinds.HasFlag(kind))
-                    continue;
-                if (kind == ActionWorkspace.PlaceKinds.Windows)
-                {
-                    <button type="button" role="tab" class="tab @(_tab == PageTab.Windows ? "tab-active" : null)" aria-selected="@(_tab == PageTab.Windows)"
-                            @onclick="() => SwitchTab(PageTab.Windows)">@caption</button>
-                }
-                else
-                {
-                    <button type="button" role="tab" class="tab" disabled title="@(Tr.T("В вебе пока нет: размещение — в десктопе."))">@caption</button>
-                }
-            }
-        </div>
-
-        <section class="campaigns" hidden="@(_tab != PageTab.Campaigns)">
             <div class="campaigns-toolbar">
                 <button type="button" class="btn btn-primary btn-sm" disabled="@(!_canAddCampaigns)" @onclick="AddCampaigns"
                         title="@(_canAddCampaigns ? null : Tr.T("Нет права добавлять рекламные кампании в эту акцию."))">

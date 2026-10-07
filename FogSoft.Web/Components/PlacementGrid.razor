@@ -9,11 +9,16 @@
     легенда и действия — у владельца.
 
     Обычная таблица без виртуализации (до ~80 строк × 7 дней), липкие шапка и две левые колонки.
-    Наведение — только CSS. Шапка дня: день недели, дата и число выпусков кампании за день.
+    Наведение — только CSS. Шапка дня: день недели с датой и число выпусков кампании за день.
+
+    Всё плотно ради высоты: в дне ~40 окон, сетке нужна вся высота экрана. Инструменты владельца
+    стоят в одной строке с неделей (LeadingTools — до неё, TrailingTools — после), подпись режима,
+    прайс-лист и легенда — тонкой строкой под ней.
 *@
 
 <div class="pgrid @(Brush ? "brush" : null)">
     <div class="pgrid-bar">
+        @LeadingTools
         <div class="pgrid-nav">
             <button type="button" class="btn btn-sm btn-outline-secondary" title="@(Tr.T("Предыдущая неделя"))"
                     disabled="@(Model == null)" @onclick="OnPrevious">
@@ -22,7 +27,7 @@
             <span class="pgrid-caption tabular">
                 @if (Model != null)
                 {
-                    @($"{DisplayFormat.Date(Model.StartDate)} – {DisplayFormat.Date(Model.FinishDate)}")
+                    @WeekCaption(Model)
                 }
             </span>
             <button type="button" class="btn btn-sm btn-outline-secondary" title="@(Tr.T("Следующая неделя"))"
@@ -33,11 +38,16 @@
                 <input type="date" class="form-control form-control-sm" value="@Date.ToString("yyyy-MM-dd")"
                        aria-label="@(Tr.T("Переход к выбранной дате"))" @onchange="Jump" />
             </label>
-            @if (Model is { NoPricelist: false })
-            {
-                <span class="pricelist tabular">@Tr.Format("Прайс-лист: {0} - {1}", DisplayFormat.Date(Model.PricelistStart), DisplayFormat.Date(Model.PricelistFinish))</span>
-            }
         </div>
+        @TrailingTools
+    </div>
+
+    <div class="pgrid-info">
+        @Caption
+        @if (Model is { NoPricelist: false })
+        {
+            <span class="pricelist tabular">@Tr.Format("Прайс-лист: {0} - {1}", DisplayFormat.Date(Model.PricelistStart), DisplayFormat.Date(Model.PricelistFinish))</span>
+        }
         @Legend
     </div>
 
@@ -73,8 +83,7 @@
                         {
                             int day = d;
                             <th class="col-day @(Model.IsInRange(day) ? null : "out")">
-                                <span class="day-name">@DayNames[day]</span>
-                                <span class="day-date">@DisplayFormat.DayMonth(Model.Day(day))</span>
+                                <span class="day-head">@DayNames[day] <span class="day-date">@DisplayFormat.DayMonth(Model.Day(day))</span></span>
                                 @if (Model.DayTotals[day] is { } total)
                                 {
                                     <span class="day-count" title="@DayTotalTitle">@total</span>
@@ -138,6 +147,15 @@
     /// <summary>Клик ставит выпуск («Режим добавления») — курсор-кисть над местами.</summary>
     [Parameter] public bool Brush { get; set; }
 
+    /// <summary>Инструменты владельца в строке недели — до навигации.</summary>
+    [Parameter] public RenderFragment? LeadingTools { get; set; }
+
+    /// <summary>Инструменты владельца в строке недели — после навигации, у правого края.</summary>
+    [Parameter] public RenderFragment? TrailingTools { get; set; }
+
+    /// <summary>Подпись режима — начало тонкой строки под неделей (перед прайс-листом и легендой).</summary>
+    [Parameter] public RenderFragment? Caption { get; set; }
+
     [Parameter] public RenderFragment? Legend { get; set; }
 
     /// <summary>Полоса между навигацией и сеткой (выделение, режимы).</summary>
@@ -151,6 +169,11 @@
     public sealed record CellEvent(PlacementCell Cell, MouseEventArgs Mouse);
 
     private static string[] DayNames => DisplayFormat.WeekDaysFromMonday();
+
+    /// <summary>«05.10 – 11.10.2026»: строка недели узкая; год у начала — только если он другой.</summary>
+    private static string WeekCaption(PlacementWeek week) =>
+        (week.StartDate.Year == week.FinishDate.Year ? DisplayFormat.DayMonth(week.StartDate) : DisplayFormat.Date(week.StartDate))
+        + " – " + DisplayFormat.Date(week.FinishDate);
 
     private Task Jump(ChangeEventArgs e)
     {

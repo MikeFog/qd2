@@ -1,6 +1,8 @@
 /*
     Вкладка «Рекламные окна» страницы акции: кампании и ролики слева, неделя окон в центре,
     выпуски выбранного окна справа. Раскладка — как у экрана «Трафик» (Traffic.razor.css).
+    Ширину левой колонки и панели окна меняют PaneSplitter (--pane-width на .side и .window-panel);
+    зазоры до сетки — сами ручки.
 */
 
 .windows-tab {
@@ -18,14 +20,24 @@
 .windows-body {
     flex: 1 1 auto;
     display: grid;
-    grid-template-columns: 280px minmax(0, 1fr);
+    grid-template-columns: auto auto minmax(0, 1fr);
     grid-template-rows: minmax(0, 1fr);
-    gap: var(--s-3);
+    gap: var(--s-3) 0;
     min-height: 0;
 }
 
 .windows-body.with-panel {
-    grid-template-columns: 280px minmax(0, 1fr) 320px;
+    grid-template-columns: auto auto minmax(0, 1fr) auto auto;
+}
+
+.windows-body ::deep .pane-splitter {
+    grid-column: 2;
+    grid-row: 1 / -1;
+    width: var(--s-3);
+}
+
+.windows-body ::deep .pane-splitter-right {
+    grid-column: 4;
 }
 
 /* ---------- Левая колонка: кампании, статистика, ролики ---------- */
@@ -33,6 +45,8 @@
 .side {
     grid-column: 1;
     grid-row: 1 / -1;
+    width: var(--pane-width, 280px);
+    min-width: 200px;
     display: flex;
     flex-direction: column;
     gap: var(--s-3);
@@ -185,7 +199,7 @@ tbody tr:focus-within .row-btn {
 /* ---------- Центр: тулбар и сетка ---------- */
 
 .center {
-    grid-column: 2;
+    grid-column: 3;
     grid-row: 1;
     min-width: 0;
     min-height: 0;
@@ -194,31 +208,27 @@ tbody tr:focus-within .row-btn {
     gap: var(--s-2);
 }
 
-.mode-caption {
-    font-weight: 600;
-}
-
-.toolbar {
-    display: flex;
-    flex-wrap: wrap;
-    align-items: center;
-    gap: var(--s-2);
-}
-
-.toolbar .btn {
+/* Тулбар вкладки стоит в строке недели сетки (PlacementGrid: LeadingTools / TrailingTools). */
+.grid-box .btn {
     white-space: nowrap;
 }
 
-.toolbar .btn > .bi {
+.grid-box .btn > .bi {
     margin-right: var(--s-1);
 }
 
-.toolbar .btn > .bi:only-child {
+.grid-box .btn > .bi:only-child {
     margin-right: 0;
 }
 
+/* Подпись режима — начало тонкой строки под неделей (решение В-3: подпись над сеткой). */
+.mode-caption {
+    font-weight: 600;
+    color: var(--c-text);
+}
+
 .brush-roller {
-    max-width: 280px;
+    max-width: 220px;
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
@@ -248,11 +258,9 @@ tbody tr:focus-within .row-btn {
 }
 
 .legend {
-    display: flex;
+    display: inline-flex;
     flex-wrap: wrap;
-    gap: var(--s-1) var(--s-4);
-    color: var(--c-text-muted);
-    font-size: 13px;
+    gap: 2px var(--s-3);
 }
 
 .legend span {
@@ -340,8 +348,10 @@ tbody tr:focus-within .row-btn {
 /* ---------- Правая панель: выпуски окна ---------- */
 
 .window-panel {
-    grid-column: 3;
+    grid-column: 5;
     grid-row: 1;
+    width: var(--pane-width, 320px);
+    min-width: 200px;
     display: flex;
     flex-direction: column;
     gap: var(--s-2);
@@ -398,18 +408,8 @@ tbody tr:focus-within .row-btn {
     min-height: 100px;
 }
 
-/* Неделе нужно ~660px. Когда рядом не помещается панель окна, она встаёт под сетку. */
-@media (max-width: 1500px) {
-    .windows-body.with-panel {
-        grid-template-columns: 280px minmax(0, 1fr);
-        grid-template-rows: minmax(0, 1fr) minmax(220px, 38%);
-    }
-
-    .window-panel {
-        grid-column: 2;
-        grid-row: 2;
-    }
-}
+/* Панель окна — всегда справа, под сетку не встаёт: высота нужна сетке (в дне ~40 окон). Неделе
+   нужно ~660px; не хватает места — сетка прокручивается вбок, левую колонку можно сузить. */
 
 @media (max-width: 900px) {
     .windows-body,
@@ -423,5 +423,10 @@ tbody tr:focus-within .row-btn {
     .window-panel {
         grid-column: 1;
         grid-row: auto;
+    }
+
+    .side,
+    .window-panel {
+        width: auto;
     }
 }

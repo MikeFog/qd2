@@ -124,6 +124,9 @@
                 </section>
             }
         </aside>
+        @* Ширину левой колонки можно менять, как дерево древовидных экранов: неделе окон хватает
+           ~660 px, а ролики с длинными предметами рекламы в 280 px не помещаются. *@
+        <PaneSplitter StorageKey="action-windows" />
 
         <section class="center">
             @if (_checked.Count == 0)
@@ -148,64 +151,67 @@
             }
             else
             {
-                <div class="mode-caption">@Tr.Format("Рекламные окна: {0}", OpenCaption)</div>
-
-                <div class="toolbar">
-                    <button type="button" class="btn btn-sm @(_brushOn ? "btn-primary" : "btn-outline-secondary")" aria-pressed="@_brushOn"
-                            disabled="@(!CanBrush)" title="@BrushHint" @onclick="ToggleBrush">
-                        <i class="bi bi-brush" aria-hidden="true"></i>@Tr.T("Режим добавления")
-                    </button>
-                    @if (BrushRow is { } brush)
-                    {
-                        <span class="brush-roller" title="@(Tr.T("Ролик, который ставится в окна, — выбран в списке «Ролики»"))">
-                            <b class="tabular">@brush[WindowsSource.RollerNumberColumn]</b> @WindowsSource.RollerName(brush) · <span class="tabular">@WindowsSource.RollerDuration(brush)</span>
-                        </span>
-                    }
-                    <button type="button" class="btn btn-sm btn-outline-secondary dropdown-toggle" title="@(Tr.T("Позиция в блоке"))"
-                            aria-haspopup="menu" @onclick="OpenPositionMenu">
-                        @PositionText
-                    </button>
-                    <button type="button" class="btn btn-sm btn-outline-secondary dropdown-toggle" title="@(Tr.T("Предметы рекламы"))"
-                            aria-haspopup="menu" @onclick="OpenAdvertTypeMenu">
-                        @AdvertTypeText
-                    </button>
-
-                    <span class="toggles">
-                        <button type="button" class="btn btn-sm btn-outline-secondary @(_view.ShowUnconfirmed ? "active" : null)" aria-pressed="@_view.ShowUnconfirmed"
-                                title="@(Tr.T("Показывать неподтвержденные выпуски"))" @onclick="ToggleUnconfirmed">
-                            @Tr.T("Учитывать макеты")
-                        </button>
-                        <button type="button" class="btn btn-sm btn-outline-secondary @(_showNumbers ? "active" : null)" aria-pressed="@_showNumbers"
-                                title="@(Tr.T("Показывать в окнах номера роликов текущей кампании вместо остатка времени"))" @onclick="() => _showNumbers = !_showNumbers">
-                            @Tr.T("Номера роликов")
-                        </button>
-                        <button type="button" class="btn btn-sm btn-outline-secondary @(_showPrime ? "active" : null)" aria-pressed="@_showPrime"
-                                title="@(Tr.T("Показать окна прайм-тайм"))" @onclick="() => _showPrime = !_showPrime">
-                            @Tr.T("Видеть прайм")
-                        </button>
-                        <button type="button" class="btn btn-sm btn-outline-secondary @(_showMarked ? "active" : null)" aria-pressed="@_showMarked"
-                                title="@(Tr.T("Показать отмеченные окна"))" aria-label="@(Tr.T("Показать отмеченные окна"))" @onclick="() => _showMarked = !_showMarked">
-                            <i class="bi bi-check2-square" aria-hidden="true"></i>
-                        </button>
-                        <button type="button" class="btn btn-sm btn-outline-secondary @(_view.ShowDisabled ? "active" : null)" aria-pressed="@_view.ShowDisabled"
-                                title="@(Tr.T("Показать заблокированные окна"))" aria-label="@(Tr.T("Показать заблокированные окна"))" @onclick="ToggleDisabled">
-                            <i class="bi bi-lock" aria-hidden="true"></i>
-                        </button>
-                        <button type="button" class="btn btn-sm btn-outline-secondary" title="@(Tr.T("Обновить информацию"))" aria-label="@(Tr.T("Обновить информацию"))"
-                                @onclick="RefreshAll">
-                            <i class="bi bi-arrow-clockwise" aria-hidden="true"></i>
-                        </button>
-                    </span>
-                </div>
-
-                @* Esc снимает выделение и отменяет перенос: клавиши ловит обёртка сетки, фокус ставит клик. *@
+                @* Esc снимает выделение и отменяет перенос: клавиши ловит обёртка сетки, фокус ставит клик.
+                   Тулбар вкладки — в строке недели сетки, подпись режима и легенда — тонкой строкой под ней:
+                   сетке нужна вся высота. Переключатели вида — значками, подписи десктопа — в подсказках. *@
                 <div class="grid-box" tabindex="-1" @ref="_gridBox" @onkeydown="GridKey">
                     <PlacementGrid Model="_week" Date="_date" SelectedKeys="_selection.Keys" Brush="_brushOn && _transfer == null"
                                    ShownBackgrounds="ShownBackgrounds" CellText="CellText" CellTitle="CellTitle" ExtraCellClass="TransferCellClass"
                                    DayTotalTitle="@(Tr.T("Выпусков этой кампании за день"))"
                                    OnPrevious="PreviousWeek" OnNext="NextWeek" OnJump="JumpTo" OnCellClick="ClickCell">
+                        <LeadingTools>
+                            <button type="button" class="btn btn-sm @(_brushOn ? "btn-primary" : "btn-outline-secondary")" aria-pressed="@_brushOn"
+                                    disabled="@(!CanBrush)" title="@BrushHint" @onclick="ToggleBrush">
+                                <i class="bi bi-brush" aria-hidden="true"></i>@Tr.T("Режим добавления")
+                            </button>
+                            @if (BrushRow is { } brush)
+                            {
+                                <span class="brush-roller" title="@(Tr.T("Ролик, который ставится в окна, — выбран в списке «Ролики»"))">
+                                    <b class="tabular">@brush[WindowsSource.RollerNumberColumn]</b> @WindowsSource.RollerName(brush) · <span class="tabular">@WindowsSource.RollerDuration(brush)</span>
+                                </span>
+                            }
+                            <button type="button" class="btn btn-sm btn-outline-secondary dropdown-toggle" title="@(Tr.T("Позиция в блоке"))"
+                                    aria-haspopup="menu" @onclick="OpenPositionMenu">
+                                @PositionText
+                            </button>
+                            <button type="button" class="btn btn-sm btn-outline-secondary dropdown-toggle" title="@(Tr.T("Предметы рекламы"))"
+                                    aria-haspopup="menu" @onclick="OpenAdvertTypeMenu">
+                                @AdvertTypeText
+                            </button>
+                        </LeadingTools>
+                        <TrailingTools>
+                            <span class="toggles">
+                                <button type="button" class="btn btn-sm btn-outline-secondary @(_view.ShowUnconfirmed ? "active" : null)" aria-pressed="@_view.ShowUnconfirmed"
+                                        title="@(Tr.T("Учитывать макеты") + "\n" + Tr.T("Показывать неподтвержденные выпуски"))" aria-label="@(Tr.T("Учитывать макеты"))" @onclick="ToggleUnconfirmed">
+                                    <i class="bi bi-file-earmark-text" aria-hidden="true"></i>
+                                </button>
+                                <button type="button" class="btn btn-sm btn-outline-secondary @(_showNumbers ? "active" : null)" aria-pressed="@_showNumbers"
+                                        title="@(Tr.T("Номера роликов") + "\n" + Tr.T("Показывать в окнах номера роликов текущей кампании вместо остатка времени"))" aria-label="@(Tr.T("Номера роликов"))" @onclick="() => _showNumbers = !_showNumbers">
+                                    <i class="bi bi-123" aria-hidden="true"></i>
+                                </button>
+                                <button type="button" class="btn btn-sm btn-outline-secondary @(_showPrime ? "active" : null)" aria-pressed="@_showPrime"
+                                        title="@(Tr.T("Видеть прайм") + "\n" + Tr.T("Показать окна прайм-тайм"))" aria-label="@(Tr.T("Видеть прайм"))" @onclick="() => _showPrime = !_showPrime">
+                                    <i class="bi bi-star" aria-hidden="true"></i>
+                                </button>
+                                <button type="button" class="btn btn-sm btn-outline-secondary @(_showMarked ? "active" : null)" aria-pressed="@_showMarked"
+                                        title="@(Tr.T("Показать отмеченные окна"))" aria-label="@(Tr.T("Показать отмеченные окна"))" @onclick="() => _showMarked = !_showMarked">
+                                    <i class="bi bi-check2-square" aria-hidden="true"></i>
+                                </button>
+                                <button type="button" class="btn btn-sm btn-outline-secondary @(_view.ShowDisabled ? "active" : null)" aria-pressed="@_view.ShowDisabled"
+                                        title="@(Tr.T("Показать заблокированные окна"))" aria-label="@(Tr.T("Показать заблокированные окна"))" @onclick="ToggleDisabled">
+                                    <i class="bi bi-lock" aria-hidden="true"></i>
+                                </button>
+                                <button type="button" class="btn btn-sm btn-outline-secondary" title="@(Tr.T("Обновить информацию"))" aria-label="@(Tr.T("Обновить информацию"))"
+                                        @onclick="RefreshAll">
+                                    <i class="bi bi-arrow-clockwise" aria-hidden="true"></i>
+                                </button>
+                            </span>
+                        </TrailingTools>
+                        <Caption>
+                            <span class="mode-caption">@Tr.Format("Рекламные окна: {0}", OpenCaption)</span>
+                        </Caption>
                         <Legend>
-                            <div class="legend">
+                            <span class="legend">
                                 <span><i class="sample mine">00:30</i>@Tr.T("выпуски этой кампании")</span>
                                 <span><i class="sample firm">00:30</i>@Tr.T("выпуски фирмы в других кампаниях")</span>
                                 @if (_showPrime)
@@ -224,7 +230,7 @@
                                 {
                                     <span><i class="sample match">00:30</i>@Tr.T("подходит под отбор")</span>
                                 }
-                            </div>
+                            </span>
                         </Legend>
                         <Toolbar>
                             @if (_transfer != null)
@@ -269,6 +275,8 @@
 
         @if (_selected != null && _open != null)
         {
+            @* Ширину панели окна тоже можно менять — как разделитель сетки и выходов в десктопе. *@
+            <PaneSplitter StorageKey="action-windows-panel" RightPane="true" />
             <aside class="window-panel">
                 <div class="panel-head">
                     <div>

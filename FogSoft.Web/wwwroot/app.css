@@ -394,6 +394,12 @@ a:hover {
     font-weight: 700;
 }
 
+/* Плотный экран (страница акции): отступ рабочей области вдвое меньше — сетке окон нужна высота.
+   «main» в селекторе — чтобы перебить scoped-стиль MainLayout (.shell-content[b-…]). */
+main.shell-content:has(> .screen-dense) {
+    padding: var(--s-3);
+}
+
 /* Перетаскивание границы панелей (PaneSplitter, js/splitter.js): курсор не мигает над
    соседними элементами, текст не выделяется. */
 body.pane-resizing,

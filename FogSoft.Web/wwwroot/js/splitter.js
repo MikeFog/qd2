@@ -1,9 +1,10 @@
 // Перетаскиваемая граница между панелями (PaneSplitter.razor): дерево слева, список справа.
 //
 // Всё перетаскивание — в браузере: движения мыши на сервер не ходят (правило веба 2026-09-18).
-// Ширина левой панели — CSS-переменная --pane-width на соседнем слева элементе; узкая раскладка
-// (колонкой) её не использует. Ширина запоминается в localStorage этого браузера по ключу экрана,
-// двойной щелчок по ручке возвращает исходную ширину, стрелки — шаг 16 px.
+// Ширина панели — CSS-переменная --pane-width на соседнем элементе: обычно слева от ручки, а у
+// ручки правой панели (rightPane) — справа, тогда движение вправо панель сужает. Узкая раскладка
+// (колонкой) переменную не использует. Ширина запоминается в localStorage этого браузера по ключу
+// экрана, двойной щелчок по ручке возвращает исходную ширину, стрелки — шаг 16 px.
 
 const MIN = 200;          // px
 const MAX_RATIO = 0.6;    // доля ширины контейнера
@@ -22,13 +23,14 @@ function write(key, width) {
     } catch { /* хранилище недоступно — ширина просто не запомнится */ }
 }
 
-export function attach(handle, storageKey) {
-    const pane = handle?.previousElementSibling;
+export function attach(handle, storageKey, rightPane) {
+    const pane = rightPane ? handle?.nextElementSibling : handle?.previousElementSibling;
     if (!pane) return;
 
     let state = states.get(handle);
     if (!state) {
-        state = { key: "", pane };
+        // sign: куда растёт панель при движении мыши вправо.
+        state = { key: "", pane, sign: rightPane ? -1 : 1 };
         states.set(handle, state);
         listen(handle, state);
     }
@@ -63,7 +65,7 @@ function currentWidth(state) {
 function listen(handle, state) {
     let startX = 0, startWidth = 0;
 
-    const move = e => apply(handle, state, clamp(handle, startWidth + e.clientX - startX));
+    const move = e => apply(handle, state, clamp(handle, startWidth + state.sign * (e.clientX - startX)));
 
     const up = e => {
         try { handle.releasePointerCapture(e.pointerId); } catch { /* захвата не было */ }
@@ -93,7 +95,7 @@ function listen(handle, state) {
     handle.addEventListener("keydown", e => {
         if (e.key !== "ArrowLeft" && e.key !== "ArrowRight") return;
         e.preventDefault();
-        const width = clamp(handle, currentWidth(state) + (e.key === "ArrowRight" ? STEP : -STEP));
+        const width = clamp(handle, currentWidth(state) + state.sign * (e.key === "ArrowRight" ? STEP : -STEP));
         apply(handle, state, width);
         write(state.key, width);
     });
