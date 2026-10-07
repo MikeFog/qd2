@@ -186,6 +186,7 @@ namespace Merlin.Classes
 		}
 
 		public const int PackModuleCampaignType = (int)Campaign.CampaignTypes.PackModule;
+		public const int LinearCampaignType = (int)Campaign.CampaignTypes.Simple;
 
 		/// <summary>Действующие агентства станции (MassmediaAgencies): agencyID, name.</summary>
 		public static DataTable StationAgencies(DataRow station)
@@ -216,17 +217,72 @@ namespace Merlin.Classes
 			if (!CanAddCampaigns(action))
 				throw new InvalidOperationException(Tr.T(Properties.Resources.OperationNotAllowed));
 
-			List<Campaign> drafts = new List<Campaign>();
-			foreach (NewCampaign item in campaigns)
-			{
-				Campaign campaign = Campaign.CreateInstance(campaignTypeId, paymentTypeId,
-					campaignTypeId == PackModuleCampaignType ? null : item.MassmediaId, item.AgencyId);
-				if (!string.IsNullOrEmpty(item.StationName))
-					campaign[Campaign.ParamNames.MassmediaName] = item.StationName;
-				drafts.Add(campaign);
-			}
-
+			List<Campaign> drafts = campaigns.Select(item => Draft(campaignTypeId, paymentTypeId, item)).ToList();
 			return action.AddCampaigns(drafts, out _);
+		}
+
+		private static Campaign Draft(int campaignTypeId, int paymentTypeId, NewCampaign item)
+		{
+			Campaign campaign = Campaign.CreateInstance(campaignTypeId, paymentTypeId,
+				campaignTypeId == PackModuleCampaignType ? null : item.MassmediaId, item.AgencyId);
+			if (!string.IsNullOrEmpty(item.StationName))
+				campaign[Campaign.ParamNames.MassmediaName] = item.StationName;
+			return campaign;
+		}
+
+		// ---------- Новая акция ----------
+
+		/// <summary>
+		/// Можно ли создавать акции (мастер /action/new): «Редактировать» у акции и у линейной
+		/// кампании. Без первого созданная акция открылась бы только на просмотр (В-7), второе —
+		/// правило десктопа для добавления кампаний (ActionForm.AddCampaign). Проверяется по
+		/// сущностям: у ещё не записанной акции CanEdit не годится. Право на пункт меню проверяет
+		/// страница.
+		/// </summary>
+		public static bool CanCreateActions() =>
+			EntityManager.GetEntity((int)Entities.Action).IsActionEnabled(Constants.EntityActions.Edit, ViewType.Journal)
+			&& EntityManager.GetEntity((int)Entities.GeneralCampaign).IsActionEnabled(Constants.EntityActions.Edit, ViewType.Journal);
+
+		/// <summary>Созданная акция и её кампании — номера, захваченные в момент записи.</summary>
+		public sealed class CreatedAction
+		{
+			public int ActionId { get; internal set; }
+			public IReadOnlyList<int> CampaignIds { get; internal set; }
+		}
+
+		/// <summary>
+		/// Новая акция фирмы с кампаниями одного вида и типа оплаты (решение В-5): ActionIUD и
+		/// CampaignIUD на каждую кампанию одной транзакцией — всё или ничего. Отказ кампании в новой
+		/// акции практически недостижим (дублей нет, акция — макет, агентство выбрано) и откатывает
+		/// и акцию. Объекты строятся заново на каждый вызов: записанный и откаченный объект уже не
+		/// «новый» (класс Д-5), поэтому наружу уходят только номера. Пересчёта нет, как у
+		/// десктопного «Внести макет»: у кампаний без выпусков нет цены.
+		/// </summary>
+		/// <param name="firm">Строка фирмы из Firm.GetFirmCandidates.</param>
+		public static CreatedAction CreateAction(DataRow firm, int campaignTypeId, int paymentTypeId,
+			IEnumerable<NewCampaign> campaigns)
+		{
+			if (!CanCreateActions())
+				throw new InvalidOperationException(Tr.T(Properties.Resources.OperationNotAllowed));
+
+			ActionOnMassmedia action = new ActionOnMassmedia(EntityManager.GetEntity((int)Entities.Firm).CreateObject(firm));
+			List<Campaign> drafts = campaigns.Select(item => Draft(campaignTypeId, paymentTypeId, item)).ToList();
+
+			WindowsSource.RunInTransaction(() =>
+			{
+				action.Update();
+				foreach (Campaign campaign in drafts)
+				{
+					campaign.Action = action;
+					campaign.Update();
+				}
+			});
+
+			return new CreatedAction
+			{
+				ActionId = action.ActionId,
+				CampaignIds = drafts.Select(c => c.CampaignId).ToList(),
+			};
 		}
 
 		// ---------- Удалить кампании ----------

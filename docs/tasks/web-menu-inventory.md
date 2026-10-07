@@ -109,8 +109,8 @@ sed -n '/private void MenuItemClick/,/catch (Exception ex)/p' Client/Forms/MDIFo
 
 | Статус | Пунктов |
 |---|---:|
-| перенесён (включая `miExit`, сделанный выходом из сеанса, и оба журнала оплат на `/payments`) | 61 |
-| формы-монстры: `miCreateUnconfirmedAction`, `miMasterCreateActions`, `miComboModulePlacement` | 3 |
+| перенесён (включая `miExit`, сделанный выходом из сеанса, и оба журнала оплат на `/payments`) | 63 |
+| формы-монстры: `miComboModulePlacement` (`miCreateUnconfirmedAction`, `miMasterCreateActions` — мастер `/action/new`, 2026-10-07) | 1 |
 | нужен свой экран: `miPriceCalculator` (`miRoller` перенесён 2026-10-02) | 1 |
 | ждёт решения владельца: `miPaymentByManager` (§10) | 1 |
 | отложено: три «удаления», `miFirmImport` (§10) | 4 |
@@ -478,9 +478,9 @@ Ctrl+Shift+A. В вебе их нет и не будет: решение вла�
 
 | menuID | Путь в меню | `codeName` | Обработчик | Категория | Сущность / форма | Веб | Гр. | Лич. | Польз. |
 |---:|---|---|---|---|---|---|---:|---|---:|
-| 68 | Рекламный отдел → Внести макет рекламной акции | `miCreateUnconfirmedAction` | `:159` → CreateMassmediaAction:526 | Мастер: диалоги → карточка акции | `Firm.SelectFirm` → `ActionOnMassmedia.ShowPassport` | этап 3 (акция) | 6 | +3/−0 | 24 |
-| 153 | Рекламный отдел → Веерное размещение... | `miMasterCreateActions` | `:161` → MasterCreateAction:543 | Мастер: диалоги → карточка акции | `Firm.SelectFirm` → `SelectMassmediasStep` → `EditIssuesForm` → `ActionForm` | этап 3 (акция, веер) | 5 | +3/−0 | 24 |
-| 180 | Рекламный отдел → Размещение комбо-модулями... | `miComboModulePlacement` | `:163` → MasterPlaceComboModules:574 | Мастер: диалоги → карточка акции | `Firm.SelectFirm` → `SelectComboModuleStep` → `ComboModulePlacementForm` → `ActionForm` | этап 3 (акция, комбо) | 0 | — | 0 |
+| 68 | Рекламный отдел → Внести макет рекламной акции | `miCreateUnconfirmedAction` | `:159` → CreateMassmediaAction:526 | Мастер: диалоги → карточка акции | `Firm.SelectFirm` → `ActionOnMassmedia.ShowPassport` | перенесён (мастер `/action/new`, 2026-10-07: фирма, кампании, запись одной транзакцией — `web-action-forms.md` §10, этап 3) | 6 | +3/−0 | 24 |
+| 153 | Рекламный отдел → Веерное размещение... | `miMasterCreateActions` | `:161` → MasterCreateAction:543 | Мастер: диалоги → карточка акции | `Firm.SelectFirm` → `SelectMassmediasStep` → `EditIssuesForm` → `ActionForm` | перенесён (тот же мастер `/action/new`, 2026-10-07; веер — на странице акции, этап 4 `web-action-forms.md`) | 5 | +3/−0 | 24 |
+| 180 | Рекламный отдел → Размещение комбо-модулями... | `miComboModulePlacement` | `:163` → MasterPlaceComboModules:574 | Мастер: диалоги → карточка акции | `Firm.SelectFirm` → `SelectComboModuleStep` → `ComboModulePlacementForm` → `ActionForm` | с вкладкой «Модули» (этап 6 `web-action-forms.md`, решение 2026-10-07); на 2026-10-06 выдан 4 группам, 17 пользователям | 0 | — | 0 |
 | 175 | Рекламный отдел → Калькулятор цены | `miPriceCalculator` | `:251` → ShowPriceCalculator:622 | Собственная форма | `PriceCalculatorForm` (1002 строки) | этап 3 (п.2 плана) | 5 | +26/−0 | 25 |
 | 11 | Рекламный отдел → Журнал подтверждённых рекламных акций | `miActionJournal` | `:165` → ShowMassmediaActions:395 | Дерево на своём контейнере | `ActionContainer(ConfirmedAction)`: 118 / 77 / 1255 | перенесён (Browser, 2026-09-20); действия по строке — этапы 3-4 | 6 | +3/−0 | 24 |
 | 158 | Рекламный отдел → Журнал макетов рекламных акций | `miActionJournalUnconfirmed` | `:169` → ShowMassmediaActions:395 | Дерево на своём контейнере | `ActionContainer(UnconfirmedAction)`: 137 / 77 / 1256 | перенесён (Browser, 2026-09-20); действия по строке — этапы 3-4 | 5 | +8/−0 | 24 |

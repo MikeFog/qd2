@@ -1,0 +1,292 @@
+@page "/action/new"
+@using System.Data
+@using FogSoft.Web.Infrastructure
+@using FogSoft.WinForm
+@using FogSoft.WinForm.Classes
+@using Merlin.Classes
+@inject MenuAccess Access
+@inject BusyService Busy
+@inject DialogService Dialogs
+@inject NavigationManager Nav
+@inject IJSRuntime JS
+@implements IAsyncDisposable
+
+@*
+    Мастер новой акции (docs/tasks/web-action-forms.md §3.7; решения В-5 и 07.10.2026) — один вместо
+    десктопных «Внести макет рекламной акции» и «Веерное размещение» с их разными проверками и
+    поведением (docs/action-forms.md §2.2). Как в десктопе, сначала окно «Фирма-заказчик» (тот же
+    выбор, что в «Сменить фирму-заказчика»), затем кампании — той же формой, что «Добавить рекламные
+    кампании» на странице акции (CampaignAddForm). «Создать» записывает акцию и кампании одной
+    транзакцией (ActionWorkspace.CreateAction) и открывает страницу акции: линейные — вкладка
+    «Рекламные окна» (одна кампания — сразу отмеченной), другие виды — «Рекламные кампании».
+
+    Пускают пункт меню (едет в адресе) и «Редактировать» у акции и у линейной кампании — их же ядро
+    проверяет перед записью. Тип рекламной кампании заранее «Линейная», тип оплаты — нет: ошибочно
+    подставленная оплата бьёт по счетам.
+*@
+
+<PageTitle>@_title</PageTitle>
+
+@if (SecurityManager.LoggedUser == null)
+{
+    <div class="state">
+        <div class="state-title">@Tr.T("Вы не вошли в систему")</div>
+        <a href="/">@Tr.T("Перейти к входу")</a>
+    </div>
+}
+else if (_access != JournalAccess.Allowed)
+{
+    <div class="state">
+        <div class="state-title">@Tr.T("Доступ закрыт")</div>
+        @Tr.T("Этот экран вам не разрешён. Права на экраны выдаются вместе с пунктами меню — обратитесь к администратору системы.")
+    </div>
+}
+else if (_canCreate == false)
+{
+    <div class="state">
+        <div class="state-title">@Tr.T("Доступ закрыт")</div>
+        @Tr.T(Merlin.Properties.Resources.OperationNotAllowed)
+    </div>
+}
+else if (_model == null)
+{
+    @if (_error != null)
+    {
+        <div class="alert alert-danger">@_error</div>
+    }
+    else
+    {
+        <div class="state">@Tr.T("Загрузка…")</div>
+    }
+}
+else
+{
+    <div class="new-action">
+        <ScreenToolbar Title="@_title">
+            <button type="button" class="btn btn-sm btn-outline-secondary" @onclick="Cancel">@Tr.T("Отмена")</button>
+            <button type="button" class="btn btn-sm btn-primary" disabled="@_created" @onclick="Create">
+                <i class="bi bi-plus-lg" aria-hidden="true"></i>@Tr.T("Создать")
+            </button>
+        </ScreenToolbar>
+
+        @if (_error != null)
+        {
+            <div class="alert alert-danger alert-dismissible" role="alert">
+                @_error
+                <button type="button" class="btn-close" aria-label="@(Tr.T("Закрыть"))" @onclick="() => _error = null"></button>
+            </div>
+        }
+
+        <div class="new-action-body">
+            <div class="firm-line">
+                <span class="firm-label">@Tr.T("Фирма-заказчик")</span>
+                @if (_firm == null)
+                {
+                    <span class="text-muted">@Tr.T("не выбрана")</span>
+                }
+                else
+                {
+                    <strong>@_firm["name"]</strong>
+                }
+                <button type="button" class="btn btn-sm btn-outline-secondary" @onclick="PickFirm">
+                    @(_firm == null ? Tr.T("Выбрать") : Tr.T("Изменить"))
+                </button>
+            </div>
+
+            <CampaignAddForm Value="_model" />
+        </div>
+    </div>
+}
+
+@code {
+    [SupplyParameterFromQuery(Name = "menu")] public string? Menu { get; set; }
+
+    private string _title = Tr.T("Новая рекламная акция");
+    private JournalAccess _access = JournalAccess.Allowed;
+    private bool? _canCreate;
+    private string? _initializedFor;
+    private string? _error;
+
+    private CampaignAddForm.Model? _model;
+    private Entity? _firmEntity;
+    private DataTable? _firmCandidates;
+    private DataRow? _firm;
+    private bool _pickFirmOnRender;
+
+    /// <summary>
+    /// Окно «Фирма-заказчик», которое страница открыла сама. Диалоги живут на circuit, а не на странице:
+    /// уйди со страницы «Назад» браузера — окно осталось бы над другим экраном. Закрывается при уходе.
+    /// </summary>
+    private DialogRequest? _firmDialog;
+
+    /// <summary>Акция записана: второй щелчок по «Создать» (Blazor ставит его в очередь) второй не создаёт.</summary>
+    private bool _created;
+
+    protected override async Task OnParametersSetAsync()
+    {
+        if (SecurityManager.LoggedUser == null)
+            return;
+
+        string code = ResolveMenu();
+        if (code == _initializedFor)
+            return;
+        // Отметка до чтения: второй проход параметров на тот же переход не начинает заново.
+        _initializedFor = code;
+        await CloseFirmDialog();
+        _model = null;
+        _canCreate = null;
+        _firm = null;
+        _error = null;
+        _created = false;
+
+        _access = Access.CheckScreen(code);
+        if (_access != JournalAccess.Allowed)
+            return;
+        // Многоточие пунктов меню — наследие десктопа (docs/UI_RULES.md, п. 2.5): в заголовке его нет.
+        _title = Access.MenuText(code)?.TrimEnd('.', '…', ' ') ?? Tr.T("Новая рекламная акция");
+
+        try
+        {
+            await Busy.RunAsync(() =>
+            {
+                _canCreate = ActionWorkspace.CanCreateActions();
+                if (_canCreate != true)
+                    return;
+                _firmEntity = EntityManager.GetEntity((int)Merlin.Entities.Firm);
+                _model = new CampaignAddForm.Model
+                {
+                    Choices = ActionWorkspace.LoadNewCampaignChoices(),
+                    CampaignTypeId = ActionWorkspace.LinearCampaignType,
+                };
+            });
+            _pickFirmOnRender = _model != null;
+        }
+        catch (Exception ex)
+        {
+            _error = ErrorPresenter.Describe(ex);
+        }
+    }
+
+    /// <summary>
+    /// Пункт меню из адреса; без него — первый разрешённый. Вид кампаний оба пункта задают один
+    /// («Линейная»): «Веерное размещение» отличается только тем, что веер — на странице акции.
+    /// </summary>
+    private string ResolveMenu()
+    {
+        if (string.Equals(Menu, ScreenRoutes.CreateActionVeer, StringComparison.OrdinalIgnoreCase))
+            return ScreenRoutes.CreateActionVeer;
+        if (string.Equals(Menu, ScreenRoutes.CreateAction, StringComparison.OrdinalIgnoreCase))
+            return ScreenRoutes.CreateAction;
+        return Access.CheckScreen(ScreenRoutes.CreateAction) == JournalAccess.Allowed
+            ? ScreenRoutes.CreateAction
+            : ScreenRoutes.CreateActionVeer;
+    }
+
+    /// <summary>Как в десктопе: войдя, сразу выбирают фирму.</summary>
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (!_pickFirmOnRender)
+            return;
+        _pickFirmOnRender = false;
+        await PickFirm();
+        StateHasChanged();
+    }
+
+    /// <summary>Окно «Фирма-заказчик» — тот же набор фирм, что у десктопного Firm.SelectFirm.</summary>
+    private async Task PickFirm()
+    {
+        if (_firmEntity == null)
+            return;
+
+        try
+        {
+            _firmCandidates ??= await Busy.RunAsync(Merlin.Classes.Firm.GetFirmCandidates);
+
+            ObjectSelector? selector = null;
+            RenderFragment body = builder =>
+            {
+                builder.OpenComponent<ObjectSelector>(0);
+                builder.AddComponentParameter(1, nameof(ObjectSelector.SourceEntity), _firmEntity);
+                builder.AddComponentParameter(2, nameof(ObjectSelector.SourceRows), _firmCandidates);
+                builder.AddComponentReferenceCapture(3, c => selector = (ObjectSelector)c);
+                builder.CloseComponent();
+            };
+
+            Task<DialogOutcome> shown = Dialogs.ShowAsync(Tr.T("Фирма-заказчик"), body, okText: Tr.T("Выбрать"));
+            // Окно уже в стеке: ShowAsync кладёт его туда до первого ожидания.
+            DialogRequest? dialog = Dialogs.Current;
+            _firmDialog = dialog;
+            DialogOutcome outcome = await shown;
+            if (ReferenceEquals(_firmDialog, dialog))
+                _firmDialog = null;
+            if (outcome == DialogOutcome.Ok && selector?.SelectedRow is DataRow row)
+            {
+                _firm = row;
+                if (_model != null)
+                    _model.Message = null;
+            }
+        }
+        catch (Exception ex)
+        {
+            _error = ErrorPresenter.Describe(ex);
+        }
+    }
+
+    private async Task Create(MouseEventArgs e)
+    {
+        // Второй щелчок двойного (detail > 1) — не повтор: после отказа он показал бы ту же ошибку.
+        if (_created || _model == null || e.Detail > 1)
+            return;
+
+        _model.Message = _firm == null ? Tr.T("Выберите фирму-заказчика.") : _model.Validate();
+        if (_model.Message != null)
+            return;
+
+        // Радиостанции без агентств пропускаются — об этом сказано под таблицей.
+        List<ActionWorkspace.NewCampaign> campaigns = _model.Build(out _);
+        int campaignTypeId = _model.CampaignTypeId!.Value;
+        int paymentTypeId = _model.PaymentTypeId!.Value;
+        DataRow firm = _firm!;
+        try
+        {
+            ActionWorkspace.CreatedAction created = await Busy.RunAsync(() =>
+                ActionWorkspace.CreateAction(firm, campaignTypeId, paymentTypeId, campaigns));
+            _created = true;
+            // Адрес мастера заменяется: «Назад» со страницы акции ведёт туда, откуда пришли в мастер.
+            Nav.NavigateTo(LandingUrl(created, campaignTypeId), replace: true);
+        }
+        catch (Exception ex)
+        {
+            // Записано ничего не осталось (одна транзакция) — можно поправить и повторить.
+            _model.Message = ErrorPresenter.Describe(ex);
+        }
+    }
+
+    /// <summary>
+    /// Линейные — на «Рекламные окна»: одна кампания — сразу её неделя, несколько — отметить слева
+    /// (веер — этап 4). Другим видам вкладок размещения в вебе пока нет — «Рекламные кампании».
+    /// </summary>
+    private static string LandingUrl(ActionWorkspace.CreatedAction created, int campaignTypeId)
+    {
+        if (campaignTypeId != ActionWorkspace.LinearCampaignType)
+            return ActionPage.Url(created.ActionId);
+        return ActionPage.WindowsUrl(created.ActionId, created.CampaignIds.Count == 1 ? created.CampaignIds[0] : null);
+    }
+
+    /// <summary>Закрыть своё окно выбора фирмы, если оно ещё открыто и верхнее.</summary>
+    private async Task CloseFirmDialog()
+    {
+        DialogRequest? dialog = _firmDialog;
+        _firmDialog = null;
+        if (dialog != null && ReferenceEquals(Dialogs.Current, dialog))
+            await Dialogs.CloseAsync(DialogOutcome.Cancel);
+    }
+
+    public async ValueTask DisposeAsync() => await CloseFirmDialog();
+
+    private async Task Cancel()
+    {
+        try { await JS.InvokeVoidAsync("history.back"); }
+        catch (JSDisconnectedException) { }
+    }
+}

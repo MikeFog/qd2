@@ -1,5 +1,5 @@
 ﻿/*
-    ДЕПЛОЙ: переводы веб-версии на язык «es» (1973 строк). docs/tasks/web-i18n.md, этап 5.
+    ДЕПЛОЙ: переводы веб-версии на язык «es» (1978 строк). docs/tasks/web-i18n.md, этап 5.
     СГЕНЕРИРОВАН из ArtvisDB/Scripts/i18n/es.tsv скриптом build-seed.py — руками не править.
 
     ПРЕДУСЛОВИЕ     накачен web-i18n-translation-deploy.sql (таблица iTranslation).
@@ -1993,7 +1993,12 @@ INSERT INTO #t ([source], [text]) VALUES
 (N'Граница между панелями', N'Límite entre paneles'),
 (N'Потяните, чтобы изменить ширину. Двойной щелчок — исходная ширина', N'Arrastre para cambiar el ancho. Doble clic: ancho inicial'),
 (N'№ счёта', N'N.º de factura'),
-(N'Дата счёта', N'Fecha de factura');
+(N'Дата счёта', N'Fecha de factura'),
+(N'Новая рекламная акция', N'Nueva campaña publicitaria'),
+(N'не выбрана', N'no seleccionada'),
+(N'Выберите фирму-заказчика.', N'Seleccione la empresa cliente.'),
+(N'Счёт выписан от', N'Factura emitida por'),
+(N'У вас нет прав на выполнение данной операции!', N'¡No tiene permisos para realizar esta operación!');
 GO
 
 BEGIN TRANSACTION;

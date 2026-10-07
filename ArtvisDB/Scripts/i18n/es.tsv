@@ -1972,3 +1972,8 @@ code	Граница между панелями	Límite entre paneles
 code	Потяните, чтобы изменить ширину. Двойной щелчок — исходная ширина	Arrastre para cambiar el ancho. Doble clic: ancho inicial
 column	№ счёта	N.º de factura
 column	Дата счёта	Fecha de factura
+code	Новая рекламная акция	Nueva campaña publicitaria
+code	не выбрана	no seleccionada
+code	Выберите фирму-заказчика.	Seleccione la empresa cliente.
+code	Счёт выписан от	Factura emitida por
+code	У вас нет прав на выполнение данной операции!	¡No tiene permisos para realizar esta operación!

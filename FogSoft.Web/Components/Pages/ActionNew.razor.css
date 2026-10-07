@@ -1,0 +1,34 @@
+/*
+    Мастер новой акции: шапка с «Отмена» / «Создать», строка фирмы-заказчика, под ней форма
+    кампаний (CampaignAddForm — та же, что в окне «Добавить рекламные кампании»). Ширина формы —
+    как у того окна: таблица радиостанций на всю ширину экрана читается хуже.
+*/
+
+.new-action {
+    flex: 1 1 auto;
+    display: flex;
+    flex-direction: column;
+    min-height: 0;
+}
+
+.new-action-body {
+    max-width: 1100px;
+}
+
+.firm-line {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: var(--s-2) var(--s-3);
+    margin-bottom: var(--s-4);
+    padding-bottom: var(--s-3);
+    border-bottom: 1px solid var(--c-border);
+}
+
+.firm-label {
+    color: var(--c-text-muted);
+}
+
+.firm-line strong {
+    font-size: 15px;
+}

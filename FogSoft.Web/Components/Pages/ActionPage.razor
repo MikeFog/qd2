@@ -193,9 +193,12 @@ else
     /// <summary>Адрес страницы акции — для переходов из журналов (ObjectActions).</summary>
     public static string Url(int actionId) => $"/action/{actionId}";
 
-    /// <summary>Вкладка «Рекламные окна» с отмеченной кампанией — «Редактировать» у линейной кампании.</summary>
-    public static string WindowsUrl(int actionId, int campaignId) =>
-        $"/action/{actionId}?{TabQuery}={WindowsTabValue}&{CampaignQuery}={campaignId}";
+    /// <summary>
+    /// Вкладка «Рекламные окна» с отмеченной кампанией — «Редактировать» у линейной кампании; без
+    /// кампании — после мастера новой акции с несколькими линейными (кампанию отмечают слева).
+    /// </summary>
+    public static string WindowsUrl(int actionId, int? campaignId = null) =>
+        $"/action/{actionId}?{TabQuery}={WindowsTabValue}" + (campaignId is int id ? $"&{CampaignQuery}={id}" : "");
 
     private enum PageTab { Campaigns, Windows }
 
@@ -206,9 +209,11 @@ else
     private string? _appliedQuery;
 
     // Пункты меню журналов акций: страница открывается из них, право на любой из них — право на
-    // экран (MenuAccess знает только пункты меню). Видимость самой акции — ActionWorkspace.CanView.
+    // экран (MenuAccess знает только пункты меню). И из мастера новой акции — по его пунктам: кто
+    // создал акцию, должен её открыть. Видимость самой акции — ActionWorkspace.CanView.
     private static readonly string[] JournalMenus =
         { "miActionJournal", "miActionJournalBuh", "miActionJournalTraffic", "miActionJournalUnconfirmed", "miActionJournalDeleted" };
+    private static readonly string[] CreateMenus = { ScreenRoutes.CreateAction, ScreenRoutes.CreateActionVeer };
 
     private const string ManagerDiscountAction = "SetManagerDiscount";
 
@@ -273,7 +278,8 @@ else
             _appliedQuery = null;
             _windowsOpened = false;
             _tab = PageTab.Campaigns;
-            _journalAccess = JournalMenus.Any(code => Access.CheckBrowser(code) == JournalAccess.Allowed);
+            _journalAccess = JournalMenus.Any(code => Access.CheckBrowser(code) == JournalAccess.Allowed)
+                || CreateMenus.Any(code => Access.CheckScreen(code) == JournalAccess.Allowed);
             if (_journalAccess)
                 await Load();
         }

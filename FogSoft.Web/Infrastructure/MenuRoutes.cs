@@ -223,6 +223,14 @@ public static class ScreenRoutes
 	/// <summary>«Выписать акт выполненных работ» из «Бухгалтерии».</summary>
 	public const string ActJournal = "miActPrint";
 
+	/// <summary>
+	/// «Внести макет рекламной акции» и «Веерное размещение» из «Рекламного отдела» — один мастер
+	/// новой акции (docs/tasks/web-action-forms.md §3.7). «Размещение комбо-модулями» подключится
+	/// с вкладкой «Модули» (этап 6).
+	/// </summary>
+	public const string CreateAction = "miCreateUnconfirmedAction";
+	public const string CreateActionVeer = "miMasterCreateActions";
+
 	public static readonly IReadOnlyDictionary<string, string> Screens =
 		new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase)
 		{
@@ -261,6 +269,10 @@ public static class ScreenRoutes
 			// Десктоп — ActJournalForm (журнал сущности 156 с doNotRefresh и пересборкой таблицы); в
 			// вебе — свой экран: данные только по «Применить», пересборка — ядро ActJournal.
 			{ ActJournal, "/act-journal" },
+			// Десктоп — три мастера с разным поведением (docs/action-forms.md §2.2); в вебе один:
+			// фирма, затем кампании, запись одной транзакцией. Пункт в адресе — по нему право.
+			{ CreateAction, "/action/new?menu=" + CreateAction },
+			{ CreateActionVeer, "/action/new?menu=" + CreateActionVeer },
 		};
 }
 
