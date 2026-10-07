@@ -245,6 +245,14 @@ else
                            value="@ReadTime(field.Name)"
                            @onchange="e => WriteTime(field.Name, e.Value)" />
                 }
+                else if (IsDateTimeField(field))
+                {
+                    @* PageFieldFullDateTime — Custom "HH:mm dd.MM.yy", секунды
+                       ApplyChanges обнуляет. Обычный textbox показывал их из ToString(). *@
+                    <input type="datetime-local" step="60" class="form-control form-control-sm@(InvalidClass(field))" disabled="@disabled"
+                           value="@ReadDateTime(field.Name)"
+                           @onchange="e => WriteDateTime(field.Name, e.Value)" />
+                }
                 else if (IsTimeDurationField(field))
                 {
                     @* Десктопный PageFieldTimeDuration — контрол TimeDuration:
@@ -406,6 +414,8 @@ else
 
     private static bool IsTimeDurationField(PassportField f) => f.Type?.IsTimeDuration == true;
 
+    private static bool IsDateTimeField(PassportField f) => f.Type?.IsDateTime == true;
+
     private int DurationTotalSeconds(string name)
     {
         object? v = Object[name];
@@ -447,6 +457,24 @@ else
         string text = value?.ToString() ?? "";
         Object[name] = text.Length > 0 && DateTime.TryParse(text, out DateTime date)
             ? date.ToString("dd.MM.yyyy")
+            : "";
+    }
+
+    /// <summary>Значение для &lt;input type="datetime-local"&gt; — ISO до минуты.</summary>
+    private string ReadDateTime(string name)
+    {
+        string text = AsText(Object[name]);
+        return text.Length > 0 && DateTime.TryParse(text, out DateTime date)
+            ? date.ToString("yyyy-MM-ddTHH:mm")
+            : "";
+    }
+
+    /// <summary>Десктопный PageFieldDateTime.ApplyChanges — до минуты, секунды 0.</summary>
+    private void WriteDateTime(string name, object? value)
+    {
+        string text = value?.ToString() ?? "";
+        Object[name] = text.Length > 0 && DateTime.TryParse(text, out DateTime date)
+            ? date.ToString("dd.MM.yyyy HH:mm")
             : "";
     }
 
