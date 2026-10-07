@@ -51,6 +51,17 @@ namespace Merlin.Classes
 			return copy;
 		}
 
+		/// <summary>
+		/// По какому объекту проверять доступность пункта меню. В вебе дерево прайс-листов одно
+		/// (узлы с тарифами), и пункты про окна в меню узла иначе всегда серые, — для них
+		/// проверяется копия <see cref="ForWindows"/>. Выполняются они над самим узлом:
+		/// обработчикам нужны только ID, срок и радиостанция прайс-листа.
+		/// </summary>
+		public static PresentationObject EnabledCheckTarget(PresentationObject po, string actionName) =>
+			po.GetType() == typeof(MassmediaPricelist) && Array.IndexOf(ActionNames.All, actionName) >= 0
+				? ForWindows(po)
+				: po;
+
 		public static DateTime StartDate(object pricelist) => ((Pricelist)pricelist).StartDate.Date;
 		public static DateTime FinishDate(object pricelist) => ((Pricelist)pricelist).FinishDate.Date;
 

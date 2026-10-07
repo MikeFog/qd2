@@ -280,7 +280,8 @@ public sealed partial class ObjectActions
 		// Работа с рекламными окнами — остальные ветки того же DoAction. Цель — копия
 		// прайс-листа с дочерней сущностью «Рекламное окно» (PricelistWindows.ForWindows):
 		// только в таком виде MassmediaPricelist.IsActionEnabled эти пункты разрешает.
-		// Вызываются с вкладки «Рекламные окна» (TariffWindowsView).
+		// Вызываются с вкладки «Рекламные окна» (TariffWindowsView) и из меню узла дерева —
+		// там доступность проверяется по той же копии (PricelistWindows.EnabledCheckTarget).
 		["MassmediaPricelist"] = new()
 		{
 			["AddTariffsMass"] = (s, t) => s.AddTariffsMass((Merlin.Classes.Pricelist)t),
@@ -2285,7 +2286,7 @@ public sealed partial class ObjectActions
 		// ShowPassport). Видна акция — страница открывается, без права правки — на просмотр.
 		Merlin.Classes.ActionOnMassmedia action when actionName == Constants.EntityActions.ShowPassport
 			=> Merlin.Classes.ActionWorkspace.CanView(action),
-		PresentationObject po => po.IsActionEnabled(actionName, view),
+		PresentationObject po => Merlin.Classes.PricelistWindows.EnabledCheckTarget(po, actionName).IsActionEnabled(actionName, view),
 		FakeContainer fc => fc.IsActionEnabled(actionName, view),
 		_ => false
 	};
