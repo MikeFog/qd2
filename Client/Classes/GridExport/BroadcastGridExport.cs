@@ -57,15 +57,27 @@ namespace Merlin.Classes.GridExport
 		}
 
 		// ---------- Позиции выпусков в окне ----------
-		// Перенесено без изменений из GridReportCreator (десктоп): первый и второй ролики окна,
-		// затем остальные — поочерёдно по предметам рекламы (сначала самые многочисленные,
-		// не больше двух подряд за проход), последний — в конце.
+		// Первый и второй ролики окна, затем остальные — так, чтобы два ролика одного предмета
+		// рекламы (подпредмета, advertTypeId) не стояли рядом, в том числе с первым/вторым
+		// и с последним; последний — в конце.
+
+		// Типы, которые BlockManager (DJin) всегда выносит из середины блока на свои места:
+		// идентификаторы СМИ 4/5/44/55, анонс агитации 7, агитация 6, локальное промо 8/9.
+		// Соседями рекламе в эфире они не будут, поэтому в чередовании не участвуют.
+		private static readonly HashSet<string> TypesOutOfBlockBody =
+			new HashSet<string> { "4", "5", "6", "7", "8", "9", "44", "55" };
+
+		private static bool IsOutOfBlockBody(DataRow row)
+		{
+			return TypesOutOfBlockBody.Contains(row[ExportParams.rolActionTypeID].ToString());
+		}
 
 		private class Window
 		{
 			public DataRow FirstRow;
 			public DataRow SecondRow;
 			public DataRow LastRow;
+			public IList<DataRow> OutOfBlockBody = new List<DataRow>();
 
 			public class IssuesWithRoltype
 			{
@@ -114,6 +126,8 @@ namespace Merlin.Classes.GridExport
 					window.SecondRow = row;
 				else if (position == (int)RollerPositions.Last)
 					window.LastRow = row;
+				else if (IsOutOfBlockBody(row))
+					window.OutOfBlockBody.Add(row);
 				else
 				{
 					if (!window.IssuesByRoltype.ContainsKey(advertType))
@@ -135,19 +149,32 @@ namespace Merlin.Classes.GridExport
 			if (window.SecondRow != null)
 				dt.Rows.Add(window.SecondRow.ItemArray);
 
+			// Предмет соседа слева — второй (или первый) ролик, справа — последний,
+			// если они остаются в середине блока
+			string prevType = null;
+			foreach (DataRow row in new[] { window.FirstRow, window.SecondRow })
+				if (row != null && !IsOutOfBlockBody(row))
+					prevType = row[ExportParams.advertTypeId].ToString();
+			string lastType = window.LastRow != null && !IsOutOfBlockBody(window.LastRow)
+				? window.LastRow[ExportParams.advertTypeId].ToString()
+				: null;
+
+			// Каждый раз — самый многочисленный предмет, не совпадающий с предыдущим роликом.
+			// Предмет последнего ролика считается на один больше, чтобы закончиться раньше него
 			while (window.IssuesUnprocessed > 0)
 			{
-				int count = 0;
-				foreach (Window.IssuesWithRoltype item in window.IssuesByRoltype.Values.OrderByDescending(val => val.Issues.Count))
-				{
-					if (item.Issues.Count > 0)
-					{
-						dt.Rows.Add(item.Issues[0].ItemArray);
-						item.Issues.RemoveAt(0);
-					}
-					if (++count == 2) break;
-				}
+				KeyValuePair<string, Window.IssuesWithRoltype> next = window.IssuesByRoltype
+					.Where(item => item.Value.Issues.Count > 0)
+					.OrderBy(item => item.Key == prevType)
+					.ThenByDescending(item => item.Value.Issues.Count + (item.Key == lastType ? 1 : 0))
+					.ThenByDescending(item => item.Value.Issues.Count)
+					.First();
+				dt.Rows.Add(next.Value.Issues[0].ItemArray);
+				next.Value.Issues.RemoveAt(0);
+				prevType = next.Key;
 			}
+			foreach (DataRow row in window.OutOfBlockBody)
+				dt.Rows.Add(row.ItemArray);
 			if (window.LastRow != null)
 				dt.Rows.Add(window.LastRow.ItemArray);
 		}
