@@ -39,8 +39,8 @@ BT → Локальное СМИ (4) → промо без спонсора (9) 
 - qd2 оставляет метки `c-type-8` / `c-type-9` в файле, как `c-type-4` / `c-type-5`
   (`BlockManager.NormalizeAgitationMarker`). Сырые `c-type-N` DJin принимает без замечаний:
   Авторадио идёт мимо добивщика с `c-type-4/5` с декабря 2025 (подтвердил Миша).
-- Добивщик (`C:\Work\AdvertAg\Broadcast Schedule\sources`, не в git, собирается
-  `pyinstaller schedule.spec` в `dist\schedule.exe`):
+- Добивщик (`C:\Work\AdvertAg\Broadcast Schedule\sources`, свой локальный git с 08.10.2026 —
+  коммит 4ddbe90; собирается `pyinstaller schedule.spec` в `dist\schedule.exe`):
   - `AudioBlock.save` снимает `c-type-8/9` у всех станций (как 4/5);
   - `AudioBlockEurope.build_block`: если в блоке (весь `BT`..`E`, склеенная цепочка тоже)
     есть 8 или 9, вместо пары «шифт + анонс» ищется один шифт —
