@@ -17,7 +17,7 @@ namespace Merlin.Classes
 	///
 	/// Чтение — те же процедуры и параметры, что у десктопа (PricelistByDate, TariffWindowRetrieve с
 	/// useActualTime, Grid, TariffWindowWithAdvertTypeRetrieve), отметка «свой выпуск» и счётчики — по
-	/// исходному окну, как в десктопе (решение В-10, 06.10.2026). Запись — IssueIUD, RollerSubstitute
+	/// окну выхода, как в десктопе (правило 07.10.2026, отменило В-10). Запись — IssueIUD, RollerSubstitute
 	/// и ActionRecalculate: одно действие пользователя — одна транзакция и один пересчёт акции. В пачке
 	/// отказ по бизнес-правилу (RAISERROR с ключом iMessage) уходит в итог, остальные места пишутся:
 	/// у IssueIUD AddItem/DeleteItem и RollerSubstitute все отказы стоят до записи. Любая другая
@@ -226,10 +226,15 @@ namespace Merlin.Classes
 
 			internal WeekIssues(DataSet ds)
 			{
-				// Выпуски кампании — по исходному окну (originalWindowID), с повторами, в порядке набора.
-				foreach (DataRow row in ds.Tables[Constants.TableNames.Data].Rows)
+				// Выпуски кампании — по окну выхода (actualWindowID: куда выпуск перенёс трафик), с повторами,
+				// в порядке набора. Старая процедура Grid колонку не отдаёт — тогда исходное окно, как раньше.
+				DataTable own = ds.Tables[Constants.TableNames.Data];
+				string windowColumn = own.Columns.Contains(TariffWindow.ParamNames.ActualWindowId)
+					? TariffWindow.ParamNames.ActualWindowId
+					: TariffWindow.ParamNames.OriginalWindowId;
+				foreach (DataRow row in own.Rows)
 				{
-					int windowId = ParseHelper.GetInt32FromObject(row[TariffWindow.ParamNames.OriginalWindowId], 0);
+					int windowId = ParseHelper.GetInt32FromObject(row[windowColumn], 0);
 					if (!_own.TryGetValue(windowId, out List<int> rollers))
 						_own[windowId] = rollers = new List<int>();
 					rollers.Add(ParseHelper.GetInt32FromObject(row[TariffWindow.ParamNames.RollerID], 0));

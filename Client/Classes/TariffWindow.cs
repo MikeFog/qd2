@@ -12,6 +12,7 @@ namespace Merlin.Classes
 			public const string Price = "price";
 			public const string WindowId = "windowId";
 			public const string OriginalWindowId = "originalWindowId";
+			public const string ActualWindowId = "actualWindowId";
 			public const string WindowDateBroadcast = "windowDateBroadcast";
 			public const string WindowDateOriginal = "windowDateOriginal";
 			public const string MaxCapacity = "maxCapacity";

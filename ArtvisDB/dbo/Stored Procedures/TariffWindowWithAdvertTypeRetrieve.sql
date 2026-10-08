@@ -24,6 +24,9 @@ BEGIN
 Результат:
 - Время выполнения ~50 ms
 
+  С 07.10.2026 выпуск ищется в окне выхода (i.actualWindowID; правило docs/tasks/window-actual-switch.md),
+  индекс IX_Issue_ActualWindowID_isConfirmed_COVERING (actualWindowID, isConfirmed) INCLUDE (campaignID, rollerID).
+
 ВАЖНО:
 - Удаление/изменение индекса приведёт к резкой деградации производительности
 */
@@ -45,7 +48,7 @@ BEGIN
               FROM Issue i
               JOIN Roller r ON r.rollerID = i.rollerID
               LEFT JOIN AdvertType adt ON adt.advertTypeID = r.advertTypeID
-              WHERE i.originalWindowID = tw.windowId
+              WHERE i.actualWindowID = tw.windowId
                 AND (@showUnconfirmed = 1 OR i.isConfirmed = 1)
                 AND (r.advertTypeID = @advertTypeId OR adt.parentID = @advertTypeId)
           )
@@ -66,7 +69,7 @@ BEGIN
           FROM Issue i
           JOIN Roller r ON r.rollerID = i.rollerID
           LEFT JOIN AdvertType adt ON adt.advertTypeID = r.advertTypeID
-          WHERE i.originalWindowID = tw.windowId
+          WHERE i.actualWindowID = tw.windowId
             AND (@showUnconfirmed = 1 OR i.isConfirmed = 1)
             AND (r.advertTypeID = @advertTypeId OR adt.parentID = @advertTypeId)
       )

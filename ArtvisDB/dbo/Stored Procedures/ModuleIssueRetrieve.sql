@@ -39,7 +39,7 @@ if @windowID is not null
 		And (@issueDate is null or mi.issueDate = @issueDate)
 		AND (@showUnconfirmed = 1 OR mi.[isConfirmed] = 1)
 		AND (@moduleIssueId is null or mi.[moduleIssueID] = @moduleIssueId)
-		AND i.originalWindowID = @windowID
+		AND i.actualWindowID = @windowID
 	Order By 
 		m.name, r.name
 	OPTION (RECOMPILE)

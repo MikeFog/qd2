@@ -22,6 +22,9 @@ namespace Merlin.Controls
 		private Dictionary<int, int> rollerNumbers;
 		// windowId -> ролики чужих кампаний той же фирмы (бирюзовые ячейки), см. AddIssues2Grid.
 		private Dictionary<int, List<int>> _otherFirmRollersByWindow = new Dictionary<int, List<int>>();
+		// Колонка окна выпуска в _dtIssue: фактическое окно (куда выпуск перенёс трафик), правило
+		// 07.10.2026. Старая процедура Grid её не отдаёт — тогда исходное окно, как раньше.
+		private string _issueWindowColumn = TariffWindow.ParamNames.ActualWindowId;
 
         public RollerIssuesGrid3()
 			: this(true)
@@ -301,6 +304,9 @@ namespace Merlin.Controls
 												  ShowUnconfirmed,
 			                                      campaign, rollerPosition);
 			_dtIssue = ds.Tables[Constants.TableNames.Data];
+			_issueWindowColumn = _dtIssue.Columns.Contains(TariffWindow.ParamNames.ActualWindowId)
+				? TariffWindow.ParamNames.ActualWindowId
+				: TariffWindow.ParamNames.OriginalWindowId;
             _dtWindoesWithCurrentFirmIssue = ds.Tables[Constants.TableNames.WindowsWithThisFirmIssue];
             foreach (DataRow row in _dtWindoesWithCurrentFirmIssue.Rows)
             {
@@ -315,7 +321,7 @@ namespace Merlin.Controls
 			{
 				DataGridViewCell cell =
 					GetCell(TariffWindowWithRollerIssues.CreateTariffWindowById(
-								int.Parse(row[TariffWindow.ParamNames.OriginalWindowId].ToString())));
+								int.Parse(row[_issueWindowColumn].ToString())));
 				if (cell != null)
 					MarkCellAsHavingCurrentCampaignIssues(cell);
 			}
@@ -383,7 +389,7 @@ namespace Merlin.Controls
 			if (_dtIssue == null || rollerNumbers == null) return null;
 
 			int windowId = int.Parse(obj[TariffWindow.ParamNames.WindowId].ToString());
-			DataRow[] issueRows = _dtIssue.Select(TariffWindow.ParamNames.OriginalWindowId + " = " + windowId);
+			DataRow[] issueRows = _dtIssue.Select(_issueWindowColumn + " = " + windowId);
 
 			List<string> numbers = new List<string>();
 			HashSet<int> covered = new HashSet<int>();
@@ -418,7 +424,7 @@ namespace Merlin.Controls
 			if (_dtIssue == null || roller == null) return;
 
 			DataRow row = _dtIssue.NewRow();
-			row[TariffWindow.ParamNames.OriginalWindowId] = windowId;
+			row[_issueWindowColumn] = windowId;
 			row[TariffWindow.ParamNames.RollerID] = roller.RollerId;
 			_dtIssue.Rows.Add(row);
 		}
@@ -432,7 +438,7 @@ namespace Merlin.Controls
 			if (_dtIssue == null) return;
 
 			DataRow[] rows = _dtIssue.Select(string.Format("{0} = {1} AND {2} = {3}",
-				TariffWindow.ParamNames.OriginalWindowId, windowId,
+				_issueWindowColumn, windowId,
 				TariffWindow.ParamNames.RollerID, rollerId));
 			if (rows.Length > 0)
 				_dtIssue.Rows.Remove(rows[0]);

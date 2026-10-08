@@ -37,13 +37,16 @@ BEGIN
         campaignID int, 
         positionId smallint, 
         originalWindowID int, 
+        actualWindowID int,
         moduleID int, 
         rollerID int,
-        INDEX IX_res_moduleID (moduleID) INCLUDE (rollerDuration, windowDateOriginal, timeString, [weekday], campaignID, positionId, originalWindowID, rollerID),
+        INDEX IX_res_moduleID (moduleID) INCLUDE (rollerDuration, windowDateOriginal, timeString, [weekday], campaignID, positionId, originalWindowID, actualWindowID, rollerID),
         INDEX IX_res_weekday (weekday)
     );
     
     -- Основной запрос с использованием OPTION (RECOMPILE) для адаптивного плана
+    -- Окно выпуска — фактическое (actualWindowID: куда выпуск перенёс трафик), правило 07.10.2026,
+    -- docs/tasks/window-actual-switch.md. originalWindowID оставлен в выдаче для старого клиента на переходный период.
     INSERT INTO #res
     SELECT 
         r.duration,
@@ -53,10 +56,11 @@ BEGIN
         i.campaignID,
         i.positionId,
         i.originalWindowID,
+        i.actualWindowID,
         mi.moduleID,
         i.rollerID
     FROM dbo.Issue i  -- Убрали NOLOCK
-        INNER JOIN dbo.TariffWindow tw ON i.originalWindowID = tw.windowId
+        INNER JOIN dbo.TariffWindow tw ON i.actualWindowID = tw.windowId AND tw.massmediaID = @massmediaID
         INNER JOIN dbo.Roller r ON i.rollerID = r.rollerID
         INNER JOIN dbo.Campaign c ON c.campaignID = i.campaignID 
         LEFT JOIN dbo.ModuleIssue mi ON i.moduleIssueID = mi.moduleIssueID
@@ -81,7 +85,7 @@ BEGIN
     BEGIN
         SELECT DISTINCT tw.windowId
         FROM dbo.Issue i
-            INNER JOIN dbo.TariffWindow tw ON i.originalWindowID = tw.windowId
+            INNER JOIN dbo.TariffWindow tw ON i.actualWindowID = tw.windowId
             INNER JOIN dbo.Campaign c ON c.campaignID = i.campaignID 
             INNER JOIN dbo.Action a ON a.actionID = c.actionID
         WHERE
@@ -97,7 +101,7 @@ BEGIN
         -- при ручном добавлении/удалении. Фильтры те же, что у третьего запроса.
         SELECT DISTINCT tw.windowId, i.rollerID, i.positionId
         FROM dbo.Issue i
-            INNER JOIN dbo.TariffWindow tw ON i.originalWindowID = tw.windowId
+            INNER JOIN dbo.TariffWindow tw ON i.actualWindowID = tw.windowId
             INNER JOIN dbo.Campaign c ON c.campaignID = i.campaignID
             INNER JOIN dbo.Action a ON a.actionID = c.actionID
         WHERE
