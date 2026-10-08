@@ -261,7 +261,7 @@ namespace Merlin.Forms
             this.lblGridQuantityCaption.Name = "lblGridQuantityCaption";
             this.lblGridQuantityCaption.Size = new System.Drawing.Size(164, 24);
             this.lblGridQuantityCaption.TabIndex = 10;
-            this.lblGridQuantityCaption.Text = "Выбрано роликов:";
+            this.lblGridQuantityCaption.Text = "Распределено выходов:";
             // 
             // lblGridQuantityValue
             // 

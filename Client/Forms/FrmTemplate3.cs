@@ -275,6 +275,34 @@ namespace Merlin.Forms
             return dailyQuantity * _template.DaysCount;
         }
 
+        // Распределение выходов по роликам — общая проверка «Рассчитать» и «Ок»; null — всё верно.
+        // Отмеченный ролик без количества — ошибка, а не пропуск: галочку ставят не просто так.
+        private string GetRollerSelectionError()
+        {
+            foreach (DataGridViewRow row in dgvRollers.Rows)
+            {
+                if (row.IsNewRow || row.DataBoundItem == null)
+                    continue;
+                if (!(row.Cells[ColSelected].Value is bool isSelected) || !isSelected)
+                    continue;
+                if (!int.TryParse(row.Cells[ColQuantity].Value?.ToString(), out int quantity) || quantity <= 0)
+                    return $"У ролика «{((DataRowView)row.DataBoundItem).Row["name"]}» не указано количество";
+            }
+            if (GetCheckedRollerAggregates().TotalQuantity == 0)
+                return "Отметьте хотя бы один ролик и укажите для него количество";
+            return null;
+        }
+
+        // Сумма по роликам должна совпасть с «Общим количеством выходов» (по одной станции, как и метка).
+        private string GetQuantityMismatchError()
+        {
+            int gridTotalQuantity = GetCheckedRollerAggregates().TotalQuantity;
+            int expectedTotalQuantity = GetExpectedTotalQuantity();
+            return gridTotalQuantity == expectedTotalQuantity
+                ? null
+                : $"Сумма количества по роликам ({gridTotalQuantity}) не совпадает с общим количеством выходов по настройкам интервала ({expectedTotalQuantity})";
+        }
+
         // Сумма "Количество" и суммарный хронометраж (duration * quantity) по отмеченным роликам грида
         private (int TotalQuantity, long TotalDurationSeconds) GetCheckedRollerAggregates()
         {
@@ -311,12 +339,13 @@ namespace Merlin.Forms
         // в среднем учитывается больше).
         private void btnEstimatePrice_Click(object sender, EventArgs e)
         {
-            var (gridTotalQuantity, totalDurationSeconds) = GetCheckedRollerAggregates();
-            if (gridTotalQuantity == 0)
+            string rollerError = GetRollerSelectionError();
+            if (rollerError != null)
             {
-                UserMessage.ShowExclamation("Отметьте хотя бы один ролик и укажите для него количество");
+                UserMessage.ShowExclamation(rollerError);
                 return;
             }
+            var (gridTotalQuantity, totalDurationSeconds) = GetCheckedRollerAggregates();
 
             SaveData2Template();
             if (_template.StartDate > _template.FinishDate || _template.StartTime >= _template.FinishTime)
@@ -325,11 +354,10 @@ namespace Merlin.Forms
                 return;
             }
 
-            int expectedTotalQuantity = GetExpectedTotalQuantity();
-            if (gridTotalQuantity != expectedTotalQuantity)
+            rollerError = GetQuantityMismatchError();
+            if (rollerError != null)
             {
-                UserMessage.ShowExclamation(
-                    $"Сумма количества по роликам ({gridTotalQuantity}) не совпадает с общим количеством выходов по настройкам интервала ({expectedTotalQuantity})");
+                UserMessage.ShowExclamation(rollerError);
                 return;
             }
 
@@ -728,6 +756,17 @@ namespace Merlin.Forms
             {
                 UserMessage.ShowExclamation(MessageAccessor.GetMessage("TemplateStartFinishTimeError"));
                 errorFlag = true;
+            }
+            // Без распределения по роликам генерация шла с пустой очередью и сообщала «Недостаточно
+            // рекламных окон» на каждый день — проверки те же, что у «Рассчитать».
+            if (!errorFlag)
+            {
+                string rollerError = GetRollerSelectionError() ?? GetQuantityMismatchError();
+                if (rollerError != null)
+                {
+                    UserMessage.ShowExclamation(rollerError);
+                    errorFlag = true;
+                }
             }
             if (errorFlag)
                 DialogResult = DialogResult.None;
