@@ -25,7 +25,9 @@ update tw
 set tw.price = @newPrice
 from 
 	TariffWindow tw 
-	inner join Pricelist pl on pl.pricelistID = @pricelistid
+	-- Только окна станции прайс-листа. Без tw.massmediaID условие соединения не трогало tw, и цена
+	-- менялась у окон всех станций с тем же временем и ценой (как у TariffWindowChangeDuration).
+	inner join Pricelist pl on tw.massmediaID = pl.massmediaID and pl.pricelistID = @pricelistid
 where 
 	tw.price = @price
 	and tw.dayOriginal between @startdate and @finishdate
