@@ -21,7 +21,7 @@ set @isTrafficManager = [dbo].[f_IsTrafficManager](@loggedUserID)
 if @actionName = 'DeleteItem' and @IsAdmin <> 1 and @isTrafficManager <> 1
 	and exists(select * 
 				from TariffWindow tw 
-					inner join Issue i on tw.windowId = i.originalWindowID 
+					inner join Issue i on tw.windowId = i.actualWindowID 
 					inner join Campaign c on i.campaignID = c.campaignID
 				where c.actionID = @actionID and tw.dayOriginal <= dbo.ToShortDate(getdate()) and i.isConfirmed = 1)
 begin
@@ -166,7 +166,7 @@ ELSE IF @actionName = 'DeleteItem'
 
 	if exists(select *
 		from Issue i 
-			inner join TariffWindow tw on i.originalWindowID = tw.windowId
+			inner join TariffWindow tw on i.actualWindowID = tw.windowId
 			inner join Campaign c on i.campaignID = c.campaignID 
 		where c.actionID = @actionID and i.isConfirmed = 1 and datediff(day,dbo.ToShortDate(getdate()),tw.dayOriginal) <= dbo.f_SysParamsDaysLog())
 	begin 

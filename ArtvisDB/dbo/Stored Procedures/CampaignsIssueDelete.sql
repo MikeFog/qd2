@@ -43,7 +43,7 @@ BEGIN
 	if @IsConfirmed = 1 and @IsAdmin  = 0 And @IsTrafficManager = 0
 		and exists(select * from @issues it 
 					inner join Issue i on it.issueID = i.issueID 
-					inner join TariffWindow tw on i.originalWindowID = tw.windowId
+					inner join TariffWindow tw on i.actualWindowID = tw.windowId
 							and tw.dayOriginal <= dbo.ToShortDate(getdate()))
 	begin 
 		raiserror('PastIssue', 16, 1)
@@ -53,7 +53,7 @@ BEGIN
 	if @IsConfirmed = 1 and @IsAdmin  = 0 And @IsTrafficManager = 0
 		and exists(select * from @issues it 
 					inner join Issue i on it.issueID = i.issueID 
-					inner join TariffWindow tw on i.originalWindowID = tw.windowId
+					inner join TariffWindow tw on i.actualWindowID = tw.windowId
 							and tw.dayOriginal <= dbo.ToShortDate(@deadLine))
 	begin 
 		raiserror('DeadLineViolationDelete', 16, 1)
@@ -135,7 +135,7 @@ BEGIN
 	if exists(select *
 		from @issues it 
 			inner join Issue i on it.issueID = i.issueID 
-			inner join TariffWindow tw on i.originalWindowID = tw.windowId
+			inner join TariffWindow tw on i.actualWindowID = tw.windowId
 		where i.isConfirmed = 1 and datediff(day,dbo.ToShortDate(getdate()),tw.dayOriginal) <= dbo.f_SysParamsDaysLog())
 	begin 
 		exec SayAdminThatIssuesDelete @loggedUserID, @actionID

@@ -367,7 +367,7 @@ namespace Merlin.Forms
 			Massmedia radioStation = ((CampaignOnSingleMassmedia)_campaign).Massmedia;
 
 			MassmediaPricelist pricelist = radioStation.GetPriceList(_template.CurrentDate) as MassmediaPricelist ?? throw new Exception("PriceListDoesntExist");
-			DataSet dsWindows = pricelist.GetTariffWindows(_template.CurrentDate, _template.CurrentDate, null, false, false);
+			DataSet dsWindows = pricelist.GetTariffWindows(_template.CurrentDate, _template.CurrentDate, null, false, false, useActualTime: true);
 			DataTable dtTariffWindow = dsWindows.Tables[Constants.TableNames.Data];
 			List<PresentationObject> issues = new List<PresentationObject>();
 
@@ -451,7 +451,7 @@ namespace Merlin.Forms
 			Massmedia radioStation = ((CampaignOnSingleMassmedia)_campaign).Massmedia;
 
 			MassmediaPricelist pricelist = radioStation.GetPriceList(_template.CurrentDate) as MassmediaPricelist ?? throw new Exception("PriceListDoesntExist");
-			DataSet dsWindows = pricelist.GetTariffWindows(_template.CurrentDate, _template.CurrentDate, null, false, false);
+			DataSet dsWindows = pricelist.GetTariffWindows(_template.CurrentDate, _template.CurrentDate, null, false, false, useActualTime: true);
 			DataTable dtTariffWindow = dsWindows.Tables[Constants.TableNames.Data];
 
 			int startTotal = _template.StartTime.Hour * 60 + _template.StartTime.Minute;

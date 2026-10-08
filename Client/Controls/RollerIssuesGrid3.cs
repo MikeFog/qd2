@@ -358,13 +358,8 @@ namespace Merlin.Controls
 					return rollerNumbersText;
 			}
 
-			DateTime dtOriginal = (DateTime)obj[ColumnNames.WindowDateOriginal];
-			DateTime dtActual = (DateTime)obj[ColumnNames.WindowDateActual];
-			dtOriginal = dtOriginal.Date.AddHours(dtOriginal.Hour).AddMinutes(dtOriginal.Minute);
-			dtActual = dtActual.Date.AddHours(dtActual.Hour).AddMinutes(dtActual.Minute);
-			string postfix = (DateTime.Compare((DateTime)obj[ColumnNames.WindowDateActualBroadcast], (DateTime)obj[ColumnNames.WindowDateBroadcast]) != 0) ? string.Format(" ({0})", dtActual.ToString("dd.MM.yy HH:mm"))
-				: (DateTime.Compare(dtOriginal, dtActual) != 0) ? string.Format(" ({0})", dtActual.ToString("HH:mm"))
-				: string.Empty;
+			string postfix = ActualTimePostfix((DateTime)obj[ColumnNames.WindowDateOriginal], (DateTime)obj[ColumnNames.WindowDateActual],
+				(DateTime)obj[ColumnNames.WindowDateBroadcast], (DateTime)obj[ColumnNames.WindowDateActualBroadcast]);
 
 			int timeLeft = int.Parse(obj[Tariff.ParamNames.Duration].ToString()) -
 			               int.Parse(obj[TariffWindow.ParamNames.TimeInUseConfirmed].ToString());

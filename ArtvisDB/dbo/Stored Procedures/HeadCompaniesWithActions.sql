@@ -110,7 +110,7 @@ BEGIN
                         LEFT JOIN PackModuleIssue pmi ON i.packModuleIssueID = pmi.packModuleIssueID
                         LEFT JOIN PackModulePriceList pmpl ON pmi.pricelistID = pmpl.priceListID
                     WHERE i.campaignID = c.campaignID
-                      AND (@issueDate is null or ((datepart(hh, tw.windowDateOriginal) = datepart(hh, @issueDate)) and (datepart(minute, tw.windowDateOriginal) = datepart(minute, @issueDate))) )
+                      AND (@issueDate is null or ((datepart(hh, tw.windowDateActual) = datepart(hh, @issueDate)) and (datepart(minute, tw.windowDateActual) = datepart(minute, @issueDate))) )
                       AND (@issueDay is null or tw.dayOriginal = @issueDay)
                       AND (@packModuleID is null or pmpl.packModuleID = @packModuleID)
                       AND (@rollerId is null or i.rollerID = @rollerId)

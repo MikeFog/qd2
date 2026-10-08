@@ -23,7 +23,7 @@ set @IsTraffic = dbo.f_IsTrafficManager(@loggedUserID)
 if @actionName = 'DeleteItem' and @IsAdmin <> 1 and @IsTraffic <> 1
 	and exists(select * 
 				from TariffWindow tw 
-					inner join Issue i on tw.windowId = i.originalWindowID 
+					inner join Issue i on tw.windowId = i.actualWindowID 
 				where i.campaignID = @campaignID and tw.dayOriginal <= dbo.ToShortDate(getdate()))
 begin
 	raiserror('PastIssue', 16, 1)
@@ -139,7 +139,7 @@ ELSE IF @actionName = 'DeleteItem' begin
 
 	if exists(select *
 		from Issue i 
-			inner join TariffWindow tw on i.originalWindowID = tw.windowId
+			inner join TariffWindow tw on i.actualWindowID = tw.windowId
 		where i.campaignID = @CampaignID and i.isConfirmed = 1 and datediff(day,dbo.ToShortDate(getdate()),tw.dayOriginal) <= dbo.f_SysParamsDaysLog())
 	begin 
 		exec SayAdminThatIssuesDelete @loggedUserID, @actionID

@@ -481,9 +481,26 @@ namespace Merlin.Controls
 		{
 			int maxCapacity = int.Parse(row[TariffWindowWithRollerIssues.ParamNames.MaxCapacity].ToString());
 			string duration = DateTimeUtils.Time2String(int.Parse(row[Tariff.ParamNames.Duration].ToString()));
+			string postfix = ActualTimePostfix((DateTime)row[ColumnNames.WindowDateOriginal], (DateTime)row[ColumnNames.WindowDateActual],
+				(DateTime)row[ColumnNames.WindowDateBroadcast], (DateTime)row[ColumnNames.WindowDateActualBroadcast]);
 			if(maxCapacity == 0)
-				return duration;
-			return string.Format("{0} [{1}]", duration, maxCapacity);
+				return duration + postfix;
+			return string.Format("{0} [{1}]{2}", duration, maxCapacity, postfix);
+		}
+
+		/// <summary>
+		/// Приписка фактического времени выхода у сдвинутого окна: « (чч:мм)», на другой день — « (дд.ММ.гг чч:мм)».
+		/// Строка сетки — время по расписанию (слот тарифа), поэтому без приписки сдвиг не виден.
+		/// </summary>
+		protected static string ActualTimePostfix(DateTime windowDateOriginal, DateTime windowDateActual, DateTime dayOriginal, DateTime dayActual)
+		{
+			DateTime dtOriginal = windowDateOriginal.Date.AddHours(windowDateOriginal.Hour).AddMinutes(windowDateOriginal.Minute);
+			DateTime dtActual = windowDateActual.Date.AddHours(windowDateActual.Hour).AddMinutes(windowDateActual.Minute);
+			if (DateTime.Compare(dayActual, dayOriginal) != 0)
+				return string.Format(" ({0})", dtActual.ToString("dd.MM.yy HH:mm"));
+			if (DateTime.Compare(dtOriginal, dtActual) != 0)
+				return string.Format(" ({0})", dtActual.ToString("HH:mm"));
+			return string.Empty;
 		}
 
 		public void DeleteCurrentObject()

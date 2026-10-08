@@ -69,7 +69,7 @@ SET TRANSACTION ISOLATION LEVEL READ UNCOMMITTED; -- Важно для прод�
 			left join PackModuleIssue pmi on i.packModuleIssueID = pmi.packModuleIssueID
 			left join PackModulePriceList pmpl on pmi.pricelistID = pmpl.priceListID
 		where i.rollerID = coalesce(@rollerId, i.rollerID)
-			and (@issueDate is null or ((datepart(hh, tw.windowDateOriginal) = datepart(hh, @issueDate)) and (datepart(minute, tw.windowDateOriginal) = datepart(minute, @issueDate))) )
+			and (@issueDate is null or ((datepart(hh, tw.windowDateActual) = datepart(hh, @issueDate)) and (datepart(minute, tw.windowDateActual) = datepart(minute, @issueDate))) )
 			and (@issueDay is null or (@issueDay is not null and (tw.dayOriginal = @issueDay)) )
 			and (@moduleID is null or mi.moduleID = @moduleID)
 			and (@packModuleID is null or pmpl.packModuleID = @packModuleID)

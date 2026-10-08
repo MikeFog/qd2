@@ -87,7 +87,7 @@ Where
 if @IsConfirmed = 1 and @actionName = 'DeleteItem' and @IsAdmin <> 1 And @IsTrafficManager <> 1
 	and exists(select * 
 				from TariffWindow tw 
-					inner join Issue i on tw.windowId = i.originalWindowID 
+					inner join Issue i on tw.windowId = i.actualWindowID 
 				where i.issueID = @issueID and tw.dayOriginal <= dbo.ToShortDate(getdate()))
 begin
 	raiserror('PastIssue', 16, 1)
@@ -98,7 +98,7 @@ end
 if @IsConfirmed = 1 and @actionName = 'DeleteItem' and @IsAdmin <> 1  And @IsTrafficManager <> 1
 	and exists(select * 
 				from TariffWindow tw 
-					inner join Issue i on tw.windowId = i.originalWindowID 
+					inner join Issue i on tw.windowId = i.actualWindowID 
 				where i.issueID = @issueID and tw.dayOriginal <= dbo.ToShortDate(@deadLine))
 begin
 	raiserror('DeadLineViolationDelete', 16, 1)
@@ -310,7 +310,7 @@ ELSE IF @actionName = 'DeleteItem' BEGIN
 		SELECT @actualDate = tw.windowDateOriginal FROM [Issue] i inner join TariffWindow tw on i.originalWindowID = tw.windowId WHERE i.[issueID] = @issueID
 		EXEC [LogDeletedIssueInsert] @loggedUserId, @actionId, @rollerID, @actualDate, @massmediaID
 		
-		if exists(SELECT * FROM [Issue] i inner join TariffWindow tw on i.originalWindowID = tw.windowId 
+		if exists(SELECT * FROM [Issue] i inner join TariffWindow tw on i.actualWindowID = tw.windowId 
 		and datediff(day,dbo.ToShortDate(getdate()),tw.dayOriginal) <= dbo.f_SysParamsDaysLog() 
 		WHERE i.[issueID] = @issueID) 
 		begin 
