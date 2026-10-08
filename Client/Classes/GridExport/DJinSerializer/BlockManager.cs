@@ -42,8 +42,9 @@ namespace Merlin.Classes.GridExport.DJinSerializer
                 if (processed == null)
                     continue;
 
+                // Служебные метки снимаются со всех блоков, в том числе отданных без перестановки
                 foreach (var line in processed.Lines)
-                    output.Append(line).Append("\r\n");
+                    output.Append(NormalizeAgitationMarker(line)).Append("\r\n");
             }
 
             return DJinParam.Encoding.GetBytes(output.ToString());
@@ -192,15 +193,18 @@ namespace Merlin.Classes.GridExport.DJinSerializer
             // Рекламы нет - джинглы влёта и аута (In/Out) не нужны
             if (!hasRealRollers)
             {
-                headLines = headLines.Where(line => GetTypeMarker(line) != DJinParam.strJingle).ToList();
-                bodyLines = bodyLines.Where(line => GetTypeMarker(line) != DJinParam.strJingle).ToList();
-                tailLines = tailLines.Where(line => GetTypeMarker(line) != DJinParam.strJingle).ToList();
+                headLines = headLines.Where(line => !IsJingle(line)).ToList();
+                bodyLines = bodyLines.Where(line => !IsJingle(line)).ToList();
+                tailLines = tailLines.Where(line => !IsJingle(line)).ToList();
             }
 
             // Порядок внутри блока:
             // 1) BT (вне этого списка)
             // 2) c-type-4 - ручной идентификатор локального СМИ, если есть
-            // 3) локальное промо без спонсора (9) - до влёта
+            // 3) локальное промо без спонсора (9) - вплотную перед влётом. В склеенном
+            //    блоке (TariffUnion, windowPrevId) влёт бывает в середине: у первого окна
+            //    его нет, а у следующего есть - тогда промо встаёт перед ним, а не в начало
+            //    блока. Влёта нет - промо сразу за c-type-4
             // 4) джингл влёта (In)
             // 5) локальное промо со спонсором (8) - сразу за влётом, а без влёта -
             //    сразу за промо без спонсора
@@ -219,7 +223,7 @@ namespace Merlin.Classes.GridExport.DJinSerializer
             if (cType4Line != null)
                 newMiddle.Add(cType4Line);
 
-            newMiddle.AddRange(promoNoSponsorLines);
+            int promoNoSponsorIndex = newMiddle.Count;
             newMiddle.AddRange(headLines);
             newMiddle.AddRange(promoSponsorLines);
 
@@ -245,10 +249,13 @@ namespace Merlin.Classes.GridExport.DJinSerializer
             if (cType5Line != null)
                 newMiddle.Add(cType5Line);
 
+            int inJingleIndex = newMiddle.FindIndex(line => GetTypeMarker(line) == DJinParam.strJingleIn);
+            newMiddle.InsertRange(inJingleIndex >= 0 ? inJingleIndex : promoNoSponsorIndex, promoNoSponsorLines);
+
             // Reconstruimos el bloque
             var result = new Block();
             result.Lines.Add(btLine);
-            result.Lines.AddRange(newMiddle.Select(NormalizeAgitationMarker));
+            result.Lines.AddRange(newMiddle);
             result.Lines.Add(eLine);
 
             return result;
@@ -258,6 +265,13 @@ namespace Merlin.Classes.GridExport.DJinSerializer
         {
             var cols = line.Split(',');
             return cols.Length > 1 ? cols[1].Trim('"') : "";
+        }
+
+        /// <summary>Джингл влёта (In) или аута (Out).</summary>
+        private static bool IsJingle(string line)
+        {
+            string marker = GetTypeMarker(line);
+            return marker == DJinParam.strJingle || marker == DJinParam.strJingleIn;
         }
 
         /// <summary>
@@ -276,11 +290,14 @@ namespace Merlin.Classes.GridExport.DJinSerializer
         /// Убирает служебные метки политической обвязки и промо: они нужны только для
         /// сортировки выше. В файл все они пишутся как обычные рекламные ролики -
         /// метки 4/5 не ставим специально, чтобы DJin не принял авто-обвязку за
-        /// ручные идентификаторы СМИ.
+        /// ручные идентификаторы СМИ. Влёт пишется обычным джинглом.
         /// </summary>
         private static string NormalizeAgitationMarker(string line)
         {
             string marker = GetTypeMarker(line);
+
+            if (marker == DJinParam.strJingleIn)
+                return ReplaceTypeMarker(line, DJinParam.strJingle);
 
             if (marker == TypeAgitLocalSmi || marker == TypeAgitFederalSmi
                 || marker == TypeAgitAnnounce || marker == TypeAgitation

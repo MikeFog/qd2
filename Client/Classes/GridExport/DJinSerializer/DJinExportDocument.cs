@@ -140,8 +140,9 @@ namespace Merlin.Classes.GridExport.DJinSerializer
 
             if ((!additional.NeedInJingle || !additional.NeedOutJingle) || !StringUtil.IsDBNullOrNull(block[ExportParams.description]))
 			{
+				// Влёт помечен отдельно от аута: в склеенном блоке он бывает в середине (BlockManager)
 				if (additional.NeedInJingle && !additional.IsAlive)
-					PrintLine(file, string.Empty, DJinParam.strJingle, string.Empty, string.Empty,
+					PrintLine(file, string.Empty, DJinParam.strJingleIn, string.Empty, string.Empty,
 							  Path.GetFullPath(string.Format(strAddedPath, mm.EnterPath, random.Next(mm.EnterMin, mm.EnterMax + 1))),
 							  string.Empty, mm.VolumeJStr);
 			}

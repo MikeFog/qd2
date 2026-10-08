@@ -12,6 +12,8 @@ namespace Merlin.Classes.GridExport.DJinSerializer
 		//public const string strBlockStart = "BT";
 		public const string strEtc = "m";
 		public const string strJingle = "j";
+		// Временная метка джингла влёта (In): нужна BlockManager для порядка в блоке, в файл пишется как strJingle
+		public const string strJingleIn = "j-in";
 		public const string strLine = "\"{0}\",\"{1}\",\"{2}\",\"{3}\",\"{4}\",\"{5}\",\"{6}\"\r\n";
         public const string strLine2 = "\"{0}\",\"{1}\",\"{2}\",\"{3}\",\"{4}\",\"{5}\",\"{6}\"";
         public const string strRoller = "c";
