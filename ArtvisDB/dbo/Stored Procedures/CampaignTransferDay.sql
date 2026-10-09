@@ -34,7 +34,9 @@ Declare
 	@actionID int,
 	@tomorrow datetime,
 	@managerDiscount decimal(18,10),
-	@campaignStartDate datetime
+	@campaignStartDate datetime,
+	@newPrice decimal(18,2), @newWindowPrice decimal(18,2),
+	@extraFirst int, @extraSecond int, @extraLast int
 
 SELECT 
 	@campaignTypeID	= c.campaignTypeID,
@@ -93,32 +95,40 @@ end
 Declare @agitMoves table (oldWindowID int, newWindowID int)
 Declare @agitOldWindowID int
 
-Declare	curIssues cursor local fast_forward
+-- static: выборка фиксируется при открытии. С динамическим курсором (fast_forward) перенесённая строка
+-- Issue сдвигалась по кластерному ключу (originalWindowID) и у модулей/пакетов (отбор по дню модуля,
+-- он меняется только после цикла) выбиралась второй раз.
+Declare	curIssues cursor local static read_only
 For
 Select	
 	i.issueID,
-	Convert(varchar, tw.windowDateOriginal, 108) as issueTimeString,
+	-- Время слота на новой дате (Р-5, 09.10.2026): у линейных и спонсорских — окно выхода (выпуск, перенесённый
+	-- трафиком, «живёт» там), у модульных и пакетных — окно модуля (исходное): их слот задаёт модуль.
+	Convert(varchar, case when @campaignTypeID in (1, 2) then twA.windowDateOriginal else tw.windowDateOriginal end, 108) as issueTimeString,
 	i.positionId,
 	r.duration,
 	mpl.[priceListID],
 	mpl.[moduleID],
-	t.[pricelistID],
+	case when @campaignTypeID in (1, 2) then coalesce(tA.[pricelistID], t.[pricelistID]) else t.[pricelistID] end,
 	pmi.[pricelistID],
 	pmpl.[packModuleID],
 	r.[rolActionTypeID]
 From	
 	Issue i
 	inner join TariffWindow tw on i.originalWindowID = tw.windowId
+	inner join TariffWindow twA on i.actualWindowID = twA.windowId   -- окно выхода
 	INNER JOIN [Roller] r ON i.[rollerID] = r.[rollerID]
 	LEFT JOIN dbo.[ModuleIssue] mi ON mi.moduleIssueID = i.[moduleIssueID]
 	LEFT JOIN dbo.[ModulePriceList] mpl ON mpl.[modulePriceListID] = mi.[modulePriceListID]
 	LEFT JOIN [Tariff] t ON t.[tariffID] = tw.[tariffId]
+	LEFT JOIN [Tariff] tA ON tA.[tariffID] = twA.[tariffId]
 	LEFT JOIN [PackModuleIssue] pmi ON pmi.[packModuleIssueID] = i.[packModuleIssueID]
 	LEFT JOIN [PackModulePriceList] pmpl ON pmi.[pricelistID] = pmpl.[priceListID]
 Where	
 	i.campaignID = @campaignID and
 	i.rollerId = Coalesce(@rollerId, i.rollerId) and
-	tw.dayOriginal = @oldDate
+	-- день выпуска — как в дереве (IssuesDays): модуль/пакет — свой день, остальные — день окна выхода
+	coalesce(mi.issueDate, pmi.issueDate, twA.dayOriginal) = @oldDate
 
 Open	curIssues
 Fetch Next from curIssues 
@@ -127,6 +137,9 @@ Into @issueID, @issueTimeString, @positionId, @rollerDuration, @modulePriceListI
 
 WHILE @@fetch_status = 0 
 	BEGIN
+	-- Окно ищется заново для каждого выпуска: без сброса ненайденное окно молча заменялось окном
+	-- предыдущего выпуска цикла.
+	SET @windowId = NULL
 	SET @issueDateOriginal = @newDate + @issueTimeString
 	
 	IF @campaignTypeID = 1 OR @campaignTypeID = 2
@@ -264,7 +277,26 @@ WHILE @@fetch_status = 0
 				Insert Into @agitMoves (oldWindowID, newWindowID) Values (@agitOldWindowID, @windowId)
 		End
 
-		Update Issue Set actualWindowId = @windowId, [originalWindowID] = @windowId	Where issueID = @issueID
+		-- Р-9 (09.10.2026, согласовано с заказчиком): цена выпуска — по новому окну, как при постановке
+		-- (IssueIUD AddItem). Только у линейных: у модульных и пакетных цена в выпуске не хранится (0), у
+		-- спонсорских деньги считаются по программам (ProgramIssue), а не по выпускам роликов.
+		If @campaignTypeID = 1
+		Begin
+			Select
+				@newWindowPrice = tw.price,
+				@extraFirst = IsNull(p.extraChargeFirstRoller, 0),
+				@extraSecond = IsNull(p.extraChargeSecondRoller, 0),
+				@extraLast = IsNull(p.extraChargeLastRoller, 0)
+			From TariffWindow tw
+				Left Join Tariff t On t.tariffID = tw.tariffId
+				Left Join Pricelist p On p.pricelistID = t.pricelistID
+			Where tw.windowId = @windowId
+			Set @newPrice = dbo.fn_GetIssuePrice(@rollerDuration, @newWindowPrice, 1, @positionId, @extraFirst, @extraSecond, @extraLast)
+		End
+
+		Update Issue Set actualWindowId = @windowId, [originalWindowID] = @windowId,
+			tariffPrice = case when @campaignTypeID = 1 then @newPrice else tariffPrice end
+		Where issueID = @issueID
 		
 		Update 
 			TariffWindow

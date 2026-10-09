@@ -28,7 +28,7 @@ BEGIN
       r.advertTypeName,
       a.deleteDate
     FROM dbo.Issue i
-    JOIN dbo.TariffWindow tw ON i.originalWindowID = tw.windowId
+    JOIN dbo.TariffWindow tw ON i.actualWindowID = tw.windowId   -- окно выхода
     JOIN dbo.Campaign c      ON c.campaignID = i.campaignID
     JOIN dbo.[Action] a      ON a.actionID = c.actionID
     JOIN dbo.iIssuePosition ip ON ip.positionId = i.positionId
@@ -56,18 +56,21 @@ BEGIN
     r.advertTypeName,
     a.deleteDate
   FROM dbo.TariffWindow tw
-  JOIN dbo.Issue i            ON i.originalWindowID = tw.windowId
+  JOIN dbo.Issue i            ON i.actualWindowID = tw.windowId   -- окно выхода
   JOIN dbo.Campaign c         ON c.campaignID = i.campaignID
   JOIN dbo.[Action] a         ON a.actionID = c.actionID
   JOIN dbo.iIssuePosition ip  ON ip.positionId = i.positionId
   JOIN dbo.vRoller r          ON r.rollerID = i.rollerID
+  LEFT JOIN dbo.ModuleIssue mi       ON mi.moduleIssueID = i.moduleIssueID
+  LEFT JOIN dbo.PackModuleIssue pmi  ON pmi.packModuleIssueID = i.packModuleIssueID
   WHERE
-      (@issueDate IS NULL OR tw.dayOriginal = @issueDate)
+      -- день выпуска: модуль/пакет — свой день, остальные — день окна выхода (как IssuesDays)
+      (@issueDate IS NULL OR coalesce(mi.issueDate, pmi.issueDate, tw.dayOriginal) = @issueDate)
   AND c.massmediaID = @massmediaID
   AND (@campaignID IS NULL OR c.campaignID = @campaignID)
   AND (@rollerID   IS NULL OR i.rollerID = @rollerID)
   AND (@moduleIssueID IS NULL OR i.moduleIssueID = @moduleIssueID)
   AND (@packModuleIssueID IS NULL OR i.packModuleIssueID = @packModuleIssueID)
-  ORDER BY tw.windowDateOriginal
+  ORDER BY tw.windowDateActual
   OPTION (RECOMPILE);  -- важно при куче optional-параметров
 END

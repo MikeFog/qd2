@@ -40,11 +40,16 @@ BEGIN
 		
 		select top 1 @issueID = i.issueID
 		from Issue i 
-			inner join TariffWindow tw on i.originalWindowID = tw.windowId
+			inner join TariffWindow tw on i.actualWindowID = tw.windowId   -- окно выхода
 		where tw.massmediaID = @massmediaID and i.campaignID = @campaignID and i.positionID = @positionID and i.rollerID = @rollerID
 			and tw.windowDateActual between @issueDate and dateadd(second, -1, dateadd(minute, 30, @issueDate))
 		order by case when (tw.duration - tw.timeInUseConfirmed) > 0 then 0 else 1 end, tw.windowDateActual
 	
+		-- Выпуска этой кампании в получасе нет — кампанию пропускаем. Раньше IssueIUD вызывался с
+		-- @issueID = NULL: в подтверждённой акции это ошибка 515 (LogDeletedIssue.issueDate NOT NULL),
+		-- и удаление по остальным станциям обрывалось.
+		if @issueID is not null
+		begin
 		exec dbo.IssueIUD
 			@rollerID = @rollerID,
 			@campaignID = @campaignID,
@@ -58,6 +63,7 @@ BEGIN
 	
 		if @@error <> 0 
 			return 
+		end
 	
 		fetch next from cur_massmedias into @massmediaID, @campaignID
 	end 

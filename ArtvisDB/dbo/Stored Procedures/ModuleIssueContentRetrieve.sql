@@ -8,19 +8,19 @@ Set Nocount On
 
 SELECT 
 	i.*,
-	twOrigin.massmediaID,
+	tw.massmediaID,
 	r.[name],
 	dbo.fn_Int2Time(r.duration) as durationString,
 	c.actionID,
 	ip.[description] as issuePosition,
-	issueDate = twOrigin.windowDateOriginal,
+	issueDate = tw.windowDateActual,   -- время выхода
 	advt.name as advertTypeName
 FROM
 	Issue i
 	inner join Roller r on i.rollerID = r.rollerID 
 	INNER JOIN Campaign c ON c.campaignID = i.campaignID
 	Inner Join iIssuePosition ip On ip.positionId = i.positionId
-	inner join TariffWindow twOrigin on twOrigin.windowID = i.originalWindowID
+	inner join TariffWindow tw on tw.windowID = i.actualWindowID   -- окно выхода
 	LEFT JOIN AdvertType advt ON advt.advertTypeID = r.advertTypeID
 where i.moduleIssueId = @moduleIssueId
 ORDER BY 

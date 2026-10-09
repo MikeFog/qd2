@@ -9,7 +9,7 @@ SET NOCOUNT ON
 SELECT 
 	i.[issueID],
 	r.[name],
-	tw.windowDateOriginal as [issueDate],
+	tw.windowDateActual as [issueDate],   -- время выхода
 	dbo.fn_Int2Time(r.duration) as durationString,
 	ip.[description] AS issuePosition,
 	m.[name] AS massmediaName,
@@ -19,7 +19,7 @@ FROM
 	[Issue] i
 	inner join vRoller r on i.rollerID = r.rollerID
 	INNER JOIN [iIssuePosition] ip ON i.[positionId] = ip.[positionId]
-	INNER JOIN [TariffWindow] tw ON tw.[windowId] = i.originalWindowID
+	INNER JOIN [TariffWindow] tw ON tw.[windowId] = i.actualWindowID   -- окно выхода
 	INNER JOIN [vMassMedia] m ON tw.[massmediaID] = m.[massmediaID]
 WHERE 
 	i.[packModuleIssueID] = coalesce(@packModuleIssueId, i.[packModuleIssueID])

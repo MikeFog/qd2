@@ -39,7 +39,7 @@ SELECT
     a.deleteDate
 FROM
     dbo.Issue i
-    INNER JOIN dbo.TariffWindow        tw   ON i.originalWindowID    = tw.windowId
+    INNER JOIN dbo.TariffWindow        tw   ON i.actualWindowID      = tw.windowId   -- окно выхода
     INNER JOIN dbo.Campaign            c    ON c.campaignID          = i.campaignID
     INNER JOIN dbo.Action              a    ON a.actionID            = c.actionID
     INNER JOIN dbo.Roller              r    ON r.rollerID            = i.rollerID
@@ -47,12 +47,13 @@ FROM
     LEFT  JOIN dbo.ModuleIssue         mi   ON mi.moduleIssueID      = i.moduleIssueID
     LEFT  JOIN dbo.PackModuleIssue     pmi  ON pmi.packModuleIssueID = i.packModuleIssueID
     LEFT  JOIN dbo.PackModulePriceList pmpl ON pmi.pricelistID       = pmpl.priceListID
-                                           AND tw.dayOriginal BETWEEN pmpl.startDate AND pmpl.finishDate
+                                           AND pmi.issueDate BETWEEN pmpl.startDate AND pmpl.finishDate
 WHERE
     i.campaignID = @campaignID
     AND (@moduleIssueID     IS NULL OR i.moduleIssueID     = @moduleIssueID)
     AND (@packModuleIssueID IS NULL OR i.packModuleIssueID = @packModuleIssueID)
-    AND (@issueDate         IS NULL OR tw.dayOriginal      = @issueDate)
+    -- день выпуска: модуль/пакет — свой день, остальные — день окна выхода (как IssuesDays)
+    AND (@issueDate         IS NULL OR coalesce(mi.issueDate, pmi.issueDate, tw.dayOriginal) = @issueDate)
     AND (@rollerId          IS NULL OR i.rollerID          = @rollerId)
 GROUP BY
     i.campaignID,

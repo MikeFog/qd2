@@ -1,5 +1,5 @@
 ﻿/*
-    ДЕПЛОЙ: переводы веб-версии на язык «es» (1978 строк). docs/tasks/web-i18n.md, этап 5.
+    ДЕПЛОЙ: переводы веб-версии на язык «es» (1979 строк). docs/tasks/web-i18n.md, этап 5.
     СГЕНЕРИРОВАН из ArtvisDB/Scripts/i18n/es.tsv скриптом build-seed.py — руками не править.
 
     ПРЕДУСЛОВИЕ     накачен web-i18n-translation-deploy.sql (таблица iTranslation).
@@ -1266,6 +1266,7 @@ INSERT INTO #t ([source], [text]) VALUES
 (N'Невозможно перенести день из-за проблем с менеджерским коэффициентом. На выбранную вами дату он превышает установленное в этой рекламной кампании значение. Операция прервана.', N'No se puede trasladar el día por un problema con el coeficiente del gerente: en la fecha seleccionada supera el valor establecido en esta pauta. Operación cancelada.'),
 (N'Невозможно перенести рекламный выпуск. Дата выпуска в прошлом, либо закрыта трафик-менеджером. Операция прервана.', N'No se puede trasladar la emisión publicitaria. La fecha de la emisión ya pasó o fue cerrada por el gestor de tráfico. Operación cancelada.'),
 (N'Невозможно перенести рекламный выпуск. Новая дата выпуска в прошлом, либо закрыта трафик-менеджером. Операция прервана.', N'No se puede trasladar la emisión publicitaria. La nueva fecha de la emisión ya pasó o fue cerrada por el gestor de tráfico. Operación cancelada.'),
+(N'Невозможно перенести рекламный выпуск в окно другой радиостанции. Операция прервана.', N'No se puede trasladar la emisión publicitaria a una ventana de otra emisora. Operación cancelada.'),
 (N'Невозможно перенести ролик в данное окно с текущей позицией, так как позиция занята. Операция прервана.', N'No se puede trasladar el spot a esta ventana con la posición actual porque la posición está ocupada. Operación cancelada.'),
 (N'Невозможно перенести ролик в данное окно, так как будет превышено допустимое время в данном окне. Операция прервана.', N'No se puede trasladar el spot a esta ventana porque se superaría el tiempo permitido en ella. Operación cancelada.'),
 (N'Невозможно перенести ролик в данное окно, так как будет превышено число допустимых роликов. Операция прервана.', N'No se puede trasladar el spot a esta ventana porque se superaría la cantidad permitida de spots. Operación cancelada.'),
@@ -1517,10 +1518,10 @@ INSERT INTO #t ([source], [text]) VALUES
 (N'Стоимость спланированной рекламы: {0:c}', N'Costo de la publicidad planificada: {0:c}'),
 (N'Стоимость спланированной рекламы по тарифам: {0:c}', N'Costo de la publicidad planificada según tarifas: {0:c}'),
 (N'Стоимость спланированной рекламы с учетом скидки: {0:c}', N'Costo de la publicidad planificada con descuento: {0:c}'),
-(N'Скидка: {0}', N'Descuento: {0}'),
-(N'В том числе НДС ({0:0.##}%): {1:c}', N'IVA incluido ({0:0.##} %): {1:c}');
+(N'Скидка: {0}', N'Descuento: {0}');
 GO
 INSERT INTO #t ([source], [text]) VALUES
+(N'В том числе НДС ({0:0.##}%): {1:c}', N'IVA incluido ({0:0.##} %): {1:c}'),
 (N'В том числе НДС: {0:c}', N'IVA incluido: {0:c}'),
 (N'Исполнитель:', N'Contratista:'),
 (N'Заказчик:', N'Cliente:'),

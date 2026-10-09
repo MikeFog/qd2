@@ -20,6 +20,43 @@ declare
 	@rightForMinus bit, 
 	@rightToGoBack bit
 
+-- Р-12 (09.10.2026): окно-приёмник — той же станции, что и окно, где выпуск стоит сейчас (у пакетной
+-- кампании Campaign.massmediaID пуст: пакет на нескольких станциях). Интерфейс переносит только внутри
+-- сетки одной станции; здесь — страховка от ошибки вызывающего кода.
+if not exists (select 1
+		from Issue i
+			inner join TariffWindow twCur on twCur.windowId = i.actualWindowID
+			inner join TariffWindow tw on tw.windowId = @newWindowId and tw.massmediaID = twCur.massmediaID
+		where i.issueID = @issueID)
+begin
+	raiserror('TransferOtherMassmedia', 16, 1)
+	return
+end
+
+-- Р-12: в окне один «Локальное СМИ»/«Локальное СМИ (агитация)», один «Федеральное СМИ»/«Федеральное
+-- СМИ (агитация)» и одна «Отбивка политической агитации» — как при постановке (hlp_IssueVerify),
+-- по окну выхода. Раньше перенос трафиком это не проверял.
+declare @transferRolType tinyint, @transferTypeError varchar(50)
+select @transferRolType = r.rolActionTypeID
+from Issue i inner join Roller r on r.rollerID = i.rollerID
+where i.issueID = @issueID
+
+if @transferRolType in (4, 44, 5, 55, 7) and exists (select 1
+		from Issue i2
+			inner join Roller r2 on r2.rollerID = i2.rollerID
+		where i2.actualWindowID = @newWindowId
+			and i2.issueID <> @issueID
+			and ((@transferRolType in (4, 44) and r2.rolActionTypeID in (4, 44))
+				or (@transferRolType in (5, 55) and r2.rolActionTypeID in (5, 55))
+				or (@transferRolType = 7 and r2.rolActionTypeID = 7)))
+begin
+	set @transferTypeError = case when @transferRolType in (4, 44) then 'RolType4AlreadyExistInWindow'
+		when @transferRolType in (5, 55) then 'RolType5AlreadyExistInWindow'
+		else 'RolType7AlreadyExistInWindow' end
+	raiserror(@transferTypeError, 16, 1)
+	return
+end
+
 -- Проверка на возможность размещения
 if exists(select * 
 		from DisabledWindow dw 

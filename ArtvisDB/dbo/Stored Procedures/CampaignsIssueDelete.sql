@@ -34,11 +34,14 @@ BEGIN
 	insert into @issues 
 	select i.issueID
 	from Issue i
-		inner join TariffWindow tw on i.originalWindowID = tw.windowId
+		inner join TariffWindow tw on i.actualWindowID = tw.windowId   -- окно выхода
+		left join ModuleIssue mi on mi.moduleIssueID = i.moduleIssueID
+		left join PackModuleIssue pmi on pmi.packModuleIssueID = i.packModuleIssueID
 	where i.campaignID = @campaignID 
 		and tw.massmediaID = @massmediaID 
 		and i.rollerID = coalesce(@rollerID, i.rollerID)
-		and (@issueDate is null or tw.dayOriginal = Convert(datetime, Convert(varchar(8), @issueDate, 112), 112))
+		-- день выпуска — как в дереве (IssuesDays): модуль/пакет — свой день, остальные — день окна выхода
+		and (@issueDate is null or coalesce(mi.issueDate, pmi.issueDate, tw.dayOriginal) = Convert(datetime, Convert(varchar(8), @issueDate, 112), 112))
 
 	if @IsConfirmed = 1 and @IsAdmin  = 0 And @IsTrafficManager = 0
 		and exists(select * from @issues it 
