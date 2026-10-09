@@ -77,7 +77,7 @@ namespace Merlin.Classes.GridExport.DJinSerializer
             {
                 // Ролик политической агитации и локальное промо (8 - со спонсором,
                 // 9 - без) - обычные рекламные ролики по звуку, метка нужна для
-                // сортировки внутри блока; метка промо остаётся и в файле (BlockManager)
+                // сортировки внутри блока; метка промо без спонсора (9) остаётся и в файле (BlockManager)
                 typePreffix = DJinParam.strRoller + $"-type-{type}";
                 volume = mm.VolumeCStr;
             }

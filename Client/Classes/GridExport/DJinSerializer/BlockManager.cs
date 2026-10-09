@@ -11,7 +11,7 @@ namespace Merlin.Classes.GridExport.DJinSerializer
     {
         // Метки типов роликов, которые проставляет DJinExportDocument.PrintRoller.
         // Нужны для сортировки внутри блока; в готовый файл метки агитации не
-        // попадают, а 4/5 и промо 8/9 остаются (см. NormalizeAgitationMarker).
+        // попадают, а 4/5 и промо без спонсора (9) остаются (см. NormalizeAgitationMarker).
         private const string TypeLocalSmi = "c-type-4";
         private const string TypeFederalSmi = "c-type-5";
         private const string TypeAgitLocalSmi = "c-type-44";
@@ -287,12 +287,12 @@ namespace Merlin.Classes.GridExport.DJinSerializer
         }
 
         /// <summary>
-        /// Убирает служебные метки политической обвязки: они нужны только для
-        /// сортировки выше. В файл все они пишутся как обычные рекламные ролики -
-        /// метки 4/5 не ставим специально, чтобы DJin не принял авто-обвязку за
+        /// Убирает служебные метки политической обвязки и промо со спонсором (8): они
+        /// нужны только для сортировки выше. В файл все они пишутся как обычные рекламные
+        /// ролики - метки 4/5 не ставим специально, чтобы DJin не принял авто-обвязку за
         /// ручные идентификаторы СМИ. Влёт пишется обычным джинглом.
-        /// Метки промо (8/9), как и 4/5, остаются: по ним добивщик Европы Плюс
-        /// не ставит анонс в блок с промо, он же снимает их перед DJin.
+        /// Метка промо без спонсора (9), как и 4/5, остаётся: по ней добивщик Европы Плюс
+        /// не ставит анонс в блок с промо, он же снимает её перед DJin.
         /// </summary>
         private static string NormalizeAgitationMarker(string line)
         {
@@ -302,7 +302,8 @@ namespace Merlin.Classes.GridExport.DJinSerializer
                 return ReplaceTypeMarker(line, DJinParam.strJingle);
 
             if (marker == TypeAgitLocalSmi || marker == TypeAgitFederalSmi
-                || marker == TypeAgitAnnounce || marker == TypeAgitation)
+                || marker == TypeAgitAnnounce || marker == TypeAgitation
+                || marker == TypePromoSponsor)
                 return ReplaceTypeMarker(line, DJinParam.strRoller);
 
             return line;
