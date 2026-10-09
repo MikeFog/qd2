@@ -62,7 +62,7 @@ If @rollerActionTypeID In (4, 44) And Exists (
 		Issue i
 		Inner Join Roller r on r.rollerID = i.rollerID
 	Where
-		i.originalWindowID = @windowID
+		i.actualWindowID = @windowID
 		And r.rolActionTypeID In (4, 44)
 		And i.issueID != IsNull(@issueID, -1)
 	)
@@ -77,7 +77,7 @@ If @rollerActionTypeID In (5, 55) And Exists (
 		Issue i
 		Inner Join Roller r on r.rollerID = i.rollerID
 	Where
-		i.originalWindowID = @windowID
+		i.actualWindowID = @windowID
 		And r.rolActionTypeID In (5, 55)
 		And i.issueID != IsNull(@issueID, -1)
 	)
@@ -109,7 +109,7 @@ If @rollerActionTypeID = 7 And Exists (
 		Issue i
 		Inner Join Roller r on r.rollerID = i.rollerID
 	Where
-		i.originalWindowID = @windowID
+		i.actualWindowID = @windowID
 		And r.rolActionTypeID = 7
 		And i.issueID != IsNull(@issueID, -1)
 	)

@@ -221,7 +221,7 @@ ELSE IF @actionName = 'UpdateItem' BEGIN
 	IF (@oldIsForModuleOnly <> @IsForModuleOnly And @IsForModuleOnly = 1)
 		And EXISTS(
 			SELECT * 
-			FROM issue i Inner Join TariffWindow tw On i.originalWindowID = tw.windowId
+			FROM issue i Inner Join TariffWindow tw On i.actualWindowID = tw.windowId
 			WHERE tw.tariffID = @tariffID And i.moduleIssueID Is Null
 		)
 		BEGIN

@@ -125,10 +125,10 @@ Where
 	TariffWindow.windowId = t1.windowID	
 		
 insert into [LogDeletedIssue] ([userId],actionID,rollerId, issueDate, massmediaID) 
-select @loggedUserID, @actionID, i.rollerID, tw.windowDateOriginal, tw.massmediaID 
+select @loggedUserID, @actionID, i.rollerID, tw.windowDateActual, tw.massmediaID 
 from @issues it 
 	inner join Issue i on it.issueID = i.moduleIssueID 
-	inner join TariffWindow tw on i.originalWindowID = tw.windowId
+	inner join TariffWindow tw on i.actualWindowID = tw.windowId
 where i.isConfirmed = 1
 	
 if exists(select *

@@ -304,7 +304,7 @@ ELSE IF @actionName = 'DeleteItem'
 	IF @isConfirmed = 1
 	BEGIN 
 		insert into LogDeletedIssue (userId,rollerId,actionId,issueDate,massmediaID) 
-		select @loggedUserId, i.rollerID, @actionID, tw.windowDateOriginal, tw.massmediaID  from Issue i inner join TariffWindow tw on tw.windowID = i.originalWindowID where i.moduleIssueID = @moduleIssueID
+		select @loggedUserId, i.rollerID, @actionID, tw.windowDateActual, tw.massmediaID  from Issue i inner join TariffWindow tw on tw.windowID = i.actualWindowID where i.moduleIssueID = @moduleIssueID
 		
 		if datediff(day,dbo.ToShortDate(getdate()),@issueDate) <= dbo.f_SysParamsDaysLog() 			
 			exec SayAdminThatIssuesDelete @loggedUserID, @actionID

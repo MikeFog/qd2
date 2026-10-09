@@ -149,7 +149,7 @@ begin
 			Issue i
 			Inner Join Roller r on r.rollerID = i.rollerID
 		Where
-			i.originalWindowID = @windowID
+			i.actualWindowID = @windowID
 			And ((r.rolActionTypeID In (4, 44) And @newRollerActionTypeID In (4, 44))
 				Or (r.rolActionTypeID In (5, 55) And @newRollerActionTypeID In (5, 55))
 				Or (r.rolActionTypeID = 7 And @newRollerActionTypeID = 7))

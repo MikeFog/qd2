@@ -70,7 +70,7 @@ WHERE
 	c.campaignID = @campaignID
 
 If @windowID Is Null and @issueID is not null
-	Select @windowID = originalWindowID From Issue Where issueID = @issueID
+	Select @windowID = actualWindowID From Issue Where issueID = @issueID
 
 Select
 	@extraChargeFirst = IsNull(extraChargeFirstRoller, 0),
@@ -253,7 +253,7 @@ IF @actionName = 'AddItem' BEGIN
 		From 
 			Issue i Inner Join Campaign c On c.campaignID = i.campaignID
 		Where
-			i.originalWindowID = @windowID
+			i.actualWindowID = @windowID
 			And i.positionId = @positionId
 			And c.actionID = @actionID
 		)
@@ -307,7 +307,7 @@ ELSE IF @actionName = 'DeleteItem' BEGIN
 			Select @rollerID = rollerID From Issue Where issueID = @issueID
 
 		DECLARE @actualDate DATETIME
-		SELECT @actualDate = tw.windowDateOriginal FROM [Issue] i inner join TariffWindow tw on i.originalWindowID = tw.windowId WHERE i.[issueID] = @issueID
+		SELECT @actualDate = tw.windowDateActual FROM [Issue] i inner join TariffWindow tw on i.actualWindowID = tw.windowId WHERE i.[issueID] = @issueID
 		EXEC [LogDeletedIssueInsert] @loggedUserId, @actionId, @rollerID, @actualDate, @massmediaID
 		
 		if exists(SELECT * FROM [Issue] i inner join TariffWindow tw on i.actualWindowID = tw.windowId 

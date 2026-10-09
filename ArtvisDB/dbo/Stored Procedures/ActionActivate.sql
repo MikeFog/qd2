@@ -303,7 +303,7 @@ BEGIN
 							FROM Issue fi
 								INNER JOIN Campaign fc ON fc.campaignID = fi.campaignID
 								INNER JOIN [Action] fa ON fa.actionID = fc.actionID
-							WHERE fi.originalWindowID = tw.windowId
+							WHERE fi.actualWindowID = tw.windowId
 								AND fa.firmID = @firmID
 								AND fa.deleteDate IS NULL
 								AND fi.isConfirmed = 1)

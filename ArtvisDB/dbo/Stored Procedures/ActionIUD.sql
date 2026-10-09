@@ -158,9 +158,9 @@ ELSE IF @actionName = 'DeleteItem'
 		TariffWindow.windowId = t1.windowID
 
 	insert into [LogDeletedIssue] ([userId],actionID,rollerId, issueDate, massmediaID) 
-	select @loggedUserID, c.actionID, i.rollerID, tw.windowDateOriginal, tw.massmediaID 
+	select @loggedUserID, c.actionID, i.rollerID, tw.windowDateActual, tw.massmediaID 
 	from Issue i 
-		inner join TariffWindow tw on i.originalWindowID = tw.windowId
+		inner join TariffWindow tw on i.actualWindowID = tw.windowId
 		inner join Campaign c on i.campaignID = c.campaignID 
 	where c.actionID = @actionID and i.isConfirmed = 1
 
