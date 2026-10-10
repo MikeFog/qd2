@@ -32,7 +32,7 @@ FROM
 	INNER JOIN [Firm] f ON f.firmID = ac.firmID
 	INNER JOIN [Campaign] c ON c.actionID = ac.actionID
 	INNER JOIN Issue i ON c.campaignID = i.campaignID
-	INNER JOIN TariffWindow tw On tw.windowId = i.originalWindowID
+	INNER JOIN TariffWindow tw On tw.windowId = i.actualWindowID
 	INNER JOIN dbo.fn_CreateTableFromString(@massmediaString) m on m.ID = tw.massmediaID
 	inner join 
 	(

@@ -105,7 +105,7 @@ BEGIN
                 OR EXISTS (
                     SELECT 1
                     FROM Issue i
-                        LEFT JOIN TariffWindow tw ON i.originalWindowID = tw.windowId
+                        LEFT JOIN TariffWindow tw ON i.actualWindowID = tw.windowId
                         LEFT JOIN ModuleIssue mi ON i.moduleIssueID = mi.moduleIssueID
                         LEFT JOIN PackModuleIssue pmi ON i.packModuleIssueID = pmi.packModuleIssueID
                         LEFT JOIN PackModulePriceList pmpl ON pmi.pricelistID = pmpl.priceListID

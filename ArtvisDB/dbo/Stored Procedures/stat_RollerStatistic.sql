@@ -56,7 +56,7 @@ Select
 	tw.massmediaID
 FROM 
 	Issue i
-	inner join TariffWindow tw on i.originalWindowID = tw.windowID
+	inner join TariffWindow tw on i.actualWindowID = tw.windowID
 	INNER JOIN Campaign c ON c.campaignID = i.campaignID
 	INNER JOIN [Action] a ON a.actionID = c.actionID
 	INNER JOIN Firm f ON f.firmID = a.firmID

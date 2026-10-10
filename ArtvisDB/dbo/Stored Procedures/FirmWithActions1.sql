@@ -62,7 +62,7 @@ SET TRANSACTION ISOLATION LEVEL READ UNCOMMITTED; -- Важно для прод�
 		select distinct c.actionID 
 		from 
 			Issue i 
-			inner join TariffWindow tw on i.originalWindowID = tw.windowId
+			inner join TariffWindow tw on i.actualWindowID = tw.windowId
 			inner join Campaign c on i.campaignID = c.campaignID
 			Inner Join MassMedia mm On mm.massmediaID = tw.massmediaID
 			left join ModuleIssue mi on i.moduleIssueID = mi.moduleIssueID
