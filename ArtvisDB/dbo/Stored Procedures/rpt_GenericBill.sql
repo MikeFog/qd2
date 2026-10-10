@@ -123,10 +123,10 @@ begin
 			inner join SponsorProgramPricelist pl on st.priceListID = pl.pricelistID
 			inner join vMassmedia mm on c.massmediaID = mm.massmediaID
 			left join dbo.AgencyTax at on c.agencyID = at.agencyID
-				and Convert(datetime, Convert(varchar(8), DATEADD(mi, -DATEPART(mi, pl.broadcastStart), DATEADD(hh, -DATEPART(hh, pl.broadcastStart), i.issueDate)), 112), 112) between at.startDate and at.finishDate
+				and Convert(datetime, Convert(varchar(8), i.issueDate, 112), 112) between at.startDate and at.finishDate
 		Where		
 			i.campaignID = @campaignID and 
-			i.issueDate between DATEADD(mi, DATEPART(mi, pl.broadcastStart), DATEADD(hh, DATEPART(hh, pl.broadcastStart), @beginDate)) and dateadd(ss, -1, DATEADD(mi, DATEPART(mi, pl.broadcastStart), DATEADD(hh, DATEPART(hh, pl.broadcastStart), dateadd(day, 1, @endDate))))
+			i.issueDate between @beginDate and dateadd(ss, -1, dateadd(day, 1, @endDate))
 		GROUP BY 
 			p.[name], mm.reportString, mm.groupName
 	end 

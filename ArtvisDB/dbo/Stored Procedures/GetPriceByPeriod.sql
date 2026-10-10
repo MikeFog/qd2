@@ -91,7 +91,7 @@ Else If	@campaignTypeID = 2
 			inner join SponsorProgramPriceList pl on st.priceListID = pl.priceListID
 		Where		
 			i.campaignID = @campaignID and 
-			Convert(datetime, Convert(varchar(8), DATEADD(mi, -DATEPART(mi, pl.broadcastStart), DATEADD(hh, -DATEPART(hh, pl.broadcastStart), i.issueDate)), 112), 112) between @startDate and @finishDate
+			Convert(datetime, Convert(varchar(8), i.issueDate, 112), 112) between @startDate and @finishDate
 	else 
 		Select	
 			@price = isnull(Sum(i.[tariffPrice] * i.[ratio]), 0), @tariffPrice = isnull(SUM(i.[tariffPrice]), 0),
@@ -104,10 +104,10 @@ Else If	@campaignTypeID = 2
 			inner join SponsorTariff st on i.tariffID = st.tariffID
 			inner join SponsorProgramPriceList pl on st.priceListID = pl.priceListID
 			left join dbo.AgencyTax at on c.agencyID = at.agencyID
-				and Convert(datetime, Convert(varchar(8), DATEADD(mi, -DATEPART(mi, pl.broadcastStart), DATEADD(hh, -DATEPART(hh, pl.broadcastStart), i.issueDate)), 112), 112) between at.startDate and at.finishDate
+				and Convert(datetime, Convert(varchar(8), i.issueDate, 112), 112) between at.startDate and at.finishDate
 		Where		
 			i.campaignID = @campaignID and 
-			Convert(datetime, Convert(varchar(8), DATEADD(mi, -DATEPART(mi, pl.broadcastStart), DATEADD(hh, -DATEPART(hh, pl.broadcastStart), i.issueDate)), 112), 112) between @startDate and @finishDate
+			Convert(datetime, Convert(varchar(8), i.issueDate, 112), 112) between @startDate and @finishDate
 	End
 Else If	@campaignTypeID = 3 begin
 	if @withTax = 0

@@ -142,7 +142,7 @@ BEGIN
         m.massmediaGroupID;
 
     ------------------------------------------------------------
-    -- 2) Спонсорская (campaignTypeID=2) — "радиодень" через broadcastStart (1:1)
+    -- 2) Спонсорская (campaignTypeID=2) — по дню выпуска (сдвиг broadcastStart снят 10.10.2026, docs/broadcast-start.md §7)
     ------------------------------------------------------------
     INSERT INTO #Result
     (
@@ -180,13 +180,7 @@ BEGIN
         JOIN dbo.f_months(@startDate, @finishDate) mn
             ON CONVERT(datetime,
                     CONVERT(varchar(8),
-                        DATEADD(mi,
-                            -DATEPART(mi, pl.broadcastStart),
-                            DATEADD(hh,
-                                -DATEPART(hh, pl.broadcastStart),
-                                pi.issueDate
-                            )
-                        ),
+                        pi.issueDate,
                         112
                     ),
                     112

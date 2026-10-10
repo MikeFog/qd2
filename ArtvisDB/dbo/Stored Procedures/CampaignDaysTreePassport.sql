@@ -37,7 +37,7 @@ if (@campaignTypeID in (1,2))
 		i.issueID,
 		convert(varchar, tw.dayActual, 104),
 		'Issue.png',
-		dbo.fn_GetTimeString(pl.broadcastStart, tw.windowDateActual) + ' ' + r.name +
+		CONVERT(varchar(5), tw.windowDateActual, 108) + ' ' + r.name +
 		Case i.positionId
 			When  -20 Then ' (F)'
 			When  -15 Then ' (F)'

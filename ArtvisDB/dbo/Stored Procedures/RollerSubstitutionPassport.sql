@@ -65,11 +65,11 @@ if (@campaignTypeID in (1,2))
 begin 
 	insert into @days(id, parentID, windowID,[image], [name],issueDate)
 	select distinct
-		convert(varchar, tw.dayOriginal, 104) + dbo.fn_GetTimeString(pl.broadcastStart, tw.windowDateOriginal),
+		convert(varchar, tw.dayOriginal, 104) + CONVERT(varchar(5), tw.windowDateOriginal, 108),
 		convert(varchar, tw.dayOriginal, 104),
 		tw.windowId,
 		'Issue.png',
-		dbo.fn_GetTimeString(pl.broadcastStart, tw.windowDateOriginal),
+		CONVERT(varchar(5), tw.windowDateOriginal, 108),
 		tw.dayOriginal
 	from 
 		Issue i 
@@ -84,7 +84,7 @@ begin
 		i.rollerID = @rollerID  
 		and (@moduleID is null or mi.moduleID = @moduleID) 
 		and (@packModuleID is null or pmpl.packModuleID = @packModuleID)
-	order by dbo.fn_GetTimeString(pl.broadcastStart, tw.windowDateOriginal)
+	order by CONVERT(varchar(5), tw.windowDateOriginal, 108)
 end 
 
 select * from @days order by issueDate

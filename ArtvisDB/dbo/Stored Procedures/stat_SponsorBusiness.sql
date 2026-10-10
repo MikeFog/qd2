@@ -66,22 +66,13 @@ begin
 			inner join @massmedias umm on sp.massmediaID = umm.massmediaID
 		where sp.massmediaID = coalesce(@massmediaID, sp.massmediaID) 
 		 and pl.startDate <= @FinishDay and pl.finishDate >= @StartDay
-		 and ((st.time >= pl.broadcastStart 
-				and ((st.monday = 1 and @dateweek = 1)
+		 and ((st.monday = 1 and @dateweek = 1)
 					or (st.tuesday = 1 and @dateweek = 2)
 					or (st.wednesday = 1 and @dateweek = 3)
 					or (st.thursday = 1 and @dateweek = 4)
 					or (st.friday = 1 and @dateweek = 5)
 					or (st.saturday = 1 and @dateweek = 6)
-					or (st.sunday = 1 and @dateweek = 7)))
-			or (st.time < pl.broadcastStart 
-				and ((st.monday = 1 and @dateweek = 7)
-					or (st.tuesday = 1 and @dateweek = 1)
-					or (st.wednesday = 1 and @dateweek = 2)
-					or (st.thursday = 1 and @dateweek = 3)
-					or (st.friday = 1 and @dateweek = 4)
-					or (st.saturday = 1 and @dateweek = 5)
-					or (st.sunday = 1 and @dateweek = 6))))
+					or (st.sunday = 1 and @dateweek = 7))
 		
 		set @date = dateadd(day, 1, @date)
 	end 
@@ -125,8 +116,8 @@ begin
 		and (f.headCompanyID is null or f.headCompanyID = coalesce(@headCompanyID, f.headCompanyID))
 		and (a.userID is null or a.userID = coalesce(@userID, a.userID))
 		and r.programID = coalesce(@programID, r.programID)
-		and (@StartDay is null or DATEADD(mi, DATEPART(mi, pl.broadcastStart), DATEADD(hh, DATEPART(hh, pl.broadcastStart), @StartDay)) <= r.issueDate)
-		and (@finishDay is null or DATEADD(mi, DATEPART(mi, pl.broadcastStart), DATEADD(hh, DATEPART(hh, pl.broadcastStart), @FinishDay)) >= r.issueDate)
+		and (@StartDay is null or (pl.pricelistID is not null and @StartDay <= r.issueDate))
+		and (@finishDay is null or (pl.pricelistID is not null and @FinishDay >= r.issueDate))
 		and (i.isConfirmed is null or i.isConfirmed = 1)
 		and ((a.userID = @loggedUserID and umm.myMassmedia = 1) or (a.userID <> @loggedUserID and umm.foreignMassmedia = 1))
 	order by r.issueDate
@@ -170,8 +161,8 @@ begin
 		and f.headCompanyID = coalesce(@headCompanyID, f.headCompanyID)
 		and a.userID = coalesce(@userID, a.userID)
 		and i.programID = coalesce(@programID, i.programID)
-		and (@StartDay is null or DATEADD(mi, DATEPART(mi, pl.broadcastStart), DATEADD(hh, DATEPART(hh, pl.broadcastStart), @StartDay)) <= i.issueDate)
-		and (@finishDay is null or DATEADD(mi, DATEPART(mi, pl.broadcastStart), DATEADD(hh, DATEPART(hh, pl.broadcastStart), @FinishDay)) > i.issueDate)
+		and (@StartDay is null or @StartDay <= i.issueDate)
+		and (@finishDay is null or @FinishDay > i.issueDate)
 		and i.isConfirmed = 1
 		and ((a.userID = @loggedUserID and umm.myMassmedia = 1) or (a.userID <> @loggedUserID and umm.foreignMassmedia = 1))
 	order by i.issueDate

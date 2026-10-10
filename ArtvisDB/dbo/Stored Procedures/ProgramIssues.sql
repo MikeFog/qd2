@@ -42,14 +42,14 @@ FROM
 WHERE
 	pi.campaignID = COALESCE(@campaignID, pi.campaignID) and
 	pi.issueDate = coalesce(@windowDate, pi.issueDate) and
-	(@issueDate is null or pi.issueDate >= DATEADD(mi, DATEPART(mi, pl.broadcastStart), DATEADD(hh, DATEPART(hh, pl.broadcastStart), @issueDate))) And
-	(@issueDate is null or pi.issueDate < DATEADD(mi, DATEPART(mi, pl.broadcastStart), DATEADD(hh, DATEPART(hh, pl.broadcastStart), dateadd(day, 1, @issueDate)))) And
+	(@issueDate is null or pi.issueDate >= @issueDate) And
+	(@issueDate is null or pi.issueDate < dateadd(day, 1, @issueDate)) And
 	pi.programID = COALESCE(@programID, pi.programID) AND
 	sp.massmediaID = COALESCE(@massmediaID, sp.massmediaID) And
 	f.firmID = Coalesce(@firmID, f.firmID) And
 	u.userID = Coalesce(@userID, u.userID) AND
 	pi.[issueID] = COALESCE(@issueID, pi.[issueID]) and 
-	(@startDate is null or @finishDate is null or (  pi.issueDate between  DATEADD(mi, DATEPART(mi, pl.broadcastStart), DATEADD(hh, DATEPART(hh, pl.broadcastStart), @startDate)) and DATEADD(mi, DATEPART(mi, pl.broadcastStart), DATEADD(hh, DATEPART(hh, pl.broadcastStart), dateadd(ss, -1, dateadd(day, 1, @finishDate)) ))     ))
+	(@startDate is null or @finishDate is null or (  pi.issueDate between  @startDate and dateadd(ss, -1, dateadd(day, 1, @finishDate))     ))
 	and (@showUncorfirmed = 1 or pi.isConfirmed = 1)
 	and (a.deleteDate Is Null or @showDeleted = 1)
 ORDER BY

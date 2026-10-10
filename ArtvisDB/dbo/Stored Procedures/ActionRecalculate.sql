@@ -130,8 +130,8 @@ BEGIN
         SELECT
             i.campaignID,
             tariffPrice  = SUM(i.tariffPrice),
-            startDate    = MIN(DATEADD(mi, -DATEPART(mi, pl.broadcastStart), DATEADD(hh, -DATEPART(hh, pl.broadcastStart), i.issueDate))),
-            finishDate   = MAX(DATEADD(mi, -DATEPART(mi, pl.broadcastStart), DATEADD(hh, -DATEPART(hh, pl.broadcastStart), i.issueDate))),
+            startDate    = MIN(i.issueDate),
+            finishDate   = MAX(i.issueDate),
             timeBonus    = SUM(pl.bonus),
             programsCount = COUNT(*)
         FROM dbo.ProgramIssue i

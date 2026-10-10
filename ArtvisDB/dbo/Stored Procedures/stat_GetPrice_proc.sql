@@ -274,12 +274,10 @@ WHERE c.campaignTypeID = 2
       WHERE st.tariffID = pi.tariffID
         AND
         (
-            -- тот самый "привод к дню с учетом broadcastStart" как в fn_statGetPrice
+            -- день выпуска (сдвиг на начало эфирного дня broadcastStart снят 10.10.2026: он везде 00:00, docs/broadcast-start.md §7)
             CONVERT(datetime,
                 CONVERT(varchar(8),
-                    DATEADD(minute, -DATEPART(minute, pl.broadcastStart),
-                        DATEADD(hour, -DATEPART(hour, pl.broadcastStart), pi.issueDate)
-                    ),
+                    pi.issueDate,
                 112),
             112)
         ) BETWEEN @startDate AND @finishDate

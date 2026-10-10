@@ -130,7 +130,7 @@ begin
 		tw.windowPrevId = @windowPrevId,
 		tw.windowNextId = @windowNextId,
 		tw.isDisabled = coalesce(@isDisabled, 0),
-		tw.dayActual = Convert(datetime, Convert(varchar(8), DATEADD(mi, -DATEPART(mi, pl.broadcastStart), DATEADD(hh, -DATEPART(hh, pl.broadcastStart), @windowDateActual)), 112), 112)
+		tw.dayActual = Convert(datetime, Convert(varchar(8), @windowDateActual, 112), 112)
 	from [TariffWindow] tw
 		inner join Pricelist pl on tw.massmediaID = pl.massmediaID and @windowDateActual >= pl.startDate and @windowDateActual < pl.finishDate + 1
 	WHERE		
@@ -153,10 +153,8 @@ BEGIN
 		INTO [TariffWindow] ([windowDateOriginal], [windowDateActual], [duration], [price], [massmediaID], 
 		isDisabled, dayActual, dayOriginal, duration_total) 
 	select @windowDateOriginal, @windowDateActual, @duration, @price, @massmediaID, coalesce(@isDisabled, 0)
-		,Convert(datetime, Convert(varchar(8), DATEADD(mi, -DATEPART(mi, pl.broadcastStart)
-		,DATEADD(hh, -DATEPART(hh, pl.broadcastStart), @windowDateActual)), 112), 112)
-		,Convert(datetime, Convert(varchar(8), DATEADD(mi, -DATEPART(mi, pl.broadcastStart)
-		, DATEADD(hh, -DATEPART(hh, pl.broadcastStart), @windowDateOriginal)), 112), 112)
+		,Convert(datetime, Convert(varchar(8), @windowDateActual, 112), 112)
+		,Convert(datetime, Convert(varchar(8), @windowDateOriginal, 112), 112)
 		, @duration_total
 	from 
 		Pricelist pl 

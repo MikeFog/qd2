@@ -1,7 +1,7 @@
 > Исследование проведено 21.09.2026. Шаг 1 (обнуление спонсорских `03:00`) — на проде
 > с 22.09.2026, закрытие сентября прошло без проблем. Инвентарь сверен с кодом и базами
 > заново 06.10.2026. Шаг 2 (удаление мёртвых объектов) — `Deploy/20`, на проде с 06.10.2026
-> без ошибок; шаг 3 — после нескольких дней тишины на проде. Очерёдность с переходом на фактическое окно
+> без ошибок; шаг 3 (схлопнуть слой 1) — `Deploy/29`, на ArtvisDev с 10.10.2026, замер «до/после» — 0 различий. Очерёдность с переходом на фактическое окно
 > выпуска — §7, «Порядок с переходом на фактическое окно» (08.10.2026).
 
 # `broadcastStart` — справочник и оценка удаления
@@ -385,6 +385,7 @@ FROM SponsorProgramPricelist GROUP BY CONVERT(varchar(8), broadcastStart, 108);
 >
 > На `Tumen` шаг 1 **не применялся** (6 × `03:00`). Спонсорских выпусков там нет вообще,
 > поэтому на результат это не влияет; применить можно для единообразия.
+> **Применён 10.10.2026** (Миша) перед шагом 3: `Deploy/29` на Tumen без него отказался работать, как задумано.
 
 **Результат контрольного замера.** До и после применения снят снимок из 15 324 строк:
 привязка выпуска к прайс-листу (JOIN по `broadcastStart`), приведение к эфирному дню,
@@ -422,6 +423,27 @@ FROM SponsorProgramPricelist GROUP BY CONVERT(varchar(8), broadcastStart, 108);
 недостижимой второй ветки дня недели. Колонку **оставить**. Начинать с write-path:
 `TariffWindowIUD` (сверять `dayActual`/`dayOriginal` до и после) и `ProgramIssueIUD`.
 Остальное сверять тем же контрольным замером, что и шаг 1.
+
+> **Статус: сделано 10.10.2026** — [`Deploy/29_broadcast-start-layer1-collapse.sql`](../Deploy/29_broadcast-start-layer1-collapse.sql),
+> 19 процедур: спонсорский тракт (`ActionRecalculate`, `GetIssuesPrice`, `GetPriceByPeriod`, `SetIssueRatio`,
+> `stat_GetPrice_proc`, `stat_GetPriceByMonth_proc`, `stat_Bonuses`, `rpt_GenericBill`, `CampaignsForActJournalRetrieve`,
+> `SponsorCampaignPrograms`, `SponsorCampaignProgramDelete`, `ProgramIssues`, `ProgramIssuesDays`, `stat_SponsorBusiness`,
+> `ProgramIssueIUD`), `TariffWindowIUD` и паспорта `TariffPassport`, `CampaignDaysTreePassport`,
+> `RollerSubstitutionPassport` (`fn_GetTimeString(broadcastStart, x)` → `CONVERT(varchar(5), x, 108)`).
+> Замер на ArtvisDev: «до» снят заново 10.10.2026 (10 мин), «после» — 38 457 секций, 252 438 строк, **0 различий**.
+> Скрипт отказывается работать, если где-то начало эфирного дня не 00:00 (у спонсорских прайс-листов — всё значение
+> `'19000101'`, они участвовали в арифметике и датой), — на Tumen сначала шаг 1. **Tumen:** шаг 1 и `Deploy/29` накатаны
+> 10.10.2026, «ГОТОВО».
+>
+> **Не вошло в шаг 3** (не тождественно или не сдвиг):
+> - `stat_SponsorBusiness`, режим «свободные и занятые»: прайс-лист присоединён `LEFT JOIN` по дате выпуска, и сдвиг
+>   заодно отсекал строки без прайс-листа — последний день спонсорского прайс-листа после 00:00 (`finishDate` хранится
+>   с 00:00). Отсечение сохранено явным условием `pl.pricelistID is not null`; похоже на дефект — отдельно.
+> - `MediaPlanRetrieve_v2`: начало дня берётся `OUTER APPLY` к прайс-листу; если прайс-листа на день окна нет,
+>   сдвиг даёт `NULL` и выпуск выпадает из «Графика размещения». Тождественно не упростить — вместе с чисткой мёртвой
+>   второй ветки.
+> - Выдача колонки наружу и запись (`Pricelists`, `ModulePriceLists`, `SponsorPricelistByDate`, `PricelistIUD`,
+>   `sponsorPLIUD`) — до шага 5. [SQL-BS-02] (`sponsorPLIUD` падает) — отдельной правкой со своим ожидаемым различием.
 
 **Правило правки — только буквальное удаление прибавки `00:00`**: `DATEADD(mi, ±DATEPART(mi, x.broadcastStart), DATEADD(hh, ±DATEPART(hh, x.broadcastStart), E))` → `E`,
 `E - spp.broadcastStart` → `E`, `ToShortDate(@d) + sppl.broadcastStart` → `ToShortDate(@d)`,

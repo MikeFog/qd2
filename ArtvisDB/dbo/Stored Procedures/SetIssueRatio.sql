@@ -52,11 +52,9 @@ BEGIN
                 ON st.pricelistID = pl.pricelistID
         WHERE
             i.issueDate BETWEEN
-                DATEADD(mi, DATEPART(mi, pl.broadcastStart),
-                    DATEADD(hh, DATEPART(hh, pl.broadcastStart), @startDate))
+                @startDate
                 AND
-                DATEADD(mi, DATEPART(mi, pl.broadcastStart),
-                    DATEADD(hh, DATEPART(hh, pl.broadcastStart), @finishDate))
+                @finishDate
             AND i.Ratio <> @ratio;
 
     IF @campaignTypeID = 3

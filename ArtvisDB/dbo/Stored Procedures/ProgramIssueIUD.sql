@@ -67,22 +67,13 @@ IF @actionName = 'AddItem'
 		from SponsorTariff t 
 			inner join SponsorProgramPricelist sppl on t.pricelistID = sppl.pricelistID
 		where t.tariffID = @tariffID and sppl.sponsorProgramID = @programID
-			and ((@issueDate >= dbo.ToShortDate(@issueDate) + sppl.broadcastStart 
-				and ((t.monday = 1 and @datepart = 1)
+			and ((t.monday = 1 and @datepart = 1)
 				or (t.tuesday = 1 and @datepart = 2)
 				or (t.wednesday = 1 and @datepart = 3)
 				or (t.thursday = 1 and @datepart = 4)
 				or (t.friday = 1 and @datepart = 5)
 				or (t.saturday = 1 and @datepart = 6)
 				or (t.sunday = 1 and @datepart = 7)))
-			or (@issueDate < dbo.ToShortDate(@issueDate) + sppl.broadcastStart 
-				and ((t.monday = 1 and @datepart = 7)
-				or (t.tuesday = 1 and @datepart = 1)
-				or (t.wednesday = 1 and @datepart = 2)
-				or (t.thursday = 1 and @datepart = 3)
-				or (t.friday = 1 and @datepart = 4)
-				or (t.saturday = 1 and @datepart = 5)
-				or (t.sunday = 1 and @datepart = 6)))))
 	begin 
 		raiserror('ProgramNotExists',16,1)
 		return

@@ -206,7 +206,7 @@ While @@fetch_status = 0 BEGIN
 				inner join SponsorProgramPriceList pl on st.priceListID = pl.priceListID
 			Where		
 				i.campaignID = @campaignID and 
-				Convert(datetime, Convert(varchar(8), DATEADD(mi, -DATEPART(mi, pl.broadcastStart), DATEADD(hh, -DATEPART(hh, pl.broadcastStart), i.issueDate)), 112), 112) between dbo.ToShortDate(@startDate) and dbo.ToShortDate(@currentDate) 
+				Convert(datetime, Convert(varchar(8), i.issueDate, 112), 112) between dbo.ToShortDate(@startDate) and dbo.ToShortDate(@currentDate) 
 		END
 		ELSE
 		BEGIN

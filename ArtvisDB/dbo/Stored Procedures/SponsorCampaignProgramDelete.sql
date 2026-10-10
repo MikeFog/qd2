@@ -27,14 +27,14 @@ begin
 			inner join SponsorProgramPricelist pl on st.pricelistID = pl.pricelistID
 		where i.campaignID = @campaignID 
 			and i.programID = coalesce(@programID, i.programID)
-			and (@issueDate is null or dbo.ToShortDate(DATEADD(mi, -DATEPART(mi, pl.broadcastStart), DATEADD(hh, -DATEPART(hh, pl.broadcastStart), i.issueDate))) = @issueDate)
+			and (@issueDate is null or dbo.ToShortDate(i.issueDate) = @issueDate)
 	
 	if dbo.f_IsAdmin(@loggedUserID) <> 1 
 		and exists(select * from @issues it 
 					inner join ProgramIssue i on it.issueID = i.issueID 
 					inner join SponsorTariff st on i.tariffID = st.tariffID
 					inner join SponsorProgramPricelist pl on st.pricelistID = pl.pricelistID
-					where dbo.ToShortDate(DATEADD(mi, -DATEPART(mi, pl.broadcastStart), DATEADD(hh, -DATEPART(hh, pl.broadcastStart), i.issueDate))) < Convert(datetime, Convert(varchar(8), dateadd(day, 1, getdate()), 112), 112))
+					where dbo.ToShortDate(i.issueDate) < Convert(datetime, Convert(varchar(8), dateadd(day, 1, getdate()), 112), 112))
 	begin 
 		raiserror('PastIssue', 16, 1)
 		return

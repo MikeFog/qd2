@@ -285,8 +285,7 @@ BEGIN
         LEFT JOIN [dbo].[SponsorTariff] st ON i.[tariffID] = st.[tariffID]
         LEFT JOIN [dbo].[SponsorProgramPriceList] pl ON st.[priceListID] = pl.[priceListID]
             AND CONVERT(DATETIME, CONVERT(VARCHAR(8),
-                DATEADD(MINUTE, -DATEPART(MINUTE, pl.[broadcastStart]),
-                    DATEADD(HOUR, -DATEPART(HOUR, pl.[broadcastStart]), i.[issueDate])), 112), 112)
+                i.[issueDate], 112), 112)
                 BETWEEN @periodStartDate AND @periodFinishDate
     WHERE cb.[campaignTypeID] = 2
     GROUP BY cb.[campaignID], cb.[firmID], cb.[firmName], cb.[headCompanyID], cb.[headCompanyName],

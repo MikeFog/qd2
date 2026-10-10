@@ -45,8 +45,8 @@ Else If @campaignTypeID = 2 Begin
 		inner join SponsorProgramPriceList pl on pl.priceListID = st.priceListID
 	Where	
 		i.campaignID = @campaignID	and
-		i.issueDate between DATEADD(mi, DATEPART(mi, pl.broadcastStart), DATEADD(hh, DATEPART(hh, pl.broadcastStart), @startDate)) 
-			and DATEADD(mi, DATEPART(mi, pl.broadcastStart), DATEADD(hh, DATEPART(hh, pl.broadcastStart), dateadd(day, 1, @finishDate))) 
+		i.issueDate between @startDate 
+			and dateadd(day, 1, @finishDate) 
 End				
 
 Else If @campaignTypeID = 3 Begin
