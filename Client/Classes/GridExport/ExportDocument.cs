@@ -61,8 +61,10 @@ namespace Merlin.Classes.GridExport
 			string lastTarrifUnionID = string.Empty;
 			bool isExtension = false;
 			int lastType = 0;
-			int lastTypeInBlock = 0;
 			bool isPrintStart = false;
+			// В окне есть ролики, кроме промо без спонсора (9); влёт окна был бы напечатан
+			bool windowHasAdvert = false;
+			bool windowInAllowed = false;
 			Dictionary<DataRow, bool> lastBlocks = new Dictionary<DataRow, bool>();
 			Additional additional = new Additional();
 
@@ -89,11 +91,8 @@ namespace Merlin.Classes.GridExport
 
 					if (lastType > 0)
 					{
-						if (beforeIsExtension && lastTypeInBlock <= 0 && additional.NeedInJingle && additional.NeedOutJingle)
-						{
-							additional.NeedOutJingle = false;
-							additional.NeedExt = false;
-						}
+						if (!windowHasAdvert)
+							EndWindowWithoutAdvert(file, mm, ref additional, windowInAllowed, beforeIsExtension || isExtension);
 						
 						if (string.IsNullOrEmpty(windowPrevId))
 							PrintBlockEnd(file, lastBlockExtension, mm, additional, isExtension);
@@ -122,7 +121,8 @@ namespace Merlin.Classes.GridExport
 					additional.NeedInJingle = bool.Parse(row[ExportParams.needInJingle].ToString());
 					additional.NeedOutJingle = bool.Parse(row[ExportParams.needOutJingle].ToString());
 					additional.IsAlive = bool.Parse(row[ExportParams.isAlive].ToString());
-					lastTypeInBlock = 0;
+					windowHasAdvert = WindowHasAdvert(rowList, i);
+					windowInAllowed = additional.NeedInJingle && string.IsNullOrEmpty(windowPrevId);
 				}
 
 				if (type > 0 && !isPrintStart)
@@ -140,10 +140,12 @@ namespace Merlin.Classes.GridExport
 						else
 							duration = int.Parse(block.Key[ExportParams.fullDuration].ToString()) + GetNextWindowsDuration(rowList, i);
 
+						// Окно без рекламы (только промо без спонсора) влёт не получает - вместо него метка в конце окна
                         Additional addStart = new Additional
 						                      	{
 						                      		NeedExt = bool.Parse(block.Key[ExportParams.needExt].ToString()),
-						                      		NeedInJingle = bool.Parse(block.Key[ExportParams.needInJingle].ToString()) && string.IsNullOrEmpty(windowPrevId),
+						                      		NeedInJingle = bool.Parse(block.Key[ExportParams.needInJingle].ToString()) && string.IsNullOrEmpty(windowPrevId)
+						                      			&& (block.Key != row || windowHasAdvert),
 						                      		NeedOutJingle = bool.Parse(block.Key[ExportParams.needOutJingle].ToString()),
 						                      		IsAlive = bool.Parse(block.Key[ExportParams.isAlive].ToString())
 						                      	};
@@ -161,21 +163,52 @@ namespace Merlin.Classes.GridExport
 				if (type > 0)
 				{
 					PrintRoller(file, row, mm, date, type, additional);
-					lastTypeInBlock = lastType = type;
+					lastType = type;
 				}
 			}
 			if (lastType > 0)
 			{
-				if (lastTypeInBlock <= 0 && additional.NeedInJingle && additional.NeedOutJingle)
-				{
-					additional.NeedOutJingle = false;
-					additional.NeedExt = false;
-				}
+				if (!windowHasAdvert)
+					EndWindowWithoutAdvert(file, mm, ref additional, windowInAllowed, isExtension);
 
 				PrintBlockEnd(file, lastBlockExtension, mm, additional, false);
 			}
 
 			PrintFooter(file, mm, date);
+		}
+
+		/// <summary>
+		/// Конец окна без рекламы - пустого или только с промо без спонсора (9) - в уже начатом блоке:
+		/// своих влёта и аута у него нет. Если окну положен влёт (needInJingle, не продолжение склейки по
+		/// windowPrevId), на его месте - метка места влёта; BlockManager оставляет её только в склеенном
+		/// блоке без настоящего влёта и с рекламой.
+		/// </summary>
+		/// <param name="inChain">Окно склеено с соседним; добивку (Ext) одиночного окна не трогаем.</param>
+		private void EndWindowWithoutAdvert(Stream file, Massmedia mm, ref Additional additional, bool inAllowed, bool inChain)
+		{
+			if (inAllowed)
+				PrintJingleInPlace(file, mm, additional);
+
+			if (additional.NeedInJingle && additional.NeedOutJingle)
+			{
+				additional.NeedOutJingle = false;
+				if (inChain)
+					additional.NeedExt = false;
+			}
+		}
+
+		/// <summary>Есть ли в окне (строки с тем же временем, начиная с start) ролик, кроме промо без спонсора (9).</summary>
+		private static bool WindowHasAdvert(List<DataRow> rowList, int start)
+		{
+			DateTime time = GetTime(rowList[start]);
+			for (int k = start; k < rowList.Count && GetTime(rowList[k]) == time; k++)
+			{
+				string strType = rowList[k][ExportParams.rolActionTypeID].ToString();
+				int type = string.IsNullOrEmpty(strType) ? 0 : int.Parse(strType);
+				if (type > 0 && type != 9)
+					return true;
+			}
+			return false;
 		}
 
 		private int GetNextWindowsDuration(List<DataRow> rowList, int currentIndex)
@@ -240,8 +273,12 @@ namespace Merlin.Classes.GridExport
 									 Additional additional, int type, bool isExtension, DataRow block);
 
 		protected abstract void PrintBlockEnd(Stream file, DateTime? lastBlock, Massmedia mm, Additional additional, bool isExtension);
-		
 
+		/// <summary>Метка места влёта (см. DJinParam.strJingleInPlace); другим форматам не нужна.</summary>
+		protected virtual void PrintJingleInPlace(Stream file, Massmedia mm, Additional additional)
+		{
+		}
+		
 		protected static DateTime GetTime(DataRow row)
 		{
 			string time = row[ExportParams.tariffTime].ToString();

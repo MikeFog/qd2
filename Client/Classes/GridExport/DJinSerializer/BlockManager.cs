@@ -116,6 +116,17 @@ namespace Merlin.Classes.GridExport.DJinSerializer
                 return null;
             }
 
+            // Метка места влёта нужна, только если настоящего влёта в склеенном блоке нет, и одна - первая
+            bool hasJingleIn = middle.Any(line => GetTypeMarker(line) == DJinParam.strJingleIn);
+            int firstInPlace = middle.FindIndex(IsJingleInPlace);
+            middle = middle.Where((line, index) => !IsJingleInPlace(line) || (!hasJingleIn && index == firstInPlace)).ToList();
+
+            // Кроме метки, ничего не напечатано (ролики прямого эфира не пишутся) - блок пустой
+            if (middle.All(IsJingleInPlace))
+            {
+                return null;
+            }
+
             // Identificar c-type-4, c-type-5 y las demás
             string cType4Line = null;
             string cType5Line = null;
@@ -158,7 +169,7 @@ namespace Merlin.Classes.GridExport.DJinSerializer
             // Si el bloque NO tiene c-type-4 ni c-type-5 ni política ni промо → dejar todo igual
             if (cType4Line == null && cType5Line == null && !hasAgitation && !hasPromo)
             {
-                return original;
+                return BuildBlock(btLine, middle, eLine);
             }
 
             // Голова - служебные строки, что стояли в начале блока до первого ролика:
@@ -171,9 +182,9 @@ namespace Merlin.Classes.GridExport.DJinSerializer
             while (headCount < middle.Count && IsServiceLine(middle[headCount]))
                 headCount++;
 
-            // Хвост - всё, что идёт после последнего обычного ролика (аут, добивка).
+            // Хвост - всё, что идёт после последнего обычного ролика (аут, добивка, метка места влёта).
             int tailStart = otherLines.Count;
-            while (tailStart > 0 && IsServiceLine(otherLines[tailStart - 1]))
+            while (tailStart > 0 && (IsServiceLine(otherLines[tailStart - 1]) || IsJingleInPlace(otherLines[tailStart - 1])))
                 tailStart--;
 
             // Обычных роликов в блоке нет - всё служебное после влёта уходит в хвост
@@ -188,9 +199,9 @@ namespace Merlin.Classes.GridExport.DJinSerializer
             // поэтому тоже считаются; идентификаторы СМИ, анонс и промо без
             // спонсора - нет, как и ручные 4/5
             bool hasRealRollers = agitationLines.Count > 0 || promoSponsorLines.Count > 0
-                                  || bodyLines.Any(line => !IsServiceLine(line));
+                                  || bodyLines.Any(line => !IsServiceLine(line) && !IsJingleInPlace(line));
 
-            // Рекламы нет - джинглы влёта и аута (In/Out) не нужны
+            // Рекламы нет - джинглы влёта и аута (In/Out) и метка места влёта не нужны
             if (!hasRealRollers)
             {
                 headLines = headLines.Where(line => !IsJingle(line)).ToList();
@@ -204,7 +215,8 @@ namespace Merlin.Classes.GridExport.DJinSerializer
             // 3) локальное промо без спонсора (9) - вплотную перед влётом. В склеенном
             //    блоке (TariffUnion, windowPrevId) влёт бывает в середине: у первого окна
             //    его нет, а у следующего есть - тогда промо встаёт перед ним, а не в начало
-            //    блока. Влёта нет - промо сразу за c-type-4
+            //    блока. Вместо влёта может быть метка места влёта (окно с влётом пустое) -
+            //    промо встаёт перед ней. Нет ни того, ни другого - промо сразу за c-type-4
             // 4) джингл влёта (In)
             // 5) локальное промо со спонсором (8) - сразу за влётом, а без влёта -
             //    сразу за промо без спонсора
@@ -249,13 +261,18 @@ namespace Merlin.Classes.GridExport.DJinSerializer
             if (cType5Line != null)
                 newMiddle.Add(cType5Line);
 
-            int inJingleIndex = newMiddle.FindIndex(line => GetTypeMarker(line) == DJinParam.strJingleIn);
+            int inJingleIndex = newMiddle.FindIndex(line => GetTypeMarker(line) == DJinParam.strJingleIn || IsJingleInPlace(line));
             newMiddle.InsertRange(inJingleIndex >= 0 ? inJingleIndex : promoNoSponsorIndex, promoNoSponsorLines);
 
-            // Reconstruimos el bloque
+            return BuildBlock(btLine, newMiddle, eLine);
+        }
+
+        // Reconstruimos el bloque
+        private static Block BuildBlock(string btLine, List<string> middle, string eLine)
+        {
             var result = new Block();
             result.Lines.Add(btLine);
-            result.Lines.AddRange(newMiddle);
+            result.Lines.AddRange(middle);
             result.Lines.Add(eLine);
 
             return result;
@@ -267,11 +284,17 @@ namespace Merlin.Classes.GridExport.DJinSerializer
             return cols.Length > 1 ? cols[1].Trim('"') : "";
         }
 
-        /// <summary>Джингл влёта (In) или аута (Out).</summary>
+        /// <summary>Джингл влёта (In) или аута (Out), а также метка места влёта.</summary>
         private static bool IsJingle(string line)
         {
             string marker = GetTypeMarker(line);
-            return marker == DJinParam.strJingle || marker == DJinParam.strJingleIn;
+            return marker == DJinParam.strJingle || marker == DJinParam.strJingleIn || marker == DJinParam.strJingleInPlace;
+        }
+
+        /// <summary>Метка места влёта (DJinParam.strJingleInPlace) - не ролик и не джингл.</summary>
+        private static bool IsJingleInPlace(string line)
+        {
+            return GetTypeMarker(line) == DJinParam.strJingleInPlace;
         }
 
         /// <summary>
@@ -292,7 +315,8 @@ namespace Merlin.Classes.GridExport.DJinSerializer
         /// ролики - метки 4/5 не ставим специально, чтобы DJin не принял авто-обвязку за
         /// ручные идентификаторы СМИ. Влёт пишется обычным джинглом.
         /// Метка промо без спонсора (9), как и 4/5, остаётся: по ней добивщик Европы Плюс
-        /// не ставит анонс в блок с промо, он же снимает её перед DJin.
+        /// не ставит анонс в блок с промо, он же снимает её перед DJin. Так же остаётся
+        /// метка места влёта: по ней добивщик ставит анонс и вычищает её.
         /// </summary>
         private static string NormalizeAgitationMarker(string line)
         {

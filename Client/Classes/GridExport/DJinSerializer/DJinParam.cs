@@ -14,6 +14,10 @@ namespace Merlin.Classes.GridExport.DJinSerializer
 		public const string strJingle = "j";
 		// Временная метка джингла влёта (In): нужна BlockManager для порядка в блоке, в файл пишется как strJingle
 		public const string strJingleIn = "j-in";
+		// Метка места влёта: окно склейки, которому положен влёт, без рекламы (пустое или только промо
+		// без спонсора, 9) - своего влёта у него нет. Строка без файла, длительность 0: по ней добивщик
+		// ставит анонс туда, где был бы влёт, и вычищает её перед DJin
+		public const string strJingleInPlace = "fake-in";
 		public const string strLine = "\"{0}\",\"{1}\",\"{2}\",\"{3}\",\"{4}\",\"{5}\",\"{6}\"\r\n";
         public const string strLine2 = "\"{0}\",\"{1}\",\"{2}\",\"{3}\",\"{4}\",\"{5}\",\"{6}\"";
         public const string strRoller = "c";

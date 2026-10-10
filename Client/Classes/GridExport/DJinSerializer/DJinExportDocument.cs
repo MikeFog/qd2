@@ -148,6 +148,12 @@ namespace Merlin.Classes.GridExport.DJinSerializer
 			}
 		}
 
+		protected override void PrintJingleInPlace(Stream file, Massmedia mm, Additional additional)
+		{
+			if (!additional.IsAlive)
+				PrintLine(file, string.Empty, DJinParam.strJingleInPlace, string.Empty, string.Empty, string.Empty, "00:00:00");
+		}
+
 		protected override void PrintBlockEnd(Stream file, DateTime? lastBlock, Massmedia mm, Additional additional, bool isExtension)
 		{
 			if (lastBlock != null)
