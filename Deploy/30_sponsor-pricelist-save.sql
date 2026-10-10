@@ -1,13 +1,18 @@
-﻿
+﻿-- Спонсорский прайс-лист снова сохраняется (docs/broadcast-start.md [SQL-BS-02]).
+-- sponsorPLIUD писала в broadcastStart параметр @broadcastStart, которого программа не передаёт (у сущности 12
+-- такого атрибута нет): NULL в колонку NOT NULL — «Не удалось вставить значение NULL в столбец broadcastStart».
+-- Падали все три действия: «Изменить», «Добавить» и «Клонировать». Теперь колонка не пишется: при создании и
+-- клонировании — значение по умолчанию (00:00), при изменении — остаётся прежним. Параметр оставлен (контракт).
+--
+-- Только SQL, клиент не нужен (программа и веб). Независим от остальных; идемпотентен.
+--   sqlcmd -S <сервер> -d <база> -E -f 65001 -I -b -i 30_sponsor-pricelist-save.sql
 
-
-
-
-
-
-
-
-
+SET NOCOUNT ON;
+GO
+SET ANSI_NULLS ON;
+GO
+SET QUOTED_IDENTIFIER ON;
+GO
 
 /*
 Parameters:
@@ -15,8 +20,7 @@ Parameters:
 Tariff table for new pricelist will be populated base on tariffs from @basePricelistID
 Modified by: Denis Gladkikh (dgladkikh@fogsoft.ru) 17.09.2008
 */
-
-CREATE            PROCEDURE [dbo].[sponsorPLIUD]
+CREATE OR ALTER PROCEDURE [dbo].[sponsorPLIUD]
 (
 @pricelistID smallint = NULL,
 @sponsorProgramID smallint = NULL,
@@ -107,7 +111,11 @@ ELSE IF @actionName = 'UpdateItem' BEGIN
 	EXEC SponsorPricelists @pricelistID = @pricelistID
 	END
 GO
-GRANT EXECUTE
-    ON OBJECT::[dbo].[sponsorPLIUD] TO PUBLIC
-    AS [dbo];
 
+-- Проверка: новая версия применена (broadcastStart не пишется).
+IF OBJECT_DEFINITION(OBJECT_ID(N'dbo.sponsorPLIUD')) NOT LIKE N'%broadcastStart = @broadcastStart%'
+   AND OBJECT_DEFINITION(OBJECT_ID(N'dbo.sponsorPLIUD')) NOT LIKE N'%isStandAlone, @broadcastStart)%'
+    PRINT N'ГОТОВО: спонсорский прайс-лист сохраняется (sponsorPLIUD).';
+ELSE
+    RAISERROR(N'30: новая версия sponsorPLIUD не применена.', 16, 1);
+GO
