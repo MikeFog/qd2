@@ -1,4 +1,25 @@
-﻿CREATE PROCEDURE [dbo].[TariffWindowIUD]
+﻿-- Фактическое окно и время, этап 0 (docs/tasks/window-actual-switch.md §5.5 п. 3; решение Р-2 от 07.10.2026).
+-- TariffWindowIUD:
+-- 1. День окна менять нельзя — только время выхода в пределах дня. «Изменить» (паспорт окна в программе и веб-версии,
+--    объединение окон) отказывает, если время выхода попадает на другой день; «Добавить» («Создать новое окно…») —
+--    если время выхода и время по расписанию в разных днях. Новое сообщение TariffWindowDayChange (+ перевод es).
+--    dayOriginal = dayActual становится гарантией: места «день окна» по правилу не переводятся. На ArtvisDev у всех
+--    2 011 204 окон день времени выхода и день по расписанию совпадают — правку ни одного окна запрет не блокирует.
+-- 2. Закрытый период (профилактика, DisabledWindow) проверяется по времени выхода, а не ещё и по времени по
+--    расписанию. На ArtvisDev окон, которые закрытый период задевает только по времени по расписанию, нет.
+--
+-- Ставить после 29 (несёт его правку TariffWindowIUD). Клиент не нужен; после наката перезапустить qd2 и веб
+-- (новое сообщение в iMessage читается при старте). Идемпотентен.
+--   sqlcmd -S <сервер> -d <база> -E -f 65001 -I -b -i 31_tariff-window-day-fixed.sql
+
+SET NOCOUNT ON;
+GO
+SET ANSI_NULLS ON;
+GO
+SET QUOTED_IDENTIFIER ON;
+GO
+
+CREATE OR ALTER PROCEDURE [dbo].[TariffWindowIUD]
 (
 @windowId int = NULL,
 @windowDateActual datetime = NULL,
@@ -189,3 +210,34 @@ BEGIN
 
 	SELECT * FROM [TariffWindow] WHERE [windowId] = @windowId
 END
+GO
+
+-- Сообщение TariffWindowDayChange (+ испанский перевод, где есть многоязычность веба)
+DECLARE @msg NVARCHAR(4000) = N'Рекламное окно нельзя перенести на другой день: время выхода можно менять только в пределах дня окна. Операция прервана.';
+DECLARE @es  NVARCHAR(4000) = N'La ventana publicitaria no se puede trasladar a otro día: la hora de emisión solo puede cambiarse dentro del día de la ventana. Operación cancelada.';
+
+IF EXISTS (SELECT 1 FROM dbo.iMessage WHERE name = 'TariffWindowDayChange')
+    UPDATE dbo.iMessage SET [message] = @msg WHERE name = 'TariffWindowDayChange';
+ELSE
+    INSERT INTO dbo.iMessage (name, [message]) VALUES ('TariffWindowDayChange', @msg);
+
+IF OBJECT_ID('dbo.iTranslation') IS NOT NULL
+    MERGE dbo.iTranslation AS dst
+    USING (SELECT 'es' AS lang, '' AS context, @msg AS [source], @es AS [text]) AS src
+       ON dst.lang = src.lang AND dst.context = src.context
+      AND dst.sourceHash = CONVERT(binary(32), HASHBYTES('SHA2_256', src.[source]))
+    WHEN MATCHED AND dst.[text] <> src.[text] COLLATE Latin1_General_BIN THEN
+        UPDATE SET [text] = src.[text]
+    WHEN NOT MATCHED BY TARGET THEN
+        INSERT (lang, context, [source], [text]) VALUES (src.lang, src.context, src.[source], src.[text]);
+GO
+
+-- Проверка: новая версия применена, сообщение есть.
+IF OBJECT_DEFINITION(OBJECT_ID(N'dbo.TariffWindowIUD')) LIKE N'%TariffWindowDayChange%'
+   AND OBJECT_DEFINITION(OBJECT_ID(N'dbo.TariffWindowIUD')) NOT LIKE N'%@windowDateOriginal between dw.startDate%'
+   AND OBJECT_DEFINITION(OBJECT_ID(N'dbo.TariffWindowIUD')) NOT LIKE N'%DATEPART(%broadcastStart%'
+   AND EXISTS (SELECT 1 FROM dbo.iMessage WHERE name = 'TariffWindowDayChange')
+    PRINT N'ГОТОВО: день окна менять нельзя, закрытый период — по времени выхода (TariffWindowIUD + сообщение).';
+ELSE
+    RAISERROR(N'31: новая версия TariffWindowIUD или сообщение не применены.', 16, 1);
+GO

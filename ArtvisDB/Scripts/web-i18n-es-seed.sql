@@ -1,5 +1,5 @@
 ﻿/*
-    ДЕПЛОЙ: переводы веб-версии на язык «es» (1979 строк). docs/tasks/web-i18n.md, этап 5.
+    ДЕПЛОЙ: переводы веб-версии на язык «es» (1980 строк). docs/tasks/web-i18n.md, этап 5.
     СГЕНЕРИРОВАН из ArtvisDB/Scripts/i18n/es.tsv скриптом build-seed.py — руками не править.
 
     ПРЕДУСЛОВИЕ     накачен web-i18n-translation-deploy.sql (таблица iTranslation).
@@ -1242,6 +1242,7 @@ INSERT INTO #t ([source], [text]) VALUES
 (N'Невозможно добавить окно, время заблокировано профилактикой. Операция прервана.', N'No se puede agregar la ventana: el horario está bloqueado por mantenimiento. Operación cancelada.'),
 (N'Невозможно добавить профилактику с {0} по {1}, так как уже существуют выпуски в это время.', N'No se puede agregar un mantenimiento del {0} al {1} porque ya existen emisiones en ese horario.'),
 (N'Невозможно добавить рекламное окно, так как оно попадает внутрь цепочки объединённых окон.', N'No se puede agregar la ventana publicitaria porque queda dentro de una cadena de ventanas unidas.'),
+(N'Рекламное окно нельзя перенести на другой день: время выхода можно менять только в пределах дня окна. Операция прервана.', N'La ventana publicitaria no se puede trasladar a otro día: la hora de emisión solo puede cambiarse dentro del día de la ventana. Operación cancelada.'),
 (N'Невозможно добавить рекламную кампанию без агентства. Операция прервана.', N'No se puede agregar una pauta sin agencia. Operación cancelada.'),
 (N'Невозможно добавить рекламную кампанию в активированную акцию, которая уже закончилась. Операция прервана.', N'No se puede agregar una pauta a una campaña activada que ya finalizó. Operación cancelada.'),
 (N'Невозможно добавить рекламный выпуск так как ролику не назначен предмет рекламы. Операция прервана.', N'No se puede agregar la emisión publicitaria porque el spot no tiene asignado un rubro publicitario. Operación cancelada.'),
@@ -1517,10 +1518,10 @@ INSERT INTO #t ([source], [text]) VALUES
 (N'Время трансляций: {0}', N'Tiempo de emisión: {0}'),
 (N'Стоимость спланированной рекламы: {0:c}', N'Costo de la publicidad planificada: {0:c}'),
 (N'Стоимость спланированной рекламы по тарифам: {0:c}', N'Costo de la publicidad planificada según tarifas: {0:c}'),
-(N'Стоимость спланированной рекламы с учетом скидки: {0:c}', N'Costo de la publicidad planificada con descuento: {0:c}'),
-(N'Скидка: {0}', N'Descuento: {0}');
+(N'Стоимость спланированной рекламы с учетом скидки: {0:c}', N'Costo de la publicidad planificada con descuento: {0:c}');
 GO
 INSERT INTO #t ([source], [text]) VALUES
+(N'Скидка: {0}', N'Descuento: {0}'),
 (N'В том числе НДС ({0:0.##}%): {1:c}', N'IVA incluido ({0:0.##} %): {1:c}'),
 (N'В том числе НДС: {0:c}', N'IVA incluido: {0:c}'),
 (N'Исполнитель:', N'Contratista:'),

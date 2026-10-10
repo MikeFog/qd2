@@ -1222,6 +1222,7 @@ message	Невозможно добавить или внести изменен
 message	Невозможно добавить окно, время заблокировано профилактикой. Операция прервана.	No se puede agregar la ventana: el horario está bloqueado por mantenimiento. Operación cancelada.
 message	Невозможно добавить профилактику с {0} по {1}, так как уже существуют выпуски в это время.	No se puede agregar un mantenimiento del {0} al {1} porque ya existen emisiones en ese horario.
 message	Невозможно добавить рекламное окно, так как оно попадает внутрь цепочки объединённых окон.	No se puede agregar la ventana publicitaria porque queda dentro de una cadena de ventanas unidas.
+message	Рекламное окно нельзя перенести на другой день: время выхода можно менять только в пределах дня окна. Операция прервана.	La ventana publicitaria no se puede trasladar a otro día: la hora de emisión solo puede cambiarse dentro del día de la ventana. Operación cancelada.
 message	Невозможно добавить рекламную кампанию без агентства. Операция прервана.	No se puede agregar una pauta sin agencia. Operación cancelada.
 message	Невозможно добавить рекламную кампанию в активированную акцию, которая уже закончилась. Операция прервана.	No se puede agregar una pauta a una campaña activada que ya finalizó. Operación cancelada.
 message	Невозможно добавить рекламный выпуск так как ролику не назначен предмет рекламы. Операция прервана.	No se puede agregar la emisión publicitaria porque el spot no tiene asignado un rubro publicitario. Operación cancelada.
