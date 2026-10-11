@@ -253,6 +253,63 @@ Where
 	TariffWindow.windowId = i.actualWindowId
 	and i.issueID = @issueID
 
+-- Р-10 (10.10.2026): после переноса даты кампании и акции — по дням выхода, по тем же правилам, что
+-- ActionRecalculate (фазы 1A, 1B и 2). Только даты: скидки, цена и ratio не трогаются (Р-3). Без этого
+-- выпуск, перенесённый за первый или последний день кампании, выпадает из акта, бонусов и «По месяцам».
+-- Модульные и пакетные кампании датируются днём модуля/пакета — перенос их не меняет.
+declare @datesCampaignID int, @datesCampaignTypeID tinyint, @datesActionID int,
+	@datesStart datetime, @datesFinish datetime, @programStart datetime, @programFinish datetime
+select @datesCampaignID = c.campaignID, @datesCampaignTypeID = c.campaignTypeID, @datesActionID = c.actionID
+from Issue i inner join Campaign c on c.campaignID = i.campaignID
+where i.issueID = @issueID
+
+if @datesCampaignTypeID = 1
+	select @datesStart = min(tw.dayOriginal), @datesFinish = max(tw.dayOriginal)
+	from Issue i inner join TariffWindow tw on tw.windowId = i.actualWindowID
+	where i.campaignID = @datesCampaignID
+else if @datesCampaignTypeID = 2
+begin
+	select @datesStart = min(twA.dayOriginal), @datesFinish = max(twA.dayOriginal)
+	from Issue i
+		inner join TariffWindow twA on twA.windowId = i.actualWindowID
+		inner join TariffWindow tw on tw.windowId = i.originalWindowID
+		cross apply (select top 1 1 as hasPricelist
+			from (values (twA.tariffId), (tw.tariffId)) v (tariffId)
+				inner join Tariff t on t.tariffID = v.tariffId
+				inner join Pricelist pl on pl.pricelistID = t.pricelistID) p
+	where i.campaignID = @datesCampaignID
+
+	select @programStart = min(pi.issueDate), @programFinish = max(pi.issueDate)
+	from ProgramIssue pi
+		inner join SponsorTariff st on st.tariffID = pi.tariffID
+		inner join SponsorProgramPricelist spl on spl.pricelistID = st.pricelistID
+	where pi.campaignID = @datesCampaignID
+
+	set @datesStart = case when @programStart is null then @datesStart when @datesStart is null then @programStart
+		when @programStart < @datesStart then @programStart else @datesStart end
+	set @datesFinish = case when @programFinish is null then @datesFinish when @datesFinish is null then @programFinish
+		when @programFinish > @datesFinish then @programFinish else @datesFinish end
+end
+
+if @datesCampaignTypeID in (1, 2)
+begin
+	set @datesStart = dbo.ToShortDate(@datesStart)
+	set @datesFinish = dbo.ToShortDate(@datesFinish)
+
+	update Campaign
+	set startDate = @datesStart, finishDate = @datesFinish
+	where campaignID = @datesCampaignID
+		and (startDate is null or finishDate is null or startDate <> @datesStart or finishDate <> @datesFinish)
+
+	update a
+	set startDate = x.startDate, finishDate = x.finishDate
+	from [Action] a
+		cross apply (select startDate = dbo.ToShortDate(min(c.startDate)), finishDate = dbo.ToShortDate(max(c.finishDate))
+			from Campaign c where c.actionID = a.actionID) x
+	where a.actionID = @datesActionID
+		and (a.startDate is null or a.finishDate is null or a.startDate <> x.startDate or a.finishDate <> x.finishDate)
+end
+
 declare @actionID int
 select  @actionID = c.actionID from Campaign c where c.campaignID = @campaignID
 

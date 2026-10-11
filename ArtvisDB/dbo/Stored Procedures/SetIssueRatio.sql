@@ -27,7 +27,7 @@ BEGIN
         (
             SELECT TOP 1 1 AS matched
             FROM TariffWindow tw
-            WHERE tw.windowId = i.originalWindowID
+            WHERE tw.windowId = i.actualWindowID
               AND tw.dayOriginal BETWEEN @startDate AND @finishDate
         ) w
     WHERE

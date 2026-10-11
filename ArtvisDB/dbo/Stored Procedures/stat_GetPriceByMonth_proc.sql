@@ -129,7 +129,7 @@ BEGIN
     (
         SELECT 1
         FROM TariffWindow tw
-        WHERE tw.windowId = i.originalWindowID
+        WHERE tw.windowId = i.actualWindowID
           AND tw.dayOriginal BETWEEN mn.startDate AND mn.finishDate
     )
     GROUP BY

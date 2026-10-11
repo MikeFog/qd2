@@ -48,7 +48,7 @@ If	@campaignTypeID = 1
 		Select	@price = sum(i.[tariffPrice] * i.[ratio]), @tariffPrice = SUM(i.[tariffPrice])
 		From	
 			Issue i
-			inner join TariffWindow tw on i.originalWindowID = tw.windowId
+			inner join TariffWindow tw on i.actualWindowID = tw.windowId
 			inner join Campaign c on i.campaignID = c.campaignID
 			inner join PaymentType pt On pt.PaymenttypeId = c.paymenttypeId
 				and (@showBlack = 1 or pt.IsHidden = 0)
@@ -63,7 +63,7 @@ If	@campaignTypeID = 1
 			@taxPrice = sum(case when at.divisor is null then 0 else ((i.[tariffPrice] * i.[ratio])/at.divisor) end)
 		From	
 			Issue i
-			inner join TariffWindow tw on i.originalWindowID = tw.windowId
+			inner join TariffWindow tw on i.actualWindowID = tw.windowId
 			inner join Campaign c on i.campaignID = c.campaignID
 			inner join PaymentType pt On pt.PaymenttypeId = c.paymenttypeId
 				and (@showBlack = 1 or pt.IsHidden = 0)

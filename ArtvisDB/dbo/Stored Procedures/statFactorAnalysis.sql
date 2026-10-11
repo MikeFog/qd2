@@ -127,7 +127,7 @@ BEGIN
 				from	
 					Issue i
 					inner JOIN Roller r on i.rollerID = r.rollerID
-					inner join TariffWindow tw on i.originalWindowID = tw.windowId
+					inner join TariffWindow tw on i.actualWindowID = tw.windowId
 					inner join Campaign c on i.campaignID = c.campaignID
 					inner join PaymentType pt On pt.PaymenttypeId = c.paymenttypeId
 						and (@showBlack = 1 or pt.IsHidden = 0)
@@ -359,7 +359,7 @@ BEGIN
 					sum(case when tw.maxCapacity > 0 then 0 else r.duration end) as duration
 				from Issue i
 					inner JOIN Roller r on i.rollerID = r.rollerID
-					inner join TariffWindow tw on i.originalWindowID = tw.windowId
+					inner join TariffWindow tw on i.actualWindowID = tw.windowId
 					inner join Campaign c on i.campaignID = c.campaignID
 					inner join PaymentType pt On pt.PaymenttypeId = c.paymenttypeId
 						and (@showBlack = 1 or pt.IsHidden = 0)

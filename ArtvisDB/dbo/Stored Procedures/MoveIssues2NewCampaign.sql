@@ -15,7 +15,7 @@ If @splitType = 1 -- split by period
 		campaignID = @newCampaignId
 	From 
 		Issue i
-		Inner Join TariffWindow tw on i.originalWindowID = tw.windowId
+		Inner Join TariffWindow tw on i.actualWindowID = tw.windowId
 	Where 
 		campaignID = @oldCampaignId
 		and tw.dayOriginal >= @splitDate

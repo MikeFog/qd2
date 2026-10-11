@@ -160,9 +160,14 @@ if exists(
 			from [Issue] i 
 				inner join @issue i2 on i.issueID = i2.issueID and i2.statusDescription like 'OK'
 				inner join Campaign c on i.campaignID = c.campaignID
-				inner join TariffWindow tw on i.originalWindowID = tw.windowId
-				Inner Join Tariff t on tw.tariffId = t.tariffID
-				Inner Join Pricelist pl On pl.pricelistID = t.pricelistID
+				inner join TariffWindow tw on i.actualWindowID = tw.windowId
+				inner join TariffWindow twO on i.originalWindowID = twO.windowId
+				-- наценки — по прайс-листу окна выхода, у окна без тарифа — окна постановки (как в ActionRecalculate)
+				cross apply (select top 1 pl.extraChargeFirstRoller, pl.extraChargeSecondRoller, pl.extraChargeLastRoller
+					from (values (1, tw.tariffId), (2, twO.tariffId)) v (ord, tariffId)
+						inner join Tariff t on t.tariffID = v.tariffId
+						inner join Pricelist pl on pl.pricelistID = t.pricelistID
+					order by v.ord) pl
 				inner join Roller r on i.rollerID = r.rollerID
 				inner join MassMedia mm on tw.massmediaID = mm.massmediaID
 			where 

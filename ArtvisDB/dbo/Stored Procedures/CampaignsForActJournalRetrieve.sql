@@ -216,8 +216,9 @@ While @@fetch_status = 0 BEGIN
 				@showByDuration = case when SUM(tw.maxCapacity) > 0 then 0 else 1 end
 			from Issue i 
 				inner join Roller rol on rol.rollerID = i.rollerID
-				inner join TariffWindow tw on i.originalWindowID = tw.windowId
-			where i.campaignID = @campaignID and tw.dayOriginal between dbo.ToShortDate(@startDate) and dbo.ToShortDate(@currentDate) 
+				inner join TariffWindow tw on i.actualWindowID = tw.windowId
+				left join ModuleIssue mi on mi.moduleIssueID = i.moduleIssueID
+			where i.campaignID = @campaignID and coalesce(mi.issueDate, tw.dayOriginal) between dbo.ToShortDate(@startDate) and dbo.ToShortDate(@currentDate) 
 		END
 		
 		Update @res

@@ -263,7 +263,7 @@ BEGIN
            MAX(CASE WHEN tw.[windowId] IS NOT NULL THEN 1 ELSE 0 END) AS hasPlacementInPeriod
     FROM #CampaignBase cb
         LEFT JOIN [dbo].[Issue] i ON i.[campaignID] = cb.[campaignID]
-        LEFT JOIN [dbo].[TariffWindow] tw ON i.[originalWindowID] = tw.[windowId]
+        LEFT JOIN [dbo].[TariffWindow] tw ON i.[actualWindowID] = tw.[windowId]
             AND tw.[dayOriginal] BETWEEN @periodStartDate AND @periodFinishDate
     WHERE cb.[campaignTypeID] = 1
     GROUP BY cb.[campaignID], cb.[firmID], cb.[firmName], cb.[headCompanyID], cb.[headCompanyName],

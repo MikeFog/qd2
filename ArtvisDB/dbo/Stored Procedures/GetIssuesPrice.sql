@@ -29,7 +29,7 @@ If @campaignTypeID = 1	Begin
 		(
 			Select Top 1 1 As matched
 			From TariffWindow tw
-			Where tw.windowId = i.originalWindowID and
+			Where tw.windowId = i.actualWindowID and
 				tw.dayOriginal between @startDate and @finishDate
 		) w
 	Where	

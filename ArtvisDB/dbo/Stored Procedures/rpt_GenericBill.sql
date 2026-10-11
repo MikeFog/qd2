@@ -68,7 +68,7 @@ begin
 		and not exists (
 			select 1
 			from Issue i
-				inner join TariffWindow tw on i.originalWindowID = tw.windowID
+				inner join TariffWindow tw on i.actualWindowID = tw.windowID
 			where @campaignTypeID = 1 and i.campaignID = @campaignID
 				and (@beginDate is null or tw.dayOriginal between @beginDate and @endDate))
 		and not exists (

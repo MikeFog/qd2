@@ -124,7 +124,7 @@ BEGIN
     FROM Campaign c
         JOIN Action a ON a.actionID = c.actionID AND a.isConfirmed = 1
         JOIN Issue i ON i.campaignID = c.campaignID
-        JOIN TariffWindow tw ON tw.windowId = i.originalWindowID
+        JOIN TariffWindow tw ON tw.windowId = i.actualWindowID
         JOIN Roller r ON r.rollerID = i.rollerID
         JOIN MassMedia m ON m.massmediaID = c.massmediaID
     WHERE c.campaignTypeID = 1

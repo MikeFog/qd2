@@ -74,7 +74,7 @@ begin
 	Set 	@sql = @sql + 
 			N'dbo.fn_Int2Time(sum(r.duration)) as duration 	
 	 from Issue i 
-		inner join TariffWindow tw on i.originalWindowID = tw.windowId
+		inner join TariffWindow tw on i.actualWindowID = tw.windowId
 		inner join Roller r on i.rollerID = r.rollerID
 		inner join Campaign c on i.campaignID = c.campaignID
 		inner join [Action] a on a.actionID = c.actionID

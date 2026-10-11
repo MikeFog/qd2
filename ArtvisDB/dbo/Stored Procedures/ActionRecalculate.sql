@@ -104,7 +104,7 @@ BEGIN
             startDate     = MIN(tw.dayOriginal),
             finishDate    = MAX(tw.dayOriginal)
         FROM dbo.Issue i
-        INNER JOIN dbo.TariffWindow tw ON tw.windowId = i.originalWindowID
+        INNER JOIN dbo.TariffWindow tw ON tw.windowId = i.actualWindowID -- день выхода (docs/tasks/window-actual-switch.md, этап 4)
         INNER JOIN dbo.Roller r ON r.rollerID = i.rollerID
         INNER JOIN #CampaignPhase1 p ON p.campaignID = i.campaignID AND p.campaignTypeID = 1
         GROUP BY i.campaignID
@@ -146,12 +146,21 @@ BEGIN
             i.campaignID,
             issuesDuration = SUM(dbo.f_GetSponsorDuration(r.duration, i.positionId, pl.extraChargeFirstRoller, pl.extraChargeSecondRoller, pl.extraChargeLastRoller)),
             issuesCount    = COUNT(*),
-            issueStartDate = MIN(tw.dayOriginal),
-            issueFinishDate = MAX(tw.dayOriginal)
+            issueStartDate = MIN(twA.dayOriginal),
+            issueFinishDate = MAX(twA.dayOriginal)
         FROM dbo.Issue i
+        INNER JOIN dbo.TariffWindow twA ON twA.windowId = i.actualWindowID -- даты — по дню выхода
         INNER JOIN dbo.TariffWindow tw ON tw.windowId = i.originalWindowID
-        INNER JOIN dbo.Tariff t ON t.tariffID = tw.tariffId
-        INNER JOIN dbo.Pricelist pl ON pl.pricelistID = t.pricelistID
+        -- Наценки (расход бонусного времени, f_GetSponsorDuration) — по прайс-листу окна выхода; у окна без тарифа —
+        -- по прайс-листу окна постановки (docs/tasks/window-actual-open-questions.md, Р-3 «Уточнено»)
+        CROSS APPLY
+        (
+            SELECT TOP 1 pl.extraChargeFirstRoller, pl.extraChargeSecondRoller, pl.extraChargeLastRoller
+            FROM (VALUES (1, twA.tariffId), (2, tw.tariffId)) v (ord, tariffId)
+            INNER JOIN dbo.Tariff t ON t.tariffID = v.tariffId
+            INNER JOIN dbo.Pricelist pl ON pl.pricelistID = t.pricelistID
+            ORDER BY v.ord
+        ) pl
         INNER JOIN dbo.Roller r ON r.rollerID = i.rollerID
         INNER JOIN #CampaignPhase1 p ON p.campaignID = i.campaignID AND p.campaignTypeID = 2
         GROUP BY i.campaignID
