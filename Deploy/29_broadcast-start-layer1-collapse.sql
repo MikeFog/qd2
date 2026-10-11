@@ -3486,3 +3486,7 @@ IF OBJECT_DEFINITION(OBJECT_ID(N'dbo.TariffWindowIUD')) NOT LIKE N'%DATEPART(%br
 ELSE
     RAISERROR(N'29: новая версия применена не ко всем процедурам.', 16, 1);
 GO
+
+-- Снять режим «не выполнять», если его включила защита в начале (иначе окно SSMS остаётся в NOEXEC).
+SET NOEXEC OFF;
+GO

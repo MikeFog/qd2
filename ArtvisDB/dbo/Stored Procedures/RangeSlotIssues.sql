@@ -16,8 +16,9 @@
 --              окнам). Группировку «ролик + позиция» собирает C#
 --              (TariffWithRangeGrid.GetSlotIssueGroups).
 --              originalWindowID/windowDayOriginal — для RollerSubstitute (массовая
---              замена ролика, TariffWithRangeGrid.GetSlotIssueRows): её #days требует
---              именно исходное окно выпуска и его день (twO), пока замена ролика не переведена на окно выхода.
+--              замена ролика, TariffWithRangeGrid.GetSlotIssueRows): ключ её #days — окно
+--              ВЫХОДА выпуска и его день (этап 5, docs/tasks/window-actual-switch.md). Имена
+--              колонок исторические, их читает клиент; переименование — этап 9.
 -- =============================================
 CREATE PROCEDURE [dbo].[RangeSlotIssues]
 (
@@ -49,15 +50,14 @@ BEGIN
 		r.duration,
 		dbo.fn_Int2Time(r.duration) AS durationString,
 		i.positionId,
-		twO.windowId AS originalWindowID,
-		twO.dayOriginal AS windowDayOriginal
+		tw.windowId AS originalWindowID,
+		tw.dayOriginal AS windowDayOriginal
 	FROM #requested req
 		-- Слот определяется тем же окном, что и в MasterIssueDelete: выпуск ищется по окну выхода
 		-- (actualWindowID), получас — по фактическому времени этого окна (правило 07.10.2026).
 		INNER JOIN dbo.TariffWindow tw
 			ON tw.windowDateActual BETWEEN req.issueDate AND DATEADD(second, -1, DATEADD(minute, 30, req.issueDate))
 		INNER JOIN dbo.Issue i ON i.actualWindowID = tw.windowId
-		INNER JOIN dbo.TariffWindow twO ON twO.windowId = i.originalWindowID
 		INNER JOIN dbo.Campaign c ON c.campaignID = i.campaignID
 		INNER JOIN dbo.Roller r ON r.rollerID = i.rollerID
 	WHERE c.actionID = @actionID

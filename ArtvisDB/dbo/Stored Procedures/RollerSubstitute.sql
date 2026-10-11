@@ -30,9 +30,17 @@ SET NOCOUNT ON
 	begin 
 		if object_id('tempdb..#days') is null
 		begin 
+			-- Один выпуск: ключ — окно выхода и день выпуска (день модуля/пакета или день окна выхода), из самого
+			-- выпуска. @originalWindowID — только признак режима, его значение не используется (этап 5,
+			-- docs/tasks/window-actual-switch.md): клиенты шлют Issue.originalWindowID.
 			create table #days (windowID int, issueDate datetime)
-			insert into [#days] (windowID,issueDate) 
-			select @originalWindowID, tw.dayOriginal from TariffWindow tw where tw.windowId = @originalWindowID
+			insert into [#days] (windowID,issueDate)
+			select i.actualWindowID, coalesce(mi.issueDate, pmi.issueDate, tw.dayOriginal)
+			from Issue i
+				inner join TariffWindow tw on tw.windowId = i.actualWindowID
+				left join ModuleIssue mi on mi.moduleIssueID = i.moduleIssueID
+				left join PackModuleIssue pmi on pmi.packModuleIssueID = i.packModuleIssueID
+			where i.issueID = @issueID
 		end 
 	end 
 
@@ -106,23 +114,30 @@ select
 	i.positionId,
 	c.timeBonus,
 	c.issuesDuration,
-	pl.extraChargeFirstRoller, 
-	pl.extraChargeSecondRoller, 
-	pl.extraChargeLastRoller,
+	p.extraChargeFirstRoller,
+	p.extraChargeSecondRoller,
+	p.extraChargeLastRoller,
 	mm.deadline,
-	tw.price,
-	tw.dayOriginal
+	p.price,
+	dd.issueDay
 from
 	Issue i
-	inner join TariffWindow tw on i.originalWindowID = tw.windowId
-	inner join Tariff t on t.tariffID = tw.tariffId
-	inner join Pricelist pl on pl.pricelistID = t.pricelistID
+	-- Этап 5 (docs/tasks/window-actual-switch.md): выпуск ищется в окне выхода; день — день модуля/пакета или
+	-- день окна выхода; цена и наценки — по окну выхода, у окна без тарифа — по окну постановки (Р-3)
+	inner join TariffWindow tw on i.actualWindowID = tw.windowId
+	inner join TariffWindow twO on i.originalWindowID = twO.windowId
+	cross apply (select top 1 v.price, pl.extraChargeFirstRoller, pl.extraChargeSecondRoller, pl.extraChargeLastRoller
+		from (values (1, tw.tariffId, tw.price), (2, twO.tariffId, twO.price)) v (ord, tariffId, price)
+			inner join Tariff t on t.tariffID = v.tariffId
+			inner join Pricelist pl on pl.pricelistID = t.pricelistID
+		order by v.ord) p
 	inner join Campaign c on i.campaignID = c.campaignID
 	inner join MassMedia mm on tw.massmediaID = mm.massmediaID
 	left join ModuleIssue mi on i.moduleIssueID = mi.moduleIssueID
 	left join PackModuleIssue pmi on i.packModuleIssueID = pmi.packModuleIssueID
 	left join PackModulePriceList pmpl on pmi.priceListID = pmpl.priceListID
-	inner join #days d on tw.dayOriginal = d.issueDate and (@campaignTypeID not in (1,2) or d.windowID = i.originalWindowID)
+	cross apply (select issueDay = coalesce(mi.issueDate, pmi.issueDate, tw.dayOriginal)) dd
+	inner join #days d on dd.issueDay = d.issueDate and (@campaignTypeID not in (1,2) or d.windowID = i.actualWindowID)
 where
 	i.campaignID = @campaignID
 	and i.rollerID = @oldRollerID 
@@ -345,10 +360,12 @@ begin
 		TariffWindow.windowId = res.actualWindowId
 end
 
-select row_number() over(order by tw.windowDateOriginal) as RowNum, tw.windowDateOriginal, msg.message
+-- «Незамененные ролики»: фактическое время окна выхода. Имя колонки windowDateOriginal оставлено — его читают
+-- атрибут сущности 212 и веб (ObjectActions.cs); переименование — этап 9
+select row_number() over(order by tw.windowDateActual) as RowNum, tw.windowDateActual as windowDateOriginal, msg.message
 from @issues i
 	inner join iMessageToSubtitute msg on i.msgError = msg.msgError
 	inner join Issue ii on i.issueID = ii.issueID
-	inner join TariffWindow tw on ii.originalWindowID = tw.windowId
+	inner join TariffWindow tw on ii.actualWindowID = tw.windowId
 where i.msgError is not null
-order by tw.windowDateOriginal
+order by tw.windowDateActual
