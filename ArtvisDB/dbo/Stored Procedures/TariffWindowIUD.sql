@@ -157,8 +157,21 @@ BEGIN
 		return
 	end
 
+	-- Р-7 (этап 7, docs/tasks/window-actual-switch.md): новое окно — не в минуту, где уже выходит окно станции, и не
+	-- в слот существующего окна (по расписанию). Раньше «Создать новое окно…» создавало второе окно в ту же минуту
+	-- или дубль слота
+	if exists (select 1 from TariffWindow tw where tw.massmediaID = @massmediaID
+			and tw.windowDateActual in (@windowDateActual, @windowDateOriginal))
+		or exists (select 1 from TariffWindow tw where tw.massmediaID = @massmediaID
+			and tw.windowDateOriginal in (@windowDateActual, @windowDateOriginal))
+	begin
+		raiserror('UIX_TariffWindow_Tariff_Date', 16, 1)
+		return
+	end
+
 	declare @isInsideChain bit
-	set @isInsideChain = dbo.f_CheckLinkedTariffWindows(@windowDateOriginal, @massmediaID)
+	-- склейки — по времени выхода (Р-8)
+	set @isInsideChain = dbo.f_CheckLinkedTariffWindows(@windowDateActual, @massmediaID)
 	
 	IF @isInsideChain = 1
 	begin

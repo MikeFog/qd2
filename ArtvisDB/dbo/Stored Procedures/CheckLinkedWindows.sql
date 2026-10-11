@@ -9,29 +9,33 @@ WITH EXECUTE AS OWNER
 AS
 
 Declare @windowId int, @windowNextId int, @windowDate1 datetime, @windowDate2 datetime
-Declare @flag int
 
-DECLARE cur_windows CURSOR FOR
-Select windowId, windowNextId, windowDateOriginal
-From TariffWindow 
-Where massmediaID = @massmediaId And windowDateOriginal >= @startDate And windowDateOriginal < @finishDate And not [windowNextId] Is Null
+-- Этап 7 (docs/tasks/window-actual-switch.md, Р-8): объединение окон A → B рвётся, если между ними в эфире выходит
+-- чужое окно станции (A.выход < C.выход < B.выход, интервал открытый). Раньше смотрели по времени по расписанию:
+-- следующее после головы окно не было хвостом. Уведомление — во времени выхода.
+DECLARE cur_windows CURSOR LOCAL STATIC FOR
+Select a.windowId, a.windowNextId, a.windowDateActual, b.windowDateActual
+From TariffWindow a
+	inner join TariffWindow b on b.windowId = a.windowNextId
+Where a.massmediaID = @massmediaId And a.windowDateActual >= @startDate And a.windowDateActual < @finishDate
+	And a.dayActual >= convert(date, @startDate) And a.dayActual <= @finishDate And a.windowNextId is not null
+	And exists (
+		select 1 from TariffWindow c
+		where c.massmediaID = @massmediaId
+			and c.windowDateActual > a.windowDateActual
+			and c.windowDateActual < b.windowDateActual
+			and c.windowId <> a.windowId and c.windowId <> b.windowId)
 
 Open cur_windows
-Fetch Next From  cur_windows Into @windowId, @windowNextId, @windowDate1
+Fetch Next From  cur_windows Into @windowId, @windowNextId, @windowDate1, @windowDate2
 While @@FETCH_STATUS = 0
 	Begin
-	
-	Select TOP 1 @flag = [windowPrevId] From TariffWindow where massmediaID = @massmediaID And  [windowDateOriginal] > @windowDate1 Order by [windowDateOriginal] ASC
-	If @flag Is Null
-	Begin
-		-- удаляем связь между окнами и отправляем уведомление траффик-менеджеру
-		Update [dbo].[TariffWindow] Set windowNextId = Null Where windowId = @windowId
-		Update [dbo].[TariffWindow] Set [windowPrevId] = Null Where windowId = @windowNextId
-		
-		Select @windowDate2 = windowDateOriginal From TariffWindow where windowId = @windowNextId
-		Exec SayTrafficThatWindowLinkDeleted @loggedUserId, @massmediaId, @windowDate1, @windowDate2
-	End
-	Fetch Next From  cur_windows Into @windowId, @windowNextId, @windowDate1
+	-- удаляем связь между окнами и отправляем уведомление траффик-менеджеру
+	Update [dbo].[TariffWindow] Set windowNextId = Null Where windowId = @windowId
+	Update [dbo].[TariffWindow] Set [windowPrevId] = Null Where windowId = @windowNextId
+
+	Exec SayTrafficThatWindowLinkDeleted @loggedUserId, @massmediaId, @windowDate1, @windowDate2
+	Fetch Next From  cur_windows Into @windowId, @windowNextId, @windowDate1, @windowDate2
 	End
 
 Close cur_windows

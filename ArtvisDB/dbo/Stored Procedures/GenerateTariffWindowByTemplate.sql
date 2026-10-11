@@ -71,28 +71,37 @@ BEGIN
 				(@thursday = 1 And @weekday = 3)	Or
 				(@friday = 1 And @weekday = 4)	Or
 				(@saturday = 1 And @weekday = 5)	Or
-				(@sunday = 1 And @weekday = 6) ))) 
-				And Not Exists
-				(
-					Select * From TariffWindow tw Where tw.massmediaID = @massmediaId And tw.windowDateOriginal = @actualDate
-				)
+				(@sunday = 1 And @weekday = 6) )))
 				And Not Exists
 				(
 					Select * From DisabledWindow dw Where dw.massmediaId = @massmediaId And @actualDate between dw.startDate And dw.finishdate
 				))
-
-				set @isInsideChain = dbo.f_CheckLinkedTariffWindows(@actualDate, @massmediaID)
-	
-				IF @isInsideChain = 0
+			-- Этап 7 (docs/tasks/window-actual-switch.md): раньше здесь не было BEGIN — условие охватывало только
+			-- следующую строку, и окно создавалось в любой день периода, в том числе в неотмеченный и в занятый слот.
+			-- Занятая минута — и эфирная (окно станции выходит в эту минуту), и слот (окно по расписанию в эту
+			-- минуту) — теперь ошибка в журнале, а не второе окно (Р-7).
+			begin
+				if exists (select 1 from TariffWindow tw where tw.massmediaID = @massmediaId and tw.windowDateActual = @actualDate)
+					or exists (select 1 from TariffWindow tw where tw.massmediaID = @massmediaId and tw.windowDateOriginal = @actualDate)
 				begin
-					INSERT INTO [TariffWindow]([tariffId], [windowDateOriginal], [windowDateActual], [duration], [price], [massmediaID], [maxCapacity], dayActual, dayOriginal, duration_total)
-					VALUES (null, @actualDate, @actualDate,	@duration, 0, @massmediaId,	0, @currentDate, @currentDate, @duration_total)
+					INSERT INTO @errors([windowDate], [errorMessage] ) VALUES(@actualDate, 'UIX_TariffWindow_Tariff_Date')
 				end
-				ELSE
+				else
 				begin
-					INSERT INTO @errors([windowDate], [errorMessage] ) VALUES(@actualDate, 'InsideLinkedWindowError')
-				end 
-	
+					set @isInsideChain = dbo.f_CheckLinkedTariffWindows(@actualDate, @massmediaID)
+
+					IF @isInsideChain = 0
+					begin
+						INSERT INTO [TariffWindow]([tariffId], [windowDateOriginal], [windowDateActual], [duration], [price], [massmediaID], [maxCapacity], dayActual, dayOriginal, duration_total)
+						VALUES (null, @actualDate, @actualDate,	@duration, 0, @massmediaId,	0, @currentDate, @currentDate, @duration_total)
+					end
+					ELSE
+					begin
+						INSERT INTO @errors([windowDate], [errorMessage] ) VALUES(@actualDate, 'InsideLinkedWindowError')
+					end
+				end
+			end
+
 		Set @currentDate = DATEADD(DAY, 1, @currentDate)
 	End
 

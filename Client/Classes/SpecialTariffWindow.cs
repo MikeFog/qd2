@@ -1,9 +1,6 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Data;
 using FogSoft.WinForm;
 using FogSoft.WinForm.Classes;
-using FogSoft.WinForm.DataAccess;
 
 namespace Merlin.Classes
 {
@@ -30,32 +27,16 @@ namespace Merlin.Classes
 			{
 				DateTime time = DateTime.Parse(parameters["time"].ToString());
 				 
-				WindowDate = WindowDate.AddHours(time.Hour).AddMinutes(time.Minute);
+				// от начала дня: после отказа (например, «окно уже существует») повторный «ОК» не прибавляет время второй раз
+				WindowDate = WindowDate.Date.AddHours(time.Hour).AddMinutes(time.Minute);
 				if (time < broadcastStart) WindowDate = WindowDate.AddDays(1);
                 WindowDateOriginal = WindowDate;
 			}
 
-			SpecialTariffWindow specialTariffWindow = GetSpecialTariffWindow();
-			if (specialTariffWindow != null)
-			{
-				parameters = specialTariffWindow.parameters;
-				isNew = false;
-			}
+			// Окно в занятую минуту или слот SQL отклоняет (TariffWindowIUD, UIX_TariffWindow_Tariff_Date, этап 7). Раньше здесь
+			// искали окно с теми же двумя временами: найденное давало техническую ошибку (MissingMethodException в CreateObject),
+			// а у сдвинутого окна не находилось ничего — и создавалось второе окно в ту же минуту или дубль слота.
 			return base.Update();
-		}
-
-		private SpecialTariffWindow GetSpecialTariffWindow()
-		{
-			Entity specialTariffWindow = EntityManager.GetEntity((int)Entities.SpecialTariffWindow);
-			Dictionary<string, object> procParameters = DataAccessor.PrepareParameters(specialTariffWindow);
-			procParameters[TariffWindow.ParamNames.WindowDateActual] = WindowDate;
-			procParameters[TariffWindow.ParamNames.WindowDateOriginal] = WindowDateOriginal;
-			procParameters[Massmedia.ParamNames.MassmediaId] = MassmediaID;
-
-			DataSet ds = DataAccessor.DoAction(procParameters) as DataSet;
-			if (ds == null || ds.Tables[Constants.TableNames.Data].Rows.Count == 0)
-				return null;
-			return (SpecialTariffWindow)specialTariffWindow.CreateObject(ds.Tables[Constants.TableNames.Data].Rows[0]);
 		}
 	}
 }
