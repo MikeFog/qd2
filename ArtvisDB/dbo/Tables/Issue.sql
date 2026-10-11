@@ -92,5 +92,5 @@ CREATE NONCLUSTERED INDEX [IX_Issue_ActualWindowID_isConfirmed_COVERING]
 GO
 CREATE NONCLUSTERED INDEX [IX_Issue_campaignID_covering]
     ON [dbo].[Issue]([campaignID] ASC, [originalWindowID] ASC)
-    INCLUDE([rollerID], [issueID], [moduleIssueID], [packModuleIssueID], [ratio], [tariffPrice]);
+    INCLUDE([rollerID], [issueID], [moduleIssueID], [packModuleIssueID], [ratio], [tariffPrice], [actualWindowID]);
 
