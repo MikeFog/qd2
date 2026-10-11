@@ -75,7 +75,7 @@
   набора (`Tables.Count > 3`, `RollerIssuesGrid3.cs:329-331`, `WindowsSource.cs:256-257`). Константу
   `TariffWindow.ParamNames.OriginalWindowId` не трогать — она нужна замене ролика.
 - Документы: `docs/tariffgrid.md:189,226-230`; `docs/scenarios/campaign-edit-form-load.md:97,141`; `docs/tasks/web-tariffgrid.md:230-231`;
-  `docs/window-original-actual.md:164,205`; `Deploy/README.md:34`; О-5.
+  `docs/window-original-actual.md` (§3.4 и список старых имён); `Deploy/README.md:34`; О-5.
 
 **Порядок.** 1) На базе все работающие клиенты не старше 177ba3a. 2) Скрипт SQL. 3) Клиент без запасного пути — когда скрипт
 стоит на всех базах (иначе новый клиент упадёт на базе без Deploy/25 — возможно, Belgorod). Веб не ограничивает: прод-веб собран
@@ -100,7 +100,7 @@ Ctrl+R в веере (`Frm/CreateActionMaster/EditIssuesForm.cs:721-722`). Ве�
 
 **Правки.** `TariffWithRangeGrid.cs:431-432,444-445,457,474-475` — поля `OriginalWindowId` → `ActualWindowId`, `WindowDayOriginal` →
 `WindowDayActual`; `EditIssuesForm.cs:721-722`. Документы: `docs/tasks/window-actual-switch.md:83,193` (номера строк устарели:
-сейчас 444-445, 474-475), `docs/window-original-actual.md:168` («RangeSlotIssues — исходное» — неверно после 27/34),
+сейчас 444-445, 474-475), `docs/window-original-actual.md` (список старых имён),
 `docs/tariffgrid.md:228`.
 
 **Осторожно.**
@@ -178,7 +178,7 @@ Ctrl+R в веере (`Frm/CreateActionMaster/EditIssuesForm.cs:721-722`). Ве�
   `ArtvisDB/Scripts/i18n/sources.json:4426`, `es.tsv:1511`), убрать `Build Include` (`ArtvisDB/ArtvisDB.sqlproj:326`).
 
 Документы: `docs/tasks/window-actual-switch.md:92-93,111`; `docs/mediaplan.md:179,183,187,214-215`;
-`docs/window-original-actual.md:57-58,68,180`.
+`docs/window-original-actual.md` §2.1, §3.4.
 
 ### 3.5 MediaPlus и Граммофон
 
@@ -222,7 +222,7 @@ Ctrl+R в веере (`Frm/CreateActionMaster/EditIssuesForm.cs:721-722`). Ве�
 обратно (`Logs/qd2.log`, 24.09.2026, станция 188). Нужен перезапуск qd2 и веба. Совет — не делать.
 
 Похожие мёртвые выгрузки вне `Client.csproj`: `Client/Classes/GridExport/VectorBoxSerializer/*`, `VideoDJSerializer/*`
-(`docs/window-original-actual.md:70`) — отдельный пункт.
+(`docs/window-original-actual.md` §2.1) — отдельный пункт.
 
 ### 3.6 `job_DeleteHistory` (О-6) и мелочи
 
@@ -253,7 +253,7 @@ WHERE database_id = DB_ID('Artvis') AND object_id = OBJECT_ID('Artvis.dbo.job_De
 Если найдутся задачи — посмотреть `.sql`/`.bat`, на которые они ссылаются (там точно есть GoOptimize).
 
 **Правки.** Скрипт: шапка, `SET NOCOUNT ON`, GO; защита «нет других ссылок в `sys.sql_modules`»; `DROP PROCEDURE IF EXISTS`; COMMIT.
-Удалить файл (169 строк) и строку `ArtvisDB.sqlproj:571`. Документы: О-6; `docs/window-original-actual.md:196,247` (дефект №4);
+Удалить файл (169 строк) и строку `ArtvisDB.sqlproj:571`. Документы: О-6; `docs/window-original-actual.md` §3.5 и §5 №4;
 `docs/tasks/window-actual-switch.md:134`; `docs/tasks/web-action-forms.md:602`; `docs/tasks/discount-applied-pricelist-id.md:73`;
 `Deploy/README.md`. Если когда-нибудь понадобится свёртка старых лет — это новая процедура, эта непригодна.
 
@@ -272,10 +272,8 @@ WHERE database_id = DB_ID('Artvis') AND object_id = OBJECT_ID('Artvis.dbo.job_De
 ## 4. Чего нет в строке этапа 9
 
 **Документы (важнее всего).**
-- `docs/window-original-actual.md` описывает состояние до перехода: §3.3 (деньги, права, учёт — «исходное»), §3.4 (`Grid`,
-  `IssuesDays`, журналы, `RollerSubstitute` — «исходное»), §3.5, §6 («деньги — originalWindowID + dayOriginal»), `:179,188,231`
-  (`RollerSubstitute` до этапа 5). `CLAUDE.md` велит читать его перед правкой любого читателя — агент по нему напишет неверный
-  денежный код. Файл не в git и пришёл из другой сессии — правку согласовать с Мишей.
+- ~~`docs/window-original-actual.md` описывал состояние до перехода~~ — **переписан 11.10.2026** под состояние после
+  Deploy/24–35 (правило, исключения, читатели, жизненный цикл пары, статус несогласованностей и дефектов 07.10).
 - Остальные: `docs/tariffgrid.md:189,224-230,244`; `docs/mass-window-operations.md:45-52`; `docs/scenarios/campaign-edit-form-load.md:97,141`;
   `docs/scenarios/range-issue-add-click-to-db.md:53`; `docs/window-merging.md:239` (#14, #15 — после Deploy/35 склейки по времени
   выхода); `docs/roller-types.md:328` (Н-7 закрыт Deploy/26 и Р-12; файл «не мой» — open-questions §8);
@@ -354,7 +352,7 @@ WHERE database_id = DB_ID('Artvis') AND object_id = OBJECT_ID('Artvis.dbo.job_De
    заказчика? Без этого не начать шаг 3.
 2. Планировщик на URANUS и `sys.dm_exec_procedure_stats` на проде (§3.6).
 3. `MassMedia.mediaPlusMassmediaID` и `grammofonMistake` — оставить (совет) или удалить отдельным шагом?
-4. Можно ли переписать `docs/window-original-actual.md` под состояние после перехода?
+4. ~~Можно ли переписать `docs/window-original-actual.md` под состояние после перехода?~~ Переписан 11.10.2026.
 5. Медиаплан: вариант А или Б; в `GetMonthes` сменить умолчание `@isFact` на 1? `GetAgenciesString` только перевести или удалить вместе с C#?
 6. «Незамененные»: переименовывать вообще или оставить алиас насовсем (тогда переписать комментарий `RollerSubstitute.sql:363-364`
    «переименование — этап 9» при следующем ALTER)?
