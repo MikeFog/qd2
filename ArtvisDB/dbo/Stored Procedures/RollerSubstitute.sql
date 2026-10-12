@@ -186,6 +186,12 @@ begin
 		select @msgError = 'PromoPositionForbidden'
 	end
 
+	-- «Локальное СМИ» (4) и «Федеральное СМИ» (5) не позиционируются: выпуск с позицией на них не меняем
+	If @newRollerActionTypeID In (4, 5) And IsNull(@position, 0) <> 0
+	begin
+		select @msgError = 'RolType45PositionForbidden'
+	end
+
 	If @isAdmin = 0 And	@isConfirmed = 1 And @isTrafficManager = 0 And @date <= IsNull(@deadLine, Convert(datetime, '19000101',112))
 	begin
 		select @msgError = 'DeadLineViolation'

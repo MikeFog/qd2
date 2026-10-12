@@ -133,6 +133,14 @@ If @rollerActionTypeID In (8, 9) And IsNull(@positionId, 0) <> 0
 		RETURN 1
 	End
 
+-- «Локальное СМИ» (4) и «Федеральное СМИ» (5) не позиционируются (заказчик, 11.10.2026):
+-- место в блоке им задаёт тип ролика при выгрузке
+If @rollerActionTypeID In (4, 5) And IsNull(@positionId, 0) <> 0
+	Begin
+		set @msgError = 'RolType45PositionForbidden'
+		RETURN 1
+	End
+
 if	@campaignFinishDate < @tomorrow and @campaignTypeID <> 2 And @RightToGoBack <> 1 And @isTrafficManager = 0
 	set @msgError = 'CampaignAlreadyFinished'
 else if @campaignTypeID = 2 

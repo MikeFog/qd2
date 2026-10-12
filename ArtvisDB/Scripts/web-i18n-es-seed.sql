@@ -1,5 +1,5 @@
 ﻿/*
-    ДЕПЛОЙ: переводы веб-версии на язык «es» (1980 строк). docs/tasks/web-i18n.md, этап 5.
+    ДЕПЛОЙ: переводы веб-версии на язык «es» (1981 строк). docs/tasks/web-i18n.md, этап 5.
     СГЕНЕРИРОВАН из ArtvisDB/Scripts/i18n/es.tsv скриптом build-seed.py — руками не править.
 
     ПРЕДУСЛОВИЕ     накачен web-i18n-translation-deploy.sql (таблица iTranslation).
@@ -1808,6 +1808,7 @@ INSERT INTO #t ([source], [text]) VALUES
 (N'В цене не больше двух знаков после запятой.', N'El precio admite como máximo dos decimales.'),
 (N'Слишком большая цена.', N'El precio es demasiado alto.'),
 (N'Для роликов локального промо позиционирование не применяется. Операция прервана.', N'El posicionamiento no se aplica a los spots de promoción local. Operación cancelada.'),
+(N'Для роликов с типом "Локальное СМИ" и "Федеральное СМИ" позиционирование не применяется. Операция прервана.', N'El posicionamiento no se aplica a los spots de tipo "Medio local" y "Medio federal". Operación cancelada.'),
 (N'Выбрать в папке роликов', N'Elegir en la carpeta de spots'),
 (N'Загрузить с компьютера', N'Subir desde la computadora'),
 (N'Записей нет. Измените условия отбора.', N'No hay registros. Cambie las condiciones del filtro.'),
