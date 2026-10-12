@@ -125,7 +125,8 @@ namespace Merlin.Classes
 		/// <summary>
 		/// Проверка правки до записи: что-то меняется, время — только у одной строки времени,
 		/// продолжительность не больше полной у каждого окна (как DurationExceedsTotal процедуры,
-		/// но заранее и со списком). null — всё верно.
+		/// но заранее и со списком; окна профилактики, которые правка пропускает, не проверяются).
+		/// null — всё верно.
 		/// </summary>
 		public static string Validate(WindowChangeTarget target, WindowChange change)
 		{
@@ -140,9 +141,11 @@ namespace Merlin.Classes
 			string first = null;
 			foreach (DataRow w in target.Rows)
 			{
+				if (SkipsDuration(w, change))
+					continue;
 				int duration = change.NewDuration ?? Seconds(w, TariffWindow.ParamNames.Duration);
 				int total = change.NewTotal ?? Seconds(w, TariffWindow.ParamNames.DurationTotal);
-				if (total > 0 && duration > total)
+				if (duration > total)
 				{
 					bad++;
 					if (first == null)
@@ -208,15 +211,18 @@ namespace Merlin.Classes
 				if (!change.NewDuration.HasValue && !change.NewTotal.HasValue)
 					continue;
 
+				List<DataRow> toChange = ofTime.FindAll(w => !SkipsDuration(w, change));
 				HashSet<string> targets = new HashSet<string>();
-				foreach (DataRow w in ofTime)
+				foreach (DataRow w in toChange)
 					targets.Add(NewDuration(w, change) + "/" + NewTotal(w, change));
 
-				if (targets.Count == 1)
+				// Одним вызовом на период — только если правятся все окна времени: процедура
+				// пишет каждое окно периода, в том числе пропущенные окна профилактики
+				if (targets.Count == 1 && toChange.Count == ofTime.Count)
 					ChangeDuration(target.PricelistId, time, NewDuration(ofTime[0], change), NewTotal(ofTime[0], change),
 						period.Start, period.Finish, period.Days);
 				else
-					foreach (DataRow w in ofTime)
+					foreach (DataRow w in toChange)
 						ChangeDuration(target.PricelistId, time, NewDuration(w, change), NewTotal(w, change),
 							OriginalDay(w), OriginalDay(w), AllDays);
 			}
@@ -230,10 +236,20 @@ namespace Merlin.Classes
 			DateTime day = OriginalDay(w);
 			if (change.NewTime.HasValue)
 				moved = MoveTime(pricelistId, time, change.NewTime.Value, day, day, AllDays, notMoved);
-			if (change.NewDuration.HasValue || change.NewTotal.HasValue)
+			if ((change.NewDuration.HasValue || change.NewTotal.HasValue) && !SkipsDuration(w, change))
 				ChangeDuration(pricelistId, time, NewDuration(w, change), NewTotal(w, change), day, day, AllDays);
 			return moved;
 		}
+
+		/// <summary>
+		/// Окно профилактики передатчика (продолжительность и полная — 0, так заказчик её помечает)
+		/// правка одной из двух продолжительностей пропускает: массовой правкой профилактика не
+		/// снимается (решение 12.10.2026). Заданы обе — правка явная, применяется и к нему.
+		/// </summary>
+		private static bool SkipsDuration(DataRow w, WindowChange change) =>
+			!(change.NewDuration.HasValue && change.NewTotal.HasValue)
+			&& Seconds(w, TariffWindow.ParamNames.Duration) == 0
+			&& Seconds(w, TariffWindow.ParamNames.DurationTotal) == 0;
 
 		private static readonly bool[] AllDays = { true, true, true, true, true, true, true };
 		private static readonly string[] DayParams = { "monday", "tuesday", "wednesday", "thursday", "friday", "saturday", "sunday" };

@@ -32,8 +32,15 @@
 WITH EXECUTE AS OWNER
 AS
 SET NOCOUNT ON
--- Продолжительность не может быть больше полной; нулевая полная продолжительность означает «не задана»
-IF @actionName In ('AddItem', 'UpdateItem', 'Clone') And @duration_total > 0 And @duration > @duration_total
+-- Продолжительность не может быть больше полной (12.10.2026: без исключения «0 = не задана»; 0/0 - так заказчик
+-- помечает профилактику передатчика - проходит). При изменении пустые значения - прежние значения тарифа
+IF @actionName In ('AddItem', 'Clone') And IsNull(@duration, 0) > IsNull(@duration_total, 0)
+	BEGIN
+		RAISERROR('DurationExceedsTotal', 16, 1)
+		RETURN
+	END
+IF @actionName = 'UpdateItem' And EXISTS(SELECT * FROM [Tariff] WHERE tariffID = @tariffID
+		And IsNull(@duration, duration) > IsNull(@duration_total, duration_total))
 	BEGIN
 		RAISERROR('DurationExceedsTotal', 16, 1)
 		RETURN
@@ -250,7 +257,7 @@ ELSE IF @actionName = 'UpdateItem' BEGIN
 		End
 
 	-- новая полная уходит в окна тарифа (ниже), а у окна продолжительность может быть своя, больше тарифной
-	IF @duration_total > 0 And @duration_total <> @oldDurationTotal
+	IF @duration_total Is Not Null And @duration_total <> @oldDurationTotal
 		And EXISTS(SELECT * FROM TariffWindow WHERE tariffId = @tariffID And duration_total = @oldDurationTotal And duration > @duration_total)
 		BEGIN
 			RAISERROR('DurationExceedsTotal', 16, 1)
@@ -270,7 +277,8 @@ ELSE IF @actionName = 'UpdateItem' BEGIN
 		sunday = ISNULL(@sunday, sunday),
 		price = ISNULL(@price, price),
 		duration = ISNULL(@duration, duration),
-		duration_total = ISNULL(@duration_total, duration),
+		-- пустая полная - прежняя (раньше подставлялась продолжительность, а в окна писался NULL - ошибка 515)
+		duration_total = ISNULL(@duration_total, duration_total),
 		comment = ISNULL(@comment, comment),
 		isForModuleOnly = ISNULL(@isForModuleOnly,isForModuleOnly),
 		suffix = ISNULL(@suffix,suffix),
@@ -313,6 +321,7 @@ ELSE IF @actionName = 'UpdateItem' BEGIN
 
 	-- если поменяласть полная продолжительность, надо обновить TariffWindow
 	Update TariffWindow set duration_total = @duration_total Where tariffId = @tariffID and duration_total = @oldDurationTotal
+		and @duration_total Is Not Null
 
 	EXEC Tariffs @TariffID = @TariffID
 	END

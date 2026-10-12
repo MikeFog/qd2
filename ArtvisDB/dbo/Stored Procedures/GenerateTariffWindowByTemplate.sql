@@ -25,8 +25,9 @@ BEGIN
 	
 	SET DATEFIRST 1
 
-	-- Продолжительность не может быть больше полной; нулевая полная продолжительность означает «не задана»
-	if @duration_total > 0 and @duration > @duration_total
+	-- Продолжительность не может быть больше полной (12.10.2026: без исключения «0 = не задана»;
+	-- 0/0 - профилактика передатчика - проходит)
+	if IsNull(@duration, 0) > IsNull(@duration_total, 0)
 	begin
 		raiserror('DurationExceedsTotal', 16, 1)
 		return
