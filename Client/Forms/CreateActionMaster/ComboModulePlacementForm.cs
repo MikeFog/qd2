@@ -954,9 +954,10 @@ namespace Merlin.Forms.CreateActionMaster
 		/// панели, Del по ячейкам сетки.
 		///
 		/// Пересчёт вызываем сами, как это делает CampaignForm.ProcessCurrentCampaignIssuesDelete.
-		/// Полагаться на ModuleIssue.Delete нельзя: там переопределён Delete() без параметров,
-		/// а SmartGrid и массовое удаление зовут Delete(true) - другой виртуальный метод, и
-		/// пересчёт в нём не выполняется.
+		/// Полагаться на ModuleIssue.Delete нельзя: пересчёт там только в Delete() без параметров,
+		/// а его зовут лишь контекстное меню и Del по одной строке панели (через DoAction).
+		/// Del по нескольким строкам, Del по ячейкам, «Отменить» и перенос зовут Delete(true) -
+		/// другой виртуальный метод, пересчёта в нём нет.
 		/// </summary>
 		private void AfterIssuesDeleted()
 		{

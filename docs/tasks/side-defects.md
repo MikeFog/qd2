@@ -140,6 +140,12 @@ qd2 (C:\Work\AdvertAg\sources), SQL Server Express, dev base `.\sqlexpress` / Ar
 - Правка: при пустом `@duration_total` оставлять прежнюю полную (`ISNULL(@duration_total, duration_total)`) и не трогать окна. Достижимость из интерфейса (правка тарифа в модуле) не проверялась.
 - Статус: исправлено 12.10.2026 в `Deploy/40_duration-total-not-below-duration.sql`: пустая полная при «Изменить» — прежняя (`ISNULL(@duration_total, duration_total)`), окна не трогаются. Проверено на ArtvisDev в откатываемой транзакции: тариф 143314 — полная осталась 225, 365 окон с полной 225 не тронуты, ошибки 515 нет.
 
+### 10. `ModuleIssue.Delete()`: неверное «направление» в [ISSUE-01] и два неточных комментария в форме комбо-модулей
+
+- `docs/IMPROVEMENTS.md` [ISSUE-01] предлагает перенести пересчёт акции из `ModuleIssue.Delete()` в `Delete(bool)`. Это неверно. `Delete()` без параметров вызывается только из `PresentationObject.DoAction` (контекстное меню, Del по одной строке), а туда всегда приходят через `CampaignPart.DoAction` (`Client/Classes/CampaignPart.WinForms.cs:16-31`), который после удаления сам пересчитывает акцию и показывает сообщение о цене. Пересчёт в override на всех путях лишний (Д-16 в `docs/action-forms.md`: «у модуля ×3»). Перенос в `Delete(bool)` добавил бы пересчёт на каждый выпуск массового удаления, а в форме комбо-модулей снова читал бы уже удалённую кампанию (Д-6). Правильное направление — удалить override `Delete()` целиком; это упрощение десктопа, меняет поведение на всех экранах модульных выпусков, только после обсуждения с Мишей. Текст [ISSUE-01] поправить заодно.
+- `Client/Forms/CreateActionMaster/ComboModulePlacementForm.cs`: комментарий к `DeleteIssuesInSelectedCells` («ModuleIssue.Delete пересчитывает акцию сам») и к `OnIssueDeleted` («ModuleIssue.Delete -> ModuleIssueIUD с пересчётом акции») неточны: по ячейкам удаление идёт через `Delete(true)` без пересчёта, пересчёт делает `AfterIssuesDeleted`. Комментарий к `AfterIssuesDeleted` исправлен вместе с Д-6.
+- Статус: открыто. Найдено 12.10.2026 при разборе Д-6.
+
 ## Найдено попутно при этапах 4–7 перехода на фактическое окно (без карточек)
 
 Подробности с числами — `docs/tasks/window-actual-open-questions.md` §11 и разборы этапов 4–7.

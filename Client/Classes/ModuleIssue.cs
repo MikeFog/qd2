@@ -72,6 +72,8 @@ namespace Merlin.Classes
 			bool res = base.Delete();
 			Campaign campaign =
 				new Campaign(int.Parse(parameters[Campaign.ParamNames.CampaignId].ToString()));
+			// кампанию мог удалить обработчик ObjectDeleted (ComboModulePlacementForm.DeleteEmptyCampaignsAndAction)
+			if (campaign.ActionId == null) return res;
 			((ActionOnMassmedia)campaign.Action).Recalculate();
 			return res;
 		}
