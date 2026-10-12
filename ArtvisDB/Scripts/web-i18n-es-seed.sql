@@ -1,5 +1,5 @@
 ﻿/*
-    ДЕПЛОЙ: переводы веб-версии на язык «es» (1981 строк). docs/tasks/web-i18n.md, этап 5.
+    ДЕПЛОЙ: переводы веб-версии на язык «es» (1982 строк). docs/tasks/web-i18n.md, этап 5.
     СГЕНЕРИРОВАН из ArtvisDB/Scripts/i18n/es.tsv скриптом build-seed.py — руками не править.
 
     ПРЕДУСЛОВИЕ     накачен web-i18n-translation-deploy.sql (таблица iTranslation).
@@ -1809,6 +1809,7 @@ INSERT INTO #t ([source], [text]) VALUES
 (N'Слишком большая цена.', N'El precio es demasiado alto.'),
 (N'Для роликов локального промо позиционирование не применяется. Операция прервана.', N'El posicionamiento no se aplica a los spots de promoción local. Operación cancelada.'),
 (N'Для роликов с типом "Локальное СМИ" и "Федеральное СМИ" позиционирование не применяется. Операция прервана.', N'El posicionamiento no se aplica a los spots de tipo "Medio local" y "Medio federal". Operación cancelada.'),
+(N'Ролики с типом "Отбивка политической агитации", "Локальное СМИ (агитация)" и "Федеральное СМИ (агитация)" система ставит сама вокруг роликов "Агитационные материалы". Операция прервана.', N'Los spots de tipo "Separador de propaganda política", "Medio local (propaganda electoral)" y "Medio federal (propaganda electoral)" los coloca el propio sistema alrededor de los spots de "Materiales de propaganda política". Operación cancelada.'),
 (N'Выбрать в папке роликов', N'Elegir en la carpeta de spots'),
 (N'Загрузить с компьютера', N'Subir desde la computadora'),
 (N'Записей нет. Измените условия отбора.', N'No hay registros. Cambie las condiciones del filtro.'),

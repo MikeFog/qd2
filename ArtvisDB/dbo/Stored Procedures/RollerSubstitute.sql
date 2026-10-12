@@ -81,6 +81,13 @@ If (case when @newRollerActionTypeID = 6 then 1 else 0 end) <> (case when @oldRo
 	RETURN
 End
 
+-- 7, 44, 55 ставит только система: заменой их не получить. Замена на ролик того же типа
+-- (правка служебной обвязки) остаётся
+If @newRollerActionTypeID In (7, 44, 55) And @newRollerActionTypeID <> IsNull(@oldRollerActionTypeID, 0) Begin
+	RAISERROR('AgitationServiceRollerManual', 16, 1)
+	RETURN
+End
+
 If @newDuration = 0 Begin
 	RAISERROR('Roller_NullDuration', 16, 1)
 	RETURN 

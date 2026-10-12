@@ -1787,6 +1787,7 @@ code	В цене не больше двух знаков после запято
 code	Слишком большая цена.	El precio es demasiado alto.
 message	Для роликов локального промо позиционирование не применяется. Операция прервана.	El posicionamiento no se aplica a los spots de promoción local. Operación cancelada.
 message	Для роликов с типом "Локальное СМИ" и "Федеральное СМИ" позиционирование не применяется. Операция прервана.	El posicionamiento no se aplica a los spots de tipo "Medio local" y "Medio federal". Operación cancelada.
+message	Ролики с типом "Отбивка политической агитации", "Локальное СМИ (агитация)" и "Федеральное СМИ (агитация)" система ставит сама вокруг роликов "Агитационные материалы". Операция прервана.	Los spots de tipo "Separador de propaganda política", "Medio local (propaganda electoral)" y "Medio federal (propaganda electoral)" los coloca el propio sistema alrededor de los spots de "Materiales de propaganda política". Operación cancelada.
 code	Выбрать в папке роликов	Elegir en la carpeta de spots
 code	Загрузить с компьютера	Subir desde la computadora
 code	Записей нет. Измените условия отбора.	No hay registros. Cambie las condiciones del filtro.
