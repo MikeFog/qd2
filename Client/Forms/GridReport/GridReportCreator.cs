@@ -104,31 +104,9 @@ namespace Merlin.Forms.GridReport
 				textObj.Text = User.Name;
 			}
 
-			// Statistics
-			Dictionary<string, object> procParameters =
-				new Dictionary<string, object>(StringComparer.CurrentCultureIgnoreCase);
-
-			procParameters["StartDay"] = procParameters["FinishDay"] = DateTime;
-			procParameters[Massmedia.ParamNames.MassmediaId] = Massmedia.MassmediaId;
-			try
-			{
-				DataSet dsStats = DataAccessor.LoadDataSet("stat_FillPercentage", procParameters, 60);
-				if (dsStats != null && dsStats.Tables.Count > 0 && dsStats.Tables[0].Rows.Count > 0)
-				{
-					DataRow row = dsStats.Tables[0].Rows[0];
-					textObj = report.ReportDefinition.ReportObjects["txtLoading"] as TextObject;
-					if (textObj != null)
-						textObj.Text = row["fill"].ToString();
-
-					textObj = report.ReportDefinition.ReportObjects["txtDayLoading"] as TextObject;
-					if (textObj != null)
-						textObj.Text = row["realTime"].ToString();
-				}
-			}
-			catch (Exception e)
-			{
-				ErrorManager.LogError("Cannot stat_FillPercentage", e);
-			}
+			// «Заполняемость» и «Фактическое время рекламы» в подвале страницы заказчик попросил убрать
+			// (11.10.2026); в подвале макета больше ничего нет — скрываем его целиком
+			report.Section5.SectionFormat.EnableSuppress = true;
 
 			return report;
 		}

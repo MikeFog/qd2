@@ -89,7 +89,7 @@
 | Что | Вход | Процедура | Время | Окно выпуска | Отбор по дню |
 |---|---|---|---|---|---|
 | Выгрузка DJin | «Сетка вещания» → «Экспорт...», «Экспорт сеток вещания» | `rpt_Grid_v3` | `windowDateActual` (`:69`, через `fn_GetTimeString`) | `actualWindowID` (`:120`, `:123`; модули без выпуска — `:257`) | `dayActual` (`:93`, `:127`, `:261`) |
-| Печать «Сетка вещания» (Crystal `Grid.rpt`; веб — `PrintGrid.razor`) | та же форма, «Обновить» | `rpt_Grid_v3` + `stat_FillPercentage` | то же | `actualWindowID`; заполняемость — тоже (`stat_FillPercentage.sql:147`) | `dayActual` (`stat_FillPercentage.sql:121`) |
+| Печать «Сетка вещания» (Crystal `Grid.rpt`; веб — `PrintGrid.razor`) | та же форма, «Обновить» | `rpt_Grid_v3` (подвал с заполняемостью убран 11.10.2026) | то же | `actualWindowID` | `dayActual` |
 | Эфирная справка | действие у кампаний (сущности 91–93, 171), журнал актов (156) | `OnAirInquireReport`; сумма — `GetPriceByPeriod` | `windowDateActual` (`:21`) | `actualWindowID` (`:36`); сумма — тоже (`GetPriceByPeriod.sql:51`, `:66`) | `dayActual` (`:39`); сумма — день окна выхода (`GetPriceByPeriod.sql:58`) |
 | Медиаплан («График размещения»), все варианты | акция, кампании, журнал актов, «по нескольким акциям» | `MediaPlanRetrieve_v2` | все вызовы (десктоп и веб, [MediaPlanBuilder.cs:185](../Client/Classes/MediaPlanBuilder.cs), `:451`) передают `isFact = 1` → `windowDateActual` (`:117`) | `actualWindowID` (`:124`); итоги — `GetPriceByPeriod` | `dayActual` (`:134–135`, `:144–145`) |
 | Месяцы для справки, медиаплана и счёта по месяцам | — | `sl_Months`; `GetMonthes` (все вызовы — `isFact = 1`) | — | `actualWindowID` (`sl_Months.sql:13`, `GetMonthes.sql:19`) | `dayActual` (`sl_Months.sql:9`, `GetMonthes.sql:16`) |

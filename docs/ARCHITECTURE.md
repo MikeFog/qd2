@@ -52,7 +52,7 @@ Concrete examples:
 - Payment allocation flow (`Client/Forms/PaymentCandidatesForm.cs`, `Client/Classes/PaymentCommon.cs`):
   - Candidate actions loaded through metadata action (`DataAccessor.DoAction`), selected rows converted into payment-action updates via `PresentationObject.Update()`.
 - Report flow (`Client/Forms/GridReport/GridReportCreator.cs`):
-  - Calls `rpt_Grid_v3` and `stat_FillPercentage`, binds results to report grid/export layers.
+  - Calls `rpt_Grid_v3`, binds results to report grid/export layers (the fill footer from `stat_FillPercentage` was removed 2026-10-11; the procedure lives on in Statistics → «% заполнения»).
 
 # Database access architecture
 

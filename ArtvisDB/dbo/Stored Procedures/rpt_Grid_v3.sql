@@ -8,6 +8,9 @@ rpt_Grid_v3:
   как в rpt_Grid: только выпуски и спонсорские программы акций этого менеджера,
   без «ничьих» строк (модули без выпуска, непроспонсированные программы).
   NULL — все, как раньше; выгрузка для эфира его не передаёт.
+- rollerDurationSum (2026-10-11): сумма под окном — хронометраж всего блока, то есть
+  ролики всех типов (раньше только «Реклама», 1; новости, программы, СМИ, агитация,
+  отбивки и промо шли как 0). Пустое окно — NULL, как раньше.
 */
 
 CREATE   PROCEDURE [dbo].[rpt_Grid_v3]
@@ -473,7 +476,7 @@ BEGIN
             CASE WHEN CAST(CAST(tariffTime AS NVARCHAR(2)) AS INT) < 24 THEN 1 ELSE 0 END AS isToday,
             tariffUnionID,
             position,
-            CASE WHEN [rolActionTypeID] <> 1 THEN 0 ELSE rollerDuration END AS rollerDurationSum,
+            rollerDuration AS rollerDurationSum,
             broadcastStart,
             windowNextId,
             windowPrevId,
@@ -517,7 +520,7 @@ BEGIN
             CASE WHEN CAST(CAST(tariffTime AS NVARCHAR(2)) AS INT) < 24 THEN 1 ELSE 0 END AS isToday,
             tariffUnionID,
             position,
-            CASE WHEN [rolActionTypeID] <> 1 THEN 0 ELSE rollerDuration END AS rollerDurationSum,
+            rollerDuration AS rollerDurationSum,
             broadcastStart,
             windowNextId,
             windowPrevId,

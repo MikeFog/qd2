@@ -16,7 +16,7 @@
 | `BillContract` — счёт-договор | `BillContractReport : BillReport` | акция: `Bill-Contract` | тот же `rpt_GenericBill` + 9 текстовых блоков | таблица счёта + тексты договора |
 | `Contract` — договор и спонсорский договор | `ContractReport` | акция: `PrintContract`, `PrintSponsorContract`; фирма: `PrintContract`, `PrintSponsorContract` (без акции, по агентству и дате) | таблицы нет, только 8 текстовых блоков | один `.rpt` на оба вида, переключает набор блоков |
 | `OnAirInquire` — эфирная справка | `OnAirInquireReport` | кампании (91, 92, 93, 171): `PrintOnAirInquire`, по месяцам | `OnAirInquireReport` (2 набора: выпуски и спонсорские программы) | **субрепорт** под второй набор; подпись директора станции; сумма за месяц опционально |
-| `Grid` — сетка вещания на день | не через `GenericReport`: `GridReportCreator` | меню → `FrmGridReport` (станция, дата, менеджер) | `rpt_Grid_v3` + `stat_FillPercentage` | рабочая распечатка, не документ для клиента; рядом живёт выгрузка сетки (`ExportGridForm`, `AdjustIssuePositions`) |
+| `Grid` — сетка вещания на день | не через `GenericReport`: `GridReportCreator` | меню → `FrmGridReport` (станция, дата, менеджер) | `rpt_Grid_v3` (до 11.10.2026 и `stat_FillPercentage` — подвал убран) | рабочая распечатка, не документ для клиента; рядом живёт выгрузка сетки (`ExportGridForm`, `AdjustIssuePositions`) |
 
 **Мёртвое (в `csproj` нет, не компилируется):** `ActionAgreementAudio/Video.rpt`,
 `ActionSponsorAgreementAudio/Video.rpt`, `AdditionalAgreement.rpt` (+ их

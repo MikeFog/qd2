@@ -8,9 +8,9 @@ namespace Merlin.Classes
 {
 	/// <summary>
 	/// «Сетка вещания» станции на день без UI — для веб-экрана (десктоп — FrmGridReport +
-	/// GridReportCreator + Crystal-макет Grid.rpt). Данные — rpt_Grid_v3, итоги дня —
-	/// stat_FillPercentage, раскладка по окнам — как в макете: группа по tariffTime, под окном
-	/// его длительность (среднее cellRealDuration) и сумма роликов (rollerDurationSum).
+	/// GridReportCreator + Crystal-макет Grid.rpt). Данные — rpt_Grid_v3, раскладка по окнам —
+	/// как в макете: группа по tariffTime, под окном его длительность (среднее cellRealDuration)
+	/// и сумма роликов (rollerDurationSum — все ролики блока).
 	/// </summary>
 	public sealed class BroadcastGrid
 	{
@@ -34,10 +34,6 @@ namespace Merlin.Classes
 
 		public readonly List<Window> Windows = new List<Window>();
 
-		/// <summary>Заполняемость и фактическое время рекламы за день (подвал макета); null — нет данных.</summary>
-		public string Fill;
-		public string RealTime;
-
 		/// <param name="userId">Менеджер: только его выпуски; null — все.</param>
 		public static BroadcastGrid Load(int massmediaId, DateTime date, int? userId)
 		{
@@ -49,7 +45,6 @@ namespace Merlin.Classes
 
 			BroadcastGrid grid = new BroadcastGrid();
 			grid.Build(DataAccessor.LoadDataSet("rpt_Grid_v3", parameters, 120).Tables[0]);
-			grid.LoadFill(massmediaId, date.Date);
 			return grid;
 		}
 
@@ -98,29 +93,6 @@ namespace Merlin.Classes
 		{
 			int total = (int)Math.Round(seconds, MidpointRounding.AwayFromZero);
 			return (total / 60).ToString("00") + ":" + (total % 60).ToString("00");
-		}
-
-		private void LoadFill(int massmediaId, DateTime date)
-		{
-			Dictionary<string, object> parameters = DataAccessor.CreateParametersDictionary();
-			parameters["StartDay"] = date;
-			parameters["FinishDay"] = date;
-			parameters[Massmedia.ParamNames.MassmediaId] = massmediaId;
-
-			// Итоги — довесок к сетке: как в десктопе, их сбой пишется в лог, а сетка показывается.
-			try
-			{
-				DataSet ds = DataAccessor.LoadDataSet("stat_FillPercentage", parameters, 60);
-				if (ds.Tables.Count == 0 || ds.Tables[0].Rows.Count == 0)
-					return;
-				DataRow row = ds.Tables[0].Rows[0];
-				Fill = row["fill"].ToString();
-				RealTime = row["realTime"].ToString();
-			}
-			catch (Exception e)
-			{
-				ErrorManager.LogError("Cannot stat_FillPercentage", e); // i18n-ok: текст для лога
-			}
 		}
 	}
 }

@@ -11,10 +11,10 @@ namespace Merlin.Classes
 	/// <summary>
 	/// Сетка вещания в Word (docx) — замена выгрузки Crystal-макета Grid.rpt в .doc
 	/// (десктоп: ExportGridForm, вторая папка). Тот же лист, что экран «Сетка вещания»:
-	/// A4 книжная; шапка (заголовок, дата, станция, менеджер) и подвал (заполняемость,
-	/// фактическое время рекламы) повторяются на каждой странице, как «шапка/подвал страницы»
-	/// у Crystal; окна — в три колонки раздела, текст перетекает сам. Под окном жирно его
-	/// длительность и сумма роликов, снизу черта.
+	/// A4 книжная; шапка (заголовок, дата, станция, менеджер) повторяется на каждой странице,
+	/// как «шапка страницы» у Crystal; подвала нет (заполняемость и фактическое время рекламы
+	/// заказчик попросил убрать 11.10.2026); окна — в три колонки раздела, текст перетекает
+	/// сам. Под окном жирно его длительность и сумма роликов (все ролики блока), снизу черта.
 	/// </summary>
 	public static class BroadcastGridDocx
 	{
@@ -43,8 +43,6 @@ namespace Merlin.Classes
 
 					HeaderPart header = main.AddNewPart<HeaderPart>();
 					header.Header = BuildHeader(station, date, manager);
-					FooterPart footer = main.AddNewPart<FooterPart>();
-					footer.Footer = BuildFooter(grid);
 
 					Body body = new Body();
 					if (grid.Windows.Count == 0)
@@ -53,7 +51,7 @@ namespace Merlin.Classes
 					foreach (BroadcastGrid.Window window in grid.Windows)
 						AppendWindow(body, window);
 
-					body.Append(SectionProperties(main.GetIdOfPart(header), main.GetIdOfPart(footer)));
+					body.Append(SectionProperties(main.GetIdOfPart(header)));
 					main.Document = new Document(body);
 				}
 				return stream.ToArray();
@@ -134,14 +132,7 @@ namespace Merlin.Classes
 			return header;
 		}
 
-		private static Footer BuildFooter(BroadcastGrid grid)
-		{
-			return new Footer(
-				HeadLine(Tr.T("Заполняемость:"), grid.Fill == null ? "—" : grid.Fill + " %"),
-				HeadLine(Tr.T("Фактическое время рекламы:"), grid.RealTime ?? "—"));
-		}
-
-		/// <summary>Строка шапки/подвала: подпись и значение с отступом, как в макете Crystal.</summary>
+		/// <summary>Строка шапки: подпись и значение с отступом, как в макете Crystal.</summary>
 		private static Paragraph HeadLine(string caption, string value)
 		{
 			Paragraph line = new Paragraph(
@@ -171,15 +162,14 @@ namespace Merlin.Classes
 			return new Run(properties, new Text(text) { Space = SpaceProcessingModeValues.Preserve });
 		}
 
-		private static SectionProperties SectionProperties(string headerId, string footerId)
+		private static SectionProperties SectionProperties(string headerId)
 		{
 			return new SectionProperties(
 				new HeaderReference { Type = HeaderFooterValues.Default, Id = headerId },
-				new FooterReference { Type = HeaderFooterValues.Default, Id = footerId },
 				new PageSize { Width = PageWidth, Height = PageHeight },
 				new PageMargin
 				{
-					Top = 2300, Bottom = 1300, Left = MarginSide, Right = MarginSide,
+					Top = 2300, Bottom = MarginSide, Left = MarginSide, Right = MarginSide,
 					Header = 567, Footer = 567, Gutter = 0
 				},
 				new Columns { ColumnCount = Columns, Space = ColumnGap.ToString(CultureInfo.InvariantCulture), EqualWidth = true });
