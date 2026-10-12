@@ -37,6 +37,7 @@ DECLARE @passport NVARCHAR(MAX) = N'<passport>
 		<separator/>
 		<field caption="Цена:" name="price"/>
 		<field caption="Продолжительность:" name="duration"/>
+		<field caption="Полная продолжительность:" name="duration_total"/>
 		<separator/>
 		<field caption="Понедельник" name="monday"/>
 		<field caption="Вторник" name="tuesday"/>
@@ -53,7 +54,6 @@ DECLARE @passport NVARCHAR(MAX) = N'<passport>
 	</page>
 	<page caption="DJin">
 		<field caption="ID" name="suffix" />
-		<field caption="Полная продолжительность:" name="duration_total"/>
 		<field caption="Джингл на вход" name="needInJingle" />
 		<field caption="Джингл на выход" name="needOutJingle" />
 		<separator/>
