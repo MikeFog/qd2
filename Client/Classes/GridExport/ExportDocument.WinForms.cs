@@ -18,9 +18,6 @@ namespace Merlin.Classes.GridExport
 				if (mm == null)
 					return;
 
-				MassmediaPricelist pl = (MassmediaPricelist) mm.GetPriceList(date);
-				string broadcastTime = pl.BroadcastStart.ToString("HHmm");
-
 				FolderBrowserDialog dlg = new FolderBrowserDialog();
 				Application.DoEvents();
 				if (dlg.ShowDialog(Globals.MdiParent) == DialogResult.OK)
@@ -29,7 +26,7 @@ namespace Merlin.Classes.GridExport
 					mmName = ExportHelper.RemoveInvalidFileNameChars(mmName);
 					string fileName = string.Format("{0}{1}{2}", dlg.SelectedPath, Path.DirectorySeparatorChar, mmName);
 
-					foreach (ExportFile file in Build(mm, date, fileName, data, broadcastTime))
+					foreach (ExportFile file in Build(mm, date, fileName, data))
 						File.WriteAllBytes(file.Name, file.Content);
 					if (ExportHelper.OpenFolderOnFinish)
 						Process.Start(dlg.SelectedPath);

@@ -18,6 +18,9 @@ namespace Merlin.Classes.GridExport.DJinSerializer
 		// без спонсора, 9) - своего влёта у него нет. Строка без файла, длительность 0: по ней добивщик
 		// ставит анонс туда, где был бы влёт, и вычищает её перед DJin
 		public const string strJingleInPlace = "fake-in";
+		// Пометка в конце имени файла выгрузки: файл пойдёт через добивщик или прямо на передающий компьютер
+		public const string strFileWithFiller = "с_добивщиком"; // i18n-ok: часть имени файла для эфирной программы, не интерфейс
+		public const string strFileWithoutFiller = "без_добивщика"; // i18n-ok: часть имени файла для эфирной программы, не интерфейс
 		public const string strLine = "\"{0}\",\"{1}\",\"{2}\",\"{3}\",\"{4}\",\"{5}\",\"{6}\"\r\n";
         public const string strLine2 = "\"{0}\",\"{1}\",\"{2}\",\"{3}\",\"{4}\",\"{5}\",\"{6}\"";
         public const string strRoller = "c";

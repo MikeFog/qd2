@@ -8,38 +8,36 @@ namespace Merlin.Classes.GridExport.DJinSerializer
 {
 	internal class DJinExportDocument : ExportDocument
 	{
-        protected override IList<ExportFile> Build(Massmedia mm, DateTime date, string fileName, DataTable data, string broadcastTime)
+        protected override IList<ExportFile> Build(Massmedia mm, DateTime date, string fileName, DataTable data)
 		{
-			// Два файла: эфир дня от начала вещания до полуночи и хвост после полуночи —
-			// последний уже следующей датой. Файл пишется, только если в его части есть выпуски.
+			// Один файл на сутки: broadcastStart у всех прайс-листов 00:00, час окна всегда меньше 24,
+			// хвоста после полуночи (второго файла) не бывает. Файл пишется, только если в нём есть выпуски.
 			List<ExportFile> files = new List<ExportFile>();
 
             if (data.Select("isToday = 1 and rolActionTypeID is not null").Length > 0)
 			{
 				DataRow[] rows = data.Select("isToday = 1");
 				if (rows.Length > 0)
-					files.Add(BuildFile(string.Format("{0}_{1}_{2}-2359.txt", fileName, date.ToString("dd_MM_yyyy"), broadcastTime),
-						rows, mm, date));
-            }
-
-			if (data.Select("isToday = 0 and rolActionTypeID is not null").Length > 0)
-			{
-				DataRow[] rows = data.Select("isToday = 0");
-				if (rows.Length > 0)
-					files.Add(BuildFile(string.Format("{0}_{1}_0000-{2}.txt", fileName, date.AddDays(1).ToString("dd_MM_yyyy"), broadcastTime),
-						rows, mm, date));
+				{
+					// Имя читает добивщик (Broadcast Schedule): «Станция (город)_дд_мм_гггг…» - станция, город и дата
+					// берутся по этому началу, дальше он имя не разбирает. Пометка в конце - для человека: куда файл идти
+					bool usesFiller = mm.UsesFiller;
+					files.Add(BuildFile(string.Format("{0}_{1}_{2}.txt", fileName, date.ToString("dd_MM_yyyy"),
+							usesFiller ? DJinParam.strFileWithFiller : DJinParam.strFileWithoutFiller),
+						rows, mm, date, usesFiller));
+				}
             }
 
 			return files;
         }
 
 		/// <summary>Блоки сетки и постобработка (BlockManager) — прежде файл писался и перечитывался с диска.</summary>
-		private ExportFile BuildFile(string name, DataRow[] rows, Massmedia mm, DateTime date)
+		private ExportFile BuildFile(string name, DataRow[] rows, Massmedia mm, DateTime date, bool usesFiller)
 		{
 			using (MemoryStream stream = new MemoryStream())
 			{
 				ExportBlocks(stream, rows, mm, date);
-				return new ExportFile { Name = name, Content = BlockManager.Process(stream.ToArray()) };
+				return new ExportFile { Name = name, Content = BlockManager.Process(stream.ToArray(), usesFiller) };
 			}
 		}
 

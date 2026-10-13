@@ -11,7 +11,8 @@ namespace Merlin.Classes.GridExport.DJinSerializer
     {
         // Метки типов роликов, которые проставляет DJinExportDocument.PrintRoller.
         // Нужны для сортировки внутри блока; в готовый файл метки агитации не
-        // попадают, а 4/5 и промо без спонсора (9) остаются (см. NormalizeAgitationMarker).
+        // попадают, а 4/5 и промо без спонсора (9) остаются только у станций с добивщиком
+        // (см. NormalizeAgitationMarker).
         private const string TypeLocalSmi = "c-type-4";
         private const string TypeFederalSmi = "c-type-5";
         private const string TypeAgitLocalSmi = "c-type-44";
@@ -31,7 +32,12 @@ namespace Merlin.Classes.GridExport.DJinSerializer
         /// Результат тот же, что был у File.ReadAllLines/WriteAllLines: строки в windows-1251,
         /// каждая с CRLF (Environment.NewLine в Windows), без BOM.
         /// </summary>
-        public static byte[] Process(byte[] content)
+        /// <param name="usesFiller">
+        /// Файл обработает добивщик (Broadcast Schedule): ему остаются метки c-type-4/5/9 и fake-in.
+        /// Без добивщика файл идёт прямо на передающий компьютер, и всё, что добивщик перед DJin убирает
+        /// (его AudioBlock.save: строки fake-in пропускаются, c-type-4/5/9 заменяются на c), здесь убирается сразу.
+        /// </param>
+        public static byte[] Process(byte[] content, bool usesFiller)
         {
             var blocks = ParseBlocks(ReadLines(DJinParam.Encoding.GetString(content)));
             var output = new StringBuilder();
@@ -44,7 +50,12 @@ namespace Merlin.Classes.GridExport.DJinSerializer
 
                 // Служебные метки снимаются со всех блоков, в том числе отданных без перестановки
                 foreach (var line in processed.Lines)
-                    output.Append(NormalizeAgitationMarker(line)).Append("\r\n");
+                {
+                    if (!usesFiller && IsJingleInPlace(line))
+                        continue;
+
+                    output.Append(NormalizeAgitationMarker(line, usesFiller)).Append("\r\n");
+                }
             }
 
             return DJinParam.Encoding.GetBytes(output.ToString());
@@ -314,11 +325,13 @@ namespace Merlin.Classes.GridExport.DJinSerializer
         /// нужны только для сортировки выше. В файл все они пишутся как обычные рекламные
         /// ролики - метки 4/5 не ставим специально, чтобы DJin не принял авто-обвязку за
         /// ручные идентификаторы СМИ. Влёт пишется обычным джинглом.
-        /// Метка промо без спонсора (9), как и 4/5, остаётся: по ней добивщик Европы Плюс
-        /// не ставит анонс в блок с промо, он же снимает её перед DJin. Так же остаётся
-        /// метка места влёта: по ней добивщик ставит анонс и вычищает её.
+        /// Метка промо без спонсора (9), как и 4/5, остаётся у станций с добивщиком: по ней добивщик
+        /// Европы Плюс не ставит анонс в блок с промо, он же снимает её перед DJin. Так же остаётся
+        /// метка места влёта: по ней добивщик ставит анонс и вычищает её (строки fake-in без добивщика
+        /// отбрасывает вызывающий). У станции без добивщика 4/5/9 пишутся обычным роликом - как их
+        /// оставил бы после себя добивщик.
         /// </summary>
-        private static string NormalizeAgitationMarker(string line)
+        private static string NormalizeAgitationMarker(string line, bool usesFiller)
         {
             string marker = GetTypeMarker(line);
 
@@ -328,6 +341,9 @@ namespace Merlin.Classes.GridExport.DJinSerializer
             if (marker == TypeAgitLocalSmi || marker == TypeAgitFederalSmi
                 || marker == TypeAgitAnnounce || marker == TypeAgitation
                 || marker == TypePromoSponsor)
+                return ReplaceTypeMarker(line, DJinParam.strRoller);
+
+            if (!usesFiller && (marker == TypeLocalSmi || marker == TypeFederalSmi || marker == TypePromoNoSponsor))
                 return ReplaceTypeMarker(line, DJinParam.strRoller);
 
             return line;

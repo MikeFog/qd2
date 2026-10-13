@@ -45,6 +45,7 @@ namespace Merlin.Classes
             public const string VolumeP = "volume_p";
             public const string VolumeM = "volume_m";
             public const string VolumeJ = "volume_j";
+            public const string UsesFiller = "usesFiller";
         }
 
 		#endregion
@@ -149,6 +150,21 @@ namespace Merlin.Classes
         public string VolumeJStr
         {
             get { return this[ParamNames.VolumeJ].ToString().Replace(",", "."); }
+        }
+
+        /// <summary>
+        /// Файл выгрузки станции обрабатывает добивщик (внешняя программа Broadcast Schedule): в файл идут
+        /// служебные метки для него. У станции без добивщика файл уходит прямо на передающий компьютер.
+        /// База без колонки (Deploy/43 не накатан) - прежнее поведение, метки пишутся всем.
+        /// </summary>
+        public bool UsesFiller
+        {
+            get
+            {
+                if (!parameters.ContainsKey(ParamNames.UsesFiller)) Refresh();
+                object value = this[ParamNames.UsesFiller];
+                return value == null || (value != DBNull.Value && bool.Parse(value.ToString()));
+            }
         }
 
         /// <summary>

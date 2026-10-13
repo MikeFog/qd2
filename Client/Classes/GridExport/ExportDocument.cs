@@ -40,16 +40,14 @@ namespace Merlin.Classes.GridExport
 
 		/// <summary>
 		/// Файлы выгрузки в памяти. <paramref name="fileName"/> — начало имени (у десктопа с
-		/// путём папки, у веба — только имя станции); дата и время эфира дописываются.
+		/// путём папки, у веба — только имя станции); дата и пометка о добивщике дописываются.
 		/// </summary>
 		public IList<ExportFile> ExportToMemory(DataTable data, Massmedia mm, DateTime date, string fileName)
 		{
-			MassmediaPricelist pl = (MassmediaPricelist)mm.GetPriceList(date);
-			string broadcastTime = pl == null ? string.Empty : pl.BroadcastStart.ToString("HHmm");
-			return Build(mm, date, fileName, data, broadcastTime);
+			return Build(mm, date, fileName, data);
 		}
 
-		protected abstract IList<ExportFile> Build(Massmedia mm, DateTime date, string fileName, DataTable data, string broadcastTime);
+		protected abstract IList<ExportFile> Build(Massmedia mm, DateTime date, string fileName, DataTable data);
 
 		protected void ExportBlocks(Stream file, IEnumerable<DataRow> rows, Massmedia mm, DateTime date)
 		{

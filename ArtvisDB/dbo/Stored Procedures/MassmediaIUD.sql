@@ -34,7 +34,8 @@
 @agitationLocalRollerID int = null,
 @agitationAnnounceRollerID int = null,
 @agitationFederalRollerID int = null,
-@agitationExcludeIntervals nvarchar(256) = null
+@agitationExcludeIntervals nvarchar(256) = null,
+@usesFiller bit = null
 )
 WITH EXECUTE AS OWNER
 as
@@ -66,12 +67,12 @@ IF @actionName = 'AddItem' BEGIN
 		rollerExitPath, rollerEtcPath, rollerPath, rollerEnterMax, rollerExitMax, rollerEtcMax, rollerEnterMin, rollerExitMin, rollerEtcMin, massmediaGroupID, 
 		exportName,mediaPlusMassmediaID, [name], director, painting, prefix, [fullPrefix], [reportString], certificateIssued,
 		volume_c, volume_n, volume_p, volume_m, volume_j,
-		agitationLocalRollerID, agitationAnnounceRollerID, agitationFederalRollerID, agitationExcludeIntervals)
+		agitationLocalRollerID, agitationAnnounceRollerID, agitationFederalRollerID, agitationExcludeIntervals, usesFiller)
 	VALUES(@roltypeID, @deadLine, @isActive, @rollerEnterPath, @rollerExitPath,
 		@rollerEtcPath, @rollerPath, @rollerEnterMax, @rollerExitMax, @rollerEtcMax, @rollerEnterMin, @rollerExitMin, @rollerEtcMin, @massmediaGroupID,
 		@exportName,@mediaPlusMassmediaID, @name, @director, @painting, @prefix, @fullPrefix, @reportString, @certificateIssued,
 		@volume_c, @volume_n, @volume_p, @volume_m, @volume_j,
-		@agitationLocalRollerID, @agitationAnnounceRollerID, @agitationFederalRollerID, @agitationExcludeIntervals)
+		@agitationLocalRollerID, @agitationAnnounceRollerID, @agitationFederalRollerID, @agitationExcludeIntervals, isnull(@usesFiller, 0))
 	
 	if @@rowcount <> 1
 	begin
@@ -126,7 +127,8 @@ ELSE IF @actionName = 'UpdateItem' BEGIN
 		agitationLocalRollerID = @agitationLocalRollerID,
 		agitationAnnounceRollerID = @agitationAnnounceRollerID,
 		agitationFederalRollerID = @agitationFederalRollerID,
-		agitationExcludeIntervals = @agitationExcludeIntervals
+		agitationExcludeIntervals = @agitationExcludeIntervals,
+		usesFiller = Coalesce(@usesFiller, usesFiller)
 	WHERE
 		massmediaID = @massmediaID
 

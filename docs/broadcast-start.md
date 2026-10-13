@@ -209,9 +209,9 @@ OR
 | [`SpecialTariffWindow.cs:34`](../Client/Classes/SpecialTariffWindow.cs) | да | `if (time < broadcastStart) WindowDate = WindowDate.AddDays(1)` |
 | [`TariffWindowGrid.cs:439,472`](../Client/Controls/TariffWindowGrid.cs) | — | раскладка часов (`hour + 24`) и колонок по дням недели |
 | [`TariffWithRangeGrid.cs`](../Client/Controls/TariffWithRangeGrid.cs) | — | `MinBroadCast`/`MaxBroadCast` (:172–203): размер массива окон, `GetTimeString` (:792), гард в `PopulateGridTable` |
-| [`ExportDocument.cs:48`](../Client/Classes/GridExport/ExportDocument.cs) | да | `ExportToMemory`: `broadcastTime = BroadcastStart.ToString("HHmm")` → **имя файла DJin**, см. §5 |
-| [`ExportDocument.WinForms.cs:22`](../Client/Classes/GridExport/ExportDocument.WinForms.cs) | — | то же для десктопной выгрузки в папку (вынесено из `ExportDocument.cs` при переносе в веб) |
-| [`DJinExportDocument.cs:21,29`](../Client/Classes/GridExport/DJinSerializer/DJinExportDocument.cs) | да | собирает имена файлов, см. [DJin-01] |
+| [`ExportDocument.cs:48`](../Client/Classes/GridExport/ExportDocument.cs) | да | `ExportToMemory`: `broadcastTime = BroadcastStart.ToString("HHmm")` → **имя файла DJin**, см. §5. **Убрано 13.10.2026** (имя больше не содержит время) |
+| [`ExportDocument.WinForms.cs:22`](../Client/Classes/GridExport/ExportDocument.WinForms.cs) | — | то же для десктопной выгрузки в папку (вынесено из `ExportDocument.cs` при переносе в веб). **Убрано 13.10.2026** |
+| [`DJinExportDocument.cs:21,29`](../Client/Classes/GridExport/DJinSerializer/DJinExportDocument.cs) | да | собирает имена файлов, см. [DJin-01]. **Убрано 13.10.2026** |
 | [`VectorBoxExportDocument.cs`](../Client/Classes/GridExport/VectorBoxSerializer/VectorBoxExportDocument.cs), [`VideoDJExportDocument.cs`](../Client/Classes/GridExport/VideoDJSerializer/VideoDJExportDocument.cs) | — | параметр `broadcastTime` принимают, но не используют; **оба файла не входят в `Client.csproj`** (мёртвые, см. `docs/roller-types.md` Н-12) |
 | [`Massmedia.cs:256`](../Client/Classes/Massmedia.cs) | — | мёртвый код (применение закомментировано) |
 
@@ -223,30 +223,18 @@ OR
 
 ## 5. Попутные находки
 
-### [DJin-01] Имя файла выгрузки содержит `broadcastTime` — внешний интерфейс
+### [DJin-01] Имя файла выгрузки содержит `broadcastTime` — внешний интерфейс — РЕШЕНО 13.10.2026
 
-[`DJinExportDocument.cs`](../Client/Classes/GridExport/DJinSerializer/DJinExportDocument.cs)
-формирует имена файлов для эфирной системы:
+Было: `DJinExportDocument` формировал имена `{станция}_{дата}_{broadcastTime}-2359.txt` и
+`{станция}_{дата+1}_0000-{broadcastTime}.txt`. При `broadcastStart = 00:00` первый файл всегда
+`..._0000-2359.txt`, второй не создавался никогда (`isToday` — это `tariffTime < 24`, час ≥ 24 появляется
+только при ненулевом `broadcastStart`).
 
-```csharp
-string fileFirst  = string.Format("{0}_{1}_{2}-2359.txt", fileName, date, broadcastTime);
-string fileSecond = string.Format("{0}_{1}_0000-{2}.txt", fileName, date.AddDays(1), broadcastTime);
-```
-
-При `broadcastStart = 00:00` первый файл всегда называется `..._0000-2359.txt`, а второй
-**не создаётся никогда**: он требует строк с `isToday = 0`, а `isToday` вычисляется в
-`rpt_Grid_v3` как `tariffTime < 24`, и час ≥ 24 появляется только через `fn_GetTimeString`
-при ненулевом `broadcastStart`.
-
-> **Это самое ответственное место при удалении.** Формат имени `0000-2359` уходит наружу,
-> в DJin. Его нужно сохранить буквально (захардкодить), а не «упростить». Ветку второго
-> файла можно удалять — она недостижима.
-
-С 25.09.2026 тот же код формирует имена и в веб-выгрузке (`ExportDocument.ExportToMemory`),
-так что одна правка закрывает обе версии. Веб-вариант дополнительно при отсутствии
-прайс-листа на дату подставляет пустую строку (`..._-2359.txt`); на практике недостижимо —
-без прайс-листа нет окон и выпусков, файл не пишется, — но захардкоженный `0000` убирает
-и это.
+Стало (решение Миши 13.10.2026: время в имени не нужно): `{станция}_{дд_мм_гггг}_с_добивщиком.txt` /
+`…_без_добивщика.txt`, один файл; выгрузка больше не читает `Pricelist.broadcastStart`
+(`ExportDocument.ExportToMemory`, `ExportDocument.WinForms.cs`, `DJinExportDocument.Build`). Добивщик разбирает
+имя только по началу «Станция (город)_дд_мм_гггг…», пометка в конце ему не мешает. Подробности —
+`docs/roller-types.md`, «Файл для станции без добивщика и имя файла».
 
 ### [SQL-BS-01] Тариф ровно в полночь выпадает из отчётов загрузки
 
@@ -327,7 +315,7 @@ or (t.[time] > pl.broadcastStart and (...дни недели без сдвига
 | Другие инсталляции с ненулевым `Pricelist.broadcastStart` | **главный.** 137 063 окна раньше 06:00 уехали бы на сутки. `Tumen` проверена 06.10.2026 — чисто; открытой осталась только `Belgorod` |
 | Слой 1 | минимальный — арифметическое тождество |
 | Слой 2–3 | средний, но ломает **экран**, а не данные: видно сразу, откатывается пересборкой |
-| Формат имени файла DJin | средний — внешний интерфейс, см. [DJin-01] |
+| Формат имени файла DJin | снят 13.10.2026 — имя больше не зависит от `broadcastStart`, см. [DJin-01] |
 | Порча данных | низкий — при `00:00` `dayActual`/`dayOriginal` пишутся одинаково |
 
 ---
@@ -491,7 +479,7 @@ FROM SponsorProgramPricelist GROUP BY CONVERT(varchar(8), broadcastStart, 108);
 
 По одному объекту, с проверкой экрана. Здесь же чинится хрупкость веерной сетки
 (`PopulateGridTable` без `MaxBroadCast`) и закрывается [SQL-BS-01]. Формат имени файла
-DJin — захардкодить, см. [DJin-01].
+DJin — уже не зависит от `broadcastStart`, см. [DJin-01].
 
 ### Шаг 5 — удалить колонку
 
