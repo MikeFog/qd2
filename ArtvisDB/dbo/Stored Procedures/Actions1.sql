@@ -78,6 +78,7 @@ SET NOCOUNT on
 			us.userName as creator,
 			@tAction + LTRIM(a.[actionID]) + ' (' + LTRIM(f.name) + ')'  as name,
 			f.name as firmName,
+			pkg.name as packageDiscountName,
 			coalesce(x.iCount, 0) as iCount,
 			coalesce(x.duration, '00:00') as duration,
 			Cast(
@@ -91,6 +92,9 @@ SET NOCOUNT on
 		from [Action] a
 			INNER JOIN [vUser] us ON us.userID = a.userID
 			INNER JOIN [Firm] f ON f.firmID = a.firmID
+			left join (PackageDiscountPriceList pkgpl
+				inner join PackageDiscount pkg on pkg.packageDiscountId = pkgpl.packageDiscountID
+				) on pkgpl.packageDiscountPriceListID = a.packageDiscountPriceListID
 			left join 
 			(
 				select c.actionID, count(distinct i.issueID) as iCount,
@@ -144,6 +148,7 @@ SET NOCOUNT on
 			--'Акция №' + LTRIM(a.[actionID]) + ' (' + LTRIM(f.name) + ')'  as name,
 			@tAction + LTRIM(a.[actionID]) as name,
 			f.name as firmName,
+			pkg.name as packageDiscountName,
 			Cast(
 			Case 
 				When a.tariffPrice = 0 Then 1
@@ -160,6 +165,9 @@ SET NOCOUNT on
 			INNER JOIN [Agency] ag ON c.[agencyID] = ag.[agencyID]
 			INNER JOIN [vUser] us ON us.userID = a.userID
 			INNER JOIN [Firm] f ON f.firmID = a.firmID
+			left join (PackageDiscountPriceList pkgpl
+				inner join PackageDiscount pkg on pkg.packageDiscountId = pkgpl.packageDiscountID
+				) on pkgpl.packageDiscountPriceListID = a.packageDiscountPriceListID
 			left join @massmedias umm on c.massmediaID = umm.massmediaID
 			left join GroupMember gm on us.userID = gm.userID
 			left join @ugroups ug on gm.groupID = ug.id
@@ -205,6 +213,7 @@ SET NOCOUNT on
 			--'Акция №' + LTRIM(a.[actionID]) + ' (' + LTRIM(f.name) + ')'  as name,
 			@tAction + LTRIM(a.[actionID]) as name,
 			f.name as firmName,
+			pkg.name as packageDiscountName,
 			Cast(
 			Case 
 				When a.tariffPrice = 0 Then 1
@@ -219,6 +228,9 @@ SET NOCOUNT on
 			Inner Join PaymentType pt ON pt.paymentTypeID = c.paymentTypeID
 			INNER JOIN [User] us ON us.userID = a.userID
 			INNER JOIN [Firm] f ON f.firmID = a.firmID
+			left join (PackageDiscountPriceList pkgpl
+				inner join PackageDiscount pkg on pkg.packageDiscountId = pkgpl.packageDiscountID
+				) on pkgpl.packageDiscountPriceListID = a.packageDiscountPriceListID
 			LEFT JOIN (
 				PackModuleIssue i 
 				JOIN [PackModuleContent] AS pmc ON i.[priceListID] = pmc.[pricelistID]
