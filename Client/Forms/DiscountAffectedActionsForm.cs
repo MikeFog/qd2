@@ -24,14 +24,31 @@ namespace Merlin.Forms
 
 		private readonly SmartGrid grid;
 
-		/// <summary>Перед записью паспорта (AddItem/UpdateItem). false — пользователь отказался.</summary>
+		/// <summary>
+		/// Перед записью паспорта (AddItem/UpdateItem). false — пользователь отказался.
+		/// Форма паспорта к этому моменту уже положила введённые значения в объект, а запись не
+		/// состоится (переопределённый Update() вернёт false до base.Update(), чей catch делает
+		/// Refresh) - поэтому у существующего объекта возвращаем значения из базы, иначе при
+		/// повторном открытии свойств видна несохранённая правка.
+		/// </summary>
 		public static bool ConfirmSave(PresentationObject po)
 		{
 			// Копия исходную скидку не меняет
 			if (po.Parameters.TryGetValue(Constants.ParamNames.ActionName, out object action)
 				&& action as string == Constants.Actions.Clone)
 				return true;
-			return Confirm(po, po.IsNew ? Constants.Actions.AddItem : Constants.Actions.Update);
+
+			bool confirmed = false;
+			try
+			{
+				confirmed = Confirm(po, po.IsNew ? Constants.Actions.AddItem : Constants.Actions.Update);
+				return confirmed;
+			}
+			finally
+			{
+				if (!confirmed && !po.IsNew)
+					po.Refresh();
+			}
 		}
 
 		/// <summary>Перед удалением строки, которая входит в содержимое скидки (порог, станция пакета).</summary>
