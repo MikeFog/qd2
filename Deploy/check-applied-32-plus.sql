@@ -26,7 +26,8 @@ INSERT @s (n, name, title) VALUES
  (37, N'37_smi-position-forbidden',                N'«Локальное СМИ» и «Федеральное СМИ» не позиционируются'),
  (38, N'38_agitation-service-rollers-manual',      N'ролики обвязки агитации (7, 44, 55) ставит только система'),
  (39, N'39_tariff-passport-duration-total',        N'паспорт тарифа: «Полная продолжительность» на вкладке «Общие»'),
- (40, N'40_duration-total-not-below-duration',     N'полная продолжительность не меньше продолжительности (5 процедур)');
+ (40, N'40_duration-total-not-below-duration',     N'полная продолжительность не меньше продолжительности (5 процедур)'),
+ (41, N'41_grid-firm-windows-one-pass',            N'Grid: бирюзовые окна и ролики фирмы одним проходом');
 
 -- Признаки в тексте процедур: must = 1 — фрагмент должен быть, 0 — не должно быть
 DECLARE @p TABLE (n int NOT NULL, obj sysname NOT NULL, pat nvarchar(300) NOT NULL, must bit NOT NULL);
@@ -78,7 +79,9 @@ INSERT @p (n, obj, pat, must) VALUES
  (40, N'TariffWindowChangeDuration',      N'%@newDuration_total > 0%', 0),
  (40, N'GenerateTariffWindowByTemplate',  N'%@duration_total > 0%', 0),
  (40, N'TariffWindowChangeDurationInDay', N'%Not (tw.duration = 0 And tw.duration_total = 0)%', 1),
- (40, N'TariffWindowChangeDurationInDay', N'%tw.duration_total > 0%', 0);
+ (40, N'TariffWindowChangeDurationInDay', N'%tw.duration_total > 0%', 0),
+ -- 41
+ (41, N'Grid',                            N'%INSERT INTO #firmIssues%', 1);
 
 INSERT @r (n, what, ok, unk, pos)
 SELECT p.n,

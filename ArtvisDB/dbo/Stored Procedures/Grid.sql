@@ -80,37 +80,50 @@ BEGIN
     FROM #res
     GROUP BY [weekday];
     
-    -- Третий запрос только если нужен firmId
+    -- Третий и четвёртый результат только если нужен firmId. Оба строятся из одной выборки
+    -- выпусков фирмы на станции за период (раньше — два одинаковых запроса). Выборка идёт от
+    -- маленьких списков (кампании фирмы на станции, окна станции за период): оптимизатор
+    -- сам выбирает, с какого начать, и не обходит всю историю фирмы с переходами в кластерный
+    -- индекс Issue и TariffWindow на каждый выпуск (на проде это давало до 4 с чтения с диска).
     IF @campaignID <> -1 AND @firmId IS NOT NULL
     BEGIN
-        SELECT DISTINCT tw.windowId
-        FROM dbo.Issue i
-            INNER JOIN dbo.TariffWindow tw ON i.actualWindowID = tw.windowId
-            INNER JOIN dbo.Campaign c ON c.campaignID = i.campaignID 
+        CREATE TABLE #firmCampaigns (campaignID int PRIMARY KEY);
+        INSERT INTO #firmCampaigns
+        SELECT c.campaignID
+        FROM dbo.Campaign c
             INNER JOIN dbo.Action a ON a.actionID = c.actionID
         WHERE
-            c.massmediaID = @massmediaID 
-            AND tw.dayOriginal BETWEEN @a AND @b
-            AND a.firmID = @firmId
-            AND (i.isConfirmed = 1 OR @showUnconfirmed = 1)
+            a.firmID = @firmId
+            AND c.massmediaID = @massmediaID
             AND a.deleteDate IS NULL;
 
-        -- Четвёртый запрос: ролики чужих кампаний той же фирмы по окнам — для номеров
+        CREATE TABLE #periodWindows (windowId int PRIMARY KEY);
+        INSERT INTO #periodWindows
+        SELECT tw.windowId
+        FROM dbo.TariffWindow tw
+        WHERE
+            tw.massmediaID = @massmediaID
+            AND tw.dayOriginal BETWEEN @a AND @b;
+
+        CREATE TABLE #firmIssues (windowId int, rollerID int, positionId smallint, campaignID int);
+        INSERT INTO #firmIssues
+        SELECT w.windowId, i.rollerID, i.positionId, i.campaignID
+        FROM #periodWindows w
+            INNER JOIN dbo.Issue i ON i.actualWindowID = w.windowId
+            INNER JOIN #firmCampaigns fc ON fc.campaignID = i.campaignID
+        WHERE i.isConfirmed = 1 OR @showUnconfirmed = 1;
+
+        -- Третий: окна, где у фирмы есть выпуски (бирюзовые ячейки), включая свою кампанию.
+        SELECT DISTINCT windowId
+        FROM #firmIssues;
+
+        -- Четвёртый: ролики чужих кампаний той же фирмы по окнам — для номеров
         -- роликов в бирюзовых ячейках (RollerIssuesGrid3.GetRollerNumbersText). Свои
         -- кампании исключены: их ролики грид берёт из первого запроса и держит актуальными
-        -- при ручном добавлении/удалении. Фильтры те же, что у третьего запроса.
-        SELECT DISTINCT tw.windowId, i.rollerID, i.positionId
-        FROM dbo.Issue i
-            INNER JOIN dbo.TariffWindow tw ON i.actualWindowID = tw.windowId
-            INNER JOIN dbo.Campaign c ON c.campaignID = i.campaignID
-            INNER JOIN dbo.Action a ON a.actionID = c.actionID
-        WHERE
-            c.massmediaID = @massmediaID
-            AND tw.dayOriginal BETWEEN @a AND @b
-            AND a.firmID = @firmId
-            AND i.campaignID <> @campaignID
-            AND (i.isConfirmed = 1 OR @showUnconfirmed = 1)
-            AND a.deleteDate IS NULL;
+        -- при ручном добавлении/удалении.
+        SELECT DISTINCT windowId, rollerID, positionId
+        FROM #firmIssues
+        WHERE campaignID <> @campaignID;
     END
     
     DROP TABLE #res;
