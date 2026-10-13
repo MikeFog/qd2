@@ -241,6 +241,28 @@ namespace Merlin.Classes
 			return DataAccessor.LoadDataSet("TariffSimilar", procParameters).Tables[0];
 		}
 
+		/// <summary>
+		/// Интервал часов «похожих» тарифов (см. <see cref="LoadSimilarTariffs"/>) - минимальный и
+		/// максимальный час; по нему «Клонировать массово» предлагает разлёт как у исходного тарифа.
+		/// Нет похожих - весь день 0-23.
+		/// </summary>
+		public void GetSimilarHourRange(out int minHour, out int maxHour)
+		{
+			minHour = int.MaxValue;
+			maxHour = int.MinValue;
+			foreach (DataRow row in LoadSimilarTariffs().Rows)
+			{
+				int hour = Convert.ToInt32(row["hour"]);
+				minHour = Math.Min(minHour, hour);
+				maxHour = Math.Max(maxHour, hour);
+			}
+			if (minHour > maxHour)
+			{
+				minHour = 0;
+				maxHour = 23;
+			}
+		}
+
 		/// <summary>Менял ли пользователь хоть один атрибут (кроме дней и интервала часов) или минуту.</summary>
 		internal static bool HasMassEditChanges(Dictionary<string, object> original, Dictionary<string, object> edited, int newMinute)
 		{

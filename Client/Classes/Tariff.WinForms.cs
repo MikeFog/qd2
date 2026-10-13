@@ -159,7 +159,8 @@ namespace Merlin.Classes
 
 		/// <summary>
 		/// «Клонировать массово»: форма «Добавить тариф массово» (паспорт TariffMass),
-		/// предзаполненная значениями этого тарифа; интервал часов по умолчанию 0-23.
+		/// предзаполненная значениями этого тарифа; интервал часов по умолчанию - как у «похожих»
+		/// тарифов (минимальный и максимальный час группы, GetSimilarHourRange).
 		/// По «ОК» - по тарифу в каждом часе интервала с указанной минутой и значениями
 		/// формы (Tariff.CreateMass, по одному TariffIUD, сбои - журналом).
 		/// </summary>
@@ -168,9 +169,11 @@ namespace Merlin.Classes
 			try
 			{
 				Tariff template = (Tariff)CreateCloneDraft();
+				int minHour, maxHour;
+				GetSimilarHourRange(out minHour, out maxHour);
 				template[MassMinuteParam] = Time.Minute;
-				template[MassHourFromParam] = 0;
-				template[MassHourToParam] = 23;
+				template[MassHourFromParam] = minHour;
+				template[MassHourToParam] = maxHour;
 
 				// Данные паспорта (справочник типов блока) - та же процедура, что у обычной карточки тарифа.
 				Dictionary<string, object> procParameters = template.Parameters;

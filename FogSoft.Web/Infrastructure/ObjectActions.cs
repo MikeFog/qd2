@@ -1212,7 +1212,8 @@ public sealed partial class ObjectActions
 	/// <summary>
 	/// «Клонировать массово» — веб-аналог Tariff.WinForms.CloneTariffsMass: паспорт
 	/// TariffMass («Добавить тариф массово»), засеянный значениями этого тарифа
-	/// (CreateCloneDraft — копия без ключа), интервал часов по умолчанию 0-23. По «ОК»
+	/// (CreateCloneDraft — копия без ключа), интервал часов по умолчанию — min/max час «похожих»
+	/// тарифов (GetSimilarHourRange). По «ОК»
 	/// Tariff.CreateMass ставит по тарифу в каждый час интервала (один TariffIUD на час,
 	/// best-effort), сбои — таблицей.
 	///
@@ -1223,9 +1224,10 @@ public sealed partial class ObjectActions
 	private async Task<ActionEffect> CloneTariffsMass(Merlin.Classes.Tariff tariff)
 	{
 		Merlin.Classes.Tariff template = (Merlin.Classes.Tariff)tariff.CreateCloneDraft();
+		tariff.GetSimilarHourRange(out int minHour, out int maxHour);
 		template[MassMinuteParam] = Convert.ToDateTime(tariff.Parameters[Merlin.Classes.Tariff.ParamNames.Time]).Minute;
-		template[MassHourFromParam] = 0;
-		template[MassHourToParam] = 23;
+		template[MassHourFromParam] = minHour;
+		template[MassHourToParam] = maxHour;
 
 		int created = 0;
 		DataTable? tableErrors = null;
