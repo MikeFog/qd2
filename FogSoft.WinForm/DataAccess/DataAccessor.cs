@@ -238,6 +238,20 @@ namespace FogSoft.WinForm.DataAccess
             }
         }
 
+        /// <summary>
+        /// Точка сохранения внутри транзакции BeginTransaction: часть работы можно откатить, не теряя остального
+        /// (веер — отказ одного слота пачки не отменяет остальные). Откат к точке не закрывает транзакцию.
+        /// </summary>
+        public static void SaveTransactionPoint(string name)
+        {
+            _transaction.Save(name);
+        }
+
+        public static void RollbackToTransactionPoint(string name)
+        {
+            _transaction.Rollback(name);
+        }
+
         private static void CloseTransactionConnection()
         {
             SqlConnection connection = _transactionConnection;

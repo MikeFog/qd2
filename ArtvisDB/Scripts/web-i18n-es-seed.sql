@@ -1,5 +1,5 @@
 ﻿/*
-    ДЕПЛОЙ: переводы веб-версии на язык «es» (2004 строк). docs/tasks/web-i18n.md, этап 5.
+    ДЕПЛОЙ: переводы веб-версии на язык «es» (2007 строк). docs/tasks/web-i18n.md, этап 5.
     СГЕНЕРИРОВАН из ArtvisDB/Scripts/i18n/es.tsv скриптом build-seed.py — руками не править.
 
     ПРЕДУСЛОВИЕ     накачен web-i18n-translation-deploy.sql (таблица iTranslation).
@@ -2026,7 +2026,10 @@ INSERT INTO #t ([source], [text]) VALUES
 (N'выпуски акции не у всех отмеченных кампаний', N'emisiones de la campaña no en todas las pautas marcadas'),
 (N'выпуски фирмы в других акциях на части станций', N'emisiones de la empresa en otras campañas en parte de las emisoras'),
 (N'Нет права «Редактировать» на одну из отмеченных кампаний.', N'No tiene el permiso «Editar» para una de las pautas marcadas.'),
-(N'Ролик на все отмеченные станции ставится в «Режиме добавления»: щёлкните слот.', N'El spot se coloca en todas las emisoras marcadas en el «Modo de agregado»: haga clic en la franja.');
+(N'Окна выделяются щелчком (Shift — прямоугольник, Ctrl — добавить); ролик на все станции одним щелчком ставит «Режим добавления».', N'Las ventanas se seleccionan con un clic (Mayús: rectángulo, Ctrl: agregar); el «Modo de agregado» coloca el spot en todas las emisoras con un solo clic.'),
+(N'Разместить ролик в выбранных окнах по выбранным кампаниям? ({0} шт.)', N'¿Colocar el spot en las ventanas seleccionadas, en las pautas marcadas? ({0} uds.)'),
+(N'Удалить выпуски в выбранных окнах по выбранным кампаниям? ({0} шт.)', N'¿Eliminar las emisiones de las ventanas seleccionadas, en las pautas marcadas? ({0} uds.)'),
+(N'В выбранных окнах нет выпусков этой акции.', N'En las ventanas seleccionadas no hay emisiones de esta campaña.');
 GO
 
 BEGIN TRANSACTION;

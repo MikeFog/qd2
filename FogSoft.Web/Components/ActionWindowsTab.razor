@@ -16,7 +16,8 @@
     CampaignForm с RollerIssuesGrid3 (режим — по числу отмеченных, решение В-3; несколько — веер,
     этап 4а: получасовые слоты по всем отмеченным станциям, как десктопный EditIssuesForm; при входе
     отмечены все линейные кампании, как там). Слева «Ролики» (кисть), в центре сетка, справа —
-    выпуски выбранного окна (у веера панели пока нет).
+    выпуски выбранного окна (у веера панели пока нет). В веере окна выделяются так же (щелчок, Shift, Ctrl,
+    Esc); по выделенным — «Разместить ролик» и «Удалить выпуски» (десктоп — Insert и Del).
 
     Клик по окну: в «Режиме добавления» ставит ролик кисти с позицией «Позиционирования», иначе
     выбирает окно (Shift/Ctrl — несколько) и показывает его выпуски. По выделенным окнам —
@@ -221,7 +222,7 @@
                                 <span class="mode-caption">@Tr.Format("Рекламные окна, веер: отмечено кампаний — {0}", _checked.Count)</span>
                                 @if (!_brushOn)
                                 {
-                                    <span class="text-muted">@Tr.T("Ролик на все отмеченные станции ставится в «Режиме добавления»: щёлкните слот.")</span>
+                                    <span class="text-muted">@Tr.T("Окна выделяются щелчком (Shift — прямоугольник, Ctrl — добавить); ролик на все станции одним щелчком ставит «Режим добавления».")</span>
                                 }
                             }
                             else
@@ -273,6 +274,23 @@
                                     </span>
                                     <button type="button" class="btn btn-sm btn-outline-secondary" title="@(Tr.T("Отменить перенос (Esc)"))" @onclick="CancelTransfer">
                                         @Tr.T("Отмена")
+                                    </button>
+                                </div>
+                            }
+                            else if (_range != null && !_brushOn && _selection.Count > 0)
+                            {
+                                <div class="selection-bar">
+                                    <span class="selection-count">@Tr.Format("Выделено окон: {0}", _selection.Count)</span>
+                                    <button type="button" class="btn btn-sm btn-primary" disabled="@(!CanBrush)" title="@BrushHint" @onclick="() => Exclusive(PlaceSelectedSlots)">
+                                        <i class="bi bi-plus-lg" aria-hidden="true"></i>@Tr.T("Разместить ролик")
+                                    </button>
+                                    <button type="button" class="btn btn-sm btn-outline-secondary" disabled="@(!_range.CanEdit)"
+                                            title="@(_range.CanEdit ? null : NoRightText)" @onclick="() => Exclusive(RemoveSelectedSlots)">
+                                        <i class="bi bi-trash3" aria-hidden="true"></i>@Tr.T("Удалить выпуски")
+                                    </button>
+                                    <button type="button" class="btn btn-sm btn-outline-secondary" title="@(Tr.T("Снять выделение (Esc)"))" aria-label="@(Tr.T("Снять выделение"))"
+                                            @onclick="ClearSelection">
+                                        <i class="bi bi-x-lg" aria-hidden="true"></i>
                                     </button>
                                 </div>
                             }
@@ -742,12 +760,19 @@
 
     private async Task ClickCell(PlacementGrid.CellEvent e)
     {
-        // Веер этапа 4а: только «Режим добавления» — слот целиком. Выделение, массовые операции и панель
-        // слота — этап 4б.
+        // Веер: «Режим добавления» ставит ролик в окно целиком (на всех отмеченных станциях), иначе окно
+        // выделяется — как в сетке одной кампании. Панели выпусков окна у веера пока нет (этап 4б).
         if (_range != null)
         {
-            if (_brushOn && e.Mouse.Detail <= 1)
-                await PlaceSlot(e.Cell);
+            if (_brushOn)
+            {
+                if (e.Mouse.Detail <= 1)
+                    await PlaceSlot(e.Cell);
+                return;
+            }
+
+            _selection.Click(_week!, e.Cell, e.Mouse.ShiftKey, e.Mouse.CtrlKey || e.Mouse.MetaKey);
+            await FocusGrid();
             return;
         }
 
@@ -994,6 +1019,72 @@
     }
 
     /// <summary>
+    /// «Разместить ролик» (десктоп — Insert) в выделенные окна веера: ролик и позиция кисти — на все отмеченные
+    /// станции каждого окна. Окно, где отказала любая станция, откатывается целиком; остальные ставятся.
+    /// </summary>
+    private async Task PlaceSelectedSlots()
+    {
+        if (!CanBrush || _range == null || _week == null || _selection.Count == 0)
+            return;
+
+        IReadOnlyList<PlacementCell> cells = _selection.Selected(_week);
+        if (!await Confirm(Tr.T("Разместить ролик"), Tr.Format("Разместить ролик в выбранных окнах по выбранным кампаниям? ({0} шт.)", cells.Count), Tr.T("Разместить")))
+            return;
+
+        WindowsSource.BatchResult? result = null;
+        int rollerId = _brushRollerId!.Value;
+        int position = _view.Position;
+        await Run(() =>
+        {
+            result = RangeSource.PlaceSlots(_range!, cells, rollerId, position, _view);
+            ReloadWeekCore();
+        });
+        await AfterBatch(result, done => Tr.Format("Добавлено выпусков: {0}, не добавлено: {1}", done, result!.Failed), "Рекламное окно"); // i18n-ok: заголовок колонки переводит ObjectList при выводе
+    }
+
+    /// <summary>
+    /// «Удалить выпуски» (десктоп — Del) в выделенных окнах веера: выпуски отмеченных кампаний. Роликов в окнах
+    /// несколько — чек-лист «Какие ролики удалить», один — вопрос. Каждое окно с роликом и позицией снимается по тем
+    /// кампаниям, где оно стоит, всеми копиями (дубли тоже).
+    /// </summary>
+    private async Task RemoveSelectedSlots()
+    {
+        if (_range is not { CanEdit: true } range || _week == null || _selection.Count == 0)
+            return;
+
+        IReadOnlyList<PlacementCell> cells = _selection.Selected(_week);
+        RangeSource.SlotContent? content = null;
+        await Run(() => content = RangeSource.ReadSlots(range, cells));
+        if (content == null)
+            return;
+        if (content.Count == 0)
+        {
+            await ShowInfo(Tr.T("Удалить выпуски"), Tr.T("В выбранных окнах нет выпусков этой акции."));
+            return;
+        }
+
+        if (content.RollerIds.Count > 1)
+        {
+            IReadOnlyCollection<int>? chosen = await ChooseRollers(Tr.T("Удалить выпуски"), Tr.T("Какие ролики удалить в выбранных окнах?"),
+                content.RollerIds, Tr.T("Удалить"));
+            if (chosen == null)
+                return;
+            content = content.Only(chosen);
+        }
+        else if (!await Confirm(Tr.T("Удалить выпуски"), Tr.Format("Удалить выпуски в выбранных окнах по выбранным кампаниям? ({0} шт.)", content.Count), Tr.T("Удалить")))
+            return;
+
+        WindowsSource.BatchResult? result = null;
+        RangeSource.SlotContent toRemove = content;
+        await Run(() =>
+        {
+            result = RangeSource.RemoveSlots(range, toRemove);
+            ReloadWeekCore();
+        });
+        await AfterBatch(result, done => Tr.Format("Удалено выпусков: {0}, не удалено: {1}", done, result!.Failed), "Выпуск"); // i18n-ok: заголовок колонки переводит ObjectList при выводе
+    }
+
+    /// <summary>
     /// После пачки: шапка страницы перечитывается; отказы — таблицей, в заголовке строка-счётчик
     /// (docs/UI_RULES.md, п. 2.2). Об успехе отдельно не сообщаем — сетка уже показывает итог
     /// (решение 2026-09-22 для массовых операций веба).
@@ -1014,7 +1105,7 @@
     private async Task<IReadOnlyCollection<int>?> ChooseRollers(string title, string question, IReadOnlyList<int> rollerIds, string okText)
     {
         var model = new RollerChecklistForm.Model { Question = question, Multiple = true };
-        await Run(() => model.Rollers = WindowsSource.RollerRows(_open!, rollerIds));
+        await Run(() => model.Rollers = WindowsSource.RollerRows(Scope!, rollerIds));
         if (_error != null)
             return null;
 

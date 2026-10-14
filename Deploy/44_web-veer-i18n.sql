@@ -39,7 +39,10 @@ ELSE
         (N'выпуски акции не у всех отмеченных кампаний', N'emisiones de la campaña no en todas las pautas marcadas'),
         (N'выпуски фирмы в других акциях на части станций', N'emisiones de la empresa en otras campañas en parte de las emisoras'),
         (N'Нет права «Редактировать» на одну из отмеченных кампаний.', N'No tiene el permiso «Editar» para una de las pautas marcadas.'),
-        (N'Ролик на все отмеченные станции ставится в «Режиме добавления»: щёлкните слот.', N'El spot se coloca en todas las emisoras marcadas en el «Modo de agregado»: haga clic en la franja.')
+        (N'Окна выделяются щелчком (Shift — прямоугольник, Ctrl — добавить); ролик на все станции одним щелчком ставит «Режим добавления».', N'Las ventanas se seleccionan con un clic (Mayús: rectángulo, Ctrl: agregar); el «Modo de agregado» coloca el spot en todas las emisoras con un solo clic.'),
+        (N'Разместить ролик в выбранных окнах по выбранным кампаниям? ({0} шт.)', N'¿Colocar el spot en las ventanas seleccionadas, en las pautas marcadas? ({0} uds.)'),
+        (N'Удалить выпуски в выбранных окнах по выбранным кампаниям? ({0} шт.)', N'¿Eliminar las emisiones de las ventanas seleccionadas, en las pautas marcadas? ({0} uds.)'),
+        (N'В выбранных окнах нет выпусков этой акции.', N'En las ventanas seleccionadas no hay emisiones de esta campaña.')
         ) AS src ([source], [text])
        ON dst.lang = 'es' AND dst.context = ''
       AND dst.sourceHash = CONVERT(binary(32), HASHBYTES('SHA2_256', src.[source]))
@@ -73,7 +76,10 @@ BEGIN
         (N'выпуски акции не у всех отмеченных кампаний'),
         (N'выпуски фирмы в других акциях на части станций'),
         (N'Нет права «Редактировать» на одну из отмеченных кампаний.'),
-        (N'Ролик на все отмеченные станции ставится в «Режиме добавления»: щёлкните слот.')
+        (N'Окна выделяются щелчком (Shift — прямоугольник, Ctrl — добавить); ролик на все станции одним щелчком ставит «Режим добавления».'),
+        (N'Разместить ролик в выбранных окнах по выбранным кампаниям? ({0} шт.)'),
+        (N'Удалить выпуски в выбранных окнах по выбранным кампаниям? ({0} шт.)'),
+        (N'В выбранных окнах нет выпусков этой акции.')
     ) AS v ([source]) WHERE NOT EXISTS
         (SELECT 1 FROM dbo.iTranslation t WHERE t.lang = 'es' AND t.context = ''
             AND t.sourceHash = CONVERT(binary(32), HASHBYTES('SHA2_256', v.[source]))));

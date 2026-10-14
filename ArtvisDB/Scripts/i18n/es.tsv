@@ -2002,4 +2002,7 @@ code	на части станций	en parte de las emisoras
 code	выпуски акции не у всех отмеченных кампаний	emisiones de la campaña no en todas las pautas marcadas
 code	выпуски фирмы в других акциях на части станций	emisiones de la empresa en otras campañas en parte de las emisoras
 code	Нет права «Редактировать» на одну из отмеченных кампаний.	No tiene el permiso «Editar» para una de las pautas marcadas.
-code	Ролик на все отмеченные станции ставится в «Режиме добавления»: щёлкните слот.	El spot se coloca en todas las emisoras marcadas en el «Modo de agregado»: haga clic en la franja.
+code	Окна выделяются щелчком (Shift — прямоугольник, Ctrl — добавить); ролик на все станции одним щелчком ставит «Режим добавления».	Las ventanas se seleccionan con un clic (Mayús: rectángulo, Ctrl: agregar); el «Modo de agregado» coloca el spot en todas las emisoras con un solo clic.
+code	Разместить ролик в выбранных окнах по выбранным кампаниям? ({0} шт.)	¿Colocar el spot en las ventanas seleccionadas, en las pautas marcadas? ({0} uds.)
+code	Удалить выпуски в выбранных окнах по выбранным кампаниям? ({0} шт.)	¿Eliminar las emisiones de las ventanas seleccionadas, en las pautas marcadas? ({0} uds.)
+code	В выбранных окнах нет выпусков этой акции.	En las ventanas seleccionadas no hay emisiones de esta campaña.

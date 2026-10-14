@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Data;
+using System.Data.SqlClient;
 using System.Globalization;
 using System.Linq;
 using FogSoft.WinForm;
@@ -153,6 +154,7 @@ namespace Merlin.Classes
 			internal int CampaignId { get; set; }
 			internal int RollerId { get; set; }
 			internal int PositionId { get; set; }
+			internal string RollerName { get; set; }
 		}
 
 		private static readonly DateTime SlotEpoch = new DateTime(2000, 1, 1);
@@ -403,6 +405,7 @@ namespace Merlin.Classes
 					CampaignId = Convert.ToInt32(row[Campaign.ParamNames.CampaignId]),
 					RollerId = Convert.ToInt32(row[Roller.ParamNames.RollerId]),
 					PositionId = IntOrZero(row[Issue.ParamNames.PositionId]),
+					RollerName = Convert.ToString(row["rollerName"]),
 				});
 			}
 			return result;
@@ -421,21 +424,183 @@ namespace Merlin.Classes
 			ActionOnMassmedia action = LoadForWrite(r);
 			Roller roller = WindowsSource.BrushRoller(r, rollerId, action.FirmID);
 
+			WindowsSource.RunInTransaction(() =>
+			{
+				AddRange(r, cell.Date, roller, position, view);
+				action.Recalculate(false);
+			});
+		}
+
+		/// <summary>AddRangeIssues: ролик с позицией на всех отмеченных станциях получаса <paramref name="slot"/>.</summary>
+		private static void AddRange(OpenRange r, DateTime slot, Roller roller, int position, WindowsSource.WeekView view)
+		{
 			Dictionary<string, object> parameters = DataAccessor.CreateParametersDictionary();
 			parameters[Action.ParamNames.ActionId] = r.ActionId;
-			parameters["issueDate"] = cell.Date;
+			parameters["issueDate"] = slot;
 			parameters["rollerID"] = roller.RollerId;
 			parameters["rollerDuration"] = roller.Duration;
 			parameters["positionId"] = position;
 			parameters["considerUnconfirmed"] = view.ShowUnconfirmed ? 1 : 0;
 			parameters["ignoreWindowsWithTheSameFirmIssue"] = 0;
 			parameters[Campaign.ParamNames.CampaignIds] = Action.BuildCampaignIdsCsv(r.CampaignIds.ToList());
+			DataAccessor.ExecuteNonQuery("AddRangeIssues", parameters);
+		}
 
+		// ---------- Выделенные окна: массовые операции ----------
+
+		private const string StepPoint = "rangeStep";
+
+		/// <summary>
+		/// Один шаг пачки — один вызов процедуры веера. Отказ по бизнес-правилу (RAISERROR с ключом iMessage)
+		/// откатывает ТОЛЬКО этот шаг к точке сохранения и уходит в отказы: процедуры веера пишут станции курсором, и без
+		/// отката шага на отказе станции k станции 1…k−1 остались бы записанными (красное окно). Остальные шаги пачки
+		/// идут дальше. Любая другая ошибка (взаимоблокировка, таймаут) рвёт пачку — транзакцию откатит вызывающий.
+		/// </summary>
+		private static void Step(WindowsSource.BatchResult result, string name, int done, System.Action write)
+		{
+			DataAccessor.SaveTransactionPoint(StepPoint);
+			try
+			{
+				write();
+				result.Done += done;
+			}
+			catch (SqlException ex) when (ex.Number == 50000 && ex.Class == 16)
+			{
+				DataAccessor.RollbackToTransactionPoint(StepPoint);
+				result.Refuse(name, ErrorManager.GetErrorMessage(ex));
+			}
+		}
+
+		private static string SlotName(DateTime slot) => slot.ToString("dd.MM.yyyy HH:mm");
+
+		/// <summary>
+		/// «Разместить ролик» в выделенные окна (десктоп — Insert): ролик и позиция кисти — AddRangeIssues на каждое окно,
+		/// один пересчёт акции на всю пачку (десктоп — тоже один, после пакета). Done — число окон. Окна идут по
+		/// возрастанию времени — один порядок блокировок у всех пачек.
+		/// </summary>
+		public static WindowsSource.BatchResult PlaceSlots(OpenRange r, IEnumerable<PlacementCell> cells, int rollerId, int position,
+			WindowsSource.WeekView view)
+		{
+			ActionOnMassmedia action = LoadForWrite(r);
+			Roller roller = WindowsSource.BrushRoller(r, rollerId, action.FirmID);
+			WindowsSource.BatchResult result = new WindowsSource.BatchResult();
 			WindowsSource.RunInTransaction(() =>
 			{
-				DataAccessor.ExecuteNonQuery("AddRangeIssues", parameters);
-				action.Recalculate(false);
+				foreach (PlacementCell cell in cells.OrderBy(c => c.Key))
+					Step(result, SlotName(cell.Date), 1, () => AddRange(r, cell.Date, roller, position, view));
+				if (result.Done > 0)
+					action.Recalculate(false);
 			});
+			return result;
+		}
+
+		/// <summary>Выпуски одного окна с одним роликом и одной позицией: у каких кампаний и сколько копий.</summary>
+		internal sealed class SlotGroup
+		{
+			internal DateTime Slot { get; set; }
+			internal int RollerId { get; set; }
+			internal string RollerName { get; set; }
+			internal int PositionId { get; set; }
+
+			/// <summary>Кампания → число выпусков этого ролика с этой позицией в окне (дубли — больше одного).</summary>
+			internal Dictionary<int, int> Copies { get; } = new Dictionary<int, int>();
+
+			internal int Count => Copies.Values.Sum();
+
+			/// <summary>
+			/// MasterIssueDelete снимает по одному выпуску на кампанию за вызов: в проход k входят кампании, у которых
+			/// копий не меньше k, — каждый проход удаляет ровно столько выпусков, сколько в нём кампаний.
+			/// </summary>
+			internal IEnumerable<List<int>> DeletePasses()
+			{
+				for (int pass = 1; ; pass++)
+				{
+					List<int> campaigns = Copies.Where(c => c.Value >= pass).Select(c => c.Key).OrderBy(id => id).ToList();
+					if (campaigns.Count == 0)
+						yield break;
+					yield return campaigns;
+				}
+			}
+		}
+
+		/// <summary>Содержимое выделенных окон по отмеченным кампаниям, сгруппированное по «ролик + позиция».</summary>
+		public sealed class SlotContent
+		{
+			internal SlotContent(List<SlotGroup> groups)
+			{
+				Groups = groups;
+			}
+
+			internal List<SlotGroup> Groups { get; }
+
+			/// <summary>Выпусков в базе — столько снимет удаление (по одному на кампанию и копию).</summary>
+			public int Count => Groups.Sum(g => g.Count);
+
+			public IReadOnlyList<int> RollerIds => Groups.Select(g => g.RollerId).Distinct().ToList();
+
+			public SlotContent Only(IEnumerable<int> rollerIds)
+			{
+				HashSet<int> keep = new HashSet<int>(rollerIds);
+				return new SlotContent(Groups.Where(g => keep.Contains(g.RollerId)).ToList());
+			}
+		}
+
+		/// <summary>Содержимое выделенных окон — RangeSlotIssues одним вызовом, как делает десктоп перед Del и Ctrl+R.</summary>
+		public static SlotContent ReadSlots(OpenRange r, IEnumerable<PlacementCell> cells)
+		{
+			List<DateTime> slots = cells.Select(c => c.Date).Distinct().OrderBy(d => d).ToList();
+			List<SlotGroup> groups = new List<SlotGroup>();
+			if (slots.Count == 0)
+				return new SlotContent(groups);
+
+			Dictionary<DateTime, List<SlotIssue>> bySlot = LoadSlotIssues(r, slots);
+			foreach (DateTime slot in slots)
+			{
+				if (!bySlot.TryGetValue(slot, out List<SlotIssue> issues))
+					continue;
+				foreach (IGrouping<(int RollerId, int PositionId), SlotIssue> g in issues.GroupBy(i => (i.RollerId, i.PositionId)))
+				{
+					SlotGroup group = new SlotGroup { Slot = slot, RollerId = g.Key.RollerId, PositionId = g.Key.PositionId, RollerName = g.First().RollerName };
+					foreach (SlotIssue issue in g)
+					{
+						group.Copies.TryGetValue(issue.CampaignId, out int copies);
+						group.Copies[issue.CampaignId] = copies + 1;
+					}
+					groups.Add(group);
+				}
+			}
+			return new SlotContent(groups);
+		}
+
+		/// <summary>
+		/// «Удалить выпуски» в выделенных окнах (десктоп — Del): MasterIssueDelete по каждой группе «окно + ролик + позиция»
+		/// и только по тем кампаниям, где она стоит (частичное окно не размножается на остальные), столько проходов, сколько
+		/// копий у кампании с наибольшим их числом. Каждый вызов — шаг с откатом к точке (как отдельная транзакция на вызов
+		/// в десктопе); отказ (прошлое, закрытый день у подтверждённой акции) — в отказы, остальное удаляется. Один пересчёт.
+		/// Done — число удалённых выпусков.
+		/// </summary>
+		public static WindowsSource.BatchResult RemoveSlots(OpenRange r, SlotContent content)
+		{
+			ActionOnMassmedia action = LoadForWrite(r);
+			WindowsSource.BatchResult result = new WindowsSource.BatchResult();
+			WindowsSource.RunInTransaction(() =>
+			{
+				foreach (SlotGroup group in content.Groups.OrderBy(g => g.Slot).ThenBy(g => g.RollerId).ThenBy(g => g.PositionId))
+					foreach (List<int> campaigns in group.DeletePasses())
+					{
+						Dictionary<string, object> parameters = DataAccessor.CreateParametersDictionary();
+						parameters[Action.ParamNames.ActionId] = r.ActionId;
+						parameters["issueDate"] = group.Slot;
+						parameters["rollerID"] = group.RollerId;
+						parameters["positionId"] = group.PositionId;
+						parameters[Campaign.ParamNames.CampaignIds] = Action.BuildCampaignIdsCsv(campaigns);
+						Step(result, SlotName(group.Slot) + " — " + group.RollerName, campaigns.Count,
+							() => DataAccessor.ExecuteNonQuery("MasterIssueDelete", parameters));
+					}
+				if (result.Done > 0)
+					action.Recalculate(false);
+			});
+			return result;
 		}
 	}
 }
