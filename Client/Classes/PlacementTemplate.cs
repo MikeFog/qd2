@@ -60,6 +60,22 @@ namespace Merlin.Classes
 				return MessageAccessor.GetMessage("TemplateStartFinishDateError");
 			if (StartTime >= FinishTime)
 				return MessageAccessor.GetMessage("TemplateStartFinishTimeError");
+			return PeriodProblem();
+		}
+
+		/// <summary>
+		/// Проверки диалога Шаблона 1 (десктоп — FrmTemplate.btnOk_Click проверяет только «добавить / удалить», в вебе режима
+		/// нет). Сверх десктопа — порядок дат и те же границы периода, что у Шаблонов 2 и 3.
+		/// </summary>
+		public string SingleProblem()
+		{
+			if (StartDate.Date > FinishDate.Date)
+				return MessageAccessor.GetMessage("TemplateStartFinishDateError");
+			return PeriodProblem();
+		}
+
+		private string PeriodProblem()
+		{
 			if (FinishDate.Date > new DateTime(9998, 12, 31))
 				return Tr.T("Дата окончания периода слишком большая.");
 			if (StartDate.Date < new DateTime(1900, 1, 1))

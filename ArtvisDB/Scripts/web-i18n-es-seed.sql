@@ -1,5 +1,5 @@
 ﻿/*
-    ДЕПЛОЙ: переводы веб-версии на язык «es» (2081 строк). docs/tasks/web-i18n.md, этап 5.
+    ДЕПЛОЙ: переводы веб-версии на язык «es» (2084 строк). docs/tasks/web-i18n.md, этап 5.
     СГЕНЕРИРОВАН из ArtvisDB/Scripts/i18n/es.tsv скриптом build-seed.py — руками не править.
 
     ПРЕДУСЛОВИЕ     накачен web-i18n-translation-deploy.sql (таблица iTranslation).
@@ -2091,7 +2091,6 @@ INSERT INTO #t ([source], [text]) VALUES
 (N'Не использовать окна где есть ролики данной фирмы', N'No usar ventanas donde hay spots de esta empresa'),
 (N'Укажите время начала и окончания интервала.', N'Indique la hora de inicio y de fin del intervalo.'),
 (N'Количество выходов — целое число от 0 до 100 (в день без разбивки — от 1).', N'La cantidad de emisiones es un número entero de 0 a 100 (por día sin desglose, desde 1).'),
-(N'Шаблон для внесения роликов на интервале времени', N'Plantilla para colocar spots en un intervalo de tiempo'),
 (N'Шаблон', N'Plantilla'),
 (N'Добавлено выпусков: {0}.', N'Emisiones agregadas: {0}.'),
 (N'Недостаточно рекламных окон прайм для размещения всех выпусков. Окон: {0}, выпусков {1}.', N'No hay suficientes ventanas publicitarias de prime para colocar todas las emisiones. Ventanas: {0}, emisiones {1}.'),
@@ -2103,7 +2102,11 @@ INSERT INTO #t ([source], [text]) VALUES
 (N'Пересчёт акции не выполнен: {0} Цена акции обновится при следующем изменении размещения.', N'No se realizó el recálculo de la campaña: {0} El precio de la campaña se actualizará con el siguiente cambio de la colocación.'),
 (N'Отмена прервана: {0} Не снято выпусков: {1}.', N'Deshacer interrumpido: {0} Emisiones sin eliminar: {1}.'),
 (N'Дата начала периода слишком ранняя.', N'La fecha de inicio del período es demasiado temprana.'),
-(N'Период шаблона слишком длинный: не больше 10 лет.', N'El período de la plantilla es demasiado largo: no más de 10 años.');
+(N'Период шаблона слишком длинный: не больше 10 лет.', N'El período de la plantilla es demasiado largo: no más de 10 años.'),
+(N'Шаблон №1 для внесения роликов', N'Plantilla N.º 1 para colocar spots'),
+(N'Шаблон №2 для внесения роликов', N'Plantilla N.º 2 para colocar spots'),
+(N'Шаблон для внесения роликов', N'Plantilla para colocar spots'),
+(N'Укажите время выхода.', N'Indique la hora de emisión.');
 GO
 
 BEGIN TRANSACTION;

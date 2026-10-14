@@ -128,68 +128,14 @@ namespace Merlin.Classes
 						continue;
 					}
 
-					WindowsSource.BatchResult dayResult = null;
-					Exception failure = null;
-					for (int attempt = 0; attempt < 2; attempt++)
-					{
-						dayResult = new WindowsSource.BatchResult();
-						failure = null;
-						try
-						{
-							WindowsSource.RunInTransaction(() =>
-							{
-								foreach (TemplateWindow w in toWrite)
-									WindowsSource.Step(dayResult, w.Start.ToString("dd.MM.yyyy HH:mm"), () =>
-									{
-										TariffWindowWithRollerIssues window = new TariffWindowWithRollerIssues(period.RowOf(w.Key), Entities.TariffWindow);
-										dayResult.Created.Add(WindowsSource.Capture(c, campaign.AddIssue(roller, window, (RollerPositions)position, null), w.Key, w.Start, roller));
-										return null;
-									});
-							});
-							break;
-						}
-						catch (SqlException ex) when (ex.Number == 1205 && attempt == 0)
-						{
-							// Жертва взаимоблокировки: день откатан целиком и ничего не оставил — день повторяется один раз.
-							Log.Warn($"Template interval: deadlock on {dayText} (campaign {c.CampaignId}), retrying the day", ex);
-						}
-						catch (Exception ex)
-						{
-							failure = ex;
-							break;
-						}
-					}
-					if (failure != null)
-					{
-						// День откатан целиком; прежние дни остаются. Запуск прерывается — следующие дни, скорее всего,
-						// упрутся в то же (сеть, таймаут), и ждать их по таймауту каждый нельзя.
-						Log.Error($"Template interval interrupted on {dayText} (campaign {c.CampaignId})", failure);
-						result.Note(dayText, Tr.Format("Запуск прерван: {0} Выпуски этого дня не добавлены, добавленные ранее — сохранены. Не обработано дней: {1}.",
-							ErrorManager.GetErrorMessage(failure), dates.Count - dayIndex), toWrite.Count);
+					List<DayWrite> writes = toWrite
+						.Select(w => new DayWrite(w.Key, w.Start, new TariffWindowWithRollerIssues(period.RowOf(w.Key), Entities.TariffWindow))).ToList();
+					if (!WriteDay(c, campaign, roller, position, writes, dayText, dates.Count - dayIndex, result))
 						break;
-					}
-
-					result.Days++;
-					result.Done += dayResult.Done;
-					result.NotAdded += dayResult.Failed;
-					result.Created.AddRange(dayResult.Created);
-					foreach (DataRow refused in dayResult.Errors.Rows)
-						result.Errors.Rows.Add(refused["name"], refused["description"]);
 				}
 				FlushMissing();
 
-				if (result.Done > 0)
-				{
-					try
-					{
-						WindowsSource.RunInTransaction(() => campaign.RecalculateAction(false));
-					}
-					catch (Exception ex)
-					{
-						Log.Error($"Template interval: recalculation failed (campaign {c.CampaignId})", ex);
-						result.Note("", Tr.Format("Пересчёт акции не выполнен: {0} Цена акции обновится при следующем изменении размещения.", ErrorManager.GetErrorMessage(ex)));
-					}
-				}
+				Recalculate(c, campaign, result);
 
 				// Параметры шаблона — в строке итога: по логу видно, что просили и что получилось (пользователь и сеанс — в шаблоне строки лога).
 				string daysText = template.ByParity ? (template.Odd ? "odd" : "even") : "days=" + string.Concat(template.WeekDays.Select(on => on ? "1" : "0"));
@@ -198,6 +144,163 @@ namespace Merlin.Classes
 					$" time={template.StartTime.ToString(@"hh\:mm")}-{template.FinishTime.ToString(@"hh\:mm")}" +
 					$" quantity={template.Quantity}/{template.QuantityPrime}/{template.QuantityOffPrime} ignoreFirm={template.IgnoreFirmWindows}" +
 					$" days={result.Days}/{dates.Count} added={result.Done} notAdded={result.NotAdded}");
+			}
+			return result;
+		}
+
+		/// <summary>Окно, в которое день пишет выпуск: номер, время (для записи «Отменить») и объект ядра.</summary>
+		private sealed class DayWrite
+		{
+			public DayWrite(int windowId, DateTime start, TariffWindowWithRollerIssues window)
+			{
+				WindowId = windowId;
+				Start = start;
+				Window = window;
+			}
+
+			public int WindowId { get; }
+			public DateTime Start { get; }
+			public TariffWindowWithRollerIssues Window { get; }
+		}
+
+		/// <summary>
+		/// Один день в одной транзакции: выпуски в окна по порядку, отказ шага — строка таблицы, остальные пишутся.
+		/// Взаимоблокировка откатывает день целиком — он повторяется один раз; иной сбой откатывает день и прерывает
+		/// запуск (false): выпуски прежних дней остаются, в строке — сколько дней не обработано (<paramref name="daysLeft"/>
+		/// считает и этот).
+		/// </summary>
+		private static bool WriteDay(WindowsSource.OpenCampaign c, Campaign campaign, Roller roller, int position, List<DayWrite> writes,
+			string dayText, int daysLeft, TemplateResult result)
+		{
+			WindowsSource.BatchResult dayResult = null;
+			Exception failure = null;
+			for (int attempt = 0; attempt < 2; attempt++)
+			{
+				dayResult = new WindowsSource.BatchResult();
+				failure = null;
+				try
+				{
+					WindowsSource.RunInTransaction(() =>
+					{
+						foreach (DayWrite w in writes)
+							WindowsSource.Step(dayResult, w.Start.ToString("dd.MM.yyyy HH:mm"), () =>
+							{
+								dayResult.Created.Add(WindowsSource.Capture(c, campaign.AddIssue(roller, w.Window, (RollerPositions)position, null), w.WindowId, w.Start, roller));
+								return null;
+							});
+					});
+					break;
+				}
+				catch (SqlException ex) when (ex.Number == 1205 && attempt == 0)
+				{
+					// Жертва взаимоблокировки: день откатан целиком и ничего не оставил — день повторяется один раз.
+					Log.Warn($"Template: deadlock on {dayText} (campaign {c.CampaignId}), retrying the day", ex);
+				}
+				catch (Exception ex)
+				{
+					failure = ex;
+					break;
+				}
+			}
+			if (failure != null)
+			{
+				// День откатан целиком; прежние дни остаются. Запуск прерывается — следующие дни, скорее всего,
+				// упрутся в то же (сеть, таймаут), и ждать их по таймауту каждый нельзя.
+				Log.Error($"Template interrupted on {dayText} (campaign {c.CampaignId})", failure);
+				Interrupted(result, dayText, failure, daysLeft, writes.Count);
+				return false;
+			}
+
+			result.Days++;
+			result.Done += dayResult.Done;
+			result.NotAdded += dayResult.Failed;
+			result.Created.AddRange(dayResult.Created);
+			foreach (DataRow refused in dayResult.Errors.Rows)
+				result.Errors.Rows.Add(refused["name"], refused["description"]);
+			return true;
+		}
+
+		private static void Interrupted(TemplateResult result, string name, Exception failure, int daysLeft, int notAdded) =>
+			result.Note(name, Tr.Format("Запуск прерван: {0} Выпуски этого дня не добавлены, добавленные ранее — сохранены. Не обработано дней: {1}.",
+				ErrorManager.GetErrorMessage(failure), daysLeft), notAdded);
+
+		/// <summary>Один пересчёт акции после запуска, отдельной транзакцией; сбой — строка в таблице (выпуски уже записаны).</summary>
+		private static void Recalculate(WindowsSource.OpenCampaign c, Campaign campaign, TemplateResult result)
+		{
+			if (result.Done == 0)
+				return;
+			try
+			{
+				WindowsSource.RunInTransaction(() => campaign.RecalculateAction(false));
+			}
+			catch (Exception ex)
+			{
+				Log.Error($"Template: recalculation failed (campaign {c.CampaignId})", ex);
+				result.Note("", Tr.Format("Пересчёт акции не выполнен: {0} Цена акции обновится при следующем изменении размещения.", ErrorManager.GetErrorMessage(ex)));
+			}
+		}
+
+		/// <summary>
+		/// Шаблон 1 («Шаблон для внесения роликов», десктоп — FrmTemplate): ролик кисти с позицией «Позиционирования» по
+		/// одному выпуску в день периода в окно, накрывающее время <see cref="PlacementTemplate.StartTime"/> (десктоп —
+		/// FrmGenerator.AddSimpleIssue: время даёт щелчок по окну, здесь оно в диалоге). Окно ищется так же, как у десктопа
+		/// (TariffWindowRetrieve @actualDate: ближайшее по началу, которое начинается не позже времени и кончается не раньше),
+		/// без отбора по прайс-листу и блокировке: заблокированное окно откажет сама запись. Режима «Удалить выбранные» нет.
+		/// </summary>
+		public static TemplateResult RunSingle(WindowsSource.OpenCampaign c, PlacementTemplate template, int rollerId, int position)
+		{
+			Campaign campaign = WindowsSource.LoadForWrite(c);
+			Roller roller = WindowsSource.BrushRoller(c, rollerId, campaign.Action.FirmID);
+			List<DateTime> dates = template.Dates();
+			TemplateResult result = new TemplateResult();
+			if (dates.Count == 0)
+				return result;
+
+			using (OperationScope.Start($"TemplateSingle campaign={c.CampaignId} days={dates.Count}"))
+			{
+				Stopwatch sw = Stopwatch.StartNew();
+				Massmedia massmedia = Massmedia.GetMassmediaByID(c.MassmediaId);
+				int firmId = campaign.Action.FirmID;
+				for (int dayIndex = 0; dayIndex < dates.Count; dayIndex++)
+				{
+					DateTime moment = dates[dayIndex].Date + template.StartTime;
+					string name = moment.ToString("dd.MM.yyyy HH:mm");
+
+					// Чтение — вне транзакции дня; отказы по правилам десктопа (FrmGenerator.AddSimpleIssue) — строки таблицы.
+					TariffWindowWithRollerIssues window;
+					string refusal;
+					try
+					{
+						window = TariffWindowWithRollerIssues.GetWindowByDate(moment, massmedia) as TariffWindowWithRollerIssues;
+						refusal = window == null ? MessageAccessor.GetMessage("TariffWindowNotFound")
+							: template.IgnoreFirmWindows && window.IsRollerOfTheFirmExist(firmId, true) ? MessageAccessor.GetMessage("IssueWithTheSameFirmExists")
+							: position != (int)RollerPositions.Undefined && PositionOccupied(window, (RollerPositions)position) ? MessageAccessor.GetMessage("FirstLastIssueError")
+							: null;
+					}
+					catch (Exception ex)
+					{
+						Log.Error($"Template single interrupted on {name} (campaign {c.CampaignId})", ex);
+						Interrupted(result, name, ex, dates.Count - dayIndex, 1);
+						break;
+					}
+					if (refusal != null)
+					{
+						result.Days++;
+						result.Note(name, refusal, 1);
+						continue;
+					}
+
+					List<DayWrite> writes = new List<DayWrite> { new DayWrite(window.WindowId, window.WindowDate, window) };
+					if (!WriteDay(c, campaign, roller, position, writes, name, dates.Count - dayIndex, result))
+						break;
+				}
+
+				Recalculate(c, campaign, result);
+
+				string daysText = template.ByParity ? (template.Odd ? "odd" : "even") : "days=" + string.Concat(template.WeekDays.Select(on => on ? "1" : "0"));
+				Log.Info($"Template single completed in {sw.ElapsedMilliseconds}ms campaign={c.CampaignId} roller={rollerId} position={position}" +
+					$" period={template.StartDate:yyyy-MM-dd}..{template.FinishDate:yyyy-MM-dd} {daysText} time={template.StartTime.ToString(@"hh\:mm")}" +
+					$" ignoreFirm={template.IgnoreFirmWindows} days={result.Days}/{dates.Count} added={result.Done} notAdded={result.NotAdded}");
 			}
 			return result;
 		}
@@ -323,6 +426,18 @@ namespace Merlin.Classes
 				- WindowsSource.IntOrZero(row[TariffWindow.ParamNames.TimeInUseUnconfirmed]),
 			IsPrime = period.MaxPrice.TryGetValue(day, out decimal max) && Convert.ToDecimal(row[TariffWindow.ParamNames.Price]) == max,
 		};
+
+		/// <summary>То же для окна ядра (FrmGenerator.IsPositionOccupied).</summary>
+		private static bool PositionOccupied(TariffWindowWithRollerIssues window, RollerPositions position)
+		{
+			switch (position)
+			{
+				case RollerPositions.First: return window.IsFirstPositionOccupied;
+				case RollerPositions.Second: return window.IsSecondPositionOccupied;
+				case RollerPositions.Last: return window.IsLastPositionOccupied;
+				default: return false;
+			}
+		}
 
 		/// <summary>Позиция занята подтверждённым выпуском — флаги окна, как FrmGenerator.IsPositionOccupied.</summary>
 		private static bool PositionOccupied(DataRow row, RollerPositions position)

@@ -304,10 +304,43 @@ internal static class Program
 			created.AddRange(r3.Created);
 			Check("шаблон: 3 дня по 9 выпусков", r3.Done == 27 && r3.Created.Count == 27, $"done={r3.Done} notAdded={r3.NotAdded}");
 
+			// Шаблон 1: по выпуску в день в окно на время; окна 10:45 есть в сетке станции каждый день
+			PlacementTemplate one = new PlacementTemplate
+			{
+				StartDate = new DateTime(2026, 10, 15), FinishDate = new DateTime(2026, 10, 17),
+				StartTime = new TimeSpan(10, 45, 0), FinishTime = new TimeSpan(10, 45, 0), Quantity = 1, IgnoreFirmWindows = false,
+			};
+			Check("шаблон 1: проверки диалога пропускают", one.SingleProblem() == null, one.SingleProblem());
+			TemplateSource.TemplateResult s1 = TemplateSource.RunSingle(c, one, rollerId, 0);
+			created.AddRange(s1.Created);
+			Check("шаблон 1: по выпуску в день, все в окне 10:45", s1.Done == 3 && s1.NotAdded == 0 && s1.Created.All(x => x.Name.Contains(" 10:45 ")),
+				$"done={s1.Done} notAdded={s1.NotAdded} names={string.Join(";", s1.Created.Select(x => x.Name))}");
+
+			// теперь в этих окнах выпуски фирмы: с флагом «не использовать окна, где есть ролики фирмы» — три отказа по правилам десктопа
+			one.IgnoreFirmWindows = true;
+			TemplateSource.TemplateResult s2 = TemplateSource.RunSingle(c, one, rollerId, 0);
+			created.AddRange(s2.Created);
+			Check("шаблон 1: окна с роликами фирмы пропускаются", s2.Done == 0 && s2.Errors.Rows.Count == 3 && s2.NotAdded == 3,
+				$"done={s2.Done} rows={s2.Errors.Rows.Count} notAdded={s2.NotAdded}");
+
+			// время без окна: «Рекламное окно не найдено.» по строке на день
+			PlacementTemplate nowhere = new PlacementTemplate
+			{
+				StartDate = new DateTime(2026, 10, 15), FinishDate = new DateTime(2026, 10, 17),
+				StartTime = new TimeSpan(3, 7, 0), FinishTime = new TimeSpan(3, 7, 0), Quantity = 1, IgnoreFirmWindows = false,
+			};
+			TemplateSource.TemplateResult s3 = TemplateSource.RunSingle(c, nowhere, rollerId, 0);
+			created.AddRange(s3.Created);
+			Check("шаблон 1: время без окна — три строки", s3.Done == 0 && s3.Errors.Rows.Count == 3 && s3.NotAdded == 3,
+				$"done={s3.Done} rows={s3.Errors.Rows.Count} notAdded={s3.NotAdded} first={(s3.Errors.Rows.Count > 0 ? s3.Errors.Rows[0][1] : "")}");
+
+			Check("проверки шаблона 1: конец раньше начала", new PlacementTemplate { StartDate = new DateTime(2026, 10, 18), FinishDate = new DateTime(2026, 10, 15) }.SingleProblem() != null);
+
 			// «Отменить» возвращает всё
+			int createdTotal = created.Count;
 			WindowsSource.BatchResult undo = WindowsSource.Undo(c, created);
 			created.Clear();
-			Check("отмена: сняты все 36 тремя-четырьмя пачками", undo.Done == 36 && undo.Failed == 0 && undo.Unprocessed.Count == 0, $"done={undo.Done} failed={undo.Failed}");
+			Check("отмена: сняты все пачками по 10", undo.Done == createdTotal && createdTotal >= 39 && undo.Failed == 0 && undo.Unprocessed.Count == 0, $"done={undo.Done} total={createdTotal} failed={undo.Failed}");
 			Check("отмена: числа выпусков по дням вернулись", totals().SequenceEqual(before), string.Join(",", totals()));
 		}
 		finally

@@ -2,11 +2,12 @@
 @using FogSoft.WinForm.Classes
 
 @*
-    Содержимое диалога шаблона вкладки «Рекламные окна» (docs/tasks/web-action-forms.md, этап 5): сейчас —
-    «Шаблон для внесения роликов на интервале времени» (десктоп — FrmTemplate2): период и дни (дни недели или
-    чётность числа), интервал времени, «в день» или с разбивкой на прайм и офф-прайм, флаг «Не использовать окна
-    где есть ролики данной фирмы». Подписи десктопа дословно. Значения пишутся в модель — её читает вкладка по
-    кнопке; проверки (Model.Validate) тоже по ней, ошибка показывается в диалоге.
+    Содержимое диалога шаблона вкладки «Рекламные окна» (docs/tasks/web-action-forms.md, этап 5): один диалог с
+    режимами по десктопным формам (В-8). «Шаблон №1» (FrmTemplate): период и дни (дни недели или чётность числа),
+    время выхода — один выпуск в день в окно на это время (десктоп берёт время из щелчка по окну), флаг «Не использовать
+    окна где есть ролики данной фирмы»; режима «Удалить выбранные» нет. «Шаблон №2» (FrmTemplate2): то же, но вместо
+    времени — интервал времени и «в день» или с разбивкой на прайм и офф-прайм. Подписи десктопа дословно. Значения
+    пишутся в модель — её читает вкладка по кнопке; проверки (Model.Validate) тоже по ней, ошибка — в диалоге.
 *@
 
 @if (Value.Message != null)
@@ -15,8 +16,18 @@
 }
 
 <div class="template-form">
-    <div class="text-muted">@Tr.T("Шаблон для внесения роликов на интервале времени")</div>
     <div class="roller"><span class="text-muted">@Tr.T("Ролик:")</span> <b>@Value.RollerName</b></div>
+
+    <fieldset class="modes">
+        <label class="inline">
+            <input type="radio" class="form-check-input" name="template-mode" checked="@(Value.Mode == Kind.Single)" @onchange="() => Value.Mode = Kind.Single" />
+            @Tr.T("Шаблон №1 для внесения роликов")
+        </label>
+        <label class="inline">
+            <input type="radio" class="form-check-input" name="template-mode" checked="@(Value.Mode == Kind.Interval)" @onchange="() => Value.Mode = Kind.Interval" />
+            @Tr.T("Шаблон №2 для внесения роликов")
+        </label>
+    </fieldset>
 
     <div class="grid2">
         <label>
@@ -29,14 +40,24 @@
             <input type="date" class="form-control form-control-sm" min="1900-01-01" max="9998-12-31" value="@Value.Finish.ToString("yyyy-MM-dd")"
                    @onchange="e => SetDate(e, start: false)" />
         </label>
-        <label>
-            @Tr.T("Начало интервала (время):")
-            <input type="time" class="form-control form-control-sm" value="@Value.StartTime" @onchange="e => Value.StartTime = e.Value?.ToString() ?? string.Empty" />
-        </label>
-        <label>
-            @Tr.T("Окончание  интервала (время):")
-            <input type="time" class="form-control form-control-sm" value="@Value.FinishTime" @onchange="e => Value.FinishTime = e.Value?.ToString() ?? string.Empty" />
-        </label>
+        @if (Value.Mode == Kind.Single)
+        {
+            <label>
+                @Tr.T("Время выхода:")
+                <input type="time" class="form-control form-control-sm" value="@Value.SingleTime" @onchange="e => Value.SingleTime = e.Value?.ToString() ?? string.Empty" />
+            </label>
+        }
+        else
+        {
+            <label>
+                @Tr.T("Начало интервала (время):")
+                <input type="time" class="form-control form-control-sm" value="@Value.StartTime" @onchange="e => Value.StartTime = e.Value?.ToString() ?? string.Empty" />
+            </label>
+            <label>
+                @Tr.T("Окончание  интервала (время):")
+                <input type="time" class="form-control form-control-sm" value="@Value.FinishTime" @onchange="e => Value.FinishTime = e.Value?.ToString() ?? string.Empty" />
+            </label>
+        }
     </div>
 
     <fieldset class="days-mode">
@@ -71,6 +92,8 @@
         </div>
     </fieldset>
 
+    @if (Value.Mode == Kind.Interval)
+    {
     <div class="quantity">
         <label class="stack">
             @Tr.T("Количество выходов в день:")
@@ -91,6 +114,7 @@
             </label>
         </div>
     </div>
+    }
 
     <label class="inline">
         <input type="checkbox" class="form-check-input" @bind="Value.IgnoreFirm" />
@@ -100,6 +124,9 @@
 
 @code {
     [Parameter, EditorRequired] public Model Value { get; set; } = default!;
+
+    /// <summary>Режим диалога: Шаблон №1 — один выпуск в день на время; Шаблон №2 — интервал времени и количество в день.</summary>
+    public enum Kind { Single, Interval }
 
     private static string[] DayNames => new[]
     {
@@ -116,6 +143,8 @@
 
     public sealed class Model
     {
+        public Kind Mode { get; set; } = Kind.Interval;
+        public string SingleTime { get; set; } = "06:00";
         public string RollerName { get; set; } = "";
         public DateTime Start { get; set; }
         public DateTime Finish { get; set; }
@@ -141,6 +170,8 @@
         /// <summary>Текст ошибки ввода или null: числа в пределах десктопных счётчиков, время разобрано, затем проверки шаблона.</summary>
         public string? Validate()
         {
+            if (Mode == Kind.Single)
+                return !TimeSpan.TryParse(SingleTime, out _) ? Tr.T("Укажите время выхода.") : ToTemplate().SingleProblem();
             if (!TimeSpan.TryParse(StartTime, out _) || !TimeSpan.TryParse(FinishTime, out _))
                 return Tr.T("Укажите время начала и окончания интервала.");
             if (!Split && (Quantity < 1 || Quantity > 100) || Split && (QuantityPrime is < 0 or > 100 || QuantityOffPrime is < 0 or > 100))
@@ -150,6 +181,25 @@
 
         public PlacementTemplate ToTemplate()
         {
+            if (Mode == Kind.Single)
+            {
+                TimeSpan time = TimeSpan.TryParse(SingleTime, out TimeSpan single) ? single : TimeSpan.Zero;
+                PlacementTemplate one = new PlacementTemplate
+                {
+                    StartDate = Start,
+                    FinishDate = Finish,
+                    ByParity = ByParity,
+                    Odd = Odd,
+                    IgnoreFirmWindows = IgnoreFirm,
+                    StartTime = time,
+                    FinishTime = time,
+                    Quantity = 1,
+                };
+                for (int d = 0; d < 7; d++)
+                    one.WeekDays[d] = Days[d];
+                return one;
+            }
+
             PlacementTemplate t = new PlacementTemplate
             {
                 StartDate = Start,

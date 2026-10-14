@@ -2067,7 +2067,6 @@ code	Выходов в офф прайм:	Emisiones fuera de prime:
 code	Не использовать окна где есть ролики данной фирмы	No usar ventanas donde hay spots de esta empresa
 code	Укажите время начала и окончания интервала.	Indique la hora de inicio y de fin del intervalo.
 code	Количество выходов — целое число от 0 до 100 (в день без разбивки — от 1).	La cantidad de emisiones es un número entero de 0 a 100 (por día sin desglose, desde 1).
-code	Шаблон для внесения роликов на интервале времени	Plantilla para colocar spots en un intervalo de tiempo
 code	Шаблон	Plantilla
 code	Добавлено выпусков: {0}.	Emisiones agregadas: {0}.
 code	Недостаточно рекламных окон прайм для размещения всех выпусков. Окон: {0}, выпусков {1}.	No hay suficientes ventanas publicitarias de prime para colocar todas las emisiones. Ventanas: {0}, emisiones {1}.
@@ -2080,3 +2079,7 @@ code	Пересчёт акции не выполнен: {0} Цена акции 
 code	Отмена прервана: {0} Не снято выпусков: {1}.	Deshacer interrumpido: {0} Emisiones sin eliminar: {1}.
 code	Дата начала периода слишком ранняя.	La fecha de inicio del período es demasiado temprana.
 code	Период шаблона слишком длинный: не больше 10 лет.	El período de la plantilla es demasiado largo: no más de 10 años.
+code	Шаблон №1 для внесения роликов	Plantilla N.º 1 para colocar spots
+code	Шаблон №2 для внесения роликов	Plantilla N.º 2 para colocar spots
+code	Шаблон для внесения роликов	Plantilla para colocar spots
+code	Укажите время выхода.	Indique la hora de emisión.

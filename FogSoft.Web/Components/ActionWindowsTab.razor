@@ -180,7 +180,7 @@
                             @if (_open != null && _range == null)
                             {
                                 <button type="button" class="btn btn-sm btn-outline-secondary" disabled="@(!_open.CanEdit)"
-                                        title="@(_open.CanEdit ? Tr.T("Шаблон для внесения роликов на интервале времени") : NoRightText)"
+                                        title="@(_open.CanEdit ? Tr.T("Шаблон для внесения роликов") : NoRightText)"
                                         @onclick="() => Exclusive(RunTemplate)">
                                     <i class="bi bi-calendar-range" aria-hidden="true"></i>@Tr.T("Шаблон")
                                 </button>
@@ -1161,10 +1161,11 @@
     private TemplateForm.Model? _templateModel;
 
     /// <summary>
-    /// «Шаблон для внесения роликов на интервале времени» (десктоп — FrmTemplate2): диалог, затем запуск по дням
-    /// (TemplateSource.RunInterval: окна читаются заранее, каждый день — своя транзакция, один пересчёт в конце).
-    /// Поставленные выпуски становятся записью «Отменить». Итог — всегда: запуск идёт и по неделям, которых на экране нет.
-    /// Диалог помнит значения до конца жизни вкладки, как десктопная форма хранит шаблон.
+    /// «Шаблон для внесения роликов» (десктоп — FrmTemplate и FrmTemplate2 в одном диалоге): Шаблон №1 — один выпуск в
+    /// день на время (TemplateSource.RunSingle), Шаблон №2 — интервал времени (RunInterval); оба по дням, каждый день в
+    /// своей транзакции, один пересчёт в конце. Поставленные выпуски становятся записью «Отменить». Итог — всегда: запуск
+    /// идёт и по неделям, которых на экране нет. Диалог помнит значения до конца жизни вкладки, как десктопная форма
+    /// хранит шаблон; время Шаблона №1 берётся из выделенного окна, если оно есть (десктоп берёт его из щелчка по окну).
     /// </summary>
     private async Task RunTemplate()
     {
@@ -1179,6 +1180,8 @@
         TemplateForm.Model model = _templateModel ??= TemplateForm.Model.Create();
         model.RollerName = WindowsSource.RollerName(brush);
         model.Message = null;
+        if (_selected != null)
+            model.SingleTime = _selected.Date.ToString("HH:mm");
         while (true)
         {
             if (await Dialogs.ShowAsync(Tr.T("Шаблон"), builder =>
@@ -1194,12 +1197,13 @@
         }
 
         PlacementTemplate template = model.ToTemplate();
+        bool single = model.Mode == TemplateForm.Kind.Single;
         int rollerId = _brushRollerId!.Value;
         int position = _view.Position;
         TemplateSource.TemplateResult? result = null;
         await Run(() =>
         {
-            result = TemplateSource.RunInterval(open, template, rollerId, position);
+            result = single ? TemplateSource.RunSingle(open, template, rollerId, position) : TemplateSource.RunInterval(open, template, rollerId, position);
             Undo.Remember(Action.ActionId, open.CampaignId, result.Created);
             ReloadWeekCore();
             if (_selected != null)
