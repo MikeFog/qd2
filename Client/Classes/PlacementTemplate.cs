@@ -1,6 +1,8 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using FogSoft.WinForm.Classes;
+using FogSoft.WinForm.DataAccess;
 
 namespace Merlin.Classes
 {
@@ -40,6 +42,26 @@ namespace Merlin.Classes
 		public int QuantityPrime { get; set; }
 
 		public int QuantityOffPrime { get; set; }
+
+		/// <summary>
+		/// Проверки диалога Шаблонов 2 и 3 (десктоп — FrmTemplate2.btnOk_Click): текст первой найденной ошибки или null.
+		/// Десктоп показывает ошибки по очереди сообщениями; здесь — одним текстом в диалоге. Сверх десктопа: отмечен ли
+		/// хотя бы один день недели (иначе запуск молча ничего не делает) и верхняя граница даты (итератор её не переносит).
+		/// </summary>
+		public string IntervalProblem()
+		{
+			if (Quantity == 0 && QuantityPrime + QuantityOffPrime == 0)
+				return Tr.T(Properties.Resources.PrimeAndNonPrimeQuantityMissing);
+			if (StartDate.Date > FinishDate.Date)
+				return MessageAccessor.GetMessage("TemplateStartFinishDateError");
+			if (StartTime >= FinishTime)
+				return MessageAccessor.GetMessage("TemplateStartFinishTimeError");
+			if (FinishDate.Date > new DateTime(9998, 12, 31))
+				return Tr.T("Дата окончания периода слишком большая.");
+			if (!ByParity && !WeekDays.Any(on => on))
+				return Tr.T("Отметьте хотя бы один день недели.");
+			return null;
+		}
 
 		/// <summary>Даты периода по возрастанию, как их обходит FrmGenerator (с началом и концом включительно).</summary>
 		public List<DateTime> Dates()

@@ -16,7 +16,10 @@ internal static class Program
 		TimeRangeCases();
 		PickCases();
 		if (args.Contains("--db"))
+		{
 			QueueCases();
+			RunCases();
+		}
 
 		Console.WriteLine(failed == 0 ? "OK: все проверки прошли" : $"ОШИБОК: {failed}");
 		return failed == 0 ? 0 : 1;
@@ -194,16 +197,92 @@ internal static class Program
 		Check("выбор: нет кандидатов — пустая группа с недобором", TemplatePlanner.PickDay(new TemplateWindow[0], 3, 0, 0, new Random(1))[0].IsShort);
 	}
 
-	// ---------- Очередь роликов (Шаблон 3) ----------
 
-	private sealed class TestUserStorage : FogSoft.WinForm.Classes.SecurityManager.ILoggedUserStorage
+	// ---------- Запуск шаблона на ArtvisDev ----------
+
+	/// <summary>
+	/// Шаблон 2 целиком: макет акции 186408, кампания 412530 (линейка, Авторадио Переславль), три дня внутри её срока.
+	/// Проверяется то, что можно проверить через публичный API: выпусков в день, нехватка окон, откат через «Отменить»
+	/// (числа выпусков по дням недели и цена акции возвращаются). Всё снимается в finally.
+	/// </summary>
+	private static void RunCases()
 	{
-		public FogSoft.WinForm.Classes.SecurityManager.User User { get; set; }
+		InitDb();
+		ActionOnMassmedia action = ActionOnMassmedia.GetActionById(186408);
+		WindowsSource.OpenCampaign c = WindowsSource.Open(action, 412530);
+		Check("шаблон: кампания открыта и правка разрешена", c != null && c.CanEdit);
+		if (c == null || !c.CanEdit)
+			return;
+		System.Data.DataTable rollers = WindowsSource.LoadRollers(c);
+		int rollerId = WindowsSource.RollerIdOf(rollers.Rows.Cast<System.Data.DataRow>().First(r => !WindowsSource.IsDummy(r)));
+
+		DateTime monday = new DateTime(2026, 10, 12);
+		WindowsSource.WeekView view = new WindowsSource.WeekView();
+		Func<int[]> totals = () =>
+		{
+			PlacementWeek week = WindowsSource.LoadWeek(c, monday, view);
+			return Enumerable.Range(0, 7).Select(d => week.DayTotals[d] ?? 0).ToArray();
+		};
+		int[] before = totals();
+
+		List<WindowsSource.PlacedIssue> created = new List<WindowsSource.PlacedIssue>();
+		try
+		{
+			// Четверг–суббота, по два выпуска в день на интервале 06:00–21:00
+			PlacementTemplate t = new PlacementTemplate
+			{
+				StartDate = new DateTime(2026, 10, 15), FinishDate = new DateTime(2026, 10, 17),
+				StartTime = TimeSpan.FromHours(6), FinishTime = TimeSpan.FromHours(21), Quantity = 2,
+			};
+			Check("шаблон: проверки диалога пропускают", t.IntervalProblem() == null, t.IntervalProblem());
+			TemplateSource.TemplateResult r1 = TemplateSource.RunInterval(c, t, rollerId, 0);
+			created.AddRange(r1.Created);
+			int[] after1 = totals();
+			Check("шаблон: 3 дня по 2 выпуска", r1.Done == 6 && r1.Created.Count == 6 && r1.Days == 3, $"done={r1.Done} created={r1.Created.Count} days={r1.Days}");
+			Check("шаблон: нет замечаний", r1.NotAdded == 0 && r1.Errors.Rows.Count == 0, string.Join("; ", r1.Errors.Rows.Cast<System.Data.DataRow>().Select(x => x[0] + " " + x[1])));
+			Check("шаблон: по два выпуска в четверг, пятницу и субботу, остальные дни те же",
+				Enumerable.Range(0, 7).All(d => after1[d] - before[d] == (d >= 3 && d <= 5 ? 2 : 0)), string.Join(",", after1.Zip(before, (a, b) => a - b)));
+			Check("шаблон: окна разные", r1.Created.Select(x => x.WindowId).Distinct().Count() == 6);
+
+			// Деление на прайм и офф-прайм: цена всех окон станции одна, значит все окна «прайм», офф-прайма нет —
+			// по одному выпуску в день и три строки «нехватка окон офф прайм»
+			PlacementTemplate split = new PlacementTemplate
+			{
+				StartDate = new DateTime(2026, 10, 15), FinishDate = new DateTime(2026, 10, 17),
+				StartTime = TimeSpan.FromHours(6), FinishTime = TimeSpan.FromHours(21), Quantity = 0, QuantityPrime = 1, QuantityOffPrime = 2,
+			};
+			TemplateSource.TemplateResult r2 = TemplateSource.RunInterval(c, split, rollerId, 0);
+			created.AddRange(r2.Created);
+			Check("шаблон: прайм — по выпуску в день", r2.Done == 3, "done=" + r2.Done);
+			Check("шаблон: нехватка офф-прайма — по строке на день, не добавлено 6",
+				r2.Errors.Rows.Count == 3 && r2.NotAdded == 6, $"rows={r2.Errors.Rows.Count} notAdded={r2.NotAdded}");
+
+			// «Отменить» возвращает всё
+			WindowsSource.BatchResult undo = WindowsSource.Undo(c, created);
+			created.Clear();
+			Check("отмена: сняты все 9", undo.Done == 9 && undo.Failed == 0, $"done={undo.Done} failed={undo.Failed}");
+			Check("отмена: числа выпусков по дням вернулись", totals().SequenceEqual(before), string.Join(",", totals()));
+		}
+		finally
+		{
+			if (created.Count > 0)
+			{
+				WindowsSource.BatchResult cleanup = WindowsSource.Undo(c, created);
+				Console.WriteLine($"уборка после сбоя: снято {cleanup.Done}, не снято {cleanup.Failed}");
+			}
+		}
 	}
 
-	private static void QueueCases()
+	// ---------- Очередь роликов (Шаблон 3) ----------
+
+	private static bool dbReady;
+
+	/// <summary>Как веб при старте: метаданные ссылаются на сборки десктопа; пользователь — администратор sveta (id 3).</summary>
+	private static void InitDb()
 	{
-		// Как веб при старте: метаданные ссылаются на сборки десктопа.
+		if (dbReady)
+			return;
+		dbReady = true;
 		AppDomain.CurrentDomain.AssemblyResolve += (_, e) =>
 			new[] { "Merlin", "FogSoft.WinForm" }.Contains(new System.Reflection.AssemblyName(e.Name).Name)
 				? typeof(FogSoft.WinForm.Classes.PresentationObject).Assembly
@@ -212,6 +291,17 @@ internal static class Program
 		var storage = new TestUserStorage();
 		FogSoft.WinForm.Classes.SecurityManager.SetLoggedUserStorage(storage);
 		storage.User = FogSoft.WinForm.Classes.SecurityManager.GetUser(3);
+
+	}
+
+	private sealed class TestUserStorage : FogSoft.WinForm.Classes.SecurityManager.ILoggedUserStorage
+	{
+		public FogSoft.WinForm.Classes.SecurityManager.User User { get; set; }
+	}
+
+	private static void QueueCases()
+	{
+		InitDb();
 
 		// Ролики фирм акций ArtvisDev (хватит любых четырёх с длительностью): те же строки, что у списка «Ролики» в вебе.
 		List<Roller> rollers = new List<Roller>();

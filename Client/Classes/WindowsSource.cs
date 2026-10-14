@@ -147,7 +147,7 @@ namespace Merlin.Classes
 			ActionWorkspace.CanEdit(action) && campaign.IsActionEnabled(Constants.EntityActions.Edit, ViewType.Journal);
 
 		/// <summary>Свежая кампания для записи; без права — отказ.</summary>
-		private static Campaign LoadForWrite(OpenCampaign c)
+		internal static Campaign LoadForWrite(OpenCampaign c)
 		{
 			Campaign campaign = Campaign.GetCampaignById(c.CampaignId);
 			if (campaign == null)
@@ -232,7 +232,7 @@ namespace Merlin.Classes
 		private static DateTime MondayOf(DateTime date) => date.AddDays(-(((int)date.DayOfWeek + 6) % 7));
 
 		/// <summary>Кампания для процедуры Grid — нужен только её номер, читать её незачем.</summary>
-		private static Campaign CampaignRef(OpenCampaign c)
+		internal static Campaign CampaignRef(OpenCampaign c)
 		{
 			Campaign campaign = new Campaign();
 			campaign[Campaign.ParamNames.CampaignId] = c.CampaignId;
@@ -460,7 +460,7 @@ namespace Merlin.Classes
 
 		private static bool IsDisabled(DataRow w) => w[TariffWindow.ParamNames.IsDisabled] is bool disabled && disabled;
 
-		private static int IntOrZero(object value) => value == null || value == DBNull.Value ? 0 : Convert.ToInt32(value);
+		internal static int IntOrZero(object value) => value == null || value == DBNull.Value ? 0 : Convert.ToInt32(value);
 
 		// ---------- Кисть: ролики фирмы ----------
 
@@ -669,13 +669,16 @@ namespace Merlin.Classes
 			public string Name { get; internal set; }
 		}
 
-		private static PlacedIssue Capture(OpenCampaign c, Issue issue, PlacementCell cell, Roller roller) => new PlacedIssue
+		private static PlacedIssue Capture(OpenCampaign c, Issue issue, PlacementCell cell, Roller roller) =>
+			Capture(c, issue, cell.Key, cell.Date, roller);
+
+		internal static PlacedIssue Capture(OpenCampaign c, Issue issue, int windowId, DateTime date, Roller roller) => new PlacedIssue
 		{
 			IssueId = Convert.ToInt32(issue[Issue.ParamNames.IssueId]),
 			CampaignId = c.CampaignId,
-			WindowId = cell.Key,
+			WindowId = windowId,
 			RollerId = Convert.ToInt32(roller[Roller.ParamNames.RollerId]),
-			Name = string.Format("{0:dd.MM.yyyy HH:mm} — {1}", cell.Date, roller.Name),
+			Name = string.Format("{0:dd.MM.yyyy HH:mm} — {1}", date, roller.Name),
 		};
 
 		/// <summary>
@@ -1000,7 +1003,7 @@ namespace Merlin.Classes
 		/// RollerSubstitute — до записи) или причина, которую вернула запись, — в отказы, пачка идёт
 		/// дальше. Любая другая ошибка рвёт пачку: транзакцию откатит вызывающий.
 		/// </summary>
-		private static void Step(BatchResult result, string name, Func<string> write)
+		internal static void Step(BatchResult result, string name, Func<string> write)
 		{
 			try
 			{
