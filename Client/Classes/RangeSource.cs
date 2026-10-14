@@ -156,6 +156,7 @@ namespace Merlin.Classes
 			internal int PositionId { get; set; }
 			internal string RollerName { get; set; }
 			internal int IssueId { get; set; }
+			internal int Duration { get; set; }
 
 			/// <summary>Окно выхода выпуска (колонка originalWindowID у RangeSlotIssues — имя историческое).</summary>
 			internal int WindowId { get; set; }
@@ -456,6 +457,7 @@ namespace Merlin.Classes
 					PositionId = IntOrZero(row[Issue.ParamNames.PositionId]),
 					RollerName = Convert.ToString(row["rollerName"]),
 					IssueId = Convert.ToInt32(row["issueID"]),
+					Duration = IntOrZero(row["duration"]),
 					WindowId = Convert.ToInt32(row["originalWindowID"]),
 				});
 			}
@@ -582,17 +584,22 @@ namespace Merlin.Classes
 		}
 
 		/// <summary>AddRangeIssues: ролик с позицией на всех отмеченных станциях получаса <paramref name="slot"/>.</summary>
-		private static void AddRange(OpenRange r, DateTime slot, Roller roller, int position, WindowsSource.WeekView view)
+		private static void AddRange(OpenRange r, DateTime slot, Roller roller, int position, WindowsSource.WeekView view) =>
+			AddRangeFor(r, slot, roller.RollerId, roller.Duration, position, r.CampaignIds, view);
+
+		/// <summary>AddRangeIssues по заданным кампаниям: «до полного пересечения» ставит выпуск одной кампании, а не всем.</summary>
+		private static void AddRangeFor(OpenRange r, DateTime slot, int rollerId, int duration, int position, IEnumerable<int> campaignIds,
+			WindowsSource.WeekView view)
 		{
 			Dictionary<string, object> parameters = DataAccessor.CreateParametersDictionary();
 			parameters[Action.ParamNames.ActionId] = r.ActionId;
 			parameters["issueDate"] = slot;
-			parameters["rollerID"] = roller.RollerId;
-			parameters["rollerDuration"] = roller.Duration;
+			parameters["rollerID"] = rollerId;
+			parameters["rollerDuration"] = duration;
 			parameters["positionId"] = position;
 			parameters["considerUnconfirmed"] = view.ShowUnconfirmed ? 1 : 0;
 			parameters["ignoreWindowsWithTheSameFirmIssue"] = 0;
-			parameters[Campaign.ParamNames.CampaignIds] = Action.BuildCampaignIdsCsv(r.CampaignIds.ToList());
+			parameters[Campaign.ParamNames.CampaignIds] = Action.BuildCampaignIdsCsv(campaignIds.ToList());
 			DataAccessor.ExecuteNonQuery("AddRangeIssues", parameters);
 		}
 
@@ -606,7 +613,7 @@ namespace Merlin.Classes
 		/// отката шага на отказе станции k станции 1…k−1 остались бы записанными (красное окно). Остальные шаги пачки
 		/// идут дальше. Любая другая ошибка (взаимоблокировка, таймаут) рвёт пачку — транзакцию откатит вызывающий.
 		/// </summary>
-		private static void Step(WindowsSource.BatchResult result, string name, int done, System.Action write) =>
+		private static bool Step(WindowsSource.BatchResult result, string name, int done, System.Action write) =>
 			Step(result, name, done, () =>
 			{
 				write();
@@ -617,24 +624,26 @@ namespace Merlin.Classes
 		/// То же, но запись может сама вернуть причину отказа (RollerSubstitute отдаёт «незамененные» строкой, не ошибкой):
 		/// такой шаг тоже откатывается к точке и уходит в отказы.
 		/// </summary>
-		private static void Step(WindowsSource.BatchResult result, string name, int done, Func<string> write)
+		private static bool Step(WindowsSource.BatchResult result, string name, int done, Func<string> write)
 		{
 			DataAccessor.SaveTransactionPoint(StepPoint);
 			try
 			{
 				string refusal = write();
 				if (refusal == null)
-					result.Done += done;
-				else
 				{
-					DataAccessor.RollbackToTransactionPoint(StepPoint);
-					result.Refuse(name, refusal);
+					result.Done += done;
+					return true;
 				}
+				DataAccessor.RollbackToTransactionPoint(StepPoint);
+				result.Refuse(name, refusal);
+				return false;
 			}
 			catch (SqlException ex) when (ex.Number == 50000 && ex.Class == 16)
 			{
 				DataAccessor.RollbackToTransactionPoint(StepPoint);
 				result.Refuse(name, ErrorManager.GetErrorMessage(ex));
+				return false;
 			}
 		}
 
@@ -744,6 +753,251 @@ namespace Merlin.Classes
 				}
 			}
 			return new SlotContent(groups);
+		}
+
+		// ---------- Дубли и «до полного пересечения» ----------
+
+		private static IEnumerable<(DateTime Slot, SlotIssue Issue)> AllIssues(SlotContent content) =>
+			content.Groups.SelectMany(g => g.Issues.Select(i => (g.Slot, i)));
+
+		/// <summary>Номер из списка «Ролики», как в ячейке; ролика в списке нет — по названию.</summary>
+		private static string RollerLabel(int rollerId, string rollerName, IReadOnlyDictionary<int, int> numbers) =>
+			numbers.TryGetValue(rollerId, out int number) ? Tr.Format("ролик {0}", number) : Tr.Format("ролик «{0}»", rollerName);
+
+		private static string IssueTarget(OpenRange r, DateTime slot, int campaignId, int rollerId, string rollerName, IReadOnlyDictionary<int, int> numbers) =>
+			SlotName(slot) + " — " + r.Titles[campaignId] + " — " + RollerLabel(rollerId, rollerName, numbers);
+
+		private static int CampaignOrder(OpenRange r, int campaignId)
+		{
+			for (int i = 0; i < r.CampaignIds.Count; i++)
+				if (r.CampaignIds[i] == campaignId)
+					return i;
+			return int.MaxValue;
+		}
+
+		/// <summary>Сколько лишних выпусков одного ролика снять у одной кампании в одном окне.</summary>
+		internal sealed class Removal
+		{
+			internal DateTime Slot { get; set; }
+			internal int CampaignId { get; set; }
+			internal int RollerId { get; set; }
+			internal string RollerName { get; set; }
+			internal int PositionId { get; set; }
+			internal int Extra { get; set; }
+		}
+
+		/// <summary>План удаления дублей и окна, пропущенные из-за разного позиционирования дублей (<see cref="Problems"/>).</summary>
+		public sealed class DuplicatePlan
+		{
+			internal DuplicatePlan() { }
+
+			internal List<Removal> Removals { get; } = new List<Removal>();
+
+			/// <summary>Окна, где у дублей одного ролика одной кампании разная позиция — неизвестно, какой оставить.</summary>
+			public WindowsSource.BatchResult Problems { get; } = new WindowsSource.BatchResult();
+
+			public int SkippedWindows { get; internal set; }
+
+			/// <summary>Выпусков к удалению.</summary>
+			public int Count => Removals.Sum(x => x.Extra);
+		}
+
+		/// <summary>
+		/// План удаления дублей (EditIssuesForm.PlanDuplicateRemovals): в каждом окне у каждой кампании каждый ролик — не больше
+		/// одного выпуска. Окно, где у дублей одного ролика одной кампании разные позиции, не трогается целиком и попадает в
+		/// <see cref="DuplicatePlan.Problems"/>. Позиции роликов без дублей на решение не влияют.
+		/// </summary>
+		public static DuplicatePlan PlanDuplicates(OpenRange r, SlotContent content, IReadOnlyDictionary<int, int> numbers)
+		{
+			DuplicatePlan plan = new DuplicatePlan();
+			foreach (IGrouping<DateTime, (DateTime Slot, SlotIssue Issue)> window in AllIssues(content).GroupBy(x => x.Slot).OrderBy(g => g.Key))
+			{
+				List<Removal> removals = new List<Removal>();
+				List<string> conflicts = new List<string>();
+				foreach (IGrouping<(int CampaignId, int RollerId), (DateTime Slot, SlotIssue Issue)> pair in window
+					.GroupBy(x => (x.Issue.CampaignId, x.Issue.RollerId))
+					.OrderBy(g => CampaignOrder(r, g.Key.CampaignId)).ThenBy(g => g.Key.RollerId))
+				{
+					List<SlotIssue> issues = pair.Select(x => x.Issue).ToList();
+					if (issues.Count < 2)
+						continue;
+					if (issues.Select(i => i.PositionId).Distinct().Count() > 1)
+					{
+						conflicts.Add(r.Titles[pair.Key.CampaignId] + " – " + RollerLabel(pair.Key.RollerId, issues[0].RollerName, numbers));
+						continue;
+					}
+					removals.Add(new Removal
+					{
+						Slot = window.Key,
+						CampaignId = pair.Key.CampaignId,
+						RollerId = pair.Key.RollerId,
+						RollerName = issues[0].RollerName,
+						PositionId = issues[0].PositionId,
+						Extra = issues.Count - 1,
+					});
+				}
+
+				if (conflicts.Count > 0)
+				{
+					plan.SkippedWindows++;
+					plan.Problems.Refuse(SlotName(window.Key), Tr.Format("Окно пропущено: у дублей разное позиционирование — {0}", string.Join("; ", conflicts)));
+				}
+				else
+					plan.Removals.AddRange(removals);
+			}
+			return plan;
+		}
+
+		/// <summary>
+		/// «Удалить дубли» (EditIssuesForm.DeleteDuplicatesInSelectedWindows): каждый лишний выпуск — отдельный вызов MasterIssueDelete по
+		/// одной кампании (шаг с откатом к точке); отказ (прошлое, закрытый день) — в отказы, остальные идут дальше, повторы того же
+		/// выпуска пропускаются (процедура выберет тот же выпуск — отказ будет тот же), в строке отказа — сколько не удалено. Один пересчёт.
+		/// Done — число удалённых.
+		///
+		/// План строился до диалога подтверждения, а пока он открыт, дубль могли снять в другом окне: MasterIssueDelete не знает «оставить
+		/// один» и снял бы единственный выпуск. Поэтому внутри транзакции состав окон читается заново, и снимается не больше «есть − 1».
+		/// </summary>
+		public static WindowsSource.BatchResult RemoveDuplicates(OpenRange r, DuplicatePlan plan, IReadOnlyDictionary<int, int> numbers)
+		{
+			ActionOnMassmedia action = LoadForWrite(r);
+			WindowsSource.BatchResult result = plan.Problems;
+			WindowsSource.RunInTransaction(() =>
+			{
+				Dictionary<DateTime, List<SlotIssue>> actual = plan.Removals.Count == 0
+					? new Dictionary<DateTime, List<SlotIssue>>()
+					: LoadSlotIssues(r, plan.Removals.Select(x => x.Slot).Distinct());
+				foreach (Removal removal in plan.Removals)
+				{
+					int have = actual.TryGetValue(removal.Slot, out List<SlotIssue> inSlot)
+						? inSlot.Count(x => x.CampaignId == removal.CampaignId && x.RollerId == removal.RollerId)
+						: 0;
+					int extra = Math.Min(removal.Extra, have - 1);
+					for (int i = 0; i < extra; i++)
+					{
+						Dictionary<string, object> parameters = DataAccessor.CreateParametersDictionary();
+						parameters[Action.ParamNames.ActionId] = r.ActionId;
+						parameters["issueDate"] = removal.Slot;
+						parameters["rollerID"] = removal.RollerId;
+						parameters["positionId"] = removal.PositionId;
+						parameters[Campaign.ParamNames.CampaignIds] = Action.BuildCampaignIdsCsv(new[] { removal.CampaignId });
+						if (!Step(result, IssueTarget(r, removal.Slot, removal.CampaignId, removal.RollerId, removal.RollerName, numbers), 1,
+							() => DataAccessor.ExecuteNonQuery("MasterIssueDelete", parameters)))
+						{
+							DataRow refused = result.Errors.Rows[result.Errors.Rows.Count - 1];
+							refused["description"] = Tr.Format("Не удалено {0} шт.: {1}", extra - i, refused["description"]);
+							break;
+						}
+					}
+				}
+				if (result.Done > 0)
+					action.Recalculate(false);
+			});
+			return result;
+		}
+
+		/// <summary>Один недостающий выпуск: куда, какой ролик и с какой позицией ставить.</summary>
+		internal sealed class Addition
+		{
+			internal DateTime Slot { get; set; }
+			internal int CampaignId { get; set; }
+			internal int RollerId { get; set; }
+			internal string RollerName { get; set; }
+			internal int Duration { get; set; }
+			internal int PositionId { get; set; }
+		}
+
+		public sealed class AdditionPlan
+		{
+			internal AdditionPlan() { }
+
+			internal List<Addition> Additions { get; } = new List<Addition>();
+
+			public int Count => Additions.Count;
+		}
+
+		/// <summary>
+		/// План выравнивания (EditIssuesForm.PlanRollerAdditions): в каждом окне по каждому ролику цель — наибольшее число среди
+		/// отмеченных кампаний (нуль считается). Лидер — первая в порядке отметки кампания с наибольшим числом; недостающим достаются
+		/// позиции лидера за вычетом тех, что у них уже есть; если их больше дефицита — сначала особые (первая, вторая, последняя), потом
+		/// без позиции (решение владельца).
+		/// </summary>
+		public static AdditionPlan PlanAdditions(OpenRange r, SlotContent content)
+		{
+			AdditionPlan plan = new AdditionPlan();
+			foreach (IGrouping<DateTime, (DateTime Slot, SlotIssue Issue)> window in AllIssues(content).GroupBy(x => x.Slot).OrderBy(g => g.Key))
+				foreach (IGrouping<int, (DateTime Slot, SlotIssue Issue)> roller in window.GroupBy(x => x.Issue.RollerId).OrderBy(g => g.Key))
+				{
+					Dictionary<int, List<int>> positions = r.CampaignIds.ToDictionary(id => id, id => new List<int>());
+					foreach ((DateTime Slot, SlotIssue Issue) row in roller)
+						if (positions.TryGetValue(row.Issue.CampaignId, out List<int> own))
+							own.Add(row.Issue.PositionId);
+
+					int max = positions.Values.Max(p => p.Count);
+					List<int> leader = positions[r.CampaignIds.First(id => positions[id].Count == max)];
+					SlotIssue sample = roller.First().Issue;
+
+					foreach (int campaignId in r.CampaignIds)
+					{
+						List<int> own = positions[campaignId];
+						int deficit = max - own.Count;
+						if (deficit == 0)
+							continue;
+
+						List<int> missing = new List<int>(leader);
+						foreach (int position in own)
+							missing.Remove(position);
+						foreach (int position in missing.OrderBy(p => p == 0 ? 1 : 0).ThenBy(p => p).Take(deficit))
+							plan.Additions.Add(new Addition
+							{
+								Slot = window.Key,
+								CampaignId = campaignId,
+								RollerId = roller.Key,
+								RollerName = sample.RollerName,
+								Duration = sample.Duration,
+								PositionId = position,
+							});
+					}
+				}
+			return plan;
+		}
+
+		// Отказы IssueIUD «позиция в окне занята»: подтверждённым выпуском (hlp_IssueVerify) или выпуском этой же акции — в черновике
+		// занятость своей акцией приходит только вторым ключом.
+		private static readonly HashSet<string> PositionBusyErrors = new HashSet<string> { "FirstLastIssueError", "PositionErrorForTheSameAction" };
+
+		/// <summary>
+		/// «Добавить до полного пересечения» (EditIssuesForm.FillRollersToIntersectionInSelectedWindows): best-effort, каждый выпуск —
+		/// отдельный вызов AddRangeIssues по одной кампании (шаг с откатом к точке); занятая позиция — повтор без позиции
+		/// (<paramref name="withoutPosition"/> — сколько их); любой другой отказ — в отказы. Один пересчёт. Done — число добавленных.
+		/// </summary>
+		public static WindowsSource.BatchResult FillToIntersection(OpenRange r, AdditionPlan plan, WindowsSource.WeekView view,
+			IReadOnlyDictionary<int, int> numbers, out int withoutPosition)
+		{
+			ActionOnMassmedia action = LoadForWrite(r);
+			WindowsSource.BatchResult result = new WindowsSource.BatchResult();
+			int without = 0;
+			WindowsSource.RunInTransaction(() =>
+			{
+				foreach (Addition a in plan.Additions)
+					Step(result, IssueTarget(r, a.Slot, a.CampaignId, a.RollerId, a.RollerName, numbers), 1, () =>
+					{
+						try
+						{
+							AddRangeFor(r, a.Slot, a.RollerId, a.Duration, a.PositionId, new[] { a.CampaignId }, view);
+						}
+						catch (SqlException ex) when (a.PositionId != 0 && PositionBusyErrors.Contains(ex.Message))
+						{
+							// Откат к точке шага: курсор мог успеть записать часть; повтор — без позиции.
+							DataAccessor.RollbackToTransactionPoint(StepPoint);
+							AddRangeFor(r, a.Slot, a.RollerId, a.Duration, 0, new[] { a.CampaignId }, view);
+							without++;
+						}
+					});
+				if (result.Done > 0)
+					action.Recalculate(false);
+			});
+			withoutPosition = without;
+			return result;
 		}
 
 		/// <summary>

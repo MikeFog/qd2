@@ -292,6 +292,14 @@
                                     <button type="button" class="btn btn-sm btn-outline-secondary" disabled="@(!CanReplace)" title="@ReplaceHint" @onclick="() => Exclusive(ReplaceSelectedSlots)">
                                         <i class="bi bi-arrow-left-right" aria-hidden="true"></i>@Tr.T("Заменить ролики")
                                     </button>
+                                    <button type="button" class="btn btn-sm btn-outline-secondary" disabled="@(!CanFixRollers)"
+                                            title="@(FixRollersHint ?? Tr.T("Добавить ролики до полного пересечения"))" @onclick="() => Exclusive(FillSlotsToIntersection)">
+                                        <i class="bi bi-intersect" aria-hidden="true"></i>@Tr.T("Добавить до полного пересечения")
+                                    </button>
+                                    <button type="button" class="btn btn-sm btn-outline-secondary" disabled="@(!CanFixRollers)"
+                                            title="@(FixRollersHint ?? Tr.T("Удалить дубли роликов из выделенных окон"))" @onclick="() => Exclusive(DeleteDuplicatesInSlots)">
+                                        <i class="bi bi-eraser" aria-hidden="true"></i>@Tr.T("Удалить дубли")
+                                    </button>
                                     <button type="button" class="btn btn-sm btn-outline-secondary" title="@(Tr.T("Снять выделение (Esc)"))" aria-label="@(Tr.T("Снять выделение"))"
                                             @onclick="ClearSelection">
                                         <i class="bi bi-x-lg" aria-hidden="true"></i>
@@ -471,6 +479,17 @@
         !_showNumbers ? Tr.T("Замена роликов доступна только при включённом показе номеров роликов (кнопка \"Номера роликов\") — так видно, что вы меняете.")
         : BrushHint ?? Tr.T("Заменить ролики в выделенных окнах на ролик, выбранный в списке \"Ролики\"");
 
+    /// <summary>
+    /// «Добавить до полного пересечения» и «Удалить дубли» (только веер): как в десктопе, доступны при включённых «Номерах
+    /// роликов» — так видно, что меняется.
+    /// </summary>
+    private bool CanFixRollers => _range is { CanEdit: true } && _showNumbers;
+
+    private string? FixRollersHint =>
+        _range is not { CanEdit: true } ? NoRightText
+        : !_showNumbers ? Tr.T("Доступно только при включённом показе номеров роликов (кнопка \"Номера роликов\") — так видно, что меняется.")
+        : null;
+
     private PlacementFlags ShownBackgrounds =>
         PlacementFlags.Disabled | (_showMarked ? PlacementFlags.Marked : 0) | (_showPrime ? PlacementFlags.Prime : 0);
 
@@ -567,8 +586,11 @@
             }
             else
             {
+                // Порядок кампаний веера — порядок списка, а не кликов: от него зависит лидер у «Добавить до полного пересечения»
+                // (в десктопе — порядок строк чек-листа).
                 _range = RangeSource.Open(Action,
-                    _checked.Select(id => new KeyValuePair<int, string>(id, CaptionOf(RowOf(id)!))).ToList());
+                    LinearRows.Select(WindowsSource.CampaignIdOf).Where(_checked.Contains)
+                        .Select(id => new KeyValuePair<int, string>(id, CaptionOf(RowOf(id)!))).ToList());
                 first = _range?.FirstIssueDate;
             }
             if (Scope == null)
@@ -1154,6 +1176,93 @@
             ReloadWeekCore();
         });
         await AfterBatch(result, done => Tr.Format("Заменено роликов: {0}, не заменено: {1}", done, result!.Failed), "Выпуск"); // i18n-ok: заголовок колонки переводит ObjectList при выводе
+    }
+
+    /// <summary>
+    /// «Удалить дубли» (десктоп — кнопка тулбара веера) в выделенных окнах: у каждой кампании остаётся по одному выпуску каждого
+    /// ролика. Окно, где у дублей одного ролика разные позиции, пропускается целиком (неизвестно, какой оставить) и попадает в
+    /// таблицу отказов.
+    /// </summary>
+    private async Task DeleteDuplicatesInSlots()
+    {
+        if (!CanFixRollers || _range is not { } range || _week == null || _selection.Count == 0)
+            return;
+
+        IReadOnlyList<PlacementCell> cells = _selection.Selected(_week);
+        RangeSource.DuplicatePlan? plan = null;
+        await Run(() => plan = RangeSource.PlanDuplicates(range, RangeSource.ReadSlots(range, cells), _numbers));
+        if (plan == null)
+            return;
+        if (plan.Count == 0)
+        {
+            await ShowInfo(Tr.T("Удалить дубли"), plan.SkippedWindows > 0
+                ? Tr.T("Удалять нечего: все окна с дублями пропущены.")
+                : Tr.T("В выделенных окнах дублей нет."));
+            await AfterBatch(plan.Problems, _ => Tr.T("Удалить дубли"), "Рекламное окно"); // i18n-ok: заголовок колонки переводит ObjectList при выводе
+            return;
+        }
+
+        string question = Tr.Format("Удалить дубли в выделенных окнах, оставив у каждой кампании по одному выпуску каждого ролика? ({0} шт.)", plan.Count);
+        string? skipped = plan.SkippedWindows > 0 ? Tr.Format("Окон будет пропущено из-за разного позиционирования дублей: {0}.", plan.SkippedWindows) : null;
+        if (await Dialogs.ShowAsync(Tr.T("Удалить дубли"), b =>
+            {
+                b.OpenElement(0, "p");
+                b.AddContent(1, question);
+                b.CloseElement();
+                if (skipped != null)
+                {
+                    b.OpenElement(2, "p");
+                    b.AddAttribute(3, "class", "text-warning-emphasis");
+                    b.AddContent(4, skipped);
+                    b.CloseElement();
+                }
+            }, okText: Tr.T("Удалить")) != DialogOutcome.Ok)
+            return;
+
+        WindowsSource.BatchResult? result = null;
+        RangeSource.DuplicatePlan toRemove = plan;
+        await Run(() =>
+        {
+            result = RangeSource.RemoveDuplicates(range, toRemove, _numbers);
+            ReloadWeekCore();
+        });
+        await AfterBatch(result, done => Tr.Format("Удалено лишних выпусков: {0}, не удалено: {1}", done, result!.Failed), "Рекламное окно"); // i18n-ok: заголовок колонки переводит ObjectList при выводе
+    }
+
+    /// <summary>
+    /// «Добавить до полного пересечения» (десктоп — кнопка тулбара веера): в каждом выделенном окне каждого ролика становится у всех
+    /// отмеченных кампаний столько же, сколько у кампании, где его больше всего; позиции — у кампании-лидера.
+    /// </summary>
+    private async Task FillSlotsToIntersection()
+    {
+        if (!CanFixRollers || _range is not { } range || _week == null || _selection.Count == 0)
+            return;
+
+        IReadOnlyList<PlacementCell> cells = _selection.Selected(_week);
+        RangeSource.AdditionPlan? plan = null;
+        await Run(() => plan = RangeSource.PlanAdditions(range, RangeSource.ReadSlots(range, cells)));
+        if (plan == null)
+            return;
+        if (plan.Count == 0)
+        {
+            await ShowInfo(Tr.T("Добавить до полного пересечения"), Tr.T("В выделенных окнах количество роликов уже совпадает у всех выбранных кампаний."));
+            return;
+        }
+        if (!await Confirm(Tr.T("Добавить до полного пересечения"),
+                Tr.Format("Добавить недостающие ролики в выделенных окнах до полного пересечения? ({0} шт.)", plan.Count), Tr.T("Добавить")))
+            return;
+
+        WindowsSource.BatchResult? result = null;
+        RangeSource.AdditionPlan toAdd = plan;
+        int withoutPosition = 0;
+        await Run(() =>
+        {
+            result = RangeSource.FillToIntersection(range, toAdd, _view, _numbers, out withoutPosition);
+            ReloadWeekCore();
+        });
+        await AfterBatch(result, done => Tr.Format("Добавлено выпусков: {0}, не добавлено: {1}", done, result!.Failed), "Рекламное окно"); // i18n-ok: заголовок колонки переводит ObjectList при выводе
+        if (withoutPosition > 0)
+            await ShowInfo(Tr.T("Добавить до полного пересечения"), Tr.Format("Из них без позиционирования (позиция в окне занята): {0}.", withoutPosition));
     }
 
     /// <summary>

@@ -1,5 +1,5 @@
 ﻿/*
-    ДЕПЛОЙ: переводы веб-версии на язык «es» (2012 строк). docs/tasks/web-i18n.md, этап 5.
+    ДЕПЛОЙ: переводы веб-версии на язык «es» (2029 строк). docs/tasks/web-i18n.md, этап 5.
     СГЕНЕРИРОВАН из ArtvisDB/Scripts/i18n/es.tsv скриптом build-seed.py — руками не править.
 
     ПРЕДУСЛОВИЕ     накачен web-i18n-translation-deploy.sql (таблица iTranslation).
@@ -2034,7 +2034,24 @@ INSERT INTO #t ([source], [text]) VALUES
 (N'ролик {0} ({1} шт.)', N'spot {0} ({1} uds.)'),
 (N'{0} ({1} шт.)', N'{0} ({1} uds.)'),
 (N'Показывать в окнах номера роликов отмеченных кампаний вместо остатка времени', N'Mostrar en las ventanas los números de spots de las pautas marcadas en lugar del tiempo libre'),
-(N'«Н» — число ролика не одинаково у кампаний, «Д» — дубли', N'«Н»: la cantidad del spot no es la misma en todas las pautas; «Д»: duplicados');
+(N'«Н» — число ролика не одинаково у кампаний, «Д» — дубли', N'«Н»: la cantidad del spot no es la misma en todas las pautas; «Д»: duplicados'),
+(N'Добавить до полного пересечения', N'Agregar hasta la intersección completa'),
+(N'Добавить ролики до полного пересечения', N'Agregar spots hasta la intersección completa'),
+(N'Удалить дубли', N'Eliminar duplicados'),
+(N'Удалить дубли роликов из выделенных окон', N'Eliminar los spots duplicados de las ventanas seleccionadas'),
+(N'Доступно только при включённом показе номеров роликов (кнопка "Номера роликов") — так видно, что меняется.', N'Disponible solo con los números de spots activados (botón "Números de spots"): así se ve qué cambia.'),
+(N'Удалять нечего: все окна с дублями пропущены.', N'No hay nada que eliminar: se omitieron todas las ventanas con duplicados.'),
+(N'В выделенных окнах дублей нет.', N'En las ventanas seleccionadas no hay duplicados.'),
+(N'Удалить дубли в выделенных окнах, оставив у каждой кампании по одному выпуску каждого ролика? ({0} шт.)', N'¿Eliminar los duplicados en las ventanas seleccionadas, dejando en cada pauta una emisión de cada spot? ({0} uds.)'),
+(N'Окон будет пропущено из-за разного позиционирования дублей: {0}.', N'Se omitirán ventanas por posicionamiento distinto de los duplicados: {0}.'),
+(N'Окно пропущено: у дублей разное позиционирование — {0}', N'Ventana omitida: los duplicados tienen posicionamiento distinto — {0}'),
+(N'ролик {0}', N'spot {0}'),
+(N'ролик «{0}»', N'spot «{0}»'),
+(N'Удалено лишних выпусков: {0}, не удалено: {1}', N'Emisiones sobrantes eliminadas: {0}, no eliminadas: {1}'),
+(N'Добавить недостающие ролики в выделенных окнах до полного пересечения? ({0} шт.)', N'¿Agregar los spots que faltan en las ventanas seleccionadas hasta la intersección completa? ({0} uds.)'),
+(N'В выделенных окнах количество роликов уже совпадает у всех выбранных кампаний.', N'En las ventanas seleccionadas la cantidad de spots ya coincide en todas las pautas marcadas.'),
+(N'Из них без позиционирования (позиция в окне занята): {0}.', N'De ellos sin posicionamiento (la posición en la ventana está ocupada): {0}.'),
+(N'Не удалено {0} шт.: {1}', N'No eliminadas {0} uds.: {1}');
 GO
 
 BEGIN TRANSACTION;

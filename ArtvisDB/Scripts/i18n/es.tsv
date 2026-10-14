@@ -2011,3 +2011,20 @@ code	ролик {0} ({1} шт.)	spot {0} ({1} uds.)
 code	{0} ({1} шт.)	{0} ({1} uds.)
 code	Показывать в окнах номера роликов отмеченных кампаний вместо остатка времени	Mostrar en las ventanas los números de spots de las pautas marcadas en lugar del tiempo libre
 code	«Н» — число ролика не одинаково у кампаний, «Д» — дубли	«Н»: la cantidad del spot no es la misma en todas las pautas; «Д»: duplicados
+code	Добавить до полного пересечения	Agregar hasta la intersección completa
+code	Добавить ролики до полного пересечения	Agregar spots hasta la intersección completa
+code	Удалить дубли	Eliminar duplicados
+code	Удалить дубли роликов из выделенных окон	Eliminar los spots duplicados de las ventanas seleccionadas
+code	Доступно только при включённом показе номеров роликов (кнопка "Номера роликов") — так видно, что меняется.	Disponible solo con los números de spots activados (botón "Números de spots"): así se ve qué cambia.
+code	Удалять нечего: все окна с дублями пропущены.	No hay nada que eliminar: se omitieron todas las ventanas con duplicados.
+code	В выделенных окнах дублей нет.	En las ventanas seleccionadas no hay duplicados.
+code	Удалить дубли в выделенных окнах, оставив у каждой кампании по одному выпуску каждого ролика? ({0} шт.)	¿Eliminar los duplicados en las ventanas seleccionadas, dejando en cada pauta una emisión de cada spot? ({0} uds.)
+code	Окон будет пропущено из-за разного позиционирования дублей: {0}.	Se omitirán ventanas por posicionamiento distinto de los duplicados: {0}.
+code	Окно пропущено: у дублей разное позиционирование — {0}	Ventana omitida: los duplicados tienen posicionamiento distinto — {0}
+code	ролик {0}	spot {0}
+code	ролик «{0}»	spot «{0}»
+code	Удалено лишних выпусков: {0}, не удалено: {1}	Emisiones sobrantes eliminadas: {0}, no eliminadas: {1}
+code	Добавить недостающие ролики в выделенных окнах до полного пересечения? ({0} шт.)	¿Agregar los spots que faltan en las ventanas seleccionadas hasta la intersección completa? ({0} uds.)
+code	В выделенных окнах количество роликов уже совпадает у всех выбранных кампаний.	En las ventanas seleccionadas la cantidad de spots ya coincide en todas las pautas marcadas.
+code	Из них без позиционирования (позиция в окне занята): {0}.	De ellos sin posicionamiento (la posición en la ventana está ocupada): {0}.
+code	Не удалено {0} шт.: {1}	No eliminadas {0} uds.: {1}
