@@ -2037,6 +2037,15 @@ code	Перенести выпуски ({0} шт.) в окно '{1}' {2}?	¿Tras
 code	В этом окне уже есть выпуск фирмы «{0}» ({1}).	En esta ventana ya hay una emisión de la empresa «{0}» ({1}).
 code	акция подтверждена	campaña confirmada
 code	акция ещё не подтверждена	campaña aún no confirmada
+code	Отменить	Deshacer
+code	Отменить последнее добавление выпусков	Deshacer la última adición de emisiones
+code	Отменить последнее добавление выпусков? ({0} шт.)	¿Deshacer la última adición de emisiones? ({0} uds.)
+code	Акция подтверждена: цена акции будет пересчитана, привязки оплат могут быть сокращены.	La campaña está confirmada: el precio de la campaña se recalculará y las vinculaciones de pagos pueden reducirse.
+code	Отменено выпусков: {0}, не отменено: {1}	Emisiones deshechas: {0}, no deshechas: {1}
+code	Отменять можно только выпуски этой кампании.	Solo se pueden deshacer emisiones de esta pauta.
+code	Выпуска уже нет.	La emisión ya no existe.
+code	Выпуск изменили после размещения: другой ролик или окно.	La emisión se modificó tras colocarla: otro spot u otra ventana.
+code	Отменено выпусков: {0}.	Emisiones deshechas: {0}.
 caption	Номер акции:	Número de campaña:
 caption	Создатель:	Creador:
 caption	Активирована:	Activada:

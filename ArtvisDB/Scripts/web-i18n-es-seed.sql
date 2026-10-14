@@ -1,5 +1,5 @@
 ﻿/*
-    ДЕПЛОЙ: переводы веб-версии на язык «es» (2038 строк). docs/tasks/web-i18n.md, этап 5.
+    ДЕПЛОЙ: переводы веб-версии на язык «es» (2047 строк). docs/tasks/web-i18n.md, этап 5.
     СГЕНЕРИРОВАН из ArtvisDB/Scripts/i18n/es.tsv скриптом build-seed.py — руками не править.
 
     ПРЕДУСЛОВИЕ     накачен web-i18n-translation-deploy.sql (таблица iTranslation).
@@ -2060,7 +2060,16 @@ INSERT INTO #t ([source], [text]) VALUES
 (N'Перенести выпуски ({0} шт.) в окно ''{1}'' {2}?', N'¿Trasladar las emisiones ({0} uds.) a la ventana ''{1}'' {2}?'),
 (N'В этом окне уже есть выпуск фирмы «{0}» ({1}).', N'En esta ventana ya hay una emisión de la empresa «{0}» ({1}).'),
 (N'акция подтверждена', N'campaña confirmada'),
-(N'акция ещё не подтверждена', N'campaña aún no confirmada');
+(N'акция ещё не подтверждена', N'campaña aún no confirmada'),
+(N'Отменить', N'Deshacer'),
+(N'Отменить последнее добавление выпусков', N'Deshacer la última adición de emisiones'),
+(N'Отменить последнее добавление выпусков? ({0} шт.)', N'¿Deshacer la última adición de emisiones? ({0} uds.)'),
+(N'Акция подтверждена: цена акции будет пересчитана, привязки оплат могут быть сокращены.', N'La campaña está confirmada: el precio de la campaña se recalculará y las vinculaciones de pagos pueden reducirse.'),
+(N'Отменено выпусков: {0}, не отменено: {1}', N'Emisiones deshechas: {0}, no deshechas: {1}'),
+(N'Отменять можно только выпуски этой кампании.', N'Solo se pueden deshacer emisiones de esta pauta.'),
+(N'Выпуска уже нет.', N'La emisión ya no existe.'),
+(N'Выпуск изменили после размещения: другой ролик или окно.', N'La emisión se modificó tras colocarla: otro spot u otra ventana.'),
+(N'Отменено выпусков: {0}.', N'Emisiones deshechas: {0}.');
 GO
 
 BEGIN TRANSACTION;

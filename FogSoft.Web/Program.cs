@@ -58,6 +58,8 @@ builder.Services.AddScoped<CircuitEntityCacheState>();
 builder.Services.AddScoped<MenuAccess>();
 // Применённый отбор экранов — на время сеанса, см. FilterMemory.
 builder.Services.AddScoped<FilterMemory>();
+// Последнее размещение вкладки «Рекламные окна» — для «Отменить последнее», см. PlacementUndo.
+builder.Services.AddScoped<PlacementUndo>();
 
 var app = builder.Build();
 

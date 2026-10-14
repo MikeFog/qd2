@@ -9,6 +9,7 @@
 @inject ObjectActions Actions
 @inject ActionMenuService Menu
 @inject RollerPlayback Playback
+@inject PlacementUndo Undo
 
 @*
     Вкладка «Рекламные окна» страницы акции (docs/tasks/web-action-forms.md, этап 2): линейные
@@ -167,6 +168,14 @@
                                     disabled="@(!CanBrush)" title="@BrushHint" @onclick="ToggleBrush">
                                 <i class="bi bi-brush" aria-hidden="true"></i>@Tr.T("Режим добавления")
                             </button>
+                            @if (UndoEntry is { } undo)
+                            {
+                                <button type="button" class="btn btn-sm btn-outline-secondary" disabled="@(!Scope.CanEdit)"
+                                        title="@(Scope.CanEdit ? Tr.Format("{0} ({1} шт.)", Tr.T("Отменить последнее добавление выпусков"), undo.Issues.Count) : NoRightText)"
+                                        @onclick="() => Exclusive(UndoLast)">
+                                    <i class="bi bi-arrow-counterclockwise" aria-hidden="true"></i>@Tr.T("Отменить")
+                                </button>
+                            }
                             @if (BrushRow is { } brush)
                             {
                                 <span class="brush-roller" title="@(Tr.T("Ролик, который ставится в окна, — выбран в списке «Ролики»"))">
@@ -559,6 +568,10 @@
         : _rollers.Rows.Cast<DataRow>().FirstOrDefault(r => WindowsSource.RollerIdOf(r) == _brushRollerId);
 
     private bool CanBrush => Scope is { CanEdit: true } && BrushRow != null;
+
+    /// <summary>Запись «Отменить последнее» этой акции, если она про открытую кампанию (у веера записи пока нет).</summary>
+    private PlacementUndo.Entry? UndoEntry =>
+        _open != null && _range == null && Undo.Of(Action.ActionId) is { } entry && entry.CampaignId == _open.CampaignId ? entry : null;
 
     private string? BrushHint =>
         Scope is not { CanEdit: true } ? NoRightText
@@ -1000,8 +1013,12 @@
         PlacementWeek week = _week;
         await Run(() =>
         {
-            WindowsSource.PlaceOne(_open!, week, cell, rollerId, position, _view);
-            placed = true;
+            // Запись и «поставлено» — сразу после коммита, до перечитывания ячейки: сбой чтения не должен оставить выпуск без записи.
+            WindowsSource.PlaceOne(_open!, week, cell, rollerId, position, _view, issue =>
+            {
+                placed = true;
+                Undo.Remember(Action.ActionId, _open!.CampaignId, new[] { issue });
+            });
             if (_selected?.Key == cell.Key)
                 _panel = WindowsSource.LoadWindowIssues(_open!, cell, _view.ShowUnconfirmed);
         });
@@ -1026,6 +1043,7 @@
         {
             RangeSource.PlaceSlot(_range, cell, rollerId, position, _view);
             placed = true;
+            Undo.Forget(Action.ActionId); // «последнее» — теперь веерное размещение; его запись появится с этапом 5.5
             ReloadWeekCore();
         });
         if (placed)
@@ -1080,6 +1098,7 @@
         await Run(() =>
         {
             result = WindowsSource.Place(_open!, cells, rollerId, position);
+            Undo.Remember(Action.ActionId, _open!.CampaignId, result.Created);
             ReloadWeekCore();
             if (_selected != null)
                 _panel = WindowsSource.LoadWindowIssues(_open!, _selected, _view.ShowUnconfirmed);
@@ -1128,6 +1147,39 @@
                 _panel = WindowsSource.LoadWindowIssues(_open, _selected, _view.ShowUnconfirmed);
         });
         await AfterBatch(result, done => Tr.Format("Удалено выпусков: {0}, не удалено: {1}", done, result!.Failed), "Выпуск"); // i18n-ok: заголовок колонки переводит ObjectList при выводе
+    }
+
+    /// <summary>
+    /// «Отменить» (десктоп — после шаблона): выпуски последнего размещения. Выпуски читаются заново: уже удалённые
+    /// и изменённые после размещения пропускаются и попадают в таблицу отказов. Запись снимается после любого итога
+    /// (кроме сбоя, который откатил всё, — тогда можно повторить).
+    /// </summary>
+    private async Task UndoLast()
+    {
+        PlacementUndo.Entry? entry = UndoEntry;
+        if (entry == null || _open is not { CanEdit: true } open)
+            return;
+
+        string question = Tr.Format("Отменить последнее добавление выпусков? ({0} шт.)", entry.Issues.Count);
+        if (Action.IsConfirmed)
+            question += " " + Tr.T("Акция подтверждена: цена акции будет пересчитана, привязки оплат могут быть сокращены.");
+        if (!await Confirm(Tr.T("Отменить"), question, Tr.T("Отменить")))
+            return;
+
+        WindowsSource.BatchResult? result = null;
+        await Run(() =>
+        {
+            result = WindowsSource.Undo(open, entry.Issues);
+            ReloadWeekCore();
+            if (_selected != null)
+                _panel = WindowsSource.LoadWindowIssues(open, _selected, _view.ShowUnconfirmed);
+        });
+        if (result != null)
+            Undo.Forget(entry.ActionId);
+        await AfterBatch(result, done => Tr.Format("Отменено выпусков: {0}, не отменено: {1}", done, result!.Failed), "Выпуск"); // i18n-ok: заголовок колонки переводит ObjectList при выводе
+        // Запись живёт дольше недели на экране: сняться могли выпуски, которых сетка не показывает, — итог сообщается всегда, как в десктопе.
+        if (result is { Failed: 0, Done: > 0 })
+            await ShowInfo(Tr.T("Отменить"), Tr.Format("Отменено выпусков: {0}.", result.Done));
     }
 
     /// <summary>
@@ -1196,6 +1248,7 @@
         await Run(() =>
         {
             result = RangeSource.PlaceSlots(_range!, cells, rollerId, position, _view);
+            Undo.Forget(Action.ActionId); // см. PlaceSlot
             ReloadWeekCore();
         });
         await AfterBatch(result, done => Tr.Format("Добавлено выпусков: {0}, не добавлено: {1}", done, result!.Failed), "Рекламное окно"); // i18n-ok: заголовок колонки переводит ObjectList при выводе
@@ -1369,6 +1422,7 @@
         await Run(() =>
         {
             result = RangeSource.FillToIntersection(range, toAdd, _view, _numbers, out withoutPosition);
+            Undo.Forget(Action.ActionId); // см. PlaceSlot
             ReloadWeekCore();
         });
         await AfterBatch(result, done => Tr.Format("Добавлено выпусков: {0}, не добавлено: {1}", done, result!.Failed), "Рекламное окно"); // i18n-ok: заголовок колонки переводит ObjectList при выводе
@@ -1585,7 +1639,8 @@
         bool moved = false;
         await Run(() =>
         {
-            WindowsSource.Move(_open!, plan);
+            // Перенос пересоздаёт выпуск с новым номером — запись «Отменить» переходит на новые выпуски.
+            Undo.Moved(Action.ActionId, WindowsSource.Move(_open!, plan));
             moved = true;
         });
         // Отказ (прошлое, закрытый день, позиция…) — сообщение над сеткой, режим переноса остаётся:

@@ -559,17 +559,22 @@ namespace Merlin.Classes
 		/// <summary>
 		/// Клик «Режима добавления» — как RollerIssuesGrid3.AddIssueTransaction: IssueIUD и пересчёт
 		/// акции одной транзакцией. Затем окно перечитывается (TariffWindowRetrieve @windowId), ячейка
-		/// и счётчик дня обновляются на месте — неделя целиком не перечитывается.
+		/// и счётчик дня обновляются на месте — неделя целиком не перечитывается. <paramref name="onPlaced"/> получает
+		/// поставленный выпуск сразу после коммита, до перечитывания окна: сбой чтения не должен оставить выпуск без записи
+		/// для «Отменить последнее».
 		/// </summary>
-		public static void PlaceOne(OpenCampaign c, PlacementWeek week, PlacementCell cell, int rollerId, int position, WeekView view)
+		public static void PlaceOne(OpenCampaign c, PlacementWeek week, PlacementCell cell, int rollerId, int position, WeekView view,
+			System.Action<PlacedIssue> onPlaced)
 		{
 			Campaign campaign = LoadForWrite(c);
 			Roller roller = BrushRoller(c, rollerId, campaign.Action.FirmID);
+			PlacedIssue placed = null;
 			RunInTransaction(() =>
 			{
-				campaign.AddIssue(roller, cell.Window, (RollerPositions)position, null);
+				placed = Capture(c, campaign.AddIssue(roller, cell.Window, (RollerPositions)position, null), cell, roller);
 				campaign.RecalculateAction(false);
 			});
+			onPlaced(placed);
 
 			DataRow w = LoadWindowRow(cell.Key);
 			List<int> own = new List<int>(cell.OwnRollerIds) { rollerId };
@@ -610,6 +615,9 @@ namespace Merlin.Classes
 
 			public int Done { get; internal set; }
 
+			/// <summary>Поставленные выпуски (только у «Разместить ролик») — запись для «Отменить последнее».</summary>
+			public List<PlacedIssue> Created { get; } = new List<PlacedIssue>();
+
 			/// <summary>name — место или выпуск, description — причина отказа.</summary>
 			public DataTable Errors { get; }
 
@@ -633,9 +641,77 @@ namespace Merlin.Classes
 				foreach (PlacementCell cell in cells.OrderBy(x => x.Key))
 					Step(result, cell.Date.ToString("dd.MM.yyyy HH:mm"), () =>
 					{
-						campaign.AddIssue(roller, cell.Window, (RollerPositions)position, null);
+						result.Created.Add(Capture(c, campaign.AddIssue(roller, cell.Window, (RollerPositions)position, null), cell, roller));
 						return null;
 					});
+				if (result.Done > 0)
+					campaign.RecalculateAction(false);
+			});
+			return result;
+		}
+
+		// ---------- «Отменить последнее» ----------
+
+		/// <summary>
+		/// Выпуск, который поставила вкладка: номер из ответа IssueIUD и то, каким он был поставлен (кампания, окно, ролик).
+		/// По записи отмена находит именно этот выпуск, а не «какой-то такой же», и видит, что его уже изменили.
+		/// </summary>
+		public sealed class PlacedIssue
+		{
+			internal PlacedIssue() { }
+
+			public int IssueId { get; internal set; }
+			public int CampaignId { get; internal set; }
+			public int WindowId { get; internal set; }
+			public int RollerId { get; internal set; }
+
+			/// <summary>Для строки отказа: «дата время — ролик».</summary>
+			public string Name { get; internal set; }
+		}
+
+		private static PlacedIssue Capture(OpenCampaign c, Issue issue, PlacementCell cell, Roller roller) => new PlacedIssue
+		{
+			IssueId = Convert.ToInt32(issue[Issue.ParamNames.IssueId]),
+			CampaignId = c.CampaignId,
+			WindowId = cell.Key,
+			RollerId = Convert.ToInt32(roller[Roller.ParamNames.RollerId]),
+			Name = string.Format("{0:dd.MM.yyyy HH:mm} — {1}", cell.Date, roller.Name),
+		};
+
+		/// <summary>
+		/// «Отменить последнее» (десктоп — «Отменить» у шаблонов): удаляет выпуски, которые поставило последнее
+		/// размещение, одной транзакцией и одним пересчётом. Десктоп удалял объекты из списка формы; веб читает
+		/// каждый выпуск заново: нет в базе — уже удалён, другой ролик, окно или кампания — его заменили или перенесли
+		/// после размещения, такой не трогается. И то и другое — строкой отказа, остальные снимаются. Права и правила
+		/// прошлого периода — те же, что у «Удалить выпуски» (IssueIUD DeleteItem). Сверка и удаление — два обращения в
+		/// READ COMMITTED: если между ними другой сеанс заменит ролик или перенесёт выпуск, он будет удалён (окно —
+		/// миллисекунды; тот же приём у переноса, а десктоп не сверяет ничего).
+		/// </summary>
+		public static BatchResult Undo(OpenCampaign c, IReadOnlyList<PlacedIssue> placed)
+		{
+			if (placed.Any(p => p.CampaignId != c.CampaignId))
+				throw new InvalidOperationException(Tr.T("Отменять можно только выпуски этой кампании."));
+			Campaign campaign = LoadForWrite(c);
+			BatchResult result = new BatchResult();
+			RunInTransaction(() =>
+			{
+				// По возрастанию номера окна — как у «Разместить ролик».
+				foreach (PlacedIssue p in placed.OrderBy(x => x.WindowId).ThenBy(x => x.IssueId))
+				{
+					DataRow row = Issue.LoadRow(p.IssueId);
+					if (row == null)
+						result.Refuse(p.Name, Tr.T("Выпуска уже нет."));
+					else if (Convert.ToInt32(row[Roller.ParamNames.RollerId]) != p.RollerId
+						|| Convert.ToInt32(row[Issue.ActualWindowIdParam]) != p.WindowId
+						|| Convert.ToInt32(row[Campaign.ParamNames.CampaignId]) != p.CampaignId)
+						result.Refuse(p.Name, Tr.T("Выпуск изменили после размещения: другой ролик или окно."));
+					else
+						Step(result, p.Name, () =>
+						{
+							new RollerIssue(row).Delete(silenceFlag: true);
+							return null;
+						});
+				}
 				if (result.Done > 0)
 					campaign.RecalculateAction(false);
 			});
@@ -809,21 +885,29 @@ namespace Merlin.Classes
 		/// В отличие от перетаскивания, между выбором выпусков и окна-приёмника проходит время: выпуск
 		/// могли удалить, заменить ролик или позицию. Поэтому выпуски перечитываются в транзакции, и
 		/// изменённый отменяет перенос — иначе удалённый выпуск воскрес бы, а замена откатилась.
+		///
+		/// Перенесённый выпуск — новая строка с новым номером. Возвращаются пары «прежний номер → выпуск в окне-приёмнике»:
+		/// по ним запись «Отменить последнее» переходит на новые выпуски, а не теряет их.
 		/// </summary>
-		public static void Move(OpenCampaign c, MovePlan plan)
+		public static IReadOnlyList<KeyValuePair<int, PlacedIssue>> Move(OpenCampaign c, MovePlan plan)
 		{
 			Campaign campaign = LoadForWrite(c);
+			List<KeyValuePair<int, PlacedIssue>> moved = new List<KeyValuePair<int, PlacedIssue>>();
 			RunInTransaction(() =>
 			{
+				moved.Clear();
 				foreach (RollerIssue issue in plan.Issues)
 				{
 					if (!IsUnchanged(issue))
 						throw new InvalidOperationException(Tr.T("Выпуск изменили или удалили, пока выбиралось окно. Выберите выпуски заново."));
+					int oldId = Convert.ToInt32(issue[Issue.ParamNames.IssueId]);
 					issue.Delete(silenceFlag: true);
-					campaign.AddIssue(issue.Roller, plan.Target.Window, issue.Position, null);
+					moved.Add(new KeyValuePair<int, PlacedIssue>(oldId,
+						Capture(c, campaign.AddIssue(issue.Roller, plan.Target.Window, issue.Position, null), plan.Target, issue.Roller)));
 				}
 				campaign.RecalculateAction(false);
 			});
+			return moved;
 		}
 
 		/// <summary>Выпуск в базе такой же, как в строке панели: тот же ролик, позиция, окно и кампания.</summary>
