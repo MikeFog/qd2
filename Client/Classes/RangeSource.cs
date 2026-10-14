@@ -157,6 +157,14 @@ namespace Merlin.Classes
 			internal string RollerName { get; set; }
 		}
 
+		/// <summary>Ролик фирмы в слоте из чужой акции (или модульной кампании этой): подтверждён ли выпуск.</summary>
+		internal sealed class FirmRoller
+		{
+			internal int RollerId { get; set; }
+			internal int PositionId { get; set; }
+			internal bool HasConfirmed { get; set; }
+		}
+
 		private static readonly DateTime SlotEpoch = new DateTime(2000, 1, 1);
 
 		/// <summary>Ключ слота — номер получаса от 2000-01-01: слоты веера лежат на границах получасов.</summary>
@@ -220,6 +228,20 @@ namespace Merlin.Classes
 				list.Add(a);
 			}
 
+			Dictionary<DateTime, List<FirmRoller>> firmRollers = new Dictionary<DateTime, List<FirmRoller>>();
+			foreach (DataRow a in ds.Tables[4].Rows)
+			{
+				DateTime date = (DateTime)a["date"];
+				if (!firmRollers.TryGetValue(date, out List<FirmRoller> list))
+					firmRollers[date] = list = new List<FirmRoller>();
+				list.Add(new FirmRoller
+				{
+					RollerId = Convert.ToInt32(a[Roller.ParamNames.RollerId]),
+					PositionId = IntOrZero(a[Issue.ParamNames.PositionId]),
+					HasConfirmed = IntOrZero(a["hasConfirmed"]) == 1,
+				});
+			}
+
 			List<PlacementCell> coloured = new List<PlacementCell>();
 			foreach (DataRow d in ds.Tables[0].Rows)
 			{
@@ -240,6 +262,8 @@ namespace Merlin.Classes
 					Text = DateTimeUtils.Time2String(IntOrZero(view.ShowUnconfirmed ? d["timeWithUnConfirmed"] : d["timeWithConfirmed"])),
 					Flags = SlotFlags(d, view),
 				};
+				if (firmRollers.TryGetValue(slot, out List<FirmRoller> firm))
+					cell.FirmSlotRollers = firm;
 				if (cell.Has(PlacementFlags.Mine) || cell.Has(PlacementFlags.Partial))
 					coloured.Add(cell);
 				else if ((cell.Has(PlacementFlags.FirmHere) || cell.Has(PlacementFlags.FirmSome)) && firmActions.TryGetValue(slot, out List<DataRow> others))
@@ -410,6 +434,105 @@ namespace Merlin.Classes
 			}
 			return result;
 		}
+
+		// ---------- Номера роликов ----------
+
+		/// <summary>
+		/// «Номера роликов» в слоте: номер → кампания → сколько выпусков этого ролика (позиция в счёт не идёт: дубль с другой
+		/// позицией — обычный дубль); ролики без номера (нет в списке «Ролики» фирмы) пропускаются — как
+		/// TariffWithRangeGrid.CountRollersByNumber.
+		/// </summary>
+		private static SortedDictionary<int, Dictionary<int, int>> CountByNumber(PlacementCell cell, IReadOnlyDictionary<int, int> numbers)
+		{
+			SortedDictionary<int, Dictionary<int, int>> result = new SortedDictionary<int, Dictionary<int, int>>();
+			foreach (SlotIssue issue in cell.SlotIssues)
+			{
+				if (!numbers.TryGetValue(issue.RollerId, out int number))
+					continue;
+				if (!result.TryGetValue(number, out Dictionary<int, int> byCampaign))
+					result[number] = byCampaign = new Dictionary<int, int>();
+				byCampaign.TryGetValue(issue.CampaignId, out int count);
+				byCampaign[issue.CampaignId] = count + 1;
+			}
+			return result;
+		}
+
+		private static int CountOf(Dictionary<int, int> byCampaign, int campaignId) =>
+			byCampaign.TryGetValue(campaignId, out int count) ? count : 0;
+
+		/// <summary>
+		/// Текст ячейки при «Номерах роликов» (TariffWithRangeGrid.GetRollerNumbersText): номера роликов акции по возрастанию с
+		/// пометками «Н» — число этого ролика не одинаково у отмеченных кампаний (в том числе у кого-то его нет) и «Д» — у
+		/// какой-то кампании он стоит больше одного раза; затем номера роликов этой фирмы из других акций (бирюзовые и оранжевые
+		/// слоты) — неподтверждённые только при «Учитывать макеты». null — известных номеров нет, в ячейке остаётся время.
+		/// </summary>
+		public static string NumbersText(OpenRange r, PlacementCell cell, IReadOnlyDictionary<int, int> numbers, bool showUnconfirmed)
+		{
+			List<string> result = new List<string>();
+			foreach (KeyValuePair<int, Dictionary<int, int>> roller in CountByNumber(cell, numbers))
+			{
+				List<int> counts = r.CampaignIds.Select(id => CountOf(roller.Value, id)).ToList();
+				bool incomplete = counts.Any(count => count != counts[0]);
+				bool duplicated = counts.Any(count => count > 1);
+				result.Add(roller.Key + (incomplete ? "Н" : "") + (duplicated ? "Д" : ""));
+			}
+
+			HashSet<string> covered = new HashSet<string>(cell.SlotIssues.Select(i => i.RollerId + "/" + i.PositionId));
+			foreach (FirmRoller firm in cell.FirmSlotRollers)
+			{
+				if (!firm.HasConfirmed && !showUnconfirmed)
+					continue;
+				if (!covered.Add(firm.RollerId + "/" + firm.PositionId))
+					continue;
+				if (numbers.TryGetValue(firm.RollerId, out int number))
+					result.Add(number.ToString());
+			}
+			return result.Count > 0 ? string.Join(", ", result) : null;
+		}
+
+		/// <summary>
+		/// Расшифровка значков Н/Д (EditIssuesForm.BuildRollerMismatchTooltip): «Отсутствуют:» — по каждой кампании, каких роликов
+		/// и сколько не хватает до кампании с наибольшим числом этого ролика, «Дубли:» — что у кампании стоит больше одного раза.
+		/// null — показывать нечего (в слоте нет выпусков этой акции, всё совпадает, дублей нет).
+		/// </summary>
+		public static string MismatchTooltip(OpenRange r, PlacementCell cell, IReadOnlyDictionary<int, int> numbers)
+		{
+			SortedDictionary<int, Dictionary<int, int>> counts = CountByNumber(cell, numbers);
+			if (counts.Count == 0)
+				return null;
+
+			List<string> missingLines = new List<string>();
+			List<string> duplicateLines = new List<string>();
+			foreach (int campaignId in r.CampaignIds)
+			{
+				List<string> missing = new List<string>();
+				List<string> duplicates = new List<string>();
+				foreach (KeyValuePair<int, Dictionary<int, int>> roller in counts)
+				{
+					int own = CountOf(roller.Value, campaignId);
+					int max = r.CampaignIds.Max(id => CountOf(roller.Value, id));
+					if (own < max)
+						missing.Add(RollerCountText(roller.Key, max - own, missing.Count == 0));
+					if (own > 1)
+						duplicates.Add(RollerCountText(roller.Key, own, duplicates.Count == 0));
+				}
+				if (missing.Count > 0)
+					missingLines.Add(r.Titles[campaignId] + " – " + string.Join(", ", missing));
+				if (duplicates.Count > 0)
+					duplicateLines.Add(r.Titles[campaignId] + " – " + string.Join(", ", duplicates));
+			}
+
+			List<string> sections = new List<string>();
+			if (missingLines.Count > 0)
+				sections.Add(Tr.T("Отсутствуют:") + "\n" + string.Join("\n", missingLines));
+			if (duplicateLines.Count > 0)
+				sections.Add(Tr.T("Дубли:") + "\n" + string.Join("\n", duplicateLines));
+			return sections.Count == 0 ? null : string.Join("\n\n", sections);
+		}
+
+		/// <summary>«ролик 5 (3 шт.)» у первого ролика строки, дальше без слова «ролик» — как в ТЗ десктопа.</summary>
+		private static string RollerCountText(int number, int count, bool isFirst) =>
+			isFirst ? Tr.Format("ролик {0} ({1} шт.)", number, count) : Tr.Format("{0} ({1} шт.)", number, count);
 
 		// ---------- Постановка ----------
 

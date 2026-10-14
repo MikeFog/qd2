@@ -177,5 +177,8 @@ namespace Merlin.Classes
 
 		/// <summary>Выпуски отмеченных кампаний акции в слоте веера (RangeSlotIssues) — только у цветных слотов.</summary>
 		internal IReadOnlyList<RangeSource.SlotIssue> SlotIssues { get; set; } = Array.Empty<RangeSource.SlotIssue>();
+
+		/// <summary>Ролики фирмы в слоте веера из других акций (и модульных кампаний этой) — номера в бирюзовых и оранжевых слотах.</summary>
+		internal IReadOnlyList<RangeSource.FirmRoller> FirmSlotRollers { get; set; } = Array.Empty<RangeSource.FirmRoller>();
 	}
 }

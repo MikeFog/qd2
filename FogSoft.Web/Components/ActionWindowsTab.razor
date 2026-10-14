@@ -188,13 +188,10 @@
                                         title="@(Tr.T("Учитывать макеты") + "\n" + Tr.T("Показывать неподтвержденные выпуски"))" aria-label="@(Tr.T("Учитывать макеты"))" @onclick="ToggleUnconfirmed">
                                     <i class="bi bi-file-earmark-text" aria-hidden="true"></i>
                                 </button>
-                                @if (!IsRange)
-                                {
-                                    <button type="button" class="btn btn-sm btn-outline-secondary @(_showNumbers ? "active" : null)" aria-pressed="@_showNumbers"
-                                            title="@(Tr.T("Номера роликов") + "\n" + Tr.T("Показывать в окнах номера роликов текущей кампании вместо остатка времени"))" aria-label="@(Tr.T("Номера роликов"))" @onclick="() => _showNumbers = !_showNumbers">
-                                        <i class="bi bi-123" aria-hidden="true"></i>
-                                    </button>
-                                }
+                                <button type="button" class="btn btn-sm btn-outline-secondary @(_showNumbers ? "active" : null)" aria-pressed="@_showNumbers"
+                                        title="@(Tr.T("Номера роликов") + "\n" + (IsRange ? Tr.T("Показывать в окнах номера роликов отмеченных кампаний вместо остатка времени") : Tr.T("Показывать в окнах номера роликов текущей кампании вместо остатка времени")))" aria-label="@(Tr.T("Номера роликов"))" @onclick="() => _showNumbers = !_showNumbers">
+                                    <i class="bi bi-123" aria-hidden="true"></i>
+                                </button>
                                 <button type="button" class="btn btn-sm btn-outline-secondary @(_showPrime ? "active" : null)" aria-pressed="@_showPrime"
                                         title="@(Tr.T("Видеть прайм") + "\n" + Tr.T("Показать окна прайм-тайм"))" aria-label="@(Tr.T("Видеть прайм"))" @onclick="() => _showPrime = !_showPrime">
                                     <i class="bi bi-star" aria-hidden="true"></i>
@@ -238,6 +235,10 @@
                                     <span><i class="sample partial">00:30</i>@Tr.T("не у всех")</span>
                                     <span><i class="sample firm">00:30</i>@Tr.T("выпуски фирмы в других акциях на всех станциях")</span>
                                     <span><i class="sample firm-some">00:30</i>@Tr.T("на части станций")</span>
+                                    @if (_showNumbers)
+                                    {
+                                        <span>@Tr.T("«Н» — число ролика не одинаково у кампаний, «Д» — дубли")</span>
+                                    }
                                 }
                                 else
                                 {
@@ -740,10 +741,19 @@
 
     // ---------- Ячейка ----------
 
-    private string? CellText(PlacementCell cell) => _showNumbers ? cell.NumbersText(_numbers) : null;
+    private string? CellText(PlacementCell cell) =>
+        !_showNumbers ? null
+        : _range != null ? RangeSource.NumbersText(_range, cell, _numbers, _view.ShowUnconfirmed)
+        : cell.NumbersText(_numbers);
 
-    private string CellTitle(PlacementCell cell) =>
-        DisplayFormat.DateAndTime(cell.Date) + StatusText(cell) + (cell.Details != null ? "\n" + cell.Details : "");
+    /// <summary>Подсказка ячейки; у веера при «Номерах роликов» первой идёт расшифровка значков Н/Д, как в десктопе.</summary>
+    private string CellTitle(PlacementCell cell)
+    {
+        string? details = _range != null && _showNumbers && RangeSource.MismatchTooltip(_range, cell, _numbers) is { } mismatch
+            ? mismatch
+            : cell.Details;
+        return DisplayFormat.DateAndTime(cell.Date) + StatusText(cell) + (details != null ? "\n" + details : "");
+    }
 
     /// <summary>Состояние окна одной строкой — подсказка ячейки и подпись панели.</summary>
     private string StatusText(PlacementCell cell) =>

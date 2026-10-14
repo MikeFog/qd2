@@ -2006,3 +2006,8 @@ code	Окна выделяются щелчком (Shift — прямоугол�
 code	Разместить ролик в выбранных окнах по выбранным кампаниям? ({0} шт.)	¿Colocar el spot en las ventanas seleccionadas, en las pautas marcadas? ({0} uds.)
 code	Удалить выпуски в выбранных окнах по выбранным кампаниям? ({0} шт.)	¿Eliminar las emisiones de las ventanas seleccionadas, en las pautas marcadas? ({0} uds.)
 code	В выбранных окнах нет выпусков этой акции.	En las ventanas seleccionadas no hay emisiones de esta campaña.
+code	Дубли:	Duplicados:
+code	ролик {0} ({1} шт.)	spot {0} ({1} uds.)
+code	{0} ({1} шт.)	{0} ({1} uds.)
+code	Показывать в окнах номера роликов отмеченных кампаний вместо остатка времени	Mostrar en las ventanas los números de spots de las pautas marcadas en lugar del tiempo libre
+code	«Н» — число ролика не одинаково у кампаний, «Д» — дубли	«Н»: la cantidad del spot no es la misma en todas las pautas; «Д»: duplicados
