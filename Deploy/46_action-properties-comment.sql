@@ -2,7 +2,7 @@
 --
 -- У акции (iEntity 77) не было паспорта; «Редактировать» открывает ActionForm (цены и кампании), а это другое окно.
 -- Теперь у акции есть пункт «Свойства» (Properties) — стандартный паспорт: номер, фирма, создатель, статус, период,
--- пакетная скидка, даты создания/изменения (только просмотр) и «Комментарий» менеджера (правится).
+-- даты создания/изменения (только просмотр) и «Комментарий» менеджера (правится).
 -- Двойной щелчок и «Редактировать» по-прежнему открывают ActionForm.
 --
 -- Что делает скрипт:
@@ -317,7 +317,6 @@ DECLARE @xml nvarchar(max) = N'<passport>
 		<separator />
 		<field caption="Начало:" name="startDate" disabled="true"/>
 		<field caption="Окончание:" name="finishDate" disabled="true"/>
-		<label caption="Пакетная скидка:" name="packageDiscountName" />
 		<separator />
 		<field caption="Создана:" name="createDate" type="df_datetime" disabled="true"/>
 		<field caption="Изменена:" name="modDate" type="df_datetime" disabled="true"/>
@@ -329,7 +328,17 @@ DECLARE @xml nvarchar(max) = N'<passport>
 IF TRY_CAST(@xml AS xml) IS NULL
     RAISERROR(N'Остановлено: XML паспорта невалиден. Ничего не изменено.', 16, 1);
 ELSE IF EXISTS (SELECT 1 FROM dbo.iEntity WHERE entityID = 77 AND CAST(passport AS nvarchar(max)) LIKE N'%name="comment"%')
+BEGIN
     PRINT N'Паспорт акции уже содержит поле «Комментарий».';
+    -- ранняя редакция скрипта записывала в паспорт и «Пакетную скидку» — убираем (она есть в журнале акций)
+    IF EXISTS (SELECT 1 FROM dbo.iEntity WHERE entityID = 77 AND CAST(passport AS nvarchar(max)) LIKE N'%name="packageDiscountName"%')
+    BEGIN
+        UPDATE dbo.iEntity
+        SET passport = REPLACE(CAST(passport AS nvarchar(max)), N'<label caption="Пакетная скидка:" name="packageDiscountName" />', N'')
+        WHERE entityID = 77;
+        PRINT N'Из паспорта акции убрана строка «Пакетная скидка».';
+    END
+END
 ELSE IF EXISTS (SELECT 1 FROM dbo.iEntity WHERE entityID = 77 AND LEN(CAST(passport AS nvarchar(max))) > 0)
     RAISERROR(N'Остановлено: у сущности 77 уже есть другой паспорт — смотрите вручную. Ничего не изменено.', 16, 1);
 ELSE
@@ -348,7 +357,6 @@ IF OBJECT_ID('dbo.iTranslation') IS NOT NULL
     (N'Номер акции:', N'Número de campaña:'),
     (N'Создатель:', N'Creador:'),
     (N'Активирована:', N'Activada:'),
-    (N'Пакетная скидка:', N'Descuento por paquete:'),
     (N'Создана:', N'Creada:'),
     (N'Изменена:', N'Modificada:'),
     (N'Комментарий:', N'Comentario:')
