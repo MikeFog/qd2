@@ -98,6 +98,10 @@ namespace FogSoft.WinForm.Passport.Classes
 			TextBox.Height = string.IsNullOrEmpty(height) ? TextBox.Height * 2 : ParseHelper.ParseToInt32(height);
 			TextBox.Multiline = true;
 			TextBox.AcceptsReturn = true;
+			// maxlength в XML — предел в символах (иначе длину никто не ограничивает: колонка её не отдаёт)
+			int maxLength = ParseHelper.ParseToInt32(navigator.GetAttribute(Attributes.MaxLength, ""), 0);
+			if (maxLength > 0)
+				TextBox.MaxLength = maxLength;
 			// без полосы прокрутки уезд текста при переполнении выглядит как
 			// пропажа данных, а не как прокрутка (жалоба пользователя на новом
 			// многострочном формате интервалов-исключений агитации)

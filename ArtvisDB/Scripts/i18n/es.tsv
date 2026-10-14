@@ -2037,3 +2037,10 @@ code	Перенести выпуски ({0} шт.) в окно '{1}' {2}?	¿Tras
 code	В этом окне уже есть выпуск фирмы «{0}» ({1}).	En esta ventana ya hay una emisión de la empresa «{0}» ({1}).
 code	акция подтверждена	campaña confirmada
 code	акция ещё не подтверждена	campaña aún no confirmada
+caption	Номер акции:	Número de campaña:
+caption	Создатель:	Creador:
+caption	Активирована:	Activada:
+caption	Пакетная скидка:	Descuento por paquete:
+caption	Создана:	Creada:
+caption	Изменена:	Modificada:
+caption	Комментарий:	Comentario:

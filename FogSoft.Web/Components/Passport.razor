@@ -269,6 +269,14 @@ else
                                @onchange="e => WriteDurationSeconds(field.Name, e.Value)" />
                     </div>
                 }
+                else if (field.TextRows > 0)
+                {
+                    @* Многострочный текст (doubleString с height в метаданных), как в десктопе. *@
+                    <textarea class="form-control form-control-sm@(InvalidClass(field))" disabled="@disabled"
+                              rows="@field.TextRows" maxlength="@(field.MaxLength > 0 ? field.MaxLength : (int?)null)"
+                              value="@ReadString(field.Name)"
+                              @onchange="e => WriteString(field.Name, e.Value)"></textarea>
+                }
                 else
                 {
                     <input class="form-control form-control-sm@(InvalidClass(field))" disabled="@disabled"

@@ -27,6 +27,13 @@ namespace Merlin.Classes
 					OnParentChanged(this, 1);
 				}
 			}
+			else if (actionName == Constants.EntityActions.ShowPassport)
+			{
+				// «Свойства»: стандартный паспорт (данные для просмотра и комментарий). ShowPassport у акции
+				// открывает ActionForm (двойной щелчок, «Редактировать»), поэтому паспорт — через базовый метод.
+				if (base.ShowPassport(owner))
+					OnParentChanged(this, 1);
+			}
 			else if (actionName == ActionNames.Deactivate)
 				DeactivateAction();
 			else if (actionName == ActionNames.Activate|| string.Compare(actionName, ActionNames.ActivateTest) == 0)

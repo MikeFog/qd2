@@ -15,6 +15,7 @@
     [isAlerted]           BIT             CONSTRAINT [DF_Action_isAlerted] DEFAULT ((0)) NOT NULL,
     [deleteDate]          DATETIME        NULL,
     [packageDiscountPriceListID] INT      NULL,
+    [comment]             [dbo].[doubleString] NULL,
     CONSTRAINT [PK_Action] PRIMARY KEY NONCLUSTERED ([actionID] ASC) WITH (FILLFACTOR = 90),
     CONSTRAINT [FK_Action_Firm] FOREIGN KEY ([firmID]) REFERENCES [dbo].[Firm] ([firmID]),
     CONSTRAINT [FK_Action_User] FOREIGN KEY ([userID]) REFERENCES [dbo].[User] ([userID]),

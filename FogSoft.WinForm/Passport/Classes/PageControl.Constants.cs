@@ -24,6 +24,7 @@
 			public const string Locked = "locked"; // locked for all but Admin!
 			public const string Disabled = "disabled";
 			public const string Height = "height";
+			public const string MaxLength = "maxlength"; // длина многострочного поля (doubleString) в символах
 			public const string MinValue = "min";
 			public const string MaxValue = "max";
 			public const string PassportChar = "passportchar";

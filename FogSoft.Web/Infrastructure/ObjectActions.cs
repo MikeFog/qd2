@@ -126,6 +126,13 @@ public sealed partial class ObjectActions
 	private delegate Task<ActionEffect> Handler(ObjectActions self, object target);
 
 	/// <summary>
+	/// «Свойства» акции — паспорт с комментарием. В вебе имя Properties занято «Открыть акцию»
+	/// (клик по строке, страница акции, не зависит от прав), поэтому пункт паспорта идёт под
+	/// своим именем; доступность — по праву Properties сущности 77.
+	/// </summary>
+	internal const string ActionPropertiesName = "ActionProperties";
+
+	/// <summary>
 	/// Общие действия. Каждое повторяет свою ветку DoAction базового класса
 	/// десктопа, но с веб-диалогом вместо формы.
 	/// </summary>
@@ -363,6 +370,7 @@ public sealed partial class ObjectActions
 		{
 			[Constants.EntityActions.Edit] = (s, t) => s.OpenActionPage((Merlin.Classes.ActionOnMassmedia)t),
 			[Constants.EntityActions.ShowPassport] = (s, t) => s.OpenActionPage((Merlin.Classes.ActionOnMassmedia)t),
+			[ActionPropertiesName] = (s, t) => s.OpenPassport(t),
 			[Merlin.Classes.Action.ActionNames.Recalculate] = (s, t) => s.RecalculateAction((Merlin.Classes.ActionOnMassmedia)t),
 			[Merlin.Classes.Action.ActionNames.Deactivate] = (s, t) => s.DeactivateAction((Merlin.Classes.ActionOnMassmedia)t),
 			[Merlin.Classes.Action.ActionNames.Merge] = (s, t) => s.MergeActions((Merlin.Classes.ActionOnMassmedia)t),
@@ -551,6 +559,7 @@ public sealed partial class ObjectActions
 
 		ActionMenuItem? properties = null;
 		ActionMenuItem? delete = null;
+		ActionMenuItem? actionProperties = null; // «Свойства» акции — последним, как у других сущностей
 		var middle = new List<ActionMenuItem>();
 
 		foreach (Entity.Action action in actions)
@@ -563,6 +572,19 @@ public sealed partial class ObjectActions
 
 			if (IsHidden(target, action.Name, view))
 				continue;
+
+			if (action.Name == Constants.EntityActions.ShowPassport && target is Merlin.Classes.ActionOnMassmedia)
+			{
+				actionProperties = new ActionMenuItem
+				{
+					Name = ActionPropertiesName,
+					Text = Tr.T(action.Alias),
+					Icon = ActionIcons.For(action.Name, action.ImgResourceName),
+					Enabled = IsEnabled(target, ActionPropertiesName, view),
+					Ported = true,
+				};
+				continue;
+			}
 
 			ActionMenuItem item = CreateItem(target, action, view);
 			if (action.Name == Constants.EntityActions.ShowPassport)
@@ -594,6 +616,11 @@ public sealed partial class ObjectActions
 		{
 			result.Add(ActionMenuItem.Separator);
 			result.Add(delete);
+		}
+		if (actionProperties != null)
+		{
+			result.Add(ActionMenuItem.Separator);
+			result.Add(actionProperties);
 		}
 
 		return CollapseSeparators(result);
@@ -2288,6 +2315,9 @@ public sealed partial class ObjectActions
 		// ShowPassport). Видна акция — страница открывается, без права правки — на просмотр.
 		Merlin.Classes.ActionOnMassmedia action when actionName == Constants.EntityActions.ShowPassport
 			=> Merlin.Classes.ActionWorkspace.CanView(action),
+		// Паспорт «Свойства» акции — настоящее право Properties (как «Свойства» в десктопе).
+		Merlin.Classes.ActionOnMassmedia action when actionName == ActionPropertiesName
+			=> action.IsActionEnabled(Constants.EntityActions.ShowPassport, view),
 		PresentationObject po => Merlin.Classes.PricelistWindows.EnabledCheckTarget(po, actionName).IsActionEnabled(actionName, view),
 		FakeContainer fc => fc.IsActionEnabled(actionName, view),
 		_ => false

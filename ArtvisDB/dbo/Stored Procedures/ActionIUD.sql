@@ -6,7 +6,8 @@
 @newCreatorID smallint = NULL,
 @isConfirmed bit = NULL,
 @actionName varchar(32),
-@loggedUserID smallint
+@loggedUserID smallint,
+@comment nvarchar(256) = NULL -- комментарий менеджера; NULL - не менять, пустая строка - очистить
 )
 WITH EXECUTE AS OWNER
 as
@@ -180,6 +181,10 @@ ELSE IF @actionName = 'UpdateItem'
 	FROM [Action] a 
 	WHERE a.[actionID] = @actionID
 	
+	-- карточка «Свойства» присылает не все поля: чего нет - остаётся как было
+	SET @firmID = ISNULL(@firmID, @oldFirmId)
+	SET @isConfirmed = ISNULL(@isConfirmed, @oldIsConfirmed)
+
 	IF (@oldFirmId <> @firmID)
 		DELETE FROM [PaymentAction] WHERE [actionID] = @actionID
 
@@ -194,8 +199,9 @@ ELSE IF @actionName = 'UpdateItem'
 		[Action]
 	SET			
 		firmID = @firmID,
-		userID = IsNull(@newCreatorID, @userID),
-		isConfirmed = @isConfirmed
+		userID = COALESCE(@newCreatorID, @userID, userID),
+		isConfirmed = @isConfirmed,
+		[comment] = CASE WHEN @comment IS NULL THEN [comment] ELSE NULLIF(LTRIM(RTRIM(@comment)), N'') END
 	WHERE		
 		actionID = @actionID
 

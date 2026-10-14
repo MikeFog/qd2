@@ -71,6 +71,8 @@ public static class PassportSchema
 					continue;
 
 				string name = Attr(child, PageControl.Attributes.Name) ?? string.Empty;
+				FieldTypeResolver fieldType = ResolveType(child, name, entity);
+				var multiline = ParseMultiline(child, fieldType);
 
 				// selector в фильтре — выбор нескольких объектов по сущности (станции журнала
 				// использования роликов): тот же выбор, что у objectPicker, только с галочками.
@@ -94,9 +96,11 @@ public static class PassportSchema
 					MultiPick: multiPick,
 					Image: ParseImage(child),
 					Tree: ParseTree(child),
-					Type: ResolveType(child, name, entity),
+					Type: fieldType,
 					IsLabel: child.Name == "label",
-					Locked: IsLocked(child)));
+					Locked: IsLocked(child),
+					TextRows: multiline.Rows,
+					MaxLength: multiline.MaxLength));
 			}
 			pages.Add(page);
 		}
@@ -245,6 +249,23 @@ public static class PassportSchema
 		ColumnInfo? columnInfo = null;
 		entity?.ColumnsInfo.TryGetValue(name, out columnInfo);
 		return new FieldTypeResolver(Attr(node, PageControl.Attributes.Type) ?? string.Empty, columnInfo);
+	}
+
+	/// <summary>
+	/// Многострочное поле: десктоп рисует doubleString/textarea с атрибутом <c>height</c> (в точках)
+	/// многострочным TextBox, длина — атрибут <c>maxlength</c>. Остальные текстовые поля веб по-прежнему рисует
+	/// одной строкой, поэтому только по явному <c>height</c> (комментарий акции).
+	/// </summary>
+	private static (int Rows, int MaxLength) ParseMultiline(XmlNode node, FieldTypeResolver type)
+	{
+		if (node.Name != "field" || !(type.IsDoubleString || type.IsTextArea))
+			return (0, 0);
+
+		int height = ParseHelper.ParseToInt32(Attr(node, PageControl.Attributes.Height) ?? string.Empty, 0);
+		if (height <= 0)
+			return (0, 0);
+
+		return (Math.Max(2, height / 20), ParseHelper.ParseToInt32(Attr(node, PageControl.Attributes.MaxLength) ?? string.Empty, 0));
 	}
 
 	private static PassportPicker? ParsePicker(XmlNode node)
@@ -438,7 +459,9 @@ public sealed record PassportField(
 	bool IsLabel = false,
 	PassportTree? Tree = null,
 	bool Locked = false,
-	bool MultiPick = false);
+	bool MultiPick = false,
+	int TextRows = 0,
+	int MaxLength = 0);
 
 /// <param name="Source">Псевдоним набора строк из процедуры паспорта/фильтра (iTableAlias); null — набора нет, список берётся сущностью по <paramref name="EntityName"/>.</param>
 /// <param name="EntityName">Сущность запасного пути, когда готового набора по source нет; null — запасного пути нет.</param>
