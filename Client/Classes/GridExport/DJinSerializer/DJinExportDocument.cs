@@ -19,12 +19,10 @@ namespace Merlin.Classes.GridExport.DJinSerializer
 				DataRow[] rows = data.Select("isToday = 1");
 				if (rows.Length > 0)
 				{
-					// Имя читает добивщик (Broadcast Schedule): «Станция (город)_дд_мм_гггг…» - станция, город и дата
-					// берутся по этому началу, дальше он имя не разбирает. Пометка в конце - для человека: куда файл идти
-					bool usesFiller = mm.UsesFiller;
-					files.Add(BuildFile(string.Format("{0}_{1}_{2}.txt", fileName, date.ToString("dd_MM_yyyy"),
-							usesFiller ? DJinParam.strFileWithFiller : DJinParam.strFileWithoutFiller),
-						rows, mm, date, usesFiller));
+					// Имя не менять: на него настроена обработка файла у заказчика (шаблон «..._0000-2359.txt»);
+					// время в нём - константа, broadcastStart у всех прайс-листов 00:00
+					files.Add(BuildFile(string.Format("{0}_{1}_0000-2359.txt", fileName, date.ToString("dd_MM_yyyy")),
+						rows, mm, date, mm.UsesFiller));
 				}
             }
 
