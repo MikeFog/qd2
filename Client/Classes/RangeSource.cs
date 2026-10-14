@@ -155,6 +155,10 @@ namespace Merlin.Classes
 			internal int RollerId { get; set; }
 			internal int PositionId { get; set; }
 			internal string RollerName { get; set; }
+			internal int IssueId { get; set; }
+
+			/// <summary>Окно выхода выпуска (колонка originalWindowID у RangeSlotIssues — имя историческое).</summary>
+			internal int WindowId { get; set; }
 		}
 
 		/// <summary>Ролик фирмы в слоте из чужой акции (или модульной кампании этой): подтверждён ли выпуск.</summary>
@@ -451,6 +455,8 @@ namespace Merlin.Classes
 					RollerId = Convert.ToInt32(row[Roller.ParamNames.RollerId]),
 					PositionId = IntOrZero(row[Issue.ParamNames.PositionId]),
 					RollerName = Convert.ToString(row["rollerName"]),
+					IssueId = Convert.ToInt32(row["issueID"]),
+					WindowId = Convert.ToInt32(row["originalWindowID"]),
 				});
 			}
 			return result;
@@ -600,13 +606,30 @@ namespace Merlin.Classes
 		/// отката шага на отказе станции k станции 1…k−1 остались бы записанными (красное окно). Остальные шаги пачки
 		/// идут дальше. Любая другая ошибка (взаимоблокировка, таймаут) рвёт пачку — транзакцию откатит вызывающий.
 		/// </summary>
-		private static void Step(WindowsSource.BatchResult result, string name, int done, System.Action write)
+		private static void Step(WindowsSource.BatchResult result, string name, int done, System.Action write) =>
+			Step(result, name, done, () =>
+			{
+				write();
+				return null;
+			});
+
+		/// <summary>
+		/// То же, но запись может сама вернуть причину отказа (RollerSubstitute отдаёт «незамененные» строкой, не ошибкой):
+		/// такой шаг тоже откатывается к точке и уходит в отказы.
+		/// </summary>
+		private static void Step(WindowsSource.BatchResult result, string name, int done, Func<string> write)
 		{
 			DataAccessor.SaveTransactionPoint(StepPoint);
 			try
 			{
-				write();
-				result.Done += done;
+				string refusal = write();
+				if (refusal == null)
+					result.Done += done;
+				else
+				{
+					DataAccessor.RollbackToTransactionPoint(StepPoint);
+					result.Refuse(name, refusal);
+				}
 			}
 			catch (SqlException ex) when (ex.Number == 50000 && ex.Class == 16)
 			{
@@ -649,6 +672,9 @@ namespace Merlin.Classes
 			/// <summary>Кампания → число выпусков этого ролика с этой позицией в окне (дубли — больше одного).</summary>
 			internal Dictionary<int, int> Copies { get; } = new Dictionary<int, int>();
 
+			/// <summary>Сами выпуски группы — для замены ролика, которая работает по выпуску.</summary>
+			internal List<SlotIssue> Issues { get; } = new List<SlotIssue>();
+
 			internal int Count => Copies.Values.Sum();
 
 			/// <summary>
@@ -687,6 +713,9 @@ namespace Merlin.Classes
 				HashSet<int> keep = new HashSet<int>(rollerIds);
 				return new SlotContent(Groups.Where(g => keep.Contains(g.RollerId)).ToList());
 			}
+
+			/// <summary>Без выпусков этого ролика — «Заменить ролики» не трогает выпуски нового ролика.</summary>
+			public SlotContent Without(int rollerId) => new SlotContent(Groups.Where(g => g.RollerId != rollerId).ToList());
 		}
 
 		/// <summary>Содержимое выделенных окон — RangeSlotIssues одним вызовом, как делает десктоп перед Del и Ctrl+R.</summary>
@@ -709,11 +738,56 @@ namespace Merlin.Classes
 					{
 						group.Copies.TryGetValue(issue.CampaignId, out int copies);
 						group.Copies[issue.CampaignId] = copies + 1;
+						group.Issues.Add(issue);
 					}
 					groups.Add(group);
 				}
 			}
 			return new SlotContent(groups);
+		}
+
+		/// <summary>
+		/// «Заменить ролики» в выделенных окнах (десктоп — Ctrl+R): RollerSubstitute на каждый выпуск (@issueID + окно выхода;
+		/// та же процедура, что у замены в сетке одной кампании). Десктоп зовёт её по паре «кампания + старый ролик» с таблицей
+		/// дней, но та загрузка идёт мимо транзакции ядра (свои соединение и транзакция) — в одной транзакции пачки веба
+		/// годится только по выпуску; итог тот же, замена и так идёт по выпускам окон. Отказы правил процедуры («незамененные»:
+		/// прошлое, закрытый день, переполнение окна, позиция…) — в отказы с её текстом; пересчёт акции — один, и только если
+		/// длина ролика изменилась (ролик той же длины цену не меняет). Done — число замен.
+		/// </summary>
+		public static WindowsSource.BatchResult ReplaceSlots(OpenRange r, SlotContent content, int newRollerId)
+		{
+			ActionOnMassmedia action = LoadForWrite(r);
+			Roller newRoller = WindowsSource.BrushRoller(r, newRollerId, action.FirmID);
+			Dictionary<int, Roller> oldRollers = content.RollerIds.ToDictionary(id => id, id => new Roller(id));
+			Dictionary<int, Campaign> campaigns = new Dictionary<int, Campaign>();
+			foreach (int campaignId in content.Groups.SelectMany(g => g.Copies.Keys).Distinct())
+				campaigns[campaignId] = Campaign.GetCampaignById(campaignId);
+
+			bool durationChanged = false;
+			WindowsSource.BatchResult result = new WindowsSource.BatchResult();
+			WindowsSource.RunInTransaction(() =>
+			{
+				foreach (SlotGroup group in content.Groups.OrderBy(g => g.Slot).ThenBy(g => g.RollerId).ThenBy(g => g.PositionId))
+				{
+					Roller oldRoller = oldRollers[group.RollerId];
+					foreach (SlotIssue issue in group.Issues)
+					{
+						string name = SlotName(group.Slot) + " — " + r.Titles[issue.CampaignId] + " — " + group.RollerName;
+						Step(result, name, 1, () =>
+						{
+							DataTable unsubstituted = CampaignRoller.ApplyRollerSubstitutionForIssue(campaigns[issue.CampaignId], oldRoller,
+								newRoller, issue.IssueId, issue.WindowId);
+							if (unsubstituted != null && unsubstituted.Rows.Count > 0)
+								return Convert.ToString(unsubstituted.Rows[0]["message"]);
+							durationChanged |= oldRoller.Duration != newRoller.Duration;
+							return null;
+						});
+					}
+				}
+				if (durationChanged)
+					action.Recalculate(false);
+			});
+			return result;
 		}
 
 		/// <summary>

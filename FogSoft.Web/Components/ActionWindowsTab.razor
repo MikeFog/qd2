@@ -289,6 +289,9 @@
                                             title="@(_range.CanEdit ? null : NoRightText)" @onclick="() => Exclusive(RemoveSelectedSlots)">
                                         <i class="bi bi-trash3" aria-hidden="true"></i>@Tr.T("Удалить выпуски")
                                     </button>
+                                    <button type="button" class="btn btn-sm btn-outline-secondary" disabled="@(!CanReplace)" title="@ReplaceHint" @onclick="() => Exclusive(ReplaceSelectedSlots)">
+                                        <i class="bi bi-arrow-left-right" aria-hidden="true"></i>@Tr.T("Заменить ролики")
+                                    </button>
                                     <button type="button" class="btn btn-sm btn-outline-secondary" title="@(Tr.T("Снять выделение (Esc)"))" aria-label="@(Tr.T("Снять выделение"))"
                                             @onclick="ClearSelection">
                                         <i class="bi bi-x-lg" aria-hidden="true"></i>
@@ -1105,6 +1108,52 @@
             ReloadWeekCore();
         });
         await AfterBatch(result, done => Tr.Format("Удалено выпусков: {0}, не удалено: {1}", done, result!.Failed), "Выпуск"); // i18n-ok: заголовок колонки переводит ObjectList при выводе
+    }
+
+    /// <summary>
+    /// «Заменить ролики» (десктоп — Ctrl+R) в выделенных окнах веера: выпуски отмеченных кампаний — на ролик кисти. Как в
+    /// десктопе, только при «Номерах роликов»: видно, что меняется. Роликов несколько — чек-лист, один — вопрос; отказы
+    /// правил процедуры («незамененные») — таблицей с её текстом.
+    /// </summary>
+    private async Task ReplaceSelectedSlots()
+    {
+        if (!CanReplace || _range == null || _week == null || _selection.Count == 0 || BrushRow is not { } brush)
+            return;
+
+        int newRollerId = WindowsSource.RollerIdOf(brush);
+        string newName = WindowsSource.RollerName(brush);
+        string newDuration = WindowsSource.RollerDuration(brush);
+        IReadOnlyList<PlacementCell> cells = _selection.Selected(_week);
+        RangeSource.SlotContent? content = null;
+        await Run(() => content = RangeSource.ReadSlots(_range!, cells).Without(newRollerId));
+        if (content == null)
+            return;
+        if (content.Count == 0)
+        {
+            await ShowInfo(Tr.T("Заменить ролики"), Tr.T("В выделенных окнах нечего заменять."));
+            return;
+        }
+
+        if (content.RollerIds.Count > 1)
+        {
+            IReadOnlyCollection<int>? chosen = await ChooseRollers(Tr.T("Заменить ролики"),
+                Tr.Format("Какие ролики заменить на «{0}» ({1})?", newName, newDuration), content.RollerIds, Tr.T("Заменить"));
+            if (chosen == null)
+                return;
+            content = content.Only(chosen);
+        }
+        else if (!await Confirm(Tr.T("Заменить ролики"),
+                     Tr.Format("Заменить ролики на «{0}» ({1}) в выделенных окнах? ({2} шт.)", newName, newDuration, content.Count), Tr.T("Заменить")))
+            return;
+
+        WindowsSource.BatchResult? result = null;
+        RangeSource.SlotContent toReplace = content;
+        await Run(() =>
+        {
+            result = RangeSource.ReplaceSlots(_range!, toReplace, newRollerId);
+            ReloadWeekCore();
+        });
+        await AfterBatch(result, done => Tr.Format("Заменено роликов: {0}, не заменено: {1}", done, result!.Failed), "Выпуск"); // i18n-ok: заголовок колонки переводит ObjectList при выводе
     }
 
     /// <summary>
