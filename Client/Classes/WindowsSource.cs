@@ -6,6 +6,7 @@ using System.Linq;
 using FogSoft.WinForm;
 using FogSoft.WinForm.Classes;
 using FogSoft.WinForm.DataAccess;
+using log4net;
 
 namespace Merlin.Classes
 {
@@ -32,6 +33,8 @@ namespace Merlin.Classes
 	/// </summary>
 	public static class WindowsSource
 	{
+		private static readonly ILog Log = LogManager.GetLogger(typeof(WindowsSource));
+
 		// ---------- Кампании вкладки ----------
 
 		/// <summary>Линейная кампания — её размещение показывает вкладка «Рекламные окна».</summary>
@@ -618,6 +621,15 @@ namespace Merlin.Classes
 			/// <summary>Поставленные выпуски (только у «Разместить ролик») — запись для «Отменить последнее».</summary>
 			public List<PlacedIssue> Created { get; } = new List<PlacedIssue>();
 
+			/// <summary>Выпуски записи, до которых отмена не дошла из-за сбоя (только у «Отменить последнее»): их можно отменить снова.</summary>
+			public List<PlacedIssue> Unprocessed { get; } = new List<PlacedIssue>();
+
+			/// <summary>
+			/// Сколько не сделано: отказы плюс не обработанные из-за сбоя; строка «отмена прервана» — не отказ, а пояснение
+			/// к <see cref="Unprocessed"/>.
+			/// </summary>
+			public int NotDone => Errors.Rows.Count - (Unprocessed.Count > 0 ? 1 : 0) + Unprocessed.Count;
+
 			/// <summary>name — место или выпуск, description — причина отказа.</summary>
 			public DataTable Errors { get; }
 
@@ -682,13 +694,23 @@ namespace Merlin.Classes
 		};
 
 		/// <summary>
+		/// Сколько выпусков снимается в одной транзакции: удаление держит блокировку окна до коммита, а на проде
+		/// <c>IssueIUD DeleteItem</c> — медиана 0,2 с, до 2 с на выпуск; запись шаблона — сотни выпусков.
+		/// </summary>
+		private const int UndoBatchSize = 10;
+
+		/// <summary>
 		/// «Отменить последнее» (десктоп — «Отменить» у шаблонов): удаляет выпуски, которые поставило последнее
-		/// размещение, одной транзакцией и одним пересчётом. Десктоп удалял объекты из списка формы; веб читает
-		/// каждый выпуск заново: нет в базе — уже удалён, другой ролик, окно или кампания — его заменили или перенесли
-		/// после размещения, такой не трогается. И то и другое — строкой отказа, остальные снимаются. Права и правила
-		/// прошлого периода — те же, что у «Удалить выпуски» (IssueIUD DeleteItem). Сверка и удаление — два обращения в
-		/// READ COMMITTED: если между ними другой сеанс заменит ролик или перенесёт выпуск, он будет удалён (окно —
-		/// миллисекунды; тот же приём у переноса, а десктоп не сверяет ничего).
+		/// размещение, пачками по <see cref="UndoBatchSize"/> (каждая в своей транзакции, по возрастанию номера окна)
+		/// и одним пересчётом в конце. Десктоп удалял объекты из списка формы; веб читает каждый выпуск заново: нет в
+		/// базе — уже удалён, другой ролик, окно или кампания — его заменили или перенесли после размещения, такой не
+		/// трогается. И то и другое — строкой отказа, остальные снимаются. Права и правила прошлого периода — те же,
+		/// что у «Удалить выпуски» (IssueIUD DeleteItem). Сверка и удаление — два обращения в READ COMMITTED: если между
+		/// ними другой сеанс заменит ролик или перенесёт выпуск, он будет удалён (миллисекунды; тот же приём у переноса,
+		/// а десктоп не сверяет ничего).
+		///
+		/// Небизнес-ошибка (взаимоблокировка, таймаут) откатывает текущую пачку и прерывает отмену: снятые ранее пачки
+		/// остаются, остальные — в <see cref="BatchResult.Unprocessed"/>, чтобы отменить их снова.
 		/// </summary>
 		public static BatchResult Undo(OpenCampaign c, IReadOnlyList<PlacedIssue> placed)
 		{
@@ -696,28 +718,58 @@ namespace Merlin.Classes
 				throw new InvalidOperationException(Tr.T("Отменять можно только выпуски этой кампании."));
 			Campaign campaign = LoadForWrite(c);
 			BatchResult result = new BatchResult();
-			RunInTransaction(() =>
+			List<PlacedIssue> ordered = placed.OrderBy(x => x.WindowId).ThenBy(x => x.IssueId).ToList();
+			for (int from = 0; from < ordered.Count; from += UndoBatchSize)
 			{
-				// По возрастанию номера окна — как у «Разместить ролик».
-				foreach (PlacedIssue p in placed.OrderBy(x => x.WindowId).ThenBy(x => x.IssueId))
+				List<PlacedIssue> batch = ordered.GetRange(from, Math.Min(UndoBatchSize, ordered.Count - from));
+				BatchResult part = new BatchResult();
+				try
 				{
-					DataRow row = Issue.LoadRow(p.IssueId);
-					if (row == null)
-						result.Refuse(p.Name, Tr.T("Выпуска уже нет."));
-					else if (Convert.ToInt32(row[Roller.ParamNames.RollerId]) != p.RollerId
-						|| Convert.ToInt32(row[Issue.ActualWindowIdParam]) != p.WindowId
-						|| Convert.ToInt32(row[Campaign.ParamNames.CampaignId]) != p.CampaignId)
-						result.Refuse(p.Name, Tr.T("Выпуск изменили после размещения: другой ролик или окно."));
-					else
-						Step(result, p.Name, () =>
+					RunInTransaction(() =>
+					{
+						foreach (PlacedIssue p in batch)
 						{
-							new RollerIssue(row).Delete(silenceFlag: true);
-							return null;
-						});
+							DataRow row = Issue.LoadRow(p.IssueId);
+							if (row == null)
+								part.Refuse(p.Name, Tr.T("Выпуска уже нет."));
+							else if (Convert.ToInt32(row[Roller.ParamNames.RollerId]) != p.RollerId
+								|| Convert.ToInt32(row[Issue.ActualWindowIdParam]) != p.WindowId
+								|| Convert.ToInt32(row[Campaign.ParamNames.CampaignId]) != p.CampaignId)
+								part.Refuse(p.Name, Tr.T("Выпуск изменили после размещения: другой ролик или окно."));
+							else
+								Step(part, p.Name, () =>
+								{
+									new RollerIssue(row).Delete(silenceFlag: true);
+									return null;
+								});
+						}
+					});
 				}
-				if (result.Done > 0)
-					campaign.RecalculateAction(false);
-			});
+				catch (Exception ex)
+				{
+					Log.Error($"Undo interrupted at {from}/{ordered.Count} (campaign {c.CampaignId})", ex);
+					List<PlacedIssue> left = ordered.GetRange(from, ordered.Count - from);
+					result.Unprocessed.AddRange(left);
+					result.Refuse(left[0].Name, Tr.Format("Отмена прервана: {0} Не снято выпусков: {1}.", ErrorManager.GetErrorMessage(ex), left.Count));
+					break;
+				}
+				result.Done += part.Done;
+				foreach (DataRow refused in part.Errors.Rows)
+					result.Errors.Rows.Add(refused["name"], refused["description"]);
+			}
+
+			if (result.Done > 0)
+			{
+				try
+				{
+					RunInTransaction(() => campaign.RecalculateAction(false));
+				}
+				catch (Exception ex)
+				{
+					Log.Error($"Undo: recalculation failed (campaign {c.CampaignId})", ex);
+					result.Refuse("", Tr.Format("Пересчёт акции не выполнен: {0} Цена акции обновится при следующем изменении размещения.", ErrorManager.GetErrorMessage(ex)));
+				}
+			}
 			return result;
 		}
 

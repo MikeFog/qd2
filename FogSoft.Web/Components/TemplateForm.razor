@@ -15,17 +15,18 @@
 }
 
 <div class="template-form">
+    <div class="text-muted">@Tr.T("Шаблон для внесения роликов на интервале времени")</div>
     <div class="roller"><span class="text-muted">@Tr.T("Ролик:")</span> <b>@Value.RollerName</b></div>
 
     <div class="grid2">
         <label>
             @Tr.T("Начало интервала:")
-            <input type="date" class="form-control form-control-sm" max="9998-12-31" value="@Value.Start.ToString("yyyy-MM-dd")"
+            <input type="date" class="form-control form-control-sm" min="1900-01-01" max="9998-12-31" value="@Value.Start.ToString("yyyy-MM-dd")"
                    @onchange="e => SetDate(e, start: true)" />
         </label>
         <label>
             @Tr.T("Окончание  интервала:")
-            <input type="date" class="form-control form-control-sm" max="9998-12-31" value="@Value.Finish.ToString("yyyy-MM-dd")"
+            <input type="date" class="form-control form-control-sm" min="1900-01-01" max="9998-12-31" value="@Value.Finish.ToString("yyyy-MM-dd")"
                    @onchange="e => SetDate(e, start: false)" />
         </label>
         <label>
@@ -60,12 +61,12 @@
         </label>
         <div class="parity @(Value.ByParity ? null : "off")">
             <label class="inline">
-                <input type="radio" class="form-check-input" name="parity" disabled="@(!Value.ByParity)" checked="@Value.Odd" @onchange="() => Value.Odd = true" />
-                @Tr.T("Нечётные дни")
-            </label>
-            <label class="inline">
                 <input type="radio" class="form-check-input" name="parity" disabled="@(!Value.ByParity)" checked="@(!Value.Odd)" @onchange="() => Value.Odd = false" />
                 @Tr.T("Чётные дни")
+            </label>
+            <label class="inline">
+                <input type="radio" class="form-check-input" name="parity" disabled="@(!Value.ByParity)" checked="@Value.Odd" @onchange="() => Value.Odd = true" />
+                @Tr.T("Нечётные дни")
             </label>
         </div>
     </fieldset>
@@ -100,7 +101,10 @@
 @code {
     [Parameter, EditorRequired] public Model Value { get; set; } = default!;
 
-    private static string[] DayNames => FogSoft.Web.Infrastructure.DisplayFormat.WeekDaysFromMonday();
+    private static string[] DayNames => new[]
+    {
+        Tr.T("Понедельник"), Tr.T("Вторник"), Tr.T("Среда"), Tr.T("Четверг"), Tr.T("Пятница"), Tr.T("Суббота"), Tr.T("Воскресенье"),
+    };
 
     private void SetDate(ChangeEventArgs e, bool start)
     {

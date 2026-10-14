@@ -1172,7 +1172,7 @@
             return;
         if (BrushRow is not { } brush)
         {
-            await ShowInfo(Tr.T("Шаблон для внесения роликов на интервале времени"), MessageAccessor.GetMessage("RollerNotSelected"));
+            await ShowInfo(Tr.T("Шаблон"), MessageAccessor.GetMessage("RollerNotSelected"));
             return;
         }
 
@@ -1181,12 +1181,12 @@
         model.Message = null;
         while (true)
         {
-            if (await Dialogs.ShowAsync(Tr.T("Шаблон для внесения роликов на интервале времени"), builder =>
+            if (await Dialogs.ShowAsync(Tr.T("Шаблон"), builder =>
                 {
                     builder.OpenComponent<TemplateForm>(0);
                     builder.AddComponentParameter(1, nameof(TemplateForm.Value), model);
                     builder.CloseComponent();
-                }, okText: Tr.T("Добавить"), wide: true) != DialogOutcome.Ok)
+                }, okText: Tr.T("Добавить")) != DialogOutcome.Ok)
                 return;
             model.Message = model.Validate();
             if (model.Message == null)
@@ -1214,7 +1214,7 @@
                 new Entity.Attribute("name", "Дата", "nvarchar"), // i18n-ok: заголовок колонки переводит ObjectList при выводе
                 new Entity.Attribute("description", "Ошибка", "nvarchar")); // i18n-ok: заголовок колонки переводит ObjectList при выводе
         else
-            await ShowInfo(Tr.T("Шаблон для внесения роликов на интервале времени"), Tr.Format("Добавлено выпусков: {0}.", result.Done));
+            await ShowInfo(Tr.T("Шаблон"), Tr.Format("Добавлено выпусков: {0}.", result.Done));
     }
 
     /// <summary>
@@ -1242,9 +1242,12 @@
             if (_selected != null)
                 _panel = WindowsSource.LoadWindowIssues(open, _selected, _view.ShowUnconfirmed);
         });
-        if (result != null)
+        // Прерванная сбоем отмена оставляет в записи то, что не снято, — её можно повторить.
+        if (result is { Unprocessed.Count: > 0 })
+            Undo.Remember(entry.ActionId, entry.CampaignId, result.Unprocessed);
+        else if (result != null)
             Undo.Forget(entry.ActionId);
-        await AfterBatch(result, done => Tr.Format("Отменено выпусков: {0}, не отменено: {1}", done, result!.Failed), "Выпуск"); // i18n-ok: заголовок колонки переводит ObjectList при выводе
+        await AfterBatch(result, done => Tr.Format("Отменено выпусков: {0}, не отменено: {1}", done, result!.NotDone), "Выпуск"); // i18n-ok: заголовок колонки переводит ObjectList при выводе
         // Запись живёт дольше недели на экране: сняться могли выпуски, которых сетка не показывает, — итог сообщается всегда, как в десктопе.
         if (result is { Failed: 0, Done: > 0 })
             await ShowInfo(Tr.T("Отменить"), Tr.Format("Отменено выпусков: {0}.", result.Done));

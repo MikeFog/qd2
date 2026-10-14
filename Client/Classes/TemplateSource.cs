@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Data;
+using System.Data.SqlClient;
 using System.Diagnostics;
 using System.Linq;
 using FogSoft.WinForm;
@@ -80,15 +81,32 @@ namespace Merlin.Classes
 				int startMinute = (int)template.StartTime.TotalMinutes;
 				int finishMinute = (int)template.FinishTime.TotalMinutes;
 
-				foreach (DateTime day in dates)
+				// Подряд идущие дни вне прайс-листов станции — одна строка таблицы («дата – дата»), а не по строке на день.
+				DateTime? missingFrom = null, missingTo = null;
+				int missingDays = 0;
+				void FlushMissing()
 				{
+					if (missingFrom == null)
+						return;
+					string range = missingFrom == missingTo ? missingFrom.Value.ToString("dd.MM.yyyy")
+						: missingFrom.Value.ToString("dd.MM.yyyy") + " – " + missingTo.Value.ToString("dd.MM.yyyy");
+					result.Note(range, MessageAccessor.GetMessage("PriceListDoesntExist"), WantedPerDay(template) * missingDays);
+					missingFrom = missingTo = null;
+					missingDays = 0;
+				}
+
+				for (int dayIndex = 0; dayIndex < dates.Count; dayIndex++)
+				{
+					DateTime day = dates[dayIndex];
 					string dayText = day.ToString("dd.MM.yyyy");
 					if (!period.Rows.TryGetValue(day, out List<DataRow> rows))
 					{
-						// День вне прайс-листов станции (GetPriceList дал ближайший будущий или ничего).
-						result.Note(dayText, MessageAccessor.GetMessage("PriceListDoesntExist"), WantedPerDay(template));
+						missingFrom = missingFrom ?? day;
+						missingTo = day;
+						missingDays++;
 						continue;
 					}
+					FlushMissing();
 
 					// Те же отборы, что у десктопа: интервал (у линейки конец включается), занятая подтверждённым выпуском
 					// позиция (макеты не смотрятся), ролики этой фирмы в окне (с макетами, любой акции фирмы).
@@ -110,27 +128,44 @@ namespace Merlin.Classes
 						continue;
 					}
 
-					WindowsSource.BatchResult dayResult = new WindowsSource.BatchResult();
-					try
+					WindowsSource.BatchResult dayResult = null;
+					Exception failure = null;
+					for (int attempt = 0; attempt < 2; attempt++)
 					{
-						WindowsSource.RunInTransaction(() =>
+						dayResult = new WindowsSource.BatchResult();
+						failure = null;
+						try
 						{
-							foreach (TemplateWindow w in toWrite)
-								WindowsSource.Step(dayResult, w.Start.ToString("dd.MM.yyyy HH:mm"), () =>
-								{
-									TariffWindowWithRollerIssues window = new TariffWindowWithRollerIssues(period.RowOf(w.Key), Entities.TariffWindow);
-									dayResult.Created.Add(WindowsSource.Capture(c, campaign.AddIssue(roller, window, (RollerPositions)position, null), w.Key, w.Start, roller));
-									return null;
-								});
-						});
+							WindowsSource.RunInTransaction(() =>
+							{
+								foreach (TemplateWindow w in toWrite)
+									WindowsSource.Step(dayResult, w.Start.ToString("dd.MM.yyyy HH:mm"), () =>
+									{
+										TariffWindowWithRollerIssues window = new TariffWindowWithRollerIssues(period.RowOf(w.Key), Entities.TariffWindow);
+										dayResult.Created.Add(WindowsSource.Capture(c, campaign.AddIssue(roller, window, (RollerPositions)position, null), w.Key, w.Start, roller));
+										return null;
+									});
+							});
+							break;
+						}
+						catch (SqlException ex) when (ex.Number == 1205 && attempt == 0)
+						{
+							// Жертва взаимоблокировки: день откатан целиком и ничего не оставил — день повторяется один раз.
+							Log.Warn($"Template interval: deadlock on {dayText} (campaign {c.CampaignId}), retrying the day", ex);
+						}
+						catch (Exception ex)
+						{
+							failure = ex;
+							break;
+						}
 					}
-					catch (Exception ex)
+					if (failure != null)
 					{
 						// День откатан целиком; прежние дни остаются. Запуск прерывается — следующие дни, скорее всего,
-						// упрутся в то же (сеть, взаимоблокировка, таймаут), и ждать их по таймауту каждый нельзя.
-						Log.Error($"Template interval interrupted on {dayText} (campaign {c.CampaignId})", ex);
-						result.Note(dayText, Tr.Format("Запуск прерван: {0} Выпуски этого дня не добавлены, добавленные ранее — сохранены.", ErrorManager.GetErrorMessage(ex)),
-							toWrite.Count);
+						// упрутся в то же (сеть, таймаут), и ждать их по таймауту каждый нельзя.
+						Log.Error($"Template interval interrupted on {dayText} (campaign {c.CampaignId})", failure);
+						result.Note(dayText, Tr.Format("Запуск прерван: {0} Выпуски этого дня не добавлены, добавленные ранее — сохранены. Не обработано дней: {1}.",
+							ErrorManager.GetErrorMessage(failure), dates.Count - dayIndex), toWrite.Count);
 						break;
 					}
 
@@ -141,6 +176,7 @@ namespace Merlin.Classes
 					foreach (DataRow refused in dayResult.Errors.Rows)
 						result.Errors.Rows.Add(refused["name"], refused["description"]);
 				}
+				FlushMissing();
 
 				if (result.Done > 0)
 				{
@@ -151,11 +187,17 @@ namespace Merlin.Classes
 					catch (Exception ex)
 					{
 						Log.Error($"Template interval: recalculation failed (campaign {c.CampaignId})", ex);
-						result.Note(Tr.T("Пересчёт акции"), Tr.Format("Пересчёт не выполнен: {0} Выпуски добавлены; цена акции обновится при следующем изменении размещения.", ErrorManager.GetErrorMessage(ex)));
+						result.Note("", Tr.Format("Пересчёт акции не выполнен: {0} Цена акции обновится при следующем изменении размещения.", ErrorManager.GetErrorMessage(ex)));
 					}
 				}
 
-				Log.Info($"Template interval completed in {sw.ElapsedMilliseconds}ms campaign={c.CampaignId} days={result.Days}/{dates.Count} added={result.Done} notAdded={result.NotAdded}");
+				// Параметры шаблона — в строке итога: по логу видно, что просили и что получилось (пользователь и сеанс — в шаблоне строки лога).
+				string daysText = template.ByParity ? (template.Odd ? "odd" : "even") : "days=" + string.Concat(template.WeekDays.Select(on => on ? "1" : "0"));
+				Log.Info($"Template interval completed in {sw.ElapsedMilliseconds}ms campaign={c.CampaignId} roller={rollerId} position={position}" +
+					$" period={template.StartDate:yyyy-MM-dd}..{template.FinishDate:yyyy-MM-dd} {daysText}" +
+					$" time={template.StartTime.ToString(@"hh\:mm")}-{template.FinishTime.ToString(@"hh\:mm")}" +
+					$" quantity={template.Quantity}/{template.QuantityPrime}/{template.QuantityOffPrime} ignoreFirm={template.IgnoreFirmWindows}" +
+					$" days={result.Days}/{dates.Count} added={result.Done} notAdded={result.NotAdded}");
 			}
 			return result;
 		}
@@ -210,9 +252,15 @@ namespace Merlin.Classes
 			MassmediaPricelist current = null;
 			foreach (DateTime day in dates)
 			{
-				if (current == null || day < current.StartDate.Date || day > current.FinishDate.Date)
+				// Прайс-лист спрашивается, только когда прошлый кончился (даты идут по возрастанию): «ближайший будущий» ещё не
+				// начался — дней до его начала в прайс-листах нет, повторно его не спрашиваем; «нет» — значит, дальше нет вовсе.
+				if (current == null || day > current.FinishDate.Date)
+				{
 					current = massmedia.GetPriceList(day) as MassmediaPricelist;
-				if (current == null || day < current.StartDate.Date || day > current.FinishDate.Date)
+					if (current == null)
+						break;
+				}
+				if (day < current.StartDate.Date)
 					continue;
 				if (!byList.TryGetValue(current.PricelistId, out var entry))
 					byList[current.PricelistId] = entry = (current, new List<DateTime>());

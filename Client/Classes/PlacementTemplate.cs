@@ -43,10 +43,14 @@ namespace Merlin.Classes
 
 		public int QuantityOffPrime { get; set; }
 
+		/// <summary>Предел периода — десять лет: запуск идёт на сервере, без отмены и без окна прогресса.</summary>
+		public const int MaxPeriodDays = 3660;
+
 		/// <summary>
 		/// Проверки диалога Шаблонов 2 и 3 (десктоп — FrmTemplate2.btnOk_Click): текст первой найденной ошибки или null.
 		/// Десктоп показывает ошибки по очереди сообщениями; здесь — одним текстом в диалоге. Сверх десктопа: отмечен ли
-		/// хотя бы один день недели (иначе запуск молча ничего не делает) и верхняя граница даты (итератор её не переносит).
+		/// хотя бы один день недели (иначе запуск молча ничего не делает), границы периода (итератор не переносит верхнюю
+		/// границу даты, а запуск на сервере без отмены не должен быть бесконечным).
 		/// </summary>
 		public string IntervalProblem()
 		{
@@ -58,6 +62,10 @@ namespace Merlin.Classes
 				return MessageAccessor.GetMessage("TemplateStartFinishTimeError");
 			if (FinishDate.Date > new DateTime(9998, 12, 31))
 				return Tr.T("Дата окончания периода слишком большая.");
+			if (StartDate.Date < new DateTime(1900, 1, 1))
+				return Tr.T("Дата начала периода слишком ранняя.");
+			if ((FinishDate.Date - StartDate.Date).TotalDays > MaxPeriodDays)
+				return Tr.T("Период шаблона слишком длинный: не больше 10 лет.");
 			if (!ByParity && !WeekDays.Any(on => on))
 				return Tr.T("Отметьте хотя бы один день недели.");
 			return null;

@@ -1,5 +1,5 @@
 ﻿/*
-    ДЕПЛОЙ: переводы веб-версии на язык «es» (2079 строк). docs/tasks/web-i18n.md, этап 5.
+    ДЕПЛОЙ: переводы веб-версии на язык «es» (2081 строк). docs/tasks/web-i18n.md, этап 5.
     СГЕНЕРИРОВАН из ArtvisDB/Scripts/i18n/es.tsv скриптом build-seed.py — руками не править.
 
     ПРЕДУСЛОВИЕ     накачен web-i18n-translation-deploy.sql (таблица iTranslation).
@@ -2094,14 +2094,16 @@ INSERT INTO #t ([source], [text]) VALUES
 (N'Шаблон для внесения роликов на интервале времени', N'Plantilla para colocar spots en un intervalo de tiempo'),
 (N'Шаблон', N'Plantilla'),
 (N'Добавлено выпусков: {0}.', N'Emisiones agregadas: {0}.'),
-(N'Запуск прерван: {0} Выпуски этого дня не добавлены, добавленные ранее — сохранены.', N'Ejecución interrumpida: {0} Las emisiones de este día no se agregaron; las agregadas antes se conservan.'),
-(N'Пересчёт акции', N'Recálculo de la campaña'),
-(N'Пересчёт не выполнен: {0} Выпуски добавлены; цена акции обновится при следующем изменении размещения.', N'No se realizó el recálculo: {0} Las emisiones se agregaron; el precio de la campaña se actualizará con el siguiente cambio de la colocación.'),
 (N'Недостаточно рекламных окон прайм для размещения всех выпусков. Окон: {0}, выпусков {1}.', N'No hay suficientes ventanas publicitarias de prime para colocar todas las emisiones. Ventanas: {0}, emisiones {1}.'),
 (N'Недостаточно рекламных окон офф прайм для размещения всех выпусков. Окон: {0}, выпусков для добавления {1}.', N'No hay suficientes ventanas publicitarias fuera de prime para colocar todas las emisiones. Ventanas: {0}, emisiones por agregar {1}.'),
 (N'Недостаточно рекламных окон для размещения всех выпусков для добавления. Окон: {0}, выпусков {1}.', N'No hay suficientes ventanas publicitarias para colocar todas las emisiones por agregar. Ventanas: {0}, emisiones {1}.'),
 (N'Дата окончания периода слишком большая.', N'La fecha de fin del período es demasiado grande.'),
-(N'Вы выбрали режим заполнения рекламных окон с разбивкой на прайм и офф прайм. Пожалуйчта, введите данные о количестве выходов в прайм и/или офф прайм.', N'Eligió el modo de llenado de ventanas con desglose en prime y fuera de prime. Introduzca la cantidad de emisiones en prime y/o fuera de prime.');
+(N'Вы выбрали режим заполнения рекламных окон с разбивкой на прайм и офф прайм. Пожалуйчта, введите данные о количестве выходов в прайм и/или офф прайм.', N'Eligió el modo de llenado de ventanas con desglose en prime y fuera de prime. Introduzca la cantidad de emisiones en prime y/o fuera de prime.'),
+(N'Запуск прерван: {0} Выпуски этого дня не добавлены, добавленные ранее — сохранены. Не обработано дней: {1}.', N'Ejecución interrumpida: {0} Las emisiones de este día no se agregaron; las agregadas antes se conservan. Días sin procesar: {1}.'),
+(N'Пересчёт акции не выполнен: {0} Цена акции обновится при следующем изменении размещения.', N'No se realizó el recálculo de la campaña: {0} El precio de la campaña se actualizará con el siguiente cambio de la colocación.'),
+(N'Отмена прервана: {0} Не снято выпусков: {1}.', N'Deshacer interrumpido: {0} Emisiones sin eliminar: {1}.'),
+(N'Дата начала периода слишком ранняя.', N'La fecha de inicio del período es demasiado temprana.'),
+(N'Период шаблона слишком длинный: не больше 10 лет.', N'El período de la plantilla es demasiado largo: no más de 10 años.');
 GO
 
 BEGIN TRANSACTION;

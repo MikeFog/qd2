@@ -275,10 +275,39 @@ internal static class Program
 			Check("шаблон: нехватка офф-прайма — по строке на день, не добавлено 6",
 				r2.Errors.Rows.Count == 3 && r2.NotAdded == 6, $"rows={r2.Errors.Rows.Count} notAdded={r2.NotAdded}");
 
+			// Дни вне прайс-листов: «ближайший будущий» (2020 — раньше первого) и «нет вовсе» (2035) — по одной строке на подряд
+			// идущие дни, без записи; прайс-лист спрашивается не на каждый день
+			foreach (DateTime from in new[] { new DateTime(2020, 3, 2), new DateTime(2035, 3, 2) })
+			{
+				PlacementTemplate far = new PlacementTemplate
+				{
+					StartDate = from, FinishDate = from.AddDays(5),
+					StartTime = TimeSpan.FromHours(6), FinishTime = TimeSpan.FromHours(21), Quantity = 2,
+				};
+				TemplateSource.TemplateResult none = TemplateSource.RunInterval(c, far, rollerId, 0);
+				Check("вне прайс-листов " + from.Year + ": ничего не добавлено", none.Done == 0 && none.Created.Count == 0, "done=" + none.Done);
+				Check("вне прайс-листов " + from.Year + ": одна строка на шесть дней, не добавлено 12",
+					none.Errors.Rows.Count == 1 && none.NotAdded == 12, $"rows={none.Errors.Rows.Count} notAdded={none.NotAdded}");
+			}
+			Check("проверки: период длиннее десяти лет",
+				new PlacementTemplate { StartDate = new DateTime(2000, 1, 1), FinishDate = new DateTime(2030, 1, 1), StartTime = TimeSpan.FromHours(6), FinishTime = TimeSpan.FromHours(21), Quantity = 2 }.IntervalProblem() != null);
+			Check("проверки: начало раньше 1900",
+				new PlacementTemplate { StartDate = new DateTime(26, 10, 15), FinishDate = new DateTime(30, 10, 15), StartTime = TimeSpan.FromHours(6), FinishTime = TimeSpan.FromHours(21), Quantity = 2 }.IntervalProblem() != null);
+
+			// Отмена сотен выпусков идёт пачками по 10 в своих транзакциях: 27 выпусков — три пачки
+			PlacementTemplate big = new PlacementTemplate
+			{
+				StartDate = new DateTime(2026, 10, 15), FinishDate = new DateTime(2026, 10, 17),
+				StartTime = TimeSpan.FromHours(6), FinishTime = TimeSpan.FromHours(21), Quantity = 9, IgnoreFirmWindows = false,
+			};
+			TemplateSource.TemplateResult r3 = TemplateSource.RunInterval(c, big, rollerId, 0);
+			created.AddRange(r3.Created);
+			Check("шаблон: 3 дня по 9 выпусков", r3.Done == 27 && r3.Created.Count == 27, $"done={r3.Done} notAdded={r3.NotAdded}");
+
 			// «Отменить» возвращает всё
 			WindowsSource.BatchResult undo = WindowsSource.Undo(c, created);
 			created.Clear();
-			Check("отмена: сняты все 9", undo.Done == 9 && undo.Failed == 0, $"done={undo.Done} failed={undo.Failed}");
+			Check("отмена: сняты все 36 тремя-четырьмя пачками", undo.Done == 36 && undo.Failed == 0 && undo.Unprocessed.Count == 0, $"done={undo.Done} failed={undo.Failed}");
 			Check("отмена: числа выпусков по дням вернулись", totals().SequenceEqual(before), string.Join(",", totals()));
 		}
 		finally

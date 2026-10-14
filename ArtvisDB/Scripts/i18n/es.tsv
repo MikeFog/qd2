@@ -2070,11 +2070,13 @@ code	Количество выходов — целое число от 0 до 1
 code	Шаблон для внесения роликов на интервале времени	Plantilla para colocar spots en un intervalo de tiempo
 code	Шаблон	Plantilla
 code	Добавлено выпусков: {0}.	Emisiones agregadas: {0}.
-code	Запуск прерван: {0} Выпуски этого дня не добавлены, добавленные ранее — сохранены.	Ejecución interrumpida: {0} Las emisiones de este día no se agregaron; las agregadas antes se conservan.
-code	Пересчёт акции	Recálculo de la campaña
-code	Пересчёт не выполнен: {0} Выпуски добавлены; цена акции обновится при следующем изменении размещения.	No se realizó el recálculo: {0} Las emisiones se agregaron; el precio de la campaña se actualizará con el siguiente cambio de la colocación.
 code	Недостаточно рекламных окон прайм для размещения всех выпусков. Окон: {0}, выпусков {1}.	No hay suficientes ventanas publicitarias de prime para colocar todas las emisiones. Ventanas: {0}, emisiones {1}.
 code	Недостаточно рекламных окон офф прайм для размещения всех выпусков. Окон: {0}, выпусков для добавления {1}.	No hay suficientes ventanas publicitarias fuera de prime para colocar todas las emisiones. Ventanas: {0}, emisiones por agregar {1}.
 code	Недостаточно рекламных окон для размещения всех выпусков для добавления. Окон: {0}, выпусков {1}.	No hay suficientes ventanas publicitarias para colocar todas las emisiones por agregar. Ventanas: {0}, emisiones {1}.
 code	Дата окончания периода слишком большая.	La fecha de fin del período es demasiado grande.
 code	Вы выбрали режим заполнения рекламных окон с разбивкой на прайм и офф прайм. Пожалуйчта, введите данные о количестве выходов в прайм и/или офф прайм.	Eligió el modo de llenado de ventanas con desglose en prime y fuera de prime. Introduzca la cantidad de emisiones en prime y/o fuera de prime.
+code	Запуск прерван: {0} Выпуски этого дня не добавлены, добавленные ранее — сохранены. Не обработано дней: {1}.	Ejecución interrumpida: {0} Las emisiones de este día no se agregaron; las agregadas antes se conservan. Días sin procesar: {1}.
+code	Пересчёт акции не выполнен: {0} Цена акции обновится при следующем изменении размещения.	No se realizó el recálculo de la campaña: {0} El precio de la campaña se actualizará con el siguiente cambio de la colocación.
+code	Отмена прервана: {0} Не снято выпусков: {1}.	Deshacer interrumpido: {0} Emisiones sin eliminar: {1}.
+code	Дата начала периода слишком ранняя.	La fecha de inicio del período es demasiado temprana.
+code	Период шаблона слишком длинный: не больше 10 лет.	El período de la plantilla es demasiado largo: no más de 10 años.
