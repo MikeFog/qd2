@@ -8,7 +8,8 @@
 -- по исходному времени (IX_TariffWindow_mm_date) после перехода на окно выхода (Deploy/24–35) для этой выборки не годятся.
 --
 -- Что делает скрипт: пересоздаёт IX_TariffWindow_ActualDate с теми же ключами и расширенным INCLUDE (tariffId, время занятости,
--- флаги и счётчики позиций, price, maxCapacity, isDisabled). Рост индекса ~56 → ~117 МБ. Процедуры и клиенты не меняются.
+-- флаги и счётчики позиций, price, maxCapacity, isDisabled); если индекса на базе нет — создаёт его. Рост индекса ~56 → ~117 МБ.
+-- Процедуры и клиенты не меняются.
 --
 -- SQL Server Express — без ONLINE: пока перестраивается (на ArtvisDev 5,5 с, на проде ожидается до минуты), окна нельзя менять —
 -- выпуски нельзя ставить, переносить и удалять (чтение работает). Запускать в нерабочее время. Идемпотентен: если price уже в
@@ -34,14 +35,23 @@ IF NOT EXISTS (
       AND c.name = N'price' AND ic.is_included_column = 1)
 BEGIN
     DECLARE @t DATETIME2 = SYSDATETIME();
-    CREATE NONCLUSTERED INDEX [IX_TariffWindow_ActualDate]
-        ON [dbo].[TariffWindow]([massmediaID] ASC, [windowDateActual] ASC)
-        INCLUDE([duration], [windowId], [tariffId], [timeInUseConfirmed], [timeInUseUnconfirmed],
-                [isFirstPositionOccupied], [isSecondPositionOccupied], [isLastPositionOccupied],
-                [firstPositionsUnconfirmed], [secondPositionsUnconfirmed], [lastPositionsUnconfirmed],
-                [price], [maxCapacity], [isDisabled])
-        WITH (DROP_EXISTING = ON);
-    PRINT N'Индекс перестроен за ' + LTRIM(DATEDIFF(MILLISECOND, @t, SYSDATETIME())) + N' мс.';
+    -- DROP_EXISTING на несуществующем индексе — ошибка 7999, поэтому на базе, где индекса нет, он просто создаётся.
+    IF EXISTS (SELECT 1 FROM sys.indexes WHERE object_id = OBJECT_ID(N'dbo.TariffWindow') AND name = N'IX_TariffWindow_ActualDate')
+        CREATE NONCLUSTERED INDEX [IX_TariffWindow_ActualDate]
+            ON [dbo].[TariffWindow]([massmediaID] ASC, [windowDateActual] ASC)
+            INCLUDE([duration], [windowId], [tariffId], [timeInUseConfirmed], [timeInUseUnconfirmed],
+                    [isFirstPositionOccupied], [isSecondPositionOccupied], [isLastPositionOccupied],
+                    [firstPositionsUnconfirmed], [secondPositionsUnconfirmed], [lastPositionsUnconfirmed],
+                    [price], [maxCapacity], [isDisabled])
+            WITH (DROP_EXISTING = ON);
+    ELSE
+        CREATE NONCLUSTERED INDEX [IX_TariffWindow_ActualDate]
+            ON [dbo].[TariffWindow]([massmediaID] ASC, [windowDateActual] ASC)
+            INCLUDE([duration], [windowId], [tariffId], [timeInUseConfirmed], [timeInUseUnconfirmed],
+                    [isFirstPositionOccupied], [isSecondPositionOccupied], [isLastPositionOccupied],
+                    [firstPositionsUnconfirmed], [secondPositionsUnconfirmed], [lastPositionsUnconfirmed],
+                    [price], [maxCapacity], [isDisabled]);
+    PRINT N'Индекс построен за ' + LTRIM(DATEDIFF(MILLISECOND, @t, SYSDATETIME())) + N' мс.';
 END
 ELSE
     PRINT N'price уже в индексе — ничего не сделано.';
