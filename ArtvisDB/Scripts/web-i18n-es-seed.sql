@@ -1,5 +1,5 @@
 ﻿/*
-    ДЕПЛОЙ: переводы веб-версии на язык «es» (2047 строк). docs/tasks/web-i18n.md, этап 5.
+    ДЕПЛОЙ: переводы веб-версии на язык «es» (2079 строк). docs/tasks/web-i18n.md, этап 5.
     СГЕНЕРИРОВАН из ArtvisDB/Scripts/i18n/es.tsv скриптом build-seed.py — руками не править.
 
     ПРЕДУСЛОВИЕ     накачен web-i18n-translation-deploy.sql (таблица iTranslation).
@@ -2069,7 +2069,39 @@ INSERT INTO #t ([source], [text]) VALUES
 (N'Отменять можно только выпуски этой кампании.', N'Solo se pueden deshacer emisiones de esta pauta.'),
 (N'Выпуска уже нет.', N'La emisión ya no existe.'),
 (N'Выпуск изменили после размещения: другой ролик или окно.', N'La emisión se modificó tras colocarla: otro spot u otra ventana.'),
-(N'Отменено выпусков: {0}.', N'Emisiones deshechas: {0}.');
+(N'Отменено выпусков: {0}.', N'Emisiones deshechas: {0}.'),
+(N'Номер акции:', N'Número de campaña:'),
+(N'Создатель:', N'Creador:'),
+(N'Активирована:', N'Activada:'),
+(N'Пакетная скидка:', N'Descuento por paquete:'),
+(N'Создана:', N'Creada:'),
+(N'Изменена:', N'Modificada:'),
+(N'Комментарий:', N'Comentario:'),
+(N'Начало интервала:', N'Inicio del intervalo:'),
+(N'Окончание  интервала:', N'Fin del intervalo:'),
+(N'Начало интервала (время):', N'Inicio del intervalo (hora):'),
+(N'Окончание  интервала (время):', N'Fin del intervalo (hora):'),
+(N'Четный/Нечетный', N'Par/Impar'),
+(N'Нечётные дни', N'Días impares'),
+(N'Чётные дни', N'Días pares'),
+(N'Количество выходов в день:', N'Cantidad de emisiones por día:'),
+(N'С разбивкой на прайм и офф прайм', N'Con desglose en prime y fuera de prime'),
+(N'Выходов в прайм:', N'Emisiones en prime:'),
+(N'Выходов в офф прайм:', N'Emisiones fuera de prime:'),
+(N'Не использовать окна где есть ролики данной фирмы', N'No usar ventanas donde hay spots de esta empresa'),
+(N'Укажите время начала и окончания интервала.', N'Indique la hora de inicio y de fin del intervalo.'),
+(N'Количество выходов — целое число от 0 до 100 (в день без разбивки — от 1).', N'La cantidad de emisiones es un número entero de 0 a 100 (por día sin desglose, desde 1).'),
+(N'Шаблон для внесения роликов на интервале времени', N'Plantilla para colocar spots en un intervalo de tiempo'),
+(N'Шаблон', N'Plantilla'),
+(N'Добавлено выпусков: {0}.', N'Emisiones agregadas: {0}.'),
+(N'Запуск прерван: {0} Выпуски этого дня не добавлены, добавленные ранее — сохранены.', N'Ejecución interrumpida: {0} Las emisiones de este día no se agregaron; las agregadas antes se conservan.'),
+(N'Пересчёт акции', N'Recálculo de la campaña'),
+(N'Пересчёт не выполнен: {0} Выпуски добавлены; цена акции обновится при следующем изменении размещения.', N'No se realizó el recálculo: {0} Las emisiones se agregaron; el precio de la campaña se actualizará con el siguiente cambio de la colocación.'),
+(N'Недостаточно рекламных окон прайм для размещения всех выпусков. Окон: {0}, выпусков {1}.', N'No hay suficientes ventanas publicitarias de prime para colocar todas las emisiones. Ventanas: {0}, emisiones {1}.'),
+(N'Недостаточно рекламных окон офф прайм для размещения всех выпусков. Окон: {0}, выпусков для добавления {1}.', N'No hay suficientes ventanas publicitarias fuera de prime para colocar todas las emisiones. Ventanas: {0}, emisiones por agregar {1}.'),
+(N'Недостаточно рекламных окон для размещения всех выпусков для добавления. Окон: {0}, выпусков {1}.', N'No hay suficientes ventanas publicitarias para colocar todas las emisiones por agregar. Ventanas: {0}, emisiones {1}.'),
+(N'Дата окончания периода слишком большая.', N'La fecha de fin del período es demasiado grande.'),
+(N'Вы выбрали режим заполнения рекламных окон с разбивкой на прайм и офф прайм. Пожалуйчта, введите данные о количестве выходов в прайм и/или офф прайм.', N'Eligió el modo de llenado de ventanas con desglose en prime y fuera de prime. Introduzca la cantidad de emisiones en prime y/o fuera de prime.');
 GO
 
 BEGIN TRANSACTION;

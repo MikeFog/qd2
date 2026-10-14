@@ -1,0 +1,167 @@
+@using Merlin.Classes
+@using FogSoft.WinForm.Classes
+
+@*
+    Содержимое диалога шаблона вкладки «Рекламные окна» (docs/tasks/web-action-forms.md, этап 5): сейчас —
+    «Шаблон для внесения роликов на интервале времени» (десктоп — FrmTemplate2): период и дни (дни недели или
+    чётность числа), интервал времени, «в день» или с разбивкой на прайм и офф-прайм, флаг «Не использовать окна
+    где есть ролики данной фирмы». Подписи десктопа дословно. Значения пишутся в модель — её читает вкладка по
+    кнопке; проверки (Model.Validate) тоже по ней, ошибка показывается в диалоге.
+*@
+
+@if (Value.Message != null)
+{
+    <div class="alert alert-danger">@Value.Message</div>
+}
+
+<div class="template-form">
+    <div class="roller"><span class="text-muted">@Tr.T("Ролик:")</span> <b>@Value.RollerName</b></div>
+
+    <div class="grid2">
+        <label>
+            @Tr.T("Начало интервала:")
+            <input type="date" class="form-control form-control-sm" max="9998-12-31" value="@Value.Start.ToString("yyyy-MM-dd")"
+                   @onchange="e => SetDate(e, start: true)" />
+        </label>
+        <label>
+            @Tr.T("Окончание  интервала:")
+            <input type="date" class="form-control form-control-sm" max="9998-12-31" value="@Value.Finish.ToString("yyyy-MM-dd")"
+                   @onchange="e => SetDate(e, start: false)" />
+        </label>
+        <label>
+            @Tr.T("Начало интервала (время):")
+            <input type="time" class="form-control form-control-sm" value="@Value.StartTime" @onchange="e => Value.StartTime = e.Value?.ToString() ?? string.Empty" />
+        </label>
+        <label>
+            @Tr.T("Окончание  интервала (время):")
+            <input type="time" class="form-control form-control-sm" value="@Value.FinishTime" @onchange="e => Value.FinishTime = e.Value?.ToString() ?? string.Empty" />
+        </label>
+    </div>
+
+    <fieldset class="days-mode">
+        <label class="inline">
+            <input type="radio" class="form-check-input" name="days-mode" checked="@(!Value.ByParity)" @onchange="() => Value.ByParity = false" />
+            @Tr.T("Дни недели")
+        </label>
+        <div class="days @(Value.ByParity ? "off" : null)">
+            @for (int d = 0; d < 7; d++)
+            {
+                int day = d;
+                <label class="inline">
+                    <input type="checkbox" class="form-check-input" disabled="@Value.ByParity" checked="@Value.Days[day]"
+                           @onchange="e => Value.Days[day] = e.Value is true" />
+                    @DayNames[day]
+                </label>
+            }
+        </div>
+        <label class="inline">
+            <input type="radio" class="form-check-input" name="days-mode" checked="@Value.ByParity" @onchange="() => Value.ByParity = true" />
+            @Tr.T("Четный/Нечетный")
+        </label>
+        <div class="parity @(Value.ByParity ? null : "off")">
+            <label class="inline">
+                <input type="radio" class="form-check-input" name="parity" disabled="@(!Value.ByParity)" checked="@Value.Odd" @onchange="() => Value.Odd = true" />
+                @Tr.T("Нечётные дни")
+            </label>
+            <label class="inline">
+                <input type="radio" class="form-check-input" name="parity" disabled="@(!Value.ByParity)" checked="@(!Value.Odd)" @onchange="() => Value.Odd = false" />
+                @Tr.T("Чётные дни")
+            </label>
+        </div>
+    </fieldset>
+
+    <div class="quantity">
+        <label class="stack">
+            @Tr.T("Количество выходов в день:")
+            <input type="number" class="form-control form-control-sm" min="1" max="100" disabled="@Value.Split" @bind="Value.Quantity" />
+        </label>
+        <label class="inline">
+            <input type="checkbox" class="form-check-input" @bind="Value.Split" />
+            @Tr.T("С разбивкой на прайм и офф прайм")
+        </label>
+        <div class="grid2">
+            <label class="stack">
+                @Tr.T("Выходов в прайм:")
+                <input type="number" class="form-control form-control-sm" min="0" max="100" disabled="@(!Value.Split)" @bind="Value.QuantityPrime" />
+            </label>
+            <label class="stack">
+                @Tr.T("Выходов в офф прайм:")
+                <input type="number" class="form-control form-control-sm" min="0" max="100" disabled="@(!Value.Split)" @bind="Value.QuantityOffPrime" />
+            </label>
+        </div>
+    </div>
+
+    <label class="inline">
+        <input type="checkbox" class="form-check-input" @bind="Value.IgnoreFirm" />
+        @Tr.T("Не использовать окна где есть ролики данной фирмы")
+    </label>
+</div>
+
+@code {
+    [Parameter, EditorRequired] public Model Value { get; set; } = default!;
+
+    private static string[] DayNames => FogSoft.Web.Infrastructure.DisplayFormat.WeekDaysFromMonday();
+
+    private void SetDate(ChangeEventArgs e, bool start)
+    {
+        if (!DateTime.TryParse(e.Value?.ToString(), System.Globalization.CultureInfo.InvariantCulture, System.Globalization.DateTimeStyles.None, out DateTime date))
+            return;
+        if (start) Value.Start = date;
+        else Value.Finish = date;
+    }
+
+    public sealed class Model
+    {
+        public string RollerName { get; set; } = "";
+        public DateTime Start { get; set; }
+        public DateTime Finish { get; set; }
+        public bool ByParity { get; set; }
+        public bool Odd { get; set; }
+        public bool[] Days { get; } = Enumerable.Repeat(true, 7).ToArray();
+        public string StartTime { get; set; } = "06:00";
+        public string FinishTime { get; set; } = "21:00";
+        public int Quantity { get; set; } = 2;
+        public bool Split { get; set; }
+        public int QuantityPrime { get; set; }
+        public int QuantityOffPrime { get; set; }
+        public bool IgnoreFirm { get; set; } = true;
+        public string? Message { get; set; }
+
+        /// <summary>Как диалог десктопа при первом открытии: период — с завтрашнего дня до воскресенья, 06:00–21:00, по 2 выхода, флаг фирмы включён.</summary>
+        public static Model Create()
+        {
+            DateTime tomorrow = DateTime.Today.AddDays(1);
+            return new Model { Start = tomorrow, Finish = tomorrow.AddDays((7 - (int)tomorrow.DayOfWeek) % 7) };
+        }
+
+        /// <summary>Текст ошибки ввода или null: числа в пределах десктопных счётчиков, время разобрано, затем проверки шаблона.</summary>
+        public string? Validate()
+        {
+            if (!TimeSpan.TryParse(StartTime, out _) || !TimeSpan.TryParse(FinishTime, out _))
+                return Tr.T("Укажите время начала и окончания интервала.");
+            if (!Split && (Quantity < 1 || Quantity > 100) || Split && (QuantityPrime is < 0 or > 100 || QuantityOffPrime is < 0 or > 100))
+                return Tr.T("Количество выходов — целое число от 0 до 100 (в день без разбивки — от 1).");
+            return ToTemplate().IntervalProblem();
+        }
+
+        public PlacementTemplate ToTemplate()
+        {
+            PlacementTemplate t = new PlacementTemplate
+            {
+                StartDate = Start,
+                FinishDate = Finish,
+                ByParity = ByParity,
+                Odd = Odd,
+                IgnoreFirmWindows = IgnoreFirm,
+                StartTime = TimeSpan.TryParse(StartTime, out TimeSpan s) ? s : TimeSpan.Zero,
+                FinishTime = TimeSpan.TryParse(FinishTime, out TimeSpan f) ? f : TimeSpan.Zero,
+                Quantity = Split ? 0 : Quantity,
+                QuantityPrime = Split ? QuantityPrime : 0,
+                QuantityOffPrime = Split ? QuantityOffPrime : 0,
+            };
+            for (int d = 0; d < 7; d++)
+                t.WeekDays[d] = Days[d];
+            return t;
+        }
+    }
+}

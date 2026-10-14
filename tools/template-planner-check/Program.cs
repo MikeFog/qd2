@@ -235,6 +235,24 @@ internal static class Program
 				StartTime = TimeSpan.FromHours(6), FinishTime = TimeSpan.FromHours(21), Quantity = 2,
 			};
 			Check("шаблон: проверки диалога пропускают", t.IntervalProblem() == null, t.IntervalProblem());
+			// проверки диалога: каждая даёт свой текст, исправная — null
+			Func<Action<PlacementTemplate>, string> problem = change =>
+			{
+				PlacementTemplate x = new PlacementTemplate
+				{
+					StartDate = new DateTime(2026, 10, 15), FinishDate = new DateTime(2026, 10, 17),
+					StartTime = TimeSpan.FromHours(6), FinishTime = TimeSpan.FromHours(21), Quantity = 2,
+				};
+				change(x);
+				return x.IntervalProblem();
+			};
+			Check("проверки: конец периода раньше начала", problem(x => x.FinishDate = new DateTime(2026, 10, 14)) != null);
+			Check("проверки: конец интервала не позже начала", problem(x => x.FinishTime = x.StartTime) != null);
+			Check("проверки: деление на прайм без количества", problem(x => x.Quantity = 0) != null);
+			Check("проверки: деление на прайм с количеством", problem(x => { x.Quantity = 0; x.QuantityPrime = 1; }) == null);
+			Check("проверки: ни одного дня недели", problem(x => Array.Clear(x.WeekDays, 0, 7)) != null);
+			Check("проверки: ни одного дня недели, но по чётности — можно", problem(x => { Array.Clear(x.WeekDays, 0, 7); x.ByParity = true; }) == null);
+			Check("проверки: дата за пределами DateTime", problem(x => x.FinishDate = DateTime.MaxValue) != null);
 			TemplateSource.TemplateResult r1 = TemplateSource.RunInterval(c, t, rollerId, 0);
 			created.AddRange(r1.Created);
 			int[] after1 = totals();

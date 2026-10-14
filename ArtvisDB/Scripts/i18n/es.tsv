@@ -2053,3 +2053,28 @@ caption	Пакетная скидка:	Descuento por paquete:
 caption	Создана:	Creada:
 caption	Изменена:	Modificada:
 caption	Комментарий:	Comentario:
+code	Начало интервала:	Inicio del intervalo:
+code	Окончание  интервала:	Fin del intervalo:
+code	Начало интервала (время):	Inicio del intervalo (hora):
+code	Окончание  интервала (время):	Fin del intervalo (hora):
+code	Четный/Нечетный	Par/Impar
+code	Нечётные дни	Días impares
+code	Чётные дни	Días pares
+code	Количество выходов в день:	Cantidad de emisiones por día:
+code	С разбивкой на прайм и офф прайм	Con desglose en prime y fuera de prime
+code	Выходов в прайм:	Emisiones en prime:
+code	Выходов в офф прайм:	Emisiones fuera de prime:
+code	Не использовать окна где есть ролики данной фирмы	No usar ventanas donde hay spots de esta empresa
+code	Укажите время начала и окончания интервала.	Indique la hora de inicio y de fin del intervalo.
+code	Количество выходов — целое число от 0 до 100 (в день без разбивки — от 1).	La cantidad de emisiones es un número entero de 0 a 100 (por día sin desglose, desde 1).
+code	Шаблон для внесения роликов на интервале времени	Plantilla para colocar spots en un intervalo de tiempo
+code	Шаблон	Plantilla
+code	Добавлено выпусков: {0}.	Emisiones agregadas: {0}.
+code	Запуск прерван: {0} Выпуски этого дня не добавлены, добавленные ранее — сохранены.	Ejecución interrumpida: {0} Las emisiones de este día no se agregaron; las agregadas antes se conservan.
+code	Пересчёт акции	Recálculo de la campaña
+code	Пересчёт не выполнен: {0} Выпуски добавлены; цена акции обновится при следующем изменении размещения.	No se realizó el recálculo: {0} Las emisiones se agregaron; el precio de la campaña se actualizará con el siguiente cambio de la colocación.
+code	Недостаточно рекламных окон прайм для размещения всех выпусков. Окон: {0}, выпусков {1}.	No hay suficientes ventanas publicitarias de prime para colocar todas las emisiones. Ventanas: {0}, emisiones {1}.
+code	Недостаточно рекламных окон офф прайм для размещения всех выпусков. Окон: {0}, выпусков для добавления {1}.	No hay suficientes ventanas publicitarias fuera de prime para colocar todas las emisiones. Ventanas: {0}, emisiones por agregar {1}.
+code	Недостаточно рекламных окон для размещения всех выпусков для добавления. Окон: {0}, выпусков {1}.	No hay suficientes ventanas publicitarias para colocar todas las emisiones por agregar. Ventanas: {0}, emisiones {1}.
+code	Дата окончания периода слишком большая.	La fecha de fin del período es demasiado grande.
+code	Вы выбрали режим заполнения рекламных окон с разбивкой на прайм и офф прайм. Пожалуйчта, введите данные о количестве выходов в прайм и/или офф прайм.	Eligió el modo de llenado de ventanas con desglose en prime y fuera de prime. Introduzca la cantidad de emisiones en prime y/o fuera de prime.

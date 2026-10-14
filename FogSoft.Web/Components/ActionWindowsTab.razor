@@ -2,6 +2,7 @@
 @using FogSoft.Web.Infrastructure
 @using FogSoft.WinForm
 @using FogSoft.WinForm.Classes
+@using FogSoft.WinForm.DataAccess
 @using Merlin.Classes
 @inject BusyService Busy
 @inject DialogService Dialogs
@@ -174,6 +175,14 @@
                                         title="@(Scope.CanEdit ? Tr.Format("{0} ({1} шт.)", Tr.T("Отменить последнее добавление выпусков"), undo.Issues.Count) : NoRightText)"
                                         @onclick="() => Exclusive(UndoLast)">
                                     <i class="bi bi-arrow-counterclockwise" aria-hidden="true"></i>@Tr.T("Отменить")
+                                </button>
+                            }
+                            @if (_open != null && _range == null)
+                            {
+                                <button type="button" class="btn btn-sm btn-outline-secondary" disabled="@(!_open.CanEdit)"
+                                        title="@(_open.CanEdit ? Tr.T("Шаблон для внесения роликов на интервале времени") : NoRightText)"
+                                        @onclick="() => Exclusive(RunTemplate)">
+                                    <i class="bi bi-calendar-range" aria-hidden="true"></i>@Tr.T("Шаблон")
                                 </button>
                             }
                             @if (BrushRow is { } brush)
@@ -1147,6 +1156,65 @@
                 _panel = WindowsSource.LoadWindowIssues(_open, _selected, _view.ShowUnconfirmed);
         });
         await AfterBatch(result, done => Tr.Format("Удалено выпусков: {0}, не удалено: {1}", done, result!.Failed), "Выпуск"); // i18n-ok: заголовок колонки переводит ObjectList при выводе
+    }
+
+    private TemplateForm.Model? _templateModel;
+
+    /// <summary>
+    /// «Шаблон для внесения роликов на интервале времени» (десктоп — FrmTemplate2): диалог, затем запуск по дням
+    /// (TemplateSource.RunInterval: окна читаются заранее, каждый день — своя транзакция, один пересчёт в конце).
+    /// Поставленные выпуски становятся записью «Отменить». Итог — всегда: запуск идёт и по неделям, которых на экране нет.
+    /// Диалог помнит значения до конца жизни вкладки, как десктопная форма хранит шаблон.
+    /// </summary>
+    private async Task RunTemplate()
+    {
+        if (_open is not { CanEdit: true } open)
+            return;
+        if (BrushRow is not { } brush)
+        {
+            await ShowInfo(Tr.T("Шаблон для внесения роликов на интервале времени"), MessageAccessor.GetMessage("RollerNotSelected"));
+            return;
+        }
+
+        TemplateForm.Model model = _templateModel ??= TemplateForm.Model.Create();
+        model.RollerName = WindowsSource.RollerName(brush);
+        model.Message = null;
+        while (true)
+        {
+            if (await Dialogs.ShowAsync(Tr.T("Шаблон для внесения роликов на интервале времени"), builder =>
+                {
+                    builder.OpenComponent<TemplateForm>(0);
+                    builder.AddComponentParameter(1, nameof(TemplateForm.Value), model);
+                    builder.CloseComponent();
+                }, okText: Tr.T("Добавить"), wide: true) != DialogOutcome.Ok)
+                return;
+            model.Message = model.Validate();
+            if (model.Message == null)
+                break;
+        }
+
+        PlacementTemplate template = model.ToTemplate();
+        int rollerId = _brushRollerId!.Value;
+        int position = _view.Position;
+        TemplateSource.TemplateResult? result = null;
+        await Run(() =>
+        {
+            result = TemplateSource.RunInterval(open, template, rollerId, position);
+            Undo.Remember(Action.ActionId, open.CampaignId, result.Created);
+            ReloadWeekCore();
+            if (_selected != null)
+                _panel = WindowsSource.LoadWindowIssues(open, _selected, _view.ShowUnconfirmed);
+        });
+        if (result == null)
+            return;
+        if (result.Done > 0)
+            await Changed.InvokeAsync();
+        if (result.Errors.Rows.Count > 0)
+            await Tables.ShowAsync(Tr.Format("Добавлено выпусков: {0}, не добавлено: {1}", result.Done, result.NotAdded), result.Errors,
+                new Entity.Attribute("name", "Дата", "nvarchar"), // i18n-ok: заголовок колонки переводит ObjectList при выводе
+                new Entity.Attribute("description", "Ошибка", "nvarchar")); // i18n-ok: заголовок колонки переводит ObjectList при выводе
+        else
+            await ShowInfo(Tr.T("Шаблон для внесения роликов на интервале времени"), Tr.Format("Добавлено выпусков: {0}.", result.Done));
     }
 
     /// <summary>
