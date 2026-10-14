@@ -44,10 +44,18 @@ namespace Merlin.Classes
 		/// Подпись кампании: радиостанция с группой и тип оплаты — в акции бывают две линейные
 		/// кампании одной станции с разным типом оплаты.
 		/// </summary>
-		public static string CampaignCaption(DataRow campaign) =>
+		public static string CampaignCaption(DataRow campaign, bool withAgency = false)
+		{
 			// В базе у названий станций бывает пробел на конце («Русское радио ») — в подсказках он виден.
-			string.Format("{0} ({1}), {2}", Convert.ToString(campaign[Campaign.ParamNames.MassmediaName]).Trim(),
+			string caption = string.Format("{0} ({1}), {2}", Convert.ToString(campaign[Campaign.ParamNames.MassmediaName]).Trim(),
 				Convert.ToString(campaign[Campaign.ParamNames.GroupName]).Trim(), campaign[PaymentTypeNameColumn]);
+			if (!withAgency || !campaign.Table.Columns.Contains(AgencyNameColumn))
+				return caption;
+			string agency = Convert.ToString(campaign[AgencyNameColumn]);
+			return string.IsNullOrWhiteSpace(agency) ? caption : caption + ", " + agency.Trim();
+		}
+
+		private const string AgencyNameColumn = "agencyName";
 
 		private const string PaymentTypeNameColumn = "paymentTypeName";
 
@@ -890,7 +898,15 @@ namespace Merlin.Classes
 			}
 			catch
 			{
-				DataAccessor.RollbackTransaction();
+				try
+				{
+					DataAccessor.RollbackTransaction();
+				}
+				catch (Exception)
+				{
+					// Сервер мог откатить транзакцию сам (жертва взаимоблокировки) — Rollback тогда бросает,
+					// и его ошибка заслонила бы настоящую причину; транзакция в любом случае закрыта.
+				}
 				throw;
 			}
 		}

@@ -45,10 +45,10 @@
                         int id = WindowsSource.CampaignIdOf(row);
                         bool on = _checked.Contains(id);
                         <li class="@(on ? "on" : null)">
-                            <input type="checkbox" class="form-check-input" checked="@on" aria-label="@WindowsSource.CampaignCaption(row)"
+                            <input type="checkbox" class="form-check-input" checked="@on" aria-label="@CaptionOf(row)"
                                    @onchange="e => ToggleCampaign(id, e.Value is true)" />
                             <button type="button" class="campaign" title="@(Tr.T("Показать только эту кампанию"))" @onclick="() => CheckOnly(id)">
-                                @WindowsSource.CampaignCaption(row)
+                                @CaptionOf(row)
                             </button>
                         </li>
                     }
@@ -419,7 +419,19 @@
 
     private DataRow? OpenRow => _open == null ? null : RowOf(_open.CampaignId);
 
-    private string OpenCaption => OpenRow is { } row ? WindowsSource.CampaignCaption(row) : "";
+    private string OpenCaption => OpenRow is { } row ? CaptionOf(row) : "";
+
+    /// <summary>
+    /// Подпись кампании. В акции бывают две линейные кампании одной станции с одним типом оплаты и разными
+    /// агентствами (UIX_Campaign) — тогда подписи совпали бы, и агентство добавляется, как в десктопном
+    /// «Отсутствуют:» (FormatCampaignTitle).
+    /// </summary>
+    private string CaptionOf(DataRow row)
+    {
+        string caption = WindowsSource.CampaignCaption(row);
+        bool ambiguous = LinearRows.Count(r => WindowsSource.CampaignCaption(r) == caption) > 1;
+        return ambiguous ? WindowsSource.CampaignCaption(row, withAgency: true) : caption;
+    }
 
     private DataRow? BrushRow => _rollers == null || _brushRollerId == null ? null
         : _rollers.Rows.Cast<DataRow>().FirstOrDefault(r => WindowsSource.RollerIdOf(r) == _brushRollerId);
@@ -534,7 +546,7 @@
             else
             {
                 _range = RangeSource.Open(Action,
-                    _checked.Select(id => new KeyValuePair<int, string>(id, WindowsSource.CampaignCaption(RowOf(id)!))).ToList());
+                    _checked.Select(id => new KeyValuePair<int, string>(id, CaptionOf(RowOf(id)!))).ToList());
                 first = _range?.FirstIssueDate;
             }
             if (Scope == null)
