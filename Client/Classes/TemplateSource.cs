@@ -77,23 +77,12 @@ namespace Merlin.Classes
 			{
 				Stopwatch sw = Stopwatch.StartNew();
 				Random rnd = new Random();
-				Period period = LoadPeriod(c, dates, template);
+				Period period = LoadPeriod(c, dates, template, showDisabled: false);
 				int startMinute = (int)template.StartTime.TotalMinutes;
 				int finishMinute = (int)template.FinishTime.TotalMinutes;
 
 				// Подряд идущие дни вне прайс-листов станции — одна строка таблицы («дата – дата»), а не по строке на день.
-				DateTime? missingFrom = null, missingTo = null;
-				int missingDays = 0;
-				void FlushMissing()
-				{
-					if (missingFrom == null)
-						return;
-					string range = missingFrom == missingTo ? missingFrom.Value.ToString("dd.MM.yyyy")
-						: missingFrom.Value.ToString("dd.MM.yyyy") + " – " + missingTo.Value.ToString("dd.MM.yyyy");
-					result.Note(range, MessageAccessor.GetMessage("PriceListDoesntExist"), WantedPerDay(template) * missingDays);
-					missingFrom = missingTo = null;
-					missingDays = 0;
-				}
+				RunOfDays missing = new RunOfDays(result, WantedPerDay(template));
 
 				for (int dayIndex = 0; dayIndex < dates.Count; dayIndex++)
 				{
@@ -101,12 +90,10 @@ namespace Merlin.Classes
 					string dayText = day.ToString("dd.MM.yyyy");
 					if (!period.Rows.TryGetValue(day, out List<DataRow> rows))
 					{
-						missingFrom = missingFrom ?? day;
-						missingTo = day;
-						missingDays++;
+						missing.Add(day, MessageAccessor.GetMessage("PriceListDoesntExist"));
 						continue;
 					}
-					FlushMissing();
+					missing.Flush();
 
 					// Те же отборы, что у десктопа: интервал (у линейки конец включается), занятая подтверждённым выпуском
 					// позиция (макеты не смотрятся), ролики этой фирмы в окне (с макетами, любой акции фирмы).
@@ -130,12 +117,12 @@ namespace Merlin.Classes
 
 					List<DayWrite> writes = toWrite
 						.Select(w => new DayWrite(w.Key, w.Start, new TariffWindowWithRollerIssues(period.RowOf(w.Key), Entities.TariffWindow))).ToList();
-					if (!WriteDay(c, campaign, roller, position, writes, dayText, dates.Count - dayIndex, result))
+					if (!WriteDay(c, campaign, roller, position, writes, dayText, dates.Count - dayIndex, result, "interval"))
 						break;
 				}
-				FlushMissing();
+				missing.Flush();
 
-				Recalculate(c, campaign, result);
+				Recalculate(c, campaign, result, "interval");
 
 				// Параметры шаблона — в строке итога: по логу видно, что просили и что получилось (пользователь и сеанс — в шаблоне строки лога).
 				string daysText = template.ByParity ? (template.Odd ? "odd" : "even") : "days=" + string.Concat(template.WeekDays.Select(on => on ? "1" : "0"));
@@ -170,7 +157,7 @@ namespace Merlin.Classes
 		/// считает и этот).
 		/// </summary>
 		private static bool WriteDay(WindowsSource.OpenCampaign c, Campaign campaign, Roller roller, int position, List<DayWrite> writes,
-			string dayText, int daysLeft, TemplateResult result)
+			string dayText, int daysLeft, TemplateResult result, string kind)
 		{
 			WindowsSource.BatchResult dayResult = null;
 			Exception failure = null;
@@ -194,7 +181,7 @@ namespace Merlin.Classes
 				catch (SqlException ex) when (ex.Number == 1205 && attempt == 0)
 				{
 					// Жертва взаимоблокировки: день откатан целиком и ничего не оставил — день повторяется один раз.
-					Log.Warn($"Template: deadlock on {dayText} (campaign {c.CampaignId}), retrying the day", ex);
+					Log.Warn($"Template {kind}: deadlock on {dayText} (campaign {c.CampaignId}), retrying the day", ex);
 				}
 				catch (Exception ex)
 				{
@@ -206,7 +193,7 @@ namespace Merlin.Classes
 			{
 				// День откатан целиком; прежние дни остаются. Запуск прерывается — следующие дни, скорее всего,
 				// упрутся в то же (сеть, таймаут), и ждать их по таймауту каждый нельзя.
-				Log.Error($"Template interrupted on {dayText} (campaign {c.CampaignId})", failure);
+				Log.Error($"Template {kind} interrupted on {dayText} (campaign {c.CampaignId})", failure);
 				Interrupted(result, dayText, failure, daysLeft, writes.Count);
 				return false;
 			}
@@ -225,7 +212,7 @@ namespace Merlin.Classes
 				ErrorManager.GetErrorMessage(failure), daysLeft), notAdded);
 
 		/// <summary>Один пересчёт акции после запуска, отдельной транзакцией; сбой — строка в таблице (выпуски уже записаны).</summary>
-		private static void Recalculate(WindowsSource.OpenCampaign c, Campaign campaign, TemplateResult result)
+		private static void Recalculate(WindowsSource.OpenCampaign c, Campaign campaign, TemplateResult result, string kind)
 		{
 			if (result.Done == 0)
 				return;
@@ -235,17 +222,21 @@ namespace Merlin.Classes
 			}
 			catch (Exception ex)
 			{
-				Log.Error($"Template: recalculation failed (campaign {c.CampaignId})", ex);
+				Log.Error($"Template {kind}: recalculation failed (campaign {c.CampaignId})", ex);
 				result.Note("", Tr.Format("Пересчёт акции не выполнен: {0} Цена акции обновится при следующем изменении размещения.", ErrorManager.GetErrorMessage(ex)));
 			}
 		}
 
 		/// <summary>
 		/// Шаблон 1 («Шаблон для внесения роликов», десктоп — FrmTemplate): ролик кисти с позицией «Позиционирования» по
-		/// одному выпуску в день периода в окно, накрывающее время <see cref="PlacementTemplate.StartTime"/> (десктоп —
-		/// FrmGenerator.AddSimpleIssue: время даёт щелчок по окну, здесь оно в диалоге). Окно ищется так же, как у десктопа
-		/// (TariffWindowRetrieve @actualDate: ближайшее по началу, которое начинается не позже времени и кончается не раньше),
-		/// без отбора по прайс-листу и блокировке: заблокированное окно откажет сама запись. Режима «Удалить выбранные» нет.
+		/// одному выпуску в день периода в окно, накрывающее время <see cref="PlacementTemplate.StartTime"/>. Десктоп берёт
+		/// время из щелчка по окну сетки (всегда начало видимого окна) и ищет окно запросом TariffWindowRetrieve @actualDate
+		/// на каждый день; в вебе время вводится вручную, поэтому окно ищется среди окон, которые видит сетка (период читается
+		/// заранее, как у Шаблона 2: без особых окон и тарифов «только для модулей»; заблокированные окна остаются — отказ
+		/// скажет запись), и введённое время не может попасть в окно, которого в сетке нет. Окно накрывает время, если
+		/// начинается не позже и кончается не раньше (границы включены, из нескольких — начавшееся позже), как в запросе
+		/// десктопа. Отказы — по правилам десктопа (FrmGenerator.AddSimpleIssue), тексты из iMessage, строка — время найденного
+		/// окна. Режима «Удалить выбранные» нет.
 		/// </summary>
 		public static TemplateResult RunSingle(WindowsSource.OpenCampaign c, PlacementTemplate template, int rollerId, int position)
 		{
@@ -259,30 +250,32 @@ namespace Merlin.Classes
 			using (OperationScope.Start($"TemplateSingle campaign={c.CampaignId} days={dates.Count}"))
 			{
 				Stopwatch sw = Stopwatch.StartNew();
-				Massmedia massmedia = Massmedia.GetMassmediaByID(c.MassmediaId);
-				int firmId = campaign.Action.FirmID;
+				Period period = LoadPeriod(c, dates, template, showDisabled: true);
+
+				// Дни вне прайс-листов и дни без окна на это время — по одной строке на подряд идущие дни.
+				RunOfDays nothing = new RunOfDays(result, 1);
 				for (int dayIndex = 0; dayIndex < dates.Count; dayIndex++)
 				{
-					DateTime moment = dates[dayIndex].Date + template.StartTime;
-					string name = moment.ToString("dd.MM.yyyy HH:mm");
+					DateTime day = dates[dayIndex];
+					if (!period.Rows.TryGetValue(day, out List<DataRow> rows))
+					{
+						nothing.Add(day, MessageAccessor.GetMessage("PriceListDoesntExist"));
+						continue;
+					}
+					DataRow row = CoveringWindow(rows, day + template.StartTime);
+					if (row == null)
+					{
+						nothing.Add(day, MessageAccessor.GetMessage("TariffWindowNotFound"));
+						continue;
+					}
+					nothing.Flush();
 
-					// Чтение — вне транзакции дня; отказы по правилам десктопа (FrmGenerator.AddSimpleIssue) — строки таблицы.
-					TariffWindowWithRollerIssues window;
-					string refusal;
-					try
-					{
-						window = TariffWindowWithRollerIssues.GetWindowByDate(moment, massmedia) as TariffWindowWithRollerIssues;
-						refusal = window == null ? MessageAccessor.GetMessage("TariffWindowNotFound")
-							: template.IgnoreFirmWindows && window.IsRollerOfTheFirmExist(firmId, true) ? MessageAccessor.GetMessage("IssueWithTheSameFirmExists")
-							: position != (int)RollerPositions.Undefined && PositionOccupied(window, (RollerPositions)position) ? MessageAccessor.GetMessage("FirstLastIssueError")
-							: null;
-					}
-					catch (Exception ex)
-					{
-						Log.Error($"Template single interrupted on {name} (campaign {c.CampaignId})", ex);
-						Interrupted(result, name, ex, dates.Count - dayIndex, 1);
-						break;
-					}
+					int windowId = Convert.ToInt32(row[TariffWindow.ParamNames.WindowId]);
+					DateTime start = (DateTime)row[TariffWindow.ParamNames.WindowDateActual];
+					string name = start.ToString("dd.MM.yyyy HH:mm");
+					string refusal = template.IgnoreFirmWindows && period.FirmWindows.Contains(windowId) ? MessageAccessor.GetMessage("IssueWithTheSameFirmExists")
+						: position != (int)RollerPositions.Undefined && PositionOccupied(row, (RollerPositions)position) ? MessageAccessor.GetMessage("FirstLastIssueError")
+						: null;
 					if (refusal != null)
 					{
 						result.Days++;
@@ -290,12 +283,13 @@ namespace Merlin.Classes
 						continue;
 					}
 
-					List<DayWrite> writes = new List<DayWrite> { new DayWrite(window.WindowId, window.WindowDate, window) };
-					if (!WriteDay(c, campaign, roller, position, writes, name, dates.Count - dayIndex, result))
+					List<DayWrite> writes = new List<DayWrite> { new DayWrite(windowId, start, new TariffWindowWithRollerIssues(row, Entities.TariffWindow)) };
+					if (!WriteDay(c, campaign, roller, position, writes, name, dates.Count - dayIndex, result, "single"))
 						break;
 				}
+				nothing.Flush();
 
-				Recalculate(c, campaign, result);
+				Recalculate(c, campaign, result, "single");
 
 				string daysText = template.ByParity ? (template.Odd ? "odd" : "even") : "days=" + string.Concat(template.WeekDays.Select(on => on ? "1" : "0"));
 				Log.Info($"Template single completed in {sw.ElapsedMilliseconds}ms campaign={c.CampaignId} roller={rollerId} position={position}" +
@@ -303,6 +297,65 @@ namespace Merlin.Classes
 					$" ignoreFirm={template.IgnoreFirmWindows} days={result.Days}/{dates.Count} added={result.Done} notAdded={result.NotAdded}");
 			}
 			return result;
+		}
+
+		/// <summary>Окно дня, накрывающее момент: начинается не позже и кончается не раньше (границы включены); из нескольких — начавшееся позже.</summary>
+		private static DataRow CoveringWindow(List<DataRow> rows, DateTime moment)
+		{
+			DataRow best = null;
+			DateTime bestStart = DateTime.MinValue;
+			foreach (DataRow row in rows)
+			{
+				DateTime start = (DateTime)row[TariffWindow.ParamNames.WindowDateActual];
+				if (start <= moment && start.AddSeconds(WindowsSource.IntOrZero(row[TariffWindow.ParamNames.Duration])) >= moment && start >= bestStart)
+				{
+					best = row;
+					bestStart = start;
+				}
+			}
+			return best;
+		}
+
+		/// <summary>
+		/// Подряд идущие дни с одной и той же причиной «ничего не нашлось» (нет прайс-листа, нет окна) — одна строка таблицы
+		/// «дата – дата», а не по строке на день; не добавлено — по <c>wantedPerDay</c> на день.
+		/// </summary>
+		private sealed class RunOfDays
+		{
+			private readonly TemplateResult _result;
+			private readonly int _wantedPerDay;
+			private string _reason;
+			private DateTime _from, _to;
+			private int _days;
+
+			public RunOfDays(TemplateResult result, int wantedPerDay)
+			{
+				_result = result;
+				_wantedPerDay = wantedPerDay;
+			}
+
+			public void Add(DateTime day, string reason)
+			{
+				if (_reason != null && _reason != reason)
+					Flush();
+				if (_reason == null)
+				{
+					_reason = reason;
+					_from = day;
+				}
+				_to = day;
+				_days++;
+			}
+
+			public void Flush()
+			{
+				if (_reason == null)
+					return;
+				string range = _from == _to ? _from.ToString("dd.MM.yyyy") : _from.ToString("dd.MM.yyyy") + " – " + _to.ToString("dd.MM.yyyy");
+				_result.Note(range, _reason, _wantedPerDay * _days);
+				_reason = null;
+				_days = 0;
+			}
 		}
 
 		/// <summary>Сколько выпусков в день просит шаблон.</summary>
@@ -344,7 +397,7 @@ namespace Merlin.Classes
 			public DataRow RowOf(int windowId) => _byId[windowId];
 		}
 
-		private static Period LoadPeriod(WindowsSource.OpenCampaign c, List<DateTime> dates, PlacementTemplate template)
+		private static Period LoadPeriod(WindowsSource.OpenCampaign c, List<DateTime> dates, PlacementTemplate template, bool showDisabled)
 		{
 			Massmedia massmedia = Massmedia.GetMassmediaByID(c.MassmediaId);
 			Period period = new Period();
@@ -374,11 +427,11 @@ namespace Merlin.Classes
 			{
 				DateTime first = days[0], last = days[days.Count - 1];
 
-				// Как RollerIssuesGrid3 и десктопный генератор: без особых окон и тарифов «только для модулей», без
-				// заблокированных окон; время окна — фактическое.
+				// Как RollerIssuesGrid3 и десктопный генератор: без особых окон и тарифов «только для модулей»; время окна —
+				// фактическое. Заблокированные окна нужны только Шаблону 1 (в окно на заданное время запись откажет сама).
 				list.ExcludeSpecialWindows = true;
 				list.ExcludeModuleTariffs = true;
-				DataTable windows = list.GetTariffWindows(first, last, null, false, false, useActualTime: true).Tables[Constants.TableNames.Data];
+				DataTable windows = list.GetTariffWindows(first, last, null, false, showDisabled, useActualTime: true).Tables[Constants.TableNames.Data];
 				HashSet<DateTime> wanted = new HashSet<DateTime>(days);
 				foreach (DataRow row in windows.Rows)
 				{
@@ -426,18 +479,6 @@ namespace Merlin.Classes
 				- WindowsSource.IntOrZero(row[TariffWindow.ParamNames.TimeInUseUnconfirmed]),
 			IsPrime = period.MaxPrice.TryGetValue(day, out decimal max) && Convert.ToDecimal(row[TariffWindow.ParamNames.Price]) == max,
 		};
-
-		/// <summary>То же для окна ядра (FrmGenerator.IsPositionOccupied).</summary>
-		private static bool PositionOccupied(TariffWindowWithRollerIssues window, RollerPositions position)
-		{
-			switch (position)
-			{
-				case RollerPositions.First: return window.IsFirstPositionOccupied;
-				case RollerPositions.Second: return window.IsSecondPositionOccupied;
-				case RollerPositions.Last: return window.IsLastPositionOccupied;
-				default: return false;
-			}
-		}
 
 		/// <summary>Позиция занята подтверждённым выпуском — флаги окна, как FrmGenerator.IsPositionOccupied.</summary>
 		private static bool PositionOccupied(DataRow row, RollerPositions position)

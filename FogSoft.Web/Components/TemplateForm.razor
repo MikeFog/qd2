@@ -45,6 +45,7 @@
             <label>
                 @Tr.T("Время выхода:")
                 <input type="time" class="form-control form-control-sm" value="@Value.SingleTime" @onchange="e => Value.SingleTime = e.Value?.ToString() ?? string.Empty" />
+                <span class="note">@Tr.T("Выпуск ставится в окно, накрывающее это время.")</span>
             </label>
         }
         else

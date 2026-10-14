@@ -31,6 +31,10 @@
     color: var(--c-text-muted);
 }
 
+.note {
+    font-size: 12px;
+}
+
 .inline {
     display: inline-flex;
     align-items: center;

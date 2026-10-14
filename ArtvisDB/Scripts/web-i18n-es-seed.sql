@@ -1,5 +1,5 @@
 ﻿/*
-    ДЕПЛОЙ: переводы веб-версии на язык «es» (2084 строк). docs/tasks/web-i18n.md, этап 5.
+    ДЕПЛОЙ: переводы веб-версии на язык «es» (2085 строк). docs/tasks/web-i18n.md, этап 5.
     СГЕНЕРИРОВАН из ArtvisDB/Scripts/i18n/es.tsv скриптом build-seed.py — руками не править.
 
     ПРЕДУСЛОВИЕ     накачен web-i18n-translation-deploy.sql (таблица iTranslation).
@@ -2106,7 +2106,8 @@ INSERT INTO #t ([source], [text]) VALUES
 (N'Шаблон №1 для внесения роликов', N'Plantilla N.º 1 para colocar spots'),
 (N'Шаблон №2 для внесения роликов', N'Plantilla N.º 2 para colocar spots'),
 (N'Шаблон для внесения роликов', N'Plantilla para colocar spots'),
-(N'Укажите время выхода.', N'Indique la hora de emisión.');
+(N'Укажите время выхода.', N'Indique la hora de emisión.'),
+(N'Выпуск ставится в окно, накрывающее это время.', N'La emisión se coloca en la ventana que abarca esta hora.');
 GO
 
 BEGIN TRANSACTION;

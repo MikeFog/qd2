@@ -331,7 +331,7 @@ internal static class Program
 			};
 			TemplateSource.TemplateResult s3 = TemplateSource.RunSingle(c, nowhere, rollerId, 0);
 			created.AddRange(s3.Created);
-			Check("шаблон 1: время без окна — три строки", s3.Done == 0 && s3.Errors.Rows.Count == 3 && s3.NotAdded == 3,
+			Check("шаблон 1: время без окна — одна строка на три дня", s3.Done == 0 && s3.Errors.Rows.Count == 1 && s3.NotAdded == 3,
 				$"done={s3.Done} rows={s3.Errors.Rows.Count} notAdded={s3.NotAdded} first={(s3.Errors.Rows.Count > 0 ? s3.Errors.Rows[0][1] : "")}");
 
 			Check("проверки шаблона 1: конец раньше начала", new PlacementTemplate { StartDate = new DateTime(2026, 10, 18), FinishDate = new DateTime(2026, 10, 15) }.SingleProblem() != null);
