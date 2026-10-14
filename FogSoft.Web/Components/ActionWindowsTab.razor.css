@@ -282,6 +282,21 @@ tbody tr:focus-within .row-btn {
     color: var(--c-place-firm);
 }
 
+.sample.partial {
+    color: var(--c-place-partial);
+}
+
+.sample.firm-some {
+    color: var(--c-place-firm-some);
+}
+
+/* «Отметить все» под списком кампаний — ссылка-кнопка в одну строку. */
+.check-all {
+    padding: 0;
+    margin: var(--s-1) 0;
+    font-size: 12px;
+}
+
 .sample.match {
     font-weight: 700;
     color: var(--c-text);

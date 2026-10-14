@@ -14,7 +14,9 @@
     Вкладка «Рекламные окна» страницы акции (docs/tasks/web-action-forms.md, этап 2): линейные
     кампании акции галочками; отмечена одна — неделя рекламных окон её радиостанции, как десктопный
     CampaignForm с RollerIssuesGrid3 (режим — по числу отмеченных, решение В-3; несколько — веер,
-    этап 4). Слева «Ролики» (кисть), в центре сетка, справа — выпуски выбранного окна.
+    этап 4а: получасовые слоты по всем отмеченным станциям, как десктопный EditIssuesForm; при входе
+    отмечены все линейные кампании, как там). Слева «Ролики» (кисть), в центре сетка, справа —
+    выпуски выбранного окна (у веера панели пока нет).
 
     Клик по окну: в «Режиме добавления» ставит ролик кисти с позицией «Позиционирования», иначе
     выбирает окно (Shift/Ctrl — несколько) и показывает его выпуски. По выделенным окнам —
@@ -51,6 +53,13 @@
                         </li>
                     }
                 </ul>
+                @if (LinearRows.Count() > 1)
+                {
+                    <button type="button" class="btn btn-sm btn-link check-all" disabled="@(_checked.Count == LinearRows.Count())"
+                            title="@(Tr.T("Отметить все линейные кампании акции — веер по всем станциям"))" @onclick="CheckAll">
+                        @Tr.T("Отметить все")
+                    </button>
+                }
                 @if (OpenRow is { } openRow)
                 {
                     <dl class="stats">
@@ -62,7 +71,7 @@
                 }
             </section>
 
-            @if (_open != null)
+            @if (Scope != null)
             {
                 <section class="side-block rollers">
                     <div class="side-title">
@@ -73,8 +82,8 @@
                                 <i class="bi bi-play-fill" aria-hidden="true"></i>
                             </button>
                             <button type="button" class="btn btn-sm btn-outline-secondary" aria-label="@(Tr.T("Добавить ролик - пустышку"))"
-                                    title="@(_open.CanEdit ? Tr.T("Добавить ролик - пустышку") : NoRightText)"
-                                    disabled="@(!_open.CanEdit)" @onclick="() => Exclusive(AddDummy)">
+                                    title="@(Scope.CanEdit ? Tr.T("Добавить ролик - пустышку") : NoRightText)"
+                                    disabled="@(!Scope.CanEdit)" @onclick="() => Exclusive(AddDummy)">
                                 <i class="bi bi-file-earmark-plus" aria-hidden="true"></i>
                             </button>
                         </span>
@@ -134,18 +143,11 @@
                 <div class="state">
                     <div class="state-title">@Tr.T("Отметьте рекламную кампанию слева")</div>
                     @(LinearRows.Any()
-                        ? Tr.T("Одна кампания — неделя рекламных окон её радиостанции: ставить ролики, смотреть выпуски окна, переносить их.")
+                        ? Tr.T("Одна кампания — неделя рекламных окон её радиостанции: ставить ролики, смотреть выпуски окна, переносить их. Несколько — веер: слоты по всем отмеченным станциям.")
                         : Tr.T("В акции нет линейных рекламных кампаний."))
                 </div>
             }
-            else if (_checked.Count > 1)
-            {
-                <div class="state">
-                    <div class="state-title">@Tr.Format("Отмечено рекламных кампаний: {0}", _checked.Count)</div>
-                    @Tr.T("Размещение сразу по нескольким радиостанциям (веер) в вебе появится позже — пока отметьте одну кампанию.")
-                </div>
-            }
-            else if (_open == null)
+            else if (Scope == null)
             {
                 <div class="state">@Tr.T("Загрузка…")</div>
             }
@@ -157,7 +159,7 @@
                 <div class="grid-box" tabindex="-1" @ref="_gridBox" @onkeydown="GridKey">
                     <PlacementGrid Model="_week" Date="_date" SelectedKeys="_selection.Keys" Brush="_brushOn && _transfer == null"
                                    ShownBackgrounds="ShownBackgrounds" CellText="CellText" CellTitle="CellTitle" ExtraCellClass="TransferCellClass"
-                                   DayTotalTitle="@(Tr.T("Выпусков этой кампании за день"))"
+                                   DayTotalTitle="@(IsRange ? Tr.T("Выпусков акции за день по отмеченным кампаниям") : Tr.T("Выпусков этой кампании за день"))"
                                    OnPrevious="PreviousWeek" OnNext="NextWeek" OnJump="JumpTo" OnCellClick="ClickCell">
                         <LeadingTools>
                             <button type="button" class="btn btn-sm @(_brushOn ? "btn-primary" : "btn-outline-secondary")" aria-pressed="@_brushOn"
@@ -185,22 +187,28 @@
                                         title="@(Tr.T("Учитывать макеты") + "\n" + Tr.T("Показывать неподтвержденные выпуски"))" aria-label="@(Tr.T("Учитывать макеты"))" @onclick="ToggleUnconfirmed">
                                     <i class="bi bi-file-earmark-text" aria-hidden="true"></i>
                                 </button>
-                                <button type="button" class="btn btn-sm btn-outline-secondary @(_showNumbers ? "active" : null)" aria-pressed="@_showNumbers"
-                                        title="@(Tr.T("Номера роликов") + "\n" + Tr.T("Показывать в окнах номера роликов текущей кампании вместо остатка времени"))" aria-label="@(Tr.T("Номера роликов"))" @onclick="() => _showNumbers = !_showNumbers">
-                                    <i class="bi bi-123" aria-hidden="true"></i>
-                                </button>
+                                @if (!IsRange)
+                                {
+                                    <button type="button" class="btn btn-sm btn-outline-secondary @(_showNumbers ? "active" : null)" aria-pressed="@_showNumbers"
+                                            title="@(Tr.T("Номера роликов") + "\n" + Tr.T("Показывать в окнах номера роликов текущей кампании вместо остатка времени"))" aria-label="@(Tr.T("Номера роликов"))" @onclick="() => _showNumbers = !_showNumbers">
+                                        <i class="bi bi-123" aria-hidden="true"></i>
+                                    </button>
+                                }
                                 <button type="button" class="btn btn-sm btn-outline-secondary @(_showPrime ? "active" : null)" aria-pressed="@_showPrime"
                                         title="@(Tr.T("Видеть прайм") + "\n" + Tr.T("Показать окна прайм-тайм"))" aria-label="@(Tr.T("Видеть прайм"))" @onclick="() => _showPrime = !_showPrime">
                                     <i class="bi bi-star" aria-hidden="true"></i>
                                 </button>
-                                <button type="button" class="btn btn-sm btn-outline-secondary @(_showMarked ? "active" : null)" aria-pressed="@_showMarked"
-                                        title="@(Tr.T("Показать отмеченные окна"))" aria-label="@(Tr.T("Показать отмеченные окна"))" @onclick="() => _showMarked = !_showMarked">
-                                    <i class="bi bi-check2-square" aria-hidden="true"></i>
-                                </button>
-                                <button type="button" class="btn btn-sm btn-outline-secondary @(_view.ShowDisabled ? "active" : null)" aria-pressed="@_view.ShowDisabled"
-                                        title="@(Tr.T("Показать заблокированные окна"))" aria-label="@(Tr.T("Показать заблокированные окна"))" @onclick="ToggleDisabled">
-                                    <i class="bi bi-lock" aria-hidden="true"></i>
-                                </button>
+                                @if (!IsRange)
+                                {
+                                    <button type="button" class="btn btn-sm btn-outline-secondary @(_showMarked ? "active" : null)" aria-pressed="@_showMarked"
+                                            title="@(Tr.T("Показать отмеченные окна"))" aria-label="@(Tr.T("Показать отмеченные окна"))" @onclick="() => _showMarked = !_showMarked">
+                                        <i class="bi bi-check2-square" aria-hidden="true"></i>
+                                    </button>
+                                    <button type="button" class="btn btn-sm btn-outline-secondary @(_view.ShowDisabled ? "active" : null)" aria-pressed="@_view.ShowDisabled"
+                                            title="@(Tr.T("Показать заблокированные окна"))" aria-label="@(Tr.T("Показать заблокированные окна"))" @onclick="ToggleDisabled">
+                                        <i class="bi bi-lock" aria-hidden="true"></i>
+                                    </button>
+                                }
                                 <button type="button" class="btn btn-sm btn-outline-secondary" title="@(Tr.T("Обновить информацию"))" aria-label="@(Tr.T("Обновить информацию"))"
                                         @onclick="RefreshAll">
                                     <i class="bi bi-arrow-clockwise" aria-hidden="true"></i>
@@ -208,21 +216,42 @@
                             </span>
                         </TrailingTools>
                         <Caption>
-                            <span class="mode-caption">@Tr.Format("Рекламные окна: {0}", OpenCaption)</span>
+                            @if (IsRange)
+                            {
+                                <span class="mode-caption">@Tr.Format("Рекламные окна, веер: отмечено кампаний — {0}", _checked.Count)</span>
+                                @if (!_brushOn)
+                                {
+                                    <span class="text-muted">@Tr.T("Ролик на все отмеченные станции ставится в «Режиме добавления»: щёлкните слот.")</span>
+                                }
+                            }
+                            else
+                            {
+                                <span class="mode-caption">@Tr.Format("Рекламные окна: {0}", OpenCaption)</span>
+                            }
                         </Caption>
                         <Legend>
                             <span class="legend">
-                                <span><i class="sample mine">00:30</i>@Tr.T("выпуски этой кампании")</span>
-                                <span><i class="sample firm">00:30</i>@Tr.T("выпуски фирмы в других кампаниях")</span>
+                                @if (IsRange)
+                                {
+                                    <span><i class="sample mine">00:30</i>@Tr.T("выпуски акции у всех отмеченных кампаний")</span>
+                                    <span><i class="sample partial">00:30</i>@Tr.T("не у всех")</span>
+                                    <span><i class="sample firm">00:30</i>@Tr.T("выпуски фирмы в других акциях на всех станциях")</span>
+                                    <span><i class="sample firm-some">00:30</i>@Tr.T("на части станций")</span>
+                                }
+                                else
+                                {
+                                    <span><i class="sample mine">00:30</i>@Tr.T("выпуски этой кампании")</span>
+                                    <span><i class="sample firm">00:30</i>@Tr.T("выпуски фирмы в других кампаниях")</span>
+                                }
                                 @if (_showPrime)
                                 {
                                     <span><i class="swatch bg-prime"></i>@Tr.T("прайм-тайм")</span>
                                 }
-                                @if (_showMarked)
+                                @if (!IsRange && _showMarked)
                                 {
                                     <span><i class="swatch bg-marked"></i>@Tr.T("отмеченное окно")</span>
                                 }
-                                @if (_view.ShowDisabled)
+                                @if (!IsRange && _view.ShowDisabled)
                                 {
                                     <span><i class="swatch bg-disabled"></i>@Tr.T("заблокированное окно")</span>
                                 }
@@ -247,7 +276,7 @@
                                     </button>
                                 </div>
                             }
-                            else if (!_brushOn && _selection.Count > 0)
+                            else if (_open != null && !_brushOn && _selection.Count > 0)
                             {
                                 <div class="selection-bar">
                                     <span class="selection-count">@Tr.Format("Выделено окон: {0}", _selection.Count)</span>
@@ -341,6 +370,7 @@
     private bool _initialized;
 
     private WindowsSource.OpenCampaign? _open;
+    private RangeSource.OpenRange? _range;
     private readonly WindowsSource.WeekView _view = new();
     private DateTime _date = DateTime.Today;
     private bool _dateChosen;
@@ -372,7 +402,15 @@
     private TransferSource? _transfer;
     private sealed record TransferSource(PlacementCell Source, IReadOnlyList<PresentationObject> Issues);
 
-    private static string NoRightText => Tr.T("Нет права «Редактировать» на эту кампанию.");
+    private string NoRightText => IsRange
+        ? Tr.T("Нет права «Редактировать» на одну из отмеченных кампаний.")
+        : Tr.T("Нет права «Редактировать» на эту кампанию.");
+
+    /// <summary>Отмечено несколько кампаний — веер (получасовые слоты по всем станциям); иначе сетка окон одной кампании.</summary>
+    private bool IsRange => _range != null;
+
+    /// <summary>Открытое: одна кампания или веер — для того, что не зависит от режима (ролики кисти, права).</summary>
+    private WindowsSource.IBrushScope? Scope => (WindowsSource.IBrushScope?)_open ?? _range;
 
     private IEnumerable<DataRow> LinearRows => Campaigns.Rows.Cast<DataRow>().Where(WindowsSource.IsLinear);
 
@@ -386,10 +424,10 @@
     private DataRow? BrushRow => _rollers == null || _brushRollerId == null ? null
         : _rollers.Rows.Cast<DataRow>().FirstOrDefault(r => WindowsSource.RollerIdOf(r) == _brushRollerId);
 
-    private bool CanBrush => _open is { CanEdit: true } && BrushRow != null;
+    private bool CanBrush => Scope is { CanEdit: true } && BrushRow != null;
 
     private string? BrushHint =>
-        _open is not { CanEdit: true } ? NoRightText
+        Scope is not { CanEdit: true } ? NoRightText
         : BrushRow == null ? Tr.T("Не выбран рекламный ролик.")
         : null;
 
@@ -412,9 +450,10 @@
 
         // Фирму акции сменили («Сменить фирму-заказчика» в меню шапки) — ролики кисти другие,
         // кампания открывается заново.
-        if (_open != null && _open.FirmId != Action.FirmID)
+        if (Scope != null && Scope.FirmId != Action.FirmID)
         {
             _open = null;
+            _range = null;
             await ApplyChecked();
         }
 
@@ -426,9 +465,11 @@
                 _checked.Clear();
                 _checked.Add(requested);
             }
-            else if (!_initialized && LinearRows.Count() == 1)
+            else if (!_initialized)
             {
-                _checked.Add(WindowsSource.CampaignIdOf(LinearRows.First()));
+                // Как при открытии десктопного веера: отмечены все линейные кампании акции (одна — сетка
+                // окон, несколько — веер); выбор между открытиями не запоминается.
+                _checked.AddRange(LinearRows.Select(WindowsSource.CampaignIdOf));
             }
             _initialized = true;
             await ApplyChecked();
@@ -451,14 +492,27 @@
         return ApplyChecked();
     }
 
-    /// <summary>Отмечена одна кампания — открыть её (если ещё не открыта), иначе закрыть сетку.</summary>
+    /// <summary>«Отметить все»: веер по всем линейным кампаниям акции, как при входе.</summary>
+    private Task CheckAll()
+    {
+        _checked.Clear();
+        _checked.AddRange(LinearRows.Select(WindowsSource.CampaignIdOf));
+        return ApplyChecked();
+    }
+
+    /// <summary>Открыто ровно то, что отмечено: та же одна кампания или тот же набор кампаний веера.</summary>
+    private bool IsOpened() =>
+        _open != null ? _checked.Count == 1 && _checked[0] == _open.CampaignId
+        : _range != null && _checked.Count == _range.CampaignIds.Count && !_checked.Except(_range.CampaignIds).Any();
+
+    /// <summary>Отмечена одна кампания — открыть её сетку окон, несколько — веер (если ещё не открыты), иначе закрыть сетку.</summary>
     private async Task ApplyChecked()
     {
-        int? single = _checked.Count == 1 ? _checked[0] : null;
-        if (single == _open?.CampaignId)
+        if (IsOpened())
             return;
 
         _open = null;
+        _range = null;
         _week = null;
         _rollers = null;
         _brushOn = false;
@@ -466,25 +520,36 @@
         _selected = null;
         _panel = null;
         _selection.Clear();
-        if (single == null)
+        if (_checked.Count == 0)
             return;
 
         await Run(() =>
         {
-            _open = WindowsSource.Open(Action, single.Value);
-            if (_open == null)
+            DateTime? first;
+            if (_checked.Count == 1)
+            {
+                _open = WindowsSource.Open(Action, _checked[0]);
+                first = _open?.FirstIssueDate;
+            }
+            else
+            {
+                _range = RangeSource.Open(Action,
+                    _checked.Select(id => new KeyValuePair<int, string>(id, WindowsSource.CampaignCaption(RowOf(id)!))).ToList());
+                first = _range?.FirstIssueDate;
+            }
+            if (Scope == null)
                 return;
-            // Первая открытая кампания — с недели её первого выпуска, как десктоп (у пустой — завтра);
-            // дальше неделя сохраняется при смене кампании: станции одной акции сравнивают за один период.
+            // Первое открытие — с недели первого выпуска, как десктоп (у пустой — завтра); дальше неделя
+            // сохраняется при смене кампании: станции одной акции сравнивают за один период.
             if (!_dateChosen)
             {
-                _date = _open.FirstIssueDate ?? DateTime.Today.AddDays(1);
+                _date = first ?? DateTime.Today.AddDays(1);
                 _dateChosen = true;
             }
             LoadRollersCore();
             ReloadWeekCore();
         });
-        if (_open == null && _error == null)
+        if (Scope == null && _error == null)
             _error = Tr.T("Рекламная кампания не найдена — её удалили. Обновите страницу.");
     }
 
@@ -505,7 +570,7 @@
 
     private void ReloadWeekCore()
     {
-        _week = WindowsSource.LoadWeek(_open!, _date, _view);
+        _week = _range != null ? RangeSource.LoadWeek(_range, _date, _view) : WindowsSource.LoadWeek(_open!, _date, _view);
         _selection.Retain(_week);
         _selected = _selected == null ? null : _week.Find(_selected.Key);
         if (_selected == null)
@@ -647,18 +712,33 @@
 
     private string? CellText(PlacementCell cell) => _showNumbers ? cell.NumbersText(_numbers) : null;
 
-    private string CellTitle(PlacementCell cell) => DisplayFormat.DateAndTime(cell.Date) + StatusText(cell);
+    private string CellTitle(PlacementCell cell) =>
+        DisplayFormat.DateAndTime(cell.Date) + StatusText(cell) + (cell.Details != null ? "\n" + cell.Details : "");
 
     /// <summary>Состояние окна одной строкой — подсказка ячейки и подпись панели.</summary>
     private string StatusText(PlacementCell cell) =>
-        (cell.Has(PlacementFlags.Mine) ? " · " + Tr.T("выпуски этой кампании")
-            : cell.Has(PlacementFlags.FirmHere) ? " · " + Tr.T("выпуски фирмы в других кампаниях") : "")
+        (IsRange
+            ? cell.Has(PlacementFlags.Mine) ? " · " + Tr.T("выпуски акции у всех отмеченных кампаний")
+                : cell.Has(PlacementFlags.Partial) ? " · " + Tr.T("выпуски акции не у всех отмеченных кампаний")
+                : cell.Has(PlacementFlags.FirmHere) ? " · " + Tr.T("выпуски фирмы в других акциях на всех станциях")
+                : cell.Has(PlacementFlags.FirmSome) ? " · " + Tr.T("выпуски фирмы в других акциях на части станций") : ""
+            : cell.Has(PlacementFlags.Mine) ? " · " + Tr.T("выпуски этой кампании")
+                : cell.Has(PlacementFlags.FirmHere) ? " · " + Tr.T("выпуски фирмы в других кампаниях") : "")
         + (cell.Has(PlacementFlags.Disabled) ? " · " + Tr.T("заблокированное окно") : "")
         + (cell.Has(PlacementFlags.Marked) ? " · " + Tr.T("отмеченное окно") : "")
         + (cell.Has(PlacementFlags.Prime) ? " · " + Tr.T("прайм-тайм") : "");
 
     private async Task ClickCell(PlacementGrid.CellEvent e)
     {
+        // Веер этапа 4а: только «Режим добавления» — слот целиком. Выделение, массовые операции и панель
+        // слота — этап 4б.
+        if (_range != null)
+        {
+            if (_brushOn && e.Mouse.Detail <= 1)
+                await PlaceSlot(e.Cell);
+            return;
+        }
+
         if (_transfer != null)
         {
             if (e.Mouse.Detail <= 1 && TransferCellClass(e.Cell) == TargetClass)
@@ -728,6 +808,29 @@
             placed = true;
             if (_selected?.Key == cell.Key)
                 _panel = WindowsSource.LoadWindowIssues(_open!, cell, _view.ShowUnconfirmed);
+        });
+        if (placed)
+            await Changed.InvokeAsync();
+    }
+
+    /// <summary>
+    /// Клик «Режима добавления» в веере: ролик кисти с позицией «Позиционирования» на всех отмеченных
+    /// станциях слота, одной транзакцией. Отказ любой станции откатывает слот целиком — сообщением над
+    /// сеткой. Неделя после записи перечитывается (слот меняет цвет, счётчик дня — число выпусков).
+    /// </summary>
+    private async Task PlaceSlot(PlacementCell cell)
+    {
+        if (!CanBrush || _range == null || _week == null)
+            return;
+
+        bool placed = false;
+        int rollerId = _brushRollerId!.Value;
+        int position = _view.Position;
+        await Run(() =>
+        {
+            RangeSource.PlaceSlot(_range, cell, rollerId, position, _view);
+            placed = true;
+            ReloadWeekCore();
         });
         if (placed)
             await Changed.InvokeAsync();
@@ -1007,7 +1110,7 @@
 
     private void LoadRollersCore()
     {
-        _rollers = WindowsSource.LoadRollers(_open!);
+        _rollers = WindowsSource.LoadRollers(Scope!);
         _numbers = _rollers.Rows.Cast<DataRow>().ToDictionary(WindowsSource.RollerIdOf, r => Convert.ToInt32(r[WindowsSource.RollerNumberColumn]));
         // Выбор сохраняется, если ролик остался в списке; иначе — первый, как в десктопе.
         if (_brushRollerId == null || !_numbers.ContainsKey(_brushRollerId.Value))
@@ -1027,7 +1130,7 @@
     /// <summary>«Добавить ролик - пустышку»: длительность → GetMuteRoller → пустышка становится роликом кисти.</summary>
     private async Task AddDummy()
     {
-        if (_open is not { CanEdit: true })
+        if (Scope is not { CanEdit: true })
             return;
 
         var model = new DummyRollerForm.Model();
@@ -1047,7 +1150,9 @@
 
         await Run(() =>
         {
-            int rollerId = WindowsSource.CreateDummyRoller(_open, model.TotalSeconds);
+            int rollerId = _range != null
+                ? RangeSource.CreateDummyRoller(_range, model.TotalSeconds)
+                : WindowsSource.CreateDummyRoller(_open!, model.TotalSeconds);
             _brushRollerId = rollerId;
             LoadRollersCore();
         });

@@ -1,5 +1,5 @@
 ﻿/*
-    ДЕПЛОЙ: переводы веб-версии на язык «es» (1983 строк). docs/tasks/web-i18n.md, этап 5.
+    ДЕПЛОЙ: переводы веб-версии на язык «es» (2004 строк). docs/tasks/web-i18n.md, этап 5.
     СГЕНЕРИРОВАН из ArtvisDB/Scripts/i18n/es.tsv скриптом build-seed.py — руками не править.
 
     ПРЕДУСЛОВИЕ     накачен web-i18n-translation-deploy.sql (таблица iTranslation).
@@ -1943,7 +1943,6 @@ INSERT INTO #t ([source], [text]) VALUES
 (N'Нет права «Редактировать» на эту кампанию.', N'No tiene el permiso «Editar» para esta pauta.'),
 (N'Номера роликов', N'Números de spots'),
 (N'Обновить информацию', N'Actualizar información'),
-(N'Одна кампания — неделя рекламных окон её радиостанции: ставить ролики, смотреть выпуски окна, переносить их.', N'Una pauta: la semana de ventanas publicitarias de su emisora; colocar spots, ver las emisiones de la ventana, trasladarlas.'),
 (N'Отменить перенос (Esc)', N'Cancelar el traslado (Esc)'),
 (N'Отметьте рекламную кампанию слева', N'Marque una pauta publicitaria a la izquierda'),
 (N'Отмечено рекламных кампаний: {0}', N'Pautas publicitarias marcadas: {0}'),
@@ -2003,7 +2002,31 @@ INSERT INTO #t ([source], [text]) VALUES
 (N'Выберите фирму-заказчика.', N'Seleccione la empresa cliente.'),
 (N'Счёт выписан от', N'Factura emitida por'),
 (N'У вас нет прав на выполнение данной операции!', N'¡No tiene permisos para realizar esta operación!'),
-(N'Пакетная скидка', N'Descuento por paquete');
+(N'Пакетная скидка', N'Descuento por paquete'),
+(N'Радиостанция использует добивщик', N'La emisora usa el rellenador de bloques'),
+(N'Рекламная акция удалена. Обновите страницу.', N'La campaña publicitaria fue eliminada. Actualice la página.'),
+(N'На этой неделе нет слотов, общих для всех отмеченных станций', N'Esta semana no hay franjas comunes a todas las emisoras marcadas'),
+(N'Слот есть только там, где окно есть у каждой отмеченной станции. Снимите галочку с лишней станции или перейдите к другой неделе.', N'Hay franja solo donde cada emisora marcada tiene una ventana. Desmarque la emisora que sobra o vaya a otra semana.'),
+(N'Нет прайс-листа на эту неделю: {0}.', N'No hay lista de precios para esta semana: {0}.'),
+(N'не подтверждена', N'no confirmada'),
+(N'Модульная кампания этой акции ({0})', N'Pauta modular de esta campaña ({0})'),
+(N'Акция №{0} ({1})', N'Campaña n.º {0} ({1})'),
+(N'В этом окне:', N'En esta ventana:'),
+(N'Отсутствуют:', N'Faltan:'),
+(N'Отметить все линейные кампании акции — веер по всем станциям', N'Marcar todas las pautas lineales de la campaña: abanico por todas las emisoras'),
+(N'Одна кампания — неделя рекламных окон её радиостанции: ставить ролики, смотреть выпуски окна, переносить их. Несколько — веер: слоты по всем отмеченным станциям.', N'Una pauta: la semana de ventanas publicitarias de su emisora: colocar spots, ver las emisiones de la ventana y trasladarlas. Varias: abanico, con franjas de todas las emisoras marcadas.'),
+(N'Выпусков акции за день по отмеченным кампаниям', N'Emisiones de la campaña en el día, en las pautas marcadas'),
+(N'Рекламные окна, веер: отмечено кампаний — {0}', N'Ventanas publicitarias, abanico: pautas marcadas — {0}'),
+(N'выпуски акции у всех отмеченных кампаний', N'emisiones de la campaña en todas las pautas marcadas'),
+(N'не у всех', N'no en todas'),
+(N'выпуски фирмы в других акциях на всех станциях', N'emisiones de la empresa en otras campañas en todas las emisoras'),
+(N'на части станций', N'en parte de las emisoras');
+GO
+INSERT INTO #t ([source], [text]) VALUES
+(N'выпуски акции не у всех отмеченных кампаний', N'emisiones de la campaña no en todas las pautas marcadas'),
+(N'выпуски фирмы в других акциях на части станций', N'emisiones de la empresa en otras campañas en parte de las emisoras'),
+(N'Нет права «Редактировать» на одну из отмеченных кампаний.', N'No tiene el permiso «Editar» para una de las pautas marcadas.'),
+(N'Ролик на все отмеченные станции ставится в «Режиме добавления»: щёлкните слот.', N'El spot se coloca en todas las emisoras marcadas en el «Modo de agregado»: haga clic en la franja.');
 GO
 
 BEGIN TRANSACTION;

@@ -86,6 +86,12 @@
     border-right: 1px solid var(--c-border-strong);
 }
 
+/* Слоты веера без цены: колонка времени у левого края и шире — «23:30-00:00». */
+.no-price .col-time {
+    left: 0;
+    min-width: 108px;
+}
+
 .table > thead > tr > th.col-price,
 .table > thead > tr > th.col-time {
     z-index: 2;
@@ -161,6 +167,15 @@
 
 .table > tbody > tr > td.firm {
     color: var(--c-place-firm);
+}
+
+/* Веер: свои выпуски не у всех отмеченных кампаний — красный, выпуски фирмы на части станций — оранжевый. */
+.table > tbody > tr > td.partial {
+    color: var(--c-place-partial);
+}
+
+.table > tbody > tr > td.firm-some {
+    color: var(--c-place-firm-some);
 }
 
 .table > tbody > tr > td.match {

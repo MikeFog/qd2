@@ -16,7 +16,7 @@
     прайс-лист и легенда — тонкой строкой под ней.
 *@
 
-<div class="pgrid @(Brush ? "brush" : null)">
+<div class="pgrid @(Brush ? "brush" : null) @(Model is { HasPrices: false } ? "no-price" : null)">
     <div class="pgrid-bar">
         @LeadingTools
         <div class="pgrid-nav">
@@ -44,7 +44,7 @@
 
     <div class="pgrid-info">
         @Caption
-        @if (Model is { NoPricelist: false })
+        @if (Model is { NoPricelist: false, HasPricelist: true })
         {
             <span class="pricelist tabular">@Tr.Format("Прайс-лист: {0} - {1}", DisplayFormat.Date(Model.PricelistStart), DisplayFormat.Date(Model.PricelistFinish))</span>
         }
@@ -67,8 +67,8 @@
     else if (Model.Rows.Count == 0)
     {
         <div class="state">
-            <div class="state-title">@Tr.T("На этой неделе рекламных окон нет")</div>
-            @Tr.T("Окна появляются после генерации по тарифам прайс-листа.")
+            <div class="state-title">@(Model.EmptyTitle ?? Tr.T("На этой неделе рекламных окон нет"))</div>
+            @(Model.EmptyHint ?? Tr.T("Окна появляются после генерации по тарифам прайс-листа."))
         </div>
     }
     else
@@ -77,7 +77,10 @@
             <table class="table">
                 <thead>
                     <tr>
-                        <th class="col-price">@Tr.T("Цена")</th>
+                        @if (Model.HasPrices)
+                        {
+                            <th class="col-price">@Tr.T("Цена")</th>
+                        }
                         <th class="col-time">@Tr.T("Время")</th>
                         @for (int d = 0; d < PlacementWeek.DaysInWeek; d++)
                         {
@@ -96,7 +99,10 @@
                     @foreach (PlacementRow row in Model.Rows)
                     {
                         <tr>
-                            <td class="col-price">@row.Price.ToString("C")</td>
+                            @if (Model.HasPrices)
+                            {
+                                <td class="col-price">@row.Price.ToString("C")</td>
+                            }
                             <td class="col-time">@row.Time</td>
                             @for (int d = 0; d < PlacementWeek.DaysInWeek; d++)
                             {
@@ -187,7 +193,9 @@
         string css = "cell";
         // Цвет текста: свои выпуски перекрывают выпуски фирмы (как в десктопе).
         if (cell.Has(PlacementFlags.Mine)) css += " mine";
+        else if (cell.Has(PlacementFlags.Partial)) css += " partial";
         else if (cell.Has(PlacementFlags.FirmHere)) css += " firm";
+        else if (cell.Has(PlacementFlags.FirmSome)) css += " firm-some";
         if (cell.Has(PlacementFlags.Match)) css += " match";
         // Фон — по приоритету десктопа: заблокировано, отмечено, прайм.
         if (Shown(cell, PlacementFlags.Disabled)) css += " bg-disabled";

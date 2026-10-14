@@ -1921,7 +1921,6 @@ code	Нет {0}	Sin {0}
 code	Нет права «Редактировать» на эту кампанию.	No tiene el permiso «Editar» para esta pauta.
 code	Номера роликов	Números de spots
 code	Обновить информацию	Actualizar información
-code	Одна кампания — неделя рекламных окон её радиостанции: ставить ролики, смотреть выпуски окна, переносить их.	Una pauta: la semana de ventanas publicitarias de su emisora; colocar spots, ver las emisiones de la ventana, trasladarlas.
 code	Отменить перенос (Esc)	Cancelar el traslado (Esc)
 code	Отметьте рекламную кампанию слева	Marque una pauta publicitaria a la izquierda
 code	Отмечено рекламных кампаний: {0}	Pautas publicitarias marcadas: {0}
@@ -1983,3 +1982,24 @@ code	Счёт выписан от	Factura emitida por
 code	У вас нет прав на выполнение данной операции!	¡No tiene permisos para realizar esta operación!
 column	Пакетная скидка	Descuento por paquete
 caption	Радиостанция использует добивщик	La emisora usa el rellenador de bloques
+code	Рекламная акция удалена. Обновите страницу.	La campaña publicitaria fue eliminada. Actualice la página.
+code	На этой неделе нет слотов, общих для всех отмеченных станций	Esta semana no hay franjas comunes a todas las emisoras marcadas
+code	Слот есть только там, где окно есть у каждой отмеченной станции. Снимите галочку с лишней станции или перейдите к другой неделе.	Hay franja solo donde cada emisora marcada tiene una ventana. Desmarque la emisora que sobra o vaya a otra semana.
+code	Нет прайс-листа на эту неделю: {0}.	No hay lista de precios para esta semana: {0}.
+code	не подтверждена	no confirmada
+code	Модульная кампания этой акции ({0})	Pauta modular de esta campaña ({0})
+code	Акция №{0} ({1})	Campaña n.º {0} ({1})
+code	В этом окне:	En esta ventana:
+code	Отсутствуют:	Faltan:
+code	Отметить все линейные кампании акции — веер по всем станциям	Marcar todas las pautas lineales de la campaña: abanico por todas las emisoras
+code	Одна кампания — неделя рекламных окон её радиостанции: ставить ролики, смотреть выпуски окна, переносить их. Несколько — веер: слоты по всем отмеченным станциям.	Una pauta: la semana de ventanas publicitarias de su emisora: colocar spots, ver las emisiones de la ventana y trasladarlas. Varias: abanico, con franjas de todas las emisoras marcadas.
+code	Выпусков акции за день по отмеченным кампаниям	Emisiones de la campaña en el día, en las pautas marcadas
+code	Рекламные окна, веер: отмечено кампаний — {0}	Ventanas publicitarias, abanico: pautas marcadas — {0}
+code	выпуски акции у всех отмеченных кампаний	emisiones de la campaña en todas las pautas marcadas
+code	не у всех	no en todas
+code	выпуски фирмы в других акциях на всех станциях	emisiones de la empresa en otras campañas en todas las emisoras
+code	на части станций	en parte de las emisoras
+code	выпуски акции не у всех отмеченных кампаний	emisiones de la campaña no en todas las pautas marcadas
+code	выпуски фирмы в других акциях на части станций	emisiones de la empresa en otras campañas en parte de las emisoras
+code	Нет права «Редактировать» на одну из отмеченных кампаний.	No tiene el permiso «Editar» para una de las pautas marcadas.
+code	Ролик на все отмеченные станции ставится в «Режиме добавления»: щёлкните слот.	El spot se coloca en todas las emisoras marcadas en el «Modo de agregado»: haga clic en la franja.

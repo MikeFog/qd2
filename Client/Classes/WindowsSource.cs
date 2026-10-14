@@ -45,8 +45,9 @@ namespace Merlin.Classes
 		/// кампании одной станции с разным типом оплаты.
 		/// </summary>
 		public static string CampaignCaption(DataRow campaign) =>
-			string.Format("{0} ({1}), {2}", campaign[Campaign.ParamNames.MassmediaName], campaign[Campaign.ParamNames.GroupName],
-				campaign[PaymentTypeNameColumn]);
+			// В базе у названий станций бывает пробел на конце («Русское радио ») — в подсказках он виден.
+			string.Format("{0} ({1}), {2}", Convert.ToString(campaign[Campaign.ParamNames.MassmediaName]).Trim(),
+				Convert.ToString(campaign[Campaign.ParamNames.GroupName]).Trim(), campaign[PaymentTypeNameColumn]);
 
 		private const string PaymentTypeNameColumn = "paymentTypeName";
 
@@ -75,11 +76,26 @@ namespace Merlin.Classes
 		// ---------- Открытая кампания ----------
 
 		/// <summary>
+		/// То, с чем работает вкладка и чему нужны ролики фирмы (кисть): одна кампания (WindowsSource)
+		/// или набор отмеченных кампаний веера (RangeSource). Ролики — фирмы акции, не станции.
+		/// </summary>
+		public interface IBrushScope
+		{
+			int FirmId { get; }
+
+			/// <summary>Можно ли менять размещение (права на акцию и кампании).</summary>
+			bool CanEdit { get; }
+
+			/// <summary>Список роликов фирмы, показанный последним, — ролик кисти берётся только из него.</summary>
+			DataTable Rollers { get; set; }
+		}
+
+		/// <summary>
 		/// Кампания, открытая на вкладке. Сам Campaign — internal; для записи он каждый раз читается
 		/// заново (акцию могли активировать или изменить в другом окне — от этого зависят проверки
 		/// IssueIUD и урезание оплат после пересчёта).
 		/// </summary>
-		public sealed class OpenCampaign
+		public sealed class OpenCampaign : IBrushScope
 		{
 			internal OpenCampaign() { }
 
@@ -94,8 +110,7 @@ namespace Merlin.Classes
 			/// <summary>День первого выпуска; null — выпусков нет. С этой недели открывается сетка.</summary>
 			public DateTime? FirstIssueDate { get; internal set; }
 
-			/// <summary>Список роликов фирмы, показанный последним, — ролик кисти берётся только из него.</summary>
-			internal DataTable Rollers { get; set; }
+			public DataTable Rollers { get; set; }
 		}
 
 		/// <summary>Линейная кампания этой акции; null — нет такой (удалена, другая акция, не линейная).</summary>
@@ -448,7 +463,7 @@ namespace Merlin.Classes
 		/// Ролики фирмы, как список «Ролики» в CampaignForm: процедура Rollers (Firm.GetRollers) —
 		/// активные ролики фирмы, пустышки тоже, по имени. Номер — позиция в списке.
 		/// </summary>
-		public static DataTable LoadRollers(OpenCampaign c)
+		public static DataTable LoadRollers(IBrushScope c)
 		{
 			DataTable rollers = new Firm(c.FirmId).GetRollers();
 			rollers.Columns.Add(RollerNumberColumn, typeof(int));
@@ -463,7 +478,7 @@ namespace Merlin.Classes
 		/// загрузка Rollers по каждому @rollerID (так видны и неактивные ролики, стоящие в выпусках),
 		/// номер — из списка «Ролики» (у кого его там нет — пусто), по порядку номеров.
 		/// </summary>
-		public static DataTable RollerRows(OpenCampaign c, IEnumerable<int> rollerIds)
+		public static DataTable RollerRows(IBrushScope c, IEnumerable<int> rollerIds)
 		{
 			Entity rollerEntity = EntityManager.GetEntity((int)Entities.Roller);
 			DataTable table = new DataTable();
@@ -478,7 +493,7 @@ namespace Merlin.Classes
 		}
 
 		/// <summary>Номер из списка «Ролики» к каждой строке роликов; строки — по возрастанию номера.</summary>
-		public static DataTable WithNumbers(OpenCampaign c, DataTable rollers)
+		public static DataTable WithNumbers(IBrushScope c, DataTable rollers)
 		{
 			Dictionary<int, int> numbers = new Dictionary<int, int>();
 			if (c.Rollers != null)
@@ -521,12 +536,12 @@ namespace Merlin.Classes
 		/// Ролик кисти — только из показанного списка роликов и только фирмы акции на сейчас
 		/// (IssueIUD фирму ролика не проверяет; фирму акции могли сменить, пока открыта вкладка).
 		/// </summary>
-		private static Roller BrushRoller(OpenCampaign c, int rollerId, Campaign campaign)
+		internal static Roller BrushRoller(IBrushScope c, int rollerId, int actionFirmId)
 		{
 			if (c.Rollers != null)
 				foreach (DataRow row in c.Rollers.Rows)
 					if (RollerIdOf(row) == rollerId
-						&& ParseHelper.GetInt32FromObject(row[Firm.ParamNames.FirmId], 0) == campaign.Action.FirmID)
+						&& ParseHelper.GetInt32FromObject(row[Firm.ParamNames.FirmId], 0) == actionFirmId)
 						return new Roller(row);
 			throw new InvalidOperationException(Tr.T("Ролика нет в списке роликов фирмы. Обновите страницу."));
 		}
@@ -541,7 +556,7 @@ namespace Merlin.Classes
 		public static void PlaceOne(OpenCampaign c, PlacementWeek week, PlacementCell cell, int rollerId, int position, WeekView view)
 		{
 			Campaign campaign = LoadForWrite(c);
-			Roller roller = BrushRoller(c, rollerId, campaign);
+			Roller roller = BrushRoller(c, rollerId, campaign.Action.FirmID);
 			RunInTransaction(() =>
 			{
 				campaign.AddIssue(roller, cell.Window, (RollerPositions)position, null);
@@ -602,7 +617,7 @@ namespace Merlin.Classes
 		public static BatchResult Place(OpenCampaign c, IEnumerable<PlacementCell> cells, int rollerId, int position)
 		{
 			Campaign campaign = LoadForWrite(c);
-			Roller roller = BrushRoller(c, rollerId, campaign);
+			Roller roller = BrushRoller(c, rollerId, campaign.Action.FirmID);
 			BatchResult result = new BatchResult();
 			RunInTransaction(() =>
 			{
@@ -695,7 +710,7 @@ namespace Merlin.Classes
 		public static BatchResult Replace(OpenCampaign c, CampaignIssues issues, int newRollerId)
 		{
 			Campaign campaign = LoadForWrite(c);
-			Roller newRoller = BrushRoller(c, newRollerId, campaign);
+			Roller newRoller = BrushRoller(c, newRollerId, campaign.Action.FirmID);
 			Dictionary<int, Roller> oldRollers = issues.RollerIds.ToDictionary(id => id, id => new Roller(id));
 			bool durationChanged = false;
 			BatchResult result = new BatchResult();

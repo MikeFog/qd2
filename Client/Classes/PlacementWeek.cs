@@ -23,6 +23,16 @@ namespace Merlin.Classes
 		Marked = 16,
 		/// <summary>Подходит под «Позиционирование» и «Предметы рекламы» (десктоп — жирный шрифт).</summary>
 		Match = 32,
+		/// <summary>
+		/// Выпуски этой акции есть не у всех отмеченных кампаний (веер, десктоп — красный текст).
+		/// Свои выпуски у всех отмеченных кампаний — <see cref="Mine"/>.
+		/// </summary>
+		Partial = 64,
+		/// <summary>
+		/// Выпуски этой фирмы в других акциях не на всех станциях места (веер, десктоп — оранжевый
+		/// текст); на всех станциях — <see cref="FirmHere"/>.
+		/// </summary>
+		FirmSome = 128,
 	}
 
 	/// <summary>
@@ -43,6 +53,16 @@ namespace Merlin.Classes
 
 		/// <summary>На эту дату у станции нет прайс-листа (ни действующего, ни будущего).</summary>
 		public bool NoPricelist { get; internal set; }
+
+		/// <summary>В строках есть цена (у слота веера её нет — колонка «Цена» не показывается).</summary>
+		public bool HasPrices { get; internal set; } = true;
+
+		/// <summary>Неделя строится по одному прайс-листу (подпись «Прайс-лист: … - …»); у веера их несколько.</summary>
+		public bool HasPricelist { get; internal set; } = true;
+
+		/// <summary>Своя надпись пустой недели вместо «рекламных окон нет»; null — стандартная.</summary>
+		public string EmptyTitle { get; internal set; }
+		public string EmptyHint { get; internal set; }
 
 		/// <summary>Срок прайс-листа недели — подпись «Прайс-лист: … - …».</summary>
 		public DateTime PricelistStart { get; internal set; }
@@ -100,7 +120,7 @@ namespace Merlin.Classes
 	/// <summary>Одно место недели.</summary>
 	public sealed class PlacementCell
 	{
-		/// <summary>Ключ места: у рекламного окна — windowId.</summary>
+		/// <summary>Ключ места: у рекламного окна — windowId, у слота веера — номер получаса от 2000-01-01.</summary>
 		public int Key { get; internal set; }
 
 		/// <summary>Фактические дата и время выхода.</summary>
@@ -115,6 +135,9 @@ namespace Merlin.Classes
 		public PlacementFlags Flags { get; internal set; }
 
 		public bool Has(PlacementFlags flag) => (Flags & flag) == flag;
+
+		/// <summary>Подсказка к месту строками (веер: каких кампаний не хватает, чьи акции фирмы здесь); null — нет.</summary>
+		public string Details { get; internal set; }
 
 		/// <summary>Ролики текущей кампании в месте — в порядке выпусков, с повторами.</summary>
 		public IReadOnlyList<int> OwnRollerIds { get; internal set; } = Array.Empty<int>();
@@ -151,5 +174,8 @@ namespace Merlin.Classes
 
 		/// <summary>Окно ядра — для записи выпуска; строится из строки TariffWindowRetrieve.</summary>
 		internal TariffWindowWithRollerIssues Window { get; set; }
+
+		/// <summary>Выпуски отмеченных кампаний акции в слоте веера (RangeSlotIssues) — только у цветных слотов.</summary>
+		internal IReadOnlyList<RangeSource.SlotIssue> SlotIssues { get; set; } = Array.Empty<RangeSource.SlotIssue>();
 	}
 }
