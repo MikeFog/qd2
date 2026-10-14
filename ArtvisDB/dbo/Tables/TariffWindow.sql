@@ -127,7 +127,10 @@ CREATE NONCLUSTERED INDEX [IX_TariffWindow_Search]
 GO
 CREATE NONCLUSTERED INDEX [IX_TariffWindow_ActualDate]
     ON [dbo].[TariffWindow]([massmediaID] ASC, [windowDateActual] ASC)
-    INCLUDE([duration], [windowId]);
+    INCLUDE([duration], [windowId], [tariffId], [timeInUseConfirmed], [timeInUseUnconfirmed],
+            [isFirstPositionOccupied], [isSecondPositionOccupied], [isLastPositionOccupied],
+            [firstPositionsUnconfirmed], [secondPositionsUnconfirmed], [lastPositionsUnconfirmed],
+            [price], [maxCapacity], [isDisabled]);
 
 
 GO
