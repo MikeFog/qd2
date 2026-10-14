@@ -411,6 +411,27 @@ tbody tr:focus-within .row-btn {
     margin-right: var(--s-1);
 }
 
+/* Панель окна веера: группы «ролик + позиция» с числом выпусков и кампаний. */
+.slot-groups {
+    width: 100%;
+    margin: 0;
+    font-size: 13px;
+}
+
+.slot-groups th {
+    font-weight: 600;
+    color: var(--c-text-muted);
+    white-space: nowrap;
+}
+
+.slot-groups .col-check {
+    width: 1%;
+}
+
+.slot-groups .col-count {
+    text-align: right;
+}
+
 .panel-list {
     flex: 1 1 0;
     min-height: 0;

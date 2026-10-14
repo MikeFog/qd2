@@ -1,5 +1,5 @@
 ﻿/*
-    ДЕПЛОЙ: переводы веб-версии на язык «es» (2029 строк). docs/tasks/web-i18n.md, этап 5.
+    ДЕПЛОЙ: переводы веб-версии на язык «es» (2038 строк). docs/tasks/web-i18n.md, этап 5.
     СГЕНЕРИРОВАН из ArtvisDB/Scripts/i18n/es.tsv скриптом build-seed.py — руками не править.
 
     ПРЕДУСЛОВИЕ     накачен web-i18n-translation-deploy.sql (таблица iTranslation).
@@ -2051,7 +2051,16 @@ INSERT INTO #t ([source], [text]) VALUES
 (N'Добавить недостающие ролики в выделенных окнах до полного пересечения? ({0} шт.)', N'¿Agregar los spots que faltan en las ventanas seleccionadas hasta la intersección completa? ({0} uds.)'),
 (N'В выделенных окнах количество роликов уже совпадает у всех выбранных кампаний.', N'En las ventanas seleccionadas la cantidad de spots ya coincide en todas las pautas marcadas.'),
 (N'Из них без позиционирования (позиция в окне занята): {0}.', N'De ellos sin posicionamiento (la posición en la ventana está ocupada): {0}.'),
-(N'Не удалено {0} шт.: {1}', N'No eliminadas {0} uds.: {1}');
+(N'Не удалено {0} шт.: {1}', N'No eliminadas {0} uds.: {1}'),
+(N'Выпуски отмеченных кампаний', N'Emisiones de las pautas marcadas'),
+(N'В окне нет выпусков отмеченных кампаний.', N'En la ventana no hay emisiones de las pautas marcadas.'),
+(N'Кампании', N'Pautas'),
+(N'в тех кампаниях, где он есть', N'en las pautas donde está'),
+(N'Перенести выпуск в окно ''{0}'' {1}?', N'¿Trasladar la emisión a la ventana ''{0}'' {1}?'),
+(N'Перенести выпуски ({0} шт.) в окно ''{1}'' {2}?', N'¿Trasladar las emisiones ({0} uds.) a la ventana ''{1}'' {2}?'),
+(N'В этом окне уже есть выпуск фирмы «{0}» ({1}).', N'En esta ventana ya hay una emisión de la empresa «{0}» ({1}).'),
+(N'акция подтверждена', N'campaña confirmada'),
+(N'акция ещё не подтверждена', N'campaña aún no confirmada');
 GO
 
 BEGIN TRANSACTION;

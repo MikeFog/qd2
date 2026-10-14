@@ -36,7 +36,7 @@
         </div>
     }
 
-    <div class="windows-body @(_selected != null && _open != null ? "with-panel" : null)">
+    <div class="windows-body @((_selected != null && _open != null) || (_rangeSlot != null && _range != null) ? "with-panel" : null)">
         <aside class="side">
             <section class="side-block">
                 <div class="side-title">@Tr.T("Рекламные кампании")</div>
@@ -158,7 +158,7 @@
                    Тулбар вкладки — в строке недели сетки, подпись режима и легенда — тонкой строкой под ней:
                    сетке нужна вся высота. Переключатели вида — значками, подписи десктопа — в подсказках. *@
                 <div class="grid-box" tabindex="-1" @ref="_gridBox" @onkeydown="GridKey">
-                    <PlacementGrid Model="_week" Date="_date" SelectedKeys="_selection.Keys" Brush="_brushOn && _transfer == null"
+                    <PlacementGrid Model="_week" Date="_date" SelectedKeys="_selection.Keys" Brush="_brushOn && _transfer == null && _rangeTransfer == null"
                                    ShownBackgrounds="ShownBackgrounds" CellText="CellText" CellTitle="CellTitle" ExtraCellClass="TransferCellClass"
                                    DayTotalTitle="@(IsRange ? Tr.T("Выпусков акции за день по отмеченным кампаниям") : Tr.T("Выпусков этой кампании за день"))"
                                    OnPrevious="PreviousWeek" OnNext="NextWeek" OnJump="JumpTo" OnCellClick="ClickCell">
@@ -278,6 +278,20 @@
                                     </button>
                                 </div>
                             }
+                            else if (_rangeTransfer != null)
+                            {
+                                <div class="transfer-bar">
+                                    <i class="bi bi-box-arrow-right" aria-hidden="true"></i>
+                                    <span>
+                                        @Tr.Format("Перенос выпусков ({0}) из окна", _rangeTransfer.Groups.Count)
+                                        <b class="tabular">@DisplayFormat.DayMonthTime(_rangeTransfer.Source.Date)</b> —
+                                        @Tr.T("щёлкните окно, куда перенести")
+                                    </span>
+                                    <button type="button" class="btn btn-sm btn-outline-secondary" title="@(Tr.T("Отменить перенос (Esc)"))" @onclick="CancelTransfer">
+                                        @Tr.T("Отмена")
+                                    </button>
+                                </div>
+                            }
                             else if (_range != null && !_brushOn && _selection.Count > 0)
                             {
                                 <div class="selection-bar">
@@ -331,6 +345,75 @@
                 </div>
             }
         </section>
+
+        @if (_rangeSlot != null && _range != null)
+        {
+            <PaneSplitter StorageKey="action-windows-panel" RightPane="true" />
+            <aside class="window-panel">
+                <div class="panel-head">
+                    <div>
+                        <div class="panel-title tabular">@Tr.Format("Окно {0}", DisplayFormat.DateAndTime(_rangeSlot.Date))</div>
+                        <div class="panel-sub tabular">@_rangeSlot.Text@StatusText(_rangeSlot)</div>
+                    </div>
+                    <button type="button" class="btn btn-sm btn-outline-secondary" title="@(Tr.T("Закрыть"))" aria-label="@(Tr.T("Закрыть"))" @onclick="() => CloseSlotPanel()">
+                        <i class="bi bi-x-lg" aria-hidden="true"></i>
+                    </button>
+                </div>
+
+                <div class="panel-section-title">@Tr.T("Выпуски отмеченных кампаний")</div>
+                @if (_slotItems.Count > 0 && _range.CanEdit)
+                {
+                    <div class="panel-bar">
+                        @if (_slotChecked.Count > 0)
+                        {
+                            <span>@Tr.Format("Отмечено: {0}", _slotChecked.Count)</span>
+                            <button type="button" class="btn btn-sm btn-primary" disabled="@(_rangeTransfer != null)" @onclick="StartRangeTransfer">
+                                <i class="bi bi-box-arrow-right" aria-hidden="true"></i>@Tr.T("Перенести в окно")
+                            </button>
+                        }
+                        else
+                        {
+                            <span class="text-muted">@Tr.T("Отметьте выпуски, чтобы перенести их в другое окно.")</span>
+                        }
+                    </div>
+                }
+                <div class="panel-list">
+                    @if (_slotItems.Count == 0)
+                    {
+                        <div class="state">@Tr.T("В окне нет выпусков отмеченных кампаний.")</div>
+                    }
+                    else
+                    {
+                        <table class="table table-sm slot-groups">
+                            <thead>
+                                <tr>
+                                    <th class="col-check"></th>
+                                    <th>@Tr.T("Ролик")</th>
+                                    <th>@Tr.T("Порядок")</th>
+                                    <th>@Tr.T("Кампании")</th>
+                                    <th class="col-count">@Tr.T("Выпусков")</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @foreach (RangeSource.SlotGroupInfo item in _slotItems)
+                                {
+                                    <tr>
+                                        <td class="col-check">
+                                            <input type="checkbox" class="form-check-input" disabled="@(!_range.CanEdit || _rangeTransfer != null)" checked="@_slotChecked.Contains(item.Index)"
+                                                   aria-label="@SlotGroupLabel(item)" @onchange="e => ToggleSlotGroup(item.Index, e.Value is true)" />
+                                        </td>
+                                        <td>@SlotGroupLabel(item)</td>
+                                        <td>@item.PositionText</td>
+                                        <td title="@item.CampaignTitles">@Tr.Format("{0} из {1}", item.Campaigns, _range.CampaignIds.Count)</td>
+                                        <td class="col-count tabular">@item.Issues</td>
+                                    </tr>
+                                }
+                            </tbody>
+                        </table>
+                    }
+                </div>
+            </aside>
+        }
 
         @if (_selected != null && _open != null)
         {
@@ -431,6 +514,15 @@
     // Перенос: отмеченные в панели выпуски ждут щелчка по окну-приёмнику.
     private TransferSource? _transfer;
     private sealed record TransferSource(PlacementCell Source, IReadOnlyList<PresentationObject> Issues);
+
+    // Панель окна веера: содержимое последнего выбранного окна по группам «ролик + позиция»; отмеченные группы переносятся в
+    // другое окно (десктоп — перетаскивание): перенос ждёт щелчка по окну-приёмнику.
+    private PlacementCell? _rangeSlot;
+    private RangeSource.SlotContent? _slotContent;
+    private IReadOnlyList<RangeSource.SlotGroupInfo> _slotItems = Array.Empty<RangeSource.SlotGroupInfo>();
+    private readonly HashSet<int> _slotChecked = new();
+    private RangeTransfer? _rangeTransfer;
+    private sealed record RangeTransfer(PlacementCell Source, RangeSource.SlotContent Content, IReadOnlyList<int> Groups);
 
     private string NoRightText => IsRange
         ? Tr.T("Нет права «Редактировать» на одну из отмеченных кампаний.")
@@ -572,6 +664,7 @@
         _transfer = null;
         _selected = null;
         _panel = null;
+        CloseSlotPanel();
         _selection.Clear();
         if (_checked.Count == 0)
             return;
@@ -633,6 +726,14 @@
         _selected = _selected == null ? null : _week.Find(_selected.Key);
         if (_selected == null)
             _panel = null;
+        if (_rangeSlot != null)
+        {
+            PlacementCell? fresh = _week.Find(_rangeSlot.Key);
+            if (fresh == null)
+                CloseSlotPanel(keepTransfer: true);
+            else
+                ShowSlotCore(fresh);
+        }
     }
 
     private Task ReloadWeek() => Run(ReloadWeekCore);
@@ -812,6 +913,13 @@
         // выделяется — как в сетке одной кампании. Панели выпусков окна у веера пока нет (этап 4б).
         if (_range != null)
         {
+            if (_rangeTransfer != null)
+            {
+                if (e.Mouse.Detail <= 1 && TransferCellClass(e.Cell) == TargetClass)
+                    await Exclusive(() => TransferRangeTo(e.Cell));
+                return;
+            }
+
             if (_brushOn)
             {
                 if (e.Mouse.Detail <= 1)
@@ -820,6 +928,7 @@
             }
 
             _selection.Click(_week!, e.Cell, e.Mouse.ShiftKey, e.Mouse.CtrlKey || e.Mouse.MetaKey);
+            await Run(() => ShowSlotCore(e.Cell));
             await FocusGrid();
             return;
         }
@@ -858,6 +967,8 @@
             return;
         if (_transfer != null)
             _transfer = null;
+        else if (_rangeTransfer != null)
+            _rangeTransfer = null;
         else
             _selection.Clear();
     }
@@ -1320,16 +1431,118 @@
         await FocusGrid();
     }
 
-    private void CancelTransfer() => _transfer = null;
+    private void CancelTransfer()
+    {
+        _transfer = null;
+        _rangeTransfer = null;
+    }
 
     private string? TransferCellClass(PlacementCell cell)
     {
+        if (_rangeTransfer != null)
+            return cell.Key == _rangeTransfer.Source.Key ? "cell-source" : TargetClass;
         if (_transfer == null)
             return null;
         if (cell.Key == _transfer.Source.Key)
             return "cell-source";
         // Заблокированное окно процедура не примет (DisabledInsertRoller) — не предлагаем.
         return cell.Has(PlacementFlags.Disabled) ? "cell-unavailable" : TargetClass;
+    }
+
+    /// <summary>Содержимое окна для панели веера; отмеченные группы сбрасываются.</summary>
+    private void ShowSlotCore(PlacementCell cell)
+    {
+        // Сначала читаем, потом присваиваем: сбой чтения (таймаут, взаимоблокировка) не должен оставить шапку одного окна над
+        // группами другого — по ним потом отмечают, что переносить.
+        RangeSource.SlotContent content = RangeSource.ContentOf(_range!, cell);
+        IReadOnlyList<RangeSource.SlotGroupInfo> items = RangeSource.Describe(_range!, content);
+        _rangeSlot = cell;
+        _slotChecked.Clear();
+        _slotContent = content;
+        _slotItems = items;
+    }
+
+    private void CloseSlotPanel(bool keepTransfer = false)
+    {
+        _rangeSlot = null;
+        _slotContent = null;
+        _slotItems = Array.Empty<RangeSource.SlotGroupInfo>();
+        _slotChecked.Clear();
+        if (!keepTransfer)
+            _rangeTransfer = null;
+    }
+
+    private void ToggleSlotGroup(int index, bool on)
+    {
+        if (on)
+            _slotChecked.Add(index);
+        else
+            _slotChecked.Remove(index);
+    }
+
+    /// <summary>«№ ролик» из списка «Ролики»; ролика в списке нет (чужой, неактивный) — по названию.</summary>
+    private string SlotGroupLabel(RangeSource.SlotGroupInfo item) =>
+        _numbers.TryGetValue(item.RollerId, out int number) ? number + " " + item.RollerName : item.RollerName;
+
+    /// <summary>«Перенести в окно» из панели веера: отмеченные группы ждут щелчка по окну-приёмнику; недели листать можно.</summary>
+    private async Task StartRangeTransfer()
+    {
+        if (_rangeSlot == null || _slotContent == null || _slotChecked.Count == 0 || _range is not { CanEdit: true })
+            return;
+        _brushOn = false;
+        _selection.Clear();
+        _rangeTransfer = new RangeTransfer(_rangeSlot, _slotContent, _slotChecked.OrderBy(i => i).ToList());
+        await FocusGrid();
+    }
+
+    /// <summary>
+    /// Перенос групп в окно-приёмник (десктоп — перетаскивание): одно подтверждение (вопрос десктопа; в окне уже выпуск этой фирмы —
+    /// предупреждение первым), затем удаление и постановка одной транзакцией — всё или ничего. Отказ (позиция занята, нет места, прошлое…)
+    /// — сообщение над сеткой, режим переноса остаётся: можно выбрать другое окно или отменить.
+    /// </summary>
+    private async Task TransferRangeTo(PlacementCell target)
+    {
+        RangeTransfer transfer = _rangeTransfer!;
+        RangeSource.MovePlan? plan = null;
+        await Run(() => plan = RangeSource.PlanMove(_range!, transfer.Content, transfer.Groups, transfer.Source.Date, target.Date));
+        if (plan == null || plan.Count == 0)
+            return;
+
+        string targetText = DisplayFormat.DateAndTime(target.Date);
+        string scope = Tr.T("в тех кампаниях, где он есть");
+        string question = plan.Count == 1
+            ? Tr.Format("Перенести выпуск в окно '{0}' {1}?", targetText, scope)
+            : Tr.Format("Перенести выпуски ({0} шт.) в окно '{1}' {2}?", plan.Count, targetText, scope);
+        string? conflict = plan.FirmConflict
+            ? Tr.Format("В этом окне уже есть выпуск фирмы «{0}» ({1}).", Action.FirmName, plan.AnyConfirmed ? Tr.T("акция подтверждена") : Tr.T("акция ещё не подтверждена"))
+            : null;
+        if (await Dialogs.ShowAsync(Tr.T("Перенести в окно"), b =>
+            {
+                if (conflict != null)
+                {
+                    b.OpenElement(0, "p");
+                    b.AddAttribute(1, "class", "text-warning-emphasis");
+                    b.AddContent(2, conflict);
+                    b.CloseElement();
+                }
+                b.OpenElement(3, "p");
+                b.AddContent(4, question);
+                b.CloseElement();
+            }, okText: Tr.T("Перенести")) != DialogOutcome.Ok)
+            return;
+
+        bool moved = false;
+        await Run(() =>
+        {
+            RangeSource.MoveGroups(_range!, plan, _view);
+            moved = true;
+        });
+        if (!moved)
+            return;
+
+        _rangeTransfer = null;
+        await Run(ReloadWeekCore);
+        await Changed.InvokeAsync();
     }
 
     /// <summary>

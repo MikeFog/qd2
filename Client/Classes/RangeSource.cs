@@ -737,22 +737,172 @@ namespace Merlin.Classes
 
 			Dictionary<DateTime, List<SlotIssue>> bySlot = LoadSlotIssues(r, slots);
 			foreach (DateTime slot in slots)
-			{
-				if (!bySlot.TryGetValue(slot, out List<SlotIssue> issues))
-					continue;
-				foreach (IGrouping<(int RollerId, int PositionId), SlotIssue> g in issues.GroupBy(i => (i.RollerId, i.PositionId)))
-				{
-					SlotGroup group = new SlotGroup { Slot = slot, RollerId = g.Key.RollerId, PositionId = g.Key.PositionId, RollerName = g.First().RollerName };
-					foreach (SlotIssue issue in g)
-					{
-						group.Copies.TryGetValue(issue.CampaignId, out int copies);
-						group.Copies[issue.CampaignId] = copies + 1;
-						group.Issues.Add(issue);
-					}
-					groups.Add(group);
-				}
-			}
+				if (bySlot.TryGetValue(slot, out List<SlotIssue> issues))
+					groups.AddRange(GroupsOf(slot, issues));
 			return new SlotContent(groups);
+		}
+
+		/// <summary>Выпуски одного окна — группами «ролик + позиция» с числом копий у каждой кампании.</summary>
+		private static List<SlotGroup> GroupsOf(DateTime slot, IEnumerable<SlotIssue> issues)
+		{
+			List<SlotGroup> groups = new List<SlotGroup>();
+			foreach (IGrouping<(int RollerId, int PositionId), SlotIssue> g in issues.GroupBy(i => (i.RollerId, i.PositionId)))
+			{
+				SlotGroup group = new SlotGroup { Slot = slot, RollerId = g.Key.RollerId, PositionId = g.Key.PositionId, RollerName = g.First().RollerName };
+				foreach (SlotIssue issue in g)
+				{
+					group.Copies.TryGetValue(issue.CampaignId, out int copies);
+					group.Copies[issue.CampaignId] = copies + 1;
+					group.Issues.Add(issue);
+				}
+				groups.Add(group);
+			}
+			return groups;
+		}
+
+		/// <summary>
+		/// Содержимое окна для панели: уже прочитанные вместе с неделей выпуски (у цветных окон они есть всегда, у остальных — при «Номерах
+		/// роликов»), иначе — RangeSlotIssues по этому окну. Перед записью состав всё равно перечитывается в транзакции.
+		/// </summary>
+		public static SlotContent ContentOf(OpenRange r, PlacementCell cell) =>
+			cell.SlotIssuesLoaded ? new SlotContent(GroupsOf(cell.Date, cell.SlotIssues)) : ReadSlots(r, new[] { cell });
+
+		/// <summary>Строка панели окна: группа «ролик + позиция» — сколько выпусков и у скольких кампаний.</summary>
+		public sealed class SlotGroupInfo
+		{
+			internal SlotGroupInfo() { }
+
+			/// <summary>Номер группы в <see cref="SlotContent"/> — по нему отмечаются группы для переноса.</summary>
+			public int Index { get; internal set; }
+			public int RollerId { get; internal set; }
+			public string RollerName { get; internal set; }
+			public int PositionId { get; internal set; }
+
+			/// <summary>«Первый» / «Второй» / «Последний»; без позиции — пусто.</summary>
+			public string PositionText { get; internal set; }
+			public int Issues { get; internal set; }
+			public int Campaigns { get; internal set; }
+
+			/// <summary>Кампании, у которых группа стоит, — подписи по строке на кампанию (подсказка).</summary>
+			public string CampaignTitles { get; internal set; }
+		}
+
+		public static IReadOnlyList<SlotGroupInfo> Describe(OpenRange r, SlotContent content)
+		{
+			List<SlotGroupInfo> items = new List<SlotGroupInfo>();
+			for (int i = 0; i < content.Groups.Count; i++)
+			{
+				SlotGroup g = content.Groups[i];
+				items.Add(new SlotGroupInfo
+				{
+					Index = i,
+					RollerId = g.RollerId,
+					RollerName = g.RollerName,
+					PositionId = g.PositionId,
+					PositionText = g.PositionId == 0 ? "" : Issue.GetPositionDisplayName((RollerPositions)g.PositionId),
+					Issues = g.Count,
+					Campaigns = g.Copies.Count,
+					CampaignTitles = string.Join("\n", r.CampaignIds.Where(g.Copies.ContainsKey).Select(id => r.Titles[id])),
+				});
+			}
+			return items;
+		}
+
+		// ---------- Перенос выпусков окна в другое окно ----------
+
+		/// <summary>План переноса: какие группы окна-источника, куда, и есть ли в окне-приёмнике выпуск этой же фирмы.</summary>
+		public sealed class MovePlan
+		{
+			internal MovePlan() { }
+
+			internal DateTime Source { get; set; }
+			internal DateTime Target { get; set; }
+			internal List<SlotGroup> Groups { get; } = new List<SlotGroup>();
+
+			/// <summary>Групп «ролик + позиция» к переносу.</summary>
+			public int Count => Groups.Count;
+
+			/// <summary>В окне-приёмнике на станциях переносимых кампаний уже есть выпуск этой фирмы (из любой акции) — предупреждение, не запрет.</summary>
+			public bool FirmConflict { get; internal set; }
+
+			/// <summary>Среди этих выпусков есть выпуск подтверждённой акции — для текста предупреждения.</summary>
+			public bool AnyConfirmed { get; internal set; }
+		}
+
+		/// <summary>
+		/// План переноса отмеченных групп окна <paramref name="source"/> в окно <paramref name="target"/>; группа переезжает в том составе
+		/// кампаний, в котором стояла (иначе перенос размножил бы выпуск на остальные кампании). Проверка фирмы — RangeSlotFirmConflict,
+		/// как в десктопном перетаскивании: только сигнал для диалога, реальную проверку при записи делает AddRangeIssues.
+		/// </summary>
+		public static MovePlan PlanMove(OpenRange r, SlotContent content, IEnumerable<int> groupIndexes, DateTime source, DateTime target)
+		{
+			MovePlan plan = new MovePlan { Source = source, Target = target };
+			HashSet<int> wanted = new HashSet<int>(groupIndexes);
+			for (int i = 0; i < content.Groups.Count; i++)
+				if (wanted.Contains(i))
+					plan.Groups.Add(content.Groups[i]);
+
+			HashSet<int> campaigns = new HashSet<int>(plan.Groups.SelectMany(g => g.Copies.Keys));
+			if (campaigns.Count == 0)
+				return plan;
+
+			Dictionary<string, object> parameters = DataAccessor.CreateParametersDictionary();
+			parameters[Action.ParamNames.ActionId] = r.ActionId;
+			parameters["issueDate"] = target;
+			parameters[Campaign.ParamNames.CampaignIds] = Action.BuildCampaignIdsCsv(campaigns.ToList());
+			DataTable table = DataAccessor.LoadDataSet("RangeSlotFirmConflict", parameters).Tables[0];
+			if (table.Rows.Count > 0)
+			{
+				plan.FirmConflict = ParseHelper.GetBooleanFromObject(table.Rows[0]["hasConflict"], false);
+				plan.AnyConfirmed = ParseHelper.GetBooleanFromObject(table.Rows[0]["anyConfirmed"], false);
+			}
+			return plan;
+		}
+
+		/// <summary>Состав группы для сравнения «не изменилась ли»: ролик, позиция, кампании и число копий.</summary>
+		private static string Signature(SlotGroup g) =>
+			g.RollerId + "/" + g.PositionId + ":" + string.Join(",", g.Copies.OrderBy(c => c.Key).Select(c => c.Key + "x" + c.Value));
+
+		/// <summary>
+		/// Перенос — как десктопное MoveRangeIssuesToSlot, всё или ничего одной транзакцией: сначала удаляются все группы окна-источника
+		/// (MasterIssueDelete по кампаниям группы, столько проходов, сколько копий), затем те же ролики с теми же позициями и в тех же
+		/// кампаниях ставятся в окно-приёмник (AddRangeIssues), один пересчёт. Отказ любой станции — откат всего переноса, сообщение
+		/// процедуры. Десктопный путь по группам теряет дубли (за вызов снимается и ставится по одному выпуску на кампанию) — здесь
+		/// копии переносятся все. Между выбором групп и окна-приёмника проходит время, поэтому состав окна-источника перечитывается в
+		/// транзакции: изменившаяся группа отменяет перенос — иначе удалённый выпуск воскрес бы.
+		/// </summary>
+		public static void MoveGroups(OpenRange r, MovePlan plan, WindowsSource.WeekView view)
+		{
+			ActionOnMassmedia action = LoadForWrite(r);
+			WindowsSource.RunInTransaction(() =>
+			{
+				Dictionary<DateTime, List<SlotIssue>> now = LoadSlotIssues(r, new[] { plan.Source });
+				Dictionary<string, string> current = GroupsOf(plan.Source, now.TryGetValue(plan.Source, out List<SlotIssue> issues) ? issues : new List<SlotIssue>())
+					.ToDictionary(g => g.RollerId + "/" + g.PositionId, Signature);
+				foreach (SlotGroup group in plan.Groups)
+					if (!current.TryGetValue(group.RollerId + "/" + group.PositionId, out string signature) || signature != Signature(group))
+						throw new InvalidOperationException(Tr.T("Выпуск изменили или удалили, пока выбиралось окно. Выберите выпуски заново."));
+
+				foreach (SlotGroup group in plan.Groups)
+					foreach (List<int> campaigns in group.DeletePasses())
+					{
+						Dictionary<string, object> parameters = DataAccessor.CreateParametersDictionary();
+						parameters[Action.ParamNames.ActionId] = r.ActionId;
+						parameters["issueDate"] = plan.Source;
+						parameters["rollerID"] = group.RollerId;
+						parameters["positionId"] = group.PositionId;
+						parameters[Campaign.ParamNames.CampaignIds] = Action.BuildCampaignIdsCsv(campaigns);
+						DataAccessor.ExecuteNonQuery("MasterIssueDelete", parameters);
+					}
+
+				foreach (SlotGroup group in plan.Groups)
+				{
+					int duration = group.Issues[0].Duration;
+					foreach (List<int> campaigns in group.DeletePasses())
+						AddRangeFor(r, plan.Target, group.RollerId, duration, group.PositionId, campaigns, view);
+				}
+				action.Recalculate(false);
+			});
 		}
 
 		// ---------- Дубли и «до полного пересечения» ----------
