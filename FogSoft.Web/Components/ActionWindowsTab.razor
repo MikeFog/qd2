@@ -189,7 +189,7 @@
                                     <i class="bi bi-file-earmark-text" aria-hidden="true"></i>
                                 </button>
                                 <button type="button" class="btn btn-sm btn-outline-secondary @(_showNumbers ? "active" : null)" aria-pressed="@_showNumbers"
-                                        title="@(Tr.T("Номера роликов") + "\n" + (IsRange ? Tr.T("Показывать в окнах номера роликов отмеченных кампаний вместо остатка времени") : Tr.T("Показывать в окнах номера роликов текущей кампании вместо остатка времени")))" aria-label="@(Tr.T("Номера роликов"))" @onclick="() => _showNumbers = !_showNumbers">
+                                        title="@(Tr.T("Номера роликов") + "\n" + (IsRange ? Tr.T("Показывать в окнах номера роликов отмеченных кампаний вместо остатка времени") : Tr.T("Показывать в окнах номера роликов текущей кампании вместо остатка времени")))" aria-label="@(Tr.T("Номера роликов"))" @onclick="ToggleNumbers">
                                     <i class="bi bi-123" aria-hidden="true"></i>
                                 </button>
                                 <button type="button" class="btn btn-sm btn-outline-secondary @(_showPrime ? "active" : null)" aria-pressed="@_showPrime"
@@ -602,6 +602,8 @@
     private void ReloadWeekCore()
     {
         _week = _range != null ? RangeSource.LoadWeek(_range, _date, _view) : WindowsSource.LoadWeek(_open!, _date, _view);
+        if (_range != null && _showNumbers)
+            RangeSource.LoadAllSlotIssues(_range, _week);
         _selection.Retain(_week);
         _selected = _selected == null ? null : _week.Find(_selected.Key);
         if (_selected == null)
@@ -640,6 +642,17 @@
         if (_selected != null)
             _panel = WindowsSource.LoadWindowIssues(_open!, _selected, _view.ShowUnconfirmed);
     });
+
+    /// <summary>
+    /// «Номера роликов»: в веере при включении дочитываются выпуски во всех окнах недели (в цветных они уже есть) — как
+    /// десктоп, который читает весь слот только в этом режиме.
+    /// </summary>
+    private async Task ToggleNumbers()
+    {
+        _showNumbers = !_showNumbers;
+        if (_showNumbers && _range != null && _week != null)
+            await Run(() => RangeSource.LoadAllSlotIssues(_range!, _week!));
+    }
 
     private Task ToggleUnconfirmed()
     {

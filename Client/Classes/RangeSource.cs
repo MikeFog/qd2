@@ -278,6 +278,7 @@ namespace Merlin.Classes
 				Dictionary<DateTime, List<SlotIssue>> bySlot = LoadSlotIssues(r, coloured.Select(c => c.Date));
 				foreach (PlacementCell cell in coloured)
 				{
+					cell.SlotIssuesLoaded = true;
 					if (!bySlot.TryGetValue(cell.Date, out List<SlotIssue> issues))
 						continue;
 					cell.SlotIssues = issues;
@@ -407,6 +408,26 @@ namespace Merlin.Classes
 					without.Add(r.Titles[campaignId]);
 			}
 			week.EmptyHint = without.Count == 0 ? hint : hint + " " + Tr.Format("Нет прайс-листа на эту неделю: {0}.", string.Join("; ", without));
+		}
+
+		/// <summary>
+		/// Выпуски отмеченных кампаний во ВСЕХ окнах недели, а не только в цветных. Цвет слота считает
+		/// TariffWindowWithRange по включённым окнам без ёмкости (#tw), а RangeSlotIssues и десктопные номера роликов
+		/// (RefreshPartialRollerGroups) читают любые: выпуск в окне, которое потом заблокировали, слот не красит, но номер
+		/// в ячейке десктоп показывал. Нужно только при «Номерах роликов», как и там, — одним вызовом.
+		/// </summary>
+		public static void LoadAllSlotIssues(OpenRange r, PlacementWeek week)
+		{
+			List<PlacementCell> rest = week.Cells.Where(c => !c.SlotIssuesLoaded).ToList();
+			if (rest.Count == 0)
+				return;
+			Dictionary<DateTime, List<SlotIssue>> bySlot = LoadSlotIssues(r, rest.Select(c => c.Date));
+			foreach (PlacementCell cell in rest)
+			{
+				if (bySlot.TryGetValue(cell.Date, out List<SlotIssue> issues))
+					cell.SlotIssues = issues;
+				cell.SlotIssuesLoaded = true;
+			}
 		}
 
 		/// <summary>RangeSlotIssues одним вызовом на все слоты: выпуски отмеченных кампаний по слотам.</summary>
