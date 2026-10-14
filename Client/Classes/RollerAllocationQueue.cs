@@ -9,7 +9,7 @@ namespace Merlin.Classes
     // дополнительно распределены так, чтобы один и тот же ролик не шёл подряд (см. ArrangeNoAdjacentRepeats) —
     // это подстраховка на случай, когда дневная порция не совпадает ровно с границей раунда.
     // Используется и для линейной, и для веерной генерации по Шаблону 3.
-    internal class RollerAllocationQueue
+    public class RollerAllocationQueue
     {
         private readonly LinkedList<Roller> _queue;
 
@@ -19,13 +19,18 @@ namespace Merlin.Classes
         // каждому дню все разные ролики. Ролики с большей квотой неизбежно достаются последним
         // раундам почти в одиночку — это ожидаемое поведение, не дефект.
         public RollerAllocationQueue(IEnumerable<(Roller Roller, int Quantity)> rollerQuantities)
+            : this(rollerQuantities, new Random())
+        {
+        }
+
+        // Random внедряется для проверки без жребия (tools/template-planner-check); десктоп вызывает конструктор выше.
+        public RollerAllocationQueue(IEnumerable<(Roller Roller, int Quantity)> rollerQuantities, Random rnd)
         {
             // rollerQuantities — IEnumerable, обходим Max() и Where() многократно, поэтому
             // материализуем один раз, иначе можно словить повторный (и потенциально другой) запрос к источнику.
             var quantities = rollerQuantities.Where(rq => rq.Quantity > 0).ToList();
 
             var pool = new List<Roller>(quantities.Sum(rq => rq.Quantity));
-            var rnd = new Random();
 
             if (quantities.Count > 0)
             {
