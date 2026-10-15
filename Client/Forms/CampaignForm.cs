@@ -1675,6 +1675,7 @@ namespace Merlin.Forms
 			try
 			{
 				tbbTemplate.Checked = false;
+				SetEditMode();
 				Roller roller = ((IRollerGrid)_tariffGrid).Roller;
 				if(roller == null)
 				{
@@ -1750,6 +1751,7 @@ namespace Merlin.Forms
 			try
 			{
 				tbbTemplate.Checked = false;
+				SetEditMode();
 				List<int> massmediaIds = GetTemplateMassmediaIds();
 				RollerPositions position = ((IRollerGrid)_tariffGrid).RollerPosition;
 				// Веерная кампания: _campaign == null (см. GetTemplateMassmediaIds) — акция берётся
