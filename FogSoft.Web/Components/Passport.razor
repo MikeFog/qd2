@@ -517,9 +517,14 @@ else
         object? v = Object[field.Name];
         if (v == null || v == DBNull.Value)
             return "";
-        return field.Type?.IsMoney == true
-            ? Convert.ToDecimal(v).ToString("C")
-            : v.ToString() ?? "";
+        // как в десктопном PageFieldLabel: type на <label> задаёт вид текста
+        if (field.Type?.IsMoney == true)
+            return Convert.ToDecimal(v).ToString("C");
+        if (IsBoolean(field))
+            return ReadBool(field.Name) ? Tr.T("Да") : Tr.T("Нет");
+        if ((IsDateField(field) || IsDateTimeField(field)) && (v is DateTime || DateTime.TryParse(v.ToString(), out _)))
+            return DisplayFormat.Value(v is DateTime d ? d : DateTime.Parse(v.ToString()!), IsDateField(field));
+        return v.ToString() ?? "";
     }
 
     /// <summary>

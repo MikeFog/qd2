@@ -313,13 +313,13 @@ DECLARE @xml nvarchar(max) = N'<passport>
 		<label caption="Номер акции:" name="actionID" />
 		<label caption="Фирма:" name="firmName" />
 		<label caption="Создатель:" name="creator" />
-		<field caption="Активирована:" name="isConfirmed" disabled="true"/>
+		<label caption="Активирована:" name="isConfirmed" type="boolean" />
 		<separator />
-		<field caption="Начало:" name="startDate" disabled="true"/>
-		<field caption="Окончание:" name="finishDate" disabled="true"/>
+		<label caption="Начало:" name="startDate" type="df_date" />
+		<label caption="Окончание:" name="finishDate" type="df_date" />
 		<separator />
-		<field caption="Создана:" name="createDate" type="df_datetime" disabled="true"/>
-		<field caption="Изменена:" name="modDate" type="df_datetime" disabled="true"/>
+		<label caption="Создана:" name="createDate" type="df_datetime" />
+		<label caption="Изменена:" name="modDate" type="df_datetime" />
 		<separator />
 		<field caption="Комментарий:" name="comment" height="80" maxlength="256"/>
 	</page>
