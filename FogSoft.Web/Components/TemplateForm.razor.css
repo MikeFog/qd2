@@ -35,6 +35,43 @@
     font-size: 12px;
 }
 
+.roller-table {
+    max-height: 240px;
+    overflow: auto;
+}
+
+.roller-table th,
+.roller-table td {
+    vertical-align: middle;
+}
+
+.quantity-input {
+    width: 90px;
+}
+
+.stats {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--s-1) var(--s-5);
+    padding: var(--s-2) var(--s-3);
+    background: var(--c-bg);
+    border-radius: 6px;
+    font-size: 13px;
+}
+
+.stats-title {
+    flex-basis: 100%;
+    font-weight: 600;
+}
+
+.ok {
+    color: var(--c-ok);
+}
+
+.bad {
+    color: var(--c-danger);
+}
+
 .inline {
     display: inline-flex;
     align-items: center;

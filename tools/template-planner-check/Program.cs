@@ -336,11 +336,38 @@ internal static class Program
 
 			Check("проверки шаблона 1: конец раньше начала", new PlacementTemplate { StartDate = new DateTime(2026, 10, 18), FinishDate = new DateTime(2026, 10, 15) }.SingleProblem() != null);
 
+			// Шаблон 3: два ролика по 3 выхода на 3 дня по 2 в день — каждый ролик ровно 3 раза, в каждый день оба
+			int rollerId2 = WindowsSource.RollerIdOf(rollers.Rows.Cast<System.Data.DataRow>().Where(r => !WindowsSource.IsDummy(r)).Skip(1).First());
+			PlacementTemplate multi = new PlacementTemplate
+			{
+				StartDate = new DateTime(2026, 10, 15), FinishDate = new DateTime(2026, 10, 17),
+				StartTime = TimeSpan.FromHours(6), FinishTime = TimeSpan.FromHours(21), Quantity = 2, IgnoreFirmWindows = false,
+			};
+			Check("шаблон 3: общее количество выходов — 6", multi.ExpectedTotal() == 6, multi.ExpectedTotal() + "");
+			var quotas = new List<KeyValuePair<int, int>> { new KeyValuePair<int, int>(rollerId, 3), new KeyValuePair<int, int>(rollerId2, 3) };
+			TemplateSource.TemplateResult m1 = TemplateSource.RunMulti(c, multi, quotas, 0);
+			created.AddRange(m1.Created);
+			Check("шаблон 3: 6 выпусков, замечаний нет", m1.Done == 6 && m1.NotAdded == 0 && m1.Errors.Rows.Count == 0, $"done={m1.Done} notAdded={m1.NotAdded} rows={m1.Errors.Rows.Count}");
+			Check("шаблон 3: квоты выполнены точно", m1.Created.Count(x => x.RollerId == rollerId) == 3 && m1.Created.Count(x => x.RollerId == rollerId2) == 3);
+			Check("шаблон 3: в каждый день оба разных ролика",
+				m1.Created.GroupBy(x => x.Name.Substring(0, 10)).All(g => g.Count() == 2 && g.Select(x => x.RollerId).Distinct().Count() == 2));
+
+			// Окон не хватает: интервал 10:45–10:46 — одно окно в день при двух выходах; к концу периода в очереди остаётся 3
+			PlacementTemplate tight = new PlacementTemplate
+			{
+				StartDate = new DateTime(2026, 10, 15), FinishDate = new DateTime(2026, 10, 17),
+				StartTime = new TimeSpan(10, 45, 0), FinishTime = new TimeSpan(10, 46, 0), Quantity = 2, IgnoreFirmWindows = false,
+			};
+			TemplateSource.TemplateResult m2 = TemplateSource.RunMulti(c, tight, quotas, 0);
+			created.AddRange(m2.Created);
+			Check("шаблон 3: нехватка окон — по выпуску в день, остаток 3 в очереди", m2.Done == 3 && m2.NotAdded == 3, $"done={m2.Done} notAdded={m2.NotAdded}");
+			Check("шаблон 3: три строки нехватки по дням и одна — за весь период", m2.Errors.Rows.Count == 4, $"rows={m2.Errors.Rows.Count}");
+
 			// «Отменить» возвращает всё
 			int createdTotal = created.Count;
 			WindowsSource.BatchResult undo = WindowsSource.Undo(c, created);
 			created.Clear();
-			Check("отмена: сняты все пачками по 10", undo.Done == createdTotal && createdTotal >= 39 && undo.Failed == 0 && undo.Unprocessed.Count == 0, $"done={undo.Done} total={createdTotal} failed={undo.Failed}");
+			Check("отмена: сняты все пачками по 10", undo.Done == createdTotal && createdTotal >= 48 && undo.Failed == 0 && undo.Unprocessed.Count == 0, $"done={undo.Done} total={createdTotal} failed={undo.Failed}");
 			Check("отмена: числа выпусков по дням вернулись", totals().SequenceEqual(before), string.Join(",", totals()));
 		}
 		finally

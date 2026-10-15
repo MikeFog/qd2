@@ -2084,3 +2084,14 @@ code	Шаблон №2 для внесения роликов	Plantilla N.º 2 p
 code	Шаблон для внесения роликов	Plantilla para colocar spots
 code	Укажите время выхода.	Indique la hora de emisión.
 code	Выпуск ставится в окно, накрывающее это время.	La emisión se coloca en la ventana que abarca esta hora.
+code	Шаблон №3 для внесения роликов	Plantilla N.º 3 para colocar spots
+code	Общее количество выходов:	Cantidad total de emisiones:
+code	Распределено выходов:	Emisiones distribuidas:
+code	Общий хронометраж:	Cronometraje total:
+code	У ролика «{0}» не указано количество	El spot «{0}» no tiene cantidad
+code	Отметьте хотя бы один ролик и укажите для него количество	Marque al menos un spot e indique su cantidad
+code	Сумма количества по роликам ({0}) не совпадает с общим количеством выходов по настройкам интервала ({1})	La suma de las cantidades por spot ({0}) no coincide con la cantidad total de emisiones según la configuración del intervalo ({1})
+code	Недостаточно рекламных окон за весь период шаблона — не удалось разместить {0} выход(ов) из выбранных роликов.	No hay suficientes ventanas publicitarias en todo el período de la plantilla: no se pudieron colocar {0} emisión(es) de los spots seleccionados.
+code	Недостаточно рекламных окон для размещения всех выпусков. Окон: {0}, выпусков: {1}.	No hay suficientes ventanas publicitarias para colocar todas las emisiones. Ventanas: {0}, emisiones: {1}.
+code	Недостаточно рекламных окон прайм для размещения всех выпусков. Окон: {0}, выпусков: {1}.	No hay suficientes ventanas publicitarias de prime para colocar todas las emisiones. Ventanas: {0}, emisiones: {1}.
+code	Недостаточно рекламных окон офф прайм для размещения всех выпусков. Окон: {0}, выпусков: {1}.	No hay suficientes ventanas publicitarias fuera de prime para colocar todas las emisiones. Ventanas: {0}, emisiones: {1}.

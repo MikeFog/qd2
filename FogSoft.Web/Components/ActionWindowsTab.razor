@@ -179,8 +179,8 @@
                             }
                             @if (_open != null && _range == null)
                             {
-                                <button type="button" class="btn btn-sm btn-outline-secondary" disabled="@(!_open.CanEdit)"
-                                        title="@(_open.CanEdit ? Tr.T("Шаблон для внесения роликов") : NoRightText)"
+                                <button type="button" class="btn btn-sm btn-outline-secondary" disabled="@(!_open.CanEdit || _rollers is not { Rows.Count: > 0 })"
+                                        title="@(!_open.CanEdit ? NoRightText : _rollers is not { Rows.Count: > 0 } ? Tr.T("У фирмы нет активных роликов. Можно добавить ролик-пустышку.") : Tr.T("Шаблон для внесения роликов"))"
                                         @onclick="() => Exclusive(RunTemplate)">
                                     <i class="bi bi-calendar-range" aria-hidden="true"></i>@Tr.T("Шаблон")
                                 </button>
@@ -1161,24 +1161,31 @@
     private TemplateForm.Model? _templateModel;
 
     /// <summary>
-    /// «Шаблон для внесения роликов» (десктоп — FrmTemplate и FrmTemplate2 в одном диалоге): Шаблон №1 — один выпуск в
-    /// день на время (TemplateSource.RunSingle), Шаблон №2 — интервал времени (RunInterval); оба по дням, каждый день в
-    /// своей транзакции, один пересчёт в конце. Поставленные выпуски становятся записью «Отменить». Итог — всегда: запуск
-    /// идёт и по неделям, которых на экране нет. Диалог помнит значения до конца жизни вкладки, как десктопная форма
-    /// хранит шаблон; время Шаблона №1 берётся из выделенного окна, если оно есть (десктоп берёт его из щелчка по окну).
+    /// «Шаблон для внесения роликов» (десктоп — FrmTemplate, FrmTemplate2 и FrmTemplate3 в одном диалоге): Шаблон №1 — один
+    /// выпуск в день на время (TemplateSource.RunSingle), №2 — интервал времени (RunInterval), №3 — то же с несколькими
+    /// роликами и квотами (RunMulti); все по дням, каждый день в своей транзакции, один пересчёт в конце. Поставленные
+    /// выпуски становятся записью «Отменить». Итог — всегда: запуск идёт и по неделям, которых на экране нет. Диалог помнит
+    /// значения до конца жизни вкладки, как десктопная форма хранит шаблон; время Шаблона №1 берётся из выделенного окна,
+    /// если оно есть (десктоп берёт его из щелчка по окну). Ролик кисти нужен №1 и №2 (проверка — в диалоге), №3 берёт
+    /// ролики из таблицы диалога.
     /// </summary>
     private async Task RunTemplate()
     {
         if (_open is not { CanEdit: true } open)
             return;
-        if (BrushRow is not { } brush)
-        {
-            await ShowInfo(Tr.T("Шаблон"), MessageAccessor.GetMessage("RollerNotSelected"));
-            return;
-        }
 
         TemplateForm.Model model = _templateModel ??= TemplateForm.Model.Create();
-        model.RollerName = WindowsSource.RollerName(brush);
+        model.HasBrushRoller = BrushRow != null;
+        model.RollerName = BrushRow is { } brush ? WindowsSource.RollerName(brush) : string.Empty;
+        // Ролики фирмы — тот же список, что слева («Ролики»): отметки и количества прошлого открытия сохраняются.
+        model.SetRollers((_rollers?.Rows.Cast<DataRow>() ?? Enumerable.Empty<DataRow>()).Select(r => new TemplateForm.RollerRow
+        {
+            Id = WindowsSource.RollerIdOf(r),
+            Name = WindowsSource.RollerName(r),
+            DurationText = WindowsSource.RollerDuration(r),
+            DurationSeconds = Convert.ToInt32(r[Roller.ParamNames.Duration]),
+            AdvertType = Convert.ToString(r[Roller.ParamNames.AdvertTypeName]) ?? string.Empty,
+        }));
         model.Message = null;
         if (_selected != null)
             model.SingleTime = _selected.Date.ToString("HH:mm");
@@ -1197,13 +1204,19 @@
         }
 
         PlacementTemplate template = model.ToTemplate();
-        bool single = model.Mode == TemplateForm.Kind.Single;
-        int rollerId = _brushRollerId!.Value;
+        TemplateForm.Kind kind = model.Mode;
+        List<KeyValuePair<int, int>> quotas = model.Quotas();
+        int rollerId = _brushRollerId ?? 0;
         int position = _view.Position;
         TemplateSource.TemplateResult? result = null;
         await Run(() =>
         {
-            result = single ? TemplateSource.RunSingle(open, template, rollerId, position) : TemplateSource.RunInterval(open, template, rollerId, position);
+            result = kind switch
+            {
+                TemplateForm.Kind.Single => TemplateSource.RunSingle(open, template, rollerId, position),
+                TemplateForm.Kind.Multi => TemplateSource.RunMulti(open, template, quotas, position),
+                _ => TemplateSource.RunInterval(open, template, rollerId, position),
+            };
             Undo.Remember(Action.ActionId, open.CampaignId, result.Created);
             ReloadWeekCore();
             if (_selected != null)

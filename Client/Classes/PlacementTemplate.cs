@@ -87,6 +87,18 @@ namespace Merlin.Classes
 			return null;
 		}
 
+		/// <summary>
+		/// «Общее количество выходов» Шаблона 3 (десктоп — FrmTemplate3.GetExpectedTotalQuantity): выходов в день × дней периода.
+		/// Для периода вне границ диалога (<see cref="MaxPeriodDays"/>, 1900…9998) — 0: дни не перебираются.
+		/// </summary>
+		public long ExpectedTotal()
+		{
+			if (StartDate.Date < new DateTime(1900, 1, 1) || FinishDate.Date > new DateTime(9998, 12, 31)
+				|| (FinishDate.Date - StartDate.Date).TotalDays > MaxPeriodDays)
+				return 0;
+			return (long)(Quantity > 0 ? Quantity : QuantityPrime + QuantityOffPrime) * Dates().Count;
+		}
+
 		/// <summary>Даты периода по возрастанию, как их обходит FrmGenerator (с началом и концом включительно).</summary>
 		public List<DateTime> Dates()
 		{

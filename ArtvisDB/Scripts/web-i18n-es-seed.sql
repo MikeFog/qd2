@@ -1,5 +1,5 @@
 ﻿/*
-    ДЕПЛОЙ: переводы веб-версии на язык «es» (2085 строк). docs/tasks/web-i18n.md, этап 5.
+    ДЕПЛОЙ: переводы веб-версии на язык «es» (2096 строк). docs/tasks/web-i18n.md, этап 5.
     СГЕНЕРИРОВАН из ArtvisDB/Scripts/i18n/es.tsv скриптом build-seed.py — руками не править.
 
     ПРЕДУСЛОВИЕ     накачен web-i18n-translation-deploy.sql (таблица iTranslation).
@@ -2107,7 +2107,18 @@ INSERT INTO #t ([source], [text]) VALUES
 (N'Шаблон №2 для внесения роликов', N'Plantilla N.º 2 para colocar spots'),
 (N'Шаблон для внесения роликов', N'Plantilla para colocar spots'),
 (N'Укажите время выхода.', N'Indique la hora de emisión.'),
-(N'Выпуск ставится в окно, накрывающее это время.', N'La emisión se coloca en la ventana que abarca esta hora.');
+(N'Выпуск ставится в окно, накрывающее это время.', N'La emisión se coloca en la ventana que abarca esta hora.'),
+(N'Шаблон №3 для внесения роликов', N'Plantilla N.º 3 para colocar spots'),
+(N'Общее количество выходов:', N'Cantidad total de emisiones:'),
+(N'Распределено выходов:', N'Emisiones distribuidas:'),
+(N'Общий хронометраж:', N'Cronometraje total:'),
+(N'У ролика «{0}» не указано количество', N'El spot «{0}» no tiene cantidad'),
+(N'Отметьте хотя бы один ролик и укажите для него количество', N'Marque al menos un spot e indique su cantidad'),
+(N'Сумма количества по роликам ({0}) не совпадает с общим количеством выходов по настройкам интервала ({1})', N'La suma de las cantidades por spot ({0}) no coincide con la cantidad total de emisiones según la configuración del intervalo ({1})'),
+(N'Недостаточно рекламных окон за весь период шаблона — не удалось разместить {0} выход(ов) из выбранных роликов.', N'No hay suficientes ventanas publicitarias en todo el período de la plantilla: no se pudieron colocar {0} emisión(es) de los spots seleccionados.'),
+(N'Недостаточно рекламных окон для размещения всех выпусков. Окон: {0}, выпусков: {1}.', N'No hay suficientes ventanas publicitarias para colocar todas las emisiones. Ventanas: {0}, emisiones: {1}.'),
+(N'Недостаточно рекламных окон прайм для размещения всех выпусков. Окон: {0}, выпусков: {1}.', N'No hay suficientes ventanas publicitarias de prime para colocar todas las emisiones. Ventanas: {0}, emisiones: {1}.'),
+(N'Недостаточно рекламных окон офф прайм для размещения всех выпусков. Окон: {0}, выпусков: {1}.', N'No hay suficientes ventanas publicitarias fuera de prime para colocar todas las emisiones. Ventanas: {0}, emisiones: {1}.');
 GO
 
 BEGIN TRANSACTION;

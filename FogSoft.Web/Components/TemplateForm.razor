@@ -1,12 +1,15 @@
 @using Merlin.Classes
 @using FogSoft.WinForm.Classes
+@using FogSoft.WinForm.DataAccess
 
 @*
     Содержимое диалога шаблона вкладки «Рекламные окна» (docs/tasks/web-action-forms.md, этап 5): один диалог с
     режимами по десктопным формам (В-8). «Шаблон №1» (FrmTemplate): период и дни (дни недели или чётность числа),
     время выхода — один выпуск в день в окно на это время (десктоп берёт время из щелчка по окну), флаг «Не использовать
     окна где есть ролики данной фирмы»; режима «Удалить выбранные» нет. «Шаблон №2» (FrmTemplate2): то же, но вместо
-    времени — интервал времени и «в день» или с разбивкой на прайм и офф-прайм. Подписи десктопа дословно. Значения
+    времени — интервал времени и «в день» или с разбивкой на прайм и офф-прайм. «Шаблон №3» (FrmTemplate3): как №2, но
+    вместо одного ролика — таблица роликов фирмы с количеством выходов на каждый и «Статистика» (общее количество,
+    распределено, хронометраж); блока оценки цены нет (решение 14.10.2026). Подписи десктопа дословно. Значения
     пишутся в модель — её читает вкладка по кнопке; проверки (Model.Validate) тоже по ней, ошибка — в диалоге.
 *@
 
@@ -16,7 +19,10 @@
 }
 
 <div class="template-form">
-    <div class="roller"><span class="text-muted">@Tr.T("Ролик:")</span> <b>@Value.RollerName</b></div>
+    @if (Value.Mode != Kind.Multi)
+    {
+        <div class="roller"><span class="text-muted">@Tr.T("Ролик:")</span> <b>@(Value.HasBrushRoller ? Value.RollerName : "—")</b></div>
+    }
 
     <fieldset class="modes">
         <label class="inline">
@@ -27,7 +33,54 @@
             <input type="radio" class="form-check-input" name="template-mode" checked="@(Value.Mode == Kind.Interval)" @onchange="() => Value.Mode = Kind.Interval" />
             @Tr.T("Шаблон №2 для внесения роликов")
         </label>
+        <label class="inline">
+            <input type="radio" class="form-check-input" name="template-mode" checked="@(Value.Mode == Kind.Multi)" @onchange="() => Value.Mode = Kind.Multi" />
+            @Tr.T("Шаблон №3 для внесения роликов")
+        </label>
     </fieldset>
+
+    @if (Value.Mode == Kind.Multi)
+    {
+        @* Таблица роликов фирмы — как список «Ролики» кампании; количество вводится рядом, ввод числа отмечает ролик (десктоп). *@
+        @if (Value.Rollers.Count == 0)
+        {
+            <div class="text-muted">@Tr.T("У фирмы нет активных роликов. Можно добавить ролик-пустышку.")</div>
+        }
+        else
+        {
+            <div class="data-table roller-table">
+                <table class="table table-sm">
+                    <thead>
+                        <tr>
+                            <th></th>
+                            <th>@Tr.T("Ролик")</th>
+                            <th>@Tr.T("Продолжительность")</th>
+                            <th>@Tr.T("Количество")</th>
+                            <th>@Tr.T("Предмет рекламы")</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (RollerRow roller in Value.Rollers)
+                        {
+                            <tr>
+                                <td>
+                                    <input type="checkbox" class="form-check-input" aria-label="@roller.Name" checked="@roller.Selected"
+                                           @onchange="e => roller.Selected = e.Value is true" />
+                                </td>
+                                <td>@roller.Name</td>
+                                <td class="tabular">@roller.DurationText</td>
+                                <td>
+                                    <input type="number" class="form-control form-control-sm quantity-input" min="0" aria-label="@($"{Tr.T("Количество")}: {roller.Name}")"
+                                           value="@(roller.Quantity > 0 ? roller.Quantity.ToString() : string.Empty)" @onchange="e => SetQuantity(roller, e)" />
+                                </td>
+                                <td>@roller.AdvertType</td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        }
+    }
 
     <div class="grid2">
         <label>
@@ -61,6 +114,30 @@
         }
     </div>
 
+    @if (Value.Mode != Kind.Single)
+    {
+        <div class="quantity">
+            <label class="stack">
+                @Tr.T("Количество выходов в день:")
+                <input type="number" class="form-control form-control-sm" min="1" max="100" disabled="@Value.Split" @bind="Value.Quantity" />
+            </label>
+            <label class="inline">
+                <input type="checkbox" class="form-check-input" @bind="Value.Split" />
+                @Tr.T("С разбивкой на прайм и офф прайм")
+            </label>
+            <div class="grid2">
+                <label class="stack">
+                    @Tr.T("Выходов в прайм:")
+                    <input type="number" class="form-control form-control-sm" min="0" max="100" disabled="@(!Value.Split)" @bind="Value.QuantityPrime" />
+                </label>
+                <label class="stack">
+                    @Tr.T("Выходов в офф прайм:")
+                    <input type="number" class="form-control form-control-sm" min="0" max="100" disabled="@(!Value.Split)" @bind="Value.QuantityOffPrime" />
+                </label>
+            </div>
+        </div>
+    }
+
     <fieldset class="days-mode">
         <label class="inline">
             <input type="radio" class="form-check-input" name="days-mode" checked="@(!Value.ByParity)" @onchange="() => Value.ByParity = false" />
@@ -93,41 +170,27 @@
         </div>
     </fieldset>
 
-    @if (Value.Mode == Kind.Interval)
-    {
-    <div class="quantity">
-        <label class="stack">
-            @Tr.T("Количество выходов в день:")
-            <input type="number" class="form-control form-control-sm" min="1" max="100" disabled="@Value.Split" @bind="Value.Quantity" />
-        </label>
-        <label class="inline">
-            <input type="checkbox" class="form-check-input" @bind="Value.Split" />
-            @Tr.T("С разбивкой на прайм и офф прайм")
-        </label>
-        <div class="grid2">
-            <label class="stack">
-                @Tr.T("Выходов в прайм:")
-                <input type="number" class="form-control form-control-sm" min="0" max="100" disabled="@(!Value.Split)" @bind="Value.QuantityPrime" />
-            </label>
-            <label class="stack">
-                @Tr.T("Выходов в офф прайм:")
-                <input type="number" class="form-control form-control-sm" min="0" max="100" disabled="@(!Value.Split)" @bind="Value.QuantityOffPrime" />
-            </label>
-        </div>
-    </div>
-    }
-
     <label class="inline">
         <input type="checkbox" class="form-check-input" @bind="Value.IgnoreFirm" />
         @Tr.T("Не использовать окна где есть ролики данной фирмы")
     </label>
+
+    @if (Value.Mode == Kind.Multi)
+    {
+        <div class="stats">
+            <div class="stats-title">@Tr.T("Статистика")</div>
+            <div>@Tr.T("Общее количество выходов:") <b class="tabular">@Value.ExpectedTotal</b></div>
+            <div>@Tr.T("Распределено выходов:") <b class="tabular @(Value.DistributedTotal == Value.ExpectedTotal ? "ok" : "bad")">@Value.DistributedTotal</b></div>
+            <div>@Tr.T("Общий хронометраж:") <b class="tabular">@FormatDuration(Value.TotalSeconds)</b></div>
+        </div>
+    }
 </div>
 
 @code {
     [Parameter, EditorRequired] public Model Value { get; set; } = default!;
 
-    /// <summary>Режим диалога: Шаблон №1 — один выпуск в день на время; Шаблон №2 — интервал времени и количество в день.</summary>
-    public enum Kind { Single, Interval }
+    /// <summary>Режим диалога: №1 — один выпуск в день на время; №2 — интервал времени и количество в день; №3 — то же с несколькими роликами.</summary>
+    public enum Kind { Single, Interval, Multi }
 
     private static string[] DayNames => new[]
     {
@@ -142,10 +205,37 @@
         else Value.Finish = date;
     }
 
+    /// <summary>Как десктоп: ввод количества больше нуля отмечает ролик; пусто и не число — ноль.</summary>
+    private static void SetQuantity(RollerRow roller, ChangeEventArgs e)
+    {
+        roller.Quantity = int.TryParse(e.Value?.ToString(), out int quantity) && quantity > 0 ? quantity : 0;
+        if (roller.Quantity > 0)
+            roller.Selected = true;
+    }
+
+    /// <summary>Хронометраж как десктопный «Общий хронометраж»: ЧЧ:ММ:СС, часы не ограничены сутками.</summary>
+    private static string FormatDuration(long totalSeconds) =>
+        $"{totalSeconds / 3600:00}:{totalSeconds % 3600 / 60:00}:{totalSeconds % 60:00}";
+
+    /// <summary>Ролик фирмы в таблице Шаблона №3.</summary>
+    public sealed class RollerRow
+    {
+        public int Id { get; init; }
+        public string Name { get; init; } = "";
+        public string DurationText { get; init; } = "";
+        public int DurationSeconds { get; init; }
+        public string AdvertType { get; init; } = "";
+        public bool Selected { get; set; }
+        public int Quantity { get; set; }
+    }
+
     public sealed class Model
     {
         public Kind Mode { get; set; } = Kind.Interval;
         public string SingleTime { get; set; } = "06:00";
+
+        /// <summary>Выбран ли ролик кисти (для №1 и №2; у №3 ролики — в таблице).</summary>
+        public bool HasBrushRoller { get; set; }
         public string RollerName { get; set; } = "";
         public DateTime Start { get; set; }
         public DateTime Finish { get; set; }
@@ -161,6 +251,37 @@
         public bool IgnoreFirm { get; set; } = true;
         public string? Message { get; set; }
 
+        /// <summary>Ролики фирмы для Шаблона №3; отметки и количества переживают повторное открытие диалога.</summary>
+        public List<RollerRow> Rollers { get; private set; } = new();
+
+        /// <summary>Свежий список роликов фирмы: отметка и количество прежнего ролика сохраняются, исчезнувшие уходят.</summary>
+        public void SetRollers(IEnumerable<RollerRow> fresh)
+        {
+            Dictionary<int, RollerRow> old = Rollers.ToDictionary(r => r.Id);
+            Rollers = fresh.Select(r =>
+            {
+                if (old.TryGetValue(r.Id, out RollerRow? prev))
+                {
+                    r.Selected = prev.Selected;
+                    r.Quantity = prev.Quantity;
+                }
+                return r;
+            }).ToList();
+        }
+
+        /// <summary>«Общее количество выходов» — по настройкам периода и «в день», не по таблице (десктоп).</summary>
+        public long ExpectedTotal => ToTemplate().ExpectedTotal();
+
+        /// <summary>«Распределено выходов» — сумма количеств по отмеченным роликам.</summary>
+        public long DistributedTotal => Rollers.Where(r => r.Selected).Sum(r => (long)r.Quantity);
+
+        /// <summary>«Общий хронометраж» — длительность × количество по отмеченным роликам, секунды.</summary>
+        public long TotalSeconds => Rollers.Where(r => r.Selected).Sum(r => (long)r.DurationSeconds * r.Quantity);
+
+        /// <summary>Номер ролика → сколько выходов: отмеченные с количеством больше нуля.</summary>
+        public List<KeyValuePair<int, int>> Quotas() =>
+            Rollers.Where(r => r.Selected && r.Quantity > 0).Select(r => new KeyValuePair<int, int>(r.Id, r.Quantity)).ToList();
+
         /// <summary>Как диалог десктопа при первом открытии: период — с завтрашнего дня до воскресенья, 06:00–21:00, по 2 выхода, флаг фирмы включён.</summary>
         public static Model Create()
         {
@@ -168,16 +289,35 @@
             return new Model { Start = tomorrow, Finish = tomorrow.AddDays((7 - (int)tomorrow.DayOfWeek) % 7) };
         }
 
-        /// <summary>Текст ошибки ввода или null: числа в пределах десктопных счётчиков, время разобрано, затем проверки шаблона.</summary>
+        /// <summary>Текст ошибки ввода или null: ролик, числа в пределах десктопных счётчиков, время разобрано, затем проверки шаблона и роликов.</summary>
         public string? Validate()
         {
+            if (Mode != Kind.Multi && !HasBrushRoller)
+                return MessageAccessor.GetMessage("RollerNotSelected");
             if (Mode == Kind.Single)
                 return !TimeSpan.TryParse(SingleTime, out _) ? Tr.T("Укажите время выхода.") : ToTemplate().SingleProblem();
             if (!TimeSpan.TryParse(StartTime, out _) || !TimeSpan.TryParse(FinishTime, out _))
                 return Tr.T("Укажите время начала и окончания интервала.");
             if (!Split && (Quantity < 1 || Quantity > 100) || Split && (QuantityPrime is < 0 or > 100 || QuantityOffPrime is < 0 or > 100))
                 return Tr.T("Количество выходов — целое число от 0 до 100 (в день без разбивки — от 1).");
-            return ToTemplate().IntervalProblem();
+            string? problem = ToTemplate().IntervalProblem();
+            return problem ?? (Mode == Kind.Multi ? RollerProblem() : null);
+        }
+
+        /// <summary>
+        /// Распределение по роликам — проверки десктопного «Ок» (FrmTemplate3.GetRollerSelectionError и
+        /// GetQuantityMismatchError): отмеченный ролик без количества — ошибка, ничего не отмечено — ошибка, сумма по
+        /// роликам должна совпасть с общим количеством выходов.
+        /// </summary>
+        private string? RollerProblem()
+        {
+            foreach (RollerRow roller in Rollers.Where(r => r.Selected && r.Quantity <= 0))
+                return Tr.Format("У ролика «{0}» не указано количество", roller.Name);
+            if (DistributedTotal == 0)
+                return Tr.T("Отметьте хотя бы один ролик и укажите для него количество");
+            if (DistributedTotal != ExpectedTotal)
+                return Tr.Format("Сумма количества по роликам ({0}) не совпадает с общим количеством выходов по настройкам интервала ({1})", DistributedTotal, ExpectedTotal);
+            return null;
         }
 
         public PlacementTemplate ToTemplate()
