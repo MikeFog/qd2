@@ -766,9 +766,10 @@ namespace Merlin.Classes
         }
 
         /// <summary>
-        /// Ролики и выпуски программ без предмета рекламы. Ролики без предмета не дают
-        /// активировать (их сначала назначают в окне «ролики акции»); выпуски программ —
-        /// только предупреждение.
+        /// Ролики и выпуски программ без предмета рекламы. Без предмета не активируют: ролики
+        /// сначала назначают в окне «ролики акции», выпуски программ — в окне «Предметы
+        /// рекламы» каждой спонсорской кампании (ProgramPartsWithoutAdvertType); иначе
+        /// ActionActivate удалил бы их как непрошедшие.
         /// </summary>
         public void CheckAdvertTypes(out bool rollersWithout, out bool programIssuesWithout)
         {
@@ -777,6 +778,26 @@ namespace Merlin.Classes
             DataSet dataSet = DataAccessor.LoadDataSet("RollersWithoutAdvertype", procParameters);
             rollersWithout = dataSet.Tables[0].Rows.Count > 0;
             programIssuesWithout = dataSet.Tables[1].Rows.Count > 0;
+        }
+
+        /// <summary>
+        /// Части «Программы для спонсоров» кампаний акции, где есть выпуски программ без
+        /// предмета рекламы, — по одной на кампанию, для окна назначения перед активацией.
+        /// </summary>
+        public List<PresentationObject> ProgramPartsWithoutAdvertType()
+        {
+            Dictionary<string, object> procParameters = DataAccessor.CreateParametersDictionary();
+            procParameters[ParamNames.ActionId] = ActionId;
+            DataTable programIssues = DataAccessor.LoadDataSet("RollersWithoutAdvertype", procParameters).Tables[1];
+
+            var campaignIds = new List<int>();
+            foreach (DataRow row in programIssues.Rows)
+            {
+                int campaignId = (int)row[Campaign.ParamNames.CampaignId];
+                if (!campaignIds.Contains(campaignId))
+                    campaignIds.Add(campaignId);
+            }
+            return campaignIds.ConvertAll(id => (PresentationObject)new ProgramPartOfSponsorCampaign(id));
         }
 
         /// <summary>

@@ -92,7 +92,20 @@ namespace Merlin.Classes
 			}
 
 			if (programIssuesWithout)
-				UserMessage.ShowExclamation(Properties.Resources.ActivationWithProgramIssuesWithoutAdvType);
+			{
+				// то же для выпусков программ: окно «Предметы рекламы» каждой такой спонсорской
+				// кампании, затем проверить ещё раз; остались — не активировать (ActionActivate
+				// удалил бы их как непрошедшие)
+				foreach (PresentationObject part in ProgramPartsWithoutAdvertType())
+					if (!((ProgramPartOfSponsorCampaign)part).SetAdvertType())
+						break;
+				CheckAdvertTypes(out _, out programIssuesWithout);
+				if (programIssuesWithout)
+				{
+					UserMessage.ShowExclamation(Properties.Resources.ActivationWithProgramIssuesWithoutAdvType);
+					return false;
+				}
+			}
 			return true;
 		}
 

@@ -1987,8 +1987,9 @@ public sealed partial class ObjectActions
 	/// <summary>
 	/// ActionOnMassmedia.ActivateAction. Предпросмотр — сразу прогон без переноса и показ
 	/// результата. Активация: ролики без предмета рекламы — окно роликов акции (назначить),
-	/// повторная проверка, если остались — отказ; выпуски программ без предмета — только
-	/// предупреждение; затем «Параметры активации», прогон и результат одним окном
+	/// повторная проверка, если остались — отказ; выпуски программ без предмета — окно
+	/// «Предметы рекламы» каждой такой кампании и так же отказ, если остались (иначе
+	/// ActionActivate удалит их); затем «Параметры активации», прогон и результат одним окном
 	/// (ActivationResultView) вместо трёх журналов десктопа. Акция без фатальной ошибки
 	/// уходит из журнала макетов — для этого экрана это удаление.
 	/// </summary>
@@ -2012,7 +2013,21 @@ public sealed partial class ObjectActions
 				}
 			}
 			if (programIssuesWithout)
-				await ShowInfo(activate, Tr.T(Merlin.Properties.Resources.ActivationWithProgramIssuesWithoutAdvType));
+			{
+				// то же для выпусков программ: окно «Предметы рекламы» каждой такой спонсорской
+				// кампании, затем проверить ещё раз; остались — не активировать (ActionActivate
+				// удалил бы их как непрошедшие)
+				List<PresentationObject> parts = await _busy.RunAsync(() => action.ProgramPartsWithoutAdvertType());
+				foreach (PresentationObject programs in parts)
+					if (await SetSponsorIssuesAdvertType(programs) != ActionEffect.Changed)
+						break;
+				await _busy.RunAsync(() => action.CheckAdvertTypes(out _, out programIssuesWithout));
+				if (programIssuesWithout)
+				{
+					await ShowInfo(activate, Tr.T(Merlin.Properties.Resources.ActivationWithProgramIssuesWithoutAdvType));
+					return ActionEffect.Changed;
+				}
+			}
 
 			settings = new Merlin.Classes.ActionOnMassmedia.ActivationSettings { TransferAttemptCount = 1 };
 			if (await _dialogs.ShowAsync(Tr.T("Параметры активации"), builder =>

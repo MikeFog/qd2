@@ -36,13 +36,14 @@ namespace Merlin.Classes
 				base.DoAction(actionName, owner, interfaceObject);
 		}
 
-		private void SetAdvertType()
+		/// <summary>Окно «Предметы рекламы»; false — пользователь отказался.</summary>
+		internal bool SetAdvertType()
 		{
 			SponsorCampaignSetAdertTypeForm selector = new SponsorCampaignSetAdertTypeForm(Campaign);
-			if (selector.ShowDialog(Globals.MdiParent) == DialogResult.OK)
-			{
-				ApplyAdvertTypeToIssues(selector.SelectedIDs, selector.AdvertTypeId);
-			}
+			if (selector.ShowDialog(Globals.MdiParent) != DialogResult.OK)
+				return false;
+			ApplyAdvertTypeToIssues(selector.SelectedIDs, selector.AdvertTypeId);
+			return true;
 		}
 
 		public void EditProgramIssues(Form parentForm)
