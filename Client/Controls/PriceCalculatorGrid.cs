@@ -847,7 +847,7 @@ namespace Merlin.Controls
                 decimal nonPrimeWeInSeg = nonPrimeWeTotal * weShare;
 
                 decimal primeWD = Convert.ToDecimal(r["PrimePricePerSecWeekday"]);
-                decimal nonPrimeWD = Convert.ToDecimal(r["NonPrimePricePerSecWeekend"]);
+                decimal nonPrimeWD = Convert.ToDecimal(r["NonPrimePricePerSecWeekday"]);
                 decimal primeWE = Convert.ToDecimal(r["PrimePricePerSecWeekend"]);
                 decimal nonPrimeWE = Convert.ToDecimal(r["NonPrimePricePerSecWeekend"]);
 
@@ -1354,7 +1354,7 @@ namespace Merlin.Controls
                     decimal nonPrimeWeInPart = nonPrimeWeTotal * weShare;
 
                     decimal primeWD = Convert.ToDecimal(r["PrimePricePerSecWeekday"]);
-                    decimal nonPrimeWD = Convert.ToDecimal(r["NonPrimePricePerSecWeekend"]);
+                    decimal nonPrimeWD = Convert.ToDecimal(r["NonPrimePricePerSecWeekday"]);
                     decimal primeWE = Convert.ToDecimal(r["PrimePricePerSecWeekend"]);
                     decimal nonPrimeWE = Convert.ToDecimal(r["NonPrimePricePerSecWeekend"]);
 
@@ -1496,6 +1496,9 @@ namespace Merlin.Controls
         public void SetManagerDiscount(decimal managerDiscount)
         {
             if (SummaryTable == null) return;
+
+            // в режиме периодов коэффициент строки считается по периодам при расчёте, одно число его не заменяет
+            if (UseManagerDiscountPeriods) return;
 
             // нормализуем
             if (managerDiscount <= 0m) managerDiscount = 1m;
