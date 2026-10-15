@@ -54,7 +54,8 @@ TariffWithRangeGrid.AddIssuesRange(DateTime windowDate, bool ignoreWindowsWithTh
   │       │       AND maxCapacity = 0 AND isDisabled = 0
   │       │       AND (ignoreWindowsWithTheSameFirmIssue = 0
   │       │            OR NOT EXISTS (issue той же фирмы в этом окне))
-  │       │     ORDER BY свободное время DESC
+  │       │     ORDER BY (при позиции: отклонят или не влезает? 1 : 0), свободное время DESC   ← Д-15, Deploy/48: окна, где IssueIUD
+  │       │                                                                       отклонит @positionId, — в последнюю очередь
   │       │
   │       │   Если окно не найдено → raiserror и return
   │       │     'CannotAddRangeIssues'  — окно не найдено
@@ -160,7 +161,7 @@ EditIssuesForm.TariffGridRefreshed()                  [EditIssuesForm.cs:78]
 
 | Процедура | Вызов | Роль |
 |---|---|---|
-| `[dbo].[AddRangeIssues]` | `DataAccessor.ExecuteNonQuery` из `AddIssuesRange` | Курсор по кампаниям акции, выбирает `TOP 1` окно по `issueDate ± 30 мин` с наибольшим свободным временем, вызывает `IssueIUD` для каждой |
+| `[dbo].[AddRangeIssues]` | `DataAccessor.ExecuteNonQuery` из `AddIssuesRange` | Курсор по кампаниям акции, выбирает `TOP 1` окно в получасе `[issueDate; +30 мин)`: при позиции сначала окна, где её не отклонят (позиция свободна, ролик помещается), затем с наибольшим свободным временем (Д-15, Deploy/48); вызывает `IssueIUD` для каждой |
 | `[dbo].[IssueIUD]` @actionName='AddItem' | Внутри курсора `AddRangeIssues` | Создаёт один выпуск на одной радиостанции (`@ratio=1` hardcode) |
 | `[dbo].[ActionRecalculate]` | `ActionOnMassmedia.Recalculate` | Пересчёт суммы акции; OUTPUT: `@totalPrice` |
 | `[dbo].[PaymentAction_CorrectByActionTotalPrice]` | `ActionOnMassmedia.CorrectPaymentAction` | Побочный: корректирует платёж, если `TotalPrice` уменьшился у подтверждённой акции |

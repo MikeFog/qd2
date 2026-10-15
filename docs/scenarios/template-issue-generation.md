@@ -399,7 +399,7 @@ CampaignForm (после form.ShowDialog):
   - Вторичная: `ThenBy(rand)` — среди одинаково свободных — **рандомный порядок**
   - Затем `Where(IsPrime).Take(P)` и `Where(!IsPrime).Take(NP)`. У линейки наоборот: сначала деление, потом сортировка каждой части — распределение
     то же, последовательность обращений к `Random` другая (комментарий в `TemplatePlanner.PickDay`)
-- **Path 1 (Simple шаблон)**: prime не используется — `AddRangeIssues` выбирает `TOP 1` по свободному времени
+- **Path 1 (Simple шаблон)**: prime не используется — `AddRangeIssues` выбирает `TOP 1` по свободному времени (при позиции — сначала окна без отказа по позиции, Д-15)
 
 ---
 
@@ -421,9 +421,9 @@ CampaignForm (после form.ShowDialog):
 | Нехватка кандидатов | строка «Недостаточно рекламных окон …» (общая / прайм / офф прайм) | строка «Недостаточно слотов для размещения. Добавлено: {0}, требовалось: {1}.» |
 
 Для Шаблона 1 (один клик) выбор окна иной: линейка берёт окно, накрывающее время клика (`GetWindowByDate`), веер — `TOP 1` окно каждой станции в получасе
-по наибольшему свободному времени (SQL `AddRangeIssues`); префильтра по позиции и флагу фирмы на C# у веера нет — позицию проверяет `IssueIUD`
-(позиция занята подтверждённым выпуском — `hlp_IssueVerify` → `FirstLastIssueError`; выпуском этой же акции — сам `IssueIUD` →
-`PositionErrorForTheSameAction`), фирму — `AddRangeIssues`.
+(SQL `AddRangeIssues`): при позиции сначала окна, где её не отклонят (занята подтверждённым выпуском — `hlp_IssueVerify` → `FirstLastIssueError`;
+выпуском этой же акции — `IssueIUD` → `PositionErrorForTheSameAction`; затем окна, куда ролик не помещается, — чтобы отказ по позиции не подменялся `WindowOverflow` тесного окна; Д-15, Deploy/48), затем по наибольшему
+свободному времени. Префильтра по позиции и флагу фирмы на C# у Шаблона 1 веера нет — окно выбирает и отклоняет SQL: позицию — `AddRangeIssues`/`IssueIUD`, фирму — `AddRangeIssues`.
 
 ---
 
@@ -451,7 +451,7 @@ CampaignForm (после form.ShowDialog):
 | Окон/слотов на дату | 1 | 1 слот (окно на каждой отмеченной станции) | N (по диапазону) | N слотов (по диапазону) |
 | Prime-логика | Нет | Нет | Да | Да |
 | Конец интервала времени | — | — | включается | **исключается** |
-| Порядок кандидатов | — (одно окно, накрывающее время клика) | `TOP 1` в получасе по свободному времени (SQL) | самые свободные, затем случайно | самые свободные, затем случайно |
+| Порядок кандидатов | — (одно окно, накрывающее время клика) | `TOP 1` в получасе: при позиции сначала без отказа по позиции, затем по свободному времени (SQL, Д-15) | самые свободные, затем случайно | самые свободные, затем случайно |
 | Позиция | C#: подтверждённые выпуски окна | только `IssueIUD` | C#: подтверждённые выпуски окна | C#: `IsPositionAvailable` (макеты при «Учитывать макеты») + `IssueIUD` |
 | Флаг «Не использовать окна…» | C# | SQL | C# | C# (признаки слота) + SQL |
 | IssueIUD вызовов per day | 1 | N кампаний (отмеченные линейные) | Qty или Prime+NonPrime | Qty×N или (P+NP)×N |
@@ -493,7 +493,7 @@ CampaignForm (после form.ShowDialog):
 |---|---|---|
 | `[dbo].[IssueIUD]` AddItem | Simple per-window; Range: внутри `AddRangeIssues` | Создаёт один выпуск |
 | `[dbo].[IssueIUD]` DeleteItem | Simple delete; Range: внутри `MasterIssueDelete` | Удаляет один выпуск |
-| `[dbo].[AddRangeIssues]` | Range add (Path 1 и Path 2) | Курсор по линейным кампаниям акции (`campaignTypeID = 1`, отбор `@campaignIDs`) → `TOP 1` окно станции в получасе (не заблокированное, `maxCapacity = 0`, тариф не «только для модулей»; по свободному времени ↓; с `@ignoreWindowsWithTheSameFirmIssue` — без окон фирмы) → IssueIUD × N. Нет окна — `IssueWithTheSameFirmExists` / `CannotAddRangeIssues` |
+| `[dbo].[AddRangeIssues]` | Range add (Path 1 и Path 2) | Курсор по линейным кампаниям акции (`campaignTypeID = 1`, отбор `@campaignIDs`) → `TOP 1` окно станции в получасе (не заблокированное, `maxCapacity = 0`, тариф не «только для модулей»; при позиции — сначала окна без отказа по позиции и с местом под ролик (Д-15), затем по свободному времени ↓; с `@ignoreWindowsWithTheSameFirmIssue` — без окон фирмы) → IssueIUD × N. Нет окна — `IssueWithTheSameFirmExists` / `CannotAddRangeIssues` |
 | `[dbo].[MasterIssueDelete]` | Range delete (Path 1); «Отменить» у веера (`MasterIssue.Delete`) | Курсор по тем же кампаниям → один выпуск кампании с заданными роликом и позицией в получасе → IssueIUD DeleteItem; кампании без такого выпуска пропускаются |
 | `[dbo].[IssuesByDate]` | Simple delete (Path 1 линейная), `GetIssuesForDate` | Выпуски кампании за день (`tw.dayOriginal`), без фильтра по ролику |
 | `[dbo].[TariffWindowRetrieve]`* | `GetWindowByDate` (Path 1 линейная, ветка `@actualDate`); `MassmediaPricelist.GetTariffWindows` (Path 2 линейная) | Окно, накрывающее момент; окна дня прайс-листа с колонками `hour`/`min` |
@@ -514,7 +514,7 @@ CampaignForm (после form.ShowDialog):
 | 2 | **`IssueTemplate.Reset()` в `Generate()`** вызывается явно до и после `DaysCount`; сам геттер `DaysCount` тоже заканчивается `Reset()` (второй явный вызов избыточен). Код между ними полностью проходит итератор; сеттеры `IsOdd` и `Day2AddMode` тоже сбрасывают итератор. Порядок не нарушать |
 | 3 | **Recalculate N раз для Range Simple** — на каждую дату шаблона (и для `DeleteIssuesRange`). Range TimePeriod этой проблемы лишён (1 Recalculate в finally) |
 | 4 | **Повторный запуск шаблона** — защищает только флаг «Не использовать окна, где есть ролики данной фирмы» (по умолчанию отмечен в обоих диалогах; он считает и выпуски самой акции — у веера `HasCurrentActionIssues`, у линейки через `IsRollerOfTheFirmExist`, см. оговорку выше). Со снятым флагом повтор ставит выпуски снова: среди сообщений `hlp_IssueVerify` общего отказа «такой ролик в окне уже есть» нет; позицию ограничивает `PositionErrorForTheSameAction` в `IssueIUD` |
-| 5 | **Range Simple (Path 1): prime не учитывается** — `AddRangeIssues` выбирает окно по свободному времени |
+| 5 | **Range Simple (Path 1): prime не учитывается** — `AddRangeIssues` выбирает окно по свободному времени (при позиции — сначала без отказа по позиции, Д-15) |
 | 6 | **Слоты до `broadcastStart` в Range TimePeriod** — недельная выгрузка `TariffWindowWithRange` идёт от понедельника `broadcastStart` до понедельника следующей недели, а фильтр `slot.WindowDate.Date == date.Date` календарный: слоты понедельника раньше `broadcastStart` лежат в выгрузке предыдущей недели и для понедельника не находятся. На данных после шага 1 удаления `broadcastStart` (везде `00:00`, `docs/broadcast-start.md`) не проявляется; по чтению кода и SQL, не воспроизводилось |
 | 7 | **`IgnoreWindowsWithTheSameFirmIssue`: разные уровни** — линейка проверяет в C# на каждое окно (вызов БД), веерный Шаблон 2 — C#-префильтр по признакам слота плюс SQL, веерный Шаблон 1 — только SQL; неподтверждённые выпуски линейка считает всегда, веер — по «Учитывать макеты» |
 | 8 | **`CampaignStatusChanged` не вызывается для range** после FrmGenerator |

@@ -152,7 +152,7 @@
 **Поиск окна при добавлении:**
 - линейная — по `windowId` ячейки ([RollerIssuesGrid3.cs:201](../Client/Controls/RollerIssuesGrid3.cs) → `IssueIUD`), время не участвует;
 - модульная — по дню окна ([RollerIssuesGrid3.cs:161](../Client/Controls/RollerIssuesGrid3.cs) → `ModuleIssueIUD`); пакетная — по дню;
-- веер — `AddRangeIssues.sql:48–52`: окно, у которого `windowDateActual` в получасе слота; конфликт фирмы — по окну выхода (`:61`, `:81–85`).
+- веер — `AddRangeIssues.sql:67–71`: окно, у которого `windowDateActual` в получасе слота; конфликт фирмы — по окну выхода (`:80`, `:119–123`).
 
 **Генерация по шаблону — везде по времени выхода** (расхождение «Simple по факту, TimePeriod по оригиналу» снято 07.10.2026):
 
@@ -288,7 +288,7 @@
 | `TariffWindowWithAdvertTypeRetrieve` — «Предметы рекламы» (Д и В); `ComboModuleFreeTimeRetrieve` — то же в комбо | `:51`, `:72`; `:99`, `:111` (день — модуля) | Deploy/25; Deploy/26 |
 | `TariffWindowWithRange` — сетка веера | `:241`, `:307`, `:335`; получас — по `windowDateActual` | так было и до перехода |
 | `RangeSlotIssues`, `MasterIssueDelete` — веер: состав получаса, Н/Д, Del, Ctrl+R, «Удалить дубли», «До пересечения», перетаскивание | `RangeSlotIssues.sql:58–60`, `MasterIssueDelete.sql:43–45` | с Deploy/27; `MasterIssueDelete` пропускает кампанию без выпуска (`:48–51`, ошибки 515 больше нет). Колонки для `#days` замены ролика (`RangeSlotIssues.sql:53–54`) — окно выхода под старыми именами (с Deploy/34) |
-| `RangeSlotFirmConflict`, `AddRangeIssues` — конфликт фирмы и поиск окна в веере | `RangeSlotFirmConflict.sql:33`, `AddRangeIssues.sql:61`, `:81` | так было и до перехода |
+| `RangeSlotFirmConflict`, `AddRangeIssues` — конфликт фирмы и поиск окна в веере | `RangeSlotFirmConflict.sql:33`, `AddRangeIssues.sql:80`, `:119` | так было и до перехода |
 | **Дерево журнала и операции над днём** | | |
 | `IssuesDays`, `IssuesByDate`, `CampaignRollers`, `CampaignsIssueDelete`, `ModuleIssueContentRetrieve`, `PackModuleIssueContentRetrieve`, `ActionIssues` | §2.3 | с Deploy/27 |
 | `CampaignDaysTreePassport` — «Дни кампании», «Изменить позиционирование» | `:21–27`, `:54` | так было и до перехода; 40 выпусков в окнах без тарифа скрыты (§2.3) |

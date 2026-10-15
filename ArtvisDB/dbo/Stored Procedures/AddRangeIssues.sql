@@ -1,7 +1,23 @@
 ﻿-- =============================================
 -- Author:		Denis Gladkikh (dgladkikh@fogsoft.ru)
 -- Create date: 14.04.2009
--- Description:	
+-- Description:	Веерное размещение: один и тот же ролик на всех (выбранных) линейных кампаниях акции в
+--              получасе @issueDate — на каждой станции в одном её окне.
+--
+--              Какое окно станции берётся (Д-15, docs/action-forms.md): из окон получаса, подходящих по
+--              условиям ниже, — сначала те, где IssueIUD НЕ отклонит позицию @positionId, потом остальные;
+--              внутри каждой группы — самое свободное по времени. Позицию отклоняют: подтверждённый выпуск
+--              с этой позицией в окне (признак TariffWindow.is{First|Second|Last}PositionOccupied,
+--              hlp_IssueVerify -> FirstLastIssueError) и выпуск ТОЙ ЖЕ АКЦИИ с этой позицией в окне
+--              (IssueIUD -> PositionErrorForTheSameAction). Раньше брали просто самое свободное окно, и занятая
+--              в нём позиция роняла слот целиком, хотя в соседнем окне того же получаса она была свободна.
+--              Окно, куда ролик не помещается (timeInUseConfirmed + длительность > duration — как WindowOverflow в
+--              hlp_IssueVerify, который IssueIUD применяет только к подтверждённой акции без права «минус», и в
+--              ActionActivate), при позиции тоже идёт в конец: иначе отказ по позиции в лучшем окне подменялся бы
+--              переполнением тесного соседнего (клиенты в этом случае повторяют вызов без позиции только после отказа
+--              по позиции), а у черновика ролик молча переполнял бы окно.
+--              Без позиции (@positionId = 0) и когда ни одно окно не подходит выбор прежний (самое свободное),
+--              отказ даёт IssueIUD с тем же текстом.
 -- =============================================
 CREATE   procedure [dbo].[AddRangeIssues] 
 (
@@ -37,6 +53,10 @@ begin
 	select @firmID = a.firmID
 	from dbo.[Action] a
 	where a.actionID = @actionID
+
+	-- Длительность ролика — из базы, а не от клиента (так же делает IssueIUD при AddItem).
+	declare @dur int
+	select @dur = convert(int, r.duration) from dbo.Roller r where r.rollerID = @rollerID
 	
 	open cur_massmedias
 	fetch next from cur_massmedias into @massmediaID, @campaignID
@@ -63,11 +83,32 @@ begin
 						and (i.isConfirmed = 1 or (a.deleteDate is null and @considerUnconfirmed = 1))
 				)
 			)
-		order by 
+		order by
+			-- Д-15: при позиции в последнюю очередь идут окна, где (а) позицию отклонят — она занята подтверждённым выпуском
+			-- или выпуском этой же акции, как у hlp_IssueVerify и IssueIUD, и (б) ролик не помещается. Переполнение IssueIUD
+			-- отклоняет только у подтверждённой акции без права «минус», но молча переполнять окно у черновика нельзя
+			-- (ActionActivate откажет позже), а отказ по позиции не должен подменяться переполнением тесного окна
+			CASE
+				WHEN isnull(@positionId, 0) = 0 THEN 0
+				WHEN @positionId = -20 AND tw.isFirstPositionOccupied = 1 THEN 1
+				WHEN @positionId = -10 AND tw.isSecondPositionOccupied = 1 THEN 1
+				WHEN @positionId = 10 AND tw.isLastPositionOccupied = 1 THEN 1
+				WHEN exists
+				(
+					select 1
+					from dbo.Issue ps_i
+						inner join dbo.Campaign ps_c on ps_c.campaignID = ps_i.campaignID
+					where ps_i.actualWindowID = tw.windowId
+						and ps_i.positionId = @positionId
+						and ps_c.actionID = @actionID
+				) THEN 1
+				WHEN @dur is not null AND tw.timeInUseConfirmed + @dur > tw.duration THEN 1
+				ELSE 0
+			END,
 			CASE
 				WHEN @considerUnconfirmed = 0 THEN tw.duration - tw.timeInUseConfirmed
 				ELSE tw.duration - tw.timeInUseConfirmed - tw.timeInUseUnconfirmed
-			END		 
+			END
 			desc
 	
 		if @windowID is null or @price is null 

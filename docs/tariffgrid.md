@@ -204,7 +204,7 @@ UserControl
 | модульная | `IsModuleExist` + `ModuleIssueIUD` (сам ставит `Issue` во все окна модуля за день) | то же |
 | спонсорская | `ProgramIssueIUD` | то же |
 | пакетная | `PackModuleIssueID` (так и называется) | то же |
-| веер | `AddRangeIssues` (курсор по кампаниям, `IssueIUD` на станцию, окно — `TOP 1` по свободному времени в получасе), `MasterIssueDelete` | `ActionRecalculate` + `Actions1` **отдельной** транзакцией |
+| веер | `AddRangeIssues` (курсор по кампаниям, `IssueIUD` на станцию, окно в получасе — `TOP 1`: при позиции сначала без отказа по позиции (Д-15, Deploy/48), затем по свободному времени), `MasterIssueDelete` | `ActionRecalculate` + `Actions1` **отдельной** транзакцией |
 | комбо | `IsModuleExist` + `ModuleIssueIUD` | `ActionRecalculate` в транзакции |
 
 `ActionRecalculate` пересчитывает **всю акцию** (два курсора по кампаниям).

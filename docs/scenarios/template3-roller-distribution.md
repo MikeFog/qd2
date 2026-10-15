@@ -410,7 +410,7 @@ PlaceRollersInSlots(slots, takeRollersForToday, ignoreFlag, result)
   │                                                    следующий день (без явного PutBackToFront)
   │  zip(slots, rollers) → AddIssuesRange(slot.WindowDate, roller, ignoreFlag, recalculate:false)
   │      → SQL AddRangeIssues → IssueIUD по каждой отмеченной линейной кампании акции
-  │        (сама берёт самое свободное окно в [время; +30 мин) и повторно проверяет флаг фирмы)
+  │        (сама берёт окно в [время; +30 мин) — при позиции сначала без отказа по позиции (Д-15), затем самое свободное — и повторно проверяет флаг фирмы)
 ```
 
 Разница с линейным путём: колбэк вызывается с `slots.Count` (фактически найденное), а не с
@@ -467,7 +467,7 @@ Range TimePeriod в `template-issue-generation.md`).
 | Процедура | Когда вызывается | Роль |
 |---|---|---|
 | `[dbo].[IssueIUD]` AddItem | Внутри `_campaign.AddIssue` (линейная) и `AddRangeIssues` (веерная) | Создаёт один выпуск |
-| `[dbo].[AddRangeIssues]` | `TariffWithRangeGrid.AddIssuesRange` | Курсор по линейным кампаниям акции (`campaignTypeID = 1`, отбор `@campaignIDs`) → на каждую самое свободное окно в `[время; +30 мин)` → `IssueIUD`; нет окна — `IssueWithTheSameFirmExists` / `CannotAddRangeIssues`, дальнейшие кампании курсора не обрабатываются |
+| `[dbo].[AddRangeIssues]` | `TariffWithRangeGrid.AddIssuesRange` | Курсор по линейным кампаниям акции (`campaignTypeID = 1`, отбор `@campaignIDs`) → на каждую окно в `[время; +30 мин)` (при позиции сначала без отказа по позиции, Д-15; затем самое свободное) → `IssueIUD`; нет окна — `IssueWithTheSameFirmExists` / `CannotAddRangeIssues`, дальнейшие кампании курсора не обрабатываются |
 | `[dbo].[TariffWindowWithRange]` | `TariffWithRangeGrid.GetSlotsForWeek` (кеш по неделям) | Слоты веера на неделю: свободное время, занятость позиций, признаки выпусков фирмы, `isPrime` — по выбранным кампаниям |
 | `[dbo].[GetMaxPriceByDay]` | `Massmedia.GetMaxPriceByDay` из `FrmGenerator.AddIssues` (линейка, один раз за запуск) | Максимальная цена окна СМИ по дням (`dayActual`) — основа прайма линейки |
 | `[dbo].[ActionRecalculate]` | `Action.Recalculate()` — 1 раз в конце `Generate()`. ⚠️ НЕ вызывается `Action.Refresh()` (тот в `FrmTemplate3.OnLoad` для `_action`) — `Refresh()` это пассивный `SELECT` (`PresentationObject.Refresh`, метадата-запрос по `InterfaceObjects.SimpleJournal`), а не пересчёт. `_action.TotalPrice`/`.Discount` в базисе — то, что реально лежит в БД с последнего РЕАЛЬНОГО `Recalculate()`, не свежий пересчёт на момент открытия формы | Пересчёт реальной суммы акции со всеми скидками |

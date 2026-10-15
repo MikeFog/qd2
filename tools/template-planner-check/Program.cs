@@ -5,13 +5,20 @@ using Merlin.Classes;
 
 // Проверки планировщика Шаблонов 1–3 (docs/tasks/web-action-forms.md, этап 5) на инвариантах, а не на «как десктоп»:
 // у десктопа жребий без зерна, побитовое совпадение недостижимо. Без ключей — только чистая логика (даты, интервал,
-// выбор окон дня); с ключом --db — ещё очередь роликов Шаблона 3 на настоящих роликах ArtvisDev; с ключом --load — только замер времени запуска на длинных периодах.
+// выбор окон дня); с ключом --db — ещё очередь роликов Шаблона 3 на настоящих роликах ArtvisDev; с ключом --load — только замер времени запуска на длинных периодах; с ключом --d15 — только сквозная проверка Д-15 (слот с двумя окнами).
 internal static class Program
 {
 	private static int failed;
 
 	private static int Main(string[] args)
 	{
+		if (args.Contains("--d15"))
+		{
+			D15Cases();
+			Console.WriteLine(failed == 0 ? "OK: Д-15 проверена" : $"ОШИБОК: {failed}");
+			return failed == 0 ? 0 : 1;
+		}
+
 		if (args.Contains("--load"))
 		{
 			LoadCases();
@@ -611,6 +618,74 @@ internal static class Program
 				WindowsSource.BatchResult cleanup = RangeSource.Undo(r, created);
 				Console.WriteLine($"уборка веера после сбоя: снято {cleanup.Done}, не снято {cleanup.Failed}");
 			}
+		}
+	}
+
+	// ---------- Д-15: позиция в получасе с двумя окнами (ключ --d15) ----------
+
+	/// <summary>
+	/// Сквозная проверка Д-15 (Deploy/48) на реальных данных ArtvisDev: макет 186056, кампания 411474 (станция 238), получас
+	/// 17.10.2026 11:30 — два окна, в окне 11:44 «первая» позиция занята подтверждённым выпуском, в окне 11:31 свободна. Клик с позицией
+	/// ставит выпуск в окно 11:31 с позицией. Показ слота остаётся консервативным (флаги позиции — MAX по окнам станции, решение
+	/// 15.10.2026, docs/IMPROVEMENTS.md [SQL-06]): слот не подсвечен «подходит под позицию», и Шаблон 2 с позицией его пропускает.
+	/// Всё снимается «Отменить». Данные ArtvisDev на 15.10.2026: на другой копии базы подставить свой слот.
+	/// </summary>
+	private static void D15Cases()
+	{
+		InitDb();
+		RangeSource.OpenRange r = RangeSource.Open(ActionOnMassmedia.GetActionById(186056),
+			new[] { new KeyValuePair<int, string>(411474, "К411474") }.ToList());
+		Check("Д-15: веер открыт и правка разрешена", r != null && r.CanEdit);
+		if (r == null || !r.CanEdit)
+			return;
+		System.Data.DataTable rollers = WindowsSource.LoadRollers(r);
+		int rollerId = WindowsSource.RollerIdOf(rollers.Rows.Cast<System.Data.DataRow>().First(row => WindowsSource.RollerIdOf(row) == 124865));
+		const int first = -20; // RollerPositions.First
+		WindowsSource.WeekView view = new WindowsSource.WeekView { Position = first };
+		DateTime slot = new DateTime(2026, 10, 17, 11, 30, 0);
+
+		PlacementWeek week = RangeSource.LoadWeek(r, new DateTime(2026, 10, 12), view);
+		PlacementCell cell = week.Cells.FirstOrDefault(c => c.Date == slot);
+		Check("Д-15: слот 17.10 11:30 есть в сетке", cell != null);
+		if (cell == null)
+			return;
+		Check("Д-15: показ слота консервативный — не подсвечен под «первую» позицию, хотя одно из двух окон свободно (SQL-06)", !cell.Has(PlacementFlags.Match),
+			"flags=" + cell.Flags);
+
+		List<WindowsSource.PlacedIssue> created = new List<WindowsSource.PlacedIssue>();
+		try
+		{
+			// клик с позицией
+			IReadOnlyList<WindowsSource.PlacedIssue> click = RangeSource.PlaceSlot(r, cell, rollerId, first, view);
+			created.AddRange(click);
+			Check("Д-15: клик с «первой» позицией ставит выпуск в свободное окно 11:31", click.Count == 1 && click[0].WindowId == 12927568,
+				"выпусков " + click.Count + (click.Count > 0 ? ", окно " + click[0].WindowId : ""));
+
+			// «Отменить» клик, затем Шаблон 2 с позицией на тот же слот: в слотовых флагах позиция «занята» (MAX по окнам), шаблон слот
+			// пропускает — «Недостаточно слотов», ничего не ставится и не падает
+			WindowsSource.BatchResult undoClick = RangeSource.Undo(r, created);
+			created.Clear();
+			Check("Д-15: отмена клика снимает выпуск", undoClick.Done == 1 && undoClick.Failed == 0);
+			PlacementTemplate t = new PlacementTemplate
+			{
+				StartDate = slot.Date, FinishDate = slot.Date, StartTime = new TimeSpan(11, 30, 0), FinishTime = new TimeSpan(11, 31, 0), // интервал — один слот 11:30
+				Quantity = 1, IgnoreFirmWindows = false,
+			};
+			TemplateSource.TemplateResult res = TemplateRangeSource.RunInterval(r, t, rollerId, first, view);
+			created.AddRange(res.Created);
+			Check("Д-15: Шаблон 2 с позицией пропускает слот с занятой позицией в одном из окон (консервативный показ): ничего не поставлено, одна строка «Недостаточно слотов»", res.Done == 0 && res.NotAdded == 1 && res.Created.Count == 0 && res.Errors.Rows.Count == 1,
+				$"done={res.Done} notAdded={res.NotAdded} {string.Join(" | ", res.Errors.Rows.Cast<System.Data.DataRow>().Select(x => x[0] + " " + x[1]))}");
+
+			int total = created.Count;
+			WindowsSource.BatchResult undo = RangeSource.Undo(r, created);
+			created.Clear();
+			Check("Д-15: отмена снимает всё", undo.Done == total && undo.Failed == 0, $"done={undo.Done} total={total}");
+			Console.WriteLine($"Д-15: проверено на слоте 17.10 11:30 станции 238 (клик → окно 11:31, шаблон с позицией слот пропустил: поставлено {res.Done}); снято {total} выпусков");
+		}
+		finally
+		{
+			if (created.Count > 0)
+				Console.WriteLine($"уборка Д-15 после сбоя: снято {RangeSource.Undo(r, created).Done}");
 		}
 	}
 
