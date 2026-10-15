@@ -177,10 +177,10 @@
                                     <i class="bi bi-arrow-counterclockwise" aria-hidden="true"></i>@Tr.T("Отменить")
                                 </button>
                             }
-                            @if (_open != null && _range == null)
+                            @if (Scope is { } templateScope)
                             {
-                                <button type="button" class="btn btn-sm btn-outline-secondary" disabled="@(!_open.CanEdit || _rollers is not { Rows.Count: > 0 })"
-                                        title="@(!_open.CanEdit ? NoRightText : _rollers is not { Rows.Count: > 0 } ? Tr.T("У фирмы нет активных роликов. Можно добавить ролик-пустышку.") : Tr.T("Шаблон для внесения роликов"))"
+                                <button type="button" class="btn btn-sm btn-outline-secondary" disabled="@(!templateScope.CanEdit || _rollers is not { Rows.Count: > 0 })"
+                                        title="@(!templateScope.CanEdit ? NoRightText : _rollers is not { Rows.Count: > 0 } ? Tr.T("У фирмы нет активных роликов. Можно добавить ролик-пустышку.") : Tr.T("Шаблон для внесения роликов"))"
                                         @onclick="() => Exclusive(RunTemplate)">
                                     <i class="bi bi-calendar-range" aria-hidden="true"></i>@Tr.T("Шаблон")
                                 </button>
@@ -578,9 +578,15 @@
 
     private bool CanBrush => Scope is { CanEdit: true } && BrushRow != null;
 
-    /// <summary>Запись «Отменить последнее» этой акции, если она про открытую кампанию (у веера записи пока нет).</summary>
+    /// <summary>
+    /// Запись «Отменить последнее» этой акции, если она про то, что открыто: у линейки — про открытую кампанию, у веера —
+    /// веерная и только про отмеченные кампании (иначе отмена задела бы то, чего на экране нет).
+    /// </summary>
     private PlacementUndo.Entry? UndoEntry =>
-        _open != null && _range == null && Undo.Of(Action.ActionId) is { } entry && entry.CampaignId == _open.CampaignId ? entry : null;
+        Undo.Of(Action.ActionId) is not { } entry ? null
+        : _range != null ? (entry.IsRange && entry.Issues.All(i => _range.CampaignIds.Contains(i.CampaignId)) ? entry : null)
+        : _open != null && !entry.IsRange && entry.CampaignId == _open.CampaignId ? entry
+        : null;
 
     private string? BrushHint =>
         Scope is not { CanEdit: true } ? NoRightText
@@ -1050,9 +1056,9 @@
         int position = _view.Position;
         await Run(() =>
         {
-            RangeSource.PlaceSlot(_range, cell, rollerId, position, _view);
+            IReadOnlyList<WindowsSource.PlacedIssue> created = RangeSource.PlaceSlot(_range, cell, rollerId, position, _view);
             placed = true;
-            Undo.Forget(Action.ActionId); // «последнее» — теперь веерное размещение; его запись появится с этапом 5.5
+            Undo.Remember(Action.ActionId, PlacementUndo.RangeCampaign, created); // до перечитывания недели: сбой чтения не должен оставить выпуски без записи
             ReloadWeekCore();
         });
         if (placed)
@@ -1171,10 +1177,13 @@
     /// </summary>
     private async Task RunTemplate()
     {
-        if (_open is not { CanEdit: true } open)
+        if (Scope is not { CanEdit: true })
             return;
+        RangeSource.OpenRange? range = _range;
+        WindowsSource.OpenCampaign? open = _open;
 
         TemplateForm.Model model = _templateModel ??= TemplateForm.Model.Create();
+        model.StationCount = range?.CampaignIds.Count ?? 1;
         model.HasBrushRoller = BrushRow != null;
         model.RollerName = BrushRow is { } brush ? WindowsSource.RollerName(brush) : string.Empty;
         // Ролики фирмы — тот же список, что слева («Ролики»): отметки и количества прошлого открытия сохраняются.
@@ -1187,8 +1196,9 @@
             AdvertType = Convert.ToString(r[Roller.ParamNames.AdvertTypeName]) ?? string.Empty,
         }));
         model.Message = null;
-        if (_selected != null)
-            model.SingleTime = _selected.Date.ToString("HH:mm");
+        // Время Шаблона 1 — от выбранного места (десктоп берёт его из щелчка): у веера — начало слота.
+        if ((range != null ? _rangeSlot : _selected) is { } picked)
+            model.SingleTime = picked.Date.ToString("HH:mm");
         while (true)
         {
             if (await Dialogs.ShowAsync(Tr.T("Шаблон"), builder =>
@@ -1211,15 +1221,28 @@
         TemplateSource.TemplateResult? result = null;
         await Run(() =>
         {
-            result = kind switch
+            if (range != null)
             {
-                TemplateForm.Kind.Single => TemplateSource.RunSingle(open, template, rollerId, position),
-                TemplateForm.Kind.Multi => TemplateSource.RunMulti(open, template, quotas, position),
-                _ => TemplateSource.RunInterval(open, template, rollerId, position),
-            };
-            Undo.Remember(Action.ActionId, open.CampaignId, result.Created);
+                result = kind switch
+                {
+                    TemplateForm.Kind.Single => TemplateRangeSource.RunSingle(range, template, rollerId, position, _view),
+                    TemplateForm.Kind.Multi => TemplateRangeSource.RunMulti(range, template, quotas, position, _view),
+                    _ => TemplateRangeSource.RunInterval(range, template, rollerId, position, _view),
+                };
+                Undo.Remember(Action.ActionId, PlacementUndo.RangeCampaign, result.Created);
+            }
+            else
+            {
+                result = kind switch
+                {
+                    TemplateForm.Kind.Single => TemplateSource.RunSingle(open!, template, rollerId, position),
+                    TemplateForm.Kind.Multi => TemplateSource.RunMulti(open!, template, quotas, position),
+                    _ => TemplateSource.RunInterval(open!, template, rollerId, position),
+                };
+                Undo.Remember(Action.ActionId, open!.CampaignId, result.Created);
+            }
             ReloadWeekCore();
-            if (_selected != null)
+            if (_selected != null && open != null)
                 _panel = WindowsSource.LoadWindowIssues(open, _selected, _view.ShowUnconfirmed);
         });
         if (result == null)
@@ -1242,7 +1265,7 @@
     private async Task UndoLast()
     {
         PlacementUndo.Entry? entry = UndoEntry;
-        if (entry == null || _open is not { CanEdit: true } open)
+        if (entry == null || Scope is not { CanEdit: true })
             return;
 
         string question = Tr.Format("Отменить последнее добавление выпусков? ({0} шт.)", entry.Issues.Count);
@@ -1254,10 +1277,10 @@
         WindowsSource.BatchResult? result = null;
         await Run(() =>
         {
-            result = WindowsSource.Undo(open, entry.Issues);
+            result = _range != null ? RangeSource.Undo(_range, entry.Issues) : WindowsSource.Undo(_open!, entry.Issues);
             ReloadWeekCore();
-            if (_selected != null)
-                _panel = WindowsSource.LoadWindowIssues(open, _selected, _view.ShowUnconfirmed);
+            if (_selected != null && _open != null)
+                _panel = WindowsSource.LoadWindowIssues(_open, _selected, _view.ShowUnconfirmed);
         });
         // Прерванная сбоем отмена оставляет в записи то, что не снято, — её можно повторить.
         if (result is { Unprocessed.Count: > 0 })
@@ -1336,7 +1359,7 @@
         await Run(() =>
         {
             result = RangeSource.PlaceSlots(_range!, cells, rollerId, position, _view);
-            Undo.Forget(Action.ActionId); // см. PlaceSlot
+            Undo.Remember(Action.ActionId, PlacementUndo.RangeCampaign, result.Created); // см. PlaceSlot
             ReloadWeekCore();
         });
         await AfterBatch(result, done => Tr.Format("Добавлено выпусков: {0}, не добавлено: {1}", done, result!.Failed), "Рекламное окно"); // i18n-ok: заголовок колонки переводит ObjectList при выводе
@@ -1510,7 +1533,7 @@
         await Run(() =>
         {
             result = RangeSource.FillToIntersection(range, toAdd, _view, _numbers, out withoutPosition);
-            Undo.Forget(Action.ActionId); // см. PlaceSlot
+            Undo.Remember(Action.ActionId, PlacementUndo.RangeCampaign, result.Created); // см. PlaceSlot
             ReloadWeekCore();
         });
         await AfterBatch(result, done => Tr.Format("Добавлено выпусков: {0}, не добавлено: {1}", done, result!.Failed), "Рекламное окно"); // i18n-ok: заголовок колонки переводит ObjectList при выводе

@@ -202,38 +202,47 @@ namespace Merlin.Classes
 			public Roller Roller { get; }
 		}
 
+		/// <summary>Один день линейки: выпуски в окна по порядку, каждое — шаг <see cref="WindowsSource.Step"/>.</summary>
+		private static bool WriteDay(WindowsSource.OpenCampaign c, Campaign campaign, int position, List<DayWrite> writes,
+			string dayText, int daysLeft, TemplateResult result, string kind) =>
+			WriteDayCore(kind, "campaign " + c.CampaignId, dayText, daysLeft, writes.Count, result, () =>
+			{
+				WindowsSource.BatchResult dayResult = new WindowsSource.BatchResult();
+				WindowsSource.RunInTransaction(() =>
+				{
+					foreach (DayWrite w in writes)
+						WindowsSource.Step(dayResult, w.Start.ToString("dd.MM.yyyy HH:mm"), () =>
+						{
+							dayResult.Created.Add(WindowsSource.Capture(c, campaign.AddIssue(w.Roller, w.Window, (RollerPositions)position, null), w.WindowId, w.Start, w.Roller));
+							return null;
+						});
+				});
+				return dayResult;
+			});
+
 		/// <summary>
-		/// Один день в одной транзакции: выпуски в окна по порядку, отказ шага — строка таблицы, остальные пишутся.
+		/// Один день в одной транзакции (её открывает <paramref name="attempt"/>): отказ шага — строка таблицы, остальные пишутся.
 		/// Взаимоблокировка откатывает день целиком — он повторяется один раз; иной сбой откатывает день и прерывает
 		/// запуск (false): выпуски прежних дней остаются, в строке — сколько дней не обработано (<paramref name="daysLeft"/>
-		/// считает и этот).
+		/// считает и этот), <paramref name="notAdded"/> — сколько выпусков дня пропало. Общее у линейки и веера.
 		/// </summary>
-		private static bool WriteDay(WindowsSource.OpenCampaign c, Campaign campaign, int position, List<DayWrite> writes,
-			string dayText, int daysLeft, TemplateResult result, string kind)
+		internal static bool WriteDayCore(string kind, string context, string dayText, int daysLeft, int notAdded, TemplateResult result,
+			Func<WindowsSource.BatchResult> attempt)
 		{
 			WindowsSource.BatchResult dayResult = null;
 			Exception failure = null;
-			for (int attempt = 0; attempt < 2; attempt++)
+			for (int n = 0; n < 2; n++)
 			{
-				dayResult = new WindowsSource.BatchResult();
 				failure = null;
 				try
 				{
-					WindowsSource.RunInTransaction(() =>
-					{
-						foreach (DayWrite w in writes)
-							WindowsSource.Step(dayResult, w.Start.ToString("dd.MM.yyyy HH:mm"), () =>
-							{
-								dayResult.Created.Add(WindowsSource.Capture(c, campaign.AddIssue(w.Roller, w.Window, (RollerPositions)position, null), w.WindowId, w.Start, w.Roller));
-								return null;
-							});
-					});
+					dayResult = attempt();
 					break;
 				}
-				catch (SqlException ex) when (ex.Number == 1205 && attempt == 0)
+				catch (SqlException ex) when (ex.Number == 1205 && n == 0)
 				{
 					// Жертва взаимоблокировки: день откатан целиком и ничего не оставил — день повторяется один раз.
-					Log.Warn($"Template {kind}: deadlock on {dayText} (campaign {c.CampaignId}), retrying the day", ex);
+					Log.Warn($"Template {kind}: deadlock on {dayText} ({context}), retrying the day", ex);
 				}
 				catch (Exception ex)
 				{
@@ -245,8 +254,8 @@ namespace Merlin.Classes
 			{
 				// День откатан целиком; прежние дни остаются. Запуск прерывается — следующие дни, скорее всего,
 				// упрутся в то же (сеть, таймаут), и ждать их по таймауту каждый нельзя.
-				Log.Error($"Template {kind} interrupted on {dayText} (campaign {c.CampaignId})", failure);
-				Interrupted(result, dayText, failure, daysLeft, writes.Count);
+				Log.Error($"Template {kind} interrupted on {dayText} ({context})", failure);
+				Interrupted(result, dayText, failure, daysLeft, notAdded);
 				return false;
 			}
 
@@ -259,22 +268,25 @@ namespace Merlin.Classes
 			return true;
 		}
 
-		private static void Interrupted(TemplateResult result, string name, Exception failure, int daysLeft, int notAdded) =>
+		internal static void Interrupted(TemplateResult result, string name, Exception failure, int daysLeft, int notAdded) =>
 			result.Note(name, Tr.Format("Запуск прерван: {0} Выпуски этого дня не добавлены, добавленные ранее — сохранены. Не обработано дней: {1}.",
 				ErrorManager.GetErrorMessage(failure), daysLeft), notAdded);
 
+		private static void Recalculate(WindowsSource.OpenCampaign c, Campaign campaign, TemplateResult result, string kind) =>
+			RecalculateCore("campaign " + c.CampaignId, () => campaign.RecalculateAction(false), result, kind);
+
 		/// <summary>Один пересчёт акции после запуска, отдельной транзакцией; сбой — строка в таблице (выпуски уже записаны).</summary>
-		private static void Recalculate(WindowsSource.OpenCampaign c, Campaign campaign, TemplateResult result, string kind)
+		internal static void RecalculateCore(string context, System.Action recalculate, TemplateResult result, string kind)
 		{
 			if (result.Done == 0)
 				return;
 			try
 			{
-				WindowsSource.RunInTransaction(() => campaign.RecalculateAction(false));
+				WindowsSource.RunInTransaction(recalculate);
 			}
 			catch (Exception ex)
 			{
-				Log.Error($"Template {kind}: recalculation failed (campaign {c.CampaignId})", ex);
+				Log.Error($"Template {kind}: recalculation failed ({context})", ex);
 				result.Note("", Tr.Format("Пересчёт акции не выполнен: {0} Цена акции обновится при следующем изменении размещения.", ErrorManager.GetErrorMessage(ex)));
 			}
 		}
@@ -372,7 +384,7 @@ namespace Merlin.Classes
 		/// Подряд идущие дни с одной и той же причиной «ничего не нашлось» (нет прайс-листа, нет окна) — одна строка таблицы
 		/// «дата – дата», а не по строке на день; не добавлено — по <c>wantedPerDay</c> на день.
 		/// </summary>
-		private sealed class RunOfDays
+		internal sealed class RunOfDays
 		{
 			private readonly TemplateResult _result;
 			private readonly int _wantedPerDay;
@@ -411,7 +423,7 @@ namespace Merlin.Classes
 		}
 
 		/// <summary>Сколько выпусков в день просит шаблон.</summary>
-		private static int WantedPerDay(PlacementTemplate t) => t.Quantity > 0 ? t.Quantity : t.QuantityPrime + t.QuantityOffPrime;
+		internal static int WantedPerDay(PlacementTemplate t) => t.Quantity > 0 ? t.Quantity : t.QuantityPrime + t.QuantityOffPrime;
 
 		/// <summary>
 		/// Тексты десктопа: у Шаблона 2 — FrmGenerator.AddSimpleIssues, у Шаблона 3 — AddMultiRollerIssues (свои три строки: «выпусков: {1}»,

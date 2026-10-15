@@ -19,6 +19,8 @@ internal static class Program
 		{
 			QueueCases();
 			RunCases();
+			RangeCases();
+			RangeTemplateCases();
 		}
 
 		Console.WriteLine(failed == 0 ? "OK: все проверки прошли" : $"ОШИБОК: {failed}");
@@ -376,6 +378,231 @@ internal static class Program
 			{
 				WindowsSource.BatchResult cleanup = WindowsSource.Undo(c, created);
 				Console.WriteLine($"уборка после сбоя: снято {cleanup.Done}, не снято {cleanup.Failed}");
+			}
+		}
+	}
+
+	// ---------- Веер на ArtvisDev ----------
+
+	/// <summary>
+	/// «Отменить последнее» у веера: макет акции 186408, все шесть станций, 15–17.10. Клик по слоту, пачка слотов и «до полного
+	/// пересечения» (выпуски на трёх станциях из шести, остальным добавляются) — выпуски находятся разностью RangeSlotIssues;
+	/// отмена возвращает числа выпусков по дням и цену акции. Всё снимается в finally.
+	/// </summary>
+	private static void RangeCases()
+	{
+		InitDb();
+		int[] campaignIds = { 412530, 412531, 412532, 412533, 412534, 412535 };
+		Func<int[], RangeSource.OpenRange> open = ids =>
+			RangeSource.Open(ActionOnMassmedia.GetActionById(186408), ids.Select(id => new KeyValuePair<int, string>(id, "К" + id)).ToList());
+		RangeSource.OpenRange r = open(campaignIds);
+		Check("веер: открыт и правка разрешена", r != null && r.CanEdit);
+		if (r == null || !r.CanEdit)
+			return;
+		System.Data.DataTable rollers = WindowsSource.LoadRollers(r);
+		int rollerId = WindowsSource.RollerIdOf(rollers.Rows.Cast<System.Data.DataRow>().First(row => !WindowsSource.IsDummy(row)));
+
+		DateTime monday = new DateTime(2026, 10, 12);
+		WindowsSource.WeekView view = new WindowsSource.WeekView();
+		Func<RangeSource.OpenRange, PlacementWeek> load = scope => RangeSource.LoadWeek(scope, monday, view);
+		Func<int[]> totals = () => { PlacementWeek w = load(r); return Enumerable.Range(0, 7).Select(d => w.DayTotals[d] ?? 0).ToArray(); };
+		Func<decimal> price = () => ActionOnMassmedia.GetActionById(186408).TotalPrice;
+		int[] before = totals();
+		decimal priceBefore = price();
+
+		const PlacementFlags busy = PlacementFlags.Mine | PlacementFlags.Partial | PlacementFlags.FirmHere | PlacementFlags.FirmSome | PlacementFlags.Disabled;
+		List<PlacementCell> free = load(r).Cells
+			.Where(c => (c.Flags & busy) == 0 && c.Date >= new DateTime(2026, 10, 15) && c.Date < new DateTime(2026, 10, 18) && c.Date.Hour >= 7 && c.Date.Hour <= 20)
+			.GroupBy(c => c.Date.Hour).Select(g => g.First()).Take(5).ToList();
+		Check("веер: свободные слоты для проверки найдены", free.Count == 5, "слотов: " + free.Count);
+		if (free.Count < 5)
+			return;
+
+		List<WindowsSource.PlacedIssue> created = new List<WindowsSource.PlacedIssue>();
+		try
+		{
+			// клик по слоту: по выпуску на каждой из шести станций
+			IReadOnlyList<WindowsSource.PlacedIssue> one = RangeSource.PlaceSlot(r, free[0], rollerId, 0, view);
+			created.AddRange(one);
+			Check("слот: по выпуску на каждой станции", one.Count == 6 && one.Select(x => x.CampaignId).Distinct().Count() == 6 && one.All(x => x.RollerId == rollerId),
+				string.Join(";", one.Select(x => x.Name)));
+			Check("слот: подписи — слот, кампания, ролик", one.All(x => x.Name.StartsWith(free[0].Date.ToString("dd.MM.yyyy HH:mm")) && x.Name.Contains("К41253")), one.Count > 0 ? one[0].Name : "");
+			Check("слот: цена акции изменилась", price() != priceBefore);
+
+			// пачка слотов: Done — число слотов, выпусков по шесть на слот
+			WindowsSource.BatchResult batch = RangeSource.PlaceSlots(r, free.Skip(1).Take(2).ToList(), rollerId, 0, view);
+			created.AddRange(batch.Created);
+			Check("пачка: два слота, двенадцать выпусков", batch.Done == 2 && batch.Failed == 0 && batch.Created.Count == 12, $"done={batch.Done} failed={batch.Failed} created={batch.Created.Count}");
+
+			// «до полного пересечения»: слот на трёх станциях из шести, остальным недостающие добавляются
+			RangeSource.OpenRange half = open(campaignIds.Take(3).ToArray());
+			half.Rollers = rollers;
+			IReadOnlyList<WindowsSource.PlacedIssue> three = RangeSource.PlaceSlot(half, free[3], rollerId, 0, view);
+			created.AddRange(three);
+			Check("слот на трёх станциях: три выпуска", three.Count == 3 && three.All(x => campaignIds.Take(3).Contains(x.CampaignId)), "создано " + three.Count);
+			PlacementCell partial = load(r).Cells.FirstOrDefault(c => c.Key == free[3].Key);
+			Check("слот на трёх станциях: у шести он частичный", partial != null && partial.Has(PlacementFlags.Partial));
+			RangeSource.AdditionPlan plan = RangeSource.PlanAdditions(r, RangeSource.ReadSlots(r, new[] { partial }));
+			Check("до пересечения: недостающие — три", plan.Count == 3, "план " + plan.Count);
+			WindowsSource.BatchResult fill = RangeSource.FillToIntersection(r, plan, view, new Dictionary<int, int>(), out int withoutPosition);
+			created.AddRange(fill.Created);
+			Check("до пересечения: добавлено три выпуска, все записаны", fill.Done == 3 && fill.Created.Count == 3 && fill.Created.All(x => campaignIds.Skip(3).Contains(x.CampaignId)),
+				$"done={fill.Done} created={fill.Created.Count}");
+
+			Check("выпуски записи — все разные", created.Select(x => x.IssueId).Distinct().Count() == created.Count && created.Count == 6 + 12 + 3 + 3);
+
+			// отмена чужого набора: выпуск кампании вне веера не снимается
+			WindowsSource.BatchResult foreign = null;
+			try
+			{
+				foreign = RangeSource.Undo(half, created);
+			}
+			catch (InvalidOperationException)
+			{
+			}
+			Check("отмена: записи с кампаниями вне веера — отказ", foreign == null);
+
+			// отмена: пачками по 10, числа по дням и цена возвращаются
+			int total = created.Count;
+			WindowsSource.BatchResult undo = RangeSource.Undo(r, created);
+			created.Clear();
+			Check("отмена: сняты все", undo.Done == total && undo.Failed == 0 && undo.Unprocessed.Count == 0, $"done={undo.Done} total={total} failed={undo.Failed}");
+			Check("отмена: числа выпусков по дням вернулись", totals().SequenceEqual(before), string.Join(",", totals()));
+			Check("отмена: цена акции вернулась", price() == priceBefore, $"{price()} против {priceBefore}");
+
+			// повторная отмена: выпусков уже нет — по строке отказа на каждый, ничего не падает
+			WindowsSource.BatchResult again = RangeSource.Undo(r, one.Concat(three).ToList());
+			Check("повторная отмена: «Выпуска уже нет» по каждому", again.Done == 0 && again.Failed == 9, $"done={again.Done} failed={again.Failed}");
+			Console.WriteLine("веер проверен: слот, пачка, до пересечения, отмена");
+		}
+		finally
+		{
+			if (created.Count > 0)
+			{
+				WindowsSource.BatchResult cleanup = RangeSource.Undo(r, created);
+				Console.WriteLine($"уборка веера после сбоя: снято {cleanup.Done}, не снято {cleanup.Failed}");
+			}
+		}
+	}
+
+	/// <summary>
+	/// Шаблоны 1–3 на веере: макет акции 186408, шесть станций, 15–17.10. Проверяются инварианты: сколько слотов занято, по выпуску
+	/// на каждой станции слота, квоты Шаблона 3, нехватка слотов, дни без слотов, отмена возвращает числа по дням и цену.
+	/// </summary>
+	private static void RangeTemplateCases()
+	{
+		InitDb();
+		int[] campaignIds = { 412530, 412531, 412532, 412533, 412534, 412535 };
+		RangeSource.OpenRange r = RangeSource.Open(ActionOnMassmedia.GetActionById(186408),
+			campaignIds.Select(id => new KeyValuePair<int, string>(id, "К" + id)).ToList());
+		Check("веер-шаблоны: открыт и правка разрешена", r != null && r.CanEdit);
+		if (r == null || !r.CanEdit)
+			return;
+		System.Data.DataTable rollers = WindowsSource.LoadRollers(r);
+		List<int> rollerIds = rollers.Rows.Cast<System.Data.DataRow>().Where(row => !WindowsSource.IsDummy(row)).Select(WindowsSource.RollerIdOf).ToList();
+		int rollerId = rollerIds[0], rollerId2 = rollerIds[1];
+
+		DateTime monday = new DateTime(2026, 10, 12);
+		WindowsSource.WeekView view = new WindowsSource.WeekView();
+		Func<int[]> totals = () => { PlacementWeek w = RangeSource.LoadWeek(r, monday, view); return Enumerable.Range(0, 7).Select(d => w.DayTotals[d] ?? 0).ToArray(); };
+		Func<decimal> price = () => ActionOnMassmedia.GetActionById(186408).TotalPrice;
+		int[] before = totals();
+		decimal priceBefore = price();
+		Func<TemplateSource.TemplateResult, string> rows = res => string.Join(" | ", res.Errors.Rows.Cast<System.Data.DataRow>().Select(x => x[0] + " " + x[1]));
+		Func<PlacementTemplate> interval = () => new PlacementTemplate
+		{
+			StartDate = new DateTime(2026, 10, 15), FinishDate = new DateTime(2026, 10, 17),
+			StartTime = TimeSpan.FromHours(6), FinishTime = TimeSpan.FromHours(21), Quantity = 2, IgnoreFirmWindows = true,
+		};
+
+		List<WindowsSource.PlacedIssue> created = new List<WindowsSource.PlacedIssue>();
+		try
+		{
+			// Шаблон 2: три дня по два слота — по выпуску на каждой из шести станций
+			TemplateSource.TemplateResult t2 = TemplateRangeSource.RunInterval(r, interval(), rollerId, 0, view);
+			created.AddRange(t2.Created);
+			Check("веер Ш.2: шесть слотов, замечаний нет", t2.Done == 6 && t2.NotAdded == 0 && t2.Errors.Rows.Count == 0 && t2.Days == 3, $"done={t2.Done} notAdded={t2.NotAdded} days={t2.Days} {rows(t2)}");
+			Check("веер Ш.2: по выпуску на станции в каждом слоте (36)", t2.Created.Count == 36 && t2.Created.GroupBy(x => x.CampaignId).All(g => g.Count() == 6), "создано " + t2.Created.Count);
+			Check("веер Ш.2: по два слота в день, слоты разные",
+				t2.Created.Select(x => x.Name.Substring(0, 16)).Distinct().Count() == 6 && t2.Created.GroupBy(x => x.Name.Substring(0, 10)).Count() == 3);
+			int[] after2 = totals();
+			Check("веер Ш.2: в четверг-субботу прибавилось по 12 выпусков (2 слота × 6 станций)",
+				Enumerable.Range(0, 7).All(d => after2[d] - before[d] == (d >= 3 && d <= 5 ? 12 : 0)), string.Join(",", after2.Zip(before, (a, b) => a - b)));
+
+			// прайм / офф-прайм: всего 3 слота в день, число просьб — 9; сумма «поставлено + не добавлено» сходится
+			PlacementTemplate split = interval();
+			split.Quantity = 0; split.QuantityPrime = 1; split.QuantityOffPrime = 2; split.IgnoreFirmWindows = false;
+			TemplateSource.TemplateResult t2s = TemplateRangeSource.RunInterval(r, split, rollerId, 0, view);
+			created.AddRange(t2s.Created);
+			Check("веер Ш.2: прайм и офф-прайм — поставлено и не добавлено в сумме 9", t2s.Done + t2s.NotAdded == 9 && t2s.Done > 0, $"done={t2s.Done} notAdded={t2s.NotAdded} {rows(t2s)}");
+
+			// Шаблон 1: время 09:45 округляется до 09:30 — по слоту в день
+			PlacementTemplate one = new PlacementTemplate
+			{
+				StartDate = new DateTime(2026, 10, 15), FinishDate = new DateTime(2026, 10, 17),
+				StartTime = new TimeSpan(9, 45, 0), FinishTime = new TimeSpan(9, 45, 0), Quantity = 1, IgnoreFirmWindows = false,
+			};
+			TemplateSource.TemplateResult t1 = TemplateRangeSource.RunSingle(r, one, rollerId, 0, view);
+			created.AddRange(t1.Created);
+			Check("веер Ш.1: по слоту в день, все на 09:30", t1.Done == 3 && t1.NotAdded == 0 && t1.Created.Count == 18 && t1.Created.All(x => x.Name.Contains(" 09:30 ")),
+				$"done={t1.Done} created={t1.Created.Count} {rows(t1)} names={string.Join(";", t1.Created.Take(2).Select(x => x.Name))}");
+
+			// теперь в этих слотах выпуски фирмы; процедура сама отказывает при «не использовать окна, где есть ролики фирмы»
+			one.IgnoreFirmWindows = true;
+			TemplateSource.TemplateResult t1b = TemplateRangeSource.RunSingle(r, one, rollerId, 0, view);
+			created.AddRange(t1b.Created);
+			Check("веер Ш.1: слоты с роликами фирмы — отказ по каждому дню", t1b.Done == 0 && t1b.Errors.Rows.Count == 3 && t1b.NotAdded == 3, $"done={t1b.Done} rows={t1b.Errors.Rows.Count} {rows(t1b)}");
+
+			// Шаблон 3: два ролика по 3 выхода на три дня по 2 в день
+			PlacementTemplate multi = interval();
+			multi.IgnoreFirmWindows = false;
+			var quotas = new List<KeyValuePair<int, int>> { new KeyValuePair<int, int>(rollerId, 3), new KeyValuePair<int, int>(rollerId2, 3) };
+			TemplateSource.TemplateResult t3 = TemplateRangeSource.RunMulti(r, multi, quotas, 0, view);
+			created.AddRange(t3.Created);
+			Check("веер Ш.3: шесть слотов, замечаний нет", t3.Done == 6 && t3.NotAdded == 0 && t3.Errors.Rows.Count == 0, $"done={t3.Done} notAdded={t3.NotAdded} {rows(t3)}");
+			Check("веер Ш.3: квоты точно — по 3 слота (18 выпусков) каждого ролика",
+				t3.Created.Count(x => x.RollerId == rollerId) == 18 && t3.Created.Count(x => x.RollerId == rollerId2) == 18);
+			Check("веер Ш.3: в каждый день оба разных ролика",
+				t3.Created.GroupBy(x => x.Name.Substring(0, 10)).All(g => g.Select(x => x.RollerId).Distinct().Count() == 2));
+
+			// слотов не хватает: интервал 09:30–09:31 — один слот в день при двух выходах; остаток 3 в очереди
+			PlacementTemplate tight = interval();
+			tight.StartTime = new TimeSpan(9, 30, 0); tight.FinishTime = new TimeSpan(9, 31, 0); tight.IgnoreFirmWindows = false;
+			TemplateSource.TemplateResult t3t = TemplateRangeSource.RunMulti(r, tight, quotas, 0, view);
+			created.AddRange(t3t.Created);
+			Check("веер Ш.3: нехватка слотов — по слоту в день, остаток 3 в очереди", t3t.Done == 3 && t3t.NotAdded == 3, $"done={t3t.Done} notAdded={t3t.NotAdded} {rows(t3t)}");
+			Check("веер Ш.3: три строки нехватки по дням и одна — за весь период", t3t.Errors.Rows.Count == 4, $"rows={t3t.Errors.Rows.Count}");
+
+			// граница интервала: конец исключается — слот 09:30 при интервале 08:30–09:30 не берётся
+			PlacementTemplate edge = interval();
+			edge.StartTime = new TimeSpan(8, 30, 0); edge.FinishTime = new TimeSpan(9, 30, 0); edge.Quantity = 1; edge.IgnoreFirmWindows = false;
+			TemplateSource.TemplateResult te = TemplateRangeSource.RunInterval(r, edge, rollerId, 0, view);
+			created.AddRange(te.Created);
+			Check("веер: конец интервала исключается — в 08:30–09:30 слот 08:30", te.Done == 3 && te.Created.All(x => x.Name.Contains(" 08:30 ")),
+				$"done={te.Done} names={string.Join(";", te.Created.Take(2).Select(x => x.Name))}");
+
+			// дни вне прайс-листов: одна строка на подряд идущие дни
+			PlacementTemplate far = interval();
+			far.StartDate = new DateTime(2035, 3, 2); far.FinishDate = new DateTime(2035, 3, 7);
+			TemplateSource.TemplateResult tf = TemplateRangeSource.RunInterval(r, far, rollerId, 0, view);
+			created.AddRange(tf.Created);
+			Check("веер: дни без слотов — одна строка на шесть дней, не добавлено 12", tf.Done == 0 && tf.Errors.Rows.Count == 1 && tf.NotAdded == 12, $"done={tf.Done} rows={tf.Errors.Rows.Count} notAdded={tf.NotAdded}");
+
+			// «Отменить» возвращает всё
+			int total = created.Count;
+			WindowsSource.BatchResult undo = RangeSource.Undo(r, created);
+			created.Clear();
+			Check("веер: отмена шаблонов снимает всё", undo.Done == total && undo.Failed == 0 && undo.Unprocessed.Count == 0, $"done={undo.Done} total={total} failed={undo.Failed}");
+			Check("веер: числа выпусков по дням вернулись", totals().SequenceEqual(before), string.Join(",", totals()));
+			Check("веер: цена акции вернулась", price() == priceBefore, $"{price()} против {priceBefore}");
+			Console.WriteLine($"веер: шаблоны проверены, снято {total} выпусков");
+		}
+		finally
+		{
+			if (created.Count > 0)
+			{
+				WindowsSource.BatchResult cleanup = RangeSource.Undo(r, created);
+				Console.WriteLine($"уборка веера после сбоя: снято {cleanup.Done}, не снято {cleanup.Failed}");
 			}
 		}
 	}

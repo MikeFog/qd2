@@ -2095,3 +2095,7 @@ code	Недостаточно рекламных окон за весь пери
 code	Недостаточно рекламных окон для размещения всех выпусков. Окон: {0}, выпусков: {1}.	No hay suficientes ventanas publicitarias para colocar todas las emisiones. Ventanas: {0}, emisiones: {1}.
 code	Недостаточно рекламных окон прайм для размещения всех выпусков. Окон: {0}, выпусков: {1}.	No hay suficientes ventanas publicitarias de prime para colocar todas las emisiones. Ventanas: {0}, emisiones: {1}.
 code	Недостаточно рекламных окон офф прайм для размещения всех выпусков. Окон: {0}, выпусков: {1}.	No hay suficientes ventanas publicitarias fuera de prime para colocar todas las emisiones. Ventanas: {0}, emisiones: {1}.
+code	Недостаточно слотов для размещения. Добавлено: {0}, требовалось: {1}.	No hay suficientes slots para colocar. Añadido: {0}, se requería: {1}.
+code	Недостаточно окон за весь период шаблона — не удалось разместить {0} выход(ов) из выбранных роликов.	No hay suficientes ventanas en todo el período de la plantilla: no se pudieron colocar {0} emisión(es) de los spots seleccionados.
+code	Выпуск ставится в получасовой слот, накрывающий это время (время округляется вниз до получаса), на всех отмеченных станциях.	La emisión se coloca en el slot de media hora que cubre esta hora (la hora se redondea hacia abajo a la media hora), en todas las emisoras marcadas.
+code	Отменять можно только выпуски отмеченных кампаний.	Solo se pueden deshacer emisiones de las pautas marcadas.

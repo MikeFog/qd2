@@ -98,7 +98,9 @@
             <label>
                 @Tr.T("Время выхода:")
                 <input type="time" class="form-control form-control-sm" value="@Value.SingleTime" @onchange="e => Value.SingleTime = e.Value?.ToString() ?? string.Empty" />
-                <span class="note">@Tr.T("Выпуск ставится в окно, накрывающее это время.")</span>
+                <span class="note">@(Value.StationCount > 1
+                    ? Tr.T("Выпуск ставится в получасовой слот, накрывающий это время (время округляется вниз до получаса), на всех отмеченных станциях.")
+                    : Tr.T("Выпуск ставится в окно, накрывающее это время."))</span>
             </label>
         }
         else
@@ -179,9 +181,9 @@
     {
         <div class="stats">
             <div class="stats-title">@Tr.T("Статистика")</div>
-            <div>@Tr.T("Общее количество выходов:") <b class="tabular">@Value.ExpectedTotal</b></div>
-            <div>@Tr.T("Распределено выходов:") <b class="tabular @(Value.DistributedTotal == Value.ExpectedTotal ? "ok" : "bad")">@Value.DistributedTotal</b></div>
-            <div>@Tr.T("Общий хронометраж:") <b class="tabular">@FormatDuration(Value.TotalSeconds)</b></div>
+            <div>@Tr.T("Общее количество выходов:") <b class="tabular">@PerStation(Value.ExpectedTotal)</b></div>
+            <div>@Tr.T("Распределено выходов:") <b class="tabular @(Value.DistributedTotal == Value.ExpectedTotal ? "ok" : "bad")">@PerStation(Value.DistributedTotal)</b></div>
+            <div>@Tr.T("Общий хронометраж:") <b class="tabular">@(Value.StationCount > 1 ? $"{FormatDuration(Value.TotalSeconds)} / {FormatDuration(Value.TotalSeconds * Value.StationCount)}" : FormatDuration(Value.TotalSeconds))</b></div>
         </div>
     }
 </div>
@@ -214,6 +216,9 @@
     }
 
     /// <summary>Хронометраж как десктопный «Общий хронометраж»: ЧЧ:ММ:СС, часы не ограничены сутками.</summary>
+    /// <summary>Веер размещает одни и те же выпуски на каждую станцию: «на одной станции / суммарно» через слэш (десктоп — FrmTemplate3); линейка — одно число.</summary>
+    private string PerStation(long quantity) => Value.StationCount > 1 ? $"{quantity} / {quantity * Value.StationCount}" : quantity.ToString();
+
     private static string FormatDuration(long totalSeconds) =>
         $"{totalSeconds / 3600:00}:{totalSeconds % 3600 / 60:00}:{totalSeconds % 60:00}";
 
@@ -233,6 +238,9 @@
     {
         public Kind Mode { get; set; } = Kind.Interval;
         public string SingleTime { get; set; } = "06:00";
+
+        /// <summary>Сколько станций получает каждый выпуск: у веера — число отмеченных кампаний, у линейки — 1.</summary>
+        public int StationCount { get; set; } = 1;
 
         /// <summary>Выбран ли ролик кисти (для №1 и №2; у №3 ролики — в таблице).</summary>
         public bool HasBrushRoller { get; set; }

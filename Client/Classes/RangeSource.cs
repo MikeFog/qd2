@@ -126,7 +126,7 @@ namespace Merlin.Classes
 		/// Свежая акция для записи; без права или с исчезнувшей отмеченной кампанией — отказ. Исчезнувшую
 		/// кампанию процедура сама молча пропустила бы, и слот вышел бы красным.
 		/// </summary>
-		private static ActionOnMassmedia LoadForWrite(OpenRange r)
+		internal static ActionOnMassmedia LoadForWrite(OpenRange r)
 		{
 			ActionOnMassmedia action = ActionWorkspace.Load(r.ActionId);
 			if (action == null)
@@ -336,17 +336,19 @@ namespace Merlin.Classes
 		}
 
 		/// <summary>Позиция свободна на всех станциях слота среди подтверждённых, при «Учитывать макеты» — и среди макетов.</summary>
-		private static bool PositionFree(DataRow d, WindowsSource.WeekView view)
+		private static bool PositionFree(DataRow d, WindowsSource.WeekView view) => PositionFree(d, view.Position, view.ShowUnconfirmed);
+
+		private static bool PositionFree(DataRow d, int position, bool showUnconfirmed)
 		{
 			string occupied, unconfirmed;
-			switch ((RollerPositions)view.Position)
+			switch ((RollerPositions)position)
 			{
 				case RollerPositions.First: occupied = "isFirstPositionOccupied"; unconfirmed = "firstPositionsUnconfirmed"; break;
 				case RollerPositions.Second: occupied = "isSecondPositionOccupied"; unconfirmed = "secondPositionsUnconfirmed"; break;
 				case RollerPositions.Last: occupied = "isLastPositionOccupied"; unconfirmed = "lastPositionsUnconfirmed"; break;
 				default: return true;
 			}
-			return !Flag(d, occupied) && (!view.ShowUnconfirmed || IntOrZero(d[unconfirmed]) == 0);
+			return !Flag(d, occupied) && (!showUnconfirmed || IntOrZero(d[unconfirmed]) == 0);
 		}
 
 		/// <summary>«Предметы рекламы»: флаг слота — предмет есть хотя бы на одной станции; «Есть» подсвечивает такой слот, «Нет» — остальные.</summary>
@@ -464,6 +466,49 @@ namespace Merlin.Classes
 			return result;
 		}
 
+		// ---------- Слоты недели для шаблонов ----------
+
+		/// <summary>Получасовой слот недели веера — кандидат на выпуск шаблона (TariffWindowWithRange, как у TariffWithRangeGrid.GetSlotsForWeek).</summary>
+		internal sealed class TemplateSlot
+		{
+			private readonly DataRow _row;
+
+			internal TemplateSlot(DataRow row)
+			{
+				_row = row;
+				Start = (DateTime)row["date"];
+				FreeSeconds = IntOrZero(row["timeWithUnConfirmed"]);
+				IsPrime = Flag(row, "isPrime");
+			}
+
+			internal DateTime Start { get; }
+
+			/// <summary>Остаток слота с неподтверждёнными выпусками — по нему шаблон берёт самые свободные слоты первыми, независимо от «Учитывать макеты».</summary>
+			internal int FreeSeconds { get; }
+
+			internal bool IsPrime { get; }
+
+			/// <summary>Позиция свободна на всех станциях слота (TariffWithRangeGrid.IsPositionAvailable); без позиции слот подходит всегда.</summary>
+			internal bool PositionAvailable(int position, bool showUnconfirmed) => position == 0 || PositionFree(_row, position, showUnconfirmed);
+
+			/// <summary>«Выпуски этой фирмы в слоте» (TariffWithRangeGrid.HasFirmIssuesFlags): любая её акция, в том числе эта.</summary>
+			internal bool HasFirmIssues(bool showUnconfirmed) =>
+				Flag(_row, "HasIssues") || Flag(_row, "HasIssuesThisAction") || (showUnconfirmed && Flag(_row, "HasIssuesUnconfirmed"));
+		}
+
+		/// <summary>Слоты недели с понедельником <paramref name="monday"/> — одним вызовом TariffWindowWithRange; слотов нет — пустой список.</summary>
+		internal static List<TemplateSlot> LoadTemplateWeek(OpenRange r, DateTime monday)
+		{
+			Dictionary<string, object> parameters = DataAccessor.CreateParametersDictionary();
+			parameters["dateStart"] = monday;
+			parameters[Action.ParamNames.ActionId] = r.ActionId;
+			parameters[Campaign.ParamNames.CampaignIds] = Action.BuildCampaignIdsCsv(r.CampaignIds.ToList());
+			DataSet ds = DataAccessor.LoadDataSet("TariffWindowWithRange", parameters);
+			return ds.Tables[0].Rows.Cast<DataRow>().Select(row => new TemplateSlot(row)).ToList();
+		}
+
+		internal static DateTime WeekMonday(DateTime date) => MondayOf(date.Date);
+
 		// ---------- Номера роликов ----------
 
 		/// <summary>
@@ -569,27 +614,38 @@ namespace Merlin.Classes
 		/// Клик «Режима добавления» — как TariffWithRangeGrid.AddIssuesRange: один ролик с позицией
 		/// «Позиционирования» на всех отмеченных станциях слота, затем пересчёт акции — одной транзакцией.
 		/// Отказ любой станции (позиция занята, нет места, выпуск этой фирмы в окне…) откатывает слот
-		/// целиком и показывается пользователю текстом процедуры. Неделя после записи перечитывается.
+		/// целиком и показывается пользователю текстом процедуры. Неделя после записи перечитывается. Возвращает поставленные
+		/// выпуски — запись для «Отменить последнее».
 		/// </summary>
-		public static void PlaceSlot(OpenRange r, PlacementCell cell, int rollerId, int position, WindowsSource.WeekView view)
+		public static IReadOnlyList<WindowsSource.PlacedIssue> PlaceSlot(OpenRange r, PlacementCell cell, int rollerId, int position,
+			WindowsSource.WeekView view)
 		{
 			ActionOnMassmedia action = LoadForWrite(r);
 			Roller roller = WindowsSource.BrushRoller(r, rollerId, action.FirmID);
 
+			List<WindowsSource.PlacedIssue> created = null;
 			WindowsSource.RunInTransaction(() =>
 			{
+				DateTime[] slots = { cell.Date };
+				HashSet<int> before = IssueIdsIn(r, slots);
 				AddRange(r, cell.Date, roller, position, view);
+				created = CreatedSince(r, slots, before, (slot, issue) => issue.RollerId == roller.RollerId);
 				action.Recalculate(false);
 			});
+			return created;
 		}
 
 		/// <summary>AddRangeIssues: ролик с позицией на всех отмеченных станциях получаса <paramref name="slot"/>.</summary>
 		private static void AddRange(OpenRange r, DateTime slot, Roller roller, int position, WindowsSource.WeekView view) =>
 			AddRangeFor(r, slot, roller.RollerId, roller.Duration, position, r.CampaignIds, view);
 
-		/// <summary>AddRangeIssues по заданным кампаниям: «до полного пересечения» ставит выпуск одной кампании, а не всем.</summary>
-		private static void AddRangeFor(OpenRange r, DateTime slot, int rollerId, int duration, int position, IEnumerable<int> campaignIds,
-			WindowsSource.WeekView view)
+		/// <summary>
+		/// AddRangeIssues по заданным кампаниям: «до полного пересечения» ставит выпуск одной кампании, а не всем.
+		/// <paramref name="ignoreFirmWindows"/> — шаблоны («не использовать окна, где есть ролики данной фирмы»): процедура сама
+		/// пропускает такие окна и, если других нет, отказывает.
+		/// </summary>
+		internal static void AddRangeFor(OpenRange r, DateTime slot, int rollerId, int duration, int position, IEnumerable<int> campaignIds,
+			WindowsSource.WeekView view, bool ignoreFirmWindows = false)
 		{
 			Dictionary<string, object> parameters = DataAccessor.CreateParametersDictionary();
 			parameters[Action.ParamNames.ActionId] = r.ActionId;
@@ -598,7 +654,7 @@ namespace Merlin.Classes
 			parameters["rollerDuration"] = duration;
 			parameters["positionId"] = position;
 			parameters["considerUnconfirmed"] = view.ShowUnconfirmed ? 1 : 0;
-			parameters["ignoreWindowsWithTheSameFirmIssue"] = 0;
+			parameters["ignoreWindowsWithTheSameFirmIssue"] = ignoreFirmWindows ? 1 : 0;
 			parameters[Campaign.ParamNames.CampaignIds] = Action.BuildCampaignIdsCsv(campaignIds.ToList());
 			DataAccessor.ExecuteNonQuery("AddRangeIssues", parameters);
 		}
@@ -613,7 +669,7 @@ namespace Merlin.Classes
 		/// отката шага на отказе станции k станции 1…k−1 остались бы записанными (красное окно). Остальные шаги пачки
 		/// идут дальше. Любая другая ошибка (взаимоблокировка, таймаут) рвёт пачку — транзакцию откатит вызывающий.
 		/// </summary>
-		private static bool Step(WindowsSource.BatchResult result, string name, int done, System.Action write) =>
+		internal static bool Step(WindowsSource.BatchResult result, string name, int done, System.Action write) =>
 			Step(result, name, done, () =>
 			{
 				write();
@@ -624,7 +680,7 @@ namespace Merlin.Classes
 		/// То же, но запись может сама вернуть причину отказа (RollerSubstitute отдаёт «незамененные» строкой, не ошибкой):
 		/// такой шаг тоже откатывается к точке и уходит в отказы.
 		/// </summary>
-		private static bool Step(WindowsSource.BatchResult result, string name, int done, Func<string> write)
+		internal static bool Step(WindowsSource.BatchResult result, string name, int done, Func<string> write)
 		{
 			DataAccessor.SaveTransactionPoint(StepPoint);
 			try
@@ -647,7 +703,7 @@ namespace Merlin.Classes
 			}
 		}
 
-		private static string SlotName(DateTime slot) => slot.ToString("dd.MM.yyyy HH:mm");
+		internal static string SlotName(DateTime slot) => slot.ToString("dd.MM.yyyy HH:mm");
 
 		/// <summary>
 		/// «Разместить ролик» в выделенные окна (десктоп — Insert): ролик и позиция кисти — AddRangeIssues на каждое окно,
@@ -660,14 +716,67 @@ namespace Merlin.Classes
 			ActionOnMassmedia action = LoadForWrite(r);
 			Roller roller = WindowsSource.BrushRoller(r, rollerId, action.FirmID);
 			WindowsSource.BatchResult result = new WindowsSource.BatchResult();
+			List<DateTime> slots = cells.Select(c => c.Date).Distinct().ToList();
 			WindowsSource.RunInTransaction(() =>
 			{
+				HashSet<int> before = IssueIdsIn(r, slots);
 				foreach (PlacementCell cell in cells.OrderBy(c => c.Key))
 					Step(result, SlotName(cell.Date), 1, () => AddRange(r, cell.Date, roller, position, view));
 				if (result.Done > 0)
+				{
+					result.Created.AddRange(CreatedSince(r, slots, before, (slot, issue) => issue.RollerId == roller.RollerId));
 					action.Recalculate(false);
+				}
 			});
 			return result;
+		}
+
+		// ---------- «Отменить последнее» ----------
+
+		/// <summary>
+		/// Номера выпусков отмеченных кампаний в слотах (RangeSlotIssues) — снимок «до» записи. AddRangeIssues номера поставленных
+		/// выпусков не возвращает, поэтому поставленное находится как разность снимков до и после — в той же транзакции, где
+		/// запись видна и откаты шагов учтены.
+		/// </summary>
+		internal static HashSet<int> IssueIdsIn(OpenRange r, IReadOnlyCollection<DateTime> slots) =>
+			slots.Count == 0
+				? new HashSet<int>()
+				: new HashSet<int>(LoadSlotIssues(r, slots).Values.SelectMany(list => list).Select(i => i.IssueId));
+
+		/// <summary>
+		/// Выпуски, появившиеся в слотах после снимка <paramref name="before"/> и подходящие под <paramref name="own"/> (слот и
+		/// выпуск — что записывалось): по слотам, внутри слота — в порядке отметки кампаний. Выпуск другого сеанса, попавший в тот
+		/// же слот с другим роликом, в запись не попадает.
+		/// </summary>
+		internal static List<WindowsSource.PlacedIssue> CreatedSince(OpenRange r, IReadOnlyCollection<DateTime> slots, HashSet<int> before,
+			Func<DateTime, SlotIssue, bool> own)
+		{
+			List<WindowsSource.PlacedIssue> created = new List<WindowsSource.PlacedIssue>();
+			foreach (KeyValuePair<DateTime, List<SlotIssue>> bySlot in LoadSlotIssues(r, slots).OrderBy(x => x.Key))
+				foreach (SlotIssue issue in bySlot.Value.OrderBy(i => CampaignOrder(r, i.CampaignId)).ThenBy(i => i.IssueId))
+					if (!before.Contains(issue.IssueId) && own(bySlot.Key, issue))
+						created.Add(new WindowsSource.PlacedIssue
+						{
+							IssueId = issue.IssueId,
+							CampaignId = issue.CampaignId,
+							WindowId = issue.WindowId,
+							RollerId = issue.RollerId,
+							Name = SlotName(bySlot.Key) + " — " + r.Titles[issue.CampaignId] + " — " + issue.RollerName,
+						});
+			return created;
+		}
+
+		/// <summary>
+		/// «Отменить последнее» у веера: выпуски последнего размещения (<see cref="WindowsSource.PlacedIssue"/> разных кампаний
+		/// веера). Правила те же, что у линейки (<see cref="WindowsSource.UndoCore"/>): пачки, сверка выпуска с записью, отказы,
+		/// один пересчёт акции в конце.
+		/// </summary>
+		public static WindowsSource.BatchResult Undo(OpenRange r, IReadOnlyList<WindowsSource.PlacedIssue> placed)
+		{
+			if (placed.Any(p => !r.CampaignIds.Contains(p.CampaignId)))
+				throw new InvalidOperationException(Tr.T("Отменять можно только выпуски отмеченных кампаний."));
+			ActionOnMassmedia action = LoadForWrite(r);
+			return WindowsSource.UndoCore(placed, "action " + r.ActionId, () => action.Recalculate(false));
 		}
 
 		/// <summary>Выпуски одного окна с одним роликом и одной позицией: у каких кампаний и сколько копий.</summary>
@@ -1126,8 +1235,11 @@ namespace Merlin.Classes
 			ActionOnMassmedia action = LoadForWrite(r);
 			WindowsSource.BatchResult result = new WindowsSource.BatchResult();
 			int without = 0;
+			List<DateTime> slots = plan.Additions.Select(a => a.Slot).Distinct().ToList();
+			HashSet<(DateTime, int, int)> targets = new HashSet<(DateTime, int, int)>(plan.Additions.Select(a => (a.Slot, a.CampaignId, a.RollerId)));
 			WindowsSource.RunInTransaction(() =>
 			{
+				HashSet<int> before = IssueIdsIn(r, slots);
 				foreach (Addition a in plan.Additions)
 					Step(result, IssueTarget(r, a.Slot, a.CampaignId, a.RollerId, a.RollerName, numbers), 1, () =>
 					{
@@ -1144,7 +1256,10 @@ namespace Merlin.Classes
 						}
 					});
 				if (result.Done > 0)
+				{
+					result.Created.AddRange(CreatedSince(r, slots, before, (slot, issue) => targets.Contains((slot, issue.CampaignId, issue.RollerId))));
 					action.Recalculate(false);
+				}
 			});
 			withoutPosition = without;
 			return result;

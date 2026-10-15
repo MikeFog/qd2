@@ -717,6 +717,15 @@ namespace Merlin.Classes
 			if (placed.Any(p => p.CampaignId != c.CampaignId))
 				throw new InvalidOperationException(Tr.T("Отменять можно только выпуски этой кампании."));
 			Campaign campaign = LoadForWrite(c);
+			return UndoCore(placed, "campaign " + c.CampaignId, () => campaign.RecalculateAction(false));
+		}
+
+		/// <summary>
+		/// Отмена по записи — общая у линейки и веера: пачки, сверка выпуска с записью, отказы, один пересчёт.
+		/// <paramref name="recalculate"/> зовётся в своей транзакции, если хоть что-то снято; <paramref name="context"/> — для журнала.
+		/// </summary>
+		internal static BatchResult UndoCore(IReadOnlyList<PlacedIssue> placed, string context, System.Action recalculate)
+		{
 			BatchResult result = new BatchResult();
 			List<PlacedIssue> ordered = placed.OrderBy(x => x.WindowId).ThenBy(x => x.IssueId).ToList();
 			for (int from = 0; from < ordered.Count; from += UndoBatchSize)
@@ -747,7 +756,7 @@ namespace Merlin.Classes
 				}
 				catch (Exception ex)
 				{
-					Log.Error($"Undo interrupted at {from}/{ordered.Count} (campaign {c.CampaignId})", ex);
+					Log.Error($"Undo interrupted at {from}/{ordered.Count} ({context})", ex);
 					List<PlacedIssue> left = ordered.GetRange(from, ordered.Count - from);
 					result.Unprocessed.AddRange(left);
 					result.Refuse(left[0].Name, Tr.Format("Отмена прервана: {0} Не снято выпусков: {1}.", ErrorManager.GetErrorMessage(ex), left.Count));
@@ -762,11 +771,11 @@ namespace Merlin.Classes
 			{
 				try
 				{
-					RunInTransaction(() => campaign.RecalculateAction(false));
+					RunInTransaction(recalculate);
 				}
 				catch (Exception ex)
 				{
-					Log.Error($"Undo: recalculation failed (campaign {c.CampaignId})", ex);
+					Log.Error($"Undo: recalculation failed ({context})", ex);
 					result.Refuse("", Tr.Format("Пересчёт акции не выполнен: {0} Цена акции обновится при следующем изменении размещения.", ErrorManager.GetErrorMessage(ex)));
 				}
 			}

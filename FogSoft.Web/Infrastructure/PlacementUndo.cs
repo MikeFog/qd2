@@ -16,8 +16,17 @@ namespace FogSoft.Web.Infrastructure;
 /// </summary>
 public sealed class PlacementUndo
 {
-	/// <summary>Выпуски одной кампании акции, поставленные одним действием.</summary>
-	public sealed record Entry(int ActionId, int CampaignId, IReadOnlyList<WindowsSource.PlacedIssue> Issues);
+	/// <summary>Номер кампании в записи веера: выпуски разных кампаний, смотрит на неё тот же веер.</summary>
+	public const int RangeCampaign = 0;
+
+	/// <summary>
+	/// Выпуски, поставленные одним действием: одной кампании акции (линейка) или нескольких отмеченных (веер,
+	/// <see cref="Entry.CampaignId"/> = <see cref="RangeCampaign"/>; кампании — в самих выпусках).
+	/// </summary>
+	public sealed record Entry(int ActionId, int CampaignId, IReadOnlyList<WindowsSource.PlacedIssue> Issues)
+	{
+		public bool IsRange => CampaignId == RangeCampaign;
+	}
 
 	private readonly Dictionary<int, Entry> _byAction = new();
 	private SecurityManager.User? _user;
