@@ -85,10 +85,10 @@ Produce a short plan, fix, write a deploy script under ArtvisDB/Scripts, validat
 ```
 </details>
 
-### 5. Веб: гонка в `MessageAccessor` — чужие подстановки в тексте ошибки
+### 5. Веб: гонка в `MessageAccessor` — чужие подстановки в тексте ошибки — ИСПРАВЛЕНО (этап 6.0)
 
 - `FogSoft.WinForm/DataAccess/MessageAccessor.cs` (общий с вебом): параметры сообщения — в статическом поле `parameters`, кэши — обычные `Dictionary`. В вебе (много пользователей) два запроса могут подставить в текст ошибки чужие значения или упасть на одновременной записи в словарь. Десктоп не затронут (один пользователь).
-- Статус: открыто (на 11.10.2026 поле по-прежнему статическое). Найдено 24.09.2026.
+- Статус: **исправлено 15.10.2026** (этап 6.0 веба, `docs/tasks/web-action-forms.md`, «Этап 6.0 — ход работ»): параметры упавшего вызова привязаны к исключению (`MessageAccessor.RememberFailedCall` во всех путях `DataAccessor`, `GetMessage(name, ex)` в `ErrorManager.GetErrorMessage`), текущие параметры — `AsyncLocal`, кэши потокобезопасны. Стенд: 80 из 80 параллельных вызовов со своей датой (до — 16, плюс NRE). Новый веб-код берёт текст отказа через `ErrorPresenter.Describe(ex)` / `GetErrorMessage(ex)`, не через `GetMessage(ex.Message)` после `await`. Найдено 24.09.2026.
 
 <details><summary>Задание для отдельной сессии (карточка от 24.09.2026)</summary>
 
@@ -179,6 +179,13 @@ qd2 (C:\Work\AdvertAg\sources), SQL Server Express, dev base `.\sqlexpress` / Ar
 - Веер: TimePeriod и Шаблон 3 исключают верхнюю границу интервала (`TariffWithRangeGrid.cs:1126,1204` — `<`), линейные включают (`FrmGenerator.cs:377,459` — `<=`), а комментарий веера (`TariffWithRangeGrid.cs:1088-1089,1117`) говорит «inclusive, как Simple TimePeriod». К оригиналу и факту не относится. По коду.
 - `TariffWindowIUD` «Добавить»: окно в последний день прайс-листа после 00:00 даёт `InternalError` (прайс-лист ищется `@windowDateActual between startDate and finishDate`, а `finishDate` хранится с 00:00) — [SQL-BS-03] в `docs/broadcast-start.md`.
 - Веб, `WindowsSource.Remove/Replace/Move` берут окна в порядке выделения (сетка: по строкам времени), а `Place` и `Undo` — по возрастанию номера окна, поэтому две пачки по пересекающимся окнам одной станции берут блокировки `TariffWindow` в разном порядке — возможна взаимоблокировка (небизнес-ошибка 1205, откатывается вся пачка). Выровнять сортировкой по номеру окна (замечание ревью 5.1, 14.10.2026).
+
+### 13. Мелочи, найденные при этапе 6.0 (15.10.2026)
+
+- **Веб: отказ по ограничению без строки в `iMessage` не показывается.** `ErrorManager.GetErrorMessage` (`FogSoft.WinForm/Classes/ErrorManager.cs:107`) для SQL 547/2627/2601 возвращает `null`, если у ограничения нет сообщения; `ErrorPresenter.Describe` тоже отдаёт `null`, и в вебе текста нет вовсе (десктоп показывает ApplicationError). Исправление: в `ErrorPresenter.Describe` — `?? Tr.T(Resources.ApplicationError)` или `?? ex.Message`. Открыто.
+- **Десктоп: ошибка фонового потока `ProgressForm` уходит в стандартный диалог .NET с сырым ключом.** `FogSoft.WinForm/Forms/ProgressForm.cs:101` — `Result = e.Result` при ошибке бросает `TargetInvocationException`, обработчика `ThreadException` нет. Исправление: в `RunWorkerCompleted` проверять `e.Error` и звать `ErrorManager.PublishError(e.Error)` (текст — через исключение). Давнее, открыто.
+- **`DataAccessor.ExecuteScalar`: `catch` перебирает `_commandParameters` (`[ThreadStatic]`) без проверки на null** — при отказе до `AssignSqlParameters` NRE подменяет исходное исключение или в `exp.Data` попадают параметры прошлого вызова. Давнее, открыто.
+- **`hlp_IssueVerify`, модульная и пакетная ветки: `TOP 1 … ORDER BY 1 DESC` выбирает сообщение по алфавиту среди окон**, а не по порядку проверок `CASE` (`WindowOverflow` перебивает `FirstLastIssueError` соседнего окна). Давнее, открыто; при правке — построчная сверка, как в Deploy/50.
 
 ## Закрытые карточки
 

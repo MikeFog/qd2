@@ -194,7 +194,7 @@ namespace Merlin.Classes
 			if (p == null)
 			{
 				DateTime monday = MondayOf(date);
-				PlacementWeek empty = new PlacementWeek { Monday = monday, StartDate = monday, FinishDate = monday.AddDays(PlacementWeek.DaysInWeek - 1), NoPricelist = true };
+				PlacementWeek empty = new PlacementWeek { FirstDay = monday, StartDate = monday, FinishDate = monday.AddDays(PlacementWeek.DaysInWeek - 1), NoPricelist = true };
 				return empty;
 			}
 
@@ -218,7 +218,7 @@ namespace Merlin.Classes
 
 			PlacementWeek week = new PlacementWeek
 			{
-				Monday = weekMonday,
+				FirstDay = weekMonday,
 				StartDate = start,
 				FinishDate = finish,
 				PricelistStart = p.StartDate.Date,
@@ -365,7 +365,7 @@ namespace Merlin.Classes
 		private static int DayOf(PlacementWeek week, DataRow w)
 		{
 			DateTime original = (DateTime)w[TariffWindow.ParamNames.WindowDateOriginal];
-			int day = (int)(original.Date - week.Monday).TotalDays;
+			int day = (int)(original.Date - week.FirstDay).TotalDays;
 			return day >= 0 && day < PlacementWeek.DaysInWeek ? day : -1;
 		}
 

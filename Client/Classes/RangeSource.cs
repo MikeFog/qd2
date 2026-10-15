@@ -190,7 +190,7 @@ namespace Merlin.Classes
 			DateTime monday = MondayOf(anyDate.Date);
 			PlacementWeek week = new PlacementWeek
 			{
-				Monday = monday,
+				FirstDay = monday,
 				StartDate = monday,
 				FinishDate = monday.AddDays(PlacementWeek.DaysInWeek - 1),
 				HasPrices = false,

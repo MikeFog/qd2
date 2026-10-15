@@ -42,7 +42,7 @@ if ((@needByTypeVerify = 0 or @campaignTypeID in (1,2,3))
 	or (@needByTypeVerify = 1 and @campaignTypeID = 4 and exists(select * from [PackModuleContent]  pmc
 																	INNER JOIN [ModulePriceList] mpl ON pmc.[modulePriceListID] = mpl.[modulePriceListID]
 																	INNER JOIN [ModuleTariff] mt ON mpl.[modulePriceListID] = mt.[modulePriceListID]
-																	INNER JOIN [TariffWindow] tw ON tw.[tariffId] = mt.[tariffID] and tw.dayActual = @issueDate
+																	INNER JOIN [TariffWindow] tw ON tw.[tariffId] = mt.[tariffID] and tw.dayOriginal = @issueDate
 																	inner join DisabledWindow dw on tw.windowDateActual between dw.startDate And dw.finishDate and tw.massmediaID = dw.massmediaID
 																	where pmc.pricelistID = @packModulePriceListId ) ) )
 begin
@@ -212,7 +212,10 @@ else if @needByTypeVerify = 1 and @campaignTypeID = 3
 		Inner Join ModulePriceList mpl On mpl.modulePriceListID = mt.modulePriceListID
 	where 
 		mt.modulePriceListID = @modulePricelistID
-		And tw.dayActual = @issueDate
+		-- день модуля и пакета - по dayOriginal, как вставка выпусков (ModuleIssueIUD, PackModuleIssueID)
+		-- и IsModuleExist; индекс IX_TariffWindow_TariffID_DayOriginal; время окна переносится только
+		-- внутри дня, так что dayOriginal = dayActual
+		And tw.dayOriginal = @issueDate
 	order by 1 desc
 	if @msgError Is Null And @positionId <> 0
 	Begin
@@ -238,7 +241,7 @@ else if @needByTypeVerify = 1 and @campaignTypeID = 4
 			inner join MassMedia mm on tw.massmediaID = mm.massmediaID
 		WHERE 
 			pmc.[pricelistID] = @packModulePriceListId
-			AND tw.dayActual = @issueDate
+			AND tw.dayOriginal = @issueDate
 			AND @issueDate <= mm.deadLine
 		)
 		Set @msgError = 'DeadLineViolation'
@@ -260,10 +263,10 @@ else if @needByTypeVerify = 1 and @campaignTypeID = 4
 			INNER JOIN [ModulePriceList] mpl ON pmc.[modulePriceListID] = mpl.[modulePriceListID]
 			INNER JOIN [ModuleTariff] mt ON mpl.[modulePriceListID] = mt.[modulePriceListID]
 			INNER JOIN [TariffWindow] tw ON tw.[tariffId] = mt.[tariffID]
-			inner join MassMedia mm on tw.massmediaID = tw.massmediaID
+			inner join MassMedia mm on mm.massmediaID = tw.massmediaID
 		WHERE 
 			pmc.[pricelistID] = @packModulePriceListId
-			AND tw.dayActual = @issueDate
+			AND tw.dayOriginal = @issueDate
 		order by 1 desc
 	if @msgError Is Null And @positionId <> 0
 		Begin

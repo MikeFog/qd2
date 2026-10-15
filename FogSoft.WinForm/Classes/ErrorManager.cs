@@ -99,11 +99,12 @@ namespace FogSoft.WinForm.Classes
 
         public static string GetErrorMessage(Exception ex)
         {   
-            string message = MessageAccessor.GetMessage(ex.Message);
+            // Подстановка — из параметров упавшего вызова, а не последнего (side-defects №5).
+            string message = MessageAccessor.GetMessage(ex.Message, ex);
             if(message != null)
                 return message;
             if (ex is SqlException sqlEx && (sqlEx.Number == 547 || sqlEx.Number == 2627 || sqlEx.Number == 2601))
-                return MessageAccessor.GetMessage(ExtractConstraintName(sqlEx));
+                return MessageAccessor.GetMessage(ExtractConstraintName(sqlEx), ex);
             return ex.Message;
         }
 

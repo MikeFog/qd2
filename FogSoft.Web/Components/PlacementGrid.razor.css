@@ -159,6 +159,38 @@
     background: var(--c-bg);
 }
 
+/* Месяц: колонки дня узкие (31 колонка), день недели и дата — двумя строками. */
+.month .table > thead > tr > th.col-day {
+    min-width: 44px;
+    padding-left: 3px;
+    padding-right: 3px;
+}
+
+.month .day-date {
+    display: block;
+}
+
+.month .table > tbody > tr > td.cell {
+    padding-left: 3px;
+    padding-right: 3px;
+}
+
+/* Месяц: суббота и воскресенье — своим тоном колонки (десктоп ComboModuleGrid — серым), темнее
+   дня вне срока прайс-листа, чтобы не сливаться с ним, и красным именем дня. День вне срока
+   остаётся тоном «вне срока». Фон признаков места (заблокировано, отмечено, прайм) ниже по файлу
+   и перекрывает тон. */
+.table > tbody > tr > td.weekend {
+    background: color-mix(in srgb, var(--c-border) 55%, var(--c-surface));
+}
+
+.table > tbody > tr > td.weekend.out {
+    background: var(--c-bg);
+}
+
+.table > thead > tr > th.weekend .day-head {
+    color: var(--c-danger);
+}
+
 /* Признаки места. Текст: выпуски кампании — синий, фирмы — бирюзовый (десктопные цвета
    TariffGrid). Жирный — подходит под «Позиционирование» / «Предметы рекламы». */
 .table > tbody > tr > td.mine {

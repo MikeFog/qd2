@@ -8,19 +8,20 @@
     типах кампаний компонент не знает. Данные, текст ячейки в особых режимах (номера роликов),
     легенда и действия — у владельца.
 
-    Обычная таблица без виртуализации (до ~80 строк × 7 дней), липкие шапка и две левые колонки.
-    Наведение — только CSS. Шапка дня: день недели с датой и число выпусков кампании за день.
+    Обычная таблица без виртуализации (неделя — до ~80 строк × 7 дней, месяц — до ~37 строк × 31),
+    липкие шапка и две левые колонки. Наведение — только CSS. Шапка дня: день недели с датой и число
+    выпусков кампании за день. Месяц (PlacementWeek.Period): узкие колонки дня, выходные тоном.
 
     Всё плотно ради высоты: в дне ~40 окон, сетке нужна вся высота экрана. Инструменты владельца
     стоят в одной строке с неделей (LeadingTools — до неё, TrailingTools — после), подпись режима,
     прайс-лист и легенда — тонкой строкой под ней.
 *@
 
-<div class="pgrid @(Brush ? "brush" : null) @(Model is { HasPrices: false } ? "no-price" : null)">
+<div class="pgrid @(Brush ? "brush" : null) @(Model is { HasPrices: false } ? "no-price" : null) @(IsMonth ? "month" : null)">
     <div class="pgrid-bar">
         @LeadingTools
         <div class="pgrid-nav">
-            <button type="button" class="btn btn-sm btn-outline-secondary" title="@(Tr.T("Предыдущая неделя"))"
+            <button type="button" class="btn btn-sm btn-outline-secondary" title="@(IsMonth ? Tr.T("Предыдущий месяц") : Tr.T("Предыдущая неделя"))"
                     disabled="@(Model == null)" @onclick="OnPrevious">
                 <i class="bi bi-chevron-left" aria-hidden="true"></i>
             </button>
@@ -30,7 +31,7 @@
                     @WeekCaption(Model)
                 }
             </span>
-            <button type="button" class="btn btn-sm btn-outline-secondary" title="@(Tr.T("Следующая неделя"))"
+            <button type="button" class="btn btn-sm btn-outline-secondary" title="@(IsMonth ? Tr.T("Следующий месяц") : Tr.T("Следующая неделя"))"
                     disabled="@(Model == null)" @onclick="OnNext">
                 <i class="bi bi-chevron-right" aria-hidden="true"></i>
             </button>
@@ -60,8 +61,8 @@
     else if (Model.NoPricelist)
     {
         <div class="state">
-            <div class="state-title">@Tr.T("На эту неделю у станции нет прайс-листа")</div>
-            @Tr.T("Рекламные окна строятся по прайс-листу — перейдите к другой дате.")
+            <div class="state-title">@(Model.EmptyTitle ?? Tr.T("На эту неделю у станции нет прайс-листа"))</div>
+            @(Model.EmptyHint ?? Tr.T("Рекламные окна строятся по прайс-листу — перейдите к другой дате."))
         </div>
     }
     else if (Model.Rows.Count == 0)
@@ -82,11 +83,12 @@
                             <th class="col-price">@Tr.T("Цена")</th>
                         }
                         <th class="col-time">@Tr.T("Время")</th>
-                        @for (int d = 0; d < PlacementWeek.DaysInWeek; d++)
+                        @for (int d = 0; d < Model.DayCount; d++)
                         {
                             int day = d;
-                            <th class="col-day @(Model.IsInRange(day) ? null : "out")">
-                                <span class="day-head">@DayNames[day] <span class="day-date">@DisplayFormat.DayMonth(Model.Day(day))</span></span>
+                            DateTime date = Model.Day(day);
+                            <th class="col-day @(Model.IsInRange(day) ? null : "out") @(Weekend(day) ? "weekend" : null)">
+                                <span class="day-head">@DayName(date) <span class="day-date">@DisplayFormat.DayMonth(date)</span></span>
                                 @if (Model.DayTotals[day] is { } total)
                                 {
                                     <span class="day-count" title="@DayTotalTitle">@total</span>
@@ -104,18 +106,18 @@
                                 <td class="col-price">@row.Price.ToString("C")</td>
                             }
                             <td class="col-time">@row.Time</td>
-                            @for (int d = 0; d < PlacementWeek.DaysInWeek; d++)
+                            @for (int d = 0; d < Model.DayCount; d++)
                             {
                                 int day = d;
                                 PlacementCell? cell = row.Cells[day];
                                 if (cell == null)
                                 {
-                                    <td class="cell empty @(Model.IsInRange(day) ? null : "out")"></td>
+                                    <td class="cell empty @(Model.IsInRange(day) ? null : "out") @(Weekend(day) ? "weekend" : null)"></td>
                                 }
                                 else
                                 {
-                                    <td class="@CellClass(cell)" title="@CellTitle?.Invoke(cell)"
-                                        @onclick="e => OnCellClick.InvokeAsync(new CellEvent(cell, e))">@(CellText?.Invoke(cell) ?? cell.Text)</td>
+                                    <td class="@CellClass(cell, day)" title="@CellTitle?.Invoke(cell)"
+                                        @onclick="ClickHandler(cell)">@(CellText?.Invoke(cell) ?? cell.Text)</td>
                                 }
                             }
                         </tr>
@@ -174,7 +176,40 @@
 
     public sealed record CellEvent(PlacementCell Cell, MouseEventArgs Mouse);
 
+    private bool IsMonth => Model is { Period: PlacementPeriod.Month };
+
     private static string[] DayNames => DisplayFormat.WeekDaysFromMonday();
+
+    /// <summary>Краткое имя дня по дате колонки: у месяца первая колонка — любой день недели.</summary>
+    private static string DayName(DateTime date) => DayNames[((int)date.DayOfWeek + 6) % 7];
+
+    /// <summary>Суббота и воскресенье тоном — только в месяце, как ComboModuleGrid.ShadeWeekends: в неделе все дни на виду.</summary>
+    private bool Weekend(int day) =>
+        IsMonth && Model!.Day(day).DayOfWeek is DayOfWeek.Saturday or DayOfWeek.Sunday;
+
+    // Обработчик щелчка — один на место, пока модель та же: лямбда в разметке создавалась бы заново
+    // на каждую отрисовку, и Blazor переназначал бы обработчик у каждой ячейки (месяц — ~1 150
+    // правок на любую перерисовку, например на щелчок выделения). Новая модель — новые места.
+    private readonly Dictionary<PlacementCell, Func<MouseEventArgs, Task>> _clickHandlers = new();
+    private PlacementWeek? _clickHandlersOf;
+
+    protected override void OnParametersSet()
+    {
+        // Сброс здесь, а не при отрисовке ячейки: неделя без мест (нет прайс-листа, нет окон) иначе
+        // держала бы в памяти места прежней модели.
+        if (!ReferenceEquals(_clickHandlersOf, Model))
+        {
+            _clickHandlers.Clear();
+            _clickHandlersOf = Model;
+        }
+    }
+
+    private Func<MouseEventArgs, Task> ClickHandler(PlacementCell cell)
+    {
+        if (!_clickHandlers.TryGetValue(cell, out Func<MouseEventArgs, Task>? handler))
+            _clickHandlers[cell] = handler = e => OnCellClick.InvokeAsync(new CellEvent(cell, e));
+        return handler;
+    }
 
     /// <summary>«05.10 – 11.10.2026»: строка недели узкая; год у начала — только если он другой.</summary>
     private static string WeekCaption(PlacementWeek week) =>
@@ -188,9 +223,10 @@
         return OnJump.InvokeAsync(date);
     }
 
-    private string CellClass(PlacementCell cell)
+    private string CellClass(PlacementCell cell, int day)
     {
         string css = "cell";
+        if (Weekend(day)) css += " weekend";
         // Цвет текста: свои выпуски перекрывают выпуски фирмы (как в десктопе).
         if (cell.Has(PlacementFlags.Mine)) css += " mine";
         else if (cell.Has(PlacementFlags.Partial)) css += " partial";

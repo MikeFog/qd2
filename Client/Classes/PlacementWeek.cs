@@ -35,19 +35,47 @@ namespace Merlin.Classes
 		FirmSome = 128,
 	}
 
+	/// <summary>Вид периода сетки размещения: подписи навигации, выходные, ширина колонок дня.</summary>
+	public enum PlacementPeriod
+	{
+		Week,
+		Month,
+	}
+
 	/// <summary>
-	/// Неделя сетки размещения: строки × семь дней, ячейка — место (на вкладке «Рекламные окна»
-	/// — рекламное окно станции). Модель строит источник (WindowsSource), отрисовывает общий
-	/// компонент веба; ни один из них не проверяет тип кампании.
+	/// Период сетки размещения: строки × дни (неделя — семь, месяц — до 31), ячейка — место (на
+	/// вкладке «Рекламные окна» — рекламное окно станции). Модель строит источник (WindowsSource),
+	/// отрисовывает общий компонент веба; ни один из них не проверяет тип кампании.
 	/// </summary>
 	public sealed class PlacementWeek
 	{
 		public const int DaysInWeek = 7;
 
-		/// <summary>Понедельник недели.</summary>
-		public DateTime Monday { get; internal set; }
+		/// <summary>Неделя: семь дней с <see cref="FirstDay"/> (понедельника).</summary>
+		public PlacementWeek() : this(PlacementPeriod.Week, DaysInWeek)
+		{
+		}
 
-		/// <summary>Первый и последний показанный день — неделя, обрезанная сроком прайс-листа.</summary>
+		/// <summary>
+		/// Период из <paramref name="dayCount"/> дней с <see cref="FirstDay"/>; строки такого периода
+		/// создаются с тем же числом дней (<see cref="PlacementRow"/> с dayCount).
+		/// </summary>
+		internal PlacementWeek(PlacementPeriod period, int dayCount)
+		{
+			Period = period;
+			DayCount = dayCount;
+			DayTotals = new int?[dayCount];
+		}
+
+		public PlacementPeriod Period { get; }
+
+		/// <summary>Колонок дня в сетке; у недели — <see cref="DaysInWeek"/>.</summary>
+		public int DayCount { get; }
+
+		/// <summary>День первой колонки: понедельник недели, первое число месяца.</summary>
+		public DateTime FirstDay { get; internal set; }
+
+		/// <summary>Первый и последний показанный день — период, обрезанный сроком прайс-листа.</summary>
 		public DateTime StartDate { get; internal set; }
 		public DateTime FinishDate { get; internal set; }
 
@@ -68,12 +96,26 @@ namespace Merlin.Classes
 		public DateTime PricelistStart { get; internal set; }
 		public DateTime PricelistFinish { get; internal set; }
 
-		public IReadOnlyList<PlacementRow> Rows { get; internal set; } = new List<PlacementRow>();
+		/// <summary>Строки периода; у каждой мест ровно <see cref="DayCount"/> — иначе сетка и выделение упадут на индексе.</summary>
+		public IReadOnlyList<PlacementRow> Rows
+		{
+			get => _rows;
+			internal set
+			{
+				foreach (PlacementRow row in value)
+					if (row.Cells.Length != DayCount)
+						throw new ArgumentException($"Строка «{row.Time}»: мест {row.Cells.Length}, а дней в периоде {DayCount}.", nameof(value));
+				_rows = value;
+			}
+		}
 
-		/// <summary>Выпусков кампании за день (Пн…Вс); null — день вне срока прайс-листа.</summary>
-		public int?[] DayTotals { get; internal set; } = new int?[DaysInWeek];
+		private IReadOnlyList<PlacementRow> _rows = new List<PlacementRow>();
 
-		public DateTime Day(int dayIndex) => Monday.AddDays(dayIndex);
+		/// <summary>Выпусков кампании за день, по колонкам (<see cref="DayCount"/>); null — день вне срока прайс-листа.</summary>
+		public int?[] DayTotals { get; }
+
+		/// <summary>Дата колонки <paramref name="dayIndex"/> — от <see cref="FirstDay"/>, а не от понедельника.</summary>
+		public DateTime Day(int dayIndex) => FirstDay.AddDays(dayIndex);
 
 		public bool IsInRange(int dayIndex)
 		{
@@ -102,14 +144,20 @@ namespace Merlin.Classes
 		}
 	}
 
-	/// <summary>Строка недели: тарифное время и цена (у окон), семь мест (null — места нет).</summary>
+	/// <summary>Строка периода: тарифное время и цена (у окон), место на каждый день (null — места нет).</summary>
 	public sealed class PlacementRow
 	{
-		internal PlacementRow(string time, decimal price)
+		/// <summary>Строка недели — семь мест.</summary>
+		internal PlacementRow(string time, decimal price) : this(time, price, PlacementWeek.DaysInWeek)
+		{
+		}
+
+		/// <summary>Строка периода из <paramref name="dayCount"/> мест — по <see cref="PlacementWeek.DayCount"/> модели.</summary>
+		internal PlacementRow(string time, decimal price, int dayCount)
 		{
 			Time = time;
 			Price = price;
-			Cells = new PlacementCell[PlacementWeek.DaysInWeek];
+			Cells = new PlacementCell[dayCount];
 		}
 
 		public string Time { get; }
@@ -126,7 +174,7 @@ namespace Merlin.Classes
 		/// <summary>Фактические дата и время выхода.</summary>
 		public DateTime Date { get; internal set; }
 
-		/// <summary>День недели места (0 — понедельник) — колонка сетки.</summary>
+		/// <summary>Колонка сетки — номер дня от <see cref="PlacementWeek.FirstDay"/> (у недели 0 — понедельник).</summary>
 		public int DayIndex { get; internal set; }
 
 		/// <summary>Остаток времени (у штучного окна — «[осталось/всего]»).</summary>

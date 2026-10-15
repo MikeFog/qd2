@@ -73,7 +73,7 @@ public sealed class PlacementSelection
 	private static (int Row, int Day)? Locate(PlacementWeek week, int key)
 	{
 		for (int r = 0; r < week.Rows.Count; r++)
-			for (int d = 0; d < PlacementWeek.DaysInWeek; d++)
+			for (int d = 0; d < week.DayCount; d++)
 				if (week.Rows[r].Cells[d]?.Key == key)
 					return (r, d);
 		return null;

@@ -2100,3 +2100,5 @@ code	Недостаточно окон за весь период шаблона
 code	Выпуск ставится в получасовой слот, накрывающий это время (время округляется вниз до получаса), на всех отмеченных станциях.	La emisión se coloca en la franja de media hora que cubre esta hora (la hora se redondea hacia abajo a la media hora), en todas las emisoras marcadas.
 code	Отменять можно только выпуски отмеченных кампаний.	Solo se pueden deshacer emisiones de las pautas marcadas.
 code	Выпуски этого дня поставлены, но «Отменить последнее» их не снимет: не удалось прочитать поставленное. Снять их можно через «Удалить выпуски».	Las emisiones de este día se colocaron, pero «Deshacer» no las quitará: no se pudo leer lo colocado. Se pueden quitar con «Eliminar emisiones».
+code	Предыдущий месяц	Mes anterior
+code	Следующий месяц	Mes siguiente

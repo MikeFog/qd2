@@ -1,5 +1,5 @@
 ﻿/*
-    ДЕПЛОЙ: переводы веб-версии на язык «es» (2101 строк). docs/tasks/web-i18n.md, этап 5.
+    ДЕПЛОЙ: переводы веб-версии на язык «es» (2103 строк). docs/tasks/web-i18n.md, этап 5.
     СГЕНЕРИРОВАН из ArtvisDB/Scripts/i18n/es.tsv скриптом build-seed.py — руками не править.
 
     ПРЕДУСЛОВИЕ     накачен web-i18n-translation-deploy.sql (таблица iTranslation).
@@ -2123,7 +2123,9 @@ INSERT INTO #t ([source], [text]) VALUES
 (N'Недостаточно окон за весь период шаблона — не удалось разместить {0} выход(ов) из выбранных роликов.', N'No hay suficientes ventanas en todo el período de la plantilla: no se pudieron colocar {0} emisión(es) de los spots seleccionados.'),
 (N'Выпуск ставится в получасовой слот, накрывающий это время (время округляется вниз до получаса), на всех отмеченных станциях.', N'La emisión se coloca en la franja de media hora que cubre esta hora (la hora se redondea hacia abajo a la media hora), en todas las emisoras marcadas.'),
 (N'Отменять можно только выпуски отмеченных кампаний.', N'Solo se pueden deshacer emisiones de las pautas marcadas.'),
-(N'Выпуски этого дня поставлены, но «Отменить последнее» их не снимет: не удалось прочитать поставленное. Снять их можно через «Удалить выпуски».', N'Las emisiones de este día se colocaron, pero «Deshacer» no las quitará: no se pudo leer lo colocado. Se pueden quitar con «Eliminar emisiones».');
+(N'Выпуски этого дня поставлены, но «Отменить последнее» их не снимет: не удалось прочитать поставленное. Снять их можно через «Удалить выпуски».', N'Las emisiones de este día se colocaron, pero «Deshacer» no las quitará: no se pudo leer lo colocado. Se pueden quitar con «Eliminar emisiones».'),
+(N'Предыдущий месяц', N'Mes anterior'),
+(N'Следующий месяц', N'Mes siguiente');
 GO
 
 BEGIN TRANSACTION;

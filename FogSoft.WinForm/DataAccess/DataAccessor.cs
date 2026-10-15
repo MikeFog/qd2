@@ -398,6 +398,7 @@ namespace FogSoft.WinForm.DataAccess
 			}
 			catch (Exception exp)
 			{
+				MessageAccessor.RememberFailedCall(exp, parameters);
 				if (parameters != null && exp.Data != null)
 				{
 					exp.Data["Procedure"] = procedureName;
@@ -510,6 +511,8 @@ namespace FogSoft.WinForm.DataAccess
 			}
 			catch (Exception exp)
 			{
+				// До IsHandledBusinessMessage: первая загрузка словаря сообщений сама идёт через LoadDataSet.
+				MessageAccessor.RememberFailedCall(exp, parameters);
 				string execScript = null;
 
 				if (parameters != null && exp.Data != null)
@@ -634,6 +637,7 @@ namespace FogSoft.WinForm.DataAccess
             }
             catch (Exception exp)
             {
+                MessageAccessor.RememberFailedCall(exp, parameters);
                 string execScript = null;
 
                 if (parameters != null && exp.Data != null)
@@ -814,6 +818,7 @@ end
 			}
 			catch(Exception exp)
 			{
+				MessageAccessor.RememberFailedCall(exp, parameters);
 				if (parameters != null && exp.Data != null)
 				{
 					exp.Data["Procedure"] = procedureName;
