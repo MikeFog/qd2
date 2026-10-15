@@ -338,6 +338,15 @@ BEGIN
         WHERE entityID = 77;
         PRINT N'Из паспорта акции убрана строка «Пакетная скидка».';
     END
+    -- ранняя редакция записывала поля только для просмотра как <field disabled="true"> (даты со временем, «True»);
+    -- теперь это <label>: даты без времени/секунд, «Да/Нет»
+    IF EXISTS (SELECT 1 FROM dbo.iEntity WHERE entityID = 77 AND CAST(passport AS nvarchar(max)) LIKE N'%name="createDate" type="df_datetime" disabled="true"%')
+    BEGIN
+        UPDATE dbo.iEntity
+        SET passport = REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(CAST(passport AS nvarchar(max)), N'<field caption="Активирована:" name="isConfirmed" disabled="true"/>', N'<label caption="Активирована:" name="isConfirmed" type="boolean" />'), N'<field caption="Начало:" name="startDate" disabled="true"/>', N'<label caption="Начало:" name="startDate" type="df_date" />'), N'<field caption="Окончание:" name="finishDate" disabled="true"/>', N'<label caption="Окончание:" name="finishDate" type="df_date" />'), N'<field caption="Создана:" name="createDate" type="df_datetime" disabled="true"/>', N'<label caption="Создана:" name="createDate" type="df_datetime" />'), N'<field caption="Изменена:" name="modDate" type="df_datetime" disabled="true"/>', N'<label caption="Изменена:" name="modDate" type="df_datetime" />')
+        WHERE entityID = 77;
+        PRINT N'В паспорте акции поля только для просмотра заменены на <label>.';
+    END
 END
 ELSE IF EXISTS (SELECT 1 FROM dbo.iEntity WHERE entityID = 77 AND LEN(CAST(passport AS nvarchar(max))) > 0)
     RAISERROR(N'Остановлено: у сущности 77 уже есть другой паспорт — смотрите вручную. Ничего не изменено.', 16, 1);
