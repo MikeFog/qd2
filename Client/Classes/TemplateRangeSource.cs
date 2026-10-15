@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Data.SqlClient;
 using System.Linq;
 using FogSoft.WinForm;
 using FogSoft.WinForm.Classes;
@@ -125,7 +126,19 @@ namespace Merlin.Classes
 					DateTime monday = RangeSource.WeekMonday(day);
 					if (monday != weekMonday)
 					{
-						week = RangeSource.LoadTemplateWeek(r, monday);
+						// Неделя читается между днями, уже записанными: сбой чтения — как сбой записи дня (прерывание запуска,
+						// пересчёт и «Отменить» по сделанному), а не исключение мимо итога.
+						try
+						{
+							week = LoadWeek(r, monday, kind);
+						}
+						catch (Exception ex)
+						{
+							Log.Error($"Template range {kind} interrupted reading the week of {monday:yyyy-MM-dd} (action {r.ActionId})", ex);
+							TemplateSource.Interrupted(result, dayText, ex, dates.Count - dayIndex, wanted);
+							interrupted = true;
+							break;
+						}
 						weekMonday = monday;
 					}
 					List<RangeSource.TemplateSlot> daySlots = week.Where(s => s.Start.Date == day).ToList();
@@ -199,6 +212,20 @@ namespace Merlin.Classes
 			return result;
 		}
 
+		/// <summary>Слоты недели; жертва взаимоблокировки (1205) читает ещё раз — чтение ничего не оставляет.</summary>
+		private static List<RangeSource.TemplateSlot> LoadWeek(RangeSource.OpenRange r, DateTime monday, string kind)
+		{
+			try
+			{
+				return RangeSource.LoadTemplateWeek(r, monday);
+			}
+			catch (SqlException ex) when (ex.Number == 1205)
+			{
+				Log.Warn($"Template range {kind}: deadlock reading the week of {monday:yyyy-MM-dd} (action {r.ActionId}), retrying", ex);
+				return RangeSource.LoadTemplateWeek(r, monday);
+			}
+		}
+
 		private static string Describe(PlacementTemplate template) =>
 			$"period={template.StartDate:yyyy-MM-dd}..{template.FinishDate:yyyy-MM-dd} " +
 			(template.ByParity ? (template.Odd ? "odd" : "even") : "days=" + string.Concat(template.WeekDays.Select(on => on ? "1" : "0")));
@@ -222,29 +249,42 @@ namespace Merlin.Classes
 
 		/// <summary>
 		/// Один день в одной транзакции: AddRangeIssues на каждый слот по порядку (шаг с точкой сохранения — отказ любой станции
-		/// откатывает слот целиком), затем поставленные выпуски — разностью RangeSlotIssues до и после. Повтор после
-		/// взаимоблокировки и прерывание запуска — как у линейки (<see cref="TemplateSource.WriteDayCore"/>).
+		/// откатывает слот целиком). Поставленные выпуски — разностью RangeSlotIssues до и после, оба чтения вне транзакции (см.
+		/// <see cref="RangeSource.IssueIdsIn"/>); сбой чтения после коммита дня запуск не прерывает — строка в таблице: выпуски дня
+		/// поставлены, но «Отменить» их не снимет. Повтор после взаимоблокировки и прерывание запуска — как у линейки
+		/// (<see cref="TemplateSource.WriteDayCore"/>).
 		/// </summary>
 		private static bool WriteDay(RangeSource.OpenRange r, int position, WindowsSource.WeekView view, bool ignoreFirmWindows, List<DayWrite> writes,
 			string dayText, int daysLeft, TemplateSource.TemplateResult result, string kind)
 		{
 			List<DateTime> slots = writes.Select(w => w.Start).Distinct().ToList();
 			Dictionary<DateTime, int> rollerOf = writes.ToDictionary(w => w.Start, w => w.Roller.RollerId);
-			return TemplateSource.WriteDayCore(kind, "action " + r.ActionId, dayText, daysLeft, writes.Count, result, () =>
+			bool notCaptured = false;
+			bool written = TemplateSource.WriteDayCore(kind, "action " + r.ActionId, dayText, daysLeft, writes.Count, result, () =>
 			{
+				notCaptured = false;
 				WindowsSource.BatchResult dayResult = new WindowsSource.BatchResult();
+				HashSet<int> before = RangeSource.IssueIdsIn(r, slots);
 				WindowsSource.RunInTransaction(() =>
 				{
-					HashSet<int> before = RangeSource.IssueIdsIn(r, slots);
 					foreach (DayWrite w in writes)
 						RangeSource.Step(dayResult, RangeSource.SlotName(w.Start), 1,
 							() => RangeSource.AddRangeFor(r, w.Start, w.Roller.RollerId, w.Roller.Duration, position, r.CampaignIds, view, ignoreFirmWindows));
-					if (dayResult.Done > 0)
-						dayResult.Created.AddRange(RangeSource.CreatedSince(r, slots, before,
-							(slot, issue) => rollerOf.TryGetValue(slot, out int rollerId) && rollerId == issue.RollerId));
 				});
+				if (dayResult.Done > 0)
+				{
+					List<WindowsSource.PlacedIssue> created = RangeSource.TryCreatedSince(r, slots, before,
+						(slot, issue) => rollerOf.TryGetValue(slot, out int rollerId) && rollerId == issue.RollerId);
+					if (created == null)
+						notCaptured = true;
+					else
+						dayResult.Created.AddRange(created);
+				}
 				return dayResult;
 			});
+			if (written && notCaptured)
+				result.Note(dayText, Tr.T("Выпуски этого дня поставлены, но «Отменить последнее» их не снимет: не удалось прочитать поставленное. Снять их можно через «Удалить выпуски»."));
+			return written;
 		}
 	}
 }

@@ -5,13 +5,20 @@ using Merlin.Classes;
 
 // Проверки планировщика Шаблонов 1–3 (docs/tasks/web-action-forms.md, этап 5) на инвариантах, а не на «как десктоп»:
 // у десктопа жребий без зерна, побитовое совпадение недостижимо. Без ключей — только чистая логика (даты, интервал,
-// выбор окон дня); с ключом --db — ещё очередь роликов Шаблона 3 на настоящих роликах ArtvisDev.
+// выбор окон дня); с ключом --db — ещё очередь роликов Шаблона 3 на настоящих роликах ArtvisDev; с ключом --load — только замер времени запуска на длинных периодах.
 internal static class Program
 {
 	private static int failed;
 
 	private static int Main(string[] args)
 	{
+		if (args.Contains("--load"))
+		{
+			LoadCases();
+			Console.WriteLine(failed == 0 ? "OK: замер выполнен" : $"ОШИБОК: {failed}");
+			return failed == 0 ? 0 : 1;
+		}
+
 		DatesCases();
 		TimeRangeCases();
 		PickCases();
@@ -603,6 +610,89 @@ internal static class Program
 			{
 				WindowsSource.BatchResult cleanup = RangeSource.Undo(r, created);
 				Console.WriteLine($"уборка веера после сбоя: снято {cleanup.Done}, не снято {cleanup.Failed}");
+			}
+		}
+	}
+
+	// ---------- Замер нагрузки (ключ --load) ----------
+
+	/// <summary>
+	/// Время запуска шаблонов на длинных периодах (5.7): линейка — макет 178224, кампания 392053 (283 дня), 15.10–31.12 по 5 выпусков в день;
+	/// веер — макет 176784, три станции, 15.10–31.12 по 2 слота в день. Печатает миллисекунды запуска и отмены и снимает всё в finally.
+	/// Только на ArtvisDev, в нерабочее время: запуск держит блокировки окон на время дня.
+	/// </summary>
+	private static void LoadCases()
+	{
+		InitDb();
+		PlacementTemplate Tpl(int quantity) => new PlacementTemplate
+		{
+			StartDate = new DateTime(2026, 10, 15), FinishDate = new DateTime(2026, 12, 31),
+			StartTime = TimeSpan.FromHours(6), FinishTime = TimeSpan.FromHours(23), Quantity = quantity, IgnoreFirmWindows = true,
+		};
+
+		// линейка
+		{
+			ActionOnMassmedia action = ActionOnMassmedia.GetActionById(178224);
+			WindowsSource.OpenCampaign c = WindowsSource.Open(action, 392053);
+			Check("нагрузка, линейка: кампания открыта и правка разрешена", c != null && c.CanEdit);
+			if (c != null && c.CanEdit)
+			{
+				System.Data.DataTable rollers = WindowsSource.LoadRollers(c);
+				int rollerId = WindowsSource.RollerIdOf(rollers.Rows.Cast<System.Data.DataRow>().First(r => !WindowsSource.IsDummy(r)));
+				decimal priceBefore = ActionOnMassmedia.GetActionById(178224).TotalPrice;
+				List<WindowsSource.PlacedIssue> created = new List<WindowsSource.PlacedIssue>();
+				try
+				{
+					System.Diagnostics.Stopwatch sw = System.Diagnostics.Stopwatch.StartNew();
+					TemplateSource.TemplateResult res = TemplateSource.RunInterval(c, Tpl(5), rollerId, 0);
+					created.AddRange(res.Created);
+					long run = sw.ElapsedMilliseconds;
+					Console.WriteLine($"нагрузка, линейка: Ш.2 78 дней × 5 — {res.Done} выпусков, не добавлено {res.NotAdded}, строк замечаний {res.Errors.Rows.Count}, {run} мс ({(res.Done == 0 ? 0 : run / res.Done)} мс на выпуск)");
+					sw.Restart();
+					WindowsSource.BatchResult undo = WindowsSource.Undo(c, created);
+					created.Clear();
+					Console.WriteLine($"нагрузка, линейка: отмена {undo.Done} выпусков, не снято {undo.Failed}, {sw.ElapsedMilliseconds} мс");
+					Check("нагрузка, линейка: цена акции вернулась", ActionOnMassmedia.GetActionById(178224).TotalPrice == priceBefore, $"{ActionOnMassmedia.GetActionById(178224).TotalPrice} против {priceBefore}");
+				}
+				finally
+				{
+					if (created.Count > 0)
+						Console.WriteLine($"уборка после сбоя: снято {WindowsSource.Undo(c, created).Done}");
+				}
+			}
+		}
+
+		// веер
+		{
+			int[] campaignIds = { 388478, 388479, 388480 };
+			RangeSource.OpenRange r = RangeSource.Open(ActionOnMassmedia.GetActionById(176784),
+				campaignIds.Select(id => new KeyValuePair<int, string>(id, "К" + id)).ToList());
+			Check("нагрузка, веер: открыт и правка разрешена", r != null && r.CanEdit);
+			if (r != null && r.CanEdit)
+			{
+				System.Data.DataTable rollers = WindowsSource.LoadRollers(r);
+				int rollerId = WindowsSource.RollerIdOf(rollers.Rows.Cast<System.Data.DataRow>().First(row => !WindowsSource.IsDummy(row)));
+				WindowsSource.WeekView view = new WindowsSource.WeekView();
+				decimal priceBefore = ActionOnMassmedia.GetActionById(176784).TotalPrice;
+				List<WindowsSource.PlacedIssue> created = new List<WindowsSource.PlacedIssue>();
+				try
+				{
+					System.Diagnostics.Stopwatch sw = System.Diagnostics.Stopwatch.StartNew();
+					TemplateSource.TemplateResult res = TemplateRangeSource.RunInterval(r, Tpl(2), rollerId, 0, view);
+					created.AddRange(res.Created);
+					long run = sw.ElapsedMilliseconds;
+					Console.WriteLine($"нагрузка, веер: Ш.2 78 дней × 2 слота × 3 станции — {res.Done} слотов ({res.Created.Count} выпусков), не добавлено {res.NotAdded}, строк замечаний {res.Errors.Rows.Count}, {run} мс ({(res.Created.Count == 0 ? 0 : run / res.Created.Count)} мс на выпуск)");
+					sw.Restart();
+					WindowsSource.BatchResult undo = RangeSource.Undo(r, created);
+					created.Clear();
+					Console.WriteLine($"нагрузка, веер: отмена {undo.Done} выпусков, не снято {undo.Failed}, {sw.ElapsedMilliseconds} мс");
+					Check("нагрузка, веер: цена акции вернулась", ActionOnMassmedia.GetActionById(176784).TotalPrice == priceBefore, $"{ActionOnMassmedia.GetActionById(176784).TotalPrice} против {priceBefore}");
+				}
+				finally
+				{
+					if (created.Count > 0)
+						Console.WriteLine($"уборка веера после сбоя: снято {RangeSource.Undo(r, created).Done}");
+				}
 			}
 		}
 	}

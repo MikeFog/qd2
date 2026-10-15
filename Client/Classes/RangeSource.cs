@@ -4,6 +4,7 @@ using System.Data;
 using System.Data.SqlClient;
 using System.Globalization;
 using System.Linq;
+using log4net;
 using FogSoft.WinForm;
 using FogSoft.WinForm.Classes;
 using FogSoft.WinForm.DataAccess;
@@ -34,6 +35,8 @@ namespace Merlin.Classes
 	/// </summary>
 	public static class RangeSource
 	{
+		private static readonly ILog Log = LogManager.GetLogger(typeof(RangeSource));
+
 		// ---------- Открытый веер ----------
 
 		/// <summary>Отмеченные линейные кампании акции, с которыми работает вкладка.</summary>
@@ -623,16 +626,14 @@ namespace Merlin.Classes
 			ActionOnMassmedia action = LoadForWrite(r);
 			Roller roller = WindowsSource.BrushRoller(r, rollerId, action.FirmID);
 
-			List<WindowsSource.PlacedIssue> created = null;
+			DateTime[] slots = { cell.Date };
+			HashSet<int> before = IssueIdsIn(r, slots);
 			WindowsSource.RunInTransaction(() =>
 			{
-				DateTime[] slots = { cell.Date };
-				HashSet<int> before = IssueIdsIn(r, slots);
 				AddRange(r, cell.Date, roller, position, view);
-				created = CreatedSince(r, slots, before, (slot, issue) => issue.RollerId == roller.RollerId);
 				action.Recalculate(false);
 			});
-			return created;
+			return TryCreatedSince(r, slots, before, (slot, issue) => issue.RollerId == roller.RollerId) ?? new List<WindowsSource.PlacedIssue>();
 		}
 
 		/// <summary>AddRangeIssues: ролик с позицией на всех отмеченных станциях получаса <paramref name="slot"/>.</summary>
@@ -717,17 +718,16 @@ namespace Merlin.Classes
 			Roller roller = WindowsSource.BrushRoller(r, rollerId, action.FirmID);
 			WindowsSource.BatchResult result = new WindowsSource.BatchResult();
 			List<DateTime> slots = cells.Select(c => c.Date).Distinct().ToList();
+			HashSet<int> before = IssueIdsIn(r, slots);
 			WindowsSource.RunInTransaction(() =>
 			{
-				HashSet<int> before = IssueIdsIn(r, slots);
 				foreach (PlacementCell cell in cells.OrderBy(c => c.Key))
 					Step(result, SlotName(cell.Date), 1, () => AddRange(r, cell.Date, roller, position, view));
 				if (result.Done > 0)
-				{
-					result.Created.AddRange(CreatedSince(r, slots, before, (slot, issue) => issue.RollerId == roller.RollerId));
 					action.Recalculate(false);
-				}
 			});
+			if (result.Done > 0)
+				result.Created.AddRange(TryCreatedSince(r, slots, before, (slot, issue) => issue.RollerId == roller.RollerId) ?? new List<WindowsSource.PlacedIssue>());
 			return result;
 		}
 
@@ -735,13 +735,32 @@ namespace Merlin.Classes
 
 		/// <summary>
 		/// Номера выпусков отмеченных кампаний в слотах (RangeSlotIssues) — снимок «до» записи. AddRangeIssues номера поставленных
-		/// выпусков не возвращает, поэтому поставленное находится как разность снимков до и после — в той же транзакции, где
-		/// запись видна и откаты шагов учтены.
+		/// выпусков не возвращает, поэтому поставленное находится как разность снимков до и после записи; оба чтения — вне
+		/// транзакции записи: процедура читает окна всех выпусков акции и внутри транзакции ждала бы чужую запись, удерживая
+		/// блокировки своих окон (взаимоблокировка с чужим пакетом по тем же станциям).
 		/// </summary>
 		internal static HashSet<int> IssueIdsIn(OpenRange r, IReadOnlyCollection<DateTime> slots) =>
 			slots.Count == 0
 				? new HashSet<int>()
 				: new HashSet<int>(LoadSlotIssues(r, slots).Values.SelectMany(list => list).Select(i => i.IssueId));
+
+		/// <summary>
+		/// <see cref="CreatedSince"/> после коммита записи: сбой чтения уже записанного не отменяет размещение — он пишется в журнал,
+		/// запись для «Отменить последнее» тогда не заводится (null).
+		/// </summary>
+		internal static List<WindowsSource.PlacedIssue> TryCreatedSince(OpenRange r, IReadOnlyCollection<DateTime> slots, HashSet<int> before,
+			Func<DateTime, SlotIssue, bool> own)
+		{
+			try
+			{
+				return CreatedSince(r, slots, before, own);
+			}
+			catch (Exception ex)
+			{
+				Log.Error($"Reading the placed issues failed (action {r.ActionId}, {slots.Count} slot(s)): «Undo» will not see them", ex);
+				return null;
+			}
+		}
 
 		/// <summary>
 		/// Выпуски, появившиеся в слотах после снимка <paramref name="before"/> и подходящие под <paramref name="own"/> (слот и
@@ -1237,9 +1256,9 @@ namespace Merlin.Classes
 			int without = 0;
 			List<DateTime> slots = plan.Additions.Select(a => a.Slot).Distinct().ToList();
 			HashSet<(DateTime, int, int)> targets = new HashSet<(DateTime, int, int)>(plan.Additions.Select(a => (a.Slot, a.CampaignId, a.RollerId)));
+			HashSet<int> before = IssueIdsIn(r, slots);
 			WindowsSource.RunInTransaction(() =>
 			{
-				HashSet<int> before = IssueIdsIn(r, slots);
 				foreach (Addition a in plan.Additions)
 					Step(result, IssueTarget(r, a.Slot, a.CampaignId, a.RollerId, a.RollerName, numbers), 1, () =>
 					{
@@ -1256,11 +1275,11 @@ namespace Merlin.Classes
 						}
 					});
 				if (result.Done > 0)
-				{
-					result.Created.AddRange(CreatedSince(r, slots, before, (slot, issue) => targets.Contains((slot, issue.CampaignId, issue.RollerId))));
 					action.Recalculate(false);
-				}
 			});
+			if (result.Done > 0)
+				result.Created.AddRange(TryCreatedSince(r, slots, before, (slot, issue) => targets.Contains((slot, issue.CampaignId, issue.RollerId)))
+					?? new List<WindowsSource.PlacedIssue>());
 			withoutPosition = without;
 			return result;
 		}

@@ -1,8 +1,13 @@
 # Сценарий: Шаблон №3 — множественные ролики с квотами и распределением по дням
 
+> **Веб (с 15.10.2026).** В вебе Шаблон 3 реализован заново, без блока оценки цены (этап 5 плана): `Client/Classes/TemplateSource.cs` (линейка, `RunMulti`),
+> `Client/Classes/TemplateRangeSource.cs` (веер), `Client/Classes/TemplatePlanner.cs` (выбор окон дня), `Client/Classes/PlacementTemplate.cs` (параметры запуска),
+> `Client/Classes/RollerAllocationQueue.cs` (очередь роликов — тот же класс, что в десктопе). Решения и сознательные отличия от десктопа — `docs/tasks/web-action-forms.md`,
+> разделы «Этап 5 — Шаблоны 1–3 и «Отменить последнее»: решения», «Этап 5.4» и «Этап 5.5». Ниже описан десктоп; спецификацией считается его код.
+
 Бизнес-процесс: пользователь выбирает несколько роликов фирмы, задаёт каждому "Количество" (квоту
 выходов за весь период), получает черновую оценку цены и генерирует реальные выпуски — с случайным,
-но равномерным распределением роликов по дням (round-robin), без повторов одного ролика подряд внутри дня.
+но равномерным распределением роликов по дням (round-robin), по возможности без повторов одного ролика подряд внутри дня (см. риск 3).
 
 Работает для **линейной** и **веерной** кампании. В отличие от Шаблона 1/2 — несколько РАЗНЫХ роликов
 за один запуск, а не один ролик на все даты.
@@ -18,13 +23,15 @@
 ## Точка входа
 
 ```
-CampaignForm.tbbTemplate3_Click                        [CampaignForm.cs:1292]
+CampaignForm.tbbTemplate3_Click
   │
-  ├── massmediaIds = GetTemplateMassmediaIds()          [CampaignForm.cs:1374]
-  │     веерная: все СМИ акции (Action.Campaigns())
+  ├── massmediaIds = GetTemplateMassmediaIds()
+  │     веерная: СМИ ОТМЕЧЕННЫХ кампаний акции (rangeGrid.SelectedCampaignIds — чек-лист EditIssuesForm;
+  │              null — все), без повторов станции (DISTINCT: на одной станции может идти несколько
+  │              кампаний акции). Это станции, а не кампании — см. риск 13
   │     линейная: одно СМИ текущей кампании
   │
-  ├── action = IsRangeCampaign                          [CampaignForm.cs:1301]
+  ├── action = IsRangeCampaign
   │       ? ((TariffWithRangeGrid)_tariffGrid).Action
   │       : _campaign.Action
   │     ⚠️ _campaign сам по себе — null для веерной (см. GetTemplateMassmediaIds — веерная
@@ -38,6 +45,8 @@ CampaignForm.tbbTemplate3_Click                        [CampaignForm.cs:1292]
   │     GetQuantityMismatchError; с 08.10.2026 — раньше пустая очередь давала «Недостаточно окон»)
   │
   ▼  (DialogResult.OK)
+  _template = formTemplate.Template     ← тот же объект CampaignForm, если в нём уже задано время; IsModeAdd = true
+  │                                        форма ставит только новому шаблону, у переиспользованного не трогает — см. риск 12
   rollerQuantities = formTemplate.SelectedRollers
       .Select(r => (new Roller(r.RollerId), r.Quantity))
   │
@@ -48,7 +57,10 @@ CampaignForm.tbbTemplate3_Click                        [CampaignForm.cs:1292]
   │           date, StartTime, FinishTime, Quantity, QuantityPrime, QuantityNonPrime,
   │           IgnoreWindowsWithTheSameFirmIssue, slotsCache, rollerQueue.TakeForToday),
   │       rangeGrid.Action)
-  │     → если после генерации rollerQueue.Count > 0 — предупреждение "не удалось разместить N"
+  │     → если после генерации rollerQueue.Count > 0 — UserMessage.ShowExclamation "Недостаточно окон за весь
+  │       период шаблона — не удалось разместить N выход(ов) из выбранных роликов." (у линейки — строкой в
+  │       таблице ошибок FrmGenerator.Generate и с другим текстом: «Недостаточно рекламных окон за весь период
+  │       шаблона — …», см. ниже)
   │     → CampaignStatusChanged() НЕ вызывается (как и остальные range-пути)
   │
   └── [Linear] — линейная
@@ -70,42 +82,48 @@ CampaignForm.tbbTemplate3_Click                        [CampaignForm.cs:1292]
 (`durationString`, read-only) | Количество (`ColQuantity`, редактируемая) | Предмет рекламы
 (`advertTypeName`, read-only, растягивается — последняя колонка).
 
-- Источник данных: `firm.GetRollers()` — активные ролики фирмы. По данным dev-БД: медиана 2,
+- Источник данных: `firm.GetRollers()` — активные ролики фирмы (`ShowInactive = false`). По данным dev-БД
+  (цифры на момент написания карты, не перепроверялись): медиана 2,
   среднее ~3.89, 90-й перцентиль 8 роликов на фирму — поиск/фильтр по гриду сознательно не
   добавлен, простого списка с чекбоксами достаточно для подавляющего большинства фирм.
-- Ввод положительного `Количество` автоматически ставит чекбокс (`FrmTemplate3.cs:110-114`).
+- Ввод положительного `Количество` автоматически ставит чекбокс (`dgvRollers.CellValueChanged` в `InitRollersGrid`).
 - Чекбокс коммитится сразу по `CurrentCellDirtyStateChanged` (иначе `CellValueChanged` не
   сработает до ухода с ячейки).
 
-### Статистика и валидация (`RecalculateStats`, `FrmTemplate3.cs:153`)
+### Статистика и валидация (`RecalculateStats`)
 
-Вызывается при ЛЮБОМ изменении расписания/количества/грида (см. подписки в `OnLoad`,
-`FrmTemplate3.cs:583-589`, плюс `dgvRollers.CellValueChanged`, `clbWeekDays_ItemCheck`,
-`groupButton_CheckChanged`, `cbSplitPrime_CheckedChanged`).
+Вызывается при ЛЮБОМ изменении расписания/количества/грида (см. подписки в `OnLoad` — даты периода,
+количества «в день»/прайм/офф-прайм, чёт/нечёт; время интервала НЕ подписано — на счётчики оно не влияет;
+плюс `dgvRollers.CellValueChanged`, `clbWeekDays_ItemCheck`, `groupButton_CheckChanged`,
+`cbSplitPrime_CheckedChanged`).
 
 - **"Общее количество выходов"** — НЕ сумма по гриду, а `dailyQuantity * _template.DaysCount`
-  (`GetExpectedTotalQuantity`, `FrmTemplate3.cs:225`) — то, что задают настройки интервала.
-  ⚠️ вызывает `_template.Reset()` — см. риск "двойной Reset" ниже.
-- **"Сумма по гриду роликов"** — сумма `Количество` по отмеченным строкам грида
-  (`GetCheckedRollerAggregates`, `FrmTemplate3.cs:236`). Должна СОВПАСТЬ с ожидаемым —
+  (`GetExpectedTotalQuantity`) — то, что задают настройки интервала.
+  ⚠️ вызывает `_template.Reset()` — см. риск 5 ниже («`IssueTemplate.Reset()` вызывается в нескольких местах»).
+- **"Сумма по гриду роликов"** (метка «Распределено выходов») — сумма `Количество` по отмеченным строкам грида
+  (`GetCheckedRollerAggregates`). Должна СОВПАСТЬ с ожидаемым —
   цвет метки зелёный/красный сигнализирует расхождение ещё до клика "Рассчитать".
 - Каждый вызов `RecalculateStats()` в конце сбрасывает блок цены через `ResetPriceEstimate()`
-  (`FrmTemplate3.cs:176`) → `DisplayBaselinePrices()` — НЕ на прочерки, а на текущее реальное
+  → `DisplayBaselinePrices()` — НЕ на прочерки, а на текущее реальное
   состояние кампании/акции (см. "Блок Статистика" ниже). Смысл: если пользователь поменял
   параметры ПОСЛЕ расчёта, устаревшая ОЦЕНКА добавки не должна вводить в заблуждение — но
   реальные текущие цифры кампании показать не вредно, наоборот полезно.
 
-### Оценка цены (`btnEstimatePrice_Click`, `FrmTemplate3.cs:269`)
+### Оценка цены (`btnEstimatePrice_Click`)
 
 Переиспользует `PriceCalculatorGrid` — тот же движок, что в реальном `PriceCalculatorForm`.
 
-1. Валидация: у каждого отмеченного ролика количество > 0, хотя бы один такой ролик; даты/время корректны;
-   сумма по гриду == ожидаемому общему количеству (иначе `MessageBox.ShowExclamation` и `return`). Те же
-   проверки делает OK (`GetRollerSelectionError`, `GetQuantityMismatchError`).
+1. Валидация, в этом порядке: у каждого отмеченного ролика количество > 0 и хотя бы один такой ролик
+   (`GetRollerSelectionError`) → даты/время корректны («Проверьте даты и время интервала перед расчётом») →
+   сумма по гриду == ожидаемому общему количеству (`GetQuantityMismatchError`); иначе
+   `UserMessage.ShowExclamation` и `return`. Проверки роликов и суммы делает и OK (`btnOk_Click`), плюс свои:
+   `PrimeAndNonPrimeQuantityMissing`, `TemplateStartFinishDateError`, `TemplateStartFinishTimeError`.
 2. `durationSec = totalDurationSeconds / gridTotalQuantity` — **средняя длительность,
    взвешенная по количеству выходов** (не простое среднее), точная `decimal`, без округления
    (см. `PriceCalculatorGrid.ApplyCalculation` — сигнатура расширена с `int` до `decimal`
-   специально под это).
+   специально под это). Количество в день: с разбивкой — поля «прайм»/«офф прайм», без разбивки всё «в день»
+   идёт как ОФФ-ПРАЙМ (`primePerDay = 0`); будни и выходные получают одни и те же числа; позиция
+   (`_position`) пишется в каждую строку калькулятора.
 3. `managerDiscount = GetEffectiveManagerDiscount(selectedDates.Min(), selectedDates.Max())` —
    см. "Блок Статистика" ниже за тем, откуда берётся это число для новой/существующей кампании.
    Передаётся в `calcGrid.ApplyCalculation(..., managerDiscount, managerDiscountModeSingle: true,
@@ -113,10 +131,11 @@ CampaignForm.tbbTemplate3_Click                        [CampaignForm.cs:1292]
    эта форма не читает (`TotalAmount` — сырой тариф без скидок) — по факту аргумент участвует
    только в ручном расчёте `grandTotal` ниже, не в `TotalAmount` из грида.
 4. Объёмная скидка считается **по станциям** — `GetCompanyDiscount(massmediaId, ...)` вызывается
-   в цикле по `targetRows`, каждой станции своя. Итоги: `combinedTariffSum` (без скидок) →
+   в цикле по `targetRows` (строки калькулятора, отфильтрованные по `_massmediaIds`), каждой станции своя.
+   Итоги: `combinedTariffSum` (без скидок) →
    `combinedDiscountedSum` (после объёмной, по-станционной) → пакетная скидка через SP →
    `grandTotal = combinedDiscountedSum * managerDiscount * packageDiscount`.
-5. **"Пакетная скидка"** — `GetPackageDiscount` (`FrmTemplate3.cs:408`), прямой вызов
+5. **"Пакетная скидка"** — `GetPackageDiscount`, прямой вызов
    `pc_PackageDiscountCalculateModel` (тот же метод, что `PriceCalculatorForm.GetPackageDiscount`,
    но он `private` в форме — пришлось продублировать вызов). TVP `pc_SelectedMassmedia.durationSec`
    имеет тип SQL `INT` — округление `(int)Math.Round(...)` только на этой границе, не в
@@ -146,17 +165,18 @@ CampaignForm.tbbTemplate3_Click                        [CampaignForm.cs:1292]
 | Объёмная скидка | `lblCompanyDiscountValue` | `discountedSum / tariffSum` | значение, если одинаково у всех станций, иначе **"разные"** (`FormatPerStationValue`) |
 | Цена с учётом объёмной скидки | `lblTotalBeforePackageValue` | `discountedSum` | сумма по станциям (`combinedDiscountedSum` / `_baselineDiscountedSum`) |
 | Менеджерская скидка | `lblManagerDiscountValue` | `GetEffectiveManagerDiscount(...)` | значение, если одинаково у всех станций с выпусками, иначе **"разные"** (`FormatPerStationValue`) |
-| Пакетная скидка | `lblPackageDiscountValue` | `1m` (см. ниже) | `_action.Discount` |
+| Пакетная скидка | `lblPackageDiscountValue` | базис: `1m` (см. ниже); после "Рассчитать" — результат `pc_PackageDiscountCalculateModel` | базис: `_action.Discount`; после "Рассчитать" — то же |
 | Итого (все скидки) | `lblGrandTotalValue` | `discountedSum × managerDiscount × packageDiscount` | базис: `_action.TotalPrice`; после "Рассчитать": та же формула |
 
 Два состояния блока, не путать:
 
-- **Базис** (`LoadExistingCampaignState` → `DisplayBaselinePrices`, `FrmTemplate3.cs:181/462`) —
+- **Базис** (`LoadExistingCampaignState` → `DisplayBaselinePrices`) —
   текущее реальное состояние кампании/акции ДО этого запуска шаблона. Показывается при `OnLoad`
-  и после любого сброса параметров (`ResetPriceEstimate`).
-- **Финал** (`btnEstimatePrice_Click`, `FrmTemplate3.cs:269`) — то же самое ПЛЮС ролики,
+  и после любого сброса параметров (`ResetPriceEstimate`). Для веерной считается по ВСЕМ кампаниям акции
+  (`_action.Campaigns()`), а не только по отмеченным в чек-листе — см. риск 13.
+- **Финал** (`btnEstimatePrice_Click`) — то же самое ПЛЮС ролики,
   отмеченные в гриде, после клика "Рассчитать" (не "сколько добавит шаблон", а состояние
-  кампании целиком).
+  кампании целиком). Для веерной — по станциям из `_massmediaIds` (то есть отмеченных кампаний).
 
 Архитектурное решение остаётся тем же, что и раньше (не dry-run через транзакцию+rollback):
 базис и оценку добавки показываем раздельно, а не сливаем в один псевдо-точный номер.
@@ -170,19 +190,23 @@ CampaignForm.tbbTemplate3_Click                        [CampaignForm.cs:1292]
 готовым. **Внутри `FrmTemplate3` не читать `Action` через `_campaign.Action`** — при открытии
 на веерной кампании `_campaign` равен null, и это NRE. Сигнал "линейная это или веерная" —
 `_massmediaIds.Count`, а не наличие `_campaign` (см. риск ниже про порядок инициализации в `OnLoad`).
+⚠️ Но у веера с одной станцией (отмечена одна кампания или все отмеченные — на одной станции)
+`_massmediaIds.Count == 1` при `_campaign == null` — см. риск 13.
 
-#### Менеджерская скидка (`GetEffectiveManagerDiscount`, `FrmTemplate3.cs:216`)
+#### Менеджерская скидка (`GetEffectiveManagerDiscount`)
 
 `Campaign.managerDiscount` в БД имеет `DEFAULT 1` (`Campaign.sql`) и обновляется
-`ActionRecalculate`-ом (Phase 1E) только на переходе количества выпусков 0 → не 0 — у кампании
-без единого выпуска это поле ВСЕГДА голая единица, а не реальный коэффициент. Реальный
+`ActionRecalculate`-ом (Phase 1E) только на переходе количества выпусков 0 ↔ не 0 (в обе стороны:
+`fn_GetMaxUserDiscount` зовётся и при 0 → не 0, и при не 0 → 0) — у кампании, у которой
+выпусков никогда не было, это поле голая единица, а не реальный коэффициент. Реальный
 Калькулятор (`TemplateEditorControl.SetManagerDiscount`) для такого случая коэффициент из
 кампании не читает вовсе — считает через `SecurityManager.User.GetDiscount(startDate,
 finishDate)` (SP `GetUserDiscount`, отдельная от `fn_GetMaxUserDiscount`), с исключением для
 админов (`IsAdmin` → всегда `1`). `GetEffectiveManagerDiscount` делает то же самое:
 
 - Есть кампания с `IssuesCount > 0` (сама `_campaign` для линейной; первая найденная в цикле
-  по `_action.Campaigns()` для веерной) → берёт готовое `Campaign.ManagerDiscount`.
+  по `_action.Campaigns()` для веерной — по всем кампаниям акции, отметка в чек-листе не учитывается)
+  → берёт готовое `Campaign.ManagerDiscount`.
 - Иначе → гипотетический расчёт через SP, как у Калькулятора.
 
 Возвращает ОДНО число — представителя, нужного для формулы `grandTotal` (единый множитель
@@ -193,22 +217,24 @@ finishDate)` (SP `GetUserDiscount`, отдельная от `fn_GetMaxUserDiscou
 поменять даты в диалоге), не переиспользует `_baselineManagerDiscount`.
 
 ⚠️ Для ОТОБРАЖЕНИЯ в веере (не для расчёта) этого одного числа недостаточно — см. следующий
-раздел и риск "Менеджерская скидка веера — баг с первой кампанией вместо сравнения" ниже.
+раздел и риск 11 ниже («Менеджерская скидка веера показывала первую кампанию вместо сравнения»).
 
 #### Объёмная и менеджерская скидка в веере — коэффициенты по станциям, сравниваются одинаково
 
 Веерная — несколько одновременно создаваемых кампаний (по одной на СМИ). Обе скидки —
 **значения по станциям**, обе показываются по одной и той же схеме "значение или разные":
 
-- **Объёмная скидка** — `hlp_CompanyDiscountCalculate` вызывается отдельно на каждое СМИ
-  (`GetCompanyDiscount(massmediaId, ...)` в цикле — что в `LoadExistingCampaignState`, что в
-  `btnEstimatePrice_Click`).
+- **Объёмная скидка** — по станциям. Базис (`LoadExistingCampaignState`) процедуру не зовёт: коэффициент берётся
+  как `campaign.Price / campaign.TariffPrice` по каждой кампании акции (`_baselineStationCompanyDiscounts`).
+  `hlp_CompanyDiscountCalculate` (`GetCompanyDiscount(massmediaId, ...)`) вызывается отдельно на каждое СМИ
+  только в `btnEstimatePrice_Click` — при оценке добавляемых выпусков.
 - **Менеджерская скидка** — `ActionRecalculate` пишет `managerDiscount` отдельно в каждую строку
   `Campaign`, не в `Action` — НА ПРАКТИКЕ РЕАЛЬНО РАЗЛИЧАЕТСЯ по станциям (найдено тестировщиками:
   две станции с 0.7 и 0.75 показывали "0.75" вместо "разные" — см. риск ниже), у каждой станции
-  своя история переходов количества выпусков 0→не 0. Собирается в `_baselineStationManagerDiscounts`
-  — только кампании с `IssuesCount > 0` (у остальных `ManagerDiscount` голая единица по DEFAULT,
-  сравнивать бессмысленно). Если ни у одной станции ещё нет выпусков, список пуст — тогда
+  своя история переходов количества выпусков 0↔не 0. Собирается в `_baselineStationManagerDiscounts`
+  — только кампании с `IssuesCount > 0` (у остальных значение не отражает реальной истории выпусков:
+  `CampaignIUD` пишет при создании `fn_GetMaxUserDiscount`, а у кампаний веерного мастера
+  `CreateActionWithRange` `managerDiscount` не задаёт — остаётся единица по DEFAULT; сравнивать такие бессмысленно). Если ни у одной станции ещё нет выпусков, список пуст — тогда
   показывается единственный гипотетический скаляр (`_baselineManagerDiscount`/`managerDiscount`),
   сравнивать нечего, он гарантированно одинаков (не зависит от massmedia).
 
@@ -228,7 +254,9 @@ finishDate)` (SP `GetUserDiscount`, отдельная от `fn_GetMaxUserDiscou
 
 Пакетная скидка — Action-level величина по построению (`ActionRecalculate`: `discount=1` жёстко
 при `@campaignCount<=1`, иначе через `hlp_ActionDiscountCalculate` на всю акцию сразу) — поэтому
-она однозначна и показывается всегда, независимо от линейная/веерная.
+она однозначна и показывается всегда, независимо от линейная/веерная. Источник разный: у веерной формы —
+`_action.Discount`, у линейной `LoadExistingCampaignState` ставит константу 1 (допущение «одна кампания в акции»,
+`_action.Discount` не читается) — в акции из нескольких кампаний линейная форма покажет 1, а не реальную скидку акции.
 
 "Итого" для базиса веерной акции = `_action.TotalPrice` напрямую (серверное значение уже
 корректно учитывает разные объёмные/менеджерские скидки по станциям) — НЕ формула
@@ -241,8 +269,9 @@ finishDate)` (SP `GetUserDiscount`, отдельная от `fn_GetMaxUserDiscou
 
 ## RollerAllocationQueue — распределение роликов по дням
 
-`Client/Classes/RollerAllocationQueue.cs`, `internal`, используется и линейной, и веерной
-кампанией (единая реализация после рефакторинга).
+`Client/Classes/RollerAllocationQueue.cs`, `public` (был `internal`; открыт ради стенда `tools/template-planner-check`,
+который лежит в другой сборке; файл подключён в `FogSoft.Core` ссылкой), используется и линейной, и веерной кампанией
+(единая реализация после рефакторинга) и веб-запуском Шаблона 3.
 
 ### Конструктор — round-robin по раундам
 
@@ -262,6 +291,11 @@ for round in 0..maxQuantity-1:
 
 _queue = new LinkedList<Roller>(pool)
 ```
+
+Пустой список (или все количества ≤ 0) → пустая очередь (`quantities.Count > 0` охраняет `Max()`).
+Есть перегрузка конструктора с внедряемым `Random` — только для стенда `tools/template-planner-check` (воспроизводимые
+проверки); десктоп и веб (`TemplateSource.RunMulti`, `TemplateRangeSource.RunMulti`) зовут обычный конструктор, то есть
+`new Random()` без зерна, и порядок невоспроизводим.
 
 **Гарантия**: раунд N содержит не более одного экземпляра каждого ролика → квота сохраняется
 точно, повтор одного ролика внутри одного раунда невозможен. Если дневная норма совпадает с
@@ -285,12 +319,14 @@ return ArrangeNoAdjacentRepeats(batch)  ← подстраховка, не ос�
 scheduler задачи): на каждом шаге берёт ролик, которого в остатке порции больше всего, но не
 совпадающий с только что поставленным; тай-брейк — более длинный ролик. Нужен для краевых
 случаев, когда:
-- дневная норма не совпадает ровно с границей раунда (например, если `count` не делится на
-  число ролика в раунде из-за смены недели/`quantity=0` у части роликов);
+- дневная норма не совпадает ровно с границей раунда: размер раунда — число роликов с неисчерпанной
+  квотой, при неравных квотах он уменьшается; при разбивке на прайм/офф-прайм за день берутся две порции
+  подряд (`QuantityPrime`, затем `QuantityNonPrime`), каждая из своей части ленты;
 - часть роликов вернулась через `PutBackToFront` (см. ниже) и создала дубль внутри порции.
 
-Гарантирует ноль повторов подряд, ЕСЛИ самый частый ролик в порции ≤ половины её размера —
-иначе математически неизбежен хотя бы один повтор, алгоритм просто минимизирует их число.
+Гарантирует ноль повторов подряд, ЕСЛИ самый частый ролик встречается в порции не больше ⌈n/2⌉ раз
+(n — размер порции; для чётного n — не больше половины; порция A,A,B даёт A,B,A) — иначе математически
+неизбежен хотя бы один повтор, алгоритм просто минимизирует их число.
 
 ⚠️ Важно: если раунд уже не содержит дублей (обычный случай при точном совпадении раунда и дня),
 `ArrangeNoAdjacentRepeats` вырождается в сортировку по убыванию длительности (тай-брейк
@@ -300,7 +336,9 @@ scheduler задачи): на каждом шаге берёт ролик, ко�
 ### PutBackToFront(rollers) — возврат остатка
 
 Не хватило окон сегодня → недостающие ролики возвращаются в НАЧАЛО очереди (сохраняя их
-взаимный порядок), чтобы быть предложенными в один из следующих дней.
+взаимный порядок), чтобы быть предложенными в один из следующих дней. Вызывается только из
+`FrmGenerator.AddIssuesForRollers` (линейка). Ролик, на котором запись упала, остаётся «съеденным» —
+назад в очередь не возвращается ни у линейки, ни у веера (ошибка уходит строкой в таблицу ошибок).
 
 ---
 
@@ -312,32 +350,58 @@ FrmGenerator.AddIssues()                                [FrmGenerator.cs]
   ▼
 AddMultiRollerIssues()                                   [FrmGenerator.cs:449]
   │  аналог AddSimpleIssues, но на каждый день — несколько роликов вместо одного _roller
-  │  окна дня: allWindows (фильтр по времени/фирме/позиции), затем OrderWindowsRandomly
-  │            (сортировка по "свободности" TimeWithUnConfirmed, затем случайно)
+  │  окна дня: прайс-лист СМИ на эту дату (Massmedia.GetPriceList) →
+  │            GetTariffWindows(дата, дата, null, false, false, useActualTime: true), то есть
+  │            showDisabledWindows:false; у прайс-листа excludeSpecialWindows и excludeModuleTariffs
+  │            по умолчанию true (MassmediaPricelist) — особых окон и модульных тарифов нет
+  │  allWindows = окна, у которых (hour*60+min) в [start; finish] — конец ВКЛЮЧАЕТСЯ (у веера исключается);
+  │            при флаге фирмы — без окон, где IsRollerOfTheFirmExist(firm, true) (отдельный запрос на каждое окно);
+  │            при позиции — без окон, где она занята ПОДТВЕРЖДЁННЫМ выпуском (IsPositionOccupied;
+  │            «Учитывать макеты» не влияет)
+  │  затем OrderWindowsRandomly: по убыванию TimeLeftWithUnconfirmed (Duration − TimeInUseConfirmed −
+  │            TimeInUseUnconfirmed), среди равных — случайно (new Random() без зерна)
+  │  «в день» задано (_template.Quantity != 0) → берутся первые N окон; иначе отдельно прайм и офф-прайм:
+  │            прайм = окна с ценой, равной максимальной цене дня (Massmedia.GetMaxPriceByDay → SP GetMaxPriceByDay;
+  │            нет цены на день → прайма нет, всё офф-прайм); сначала прайм, потом офф-прайм
   ▼
 AddIssuesForRollers(targetCount, windows, errorTemplate)  [FrmGenerator.cs:522]
   │  rollers = _rollerQueue.TakeForToday(targetCount)
   │  zip(rollers, windows) → _campaign.AddIssue(roller, window, position, grantorID) для каждой пары
   │  остаток (окон меньше, чем роликов) → _rollerQueue.PutBackToFront(rollers)
+  │  ошибка записи (исключение AddIssue) → строка в таблицу ошибок; ролик и окно «съедены», назад не возвращаются
+  │  выставлено меньше targetCount → строка "Недостаточно рекламных окон [прайм | офф прайм] для размещения
+  │            всех выпусков. Окон: {выставлено}, выпусков: {targetCount}." — первое число это число выставленных,
+  │            а не найденных окон, и строка появляется и тогда, когда очередь кончилась раньше окон
 ```
 
 Порядок роликов (из `TakeForToday`) сопоставляется с порядком окон (из `OrderWindowsRandomly`)
 позиционно — окна отсортированы по свободности (сначала самые свободные), ролики — по
-"анти-повторной" логике. Recalculate — 1 раз в конце всего `Generate()` (см.
-`template-issue-generation.md`, не переопределяется Шаблоном 3).
+"анти-повторной" логике. Recalculate — 1 раз в конце всего `Generate()` (`finally`:
+`_campaign.RecalculateAction()`; см. `template-issue-generation.md`, не переопределяется Шаблоном 3).
+После цикла по дням `Generate()` проверяет очередь: если `_rollerQueue.Count > 0`, в таблицу ошибок
+добавляется "Недостаточно рекламных окон за весь период шаблона — не удалось разместить N выход(ов) из
+выбранных роликов."
 
 ---
 
 ## Веерный путь размещения
 
 ```
-TariffWithRangeGrid.AddIssuesRangeTimePeriodMultiRoller(...)   [TariffWithRangeGrid.cs:547]
+TariffWithRangeGrid.AddIssuesRangeTimePeriodMultiRoller(...)
   │  аналог AddIssuesRangeTimePeriod, но вместо одного Roller — колбэк takeRollersForToday
-  │  slotsForDate = недельные слоты (кеш slotsCache) отфильтрованные по времени/позиции/фирме
+  │  slotsForDate = недельные 30-минутные слоты (GetSlotsForWeek → SP TariffWindowWithRange, кеш slotsCache
+  │            по понедельникам), отфильтрованные:
+  │            дата; время слота в [start; finish) — конец ИСКЛЮЧАЕТСЯ (у линейки включается);
+  │            позиция (если задана) — IsPositionAvailable: не занята подтверждёнными, а при включённом
+  │            «Учитывать макеты» (ShowUnconfirmed) — ещё и неподтверждёнными;
+  │            флаг фирмы (если включён) — слот без HasFirmIssuesFlags (HasIssues || HasCurrentActionIssues ||
+  │            (ShowUnconfirmed && HasIssuesUnconfirmed));
+  │            порядок — самые свободные (IComparable по TimeWithUnConfirmed, убыв.), среди равных — случайно
+  │            (new Random() без зерна)
   │  quantity > 0:          selectedSlots = slotsForDate.Take(quantity)
-  │  prime split:           primeSlots/nonPrimeSlots раздельно
+  │  prime split:           primeSlots/nonPrimeSlots раздельно (признак слота IsPrime из SQL), сначала прайм
   ▼
-PlaceRollersInSlots(slots, takeRollersForToday, ignoreFlag, result)   [TariffWithRangeGrid.cs:603]
+PlaceRollersInSlots(slots, takeRollersForToday, ignoreFlag, result)
   │  rollers = takeRollersForToday(slots.Count)     ← колбэк = rollerQueue.TakeForToday,
   │                                                    ПЕРЕДАЁТСЯ реальное число найденных слотов,
   │                                                    не запрошенная дневная норма — если слотов
@@ -345,13 +409,35 @@ PlaceRollersInSlots(slots, takeRollersForToday, ignoreFlag, result)   [TariffWit
   │                                                    меньше, остаток естественно уходит на
   │                                                    следующий день (без явного PutBackToFront)
   │  zip(slots, rollers) → AddIssuesRange(slot.WindowDate, roller, ignoreFlag, recalculate:false)
-  │      → SQL AddRangeIssues → IssueIUD × N СМИ веера
+  │      → SQL AddRangeIssues → IssueIUD по каждой отмеченной линейной кампании акции
+  │        (сама берёт самое свободное окно в [время; +30 мин) и повторно проверяет флаг фирмы)
 ```
 
 Разница с линейным путём: колбэк вызывается с `slots.Count` (фактически найденное), а не с
 запрошенным `count` — поэтому здесь нет отдельного `PutBackToFront` внутри `PlaceRollersInSlots`;
 недобор просто не запрашивается из очереди и остаётся там сам. Явный `PutBackToFront` в этом
 пути не нужен и не вызывается.
+
+Что ещё отличает веер от линейки (по коду десктопа):
+
+- **Граница конца интервала**: веер `[start; finish)`, линейка `[start; finish]` (по минутам).
+- **Единица**: 30-минутный слот, общий для всех отмеченных станций (SP `TariffWindowWithRange`), а не окно
+  одной станции; недельный кеш слотов не обновляется по ходу запуска.
+- **Прайм**: у линейки — окна с ценой, равной максимальной за день (`GetMaxPriceByDay`: `MAX(price)` по всем
+  окнам СМИ за `dayActual`, без отсева заблокированных); у веера — признак слота `IsPrime` (в
+  `TariffWindowWithRange` слот прайм, если все окна получаса на всех станциях стоят по максимальной цене своего
+  дня; в расчёт берутся только незаблокированные окна с `maxCapacity = 0` и тарифы не «только для модулей»).
+- **Порядок розыгрыша**: линейка тянет жребий отдельно по прайм-списку и отдельно по офф-прайм-списку; веер —
+  один жребий по всем слотам дня и делит на прайм после сортировки (распределение то же, последовательность
+  случайных чисел другая; см. комментарий в `PickDay`, `Client/Classes/TemplatePlanner.cs`). Очередь роликов у
+  обоих тратится сначала на прайм, потом на офф-прайм.
+- **Позиция**: линейка смотрит только подтверждённые выпуски; веер — `IsPositionAvailable`, с макетами при
+  включённом «Учитывать макеты».
+- **Флаг фирмы**: линейка — запрос по каждому окну; веер — признаки слота (без запроса) и повторная проверка в
+  `AddRangeIssues` (`@ignoreWindowsWithTheSameFirmIssue`).
+- **Сообщения о нехватке**: у веера `FrmGenerator.AddIssues` пишет "Недостаточно слотов для размещения.
+  Добавлено: {Rows.Count}, требовалось: {ExpectedCount}." всякий раз, когда поставлено меньше заданного, в том
+  числе когда очередь роликов кончилась раньше слотов; у линейки — тексты "Недостаточно рекламных окон …" (выше).
 
 Recalculate — `rangeGrid.Action` передаётся в `FrmGenerator`, пересчёт 1 раз в конце (как Path 2
 Range TimePeriod в `template-issue-generation.md`).
@@ -363,14 +449,15 @@ Range TimePeriod в `template-issue-generation.md`).
 | Файл | Методы / члены |
 |---|---|
 | `Client\Forms\CampaignForm.cs` | `tbbTemplate3_Click` (резолвит `action` для конструктора, см. "Точка входа"), `GetTemplateMassmediaIds`, `IsRangeCampaign` |
-| `Client\Forms\FrmTemplate3.cs` / `.Designer.cs` | Конструктор `(firm, template, massmediaIds, position, campaign, action)`, `RecalculateStats`, `ResetPriceEstimate`, `DisplayBaselinePrices`, `GetEffectiveManagerDiscount`, `LoadExistingCampaignState`, `btnEstimatePrice_Click`, `GetCompanyDiscount`, `GetPackageDiscount`, `SelectedRollers`, `SaveData2Template` |
-| `Client\Classes\RollerAllocationQueue.cs` | Конструктор (round-robin), `TakeForToday`, `ArrangeNoAdjacentRepeats`, `PutBackToFront`, `Count` |
-| `Client\Forms\FrmGenerator.cs` | Конструктор `(template, rollerQuantities, position, campaign, pricelist, module, grantorID)`, `AddMultiRollerIssues`, `AddIssuesForRollers`, `OrderWindowsRandomly` |
-| `Client\Controls\TariffWithRangeGrid.cs` | `AddIssuesRangeTimePeriodMultiRoller`, `PlaceRollersInSlots`, `AddIssuesRange(date, roller, ignoreFlag, recalculate)` — перегрузка с явным `roller`, `Action` (используется и `CampaignForm`, и `FrmTemplate3` косвенно) |
-| `Client\Controls\PriceCalculatorGrid.cs` | `ApplyCalculation` (decimal `durationSec`), `CalculateCampaignTariffPrice`, `SafeDecimal`, `GetTotalSeconds`, `TotalAmount` (сырой тариф, без скидок — единственная колонка, которую читает `FrmTemplate3`) |
-| `Client\Classes\Campaign.cs` | `ManagerDiscount`, `IssuesCount`, `TariffPrice`, `Price`, `Action` (лениво кэшированный `ActionOnMassmedia`, но НЕ использовать из `FrmTemplate3` — см. `_campaign` vs `_action`) |
+| `Client\Forms\FrmTemplate3.cs` / `.Designer.cs` | Конструктор `(firm, template, massmediaIds, position, campaign, action)`, `RecalculateStats`, `ResetPriceEstimate`, `DisplayBaselinePrices`, `GetEffectiveManagerDiscount`, `LoadExistingCampaignState`, `btnEstimatePrice_Click`, `GetCompanyDiscount`, `GetPackageDiscount`, `SelectedRollers`, `SaveData2Template`, `btnOk_Click`, `GetRollerSelectionError`, `GetQuantityMismatchError`, `FormatPerStationValue` |
+| `Client\Classes\RollerAllocationQueue.cs` | Конструкторы (round-robin; перегрузка с `Random` — только для стенда), `TakeForToday`, `ArrangeNoAdjacentRepeats`, `PutBackToFront`, `Count` |
+| `Client\Forms\FrmGenerator.cs` | Конструктор `(template, rollerQuantities, position, campaign, pricelist, module, grantorID)`, `Generate`, `AddIssues`, `AddMultiRollerIssues`, `AddIssuesForRollers`, `OrderWindowsRandomly` |
+| `Client\Controls\TariffWithRangeGrid.cs` | `AddIssuesRangeTimePeriodMultiRoller`, `PlaceRollersInSlots`, `GetSlotsForWeek`, `IsPositionAvailable`, `HasFirmIssuesFlags`, `AddIssuesRange(date, roller, ignoreFlag, recalculate)` — перегрузка с явным `roller`, `Action` (используется и `CampaignForm`, и `FrmTemplate3` косвенно), `SelectedCampaignIds` |
+| `Client\Classes\TariffWindowWithRollerIssues.cs`, `Client\Classes\TariffWindowWithRange.cs` | `CompareTo` — порядок «самые свободные первыми» (линейка: `TimeLeftWithUnconfirmed`, веер: `TimeWithUnConfirmed`), `IsRollerOfTheFirmExist`, `IsFirstPositionOccupied`/`IsSecondPositionOccupied`/`IsLastPositionOccupied`, `IsPrime` (веер) |
+| `Client\Controls\PriceCalculatorGrid.cs` | `LoadData` (зовёт `pc_GetStationsPriceModel`), `ApplyCalculation` (decimal `durationSec`), `CalculateCampaignTariffPrice`, `SafeDecimal`, `GetTotalSeconds`, `TotalAmount` (сырой тариф, без скидок — единственная расчётная колонка цены, которую читает `FrmTemplate3`; из остальных она берёт `massmediaID` и `*TotalSpots*` для TVP пакетной скидки) |
+| `Client\Classes\Campaign.cs` | `ManagerDiscount`, `IssuesCount`, `IssuesDuration`, `TariffPrice`, `Price`, `Action` (лениво кэшированный `ActionOnMassmedia`, но НЕ использовать из `FrmTemplate3` — см. `_campaign` vs `_action`) |
 | `Client\Classes\Action.cs` (базовый класс) | `TariffPrice`, `Discount`, `TotalPrice` (все три через `ParseHelper.GetDecimalFromObject(..., 0)` — не кидают на DBNull/missing key), `Campaigns()` |
-| `Client\Classes\ActionOnMassmedia.cs` | `Refresh`, `Recalculate` → `ActionRecalculate`, `GetActionById` (всегда возвращает объект, никогда null), `DisplayData` — тот же набор данных (тариф/пакетная скидка/итог), что теперь показывает `FrmTemplate3` для веера |
+| `Client\Classes\ActionOnMassmedia.cs`, `Client\Classes\ActionOnMassmedia.WinForms.cs` | `Refresh`, `Recalculate` → `ActionRecalculate`, `GetActionById` (всегда возвращает объект, никогда null); `DisplayData` (в `.WinForms.cs`) — тот же набор данных (тариф/пакетная скидка/итог), что теперь показывает `FrmTemplate3` для веера |
 | `FogSoft.WinForm\Classes\SecurityManager.cs` | `User.GetDiscount(startDate, finishDate)` (SP `GetUserDiscount` — MIN по `UserDiscount`, НЕ `fn_GetMaxUserDiscount`), `User.IsAdmin`, `LoggedUser` |
 
 ---
@@ -380,9 +467,11 @@ Range TimePeriod в `template-issue-generation.md`).
 | Процедура | Когда вызывается | Роль |
 |---|---|---|
 | `[dbo].[IssueIUD]` AddItem | Внутри `_campaign.AddIssue` (линейная) и `AddRangeIssues` (веерная) | Создаёт один выпуск |
-| `[dbo].[AddRangeIssues]` | `TariffWithRangeGrid.AddIssuesRange` | Курсор → `IssueIUD` × N СМИ веера |
+| `[dbo].[AddRangeIssues]` | `TariffWithRangeGrid.AddIssuesRange` | Курсор по линейным кампаниям акции (`campaignTypeID = 1`, отбор `@campaignIDs`) → на каждую самое свободное окно в `[время; +30 мин)` → `IssueIUD`; нет окна — `IssueWithTheSameFirmExists` / `CannotAddRangeIssues`, дальнейшие кампании курсора не обрабатываются |
+| `[dbo].[TariffWindowWithRange]` | `TariffWithRangeGrid.GetSlotsForWeek` (кеш по неделям) | Слоты веера на неделю: свободное время, занятость позиций, признаки выпусков фирмы, `isPrime` — по выбранным кампаниям |
+| `[dbo].[GetMaxPriceByDay]` | `Massmedia.GetMaxPriceByDay` из `FrmGenerator.AddIssues` (линейка, один раз за запуск) | Максимальная цена окна СМИ по дням (`dayActual`) — основа прайма линейки |
 | `[dbo].[ActionRecalculate]` | `Action.Recalculate()` — 1 раз в конце `Generate()`. ⚠️ НЕ вызывается `Action.Refresh()` (тот в `FrmTemplate3.OnLoad` для `_action`) — `Refresh()` это пассивный `SELECT` (`PresentationObject.Refresh`, метадата-запрос по `InterfaceObjects.SimpleJournal`), а не пересчёт. `_action.TotalPrice`/`.Discount` в базисе — то, что реально лежит в БД с последнего РЕАЛЬНОГО `Recalculate()`, не свежий пересчёт на момент открытия формы | Пересчёт реальной суммы акции со всеми скидками |
-| `[dbo].[pc_GetStationsPriceModel]` | Внутри `PriceCalculatorGrid.CalculateCampaignTariffPrice` | Prime/non-prime цены по `DENSE_RANK` — см. риск ниже |
+| `[dbo].[pc_GetStationsPriceModel]` | `PriceCalculatorGrid.LoadData` (`calcGrid.LoadData(0, мин. дата, макс. дата)` в `btnEstimatePrice_Click`); дальше `CalculateCampaignTariffPrice` считает по загруженным сегментам | Prime/non-prime цены по `DENSE_RANK` — см. риск ниже |
 | `[dbo].[pc_PackageDiscountCalculateModel]` | `FrmTemplate3.GetPackageDiscount` (черновая оценка) и `PriceCalculatorForm.GetPackageDiscount` (реальный калькулятор) | Пакетная скидка по TVP `pc_SelectedMassmedia` |
 
 ---
@@ -391,17 +480,19 @@ Range TimePeriod в `template-issue-generation.md`).
 
 | # | Риск | Описание |
 |---|---|---|
-| 1 | **2-уровневая prime/non-prime модель** | `pc_GetStationsPriceModel` определяет prime/non-prime через `DENSE_RANK` (топ-1 и топ-2 уникальные цены дня) — если у прайслиста реально 3+ уровня тарифа, часть цен будет посчитана неверно. Известное ограничение, не пофикшено, out of scope |
+| 1 | **2-уровневая prime/non-prime модель** | `pc_GetStationsPriceModel` определяет prime/non-prime через `DENSE_RANK` (топ-1 и топ-2 уникальные цены тарифов прайс-листа, отдельно для будней и выходных; нет второй цены — не-прайм приравнивается к прайму) — если у прайслиста реально 3+ уровня тарифа, часть цен будет посчитана неверно. Известное ограничение, не пофикшено, out of scope |
 | 2 | **Round-robin не размазывает "сильные" ролики по всему интервалу** | При сильно неравных квотах (см. пример `14/6/4/4`) последние дни почти целиком состоят из одного ролика — задокументированное, ожидаемое поведение |
 | 3 | **`ArrangeNoAdjacentRepeats` — best effort** | Не может убрать повтор подряд, если единственный оставшийся тип ролика в порции — один и тот же (например, все окна дня заняты остатком одного ролика после `PutBackToFront`) |
 | 4 | **`ArrangeNoAdjacentRepeats` частично детерминирует порядок длительностью** | Когда дублей в порции нет (обычный случай), тай-брейк по длительности эффективно сортирует порцию — порядок внутри дня не полностью случаен |
 | 5 | **`IssueTemplate.Reset()` вызывается в нескольких местах** | `GetExpectedTotalQuantity()` и `BuildTemplateDates()` оба дергают `Reset()`/`MoveNext()` — см. общий риск "двойной Reset" в `template-issue-generation.md`. Не менять порядок вызовов без проверки `DaysCount` |
-| 6 | ~~"Оценка добавляемых роликов" не учитывает существующие выпуски~~ — **устарело, исправлено** | Текущий код учитывает: `existingTariffPrice + rowAmount` перед вызовом `GetCompanyDiscount` (`FrmTemplate3.cs:342-343`), а базис (`LoadExistingCampaignState`) явно показывает текущее состояние кампании/акции. См. "Блок Статистика" выше |
+| 6 | ~~"Оценка добавляемых роликов" не учитывает существующие выпуски~~ — **устарело, исправлено** | Текущий код учитывает: `existingTariffPrice + rowAmount` перед вызовом `GetCompanyDiscount` (`btnEstimatePrice_Click`, цикл по `targetRows`), а базис (`LoadExistingCampaignState`) явно показывает текущее состояние кампании/акции. См. "Блок Статистика" выше |
 | 7 | **Веерный путь: явного `PutBackToFront` нет** | Недобор в `PlaceRollersInSlots` просто не запрашивается из очереди (колбэк вызывается с фактическим `slots.Count`) — отличие от линейного пути, где `PutBackToFront` вызывается явно |
-| 8 | **`FrmTemplate3.SelectedRollers` — комментарий устарел** | В коде написано "пока не используется генератором выпусков" (`FrmTemplate3.cs:515-516`) — на самом деле используется (`CampaignForm.tbbTemplate3_Click:1309`). Мелкая правка, не влияющая на поведение |
-| 9 | **Порядок инициализации в `OnLoad`: `cbSplitPrime.Checked = ...` может выстрелить `DisplayBaselinePrices` раньше `LoadExistingCampaignState`** | `cbSplitPrime.CheckedChanged` подписан в Designer (активен с конструктора), а `cbSplitPrime.Checked = _template.Quantity == 0` в `OnLoad` (`FrmTemplate3.cs:568`) идёт РАНЬШЕ `LoadExistingCampaignState()` (`FrmTemplate3.cs:594`) — синхронно триггерит `RecalculateStats → DisplayBaselinePrices` на ещё не заполненных `_baselineXxx`. Сейчас безвредно: все поля — `decimal`/`bool` с безопасными дефолтами (0/false), `DisplayBaselinePrices` больше не трогает `_campaign`/`_action` напрямую. ⚠️ Если добавлять в `DisplayBaselinePrices` новое поле, читающее `_campaign`/`_action` напрямую — получите NRE именно на этом преждевременном вызове (так и родился баг из риска #10) |
+| 8 | ~~`FrmTemplate3.SelectedRollers` — комментарий устарел~~ — **исправлено** | Комментарий у `SelectedRollers` обновлён (коммит 44fb25c, 05.09.2026): теперь он говорит, что свойство используется в `CampaignForm.tbbTemplate3_Click` для построения `rollerQuantities` |
+| 9 | **Порядок инициализации в `OnLoad`: `cbSplitPrime.Checked = ...` может выстрелить `DisplayBaselinePrices` раньше `LoadExistingCampaignState`** | `cbSplitPrime.CheckedChanged` подписан в Designer (активен с конструктора), а `cbSplitPrime.Checked = _template.Quantity == 0` в `OnLoad` идёт РАНЬШЕ `LoadExistingCampaignState()` — синхронно триггерит `RecalculateStats → DisplayBaselinePrices` на ещё не заполненных `_baselineXxx` (срабатывает только когда значение меняется: в Designer `Checked = false`, то есть при `_template.Quantity == 0` — шаблон переиспользован после запуска с разбивкой на прайм/офф-прайм; по чтению также `clbWeekDays.Items.Add(..., true)` может поднять `ItemCheck`, подписанный в Designer, — вживую не проверялось). Сейчас безвредно: все поля — `decimal`/`bool` с безопасными дефолтами (0/false), `_baselineStationCompanyDiscounts`/`_baselineStationManagerDiscounts` инициализированы пустыми списками; `DisplayBaselinePrices` не трогает `_campaign`, а `_action` читает только в веерной ветке (`_action.TotalPrice`) — он задан в конструкторе и не null, но до `_action.Refresh()` значение может быть устаревшим; итоговый `RecalculateStats()` в конце `OnLoad` перерисовывает его. ⚠️ Если добавлять в `DisplayBaselinePrices` новое поле, читающее `_campaign` или поле `_action`, которое может быть null/не загружено — получите NRE именно на этом преждевременном вызове (так и родился баг из риска #10) |
 | 10 | **Веерная: `_campaign` — не тот же null-check, что "новая кампания"** | `_campaign == null` означает "форма открыта для веерной" (см. `_campaign` vs `_action` в "Блок Статистика"), а НЕ "кампания новая/без выпусков" — это разные оси (линейная/веерная × новая/существующая, 4 комбинации). Не путать `_massmediaIds.Count` (линейная/веерная) с `_hasExistingIssues` (новая/существующая) |
 | 11 | ~~Менеджерская скидка веера показывала первую кампанию вместо сравнения~~ — **исправлено** | Найдено тестировщиками: две станции с реальным `ManagerDiscount` 0.7 и 0.75 — форма показывала "0.75" (значение просто первой кампании по порядку `_action.Campaigns()`), а не "разные". Причина: когда прочерк заменили на реальное значение, `FormatPerStationValue` подключили для объёмной скидки, но не для менеджерской — асимметрия, не осознанное решение. `GetEffectiveManagerDiscount` по-прежнему возвращает один скаляр (нужен как множитель в `grandTotal`), но UI теперь сравнивает `_baselineStationManagerDiscounts` (собран в `LoadExistingCampaignState`, только кампании с `IssuesCount > 0`) так же, как объёмную. Не путать "представитель для формулы" (`_existingManagerDiscount`/`managerDiscount`) с "список для сравнения на UI" (`_baselineStationManagerDiscounts`) — если снова понадобится менять эту область, оба должны обновляться синхронно |
+| 12 | **Режим «удаление» Шаблона 1 протекает в Шаблон 3** (по чтению кода, вживую не воспроизводилось) | Общее поле `CampaignForm._template` хранит `IsModeAdd`. `FrmTemplate` (Шаблон 1) выставляет его по OK (`btnOk_Click`); конструктор `FrmTemplate3` берёт тот же объект, если в нём уже заданы `StartTime`/`FinishTime` (как `FrmTemplate2`), а `SaveData2Template` `IsModeAdd` не трогает. Цепочка: Шаблон 2/3 (в объекте появилось время) → Шаблон 1 в режиме «Удалить» (`IsModeAdd = false`) → Шаблон 3. `FrmGenerator.Generate` тогда идёт в `DeleteIssues()` вместо `AddIssues()` (заголовок окна «Удаление рекламных выпусков по шаблону», ролики НЕ добавляются, очередь остаётся нетронутой). У линейки `GetIssuesForDate(CurrentDate)` оставляет только выпуски с `issueDate`, в точности равным `CurrentDate`; у Шаблона 3 это полночь (`SaveData2Template` обрезает `StartDate` до даты), поэтому удалились бы лишь выпуски в окне ровно 00:00:00, остальное не тронуто — запуск почти пустой, в таблице ошибок "Недостаточно рекламных окон за весь период… не удалось разместить N". У веера `_campaign == null` в `FrmGenerator`, `DeleteIssues` падает с NRE по каждому дню (строки в таблице ошибок), пересчёт акции всё равно идёт в `finally`, `CampaignForm` показывает "не удалось разместить N". Это не Д-1 из `docs/action-forms.md` (там про режим клика по окну). В вебе режима удаления нет |
+| 13 | **Веер с одной станцией: `_massmediaIds.Count == 1` при `_campaign == null`; базис и размещение — по разным наборам кампаний** (по чтению кода, вживую не воспроизводилось) | `GetTemplateMassmediaIds` для веера берёт станции ОТМЕЧЕННЫХ кампаний (`SelectedCampaignIds`) и схлопывает повторы. Если отмечена одна кампания (или все отмеченные — на одной станции), `FrmTemplate3.LoadExistingCampaignState` идёт в линейную ветку (`_massmediaIds.Count == 1`) и читает `_campaign.TariffPrice` при `_campaign == null` — NRE при открытии формы. Для веера из двух и более станций: (а) базис (`LoadExistingCampaignState`) собирается по ВСЕМ кампаниям акции (`_action.Campaigns()`), а «Рассчитать» и размещение — только по отмеченным (`targetRows` по `_massmediaIds`, `@campaignIDs` в `AddRangeIssues`), поэтому цифры «до» и «после» несопоставимы, если отмечена часть кампаний; (б) `_existingTariffPriceByMassmedia`/`_existingIssuesDurationByMassmedia` ключуются станцией и при нескольких кампаниях одной станции перезаписываются последней, тогда как `_baselineTariffSum` суммирует все; (в) "суммарно по всем станциям" в левых счётчиках = значение × число станций, а выпуски ставятся в каждую отмеченную кампанию, так что при двух кампаниях на одной станции реальных выпусков больше |
 
 ---
 
@@ -412,5 +503,5 @@ Range TimePeriod в `template-issue-generation.md`).
 | 1 | Почему базис (текущее состояние акции) и оценка добавляемых роликов — два разных числа, а не одно точное? | Точный вариант потребовал бы временной записи реальных выпусков в транзакции + `ActionRecalculate` + rollback — риск для транзакционной целостности ради предпросмотра. Выбран более простой и безопасный вариант — см. обсуждение с заказчиком |
 | 2 | Почему `managerDiscountModeSingle` всегда `true`, а не `false` (period-based)? | Period-based режим завязан на `userId` и таблицу периодов конкретного менеджера — в контексте Шаблона 3 просто нужен фиксированный коэффициент, `GetEffectiveManagerDiscount(...)` (реальный для существующей кампании или гипотетический через `SecurityManager.User.GetDiscount` для новой — см. "Блок Статистика") |
 | 3 | Почему `RollerAllocationQueue` общий для линейной и веерной, а остальная логика (`FrmGenerator`/`TariffWithRangeGrid`) — нет? | Изначально было осознанное решение не шарить код между путями ("не трогать протестированный рабочий код"). После того как анти-дублирующий фикс пришлось вносить в двух местах вручную дважды подряд, очередь всё-таки унифицировали — риск рассинхронизации оказался выше цены рефакторинга |
-| 4 | Почему `FrmTemplate3` не может просто читать `Action` через `_campaign.Action`, как остальной код (`Campaign.cs:182`)? | `Campaign.Action` — рабочее свойство, но требует непустой `_campaign`. У веерной кампании `_campaign`, переданная в `FrmTemplate3`, сама равна `null` (см. `CampaignForm.GetTemplateMassmediaIds` — веерная берёт СМИ из `TariffWithRangeGrid.Action.Campaigns()`, не из кампании). Поэтому `Action` резолвится один раз в `CampaignForm.tbbTemplate3_Click` (там уже есть ветвление `IsRangeCampaign`) и передаётся в `FrmTemplate3` явным параметром `_action` |
-| 5 | Почему для веерной "Менеджерская скидка" берётся с ПЕРВОЙ кампании акции с выпусками, а не проверяется на совпадение по всем? | Коэффициент завязан на пользователя и период (`fn_GetMaxUserDiscount(@loggedUserID, @startDate, @finishDate)`), общие для всей акции — на практике одно и то же значение у всех кампаний акции. Проверка "совпадают ли все" усложнила бы код ради теоретического случая без известных прецедентов; к тому же в UI для веера это значение всё равно не выводится (см. "Почему у веерной нет Объёмной/Менеджерской скидки") — используется только внутри `grandTotal` при "Рассчитать" |
+| 4 | Почему `FrmTemplate3` не может просто читать `Action` через `_campaign.Action`, как остальной код (`Campaign.Action`)? | `Campaign.Action` — рабочее свойство, но требует непустой `_campaign`. У веерной кампании `_campaign`, переданная в `FrmTemplate3`, сама равна `null` (см. `CampaignForm.GetTemplateMassmediaIds` — веерная берёт СМИ из `TariffWithRangeGrid.Action.Campaigns()` с отбором по отмеченным кампаниям, не из кампании). Поэтому `Action` резолвится один раз в `CampaignForm.tbbTemplate3_Click` (там уже есть ветвление `IsRangeCampaign`) и передаётся в `FrmTemplate3` явным параметром `_action` |
+| 5 | Почему для веерной "Менеджерская скидка" берётся с ПЕРВОЙ кампании акции с выпусками, а не проверяется на совпадение по всем? | **Решение пересмотрено** (первоначальный ответ — "на практике одно значение у всех кампаний, в UI не выводится" — опровергнут тестировщиками, см. риск 11). Сейчас UI веера сравнивает коэффициент по станциям (`_baselineStationManagerDiscounts` — значение или "разные"), а первая кампания с выпусками остаётся только «представителем» для множителя в `grandTotal` (`GetEffectiveManagerDiscount` возвращает одно число) |

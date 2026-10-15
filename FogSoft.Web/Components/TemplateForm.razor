@@ -215,10 +215,10 @@
             roller.Selected = true;
     }
 
-    /// <summary>Хронометраж как десктопный «Общий хронометраж»: ЧЧ:ММ:СС, часы не ограничены сутками.</summary>
     /// <summary>Веер размещает одни и те же выпуски на каждую станцию: «на одной станции / суммарно» через слэш (десктоп — FrmTemplate3); линейка — одно число.</summary>
     private string PerStation(long quantity) => Value.StationCount > 1 ? $"{quantity} / {quantity * Value.StationCount}" : quantity.ToString();
 
+    /// <summary>Хронометраж как десктопный «Общий хронометраж»: ЧЧ:ММ:СС, часы не ограничены сутками.</summary>
     private static string FormatDuration(long totalSeconds) =>
         $"{totalSeconds / 3600:00}:{totalSeconds % 3600 / 60:00}:{totalSeconds % 60:00}";
 
