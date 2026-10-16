@@ -2113,7 +2113,6 @@ code	Выпусков модулей за день по отмеченным к�
 code	Показывать неделю или месяц	Mostrar la semana o el mes
 code	Неделя	Semana
 code	Месяц	Mes
-code	Щелчок по ячейке — выпуски и окна модуля за день.	Clic en una celda: las emisiones y las ventanas del módulo en el día.
 code	выпуски модуля в этот день	emisiones del módulo en este día
 code	модуль в этот день не выходит целиком	el módulo no sale completo este día
 code	Выпуски модуля	Emisiones del módulo
@@ -2123,3 +2122,8 @@ code	Окна модуля	Ventanas del módulo
 code	Модули: {0}	Módulos: {0}
 code	Модули: отмечено кампаний — {0}	Módulos: pautas marcadas — {0}
 code	Остаток времени	Tiempo libre
+code	Прайс-лист модуля «{0}» на {1:dd.MM.yyyy} изменился. Обновите страницу.	La lista de precios del módulo «{0}» para el {1:dd.MM.yyyy} cambió. Actualice la página.
+code	Ролик «{0}» нельзя поставить в модуль: в модули ставятся только ролики типов «Реклама», «Новость» и «Программа».	El spot «{0}» no se puede colocar en un módulo: en los módulos solo se colocan spots de los tipos «Publicidad», «Noticia» y «Programa».
+code	Модуль «{0}» ({1}) не выходит {2:dd.MM.yyyy} целиком, выпуск не создан.	El módulo «{0}» ({1}) no sale completo el {2:dd.MM.yyyy}; no se creó la emisión.
+code	Ролик, который ставится в модули, — выбран в списке «Ролики»	Spot que se coloca en los módulos: el elegido en la lista «Spots»
+code	Щелчок по ячейке — выпуски и окна модуля за день, в «Режиме добавления» — постановка модуля на весь день.	Clic en una celda: las emisiones y las ventanas del módulo en el día; en el «Modo de agregado», colocar el módulo para todo el día.

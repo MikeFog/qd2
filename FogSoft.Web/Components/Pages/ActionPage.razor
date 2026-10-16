@@ -173,23 +173,26 @@ else
             <ObjectList @ref="_list" Entity="_campaignEntity!" Data="_campaigns" Selectable="_canEdit"
                         EmptyText="@(Tr.T("В акции пока нет рекламных кампаний. Добавьте их кнопкой «Добавить рекламные кампании»."))"
                         ScreenActions="CampaignScreenActions" ScreenAction="OnCampaignScreenAction"
-                        Changed="Load" Failed="ShowError" SelectionChanged="c => _selectedCount = c" />
+                        Changed="PlacementChangedOutside" Failed="ShowError" SelectionChanged="c => _selectedCount = c" />
         </section>
 
         @* Вкладка размещения создаётся при первом открытии и дальше живёт скрытой: неделя, отметки
-           и кисть не теряются при переходе на «Рекламные кампании» и обратно. *@
+           и кисть не теряются при переходе на «Рекламные кампании» и обратно. Запись на одной вкладке
+           размещения меняет окна другой — та перечитывает свой период, когда её покажут (PlacementVersion). *@
         @if (Pane(PageTab.Windows) is { } windows)
         {
             <div class="tab-pane" hidden="@(_tab != PageTab.Windows)">
                 <ActionWindowsTab Action="_action" Campaigns="_campaigns!" RequestedCampaignId="windows.RequestedCampaign"
-                                  RequestVersion="windows.RequestVersion" Changed="Load" />
+                                  RequestVersion="windows.RequestVersion" Active="_tab == PageTab.Windows" PlacementVersion="windows.PlacementVersion"
+                                  Changed="() => PlacementChanged(PageTab.Windows)" />
             </div>
         }
         @if (Pane(PageTab.Modules) is { } modules)
         {
             <div class="tab-pane" hidden="@(_tab != PageTab.Modules)">
                 <ActionModulesTab Action="_action" Campaigns="_campaigns!" RequestedCampaignId="modules.RequestedCampaign"
-                                  RequestVersion="modules.RequestVersion" />
+                                  RequestVersion="modules.RequestVersion" Active="_tab == PageTab.Modules" PlacementVersion="modules.PlacementVersion"
+                                  Changed="() => PlacementChanged(PageTab.Modules)" />
             </div>
         }
     </div>
@@ -232,8 +235,8 @@ else
 
     /// <summary>
     /// Вкладка размещения: вид места (вкладка есть, пока в акции есть такие кампании), значение в адресе
-    /// и состояние — открывали ли её (создаётся при первом открытии) и кампания из адреса, которую
-    /// вкладка отмечает при смене версии.
+    /// и состояние — открывали ли её (создаётся при первом открытии), кампания из адреса, которую
+    /// вкладка отмечает при смене версии, и версия размещения для неё.
     /// </summary>
     private sealed class PlacementTab
     {
@@ -248,6 +251,13 @@ else
         public bool Opened { get; set; }
         public int? RequestedCampaign { get; set; }
         public int RequestVersion { get; set; }
+
+        /// <summary>
+        /// Версия размещения: растёт с каждой записью на другой вкладке размещения (выпуски модулей стоят в тех же окнах,
+        /// что и линейные). Вкладка с отставшей версией перечитывает свой период, когда видна; своя запись версию не
+        /// меняет — после неё вкладка уже перечитала период сама.
+        /// </summary>
+        public int PlacementVersion { get; set; }
     }
 
     private readonly Dictionary<PageTab, PlacementTab> _placement = new()
@@ -442,6 +452,24 @@ else
 
     private void ShowError(string message) => _error = message;
 
+    /// <summary>
+    /// Запись на вкладке размещения <paramref name="source"/>: остальные вкладки размещения перечитают свой период, когда их
+    /// покажут (окна модулей — те же окна, что у линейных кампаний), страница — шапку и кампании.
+    /// </summary>
+    /// <summary>
+    /// Запись не на вкладке размещения (список кампаний, меню шапки, добавление и удаление кампаний — активация, удаление
+    /// выпусков, смена фирмы): обе вкладки размещения перечитают период, когда их покажут.
+    /// </summary>
+    private Task PlacementChangedOutside() => PlacementChanged(PageTab.Campaigns);
+
+    private Task PlacementChanged(PageTab source)
+    {
+        foreach ((PageTab tab, PlacementTab placement) in _placement)
+            if (tab != source)
+                placement.PlacementVersion++;
+        return Load();
+    }
+
     private async Task Back()
     {
         try { await JS.InvokeVoidAsync("history.back"); }
@@ -472,7 +500,7 @@ else
 
             ActionEffect? effect = await Actions.ExecuteAsync(target, picked, ViewType.Journal);
             if (effect is not null and not ActionEffect.None)
-                await Load();
+                await PlacementChangedOutside();
         }
         catch (Exception ex)
         {
@@ -543,7 +571,7 @@ else
             IReadOnlyList<string> failed = await Busy.RunAsync(() =>
                 ActionWorkspace.AddCampaigns(_action, model.CampaignTypeId!.Value, model.PaymentTypeId!.Value, campaigns));
 
-            await Load();
+            await PlacementChangedOutside();
 
             // Итог — только при отказах (всё добавленное и так видно в списке): таблица, в заголовке
             // строка-счётчик (docs/UI_RULES.md, п. 2.2). Станции без агентств — тоже отказ.
@@ -585,7 +613,7 @@ else
         {
             string? priceMessage = null;
             DataTable errors = await Busy.RunAsync(() => ActionWorkspace.DeleteCampaigns(_action, campaigns, out priceMessage));
-            await Load();
+            await PlacementChangedOutside();
 
             if (errors.Rows.Count > 0)
                 await Tables.ShowAsync(Tr.Format("Удалено рекламных кампаний: {0}, не удалено: {1}", campaigns.Count - errors.Rows.Count, errors.Rows.Count), errors,

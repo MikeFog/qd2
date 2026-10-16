@@ -39,7 +39,7 @@
     grid-column: 4;
 }
 
-/* ---------- Левая колонка: кампании и статистика ---------- */
+/* ---------- Левая колонка: кампании и статистика; ролики — RollerBrush.razor.css ---------- */
 
 .side {
     grid-column: 1;
@@ -154,8 +154,22 @@
     white-space: nowrap;
 }
 
+.grid-box .btn > .bi {
+    margin-right: var(--s-1);
+}
+
 .grid-box .btn > .bi:only-child {
     margin-right: 0;
+}
+
+/* Ролик кисти — рядом с «Позиционированием»: что ставит «Режим добавления». */
+.brush-roller {
+    max-width: 220px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    font-size: 13px;
+    color: var(--c-text-muted);
 }
 
 .period-switch .btn.active {

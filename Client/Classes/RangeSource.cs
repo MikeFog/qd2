@@ -142,13 +142,6 @@ namespace Merlin.Classes
 			return action;
 		}
 
-		/// <summary>«Добавить ролик - пустышку» в веере: пустышка фирмы этой длины, как у одной кампании.</summary>
-		public static int CreateDummyRoller(OpenRange r, int seconds)
-		{
-			ActionOnMassmedia action = LoadForWrite(r);
-			return MuteRoller.GetRoller(seconds, action.FirmID, null).RollerId;
-		}
-
 		// ---------- Неделя ----------
 
 		/// <summary>Один выпуск отмеченной кампании в слоте.</summary>

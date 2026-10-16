@@ -87,8 +87,9 @@ namespace Merlin.Classes
 		// ---------- Открытая кампания ----------
 
 		/// <summary>
-		/// То, с чем работает вкладка и чему нужны ролики фирмы (кисть): одна кампания (WindowsSource)
-		/// или набор отмеченных кампаний веера (RangeSource). Ролики — фирмы акции, не станции.
+		/// То, с чем работает вкладка и чему нужны ролики фирмы (кисть): одна кампания (WindowsSource),
+		/// набор отмеченных кампаний веера (RangeSource) или модульных кампаний (ModuleDaySource). Ролики —
+		/// фирмы акции, не станции.
 		/// </summary>
 		public interface IBrushScope
 		{
@@ -535,12 +536,27 @@ namespace Merlin.Classes
 
 		/// <summary>
 		/// «Добавить ролик - пустышку»: пустышка фирмы этой длины (GetMuteRoller находит готовую или
-		/// заводит новую, без предмета рекламы — как десктоп). Возвращает её номер ролика.
+		/// заводит новую, без предмета рекламы — как десктоп). Права — как у записи на вкладке: одна
+		/// кампания, веер или модули. Возвращает её номер ролика.
 		/// </summary>
-		public static int CreateDummyRoller(OpenCampaign c, int seconds)
+		public static int CreateDummyRoller(IBrushScope c, int seconds)
 		{
-			Campaign campaign = LoadForWrite(c);
-			return MuteRoller.GetRoller(seconds, campaign.Action.FirmID, null).RollerId;
+			int firmId;
+			switch (c)
+			{
+				case OpenCampaign one:
+					firmId = LoadForWrite(one).Action.FirmID;
+					break;
+				case RangeSource.OpenRange range:
+					firmId = RangeSource.LoadForWrite(range).FirmID;
+					break;
+				case ModuleDaySource.ModuleScope modules:
+					firmId = ModuleDaySource.LoadForWrite(modules).FirmID;
+					break;
+				default:
+					throw new ArgumentException(nameof(c));
+			}
+			return MuteRoller.GetRoller(seconds, firmId, null).RollerId;
 		}
 
 		/// <summary>

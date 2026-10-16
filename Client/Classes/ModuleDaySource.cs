@@ -19,7 +19,10 @@ namespace Merlin.Classes
 	/// ModuleIssueRetrieve, ModuleIssueContentRetrieve (окна выхода выпуска) и TariffWindowRetrieve (окна тарифов
 	/// модуля). Окно выхода — фактическое (правило 07.10.2026, docs/window-original-actual.md).
 	///
-	/// Подэтап 6.1 — только просмотр. Только веб: в Client.csproj не входит.
+	/// Запись (подэтап 6.2) — клик по месту, как клик комбо: IsModuleExist, ModuleIssueIUD AddItem и ActionRecalculate одной
+	/// транзакцией. Права проверяет фасад перед записью: процедуры о «своей / чужой» акции не знают.
+	///
+	/// Только веб: в Client.csproj не входит.
 	/// </summary>
 	public static class ModuleDaySource
 	{
@@ -67,6 +70,9 @@ namespace Merlin.Classes
 			internal IReadOnlyDictionary<int, CampaignInfo> Campaigns { get; set; }
 
 			private readonly Dictionary<(int ModuleId, int CampaignId), int> _rowNumbers = new Dictionary<(int, int), int>();
+
+			/// <summary>Строки (модуль, кампания), которые набор уже показывал, — им выдан номер.</summary>
+			internal IEnumerable<(int ModuleId, int CampaignId)> ShownRows => _rowNumbers.Keys;
 
 			/// <summary>Номер строки (модуль, кампания): выдан раз — тот же при любом периоде и фильтре.</summary>
 			internal int RowNumber(int moduleId, int campaignId)
@@ -355,6 +361,31 @@ namespace Merlin.Classes
 						});
 			}
 
+			// Строки, которые набор уже показывал, остаются, пока модуль действует в периоде: иначе после первой постановки в
+			// кампанию без выпусков остальные модули её станции пропали бы, строки ниже сдвинулись бы и следующий щелчок попал
+			// бы в чужую строку. Память — на время жизни набора (вкладку открыли заново — заново).
+			foreach (IGrouping<int, (int ModuleId, int CampaignId)> shown in s.ShownRows.Where(r => s.CampaignIds.Contains(r.CampaignId)).GroupBy(r => r.CampaignId).ToList())
+			{
+				List<int> missing = shown.Select(r => r.ModuleId).Where(id => !specs.Any(r => r.ModuleId == id && r.CampaignId == shown.Key)).ToList();
+				if (missing.Count == 0)
+					continue;
+				CampaignInfo campaign = s.Campaigns[shown.Key];
+				if (!modulesOf.TryGetValue(campaign.MassmediaId, out DataTable modules))
+					modulesOf[campaign.MassmediaId] = modules = LoadStationModules(campaign.MassmediaId, theDate);
+				foreach (DataRow module in modules.Rows)
+				{
+					int moduleId = Convert.ToInt32(module[Module.ParamNames.ModuleId]);
+					if (missing.Contains(moduleId) && Convert.ToDateTime(module[ClosestPricelistStartColumn]).Date <= finish)
+						specs.Add(new RowSpec
+						{
+							ModuleId = moduleId,
+							ModuleName = Convert.ToString(module[Constants.Parameters.Name]),
+							CampaignId = shown.Key,
+							Campaign = campaign,
+						});
+				}
+			}
+
 			foreach (RowSpec spec in specs)
 			{
 				spec.PaymentType = spec.Campaign.PaymentTypeName;
@@ -423,6 +454,175 @@ namespace Merlin.Classes
 		}
 
 		private static int IntOrZero(object value) => value == null || value == DBNull.Value ? 0 : Convert.ToInt32(value);
+
+		// ---------- Постановка ----------
+
+		/// <summary>
+		/// Свежая акция для записи: удалённая — отказ; без «Редактировать» акции (на сейчас) или модульных кампаний (на момент
+		/// открытия: правило своих / чужих акций у кампании то же, что у акции, а права группы от строки кампании не зависят,
+		/// как у RangeSource.LoadForWrite) — отказ.
+		/// </summary>
+		internal static ActionOnMassmedia LoadForWrite(ModuleScope s)
+		{
+			ActionOnMassmedia action = ActionWorkspace.Load(s.ActionId);
+			if (action == null || ActionWorkspace.IsDeleted(action))
+				throw new InvalidOperationException(Tr.T("Рекламная акция удалена. Обновите страницу."));
+			if (!s.CanEdit || !ActionWorkspace.CanEdit(action))
+				throw new InvalidOperationException(Tr.T(Properties.Resources.OperationNotAllowed));
+			return action;
+		}
+
+		/// <summary>Выпуск модуля, поставленный кликом, — номер из ответа ModuleIssueIUD, захваченный в момент записи.</summary>
+		public sealed class PlacedModuleIssue
+		{
+			internal PlacedModuleIssue() { }
+
+			public int ModuleIssueId { get; internal set; }
+			public int CampaignId { get; internal set; }
+			public int ModuleId { get; internal set; }
+			public int RollerId { get; internal set; }
+
+			/// <summary>День выпуска (ModuleIssue.issueDate).</summary>
+			public DateTime Date { get; internal set; }
+
+			public string ModuleName { get; internal set; }
+
+			/// <summary>Для строки отказа: «дата — модуль — ролик».</summary>
+			public string Name { get; internal set; }
+		}
+
+		/// <summary>
+		/// Клик «Режима добавления» — как клик комбо (ComboModulePlacementForm.AddModuleIssue → Campaign.AddModuleIssue):
+		/// модуль строки места на весь день, ролик и позиция кисти. Одна транзакция: IsModuleExist, ModuleIssueIUD AddItem
+		/// (строки Issue во все окна модуля за день) и ActionRecalculate. Акция и её кампании читаются заново перед записью:
+		/// коррекция платежа подтверждённой акции сравнивает её прежнюю цену с новой (ActionOnMassmedia.Recalculate), а кампанию
+		/// могли удалить. Кампания — строкой списка кампаний акции, как в веере: чтение объекта кампании и его прав стоит ~0,2 с.
+		/// Повтор того же модуля в тот же день ставит ещё один выпуск, как в десктопе (В-18). Отказ по бизнес-правилу
+		/// (RAISERROR с ключом iMessage) откатывает всё и уходит наверх как есть: текст — ErrorManager.GetErrorMessage(ex).
+		/// Модель периода после записи перечитывает экран (LoadPeriod): изменились остатки окон и у соседних модулей
+		/// с общими тарифами, отметки и итог дня.
+		/// </summary>
+		public static PlacedModuleIssue PlaceOne(ModuleScope s, PlacementCell cell, int rollerId, int position)
+		{
+			ModuleDay m = cell?.ModuleDay;
+			if (m == null || !s.Campaigns.ContainsKey(m.CampaignId))
+				throw new InvalidOperationException(Tr.T("Место не относится к отмеченным модульным кампаниям. Обновите страницу."));
+			DateTime day = cell.Date.Date;
+
+			ActionOnMassmedia action = LoadForWrite(s);
+			int massmediaId = ModularCampaignStation(action, m.CampaignId);
+			Roller roller = ModuleRoller(s, rollerId, action.FirmID);
+			if (!IsPricelistOfDay(m, massmediaId, day))
+				throw new InvalidOperationException(Tr.Format("Прайс-лист модуля «{0}» на {1:dd.MM.yyyy} изменился. Обновите страницу.", m.ModuleName, day));
+
+			int moduleIssueId = 0;
+			WindowsSource.RunInTransaction(() =>
+			{
+				if (!IsModuleWhole(m.ModulePricelistId, day))
+					throw NotWhole(m, day);
+				moduleIssueId = AddModuleIssue(action, m, roller, position, day);
+				if (moduleIssueId <= 0)
+					throw NotWhole(m, day);
+				action.Recalculate(false);
+			});
+
+			return new PlacedModuleIssue
+			{
+				ModuleIssueId = moduleIssueId,
+				CampaignId = m.CampaignId,
+				ModuleId = m.ModuleId,
+				RollerId = roller.RollerId,
+				Date = day,
+				ModuleName = m.ModuleName,
+				Name = string.Format("{0:dd.MM.yyyy} — {1} — {2}", day, m.ModuleName, roller.Name),
+			};
+		}
+
+		/// <summary>Станция модульной кампании места по свежему списку кампаний акции; кампании в нём нет — её удалили.</summary>
+		private static int ModularCampaignStation(ActionOnMassmedia action, int campaignId)
+		{
+			foreach (DataRow row in ActionWorkspace.LoadCampaigns(action).Rows)
+				if (WindowsSource.CampaignIdOf(row) == campaignId && IsModular(row))
+					return ParseHelper.GetInt32FromObject(row[Campaign.ParamNames.MassmediaId], 0);
+			throw new InvalidOperationException(Tr.T("Рекламная кампания удалена. Обновите страницу."));
+		}
+
+		/// <summary>Типы роликов, которые ставятся в модули (iRollerActionType): 1 — Реклама, 2 — Новость, 3 — Программа.</summary>
+		private const int FirstModuleRollerType = 1;
+		private const int LastModuleRollerType = 3;
+
+		/// <summary>
+		/// Ролик кисти — из показанного списка роликов фирмы акции (WindowsSource.BrushRoller) и только типов 1–3 (В-25):
+		/// у модулей не работают проверки, привязанные к окну (СМИ, агитация, отбивки).
+		/// </summary>
+		private static Roller ModuleRoller(ModuleScope s, int rollerId, int actionFirmId)
+		{
+			Roller roller = WindowsSource.BrushRoller(s, rollerId, actionFirmId);
+			int type = ParseHelper.GetInt32FromObject(roller[Roller.ParamNames.RolActionTypeID], 0);
+			if (type < FirstModuleRollerType || type > LastModuleRollerType)
+				throw new InvalidOperationException(Tr.Format("Ролик «{0}» нельзя поставить в модуль: в модули ставятся только ролики типов «Реклама», «Новость» и «Программа».", roller.Name));
+			return roller;
+		}
+
+		/// <summary>
+		/// Прайс-лист модуля места — этого модуля, действует в этот день и входит в прайс-лист станции кампании
+		/// (ModulePricelistByDate @massmediaID кампании): место могло устареть, а hlp_IssueVerify этого не проверяет.
+		/// </summary>
+		private static bool IsPricelistOfDay(ModuleDay m, int massmediaId, DateTime day)
+		{
+			Dictionary<string, object> parameters = DataAccessor.CreateParametersDictionary();
+			parameters[Massmedia.ParamNames.MassmediaId] = massmediaId;
+			parameters["theDate"] = day;
+			parameters[Module.ParamNames.ModuleId] = m.ModuleId;
+			foreach (DataRow row in DataAccessor.LoadDataSet("ModulePricelistByDate", parameters).Tables[0].Rows)
+				if (Convert.ToInt32(row[ModulePricelist.ParamNames.ModulePriceListID]) == m.ModulePricelistId)
+					return true;
+			return false;
+		}
+
+		/// <summary>
+		/// IsModuleExist: у каждого тарифа прайс-листа модуля есть окно в этот день. LoadDataSet, а не ExecuteScalar
+		/// (Campaign.IsModuleExists): внутри транзакции он идёт на её соединении, ExecuteScalar открыл бы своё.
+		/// </summary>
+		private static bool IsModuleWhole(int modulePricelistId, DateTime day)
+		{
+			Dictionary<string, object> parameters = DataAccessor.CreateParametersDictionary();
+			parameters[ModulePricelist.ParamNames.ModulePriceListID] = modulePricelistId;
+			parameters["date"] = day;
+			DataTable result = DataAccessor.LoadDataSet("IsModuleExist", parameters).Tables[0];
+			return result.Rows.Count > 0 && Convert.ToInt32(result.Rows[0][0]) == 1;
+		}
+
+		/// <summary>Отказ «не выходит целиком» — текст десктопного комбо.</summary>
+		private static InvalidOperationException NotWhole(ModuleDay m, DateTime day) =>
+			new InvalidOperationException(Tr.Format("Модуль «{0}» ({1}) не выходит {2:dd.MM.yyyy} целиком, выпуск не создан.", m.ModuleName, m.Station, day));
+
+		/// <summary>
+		/// ModuleIssueIUD AddItem с параметрами десктопа (ModuleIssue из Campaign.AddModuleIssue): длительность ролика и цену
+		/// модуля процедура берёт из базы, грантор — NULL. LoadDataSet, а не DoAction: по метаданным процедура NO_DATA, и DoAction
+		/// выбросил бы её ответ — выпуск (ModuleIssueRetrieve в конце) или −1, если у модуля за день не нашлось ни одного окна.
+		/// Возвращает номер выпуска или −1.
+		/// </summary>
+		private static int AddModuleIssue(ActionOnMassmedia action, ModuleDay m, Roller roller, int position, DateTime day)
+		{
+			Dictionary<string, object> parameters = DataAccessor.CreateParametersDictionary();
+			parameters[Constants.ParamNames.ActionName] = Constants.Actions.AddItem;
+			parameters[Campaign.ParamNames.CampaignId] = m.CampaignId;
+			parameters[Module.ParamNames.ModuleId] = m.ModuleId;
+			parameters[ModulePricelist.ParamNames.ModulePriceListID] = m.ModulePricelistId;
+			parameters[Roller.ParamNames.RollerId] = roller.RollerId;
+			parameters[Issue.ParamNames.PositionId] = position;
+			parameters[Issue.ParamNames.IssueDate] = day;
+			parameters[Action.ParamNames.IsConfirmed] = action.IsConfirmed;
+			DataSet answer = DataAccessor.LoadDataSet("ModuleIssueIUD", parameters);
+			for (int i = answer.Tables.Count - 1; i >= 0; i--)
+			{
+				DataTable table = answer.Tables[i];
+				if (table.Columns.Contains(Issue.ParamNames.ModuleIssueId) && table.Rows.Count > 0)
+					return Convert.ToInt32(table.Rows[0][Issue.ParamNames.ModuleIssueId]);
+			}
+			return -1;
+		}
 
 		// ---------- Панель места ----------
 

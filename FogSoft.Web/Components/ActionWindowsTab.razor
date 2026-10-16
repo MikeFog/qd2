@@ -7,9 +7,6 @@
 @inject BusyService Busy
 @inject DialogService Dialogs
 @inject TableDialog Tables
-@inject ObjectActions Actions
-@inject ActionMenuService Menu
-@inject RollerPlayback Playback
 @inject PlacementUndo Undo
 
 @*
@@ -17,7 +14,7 @@
     кампании акции галочками; отмечена одна — неделя рекламных окон её радиостанции, как десктопный
     CampaignForm с RollerIssuesGrid3 (режим — по числу отмеченных, решение В-3; несколько — веер,
     этап 4а: получасовые слоты по всем отмеченным станциям, как десктопный EditIssuesForm; при входе
-    отмечены все линейные кампании, как там). Слева «Ролики» (кисть), в центре сетка, справа —
+    отмечены все линейные кампании, как там). Слева «Ролики» (кисть, RollerBrush), в центре сетка, справа —
     выпуски выбранного окна (у веера панели пока нет). В веере окна выделяются так же (щелчок, Shift, Ctrl,
     Esc); по выделенным — «Разместить ролик» и «Удалить выпуски» (десктоп — Insert и Del).
 
@@ -26,7 +23,8 @@
     «Разместить ролик», «Удалить выпуски», «Заменить ролики» (десктоп — Insert, Del, Ctrl+R);
     перенос выпусков — «Перенести в окно» из панели (десктоп — перетаскивание). Запись и права —
     в ядре (WindowsSource), одно действие — одна транзакция и один пересчёт акции; после записи
-    страница перечитывает шапку (Changed).
+    страница перечитывает шапку (Changed). Запись на «Модулях» меняет те же окна — скрытая вкладка
+    перечитывает неделю при показе (PlacementVersion).
 *@
 
 <div class="windows-tab">
@@ -76,64 +74,9 @@
 
             @if (Scope != null)
             {
-                <section class="side-block rollers">
-                    <div class="side-title">
-                        @Tr.T("Ролики")
-                        <span class="side-actions">
-                            <button type="button" class="btn btn-sm btn-outline-secondary" title="@(Tr.T("Прослушать ролик"))" aria-label="@(Tr.T("Прослушать ролик"))"
-                                    disabled="@(BrushRow is not { } br || WindowsSource.IsDummy(br))" @onclick="PlayRoller">
-                                <i class="bi bi-play-fill" aria-hidden="true"></i>
-                            </button>
-                            <button type="button" class="btn btn-sm btn-outline-secondary" aria-label="@(Tr.T("Добавить ролик - пустышку"))"
-                                    title="@(Scope.CanEdit ? Tr.T("Добавить ролик - пустышку") : NoRightText)"
-                                    disabled="@(!Scope.CanEdit)" @onclick="() => Exclusive(AddDummy)">
-                                <i class="bi bi-file-earmark-plus" aria-hidden="true"></i>
-                            </button>
-                        </span>
-                    </div>
-                    @if (_rollers == null)
-                    {
-                        <div class="state">@Tr.T("Загрузка…")</div>
-                    }
-                    else if (_rollers.Rows.Count == 0)
-                    {
-                        <div class="text-muted small">@Tr.T("У фирмы нет активных роликов. Можно добавить ролик-пустышку.")</div>
-                    }
-                    else
-                    {
-                        <div class="data-table roller-table">
-                            <table class="table table-hover">
-                                <thead>
-                                    <tr>
-                                        <th class="col-num">№</th>
-                                        <th>@Tr.T("Ролик")</th>
-                                        <th>@Tr.T("Предмет рекламы")</th>
-                                        <th>@Tr.T("Продолжительность")</th>
-                                        <th class="col-menu"></th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    @foreach (DataRow row in _rollers.Rows)
-                                    {
-                                        int rollerId = WindowsSource.RollerIdOf(row);
-                                        <tr class="@(rollerId == _brushRollerId ? "row-active" : null)" @onclick="() => _brushRollerId = rollerId">
-                                            <td class="col-num tabular">@row[WindowsSource.RollerNumberColumn]</td>
-                                            <td>@WindowsSource.RollerName(row)</td>
-                                            <td>@row[Roller.ParamNames.AdvertTypeName]</td>
-                                            <td class="tabular">@WindowsSource.RollerDuration(row)</td>
-                                            <td class="col-menu">
-                                                <button type="button" class="row-btn" title="@(Tr.T("Действия с роликом"))" aria-label="@(Tr.T("Действия с роликом"))"
-                                                        aria-haspopup="menu" @onclick="e => OpenRollerMenu(row, e)" @onclick:stopPropagation="true">
-                                                    <i class="bi bi-three-dots" aria-hidden="true"></i>
-                                                </button>
-                                            </td>
-                                        </tr>
-                                    }
-                                </tbody>
-                            </table>
-                        </div>
-                    }
-                </section>
+                <RollerBrush Value="_brush" Scope="Scope" NoRightText="@NoRightText" Run="Run" Exclusive="Exclusive"
+                             Changed="BrushChanged" RollerEdited="RollerEdited" Failed="ShowError"
+                             ReadOnly="ActionWorkspace.IsDeleted(Action)" RollersChanged="() => Changed.InvokeAsync()" />
             }
         </aside>
         @* Ширину левой колонки можно менять, как дерево древовидных экранов: неделе окон хватает
@@ -179,8 +122,8 @@
                             }
                             @if (Scope is { } templateScope)
                             {
-                                <button type="button" class="btn btn-sm btn-outline-secondary" disabled="@(!templateScope.CanEdit || _rollers is not { Rows.Count: > 0 })"
-                                        title="@(!templateScope.CanEdit ? NoRightText : _rollers is not { Rows.Count: > 0 } ? Tr.T("У фирмы нет активных роликов. Можно добавить ролик-пустышку.") : Tr.T("Шаблон для внесения роликов"))"
+                                <button type="button" class="btn btn-sm btn-outline-secondary" disabled="@(!templateScope.CanEdit || !_brush.HasRollers)"
+                                        title="@(!templateScope.CanEdit ? NoRightText : !_brush.HasRollers ? Tr.T("У фирмы нет активных роликов. Можно добавить ролик-пустышку.") : Tr.T("Шаблон для внесения роликов"))"
                                         @onclick="() => Exclusive(RunTemplate)">
                                     <i class="bi bi-calendar-range" aria-hidden="true"></i>@Tr.T("Шаблон")
                                 </button>
@@ -195,7 +138,7 @@
                         </LeadingTools>
                         <TrailingTools>
                             <span class="toggles">
-                                <PlacementFilterButtons View="_view" Unconfirmed="true" Changed="UnconfirmedChanged" />
+                                <PlacementFilterButtons View="_view" Unconfirmed="true" Changed="ReloadWeekAndPanel" />
                                 <button type="button" class="btn btn-sm btn-outline-secondary @(_showNumbers ? "active" : null)" aria-pressed="@_showNumbers"
                                         title="@(Tr.T("Номера роликов") + "\n" + (IsRange ? Tr.T("Показывать в окнах номера роликов отмеченных кампаний вместо остатка времени") : Tr.T("Показывать в окнах номера роликов текущей кампании вместо остатка времени")))" aria-label="@(Tr.T("Номера роликов"))" @onclick="ToggleNumbers">
                                     <i class="bi bi-123" aria-hidden="true"></i>
@@ -486,9 +429,19 @@
     /// <summary>Размещение изменилось — страница перечитывает шапку и кампании.</summary>
     [Parameter] public EventCallback Changed { get; set; }
 
+    /// <summary>Вкладка видна (скрытая живёт, но не перечитывает неделю на каждую запись другой вкладки).</summary>
+    [Parameter] public bool Active { get; set; }
+
+    /// <summary>
+    /// Версия размещения от страницы: растёт с каждой записью на другой вкладке размещения (модули ставят выпуски в те же
+    /// окна). Видимая вкладка с отставшей версией перечитывает неделю; своя запись версию не меняет — неделя уже перечитана.
+    /// </summary>
+    [Parameter] public int PlacementVersion { get; set; }
+
     private readonly List<int> _checked = new();
     private int _appliedRequest = -1;
     private bool _initialized;
+    private int _shownVersion;
 
     private WindowsSource.OpenCampaign? _open;
     private RangeSource.OpenRange? _range;
@@ -498,9 +451,8 @@
     private PlacementWeek? _week;
     private string? _error;
 
-    private DataTable? _rollers;
-    private int? _brushRollerId;
-    private Dictionary<int, int> _numbers = new();
+    // Кисть: ролики фирмы, их номера и ролик кисти (RollerBrush).
+    private readonly RollerBrush.Model _brush = new();
     private bool _brushOn;
     private string? _advertTypeName;
 
@@ -563,8 +515,10 @@
         return ambiguous ? WindowsSource.CampaignCaption(row, withAgency: true) : caption;
     }
 
-    private DataRow? BrushRow => _rollers == null || _brushRollerId == null ? null
-        : _rollers.Rows.Cast<DataRow>().FirstOrDefault(r => WindowsSource.RollerIdOf(r) == _brushRollerId);
+    private DataRow? BrushRow => _brush.Row;
+
+    /// <summary>Номера роликов из списка «Ролики» — в ячейках, чек-листах и панели веера.</summary>
+    private IReadOnlyDictionary<int, int> RollerNumbers => _brush.Numbers;
 
     private bool CanBrush => Scope is { CanEdit: true } && BrushRow != null;
 
@@ -639,6 +593,14 @@
         }
         else if (_checked.Count != before)
             await ApplyChecked();
+
+        // Размещение или ролики фирмы изменили на другой вкладке — неделя, панель и ролики заново.
+        if (Active && PlacementVersion != _shownVersion)
+        {
+            _shownVersion = PlacementVersion;
+            if (Scope != null)
+                await RefreshAll();
+        }
     }
 
     private Task ToggleCampaign(int id, bool on)
@@ -674,10 +636,12 @@
         if (IsOpened())
             return;
 
+        // Открывается заново — читается свежим, отставшая версия размещения не нужна.
+        _shownVersion = PlacementVersion;
         _open = null;
         _range = null;
         _week = null;
-        _rollers = null;
+        _brush.Clear();
         _brushOn = false;
         _transfer = null;
         _selected = null;
@@ -798,8 +762,11 @@
             await Run(() => RangeSource.LoadAllSlotIssues(_range!, _week!));
     }
 
-    /// <summary>«Учитывать макеты» переключили (PlacementFilterButtons) — неделя и выпуски окна панели.</summary>
-    private Task UnconfirmedChanged() => Run(() =>
+    /// <summary>
+    /// Неделя и выпуски окна панели заново: «Учитывать макеты» переключили (PlacementFilterButtons) или размещение
+    /// изменили на другой вкладке (PlacementVersion).
+    /// </summary>
+    private Task ReloadWeekAndPanel() => Run(() =>
     {
         ReloadWeekCore();
         if (_selected != null)
@@ -816,13 +783,13 @@
 
     private string? CellText(PlacementCell cell) =>
         !_showNumbers ? null
-        : _range != null ? RangeSource.NumbersText(_range, cell, _numbers, _view.ShowUnconfirmed)
-        : cell.NumbersText(_numbers);
+        : _range != null ? RangeSource.NumbersText(_range, cell, RollerNumbers, _view.ShowUnconfirmed)
+        : cell.NumbersText(RollerNumbers);
 
     /// <summary>Подсказка ячейки; у веера при «Номерах роликов» первой идёт расшифровка значков Н/Д, как в десктопе.</summary>
     private string CellTitle(PlacementCell cell)
     {
-        string? details = _range != null && _showNumbers && RangeSource.MismatchTooltip(_range, cell, _numbers) is { } mismatch
+        string? details = _range != null && _showNumbers && RangeSource.MismatchTooltip(_range, cell, RollerNumbers) is { } mismatch
             ? mismatch
             : cell.Details;
         return DisplayFormat.DateAndTime(cell.Date) + StatusText(cell) + (details != null ? "\n" + details : "");
@@ -929,7 +896,7 @@
             return;
 
         bool placed = false;
-        int rollerId = _brushRollerId!.Value;
+        int rollerId = _brush.RollerId!.Value;
         int position = _view.Position;
         PlacementWeek week = _week;
         await Run(() =>
@@ -958,7 +925,7 @@
             return;
 
         bool placed = false;
-        int rollerId = _brushRollerId!.Value;
+        int rollerId = _brush.RollerId!.Value;
         int position = _view.Position;
         await Run(() =>
         {
@@ -1014,7 +981,7 @@
             return;
 
         WindowsSource.BatchResult? result = null;
-        int rollerId = _brushRollerId!.Value;
+        int rollerId = _brush.RollerId!.Value;
         int position = _view.Position;
         await Run(() =>
         {
@@ -1093,7 +1060,7 @@
         model.HasBrushRoller = BrushRow != null;
         model.RollerName = BrushRow is { } brush ? WindowsSource.RollerName(brush) : string.Empty;
         // Ролики фирмы — тот же список, что слева («Ролики»): отметки и количества прошлого открытия сохраняются.
-        model.SetRollers((_rollers?.Rows.Cast<DataRow>() ?? Enumerable.Empty<DataRow>()).Select(r => new TemplateForm.RollerRow
+        model.SetRollers((_brush.Rollers?.Rows.Cast<DataRow>() ?? Enumerable.Empty<DataRow>()).Select(r => new TemplateForm.RollerRow
         {
             Id = WindowsSource.RollerIdOf(r),
             Name = WindowsSource.RollerName(r),
@@ -1122,7 +1089,7 @@
         PlacementTemplate template = model.ToTemplate();
         TemplateForm.Kind kind = model.Mode;
         List<KeyValuePair<int, int>> quotas = model.Quotas();
-        int rollerId = _brushRollerId ?? 0;
+        int rollerId = _brush.RollerId ?? 0;
         int position = _view.Position;
         TemplateSource.TemplateResult? result = null;
         await Run(() =>
@@ -1260,7 +1227,7 @@
             return;
 
         WindowsSource.BatchResult? result = null;
-        int rollerId = _brushRollerId!.Value;
+        int rollerId = _brush.RollerId!.Value;
         int position = _view.Position;
         await Run(() =>
         {
@@ -1371,7 +1338,7 @@
 
         IReadOnlyList<PlacementCell> cells = _selection.Selected(_week);
         RangeSource.DuplicatePlan? plan = null;
-        await Run(() => plan = RangeSource.PlanDuplicates(range, RangeSource.ReadSlots(range, cells), _numbers));
+        await Run(() => plan = RangeSource.PlanDuplicates(range, RangeSource.ReadSlots(range, cells), RollerNumbers));
         if (plan == null)
             return;
         if (plan.Count == 0)
@@ -1404,7 +1371,7 @@
         RangeSource.DuplicatePlan toRemove = plan;
         await Run(() =>
         {
-            result = RangeSource.RemoveDuplicates(range, toRemove, _numbers);
+            result = RangeSource.RemoveDuplicates(range, toRemove, RollerNumbers);
             ReloadWeekCore();
         });
         await AfterBatch(result, done => Tr.Format("Удалено лишних выпусков: {0}, не удалено: {1}", done, result!.Failed), "Рекламное окно"); // i18n-ok: заголовок колонки переводит ObjectList при выводе
@@ -1438,7 +1405,7 @@
         int withoutPosition = 0;
         await Run(() =>
         {
-            result = RangeSource.FillToIntersection(range, toAdd, _view, _numbers, out withoutPosition);
+            result = RangeSource.FillToIntersection(range, toAdd, _view, RollerNumbers, out withoutPosition);
             Undo.Remember(Action.ActionId, PlacementUndo.RangeCampaign, result.Created); // см. PlaceSlot
             ReloadWeekCore();
         });
@@ -1553,7 +1520,7 @@
 
     /// <summary>«№ ролик» из списка «Ролики»; ролика в списке нет (чужой, неактивный) — по названию.</summary>
     private string SlotGroupLabel(RangeSource.SlotGroupInfo item) =>
-        _numbers.TryGetValue(item.RollerId, out int number) ? number + " " + item.RollerName : item.RollerName;
+        RollerNumbers.TryGetValue(item.RollerId, out int number) ? number + " " + item.RollerName : item.RollerName;
 
     /// <summary>«Перенести в окно» из панели веера: отмеченные группы ждут щелчка по окну-приёмнику; недели листать можно.</summary>
     private async Task StartRangeTransfer()
@@ -1677,80 +1644,27 @@
 
     // ---------- Ролики ----------
 
+    /// <summary>Ролики кисти для открытого (в той же операции, что и неделя: номера роликов в ячейках).</summary>
     private void LoadRollersCore()
     {
-        _rollers = WindowsSource.LoadRollers(Scope!);
-        _numbers = _rollers.Rows.Cast<DataRow>().ToDictionary(WindowsSource.RollerIdOf, r => Convert.ToInt32(r[WindowsSource.RollerNumberColumn]));
-        // Выбор сохраняется, если ролик остался в списке; иначе — первый, как в десктопе.
-        if (_brushRollerId == null || !_numbers.ContainsKey(_brushRollerId.Value))
-            _brushRollerId = _rollers.Rows.Count > 0 ? WindowsSource.RollerIdOf(_rollers.Rows[0]) : null;
-        if (_rollers.Rows.Count == 0)
+        _brush.Load(Scope!);
+        if (!_brush.HasRollers)
             _brushOn = false;
     }
 
-    private async Task PlayRoller()
+    /// <summary>Кисть выбрала другой ролик или добавила пустышку — тулбар показывает ролик кисти и «Режим добавления».</summary>
+    private void BrushChanged()
     {
-        if (BrushRow is not { } row)
-            return;
-        if (await Playback.PlayAsync(WindowsSource.RollerListEntity().CreateObject(row)) is { } refusal)
-            await ShowInfo(Tr.T("Прослушать ролик"), refusal);
+        if (!_brush.HasRollers)
+            _brushOn = false;
     }
 
-    /// <summary>«Добавить ролик - пустышку»: длительность → GetMuteRoller → пустышка становится роликом кисти.</summary>
-    private async Task AddDummy()
+    /// <summary>Ролик изменили из меню «⋯» кисти: предмет рекламы мог смениться — список и отбор по предмету перечитать.</summary>
+    private Task RollerEdited() => Run(() =>
     {
-        if (Scope is not { CanEdit: true })
-            return;
-
-        var model = new DummyRollerForm.Model();
-        while (true)
-        {
-            if (await Dialogs.ShowAsync(Tr.T("Добавить ролик - пустышку"), builder =>
-                {
-                    builder.OpenComponent<DummyRollerForm>(0);
-                    builder.AddComponentParameter(1, nameof(DummyRollerForm.Value), model);
-                    builder.CloseComponent();
-                }, okText: Tr.T("Добавить")) != DialogOutcome.Ok)
-                return;
-            model.Message = model.Validate();
-            if (model.Message == null)
-                break;
-        }
-
-        await Run(() =>
-        {
-            int rollerId = _range != null
-                ? RangeSource.CreateDummyRoller(_range, model.TotalSeconds)
-                : WindowsSource.CreateDummyRoller(_open!, model.TotalSeconds);
-            _brushRollerId = rollerId;
-            LoadRollersCore();
-        });
-    }
-
-    /// <summary>«⋯» у ролика — меню сущности 1244, как у списка «Ролики» десктопа.</summary>
-    private async Task OpenRollerMenu(DataRow row, MouseEventArgs e)
-    {
-        try
-        {
-            PresentationObject roller = WindowsSource.RollerListEntity().CreateObject(row);
-            IReadOnlyList<ActionMenuItem> items = Actions.BuildMenu(roller, ViewType.Journal);
-            string? picked = await Menu.ShowAsync(items, e.ClientX, e.ClientY, fromButton: true);
-            if (picked == null)
-                return;
-            ActionEffect? effect = await Actions.ExecuteAsync(roller, picked, ViewType.Journal);
-            // Предмет рекламы ролика мог смениться — список и отбор по предмету перечитать.
-            if (effect is not null and not ActionEffect.None)
-                await Run(() =>
-                {
-                    LoadRollersCore();
-                    ReloadWeekCore();
-                });
-        }
-        catch (Exception ex)
-        {
-            _error = ErrorPresenter.Describe(ex);
-        }
-    }
+        LoadRollersCore();
+        ReloadWeekCore();
+    });
 
     // ---------- Диалоги ----------
 

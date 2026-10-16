@@ -1,0 +1,91 @@
+/*
+    Кисть вкладок размещения: блок «Ролики» в левой колонке вкладки (ActionWindowsTab, ActionModulesTab) —
+    стили блока те же, что у соседнего блока кампаний владельца; блок занимает остаток высоты колонки.
+*/
+
+.side-block {
+    display: flex;
+    flex-direction: column;
+    gap: var(--s-1);
+    padding: var(--s-2);
+    background: var(--c-surface);
+    border: 1px solid var(--c-border);
+    border-radius: 6px;
+}
+
+.side-title {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--s-2);
+    font-weight: 600;
+}
+
+.side-actions {
+    display: inline-flex;
+    gap: var(--s-1);
+}
+
+.rollers {
+    flex: 1 1 auto;
+    min-height: 160px;
+}
+
+.roller-table {
+    flex: 1 1 auto;
+    min-height: 0;
+    overflow: auto;
+    font-size: 13px;
+}
+
+.roller-table tbody tr {
+    cursor: pointer;
+}
+
+/* Узкая колонка: плотнее, чем журнал, длинные имена и предметы рекламы переносятся. */
+.roller-table .table > thead > tr > th,
+.roller-table .table > tbody > tr > td {
+    padding: 4px var(--s-1);
+    white-space: normal;
+    overflow-wrap: break-word;
+}
+
+.roller-table tbody tr.row-active > td {
+    background: var(--c-accent-soft);
+}
+
+.col-num {
+    width: 32px;
+    text-align: right;
+}
+
+.col-menu {
+    width: 28px;
+}
+
+.row-btn {
+    visibility: hidden;
+    width: 24px;
+    height: 22px;
+    padding: 0;
+    border: none;
+    border-radius: 4px;
+    background: none;
+    color: var(--c-text-muted);
+}
+
+tbody tr:hover .row-btn,
+tbody tr:focus-within .row-btn {
+    visibility: visible;
+}
+
+.row-btn:hover {
+    background: var(--c-border);
+    color: var(--c-text);
+}
+
+@media (hover: none) {
+    .row-btn {
+        visibility: visible;
+    }
+}

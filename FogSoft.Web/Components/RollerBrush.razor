@@ -1,0 +1,215 @@
+@using System.Data
+@using FogSoft.WinForm
+@using FogSoft.WinForm.Classes
+@using Merlin.Classes
+@inject DialogService Dialogs
+@inject ObjectActions Actions
+@inject ActionMenuService Menu
+@inject RollerPlayback Playback
+
+@*
+    Кисть вкладок размещения (docs/tasks/web-action-forms.md, этап 6.2) — что ставит «Режим добавления»:
+    список «Ролики» фирмы акции с номерами, как список роликов десктопных CampaignForm и ComboModulePlacementForm.
+    Ролик кисти выбирается щелчком по строке; «Прослушать ролик», «Добавить ролик - пустышку» (пустышка
+    становится роликом кисти) и меню ролика «⋯» (сущность 1244). Позиция кисти — «Позиционирование» в
+    тулбаре сетки владельца (PlacementFilterButtons).
+
+    Общая для «Рекламных окон» (одна кампания и веер) и «Модулей». Состояние — Model у владельца: он читает
+    список в той же операции, что и сетку (номера роликов в ячейках), и берёт из него ролик для записи.
+    Ошибки и ожидание — операцией владельца (Run): отказ показывается над сеткой, как у остальной записи вкладки.
+*@
+
+<section class="side-block rollers">
+    <div class="side-title">
+        @Tr.T("Ролики")
+        <span class="side-actions">
+            <button type="button" class="btn btn-sm btn-outline-secondary" title="@(Tr.T("Прослушать ролик"))" aria-label="@(Tr.T("Прослушать ролик"))"
+                    disabled="@(Value.Row is not { } br || WindowsSource.IsDummy(br))" @onclick="PlayRoller">
+                <i class="bi bi-play-fill" aria-hidden="true"></i>
+            </button>
+            <button type="button" class="btn btn-sm btn-outline-secondary" aria-label="@(Tr.T("Добавить ролик - пустышку"))"
+                    title="@(Scope.CanEdit && !ReadOnly ? Tr.T("Добавить ролик - пустышку") : NoRightText)"
+                    disabled="@(!Scope.CanEdit || ReadOnly)" @onclick="() => Exclusive(AddDummy)">
+                <i class="bi bi-file-earmark-plus" aria-hidden="true"></i>
+            </button>
+        </span>
+    </div>
+    @if (Value.Rollers == null)
+    {
+        <div class="state">@Tr.T("Загрузка…")</div>
+    }
+    else if (Value.Rollers.Rows.Count == 0)
+    {
+        <div class="text-muted small">@Tr.T("У фирмы нет активных роликов. Можно добавить ролик-пустышку.")</div>
+    }
+    else
+    {
+        <div class="data-table roller-table">
+            <table class="table table-hover">
+                <thead>
+                    <tr>
+                        <th class="col-num">№</th>
+                        <th>@Tr.T("Ролик")</th>
+                        <th>@Tr.T("Предмет рекламы")</th>
+                        <th>@Tr.T("Продолжительность")</th>
+                        <th class="col-menu"></th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (DataRow row in Value.Rollers.Rows)
+                    {
+                        int rollerId = WindowsSource.RollerIdOf(row);
+                        <tr class="@(rollerId == Value.RollerId ? "row-active" : null)" @onclick="() => Select(rollerId)">
+                            <td class="col-num tabular">@row[WindowsSource.RollerNumberColumn]</td>
+                            <td>@WindowsSource.RollerName(row)</td>
+                            <td>@row[Roller.ParamNames.AdvertTypeName]</td>
+                            <td class="tabular">@WindowsSource.RollerDuration(row)</td>
+                            <td class="col-menu">
+                                <button type="button" class="row-btn" title="@(Tr.T("Действия с роликом"))" aria-label="@(Tr.T("Действия с роликом"))"
+                                        aria-haspopup="menu" @onclick="e => OpenRollerMenu(row, e)" @onclick:stopPropagation="true">
+                                    <i class="bi bi-three-dots" aria-hidden="true"></i>
+                                </button>
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    }
+</section>
+
+@code {
+    /// <summary>Список роликов, номера и ролик кисти — состояние владельца.</summary>
+    [Parameter, EditorRequired] public Model Value { get; set; } = default!;
+
+    /// <summary>Открытое на вкладке (одна кампания, веер, модули): фирма роликов и право на пустышку.</summary>
+    [Parameter, EditorRequired] public WindowsSource.IBrushScope Scope { get; set; } = default!;
+
+    /// <summary>Акция удалена — пустышку не добавить (права набора считались при открытии).</summary>
+    [Parameter] public bool ReadOnly { get; set; }
+
+    /// <summary>Список роликов фирмы изменился (добавлена пустышка, ролик правили) — страница отметит это для других вкладок.</summary>
+    [Parameter] public EventCallback RollersChanged { get; set; }
+
+    /// <summary>Подсказка у недоступной пустышки — нет права менять размещение.</summary>
+    [Parameter] public string? NoRightText { get; set; }
+
+    /// <summary>Операция владельца под слоем ожидания: отказ — сообщением над его сеткой.</summary>
+    [Parameter, EditorRequired] public Func<System.Action, Task> Run { get; set; } = default!;
+
+    /// <summary>Операция с вопросом пользователю — одна за раз на всю вкладку владельца.</summary>
+    [Parameter, EditorRequired] public Func<Func<Task>, Task> Exclusive { get; set; } = default!;
+
+    /// <summary>Выбран другой ролик или список перечитан — владелец перерисовывает ролик кисти и «Режим добавления».</summary>
+    [Parameter] public EventCallback Changed { get; set; }
+
+    /// <summary>Ролик изменили из меню «⋯» (предмет рекламы и др.) — владелец перечитывает список и сетку.</summary>
+    [Parameter] public EventCallback RollerEdited { get; set; }
+
+    /// <summary>Сбой меню ролика — текст для показа над сеткой.</summary>
+    [Parameter] public EventCallback<string> Failed { get; set; }
+
+    /// <summary>
+    /// Состояние кисти: ролики фирмы (WindowsSource.LoadRollers — номер ролика = позиция в списке), номера по ролику
+    /// (номера в ячейках, чек-листах и панели веера) и выбранный ролик.
+    /// </summary>
+    public sealed class Model
+    {
+        /// <summary>Ролики фирмы; null — ещё не прочитаны (вкладка открывается заново).</summary>
+        public DataTable? Rollers { get; private set; }
+
+        /// <summary>Ролик кисти; null — роликов нет.</summary>
+        public int? RollerId { get; set; }
+
+        public IReadOnlyDictionary<int, int> Numbers { get; private set; } = new Dictionary<int, int>();
+
+        /// <summary>Строка ролика кисти в списке; null — не выбран.</summary>
+        public DataRow? Row => Rollers == null || RollerId == null ? null
+            : Rollers.Rows.Cast<DataRow>().FirstOrDefault(r => WindowsSource.RollerIdOf(r) == RollerId);
+
+        public bool HasRollers => Rollers is { Rows.Count: > 0 };
+
+        /// <summary>Прочитать ролики фирмы открытого. Выбор сохраняется, если ролик остался в списке; иначе — первый, как в десктопе.</summary>
+        public void Load(WindowsSource.IBrushScope scope)
+        {
+            DataTable rollers = WindowsSource.LoadRollers(scope);
+            Rollers = rollers;
+            Numbers = rollers.Rows.Cast<DataRow>().ToDictionary(WindowsSource.RollerIdOf, r => Convert.ToInt32(r[WindowsSource.RollerNumberColumn]));
+            if (RollerId == null || !Numbers.ContainsKey(RollerId.Value))
+                RollerId = rollers.Rows.Count > 0 ? WindowsSource.RollerIdOf(rollers.Rows[0]) : null;
+        }
+
+        /// <summary>Открытое закрыли — список прочитается заново (выбранный ролик помнится).</summary>
+        public void Clear() => Rollers = null;
+    }
+
+    private Task Select(int rollerId)
+    {
+        Value.RollerId = rollerId;
+        return Changed.InvokeAsync();
+    }
+
+    private async Task PlayRoller()
+    {
+        if (Value.Row is not { } row)
+            return;
+        if (await Playback.PlayAsync(WindowsSource.RollerListEntity().CreateObject(row)) is { } refusal)
+            await Dialogs.ShowAsync(Tr.T("Прослушать ролик"), builder => builder.AddContent(0, refusal), okText: Tr.T("Ок"), showCancel: false);
+    }
+
+    /// <summary>«Добавить ролик - пустышку»: длительность → GetMuteRoller → пустышка становится роликом кисти.</summary>
+    private async Task AddDummy()
+    {
+        if (!Scope.CanEdit || ReadOnly)
+            return;
+
+        var model = new DummyRollerForm.Model();
+        while (true)
+        {
+            if (await Dialogs.ShowAsync(Tr.T("Добавить ролик - пустышку"), builder =>
+                {
+                    builder.OpenComponent<DummyRollerForm>(0);
+                    builder.AddComponentParameter(1, nameof(DummyRollerForm.Value), model);
+                    builder.CloseComponent();
+                }, okText: Tr.T("Добавить")) != DialogOutcome.Ok)
+                return;
+            model.Message = model.Validate();
+            if (model.Message == null)
+                break;
+        }
+
+        WindowsSource.IBrushScope scope = Scope;
+        await Run(() =>
+        {
+            int rollerId = WindowsSource.CreateDummyRoller(scope, model.TotalSeconds);
+            Value.RollerId = rollerId;
+            Value.Load(scope);
+        });
+        await Changed.InvokeAsync();
+        await RollersChanged.InvokeAsync();
+    }
+
+    /// <summary>«⋯» у ролика — меню сущности 1244, как у списка «Ролики» десктопа.</summary>
+    private async Task OpenRollerMenu(DataRow row, MouseEventArgs e)
+    {
+        try
+        {
+            PresentationObject roller = WindowsSource.RollerListEntity().CreateObject(row);
+            IReadOnlyList<ActionMenuItem> items = Actions.BuildMenu(roller, ViewType.Journal);
+            string? picked = await Menu.ShowAsync(items, e.ClientX, e.ClientY, fromButton: true);
+            if (picked == null)
+                return;
+            ActionEffect? effect = await Actions.ExecuteAsync(roller, picked, ViewType.Journal);
+            // Предмет рекламы ролика мог смениться — список и отбор по предмету перечитать.
+            if (effect is not null and not ActionEffect.None)
+            {
+                await RollerEdited.InvokeAsync();
+                await RollersChanged.InvokeAsync();
+            }
+        }
+        catch (Exception ex)
+        {
+            await Failed.InvokeAsync(ErrorPresenter.Describe(ex));
+        }
+    }
+}

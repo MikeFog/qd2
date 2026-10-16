@@ -1,5 +1,5 @@
 ﻿/*
-    ДЕПЛОЙ: переводы веб-версии на язык «es» (2124 строк). docs/tasks/web-i18n.md, этап 5.
+    ДЕПЛОЙ: переводы веб-версии на язык «es» (2128 строк). docs/tasks/web-i18n.md, этап 5.
     СГЕНЕРИРОВАН из ArtvisDB/Scripts/i18n/es.tsv скриптом build-seed.py — руками не править.
 
     ПРЕДУСЛОВИЕ     накачен web-i18n-translation-deploy.sql (таблица iTranslation).
@@ -2137,7 +2137,6 @@ INSERT INTO #t ([source], [text]) VALUES
 (N'Показывать неделю или месяц', N'Mostrar la semana o el mes'),
 (N'Неделя', N'Semana'),
 (N'Месяц', N'Mes'),
-(N'Щелчок по ячейке — выпуски и окна модуля за день.', N'Clic en una celda: las emisiones y las ventanas del módulo en el día.'),
 (N'выпуски модуля в этот день', N'emisiones del módulo en este día'),
 (N'модуль в этот день не выходит целиком', N'el módulo no sale completo este día'),
 (N'Выпуски модуля', N'Emisiones del módulo'),
@@ -2146,7 +2145,12 @@ INSERT INTO #t ([source], [text]) VALUES
 (N'Окна модуля', N'Ventanas del módulo'),
 (N'Модули: {0}', N'Módulos: {0}'),
 (N'Модули: отмечено кампаний — {0}', N'Módulos: pautas marcadas — {0}'),
-(N'Остаток времени', N'Tiempo libre');
+(N'Остаток времени', N'Tiempo libre'),
+(N'Прайс-лист модуля «{0}» на {1:dd.MM.yyyy} изменился. Обновите страницу.', N'La lista de precios del módulo «{0}» para el {1:dd.MM.yyyy} cambió. Actualice la página.'),
+(N'Ролик «{0}» нельзя поставить в модуль: в модули ставятся только ролики типов «Реклама», «Новость» и «Программа».', N'El spot «{0}» no se puede colocar en un módulo: en los módulos solo se colocan spots de los tipos «Publicidad», «Noticia» y «Programa».'),
+(N'Модуль «{0}» ({1}) не выходит {2:dd.MM.yyyy} целиком, выпуск не создан.', N'El módulo «{0}» ({1}) no sale completo el {2:dd.MM.yyyy}; no se creó la emisión.'),
+(N'Ролик, который ставится в модули, — выбран в списке «Ролики»', N'Spot que se coloca en los módulos: el elegido en la lista «Spots»'),
+(N'Щелчок по ячейке — выпуски и окна модуля за день, в «Режиме добавления» — постановка модуля на весь день.', N'Clic en una celda: las emisiones y las ventanas del módulo en el día; en el «Modo de agregado», colocar el módulo para todo el día.');
 GO
 
 BEGIN TRANSACTION;

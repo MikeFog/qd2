@@ -40,7 +40,7 @@
     grid-column: 4;
 }
 
-/* ---------- Левая колонка: кампании, статистика, ролики ---------- */
+/* ---------- Левая колонка: кампании, статистика; ролики — RollerBrush.razor.css ---------- */
 
 .side {
     grid-column: 1;
@@ -69,11 +69,6 @@
     justify-content: space-between;
     gap: var(--s-2);
     font-weight: 600;
-}
-
-.side-actions {
-    display: inline-flex;
-    gap: var(--s-1);
 }
 
 .campaign-list {
@@ -130,70 +125,6 @@
     margin: 0;
     text-align: right;
     font-variant-numeric: tabular-nums;
-}
-
-.rollers {
-    flex: 1 1 auto;
-    min-height: 160px;
-}
-
-.roller-table {
-    flex: 1 1 auto;
-    min-height: 0;
-    overflow: auto;
-    font-size: 13px;
-}
-
-.roller-table tbody tr {
-    cursor: pointer;
-}
-
-/* Узкая колонка: плотнее, чем журнал, длинные имена и предметы рекламы переносятся. */
-.roller-table .table > thead > tr > th,
-.roller-table .table > tbody > tr > td {
-    padding: 4px var(--s-1);
-    white-space: normal;
-    overflow-wrap: break-word;
-}
-
-.roller-table tbody tr.row-active > td {
-    background: var(--c-accent-soft);
-}
-
-.col-num {
-    width: 32px;
-    text-align: right;
-}
-
-.col-menu {
-    width: 28px;
-}
-
-.row-btn {
-    visibility: hidden;
-    width: 24px;
-    height: 22px;
-    padding: 0;
-    border: none;
-    border-radius: 4px;
-    background: none;
-    color: var(--c-text-muted);
-}
-
-tbody tr:hover .row-btn,
-tbody tr:focus-within .row-btn {
-    visibility: visible;
-}
-
-.row-btn:hover {
-    background: var(--c-border);
-    color: var(--c-text);
-}
-
-@media (hover: none) {
-    .row-btn {
-        visibility: visible;
-    }
 }
 
 /* ---------- Центр: тулбар и сетка ---------- */

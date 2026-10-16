@@ -5,16 +5,19 @@
 @inject BusyService Busy
 
 @*
-    Вкладка «Модули» страницы акции (docs/tasks/web-action-forms.md, этап 6; подэтап 6.1 — только
-    просмотр): модульные кампании акции галочками (при входе отмечены все, «Редактировать» у кампании —
-    только она); в центре сетка «модуль × кампания» по дням недели или месяца, как десктопный
+    Вкладка «Модули» страницы акции (docs/tasks/web-action-forms.md, этап 6): модульные кампании акции
+    галочками (при входе отмечены все, «Редактировать» у кампании — только она), под ними «Ролики» (кисть,
+    RollerBrush); в центре сетка «модуль × кампания» по дням недели или месяца, как десктопный
     ComboModulePlacementForm с ComboModuleGrid при редактировании готовой акции (режим 2): в ячейке —
     остаток самого заполненного окна модуля за день. Щелчок по ячейке — панель справа: выпуски модуля
     строки за день, окна модуля (у поставленного — окна выхода) и «Все выходы в эфир» окна, как в
     панели окна линейной вкладки. Данные — ModuleDaySource. Раскладка — как у ActionWindowsTab.
 
-    Записи нет: кисть, «Показать модули…», выделение, операции над выпусками и «Отменить» — следующие
-    подэтапы.
+    Подэтап 6.2: в «Режиме добавления» щелчок ставит модуль строки на весь день — ролик кисти с позицией
+    «Позиционирования», как клик комбо (одна транзакция, один пересчёт акции); после записи период
+    перечитывается, страница — шапку (Changed). Запись на «Рекламных окнах» меняет те же окна — скрытая
+    вкладка перечитывает период при показе (PlacementVersion). Без права «Редактировать» — просмотр (В-7).
+    «Показать модули…», выделение, операции над выпусками и «Отменить» — следующие подэтапы.
 *@
 
 <div class="modules-tab">
@@ -61,6 +64,13 @@
                     </dl>
                 }
             </section>
+
+            @if (_scope != null)
+            {
+                <RollerBrush Value="_brush" Scope="_scope" NoRightText="@NoRightText" Run="Run" Exclusive="Exclusive"
+                             Changed="BrushChanged" RollerEdited="RollerEdited" Failed="ShowError"
+                             ReadOnly="ActionWorkspace.IsDeleted(Action)" RollersChanged="() => Changed.InvokeAsync()" />
+            }
         </aside>
         <PaneSplitter StorageKey="action-modules" />
 
@@ -82,10 +92,14 @@
             {
                 @* Тулбар — в строке периода сетки, подпись и легенда — тонкой строкой под ней: сетке нужна вся высота. *@
                 <div class="grid-box">
-                    <PlacementGrid Model="_week" Date="_date" SelectedKeys="SelectedKeys" CellTitle="CellTitle"
+                    <PlacementGrid Model="_week" Date="_date" SelectedKeys="SelectedKeys" CellTitle="CellTitle" Brush="_brushOn"
                                    DayTotalTitle="@(Tr.T("Выпусков модулей за день по отмеченным кампаниям"))"
                                    OnPrevious="Previous" OnNext="Next" OnJump="JumpTo" OnCellClick="ClickCell">
                         <LeadingTools>
+                            <button type="button" class="btn btn-sm @(_brushOn ? "btn-primary" : "btn-outline-secondary")" aria-pressed="@_brushOn"
+                                    disabled="@(!CanBrush)" title="@BrushHint" @onclick="ToggleBrush">
+                                <i class="bi bi-brush" aria-hidden="true"></i>@Tr.T("Режим добавления")
+                            </button>
                             <span class="btn-group period-switch" role="group" aria-label="@(Tr.T("Показывать неделю или месяц"))">
                                 <button type="button" class="btn btn-sm btn-outline-secondary @(_period == PlacementPeriod.Week ? "active" : null)"
                                         aria-pressed="@(_period == PlacementPeriod.Week)" title="@(Tr.T("Неделя"))" aria-label="@(Tr.T("Неделя"))"
@@ -98,20 +112,26 @@
                                     <i class="bi bi-calendar-month" aria-hidden="true"></i>
                                 </button>
                             </span>
+                            @if (_brush.Row is { } brush)
+                            {
+                                <span class="brush-roller" title="@(Tr.T("Ролик, который ставится в модули, — выбран в списке «Ролики»"))">
+                                    <b class="tabular">@brush[WindowsSource.RollerNumberColumn]</b> @WindowsSource.RollerName(brush) · <span class="tabular">@WindowsSource.RollerDuration(brush)</span>
+                                </span>
+                            }
                             <PlacementFilterButtons View="_view" @bind-AdvertTypeName="_advertTypeName" Changed="Reload" />
                         </LeadingTools>
                         <TrailingTools>
                             <span class="toggles">
                                 <PlacementFilterButtons View="_view" Unconfirmed="true" Changed="Reload" />
                                 <button type="button" class="btn btn-sm btn-outline-secondary" title="@(Tr.T("Обновить информацию"))" aria-label="@(Tr.T("Обновить информацию"))"
-                                        @onclick="Reload">
+                                        @onclick="RefreshAll">
                                     <i class="bi bi-arrow-clockwise" aria-hidden="true"></i>
                                 </button>
                             </span>
                         </TrailingTools>
                         <Caption>
                             <span class="mode-caption">@ModeCaption</span>
-                            <span class="text-muted">@Tr.T("Щелчок по ячейке — выпуски и окна модуля за день.")</span>
+                            <span class="text-muted">@Tr.T("Щелчок по ячейке — выпуски и окна модуля за день, в «Режиме добавления» — постановка модуля на весь день.")</span>
                         </Caption>
                         <Legend>
                             <span class="legend">
@@ -225,15 +245,32 @@
 
     [Parameter] public int RequestVersion { get; set; }
 
+    /// <summary>Размещение изменилось — страница перечитывает шапку и кампании.</summary>
+    [Parameter] public EventCallback Changed { get; set; }
+
+    /// <summary>Вкладка видна (скрытая живёт, но не перечитывает период на каждую запись другой вкладки).</summary>
+    [Parameter] public bool Active { get; set; }
+
+    /// <summary>
+    /// Версия размещения от страницы: растёт с каждой записью на другой вкладке размещения (окна модулей — те же окна, что
+    /// у линейных кампаний). Видимая вкладка с отставшей версией перечитывает период; своя запись версию не меняет.
+    /// </summary>
+    [Parameter] public int PlacementVersion { get; set; }
+
     private List<DataRow> _rows = new();
     private readonly List<int> _checked = new();
     private int _appliedRequest = -1;
     private bool _initialized;
     private string? _captionsKey;
+    private int _shownVersion;
 
     private ModuleDaySource.ModuleScope? _scope;
     private readonly WindowsSource.WeekView _view = new();
     private string? _advertTypeName;
+
+    // Кисть: ролики фирмы и ролик кисти (RollerBrush); позиция — «Позиционирование» отбора (_view.Position), как у окон.
+    private readonly RollerBrush.Model _brush = new();
+    private bool _brushOn;
 
     // Неделя или месяц — как переключатель десктопного комбо; помнится, пока жива вкладка (общего хранения
     // настроек в браузере у веба нет).
@@ -271,15 +308,29 @@
 
     private IReadOnlyCollection<int>? SelectedKeys => _cell == null ? null : new[] { _cell.Key };
 
+    private string NoRightText => _scope is { CampaignIds.Count: > 1 }
+        ? Tr.T("Нет права «Редактировать» на одну из отмеченных кампаний.")
+        : Tr.T("Нет права «Редактировать» на эту кампанию.");
+
+    // Удалённая акция: права набора считались при открытии, а удалить могли из меню шапки — запись закрыта сразу.
+    private bool CanBrush => _scope is { CanEdit: true } && !ActionWorkspace.IsDeleted(Action) && _brush.Row != null;
+
+    private string? BrushHint =>
+        ActionWorkspace.IsDeleted(Action) ? Tr.T("Рекламная акция удалена. Обновите страницу.")
+        : _scope is not { CanEdit: true } ? NoRightText
+        : _brush.Row == null ? Tr.T("Не выбран рекламный ролик.")
+        : null;
+
     // ---------- Кампании ----------
 
     protected override async Task OnParametersSetAsync()
     {
         _rows = Campaigns.Rows.Cast<DataRow>().Where(ModuleDaySource.IsModular).ToList();
 
-        // Тип оплаты и агентство кампании набор помнит с открытия — сменили на «Кампаниях», открыть заново.
+        // Тип оплаты и агентство кампании набор помнит с открытия — сменили на «Кампаниях», открыть заново; фирму акции
+        // сменили («Сменить фирму-заказчика» в меню шапки) — ролики кисти другие, тоже заново.
         string captions = string.Join("|", _rows.Select(r => WindowsSource.CampaignCaption(r, true)));
-        bool captionsChanged = _captionsKey != null && captions != _captionsKey;
+        bool captionsChanged = (_captionsKey != null && captions != _captionsKey) || (_scope != null && _scope.FirmId != Action.FirmID);
         _captionsKey = captions;
 
         // Удалённые кампании — из отметок долой (страница перечитала список после операции).
@@ -307,6 +358,13 @@
             if (captionsChanged)
                 _scope = null;
             await ApplyChecked();
+        }
+
+        // Размещение или ролики фирмы изменили на другой вкладке — период и ролики заново.
+        if (Active && PlacementVersion != _shownVersion)
+        {
+            _shownVersion = PlacementVersion;
+            await RefreshAll();
         }
     }
 
@@ -340,8 +398,12 @@
         if (IsOpened())
             return;
 
+        // Открывается заново — читается свежим, отставшая версия размещения не нужна.
+        _shownVersion = PlacementVersion;
         _scope = null;
         _week = null;
+        _brush.Clear();
+        _brushOn = false;
         ClosePanel();
         if (_checked.Count == 0)
             return;
@@ -361,6 +423,7 @@
                 _date = scope.FirstIssueDate ?? DateTime.Today;
                 _dateChosen = true;
             }
+            LoadRollersCore();
             ReloadCore();
         });
         if (_scope == null && _error == null)
@@ -393,6 +456,13 @@
     }
 
     private Task Reload() => _scope == null ? Task.CompletedTask : Run(ReloadCore);
+
+    /// <summary>«Обновить информацию»: ролики кисти и период.</summary>
+    private Task RefreshAll() => _scope == null ? Task.CompletedTask : Run(() =>
+    {
+        LoadRollersCore();
+        ReloadCore();
+    });
 
     private Task Previous()
     {
@@ -429,13 +499,26 @@
         + (cell.Has(PlacementFlags.Mine) ? " · " + Tr.T("выпуски модуля в этот день") : "")
         + (cell.Has(PlacementFlags.Match) ? " · " + Tr.T("подходит под отбор") : "");
 
-    private Task ClickCell(PlacementGrid.CellEvent e)
+    private async Task ClickCell(PlacementGrid.CellEvent e)
     {
-        if (_scope == null || (_details != null && _cell?.Key == e.Cell.Key))
-            return Task.CompletedTask;
+        if (_scope == null)
+            return;
+
+        if (_brushOn)
+        {
+            // Второй щелчок двойного (detail > 1) второй выпуск не ставит: Blazor выполняет события по очереди, и без
+            // этой проверки он пришёл бы уже после первой постановки. Осознанный повторный щелчок по той же ячейке —
+            // отдельный щелчок, он ставит ещё один выпуск модуля, как в десктопе (В-18).
+            if (e.Mouse.Detail <= 1)
+                await PlaceOne(e.Cell);
+            return;
+        }
+
+        if (_details != null && _cell?.Key == e.Cell.Key)
+            return;
         _issuesWindow = null;
         _windowIssues = null;
-        return Run(() => ShowCore(e.Cell));
+        await Run(() => ShowCore(e.Cell));
     }
 
     /// <summary>
@@ -477,6 +560,82 @@
             _issuesWindow = window;
             _windowIssues = issues;
         });
+    }
+
+    // ---------- Режим добавления ----------
+
+    private void ToggleBrush() => _brushOn = !_brushOn;
+
+    /// <summary>
+    /// Клик «Режима добавления»: модуль строки на весь день — ролик кисти с позицией «Позиционирования», одной транзакцией
+    /// с пересчётом акции (ModuleDaySource.PlaceOne). Затем период перечитывается целиком — остатки окон меняются и у
+    /// соседних модулей с общими тарифами, отметки и итог дня, — и панель места, если она открыта. Отказ — над сеткой.
+    /// </summary>
+    private async Task PlaceOne(PlacementCell cell)
+    {
+        if (!CanBrush || _scope == null)
+            return;
+
+        bool placed = false;
+        ModuleDaySource.ModuleScope scope = _scope;
+        int rollerId = _brush.RollerId!.Value;
+        int position = _view.Position;
+        await Run(() =>
+        {
+            // «Поставлено» — сразу после коммита, до перечитывания: сбой чтения не должен скрыть запись от шапки страницы.
+            ModuleDaySource.PlaceOne(scope, cell, rollerId, position);
+            placed = true;
+            ReloadCore();
+        });
+        if (placed)
+            await Changed.InvokeAsync();
+    }
+
+    // ---------- Ролики ----------
+
+    /// <summary>Ролики кисти для открытого набора кампаний.</summary>
+    private void LoadRollersCore()
+    {
+        _brush.Load(_scope!);
+        if (!_brush.HasRollers)
+            _brushOn = false;
+    }
+
+    /// <summary>Кисть выбрала другой ролик или добавила пустышку — тулбар показывает ролик кисти и «Режим добавления».</summary>
+    private void BrushChanged()
+    {
+        if (!_brush.HasRollers)
+            _brushOn = false;
+    }
+
+    /// <summary>Ролик изменили из меню «⋯» кисти: предмет рекламы мог смениться — список и отбор по предмету перечитать.</summary>
+    private Task RollerEdited() => _scope == null ? Task.CompletedTask : Run(() =>
+    {
+        LoadRollersCore();
+        ReloadCore();
+    });
+
+    private void ShowError(string message) => _error = message;
+
+    private bool _operating;
+
+    /// <summary>
+    /// Операция с вопросом пользователю (пустышка) — одна за раз: повторный щелчок, пришедший, пока открыт вопрос, иначе
+    /// открыл бы второй такой же вопрос.
+    /// </summary>
+    private async Task Exclusive(Func<Task> operation)
+    {
+        if (_operating)
+            return;
+        _operating = true;
+        try
+        {
+            await operation();
+        }
+        finally
+        {
+            _operating = false;
+        }
     }
 
     /// <summary>Время выхода окна; окно, перенесённое трафиком на другой день, — с датой.</summary>
