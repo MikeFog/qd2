@@ -3,6 +3,9 @@
 @using FogSoft.WinForm.Classes
 @using Merlin.Classes
 @inject BusyService Busy
+@inject DialogService Dialogs
+@inject TableDialog Tables
+@inject ModuleRowsMemory Memory
 
 @*
     Вкладка «Модули» страницы акции (docs/tasks/web-action-forms.md, этап 6): модульные кампании акции
@@ -17,7 +20,13 @@
     «Позиционирования», как клик комбо (одна транзакция, один пересчёт акции); после записи период
     перечитывается, страница — шапку (Changed). Запись на «Рекламных окнах» меняет те же окна — скрытая
     вкладка перечитывает период при показе (PlacementVersion). Без права «Редактировать» — просмотр (В-7).
-    «Показать модули…», выделение, операции над выпусками и «Отменить» — следующие подэтапы.
+
+    Подэтап 6.3: «Показать модули» (ModuleRowsForm) добавляет строки — модули комбо-модуля, радиостанции
+    или отмеченной кампании; строки помнит сеанс (ModuleRowsMemory, переход со страницы и обратно их не
+    теряет). Строке без кампании модульную кампанию создаёт (или находит) первая постановка — кампания
+    появляется в списке слева отмеченной, строка остаётся на месте. Вкладка есть и у акции без модульных
+    кампаний, если можно добавлять кампании (В-23). Выделение, операции над выпусками и «Отменить» —
+    следующие подэтапы.
 *@
 
 <div class="modules-tab">
@@ -33,6 +42,10 @@
         <aside class="side">
             <section class="side-block">
                 <div class="side-title">@Tr.T("Рекламные кампании")</div>
+                @if (_rows.Count == 0)
+                {
+                    <div class="text-muted no-campaigns">@Tr.T("В акции нет модульных рекламных кампаний.")</div>
+                }
                 <ul class="campaign-list">
                     @foreach (DataRow row in _rows)
                     {
@@ -75,13 +88,16 @@
         <PaneSplitter StorageKey="action-modules" />
 
         <section class="center">
-            @if (_checked.Count == 0)
+            @if (!ShowsGrid)
             {
                 <div class="state">
-                    <div class="state-title">@Tr.T("Отметьте рекламную кампанию слева")</div>
+                    <div class="state-title">@(_rows.Count > 0 ? Tr.T("Отметьте рекламную кампанию слева") : Tr.T("Модульных рекламных кампаний в акции нет"))</div>
                     @(_rows.Count > 0
                         ? Tr.T("Строки — модули отмеченных кампаний, колонки — дни недели или месяца, в ячейке — остаток самого заполненного окна модуля за день.")
-                        : Tr.T("В акции нет модульных рекламных кампаний."))
+                        : Tr.T("Добавьте строки кнопкой «Показать модули» — модули комбо-модуля или радиостанции: рекламная кампания на радиостанции будет создана при первой постановке модуля."))
+                    <div class="state-actions">
+                        @ShowModulesButton
+                    </div>
                 </div>
             }
             else if (_scope == null)
@@ -100,6 +116,7 @@
                                     disabled="@(!CanBrush)" title="@BrushHint" @onclick="ToggleBrush">
                                 <i class="bi bi-brush" aria-hidden="true"></i>@Tr.T("Режим добавления")
                             </button>
+                            @ShowModulesButton
                             <span class="btn-group period-switch" role="group" aria-label="@(Tr.T("Показывать неделю или месяц"))">
                                 <button type="button" class="btn btn-sm btn-outline-secondary @(_period == PlacementPeriod.Week ? "active" : null)"
                                         aria-pressed="@(_period == PlacementPeriod.Week)" title="@(Tr.T("Неделя"))" aria-label="@(Tr.T("Неделя"))"
@@ -240,6 +257,12 @@
     /// <summary>Кампании акции (Campaigns) — страница перечитывает их после каждой операции.</summary>
     [Parameter, EditorRequired] public DataTable Campaigns { get; set; } = default!;
 
+    /// <summary>
+    /// Можно добавлять модульные кампании в акцию (ModuleDaySource.CanAddModuleCampaigns) — «Показать модули» с источниками
+    /// «Комбо-модуль» и «Модули радиостанции»; страница считает его при каждом чтении акции.
+    /// </summary>
+    [Parameter] public bool CanAddCampaigns { get; set; }
+
     /// <summary>Отметить только эту кампанию (вход «Редактировать» у кампании); применяется при смене <see cref="RequestVersion"/>.</summary>
     [Parameter] public int? RequestedCampaignId { get; set; }
 
@@ -261,7 +284,8 @@
     private readonly List<int> _checked = new();
     private int _appliedRequest = -1;
     private bool _initialized;
-    private string? _captionsKey;
+    private string? _addedKey;
+    private Dictionary<int, string>? _captions;
     private int _shownVersion;
 
     private ModuleDaySource.ModuleScope? _scope;
@@ -304,12 +328,14 @@
     private string ModeCaption =>
         _scope is { CampaignIds.Count: 1 } && RowOf(_scope.CampaignIds[0]) is { } row
             ? Tr.Format("Модули: {0}", CaptionOf(row))
+            : _scope is { CampaignIds.Count: 0 } ? Tr.T("Модули: строки без рекламной кампании")
             : Tr.Format("Модули: отмечено кампаний — {0}", _scope?.CampaignIds.Count ?? 0);
 
     private IReadOnlyCollection<int>? SelectedKeys => _cell == null ? null : new[] { _cell.Key };
 
-    private string NoRightText => _scope is { CampaignIds.Count: > 1 }
-        ? Tr.T("Нет права «Редактировать» на одну из отмеченных кампаний.")
+    private string NoRightText =>
+        _scope is { CampaignIds.Count: 0 } ? Tr.T("Нет права добавлять рекламные кампании в эту акцию.")
+        : _scope is { CampaignIds.Count: > 1 } ? Tr.T("Нет права «Редактировать» на одну из отмеченных кампаний.")
         : Tr.T("Нет права «Редактировать» на эту кампанию.");
 
     // Удалённая акция: права набора считались при открытии, а удалить могли из меню шапки — запись закрыта сразу.
@@ -328,14 +354,36 @@
         _rows = Campaigns.Rows.Cast<DataRow>().Where(ModuleDaySource.IsModular).ToList();
 
         // Тип оплаты и агентство кампании набор помнит с открытия — сменили на «Кампаниях», открыть заново; фирму акции
-        // сменили («Сменить фирму-заказчика» в меню шапки) — ролики кисти другие, тоже заново.
-        string captions = string.Join("|", _rows.Select(r => WindowsSource.CampaignCaption(r, true)));
-        bool captionsChanged = (_captionsKey != null && captions != _captionsKey) || (_scope != null && _scope.FirmId != Action.FirmID);
-        _captionsKey = captions;
+        // сменили («Сменить фирму-заказчика» в меню шапки) — ролики кисти другие, тоже заново. Новая кампания (создала
+        // постановка в добавленную строку) набор не пересоздаёт: он уже её знает, номера строк остаются.
+        Dictionary<int, string> captions = _rows.ToDictionary(WindowsSource.CampaignIdOf, r => WindowsSource.CampaignCaption(r, true));
+        bool captionsChanged = (_captions != null && captions.Any(c => _captions.TryGetValue(c.Key, out string? old) && old != c.Value))
+            || (_scope != null && _scope.FirmId != Action.FirmID);
 
-        // Удалённые кампании — из отметок долой (страница перечитала список после операции).
+        // Удалённые кампании — из отметок долой (страница перечитала список после операции). Кампанию, которой в прежнем
+        // списке не было, не трогаем: её только что создала постановка, а страница рисуется ещё со старым списком
+        // (перерисовка до перечитывания) — снятая отметка пересоздала бы набор и сбросила номера строк.
         int before = _checked.Count;
-        _checked.RemoveAll(id => RowOf(id) == null);
+        _checked.RemoveAll(id => !captions.ContainsKey(id) && (_captions == null || _captions.ContainsKey(id)));
+
+        // Модульная кампания появилась не постановкой этой вкладки («Добавить рекламные кампании», другой пользователь) и
+        // совпадает со строкой «Показать модули» без кампании — отметить, иначе строка молча пропала бы вместе со строками
+        // неотмеченной кампании (AddedRows).
+        if (_captions != null)
+            foreach (DataRow campaign in _rows)
+            {
+                int id = WindowsSource.CampaignIdOf(campaign);
+                if (!_captions.ContainsKey(id) && !_checked.Contains(id)
+                    && Memory.Rows(Action.ActionId).Any(r => r.CampaignId == null && IsCampaignOf(campaign, r)))
+                    _checked.Add(id);
+            }
+        _captions = captions;
+
+        // Видимые добавленные строки изменились при закрытом наборе (например, удалили кампанию, снятую с отметки, — её
+        // строки снова ожидающие): набор открыть, иначе вкладка осталась бы на «Загрузка…».
+        string addedKey = string.Join("|", AddedRows.Select(r => r.Key + ":" + r.CampaignId));
+        bool addedChanged = _addedKey != null && addedKey != _addedKey;
+        _addedKey = addedKey;
 
         if (RequestVersion != _appliedRequest)
         {
@@ -353,7 +401,7 @@
             _initialized = true;
             await ApplyChecked();
         }
-        else if (_checked.Count != before || captionsChanged)
+        else if (_checked.Count != before || captionsChanged || (addedChanged && _scope == null))
         {
             if (captionsChanged)
                 _scope = null;
@@ -392,7 +440,32 @@
     private bool IsOpened() =>
         _scope != null && _checked.Count == _scope.CampaignIds.Count && !_checked.Except(_scope.CampaignIds).Any();
 
-    /// <summary>Открыть отмеченные кампании (если ещё не открыты) и прочитать период; ничего не отмечено — сетки нет.</summary>
+    /// <summary>
+    /// Строки «Показать модули» этой акции за сеанс, кроме строк неотмеченных кампаний. Строка без номера кампании, чьи
+    /// станция, тип оплаты и агентство — как у модульной кампании акции, — строка этой кампании (так её покажет и набор):
+    /// снятая отметка прячет её вместе с остальными строками кампании, а после удаления кампании строка снова ожидающая.
+    /// </summary>
+    private IReadOnlyList<ModuleDaySource.AddedRow> AddedRows =>
+        Memory.Rows(Action.ActionId)
+            .Where(r => r.CampaignId is int id ? _checked.Contains(id)
+                : !_rows.Any(c => !_checked.Contains(WindowsSource.CampaignIdOf(c)) && IsCampaignOf(c, r)))
+            .ToList();
+
+    private static bool IsCampaignOf(DataRow campaign, ModuleDaySource.AddedRow row) =>
+        ParseHelper.GetInt32FromObject(campaign[ActionWorkspace.CampaignColumns.MassmediaId], 0) == row.MassmediaId
+        && ParseHelper.GetInt32FromObject(campaign[PaymentTypeIdColumn], 0) == row.PaymentTypeId
+        && ParseHelper.GetInt32FromObject(campaign[AgencyIdColumn], 0) == row.AgencyId;
+
+    private const string PaymentTypeIdColumn = "paymentTypeID";
+    private const string AgencyIdColumn = "agencyID";
+
+    /// <summary>Сетка есть, если отмечена кампания или добавлены строки (В-23: у акции без модульных кампаний — только они).</summary>
+    private bool ShowsGrid => _checked.Count > 0 || AddedRows.Count > 0;
+
+    /// <summary>
+    /// Открыть отмеченные кампании (если ещё не открыты) и прочитать период; ничего не отмечено и строк не добавляли —
+    /// сетки нет.
+    /// </summary>
     private async Task ApplyChecked()
     {
         if (IsOpened())
@@ -405,7 +478,7 @@
         _brush.Clear();
         _brushOn = false;
         ClosePanel();
-        if (_checked.Count == 0)
+        if (!ShowsGrid)
             return;
 
         // Порядок кампаний — порядок списка, а не щелчков.
@@ -413,7 +486,8 @@
         await Run(() =>
         {
             ModuleDaySource.ModuleScope scope = ModuleDaySource.Open(Action, ids);
-            if (scope.CampaignIds.Count == 0)
+            // Отмеченных кампаний не нашлось — их удалили; без отметок набор пустой и показывает только добавленные строки.
+            if (ids.Count > 0 && scope.CampaignIds.Count == 0)
                 return;
             _scope = scope;
             // Первое открытие — с недели (месяца) первого выпуска, у кампаний без выпусков — с сегодняшней; дальше
@@ -448,7 +522,7 @@
     /// <summary>Период заново (период, отбор, «Учитывать макеты», «Обновить»); место панели, если оно осталось в периоде, — тоже.</summary>
     private void ReloadCore()
     {
-        _week = ModuleDaySource.LoadPeriod(_scope!, _date, _period, _view);
+        _week = ModuleDaySource.LoadPeriod(_scope!, _date, _period, _view, AddedRows);
         if (_cell != null && _week.Find(_cell.Key) is { } fresh)
             ShowCore(fresh);
         else
@@ -583,12 +657,125 @@
         await Run(() =>
         {
             // «Поставлено» — сразу после коммита, до перечитывания: сбой чтения не должен скрыть запись от шапки страницы.
-            ModuleDaySource.PlaceOne(scope, cell, rollerId, position);
+            ModuleDaySource.PlacedModuleIssue issue = ModuleDaySource.PlaceOne(scope, cell, rollerId, position);
             placed = true;
+            // Добавленная строка без кампании: кампанию создала (или нашла неотмеченную) постановка — набор её уже знает,
+            // отметка слева — тоже, иначе следующее открытие набора сбросило бы номера строк. Созданную — запомнить (В-21).
+            if (!_checked.Contains(issue.CampaignId))
+                _checked.Add(issue.CampaignId);
+            if (issue.CampaignCreated)
+                Memory.CampaignCreated(Action.ActionId, issue.CampaignId);
             ReloadCore();
         });
         if (placed)
             await Changed.InvokeAsync();
+    }
+
+    // ---------- «Показать модули» ----------
+
+    /// <summary>Источники «Комбо-модуль» и «Модули радиостанции»: право добавлять модульные кампании.</summary>
+    private bool CanAddRows => CanAddCampaigns && !ActionWorkspace.IsDeleted(Action);
+
+    /// <summary>Источник «Модули рекламной кампании»: отмеченные кампании и право «Редактировать» на них.</summary>
+    private bool CanCampaignRows => _scope is { CanEdit: true, CampaignIds.Count: > 0 } && !ActionWorkspace.IsDeleted(Action);
+
+    private string ShowModulesHint =>
+        ActionWorkspace.IsDeleted(Action) ? Tr.T("Рекламная акция удалена. Обновите страницу.")
+        : CanAddRows || CanCampaignRows ? Tr.T("Добавить в сетку модули комбо-модуля, радиостанции или отмеченной рекламной кампании")
+        : Tr.T("Нет права добавлять рекламные кампании в эту акцию.");
+
+    private RenderFragment ShowModulesButton =>
+        @<button type="button" class="btn btn-sm btn-outline-secondary" disabled="@(!(CanAddRows || CanCampaignRows))" title="@ShowModulesHint"
+                 @onclick="() => Exclusive(ShowModules)">
+            <i class="bi bi-plus-square" aria-hidden="true"></i>@Tr.T("Показать модули")
+        </button>;
+
+    /// <summary>
+    /// «Показать модули»: окно выбора строк (ModuleRowsForm), строки — в память сеанса и в сетку сразу (ожидающие — как
+    /// обычные, с остатками). Модули радиостанций без агентства не добавляются — итог таблицей, как у «Добавить рекламные
+    /// кампании». Модули берутся на начало показанного периода.
+    /// </summary>
+    private async Task ShowModules()
+    {
+        if (!(CanAddRows || CanCampaignRows))
+            return;
+
+        try
+        {
+            ModuleDaySource.ModuleScope? scope = _scope;
+            DateTime date = _week?.StartDate ?? _date;
+            List<KeyValuePair<int, string>> campaigns = CanCampaignRows
+                ? scope!.CampaignIds.Select(id => new KeyValuePair<int, string>(id, RowOf(id) is { } row ? CaptionOf(row) : id.ToString())).ToList()
+                : new List<KeyValuePair<int, string>>();
+            string campaignReason = _rows.Count == 0 ? Tr.T("В акции нет модульных рекламных кампаний.")
+                : scope is { CanEdit: false, CampaignIds.Count: > 0 } ? NoRightText
+                : Tr.T("Отметьте модульную рекламную кампанию слева.");
+            bool canAdd = CanAddRows;
+            ModuleRowsForm.Model model = await Busy.RunAsync(() =>
+            {
+                ModuleRowsForm.Model m = new ModuleRowsForm.Model
+                {
+                    Scope = scope!,
+                    Date = date,
+                    CanAdd = canAdd,
+                    Campaigns = campaigns,
+                    CampaignReason = campaignReason,
+                    PaymentTypes = canAdd ? ActionWorkspace.LoadNewCampaignChoices().PaymentTypes : new DataTable(),
+                };
+                // Одна отмеченная кампания — по В-24 второй модуль ставят в неё: источник выбран сразу.
+                if (campaigns.Count == 1)
+                {
+                    m.Source = ModuleRowsForm.Sources.Campaign;
+                    m.CampaignId = campaigns[0].Key;
+                    m.CampaignRows = ModuleDaySource.CampaignModules(scope!, campaigns[0].Key, date);
+                }
+                return m;
+            });
+
+            while (true)
+            {
+                if (await Dialogs.ShowAsync(Tr.T("Показать модули"), builder =>
+                    {
+                        builder.OpenComponent<ModuleRowsForm>(0);
+                        builder.AddComponentParameter(1, nameof(ModuleRowsForm.Value), model);
+                        builder.CloseComponent();
+                    }, okText: Tr.T("Показать"), wide: true) != DialogOutcome.Ok)
+                    return;
+
+                model.Message = model.Validate();
+                if (model.Message == null)
+                    break;
+            }
+
+            List<ModuleDaySource.AddedRow> rows = model.Build(out List<string> skipped);
+            Memory.Add(Action.ActionId, rows);
+            // Строки кампании, снятой с отметки, иначе остались бы скрыты (AddedRows): «показать» — отметить её.
+            foreach (DataRow campaign in _rows)
+            {
+                int id = WindowsSource.CampaignIdOf(campaign);
+                if (!_checked.Contains(id) && rows.Any(r => r.CampaignId == null && IsCampaignOf(campaign, r)))
+                    _checked.Add(id);
+            }
+            if (IsOpened())
+                await Reload();
+            else
+                await ApplyChecked();
+
+            // Итог — только при пропущенных станциях (остальное видно в сетке): таблица, в заголовке строка-счётчик
+            // (docs/UI_RULES.md, п. 2.2).
+            if (skipped.Count > 0)
+            {
+                DataTable errors = ErrorManager.CreateErrorsTable();
+                foreach (string station in skipped)
+                    ErrorManager.AddErrorRow(errors, DateTime.Now, Tr.Format("{0} - нет агентства", station));
+                await Tables.ShowAsync(Tr.Format("Показано модулей: {0}, не показано радиостанций: {1}", rows.Count, skipped.Count),
+                    errors, new Entity.Attribute("description", "Ошибка", "nvarchar")); // i18n-ok: Alias переводится при показе (ObjectList)
+            }
+        }
+        catch (Exception ex)
+        {
+            _error = ErrorPresenter.Describe(ex);
+        }
     }
 
     // ---------- Ролики ----------

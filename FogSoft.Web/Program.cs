@@ -60,6 +60,8 @@ builder.Services.AddScoped<MenuAccess>();
 builder.Services.AddScoped<FilterMemory>();
 // Последнее размещение вкладки «Рекламные окна» — для «Отменить последнее», см. PlacementUndo.
 builder.Services.AddScoped<PlacementUndo>();
+// Строки «Показать модули» вкладки «Модули» и созданные ею кампании — на время сеанса, см. ModuleRowsMemory.
+builder.Services.AddScoped<ModuleRowsMemory>();
 
 var app = builder.Build();
 

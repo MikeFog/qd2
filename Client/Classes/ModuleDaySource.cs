@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Data;
+using System.Data.SqlClient;
 using System.Globalization;
 using System.Linq;
 using FogSoft.WinForm;
@@ -22,6 +23,10 @@ namespace Merlin.Classes
 	/// Запись (подэтап 6.2) — клик по месту, как клик комбо: IsModuleExist, ModuleIssueIUD AddItem и ActionRecalculate одной
 	/// транзакцией. Права проверяет фасад перед записью: процедуры о «своей / чужой» акции не знают.
 	///
+	/// «Показать модули…» (подэтап 6.3) — добавленные строки (<see cref="AddedRow"/>): модули комбо-модуля, станции или
+	/// своей кампании. Строке без кампании модульная кампания создаётся при первой постановке в той же транзакции — как
+	/// режимы 1/3 десктопного комбо (ComboModulePlacementForm.EnsureCampaign). Помнит строки экран (на сеанс), не ядро.
+	///
 	/// Только веб: в Client.csproj не входит.
 	/// </summary>
 	public static class ModuleDaySource
@@ -40,14 +45,18 @@ namespace Merlin.Classes
 			/// <summary>Радиостанция с группой — колонка «Радиостанция».</summary>
 			internal string Station { get; set; }
 
+			internal int PaymentTypeId { get; set; }
 			internal string PaymentTypeName { get; set; }
+			internal int AgencyId { get; set; }
 			internal string AgencyName { get; set; }
 		}
 
 		/// <summary>
 		/// Отмеченные модульные кампании акции, с которыми работает вкладка. Номер строки (модуль, кампания) выдаётся один
 		/// раз за жизнь объекта и не меняется — ключ места = день × 100 000 + номер строки (ключ «день × moduleID» дал бы
-		/// одно место двум кампаниям одного модуля).
+		/// одно место двум кампаниям одного модуля). Добавленная строка без кампании получает номер по своему ключу
+		/// (<see cref="AddedRow.Key"/>), а когда кампанию создаст или найдёт постановка, строка кампании берёт этот же номер —
+		/// место не сдвигается.
 		/// </summary>
 		public sealed class ModuleScope : WindowsSource.IBrushScope
 		{
@@ -56,31 +65,72 @@ namespace Merlin.Classes
 			public int ActionId { get; internal set; }
 			public int FirmId { get; internal set; }
 
-			/// <summary>Можно ли менять размещение: «Редактировать» у акции и у модульных кампаний (на момент открытия).</summary>
+			/// <summary>
+			/// Можно ли менять размещение: «Редактировать» у акции и у модульных кампаний (на момент открытия); у набора без
+			/// кампаний — можно ли добавлять модульные кампании (<see cref="CanAddCampaigns"/>): ставить есть куда только в
+			/// добавленные строки.
+			/// </summary>
 			public bool CanEdit { get; internal set; }
+
+			/// <summary>Можно ли создавать модульные кампании постановкой в добавленную строку (на момент открытия).</summary>
+			public bool CanAddCampaigns { get; internal set; }
 
 			public DataTable Rollers { get; set; }
 
-			/// <summary>Отмеченные модульные кампании — в порядке, в котором их передал экран.</summary>
-			public IReadOnlyList<int> CampaignIds { get; internal set; }
+			private readonly List<int> _campaignIds = new List<int>();
+			private readonly Dictionary<int, CampaignInfo> _campaigns = new Dictionary<int, CampaignInfo>();
+
+			/// <summary>
+			/// Отмеченные модульные кампании — в порядке, в котором их передал экран; кампания, которую создала или нашла
+			/// постановка в добавленную строку, дописывается в конец (экрану — отметить её).
+			/// </summary>
+			public IReadOnlyList<int> CampaignIds => _campaignIds;
 
 			/// <summary>День самого раннего выпуска модуля отмеченных кампаний; null — выпусков нет. С него открывается сетка.</summary>
 			public DateTime? FirstIssueDate { get; internal set; }
 
-			internal IReadOnlyDictionary<int, CampaignInfo> Campaigns { get; set; }
+			internal IReadOnlyDictionary<int, CampaignInfo> Campaigns => _campaigns;
+
+			internal void AddCampaign(int campaignId, CampaignInfo campaign)
+			{
+				if (_campaigns.ContainsKey(campaignId))
+					return;
+				_campaignIds.Add(campaignId);
+				_campaigns.Add(campaignId, campaign);
+			}
 
 			private readonly Dictionary<(int ModuleId, int CampaignId), int> _rowNumbers = new Dictionary<(int, int), int>();
+			private readonly Dictionary<(int ModuleId, int MassmediaId, int PaymentTypeId, int AgencyId), int> _pendingNumbers =
+				new Dictionary<(int, int, int, int), int>();
+			private int _lastNumber;
 
 			/// <summary>Строки (модуль, кампания), которые набор уже показывал, — им выдан номер.</summary>
 			internal IEnumerable<(int ModuleId, int CampaignId)> ShownRows => _rowNumbers.Keys;
 
-			/// <summary>Номер строки (модуль, кампания): выдан раз — тот же при любом периоде и фильтре.</summary>
+			/// <summary>
+			/// Номер строки (модуль, кампания): выдан раз — тот же при любом периоде и фильтре. Строка ожидающей кампании,
+			/// ставшая строкой кампании, сохраняет свой номер.
+			/// </summary>
 			internal int RowNumber(int moduleId, int campaignId)
 			{
-				if (!_rowNumbers.TryGetValue((moduleId, campaignId), out int number))
+				if (_rowNumbers.TryGetValue((moduleId, campaignId), out int number))
+					return number;
+				if (_campaigns.TryGetValue(campaignId, out CampaignInfo c)
+					&& _pendingNumbers.TryGetValue((moduleId, c.MassmediaId, c.PaymentTypeId, c.AgencyId), out number))
+					_pendingNumbers.Remove((moduleId, c.MassmediaId, c.PaymentTypeId, c.AgencyId));
+				else
+					number = ++_lastNumber;
+				_rowNumbers.Add((moduleId, campaignId), number);
+				return number;
+			}
+
+			/// <summary>Номер добавленной строки без кампании — по её ключу, выдан раз.</summary>
+			internal int PendingRowNumber((int ModuleId, int MassmediaId, int PaymentTypeId, int AgencyId) key)
+			{
+				if (!_pendingNumbers.TryGetValue(key, out int number))
 				{
-					number = _rowNumbers.Count + 1;
-					_rowNumbers.Add((moduleId, campaignId), number);
+					number = ++_lastNumber;
+					_pendingNumbers.Add(key, number);
 				}
 				return number;
 			}
@@ -88,7 +138,8 @@ namespace Merlin.Classes
 
 		/// <summary>
 		/// Отмеченные кампании: из <paramref name="campaignIds"/> остаются только модульные кампании этой акции (чужие,
-		/// не модульные и удалённые отбрасываются, повторы — тоже). Пустой набор — вкладке показывать нечего.
+		/// не модульные и удалённые отбрасываются, повторы — тоже). Пустой набор — строк нет, кроме добавленных
+		/// «Показать модули…» (В-23: вкладка есть и у акции без модульных кампаний).
 		/// </summary>
 		public static ModuleScope Open(ActionOnMassmedia action, IEnumerable<int> campaignIds)
 		{
@@ -97,42 +148,50 @@ namespace Merlin.Classes
 				if (IsModular(row))
 					rows[WindowsSource.CampaignIdOf(row)] = row;
 
-			List<int> ids = new List<int>();
-			Dictionary<int, CampaignInfo> campaigns = new Dictionary<int, CampaignInfo>();
+			ModuleScope scope = new ModuleScope
+			{
+				ActionId = action.ActionId,
+				FirmId = action.FirmID,
+				CanAddCampaigns = CanAddModuleCampaigns(action),
+			};
 			foreach (int id in campaignIds)
-				if (rows.TryGetValue(id, out DataRow row) && !campaigns.ContainsKey(id))
-				{
-					ids.Add(id);
-					campaigns[id] = new CampaignInfo
+				if (rows.TryGetValue(id, out DataRow row))
+					scope.AddCampaign(id, new CampaignInfo
 					{
 						MassmediaId = ParseHelper.GetInt32FromObject(row[Campaign.ParamNames.MassmediaId], 0),
 						Station = StationOf(row),
+						PaymentTypeId = ParseHelper.GetInt32FromObject(row[Campaign.ParamNames.PaymentTypeID], 0),
 						PaymentTypeName = Convert.ToString(row[PaymentTypeNameColumn]),
+						AgencyId = ParseHelper.GetInt32FromObject(row[Campaign.ParamNames.AgencyID], 0),
 						AgencyName = Convert.ToString(row[AgencyNameColumn]).Trim(),
-					};
-				}
+					});
 
 			// Не Campaign.startDate: он считается по строкам Issue (окнам), а день модуля — ModuleIssue.issueDate.
 			DateTime? first = null;
-			if (ids.Count > 0)
+			if (scope.CampaignIds.Count > 0)
 				foreach (DataRow issue in ComboModule.LoadIssues(action.ActionId).Rows)
-					if (campaigns.ContainsKey(IssueCampaignId(issue)))
+					if (scope.Campaigns.ContainsKey(IssueCampaignId(issue)))
 					{
 						DateTime day = IssueDay(issue);
 						if (first == null || day < first)
 							first = day;
 					}
+			scope.FirstIssueDate = first;
 
-			return new ModuleScope
-			{
-				ActionId = action.ActionId,
-				FirmId = action.FirmID,
-				CanEdit = ids.Count > 0 && ActionWorkspace.CanEdit(action) && CampaignRight(ids[0]),
-				CampaignIds = ids,
-				FirstIssueDate = first,
-				Campaigns = campaigns,
-			};
+			scope.CanEdit = scope.CampaignIds.Count > 0
+				? ActionWorkspace.CanEdit(action) && CampaignRight(scope.CampaignIds[0])
+				: scope.CanAddCampaigns;
+			return scope;
 		}
+
+		/// <summary>
+		/// Можно ли создавать модульные кампании в акции (постановкой в добавленную строку): право добавлять кампании, как
+		/// у «Добавить кампании» (ActionWorkspace.CanAddCampaigns), и «Редактировать» модульной кампании (сущность 92) — то
+		/// же, что CampaignRight у существующей: правило своих / чужих акций уже проверено правом на акцию.
+		/// </summary>
+		public static bool CanAddModuleCampaigns(ActionOnMassmedia action) =>
+			ActionWorkspace.CanAddCampaigns(action)
+			&& EntityManager.GetEntity((int)Entities.ModuleCampaign).IsActionEnabled(Constants.EntityActions.Edit, ViewType.Journal);
 
 		/// <summary>
 		/// «Редактировать» модульной кампании (сущность 92), как у RangeSource.CampaignRight: правило своих / чужих акций
@@ -149,10 +208,13 @@ namespace Merlin.Classes
 		private const string AgencyNameColumn = "agencyName";
 
 		/// <summary>Радиостанция с группой без хвостовых пробелов (в базе бывают: «Бизнес ФМ »).</summary>
-		private static string StationOf(DataRow campaign)
+		private static string StationOf(DataRow row) =>
+			StationLabel(row[Campaign.ParamNames.MassmediaName], row[Campaign.ParamNames.GroupName]);
+
+		private static string StationLabel(object massmediaName, object groupName)
 		{
-			string name = Convert.ToString(campaign[Campaign.ParamNames.MassmediaName]).Trim();
-			string group = Convert.ToString(campaign[Campaign.ParamNames.GroupName]).Trim();
+			string name = Convert.ToString(massmediaName).Trim();
+			string group = Convert.ToString(groupName).Trim();
 			return group.Length == 0 ? name : string.Format("{0} ({1})", name, group);
 		}
 
@@ -162,13 +224,172 @@ namespace Merlin.Classes
 
 		private static DateTime IssueDay(DataRow issue) => Convert.ToDateTime(issue[ComboModule.ParamNames.IssueDate]).Date;
 
+		// ---------- «Показать модули…»: добавленные строки и их источники ----------
+
+		/// <summary>Модуль радиостанции — строка источника «Показать модули…».</summary>
+		public sealed class ModuleChoice
+		{
+			internal ModuleChoice() { }
+
+			public int ModuleId { get; internal set; }
+			public string ModuleName { get; internal set; }
+			public int MassmediaId { get; internal set; }
+
+			/// <summary>Радиостанция с группой — как колонка «Радиостанция» строк.</summary>
+			public string Station { get; internal set; }
+		}
+
+		/// <summary>Радиостанция, у которой есть модули, — источник «Модули радиостанции».</summary>
+		public sealed class StationChoice
+		{
+			internal StationChoice() { }
+
+			public int MassmediaId { get; internal set; }
+
+			/// <summary>Радиостанция с группой — как колонка «Радиостанция» строк.</summary>
+			public string Station { get; internal set; }
+
+			/// <summary>Группа радиостанций (город); пусто — без группы.</summary>
+			public string GroupName { get; internal set; }
+		}
+
+		/// <summary>
+		/// Строка, добавленная «Показать модули…»: модуль, его радиостанция, тип оплаты и агентство будущей кампании, а если
+		/// кампания уже есть («модули этой кампании», В-24) — её номер. Неизменяемая. Строка без кампании — ожидающая: её
+		/// ключ — <see cref="Key"/>; модульную кампанию с этой станцией, типом оплаты и агентством создаст (или найдёт)
+		/// первая постановка в строку (<see cref="PlaceOne"/>), и строка станет обычной строкой модуль × кампания.
+		/// </summary>
+		public sealed class AddedRow
+		{
+			/// <summary>Строка без кампании: модуль комбо-модуля или станции, тип оплаты и агентство — выбор экрана.</summary>
+			public AddedRow(ModuleChoice module, int paymentTypeId, string paymentTypeName, int agencyId, string agencyName)
+				: this(module.ModuleId, module.ModuleName, module.MassmediaId, module.Station,
+					paymentTypeId, paymentTypeName, agencyId, agencyName, null)
+			{
+			}
+
+			internal AddedRow(int moduleId, string moduleName, int massmediaId, string station, int paymentTypeId,
+				string paymentTypeName, int agencyId, string agencyName, int? campaignId)
+			{
+				// Без агентства и типа оплаты кампанию не создать (CampaignIUD: CannotAddCampaignWithoutAgency): станцию без
+				// агентства экран пропускает с пояснением, как CampaignAddForm.
+				if (paymentTypeId <= 0)
+					throw new ArgumentOutOfRangeException(nameof(paymentTypeId));
+				if (agencyId <= 0)
+					throw new ArgumentOutOfRangeException(nameof(agencyId));
+				ModuleId = moduleId;
+				ModuleName = moduleName;
+				MassmediaId = massmediaId;
+				Station = station;
+				PaymentTypeId = paymentTypeId;
+				PaymentTypeName = paymentTypeName ?? string.Empty;
+				AgencyId = agencyId;
+				AgencyName = (agencyName ?? string.Empty).Trim();
+				CampaignId = campaignId;
+			}
+
+			public int ModuleId { get; }
+			public string ModuleName { get; }
+			public int MassmediaId { get; }
+			public string Station { get; }
+			public int PaymentTypeId { get; }
+			public string PaymentTypeName { get; }
+			public int AgencyId { get; }
+			public string AgencyName { get; }
+
+			/// <summary>Кампания строки, если она уже была при добавлении; null — создаст постановка.</summary>
+			public int? CampaignId { get; }
+
+			/// <summary>
+			/// Ключ строки — (модуль, станция, тип оплаты, агентство): у станции не бывает двух модульных кампаний с одним типом
+			/// оплаты и агентством (UIX_Campaign), поэтому строки с одним ключом — одна строка.
+			/// </summary>
+			public (int ModuleId, int MassmediaId, int PaymentTypeId, int AgencyId) Key => (ModuleId, MassmediaId, PaymentTypeId, AgencyId);
+
+			internal bool IsOf(CampaignInfo campaign) =>
+				campaign.MassmediaId == MassmediaId && campaign.PaymentTypeId == PaymentTypeId && campaign.AgencyId == AgencyId;
+		}
+
+		/// <summary>Колонки списка комбо-модулей (<see cref="ComboModules"/>).</summary>
+		public const string ComboModuleIdColumn = ComboModule.ParamNames.ComboModuleId;
+		public const string ComboModuleNameColumn = "name";
+
+		/// <summary>
+		/// Комбо-модули: comboModuleID, name — процедурой ComboModules, как список десктопного шага SelectComboModuleStep
+		/// (загрузка сущности 1270). Не через метаданные: у сущности 1270 на ArtvisDev нет групп, проверка прав веба закрыла бы
+		/// список всем, а десктоп прав на него не спрашивает.
+		/// </summary>
+		public static DataTable ComboModules() =>
+			DataAccessor.LoadDataSet("ComboModules", DataAccessor.CreateParametersDictionary()).Tables[0];
+
+		/// <summary>Состав комбо-модуля (ComboModuleContentRetrieve) — модули по радиостанциям, как строки десктопного комбо.</summary>
+		public static IReadOnlyList<ModuleChoice> ComboModuleContent(int comboModuleId) =>
+			ComboModule.LoadContent(comboModuleId).Rows.Cast<DataRow>().Select(row => new ModuleChoice
+			{
+				ModuleId = Convert.ToInt32(row[ComboModule.ParamNames.ModuleId]),
+				ModuleName = Convert.ToString(row[ComboModule.ParamNames.ModuleName]),
+				MassmediaId = Convert.ToInt32(row[ComboModule.ParamNames.MassmediaId]),
+				Station = StationOf(row),
+			}).ToList();
+
+		/// <summary>
+		/// Радиостанции с модулями, у которых прайс-лист действует или начнётся (ModuleList на дату): все, без права станции
+		/// «добавлять» — как десктопный комбо (В-26). Порядок — по подписи.
+		/// </summary>
+		public static IReadOnlyList<StationChoice> StationsWithModules(DateTime date)
+		{
+			Dictionary<int, StationChoice> stations = new Dictionary<int, StationChoice>();
+			foreach (DataRow row in LoadStationModules(null, date.Date).Rows)
+			{
+				int massmediaId = Convert.ToInt32(row[Massmedia.ParamNames.MassmediaId]);
+				if (!stations.ContainsKey(massmediaId))
+					stations.Add(massmediaId, new StationChoice
+					{
+						MassmediaId = massmediaId,
+						Station = StationOf(row),
+						GroupName = Convert.ToString(row[Campaign.ParamNames.GroupName]).Trim(),
+					});
+			}
+			StringComparer text = StringComparer.Create(CultureInfo.CurrentCulture, ignoreCase: true);
+			return stations.Values.OrderBy(x => x.Station, text).ToList();
+		}
+
+		/// <summary>Модули радиостанции с прайс-листом, действующим или будущим на дату (ModuleList @massmediaID, @theDate).</summary>
+		public static IReadOnlyList<ModuleChoice> StationModules(int massmediaId, DateTime date) =>
+			LoadStationModules(massmediaId, date.Date).Rows.Cast<DataRow>().Select(row => new ModuleChoice
+			{
+				ModuleId = Convert.ToInt32(row[Module.ParamNames.ModuleId]),
+				ModuleName = Convert.ToString(row[Constants.Parameters.Name]),
+				MassmediaId = Convert.ToInt32(row[Massmedia.ParamNames.MassmediaId]),
+				Station = StationOf(row),
+			}).ToList();
+
+		/// <summary>
+		/// «Модули этой кампании» (В-24): модули станции отмеченной кампании на дату — строки сразу с кампанией, её типом
+		/// оплаты и агентством, без вопросов.
+		/// </summary>
+		public static IReadOnlyList<AddedRow> CampaignModules(ModuleScope s, int campaignId, DateTime date)
+		{
+			if (!s.Campaigns.TryGetValue(campaignId, out CampaignInfo c))
+				throw new InvalidOperationException(Tr.T("Рекламная кампания удалена. Обновите страницу."));
+			return StationModules(c.MassmediaId, date)
+				.Select(m => new AddedRow(m.ModuleId, m.ModuleName, c.MassmediaId, c.Station, c.PaymentTypeId, c.PaymentTypeName, c.AgencyId, c.AgencyName, campaignId))
+				.ToList();
+		}
+
 		// ---------- Период ----------
 
 		/// <summary>Модуль и кампания места за день — то, что нужно панели и записи (у PlacementCell — internal).</summary>
 		internal sealed class ModuleDay
 		{
 			internal int ModuleId { get; set; }
+
+			/// <summary>Кампания строки; 0 — добавленная строка без кампании (<see cref="Added"/>), её создаст постановка.</summary>
 			internal int CampaignId { get; set; }
+
+			/// <summary>Добавленная строка без кампании: станция, тип оплаты и агентство будущей кампании; иначе null.</summary>
+			internal AddedRow Added { get; set; }
+
 			internal int MassmediaId { get; set; }
 			internal int ModulePricelistId { get; set; }
 
@@ -188,8 +409,14 @@ namespace Merlin.Classes
 		{
 			internal int ModuleId { get; set; }
 			internal string ModuleName { get; set; }
+
+			/// <summary>0 — добавленная строка без кампании (<see cref="Added"/>).</summary>
 			internal int CampaignId { get; set; }
+
+			/// <summary>Кампания строки; у добавленной без кампании — станция, тип оплаты и агентство из строки.</summary>
 			internal CampaignInfo Campaign { get; set; }
+
+			internal AddedRow Added { get; set; }
 			internal string PaymentType { get; set; }
 		}
 
@@ -204,8 +431,15 @@ namespace Merlin.Classes
 		/// у отмеченной кампании без выпусков — модули её станции, действующие в периоде (ModuleList). Порядок —
 		/// радиостанция, модуль, тип оплаты; полоса меняется со станцией. Место есть, если модуль в этот день выходит
 		/// целиком и ни одно его окно не отключено (ComboModuleFreeTimeRetrieve).
+		///
+		/// <paramref name="added"/> — строки «Показать модули…» (память экрана): строка отмеченной кампании (с её номером или
+		/// без номера, но с её станцией, типом оплаты и агентством) — обычная строка модуль × кампания; строка без такой
+		/// кампании в наборе — ожидающая: те же колонки, места из того же вызова процедуры, своих выпусков нет; строка
+		/// с номером кампании, которой в наборе нет (снята отметка, удалена), не показывается. Совпадающие строки не
+		/// дублируются.
 		/// </summary>
-		public static PlacementWeek LoadPeriod(ModuleScope s, DateTime anyDate, PlacementPeriod period, WindowsSource.WeekView view)
+		public static PlacementWeek LoadPeriod(ModuleScope s, DateTime anyDate, PlacementPeriod period, WindowsSource.WeekView view,
+			IEnumerable<AddedRow> added = null)
 		{
 			DateTime date = anyDate.Date;
 			DateTime start = period == PlacementPeriod.Month
@@ -231,7 +465,7 @@ namespace Merlin.Classes
 					if (s.Campaigns.ContainsKey(IssueCampaignId(issue)))
 						issues.Add(issue);
 
-			List<RowSpec> specs = RowSpecs(s, issues, start, finish);
+			List<RowSpec> specs = RowSpecs(s, issues, start, finish, added);
 			Dictionary<(int, DateTime), DataRow> free = specs.Count > 0
 				? FreeTimeByModuleAndDay(specs.Select(r => r.ModuleId), start, finish, view)
 				: new Dictionary<(int, DateTime), DataRow>();
@@ -266,7 +500,7 @@ namespace Merlin.Classes
 				}
 				row.Band = band;
 
-				int number = s.RowNumber(spec.ModuleId, spec.CampaignId);
+				int number = spec.Added != null ? s.PendingRowNumber(spec.Added.Key) : s.RowNumber(spec.ModuleId, spec.CampaignId);
 				for (int d = 0; d < dayCount; d++)
 				{
 					DateTime day = start.AddDays(d);
@@ -293,6 +527,7 @@ namespace Merlin.Classes
 						{
 							ModuleId = spec.ModuleId,
 							CampaignId = spec.CampaignId,
+							Added = spec.Added,
 							MassmediaId = Convert.ToInt32(f[ComboModule.ParamNames.MassmediaId]),
 							ModulePricelistId = Convert.ToInt32(f[ComboModule.ParamNames.ModulePriceListId]),
 							PricelistId = Convert.ToInt32(f[Pricelist.ParamNames.PricelistId]),
@@ -316,11 +551,11 @@ namespace Merlin.Classes
 		}
 
 		/// <summary>
-		/// Строки периода: размещённые пары (модуль, кампания) и модули станции у кампаний без выпусков; порядок и подпись
-		/// типа оплаты — как ComboModulePlacementForm.BuildGridRows (при одинаковом типе оплаты у двух строк модуля —
-		/// с агентством).
+		/// Строки периода: размещённые пары (модуль, кампания), модули станции у кампаний без выпусков и добавленные строки;
+		/// порядок и подпись типа оплаты — как ComboModulePlacementForm.BuildGridRows (при одинаковом типе оплаты у двух
+		/// строк модуля — с агентством).
 		/// </summary>
-		private static List<RowSpec> RowSpecs(ModuleScope s, List<DataRow> issues, DateTime start, DateTime finish)
+		private static List<RowSpec> RowSpecs(ModuleScope s, List<DataRow> issues, DateTime start, DateTime finish, IEnumerable<AddedRow> addedRows)
 		{
 			List<RowSpec> specs = new List<RowSpec>();
 			HashSet<(int, int)> added = new HashSet<(int, int)>();
@@ -386,6 +621,35 @@ namespace Merlin.Classes
 				}
 			}
 
+			// Добавленные «Показать модули…»: строка отмеченной кампании — её строка (как десктопный комбо находит кампанию
+			// строки по станции, типу оплаты и агентству, FindModuleCampaignRow), иначе ожидающая строка.
+			if (addedRows != null)
+				foreach (AddedRow row in addedRows)
+				{
+					int campaignId = row.CampaignId ?? s.Campaigns.Where(c => row.IsOf(c.Value)).Select(c => c.Key).FirstOrDefault();
+					if (campaignId != 0)
+					{
+						if (s.Campaigns.TryGetValue(campaignId, out CampaignInfo campaign) && !specs.Any(r => r.ModuleId == row.ModuleId && r.CampaignId == campaignId))
+							specs.Add(new RowSpec { ModuleId = row.ModuleId, ModuleName = row.ModuleName, CampaignId = campaignId, Campaign = campaign });
+					}
+					else if (!specs.Any(r => r.Added != null && r.Added.Key == row.Key))
+						specs.Add(new RowSpec
+						{
+							ModuleId = row.ModuleId,
+							ModuleName = row.ModuleName,
+							Added = row,
+							Campaign = new CampaignInfo
+							{
+								MassmediaId = row.MassmediaId,
+								Station = row.Station,
+								PaymentTypeId = row.PaymentTypeId,
+								PaymentTypeName = row.PaymentTypeName,
+								AgencyId = row.AgencyId,
+								AgencyName = row.AgencyName,
+							},
+						});
+				}
+
 			foreach (RowSpec spec in specs)
 			{
 				spec.PaymentType = spec.Campaign.PaymentTypeName;
@@ -400,11 +664,12 @@ namespace Merlin.Classes
 
 		private const string ClosestPricelistStartColumn = "closestPriceListStartDate";
 
-		/// <summary>ModuleList @massmediaID, @theDate: модули станции с прайс-листом, не закончившимся к дате.</summary>
-		private static DataTable LoadStationModules(int massmediaId, DateTime theDate)
+		/// <summary>ModuleList @massmediaID, @theDate: модули станции (null — всех станций) с прайс-листом, не закончившимся к дате.</summary>
+		private static DataTable LoadStationModules(int? massmediaId, DateTime theDate)
 		{
 			Dictionary<string, object> parameters = DataAccessor.CreateParametersDictionary();
-			parameters[Massmedia.ParamNames.MassmediaId] = massmediaId;
+			if (massmediaId.HasValue)
+				parameters[Massmedia.ParamNames.MassmediaId] = massmediaId.Value;
 			parameters["theDate"] = theDate;
 			return DataAccessor.LoadDataSet("ModuleList", parameters).Tables[0];
 		}
@@ -460,7 +725,7 @@ namespace Merlin.Classes
 		/// <summary>
 		/// Свежая акция для записи: удалённая — отказ; без «Редактировать» акции (на сейчас) или модульных кампаний (на момент
 		/// открытия: правило своих / чужих акций у кампании то же, что у акции, а права группы от строки кампании не зависят,
-		/// как у RangeSource.LoadForWrite) — отказ.
+		/// как у RangeSource.LoadForWrite; у набора без кампаний — права добавлять модульные кампании) — отказ.
 		/// </summary>
 		internal static ActionOnMassmedia LoadForWrite(ModuleScope s)
 		{
@@ -489,7 +754,17 @@ namespace Merlin.Classes
 
 			/// <summary>Для строки отказа: «дата — модуль — ролик».</summary>
 			public string Name { get; internal set; }
+
+			/// <summary>
+			/// Кампанию строки создало это действие (постановка в добавленную строку без кампании) — для учёта «кампанию создала
+			/// вкладка в этом сеансе» (В-21). Найденная существующая кампания — false.
+			/// </summary>
+			public bool CampaignCreated { get; internal set; }
 		}
+
+		/// <summary>Место строки отмеченной кампании или добавленной строки без кампании.</summary>
+		private static bool IsOfScope(ModuleScope s, ModuleDay m) =>
+			m != null && (m.CampaignId == 0 ? m.Added != null : s.Campaigns.ContainsKey(m.CampaignId));
 
 		/// <summary>
 		/// Клик «Режима добавления» — как клик комбо (ComboModulePlacementForm.AddModuleIssue → Campaign.AddModuleIssue):
@@ -501,41 +776,112 @@ namespace Merlin.Classes
 		/// (RAISERROR с ключом iMessage) откатывает всё и уходит наверх как есть: текст — ErrorManager.GetErrorMessage(ex).
 		/// Модель периода после записи перечитывает экран (LoadPeriod): изменились остатки окон и у соседних модулей
 		/// с общими тарифами, отметки и итог дня.
+		///
+		/// Добавленная строка без кампании (режимы 1/3 комбо, ComboModulePlacementForm.EnsureCampaign): в той же транзакции
+		/// модульная кампания акции с её станцией, типом оплаты и агентством — найденная или созданная (EnsureCampaign);
+		/// нужно право добавлять модульные кампании (<see cref="CanAddModuleCampaigns"/>), права станции не проверяются, как
+		/// в десктопном комбо (В-26). Любой отказ откатывает и созданную кампанию. После записи кампания попадает в набор
+		/// (<see cref="ModuleScope.CampaignIds"/>), строка остаётся на своём месте с тем же номером.
 		/// </summary>
 		public static PlacedModuleIssue PlaceOne(ModuleScope s, PlacementCell cell, int rollerId, int position)
 		{
 			ModuleDay m = cell?.ModuleDay;
-			if (m == null || !s.Campaigns.ContainsKey(m.CampaignId))
+			if (!IsOfScope(s, m))
 				throw new InvalidOperationException(Tr.T("Место не относится к отмеченным модульным кампаниям. Обновите страницу."));
 			DateTime day = cell.Date.Date;
+			AddedRow pending = m.CampaignId == 0 ? m.Added : null;
 
 			ActionOnMassmedia action = LoadForWrite(s);
-			int massmediaId = ModularCampaignStation(action, m.CampaignId);
+			if (pending != null && !(s.CanAddCampaigns && CanAddModuleCampaigns(action)))
+				throw new InvalidOperationException(Tr.T(Properties.Resources.OperationNotAllowed));
+			int massmediaId = pending?.MassmediaId ?? ModularCampaignStation(action, m.CampaignId);
 			Roller roller = ModuleRoller(s, rollerId, action.FirmID);
 			if (!IsPricelistOfDay(m, massmediaId, day))
 				throw new InvalidOperationException(Tr.Format("Прайс-лист модуля «{0}» на {1:dd.MM.yyyy} изменился. Обновите страницу.", m.ModuleName, day));
 
+			int campaignId = m.CampaignId;
+			bool created = false;
 			int moduleIssueId = 0;
 			WindowsSource.RunInTransaction(() =>
 			{
 				if (!IsModuleWhole(m.ModulePricelistId, day))
 					throw NotWhole(m, day);
-				moduleIssueId = AddModuleIssue(action, m, roller, position, day);
+				if (pending != null)
+					campaignId = EnsureCampaign(action, pending, out created);
+				moduleIssueId = AddModuleIssue(action, campaignId, m, roller, position, day);
 				if (moduleIssueId <= 0)
 					throw NotWhole(m, day);
 				action.Recalculate(false);
 			});
 
+			if (pending != null)
+				s.AddCampaign(campaignId, new CampaignInfo
+				{
+					MassmediaId = pending.MassmediaId,
+					Station = pending.Station,
+					PaymentTypeId = pending.PaymentTypeId,
+					PaymentTypeName = pending.PaymentTypeName,
+					AgencyId = pending.AgencyId,
+					AgencyName = pending.AgencyName,
+				});
+
 			return new PlacedModuleIssue
 			{
 				ModuleIssueId = moduleIssueId,
-				CampaignId = m.CampaignId,
+				CampaignId = campaignId,
 				ModuleId = m.ModuleId,
 				RollerId = roller.RollerId,
 				Date = day,
 				ModuleName = m.ModuleName,
 				Name = string.Format("{0:dd.MM.yyyy} — {1} — {2}", day, m.ModuleName, roller.Name),
+				CampaignCreated = created,
 			};
+		}
+
+		/// <summary>
+		/// Модульная кампания акции для добавленной строки — внутри транзакции постановки: сначала поиск по станции, типу
+		/// оплаты и агентству в свежем списке кампаний (Campaigns @actionID на соединении транзакции), не нашлась — CampaignIUD
+		/// AddItem тем же путём, что «Добавить кампании» и мастер (ActionWorkspace.Draft: тип 3, сущность 92). Объект кампании
+		/// строится заново на каждый вызов: записанный и откаченный объект уже не «новый» (класс Д-5). 2601/2627 (UIX_Campaign:
+		/// ту же кампанию только что создал другой) — перечитать и взять её; бизнес-отказ CampaignIUD
+		/// (CannotAddCampaignWithoutAgency, CannotAddCampaignInConfirmedFinishedAction) уходит наверх, транзакцию откатит
+		/// вызывающий.
+		/// </summary>
+		private static int EnsureCampaign(ActionOnMassmedia action, AddedRow row, out bool created)
+		{
+			created = false;
+			int campaignId = FindModuleCampaign(action, row);
+			if (campaignId != 0)
+				return campaignId;
+
+			Campaign campaign = ActionWorkspace.Draft(ActionWorkspace.ModuleCampaignType, row.PaymentTypeId,
+				new ActionWorkspace.NewCampaign { MassmediaId = row.MassmediaId, StationName = row.Station, AgencyId = row.AgencyId });
+			campaign.Action = action;
+			try
+			{
+				campaign.Update();
+			}
+			catch (SqlException ex) when (ex.Errors.Cast<SqlError>().Any(e => e.Number == 2601 || e.Number == 2627))
+			{
+				campaignId = FindModuleCampaign(action, row);
+				if (campaignId != 0)
+					return campaignId;
+				throw;
+			}
+			created = true;
+			return campaign.CampaignId;
+		}
+
+		/// <summary>Модульная кампания акции с этой станцией, типом оплаты и агентством по свежему списку; 0 — нет.</summary>
+		private static int FindModuleCampaign(ActionOnMassmedia action, AddedRow row)
+		{
+			foreach (DataRow c in ActionWorkspace.LoadCampaigns(action).Rows)
+				if (IsModular(c)
+					&& ParseHelper.GetInt32FromObject(c[Campaign.ParamNames.MassmediaId], 0) == row.MassmediaId
+					&& ParseHelper.GetInt32FromObject(c[Campaign.ParamNames.PaymentTypeID], 0) == row.PaymentTypeId
+					&& ParseHelper.GetInt32FromObject(c[Campaign.ParamNames.AgencyID], 0) == row.AgencyId)
+					return WindowsSource.CampaignIdOf(c);
+			return 0;
 		}
 
 		/// <summary>Станция модульной кампании места по свежему списку кампаний акции; кампании в нём нет — её удалили.</summary>
@@ -603,11 +949,11 @@ namespace Merlin.Classes
 		/// выбросил бы её ответ — выпуск (ModuleIssueRetrieve в конце) или −1, если у модуля за день не нашлось ни одного окна.
 		/// Возвращает номер выпуска или −1.
 		/// </summary>
-		private static int AddModuleIssue(ActionOnMassmedia action, ModuleDay m, Roller roller, int position, DateTime day)
+		private static int AddModuleIssue(ActionOnMassmedia action, int campaignId, ModuleDay m, Roller roller, int position, DateTime day)
 		{
 			Dictionary<string, object> parameters = DataAccessor.CreateParametersDictionary();
 			parameters[Constants.ParamNames.ActionName] = Constants.Actions.AddItem;
-			parameters[Campaign.ParamNames.CampaignId] = m.CampaignId;
+			parameters[Campaign.ParamNames.CampaignId] = campaignId;
 			parameters[Module.ParamNames.ModuleId] = m.ModuleId;
 			parameters[ModulePricelist.ParamNames.ModulePriceListID] = m.ModulePricelistId;
 			parameters[Roller.ParamNames.RollerId] = roller.RollerId;
@@ -680,12 +1026,13 @@ namespace Merlin.Classes
 		/// макетами (как выпуски кампании в панели CampaignForm). Окна: есть свой выпуск — окна ВЫХОДА его дочерних строк
 		/// (ModuleIssueContentRetrieve: actualWindowID, windowDateActual, позиция; у выпуска с перенесёнными трафиком строками
 		/// они отличаются от окон тарифов), нет — окна тарифов модуля за день (TariffWindowRetrieve @moduleId, @pricelistId)
-		/// с остатком по <paramref name="showUnconfirmed"/> и пометкой заблокированных.
+		/// с остатком по <paramref name="showUnconfirmed"/> и пометкой заблокированных. У добавленной строки без кампании
+		/// выпусков нет — окна тарифов модуля.
 		/// </summary>
 		public static ModuleDayDetails Details(ModuleScope s, PlacementCell cell, bool showUnconfirmed)
 		{
 			ModuleDay m = cell.ModuleDay;
-			if (m == null || !s.Campaigns.ContainsKey(m.CampaignId))
+			if (!IsOfScope(s, m))
 				throw new InvalidOperationException(Tr.T("Место не относится к отмеченным модульным кампаниям. Обновите страницу."));
 
 			DataTable issues = LoadRowIssues(m, cell.Date);

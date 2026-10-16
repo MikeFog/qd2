@@ -1,5 +1,5 @@
 ﻿/*
-    ДЕПЛОЙ: переводы веб-версии на язык «es» (2128 строк). docs/tasks/web-i18n.md, этап 5.
+    ДЕПЛОЙ: переводы веб-версии на язык «es» (2147 строк). docs/tasks/web-i18n.md, этап 5.
     СГЕНЕРИРОВАН из ArtvisDB/Scripts/i18n/es.tsv скриптом build-seed.py — руками не править.
 
     ПРЕДУСЛОВИЕ     накачен web-i18n-translation-deploy.sql (таблица iTranslation).
@@ -2150,7 +2150,26 @@ INSERT INTO #t ([source], [text]) VALUES
 (N'Ролик «{0}» нельзя поставить в модуль: в модули ставятся только ролики типов «Реклама», «Новость» и «Программа».', N'El spot «{0}» no se puede colocar en un módulo: en los módulos solo se colocan spots de los tipos «Publicidad», «Noticia» y «Programa».'),
 (N'Модуль «{0}» ({1}) не выходит {2:dd.MM.yyyy} целиком, выпуск не создан.', N'El módulo «{0}» ({1}) no sale completo el {2:dd.MM.yyyy}; no se creó la emisión.'),
 (N'Ролик, который ставится в модули, — выбран в списке «Ролики»', N'Spot que se coloca en los módulos: el elegido en la lista «Spots»'),
-(N'Щелчок по ячейке — выпуски и окна модуля за день, в «Режиме добавления» — постановка модуля на весь день.', N'Clic en una celda: las emisiones y las ventanas del módulo en el día; en el «Modo de agregado», colocar el módulo para todo el día.');
+(N'Щелчок по ячейке — выпуски и окна модуля за день, в «Режиме добавления» — постановка модуля на весь день.', N'Clic en una celda: las emisiones y las ventanas del módulo en el día; en el «Modo de agregado», colocar el módulo para todo el día.'),
+(N'Модулей: {0}', N'Módulos: {0}'),
+(N'Выберите, какие модули показать.', N'Seleccione qué módulos mostrar.'),
+(N'У радиостанций нет агентства, их модули показаны не будут: {0}.', N'Las emisoras no tienen agencia, sus módulos no se mostrarán: {0}.'),
+(N'Рекламная кампания на радиостанции с этим типом оплаты и агентством будет создана при первой постановке модуля, если её ещё нет в акции.', N'La pauta publicitaria en la emisora con este tipo de pago y esta agencia se creará al colocar el primer módulo, si aún no existe en la campaña.'),
+(N'Модули радиостанции', N'Módulos de la emisora'),
+(N'Модули рекламной кампании', N'Módulos de la pauta publicitaria'),
+(N'На эту дату у радиостанции нет модулей с прайс-листом.', N'En esta fecha la emisora no tiene módulos con lista de precios.'),
+(N'Отмечено модулей: {0}', N'Módulos marcados: {0}'),
+(N'Выберите рекламную кампанию.', N'Seleccione la pauta publicitaria.'),
+(N'Отметьте хотя бы один модуль.', N'Marque al menos un módulo.'),
+(N'Выберите комбо-модуль.', N'Seleccione el módulo combo.'),
+(N'Выберите радиостанцию.', N'Seleccione la emisora.'),
+(N'Ни у одной радиостанции нет агентства — показывать нечего.', N'Ninguna de las emisoras tiene agencia: no hay nada que mostrar.'),
+(N'Модульных рекламных кампаний в акции нет', N'La campaña no tiene pautas publicitarias modulares'),
+(N'Добавьте строки кнопкой «Показать модули» — модули комбо-модуля или радиостанции: рекламная кампания на радиостанции будет создана при первой постановке модуля.', N'Agregue filas con el botón «Mostrar módulos» (los módulos de un módulo combo o de una emisora): la pauta publicitaria en la emisora se creará al colocar el primer módulo.'),
+(N'Добавить в сетку модули комбо-модуля, радиостанции или отмеченной рекламной кампании', N'Agregar a la cuadrícula los módulos de un módulo combo, de una emisora o de la pauta publicitaria marcada'),
+(N'Отметьте модульную рекламную кампанию слева.', N'Marque una pauta publicitaria modular a la izquierda.'),
+(N'Показано модулей: {0}, не показано радиостанций: {1}', N'Módulos mostrados: {0}, emisoras no mostradas: {1}'),
+(N'Модули: строки без рекламной кампании', N'Módulos: filas sin pauta publicitaria');
 GO
 
 BEGIN TRANSACTION;

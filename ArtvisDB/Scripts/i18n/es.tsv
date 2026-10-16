@@ -2127,3 +2127,22 @@ code	Ролик «{0}» нельзя поставить в модуль: в мо
 code	Модуль «{0}» ({1}) не выходит {2:dd.MM.yyyy} целиком, выпуск не создан.	El módulo «{0}» ({1}) no sale completo el {2:dd.MM.yyyy}; no se creó la emisión.
 code	Ролик, который ставится в модули, — выбран в списке «Ролики»	Spot que se coloca en los módulos: el elegido en la lista «Spots»
 code	Щелчок по ячейке — выпуски и окна модуля за день, в «Режиме добавления» — постановка модуля на весь день.	Clic en una celda: las emisiones y las ventanas del módulo en el día; en el «Modo de agregado», colocar el módulo para todo el día.
+code	Модулей: {0}	Módulos: {0}
+code	Выберите, какие модули показать.	Seleccione qué módulos mostrar.
+code	У радиостанций нет агентства, их модули показаны не будут: {0}.	Las emisoras no tienen agencia, sus módulos no se mostrarán: {0}.
+code	Рекламная кампания на радиостанции с этим типом оплаты и агентством будет создана при первой постановке модуля, если её ещё нет в акции.	La pauta publicitaria en la emisora con este tipo de pago y esta agencia se creará al colocar el primer módulo, si aún no existe en la campaña.
+code	Модули радиостанции	Módulos de la emisora
+code	Модули рекламной кампании	Módulos de la pauta publicitaria
+code	На эту дату у радиостанции нет модулей с прайс-листом.	En esta fecha la emisora no tiene módulos con lista de precios.
+code	Отмечено модулей: {0}	Módulos marcados: {0}
+code	Выберите рекламную кампанию.	Seleccione la pauta publicitaria.
+code	Отметьте хотя бы один модуль.	Marque al menos un módulo.
+code	Выберите комбо-модуль.	Seleccione el módulo combo.
+code	Выберите радиостанцию.	Seleccione la emisora.
+code	Ни у одной радиостанции нет агентства — показывать нечего.	Ninguna de las emisoras tiene agencia: no hay nada que mostrar.
+code	Модульных рекламных кампаний в акции нет	La campaña no tiene pautas publicitarias modulares
+code	Добавьте строки кнопкой «Показать модули» — модули комбо-модуля или радиостанции: рекламная кампания на радиостанции будет создана при первой постановке модуля.	Agregue filas con el botón «Mostrar módulos» (los módulos de un módulo combo o de una emisora): la pauta publicitaria en la emisora se creará al colocar el primer módulo.
+code	Добавить в сетку модули комбо-модуля, радиостанции или отмеченной рекламной кампании	Agregar a la cuadrícula los módulos de un módulo combo, de una emisora o de la pauta publicitaria marcada
+code	Отметьте модульную рекламную кампанию слева.	Marque una pauta publicitaria modular a la izquierda.
+code	Показано модулей: {0}, не показано радиостанций: {1}	Módulos mostrados: {0}, emisoras no mostradas: {1}
+code	Модули: строки без рекламной кампании	Módulos: filas sin pauta publicitaria

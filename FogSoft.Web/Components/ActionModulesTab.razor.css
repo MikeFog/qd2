@@ -143,6 +143,19 @@
     gap: var(--s-2);
 }
 
+/* Пустое состояние без сетки (нет модульных кампаний, ничего не отмечено) — с кнопкой «Показать модули». */
+.state-actions {
+    margin-top: var(--s-3);
+}
+
+.state-actions .btn > .bi {
+    margin-right: var(--s-1);
+}
+
+.no-campaigns {
+    font-size: 13px;
+}
+
 .grid-box {
     flex: 1 1 auto;
     min-height: 0;

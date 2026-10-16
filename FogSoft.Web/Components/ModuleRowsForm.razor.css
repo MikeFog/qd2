@@ -1,0 +1,85 @@
+/* Раскладка — как у «Добавить рекламные кампании» (CampaignAddForm). */
+.sources {
+    margin-bottom: var(--s-3);
+}
+
+.add-head {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--s-3) var(--s-4);
+    margin-bottom: var(--s-2);
+}
+
+.field {
+    display: flex;
+    flex-direction: column;
+    gap: var(--s-1);
+    min-width: 220px;
+    max-width: 360px;
+    color: var(--c-text-muted);
+}
+
+.hint {
+    margin: var(--s-3) 0 var(--s-2);
+}
+
+/* В комбо-модуле — до ~40 модулей: список прокручивается, шапка на месте. */
+.modules {
+    max-height: 42vh;
+    overflow: auto;
+    border: 1px solid var(--c-border);
+    border-radius: 6px;
+}
+
+.modules table {
+    margin: 0;
+}
+
+.modules thead th {
+    position: sticky;
+    top: 0;
+    z-index: 1;
+    background: var(--c-surface);
+}
+
+.col-check {
+    width: 32px;
+}
+
+.modules tbody tr.row-selected td {
+    background: var(--c-accent-soft);
+}
+
+.modules tbody tr:has(.col-check) {
+    cursor: pointer;
+}
+
+.selected-count {
+    margin-top: var(--s-2);
+    font-size: 13px;
+}
+
+.agencies {
+    margin-top: var(--s-3);
+    padding: var(--s-3);
+    background: var(--c-bg);
+    border-radius: 6px;
+}
+
+.agencies-title {
+    margin-bottom: var(--s-2);
+    color: var(--c-text-muted);
+}
+
+.agency-row {
+    display: grid;
+    grid-template-columns: minmax(200px, 1fr) minmax(220px, 320px);
+    align-items: center;
+    gap: var(--s-3);
+    margin-bottom: var(--s-2);
+}
+
+.without-agency {
+    margin-top: var(--s-2);
+    font-size: 13px;
+}

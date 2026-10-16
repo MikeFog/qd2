@@ -201,6 +201,14 @@ namespace Merlin.Classes
 			return massmedia.Agencies;
 		}
 
+		/// <summary>То же по номеру станции — для станций «Показать модули…» вкладки «Модули» (ModuleDaySource).</summary>
+		public static DataTable StationAgencies(int massmediaId)
+		{
+			Dictionary<string, object> station = DataAccessor.CreateParametersDictionary();
+			station[Massmedia.ParamNames.MassmediaId] = massmediaId;
+			return ((Massmedia)EntityManager.GetEntity((int)Entities.MassMedia).CreateObject(station)).Agencies;
+		}
+
 		/// <summary>Агентства пользователя — для пакетной кампании, у неё нет станции (UserAgencies).</summary>
 		public static DataTable UserAgencies() => SecurityManager.LoggedUser.Agencies;
 
@@ -227,7 +235,8 @@ namespace Merlin.Classes
 			return action.AddCampaigns(drafts, out _);
 		}
 
-		private static Campaign Draft(int campaignTypeId, int paymentTypeId, NewCampaign item)
+		/// <summary>Новая кампания к записи — общий путь «Добавить кампании», мастера и ленивой модульной кампании (ModuleDaySource).</summary>
+		internal static Campaign Draft(int campaignTypeId, int paymentTypeId, NewCampaign item)
 		{
 			Campaign campaign = Campaign.CreateInstance(campaignTypeId, paymentTypeId,
 				campaignTypeId == PackModuleCampaignType ? null : item.MassmediaId, item.AgencyId);

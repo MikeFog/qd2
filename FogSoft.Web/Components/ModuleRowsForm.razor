@@ -1,0 +1,445 @@
+@using System.Data
+@using FogSoft.Web.Infrastructure
+@using FogSoft.WinForm.Classes
+@using Merlin.Classes
+@inject BusyService Busy
+
+@*
+    «Показать модули» вкладки «Модули» (docs/tasks/web-action-forms.md, этап 6.3, п. 7 предложения):
+    какие строки добавить в сетку. Источники: комбо-модуль — весь его состав по радиостанциям, как
+    десктопный шаг SelectComboModuleStep; модули радиостанции — галочками, все станции с модулями, права
+    станции не проверяются (В-26); модули отмеченной модульной кампании — галочками, без вопросов об
+    оплате и агентстве (В-24). Для первых двух тип оплаты один на все строки и не подставлен (решение
+    07.10.2026), агентство — радиостанции: единственное молча, несколько — выбор под таблицей (как в
+    CampaignAddForm), нет — модули станции не добавляются (десктоп отказывал всему комбо). Кампании
+    здесь не создаются: их создаст первая постановка в строку. Значения пишутся в модель, её читает
+    вкладка по «Показать».
+*@
+
+@if (Value.Message != null)
+{
+    <div class="alert alert-danger">@Value.Message</div>
+}
+
+<div class="sources" role="radiogroup" aria-label="@(Tr.T("Показать модули"))">
+    @foreach ((Sources source, string caption, string? reason) in SourceOptions)
+    {
+        <label class="form-check form-check-inline" title="@reason">
+            <input type="radio" class="form-check-input" name="module-rows-source" checked="@(Value.Source == source)"
+                   disabled="@(reason != null)" @onchange="() => SourceChanged(source)" />
+            <span class="form-check-label">@caption</span>
+        </label>
+    }
+</div>
+
+@switch (Value.Source)
+{
+    case Sources.Combo:
+        <div class="add-head">
+            <label class="field">
+                @Tr.T("Комбо-модуль")
+                <select class="form-select form-select-sm" value="@Value.ComboId" @onchange="ComboChanged">
+                    <option value="">@Tr.T("— выберите —")</option>
+                    @foreach (DataRow c in Value.Combos?.Rows.Cast<DataRow>() ?? Enumerable.Empty<DataRow>())
+                    {
+                        <option value="@c[ModuleDaySource.ComboModuleIdColumn]">@c[ModuleDaySource.ComboModuleNameColumn]</option>
+                    }
+                </select>
+            </label>
+            @PaymentTypeField
+        </div>
+        @if (Value.ComboId != null)
+        {
+            <div class="modules">
+                <table class="table table-sm">
+                    <thead>
+                        <tr>
+                            <th>@Tr.T("Радиостанция")</th>
+                            <th>@Tr.T("Модуль")</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (ModuleDaySource.ModuleChoice m in Value.ComboContent)
+                        {
+                            <tr>
+                                <td>@m.Station</td>
+                                <td>@m.ModuleName</td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+            <div class="text-muted selected-count">@Tr.Format("Модулей: {0}", Value.ComboContent.Count)</div>
+        }
+        break;
+
+    case Sources.Station:
+        <div class="add-head">
+            <label class="field">
+                @Tr.T("Радиостанция")
+                <select class="form-select form-select-sm" value="@Value.MassmediaId" @onchange="StationChanged">
+                    <option value="">@Tr.T("— выберите —")</option>
+                    @foreach (ModuleDaySource.StationChoice s in Value.Stations ?? Array.Empty<ModuleDaySource.StationChoice>())
+                    {
+                        <option value="@s.MassmediaId">@s.Station</option>
+                    }
+                </select>
+            </label>
+            @PaymentTypeField
+        </div>
+        @if (Value.MassmediaId != null)
+        {
+            @ModuleChecklist(Value.StationModules.Select(m => (m.ModuleId, m.ModuleName)).ToList())
+        }
+        break;
+
+    case Sources.Campaign:
+        <div class="add-head">
+            <label class="field">
+                @Tr.T("Рекламная кампания")
+                <select class="form-select form-select-sm" value="@Value.CampaignId" @onchange="CampaignChanged">
+                    @if (Value.Campaigns.Count > 1)
+                    {
+                        <option value="">@Tr.T("— выберите —")</option>
+                    }
+                    @foreach (KeyValuePair<int, string> c in Value.Campaigns)
+                    {
+                        <option value="@c.Key">@c.Value</option>
+                    }
+                </select>
+            </label>
+        </div>
+        @if (Value.CampaignId != null)
+        {
+            @ModuleChecklist(Value.CampaignRows.Select(r => (r.ModuleId, r.ModuleName)).ToList())
+        }
+        break;
+
+    default:
+        <p class="text-muted hint">@Tr.T("Выберите, какие модули показать.")</p>
+        break;
+}
+
+@if (Value.Source is Sources.Combo or Sources.Station)
+{
+    @if (Value.NeedingAgency.Count > 0)
+    {
+        <div class="agencies">
+            <div class="agencies-title">@Tr.T("Выбор агентства — у этих радиостанций их несколько:")</div>
+            @foreach (AgencyChoice choice in Value.NeedingAgency)
+            {
+                <label class="agency-row">
+                    <span>@choice.Station</span>
+                    <select class="form-select form-select-sm" @bind="choice.AgencyId">
+                        <option value="">@Tr.T("— выберите —")</option>
+                        @foreach (DataRow a in choice.Agencies.Rows)
+                        {
+                            <option value="@a["agencyID"]">@a["name"]</option>
+                        }
+                    </select>
+                </label>
+            }
+        </div>
+    }
+    @if (Value.WithoutAgency.Count > 0)
+    {
+        <div class="text-danger without-agency">
+            @Tr.Format("У радиостанций нет агентства, их модули показаны не будут: {0}.", string.Join(", ", Value.WithoutAgency.Select(c => c.Station)))
+        </div>
+    }
+    <p class="text-muted hint">@Tr.T("Рекламная кампания на радиостанции с этим типом оплаты и агентством будет создана при первой постановке модуля, если её ещё нет в акции.")</p>
+}
+
+@code {
+    [Parameter, EditorRequired] public Model Value { get; set; } = default!;
+
+    public enum Sources { Combo, Station, Campaign }
+
+    /// <summary>Источники: подпись и причина, по которой недоступен (null — доступен).</summary>
+    private IEnumerable<(Sources, string, string?)> SourceOptions => new (Sources, string, string?)[]
+    {
+        (Sources.Combo, Tr.T("Комбо-модуль"), Value.CanAdd ? null : Tr.T("Нет права добавлять рекламные кампании в эту акцию.")),
+        (Sources.Station, Tr.T("Модули радиостанции"), Value.CanAdd ? null : Tr.T("Нет права добавлять рекламные кампании в эту акцию.")),
+        (Sources.Campaign, Tr.T("Модули рекламной кампании"), Value.Campaigns.Count > 0 ? null : Value.CampaignReason),
+    };
+
+    private RenderFragment PaymentTypeField =>
+        @<label class="field">
+            @Tr.T("Тип оплаты")
+            <select class="form-select form-select-sm" @bind="Value.PaymentTypeId">
+                <option value="">@Tr.T("— выберите —")</option>
+                @foreach (DataRow t in Value.PaymentTypes.Rows)
+                {
+                    <option value="@t["id"]">@t["name"]</option>
+                }
+            </select>
+        </label>;
+
+    /// <summary>Модули галочками — у радиостанции и у кампании; отмечают и щелчком по строке.</summary>
+    private RenderFragment ModuleChecklist(IReadOnlyList<(int Id, string Name)> modules) =>
+        @<div>
+            @if (modules.Count == 0)
+            {
+                <div class="state">@Tr.T("На эту дату у радиостанции нет модулей с прайс-листом.")</div>
+            }
+            else
+            {
+                <div class="modules">
+                    <table class="table table-sm">
+                        <thead>
+                            <tr>
+                                <th class="col-check">
+                                    <input type="checkbox" class="form-check-input" title="@(Tr.T("Отметить все"))"
+                                           checked="@(modules.All(m => Value.CheckedModules.Contains(m.Id)))"
+                                           @onchange="e => CheckAll(modules, e.Value is true)" />
+                                </th>
+                                <th>@Tr.T("Модуль")</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach ((int id, string name) in modules)
+                            {
+                                bool on = Value.CheckedModules.Contains(id);
+                                <tr class="@(on ? "row-selected" : null)" @onclick="() => Check(id, !on)">
+                                    <td class="col-check" @onclick:stopPropagation="true">
+                                        <input type="checkbox" class="form-check-input" checked="@on" aria-label="@name" @onchange="e => Check(id, e.Value is true)" />
+                                    </td>
+                                    <td>@name</td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+                <div class="text-muted selected-count">@Tr.Format("Отмечено модулей: {0}", Value.CheckedModules.Count)</div>
+            }
+        </div>;
+
+    private void Check(int moduleId, bool on)
+    {
+        if (on) Value.CheckedModules.Add(moduleId);
+        else Value.CheckedModules.Remove(moduleId);
+    }
+
+    private void CheckAll(IReadOnlyList<(int Id, string Name)> modules, bool on)
+    {
+        foreach ((int id, _) in modules)
+            Check(id, on);
+    }
+
+    /// <summary>Чтение под курсором ожидания; сбой — текстом в окне.</summary>
+    private async Task Load(System.Action work)
+    {
+        try
+        {
+            Value.Message = null;
+            await Busy.RunAsync(work);
+        }
+        catch (Exception ex)
+        {
+            Value.Message = ErrorPresenter.Describe(ex);
+        }
+    }
+
+    private Task SourceChanged(Sources source)
+    {
+        Value.Source = source;
+        Value.CheckedModules.Clear();
+        return Load(() =>
+        {
+            switch (source)
+            {
+                case Sources.Combo:
+                    Value.Combos ??= ModuleDaySource.ComboModules();
+                    break;
+                case Sources.Station:
+                    Value.Stations ??= ModuleDaySource.StationsWithModules(Value.Date);
+                    break;
+                case Sources.Campaign:
+                    if (Value.CampaignId is int id && Value.CampaignRows.Count == 0)
+                        Value.CampaignRows = ModuleDaySource.CampaignModules(Value.Scope, id, Value.Date);
+                    break;
+            }
+        });
+    }
+
+    private Task ComboChanged(ChangeEventArgs e)
+    {
+        Value.ComboId = int.TryParse(e.Value?.ToString(), out int id) ? id : null;
+        Value.ComboContent = Array.Empty<ModuleDaySource.ModuleChoice>();
+        if (Value.ComboId == null)
+            return Task.CompletedTask;
+        return Load(() =>
+        {
+            IReadOnlyList<ModuleDaySource.ModuleChoice> content = ModuleDaySource.ComboModuleContent(id);
+            LoadAgencies(content.Select(m => (m.MassmediaId, m.Station)));
+            Value.ComboContent = content;
+        });
+    }
+
+    private Task StationChanged(ChangeEventArgs e)
+    {
+        Value.MassmediaId = int.TryParse(e.Value?.ToString(), out int id) ? id : null;
+        Value.StationModules = Array.Empty<ModuleDaySource.ModuleChoice>();
+        Value.CheckedModules.Clear();
+        if (Value.MassmediaId == null)
+            return Task.CompletedTask;
+        string station = Value.Stations?.FirstOrDefault(s => s.MassmediaId == id)?.Station ?? "";
+        return Load(() =>
+        {
+            IReadOnlyList<ModuleDaySource.ModuleChoice> modules = ModuleDaySource.StationModules(id, Value.Date);
+            LoadAgencies(new[] { (id, station) });
+            Value.StationModules = modules;
+        });
+    }
+
+    private Task CampaignChanged(ChangeEventArgs e)
+    {
+        Value.CampaignId = int.TryParse(e.Value?.ToString(), out int id) ? id : null;
+        Value.CampaignRows = Array.Empty<ModuleDaySource.AddedRow>();
+        Value.CheckedModules.Clear();
+        if (Value.CampaignId == null)
+            return Task.CompletedTask;
+        return Load(() => Value.CampaignRows = ModuleDaySource.CampaignModules(Value.Scope, id, Value.Date));
+    }
+
+    /// <summary>Агентства радиостанций — по станции, один раз за показ окна; единственное подставляется молча.</summary>
+    private void LoadAgencies(IEnumerable<(int MassmediaId, string Station)> stations)
+    {
+        foreach ((int massmediaId, string station) in stations)
+        {
+            if (Value.Agencies.ContainsKey(massmediaId))
+                continue;
+            DataTable agencies = ActionWorkspace.StationAgencies(massmediaId);
+            Value.Agencies[massmediaId] = new AgencyChoice
+            {
+                Station = station,
+                Agencies = agencies,
+                AgencyId = agencies.Rows.Count == 1 ? Convert.ToInt32(agencies.Rows[0]["agencyID"]) : null,
+            };
+        }
+    }
+
+    public sealed class AgencyChoice
+    {
+        public string Station { get; init; } = "";
+        public DataTable Agencies { get; init; } = new();
+        public int? AgencyId { get; set; }
+
+        public string AgencyName => AgencyId is int id
+            ? Agencies.Rows.Cast<DataRow>().Where(a => Convert.ToInt32(a["agencyID"]) == id).Select(a => Convert.ToString(a["name"]) ?? "").FirstOrDefault() ?? ""
+            : "";
+    }
+
+    public sealed class Model
+    {
+        /// <summary>Набор вкладки — для «модулей этой кампании».</summary>
+        public ModuleDaySource.ModuleScope Scope { get; init; } = default!;
+
+        /// <summary>Дата, на которую берутся модули с прайс-листом (начало показанного периода).</summary>
+        public DateTime Date { get; init; }
+
+        /// <summary>Можно добавлять модульные кампании — комбо-модуль и модули радиостанции.</summary>
+        public bool CanAdd { get; init; }
+
+        /// <summary>Отмеченные модульные кампании, которые можно редактировать: номер → подпись; пусто — источника нет.</summary>
+        public IReadOnlyList<KeyValuePair<int, string>> Campaigns { get; init; } = Array.Empty<KeyValuePair<int, string>>();
+
+        /// <summary>Почему нет источника «Модули рекламной кампании».</summary>
+        public string? CampaignReason { get; init; }
+
+        /// <summary>Действующие типы оплаты: id, name.</summary>
+        public DataTable PaymentTypes { get; init; } = new();
+
+        public Sources? Source { get; set; }
+
+        public DataTable? Combos { get; set; }
+        public int? ComboId { get; set; }
+        public IReadOnlyList<ModuleDaySource.ModuleChoice> ComboContent { get; set; } = Array.Empty<ModuleDaySource.ModuleChoice>();
+
+        public IReadOnlyList<ModuleDaySource.StationChoice>? Stations { get; set; }
+        public int? MassmediaId { get; set; }
+        public IReadOnlyList<ModuleDaySource.ModuleChoice> StationModules { get; set; } = Array.Empty<ModuleDaySource.ModuleChoice>();
+
+        public int? CampaignId { get; set; }
+        public IReadOnlyList<ModuleDaySource.AddedRow> CampaignRows { get; set; } = Array.Empty<ModuleDaySource.AddedRow>();
+
+        /// <summary>Отмеченные модули — у радиостанции и у кампании.</summary>
+        public HashSet<int> CheckedModules { get; } = new();
+
+        public int? PaymentTypeId { get; set; }
+
+        /// <summary>Агентства радиостанций, уже прочитанные за этот показ окна: massmediaID → выбор.</summary>
+        public Dictionary<int, AgencyChoice> Agencies { get; } = new();
+
+        public string? Message { get; set; }
+
+        /// <summary>Радиостанции строк текущего источника (комбо-модуль, радиостанция) в порядке строк.</summary>
+        private IReadOnlyList<AgencyChoice> RowStations =>
+            (Source == Sources.Combo ? ComboContent.Select(m => m.MassmediaId)
+                : Source == Sources.Station && MassmediaId is int id ? new[] { id }
+                : Enumerable.Empty<int>())
+            .Distinct().Where(Agencies.ContainsKey).Select(x => Agencies[x]).ToList();
+
+        public IReadOnlyList<AgencyChoice> NeedingAgency => RowStations.Where(c => c.Agencies.Rows.Count > 1).ToList();
+
+        public IReadOnlyList<AgencyChoice> WithoutAgency => RowStations.Where(c => c.Agencies.Rows.Count == 0).ToList();
+
+        /// <summary>Проверка «Показать»: текст ошибки или null. Станции без агентства проверку проходят — их перечислит итог.</summary>
+        public string? Validate()
+        {
+            switch (Source)
+            {
+                case null:
+                    return Tr.T("Выберите, какие модули показать.");
+                case Sources.Campaign:
+                    if (CampaignId == null)
+                        return Tr.T("Выберите рекламную кампанию.");
+                    return CheckedModules.Count == 0 ? Tr.T("Отметьте хотя бы один модуль.") : null;
+                case Sources.Combo:
+                    if (ComboId == null)
+                        return Tr.T("Выберите комбо-модуль.");
+                    break;
+                case Sources.Station:
+                    if (MassmediaId == null)
+                        return Tr.T("Выберите радиостанцию.");
+                    if (CheckedModules.Count == 0)
+                        return Tr.T("Отметьте хотя бы один модуль.");
+                    break;
+            }
+            if (PaymentTypeId == null)
+                return Tr.T("Выберите тип оплаты.");
+            List<string> noChoice = NeedingAgency.Where(c => c.AgencyId == null).Select(c => c.Station).ToList();
+            if (noChoice.Count > 0)
+                return Tr.Format("Необходимо выбрать агентство: {0}.", string.Join(", ", noChoice));
+            if (RowStations.All(c => c.AgencyId == null))
+                return Tr.T("Ни у одной радиостанции нет агентства — показывать нечего.");
+            return null;
+        }
+
+        /// <summary>Строки к показу; радиостанции без агентства — в <paramref name="skipped"/>.</summary>
+        public List<ModuleDaySource.AddedRow> Build(out List<string> skipped)
+        {
+            skipped = new List<string>();
+            if (Source == Sources.Campaign)
+                return CampaignRows.Where(r => CheckedModules.Contains(r.ModuleId)).ToList();
+
+            IEnumerable<ModuleDaySource.ModuleChoice> modules = Source == Sources.Combo
+                ? ComboContent
+                : StationModules.Where(m => CheckedModules.Contains(m.ModuleId));
+            int paymentTypeId = PaymentTypeId!.Value;
+            string paymentTypeName = PaymentTypes.Rows.Cast<DataRow>()
+                .Where(t => Convert.ToInt32(t["id"]) == paymentTypeId).Select(t => Convert.ToString(t["name"]) ?? "").FirstOrDefault() ?? "";
+
+            var result = new List<ModuleDaySource.AddedRow>();
+            foreach (ModuleDaySource.ModuleChoice module in modules)
+            {
+                AgencyChoice agency = Agencies[module.MassmediaId];
+                if (agency.AgencyId is int agencyId)
+                    result.Add(new ModuleDaySource.AddedRow(module, paymentTypeId, paymentTypeName, agencyId, agency.AgencyName));
+                else if (!skipped.Contains(agency.Station))
+                    skipped.Add(agency.Station);
+            }
+            return result;
+        }
+    }
+}

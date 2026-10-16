@@ -108,14 +108,14 @@ else
                     </button>
                     @foreach ((ActionWorkspace.PlaceKinds kind, string caption) in PlacementTabs)
                     {
-                        if (!_kinds.HasFlag(kind))
-                            continue;
                         if (TabOf(kind) is { } tab)
                         {
+                            if (!Available(tab))
+                                continue;
                             <button type="button" role="tab" class="tab @(_tab == tab ? "tab-active" : null)" aria-selected="@(_tab == tab)"
                                     @onclick="() => SwitchTab(tab)">@caption</button>
                         }
-                        else
+                        else if (_kinds.HasFlag(kind))
                         {
                             <button type="button" role="tab" class="tab" disabled title="@(Tr.T("В вебе пока нет: размещение — в десктопе."))">@caption</button>
                         }
@@ -190,7 +190,7 @@ else
         @if (Pane(PageTab.Modules) is { } modules)
         {
             <div class="tab-pane" hidden="@(_tab != PageTab.Modules)">
-                <ActionModulesTab Action="_action" Campaigns="_campaigns!" RequestedCampaignId="modules.RequestedCampaign"
+                <ActionModulesTab Action="_action" Campaigns="_campaigns!" CanAddCampaigns="_canAddModules" RequestedCampaignId="modules.RequestedCampaign"
                                   RequestVersion="modules.RequestVersion" Active="_tab == PageTab.Modules" PlacementVersion="modules.PlacementVersion"
                                   Changed="() => PlacementChanged(PageTab.Modules)" />
             </div>
@@ -278,8 +278,12 @@ else
         return null;
     }
 
-    /// <summary>Вкладку можно показать: «Кампании» — всегда, размещения — пока в акции есть кампании её вида.</summary>
-    private bool Available(PageTab tab) => tab == PageTab.Campaigns || _kinds.HasFlag(_placement[tab].Kind);
+    /// <summary>
+    /// Вкладку можно показать: «Кампании» — всегда, размещения — пока в акции есть кампании её вида; «Модули» — ещё и
+    /// когда можно добавлять модульные кампании (В-23: кампанию создаст первая постановка модуля).
+    /// </summary>
+    private bool Available(PageTab tab) =>
+        tab == PageTab.Campaigns || _kinds.HasFlag(_placement[tab].Kind) || (tab == PageTab.Modules && _canAddModules);
 
     /// <summary>Вкладка размещения, которую пора рисовать (открывали и она есть); null — не рисовать.</summary>
     private PlacementTab? Pane(PageTab tab) =>
@@ -303,6 +307,7 @@ else
     private ActionOnMassmedia? _action;
     private bool _canEdit;
     private bool _canAddCampaigns;
+    private bool _canAddModules;
 
     private Entity? _campaignEntity;
     private DataTable? _campaigns;
@@ -429,12 +434,13 @@ else
                 _action = action;
                 _canEdit = ActionWorkspace.CanEdit(action);
                 _canAddCampaigns = ActionWorkspace.CanAddCampaigns(action);
+                _canAddModules = ModuleDaySource.CanAddModuleCampaigns(action);
                 _campaignEntity ??= ActionWorkspace.CampaignListEntity();
                 _campaigns = ActionWorkspace.LoadCampaigns(action);
                 _kinds = ActionWorkspace.KindsOf(_campaigns);
                 _emptyRows = _campaigns.Rows.Cast<DataRow>().Where(ActionWorkspace.IsEmpty).ToList();
                 // Кампаний вида открытой вкладки не осталось (удалили последнюю линейную на «Рекламных
-                // окнах» или модульную на «Модулях») — этой вкладки больше нет.
+                // окнах» или модульную на «Модулях» без права добавлять кампании) — этой вкладки больше нет.
                 if (!Available(_tab))
                     _tab = PageTab.Campaigns;
             });
