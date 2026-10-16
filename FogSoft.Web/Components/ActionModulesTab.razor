@@ -1,5 +1,6 @@
 @using System.Data
 @using FogSoft.Web.Infrastructure
+@using FogSoft.WinForm
 @using FogSoft.WinForm.Classes
 @using Merlin.Classes
 @inject BusyService Busy
@@ -25,8 +26,13 @@
     или отмеченной кампании; строки помнит сеанс (ModuleRowsMemory, переход со страницы и обратно их не
     теряет). Строке без кампании модульную кампанию создаёт (или находит) первая постановка — кампания
     появляется в списке слева отмеченной, строка остаётся на месте. Вкладка есть и у акции без модульных
-    кампаний, если можно добавлять кампании (В-23). Выделение, операции над выпусками и «Отменить» —
-    следующие подэтапы.
+    кампаний, если можно добавлять кампании (В-23).
+
+    Подэтап 6.4: вне «Режима добавления» щелчок выделяет ячейку и показывает её панель (Shift — прямоугольник,
+    Ctrl — добавить или убрать, Esc — снять; PlacementSelection, как на «Рекламных окнах»); по выделенным —
+    «Разместить ролик» и «Удалить выпуски» (десктоп комбо — Insert и Del по ячейкам): транзакция на день, один
+    пересчёт акции, отказы — таблицей. Опустевшую кампанию, которую создала вкладка в этом сеансе, «Удалить
+    выпуски» удаляет сама (В-21), её строки снова ожидающие. Меню выпуска в панели и «Отменить» — следующие подэтапы.
 *@
 
 <div class="modules-tab">
@@ -106,8 +112,9 @@
             }
             else
             {
-                @* Тулбар — в строке периода сетки, подпись и легенда — тонкой строкой под ней: сетке нужна вся высота. *@
-                <div class="grid-box">
+                @* Тулбар — в строке периода сетки, подпись и легенда — тонкой строкой под ней: сетке нужна вся высота.
+                   Esc снимает выделение: клавиши ловит обёртка сетки, фокус ставит щелчок. *@
+                <div class="grid-box" tabindex="-1" @ref="_gridBox" @onkeydown="GridKey">
                     <PlacementGrid Model="_week" Date="_date" SelectedKeys="SelectedKeys" CellTitle="CellTitle" Brush="_brushOn"
                                    DayTotalTitle="@(Tr.T("Выпусков модулей за день по отмеченным кампаниям"))"
                                    OnPrevious="Previous" OnNext="Next" OnJump="JumpTo" OnCellClick="ClickCell">
@@ -148,7 +155,7 @@
                         </TrailingTools>
                         <Caption>
                             <span class="mode-caption">@ModeCaption</span>
-                            <span class="text-muted">@Tr.T("Щелчок по ячейке — выпуски и окна модуля за день, в «Режиме добавления» — постановка модуля на весь день.")</span>
+                            <span class="text-muted">@Tr.T("Щелчок по ячейке — выпуски и окна модуля за день (Shift — прямоугольник, Ctrl — добавить), в «Режиме добавления» — постановка модуля на весь день.")</span>
                         </Caption>
                         <Legend>
                             <span class="legend">
@@ -160,6 +167,24 @@
                                 <span><i class="swatch"></i>@Tr.T("модуль в этот день не выходит целиком")</span>
                             </span>
                         </Legend>
+                        <Toolbar>
+                            @if (!_brushOn && _selection.Count > 0)
+                            {
+                                <div class="selection-bar">
+                                    <span class="selection-count">@Tr.Format("Выделено ячеек: {0}", _selection.Count)</span>
+                                    <button type="button" class="btn btn-sm btn-primary" disabled="@(!CanBrush)" title="@BrushHint" @onclick="() => Exclusive(PlaceSelected)">
+                                        <i class="bi bi-plus-lg" aria-hidden="true"></i>@Tr.T("Разместить ролик")
+                                    </button>
+                                    <button type="button" class="btn btn-sm btn-outline-secondary" disabled="@(!CanRemove)" title="@RemoveHint" @onclick="() => Exclusive(RemoveSelected)">
+                                        <i class="bi bi-trash3" aria-hidden="true"></i>@Tr.T("Удалить выпуски")
+                                    </button>
+                                    <button type="button" class="btn btn-sm btn-outline-secondary" title="@(Tr.T("Снять выделение (Esc)"))" aria-label="@(Tr.T("Снять выделение"))"
+                                            @onclick="ClearSelection">
+                                        <i class="bi bi-x-lg" aria-hidden="true"></i>
+                                    </button>
+                                </div>
+                            }
+                        </Toolbar>
                     </PlacementGrid>
                 </div>
             }
@@ -312,6 +337,13 @@
     private readonly Entity _issueEntity = ModuleDaySource.IssueEntity();
     private readonly Entity _allIssueEntity = WindowsSource.IssueEntity(full: true);
 
+    // Выделенные ячейки — «Разместить ролик» и «Удалить выпуски» по ним (подэтап 6.4).
+    private readonly PlacementSelection _selection = new();
+    private ElementReference _gridBox;
+
+    // «Удалить» у выпуска модуля (сущность 130) — считается при открытии набора; ядро проверяет его снова перед записью.
+    private bool _canDeleteIssues;
+
     private DataRow? RowOf(int campaignId) => _rows.FirstOrDefault(r => WindowsSource.CampaignIdOf(r) == campaignId);
 
     /// <summary>
@@ -331,7 +363,8 @@
             : _scope is { CampaignIds.Count: 0 } ? Tr.T("Модули: строки без рекламной кампании")
             : Tr.Format("Модули: отмечено кампаний — {0}", _scope?.CampaignIds.Count ?? 0);
 
-    private IReadOnlyCollection<int>? SelectedKeys => _cell == null ? null : new[] { _cell.Key };
+    // Рамкой — выделенные ячейки; в «Режиме добавления» выделения нет, рамкой — ячейка панели.
+    private IReadOnlyCollection<int>? SelectedKeys => !_brushOn ? _selection.Keys : _cell == null ? null : new[] { _cell.Key };
 
     private string NoRightText =>
         _scope is { CampaignIds.Count: 0 } ? Tr.T("Нет права добавлять рекламные кампании в эту акцию.")
@@ -345,6 +378,14 @@
         ActionWorkspace.IsDeleted(Action) ? Tr.T("Рекламная акция удалена. Обновите страницу.")
         : _scope is not { CanEdit: true } ? NoRightText
         : _brush.Row == null ? Tr.T("Не выбран рекламный ролик.")
+        : null;
+
+    private bool CanRemove => _scope is { CanEdit: true } && !ActionWorkspace.IsDeleted(Action) && _canDeleteIssues;
+
+    private string? RemoveHint =>
+        ActionWorkspace.IsDeleted(Action) ? Tr.T("Рекламная акция удалена. Обновите страницу.")
+        : _scope is not { CanEdit: true } ? NoRightText
+        : !_canDeleteIssues ? Tr.T("Нет права удалять выпуски модулей.")
         : null;
 
     // ---------- Кампании ----------
@@ -478,6 +519,7 @@
         _brush.Clear();
         _brushOn = false;
         ClosePanel();
+        _selection.Clear();
         if (!ShowsGrid)
             return;
 
@@ -489,6 +531,7 @@
             // Отмеченных кампаний не нашлось — их удалили; без отметок набор пустой и показывает только добавленные строки.
             if (ids.Count > 0 && scope.CampaignIds.Count == 0)
                 return;
+            _canDeleteIssues = EntityManager.GetEntity((int)Merlin.Entities.ModuleIssue).IsActionEnabled(Constants.EntityActions.Delete, ViewType.Journal);
             _scope = scope;
             // Первое открытие — с недели (месяца) первого выпуска, у кампаний без выпусков — с сегодняшней; дальше
             // период сохраняется при смене отметок: кампании одной акции сравнивают за один период.
@@ -523,6 +566,7 @@
     private void ReloadCore()
     {
         _week = ModuleDaySource.LoadPeriod(_scope!, _date, _period, _view, AddedRows);
+        _selection.Retain(_week);
         if (_cell != null && _week.Find(_cell.Key) is { } fresh)
             ShowCore(fresh);
         else
@@ -538,9 +582,12 @@
         ReloadCore();
     });
 
+    // Листание и переход к дате снимают выделение, как на «Рекламных окнах»; смена недели на месяц и обратно — нет: ключ
+    // ячейки (день и строка) тот же, ячейки вне нового периода уходят из выделения при перечитывании (ReloadCore).
     private Task Previous()
     {
         if (_week == null) return Task.CompletedTask;
+        _selection.Clear();
         _date = _week.StartDate.AddDays(-1);
         return Reload();
     }
@@ -548,12 +595,14 @@
     private Task Next()
     {
         if (_week == null) return Task.CompletedTask;
+        _selection.Clear();
         _date = _week.FinishDate.AddDays(1);
         return Reload();
     }
 
     private Task JumpTo(DateTime date)
     {
+        _selection.Clear();
         _date = date;
         return Reload();
     }
@@ -575,7 +624,7 @@
 
     private async Task ClickCell(PlacementGrid.CellEvent e)
     {
-        if (_scope == null)
+        if (_scope == null || _week == null)
             return;
 
         if (_brushOn)
@@ -588,12 +637,31 @@
             return;
         }
 
-        if (_details != null && _cell?.Key == e.Cell.Key)
-            return;
-        _issuesWindow = null;
-        _windowIssues = null;
-        await Run(() => ShowCore(e.Cell));
+        // Как на «Рекламных окнах»: щелчок выделяет (Shift — прямоугольник, Ctrl — добавить или убрать) и показывает
+        // панель ячейки; панель той же ячейки не перечитывается.
+        _selection.Click(_week, e.Cell, e.Mouse.ShiftKey, e.Mouse.CtrlKey || e.Mouse.MetaKey);
+        if (_details == null || _cell?.Key != e.Cell.Key)
+        {
+            _issuesWindow = null;
+            _windowIssues = null;
+            await Run(() => ShowCore(e.Cell));
+        }
+        await FocusGrid();
     }
+
+    private async Task FocusGrid()
+    {
+        try { await _gridBox.FocusAsync(preventScroll: true); }
+        catch (Exception) { /* сетка уже убрана со страницы — фокус не нужен */ }
+    }
+
+    private void GridKey(KeyboardEventArgs e)
+    {
+        if (e.Key == "Escape")
+            _selection.Clear();
+    }
+
+    private void ClearSelection() => _selection.Clear();
 
     /// <summary>
     /// Панель места: выпуски и окна модуля за день; раскрытые «Все выходы в эфир» того же окна перечитываются.
@@ -638,7 +706,12 @@
 
     // ---------- Режим добавления ----------
 
-    private void ToggleBrush() => _brushOn = !_brushOn;
+    private void ToggleBrush()
+    {
+        _brushOn = !_brushOn;
+        if (_brushOn)
+            _selection.Clear();
+    }
 
     /// <summary>
     /// Клик «Режима добавления»: модуль строки на весь день — ролик кисти с позицией «Позиционирования», одной транзакцией
@@ -670,6 +743,133 @@
         if (placed)
             await Changed.InvokeAsync();
     }
+
+    // ---------- Операции по выделенным ячейкам ----------
+
+    /// <summary>
+    /// «Разместить ролик» (десктоп комбо — Insert по ячейкам): модуль строки каждой выделенной ячейки на весь день — ролик кисти
+    /// с позицией «Позиционирования» (ModuleDaySource.Place: транзакция на день, один пересчёт акции). Кампании, которые создала
+    /// или нашла постановка в строки без кампании, отмечаются слева, созданные — запоминаются (В-21), как у клика.
+    /// </summary>
+    private async Task PlaceSelected()
+    {
+        if (!CanBrush || _scope == null || _week == null || _selection.Count == 0)
+            return;
+
+        IReadOnlyList<PlacementCell> cells = _selection.Selected(_week);
+        if (!await Confirm(Tr.T("Разместить ролик"), Tr.Format("Разместить ролик в выбранных ячейках? ({0} шт.)", cells.Count), Tr.T("Разместить")))
+            return;
+
+        ModuleDaySource.ModuleScope scope = _scope;
+        ModuleDaySource.ModuleBatchResult? result = null;
+        int rollerId = _brush.RollerId!.Value;
+        int position = _view.Position;
+        await Run(() =>
+        {
+            result = ModuleDaySource.Place(scope, cells, rollerId, position);
+            // Сразу после записи, до перечитывания: сбой чтения не должен оставить созданную кампанию без отметки и учёта.
+            foreach (int id in result.CreatedCampaignIds)
+                Memory.CampaignCreated(Action.ActionId, id);
+            foreach (int id in scope.CampaignIds)
+                if (!_checked.Contains(id))
+                    _checked.Add(id);
+            ReloadCore();
+        });
+        await AfterBatch(result, done => Tr.Format("Добавлено выпусков: {0}, не добавлено: {1}", done, result!.NotDone), "Модуль"); // i18n-ok: заголовок колонки переводит ObjectList при выводе
+    }
+
+    /// <summary>
+    /// «Удалить выпуски» (десктоп комбо — Del по ячейкам): выпуски модулей отмеченных кампаний в выделенных ячейках. Роликов
+    /// несколько — чек-лист «Какие ролики удалить», один — вопрос с числом выпусков; удаляются только ролики, которые видел
+    /// пользователь. Опустевшую кампанию, созданную вкладкой в этом сеансе, ядро удаляет в той же транзакции (В-21): она
+    /// уходит из набора и из памяти «создана здесь», её строки снова ожидающие; остальные опустевшие — плашка «без выпусков»
+    /// на «Рекламных кампаниях» (В-6). Отметка удалённой кампании снимается, когда страница перечитает список кампаний.
+    /// </summary>
+    private async Task RemoveSelected()
+    {
+        if (!CanRemove || _scope == null || _week == null || _selection.Count == 0)
+            return;
+
+        ModuleDaySource.ModuleScope scope = _scope;
+        IReadOnlyList<PlacementCell> cells = _selection.Selected(_week);
+        ModuleDaySource.CellIssues? issues = null;
+        await Run(() => issues = ModuleDaySource.IssuesInCells(scope, cells));
+        if (issues == null)
+            return;
+        if (issues.Count == 0)
+        {
+            await ShowInfo(Tr.T("Удалить выпуски"), Tr.T("В выбранных ячейках нет выпусков этой акции."));
+            return;
+        }
+
+        IReadOnlyCollection<int> rollerIds = issues.RollerIds;
+        if (issues.RollerIds.Count > 1)
+        {
+            IReadOnlyCollection<int>? chosen = await ChooseRollers(Tr.T("Удалить выпуски"), Tr.T("Какие ролики удалить в выбранных ячейках?"),
+                issues.RollerIds, Tr.T("Удалить"));
+            if (chosen == null)
+                return;
+            rollerIds = chosen;
+        }
+        else if (!await Confirm(Tr.T("Удалить выпуски"), Tr.Format("Удалить выпуски в выбранных ячейках? ({0} шт.)", issues.Count), Tr.T("Удалить")))
+            return;
+
+        ISet<int> createdHere = Memory.CreatedCampaigns(Action.ActionId);
+        ModuleDaySource.ModuleBatchResult? result = null;
+        await Run(() =>
+        {
+            result = ModuleDaySource.Remove(scope, issues.Only(rollerIds), createdHere);
+            foreach (int id in result.DeletedCampaignIds)
+                Memory.CampaignDeleted(Action.ActionId, id);
+            ReloadCore();
+        });
+        await AfterBatch(result, done => Tr.Format("Удалено выпусков: {0}, не удалено: {1}", done, result!.NotDone), "Выпуск"); // i18n-ok: заголовок колонки переводит ObjectList при выводе
+    }
+
+    /// <summary>
+    /// После пачки: шапка и кампании страницы перечитываются; отказы, прерывание и сбой пересчёта — таблицей, в заголовке
+    /// строка-счётчик (docs/UI_RULES.md, п. 2.2). Об успехе отдельно не сообщаем — итог виден в сетке, как у окон.
+    /// </summary>
+    private async Task AfterBatch(ModuleDaySource.ModuleBatchResult? result, Func<int, string> caption, string nameColumn)
+    {
+        if (result == null)
+            return;
+        if (result.Done > 0)
+            await Changed.InvokeAsync();
+        if (result.Errors.Rows.Count > 0)
+            await Tables.ShowAsync(caption(result.Done), result.Errors,
+                new Entity.Attribute("name", nameColumn, "nvarchar"),
+                new Entity.Attribute("description", "Ошибка", "nvarchar")); // i18n-ok: заголовок колонки переводит ObjectList при выводе
+    }
+
+    /// <summary>Чек-лист роликов (номера — из списка «Ролики»); null — отмена. Пустой выбор не принимается.</summary>
+    private async Task<IReadOnlyCollection<int>?> ChooseRollers(string title, string question, IReadOnlyList<int> rollerIds, string okText)
+    {
+        var model = new RollerChecklistForm.Model { Question = question, Multiple = true };
+        await Run(() => model.Rollers = WindowsSource.RollerRows(_scope!, rollerIds));
+        if (_error != null)
+            return null;
+
+        while (true)
+        {
+            if (await Dialogs.ShowAsync(title, builder =>
+                {
+                    builder.OpenComponent<RollerChecklistForm>(0);
+                    builder.AddComponentParameter(1, nameof(RollerChecklistForm.Value), model);
+                    builder.CloseComponent();
+                }, okText: okText, wide: true) != DialogOutcome.Ok)
+                return null;
+            if (model.Selected.Count > 0)
+                return model.Selected;
+            model.Message = Tr.T("Отметьте хотя бы один ролик.");
+        }
+    }
+
+    private async Task<bool> Confirm(string title, string text, string okText) =>
+        await Dialogs.ShowAsync(title, b => b.AddContent(0, text), okText: okText) == DialogOutcome.Ok;
+
+    private Task ShowInfo(string caption, string text) =>
+        Dialogs.ShowAsync(caption, builder => builder.AddContent(0, text), okText: Tr.T("Ок"), showCancel: false);
 
     // ---------- «Показать модули» ----------
 

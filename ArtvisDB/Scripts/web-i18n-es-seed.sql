@@ -1,5 +1,5 @@
 ﻿/*
-    ДЕПЛОЙ: переводы веб-версии на язык «es» (2147 строк). docs/tasks/web-i18n.md, этап 5.
+    ДЕПЛОЙ: переводы веб-версии на язык «es» (2156 строк). docs/tasks/web-i18n.md, этап 5.
     СГЕНЕРИРОВАН из ArtvisDB/Scripts/i18n/es.tsv скриптом build-seed.py — руками не править.
 
     ПРЕДУСЛОВИЕ     накачен web-i18n-translation-deploy.sql (таблица iTranslation).
@@ -2150,7 +2150,6 @@ INSERT INTO #t ([source], [text]) VALUES
 (N'Ролик «{0}» нельзя поставить в модуль: в модули ставятся только ролики типов «Реклама», «Новость» и «Программа».', N'El spot «{0}» no se puede colocar en un módulo: en los módulos solo se colocan spots de los tipos «Publicidad», «Noticia» y «Programa».'),
 (N'Модуль «{0}» ({1}) не выходит {2:dd.MM.yyyy} целиком, выпуск не создан.', N'El módulo «{0}» ({1}) no sale completo el {2:dd.MM.yyyy}; no se creó la emisión.'),
 (N'Ролик, который ставится в модули, — выбран в списке «Ролики»', N'Spot que se coloca en los módulos: el elegido en la lista «Spots»'),
-(N'Щелчок по ячейке — выпуски и окна модуля за день, в «Режиме добавления» — постановка модуля на весь день.', N'Clic en una celda: las emisiones y las ventanas del módulo en el día; en el «Modo de agregado», colocar el módulo para todo el día.'),
 (N'Модулей: {0}', N'Módulos: {0}'),
 (N'Выберите, какие модули показать.', N'Seleccione qué módulos mostrar.'),
 (N'У радиостанций нет агентства, их модули показаны не будут: {0}.', N'Las emisoras no tienen agencia, sus módulos no se mostrarán: {0}.'),
@@ -2169,7 +2168,17 @@ INSERT INTO #t ([source], [text]) VALUES
 (N'Добавить в сетку модули комбо-модуля, радиостанции или отмеченной рекламной кампании', N'Agregar a la cuadrícula los módulos de un módulo combo, de una emisora o de la pauta publicitaria marcada'),
 (N'Отметьте модульную рекламную кампанию слева.', N'Marque una pauta publicitaria modular a la izquierda.'),
 (N'Показано модулей: {0}, не показано радиостанций: {1}', N'Módulos mostrados: {0}, emisoras no mostradas: {1}'),
-(N'Модули: строки без рекламной кампании', N'Módulos: filas sin pauta publicitaria');
+(N'Модули: строки без рекламной кампании', N'Módulos: filas sin pauta publicitaria'),
+(N'Размещение прервано: {0} Выпуски этого дня не добавлены, добавленные ранее — сохранены. Не обработано дней: {1}.', N'Colocación interrumpida: {0} Las emisiones de este día no se agregaron; las agregadas antes se conservan. Días sin procesar: {1}.'),
+(N'Удаление прервано: {0} Выпуски этого дня не удалены, выпуски прежних дней удалены. Не обработано дней: {1}.', N'Eliminación interrumpida: {0} Las emisiones de este día no se eliminaron; las de los días anteriores sí se eliminaron. Días sin procesar: {1}.'),
+(N'Выделено ячеек: {0}', N'Celdas seleccionadas: {0}'),
+(N'Разместить ролик в выбранных ячейках? ({0} шт.)', N'¿Colocar el spot en las celdas seleccionadas? ({0} uds.)'),
+(N'В выбранных ячейках нет выпусков этой акции.', N'En las celdas seleccionadas no hay emisiones de esta campaña.'),
+(N'Какие ролики удалить в выбранных ячейках?', N'¿Qué spots eliminar en las celdas seleccionadas?'),
+(N'Удалить выпуски в выбранных ячейках? ({0} шт.)', N'¿Eliminar las emisiones de las celdas seleccionadas? ({0} uds.)'),
+(N'Нет права удалять выпуски модулей.', N'No tiene permiso para eliminar emisiones de módulos.'),
+(N'Щелчок по ячейке — выпуски и окна модуля за день (Shift — прямоугольник, Ctrl — добавить), в «Режиме добавления» — постановка модуля на весь день.', N'Clic en una celda: las emisiones y las ventanas del módulo en el día (Mayús: rectángulo, Ctrl: agregar); en el «Modo de agregado», colocar el módulo para todo el día.'),
+(N'Ролик выпуска изменили после вопроса — выпуск не удалён.', N'El spot de la emisión se cambió después de la pregunta: la emisión no se eliminó.');
 GO
 
 BEGIN TRANSACTION;

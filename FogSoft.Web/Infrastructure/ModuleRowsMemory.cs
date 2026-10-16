@@ -63,4 +63,29 @@ public sealed class ModuleRowsMemory
 	/// <summary>Создала ли кампанию вкладка в этом сеансе — только такую опустевшую кампанию можно удалить без вопроса (В-21).</summary>
 	public bool IsCreatedHere(int actionId, int campaignId) =>
 		_created.TryGetValue(actionId, out HashSet<int>? set) && set.Contains(campaignId);
+
+	/// <summary>Кампании акции, созданные вкладкой в этом сеансе, — копией: «Удалить выпуски» (ModuleDaySource.Remove, В-21).</summary>
+	public ISet<int> CreatedCampaigns(int actionId) =>
+		_created.TryGetValue(actionId, out HashSet<int>? set) ? new HashSet<int>(set) : new HashSet<int>();
+
+	/// <summary>
+	/// Кампанию, созданную вкладкой, удалили вместе с последним выпуском (В-21) — она больше не «создана здесь». Строки без
+	/// номера кампании набор снова покажет ожидающими; строки, привязанные к ней («Модули рекламной кампании»), становятся
+	/// такими же ожидающими, иначе пропали бы вместе с кампанией.
+	/// </summary>
+	public void CampaignDeleted(int actionId, int campaignId)
+	{
+		if (_created.TryGetValue(actionId, out HashSet<int>? set))
+			set.Remove(campaignId);
+		if (!_rows.TryGetValue(actionId, out List<ModuleDaySource.AddedRow>? list))
+			return;
+		List<ModuleDaySource.AddedRow> bound = list.Where(r => r.CampaignId == campaignId).ToList();
+		foreach (ModuleDaySource.AddedRow row in bound)
+		{
+			list.Remove(row);
+			ModuleDaySource.AddedRow pending = row.WithoutCampaign();
+			if (!list.Any(r => r.Key == pending.Key && r.CampaignId == null))
+				list.Add(pending);
+		}
+	}
 }

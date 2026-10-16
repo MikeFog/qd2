@@ -2,8 +2,10 @@ using System;
 using System.Collections.Generic;
 using System.Data;
 using System.Data.SqlClient;
+using System.Diagnostics;
 using System.Globalization;
 using System.Linq;
+using log4net;
 using FogSoft.WinForm;
 using FogSoft.WinForm.Classes;
 using FogSoft.WinForm.DataAccess;
@@ -23,6 +25,10 @@ namespace Merlin.Classes
 	/// Запись (подэтап 6.2) — клик по месту, как клик комбо: IsModuleExist, ModuleIssueIUD AddItem и ActionRecalculate одной
 	/// транзакцией. Права проверяет фасад перед записью: процедуры о «своей / чужой» акции не знают.
 	///
+	/// Выделение (подэтап 6.4) — «Разместить ролик» и «Удалить выпуски» по выделенным местам (десктоп комбо — Insert и Del):
+	/// транзакция на день выделения, как у шаблонов, каждый вызов ModuleIssueIUD — шаг с точкой сохранения, один пересчёт в
+	/// конце; опустевшую кампанию, которую создала вкладка в этом сеансе, «Удалить выпуски» удаляет в той же транзакции (В-21).
+	///
 	/// «Показать модули…» (подэтап 6.3) — добавленные строки (<see cref="AddedRow"/>): модули комбо-модуля, станции или
 	/// своей кампании. Строке без кампании модульная кампания создаётся при первой постановке в той же транзакции — как
 	/// режимы 1/3 десктопного комбо (ComboModulePlacementForm.EnsureCampaign). Помнит строки экран (на сеанс), не ядро.
@@ -31,6 +37,8 @@ namespace Merlin.Classes
 	/// </summary>
 	public static class ModuleDaySource
 	{
+		private static readonly ILog Log = LogManager.GetLogger(typeof(ModuleDaySource));
+
 		// ---------- Кампании вкладки ----------
 
 		/// <summary>Модульная кампания — её размещение показывает вкладка «Модули».</summary>
@@ -97,6 +105,25 @@ namespace Merlin.Classes
 					return;
 				_campaignIds.Add(campaignId);
 				_campaigns.Add(campaignId, campaign);
+			}
+
+			/// <summary>
+			/// Кампанию удалили («Удалить выпуски», В-21): её строки уходят из набора, а их номера возвращаются ключам
+			/// ожидающих строк — добавленная строка этой станции, оплаты и агентства снова станет ожидающей на своём месте.
+			/// </summary>
+			internal void RemoveCampaign(int campaignId)
+			{
+				if (!_campaigns.TryGetValue(campaignId, out CampaignInfo c))
+					return;
+				_campaignIds.Remove(campaignId);
+				_campaigns.Remove(campaignId);
+				foreach ((int ModuleId, int CampaignId) row in _rowNumbers.Keys.Where(k => k.CampaignId == campaignId).ToList())
+				{
+					var pending = (row.ModuleId, c.MassmediaId, c.PaymentTypeId, c.AgencyId);
+					if (!_pendingNumbers.ContainsKey(pending))
+						_pendingNumbers.Add(pending, _rowNumbers[row]);
+					_rowNumbers.Remove(row);
+				}
 			}
 
 			private readonly Dictionary<(int ModuleId, int CampaignId), int> _rowNumbers = new Dictionary<(int, int), int>();
@@ -299,6 +326,10 @@ namespace Merlin.Classes
 
 			/// <summary>Кампания строки, если она уже была при добавлении; null — создаст постановка.</summary>
 			public int? CampaignId { get; }
+
+			/// <summary>Та же строка без кампании — ожидающая: кампанию строки удалили (В-21), первая постановка создаст её заново.</summary>
+			public AddedRow WithoutCampaign() => CampaignId == null ? this
+				: new AddedRow(ModuleId, ModuleName, MassmediaId, Station, PaymentTypeId, PaymentTypeName, AgencyId, AgencyName, null);
 
 			/// <summary>
 			/// Ключ строки — (модуль, станция, тип оплаты, агентство): у станции не бывает двух модульных кампаний с одним типом
@@ -815,17 +846,24 @@ namespace Merlin.Classes
 			});
 
 			if (pending != null)
-				s.AddCampaign(campaignId, new CampaignInfo
-				{
-					MassmediaId = pending.MassmediaId,
-					Station = pending.Station,
-					PaymentTypeId = pending.PaymentTypeId,
-					PaymentTypeName = pending.PaymentTypeName,
-					AgencyId = pending.AgencyId,
-					AgencyName = pending.AgencyName,
-				});
+				s.AddCampaign(campaignId, InfoOf(pending));
 
-			return new PlacedModuleIssue
+			return Placed(m, roller, day, campaignId, moduleIssueId, created);
+		}
+
+		/// <summary>Кампания добавленной строки для набора вкладки — станция, тип оплаты и агентство строки.</summary>
+		private static CampaignInfo InfoOf(AddedRow row) => new CampaignInfo
+		{
+			MassmediaId = row.MassmediaId,
+			Station = row.Station,
+			PaymentTypeId = row.PaymentTypeId,
+			PaymentTypeName = row.PaymentTypeName,
+			AgencyId = row.AgencyId,
+			AgencyName = row.AgencyName,
+		};
+
+		private static PlacedModuleIssue Placed(ModuleDay m, Roller roller, DateTime day, int campaignId, int moduleIssueId, bool campaignCreated) =>
+			new PlacedModuleIssue
 			{
 				ModuleIssueId = moduleIssueId,
 				CampaignId = campaignId,
@@ -834,9 +872,8 @@ namespace Merlin.Classes
 				Date = day,
 				ModuleName = m.ModuleName,
 				Name = string.Format("{0:dd.MM.yyyy} — {1} — {2}", day, m.ModuleName, roller.Name),
-				CampaignCreated = created,
+				CampaignCreated = campaignCreated,
 			};
-		}
 
 		/// <summary>
 		/// Модульная кампания акции для добавленной строки — внутри транзакции постановки: сначала поиск по станции, типу
@@ -885,12 +922,22 @@ namespace Merlin.Classes
 		}
 
 		/// <summary>Станция модульной кампании места по свежему списку кампаний акции; кампании в нём нет — её удалили.</summary>
-		private static int ModularCampaignStation(ActionOnMassmedia action, int campaignId)
+		private static int ModularCampaignStation(ActionOnMassmedia action, int campaignId) =>
+			CampaignStation(ModularCampaigns(action), campaignId);
+
+		private static int CampaignStation(Dictionary<int, DataRow> campaigns, int campaignId) =>
+			campaigns.TryGetValue(campaignId, out DataRow row)
+				? ParseHelper.GetInt32FromObject(row[Campaign.ParamNames.MassmediaId], 0)
+				: throw new InvalidOperationException(Tr.T("Рекламная кампания удалена. Обновите страницу."));
+
+		/// <summary>Модульные кампании акции по свежему списку (Campaigns @actionID) — строки по номеру кампании.</summary>
+		private static Dictionary<int, DataRow> ModularCampaigns(ActionOnMassmedia action)
 		{
+			Dictionary<int, DataRow> result = new Dictionary<int, DataRow>();
 			foreach (DataRow row in ActionWorkspace.LoadCampaigns(action).Rows)
-				if (WindowsSource.CampaignIdOf(row) == campaignId && IsModular(row))
-					return ParseHelper.GetInt32FromObject(row[Campaign.ParamNames.MassmediaId], 0);
-			throw new InvalidOperationException(Tr.T("Рекламная кампания удалена. Обновите страницу."));
+				if (IsModular(row))
+					result[WindowsSource.CampaignIdOf(row)] = row;
+			return result;
 		}
 
 		/// <summary>Типы роликов, которые ставятся в модули (iRollerActionType): 1 — Реклама, 2 — Новость, 3 — Программа.</summary>
@@ -968,6 +1015,440 @@ namespace Merlin.Classes
 					return Convert.ToInt32(table.Rows[0][Issue.ParamNames.ModuleIssueId]);
 			}
 			return -1;
+		}
+
+		// ---------- Выделенные места: «Разместить ролик» и «Удалить выпуски» ----------
+
+		/// <summary>
+		/// Итог действия над выделенными местами (десктоп комбо — Insert и Del по выделению): сколько выпусков модулей
+		/// поставлено или снято, отказы «что и где — причина», а также то, что нужно экрану для «Отменить последнее» и учёта
+		/// кампаний, созданных вкладкой (В-21).
+		/// </summary>
+		public sealed class ModuleBatchResult
+		{
+			internal ModuleBatchResult()
+			{
+				Errors = new DataTable();
+				Errors.Columns.Add("name", typeof(string));
+				Errors.Columns.Add("description", typeof(string));
+			}
+
+			/// <summary>Поставлено или снято выпусков модулей.</summary>
+			public int Done { get; internal set; }
+
+			/// <summary>Не поставлено или не снято: отказы плюс места (выпуски) дней, до которых пачка не дошла из-за сбоя.</summary>
+			public int NotDone { get; internal set; }
+
+			/// <summary>name — что и где, description — причина: отказ, прерывание пачки, сбой пересчёта.</summary>
+			public DataTable Errors { get; }
+
+			/// <summary>Пачку прервал сбой (не бизнес-отказ): прежние дни записаны, этот и следующие — нет.</summary>
+			public bool Interrupted { get; internal set; }
+
+			/// <summary>«Разместить ролик»: поставленные выпуски — номера из ответа ModuleIssueIUD (запись для «Отменить последнее»).</summary>
+			public List<PlacedModuleIssue> Created { get; } = new List<PlacedModuleIssue>();
+
+			/// <summary>«Разместить ролик»: кампании, которые создала постановка в добавленные строки, — «созданы вкладкой» (В-21).</summary>
+			public List<int> CreatedCampaignIds { get; } = new List<int>();
+
+			/// <summary>«Удалить выпуски»: опустевшие кампании, созданные вкладкой, — удалены в той же транзакции (В-21).</summary>
+			public List<int> DeletedCampaignIds { get; } = new List<int>();
+
+			/// <summary>
+			/// «Удалить выпуски»: опустевшие кампании, созданные вкладкой, которые остались — нет права удалять кампании или
+			/// удаление отказало. Прочие опустевшие кампании показывает плашка страницы «без выпусков» (В-6).
+			/// </summary>
+			public List<int> KeptEmptyCampaignIds { get; } = new List<int>();
+
+			internal void Note(string name, string description) => Errors.Rows.Add(name, description);
+		}
+
+		/// <summary>Итог одного дня пачки — попадает в <see cref="ModuleBatchResult"/> и в набор только после коммита дня.</summary>
+		private sealed class DayWork
+		{
+			internal WindowsSource.BatchResult Steps { get; } = new WindowsSource.BatchResult();
+			internal List<PlacedModuleIssue> Placed { get; } = new List<PlacedModuleIssue>();
+
+			/// <summary>Кампании добавленных строк, найденные или созданные за день, — в набор вкладки.</summary>
+			internal Dictionary<int, AddedRow> PendingCampaigns { get; } = new Dictionary<int, AddedRow>();
+
+			internal List<int> CreatedCampaigns { get; } = new List<int>();
+			internal List<int> DeletedCampaigns { get; } = new List<int>();
+			internal List<int> KeptEmpty { get; } = new List<int>();
+			internal List<(string Name, string Description)> Notes { get; } = new List<(string, string)>();
+		}
+
+		/// <summary>
+		/// Дни пачки по порядку, каждый — в своей транзакции, как шаблоны (этап 5): блокировки окон держатся доли секунды, а не
+		/// всю пачку. <paramref name="attempt"/> пишет день с номером i в открытой им транзакции; бизнес-отказы шагов — строки
+		/// итога. Взаимоблокировка откатывает день целиком — он повторяется один раз (поэтому попытка собирает итог дня заново);
+		/// иной сбой откатывает день и прерывает пачку, прежние дни остаются. Итог дня и <paramref name="committed"/> — только
+		/// после коммита: кампания, созданная в откаченном дне, не попадёт ни в итог, ни в набор.
+		/// </summary>
+		private static void RunDays(ModuleBatchResult result, string kind, string context, IReadOnlyList<(DateTime Day, int Count)> days,
+			Func<int, DayWork> attempt, System.Action<DayWork> committed, Func<Exception, int, string> interrupted)
+		{
+			for (int i = 0; i < days.Count; i++)
+			{
+				DayWork work = null;
+				Exception failure = null;
+				for (int n = 0; n < 2 && work == null && failure == null; n++)
+				{
+					try
+					{
+						work = attempt(i);
+					}
+					catch (SqlException ex) when (ex.Number == 1205 && n == 0)
+					{
+						Log.Warn($"Modules {kind}: deadlock on {days[i].Day:dd.MM.yyyy} ({context}), retrying the day", ex);
+					}
+					catch (Exception ex)
+					{
+						failure = ex;
+					}
+				}
+				if (failure != null)
+				{
+					Log.Error($"Modules {kind} interrupted on {days[i].Day:dd.MM.yyyy} ({context})", failure);
+					result.Interrupted = true;
+					result.NotDone += days.Skip(i).Sum(d => d.Count);
+					result.Note(days[i].Day.ToString("dd.MM.yyyy"), interrupted(failure, days.Count - i));
+					return;
+				}
+
+				result.Done += work.Steps.Done;
+				result.NotDone += work.Steps.Failed;
+				foreach (DataRow refused in work.Steps.Errors.Rows)
+					result.Note(Convert.ToString(refused["name"]), Convert.ToString(refused["description"]));
+				foreach ((string name, string description) in work.Notes)
+					result.Note(name, description);
+				result.Created.AddRange(work.Placed);
+				result.CreatedCampaignIds.AddRange(work.CreatedCampaigns);
+				result.DeletedCampaignIds.AddRange(work.DeletedCampaigns);
+				result.KeptEmptyCampaignIds.AddRange(work.KeptEmpty);
+				committed(work);
+			}
+		}
+
+		/// <summary>Один пересчёт акции после пачки, своей транзакцией; сбой — строка итога (выпуски уже записаны), как у шаблонов.</summary>
+		private static void Recalculate(ActionOnMassmedia action, ModuleBatchResult result, string kind)
+		{
+			try
+			{
+				WindowsSource.RunInTransaction(() => action.Recalculate(false));
+			}
+			catch (Exception ex)
+			{
+				Log.Error($"Modules {kind}: recalculation failed (action {action.ActionId})", ex);
+				result.Note("", Tr.Format("Пересчёт акции не выполнен: {0} Цена акции обновится при следующем изменении размещения.", ErrorManager.GetErrorMessage(ex)));
+			}
+		}
+
+		/// <summary>Выделенные места без повторов; место не из набора (чужая строка, пустая ячейка) — отказ до записи.</summary>
+		private static List<PlacementCell> DistinctCells(ModuleScope s, IEnumerable<PlacementCell> cells)
+		{
+			List<PlacementCell> result = new List<PlacementCell>();
+			HashSet<int> keys = new HashSet<int>();
+			foreach (PlacementCell cell in cells ?? Enumerable.Empty<PlacementCell>())
+			{
+				if (!IsOfScope(s, cell?.ModuleDay))
+					throw new InvalidOperationException(Tr.T("Место не относится к отмеченным модульным кампаниям. Обновите страницу."));
+				if (keys.Add(cell.Key))
+					result.Add(cell);
+			}
+			return result;
+		}
+
+		/// <summary>Для строки итога: «дата — радиостанция — модуль».</summary>
+		private static string CellName(ModuleDay m, DateTime day) => string.Format("{0:dd.MM.yyyy} — {1} — {2}", day, m.Station, m.ModuleName);
+
+		/// <summary>
+		/// «Разместить ролик» по выделенным местам (десктоп комбо — Insert по выделению, ComboModulePlacementForm.AddIssuesInSelectedCells):
+		/// модуль строки каждого места на весь день, ролик и позиция кисти. Проверки — те же, что у клика (<see cref="PlaceOne"/>),
+		/// и все до записи: места из модели набора; свежая акция и права, а если среди мест есть ожидающие строки — и право
+		/// создавать модульные кампании; кампании мест — в свежем списке кампаний акции; ролик из списка и типов 1–3 (В-25);
+		/// прайс-лист модуля каждого места.
+		///
+		/// Запись — по дням выделения, день — одной транзакцией (<see cref="RunDays"/>); внутри дня места по модулю, каждое — шаг
+		/// с точкой сохранения (RangeSource.Step): ModuleIssueIUD вставляет ModuleIssue до своих проверок (AgitationMixError,
+		/// hlp_IssueVerify), без отката к точке отказ оставил бы выпуск без строк Issue. Шаг: IsModuleExist → у ожидающей строки
+		/// кампания (поиск внутри транзакции, иначе CampaignIUD — <see cref="EnsureCampaign"/>) → ModuleIssueIUD AddItem (номер
+		/// выпуска из ответа; −1 — модуль не целиком). Отказ шага откатывает и кампанию, созданную в этом шаге, поэтому номер
+		/// кампании между шагами не запоминается: следующий шаг той же строки снова ищет её в транзакции и при нужде создаёт.
+		/// Бизнес-отказ — строка итога, пачка идёт дальше; иной сбой откатывает день и прерывает пачку. Пересчёт акции — один, в
+		/// конце, своей транзакцией; акция прочитана свежей до записи, поэтому коррекция платежа подтверждённой акции считает
+		/// разницу цены за всю пачку. Кампании ожидающих строк после коммита дня попадают в набор (<see cref="ModuleScope.CampaignIds"/>).
+		/// </summary>
+		public static ModuleBatchResult Place(ModuleScope s, IEnumerable<PlacementCell> cells, int rollerId, int position)
+		{
+			List<PlacementCell> places = DistinctCells(s, cells);
+			ModuleBatchResult result = new ModuleBatchResult();
+			if (places.Count == 0)
+				return result;
+
+			ActionOnMassmedia action = LoadForWrite(s);
+			if (places.Any(c => c.ModuleDay.CampaignId == 0) && !(s.CanAddCampaigns && CanAddModuleCampaigns(action)))
+				throw new InvalidOperationException(Tr.T(Properties.Resources.OperationNotAllowed));
+			Roller roller = ModuleRoller(s, rollerId, action.FirmID);
+			Dictionary<int, DataRow> campaigns = ModularCampaigns(action);
+			HashSet<(int, int, int, DateTime)> checkedPricelists = new HashSet<(int, int, int, DateTime)>();
+			foreach (PlacementCell cell in places)
+			{
+				ModuleDay m = cell.ModuleDay;
+				int massmediaId = m.CampaignId == 0 ? m.Added.MassmediaId : CampaignStation(campaigns, m.CampaignId);
+				if (checkedPricelists.Add((m.ModuleId, m.ModulePricelistId, massmediaId, cell.Date.Date)) && !IsPricelistOfDay(m, massmediaId, cell.Date.Date))
+					throw new InvalidOperationException(Tr.Format("Прайс-лист модуля «{0}» на {1:dd.MM.yyyy} изменился. Обновите страницу.", m.ModuleName, cell.Date.Date));
+			}
+
+			// Шаги — по (день, модуль), внутри модуля — по строке: один порядок блокировок у всех пачек.
+			List<(DateTime Day, List<PlacementCell> Cells)> days = places.GroupBy(c => c.Date.Date).OrderBy(g => g.Key)
+				.Select(g => (g.Key, g.OrderBy(c => c.ModuleDay.ModuleId).ThenBy(c => c.Key).ToList())).ToList();
+			using (OperationScope.Start($"ModulesPlace action={s.ActionId} cells={places.Count}"))
+			{
+				Stopwatch sw = Stopwatch.StartNew();
+				RunDays(result, "place", "action " + s.ActionId, days.Select(d => (d.Day, d.Cells.Count)).ToList(), i =>
+				{
+					DayWork work = new DayWork();
+					DateTime day = days[i].Day;
+					WindowsSource.RunInTransaction(() =>
+					{
+						foreach (PlacementCell cell in days[i].Cells)
+							RangeSource.Step(work.Steps, CellName(cell.ModuleDay, day), 1, () => PlaceStep(action, cell.ModuleDay, roller, position, day, work));
+					});
+					return work;
+				}, work =>
+				{
+					foreach (KeyValuePair<int, AddedRow> campaign in work.PendingCampaigns)
+						s.AddCampaign(campaign.Key, InfoOf(campaign.Value));
+				}, (failure, daysLeft) => Tr.Format("Размещение прервано: {0} Выпуски этого дня не добавлены, добавленные ранее — сохранены. Не обработано дней: {1}.",
+					ErrorManager.GetErrorMessage(failure), daysLeft));
+
+				if (result.Done > 0)
+					Recalculate(action, result, "place");
+				Log.Info($"Modules place completed in {sw.ElapsedMilliseconds}ms action={s.ActionId} cells={places.Count} days={days.Count}" +
+					$" roller={rollerId} position={position} placed={result.Done} notPlaced={result.NotDone} campaignsCreated={result.CreatedCampaignIds.Count}");
+			}
+			return result;
+		}
+
+		/// <summary>Шаг «Разместить ролик» в транзакции дня (см. <see cref="Place"/>): причина отказа или null.</summary>
+		private static string PlaceStep(ActionOnMassmedia action, ModuleDay m, Roller roller, int position, DateTime day, DayWork work)
+		{
+			if (!IsModuleWhole(m.ModulePricelistId, day))
+				return NotWhole(m, day).Message;
+			int campaignId = m.CampaignId;
+			bool created = false;
+			if (campaignId == 0)
+				campaignId = EnsureCampaign(action, m.Added, out created);
+			int moduleIssueId = AddModuleIssue(action, campaignId, m, roller, position, day);
+			if (moduleIssueId <= 0)
+				return NotWhole(m, day).Message;
+
+			work.Placed.Add(Placed(m, roller, day, campaignId, moduleIssueId, created));
+			if (m.CampaignId == 0)
+				work.PendingCampaigns[campaignId] = m.Added;
+			if (created)
+				work.CreatedCampaigns.Add(campaignId);
+			return null;
+		}
+
+		/// <summary>Выпуски модулей в выделенных местах — для вопроса «Удалить выпуски» и чек-листа роликов.</summary>
+		public sealed class CellIssues
+		{
+			internal CellIssues(List<DataRow> rows)
+			{
+				Rows = rows;
+			}
+
+			/// <summary>Строки ComboModuleIssuesRetrieve — по дню, модулю, кампании и номеру выпуска.</summary>
+			internal List<DataRow> Rows { get; }
+
+			public int Count => Rows.Count;
+
+			/// <summary>Ролики выпусков без повторов; строки чек-листа с номерами из списка кисти — WindowsSource.RollerRows.</summary>
+			public IReadOnlyList<int> RollerIds => Rows.Select(IssueRollerId).Distinct().ToList();
+
+			/// <summary>Только выпуски этих роликов; null — все.</summary>
+			public CellIssues Only(IReadOnlyCollection<int> rollerIds) =>
+				rollerIds == null ? this : new CellIssues(Rows.Where(r => rollerIds.Contains(IssueRollerId(r))).ToList());
+		}
+
+		private static int IssueRollerId(DataRow issue) => Convert.ToInt32(issue[Roller.ParamNames.RollerId]);
+
+		private static int IssueModuleIssueId(DataRow issue) => Convert.ToInt32(issue[Issue.ParamNames.ModuleIssueId]);
+
+		/// <summary>
+		/// Выпуски модулей строк-кампаний в выделенных местах — ComboModuleIssuesRetrieve @actionID, как десктоп комбо берёт их из
+		/// своей панели (GetIssuesInDays): только кампании и модуля строки места за его день; места ожидающих строк пропускаются —
+		/// выпусков у них нет. Повтор модуля в тот же день (В-18) — оба выпуска. Место не из набора — отказ.
+		/// </summary>
+		public static CellIssues IssuesInCells(ModuleScope s, IEnumerable<PlacementCell> cells)
+		{
+			HashSet<(int, int, DateTime)> keys = new HashSet<(int, int, DateTime)>();
+			foreach (PlacementCell cell in DistinctCells(s, cells))
+				if (cell.ModuleDay.CampaignId != 0)
+					keys.Add((cell.ModuleDay.ModuleId, cell.ModuleDay.CampaignId, cell.Date.Date));
+			List<DataRow> rows = new List<DataRow>();
+			if (keys.Count > 0)
+				foreach (DataRow issue in ComboModule.LoadIssues(s.ActionId).Rows)
+					if (keys.Contains((IssueModuleId(issue), IssueCampaignId(issue), IssueDay(issue))))
+						rows.Add(issue);
+			return new CellIssues(rows.OrderBy(IssueDay).ThenBy(IssueModuleId).ThenBy(IssueCampaignId).ThenBy(IssueModuleIssueId).ToList());
+		}
+
+		/// <summary>Для строки итога: «дата — радиостанция — модуль — ролик».</summary>
+		private static string IssueName(DataRow issue) => string.Format("{0:dd.MM.yyyy} — {1} — {2} — {3}", IssueDay(issue),
+			Convert.ToString(issue[Campaign.ParamNames.MassmediaName]).Trim(), issue[ComboModule.ParamNames.ModuleName], issue[RollerNameColumn]);
+
+		private const string RollerNameColumn = "rollerName";
+
+		/// <summary>
+		/// «Удалить выпуски» по выделенным местам (десктоп комбо — Del по ячейкам, DeleteIssuesInSelectedCells): снимок выпусков,
+		/// который экран показал и пользователь подтвердил (<see cref="IssuesInCells"/>, при нескольких роликах — только выбранные,
+		/// <see cref="CellIssues.Only"/>, как линейная вкладка); ролик выпуска заменили после вопроса — не удаляется. Права — до записи: акция и кампании
+		/// (LoadForWrite) и «Удалить» выпуска модуля (сущность 130: веб проверяет её при DoAction, а запись здесь — LoadDataSet).
+		///
+		/// По дням транзакциями (<see cref="RunDays"/>), внутри дня — шаг с точкой сохранения на выпуск: ModuleIssueIUD DeleteItem
+		/// уменьшает счётчики окон до своих проверок (PastIssue, DeadLineViolationDelete), без отката к точке отказ испортил бы
+		/// счётчики. Удаление подтверждённых выпусков ближе DaysLog дней шлёт объявление администраторам на каждый выпуск модуля —
+		/// как в десктопе.
+		///
+		/// В-21 — последним в транзакции дня: кампания из <paramref name="createdHereCampaignIds"/> (создана вкладкой в этом
+		/// сеансе), у которой в этот день сняты выпуски и не осталось ни ModuleIssue, ни строк Issue (проверка — последней перед
+		/// удалением), удаляется тем же путём, что «Удалить» в списке кампаний (ActionWorkspace.DeleteCampaigns: объект строки
+		/// списка, CampaignIUD DeleteItem; право «Удалить» проверено до записи), шагом с точкой сохранения. Без права — остаётся
+		/// (<see cref="ModuleBatchResult.KeptEmptyCampaignIds"/>, плашка по В-6); прочие опустевшие кампании не трогаются. Удалённые
+		/// кампании уходят из набора. Пересчёт акции — один, в конце.
+		/// </summary>
+		public static ModuleBatchResult Remove(ModuleScope s, CellIssues accepted, ISet<int> createdHereCampaignIds)
+		{
+			// Снимают ровно то, что пользователь видел и подтвердил (IssuesInCells → вопрос или чек-лист роликов), как десктоп комбо
+			// и «Рекламные окна»: выпуск, поставленный в эти места после вопроса, не трогается.
+			List<DataRow> issues = accepted.Rows;
+			ModuleBatchResult result = new ModuleBatchResult();
+			if (issues.Count == 0)
+				return result;
+
+			ActionOnMassmedia action = LoadForWrite(s);
+			if (!EntityManager.GetEntity((int)Entities.ModuleIssue).IsActionEnabled(Constants.EntityActions.Delete, ViewType.Journal))
+				throw new InvalidOperationException(Tr.T(Properties.Resources.OperationNotAllowed));
+
+			// Кампании выпусков, созданные вкладкой: строка свежего списка (по ней удаляется) и право «Удалить» — до записи.
+			Dictionary<int, DataRow> campaigns = ModularCampaigns(action);
+			Entity listEntity = ActionWorkspace.CampaignListEntity();
+			List<DataRow> createdHere = new List<DataRow>();
+			HashSet<int> deletable = new HashSet<int>();
+			foreach (int campaignId in issues.Select(IssueCampaignId).Distinct())
+				if (createdHereCampaignIds != null && createdHereCampaignIds.Contains(campaignId) && campaigns.TryGetValue(campaignId, out DataRow row))
+				{
+					createdHere.Add(row);
+					if (listEntity.CreateObject(row).IsActionEnabled(Constants.EntityActions.Delete, ViewType.Journal))
+						deletable.Add(campaignId);
+				}
+
+			List<(DateTime Day, List<DataRow> Issues)> days = issues.GroupBy(IssueDay).OrderBy(g => g.Key).Select(g => (g.Key, g.ToList())).ToList();
+			using (OperationScope.Start($"ModulesRemove action={s.ActionId} issues={issues.Count}"))
+			{
+				Stopwatch sw = Stopwatch.StartNew();
+				RunDays(result, "remove", "action " + s.ActionId, days.Select(d => (d.Day, d.Issues.Count)).ToList(), i =>
+				{
+					DayWork work = new DayWork();
+					WindowsSource.RunInTransaction(() =>
+					{
+						HashSet<int> touched = new HashSet<int>();
+						foreach (DataRow issue in days[i].Issues)
+							if (RangeSource.Step(work.Steps, IssueName(issue), 1, () => DeleteStep(IssueModuleIssueId(issue), IssueRollerId(issue))))
+								touched.Add(IssueCampaignId(issue));
+						foreach (DataRow campaign in createdHere.Where(c => touched.Contains(WindowsSource.CampaignIdOf(c))))
+							DeleteIfEmpty(listEntity, campaign, deletable.Contains(WindowsSource.CampaignIdOf(campaign)), work);
+					});
+					return work;
+				}, work =>
+				{
+					foreach (int campaignId in work.DeletedCampaigns)
+						s.RemoveCampaign(campaignId);
+				}, (failure, daysLeft) => Tr.Format("Удаление прервано: {0} Выпуски этого дня не удалены, выпуски прежних дней удалены. Не обработано дней: {1}.",
+					ErrorManager.GetErrorMessage(failure), daysLeft));
+
+				if (result.Done > 0)
+					Recalculate(action, result, "remove");
+				Log.Info($"Modules remove completed in {sw.ElapsedMilliseconds}ms action={s.ActionId} issues={issues.Count} days={days.Count}" +
+					$" rollers={string.Join(",", accepted.RollerIds)} removed={result.Done} notRemoved={result.NotDone}" +
+					$" campaignsDeleted={result.DeletedCampaignIds.Count} keptEmpty={result.KeptEmptyCampaignIds.Count}");
+			}
+			return result;
+		}
+
+		/// <summary>
+		/// Шаг «Удалить выпуски»: выпуск модуля заново (ModuleIssueRetrieve @moduleIssueId на соединении транзакции; нет — «Выпуска
+		/// уже нет.») и ModuleIssueIUD DeleteItem с его полной строкой: без @campaignID процедура молча пропустила бы проверки
+		/// прошлого и закрытого периода. Причина отказа или null.
+		/// </summary>
+		private static string DeleteStep(int moduleIssueId, int acceptedRollerId)
+		{
+			Dictionary<string, object> parameters = DataAccessor.CreateParametersDictionary();
+			parameters[Issue.ParamNames.ModuleIssueId] = moduleIssueId;
+			DataTable fresh = DataAccessor.LoadDataSet("ModuleIssueRetrieve", parameters).Tables[0];
+			if (fresh.Rows.Count == 0)
+				return Tr.T("Выпуска уже нет.");
+			DataRow row = fresh.Rows[0];
+			// Ролик выпуска заменили после вопроса — пользователь удалять его не подтверждал.
+			if (IssueRollerId(row) != acceptedRollerId)
+				return Tr.T("Ролик выпуска изменили после вопроса — выпуск не удалён.");
+
+			parameters = DataAccessor.CreateParametersDictionary();
+			parameters[Constants.ParamNames.ActionName] = Constants.Actions.Delete;
+			parameters[Issue.ParamNames.ModuleIssueId] = moduleIssueId;
+			parameters[Campaign.ParamNames.CampaignId] = row[Campaign.ParamNames.CampaignId];
+			parameters[Module.ParamNames.ModuleId] = row[Module.ParamNames.ModuleId];
+			parameters[ModulePricelist.ParamNames.ModulePriceListID] = row[ModulePricelist.ParamNames.ModulePriceListID];
+			parameters[Issue.ParamNames.IssueDate] = row[Issue.ParamNames.IssueDate];
+			parameters[Roller.ParamNames.RollerId] = row[Roller.ParamNames.RollerId];
+			parameters[Issue.ParamNames.PositionId] = row[Issue.ParamNames.PositionId];
+			parameters[Action.ParamNames.IsConfirmed] = row[Action.ParamNames.IsConfirmed];
+			DataAccessor.LoadDataSet("ModuleIssueIUD", parameters);
+			return null;
+		}
+
+		/// <summary>
+		/// В-21 в транзакции дня: кампания, созданная вкладкой, без выпусков модулей и строк Issue (проверка — сейчас, на соединении
+		/// транзакции) удаляется, как «Удалить» в списке кампаний — объект строки списка, CampaignIUD DeleteItem, — шагом с точкой
+		/// сохранения; без права или при отказе остаётся (отказ — строкой итога).
+		/// </summary>
+		private static void DeleteIfEmpty(Entity listEntity, DataRow campaign, bool canDelete, DayWork work)
+		{
+			int campaignId = WindowsSource.CampaignIdOf(campaign);
+			if (!IsCampaignEmpty(campaignId, ParseHelper.GetInt32FromObject(campaign[Campaign.ParamNames.MassmediaId], 0)))
+				return;
+			if (!canDelete)
+			{
+				work.KeptEmpty.Add(campaignId);
+				return;
+			}
+			PresentationObject target = listEntity.CreateObject(campaign);
+			WindowsSource.BatchResult step = new WindowsSource.BatchResult();
+			if (RangeSource.Step(step, ActionWorkspace.CampaignName(campaign), 1, () => { target.Delete(silenceFlag: true); }))
+				work.DeletedCampaigns.Add(campaignId);
+			else
+			{
+				work.KeptEmpty.Add(campaignId);
+				foreach (DataRow refused in step.Errors.Rows)
+					work.Notes.Add((Convert.ToString(refused["name"]), Convert.ToString(refused["description"])));
+			}
+		}
+
+		/// <summary>Нет ни выпусков модулей (ModuleIssueRetrieve @campaignID), ни строк Issue (IssuesDays) — у модульной кампании других выпусков не бывает.</summary>
+		private static bool IsCampaignEmpty(int campaignId, int massmediaId)
+		{
+			Dictionary<string, object> parameters = DataAccessor.CreateParametersDictionary();
+			parameters[Campaign.ParamNames.CampaignId] = campaignId;
+			parameters["showUnconfirmed"] = true;
+			if (DataAccessor.LoadDataSet("ModuleIssueRetrieve", parameters).Tables[0].Rows.Count > 0)
+				return false;
+			parameters = DataAccessor.CreateParametersDictionary();
+			parameters[Campaign.ParamNames.CampaignId] = campaignId;
+			parameters[Massmedia.ParamNames.MassmediaId] = massmediaId;
+			return DataAccessor.LoadDataSet("IssuesDays", parameters).Tables[0].Rows.Count == 0;
 		}
 
 		// ---------- Панель места ----------
