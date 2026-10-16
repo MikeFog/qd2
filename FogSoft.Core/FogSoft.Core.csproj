@@ -211,6 +211,8 @@
     <Compile Include="..\Client\Classes\PlacementWeek.cs" Link="Domain\PlacementWeek.cs" />
     <Compile Include="..\Client\Classes\WindowsSource.cs" Link="Domain\WindowsSource.cs" />
     <Compile Include="..\Client\Classes\RangeSource.cs" Link="Domain\RangeSource.cs" />
+    <!-- Вкладка «Модули» страницы акции (этап 6). Только веб, в Client.csproj не входит. -->
+    <Compile Include="..\Client\Classes\ModuleDaySource.cs" Link="Domain\ModuleDaySource.cs" />
     <!-- Шаблоны 1–3 (этап 5). Только веб, в Client.csproj не входят. -->
     <Compile Include="..\Client\Classes\PlacementTemplate.cs" Link="Domain\PlacementTemplate.cs" />
     <Compile Include="..\Client\Classes\TemplatePlanner.cs" Link="Domain\TemplatePlanner.cs" />

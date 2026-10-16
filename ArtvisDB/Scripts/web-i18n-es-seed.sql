@@ -1,5 +1,5 @@
 ﻿/*
-    ДЕПЛОЙ: переводы веб-версии на язык «es» (2103 строк). docs/tasks/web-i18n.md, этап 5.
+    ДЕПЛОЙ: переводы веб-версии на язык «es» (2124 строк). docs/tasks/web-i18n.md, этап 5.
     СГЕНЕРИРОВАН из ArtvisDB/Scripts/i18n/es.tsv скриптом build-seed.py — руками не править.
 
     ПРЕДУСЛОВИЕ     накачен web-i18n-translation-deploy.sql (таблица iTranslation).
@@ -2125,7 +2125,28 @@ INSERT INTO #t ([source], [text]) VALUES
 (N'Отменять можно только выпуски отмеченных кампаний.', N'Solo se pueden deshacer emisiones de las pautas marcadas.'),
 (N'Выпуски этого дня поставлены, но «Отменить последнее» их не снимет: не удалось прочитать поставленное. Снять их можно через «Удалить выпуски».', N'Las emisiones de este día se colocaron, pero «Deshacer» no las quitará: no se pudo leer lo colocado. Se pueden quitar con «Eliminar emisiones».'),
 (N'Предыдущий месяц', N'Mes anterior'),
-(N'Следующий месяц', N'Mes siguiente');
+(N'Следующий месяц', N'Mes siguiente'),
+(N'Модулей нет', N'No hay módulos'),
+(N'Строки — модули, размещённые в отмеченных модульных кампаниях; у кампании без выпусков — модули её радиостанции, действующие в этом периоде.', N'Las filas son los módulos colocados en las pautas modulares marcadas; en una pauta sin emisiones, los módulos de su emisora vigentes en este período.'),
+(N'Процедура ComboModuleFreeTimeRetrieve в базе старая: нет набора модулей @moduleIDs. Нужно установить Deploy/50.', N'El procedimiento ComboModuleFreeTimeRetrieve de la base de datos está desactualizado: no admite el conjunto de módulos @moduleIDs. Hay que instalar Deploy/50.'),
+(N'Место не относится к отмеченным модульным кампаниям. Обновите страницу.', N'La celda no pertenece a las pautas modulares marcadas. Actualice la página.'),
+(N'Отметить все модульные кампании акции', N'Marcar todas las pautas modulares de la campaña'),
+(N'Строки — модули отмеченных кампаний, колонки — дни недели или месяца, в ячейке — остаток самого заполненного окна модуля за день.', N'Filas: los módulos de las pautas marcadas; columnas: los días de la semana o del mes; en la celda, el tiempo libre de la ventana más ocupada del módulo en el día.'),
+(N'В акции нет модульных рекламных кампаний.', N'La campaña no tiene pautas publicitarias modulares.'),
+(N'Выпусков модулей за день по отмеченным кампаниям', N'Emisiones de módulos en el día, en las pautas marcadas'),
+(N'Показывать неделю или месяц', N'Mostrar la semana o el mes'),
+(N'Неделя', N'Semana'),
+(N'Месяц', N'Mes'),
+(N'Щелчок по ячейке — выпуски и окна модуля за день.', N'Clic en una celda: las emisiones y las ventanas del módulo en el día.'),
+(N'выпуски модуля в этот день', N'emisiones del módulo en este día'),
+(N'модуль в этот день не выходит целиком', N'el módulo no sale completo este día'),
+(N'Выпуски модуля', N'Emisiones del módulo'),
+(N'В этот день модуль в кампании не стоит.', N'Este día el módulo no está colocado en la pauta.'),
+(N'Окна выхода', N'Ventanas de emisión'),
+(N'Окна модуля', N'Ventanas del módulo'),
+(N'Модули: {0}', N'Módulos: {0}'),
+(N'Модули: отмечено кампаний — {0}', N'Módulos: pautas marcadas — {0}'),
+(N'Остаток времени', N'Tiempo libre');
 GO
 
 BEGIN TRANSACTION;

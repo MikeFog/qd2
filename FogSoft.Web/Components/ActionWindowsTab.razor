@@ -191,21 +191,11 @@
                                     <b class="tabular">@brush[WindowsSource.RollerNumberColumn]</b> @WindowsSource.RollerName(brush) · <span class="tabular">@WindowsSource.RollerDuration(brush)</span>
                                 </span>
                             }
-                            <button type="button" class="btn btn-sm btn-outline-secondary dropdown-toggle" title="@(Tr.T("Позиция в блоке"))"
-                                    aria-haspopup="menu" @onclick="OpenPositionMenu">
-                                @PositionText
-                            </button>
-                            <button type="button" class="btn btn-sm btn-outline-secondary dropdown-toggle" title="@(Tr.T("Предметы рекламы"))"
-                                    aria-haspopup="menu" @onclick="OpenAdvertTypeMenu">
-                                @AdvertTypeText
-                            </button>
+                            <PlacementFilterButtons View="_view" @bind-AdvertTypeName="_advertTypeName" Changed="ReloadWeek" />
                         </LeadingTools>
                         <TrailingTools>
                             <span class="toggles">
-                                <button type="button" class="btn btn-sm btn-outline-secondary @(_view.ShowUnconfirmed ? "active" : null)" aria-pressed="@_view.ShowUnconfirmed"
-                                        title="@(Tr.T("Учитывать макеты") + "\n" + Tr.T("Показывать неподтвержденные выпуски"))" aria-label="@(Tr.T("Учитывать макеты"))" @onclick="ToggleUnconfirmed">
-                                    <i class="bi bi-file-earmark-text" aria-hidden="true"></i>
-                                </button>
+                                <PlacementFilterButtons View="_view" Unconfirmed="true" Changed="UnconfirmedChanged" />
                                 <button type="button" class="btn btn-sm btn-outline-secondary @(_showNumbers ? "active" : null)" aria-pressed="@_showNumbers"
                                         title="@(Tr.T("Номера роликов") + "\n" + (IsRange ? Tr.T("Показывать в окнах номера роликов отмеченных кампаний вместо остатка времени") : Tr.T("Показывать в окнах номера роликов текущей кампании вместо остатка времени")))" aria-label="@(Tr.T("Номера роликов"))" @onclick="ToggleNumbers">
                                     <i class="bi bi-123" aria-hidden="true"></i>
@@ -808,102 +798,18 @@
             await Run(() => RangeSource.LoadAllSlotIssues(_range!, _week!));
     }
 
-    private Task ToggleUnconfirmed()
+    /// <summary>«Учитывать макеты» переключили (PlacementFilterButtons) — неделя и выпуски окна панели.</summary>
+    private Task UnconfirmedChanged() => Run(() =>
     {
-        _view.ShowUnconfirmed = !_view.ShowUnconfirmed;
-        return Run(() =>
-        {
-            ReloadWeekCore();
-            if (_selected != null)
-                _panel = WindowsSource.LoadWindowIssues(_open!, _selected, _view.ShowUnconfirmed);
-        });
-    }
+        ReloadWeekCore();
+        if (_selected != null)
+            _panel = WindowsSource.LoadWindowIssues(_open!, _selected, _view.ShowUnconfirmed);
+    });
 
     private Task ToggleDisabled()
     {
         _view.ShowDisabled = !_view.ShowDisabled;
         return ReloadWeek();
-    }
-
-    // ---------- Отбор: позиционирование и предметы рекламы ----------
-
-    private static readonly (int Position, string Text)[] Positions =
-    {
-        (0, "Показывать всё"), // i18n-ok: переводится при показе (Tr.T)
-        ((int)Merlin.RollerPositions.First, "Показывать первые"), // i18n-ok: переводится при показе (Tr.T)
-        ((int)Merlin.RollerPositions.Second, "Показывать вторые"), // i18n-ok: переводится при показе (Tr.T)
-        ((int)Merlin.RollerPositions.Last, "Показывать последние"), // i18n-ok: переводится при показе (Tr.T)
-    };
-
-    /// <summary>Подпись кнопки — выбранный пункт, как в десктопе; до выбора — «Позиционирование».</summary>
-    private string PositionText => _view.Position == 0 ? Tr.T("Позиционирование") : Tr.T(Positions.First(p => p.Position == _view.Position).Text);
-
-    private async Task OpenPositionMenu(MouseEventArgs e)
-    {
-        var items = Positions.Select(p => new ActionMenuItem
-        {
-            Name = p.Position.ToString(),
-            Text = Tr.T(p.Text),
-            Icon = p.Position == _view.Position ? "bi-check2" : null,
-            Enabled = true,
-            Ported = true,
-        }).ToList();
-        string? picked = await Menu.ShowAsync(items, e.ClientX, e.ClientY, fromButton: true);
-        if (picked == null || !int.TryParse(picked, out int position) || position == _view.Position)
-            return;
-        _view.Position = position;
-        await ReloadWeek();
-    }
-
-    private const string AdvertAll = "all";
-    private const string AdvertExists = "exists";
-    private const string AdvertNotExists = "notExists";
-
-    private string AdvertTypeText =>
-        _view.AdvertTypeId == null ? Tr.T("Предметы рекламы")
-        : _view.AdvertTypeExists ? Tr.Format("Есть {0}", _advertTypeName)
-        : Tr.Format("Нет {0}", _advertTypeName);
-
-    /// <summary>«Предметы рекламы»: «есть / нет» — выбор из дерева предметов, как TreeViewSelector десктопа.</summary>
-    private async Task OpenAdvertTypeMenu(MouseEventArgs e)
-    {
-        var items = new[]
-        {
-            new ActionMenuItem { Name = AdvertAll, Text = Tr.T("Показывать всё"), Enabled = true, Ported = true },
-            new ActionMenuItem { Name = AdvertExists, Text = Tr.T("Показывать все где есть предмет рекламы"), Enabled = true, Ported = true },
-            new ActionMenuItem { Name = AdvertNotExists, Text = Tr.T("Показывать все где нет предмета рекламы"), Enabled = true, Ported = true },
-        };
-        string? picked = await Menu.ShowAsync(items, e.ClientX, e.ClientY, fromButton: true);
-        if (picked == null)
-            return;
-
-        if (picked == AdvertAll)
-        {
-            if (_view.AdvertTypeId == null)
-                return;
-            _view.AdvertTypeId = null;
-            _advertTypeName = null;
-            await ReloadWeek();
-            return;
-        }
-
-        ScenarioTreePicker? picker = null;
-        if (await Dialogs.ShowAsync(Tr.T("Предметы рекламы"), builder =>
-            {
-                builder.OpenComponent<ScenarioTreePicker>(0);
-                builder.AddComponentParameter(1, nameof(ScenarioTreePicker.Scenario), Merlin.RelationScenarios.AdvertTypes);
-                builder.AddComponentReferenceCapture(2, c => picker = (ScenarioTreePicker)c);
-                builder.CloseComponent();
-            }, okText: Tr.T("Выбрать")) != DialogOutcome.Ok)
-            return;
-
-        PresentationObject? advertType = picker?.SelectedObject;
-        if (advertType == null)
-            return;
-        _view.AdvertTypeId = Convert.ToInt32(advertType.IDs[0]);
-        _view.AdvertTypeExists = picked == AdvertExists;
-        _advertTypeName = advertType.Name;
-        await ReloadWeek();
     }
 
     // ---------- Ячейка ----------

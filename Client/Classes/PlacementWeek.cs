@@ -92,6 +92,13 @@ namespace Merlin.Classes
 		public string EmptyTitle { get; internal set; }
 		public string EmptyHint { get; internal set; }
 
+		/// <summary>
+		/// Заголовочные колонки строки слева от дней (у модулей — «Радиостанция», «Модуль», «Тип оплаты»), тексты строки —
+		/// <see cref="PlacementRow.Headers"/>. null — как у окон и веера: «Цена» (при <see cref="HasPrices"/>) и «Время».
+		/// Задаётся до <see cref="Rows"/>.
+		/// </summary>
+		public IReadOnlyList<string> HeaderColumns { get; internal set; }
+
 		/// <summary>Срок прайс-листа недели — подпись «Прайс-лист: … - …».</summary>
 		public DateTime PricelistStart { get; internal set; }
 		public DateTime PricelistFinish { get; internal set; }
@@ -103,8 +110,12 @@ namespace Merlin.Classes
 			internal set
 			{
 				foreach (PlacementRow row in value)
+				{
 					if (row.Cells.Length != DayCount)
 						throw new ArgumentException($"Строка «{row.Time}»: мест {row.Cells.Length}, а дней в периоде {DayCount}.", nameof(value));
+					if (HeaderColumns != null && row.Headers?.Count != HeaderColumns.Count)
+						throw new ArgumentException($"Строка «{row.Time}»: заголовков {row.Headers?.Count ?? 0}, а колонок {HeaderColumns.Count}.", nameof(value)); // i18n-ok: ошибка разработчика
+				}
 				_rows = value;
 			}
 		}
@@ -144,7 +155,10 @@ namespace Merlin.Classes
 		}
 	}
 
-	/// <summary>Строка периода: тарифное время и цена (у окон), место на каждый день (null — места нет).</summary>
+	/// <summary>
+	/// Строка периода: тарифное время и цена (у окон) или тексты заголовочных колонок (у модулей), место на каждый день
+	/// (null — места нет).
+	/// </summary>
 	public sealed class PlacementRow
 	{
 		/// <summary>Строка недели — семь мест.</summary>
@@ -160,18 +174,39 @@ namespace Merlin.Classes
 			Cells = new PlacementCell[dayCount];
 		}
 
+		/// <summary>
+		/// Строка с заголовочными колонками (<see cref="PlacementWeek.HeaderColumns"/>): <see cref="Time"/> — последний
+		/// заголовок (для сообщений), цены нет.
+		/// </summary>
+		internal PlacementRow(IReadOnlyList<string> headers, int dayCount)
+		{
+			Headers = headers;
+			Time = headers.Count > 0 ? headers[headers.Count - 1] : string.Empty;
+			Cells = new PlacementCell[dayCount];
+		}
+
 		public string Time { get; }
 		public decimal Price { get; }
+
+		/// <summary>Тексты заголовочных колонок по <see cref="PlacementWeek.HeaderColumns"/>; null — у строк окон и веера.</summary>
+		public IReadOnlyList<string> Headers { get; }
+
+		/// <summary>Полоса строки (0/1) — «зебра» по радиостанциям у модулей (ComboModuleGrid.StripeMassmediaGroups); у остальных 0.</summary>
+		public int Band { get; internal set; }
+
 		public PlacementCell[] Cells { get; }
 	}
 
 	/// <summary>Одно место недели.</summary>
 	public sealed class PlacementCell
 	{
-		/// <summary>Ключ места: у рекламного окна — windowId, у слота веера — номер получаса от 2000-01-01.</summary>
+		/// <summary>
+		/// Ключ места: у рекламного окна — windowId, у слота веера — номер получаса от 2000-01-01, у модуля — номер дня от
+		/// 2000-01-01 × 100 000 + номер строки.
+		/// </summary>
 		public int Key { get; internal set; }
 
-		/// <summary>Фактические дата и время выхода.</summary>
+		/// <summary>Фактические дата и время выхода (у модуля — день, без времени).</summary>
 		public DateTime Date { get; internal set; }
 
 		/// <summary>Колонка сетки — номер дня от <see cref="PlacementWeek.FirstDay"/> (у недели 0 — понедельник).</summary>
@@ -231,5 +266,8 @@ namespace Merlin.Classes
 
 		/// <summary>Ролики фирмы в слоте веера из других акций (и модульных кампаний этой) — номера в бирюзовых и оранжевых слотах.</summary>
 		internal IReadOnlyList<RangeSource.FirmRoller> FirmSlotRollers { get; set; } = Array.Empty<RangeSource.FirmRoller>();
+
+		/// <summary>Модуль и кампания строки за день — у места вкладки «Модули» (ModuleDaySource), иначе null.</summary>
+		internal ModuleDaySource.ModuleDay ModuleDay { get; set; }
 	}
 }

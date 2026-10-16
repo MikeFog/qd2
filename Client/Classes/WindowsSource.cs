@@ -393,7 +393,7 @@ namespace Merlin.Classes
 		/// подтверждёнными, при «Учитывать макеты» — и макетами; у штучного окна ещё «[осталось/всего]».
 		/// Остаток бывает отрицательным.
 		/// </summary>
-		private static string CellText(DataRow w, bool showUnconfirmed)
+		internal static string CellText(DataRow w, bool showUnconfirmed)
 		{
 			int timeLeft = IntOrZero(w[TariffWindow.ParamNames.Duration]) - IntOrZero(w[TariffWindow.ParamNames.TimeInUseConfirmed])
 				- (showUnconfirmed ? IntOrZero(w[TariffWindow.ParamNames.TimeInUseUnconfirmed]) : 0);
@@ -1004,14 +1004,18 @@ namespace Merlin.Classes
 		/// WindowIssuesRetrieve по фактическому окну — один вызов с макетами: выпуски этой кампании
 		/// показываются всегда (как в десктопе), остальные — по «Учитывать макеты».
 		/// </summary>
-		public static WindowIssues LoadWindowIssues(OpenCampaign c, PlacementCell cell, bool showUnconfirmed)
+		public static WindowIssues LoadWindowIssues(OpenCampaign c, PlacementCell cell, bool showUnconfirmed) =>
+			LoadWindowIssues(cell.Key, c.CampaignId, showUnconfirmed);
+
+		/// <summary>То же по номеру окна и кампании — общее с вкладкой «Модули» (окна модуля в панели).</summary>
+		internal static WindowIssues LoadWindowIssues(int windowId, int campaignId, bool showUnconfirmed)
 		{
-			DataTable all = TariffWindowWithRollerIssues.LoadIssues(true, cell.Key);
+			DataTable all = TariffWindowWithRollerIssues.LoadIssues(true, windowId);
 			DataTable campaign = all.Clone();
 			DataTable shown = all.Clone();
 			foreach (DataRow row in all.Rows)
 			{
-				if (ParseHelper.GetInt32FromObject(row[Campaign.ParamNames.CampaignId], 0) == c.CampaignId)
+				if (ParseHelper.GetInt32FromObject(row[Campaign.ParamNames.CampaignId], 0) == campaignId)
 					campaign.ImportRow(row);
 				if (showUnconfirmed || ParseHelper.GetBooleanFromObject(row[Action.ParamNames.IsConfirmed], false))
 					shown.ImportRow(row);

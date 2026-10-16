@@ -1,0 +1,328 @@
+/*
+    Вкладка «Модули» страницы акции: модульные кампании слева, сетка «модуль × день» в центре, панель места
+    справа — раскладка как у «Рекламных окон» (ActionWindowsTab.razor.css). Ширину левой колонки и панели
+    меняют PaneSplitter (--pane-width на .side и .window-panel); зазоры до сетки — сами ручки.
+*/
+
+.modules-tab {
+    flex: 1 1 auto;
+    display: flex;
+    flex-direction: column;
+    gap: var(--s-2);
+    min-height: 0;
+}
+
+.tab-error {
+    margin: 0;
+}
+
+.modules-body {
+    flex: 1 1 auto;
+    display: grid;
+    grid-template-columns: auto auto minmax(0, 1fr);
+    grid-template-rows: minmax(0, 1fr);
+    gap: var(--s-3) 0;
+    min-height: 0;
+}
+
+.modules-body.with-panel {
+    grid-template-columns: auto auto minmax(0, 1fr) auto auto;
+}
+
+.modules-body ::deep .pane-splitter {
+    grid-column: 2;
+    grid-row: 1 / -1;
+    width: var(--s-3);
+}
+
+.modules-body ::deep .pane-splitter-right {
+    grid-column: 4;
+}
+
+/* ---------- Левая колонка: кампании и статистика ---------- */
+
+.side {
+    grid-column: 1;
+    grid-row: 1 / -1;
+    width: var(--pane-width, 280px);
+    min-width: 200px;
+    display: flex;
+    flex-direction: column;
+    gap: var(--s-3);
+    min-height: 0;
+}
+
+.side-block {
+    display: flex;
+    flex-direction: column;
+    gap: var(--s-1);
+    min-height: 0;
+    padding: var(--s-2);
+    background: var(--c-surface);
+    border: 1px solid var(--c-border);
+    border-radius: 6px;
+}
+
+.side-title {
+    font-weight: 600;
+}
+
+/* Модульных кампаний в акции до 16 — список длиннее, чем у линейных. */
+.campaign-list {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    max-height: 50vh;
+    overflow: auto;
+}
+
+.campaign-list li {
+    display: flex;
+    align-items: center;
+    gap: var(--s-2);
+    padding: 2px var(--s-1);
+    border-radius: 4px;
+}
+
+.campaign-list li.on {
+    background: var(--c-accent-soft);
+}
+
+.campaign {
+    flex: 1 1 auto;
+    padding: 0;
+    border: none;
+    background: none;
+    text-align: left;
+    color: var(--c-text);
+}
+
+.campaign:hover {
+    color: var(--c-accent);
+}
+
+.check-all {
+    align-self: flex-start;
+    padding: 0;
+    margin: var(--s-1) 0;
+    font-size: 12px;
+}
+
+.stats {
+    display: grid;
+    grid-template-columns: auto 1fr;
+    gap: 2px var(--s-3);
+    margin: var(--s-2) 0 0;
+    font-size: 13px;
+}
+
+.stats > div {
+    display: contents;
+}
+
+.stats dt {
+    font-weight: 400;
+    color: var(--c-text-muted);
+}
+
+.stats dd {
+    margin: 0;
+    text-align: right;
+    font-variant-numeric: tabular-nums;
+}
+
+/* ---------- Центр: тулбар и сетка ---------- */
+
+.center {
+    grid-column: 3;
+    grid-row: 1;
+    min-width: 0;
+    min-height: 0;
+    display: flex;
+    flex-direction: column;
+    gap: var(--s-2);
+}
+
+.grid-box {
+    flex: 1 1 auto;
+    min-height: 0;
+    display: flex;
+    flex-direction: column;
+}
+
+.grid-box .btn {
+    white-space: nowrap;
+}
+
+.grid-box .btn > .bi:only-child {
+    margin-right: 0;
+}
+
+.period-switch .btn.active {
+    background: var(--c-accent-soft);
+    border-color: var(--c-accent);
+    color: var(--c-accent);
+}
+
+.toggles {
+    display: inline-flex;
+    flex-wrap: wrap;
+    gap: var(--s-1);
+    margin-left: auto;
+}
+
+.mode-caption {
+    font-weight: 600;
+    color: var(--c-text);
+}
+
+.legend {
+    display: inline-flex;
+    flex-wrap: wrap;
+    gap: 2px var(--s-3);
+}
+
+.legend span {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--s-1);
+}
+
+.sample {
+    font-style: normal;
+    font-variant-numeric: tabular-nums;
+}
+
+.sample.mine {
+    color: var(--c-place-mine);
+}
+
+.sample.match {
+    font-weight: 700;
+    color: var(--c-text);
+}
+
+/* Пустая ячейка сетки — модуль в этот день не выходит целиком. */
+.swatch {
+    display: inline-block;
+    width: 14px;
+    height: 14px;
+    background: var(--c-surface);
+    border: 1px solid var(--c-border-strong);
+    border-radius: 3px;
+}
+
+/* ---------- Правая панель: место ---------- */
+
+.window-panel {
+    grid-column: 5;
+    grid-row: 1;
+    width: var(--pane-width, 360px);
+    min-width: 220px;
+    display: flex;
+    flex-direction: column;
+    gap: var(--s-2);
+    min-height: 0;
+}
+
+.panel-head {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: var(--s-2);
+    padding: var(--s-2) var(--s-3);
+    background: var(--c-surface);
+    border: 1px solid var(--c-border);
+    border-radius: 6px;
+}
+
+.panel-title {
+    font-weight: 600;
+}
+
+.panel-sub {
+    color: var(--c-text-muted);
+    font-size: 13px;
+}
+
+.panel-section-title {
+    font-weight: 600;
+    font-size: 13px;
+}
+
+.panel-list {
+    flex: 1 1 0;
+    min-height: 0;
+    display: flex;
+    flex-direction: column;
+}
+
+/* Окна модуля (до 18) и выходы окна — выше, чем выпуски модуля за день (обычно один). */
+.panel-list-wide {
+    flex-grow: 2;
+}
+
+.panel-list ::deep .data-table,
+.panel-list > .data-table {
+    flex: 1 1 auto;
+    min-height: 100px;
+}
+
+.module-windows > tbody > tr > td {
+    padding: 3px var(--s-2);
+}
+
+.module-windows > tbody > tr > td:first-child {
+    white-space: nowrap;
+}
+
+.module-windows .btn {
+    padding: 0 6px;
+    line-height: 20px;
+}
+
+.module-windows > thead > tr > th {
+    padding: 4px var(--s-2);
+}
+
+.module-windows tbody tr.row-active > td {
+    background: var(--c-accent-soft);
+}
+
+.module-windows .col-btn {
+    width: 1%;
+    text-align: right;
+}
+
+.module-windows .btn.active {
+    background: var(--c-accent-soft);
+    border-color: var(--c-accent);
+    color: var(--c-accent);
+}
+
+.window-locked {
+    margin-left: var(--s-1);
+    color: var(--c-danger);
+}
+
+/* Панель места — всегда справа, под сетку не встаёт: высота нужна сетке. */
+
+@media (max-width: 900px) {
+    .modules-body,
+    .modules-body.with-panel {
+        grid-template-columns: minmax(0, 1fr);
+        grid-template-rows: auto;
+    }
+
+    .side,
+    .center,
+    .window-panel {
+        grid-column: 1;
+        grid-row: auto;
+    }
+
+    .side,
+    .window-panel {
+        width: auto;
+    }
+}

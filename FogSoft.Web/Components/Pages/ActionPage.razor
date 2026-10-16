@@ -20,11 +20,11 @@
     шапка с итогами и меню акции (то же «⋯», что в журнале), вкладка «Кампании» — добавить и
     удалить кампании, скидка менеджера, цена акции. Вкладки размещения по виду места (Окна /
     Модули / Спонсорство / Пакеты) видны для тех видов, что есть в акции. Этап 2 — «Рекламные
-    окна» (ActionWindowsTab), остальные пока серые.
+    окна» (ActionWindowsTab), этап 6 — «Модули» (ActionModulesTab), остальные пока серые.
 
-    Вкладка и кампания — в адресе (?tab=windows&campaign=N): так открывает «Редактировать» у
-    линейной кампании (ObjectActions). Переключение вкладок адрес заменяет, а не добавляет —
-    «Назад» ведёт туда, откуда страницу открыли.
+    Вкладка и кампания — в адресе (?tab=windows&campaign=N, ?tab=modules&campaign=N): так
+    открывает «Редактировать» у линейной и модульной кампании (ObjectActions). Переключение
+    вкладок адрес заменяет, а не добавляет — «Назад» ведёт туда, откуда страницу открыли.
 
     Входы: «Редактировать» у акции в журналах и щелчок по акции в списке (ObjectActions). Права
     проверяет ядро (ActionWorkspace) перед каждой записью; без права «Редактировать» страница
@@ -110,10 +110,10 @@ else
                     {
                         if (!_kinds.HasFlag(kind))
                             continue;
-                        if (kind == ActionWorkspace.PlaceKinds.Windows)
+                        if (TabOf(kind) is { } tab)
                         {
-                            <button type="button" role="tab" class="tab @(_tab == PageTab.Windows ? "tab-active" : null)" aria-selected="@(_tab == PageTab.Windows)"
-                                    @onclick="() => SwitchTab(PageTab.Windows)">@caption</button>
+                            <button type="button" role="tab" class="tab @(_tab == tab ? "tab-active" : null)" aria-selected="@(_tab == tab)"
+                                    @onclick="() => SwitchTab(tab)">@caption</button>
                         }
                         else
                         {
@@ -176,13 +176,20 @@ else
                         Changed="Load" Failed="ShowError" SelectionChanged="c => _selectedCount = c" />
         </section>
 
-        @* Вкладка создаётся при первом открытии и дальше живёт скрытой: неделя, отметки и кисть
-           не теряются при переходе на «Рекламные кампании» и обратно. *@
-        @if (_windowsOpened && _campaigns != null && _kinds.HasFlag(ActionWorkspace.PlaceKinds.Windows))
+        @* Вкладка размещения создаётся при первом открытии и дальше живёт скрытой: неделя, отметки
+           и кисть не теряются при переходе на «Рекламные кампании» и обратно. *@
+        @if (Pane(PageTab.Windows) is { } windows)
         {
             <div class="tab-pane" hidden="@(_tab != PageTab.Windows)">
-                <ActionWindowsTab Action="_action" Campaigns="_campaigns" RequestedCampaignId="_requestedCampaign"
-                                  RequestVersion="_requestVersion" Changed="Load" />
+                <ActionWindowsTab Action="_action" Campaigns="_campaigns!" RequestedCampaignId="windows.RequestedCampaign"
+                                  RequestVersion="windows.RequestVersion" Changed="Load" />
+            </div>
+        }
+        @if (Pane(PageTab.Modules) is { } modules)
+        {
+            <div class="tab-pane" hidden="@(_tab != PageTab.Modules)">
+                <ActionModulesTab Action="_action" Campaigns="_campaigns!" RequestedCampaignId="modules.RequestedCampaign"
+                                  RequestVersion="modules.RequestVersion" />
             </div>
         }
     </div>
@@ -201,24 +208,72 @@ else
     private const string TabQuery = "tab";
     private const string CampaignQuery = "campaign";
     private const string WindowsTabValue = "windows";
+    private const string ModulesTabValue = "modules";
 
     /// <summary>Адрес страницы акции — для переходов из журналов (ObjectActions).</summary>
     public static string Url(int actionId) => $"/action/{actionId}";
 
     /// <summary>
     /// Вкладка «Рекламные окна» с отмеченной кампанией — «Редактировать» у линейной кампании; без
-    /// кампании — после мастера новой акции с несколькими линейными (кампанию отмечают слева).
+    /// кампании — после мастера новой акции с несколькими линейными (отмечены все — веер).
     /// </summary>
-    public static string WindowsUrl(int actionId, int? campaignId = null) =>
-        $"/action/{actionId}?{TabQuery}={WindowsTabValue}" + (campaignId is int id ? $"&{CampaignQuery}={id}" : "");
+    public static string WindowsUrl(int actionId, int? campaignId = null) => TabUrl(actionId, WindowsTabValue, campaignId);
 
-    private enum PageTab { Campaigns, Windows }
+    /// <summary>
+    /// Вкладка «Модули» с отмеченной кампанией — «Редактировать» у модульной кампании; без кампании —
+    /// после мастера новой акции с несколькими модульными (отмечены все).
+    /// </summary>
+    public static string ModulesUrl(int actionId, int? campaignId = null) => TabUrl(actionId, ModulesTabValue, campaignId);
+
+    private static string TabUrl(int actionId, string tab, int? campaignId) =>
+        $"/action/{actionId}?{TabQuery}={tab}" + (campaignId is int id ? $"&{CampaignQuery}={id}" : "");
+
+    private enum PageTab { Campaigns, Windows, Modules }
+
+    /// <summary>
+    /// Вкладка размещения: вид места (вкладка есть, пока в акции есть такие кампании), значение в адресе
+    /// и состояние — открывали ли её (создаётся при первом открытии) и кампания из адреса, которую
+    /// вкладка отмечает при смене версии.
+    /// </summary>
+    private sealed class PlacementTab
+    {
+        public PlacementTab(ActionWorkspace.PlaceKinds kind, string query)
+        {
+            Kind = kind;
+            Query = query;
+        }
+
+        public ActionWorkspace.PlaceKinds Kind { get; }
+        public string Query { get; }
+        public bool Opened { get; set; }
+        public int? RequestedCampaign { get; set; }
+        public int RequestVersion { get; set; }
+    }
+
+    private readonly Dictionary<PageTab, PlacementTab> _placement = new()
+    {
+        [PageTab.Windows] = new PlacementTab(ActionWorkspace.PlaceKinds.Windows, WindowsTabValue),
+        [PageTab.Modules] = new PlacementTab(ActionWorkspace.PlaceKinds.Modules, ModulesTabValue),
+    };
 
     private PageTab _tab = PageTab.Campaigns;
-    private bool _windowsOpened;
-    private int? _requestedCampaign;
-    private int _requestVersion;
     private string? _appliedQuery;
+
+    /// <summary>Вкладка размещения этого вида; null — в вебе её пока нет (серая).</summary>
+    private PageTab? TabOf(ActionWorkspace.PlaceKinds kind)
+    {
+        foreach ((PageTab tab, PlacementTab placement) in _placement)
+            if (placement.Kind == kind)
+                return tab;
+        return null;
+    }
+
+    /// <summary>Вкладку можно показать: «Кампании» — всегда, размещения — пока в акции есть кампании её вида.</summary>
+    private bool Available(PageTab tab) => tab == PageTab.Campaigns || _kinds.HasFlag(_placement[tab].Kind);
+
+    /// <summary>Вкладка размещения, которую пора рисовать (открывали и она есть); null — не рисовать.</summary>
+    private PlacementTab? Pane(PageTab tab) =>
+        _placement[tab].Opened && _campaigns != null && Available(tab) ? _placement[tab] : null;
 
     // Пункты меню журналов акций: страница открывается из них, право на любой из них — право на
     // экран (MenuAccess знает только пункты меню). И из мастера новой акции — по его пунктам: кто
@@ -288,7 +343,11 @@ else
             // Отметка до чтения: второй проход параметров на тот же переход не перечитывает акцию.
             _loadedId = ActionId;
             _appliedQuery = null;
-            _windowsOpened = false;
+            foreach (PlacementTab placement in _placement.Values)
+            {
+                placement.Opened = false;
+                placement.RequestedCampaign = null;
+            }
             _tab = PageTab.Campaigns;
             _journalAccess = JournalMenus.Any(code => Access.CheckBrowser(code) == JournalAccess.Allowed)
                 || CreateMenus.Any(code => Access.CheckScreen(code) == JournalAccess.Allowed);
@@ -307,17 +366,20 @@ else
         _appliedQuery = query;
 
         Dictionary<string, Microsoft.Extensions.Primitives.StringValues> values = QueryHelpers.ParseQuery(query);
-        bool windows = values.TryGetValue(TabQuery, out var tab) && tab.ToString() == WindowsTabValue
-            && _kinds.HasFlag(ActionWorkspace.PlaceKinds.Windows);
-        _tab = windows ? PageTab.Windows : PageTab.Campaigns;
-        if (!windows)
+        string? tabValue = values.TryGetValue(TabQuery, out var tab) ? tab.ToString() : null;
+        _tab = PageTab.Campaigns;
+        foreach ((PageTab key, PlacementTab candidate) in _placement)
+            if (candidate.Query == tabValue && Available(key))
+                _tab = key;
+        if (_tab == PageTab.Campaigns)
             return;
 
-        _windowsOpened = true;
+        PlacementTab placement = _placement[_tab];
+        placement.Opened = true;
         if (values.TryGetValue(CampaignQuery, out var c) && int.TryParse(c, out int campaignId))
         {
-            _requestedCampaign = campaignId;
-            _requestVersion++;
+            placement.RequestedCampaign = campaignId;
+            placement.RequestVersion++;
         }
     }
 
@@ -327,9 +389,12 @@ else
         if (tab == _tab)
             return;
         _tab = tab;
-        if (tab == PageTab.Windows)
-            _windowsOpened = true;
-        string url = tab == PageTab.Windows ? $"{Url(ActionId)}?{TabQuery}={WindowsTabValue}" : Url(ActionId);
+        string url = Url(ActionId);
+        if (tab != PageTab.Campaigns)
+        {
+            _placement[tab].Opened = true;
+            url += $"?{TabQuery}={_placement[tab].Query}";
+        }
         // Вкладка уже переключена — этот адрес применять заново не нужно.
         _appliedQuery = Nav.ToAbsoluteUri(url).Query;
         Nav.NavigateTo(url, replace: true);
@@ -358,8 +423,9 @@ else
                 _campaigns = ActionWorkspace.LoadCampaigns(action);
                 _kinds = ActionWorkspace.KindsOf(_campaigns);
                 _emptyRows = _campaigns.Rows.Cast<DataRow>().Where(ActionWorkspace.IsEmpty).ToList();
-                // Линейных кампаний не осталось — вкладки «Рекламные окна» больше нет.
-                if (!_kinds.HasFlag(ActionWorkspace.PlaceKinds.Windows))
+                // Кампаний вида открытой вкладки не осталось (удалили последнюю линейную на «Рекламных
+                // окнах» или модульную на «Модулях») — этой вкладки больше нет.
+                if (!Available(_tab))
                     _tab = PageTab.Campaigns;
             });
             _title = _action == null ? Tr.T("Рекламная акция") : Tr.Format("Акция № {0} · {1}", ActionId, _action.FirmName);

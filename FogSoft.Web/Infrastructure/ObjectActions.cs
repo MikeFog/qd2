@@ -389,10 +389,10 @@ public sealed partial class ObjectActions
 			// CampaignPart.DoAction(Delete): удалить, пересчитать акцию, сказать о цене. Своё
 			// удаление остальных наследников CampaignPart (выпуски) по-прежнему серое (DesktopOverrides).
 			[Constants.EntityActions.Delete] = (s, t) => s.DeleteCampaign((PresentationObject)t),
-			// «Редактировать» (десктоп — CampaignForm): размещение на странице акции. Пока только у
-			// линейной — вкладка «Рекламные окна» (web-action-forms.md, этап 2); у модульной,
-			// спонсорской и пакетной пункт серый (ClassActionApplies).
-			[Constants.EntityActions.Edit] = (s, t) => s.OpenCampaignWindows((PresentationObject)t),
+			// «Редактировать» (десктоп — CampaignForm): размещение на странице акции — у линейной
+			// вкладка «Рекламные окна» (web-action-forms.md, этап 2), у модульной — «Модули» (этап 6);
+			// у спонсорской и пакетной пункт серый (ClassActionApplies).
+			[Constants.EntityActions.Edit] = (s, t) => s.OpenCampaignPlacement((PresentationObject)t),
 			[Merlin.Classes.CampaignChange.ChangeAgencyAction] = (s, t) => s.ChangeCampaignAgency((PresentationObject)t),
 			[Merlin.Classes.CampaignChange.ChangePaymentTypeAction] = (s, t) => s.ChangeCampaignPaymentType((PresentationObject)t),
 			[Merlin.Classes.CampaignChange.PrintTransfersAction] = (s, t) => s.ShowCampaignTransfers((PresentationObject)t),
@@ -733,8 +733,9 @@ public sealed partial class ObjectActions
 	/// </summary>
 	private static readonly Dictionary<string, Func<object, bool>> ClassActionApplies = new()
 	{
-		// Размещение в вебе пока есть только у линейной кампании (вкладка «Рекламные окна»).
-		["Campaign." + Constants.EntityActions.Edit] = t => Merlin.Classes.ActionWorkspace.IsLinearCampaign((PresentationObject)t),
+		// Размещение в вебе есть у линейной кампании (вкладка «Рекламные окна») и у модульной («Модули»).
+		["Campaign." + Constants.EntityActions.Edit] = t => Merlin.Classes.ActionWorkspace.IsLinearCampaign((PresentationObject)t)
+			|| Merlin.Classes.ActionWorkspace.IsModularCampaign((PresentationObject)t),
 	};
 
 	private static Handler? FindHandler(object target, string actionName)
@@ -2119,14 +2120,19 @@ public sealed partial class ObjectActions
 	}
 
 	/// <summary>
-	/// «Редактировать» у линейной кампании (журналы акций, список кампаний страницы акции) —
-	/// страница акции на вкладке «Рекламные окна» с отмеченной кампанией.
+	/// «Редактировать» у кампании (журналы акций, список кампаний страницы акции) — страница акции
+	/// с отмеченной кампанией: у модульной — вкладка «Модули», у линейной — «Рекламные окна».
 	/// </summary>
-	private Task<ActionEffect> OpenCampaignWindows(PresentationObject campaign)
+	private Task<ActionEffect> OpenCampaignPlacement(PresentationObject campaign)
 	{
 		int? actionId = Merlin.Classes.ActionWorkspace.ActionIdOf(campaign);
 		if (actionId != null)
-			_navigation.NavigateTo(FogSoft.Web.Components.Pages.ActionPage.WindowsUrl(actionId.Value, Convert.ToInt32(campaign.IDs[0])));
+		{
+			int campaignId = Convert.ToInt32(campaign.IDs[0]);
+			_navigation.NavigateTo(Merlin.Classes.ActionWorkspace.IsModularCampaign(campaign)
+				? FogSoft.Web.Components.Pages.ActionPage.ModulesUrl(actionId.Value, campaignId)
+				: FogSoft.Web.Components.Pages.ActionPage.WindowsUrl(actionId.Value, campaignId));
+		}
 		return Task.FromResult(ActionEffect.None);
 	}
 

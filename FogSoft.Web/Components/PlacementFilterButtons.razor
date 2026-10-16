@@ -1,0 +1,138 @@
+@using FogSoft.Web.Infrastructure
+@using FogSoft.WinForm.Classes
+@using Merlin.Classes
+@inject DialogService Dialogs
+@inject ActionMenuService Menu
+
+@*
+    Кнопки отбора сетки размещения — общие у вкладок «Рекламные окна» и «Модули» страницы акции (те же
+    кнопки тулбаров CampaignForm и ComboModulePlacementForm): «Позиционирование» и «Предметы рекламы»
+    (предмет — выбором из дерева, как TreeViewSelector десктопа) или, с Unconfirmed, «Учитывать макеты»
+    значком — он стоит в ряду переключателей вида, отдельно от отбора. Компонент меняет WeekView владельца
+    и сообщает Changed, перечитывает владелец. Название предмета рекламы хранит владелец (@bind-AdvertTypeName):
+    кнопки пропадают вместе с сеткой, пока она загружается, а отбор остаётся.
+*@
+
+@if (Unconfirmed)
+{
+    <button type="button" class="btn btn-sm btn-outline-secondary @(View.ShowUnconfirmed ? "active" : null)" aria-pressed="@View.ShowUnconfirmed"
+            title="@(Tr.T("Учитывать макеты") + "\n" + Tr.T("Показывать неподтвержденные выпуски"))" aria-label="@(Tr.T("Учитывать макеты"))" @onclick="ToggleUnconfirmed">
+        <i class="bi bi-file-earmark-text" aria-hidden="true"></i>
+    </button>
+}
+else
+{
+    <button type="button" class="btn btn-sm btn-outline-secondary dropdown-toggle" title="@(Tr.T("Позиция в блоке"))"
+            aria-haspopup="menu" @onclick="OpenPositionMenu">
+        @PositionText
+    </button>
+    <button type="button" class="btn btn-sm btn-outline-secondary dropdown-toggle" title="@(Tr.T("Предметы рекламы"))"
+            aria-haspopup="menu" @onclick="OpenAdvertTypeMenu">
+        @AdvertTypeText
+    </button>
+}
+
+@code {
+    /// <summary>Вид сетки владельца — компонент меняет в нём отбор.</summary>
+    [Parameter, EditorRequired] public WindowsSource.WeekView View { get; set; } = default!;
+
+    /// <summary>Только «Учитывать макеты»; иначе — «Позиционирование» и «Предметы рекламы».</summary>
+    [Parameter] public bool Unconfirmed { get; set; }
+
+    /// <summary>Название выбранного предмета рекламы — подпись кнопки «Есть …» / «Нет …».</summary>
+    [Parameter] public string? AdvertTypeName { get; set; }
+
+    [Parameter] public EventCallback<string?> AdvertTypeNameChanged { get; set; }
+
+    /// <summary>Отбор изменился (View уже изменён) — владелец перечитывает сетку.</summary>
+    [Parameter] public EventCallback Changed { get; set; }
+
+    private Task ToggleUnconfirmed()
+    {
+        View.ShowUnconfirmed = !View.ShowUnconfirmed;
+        return Changed.InvokeAsync();
+    }
+
+    // ---------- Позиционирование ----------
+
+    private static readonly (int Position, string Text)[] Positions =
+    {
+        (0, "Показывать всё"), // i18n-ok: переводится при показе (Tr.T)
+        ((int)Merlin.RollerPositions.First, "Показывать первые"), // i18n-ok: переводится при показе (Tr.T)
+        ((int)Merlin.RollerPositions.Second, "Показывать вторые"), // i18n-ok: переводится при показе (Tr.T)
+        ((int)Merlin.RollerPositions.Last, "Показывать последние"), // i18n-ok: переводится при показе (Tr.T)
+    };
+
+    /// <summary>Подпись кнопки — выбранный пункт, как в десктопе; до выбора — «Позиционирование».</summary>
+    private string PositionText => View.Position == 0 ? Tr.T("Позиционирование") : Tr.T(Positions.First(p => p.Position == View.Position).Text);
+
+    private async Task OpenPositionMenu(MouseEventArgs e)
+    {
+        var items = Positions.Select(p => new ActionMenuItem
+        {
+            Name = p.Position.ToString(),
+            Text = Tr.T(p.Text),
+            Icon = p.Position == View.Position ? "bi-check2" : null,
+            Enabled = true,
+            Ported = true,
+        }).ToList();
+        string? picked = await Menu.ShowAsync(items, e.ClientX, e.ClientY, fromButton: true);
+        if (picked == null || !int.TryParse(picked, out int position) || position == View.Position)
+            return;
+        View.Position = position;
+        await Changed.InvokeAsync();
+    }
+
+    // ---------- Предметы рекламы ----------
+
+    private const string AdvertAll = "all";
+    private const string AdvertExists = "exists";
+    private const string AdvertNotExists = "notExists";
+
+    private string AdvertTypeText =>
+        View.AdvertTypeId == null ? Tr.T("Предметы рекламы")
+        : View.AdvertTypeExists ? Tr.Format("Есть {0}", AdvertTypeName)
+        : Tr.Format("Нет {0}", AdvertTypeName);
+
+    /// <summary>«Предметы рекламы»: «есть / нет» — выбор из дерева предметов, как TreeViewSelector десктопа.</summary>
+    private async Task OpenAdvertTypeMenu(MouseEventArgs e)
+    {
+        var items = new[]
+        {
+            new ActionMenuItem { Name = AdvertAll, Text = Tr.T("Показывать всё"), Enabled = true, Ported = true },
+            new ActionMenuItem { Name = AdvertExists, Text = Tr.T("Показывать все где есть предмет рекламы"), Enabled = true, Ported = true },
+            new ActionMenuItem { Name = AdvertNotExists, Text = Tr.T("Показывать все где нет предмета рекламы"), Enabled = true, Ported = true },
+        };
+        string? picked = await Menu.ShowAsync(items, e.ClientX, e.ClientY, fromButton: true);
+        if (picked == null)
+            return;
+
+        if (picked == AdvertAll)
+        {
+            if (View.AdvertTypeId == null)
+                return;
+            View.AdvertTypeId = null;
+            await AdvertTypeNameChanged.InvokeAsync(null);
+            await Changed.InvokeAsync();
+            return;
+        }
+
+        ScenarioTreePicker? picker = null;
+        if (await Dialogs.ShowAsync(Tr.T("Предметы рекламы"), builder =>
+            {
+                builder.OpenComponent<ScenarioTreePicker>(0);
+                builder.AddComponentParameter(1, nameof(ScenarioTreePicker.Scenario), Merlin.RelationScenarios.AdvertTypes);
+                builder.AddComponentReferenceCapture(2, c => picker = (ScenarioTreePicker)c);
+                builder.CloseComponent();
+            }, okText: Tr.T("Выбрать")) != DialogOutcome.Ok)
+            return;
+
+        PresentationObject? advertType = picker?.SelectedObject;
+        if (advertType == null)
+            return;
+        View.AdvertTypeId = Convert.ToInt32(advertType.IDs[0]);
+        View.AdvertTypeExists = picked == AdvertExists;
+        await AdvertTypeNameChanged.InvokeAsync(advertType.Name);
+        await Changed.InvokeAsync();
+    }
+}

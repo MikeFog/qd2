@@ -98,6 +98,42 @@
     background: var(--c-bg);
 }
 
+/* Заголовочные колонки модели (модули: радиостанция, модуль, тип оплаты) вместо цены и времени:
+   липкие слева, отступ и ширину текста ставит компонент (style) — длинное обрезается многоточием. */
+.col-head {
+    position: sticky;
+    background: var(--c-surface);
+    z-index: 1;
+    white-space: nowrap;
+}
+
+.col-head-last {
+    border-right: 1px solid var(--c-border-strong);
+}
+
+.pgrid-table .table > thead > tr > th.col-head,
+.pgrid-table .table > tbody > tr > td.col-head {
+    padding-left: 0;
+    padding-right: 0;
+}
+
+.table > thead > tr > th.col-head {
+    z-index: 2;
+    background: var(--c-bg);
+}
+
+.head-text {
+    display: block;
+    padding: 0 var(--s-2);
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+/* Полоса строки — тон заголовочных колонок по радиостанциям (десктоп ComboModuleGrid — серым через станцию). */
+.table > tbody > tr.band > td.col-head {
+    background: var(--c-bg);
+}
+
 .pgrid-table .table > thead > tr > th {
     padding: 3px var(--s-2);
     vertical-align: bottom;

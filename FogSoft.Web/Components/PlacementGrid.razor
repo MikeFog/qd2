@@ -11,6 +11,8 @@
     Обычная таблица без виртуализации (неделя — до ~80 строк × 7 дней, месяц — до ~37 строк × 31),
     липкие шапка и две левые колонки. Наведение — только CSS. Шапка дня: день недели с датой и число
     выпусков кампании за день. Месяц (PlacementWeek.Period): узкие колонки дня, выходные тоном.
+    Заголовочные колонки модели (PlacementWeek.HeaderColumns, у модулей — «Радиостанция», «Модуль»,
+    «Тип оплаты») заменяют «Цену» и «Время»; полоса строки (PlacementRow.Band) тонирует их по станциям.
 
     Всё плотно ради высоты: в дне ~40 окон, сетке нужна вся высота экрана. Инструменты владельца
     стоят в одной строке с неделей (LeadingTools — до неё, TrailingTools — после), подпись режима,
@@ -78,11 +80,21 @@
             <table class="table">
                 <thead>
                     <tr>
-                        @if (Model.HasPrices)
+                        @if (Model.HeaderColumns is { } heads)
                         {
-                            <th class="col-price">@Tr.T("Цена")</th>
+                            for (int h = 0; h < heads.Count; h++)
+                            {
+                                <th class="@_heads[h].Class" style="@_heads[h].Left"><span class="head-text" style="@_heads[h].Width">@heads[h]</span></th>
+                            }
                         }
-                        <th class="col-time">@Tr.T("Время")</th>
+                        else
+                        {
+                            @if (Model.HasPrices)
+                            {
+                                <th class="col-price">@Tr.T("Цена")</th>
+                            }
+                            <th class="col-time">@Tr.T("Время")</th>
+                        }
                         @for (int d = 0; d < Model.DayCount; d++)
                         {
                             int day = d;
@@ -100,12 +112,22 @@
                 <tbody>
                     @foreach (PlacementRow row in Model.Rows)
                     {
-                        <tr>
-                            @if (Model.HasPrices)
+                        <tr class="@(row.Band == 1 ? "band" : null)">
+                            @if (Model.HeaderColumns != null && row.Headers is { } texts)
                             {
-                                <td class="col-price">@row.Price.ToString("C")</td>
+                                for (int h = 0; h < texts.Count; h++)
+                                {
+                                    <td class="@_heads[h].Class" style="@_heads[h].Left"><span class="head-text" style="@_heads[h].Width" title="@texts[h]">@texts[h]</span></td>
+                                }
                             }
-                            <td class="col-time">@row.Time</td>
+                            else
+                            {
+                                @if (Model.HasPrices)
+                                {
+                                    <td class="col-price">@row.Price.ToString("C")</td>
+                                }
+                                <td class="col-time">@row.Time</td>
+                            }
                             @for (int d = 0; d < Model.DayCount; d++)
                             {
                                 int day = d;
@@ -201,7 +223,40 @@
         {
             _clickHandlers.Clear();
             _clickHandlersOf = Model;
+            _heads = MeasureHeads(Model);
         }
+    }
+
+    /// <summary>Заголовочная колонка: класс, отступ слева (липкая) и ширина текста.</summary>
+    private sealed record HeadColumn(string Class, string Left, string Width);
+
+    private HeadColumn[] _heads = Array.Empty<HeadColumn>();
+
+    /// <summary>
+    /// Липкой колонке нужен известный отступ слева, поэтому ширина заголовочной колонки считается заранее —
+    /// по самому длинному тексту колонки в модели (шапка — 12 px прописными, строки — 13 px), в пределах
+    /// 64–240 px; не поместилось — многоточие и подсказка.
+    /// </summary>
+    private static HeadColumn[] MeasureHeads(PlacementWeek? model)
+    {
+        if (model?.HeaderColumns is not { } heads)
+            return Array.Empty<HeadColumn>();
+
+        HeadColumn[] result = new HeadColumn[heads.Count];
+        int left = 0;
+        for (int h = 0; h < heads.Count; h++)
+        {
+            int longest = 0;
+            foreach (PlacementRow row in model.Rows)
+                if (row.Headers != null && h < row.Headers.Count)
+                    longest = Math.Max(longest, row.Headers[h]?.Length ?? 0);
+            int width = (int)Math.Ceiling(Math.Max(heads[h].Length * 8.5, longest * 7.5)) + 2 * 8;
+            width = Math.Clamp(width, 64, 240);
+            string css = "col-head" + (h == heads.Count - 1 ? " col-head-last" : "");
+            result[h] = new HeadColumn(css, FormattableString.Invariant($"left:{left}px"), FormattableString.Invariant($"width:{width}px"));
+            left += width;
+        }
+        return result;
     }
 
     private Func<MouseEventArgs, Task> ClickHandler(PlacementCell cell)

@@ -1,0 +1,485 @@
+@using System.Data
+@using FogSoft.Web.Infrastructure
+@using FogSoft.WinForm.Classes
+@using Merlin.Classes
+@inject BusyService Busy
+
+@*
+    Вкладка «Модули» страницы акции (docs/tasks/web-action-forms.md, этап 6; подэтап 6.1 — только
+    просмотр): модульные кампании акции галочками (при входе отмечены все, «Редактировать» у кампании —
+    только она); в центре сетка «модуль × кампания» по дням недели или месяца, как десктопный
+    ComboModulePlacementForm с ComboModuleGrid при редактировании готовой акции (режим 2): в ячейке —
+    остаток самого заполненного окна модуля за день. Щелчок по ячейке — панель справа: выпуски модуля
+    строки за день, окна модуля (у поставленного — окна выхода) и «Все выходы в эфир» окна, как в
+    панели окна линейной вкладки. Данные — ModuleDaySource. Раскладка — как у ActionWindowsTab.
+
+    Записи нет: кисть, «Показать модули…», выделение, операции над выпусками и «Отменить» — следующие
+    подэтапы.
+*@
+
+<div class="modules-tab">
+    @if (_error != null)
+    {
+        <div class="alert alert-danger alert-dismissible tab-error" role="alert">
+            @_error
+            <button type="button" class="btn-close" aria-label="@(Tr.T("Закрыть"))" @onclick="() => _error = null"></button>
+        </div>
+    }
+
+    <div class="modules-body @(_details != null ? "with-panel" : null)">
+        <aside class="side">
+            <section class="side-block">
+                <div class="side-title">@Tr.T("Рекламные кампании")</div>
+                <ul class="campaign-list">
+                    @foreach (DataRow row in _rows)
+                    {
+                        int id = WindowsSource.CampaignIdOf(row);
+                        bool on = _checked.Contains(id);
+                        <li class="@(on ? "on" : null)">
+                            <input type="checkbox" class="form-check-input" checked="@on" aria-label="@CaptionOf(row)"
+                                   @onchange="e => ToggleCampaign(id, e.Value is true)" />
+                            <button type="button" class="campaign" title="@(Tr.T("Показать только эту кампанию"))" @onclick="() => CheckOnly(id)">
+                                @CaptionOf(row)
+                            </button>
+                        </li>
+                    }
+                </ul>
+                @if (_rows.Count > 1)
+                {
+                    <button type="button" class="btn btn-sm btn-link check-all" disabled="@(_checked.Count == _rows.Count)"
+                            title="@(Tr.T("Отметить все модульные кампании акции"))" @onclick="CheckAll">
+                        @Tr.T("Отметить все")
+                    </button>
+                }
+                @if (_checked.Count == 1 && RowOf(_checked[0]) is { } oneRow)
+                {
+                    <dl class="stats">
+                        @foreach (KeyValuePair<string, string> stat in WindowsSource.CampaignStats(oneRow))
+                        {
+                            <div><dt>@stat.Key</dt><dd>@stat.Value</dd></div>
+                        }
+                    </dl>
+                }
+            </section>
+        </aside>
+        <PaneSplitter StorageKey="action-modules" />
+
+        <section class="center">
+            @if (_checked.Count == 0)
+            {
+                <div class="state">
+                    <div class="state-title">@Tr.T("Отметьте рекламную кампанию слева")</div>
+                    @(_rows.Count > 0
+                        ? Tr.T("Строки — модули отмеченных кампаний, колонки — дни недели или месяца, в ячейке — остаток самого заполненного окна модуля за день.")
+                        : Tr.T("В акции нет модульных рекламных кампаний."))
+                </div>
+            }
+            else if (_scope == null)
+            {
+                <div class="state">@Tr.T("Загрузка…")</div>
+            }
+            else
+            {
+                @* Тулбар — в строке периода сетки, подпись и легенда — тонкой строкой под ней: сетке нужна вся высота. *@
+                <div class="grid-box">
+                    <PlacementGrid Model="_week" Date="_date" SelectedKeys="SelectedKeys" CellTitle="CellTitle"
+                                   DayTotalTitle="@(Tr.T("Выпусков модулей за день по отмеченным кампаниям"))"
+                                   OnPrevious="Previous" OnNext="Next" OnJump="JumpTo" OnCellClick="ClickCell">
+                        <LeadingTools>
+                            <span class="btn-group period-switch" role="group" aria-label="@(Tr.T("Показывать неделю или месяц"))">
+                                <button type="button" class="btn btn-sm btn-outline-secondary @(_period == PlacementPeriod.Week ? "active" : null)"
+                                        aria-pressed="@(_period == PlacementPeriod.Week)" title="@(Tr.T("Неделя"))" aria-label="@(Tr.T("Неделя"))"
+                                        @onclick="() => SetPeriod(PlacementPeriod.Week)">
+                                    <i class="bi bi-calendar-week" aria-hidden="true"></i>
+                                </button>
+                                <button type="button" class="btn btn-sm btn-outline-secondary @(_period == PlacementPeriod.Month ? "active" : null)"
+                                        aria-pressed="@(_period == PlacementPeriod.Month)" title="@(Tr.T("Месяц"))" aria-label="@(Tr.T("Месяц"))"
+                                        @onclick="() => SetPeriod(PlacementPeriod.Month)">
+                                    <i class="bi bi-calendar-month" aria-hidden="true"></i>
+                                </button>
+                            </span>
+                            <PlacementFilterButtons View="_view" @bind-AdvertTypeName="_advertTypeName" Changed="Reload" />
+                        </LeadingTools>
+                        <TrailingTools>
+                            <span class="toggles">
+                                <PlacementFilterButtons View="_view" Unconfirmed="true" Changed="Reload" />
+                                <button type="button" class="btn btn-sm btn-outline-secondary" title="@(Tr.T("Обновить информацию"))" aria-label="@(Tr.T("Обновить информацию"))"
+                                        @onclick="Reload">
+                                    <i class="bi bi-arrow-clockwise" aria-hidden="true"></i>
+                                </button>
+                            </span>
+                        </TrailingTools>
+                        <Caption>
+                            <span class="mode-caption">@ModeCaption</span>
+                            <span class="text-muted">@Tr.T("Щелчок по ячейке — выпуски и окна модуля за день.")</span>
+                        </Caption>
+                        <Legend>
+                            <span class="legend">
+                                <span><i class="sample mine">00:30</i>@Tr.T("выпуски модуля в этот день")</span>
+                                @if (_view.Position != 0 || _view.AdvertTypeId != null)
+                                {
+                                    <span><i class="sample match">00:30</i>@Tr.T("подходит под отбор")</span>
+                                }
+                                <span><i class="swatch"></i>@Tr.T("модуль в этот день не выходит целиком")</span>
+                            </span>
+                        </Legend>
+                    </PlacementGrid>
+                </div>
+            }
+        </section>
+
+        @if (_details != null)
+        {
+            <PaneSplitter StorageKey="action-modules-panel" RightPane="true" />
+            <aside class="window-panel">
+                <div class="panel-head">
+                    <div>
+                        <div class="panel-title">@_details.Module · <span class="tabular">@DisplayFormat.Date(_details.Date)</span></div>
+                        <div class="panel-sub">@_details.Massmedia · @_details.PaymentType</div>
+                    </div>
+                    <button type="button" class="btn btn-sm btn-outline-secondary" title="@(Tr.T("Закрыть"))" aria-label="@(Tr.T("Закрыть"))" @onclick="ClosePanel">
+                        <i class="bi bi-x-lg" aria-hidden="true"></i>
+                    </button>
+                </div>
+
+                <div class="panel-section-title">@Tr.T("Выпуски модуля")</div>
+                <div class="panel-list">
+                    <ObjectList Entity="_issueEntity" Data="_details.Issues" ReadOnly="true"
+                                EmptyText="@(Tr.T("В этот день модуль в кампании не стоит."))" />
+                </div>
+
+                <div class="panel-section-title">@(_details.ExitWindows ? Tr.T("Окна выхода") : Tr.T("Окна модуля"))</div>
+                <div class="panel-list panel-list-wide">
+                    <div class="data-table">
+                        <table class="table module-windows">
+                            <thead>
+                                <tr>
+                                    <th>@Tr.T("Время выхода")</th>
+                                    @if (_details.ExitWindows)
+                                    {
+                                        <th>@Tr.T("Ролик")</th>
+                                        <th>@Tr.T("Порядок")</th>
+                                    }
+                                    else
+                                    {
+                                        <th>@Tr.T("Остаток времени")</th>
+                                    }
+                                    <th class="col-btn"></th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @foreach (ModuleDaySource.ModuleWindow window in _details.Windows)
+                                {
+                                    bool shown = ReferenceEquals(window, _issuesWindow);
+                                    <tr class="@(shown ? "row-active" : null)">
+                                        <td class="tabular">
+                                            @WindowTime(window)
+                                            @if (window.Disabled)
+                                            {
+                                                <i class="bi bi-lock window-locked" title="@(Tr.T("заблокированное окно"))" aria-label="@(Tr.T("заблокированное окно"))"></i>
+                                            }
+                                        </td>
+                                        @if (_details.ExitWindows)
+                                        {
+                                            <td>@window.RollerName</td>
+                                            <td>@window.Position</td>
+                                        }
+                                        else
+                                        {
+                                            <td class="tabular">@window.Text</td>
+                                        }
+                                        <td class="col-btn">
+                                            <button type="button" class="btn btn-sm btn-outline-secondary @(shown ? "active" : null)" aria-pressed="@shown"
+                                                    title="@(Tr.T("Все выходы в эфир"))" aria-label="@(Tr.T("Все выходы в эфир"))" @onclick="() => ToggleWindowIssues(window)">
+                                                <i class="bi bi-list-ul" aria-hidden="true"></i>
+                                            </button>
+                                        </td>
+                                    </tr>
+                                }
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                @if (_issuesWindow != null)
+                {
+                    <div class="panel-section-title">@Tr.T("Все выходы в эфир") <span class="tabular text-muted">@WindowTime(_issuesWindow)</span></div>
+                    <div class="panel-list panel-list-wide">
+                        <ObjectList Entity="_allIssueEntity" Data="_windowIssues?.All" ReadOnly="true" EmptyText="@(Tr.T("В окне нет выпусков."))" />
+                    </div>
+                }
+            </aside>
+        }
+    </div>
+</div>
+
+@code {
+    /// <summary>Акция страницы.</summary>
+    [Parameter, EditorRequired] public ActionOnMassmedia Action { get; set; } = default!;
+
+    /// <summary>Кампании акции (Campaigns) — страница перечитывает их после каждой операции.</summary>
+    [Parameter, EditorRequired] public DataTable Campaigns { get; set; } = default!;
+
+    /// <summary>Отметить только эту кампанию (вход «Редактировать» у кампании); применяется при смене <see cref="RequestVersion"/>.</summary>
+    [Parameter] public int? RequestedCampaignId { get; set; }
+
+    [Parameter] public int RequestVersion { get; set; }
+
+    private List<DataRow> _rows = new();
+    private readonly List<int> _checked = new();
+    private int _appliedRequest = -1;
+    private bool _initialized;
+    private string? _captionsKey;
+
+    private ModuleDaySource.ModuleScope? _scope;
+    private readonly WindowsSource.WeekView _view = new();
+    private string? _advertTypeName;
+
+    // Неделя или месяц — как переключатель десктопного комбо; помнится, пока жива вкладка (общего хранения
+    // настроек в браузере у веба нет).
+    private PlacementPeriod _period = PlacementPeriod.Week;
+    private DateTime _date = DateTime.Today;
+    private bool _dateChosen;
+    private PlacementWeek? _week;
+    private string? _error;
+
+    // Место в правой панели (выделено рамкой), его выпуски и окна; окно, чьи «Все выходы в эфир» раскрыты.
+    private PlacementCell? _cell;
+    private ModuleDaySource.ModuleDayDetails? _details;
+    private ModuleDaySource.ModuleWindow? _issuesWindow;
+    private WindowsSource.WindowIssues? _windowIssues;
+    private readonly Entity _issueEntity = ModuleDaySource.IssueEntity();
+    private readonly Entity _allIssueEntity = WindowsSource.IssueEntity(full: true);
+
+    private DataRow? RowOf(int campaignId) => _rows.FirstOrDefault(r => WindowsSource.CampaignIdOf(r) == campaignId);
+
+    /// <summary>
+    /// Подпись кампании; у двух модульных кампаний одной станции с одним типом оплаты (разные агентства) — с
+    /// агентством, как у линейных на «Рекламных окнах».
+    /// </summary>
+    private string CaptionOf(DataRow row)
+    {
+        string caption = WindowsSource.CampaignCaption(row);
+        bool ambiguous = _rows.Count(r => WindowsSource.CampaignCaption(r) == caption) > 1;
+        return ambiguous ? WindowsSource.CampaignCaption(row, withAgency: true) : caption;
+    }
+
+    private string ModeCaption =>
+        _scope is { CampaignIds.Count: 1 } && RowOf(_scope.CampaignIds[0]) is { } row
+            ? Tr.Format("Модули: {0}", CaptionOf(row))
+            : Tr.Format("Модули: отмечено кампаний — {0}", _scope?.CampaignIds.Count ?? 0);
+
+    private IReadOnlyCollection<int>? SelectedKeys => _cell == null ? null : new[] { _cell.Key };
+
+    // ---------- Кампании ----------
+
+    protected override async Task OnParametersSetAsync()
+    {
+        _rows = Campaigns.Rows.Cast<DataRow>().Where(ModuleDaySource.IsModular).ToList();
+
+        // Тип оплаты и агентство кампании набор помнит с открытия — сменили на «Кампаниях», открыть заново.
+        string captions = string.Join("|", _rows.Select(r => WindowsSource.CampaignCaption(r, true)));
+        bool captionsChanged = _captionsKey != null && captions != _captionsKey;
+        _captionsKey = captions;
+
+        // Удалённые кампании — из отметок долой (страница перечитала список после операции).
+        int before = _checked.Count;
+        _checked.RemoveAll(id => RowOf(id) == null);
+
+        if (RequestVersion != _appliedRequest)
+        {
+            _appliedRequest = RequestVersion;
+            if (RequestedCampaignId is { } requested && RowOf(requested) != null)
+            {
+                _checked.Clear();
+                _checked.Add(requested);
+            }
+            else if (!_initialized)
+            {
+                // Как десктопный комбо при редактировании акции: все модульные кампании сразу.
+                _checked.AddRange(_rows.Select(WindowsSource.CampaignIdOf));
+            }
+            _initialized = true;
+            await ApplyChecked();
+        }
+        else if (_checked.Count != before || captionsChanged)
+        {
+            if (captionsChanged)
+                _scope = null;
+            await ApplyChecked();
+        }
+    }
+
+    private Task ToggleCampaign(int id, bool on)
+    {
+        if (on && !_checked.Contains(id)) _checked.Add(id);
+        if (!on) _checked.Remove(id);
+        return ApplyChecked();
+    }
+
+    private Task CheckOnly(int id)
+    {
+        _checked.Clear();
+        _checked.Add(id);
+        return ApplyChecked();
+    }
+
+    private Task CheckAll()
+    {
+        _checked.Clear();
+        _checked.AddRange(_rows.Select(WindowsSource.CampaignIdOf));
+        return ApplyChecked();
+    }
+
+    private bool IsOpened() =>
+        _scope != null && _checked.Count == _scope.CampaignIds.Count && !_checked.Except(_scope.CampaignIds).Any();
+
+    /// <summary>Открыть отмеченные кампании (если ещё не открыты) и прочитать период; ничего не отмечено — сетки нет.</summary>
+    private async Task ApplyChecked()
+    {
+        if (IsOpened())
+            return;
+
+        _scope = null;
+        _week = null;
+        ClosePanel();
+        if (_checked.Count == 0)
+            return;
+
+        // Порядок кампаний — порядок списка, а не щелчков.
+        List<int> ids = _rows.Select(WindowsSource.CampaignIdOf).Where(_checked.Contains).ToList();
+        await Run(() =>
+        {
+            ModuleDaySource.ModuleScope scope = ModuleDaySource.Open(Action, ids);
+            if (scope.CampaignIds.Count == 0)
+                return;
+            _scope = scope;
+            // Первое открытие — с недели (месяца) первого выпуска, у кампаний без выпусков — с сегодняшней; дальше
+            // период сохраняется при смене отметок: кампании одной акции сравнивают за один период.
+            if (!_dateChosen)
+            {
+                _date = scope.FirstIssueDate ?? DateTime.Today;
+                _dateChosen = true;
+            }
+            ReloadCore();
+        });
+        if (_scope == null && _error == null)
+            _error = Tr.T("Рекламная кампания не найдена — её удалили. Обновите страницу.");
+    }
+
+    // ---------- Период ----------
+
+    private Task Run(System.Action work) => Busy.RunAsync(() =>
+    {
+        try
+        {
+            _error = null;
+            work();
+        }
+        catch (Exception ex)
+        {
+            _error = ErrorPresenter.Describe(ex);
+        }
+    });
+
+    /// <summary>Период заново (период, отбор, «Учитывать макеты», «Обновить»); место панели, если оно осталось в периоде, — тоже.</summary>
+    private void ReloadCore()
+    {
+        _week = ModuleDaySource.LoadPeriod(_scope!, _date, _period, _view);
+        if (_cell != null && _week.Find(_cell.Key) is { } fresh)
+            ShowCore(fresh);
+        else
+            ClosePanel();
+    }
+
+    private Task Reload() => _scope == null ? Task.CompletedTask : Run(ReloadCore);
+
+    private Task Previous()
+    {
+        if (_week == null) return Task.CompletedTask;
+        _date = _week.StartDate.AddDays(-1);
+        return Reload();
+    }
+
+    private Task Next()
+    {
+        if (_week == null) return Task.CompletedTask;
+        _date = _week.FinishDate.AddDays(1);
+        return Reload();
+    }
+
+    private Task JumpTo(DateTime date)
+    {
+        _date = date;
+        return Reload();
+    }
+
+    private Task SetPeriod(PlacementPeriod period)
+    {
+        if (period == _period)
+            return Task.CompletedTask;
+        _period = period;
+        return Reload();
+    }
+
+    // ---------- Ячейка и панель ----------
+
+    private string CellTitle(PlacementCell cell) =>
+        DisplayFormat.Date(cell.Date)
+        + (cell.Has(PlacementFlags.Mine) ? " · " + Tr.T("выпуски модуля в этот день") : "")
+        + (cell.Has(PlacementFlags.Match) ? " · " + Tr.T("подходит под отбор") : "");
+
+    private Task ClickCell(PlacementGrid.CellEvent e)
+    {
+        if (_scope == null || (_details != null && _cell?.Key == e.Cell.Key))
+            return Task.CompletedTask;
+        _issuesWindow = null;
+        _windowIssues = null;
+        return Run(() => ShowCore(e.Cell));
+    }
+
+    /// <summary>
+    /// Панель места: выпуски и окна модуля за день; раскрытые «Все выходы в эфир» того же окна перечитываются.
+    /// Сначала читаем, потом присваиваем: сбой чтения не должен оставить шапку одного места над окнами другого.
+    /// </summary>
+    private void ShowCore(PlacementCell cell)
+    {
+        ModuleDaySource.ModuleDayDetails details = ModuleDaySource.Details(_scope!, cell, _view.ShowUnconfirmed);
+        ModuleDaySource.ModuleWindow? window = _issuesWindow == null ? null
+            : details.Windows.FirstOrDefault(w => w.WindowId == _issuesWindow.WindowId && w.ModuleIssueId == _issuesWindow.ModuleIssueId);
+        WindowsSource.WindowIssues? issues = window == null ? null : ModuleDaySource.LoadWindowIssues(window, _view.ShowUnconfirmed);
+        _cell = cell;
+        _details = details;
+        _issuesWindow = window;
+        _windowIssues = issues;
+    }
+
+    private void ClosePanel()
+    {
+        _cell = null;
+        _details = null;
+        _issuesWindow = null;
+        _windowIssues = null;
+    }
+
+    /// <summary>«Все выходы в эфир» окна — по требованию; повторный щелчок сворачивает.</summary>
+    private Task ToggleWindowIssues(ModuleDaySource.ModuleWindow window)
+    {
+        if (ReferenceEquals(window, _issuesWindow))
+        {
+            _issuesWindow = null;
+            _windowIssues = null;
+            return Task.CompletedTask;
+        }
+        return Run(() =>
+        {
+            WindowsSource.WindowIssues issues = ModuleDaySource.LoadWindowIssues(window, _view.ShowUnconfirmed);
+            _issuesWindow = window;
+            _windowIssues = issues;
+        });
+    }
+
+    /// <summary>Время выхода окна; окно, перенесённое трафиком на другой день, — с датой.</summary>
+    private string WindowTime(ModuleDaySource.ModuleWindow window) =>
+        _details != null && window.Date.Date != _details.Date.Date ? DisplayFormat.DayMonthTime(window.Date) : window.Date.ToString("HH:mm");
+}

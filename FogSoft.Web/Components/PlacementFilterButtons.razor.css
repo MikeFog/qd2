@@ -1,0 +1,19 @@
+/*
+    Кнопки отбора сетки размещения: в строке периода не переносятся; «Учитывать макеты» включённая —
+    тоном акцента, как переключатели вида у владельца (.toggles .btn.active).
+*/
+
+.btn {
+    white-space: nowrap;
+}
+
+/* Значок без подписи — без отступа справа (как .grid-box .btn > .bi:only-child у владельцев). */
+.btn > .bi:only-child {
+    margin-right: 0;
+}
+
+.btn.active {
+    background: var(--c-accent-soft);
+    border-color: var(--c-accent);
+    color: var(--c-accent);
+}
