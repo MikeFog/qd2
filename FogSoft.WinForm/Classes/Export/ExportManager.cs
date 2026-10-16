@@ -5,6 +5,7 @@ using System.Data;
 using System.Drawing;
 using System.Globalization;
 using System.Reflection;
+using System.Runtime.InteropServices;
 using System.Threading;
 using System.Windows.Forms;
 using FogSoft.WinForm.Classes.Export.MSExcel;
@@ -146,10 +147,35 @@ namespace FogSoft.WinForm.Classes.Export
 				if (dv == null || dv.Count == 0)
 					return;
 
+				IExportDocument previous = doc;
 				IExportDocument docC = Application;
+				bool reused = ReferenceEquals(previous, docC);
+				IDocumentSheet sheet;
 
-				docC.StartExport();
-				IDocumentSheet sheet = docC.GetNewSheet("", "Tahoma", 10);
+				try
+				{
+					docC.StartExport();
+					sheet = docC.GetNewSheet("", "Tahoma", 10);
+				}
+				catch (COMException e)
+				{
+					// Переиспользованный документ мог пережить закрытие своей книги или самого Excel:
+					// Visible() этого не видит, а wb.Sheets падает (RPC_E_DISCONNECTED, RPC_S_UNKNOWN_IF),
+					// и без сброса ссылки ошибка держалась бы до перезапуска клиента. Новый документ
+					// не повторяем - его отказ не про залипшую ссылку.
+					if (!reused) throw;
+
+					Log.Warn("ExportExcel - переиспользуемый документ Excel недоступен, создаю новый", e);
+
+					// StartExport мог выключить ScreenUpdating у живого Excel пользователя - возвращаем
+					try { docC.FinishExport(); } catch { }
+
+					StartNewApplication();
+					docC = Application;
+					docC.StartExport();
+					sheet = docC.GetNewSheet("", "Tahoma", 10);
+				}
+
 				CopyData2WorkSheet(sheet, dg, dv, entity, needHighlight);
                 
 				sheet.SetAutoFitCells();
