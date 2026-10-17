@@ -13,6 +13,11 @@ DECLARE @tPackModuleCampaignTypo NVARCHAR(200) = dbo.fn_Translate(@languageCode,
 
 IF (@actionID IS NOT NULL OR @campaignID IS NOT NULL /* (@campaignID IS NOT NULL AND @massmediaID IS NULL AND @actionID IS NULL)*/)
 begin
+	-- Отбор всегда по акции - поиском по индексу; для одной кампании акцию берём из неё. По COALESCE с колонкой
+	-- поиска нет: одна кампания читалась сканом Firm, Action и Campaign, ~30 мс (docs/IMPROVEMENTS.md, [SQL-07]).
+	IF @actionID IS NULL
+		SELECT @actionID = [actionID] FROM [Campaign] WITH (NOLOCK) WHERE [campaignID] = @campaignID
+
 	SELECT
 		cm.*,
 		CASE cm.[campaignTypeID]
@@ -50,7 +55,7 @@ begin
 		LEFT JOIN Agency ag WITH (NOLOCK) ON ag.agencyId = cm.agencyId
 		LEFT OUTER JOIN [User] u WITH (NOLOCK) ON u.userId = cm.modUser
 	WHERE
-		cm.actionID = COALESCE(@actionID, cm.actionID) AND
+		cm.actionID = @actionID AND
 		cm.campaignID = COALESCE(@campaignID, cm.campaignID)
 	ORDER BY
 		cm.campaignID
