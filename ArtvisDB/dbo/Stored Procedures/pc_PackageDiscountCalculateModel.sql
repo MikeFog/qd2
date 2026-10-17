@@ -13,7 +13,9 @@ BEGIN
 
     DECLARE @campaignsCount int;
 	Declare @avgDurationSec float;
-    SELECT @campaignsCount = COUNT(DISTINCT massmediaID), @avgDurationSec = AVG(CAST(durationSec as float)) FROM @sel;
+    -- станции без выходов в пакете не участвуют, как пустые кампании в hlp_ActionDiscountCalculate: иначе они
+    -- тянули вниз среднюю длительность и завышали число станций, и пакет срывался
+    SELECT @campaignsCount = COUNT(DISTINCT massmediaID), @avgDurationSec = AVG(CAST(durationSec as float)) FROM @sel WHERE durationSec > 0;
 
     SET @discountValue = 1;
     SET @packageDiscountPriceListID = NULL;
@@ -36,7 +38,8 @@ BEGIN
            AND @startDate BETWEEN p.startDate AND p.finishDate
            AND p.value <= @priceTotal
         WHERE
-            CAST(s.durationSec as float) >= @avgDurationSec * p.eachVolume / 100.0
+            s.durationSec > 0
+            AND CAST(s.durationSec as float) >= @avgDurationSec * p.eachVolume / 100.0
         GROUP BY
             m.packageDiscountPriceListID
         HAVING
@@ -53,5 +56,6 @@ BEGIN
     WHERE
         d.count = t.campaignsCount
     ORDER BY
-        pl.discount ASC;  -- самый выгодный клиенту (минимальный коэффициент)
+        pl.discount ASC,  -- самый выгодный клиенту (минимальный коэффициент)
+        pl.packageDiscountPriceListID;  -- при равных — меньший ID, как в hlp_ActionDiscountCalculate
 END

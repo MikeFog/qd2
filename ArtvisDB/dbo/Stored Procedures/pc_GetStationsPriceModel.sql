@@ -2,7 +2,8 @@
 (
     @MassmediaGroupID  int = null,
     @DateFrom          date,
-    @DateTo            date
+    @DateTo            date,
+    @userID            int = null   -- чьи периоды коэффициента отдать третьей выборкой; NULL — всех, как раньше
 )
 AS
 BEGIN
@@ -14,7 +15,7 @@ BEGIN
     CREATE TABLE #Segments
     (
         massmediaID   smallint     NOT NULL,
-        [name]        varchar(64)  NOT NULL,
+        [name]        nvarchar(317) NOT NULL,   -- как vMassmedia.nameWithGroup: varchar терял символы вне cp1251
         pricelistID   smallint     NOT NULL,
         SegmentStart  date         NOT NULL,
         SegmentEnd    date         NOT NULL,
@@ -26,7 +27,7 @@ BEGIN
     CREATE TABLE #SegPrices
     (
         massmediaID                  smallint     NOT NULL,
-        [name]                       varchar(64)  NOT NULL,
+        [name]                       nvarchar(317) NOT NULL,
         pricelistID                  smallint     NOT NULL,
         SegmentStart                 date         NOT NULL,
         SegmentEnd                   date         NOT NULL,
@@ -178,5 +179,5 @@ BEGIN
     ORDER BY [name], SegmentStart;
 
     -- Resultset #3: информация о менеджерском коэффициенте
-    SELECT * FROM UserDiscount --WHERE userID = @userID
+    SELECT * FROM UserDiscount WHERE @userID IS NULL OR userID = @userID
 END

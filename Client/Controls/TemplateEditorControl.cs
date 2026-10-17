@@ -16,6 +16,8 @@ namespace Merlin.Controls
         public event EventHandler ScheduleChanged;
         public event EventHandler ManagerDiscountModeChanged;
         public event EventHandler CurrentUserChanged;
+        // период или группа: модель цен (сегменты прайс-листов) надо перечитать, а не только пересчитать
+        public event EventHandler ModelParametersChanged;
 
         private bool _loaded;
 
@@ -50,8 +52,8 @@ namespace Merlin.Controls
             rbEvenDays.CheckedChanged += OnScheduleChanged;
             rbOddDays.CheckedChanged += OnScheduleChanged;
 
-            dtStart.ValueChanged += (s, e) => { SetManagerDiscount(); };
-            dtEnd.ValueChanged += (s, e) => { SetManagerDiscount(); };
+            dtStart.ValueChanged += (s, e) => { SetManagerDiscount(); OnModelParametersChanged(); };
+            dtEnd.ValueChanged += (s, e) => { SetManagerDiscount(); OnModelParametersChanged(); };
 
             // Дни недели
             chkMon.CheckedChanged += OnScheduleChanged;
@@ -142,7 +144,8 @@ namespace Merlin.Controls
                 cbCity.ValueMember = dv.Table.Columns[0].ColumnName;
                 cbCity.DisplayMember = dv.Table.Columns[1].ColumnName;
 
-                cbCity.SelectedValue = 1;
+                // «Показать все»: прежняя 1 — несуществующая группа, комбо оставалось пустым при расчёте по всем (К-13)
+                cbCity.SelectedValue = 0;
             }
             finally
             {
@@ -302,11 +305,18 @@ namespace Merlin.Controls
             ScheduleChanged?.Invoke(this, EventArgs.Empty);
         }
 
+        private void OnModelParametersChanged()
+        {
+            if (!_loaded) return;
+            ModelParametersChanged?.Invoke(this, EventArgs.Empty);
+        }
+
         protected override void OnLoad(EventArgs e)
         {
             base.OnLoad(e);
             if (DesignMode) return;
             LoadCities();
+            cbCity.SelectedValueChanged += (s, args) => OnModelParametersChanged();
             SetManagerDiscount();
             InitPositions();
 

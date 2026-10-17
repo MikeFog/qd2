@@ -13,6 +13,11 @@ namespace Merlin.Classes
         public DateTime DateFrom { get; set; }
         public DateTime DateTo { get; set; }
 
+        // Введённый «Период акции»: DateFrom/DateTo выше — первый и последний выбранный день (карточка, КП),
+        // а «Редактировать» восстанавливает введённый период (К-26). default — вариант сохранён без него.
+        public DateTime PeriodFrom { get; set; }
+        public DateTime PeriodTo { get; set; }
+
         public int TotalDays { get; set; }
 
         public int TotalDuration { get; set; }

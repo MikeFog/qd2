@@ -14,33 +14,45 @@ using System.Linq;
 using System.Text;
 using System.Windows.Forms;
 using FogSoft.WinForm.Forms;
+using log4net;
 
 namespace Merlin.Forms
 {
     public partial class PriceCalculatorForm : Form
     {
+        private static readonly ILog Log = LogManager.GetLogger(typeof(PriceCalculatorForm));
+
         private readonly List<CampaignCalcSnapshot> _saved = new List<CampaignCalcSnapshot>();
         private decimal _lastTotalAfterPackage;
         
         // ✅ Добавляем поле для отслеживания редактируемого варианта
         private CampaignCalcSnapshot _editingSnapshot = null;
+
+        // идёт восстановление варианта: события полей шаблона не пересчитывают и не перечитывают по одному
+        private bool _restoringVariant;
+
+        // перечитывание модели после смены периода, группы или менеджера — через паузу, а не на каждую цифру даты,
+        // шаг календаря или стрелку по списку; всё, что считает по модели, сначала доделывает отложенное (FlushPendingReload)
+        private readonly System.Windows.Forms.Timer _reloadTimer = new System.Windows.Forms.Timer { Interval = 400 };
         
+        // по именам колонок таблицы, а не по заголовкам: заголовки цен меняются при слиянии колонок, и прежний
+        // список заголовков с ними не совпадал — формат денег к ценам не применялся (К-12)
         private readonly string[] _columnsWithMoney = new[]
         {
-            "Цена прайм будни",
-            "Цена офф прайм будни",
-            "Цена прайм выходные",
-            "Цена офф прайм выходные",
-            "Цена кампании",
-            "Цена до пакетной скидки",
-            "Итог"
+            "colPrimeWeekday",
+            "colNonPrimeWeekday",
+            "colPrimeWeekend",
+            "colNonPrimeWeekend",
+            "colTotalAmount",
+            "colTotalBeforePackage",
+            "colTotalAfterPackage"
         };
 
         private readonly string[] _columnsWithNumeric = new[]
         {
-            "Сезонный коэфф.",
-            "Объёмная скидка",
-            "Пакетная скидка",
+            "colSeasonCoeff",
+            "colCompanyDiscount",
+            "colPackageDiscount",
         };
 
         public PriceCalculatorForm()
@@ -49,15 +61,31 @@ namespace Merlin.Forms
             templateEditor.SaveButton.Click += (s, e) => SaveVariant();
             templateEditor.CalculateButton.Click += CalculateButton_Click;
             templateEditor.ExcelButton.Click += (s, e) => ExportSelectedToExcel();
-            templateEditor.ManagerDiscountNum.ValueChanged += (s, e) => grdPriceCalculator.SetManagerDiscount(templateEditor.ManagerDiscount);
+            templateEditor.ManagerDiscountNum.ValueChanged += (s, e) =>
+            {
+                if (_restoringVariant) return;
+                grdPriceCalculator.SetManagerDiscount(templateEditor.ManagerDiscount);
+            };
 
-            templateEditor.PositionChanged += (s, e) => grdPriceCalculator.SetDefaultPosition(templateEditor.SelectedPosition);
+            templateEditor.PositionChanged += (s, e) =>
+            {
+                if (_restoringVariant) return;
+                grdPriceCalculator.SetDefaultPosition(templateEditor.SelectedPosition);
+            };
 
             // пересчитываем при смене дневных/выходных количеств
             templateEditor.SpotsSettingsChanged += (s, e) => RecalculateFromTemplateInputs();
             templateEditor.DurationChanged += (s, e) => RecalculateFromTemplateInputs();
             templateEditor.ManagerDiscountModeChanged += (s, e) => RecalculateFromTemplateInputs();
-            templateEditor.CurrentUserChanged += (s, e) => RecalculateFromTemplateInputs();
+            // периоды коэффициента читаются по выбранному менеджеру — смена менеджера перечитывает модель
+            templateEditor.CurrentUserChanged += (s, e) => ScheduleReload();
+            templateEditor.ModelParametersChanged += (s, e) => ScheduleReload();
+            _reloadTimer.Tick += (s, e) =>
+            {
+                _reloadTimer.Stop();
+                ReloadModel();
+            };
+            FormClosed += (s, e) => _reloadTimer.Dispose();
 
             // новый авто-пересчёт по датам/дням/чётности
             templateEditor.ScheduleChanged += (s, e) => RecalculateFromTemplateInputs();
@@ -67,6 +95,7 @@ namespace Merlin.Forms
             chkAll.CheckedChanged += ChkAll_CheckedChanged;
             btnDeleteAllChecked.Click += BtnDeleteAllChecked_Click;
             LoadAgencies();
+            Log.Info("PriceCalculator opened");
         }
 
         private void FlpSaved_SizeChanged(object sender, EventArgs e)
@@ -99,7 +128,8 @@ namespace Merlin.Forms
                 cmbAgency.ValueMember = Agency.ParamNames.AgencyId;
                 cmbAgency.DisplayMember = Constants.Parameters.Name;
 
-                cmbAgency.SelectedValue = 1;
+                // без выбора: прежняя 1 — несуществующее агентство, выбор так же сбрасывался (К-13)
+                cmbAgency.SelectedIndex = -1;
             }
             finally
             {
@@ -109,7 +139,11 @@ namespace Merlin.Forms
 
         private void RecalculateFromTemplateInputs()
         {
+            if (_restoringVariant) return;
             if (grdPriceCalculator.SummaryTable == null) return;
+            // отложенное перечитывание уже посчитало по текущим полям; без него этот пересчёт пошёл бы по новым датам на
+            // старой модели (К-2)
+            if (FlushPendingReload()) return;
 
             var selectedDates = BuildSelectedDates(
                 templateEditor.DateFrom, templateEditor.DateTo,
@@ -159,28 +193,11 @@ namespace Merlin.Forms
                 Application.DoEvents();
                 templateEditor.TotalAfterPackageDiscount.Text = "Итог: ";
 
-                grdPriceCalculator.LoadData(templateEditor.MassmediaGroupId, templateEditor.DateFrom, templateEditor.DateTo);
-
-                var selectedDates = BuildSelectedDates(
-                    templateEditor.DateFrom, templateEditor.DateTo,
-                    templateEditor.UseDaysOfWeek,
-                    templateEditor.DaysOfWeekChecked,
-                    templateEditor.EvenDaysSelected
-                );
-
-                grdPriceCalculator.ApplyCalculation(
-                    selectedDates,
-                    templateEditor.DurationSec,
-                    templateEditor.PrimePerDayWeekday,
-                    templateEditor.NonPrimePerDayWeekday,
-                    templateEditor.PrimePerDayWeekend,
-                    templateEditor.NonPrimePerDayWeekend,
-                    templateEditor.ManagerDiscount,
-                    templateEditor.ManagerDiscountModeSingle,
-                    templateEditor.CurrentUserId
-                );
-
-                grdPriceCalculator.SetDefaultPosition(templateEditor.SelectedPosition);
+                var sw = Stopwatch.StartNew();
+                LoadAndCalculate(keepRowPositions: false);
+                Log.Info($"PriceCalculator calculate completed in {sw.ElapsedMilliseconds}ms group={templateEditor.MassmediaGroupId}" +
+                    $" period={templateEditor.DateFrom:dd.MM.yyyy}-{templateEditor.DateTo:dd.MM.yyyy} manager={templateEditor.CurrentUserId}" +
+                    $" stations={grdPriceCalculator.SummaryTable?.Rows.Count ?? 0}");
             }
             catch (Exception ex)
             {
@@ -189,6 +206,94 @@ namespace Merlin.Forms
             finally
             {
                 UseWaitCursor = false;
+                Cursor.Current = Cursors.Default;
+            }
+        }
+
+        /// <param name="keepRowPositions">false — «Рассчитать»: всем строкам позиция шаблона, как раньше; true — перечитывание
+        /// после смены периода, группы или менеджера: позиции строк остаются, новым станциям — позиция шаблона.</param>
+        private void LoadAndCalculate(bool keepRowPositions)
+        {
+            // отложенное перечитывание больше не нужно — модель читается сейчас; останавливать только здесь: «Рассчитать»,
+            // отказавшее на проверке дат или дней, должно оставить его в силе
+            _reloadTimer.Stop();
+            grdPriceCalculator.LoadData(templateEditor.MassmediaGroupId, templateEditor.DateFrom, templateEditor.DateTo,
+                templateEditor.CurrentUserId);
+
+            // позиция — до расчёта, и строки считаются один раз (прежде SetDefaultPosition после расчёта считал их второй раз)
+            grdPriceCalculator.PresetPositions(templateEditor.SelectedPosition, onlyMissing: keepRowPositions);
+
+            var selectedDates = BuildSelectedDates(
+                templateEditor.DateFrom, templateEditor.DateTo,
+                templateEditor.UseDaysOfWeek,
+                templateEditor.DaysOfWeekChecked,
+                templateEditor.EvenDaysSelected
+            );
+
+            grdPriceCalculator.ApplyCalculation(
+                selectedDates,
+                templateEditor.DurationSec,
+                templateEditor.PrimePerDayWeekday,
+                templateEditor.NonPrimePerDayWeekday,
+                templateEditor.PrimePerDayWeekend,
+                templateEditor.NonPrimePerDayWeekend,
+                templateEditor.ManagerDiscount,
+                templateEditor.ManagerDiscountModeSingle,
+                templateEditor.CurrentUserId
+            );
+
+            // итог и кнопки — всегда: если отмеченных строк не осталось (сменилась группа), «Итог:», «Сохранить», «Excel»
+            // оставались от прошлого расчёта (К-25)
+            UpdateSummary();
+        }
+
+        private void ScheduleReload()
+        {
+            if (_restoringVariant || grdPriceCalculator.SummaryTable == null) return;
+            _reloadTimer.Stop();
+            _reloadTimer.Start();
+        }
+
+        // true — перечитывание было отложено и сделано сейчас (вместе с пересчётом по текущим полям)
+        private bool FlushPendingReload()
+        {
+            if (!_reloadTimer.Enabled) return false;
+            _reloadTimer.Stop();
+            ReloadModel();
+            return true;
+        }
+
+        // Период, группа или менеджер поменялись после расчёта: модель цен (сегменты прайс-листов, периоды
+        // коэффициента) перечитывается — иначе следующий пересчёт шёл по новым датам на старых сегментах, и дни вне
+        // загруженного диапазона считались по 0 (К-2). До первого «Рассчитать» модели нет — ничего не делаем.
+        private void ReloadModel()
+        {
+            if (_restoringVariant) return;
+            if (grdPriceCalculator.SummaryTable == null) return;
+
+            // период перевёрнут — читать нечего: пересчёт с пустым набором дат обнулит строки и закроет «Сохранить» и
+            // «Excel». Выйти из этого состояния можно только сменой даты, а она перечитывает. Дни недели модель не
+            // меняют — без них перечитываем как обычно (пустой набор дней так же обнулит строки), иначе модель отставала
+            // бы от периода, группы и менеджера, пока дни не отметят снова
+            if (templateEditor.DateFrom > templateEditor.DateTo)
+            {
+                RecalculateFromTemplateInputs();
+                return;
+            }
+
+            try
+            {
+                Cursor.Current = Cursors.WaitCursor;
+                LoadAndCalculate(keepRowPositions: true);
+            }
+            catch (Exception ex)
+            {
+                // таблица после сбоя наполовину пересчитана — сохранять и выгружать её нельзя до следующего расчёта
+                templateEditor.SaveButton.Enabled = templateEditor.ExcelButton.Enabled = false;
+                ErrorManager.PublishError(ex);
+            }
+            finally
+            {
                 Cursor.Current = Cursors.Default;
             }
         }
@@ -226,11 +331,16 @@ namespace Merlin.Forms
             try
             {
                 var selectedRows = grdPriceCalculator.GetSelectedRadiostations();
-                templateEditor.SaveButton.Enabled = templateEditor.ExcelButton.Enabled = selectedRows.Count >0;
+                var selectedDates = grdPriceCalculator.GetSelectedDates();
+                // без выбранных дней сохранять нечего: снимок брал первый и последний день из пустого списка (К-9)
+                templateEditor.SaveButton.Enabled = templateEditor.ExcelButton.Enabled =
+                    selectedRows.Count > 0 && selectedDates.Count > 0;
 
                 decimal totalwithCampaignDiscount = grdPriceCalculator.GetSelectedTotalWithCampaignDiscount();
                 decimal packageDiscount = GetPackageDiscount(
-                    startDate: templateEditor.DateFrom,
+                    // первый выбранный день, как у объёмной скидки (К-5); система берёт первый день выхода кампании — он позже,
+                    // только если в первые выбранные дни выходов нет (например, будни 0/0 при периоде с четверга)
+                    startDate: selectedDates.Count > 0 ? selectedDates[0] : templateEditor.DateFrom,
                     priceTotal: totalwithCampaignDiscount,
                     selectedRows: selectedRows
                 );
@@ -253,7 +363,8 @@ namespace Merlin.Forms
             var p = DataAccessor.CreateParametersDictionary();
             p["startDate"] = startDate;
             p["campaignTypeID"] = (byte)1;
-            p["priceTotal"] = priceTotal;
+            // decimal(18,2) параметра отсекает дробные копейки, а не округляет — округляем сами (К-29)
+            p["priceTotal"] = Math.Round(priceTotal, 2, MidpointRounding.AwayFromZero);
             p["sel"] = new FogSoft.WinForm.DataAccess.TvpValue(tvpTable, "dbo.pc_SelectedMassmedia");
 
             p["discountValue"] = null;               // OUT
@@ -318,12 +429,31 @@ namespace Merlin.Forms
             return templateEditor.EvenDaysSelected ? "Чётные дни" : "Нечётные дни";
         }
 
+        // Города отмеченных станций, как в КП: «Показать все» или пустое комбо в «Город:» ничего не говорили (К-13)
+        private string BuildCityDescription()
+        {
+            var groups = grdPriceCalculator.GetSelectedRadiostations()
+                .Select(r => r.Row.Table.Columns.Contains("groupName") ? Convert.ToString(r["groupName"]).Trim() : null)
+                .Where(g => !string.IsNullOrEmpty(g))
+                .Distinct()
+                .OrderBy(g => g)
+                .ToList();
+            return string.Join(", ", groups);
+        }
+
+        // часы не переносятся в сутки: 25 ч 50 мин — «25:50:00», а не «01:50:00» (К-8)
+        private static string FormatDuration(int totalSeconds)
+        {
+            return $"{totalSeconds / 3600:00}:{totalSeconds % 3600 / 60:00}:{totalSeconds % 60:00}";
+        }
+
         /// <summary>
         /// Экспорт отмеченных строк PriceCalculatorGrid в Excel.
         /// Привяжите вызов к вашей кнопке/меню.
         /// </summary>
         public void ExportSelectedToExcel()
         {
+            if (FlushPendingReload() && !templateEditor.ExcelButton.Enabled) return;
             var dt = grdPriceCalculator.BuildSelectedExportTable();
             if (dt == null || dt.Rows.Count == 0)
             {
@@ -331,6 +461,7 @@ namespace Merlin.Forms
                 return;
             }
 
+            Log.Info($"PriceCalculator excel rows={dt.Rows.Count} total={_lastTotalAfterPackage}");
             var headers = dt.ExtendedProperties["Headers"] as Dictionary<string, string>;
             var doc = new MSExportDocument();
             try
@@ -343,14 +474,12 @@ namespace Merlin.Forms
                 sheet.SetBoldForRange(currentRow, 1, currentRow, 1);
                 currentRow++;
 
-                sheet.SetCellValue(currentRow++, 1, "Город: " + templateEditor.MassmediaGroupName);
+                sheet.SetCellValue(currentRow++, 1, "Город: " + BuildCityDescription());
                 sheet.SetCellValue(currentRow++, 1, string.Format("Период: {0:d} - {1:d}", templateEditor.DateFrom, templateEditor.DateTo));
                 sheet.SetCellValue(currentRow++, 1, "График: " + BuildScheduleDescription());
 
                 sheet.SetCellValue(currentRow++, 1, "Количество рекламных выпусков:" + grdPriceCalculator.GetTotalSpots());
-                var totalSeconds = grdPriceCalculator.GetTotalSeconds();
-                var duration = TimeSpan.FromSeconds(totalSeconds);
-                sheet.SetCellValue(currentRow++, 1, "Хронометраж эфирного времени:" + duration.ToString(@"hh\:mm\:ss"));
+                sheet.SetCellValue(currentRow++, 1, "Хронометраж эфирного времени:" + FormatDuration(grdPriceCalculator.GetTotalSeconds()));
                 // Теперь таблица с данными
                 currentRow += 1; // одна пустая строка
                 // заголовки
@@ -363,9 +492,9 @@ namespace Merlin.Forms
                     var header = headers != null && headers.ContainsKey(name) ? headers[name] : name;
                     columnHeaders.Add(header);
                     sheet.SetCellValue(headerRow, c + 1, header);
-                    if (_columnsWithMoney.Contains(header))
+                    if (_columnsWithMoney.Contains(name))
                         sheet.SetColumnNumberFormat(c + 1, "#,##0.00");
-                    else if (_columnsWithNumeric.Contains(header))
+                    else if (_columnsWithNumeric.Contains(name))
                         sheet.SetColumnNumberFormat(c + 1, "0.00");
                 }
                 currentRow = headerRow + 1;
@@ -430,7 +559,13 @@ namespace Merlin.Forms
 
         private void SaveVariant()
         {
+            // перечитывание могло снять все отметки (другая группа) или обнулить строки — тогда кнопка уже закрыта
+            if (FlushPendingReload() && !templateEditor.SaveButton.Enabled) return;
+            // кнопка без выбранных дней закрыта (UpdateSummary); снимок без дней не построить (К-9)
+            if (grdPriceCalculator.GetSelectedDates().Count == 0) return;
+
             var snapshot = BuildSnapshot();
+            Log.Info($"PriceCalculator save variant stations={snapshot.Rows.Count} total={snapshot.GrandTotal} editing={_editingSnapshot != null}");
             
             // ✅ Проверяем, редактируем ли мы существующий вариант
             if (_editingSnapshot != null)
@@ -485,6 +620,8 @@ namespace Merlin.Forms
             {
                 DateFrom = grdPriceCalculator.GetSelectedDates().Min(),
                 DateTo = grdPriceCalculator.GetSelectedDates().Max(),
+                PeriodFrom = templateEditor.DateFrom,
+                PeriodTo = templateEditor.DateTo,
                 TotalDays = grdPriceCalculator.GetSelectedDates().Count,
                 TotalDuration = grdPriceCalculator.GetTotalSeconds(),
 
@@ -749,12 +886,11 @@ namespace Merlin.Forms
 
         private string BuildDetails(CampaignCalcSnapshot snap)
         {
-            var duration = TimeSpan.FromSeconds(snap.TotalDuration);
             StringBuilder builder = new StringBuilder();
             builder.AppendLine(string.Format("Радиостанции: {0}", snap.GetRadiostationsList()));
             builder.AppendLine(string.Format("Количество дней рекламной акции: {0}", snap.TotalDays));
             builder.AppendLine(string.Format("Продолжительность ролика: {0}", snap.DurationSec));
-            builder.AppendLine(string.Format("Суммарный хронометраж эфирного времени: {0}", duration.ToString(@"hh\:mm\:ss")));
+            builder.AppendLine(string.Format("Суммарный хронометраж эфирного времени: {0}", FormatDuration(snap.TotalDuration)));
             builder.AppendLine(string.Format("Итог: {0}", snap.GrandTotal.ToString("c")));
             return builder.ToString();
         }
@@ -803,33 +939,51 @@ namespace Merlin.Forms
         {
             if (variant == null) return;
 
+            // Введённый период, а не первый и последний выбранный день: с ними сдвигались дата пакетной скидки и диапазон
+            // коэффициента, и итог расходился с сохранённым (К-26). У вариантов без введённого периода — как раньше.
+            DateTime periodFrom = variant.PeriodFrom != default(DateTime) ? variant.PeriodFrom : variant.DateFrom;
+            DateTime periodTo = variant.PeriodTo != default(DateTime) ? variant.PeriodTo : variant.DateTo;
+            _reloadTimer.Stop(); // модель варианта читается ниже
+
             try
             {
                 Cursor.Current = Cursors.WaitCursor;
 
-                // 1) Restore template editor settings
-                templateEditor.SetMassmediaGroupId(variant.MassmediaGroupId);
-                templateEditor.SetDateRange(variant.DateFrom, variant.DateTo);
-                templateEditor.SetDurationSec(variant.DurationSec);
-                templateEditor.SetSpotsSettings(
-                    variant.PrimePerDayWeekday,
-                    variant.NonPrimePerDayWeekday,
-                    variant.PrimePerDayWeekend,
-                    variant.NonPrimePerDayWeekend);
-                templateEditor.SetManagerDiscountSettings(variant.ManagerDiscountValue, variant.ManagerDiscountModeSingle);
-                templateEditor.SetPosition(variant.PositionValue);
-                templateEditor.SetSchedulePattern(
-                    variant.UseDaysOfWeek,
-                    variant.EvenDaysSelected,
-                    variant.DaysOfWeekChecked);
-                templateEditor.CurrentUserId = variant.CurrentUserId;
+                // 1) Restore template editor settings. Менеджер — первым: его смена ставит в поле коэффициента значение
+                // по его UserDiscount и затирала восстановленное (К-14). События полей на это время не пересчитывают и не
+                // перечитывают таблицу — расчёт ниже один, по варианту.
+                _restoringVariant = true;
+                try
+                {
+                    templateEditor.CurrentUserId = variant.CurrentUserId;
+                    templateEditor.SetMassmediaGroupId(variant.MassmediaGroupId);
+                    templateEditor.SetDateRange(periodFrom, periodTo);
+                    templateEditor.SetDurationSec(variant.DurationSec);
+                    templateEditor.SetSpotsSettings(
+                        variant.PrimePerDayWeekday,
+                        variant.NonPrimePerDayWeekday,
+                        variant.PrimePerDayWeekend,
+                        variant.NonPrimePerDayWeekend);
+                    templateEditor.SetManagerDiscountSettings(variant.ManagerDiscountValue, variant.ManagerDiscountModeSingle);
+                    templateEditor.SetPosition(variant.PositionValue);
+                    templateEditor.SetSchedulePattern(
+                        variant.UseDaysOfWeek,
+                        variant.EvenDaysSelected,
+                        variant.DaysOfWeekChecked);
+                }
+                finally
+                {
+                    _restoringVariant = false;
+                }
 
                 // 2) Reload grid data with the variant's massmedia group and date range
-                grdPriceCalculator.LoadData(variant.MassmediaGroupId, variant.DateFrom, variant.DateTo);
+                grdPriceCalculator.LoadData(variant.MassmediaGroupId, periodFrom, periodTo, variant.CurrentUserId);
+                // строкам — позиция шаблона варианта, как при «Рассчитать»; строки варианта получат свои ниже
+                grdPriceCalculator.PresetPositions((RollerPositions)variant.PositionValue, onlyMissing: false);
 
                 // 3) Build selected dates based on schedule pattern
                 var selectedDates = BuildSelectedDates(
-                    variant.DateFrom, variant.DateTo,
+                    periodFrom, periodTo,
                     variant.UseDaysOfWeek,
                     variant.DaysOfWeekChecked,
                     variant.EvenDaysSelected
@@ -961,6 +1115,7 @@ namespace Merlin.Forms
 
                 var outPath = Path.Combine(outFolder, fileName);
                 SecurityManager.User user = SecurityManager.GetUser(templateEditor.CurrentUserId);
+                Log.Info($"PriceCalculator proposal variants={list.Count} agency={cmbAgency.SelectedValue} manager={templateEditor.CurrentUserId}");
 
                 var result = Cp.CpOneDocGenerator.GenerateOneDoc(
                     list,

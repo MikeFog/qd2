@@ -441,7 +441,7 @@ namespace Merlin.Cp
 
             emit(MakeMixedParagraph(
                 ("Суммарный хронометраж эфирного времени на каждой станции: ", false, fontMediaum),
-                ($"{durationPerStation:hh\\:mm\\:ss}", true, fontNormal)
+                (FormatDuration(durationPerStation), true, fontNormal)
             ));
 
             emit(MakeMixedParagraph(
@@ -540,7 +540,7 @@ namespace Merlin.Cp
             var totalDur = TimeSpan.FromSeconds(Math.Max(0, s.TotalDuration));
             emit(MakeMixedParagraph(
                 ("Суммарный хронометраж эфирного времени: ", false, fontMediaum),
-                ($"{totalDur:hh\\:mm\\:ss}", true, fontNormal)
+                (FormatDuration(totalDur), true, fontNormal)
             ));
 
             emit(MakeParagraph("", bold: false));
@@ -630,6 +630,12 @@ namespace Merlin.Cp
         private static void AppendPageBreak(Action<OpenXmlElement> emit)
         {
             emit(new Paragraph(new Run(new Break { Type = BreakValues.Page })));
+        }
+
+        // часы не переносятся в сутки: 25 ч 50 мин — «25:50:00», а не «01:50:00» (К-8, как карточка варианта и Excel)
+        private static string FormatDuration(TimeSpan duration)
+        {
+            return $"{(long)duration.TotalHours:00}:{duration.Minutes:00}:{duration.Seconds:00}";
         }
 
         private static string GetSharedGroupName(Cp1Grouping.Cp1Group group)

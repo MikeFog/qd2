@@ -507,7 +507,8 @@ namespace Merlin.Forms
             var p = DataAccessor.CreateParametersDictionary();
             p["startDate"] = startDate;
             p["campaignTypeID"] = (byte)1;
-            p["priceTotal"] = priceTotal;
+            // decimal(18,2) параметра отсекает дробные копейки, а не округляет (К-29 калькулятора)
+            p["priceTotal"] = Math.Round(priceTotal, 2, MidpointRounding.AwayFromZero);
             p["sel"] = new TvpValue(tvpTable, "dbo.pc_SelectedMassmedia");
             p["discountValue"] = null;
             p["packageDiscountPriceListID"] = null;
