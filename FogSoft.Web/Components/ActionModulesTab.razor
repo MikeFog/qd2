@@ -8,6 +8,7 @@
 @inject TableDialog Tables
 @inject ModuleRowsMemory Memory
 @inject ObjectActions Actions
+@inject PlacementUndo Undo
 
 @*
     Вкладка «Модули» страницы акции (docs/tasks/web-action-forms.md, этап 6): модульные кампании акции
@@ -38,7 +39,10 @@
     Подэтап 6.5: у строки «Выпуски модуля» панели — меню «⋯» и правая кнопка с пунктами выпуска модуля (сущность 130):
     позиция в блоке, «Заменить рекламный ролик», «Удалить» (ObjectActions → ModuleIssueChange, как в дереве журналов);
     «Удалить» — с кампаниями «создана здесь» (В-21, как «Удалить выпуски»). После действия — период, панель и шапка страницы.
-    «Отменить» — следующий подэтап.
+
+    Подэтап 6.6: «Отменить» (как на «Рекламных окнах») снимает выпуски последнего размещения вкладки — клика или «Разместить
+    ролик» — по номерам, захваченным при записи (ModuleDaySource.Undo). Запись — PlacementUndo, одна на акцию: размещение на
+    одной вкладке гасит запись другой. Опустевшую кампанию «создана здесь» отмена удаляет сама (В-21).
 *@
 
 <div class="modules-tab">
@@ -129,6 +133,14 @@
                                     disabled="@(!CanBrush)" title="@BrushHint" @onclick="ToggleBrush">
                                 <i class="bi bi-brush" aria-hidden="true"></i>@Tr.T("Режим добавления")
                             </button>
+                            @if (UndoEntry is { } undo)
+                            {
+                                <button type="button" class="btn btn-sm btn-outline-secondary" disabled="@(!CanRemove)"
+                                        title="@(RemoveHint ?? Tr.Format("{0} ({1} шт.)", Tr.T("Отменить последнее добавление выпусков"), undo.Count))"
+                                        @onclick="() => Exclusive(UndoLast)">
+                                    <i class="bi bi-arrow-counterclockwise" aria-hidden="true"></i>@Tr.T("Отменить")
+                                </button>
+                            }
                             @ShowModulesButton
                             <span class="btn-group period-switch" role="group" aria-label="@(Tr.T("Показывать неделю или месяц"))">
                                 <button type="button" class="btn btn-sm btn-outline-secondary @(_period == PlacementPeriod.Week ? "active" : null)"
@@ -395,6 +407,14 @@
         : _scope is not { CanEdit: true } ? NoRightText
         : !_canDeleteIssues ? Tr.T("Нет права удалять выпуски модулей.")
         : null;
+
+    /// <summary>
+    /// Запись «Отменить последнее» этой акции, если она модульная и только про отмеченные кампании (иначе отмена задела бы то,
+    /// чего на экране нет). Права — как у «Удалить выпуски» (CanRemove): отмена удаляет выпуски.
+    /// </summary>
+    private PlacementUndo.Entry? UndoEntry =>
+        _scope != null && Undo.Of(Action.ActionId) is { Kind: PlacementUndo.Kind.Modules } entry
+        && entry.ModuleIssues.All(i => _scope.CampaignIds.Contains(i.CampaignId)) ? entry : null;
 
     // ---------- Кампании ----------
 
@@ -776,9 +796,11 @@
         int position = _view.Position;
         await Run(() =>
         {
-            // «Поставлено» — сразу после коммита, до перечитывания: сбой чтения не должен скрыть запись от шапки страницы.
+            // «Поставлено» и запись «Отменить» — сразу после коммита, до перечитывания: сбой чтения не должен скрыть запись
+            // от шапки страницы и от «Отменить».
             ModuleDaySource.PlacedModuleIssue issue = ModuleDaySource.PlaceOne(scope, cell, rollerId, position);
             placed = true;
+            Undo.RememberModules(Action.ActionId, new[] { issue });
             // Добавленная строка без кампании: кампанию создала (или нашла неотмеченную) постановка — набор её уже знает,
             // отметка слева — тоже, иначе следующее открытие набора сбросило бы номера строк. Созданную — запомнить (В-21).
             if (!_checked.Contains(issue.CampaignId))
@@ -814,7 +836,9 @@
         await Run(() =>
         {
             result = ModuleDaySource.Place(scope, cells, rollerId, position);
-            // Сразу после записи, до перечитывания: сбой чтения не должен оставить созданную кампанию без отметки и учёта.
+            // Сразу после записи, до перечитывания: сбой чтения не должен оставить созданную кампанию без отметки и учёта,
+            // а поставленные выпуски — без записи «Отменить» (в Created — только выпуски записанных дней; пусто — гасит запись).
+            Undo.RememberModules(Action.ActionId, result.Created);
             foreach (int id in result.CreatedCampaignIds)
                 Memory.CampaignCreated(Action.ActionId, id);
             foreach (int id in scope.CampaignIds)
@@ -871,6 +895,43 @@
             ReloadCore();
         });
         await AfterBatch(result, done => Tr.Format("Удалено выпусков: {0}, не удалено: {1}", done, result!.NotDone), "Выпуск"); // i18n-ok: заголовок колонки переводит ObjectList при выводе
+    }
+
+    /// <summary>
+    /// «Отменить» (как на «Рекламных окнах»): выпуски последнего размещения вкладки — клика или «Разместить ролик» — по номерам,
+    /// захваченным при записи (ModuleDaySource.Undo). Удалённые и изменённые после размещения выпуски не снимаются — строки
+    /// таблицы отказов. Опустевшую кампанию, созданную вкладкой в этом сеансе, ядро удаляет в той же транзакции (В-21), как
+    /// «Удалить выпуски». Запись снимается после любого итога, кроме сбоя: то, что не снято, остаётся в ней — можно повторить.
+    /// </summary>
+    private async Task UndoLast()
+    {
+        PlacementUndo.Entry? entry = UndoEntry;
+        if (entry == null || !CanRemove || _scope == null)
+            return;
+
+        string question = Tr.Format("Отменить последнее добавление выпусков? ({0} шт.)", entry.Count);
+        if (Action.IsConfirmed)
+            question += " " + Tr.T("Акция подтверждена: цена акции будет пересчитана, привязки оплат могут быть сокращены.");
+        if (!await Confirm(Tr.T("Отменить"), question, Tr.T("Отменить")))
+            return;
+
+        ModuleDaySource.ModuleScope scope = _scope;
+        ISet<int> createdHere = Memory.CreatedCampaigns(Action.ActionId);
+        ModuleDaySource.ModuleBatchResult? result = null;
+        await Run(() =>
+        {
+            result = ModuleDaySource.Undo(scope, entry.ModuleIssues, createdHere);
+            // Сразу после записи, до перечитывания: остаток прерванной отмены — в запись (пустой гасит её), удалённые кампании —
+            // из памяти «создана здесь», их строки снова ожидающие.
+            Undo.Remember(entry with { ModuleIssues = result.Unprocessed });
+            foreach (int id in result.DeletedCampaignIds)
+                Memory.CampaignDeleted(Action.ActionId, id);
+            ReloadCore();
+        });
+        await AfterBatch(result, done => Tr.Format("Отменено выпусков: {0}, не отменено: {1}", done, result!.NotDone), "Выпуск"); // i18n-ok: заголовок колонки переводит ObjectList при выводе
+        // Запись живёт дольше периода на экране: сняться могли выпуски, которых сетка не показывает, — итог сообщается всегда, как у окон.
+        if (result is { Done: > 0 } && result.Errors.Rows.Count == 0)
+            await ShowInfo(Tr.T("Отменить"), Tr.Format("Отменено выпусков: {0}.", result.Done));
     }
 
     /// <summary>

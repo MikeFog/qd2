@@ -58,7 +58,7 @@ builder.Services.AddScoped<CircuitEntityCacheState>();
 builder.Services.AddScoped<MenuAccess>();
 // Применённый отбор экранов — на время сеанса, см. FilterMemory.
 builder.Services.AddScoped<FilterMemory>();
-// Последнее размещение вкладки «Рекламные окна» — для «Отменить последнее», см. PlacementUndo.
+// Последнее размещение на странице акции («Рекламные окна» или «Модули», одна запись на акцию) — для «Отменить последнее», см. PlacementUndo.
 builder.Services.AddScoped<PlacementUndo>();
 // Строки «Показать модули» вкладки «Модули» и созданные ею кампании — на время сеанса, см. ModuleRowsMemory.
 builder.Services.AddScoped<ModuleRowsMemory>();

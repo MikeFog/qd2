@@ -528,8 +528,8 @@
     /// </summary>
     private PlacementUndo.Entry? UndoEntry =>
         Undo.Of(Action.ActionId) is not { } entry ? null
-        : _range != null ? (entry.IsRange && entry.Issues.All(i => _range.CampaignIds.Contains(i.CampaignId)) ? entry : null)
-        : _open != null && !entry.IsRange && entry.CampaignId == _open.CampaignId ? entry
+        : _range != null ? (entry.Kind == PlacementUndo.Kind.Range && entry.Issues.All(i => _range.CampaignIds.Contains(i.CampaignId)) ? entry : null)
+        : _open != null && entry.Kind == PlacementUndo.Kind.Windows && entry.CampaignId == _open.CampaignId ? entry
         : null;
 
     private string? BrushHint =>
@@ -905,7 +905,7 @@
             WindowsSource.PlaceOne(_open!, week, cell, rollerId, position, _view, issue =>
             {
                 placed = true;
-                Undo.Remember(Action.ActionId, _open!.CampaignId, new[] { issue });
+                Undo.RememberWindows(Action.ActionId, _open!.CampaignId, new[] { issue });
             });
             if (_selected?.Key == cell.Key)
                 _panel = WindowsSource.LoadWindowIssues(_open!, cell, _view.ShowUnconfirmed);
@@ -931,7 +931,7 @@
         {
             IReadOnlyList<WindowsSource.PlacedIssue> created = RangeSource.PlaceSlot(_range, cell, rollerId, position, _view);
             placed = true;
-            Undo.Remember(Action.ActionId, PlacementUndo.RangeCampaign, created); // до перечитывания недели: сбой чтения не должен оставить выпуски без записи
+            Undo.RememberRange(Action.ActionId, created); // до перечитывания недели: сбой чтения не должен оставить выпуски без записи
             ReloadWeekCore();
         });
         if (placed)
@@ -986,7 +986,7 @@
         await Run(() =>
         {
             result = WindowsSource.Place(_open!, cells, rollerId, position);
-            Undo.Remember(Action.ActionId, _open!.CampaignId, result.Created);
+            Undo.RememberWindows(Action.ActionId, _open!.CampaignId, result.Created);
             ReloadWeekCore();
             if (_selected != null)
                 _panel = WindowsSource.LoadWindowIssues(_open!, _selected, _view.ShowUnconfirmed);
@@ -1102,7 +1102,7 @@
                     TemplateForm.Kind.Multi => TemplateRangeSource.RunMulti(range, template, quotas, position, _view),
                     _ => TemplateRangeSource.RunInterval(range, template, rollerId, position, _view),
                 };
-                Undo.Remember(Action.ActionId, PlacementUndo.RangeCampaign, result.Created);
+                Undo.RememberRange(Action.ActionId, result.Created);
             }
             else
             {
@@ -1112,7 +1112,7 @@
                     TemplateForm.Kind.Multi => TemplateSource.RunMulti(open!, template, quotas, position),
                     _ => TemplateSource.RunInterval(open!, template, rollerId, position),
                 };
-                Undo.Remember(Action.ActionId, open!.CampaignId, result.Created);
+                Undo.RememberWindows(Action.ActionId, open!.CampaignId, result.Created);
             }
             ReloadWeekCore();
             if (_selected != null && open != null)
@@ -1157,7 +1157,7 @@
         });
         // Прерванная сбоем отмена оставляет в записи то, что не снято, — её можно повторить.
         if (result is { Unprocessed.Count: > 0 })
-            Undo.Remember(entry.ActionId, entry.CampaignId, result.Unprocessed);
+            Undo.Remember(entry with { Issues = result.Unprocessed });
         else if (result != null)
             Undo.Forget(entry.ActionId);
         await AfterBatch(result, done => Tr.Format("Отменено выпусков: {0}, не отменено: {1}", done, result!.NotDone), "Выпуск"); // i18n-ok: заголовок колонки переводит ObjectList при выводе
@@ -1232,7 +1232,7 @@
         await Run(() =>
         {
             result = RangeSource.PlaceSlots(_range!, cells, rollerId, position, _view);
-            Undo.Remember(Action.ActionId, PlacementUndo.RangeCampaign, result.Created); // см. PlaceSlot
+            Undo.RememberRange(Action.ActionId, result.Created); // см. PlaceSlot
             ReloadWeekCore();
         });
         await AfterBatch(result, done => Tr.Format("Добавлено выпусков: {0}, не добавлено: {1}", done, result!.Failed), "Рекламное окно"); // i18n-ok: заголовок колонки переводит ObjectList при выводе
@@ -1406,7 +1406,7 @@
         await Run(() =>
         {
             result = RangeSource.FillToIntersection(range, toAdd, _view, RollerNumbers, out withoutPosition);
-            Undo.Remember(Action.ActionId, PlacementUndo.RangeCampaign, result.Created); // см. PlaceSlot
+            Undo.RememberRange(Action.ActionId, result.Created); // см. PlaceSlot
             ReloadWeekCore();
         });
         await AfterBatch(result, done => Tr.Format("Добавлено выпусков: {0}, не добавлено: {1}", done, result!.Failed), "Рекламное окно"); // i18n-ok: заголовок колонки переводит ObjectList при выводе

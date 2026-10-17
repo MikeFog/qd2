@@ -30,6 +30,8 @@ namespace Merlin.Classes
 	/// конце; опустевшую кампанию, которую создала вкладка в этом сеансе, «Удалить выпуски» удаляет в той же транзакции (В-21).
 	/// Действия над одним выпуском (подэтап 6.5) — ModuleIssueChange; его «Удалить» идёт через <see cref="RemoveOne"/> — те же шаг
 	/// удаления и В-21, что у «Удалить выпуски».
+	/// «Отменить последнее» (подэтап 6.6) — <see cref="Undo"/>: выпуски клика или «Разместить ролик» по захваченным номерам, тем же
+	/// шагом удаления и В-21; запись (одну на акцию) держит экран.
 	///
 	/// «Показать модули…» (подэтап 6.3) — добавленные строки (<see cref="AddedRow"/>): модули комбо-модуля, станции или
 	/// своей кампании. Строке без кампании модульная кампания создаётся при первой постановке в той же транзакции — как
@@ -785,7 +787,7 @@ namespace Merlin.Classes
 
 			public string ModuleName { get; internal set; }
 
-			/// <summary>Для строки отказа: «дата — модуль — ролик».</summary>
+			/// <summary>Для строки отказа: «дата — радиостанция — модуль — ролик» (одноимённые модули разных станций различимы).</summary>
 			public string Name { get; internal set; }
 
 			/// <summary>
@@ -873,7 +875,7 @@ namespace Merlin.Classes
 				RollerId = roller.RollerId,
 				Date = day,
 				ModuleName = m.ModuleName,
-				Name = string.Format("{0:dd.MM.yyyy} — {1} — {2}", day, m.ModuleName, roller.Name),
+				Name = string.Format("{0:dd.MM.yyyy} — {1} — {2} — {3}", day, m.Station, m.ModuleName, roller.Name),
 				CampaignCreated = campaignCreated,
 			};
 
@@ -1049,6 +1051,9 @@ namespace Merlin.Classes
 
 			/// <summary>«Разместить ролик»: поставленные выпуски — номера из ответа ModuleIssueIUD (запись для «Отменить последнее»).</summary>
 			public List<PlacedModuleIssue> Created { get; } = new List<PlacedModuleIssue>();
+
+			/// <summary>«Отменить последнее»: выпуски записи, до которых отмена не дошла из-за сбоя, — их можно отменить снова.</summary>
+			public List<PlacedModuleIssue> Unprocessed { get; } = new List<PlacedModuleIssue>();
 
 			/// <summary>«Разместить ролик»: кампании, которые создала постановка в добавленные строки, — «созданы вкладкой» (В-21).</summary>
 			public List<int> CreatedCampaignIds { get; } = new List<int>();
@@ -1337,7 +1342,7 @@ namespace Merlin.Classes
 
 			Entity listEntity = ActionWorkspace.CampaignListEntity();
 			HashSet<int> deletable = new HashSet<int>();
-			List<DataRow> createdHere = CreatedHere(action, issues, createdHereCampaignIds, listEntity, deletable);
+			List<DataRow> createdHere = CreatedHere(action, issues.Select(IssueCampaignId), createdHereCampaignIds, listEntity, deletable);
 
 			List<(DateTime Day, List<DataRow> Issues)> days = issues.GroupBy(IssueDay).OrderBy(g => g.Key).Select(g => (g.Key, g.ToList())).ToList();
 			using (OperationScope.Start($"ModulesRemove action={s.ActionId} issues={issues.Count}"))
@@ -1373,17 +1378,17 @@ namespace Merlin.Classes
 		}
 
 		/// <summary>
-		/// Кампании выпусков, созданные вкладкой в этом сеансе (В-21), — строки свежего списка (по ним удаляется); в
-		/// <paramref name="deletable"/> — те, что пользователь вправе удалить. До записи.
+		/// Кампании выпусков (<paramref name="campaignIds"/>), созданные вкладкой в этом сеансе (В-21), — строки свежего списка
+		/// (по ним удаляется); в <paramref name="deletable"/> — те, что пользователь вправе удалить. До записи.
 		/// </summary>
-		private static List<DataRow> CreatedHere(ActionOnMassmedia action, IEnumerable<DataRow> issues, ISet<int> createdHereCampaignIds,
+		private static List<DataRow> CreatedHere(ActionOnMassmedia action, IEnumerable<int> campaignIds, ISet<int> createdHereCampaignIds,
 			Entity listEntity, HashSet<int> deletable)
 		{
 			List<DataRow> createdHere = new List<DataRow>();
 			if (createdHereCampaignIds == null || createdHereCampaignIds.Count == 0)
 				return createdHere;
 			Dictionary<int, DataRow> campaigns = ModularCampaigns(action);
-			foreach (int campaignId in issues.Select(IssueCampaignId).Distinct())
+			foreach (int campaignId in campaignIds.Distinct())
 				if (createdHereCampaignIds.Contains(campaignId) && campaigns.TryGetValue(campaignId, out DataRow row))
 				{
 					createdHere.Add(row);
@@ -1395,7 +1400,7 @@ namespace Merlin.Classes
 
 		/// <summary>
 		/// «Удалить» у одного выпуска модуля (<see cref="ModuleIssueChange.Delete"/>: панель места и дерево журналов) — модуль
-		/// снимается на весь день. Одна транзакция: ModuleIssueIUD DeleteItem со свежей полной строкой (<see cref="DeleteStep"/>),
+		/// снимается на весь день. Одна транзакция: ModuleIssueIUD DeleteItem со свежей полной строкой (<see cref="DeleteStep(int, int)"/>),
 		/// В-21 для кампании выпуска — тем же <see cref="DeleteIfEmpty"/>, что у «Удалить выпуски», — и один пересчёт акции
 		/// (десктоп пересчитывал трижды, Д-16). Отказ удаления выпуска откатывает всё и уходит наверх; отказ удаления опустевшей
 		/// кампании откатывает только её (точка сохранения) — строка итога. Акцию вызывающий прочитал до записи (коррекция
@@ -1406,7 +1411,7 @@ namespace Merlin.Classes
 		{
 			Entity listEntity = ActionWorkspace.CampaignListEntity();
 			HashSet<int> deletable = new HashSet<int>();
-			List<DataRow> createdHere = CreatedHere(action, new[] { issue }, createdHereCampaignIds, listEntity, deletable);
+			List<DataRow> createdHere = CreatedHere(action, new[] { IssueCampaignId(issue) }, createdHereCampaignIds, listEntity, deletable);
 			DayWork work = new DayWork();
 			WindowsSource.RunInTransaction(() =>
 			{
@@ -1428,6 +1433,82 @@ namespace Merlin.Classes
 				s?.RemoveCampaign(campaignId);
 			return result;
 		}
+
+		// ---------- «Отменить последнее» ----------
+
+		/// <summary>
+		/// «Отменить последнее» у модулей (подэтап 6.6): снимает выпуски последнего размещения вкладки — клика (<see cref="PlaceOne"/>)
+		/// или «Разместить ролик» (<see cref="Place"/>) — по номерам, захваченным в момент записи; повтор модуля в тот же день (В-18),
+		/// поставленный другим действием, не трогается. Запись — только своя: выпуски модулей (номера выпусков окон — другой
+		/// счётчик и другой тип, PlacedIssue, сюда не передать) отмеченных кампаний набора.
+		///
+		/// Устройство — как у <see cref="Remove"/>: права до записи (LoadForWrite и «Удалить» сущности 130); дни транзакциями
+		/// (<see cref="RunDays"/>), внутри дня — по модулю, каждый выпуск — шаг с точкой сохранения (<see cref="DeleteStep(int, Func{DataRow, string})"/>:
+		/// ModuleIssueIUD DeleteItem уменьшает счётчики окон до своих проверок). Свежая строка выпуска: нет — «Выпуска уже нет.»;
+		/// другие ролик, кампания, модуль или день (например, ролик заменили после размещения) — отказ строкой, выпуск не снимается.
+		/// Сверка и удаление — в одной транзакции, но READ COMMITTED, как у окон (WindowsSource.Undo). В-21 — последним в
+		/// транзакции дня (<see cref="DeleteIfEmpty"/>). Пересчёт — один, в конце; акция прочитана до записи (коррекция платежа
+		/// подтверждённой). Сбой (не бизнес-отказ) прерывает отмену: снятые дни остаются, выпуски этого и следующих дней — в
+		/// <see cref="ModuleBatchResult.Unprocessed"/>.
+		/// </summary>
+		public static ModuleBatchResult Undo(ModuleScope s, IReadOnlyList<PlacedModuleIssue> placed, ISet<int> createdHereCampaignIds)
+		{
+			ModuleBatchResult result = new ModuleBatchResult();
+			if (placed == null || placed.Count == 0)
+				return result;
+			if (placed.Any(p => !s.Campaigns.ContainsKey(p.CampaignId)))
+				throw new InvalidOperationException(Tr.T("Отменять можно только выпуски отмеченных кампаний."));
+
+			ActionOnMassmedia action = LoadForWrite(s);
+			if (!EntityManager.GetEntity((int)Entities.ModuleIssue).IsActionEnabled(Constants.EntityActions.Delete, ViewType.Journal))
+				throw new InvalidOperationException(Tr.T(Properties.Resources.OperationNotAllowed));
+
+			Entity listEntity = ActionWorkspace.CampaignListEntity();
+			HashSet<int> deletable = new HashSet<int>();
+			List<DataRow> createdHere = CreatedHere(action, placed.Select(p => p.CampaignId), createdHereCampaignIds, listEntity, deletable);
+
+			// По дням, внутри дня — по модулю: тот же порядок блокировок, что у «Разместить ролик».
+			List<(DateTime Day, List<PlacedModuleIssue> Issues)> days = placed.GroupBy(p => p.Date.Date).OrderBy(g => g.Key)
+				.Select(g => (g.Key, g.OrderBy(p => p.ModuleId).ThenBy(p => p.ModuleIssueId).ToList())).ToList();
+			int committed = 0;
+			using (OperationScope.Start($"ModulesUndo action={s.ActionId} issues={placed.Count}"))
+			{
+				Stopwatch sw = Stopwatch.StartNew();
+				RunDays(result, "undo", "action " + s.ActionId, days.Select(d => (d.Day, d.Issues.Count)).ToList(), i =>
+				{
+					DayWork work = new DayWork();
+					WindowsSource.RunInTransaction(() =>
+					{
+						HashSet<int> touched = new HashSet<int>();
+						foreach (PlacedModuleIssue p in days[i].Issues)
+							if (RangeSource.Step(work.Steps, p.Name, 1, () => DeleteStep(p.ModuleIssueId, row => IsAsPlaced(row, p) ? null
+								: Tr.T("Выпуск изменили после размещения: другой ролик, модуль или день."))))
+								touched.Add(p.CampaignId);
+						foreach (DataRow campaign in createdHere.Where(c => touched.Contains(WindowsSource.CampaignIdOf(c))))
+							DeleteIfEmpty(listEntity, campaign, deletable.Contains(WindowsSource.CampaignIdOf(campaign)), work);
+					});
+					return work;
+				}, work =>
+				{
+					committed++;
+					foreach (int campaignId in work.DeletedCampaigns)
+						s.RemoveCampaign(campaignId);
+				}, (failure, daysLeft) => Tr.Format("Отмена прервана: {0} Не снято выпусков: {1}.", ErrorManager.GetErrorMessage(failure),
+					days.Skip(days.Count - daysLeft).Sum(d => d.Issues.Count)));
+				if (result.Interrupted)
+					result.Unprocessed.AddRange(days.Skip(committed).SelectMany(d => d.Issues));
+
+				if (result.Done > 0)
+					Recalculate(action, result, "undo");
+				Log.Info($"Modules undo completed in {sw.ElapsedMilliseconds}ms action={s.ActionId} issues={placed.Count} days={days.Count}" +
+					$" removed={result.Done} notRemoved={result.NotDone} campaignsDeleted={result.DeletedCampaignIds.Count} keptEmpty={result.KeptEmptyCampaignIds.Count}");
+			}
+			return result;
+		}
+
+		/// <summary>Выпуск таков, каким его поставили: ролик, кампания, модуль и день — как в записи.</summary>
+		private static bool IsAsPlaced(DataRow row, PlacedModuleIssue p) =>
+			IssueRollerId(row) == p.RollerId && IssueCampaignId(row) == p.CampaignId && IssueModuleId(row) == p.ModuleId && IssueDay(row) == p.Date.Date;
 
 		/// <summary>Строка выпуска модуля из базы (ModuleIssueRetrieve @moduleIssueId: кампания, акция, isConfirmed акции…); null — выпуска нет.</summary>
 		internal static DataRow LoadModuleIssue(int moduleIssueId)
@@ -1462,14 +1543,19 @@ namespace Merlin.Classes
 		/// Шаг «Удалить выпуски»: выпуск модуля заново (<see cref="LoadModuleIssue"/> на соединении транзакции; нет — «Выпуска
 		/// уже нет.») и ModuleIssueIUD DeleteItem с его полной строкой (<see cref="ModuleIssueParameters"/>). Причина отказа или null.
 		/// </summary>
-		private static string DeleteStep(int moduleIssueId, int acceptedRollerId)
+		private static string DeleteStep(int moduleIssueId, int acceptedRollerId) =>
+			// Ролик выпуска заменили после вопроса — пользователь удалять его не подтверждал.
+			DeleteStep(moduleIssueId, row => IssueRollerId(row) != acceptedRollerId ? Tr.T("Ролик выпуска изменили после вопроса — выпуск не удалён.") : null);
+
+		/// <summary>Шаг удаления выпуска модуля со своей сверкой свежей строки: <paramref name="refusal"/> — причина не удалять или null.</summary>
+		private static string DeleteStep(int moduleIssueId, Func<DataRow, string> refusal)
 		{
 			DataRow row = LoadModuleIssue(moduleIssueId);
 			if (row == null)
 				return Tr.T("Выпуска уже нет.");
-			// Ролик выпуска заменили после вопроса — пользователь удалять его не подтверждал.
-			if (IssueRollerId(row) != acceptedRollerId)
-				return Tr.T("Ролик выпуска изменили после вопроса — выпуск не удалён.");
+			string reason = refusal(row);
+			if (reason != null)
+				return reason;
 
 			DataAccessor.LoadDataSet("ModuleIssueIUD", ModuleIssueParameters(row, Constants.Actions.Delete));
 			return null;
