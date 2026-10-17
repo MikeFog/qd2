@@ -284,7 +284,9 @@ sed -n '/private void MenuItemClick/,/catch (Exception ex)/p' Client/Forms/MDIFo
   `TariffWindows`) плюс собственная таблица окон, переход к дате, Excel.
 - **`miTrafficManagement`** — `TrafficManagementForm` на `TrafficGrid`.
 - **`miPriceCalculator`** — `PriceCalculatorForm`, 1002 строки, свои процедуры
-  расчёта (`pc_PackageDiscountCalculateModel`).
+  расчёта (`pc_PackageDiscountCalculateModel`). Разбор и план переноса (17.10.2026):
+  `docs/tasks/web-price-calculator.md`; «25 + 26» в таблице — пересекающиеся
+  множества, доступ у 29 из 39 активных.
 - **`miPrintGrid`, `miPrintGridFromRSection`** — `FrmGridReport`, просмотрщик
   Crystal Reports. **`miExportGrid`** — `ExportGridForm`: выгрузка сеток на диск
   (Crystal/Word/txt). **`miMultiActionMediaPlan`** — диалог `FrmMultiActionMediaPlan`
