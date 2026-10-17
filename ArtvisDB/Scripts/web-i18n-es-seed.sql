@@ -2182,8 +2182,8 @@ INSERT INTO #t ([source], [text]) VALUES
 (N'Модуль снимается на весь день — окон: {0}.', N'El módulo se quita para todo el día: ventanas: {0}.'),
 (N'Выпуск изменили после размещения: другой ролик, модуль или день.', N'La emisión se modificó tras colocarla: otro spot, otro módulo u otro día.'),
 (N'У радиостанций нет агентства, их модули добавлены не будут: {0}.', N'Las emisoras no tienen agencia, sus módulos no se agregarán: {0}.'),
-(N'В комбо-модуле нет модулей.', N'El combo-módulo no tiene módulos.'),
-(N'Ни у одной радиостанции нет агентства — разместить комбо-модуль нельзя.', N'Ninguna emisora tiene agencia: no se puede colocar el combo-módulo.');
+(N'В комбо-модуле нет модулей.', N'El módulo combo no tiene módulos.'),
+(N'Ни у одной радиостанции нет агентства — разместить комбо-модуль нельзя.', N'Ninguna emisora tiene agencia: no se puede colocar el módulo combo.');
 GO
 
 BEGIN TRANSACTION;

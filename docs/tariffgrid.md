@@ -5,7 +5,10 @@
 форм размещения (`CampaignForm`, `EditIssuesForm`, `ComboModulePlacementForm`), генератора
 по шаблону и перед переносом размещения в веб.
 
-Проект веб-версии — отдельно: [`docs/tasks/web-tariffgrid.md`](tasks/web-tariffgrid.md).
+Проект веб-версии — отдельно: [`docs/tasks/web-tariffgrid.md`](tasks/web-tariffgrid.md). Веб-сетка
+«модуль × день» (замена модульной `CampaignForm` и комбо) — `Client/Classes/ModuleDaySource.cs` (строки, ячейки,
+запись) и `FogSoft.Web/Components/ActionModulesTab.razor` (вкладка «Модули» страницы акции, этап 6
+[`docs/tasks/web-action-forms.md`](tasks/web-action-forms.md)).
 
 Состояние на 23.09.2026 (master `f239535` плюс незакоммиченная работа по скидкам — сеток она
 не касается). Замеры — из лога прода `Logs/qd2.log` за 17.09–23.09.2026 (~19 пользователей)
@@ -50,7 +53,7 @@
 | `ProgramIssuesGrid2` | 176 | `…OnSingleMassmedia` | спонсорские программы, ячейки-чекбоксы |
 | `PackModuleGrid` | 198 | `TariffGridWithCampaignIssues` | пакетный модуль: одна строка × 7 дней |
 | `TariffWithRangeGrid` | 1263 | `TariffGrid` | **веер**: получасовые слоты сразу по всем станциям акции |
-| `ComboModuleGrid` | 764 | `UserControl` (не член иерархии) | комбо-модули: строка = модуль, колонка = день, неделя или месяц |
+| `ComboModuleGrid` | 764 | `UserControl` (не член иерархии) | комбо-модули: строка = модуль (с 04.10.2026, Д-7 — модуль в модульной кампании), колонка = день, неделя или месяц |
 | `IRollerGrid` | 22 | интерфейс | ролик / позиция / модуль / грантор / точечное обновление ячейки |
 
 ```
@@ -84,15 +87,15 @@ UserControl
 
 | Кампания (`campaignTypeID`) | Сетка | Где создаётся | Форма, кто открывает |
 |---|---|---|---|
-| Линейная (1) | `RollerIssuesGrid3` | `Campaign.WinForms.cs:36` → `EditRollerIssues` | `CampaignForm`; `ActionForm.cs:240` |
-| Модульная (3) | тот же `RollerIssuesGrid3`, модуль задаётся в `CampaignForm.InitModule` (`:340`) | `Campaign.WinForms.cs:36` | `CampaignForm` |
-| Спонсорская (2), ролики | `RollerIssuesGrid3` | `RollerPartOfSponsorCampaign.WinForms.cs:49`, `Campaign.WinForms.cs:36` | `CampaignForm` |
-| Спонсорская (2), программы | `ProgramIssuesGrid2` | `Campaign.WinForms.cs:181`, `ProgramPartOfSponsorCampaign.WinForms.cs:59` | `CampaignForm`; `ActionForm.cs:272` |
+| Линейная (1) | `RollerIssuesGrid3` | `Campaign.WinForms.cs:33` → `EditRollerIssues` | `CampaignForm`; `ActionForm.cs:240` |
+| Модульная (3) | тот же `RollerIssuesGrid3`, модуль задаётся в `CampaignForm.InitModule` (`:385`) | `Campaign.WinForms.cs:33` | `CampaignForm` |
+| Спонсорская (2), ролики | `RollerIssuesGrid3` | `RollerPartOfSponsorCampaign.WinForms.cs:41`, `Campaign.WinForms.cs:33` | `CampaignForm` |
+| Спонсорская (2), программы | `ProgramIssuesGrid2` | `Campaign.WinForms.cs:169`, `ProgramPartOfSponsorCampaign.WinForms.cs:52` | `CampaignForm`; `ActionForm.cs:271` |
 | Пакетная (4) | `PackModuleGrid` | `CampaignPackModule.WinForms.cs:23` | `CampaignForm` |
-| Веер (все линейные кампании акции) | `TariffWithRangeGrid(action, n)` | `EditIssuesForm.cs:39` | `EditIssuesForm`; `ActionForm.cs:543` («Массовое редактирование»), `MDIForm.cs:518` (мастер акции) |
-| Комбо-модуль | `ComboModuleGrid` | Designer | `ComboModulePlacementForm`; `ActionForm.cs:520/523`, `MDIForm.cs:549` |
-| — (окна прайс-листа) | `TariffWindowGrid` | Designer | `TariffWindowGenerationForm`; `MDIForm.cs:343` |
-| — (трафик) | `TrafficGrid` | Designer | `TrafficManagementForm`; `MDIForm.cs:671` |
+| Веер (все линейные кампании акции) | `TariffWithRangeGrid(action, n)` | `EditIssuesForm.cs:39` | `EditIssuesForm`; `ActionForm.cs:491` («Веерное редактирование»), `MDIForm.cs:520` (мастер акции) |
+| Комбо-модуль | `ComboModuleGrid` | Designer | `ComboModulePlacementForm`; `ActionForm.cs:468/471`, `MDIForm.cs:551` |
+| — (окна прайс-листа) | `TariffWindowGrid` | Designer | `TariffWindowGenerationForm`; `MDIForm.cs:345` |
+| — (трафик) | `TrafficGrid` | Designer | `TrafficManagementForm`; `MDIForm.cs:673` |
 
 **Связность с формой.** `CampaignForm` различает сетки проверками типа (`is`/`as`) и
 кастами `(IRollerGrid)` без проверки — около 20 проверок и 20 кастов (строки 73, 135, 148,
@@ -147,7 +150,7 @@ UserControl
 | спонсорская | тариф программы | `TariffWindowWithProgramIssue` (тариф × дата) | чекбокс «моя», либо название чужой фирмы; подсказка `[N]` |
 | пакетная | одна строка «цена» | `TariffWindowPackModule` (день) | длительность `[свободно]` |
 | веер | получасовой слот `hh:mm–hh:mm` | `TariffWindowWithRange` (слот × все станции) | минимальный по станциям остаток времени |
-| комбо | модуль (станция, модуль) | `ComboModuleDay` | остаток в самом заполненном окне модуля `[осталось/всего]` |
+| комбо | модуль в модульной кампании (станция, модуль, тип оплаты; Д-7) | `ComboModuleDay` | остаток в самом заполненном окне модуля `[осталось/всего]` |
 
 **Цвет текста** (кто уже стоит в ячейке):
 
@@ -186,13 +189,13 @@ UserControl
 
 | Сетка | Процедуры |
 |---|---|
-| линейная / модульная / трафик | `PricelistByDate` (или `ModulePricelistByDate`) → `TariffWindowRetrieve` (неделя: наборы `time` и `data`) → `Grid` (выпуски кампании по `originalWindowID`, счётчики по дням, окна с выпусками других акций фирмы); по фильтру — `TariffWindowWithAdvertTypeRetrieve`; модульная — `IsModuleExist` на каждую колонку |
+| линейная / модульная / трафик | `PricelistByDate` (или `ModulePricelistByDate`) → `TariffWindowRetrieve` (неделя: наборы `time` и `data`) → `Grid` (выпуски кампании по `actualWindowID` — с Deploy/25, раньше по `originalWindowID`; счётчики по дням, окна с выпусками других акций фирмы); по фильтру — `TariffWindowWithAdvertTypeRetrieve`; модульная — `IsModuleExist` на каждую колонку |
 | одно окно после клика | `TariffWindowRetrieve @windowId` (~3 мс) |
 | панели под сеткой | `WindowIssuesRetrieve` (по `actualWindowID`), `Campaigns` (`ReloadData`), `GetPackModuleIssueDetails` |
 | спонсорская | `SponsorPricelistByDate`, `SponsorTariffList`, `ProgramIssues` |
 | пакетная | `PackModulePricelistByDate`, `PackModuleTariffWindowsRetrieve`, `PackModuleIssueRetrieve` |
 | веер | `TariffWindowWithRange` (5 наборов: слоты, границы вещания, строки времени, чужие акции фирмы, их ролики), `RangeSlotIssues`, `RangeSlotFirmConflict`; «Добавленные выпуски» — `Action.BuildAddedIssuesTable` |
-| комбо | `ComboModuleContentRetrieve`, `ComboModuleFreeTimeRetrieve`, `ComboModuleIssuesRetrieve` |
+| комбо | `ComboModuleContentRetrieve`, `ComboModuleFreeTimeRetrieve`, `ComboModuleIssuesRetrieve`; веб «Модули» — те же `ComboModuleIssuesRetrieve` и `ComboModuleFreeTimeRetrieve @moduleIDs` (Deploy/50), у кампании без выпусков — `ModuleList` (`ModuleDaySource.cs:499`, `:709`, `:734`) |
 
 **Запись** — только через IUD-процедуры: они же ведут счётчики занятости прямо в строке
 `TariffWindow` (`timeInUse*`, `capacityInUse*`, `is*PositionOccupied`, `*PositionsUnconfirmed`),
@@ -223,11 +226,11 @@ UserControl
 
 - у выпуска нет своего времени — только `originalWindowID` и `actualWindowID`; при вставке
   они равны, `IssueTransfer` и `ActionActivate` их разводят (на dev 1205 выпусков);
-- **несогласованность original/actual:** отметка ячейки и счётчики (`Grid`) — по
-  `originalWindowID`; список выпусков окна (`WindowIssuesRetrieve`), занятость и сетка веера —
-  по `actualWindowID`; а `RangeSlotIssues`/`MasterIssueDelete` веера — снова по
-  `originalWindowID`. Перенесённый выпуск подсвечен в одном окне, а виден и удаляется — в
-  другом;
+- **несогласованность original/actual устранена** скриптами Deploy/24–35: отметка ячейки и счётчики
+  (`Grid`) — по `actualWindowID` с Deploy/25, `RangeSlotIssues`/`MasterIssueDelete` веера — с Deploy/27;
+  список выпусков окна (`WindowIssuesRetrieve`), занятость и сетка веера и раньше шли по `actualWindowID`.
+  До этого перенесённый выпуск был подсвечен в одном окне, а виден и удалялся — в другом. Правило и
+  исключения — [`docs/window-original-actual.md`](window-original-actual.md);
 - у 1,7% окон `windowDateOriginal ≠ windowDateActual`, все сдвиги — внутри дня;
 - склейка окон `windowPrevId/windowNextId` — 0,11% окон за год на dev (см. `window-merging.md`);
 - `MasterIssue` — не таблица, а понятие веера «один ролик в слоте на всех станциях».
@@ -272,7 +275,7 @@ UserControl
 
 | # | Где | Что не так | Цена сейчас | Лечение | Цена работы |
 |---|---|---|---|---|---|
-| **П-1** | `CampaignForm.AddIssuesInSelectedWindows` → `RollerIssuesGrid3.AddIssueToWindow` → `AddIssueTransaction` | Insert по N окнам: `ActionRecalculate` на **каждое** окно, потом ещё один (комментарий «пересчёт один после пакета» не соответствует коду). То же: `ComboModulePlacementForm.AddIssuesInSelectedCells` (`:489`, пересчёт с `Refresh` на ячейку); шаблон веера путь Simple (`CampaignForm.cs:559`, пересчёт на каждую дату + ещё один в `FrmGenerator.finally`) | N × пересчёт всей акции | флаг «без пересчёта» (как `recalculate:false` в веере), один пересчёт в конце | мала |
+| **П-1** | `CampaignForm.AddIssuesInSelectedWindows` → `RollerIssuesGrid3.AddIssueToWindow` → `AddIssueTransaction` | Insert по N окнам: `ActionRecalculate` на **каждое** окно, потом ещё один (комментарий «пересчёт один после пакета» не соответствует коду). То же: `ComboModulePlacementForm.AddIssuesInSelectedCells` (`:644`; пересчёт с `Refresh` на ячейку — `:507`); шаблон веера путь Simple (`CampaignForm.cs:559`, пересчёт на каждую дату + ещё один в `FrmGenerator.finally`) | N × пересчёт всей акции | флаг «без пересчёта» (как `recalculate:false` в веере), один пересчёт в конце | мала |
 | **П-2** | `TariffWithRangeGrid.AddIssuesRange(cell)` → `RefreshGrid` — [RANGE-01] | каждый клик веера перечитывает всю неделю по всем станциям | ~0,8 с на клик, p90 4 с | точечное перечитывание слота (параметр даты слота в процедуре) | средняя |
 | **П-2а** | `TariffWindowWithRange.sql`, разделы 7 и 9 | один и тот же тяжёлый джойн `TariffWindow × Issue × Campaign × Action` по всем станциям считается **дважды** (раздел 9 сам пишет «тот же джойн, что в п.7») | ~0,5 с из ~1,5 с на dev | раздел 7 считать из `#otherIssues` (добавить туда `massmediaID`, `deleteDate`) | мала, только SQL |
 | **П-3** | веер, открытие: `TariffWithRangeGrid` ctor (`BuildAddedIssuesTable(null)`) → первый `EditIssuesForm.RefreshGrid` → `SetSelectedCampaigns(список)` (`IsSameSelection(null, список)` = false) | «Добавленные выпуски» собираются **дважды**; сборка — `GetCampaignById` на каждую кампанию (N+1) + `GetContent` **всех выпусков кампании за весь период**; `Campaigns` вызывается 4 раза. Та же пересборка — на каждую галочку чек-листа кампаний | ~25–30 лишних запросов на 10 станций | собирать один раз; тип кампании уже есть в строках `Campaigns()`; выпуски акции одним запросом по `@campaignIDs` | средняя |
@@ -282,12 +285,12 @@ UserControl
 | **П-7** | `CampaignForm.grid_CellClicked` → `ShowWindowIssues` — [UI-02] | после каждого клика-добавления перестраиваются две таблицы деталей окна (1–2 × `WindowIssuesRetrieve`, клонирование сущностей, привязка) | 165 мс медиана × 5615 кликов за неделю | детали окна — по требованию, не на клик расстановки | средняя (порядок `DoEvents`, SmartGrid) |
 | **П-8** | `EditIssuesForm`: клик веера | `updateDB` → `RefreshGrid` → `GridRefreshed` → `TariffGridRefreshed`, затем `grid_CellClicked` → `ShowWindowIssues` → `TariffGridRefreshed` **ещё раз**; SmartGrid делает `bm.PositionChanged +=` без `-=` → **+2 подписки на каждый клик** (сбрасываются только при пересборке `AddedIssues`) | лишняя привязка + растущая работа на смену строки | одна привязка; `-=` перед `+=` в `SmartGrid` | мала |
 | **П-9** | `FrmGenerator` | ~110 мс на выпуск при `IssueIUD` ~4 мс: `issue.Refresh()` на выпуск, `IsRollerOfTheFirmExist` / `WindowIssuesRetrieve` на каждое окно-кандидат, окна перечитываются на каждый день, `grdSuccess.AddRow` на выпуск | 452 с за неделю по всем пользователям | окна периода одним запросом; «окна с выпуском фирмы» пачкой (есть в 3-м наборе `Grid`); замерить остаток клиента | средняя |
-| П-10 | `RecalculateAction()` с `refreshFlag=true` (`CampaignForm.cs:819, 978, 1071, 1165, 1672`, `FrmGenerator.cs:238`); `ComboModulePlacementForm` (`:333/792` + `ShowStatistics`) | лишняя загрузка акции (`Actions1`) после пересчёта — `TotalPrice` уже приходит из OUTPUT; **но** `tariffPrice`, `iCount` и т. п. освежает только этот `Refresh` (кнопка «Цена акции», статистика веера/комбо) | +1 запрос на операцию | вернуть `tariffPrice` OUTPUT-параметром, потом `RecalculateAction(false)`; в комбо убрать второй `Refresh` | мала |
+| П-10 | `RecalculateAction()` с `refreshFlag=true` (`CampaignForm.cs:819, 978, 1071, 1165, 1672`, `FrmGenerator.cs:238`); `ComboModulePlacementForm` (`:507/969` + `ShowStatistics`, `:1357`) | лишняя загрузка акции (`Actions1`) после пересчёта — `TotalPrice` уже приходит из OUTPUT; **но** `tariffPrice`, `iCount` и т. п. освежает только этот `Refresh` (кнопка «Цена акции», статистика веера/комбо) | +1 запрос на операцию | вернуть `tariffPrice` OUTPUT-параметром, потом `RecalculateAction(false)`; в комбо убрать второй `Refresh` | мала |
 | П-11 | `CampaignForm.DeleteIssuesInSelectedWindows`, отмена шаблона, `MoveIssuesToWindow`, веер: удаление дублей, «до пересечения», Del | одиночные `IssueIUD`/`MasterIssueDelete`/`AddRangeIssues` в цикле (пересчёт уже один); `MoveIssuesToWindow` и `MoveRangeIssuesToSlot` — `new Roller` на каждую строку | N запросов по 4–30 мс | ролики кэшировать по id; чтение выпусков одним запросом по списку окон. Процедуры массовой записи — только если N реально сотни | мала / средняя |
 | П-12 | `ProgramIssuesGrid2` | N+1 на отрисовке: `Issue.Campaign.Action.FirmName` → `GetCampaignById` + `GetActionById` на каждую чужую ячейку; `LoadIssues` выбрасывается сразу после загрузки (свой `GridRefreshed` раньше формы); клик по чекбоксу вызывает `ShowWindowIssues` дважды (`CellClick` и `CurrentCellDirtyStateChanged`) | сетка крошечная — терпимо | имя фирмы в `ProgramIssues`; одна подписка | мала |
 | П-13 | пакетная: `RefreshDetails` в `CampaignStatusChanged` и в `ShowWindowIssues` | `GetPackModuleIssueDetails` дважды на клик | +1 запрос | вызывать один раз | мала |
 | П-14 | `ComboModulePlacementForm.OnGridRefreshed` — [UI-03] | на каждом листании периода перечитываются **все** выпуски акции (от периода не зависят); после удаления — дважды | ~2 с клиентской перестройки на операцию | выпуски — один раз и после записи | средняя |
-| П-15 | `ActionForm` после закрытия формы кампании (`:241–243`, `:545–546`) | `RefreshActionStats(true)` + `LoadCampaigns` безусловно, даже без изменений; спонсорская — лишние `Action.Recalculate()` (`Campaign.WinForms.cs:186`, `ProgramPartOfSponsorCampaign.WinForms.cs:64`) | 2–3 запроса + пересчёт | только при `ChangeFlag` | мала |
+| П-15 | `ActionForm` после закрытия формы кампании (`:241–243`, `:493–494`) | `RefreshActionStats(true)` + `LoadCampaigns` безусловно, даже без изменений; спонсорская — лишние `Action.Recalculate()` (`Campaign.WinForms.cs:174`, `ProgramPartOfSponsorCampaign.WinForms.cs:57`) | 2–3 запроса + пересчёт | только при `ChangeFlag` | мала |
 | П-16 | `TrafficManagementForm.TsbMassClose_Click` (`:78–92`) | `DataSource` → `ObjectSelected` → `RefreshGrid`, затем явный `RefreshGrid` | двойная загрузка | убрать явный | мала |
 | П-17 | `TariffWindowGrid.DeleteGeneratedTariffWindows`, `MassmediaPricelist.DeleteGeneratedTariffWindows` | `TariffWindowMassDelete` по одному дню (в логе 480 медленных вызовов, 167 с за неделю) | ~250 мс × дни | по неделям/месяцам; дробление по дням, вероятно, сознательное (прогресс, отмена, короткие блокировки) — сначала уточнить | мала |
 | П-18 | `RangeSlotIssues` (веер: номера роликов — вся неделя после каждой перерисовки; Ctrl+R/Del — выделенные слоты) | `STRING_SPLIT` дат стоял в соединении по диапазону времени и выполнялся на каждый выпуск акции (выпуски × слоты); пока шёл запрос, S-блокировки укрупнялись до всей таблицы `Issue` и держали чужие записи выпусков | было: 20–29 с у копий больших акций на проде (тайм-аут 30), 40 с на копии прода; чужие `IssueIUD` ждали до 19 с | **исправлено 05.10.2026** (`Deploy/18`): даты один раз во временную таблицу с индексом — 0,1–0,6 с | мала, только SQL |

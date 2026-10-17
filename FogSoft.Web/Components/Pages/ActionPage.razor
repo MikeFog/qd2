@@ -459,15 +459,15 @@ else
     private void ShowError(string message) => _error = message;
 
     /// <summary>
-    /// Запись на вкладке размещения <paramref name="source"/>: остальные вкладки размещения перечитают свой период, когда их
-    /// покажут (окна модулей — те же окна, что у линейных кампаний), страница — шапку и кампании.
-    /// </summary>
-    /// <summary>
     /// Запись не на вкладке размещения (список кампаний, меню шапки, добавление и удаление кампаний — активация, удаление
     /// выпусков, смена фирмы): обе вкладки размещения перечитают период, когда их покажут.
     /// </summary>
     private Task PlacementChangedOutside() => PlacementChanged(PageTab.Campaigns);
 
+    /// <summary>
+    /// Запись на вкладке размещения <paramref name="source"/>: остальные вкладки размещения перечитают свой период, когда их
+    /// покажут (окна модулей — те же окна, что у линейных кампаний), страница — шапку и кампании.
+    /// </summary>
     private Task PlacementChanged(PageTab source)
     {
         foreach ((PageTab tab, PlacementTab placement) in _placement)

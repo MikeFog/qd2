@@ -51,12 +51,6 @@ namespace Merlin.Classes
 			/// <summary>«Удалить»: кампания выпуска, созданная вкладкой в этом сеансе, опустела и удалена в той же транзакции (В-21).</summary>
 			public int? DeletedCampaignId { get; internal set; }
 
-			/// <summary>
-			/// «Удалить»: опустевшая кампания «создана здесь» осталась — нет права удалять кампании или удаление отказало (причина —
-			/// <see cref="Warning"/>); плашка «без выпусков» по В-6.
-			/// </summary>
-			public int? KeptEmptyCampaignId { get; internal set; }
-
 			/// <summary>Что не вышло при выполненном действии: отказ удаления опустевшей кампании, сбой пересчёта после замены ролика.</summary>
 			public string Warning { get; internal set; }
 
@@ -165,7 +159,6 @@ namespace Merlin.Classes
 			ModuleDaySource.ModuleBatchResult removed = ModuleDaySource.RemoveOne(action, row, acceptedRollerId, createdHereCampaignIds, scope);
 			Result result = Priced(oldPrice, action);
 			result.DeletedCampaignId = removed.DeletedCampaignIds.Cast<int?>().FirstOrDefault();
-			result.KeptEmptyCampaignId = removed.KeptEmptyCampaignIds.Cast<int?>().FirstOrDefault();
 			if (removed.Errors.Rows.Count > 0)
 				result.Warning = Convert.ToString(removed.Errors.Rows[0]["description"]);
 			return result;

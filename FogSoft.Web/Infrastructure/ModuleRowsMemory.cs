@@ -60,10 +60,6 @@ public sealed class ModuleRowsMemory
 		set.Add(campaignId);
 	}
 
-	/// <summary>Создала ли кампанию вкладка в этом сеансе — только такую опустевшую кампанию можно удалить без вопроса (В-21).</summary>
-	public bool IsCreatedHere(int actionId, int campaignId) =>
-		_created.TryGetValue(actionId, out HashSet<int>? set) && set.Contains(campaignId);
-
 	/// <summary>Кампании акции, созданные вкладкой в этом сеансе, — копией: «Удалить выпуски» (ModuleDaySource.Remove, В-21).</summary>
 	public ISet<int> CreatedCampaigns(int actionId) =>
 		_created.TryGetValue(actionId, out HashSet<int>? set) ? new HashSet<int>(set) : new HashSet<int>();

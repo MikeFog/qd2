@@ -109,8 +109,8 @@ sed -n '/private void MenuItemClick/,/catch (Exception ex)/p' Client/Forms/MDIFo
 
 | Статус | Пунктов |
 |---|---:|
-| перенесён (включая `miExit`, сделанный выходом из сеанса, и оба журнала оплат на `/payments`) | 63 |
-| формы-монстры: `miComboModulePlacement` (`miCreateUnconfirmedAction`, `miMasterCreateActions` — мастер `/action/new`, 2026-10-07) | 1 |
+| перенесён (включая `miExit`, сделанный выходом из сеанса, и оба журнала оплат на `/payments`; `miComboModulePlacement` — 2026-10-17) | 64 |
+| формы-монстры: нет (`miCreateUnconfirmedAction`, `miMasterCreateActions` — мастер `/action/new`, 2026-10-07; `miComboModulePlacement` — `/action/new?menu=miComboModulePlacement`, 2026-10-17, этап 6.7 `web-action-forms.md`) | 0 |
 | нужен свой экран: `miPriceCalculator` (`miRoller` перенесён 2026-10-02) | 1 |
 | ждёт решения владельца: `miPaymentByManager` (§10) | 1 |
 | отложено: три «удаления», `miFirmImport` (§10) | 4 |
@@ -480,7 +480,7 @@ Ctrl+Shift+A. В вебе их нет и не будет: решение вла�
 |---:|---|---|---|---|---|---|---:|---|---:|
 | 68 | Рекламный отдел → Внести макет рекламной акции | `miCreateUnconfirmedAction` | `:159` → CreateMassmediaAction:526 | Мастер: диалоги → карточка акции | `Firm.SelectFirm` → `ActionOnMassmedia.ShowPassport` | перенесён (мастер `/action/new`, 2026-10-07: фирма, кампании, запись одной транзакцией — `web-action-forms.md` §10, этап 3) | 6 | +3/−0 | 24 |
 | 153 | Рекламный отдел → Веерное размещение... | `miMasterCreateActions` | `:161` → MasterCreateAction:543 | Мастер: диалоги → карточка акции | `Firm.SelectFirm` → `SelectMassmediasStep` → `EditIssuesForm` → `ActionForm` | перенесён (тот же мастер `/action/new`, 2026-10-07; веер — на странице акции, этап 4 `web-action-forms.md`) | 5 | +3/−0 | 24 |
-| 180 | Рекламный отдел → Размещение комбо-модулями... | `miComboModulePlacement` | `:163` → MasterPlaceComboModules:574 | Мастер: диалоги → карточка акции | `Firm.SelectFirm` → `SelectComboModuleStep` → `ComboModulePlacementForm` → `ActionForm` | с вкладкой «Модули» (этап 6 `web-action-forms.md`, решение 2026-10-07); на 2026-10-06 выдан 4 группам, 17 пользователям | 0 | — | 0 |
+| 180 | Рекламный отдел → Размещение комбо-модулями... | `miComboModulePlacement` | `:163` → MasterPlaceComboModules:574 | Мастер: диалоги → карточка акции | `Firm.SelectFirm` → `SelectComboModuleStep` → `ComboModulePlacementForm` → `ActionForm` | перенесён 2026-10-17 (третий вход мастера `/action/new?menu=miComboModulePlacement` → вкладка «Модули», этап 6.7 `web-action-forms.md`; решение 2026-10-07); на 2026-10-06 выдан 4 группам, 17 пользователям | 0 | — | 0 |
 | 175 | Рекламный отдел → Калькулятор цены | `miPriceCalculator` | `:251` → ShowPriceCalculator:622 | Собственная форма | `PriceCalculatorForm` (1002 строки) | этап 3 (п.2 плана) | 5 | +26/−0 | 25 |
 | 11 | Рекламный отдел → Журнал подтверждённых рекламных акций | `miActionJournal` | `:165` → ShowMassmediaActions:395 | Дерево на своём контейнере | `ActionContainer(ConfirmedAction)`: 118 / 77 / 1255 | перенесён (Browser, 2026-09-20); действия по строке — этапы 3-4 | 6 | +3/−0 | 24 |
 | 158 | Рекламный отдел → Журнал макетов рекламных акций | `miActionJournalUnconfirmed` | `:169` → ShowMassmediaActions:395 | Дерево на своём контейнере | `ActionContainer(UnconfirmedAction)`: 137 / 77 / 1256 | перенесён (Browser, 2026-09-20); действия по строке — этапы 3-4 | 5 | +8/−0 | 24 |
@@ -647,6 +647,10 @@ Ctrl+Shift+A. В вебе их нет и не будет: решение вла�
 `ActionFinalPriceForm`, `RollerMuteSelect`). Сверено по `iMenu`, `iEntityAction` и
 реестру `ObjectActions`; веб не запускался.
 
+Обновление 17.10.2026: монстров переносит план `web-action-forms.md` (ход — его §10). Модульная часть `CampaignForm`
+(режим М) и `ComboModulePlacementForm` перенесены этапом 6 — вкладка «Модули» страницы акции и третий вход мастера
+«Размещение комбо-модулями» (`miComboModulePlacement`, `/action/new?menu=miComboModulePlacement`).
+
 ### Экраны меню
 
 | Пункт | Что нужно | Заметки |
@@ -664,18 +668,25 @@ Ctrl+Shift+A. В вебе их нет и не будет: решение вла�
 - **Выпуски в дереве кампании** — вся группа мелкая, формы по 120–150 строк, монстров не требует;
   пока её нет, выпуски в вебе правятся только через монстров:
   - «Изменить позиционирование» (`ChangePositions`): 7 сущностей (87, 91, 92, 95, 96, 171, 177),
-    `ChangePositioningForm` (134);
+    `ChangePositioningForm` (134); у модульной кампании (92) и модуля в ней (96) на 17.10.2026
+    по-прежнему нет;
   - «Сделать первым / вторым / последним / убрать порядок»: 4 сущности (98, 130, 175, 1247),
-    логика уже в ядре (`Issue.cs`);
+    логика уже в ядре (`Issue.cs`); у выпуска модуля (130) перенесены 16.10.2026 вместе с
+    «Заменить рекламный ролик» и «Удалить» (подэтап 6.5 `web-action-forms.md`,
+    `ObjectActions.cs:450-459`, ядро `ModuleIssueChange`);
   - «Удалить рекламные выпуски» (`DeleteIssues`): 9 сущностей, `CampaignDaysForm` (120),
     связано с `docs/mass-window-operations.md`; в `ObjectActions.DesktopOverrides` стоят
-    собственные удаления `MasterIssue`, `ModuleIssue`, `CampaignPart` и обновление
-    `SponsorProgramPart`;
+    собственные удаления `MasterIssue`, `CampaignPart` и обновление `SponsorProgramPart`
+    (`ModuleIssue` оттуда убран — перенесён, `ObjectActions.cs:538-546`). «Удалить выпуски
+    рекламных модулей» у модульной кампании (92) и «Удалить выпуски рекламного модуля» (96)
+    на 17.10.2026 нет;
   - «Заменить рекламный ролик» у одного выпуска (98, 130, 175, 215, 1247),
-    `RollerSubstitutionForm` (149): замена на уровне ролика уже есть;
+    `RollerSubstitutionForm` (149): замена на уровне ролика уже есть; у 130 — перенесено (6.5);
   - «Изменить предмет рекламы» у выпуска (175, 215), `RollerChangeAdvertTypeForm` (131).
 - **«Редактировать выпуски»** у спонсорских частей (86, 87) и «Редактировать» у кампаний
-  (91, 92, 171) открывают `CampaignForm` — монстр.
+  (91, 92, 171) открывают `CampaignForm` — монстр. В вебе на 17.10.2026 «Редактировать» у
+  линейной (91) открывает вкладку «Рекламные окна», у модульной (92) — «Модули» страницы акции;
+  у спонсорской и пакетной — серый (`ObjectActions.cs:392-395`).
 - Пользователи, группы, права (107, 108, 109) — отдельное приложение `Protector`, в веб не
   переносим (решение 2026-09-21).
 

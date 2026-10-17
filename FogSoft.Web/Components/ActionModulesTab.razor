@@ -126,11 +126,12 @@
                    Esc снимает выделение: клавиши ловит обёртка сетки, фокус ставит щелчок. *@
                 <div class="grid-box" tabindex="-1" @ref="_gridBox" @onkeydown="GridKey">
                     <PlacementGrid Model="_week" Date="_date" SelectedKeys="SelectedKeys" CellTitle="CellTitle" Brush="_brushOn"
+                                   CellText="NumbersCellText"
                                    DayTotalTitle="@(Tr.T("Выпусков модулей за день по отмеченным кампаниям"))"
                                    OnPrevious="Previous" OnNext="Next" OnJump="JumpTo" OnCellClick="ClickCell">
                         <LeadingTools>
                             <button type="button" class="btn btn-sm @(_brushOn ? "btn-primary" : "btn-outline-secondary")" aria-pressed="@_brushOn"
-                                    disabled="@(!CanBrush)" title="@BrushHint" @onclick="ToggleBrush">
+                                    disabled="@(!_brushOn && !CanBrush)" title="@BrushHint" @onclick="ToggleBrush">
                                 <i class="bi bi-brush" aria-hidden="true"></i>@Tr.T("Режим добавления")
                             </button>
                             @if (UndoEntry is { } undo)
@@ -165,6 +166,12 @@
                         <TrailingTools>
                             <span class="toggles">
                                 <PlacementFilterButtons View="_view" Unconfirmed="true" Changed="Reload" />
+                                @* Как tbbShowRollerNumbers десктопного комбо: номера роликов кампании в ячейке вместо остатка. *@
+                                <button type="button" class="btn btn-sm btn-outline-secondary @(_showNumbers ? "active" : null)" aria-pressed="@_showNumbers"
+                                        title="@(Tr.T("Номера роликов") + "\n" + Tr.T("Показывать в окнах номера роликов текущей акции вместо остатка времени"))"
+                                        aria-label="@(Tr.T("Номера роликов"))" @onclick="() => _showNumbers = !_showNumbers">
+                                    <i class="bi bi-123" aria-hidden="true"></i>
+                                </button>
                                 <button type="button" class="btn btn-sm btn-outline-secondary" title="@(Tr.T("Обновить информацию"))" aria-label="@(Tr.T("Обновить информацию"))"
                                         @onclick="RefreshAll">
                                     <i class="bi bi-arrow-clockwise" aria-hidden="true"></i>
@@ -434,6 +441,12 @@
         // (перерисовка до перечитывания) — снятая отметка пересоздала бы набор и сбросила номера строк.
         int before = _checked.Count;
         _checked.RemoveAll(id => !captions.ContainsKey(id) && (_captions == null || _captions.ContainsKey(id)));
+
+        // Кампанию удалили не с вкладки («Рекламные кампании», другой пользователь): строки памяти, привязанные к ней, снова
+        // ожидающие, и она больше не «создана здесь» — как после удаления с вкладки (В-21).
+        if (_captions != null)
+            foreach (int gone in _captions.Keys.Where(id => !captions.ContainsKey(id)).ToList())
+                Memory.CampaignDeleted(Action.ActionId, gone);
 
         // Модульная кампания появилась не постановкой этой вкладки («Добавить рекламные кампании», другой пользователь) и
         // совпадает со строкой «Показать модули» без кампании — отметить, иначе строка молча пропала бы вместе со строками
@@ -775,10 +788,20 @@
 
     private void ToggleBrush()
     {
+        // Включить — только при праве; выключить — всегда (акцию могли удалить, пока режим был включён).
+        if (!_brushOn && !CanBrush)
+            return;
         _brushOn = !_brushOn;
         if (_brushOn)
             _selection.Clear();
     }
+
+    // ---------- Номера роликов ----------
+
+    private bool _showNumbers;
+
+    /// <summary>«Номера роликов»: номера роликов кампании в ячейке вместо остатка (null — остаток), как у окон.</summary>
+    private string? NumbersCellText(PlacementCell cell) => _showNumbers ? cell.NumbersText(_brush.Numbers) : null;
 
     /// <summary>
     /// Клик «Режима добавления»: модуль строки на весь день — ролик кисти с позицией «Позиционирования», одной транзакцией

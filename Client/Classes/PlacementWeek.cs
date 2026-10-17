@@ -112,7 +112,7 @@ namespace Merlin.Classes
 				foreach (PlacementRow row in value)
 				{
 					if (row.Cells.Length != DayCount)
-						throw new ArgumentException($"Строка «{row.Time}»: мест {row.Cells.Length}, а дней в периоде {DayCount}.", nameof(value));
+						throw new ArgumentException($"Строка «{row.Time}»: мест {row.Cells.Length}, а дней в периоде {DayCount}.", nameof(value)); // i18n-ok: ошибка разработчика
 					if (HeaderColumns != null && row.Headers?.Count != HeaderColumns.Count)
 						throw new ArgumentException($"Строка «{row.Time}»: заголовков {row.Headers?.Count ?? 0}, а колонок {HeaderColumns.Count}.", nameof(value)); // i18n-ok: ошибка разработчика
 				}

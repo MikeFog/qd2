@@ -279,9 +279,6 @@ namespace Merlin.Classes
 
 			/// <summary>Радиостанция с группой — как колонка «Радиостанция» строк.</summary>
 			public string Station { get; internal set; }
-
-			/// <summary>Группа радиостанций (город); пусто — без группы.</summary>
-			public string GroupName { get; internal set; }
 		}
 
 		/// <summary>
@@ -382,7 +379,6 @@ namespace Merlin.Classes
 					{
 						MassmediaId = massmediaId,
 						Station = StationOf(row),
-						GroupName = Convert.ToString(row[Campaign.ParamNames.GroupName]).Trim(),
 					});
 			}
 			StringComparer text = StringComparer.Create(CultureInfo.CurrentCulture, ignoreCase: true);
@@ -425,14 +421,10 @@ namespace Merlin.Classes
 			/// <summary>Добавленная строка без кампании: станция, тип оплаты и агентство будущей кампании; иначе null.</summary>
 			internal AddedRow Added { get; set; }
 
-			internal int MassmediaId { get; set; }
 			internal int ModulePricelistId { get; set; }
 
 			/// <summary>Прайс-лист станции, к которому относится прайс-лист модуля (TariffWindowRetrieve @pricelistId).</summary>
 			internal int PricelistId { get; set; }
-
-			/// <summary>Цена прайс-листа модуля, ₽ за секунду ролика.</summary>
-			internal decimal Price { get; set; }
 
 			internal string Station { get; set; }
 			internal string ModuleName { get; set; }
@@ -563,10 +555,8 @@ namespace Merlin.Classes
 							ModuleId = spec.ModuleId,
 							CampaignId = spec.CampaignId,
 							Added = spec.Added,
-							MassmediaId = Convert.ToInt32(f[ComboModule.ParamNames.MassmediaId]),
 							ModulePricelistId = Convert.ToInt32(f[ComboModule.ParamNames.ModulePriceListId]),
 							PricelistId = Convert.ToInt32(f[Pricelist.ParamNames.PricelistId]),
-							Price = Convert.ToDecimal(f[ComboModule.ParamNames.Price]),
 							Station = spec.Campaign.Station,
 							ModuleName = spec.ModuleName,
 							PaymentType = spec.PaymentType,
@@ -785,8 +775,6 @@ namespace Merlin.Classes
 			/// <summary>День выпуска (ModuleIssue.issueDate).</summary>
 			public DateTime Date { get; internal set; }
 
-			public string ModuleName { get; internal set; }
-
 			/// <summary>Для строки отказа: «дата — радиостанция — модуль — ролик» (одноимённые модули разных станций различимы).</summary>
 			public string Name { get; internal set; }
 
@@ -874,7 +862,6 @@ namespace Merlin.Classes
 				ModuleId = m.ModuleId,
 				RollerId = roller.RollerId,
 				Date = day,
-				ModuleName = m.ModuleName,
 				Name = string.Format("{0:dd.MM.yyyy} — {1} — {2} — {3}", day, m.Station, m.ModuleName, roller.Name),
 				CampaignCreated = campaignCreated,
 			};
@@ -1640,9 +1627,6 @@ namespace Merlin.Classes
 			public string PaymentType { get; internal set; }
 			public DateTime Date { get; internal set; }
 
-			/// <summary>Цена прайс-листа модуля, ₽ за секунду ролика.</summary>
-			public decimal Price { get; internal set; }
-
 			/// <summary>Выпуски модуля строки за день (ModuleIssueRetrieve) — колонки по <see cref="IssueEntity"/>.</summary>
 			public DataTable Issues { get; internal set; }
 
@@ -1705,7 +1689,6 @@ namespace Merlin.Classes
 				Module = m.ModuleName,
 				PaymentType = m.PaymentType,
 				Date = cell.Date,
-				Price = m.Price,
 				Issues = issues,
 				ExitWindows = issues.Rows.Count > 0,
 				Windows = windows.OrderBy(w => w.Date).ThenBy(w => w.ModuleIssueId ?? 0).ToList(),

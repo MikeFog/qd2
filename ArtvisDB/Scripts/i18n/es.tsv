@@ -2158,5 +2158,5 @@ code	Ролик выпуска изменили после вопроса — в
 code	Модуль снимается на весь день — окон: {0}.	El módulo se quita para todo el día: ventanas: {0}.
 code	Выпуск изменили после размещения: другой ролик, модуль или день.	La emisión se modificó tras colocarla: otro spot, otro módulo u otro día.
 code	У радиостанций нет агентства, их модули добавлены не будут: {0}.	Las emisoras no tienen agencia, sus módulos no se agregarán: {0}.
-code	В комбо-модуле нет модулей.	El combo-módulo no tiene módulos.
-code	Ни у одной радиостанции нет агентства — разместить комбо-модуль нельзя.	Ninguna emisora tiene agencia: no se puede colocar el combo-módulo.
+code	В комбо-модуле нет модулей.	El módulo combo no tiene módulos.
+code	Ни у одной радиостанции нет агентства — разместить комбо-модуль нельзя.	Ninguna emisora tiene agencia: no se puede colocar el módulo combo.
