@@ -258,6 +258,15 @@ namespace Merlin.Classes
 			EntityManager.GetEntity((int)Entities.Action).IsActionEnabled(Constants.EntityActions.Edit, ViewType.Journal)
 			&& EntityManager.GetEntity((int)Entities.GeneralCampaign).IsActionEnabled(Constants.EntityActions.Edit, ViewType.Journal);
 
+		/// <summary>
+		/// Можно ли создавать акции мастером «Размещение комбо-модулями»: то же, что <see cref="CanCreateActions"/>, плюс
+		/// «Редактировать» у модульной кампании (92) — без него вкладка «Модули» новой акции не поставила бы ни одного
+		/// модуля (ModuleDaySource.CanAddModuleCampaigns), и мастер оставил бы пустую акцию.
+		/// </summary>
+		public static bool CanCreateComboActions() =>
+			CanCreateActions()
+			&& EntityManager.GetEntity((int)Entities.ModuleCampaign).IsActionEnabled(Constants.EntityActions.Edit, ViewType.Journal);
+
 		/// <summary>Созданная акция и её кампании — номера, захваченные в момент записи.</summary>
 		public sealed class CreatedAction
 		{
@@ -280,8 +289,28 @@ namespace Merlin.Classes
 			if (!CanCreateActions())
 				throw new InvalidOperationException(Tr.T(Properties.Resources.OperationNotAllowed));
 
+			return Insert(firm, campaigns.Select(item => Draft(campaignTypeId, paymentTypeId, item)).ToList());
+		}
+
+		/// <summary>
+		/// Новая акция фирмы без кампаний — мастер «Размещение комбо-модулями» (В-5): акция сразу, модульные кампании —
+		/// при первой постановке модуля на вкладке «Модули» (ленивая кампания ModuleDaySource). Путь тот же, что у
+		/// <see cref="CreateAction"/>.
+		/// </summary>
+		/// <param name="firm">Строка фирмы из Firm.GetFirmCandidates.</param>
+		/// <returns>Номер акции.</returns>
+		public static int CreateActionWithoutCampaigns(DataRow firm)
+		{
+			if (!CanCreateComboActions())
+				throw new InvalidOperationException(Tr.T(Properties.Resources.OperationNotAllowed));
+
+			return Insert(firm, new List<Campaign>()).ActionId;
+		}
+
+		/// <summary>Акция и кампании одной транзакцией; объект акции — новый на каждый вызов.</summary>
+		private static CreatedAction Insert(DataRow firm, List<Campaign> drafts)
+		{
 			ActionOnMassmedia action = new ActionOnMassmedia(EntityManager.GetEntity((int)Entities.Firm).CreateObject(firm));
-			List<Campaign> drafts = campaigns.Select(item => Draft(campaignTypeId, paymentTypeId, item)).ToList();
 
 			WindowsSource.RunInTransaction(() =>
 			{

@@ -14,6 +14,9 @@
     CampaignAddForm), нет — модули станции не добавляются (десктоп отказывал всему комбо). Кампании
     здесь не создаются: их создаст первая постановка в строку. Значения пишутся в модель, её читает
     вкладка по «Показать».
+
+    ComboOnly — только комбо-модуль, без выбора источника: мастер «Размещение комбо-модулями» (этап 6.7,
+    ActionNew), как десктопный SelectComboModuleStep; источник «Комбо-модуль» и список комбо задаёт вызывающий.
 *@
 
 @if (Value.Message != null)
@@ -21,16 +24,19 @@
     <div class="alert alert-danger">@Value.Message</div>
 }
 
-<div class="sources" role="radiogroup" aria-label="@(Tr.T("Показать модули"))">
-    @foreach ((Sources source, string caption, string? reason) in SourceOptions)
-    {
-        <label class="form-check form-check-inline" title="@reason">
-            <input type="radio" class="form-check-input" name="module-rows-source" checked="@(Value.Source == source)"
-                   disabled="@(reason != null)" @onchange="() => SourceChanged(source)" />
-            <span class="form-check-label">@caption</span>
-        </label>
-    }
-</div>
+@if (!ComboOnly)
+{
+    <div class="sources" role="radiogroup" aria-label="@(Tr.T("Показать модули"))">
+        @foreach ((Sources source, string caption, string? reason) in SourceOptions)
+        {
+            <label class="form-check form-check-inline" title="@reason">
+                <input type="radio" class="form-check-input" name="module-rows-source" checked="@(Value.Source == source)"
+                       disabled="@(reason != null)" @onchange="() => SourceChanged(source)" />
+                <span class="form-check-label">@caption</span>
+            </label>
+        }
+    </div>
+}
 
 @switch (Value.Source)
 {
@@ -144,7 +150,9 @@
     @if (Value.WithoutAgency.Count > 0)
     {
         <div class="text-danger without-agency">
-            @Tr.Format("У радиостанций нет агентства, их модули показаны не будут: {0}.", string.Join(", ", Value.WithoutAgency.Select(c => c.Station)))
+            @(Value.ForWizard
+                ? Tr.Format("У радиостанций нет агентства, их модули добавлены не будут: {0}.", string.Join(", ", Value.WithoutAgency.Select(c => c.Station)))
+                : Tr.Format("У радиостанций нет агентства, их модули показаны не будут: {0}.", string.Join(", ", Value.WithoutAgency.Select(c => c.Station))))
         </div>
     }
     <p class="text-muted hint">@Tr.T("Рекламная кампания на радиостанции с этим типом оплаты и агентством будет создана при первой постановке модуля, если её ещё нет в акции.")</p>
@@ -152,6 +160,9 @@
 
 @code {
     [Parameter, EditorRequired] public Model Value { get; set; } = default!;
+
+    /// <summary>Только комбо-модуль (мастер): выбора источника нет, Value.Source = Combo и Value.Combos — заранее.</summary>
+    [Parameter] public bool ComboOnly { get; set; }
 
     public enum Sources { Combo, Station, Campaign }
 
@@ -341,6 +352,9 @@
         /// <summary>Можно добавлять модульные кампании — комбо-модуль и модули радиостанции.</summary>
         public bool CanAdd { get; init; }
 
+        /// <summary>Мастер «Размещение комбо-модулями» («Создать»), а не «Показать модули»: тексты — про размещение, как десктоп.</summary>
+        public bool ForWizard { get; init; }
+
         /// <summary>Отмеченные модульные кампании, которые можно редактировать: номер → подпись; пусто — источника нет.</summary>
         public IReadOnlyList<KeyValuePair<int, string>> Campaigns { get; init; } = Array.Empty<KeyValuePair<int, string>>();
 
@@ -398,6 +412,8 @@
                 case Sources.Combo:
                     if (ComboId == null)
                         return Tr.T("Выберите комбо-модуль.");
+                    if (ComboContent.Count == 0)
+                        return Tr.T("В комбо-модуле нет модулей.");
                     break;
                 case Sources.Station:
                     if (MassmediaId == null)
@@ -412,7 +428,9 @@
             if (noChoice.Count > 0)
                 return Tr.Format("Необходимо выбрать агентство: {0}.", string.Join(", ", noChoice));
             if (RowStations.All(c => c.AgencyId == null))
-                return Tr.T("Ни у одной радиостанции нет агентства — показывать нечего.");
+                return ForWizard
+                    ? Tr.T("Ни у одной радиостанции нет агентства — разместить комбо-модуль нельзя.")
+                    : Tr.T("Ни у одной радиостанции нет агентства — показывать нечего.");
             return null;
         }
 
