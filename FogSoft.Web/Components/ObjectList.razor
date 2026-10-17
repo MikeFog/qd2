@@ -244,6 +244,13 @@ else
     [Parameter] public EventCallback<(DataRow Row, string Action)> ScreenAction { get; set; }
 
     /// <summary>
+    /// Исполнение пунктов меню и быстрых иконок строки владельцем экрана вместо ObjectActions.ExecuteAsync — когда действию
+    /// нужен контекст экрана (вкладка «Модули»: «Удалить» выпуска модуля знает кампании, созданные вкладкой, В-21). Владелец
+    /// отвечает и за доступность (ObjectActions.CanExecute); null — действие недоступно, как у ExecuteAsync.
+    /// </summary>
+    [Parameter] public Func<PresentationObject, string, Task<ActionEffect?>>? ActionExecutor { get; set; }
+
+    /// <summary>
     /// Колонки — атрибуты сущности, у которых есть соответствующая колонка в
     /// пришедших строках. Метаданные (iEntityAttribute) могут объявлять
     /// колонку, которой нет в конкретной процедуре загрузки списка — например,
@@ -784,12 +791,17 @@ else
     {
         if (Data == null || Data.Rows.Count == 0)
             return false;
-        if (ScreenActions != null)
+        // Владелец сам исполняет действия строк — меню у них есть; строить его по первой строке на каждое чтение не нужно
+        // (у выпуска модуля доступность пунктов — обращение к базе).
+        if (ScreenActions != null || ActionExecutor != null)
             return true;
 
         try
         {
-            return Actions.BuildMenu(Entity.CreateObject(Data.Rows[0]), ViewType.Journal).Any(i => !i.IsSeparator);
+            PresentationObject first = Entity.CreateObject(Data.Rows[0]);
+            if (Actions.KnownHasMenu(first) is bool known)
+                return known;
+            return Actions.BuildMenu(first, ViewType.Journal).Any(i => !i.IsSeparator);
         }
         catch
         {
@@ -908,7 +920,9 @@ else
 
     private async Task Execute(PresentationObject obj, string actionName, bool reportUnavailable)
     {
-        ActionEffect? effect = await Actions.ExecuteAsync(obj, actionName, ViewType.Journal);
+        ActionEffect? effect = ActionExecutor != null
+            ? await ActionExecutor(obj, actionName)
+            : await Actions.ExecuteAsync(obj, actionName, ViewType.Journal);
 
         if (effect == null)
         {

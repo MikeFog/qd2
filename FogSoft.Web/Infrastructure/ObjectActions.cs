@@ -442,6 +442,21 @@ public sealed partial class ObjectActions
 			[Merlin.Classes.RollerIssueChange.SubstituteAction] = (s, t) => s.SubstituteIssueRoller((PresentationObject)t),
 			[Constants.EntityActions.Delete] = (s, t) => s.DeleteIssue((PresentationObject)t),
 		},
+		// Issue.DoAction, ModuleIssue.DoAction и CampaignPart.DoAction у выпуска модуля (130) — узел выпуска под днём модульной
+		// кампании в дереве журнала акций и список «Выпуски модуля» панели места вкладки «Модули» (web-action-forms.md, подэтап
+		// 6.5). Запись, права и пересчёт — ModuleIssueChange по номеру выпуска (строка читается заново); доступность — его
+		// EnabledActions (IsEnabled). «Удалить» отсюда — без В-21 (кампаний «создана здесь» нет); вкладка «Модули» зовёт
+		// DeleteModuleIssue сама, со своим набором.
+		["ModuleIssue"] = new()
+		{
+			[Merlin.Classes.ModuleIssueChange.SetFirstAction] = (s, t) => s.SetModuleIssuePosition((PresentationObject)t, Merlin.Classes.ModuleIssueChange.SetFirstAction),
+			[Merlin.Classes.ModuleIssueChange.SetSecondAction] = (s, t) => s.SetModuleIssuePosition((PresentationObject)t, Merlin.Classes.ModuleIssueChange.SetSecondAction),
+			[Merlin.Classes.ModuleIssueChange.SetLastAction] = (s, t) => s.SetModuleIssuePosition((PresentationObject)t, Merlin.Classes.ModuleIssueChange.SetLastAction),
+			[Merlin.Classes.ModuleIssueChange.SetUnknownAction] = (s, t) => s.SetModuleIssuePosition((PresentationObject)t, Merlin.Classes.ModuleIssueChange.SetUnknownAction),
+			[Merlin.Classes.ModuleIssueChange.SubstituteAction] = (s, t) => s.SubstituteModuleIssueRoller((PresentationObject)t),
+			[Merlin.Classes.ModuleIssueChange.DeleteAction] = async (s, t) =>
+				await s.DeleteModuleIssue((PresentationObject)t, new HashSet<int>(), null, null) ? ActionEffect.Deleted : ActionEffect.None,
+		},
 		// ActionRoller.WinForms.cs, DoAction: строки окна роликов акции. CommonRoller (ролик
 		// «для всех фирм») — наследник, отличие внутри ActionRollerChange.SetAdvertType.
 		["ActionRoller"] = new()
@@ -522,10 +537,9 @@ public sealed partial class ObjectActions
 	/// </summary>
 	private static readonly Dictionary<string, string[]> DesktopOverrides = new()
 	{
-		// Своё удаление: пересчёт, каскад, подтверждение другим текстом. У кампании (Campaign)
-		// оно уже перенесено — ClassActions проверяются раньше.
+		// Своё удаление: пересчёт, каскад, подтверждение другим текстом. У кампании (Campaign) и
+		// выпуска модуля (ModuleIssue) оно уже перенесено — ClassActions проверяются раньше.
 		["MasterIssue"] = new[] { Constants.EntityActions.Delete },
-		["ModuleIssue"] = new[] { Constants.EntityActions.Delete },
 		["CampaignPart"] = new[] { Constants.EntityActions.Delete },
 		// Своё обновление в DoAction.
 		["SponsorProgramPart"] = new[] { Constants.EntityActions.Refresh },
@@ -552,6 +566,22 @@ public sealed partial class ObjectActions
 	/// (PresentationObject или корневой FakeContainer).
 	/// </summary>
 	public IReadOnlyList<ActionMenuItem> BuildMenu(object target, ViewType view)
+	{
+		// Доступность пунктов выпуска модуля — одним вызовом ядра на меню, а не на каждый пункт (ModuleIssueEnabled).
+		_menuModuleIssue = target is PresentationObject po && IsModuleIssue(po)
+			? (po, Merlin.Classes.ModuleIssueChange.EnabledActions(ModuleIssueIdOf(po)))
+			: null;
+		try
+		{
+			return BuildMenuCore(target, view);
+		}
+		finally
+		{
+			_menuModuleIssue = null;
+		}
+	}
+
+	private IReadOnlyList<ActionMenuItem> BuildMenuCore(object target, ViewType view)
 	{
 		Entity.Action[]? actions = ActionList(target);
 		if (actions == null)
@@ -2166,10 +2196,26 @@ public sealed partial class ObjectActions
 	{
 		string title = Tr.T("Заменить рекламный ролик");
 		DataTable? candidates = await _busy.RunAsync(() => Merlin.Classes.RollerIssueChange.SubstituteCandidates(issue));
+		if (await ChooseSubstituteRoller(title, candidates) is not int rollerId)
+			return ActionEffect.None;
+
+		string? warning = null;
+		string priceMessage = await _busy.RunAsync(() => Merlin.Classes.RollerIssueChange.Substitute(issue, rollerId, out warning));
+		// Незаменённое (прошлое, закрытый день…) — первой строкой, как в десктопе, затем цена акции.
+		await ShowOutcome(title, warning, priceMessage);
+		return ActionEffect.Changed;
+	}
+
+	/// <summary>
+	/// Ролик на замену в одном выпуске — CampaignPart.SubstituteRollerForSingleIssue: роликов нет — сообщение, иначе выбор
+	/// одного («Выберите ролик для замены.»), пустой выбор не принимается. null — менять не на что или отказ.
+	/// </summary>
+	private async Task<int?> ChooseSubstituteRoller(string title, DataTable? candidates)
+	{
 		if (candidates == null)
 		{
 			await ShowInfo(title, Tr.T("Нет роликов на замену для данной фирмы."));
-			return ActionEffect.None;
+			return null;
 		}
 
 		var model = new RollerChecklistForm.Model
@@ -2186,16 +2232,16 @@ public sealed partial class ObjectActions
 					builder.AddComponentParameter(1, nameof(RollerChecklistForm.Value), model);
 					builder.CloseComponent();
 				}, okText: Tr.T("Заменить"), wide: true) != DialogOutcome.Ok)
-				return ActionEffect.None;
+				return null;
 			if (model.Selected.Count > 0)
-				break;
+				return model.Selected.First();
 			model.Message = Tr.T("Выберите ролик для замены.");
 		}
+	}
 
-		string? warning = null;
-		string priceMessage = await _busy.RunAsync(() => Merlin.Classes.RollerIssueChange.Substitute(issue, model.Selected.First(), out warning));
-		// Незаменённое (прошлое, закрытый день…) — первой строкой, как в десктопе, затем цена акции.
-		await _dialogs.ShowAsync(title, builder =>
+	/// <summary>Итог действия над выпуском: что не вышло (если есть) — первым абзацем, затем текст о цене акции.</summary>
+	private Task ShowOutcome(string caption, string? warning, string text) =>
+		_dialogs.ShowAsync(caption, builder =>
 		{
 			if (warning != null)
 			{
@@ -2203,9 +2249,85 @@ public sealed partial class ObjectActions
 				builder.AddContent(1, warning);
 				builder.CloseElement();
 			}
-			builder.AddContent(2, priceMessage);
+			builder.AddContent(2, text);
 		}, okText: Tr.T("Ок"), showCancel: false);
+
+	/// <summary>
+	/// Issue.UpdatePosition у выпуска модуля: позиция (ModuleIssueChange.SetPosition — свежая строка, проверка повтора позиции
+	/// в акции, Д-20), пересчёт акции и сообщение о её цене.
+	/// </summary>
+	private async Task<ActionEffect> SetModuleIssuePosition(PresentationObject issue, string actionName)
+	{
+		int id = ModuleIssueIdOf(issue);
+		Merlin.Classes.ModuleIssueChange.Result result = await _busy.RunAsync(() =>
+			Merlin.Classes.ModuleIssueChange.SetPosition(id, Merlin.Classes.ModuleIssueChange.PositionOf(actionName)));
+		await ShowInfo(Tr.T(issue.Entity.ActionList?.FirstOrDefault(a => a.Name == actionName)?.Alias ?? actionName), result.PriceMessage);
 		return ActionEffect.Changed;
+	}
+
+	/// <summary>
+	/// «Удалить» у выпуска модуля — CampaignPart.DoAction(Delete): вопрос тем же текстом (DeleteConfirmationText), модуль
+	/// снимается на весь день, один пересчёт, сообщение о цене акции (ModuleIssueChange.Delete). Дерево журналов зовёт с пустым
+	/// <paramref name="createdHere"/>; вкладка «Модули» — со своими кампаниями «создана здесь» и набором (В-21): опустевшая
+	/// кампания удаляется в той же транзакции, <paramref name="campaignDeleted"/> узнаёт о ней сразу после записи, до сообщения.
+	/// Отказ — исключение (текст — ErrorPresenter.Describe у владельца экрана).
+	/// </summary>
+	/// <returns>Выпуск удалён; false — пользователь отказался.</returns>
+	public async Task<bool> DeleteModuleIssue(PresentationObject issue, ISet<int> createdHere,
+		Merlin.Classes.ModuleDaySource.ModuleScope? scope, Action<int>? campaignDeleted)
+	{
+		int id = ModuleIssueIdOf(issue);
+		// Вопрос десктопа и строкой ниже — что модуль снимается на весь день (все окна дня, а не одно).
+		int windows = await _busy.RunAsync(() => Merlin.Classes.ModuleIssueChange.WindowCount(id));
+		if (await _dialogs.ShowAsync(
+				Tr.T("Удаление"),
+				builder =>
+				{
+					builder.AddContent(0, issue.DeleteConfirmationText);
+					builder.OpenElement(1, "p");
+					builder.AddContent(2, Tr.Format("Модуль снимается на весь день — окон: {0}.", windows));
+					builder.CloseElement();
+				},
+				okText: Tr.T("Удалить")) != DialogOutcome.Ok)
+			return false;
+
+		// Ролик, который пользователь видел в вопросе: заменили после вопроса — выпуск не удаляется (как «Удалить выпуски», 6.4).
+		int acceptedRollerId = Convert.ToInt32(issue["rollerID"]);
+		Merlin.Classes.ModuleIssueChange.Result result = await _busy.RunAsync(() =>
+		{
+			Merlin.Classes.ModuleIssueChange.Result removed = Merlin.Classes.ModuleIssueChange.Delete(id, acceptedRollerId, createdHere, scope);
+			if (removed.DeletedCampaignId is int campaignId)
+				campaignDeleted?.Invoke(campaignId);
+			return removed;
+		});
+		// Опустевшую кампанию «создана здесь» удалить не вышло — причина первой строкой.
+		await ShowOutcome(Tr.T("Удаление"), result.Warning, result.PriceMessage);
+		return true;
+	}
+
+	/// <summary>
+	/// ModuleIssue.DoAction(Substitute) — CampaignPart.SubstituteRollerForSingleIssue у выпуска модуля: ролик фирмы, затем
+	/// RollerSubstitute на день выпуска (ModuleIssueChange.Substitute: ролик меняется во всех выпусках этого модуля кампании
+	/// за день с тем же роликом, В-18); незаменённое — таблицей, как у замены ролика кампании, затем цена акции.
+	/// Эффект — SiblingAdded, как там же: под днём меняются имена выпусков (модуль — ролик), перечитывать надо родителя
+	/// (десктоп — OnParentChanged до кампании).
+	/// </summary>
+	private async Task<ActionEffect> SubstituteModuleIssueRoller(PresentationObject issue)
+	{
+		string title = Tr.T("Заменить рекламный ролик");
+		int id = ModuleIssueIdOf(issue);
+		DataTable? candidates = await _busy.RunAsync(() => Merlin.Classes.ModuleIssueChange.SubstituteCandidates(id));
+		if (await ChooseSubstituteRoller(title, candidates) is not int rollerId)
+			return ActionEffect.None;
+
+		Merlin.Classes.ModuleIssueChange.Result result = await _busy.RunAsync(() => Merlin.Classes.ModuleIssueChange.Substitute(id, rollerId));
+		if (result.Unsubstituted != null)
+			await _tables.ShowAsync(Tr.T("Незамененные ролики"), result.Unsubstituted,
+				new Entity.Attribute("windowDateOriginal", "Дата выпуска", "datetime"), // i18n-ok: Alias переводится при показе (ObjectList)
+				new Entity.Attribute("message", "Ошибка", "nvarchar")); // i18n-ok: Alias переводится при показе (ObjectList)
+		// Пересчёт после записанной замены не прошёл — причина первой строкой.
+		await ShowOutcome(title, result.Warning, result.PriceMessage);
+		return ActionEffect.SiblingAdded;
 	}
 
 	/// <summary>Campaign.ChangeAgency: правило «можно ли», агентства по правам, запись.</summary>
@@ -2329,7 +2451,7 @@ public sealed partial class ObjectActions
 		_ => null
 	};
 
-	private static bool IsEnabled(object target, string actionName, ViewType view) => target switch
+	private bool IsEnabled(object target, string actionName, ViewType view) => target switch
 	{
 		// Карточка акции — страница акции: в метаданных у сущности 77 «Свойств» нет, а десктоп
 		// открывает ActionForm без проверки (TreeView2.EditCurrentObject: нет «Редактировать» —
@@ -2339,10 +2461,36 @@ public sealed partial class ObjectActions
 		// Паспорт «Свойства» акции — настоящее право Properties (как «Свойства» в десктопе).
 		Merlin.Classes.ActionOnMassmedia action when actionName == ActionPropertiesName
 			=> action.IsActionEnabled(Constants.EntityActions.ShowPassport, view),
+		// Пункты выпуска модуля — по свежей строке и «Редактировать» акции (ModuleIssueChange.EnabledActions), а не по
+		// строке списка или узла: у удалённой акции и без права погашены все. «Обновить» — как у всех.
+		PresentationObject po when IsModuleIssue(po) && ClassActions["ModuleIssue"].ContainsKey(actionName)
+			=> ModuleIssueEnabled(po).Contains(actionName),
 		PresentationObject po => Merlin.Classes.PricelistWindows.EnabledCheckTarget(po, actionName).IsActionEnabled(actionName, view),
 		FakeContainer fc => fc.IsActionEnabled(actionName, view),
 		_ => false
 	};
+
+	private static bool IsModuleIssue(PresentationObject po) => po.Entity.Id == (int)Merlin.Entities.ModuleIssue;
+
+	/// <summary>
+	/// Есть ли у строки меню — без расчёта доступности пунктов, где он дорог: у выпуска модуля пункты есть всегда (хотя бы
+	/// «Обновить»), а BuildMenu поднимает кампанию, акцию, прайс-лист и ролик. null — узнать через BuildMenu.
+	/// </summary>
+	public bool? KnownHasMenu(PresentationObject po) => IsModuleIssue(po) ? true : null;
+
+	private static int ModuleIssueIdOf(PresentationObject issue) => Convert.ToInt32(issue.IDs[0]);
+
+	/// <summary>
+	/// Доступные действия выпуска модуля, посчитанные на время одного <see cref="BuildMenu"/>: EnabledActions поднимает
+	/// кампанию, акцию, прайс-лист и ролик (170–250 мс), а меню спрашивает о каждом пункте. BuildMenu синхронный — поле живёт
+	/// только внутри него; исполнение (ExecuteAsync) спрашивает ядро заново.
+	/// </summary>
+	private (PresentationObject Target, ISet<string> Enabled)? _menuModuleIssue;
+
+	private ISet<string> ModuleIssueEnabled(PresentationObject issue) =>
+		_menuModuleIssue is { } memo && ReferenceEquals(memo.Target, issue)
+			? memo.Enabled
+			: Merlin.Classes.ModuleIssueChange.EnabledActions(ModuleIssueIdOf(issue));
 
 	/// <summary>
 	/// Почему погашенное действие недоступно — там, где доменный класс умеет это

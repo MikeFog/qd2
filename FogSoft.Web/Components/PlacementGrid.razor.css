@@ -111,6 +111,11 @@
     border-right: 1px solid var(--c-border-strong);
 }
 
+/* Последняя заголовочная колонка из трёх и более — не липкая, прокручивается с днями (компонент, MeasureHeads). */
+.col-head.col-head-free {
+    position: static;
+}
+
 .pgrid-table .table > thead > tr > th.col-head,
 .pgrid-table .table > tbody > tr > td.col-head {
     padding-left: 0;

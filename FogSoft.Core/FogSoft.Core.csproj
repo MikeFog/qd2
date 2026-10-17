@@ -219,6 +219,7 @@
     <Compile Include="..\Client\Classes\TemplateSource.cs" Link="Domain\TemplateSource.cs" />
     <Compile Include="..\Client\Classes\TemplateRangeSource.cs" Link="Domain\TemplateRangeSource.cs" />
     <Compile Include="..\Client\Classes\RollerIssueChange.cs" Link="Domain\RollerIssueChange.cs" />
+    <Compile Include="..\Client\Classes\ModuleIssueChange.cs" Link="Domain\ModuleIssueChange.cs" />
     <!-- Документы из Word-шаблонов (docs/tasks/web-reports.md §8). Только веб: десктоп
          печатает через Crystal до решения о переводе (§7 п.1), в Client.csproj не входят. -->
     <Compile Include="..\Client\Classes\Documents\DocumentData.cs" Link="Domain\Documents\DocumentData.cs" />

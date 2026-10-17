@@ -235,7 +235,9 @@
     /// <summary>
     /// Липкой колонке нужен известный отступ слева, поэтому ширина заголовочной колонки считается заранее —
     /// по самому длинному тексту колонки в модели (шапка — 12 px прописными, строки — 13 px), в пределах
-    /// 64–240 px; не поместилось — многоточие и подсказка.
+    /// 64–160 px; не поместилось — многоточие и подсказка. Последняя из трёх и более колонок (у модулей — «Тип оплаты»)
+    /// не липкая: при открытых списке кампаний и панели места (1440 px) три липкие колонки занимали почти всю ширину
+    /// сетки, и дни уходили под них.
     /// </summary>
     private static HeadColumn[] MeasureHeads(PlacementWeek? model)
     {
@@ -251,9 +253,11 @@
                 if (row.Headers != null && h < row.Headers.Count)
                     longest = Math.Max(longest, row.Headers[h]?.Length ?? 0);
             int width = (int)Math.Ceiling(Math.Max(heads[h].Length * 8.5, longest * 7.5)) + 2 * 8;
-            width = Math.Clamp(width, 64, 240);
-            string css = "col-head" + (h == heads.Count - 1 ? " col-head-last" : "");
-            result[h] = new HeadColumn(css, FormattableString.Invariant($"left:{left}px"), FormattableString.Invariant($"width:{width}px"));
+            width = Math.Clamp(width, 64, 160);
+            bool last = h == heads.Count - 1;
+            bool free = last && heads.Count > 2;
+            string css = "col-head" + (last ? " col-head-last" : "") + (free ? " col-head-free" : "");
+            result[h] = new HeadColumn(css, free ? "" : FormattableString.Invariant($"left:{left}px"), FormattableString.Invariant($"width:{width}px"));
             left += width;
         }
         return result;

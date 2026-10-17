@@ -1,5 +1,5 @@
 ﻿/*
-    ДЕПЛОЙ: переводы веб-версии на язык «es» (2156 строк). docs/tasks/web-i18n.md, этап 5.
+    ДЕПЛОЙ: переводы веб-версии на язык «es» (2157 строк). docs/tasks/web-i18n.md, этап 5.
     СГЕНЕРИРОВАН из ArtvisDB/Scripts/i18n/es.tsv скриптом build-seed.py — руками не править.
 
     ПРЕДУСЛОВИЕ     накачен web-i18n-translation-deploy.sql (таблица iTranslation).
@@ -2178,7 +2178,8 @@ INSERT INTO #t ([source], [text]) VALUES
 (N'Удалить выпуски в выбранных ячейках? ({0} шт.)', N'¿Eliminar las emisiones de las celdas seleccionadas? ({0} uds.)'),
 (N'Нет права удалять выпуски модулей.', N'No tiene permiso para eliminar emisiones de módulos.'),
 (N'Щелчок по ячейке — выпуски и окна модуля за день (Shift — прямоугольник, Ctrl — добавить), в «Режиме добавления» — постановка модуля на весь день.', N'Clic en una celda: las emisiones y las ventanas del módulo en el día (Mayús: rectángulo, Ctrl: agregar); en el «Modo de agregado», colocar el módulo para todo el día.'),
-(N'Ролик выпуска изменили после вопроса — выпуск не удалён.', N'El spot de la emisión se cambió después de la pregunta: la emisión no se eliminó.');
+(N'Ролик выпуска изменили после вопроса — выпуск не удалён.', N'El spot de la emisión se cambió después de la pregunta: la emisión no se eliminó.'),
+(N'Модуль снимается на весь день — окон: {0}.', N'El módulo se quita para todo el día: ventanas: {0}.');
 GO
 
 BEGIN TRANSACTION;

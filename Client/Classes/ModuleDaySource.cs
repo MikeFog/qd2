@@ -28,6 +28,8 @@ namespace Merlin.Classes
 	/// Выделение (подэтап 6.4) — «Разместить ролик» и «Удалить выпуски» по выделенным местам (десктоп комбо — Insert и Del):
 	/// транзакция на день выделения, как у шаблонов, каждый вызов ModuleIssueIUD — шаг с точкой сохранения, один пересчёт в
 	/// конце; опустевшую кампанию, которую создала вкладка в этом сеансе, «Удалить выпуски» удаляет в той же транзакции (В-21).
+	/// Действия над одним выпуском (подэтап 6.5) — ModuleIssueChange; его «Удалить» идёт через <see cref="RemoveOne"/> — те же шаг
+	/// удаления и В-21, что у «Удалить выпуски».
 	///
 	/// «Показать модули…» (подэтап 6.3) — добавленные строки (<see cref="AddedRow"/>): модули комбо-модуля, станции или
 	/// своей кампании. Строке без кампании модульная кампания создаётся при первой постановке в той же транзакции — как
@@ -941,8 +943,8 @@ namespace Merlin.Classes
 		}
 
 		/// <summary>Типы роликов, которые ставятся в модули (iRollerActionType): 1 — Реклама, 2 — Новость, 3 — Программа.</summary>
-		private const int FirstModuleRollerType = 1;
-		private const int LastModuleRollerType = 3;
+		internal const int FirstModuleRollerType = 1;
+		internal const int LastModuleRollerType = 3;
 
 		/// <summary>
 		/// Ролик кисти — из показанного списка роликов фирмы акции (WindowsSource.BrushRoller) и только типов 1–3 (В-25):
@@ -1333,18 +1335,9 @@ namespace Merlin.Classes
 			if (!EntityManager.GetEntity((int)Entities.ModuleIssue).IsActionEnabled(Constants.EntityActions.Delete, ViewType.Journal))
 				throw new InvalidOperationException(Tr.T(Properties.Resources.OperationNotAllowed));
 
-			// Кампании выпусков, созданные вкладкой: строка свежего списка (по ней удаляется) и право «Удалить» — до записи.
-			Dictionary<int, DataRow> campaigns = ModularCampaigns(action);
 			Entity listEntity = ActionWorkspace.CampaignListEntity();
-			List<DataRow> createdHere = new List<DataRow>();
 			HashSet<int> deletable = new HashSet<int>();
-			foreach (int campaignId in issues.Select(IssueCampaignId).Distinct())
-				if (createdHereCampaignIds != null && createdHereCampaignIds.Contains(campaignId) && campaigns.TryGetValue(campaignId, out DataRow row))
-				{
-					createdHere.Add(row);
-					if (listEntity.CreateObject(row).IsActionEnabled(Constants.EntityActions.Delete, ViewType.Journal))
-						deletable.Add(campaignId);
-				}
+			List<DataRow> createdHere = CreatedHere(action, issues, createdHereCampaignIds, listEntity, deletable);
 
 			List<(DateTime Day, List<DataRow> Issues)> days = issues.GroupBy(IssueDay).OrderBy(g => g.Key).Select(g => (g.Key, g.ToList())).ToList();
 			using (OperationScope.Start($"ModulesRemove action={s.ActionId} issues={issues.Count}"))
@@ -1380,25 +1373,81 @@ namespace Merlin.Classes
 		}
 
 		/// <summary>
-		/// Шаг «Удалить выпуски»: выпуск модуля заново (ModuleIssueRetrieve @moduleIssueId на соединении транзакции; нет — «Выпуска
-		/// уже нет.») и ModuleIssueIUD DeleteItem с его полной строкой: без @campaignID процедура молча пропустила бы проверки
-		/// прошлого и закрытого периода. Причина отказа или null.
+		/// Кампании выпусков, созданные вкладкой в этом сеансе (В-21), — строки свежего списка (по ним удаляется); в
+		/// <paramref name="deletable"/> — те, что пользователь вправе удалить. До записи.
 		/// </summary>
-		private static string DeleteStep(int moduleIssueId, int acceptedRollerId)
+		private static List<DataRow> CreatedHere(ActionOnMassmedia action, IEnumerable<DataRow> issues, ISet<int> createdHereCampaignIds,
+			Entity listEntity, HashSet<int> deletable)
+		{
+			List<DataRow> createdHere = new List<DataRow>();
+			if (createdHereCampaignIds == null || createdHereCampaignIds.Count == 0)
+				return createdHere;
+			Dictionary<int, DataRow> campaigns = ModularCampaigns(action);
+			foreach (int campaignId in issues.Select(IssueCampaignId).Distinct())
+				if (createdHereCampaignIds.Contains(campaignId) && campaigns.TryGetValue(campaignId, out DataRow row))
+				{
+					createdHere.Add(row);
+					if (listEntity.CreateObject(row).IsActionEnabled(Constants.EntityActions.Delete, ViewType.Journal))
+						deletable.Add(campaignId);
+				}
+			return createdHere;
+		}
+
+		/// <summary>
+		/// «Удалить» у одного выпуска модуля (<see cref="ModuleIssueChange.Delete"/>: панель места и дерево журналов) — модуль
+		/// снимается на весь день. Одна транзакция: ModuleIssueIUD DeleteItem со свежей полной строкой (<see cref="DeleteStep"/>),
+		/// В-21 для кампании выпуска — тем же <see cref="DeleteIfEmpty"/>, что у «Удалить выпуски», — и один пересчёт акции
+		/// (десктоп пересчитывал трижды, Д-16). Отказ удаления выпуска откатывает всё и уходит наверх; отказ удаления опустевшей
+		/// кампании откатывает только её (точка сохранения) — строка итога. Акцию вызывающий прочитал до записи (коррекция
+		/// платежа подтверждённой) и проверил права на выпуск; право удалять кампанию — здесь, как в <see cref="Remove"/>.
+		/// Удалённая кампания уходит из набора вкладки <paramref name="s"/>, если он есть.
+		/// </summary>
+		internal static ModuleBatchResult RemoveOne(ActionOnMassmedia action, DataRow issue, int acceptedRollerId, ISet<int> createdHereCampaignIds, ModuleScope s)
+		{
+			Entity listEntity = ActionWorkspace.CampaignListEntity();
+			HashSet<int> deletable = new HashSet<int>();
+			List<DataRow> createdHere = CreatedHere(action, new[] { issue }, createdHereCampaignIds, listEntity, deletable);
+			DayWork work = new DayWork();
+			WindowsSource.RunInTransaction(() =>
+			{
+				// Ролик — тот, что пользователь видел в вопросе: заменили после вопроса — отказ (DeleteStep).
+				string refusal = DeleteStep(IssueModuleIssueId(issue), acceptedRollerId);
+				if (refusal != null)
+					throw new InvalidOperationException(refusal);
+				foreach (DataRow campaign in createdHere)
+					DeleteIfEmpty(listEntity, campaign, deletable.Contains(WindowsSource.CampaignIdOf(campaign)), work);
+				action.Recalculate(false);
+			});
+
+			ModuleBatchResult result = new ModuleBatchResult { Done = 1 };
+			foreach ((string name, string description) in work.Notes)
+				result.Note(name, description);
+			result.DeletedCampaignIds.AddRange(work.DeletedCampaigns);
+			result.KeptEmptyCampaignIds.AddRange(work.KeptEmpty);
+			foreach (int campaignId in work.DeletedCampaigns)
+				s?.RemoveCampaign(campaignId);
+			return result;
+		}
+
+		/// <summary>Строка выпуска модуля из базы (ModuleIssueRetrieve @moduleIssueId: кампания, акция, isConfirmed акции…); null — выпуска нет.</summary>
+		internal static DataRow LoadModuleIssue(int moduleIssueId)
 		{
 			Dictionary<string, object> parameters = DataAccessor.CreateParametersDictionary();
 			parameters[Issue.ParamNames.ModuleIssueId] = moduleIssueId;
 			DataTable fresh = DataAccessor.LoadDataSet("ModuleIssueRetrieve", parameters).Tables[0];
-			if (fresh.Rows.Count == 0)
-				return Tr.T("Выпуска уже нет.");
-			DataRow row = fresh.Rows[0];
-			// Ролик выпуска заменили после вопроса — пользователь удалять его не подтверждал.
-			if (IssueRollerId(row) != acceptedRollerId)
-				return Tr.T("Ролик выпуска изменили после вопроса — выпуск не удалён.");
+			return fresh.Rows.Count > 0 ? fresh.Rows[0] : null;
+		}
 
-			parameters = DataAccessor.CreateParametersDictionary();
-			parameters[Constants.ParamNames.ActionName] = Constants.Actions.Delete;
-			parameters[Issue.ParamNames.ModuleIssueId] = moduleIssueId;
+		/// <summary>
+		/// Параметры ModuleIssueIUD по полной строке выпуска (<see cref="LoadModuleIssue"/>): без @campaignID процедура молча
+		/// пропускает проверки (прошлое, закрытый период, hlp_IssueVerify), без @modulePricelistID не находит наценок прайс-листа
+		/// модуля — цена выпуска с позицией становится 0, а штучным модулям позицию не отказывает.
+		/// </summary>
+		internal static Dictionary<string, object> ModuleIssueParameters(DataRow row, string actionName)
+		{
+			Dictionary<string, object> parameters = DataAccessor.CreateParametersDictionary();
+			parameters[Constants.ParamNames.ActionName] = actionName;
+			parameters[Issue.ParamNames.ModuleIssueId] = row[Issue.ParamNames.ModuleIssueId];
 			parameters[Campaign.ParamNames.CampaignId] = row[Campaign.ParamNames.CampaignId];
 			parameters[Module.ParamNames.ModuleId] = row[Module.ParamNames.ModuleId];
 			parameters[ModulePricelist.ParamNames.ModulePriceListID] = row[ModulePricelist.ParamNames.ModulePriceListID];
@@ -1406,7 +1455,23 @@ namespace Merlin.Classes
 			parameters[Roller.ParamNames.RollerId] = row[Roller.ParamNames.RollerId];
 			parameters[Issue.ParamNames.PositionId] = row[Issue.ParamNames.PositionId];
 			parameters[Action.ParamNames.IsConfirmed] = row[Action.ParamNames.IsConfirmed];
-			DataAccessor.LoadDataSet("ModuleIssueIUD", parameters);
+			return parameters;
+		}
+
+		/// <summary>
+		/// Шаг «Удалить выпуски»: выпуск модуля заново (<see cref="LoadModuleIssue"/> на соединении транзакции; нет — «Выпуска
+		/// уже нет.») и ModuleIssueIUD DeleteItem с его полной строкой (<see cref="ModuleIssueParameters"/>). Причина отказа или null.
+		/// </summary>
+		private static string DeleteStep(int moduleIssueId, int acceptedRollerId)
+		{
+			DataRow row = LoadModuleIssue(moduleIssueId);
+			if (row == null)
+				return Tr.T("Выпуска уже нет.");
+			// Ролик выпуска заменили после вопроса — пользователь удалять его не подтверждал.
+			if (IssueRollerId(row) != acceptedRollerId)
+				return Tr.T("Ролик выпуска изменили после вопроса — выпуск не удалён.");
+
+			DataAccessor.LoadDataSet("ModuleIssueIUD", ModuleIssueParameters(row, Constants.Actions.Delete));
 			return null;
 		}
 
@@ -1581,7 +1646,7 @@ namespace Merlin.Classes
 		}
 
 		/// <summary>Дочерние строки Issue выпуска модуля — по окну выхода (ModuleIssueContentRetrieve, загрузка сущности 155).</summary>
-		private static DataTable LoadIssueContent(int moduleIssueId)
+		internal static DataTable LoadIssueContent(int moduleIssueId)
 		{
 			Dictionary<string, object> parameters = DataAccessor.CreateParametersDictionary();
 			parameters[Issue.ParamNames.ModuleIssueId] = moduleIssueId;

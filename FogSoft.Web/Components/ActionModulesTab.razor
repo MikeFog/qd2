@@ -7,6 +7,7 @@
 @inject DialogService Dialogs
 @inject TableDialog Tables
 @inject ModuleRowsMemory Memory
+@inject ObjectActions Actions
 
 @*
     Вкладка «Модули» страницы акции (docs/tasks/web-action-forms.md, этап 6): модульные кампании акции
@@ -32,7 +33,12 @@
     Ctrl — добавить или убрать, Esc — снять; PlacementSelection, как на «Рекламных окнах»); по выделенным —
     «Разместить ролик» и «Удалить выпуски» (десктоп комбо — Insert и Del по ячейкам): транзакция на день, один
     пересчёт акции, отказы — таблицей. Опустевшую кампанию, которую создала вкладка в этом сеансе, «Удалить
-    выпуски» удаляет сама (В-21), её строки снова ожидающие. Меню выпуска в панели и «Отменить» — следующие подэтапы.
+    выпуски» удаляет сама (В-21), её строки снова ожидающие.
+
+    Подэтап 6.5: у строки «Выпуски модуля» панели — меню «⋯» и правая кнопка с пунктами выпуска модуля (сущность 130):
+    позиция в блоке, «Заменить рекламный ролик», «Удалить» (ObjectActions → ModuleIssueChange, как в дереве журналов);
+    «Удалить» — с кампаниями «создана здесь» (В-21, как «Удалить выпуски»). После действия — период, панель и шапка страницы.
+    «Отменить» — следующий подэтап.
 *@
 
 <div class="modules-tab">
@@ -206,7 +212,9 @@
 
                 <div class="panel-section-title">@Tr.T("Выпуски модуля")</div>
                 <div class="panel-list">
-                    <ObjectList Entity="_issueEntity" Data="_details.Issues" ReadOnly="true"
+                    <ObjectList Entity="_issueEntity" Data="_details.Issues" ActionExecutor="RunIssueAction"
+                                ReadOnly="@(!(_scope?.CanEdit ?? false) || ActionWorkspace.IsDeleted(Action))"
+                                Changed="AfterIssueAction" Failed="ShowError"
                                 EmptyText="@(Tr.T("В этот день модуль в кампании не стоит."))" />
                 </div>
 
@@ -702,6 +710,45 @@
             _issuesWindow = window;
             _windowIssues = issues;
         });
+    }
+
+    /// <summary>
+    /// Пункт меню выпуска в панели (подэтап 6.5). «Удалить» — с набором вкладки: опустевшую кампанию, которую вкладка создала
+    /// в этом сеансе, ядро удаляет в той же транзакции (В-21) — она уходит из набора и из памяти «создана здесь», её строки
+    /// снова ожидающие, как у «Удалить выпуски». Остальные пункты — как в дереве журналов (ObjectActions).
+    /// </summary>
+    private async Task<ActionEffect?> RunIssueAction(PresentationObject issue, string actionName)
+    {
+        // Одно действие за раз: повторный щелчок по корзине, пока открыт вопрос, открыл бы второй такой же (как Exclusive).
+        if (_operating)
+            return ActionEffect.None;
+        _operating = true;
+        try
+        {
+            if (actionName != ModuleIssueChange.DeleteAction || _scope == null)
+                return await Actions.ExecuteAsync(issue, actionName, ViewType.Journal);
+            if (!Actions.CanExecute(issue, actionName, ViewType.Journal))
+                return null;
+
+            int actionId = Action.ActionId;
+            bool deleted = await Actions.DeleteModuleIssue(issue, Memory.CreatedCampaigns(actionId), _scope,
+                campaignId => Memory.CampaignDeleted(actionId, campaignId));
+            return deleted ? ActionEffect.Deleted : ActionEffect.None;
+        }
+        finally
+        {
+            _operating = false;
+        }
+    }
+
+    /// <summary>
+    /// Действие над выпуском в панели выполнено — период (остатки окон, отметки, итог дня), панель места и шапка страницы
+    /// перечитываются. Удалённая кампания (В-21) уже ушла из набора; отметка снимется, когда страница перечитает кампании.
+    /// </summary>
+    private async Task AfterIssueAction()
+    {
+        await Reload();
+        await Changed.InvokeAsync();
     }
 
     // ---------- Режим добавления ----------
