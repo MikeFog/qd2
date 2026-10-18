@@ -70,8 +70,9 @@ stat_VolumeOfRealizationByMonth*, TariffPassport, строка после сох
 `CampaignOnSingleMassmedia`, `ActionOnMassmedia`, `PresentationObject.DeleteConfirmationText`,
 11 строк `Resources.resx` через `Tr.T(Properties.Resources.X)`) — через `Tr`;
 `python FogSoft.Web/find-untranslated.py --core` → 0. Только десктопные файлы ядра
-(`Money`, `CpOneDocGenerator`, `Class1`, `DateTimeUtils`, `ReportGenerator`,
-`UserInteraction`) исключены в самом скрипте, с причиной. Подписи действий
+(`Money`, `Class1`, `DateTimeUtils`, `ReportGenerator`, `UserInteraction`) и генератор КП
+(`CpOneDocGenerator` — документ клиенту на языке шаблона агентства, с К.4 его зовёт и веб)
+исключены в самом скрипте, с причиной. Подписи действий
 контейнеров не оборачиваются — их переводит `ObjectActions` при выводе. `qd2.sln` и
 веб собираются; испанский для 58 новых строк добавлен в `es.tsv` (всего 1398).
 Попутно: сборщик TSV терял `` — два сообщения `iMessage` с `

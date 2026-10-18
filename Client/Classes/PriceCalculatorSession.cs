@@ -1,8 +1,11 @@
 using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using FogSoft.WinForm.Classes;
 using log4net;
+using Merlin.Classes.GridExport;
+using Merlin.Cp;
 
 namespace Merlin.Classes
 {
@@ -299,6 +302,89 @@ namespace Merlin.Classes
 			if (Editing != null && !Variants.Contains(Editing))
 				Editing = null;
 			Log.Info($"PriceCalculator delete variants count={list.Count} left={Variants.Count}");
+		}
+
+		/// <summary>
+		/// «Excel», как десктоп (<c>ExportSelectedToExcel</c>): текущий расчёт — параметры, отмеченные строки в показанном
+		/// порядке, «Итог:» (<see cref="PriceCalculatorExport.Excel"/>). Доступна тогда же, когда «Сохранить».
+		/// </summary>
+		public byte[] Excel()
+		{
+			if (!CanSave)
+				throw new InvalidOperationException("Расчёт не готов к выгрузке."); // i18n-ok: экран закрывает «Excel» раньше
+			Log.Info($"PriceCalculator excel rows={Result.Rows.Count(r => r.Input.Selected)} total={Result.Total:0.00}");
+			return PriceCalculatorExport.Excel(Template, Model, Result);
+		}
+
+		/// <summary>
+		/// «Создать КП», как десктоп (<c>btnCreaateProposal_Click</c>): отмеченные варианты в порядке карточек, шаблон
+		/// агентства из папки шаблонов, клиент — текст поля фирмы, дата — сегодня, контакт — выбранный «Менеджер:» (не
+		/// менеджер вариантов). Документ — в памяти, без копии на сервере. Отказ (нет отмеченных, не выбрано агентство, нет
+		/// файла шаблона, шаблон не подходит) — текстом в <paramref name="problem"/>, документа нет.
+		/// </summary>
+		public ExportFile Proposal(int agencyId, string agencyName, string client, out string problem)
+		{
+			problem = null;
+			var snapshots = Variants.Where(v => v.Checked).Select(v => v.Snapshot).ToList();
+			if (snapshots.Count == 0)
+			{
+				problem = Tr.T("Нет отмеченных вариантов для создания коммерческого предложения.");
+				return null;
+			}
+			if (agencyId <= 0)
+			{
+				problem = Tr.T("Пожалуйста, выберите агентство.");
+				return null;
+			}
+			string path = PriceCalculatorData.ProposalTemplatePath(agencyId);
+			if (path == null || !File.Exists(path))
+			{
+				problem = Tr.Format("Шаблон коммерческого предложения для агентства «{0}» не найден по пути:\n{1}", agencyName,
+					path ?? PriceCalculatorData.ProposalTemplateFolder());
+				return null;
+			}
+
+			byte[] template;
+			try
+			{
+				// с общим доступом на запись: шаблон, открытый в Word на сервере, читается (у десктопа File.Copy его тоже копирует)
+				using (var file = new FileStream(path, FileMode.Open, FileAccess.Read, FileShare.ReadWrite | FileShare.Delete))
+				using (var buffer = new MemoryStream())
+				{
+					file.CopyTo(buffer);
+					template = buffer.ToArray();
+				}
+			}
+			catch (Exception ex) when (ex is IOException || ex is UnauthorizedAccessException)
+			{
+				Log.Warn($"PriceCalculator proposal template read agency={agencyId} file={path}", ex);
+				problem = Tr.Format("Не удалось прочитать шаблон коммерческого предложения для агентства «{0}» (нет прав на чтение или файл занят):\n{1}",
+					agencyName, path);
+				return null;
+			}
+			SecurityManager.User manager = _manager != null && _manager.Id == Template.ManagerId ? _manager : SecurityManager.GetUser(Template.ManagerId);
+			client = (client ?? string.Empty).Trim();
+			Log.Info($"PriceCalculator proposal variants={snapshots.Count} agency={agencyId} manager={Template.ManagerId}");
+			byte[] document;
+			try
+			{
+				document = CpOneDocGenerator.GenerateOneDoc(snapshots, template, client, DateTime.Today,
+					manager?.FullName ?? string.Empty, manager?.Email ?? string.Empty, manager?.Phone ?? string.Empty);
+			}
+			catch (Exception ex)
+			{
+				// повреждённый файл, нет якоря {{CONTENT}}: у десктопа — «В программе произошла ошибка.», здесь — причина
+				Log.Error($"PriceCalculator proposal template agency={agencyId} file={Path.GetFileName(path)}", ex);
+				problem = Tr.Format("Шаблон коммерческого предложения для агентства «{0}» не подходит: {1}", agencyName, ex.Message);
+				return null;
+			}
+
+			// имя — как у десктопа: документ для клиента на языке шаблона агентства, не интерфейса (К-27)
+			string stamp = DateTime.Now.ToString("dd.MM.yyyy-HH-mm-ss");
+			string name = client.Length == 0 ? "КП_" + stamp + ".docx" : "КП для " + client + " " + stamp + ".docx"; // i18n-ok: имя файла КП как у десктопа
+			foreach (char c in Path.GetInvalidFileNameChars())
+				name = name.Replace(c, '_');
+			return new ExportFile { Name = name, Content = document };
 		}
 
 		/// <summary>Выйти из режима редактирования: расчёт остаётся, «Сохранить» добавит его новым вариантом.</summary>

@@ -4,18 +4,23 @@
 @using FogSoft.Web.Infrastructure
 @using FogSoft.WinForm.Classes
 @using Merlin.Classes
+@using Merlin.Classes.GridExport
+@using FogSoft.WinForm.Passport.Classes
+@implements IAsyncDisposable
 @inject MenuAccess Access
 @inject BusyService Busy
 @inject PriceCalculatorMemory Memory
 @inject DialogService Dialogs
+@inject FileSaver Saver
 
 @*
     «Калькулятор цены» — веб-экран вместо PriceCalculatorForm (docs/tasks/web-price-calculator.md, этапы К.2–К.3).
     Сверху параметры в порядке десктопной панели (TemplateEditorControl), под ними вкладки, как у десктопа: «Расчёты» —
     таблица станций с правкой длительности, позиции и выходов, «Сохранённые варианты» — карточки вариантов. Кнопки
     «Рассчитать» нет: любое изменение пересчитывает, смена периода, группы или менеджера перечитывает цены (§4.5).
-    «Сохранить» — в шапке, видна на обеих вкладках. Расчёт и варианты — ядро PriceCalculatorSession / PriceCalculatorEngine,
-    состояние — PriceCalculatorMemory (страница пересоздаётся при смене языка).
+    «Сохранить» и «Excel» — в шапке, видны на обеих вкладках; «Создать КП» — над карточками (этап К.4): просмотр документа
+    и «Скачать Word», файлы — через «Сохранить как» браузера, на сервере не остаются. Расчёт и варианты — ядро
+    PriceCalculatorSession / PriceCalculatorEngine, состояние — PriceCalculatorMemory (страница пересоздаётся при смене языка).
 *@
 
 <PageTitle>@_title</PageTitle>
@@ -47,6 +52,10 @@ else if (Memory.Session is { } s)
             <button class="btn btn-sm btn-primary" disabled="@(!s.CanSave)" @onclick="() => SaveVariant(s)"
                     title="@(s.CanSave ? null : s.Result == null ? Tr.T("Сохранить можно после расчёта.") : Tr.T("Отметьте хотя бы одну станцию; в периоде должны быть выбранные дни."))">
                 <i class="bi bi-floppy" aria-hidden="true"></i>@Tr.T("Сохранить")
+            </button>
+            <button class="btn btn-sm btn-outline-secondary" disabled="@(!s.CanSave)" @onclick="() => ExportExcel(s)"
+                    title="@(s.CanSave ? null : s.Result == null ? Tr.T("Выгрузить можно после расчёта.") : Tr.T("Отметьте хотя бы одну станцию; в периоде должны быть выбранные дни."))">
+                <i class="bi bi-file-earmark-excel" aria-hidden="true"></i>@Tr.T("Excel")
             </button>
             @if (periodProblem == null && s.Result != null)
             {
@@ -407,7 +416,7 @@ else if (Memory.Session is { } s)
             }
             else
             {
-                @* место под агентство, фирму и «Создать КП» (этап К.4) — в этой же строке, как у десктопа *@
+                @* «Создать КП», агентство и фирма — в этой же строке, в порядке десктопа *@
                 <div class="variants-bar">
                     <label class="inline">
                         <input type="checkbox" class="form-check-input" checked="@s.Variants.All(v => v.Checked)"
@@ -418,6 +427,29 @@ else if (Memory.Session is { } s)
                             @onclick="() => DeleteChecked(s)">
                         <i class="bi bi-trash3" aria-hidden="true"></i>@Tr.T("Удалить отмеченные")
                     </button>
+                    @{ string? proposalHint = ProposalHint(s); }
+                    <button type="button" class="btn btn-sm btn-outline-secondary" disabled="@(proposalHint != null)" title="@proposalHint"
+                            @onclick="() => CreateProposal(s)">
+                        <i class="bi bi-file-earmark-word" aria-hidden="true"></i>@Tr.T("Создать КП")
+                    </button>
+                    <select class="form-select form-select-sm agency" aria-label="@(Tr.T("Агентство"))"
+                            @bind:get="Memory.ProposalAgencyId" @bind:set="v => Memory.ProposalAgencyId = v">
+                        <option value="0">@Tr.T("— выберите агентство —")</option>
+                        @foreach (KeyValuePair<int, string> a in _agencies)
+                        {
+                            <option value="@a.Key">@a.Value</option>
+                        }
+                    </select>
+                    <button type="button" class="btn btn-sm btn-outline-secondary" @onclick="PickFirm">@Tr.T("Выбрать фирму")</button>
+                    <div class="client">
+                        <input type="text" class="form-control form-control-sm" placeholder="@(Tr.T("Фирма-заказчик"))"
+                               aria-label="@(Tr.T("Фирма-заказчик"))" @bind="Memory.ProposalClient" />
+                        @if (Memory.ProposalClient.Length > 0)
+                        {
+                            <button type="button" class="btn-close" aria-label="@(Tr.T("Очистить"))" title="@(Tr.T("Очистить"))"
+                                    @onclick="() => Memory.ProposalClient = string.Empty"></button>
+                        }
+                    </div>
                 </div>
                 <div class="variants">
                     @foreach (PriceCalculatorVariant v in s.Variants)
@@ -498,6 +530,13 @@ else if (_error != null)
     private DataView _groups = new DataTable().DefaultView;
     private List<KeyValuePair<int, string>> _positions = new();
     private List<KeyValuePair<int, string>> _managers = new();
+    private List<KeyValuePair<int, string>> _agencies = new();
+    private Entity? _firmEntity;
+    private DataTable? _firmCandidates;
+    // окно, открытое страницей: при уходе со страницы (назад в браузере) закрывается, иначе осталось бы над чужим экраном;
+    // после ухода новые окна не открываются (запрос к базе мог закончиться уже после него)
+    private DialogRequest? _dialog;
+    private bool _disposed;
 
     protected override async Task OnParametersSetAsync()
     {
@@ -527,19 +566,31 @@ else if (_error != null)
             else if (Memory.Session.Result == null && !Memory.Session.PeriodInvalid)
                 Memory.Session.Start();
         });
-        // список «Менеджер:» — отдельно: без него (нет Deploy/55) калькулятор работает на вошедшего; сообщение о сбое
-        // расчёта выше не стирается
-        if (_isAdmin && Memory.Session is { } s)
+        // список «Менеджер:» и агентства КП — отдельно: без них калькулятор считает (на вошедшего, без «Создать КП»);
+        // сообщение о сбое расчёта выше не стирается
+        if (Memory.Session is { } s)
             await Busy.RunAsync(() =>
             {
                 try
                 {
-                    LoadManagers(s, user);
+                    if (_isAdmin)
+                        LoadManagers(s, user);
                 }
                 catch (Exception ex)
                 {
                     _error ??= ErrorPresenter.Describe(ex);
                 }
+                try
+                {
+                    // агентства с шаблоном КП; одно — сразу выбрано
+                    _agencies = PriceCalculatorData.ProposalAgencies().OrderBy(a => a.Value, StringComparer.CurrentCulture).ToList();
+                }
+                catch (Exception ex)
+                {
+                    _error ??= ErrorPresenter.Describe(ex);
+                }
+                if (_agencies.All(a => a.Key != Memory.ProposalAgencyId))
+                    Memory.ProposalAgencyId = _agencies.Count == 1 ? _agencies[0].Key : 0;
             });
     }
 
@@ -614,7 +665,7 @@ else if (_error != null)
                 builder.AddComponentReferenceCapture(1, c => dialog = (PriceCalculatorSaveDialog)c);
                 builder.CloseComponent();
             };
-            if (await Dialogs.ShowAsync(Tr.T("Сохранить"), body, okText: Tr.T("Сохранить")) != DialogOutcome.Ok || dialog == null)
+            if (await Show(Tr.T("Сохранить"), body, okText: Tr.T("Сохранить")) != DialogOutcome.Ok || dialog == null)
                 return;
             replace = dialog.Replace;
         }
@@ -626,8 +677,7 @@ else if (_error != null)
             saved = true;
         });
         if (saved && outcome == PriceCalculatorSaveOutcome.Duplicate)
-            await Dialogs.ShowAsync(Tr.T("Сохранить"), builder => builder.AddContent(0, Tr.T("Данный вариант уже добавлен.")),
-                okText: Tr.T("Ок"), showCancel: false);
+            await ShowInfo(Tr.T("Сохранить"), Tr.T("Данный вариант уже добавлен."));
     }
 
     // «Редактировать»: цены перечитываются — под слоем ожидания; менеджер варианта — в списке «Менеджер:».
@@ -646,7 +696,7 @@ else if (_error != null)
     private async Task DeleteVariant(PriceCalculatorSession s, PriceCalculatorVariant variant)
     {
         string text = Tr.Format("Удалить вариант за период с {0} до {1}?", DisplayFormat.Date(variant.Snapshot.DateFrom), DisplayFormat.Date(variant.Snapshot.DateTo));
-        if (await Dialogs.ShowAsync(Tr.T("Удаление"), builder => builder.AddContent(0, text), okText: Tr.T("Удалить")) != DialogOutcome.Ok)
+        if (await Show(Tr.T("Удаление"), builder => builder.AddContent(0, text), okText: Tr.T("Удалить")) != DialogOutcome.Ok)
             return;
         Edit(() => s.Delete(new[] { variant }));
     }
@@ -658,7 +708,7 @@ else if (_error != null)
         List<PriceCalculatorVariant> list = s.Variants.Where(v => v.Checked).ToList();
         if (list.Count == 0)
             return;
-        if (await Dialogs.ShowAsync(Tr.T("Удаление"), builder => builder.AddContent(0, Tr.Format("Удалить отмеченные варианты ({0})?", list.Count)),
+        if (await Show(Tr.T("Удаление"), builder => builder.AddContent(0, Tr.Format("Удалить отмеченные варианты ({0})?", list.Count)),
                 okText: Tr.T("Удалить")) != DialogOutcome.Ok)
             return;
         Edit(() => s.Delete(list));
@@ -668,6 +718,140 @@ else if (_error != null)
     {
         foreach (PriceCalculatorVariant v in s.Variants)
             v.Checked = on;
+    }
+
+    // Окно страницы: запоминается, пока открыто, — см. DisposeAsync.
+    private async Task<DialogOutcome> Show(string title, RenderFragment body, string? okText = null, string? cancelText = null,
+        bool showCancel = true, bool wide = false)
+    {
+        if (_disposed)
+            return DialogOutcome.Cancel;
+        Task<DialogOutcome> shown = Dialogs.ShowAsync(title, body, okText, cancelText, wide: wide, showCancel: showCancel);
+        // окно уже в стеке: ShowAsync кладёт его туда до первого ожидания (как ActionNew.PickFirm)
+        DialogRequest? dialog = Dialogs.Current;
+        _dialog = dialog;
+        DialogOutcome outcome = await shown;
+        if (ReferenceEquals(_dialog, dialog))
+            _dialog = null;
+        return outcome;
+    }
+
+    public async ValueTask DisposeAsync()
+    {
+        _disposed = true;
+        DialogRequest? dialog = _dialog;
+        _dialog = null;
+        if (dialog != null && ReferenceEquals(Dialogs.Current, dialog))
+            await Dialogs.CloseAsync(DialogOutcome.Cancel);
+    }
+
+    private Task ShowInfo(string title, string text) =>
+        Show(title, builder =>
+        {
+            // переводы строк текста — как в десктопном сообщении
+            builder.OpenElement(0, "div");
+            builder.AddAttribute(1, "style", "white-space: pre-line");
+            builder.AddContent(2, text);
+            builder.CloseElement();
+        }, okText: Tr.T("Ок"), showCancel: false);
+
+    // «Сохранить как» браузера (решение 25.09.2026); браузер отказал открыть окно — повтор по новому щелчку.
+    private async Task SaveFile(ExportFile file, string title)
+    {
+        try
+        {
+            if (await Saver.UnsupportedReasonAsync() is { } unsupported)
+            {
+                _error = unsupported;
+                return;
+            }
+            await Saver.SaveAsAsync(file, async () =>
+                await Show(title, builder => builder.AddContent(0, Tr.T("Файл готов. Выберите, куда сохранить файл.")),
+                    okText: Tr.T("Сохранить…")) == DialogOutcome.Ok);
+        }
+        catch (Exception ex)
+        {
+            _error = ErrorPresenter.Describe(ex);
+        }
+    }
+
+    // «Excel»: текущий расчёт; файл — «Калькулятор цены dd.MM.yyyy.xlsx» (у десктопа — несохранённая книга без имени).
+    private async Task ExportExcel(PriceCalculatorSession s)
+    {
+        if (!s.CanSave)
+            return;
+        if (await Saver.UnsupportedReasonAsync() is { } unsupported)
+        {
+            _error = unsupported;
+            return;
+        }
+        ExportFile? file = null;
+        Edit(() => file = new ExportFile { Name = GridExcelExport.FileName(_title, DateTime.Today), Content = s.Excel() });
+        if (file != null)
+            await SaveFile(file, _title);
+    }
+
+    // Почему «Создать КП» закрыта — тексты десктопных отказов; null — можно.
+    private string? ProposalHint(PriceCalculatorSession s)
+    {
+        if (!s.Variants.Any(v => v.Checked))
+            return Tr.T("Нет отмеченных вариантов для создания коммерческого предложения.");
+        if (Memory.ProposalAgencyId <= 0 || _agencies.All(a => a.Key != Memory.ProposalAgencyId))
+            return _agencies.Count == 0 ? Tr.T("Ни у одного агентства не задан шаблон коммерческого предложения.") : Tr.T("Пожалуйста, выберите агентство.");
+        return null;
+    }
+
+    // «Создать КП»: документ — просмотр в окне, «Скачать Word» — «Сохранить как»; отказ — сообщение с текстом десктопа.
+    private async Task CreateProposal(PriceCalculatorSession s)
+    {
+        if (ProposalHint(s) != null)
+            return;
+        int agencyId = Memory.ProposalAgencyId;
+        string agencyName = _agencies.FirstOrDefault(a => a.Key == agencyId).Value ?? string.Empty;
+        ExportFile? file = null;
+        string? problem = null;
+        await Run(() => file = s.Proposal(agencyId, agencyName, Memory.ProposalClient, out problem));
+        if (problem != null)
+        {
+            await ShowInfo(Tr.T("Создать КП"), problem);
+            return;
+        }
+        if (file == null)
+            return;
+        ExportFile document = file;
+        if (await Show(document.Name, builder =>
+            {
+                builder.OpenComponent<DocxPreview>(0);
+                builder.AddComponentParameter(1, nameof(DocxPreview.Content), document.Content);
+                builder.CloseComponent();
+            }, okText: Tr.T("Скачать Word"), cancelText: Tr.T("Закрыть"), wide: true) == DialogOutcome.Ok)
+            await SaveFile(document, document.Name);
+    }
+
+    // «Выбрать фирму» — окно «Фирма-заказчик», тот же набор фирм, что у десктопного Firm.SelectFirm; в поле — префикс и
+    // название (PrefixWithName), как у десктопа.
+    private async Task PickFirm()
+    {
+        try
+        {
+            _firmEntity ??= EntityManager.GetEntity((int)Merlin.Entities.Firm);
+            _firmCandidates ??= await Busy.RunAsync(Merlin.Classes.Firm.GetFirmCandidates);
+            ObjectSelector? selector = null;
+            RenderFragment body = builder =>
+            {
+                builder.OpenComponent<ObjectSelector>(0);
+                builder.AddComponentParameter(1, nameof(ObjectSelector.SourceEntity), _firmEntity);
+                builder.AddComponentParameter(2, nameof(ObjectSelector.SourceRows), _firmCandidates);
+                builder.AddComponentReferenceCapture(3, c => selector = (ObjectSelector)c);
+                builder.CloseComponent();
+            };
+            if (await Show(Tr.T("Фирма-заказчик"), body, okText: Tr.T("Выбрать")) == DialogOutcome.Ok && selector?.SelectedRow is DataRow row)
+                Memory.ProposalClient = new Merlin.Classes.Firm(row).PrefixWithName;
+        }
+        catch (Exception ex)
+        {
+            _error = ErrorPresenter.Describe(ex);
+        }
     }
 
     private void Sort(PriceCalculatorSession s, string column, string? alias)

@@ -198,6 +198,29 @@
     gap: var(--s-2) var(--s-4);
 }
 
+.variants-bar .agency {
+    width: 240px;
+}
+
+/* поле клиента КП с крестиком очистки внутри */
+.client {
+    position: relative;
+    display: flex;
+    align-items: center;
+    width: 320px;
+}
+
+.client .form-control {
+    padding-right: 28px;
+}
+
+.client .btn-close {
+    position: absolute;
+    right: 8px;
+    width: 8px;
+    height: 8px;
+}
+
 /* не уже одной карточки: на невысоком экране прокручивается вся страница, а не схлопывается список */
 .variants {
     flex: 1 1 auto;

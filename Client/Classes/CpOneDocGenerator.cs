@@ -40,7 +40,8 @@ namespace Merlin.Cp
 
         /// <summary>
         /// КП-1 совместимость: в одном снапшоте все строки Rows имеют одинаковый "паттерн"
-        /// (споты/ролик/позиция одинаковы).
+        /// (споты/ролик/позиция одинаковы), и выходы за период делятся на число будних и выходных дней графика без
+        /// остатка — сводный блок печатает «в день» и итоги по строкам (К-24); иначе вариант идёт детальным блоком.
         /// </summary>
         public static bool IsCp1Compatible(CampaignCalcSnapshot s)
         {
@@ -59,14 +60,28 @@ namespace Merlin.Cp
                     return null;
             }
 
+            CountSelectedDaysByType(s.DateFrom.Date, s.DateTo.Date, s.UseDaysOfWeek, s.EvenDaysSelected, s.DaysOfWeekChecked,
+                out int weekdayDays, out int weekendDays);
+            if (!DividesByDays(p0.PrimeTotalSpotsWeekday, weekdayDays) || !DividesByDays(p0.NonPrimeTotalSpotsWeekday, weekdayDays)
+                || !DividesByDays(p0.PrimeTotalSpotsWeekend, weekendDays) || !DividesByDays(p0.NonPrimeTotalSpotsWeekend, weekendDays))
+                return null;
+
             var h = new Cp1Header
             {
                 DateFrom = s.DateFrom.Date,
                 DateTo = s.DateTo.Date,
-                TotalDays = s.TotalDays
+                TotalDays = s.TotalDays,
+                WeekdayDays = weekdayDays,
+                WeekendDays = weekendDays
             };
 
             return new Normalized { Source = s, Header = h, RowPattern = p0 };
+        }
+
+        // выходов нет — подходит при любом числе дней; есть — только целое число в день
+        private static bool DividesByDays(int spots, int days)
+        {
+            return spots == 0 || (days > 0 && spots % days == 0);
         }
 
         private static void CountSelectedDaysByType(
@@ -149,12 +164,15 @@ namespace Merlin.Cp
             public DateTime DateFrom { get; set; }
             public DateTime DateTo { get; set; }
             public int TotalDays { get; set; }
+            /// <summary>Будних и выходных дней в графике варианта — общие для группы: блок печатает их одной строкой (К-24).</summary>
+            public int WeekdayDays { get; set; }
+            public int WeekendDays { get; set; }
 
             public bool Equals(Cp1Header o)
             {
                 if (o == null) return false;
-                // Для КП-1 ключа сейчас достаточно периода (ты так и хотел)
-                return DateFrom == o.DateFrom && DateTo == o.DateTo;
+                // период и число будних и выходных дней: при одном периоде графики могут быть разными (К-24)
+                return DateFrom == o.DateFrom && DateTo == o.DateTo && WeekdayDays == o.WeekdayDays && WeekendDays == o.WeekendDays;
             }
 
             public override bool Equals(object obj) => Equals(obj as Cp1Header);
@@ -166,6 +184,8 @@ namespace Merlin.Cp
                     int h = 17;
                     h = h * 23 + DateFrom.GetHashCode();
                     h = h * 23 + DateTo.GetHashCode();
+                    h = h * 23 + WeekdayDays;
+                    h = h * 23 + WeekendDays;
                     return h;
                 }
             }
@@ -349,7 +369,7 @@ namespace Merlin.Cp
                 ReplaceTextPlaceholdersPreserveStylesEverywhere(doc, new Dictionary<string, string>
                 {
                     ["{{CLIENT_NAME}}"] = clientName,
-                    ["{{STR1}}"] = string.IsNullOrEmpty(clientName) ? "по проведению рекламой кампании на радио" : "по проведению рекламой кампании на радио для",
+                    ["{{STR1}}"] = string.IsNullOrEmpty(clientName) ? "по проведению рекламной кампании на радио" : "по проведению рекламной кампании на радио для",
                     ["{{DOC_DATE}}"] = docDate.ToString("dd.MM.yyyy"),
                     //["{{CONTACT_NAME}}"] = contactName + " " + contactEmail + " " + contactPhone
                     ["{{CONTACT_NAME}}"] = contactName,
@@ -360,7 +380,7 @@ namespace Merlin.Cp
                 // 1) Ищем абзац-якорь с {{CONTENT}}
                 var anchorParagraph = FindAnchorParagraph(body, "{{CONTENT}}");
                 if (anchorParagraph == null)
-                    throw new Exception("Не найден якорь {{CONTENT}} в шаблоне Word. Вставь {{CONTENT}} отдельным абзацем в нужное место.");
+                    throw new Exception("Не найден якорь {{CONTENT}} в шаблоне Word: вставьте {{CONTENT}} отдельным абзацем в нужное место.");
 
                 // 2) Генерим контент в список элементов
                 var generated = new List<OpenXmlElement>();
@@ -424,12 +444,19 @@ namespace Merlin.Cp
             emit(MakeParagraph(title, bold: true));
             emit(MakeParagraph(string.Empty, bold: false));
 
-            var schedule = BuildScheduleInfo(group.Snapshots.FirstOrDefault());
+            // К-24: дни — общие для группы (ключ), выходы — из строк (у всех строк группы одинаковые), «в день» — выходы на дни
+            // (делятся без остатка — иначе вариант детальный); прежде всё бралось из шаблона первого варианта и при ручных
+            // количествах противоречило цене
+            var p = group.RowPattern;
+            int weekdayDays = group.Header.WeekdayDays;
+            int weekendDays = group.Header.WeekendDays;
+            int totalWeekday = p.PrimeTotalSpotsWeekday + p.NonPrimeTotalSpotsWeekday;
+            int totalWeekend = p.PrimeTotalSpotsWeekend + p.NonPrimeTotalSpotsWeekend;
 
-            var rollerSec = group.RowPattern.RollerDuration;
-            var positionId = group.RowPattern.Position;
+            var rollerSec = p.RollerDuration;
+            var positionId = p.Position;
 
-            var durationPerStation = TimeSpan.FromSeconds(schedule.TotalSpotsPerStation * rollerSec);
+            var durationPerStation = TimeSpan.FromSeconds((long)(totalWeekday + totalWeekend) * rollerSec);
 
             emit(MakeMixedParagraph(
                 ("Параметры расчёта ", false, fontMediaum),
@@ -450,30 +477,30 @@ namespace Merlin.Cp
 
             emit(MakeMixedParagraph(
                 ("Количество дней рекламной акции: будни - ", false, fontMediaum),
-                ($"{schedule.WeekdayDaysCount}", true, fontNormal),
+                ($"{weekdayDays}", true, fontNormal),
                 (", выходные - ", false, fontMediaum),
-                ($"{schedule.WeekendDaysCount}", true, fontNormal)
+                ($"{weekendDays}", true, fontNormal)
             ));
 
             emit(MakeMixedParagraph(
                 ("Количество ежедневных выпусков в прайм-тайм: будни - ", false, fontMediaum),
-                ($"{schedule.PrimePerDayWeekday}", true, fontNormal),
+                ($"{PerDay(p.PrimeTotalSpotsWeekday, weekdayDays)}", true, fontNormal),
                 (", выходные - ", false, fontMediaum),
-                ($"{schedule.PrimePerDayWeekend}", true, fontNormal)
+                ($"{PerDay(p.PrimeTotalSpotsWeekend, weekendDays)}", true, fontNormal)
             ));
 
             emit(MakeMixedParagraph(
                 ("Количество ежедневных выпусков в офф-прайм: будни - ", false, fontMediaum),
-                ($"{schedule.NonPrimePerDayWeekday}", true, fontNormal),
+                ($"{PerDay(p.NonPrimeTotalSpotsWeekday, weekdayDays)}", true, fontNormal),
                 (", выходные - ", false, fontMediaum),
-                ($"{schedule.NonPrimePerDayWeekend}", true, fontNormal)
+                ($"{PerDay(p.NonPrimeTotalSpotsWeekend, weekendDays)}", true, fontNormal)
             ));
 
             emit(MakeMixedParagraph(
                 ("Суммарное количество выпусков на каждой станции: будни - ", false, fontMediaum),
-                ($"{schedule.TotalSpotsWeekday}", true, fontNormal),
+                ($"{totalWeekday}", true, fontNormal),
                 (", выходные - ", false, fontMediaum),
-                ($"{schedule.TotalSpotsWeekend}", true, fontNormal)
+                ($"{totalWeekend}", true, fontNormal)
             ));
 
             emit(MakeMixedParagraph(
@@ -481,10 +508,13 @@ namespace Merlin.Cp
                 (FormatDuration(durationPerStation), true, fontNormal)
             ));
 
-            emit(MakeMixedParagraph(
-                ("Позиционирование в рекламном блоке: ", false, fontMediaum),
-                ($"{MapPosition(positionId)}", true, fontNormal)
-            ));
+            // К-27: «Не определен» клиенту не печатается
+            string position = MapPosition(positionId);
+            if (position != null)
+                emit(MakeMixedParagraph(
+                    ("Позиционирование в рекламном блоке: ", false, fontMediaum),
+                    (position, true, fontNormal)
+                ));
 
             emit(MakeParagraph(string.Empty, bold: false));
 
@@ -649,7 +679,7 @@ namespace Merlin.Cp
                 {
                     stationName,
                     r.RollerDuration.ToString(),
-                    MapPosition(r.Position),
+                    MapPosition(r.Position) ?? "—",
                     r.PrimeTotalSpotsWeekday.ToString(),
                     r.NonPrimeTotalSpotsWeekday.ToString(),
                     r.PrimeTotalSpotsWeekend.ToString(),
@@ -729,14 +759,43 @@ namespace Merlin.Cp
             }
 
             return string.Join(" + ", names
-                .Distinct(StringComparer.CurrentCulture)
-                .OrderBy(x => x, StringComparer.CurrentCulture));
+                .Distinct(StringComparer.Ordinal)
+                .OrderBy(StationSortKey, StringComparer.Ordinal)
+                .ThenBy(x => x, StringComparer.Ordinal));
         }
 
+        // Порядок станций в «A + B» не зависит от среды: десктоп (.NET Framework, NLS) при сравнении по культуре пропускает
+        // дефис и апостроф, веб (.NET 10, ICU) — нет, и одно КП выходило с разным порядком. Ключ — близко к NLS: заглавные
+        // буквы, Ё как Е, без дефиса и апострофа, дальше по коду символа (пробел, прямые кавычки и скобки — раньше цифр и
+        // букв, «ёлочки» — между латиницей и кириллицей); для обычных названий порядок прежний.
+        private static string StationSortKey(string name)
+        {
+            var key = new System.Text.StringBuilder(name.Length);
+            foreach (char c in name.ToUpperInvariant())
+            {
+                if (c == '-' || c == '\'')
+                    continue;
+                key.Append(c == 'Ё' ? 'Е' : c);
+            }
+            return key.ToString();
+        }
+
+        // К-27: подписи позиций — по-русски, как текст и шаблон КП, а не на языке интерфейса (через Tr.T документ в испанском
+        // интерфейсе становился двуязычным); без позиции — null: «Не определен» клиенту не печатается
         private static string MapPosition(int position)
         {
-            // Используем твой справочник
-            return Issue.GetRollerPositionItems().FirstOrDefault(x => x.Key == position).Value ?? "без позиции";
+            switch ((RollerPositions)position)
+            {
+                case RollerPositions.First: return "Первый";
+                case RollerPositions.Second: return "Второй";
+                case RollerPositions.Last: return "Последний";
+                default: return null;
+            }
+        }
+
+        private static int PerDay(int spots, int days)
+        {
+            return days > 0 ? spots / days : 0;
         }
 
         private static string FormatRub(decimal price)
@@ -858,26 +917,6 @@ namespace Merlin.Cp
         {
             public int WeekdayDaysCount { get; set; }
             public int WeekendDaysCount { get; set; }
-
-            public int PrimePerDayWeekday { get; set; }
-            public int NonPrimePerDayWeekday { get; set; }
-            public int PrimePerDayWeekend { get; set; }
-            public int NonPrimePerDayWeekend { get; set; }
-
-            public int TotalSpotsWeekday
-            {
-                get { return WeekdayDaysCount * (PrimePerDayWeekday + NonPrimePerDayWeekday); }
-            }
-
-            public int TotalSpotsWeekend
-            {
-                get { return WeekendDaysCount * (PrimePerDayWeekend + NonPrimePerDayWeekend); }
-            }
-
-            public int TotalSpotsPerStation
-            {
-                get { return TotalSpotsWeekday + TotalSpotsWeekend; }
-            }
         }
 
         private static CampaignScheduleInfo BuildScheduleInfo(CampaignCalcSnapshot snapshot)
@@ -897,10 +936,6 @@ namespace Merlin.Cp
 
             info.WeekdayDaysCount = weekdayDaysCount;
             info.WeekendDaysCount = weekendDaysCount;
-            info.PrimePerDayWeekday = snapshot.PrimePerDayWeekday;
-            info.NonPrimePerDayWeekday = snapshot.NonPrimePerDayWeekday;
-            info.PrimePerDayWeekend = snapshot.PrimePerDayWeekend;
-            info.NonPrimePerDayWeekend = snapshot.NonPrimePerDayWeekend;
 
             return info;
         }
@@ -970,24 +1005,26 @@ namespace Merlin.Cp
             var texts = p.Descendants<Text>().ToList();
             if (texts.Count == 0) return;
 
-            // 1) строим полную строку абзаца + карту "индексы -> Text-ноды"
-            var spans = new List<TextSpan>(texts.Count);
-            int pos = 0;
-            foreach (var t in texts)
-            {
-                var s = t.Text ?? string.Empty;
-                spans.Add(new TextSpan { TextNode = t, Start = pos, Length = s.Length });
-                pos += s.Length;
-            }
-
-            string full = string.Concat(texts.Select(t => t.Text ?? string.Empty));
-            if (full.Length == 0) return;
-
-            // 2) Для каждого токена ищем ВСЕ вхождения и заменяем с конца (чтобы индексы не "плыли")
+            // Для каждого токена ищем ВСЕ вхождения и заменяем с конца (чтобы индексы не "плыли")
             foreach (var kv in map)
             {
                 var token = kv.Key;
                 var replacement = kv.Value ?? string.Empty;
+
+                // строка абзаца и карта "индексы -> Text-ноды" — заново на каждый токен: замена предыдущего меняет длину
+                // текста, и по старой карте метки, стоящие в абзаце подряд ({{CONTACT_NAME}}{{CONTACT_EMAIL}}{{CONTACT_PHONE}}
+                // в шаблонах агентств), заменялись со сдвигом — телефон оставался меткой, у почты появлялась «{» (К-34)
+                var spans = new List<TextSpan>(texts.Count);
+                int pos = 0;
+                foreach (var t in texts)
+                {
+                    var s = t.Text ?? string.Empty;
+                    spans.Add(new TextSpan { TextNode = t, Start = pos, Length = s.Length });
+                    pos += s.Length;
+                }
+
+                string full = string.Concat(texts.Select(t => t.Text ?? string.Empty));
+                if (full.Length == 0) return;
 
                 // find all occurrences
                 var occ = new List<int>();

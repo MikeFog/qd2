@@ -26,6 +26,8 @@ public sealed class PriceCalculatorMemory
 			_user = session.User;
 			Session = null;
 			VariantsTab = false;
+			ProposalAgencyId = 0;
+			ProposalClient = string.Empty;
 		};
 	}
 
@@ -34,4 +36,8 @@ public sealed class PriceCalculatorMemory
 
 	/// <summary>Открыта вкладка «Сохранённые варианты» (иначе «Расчёты»).</summary>
 	public bool VariantsTab { get; set; }
+
+	/// <summary>«Создать КП»: выбранное агентство (0 — не выбрано) и клиент — текст поля фирмы, его можно и набрать руками.</summary>
+	public int ProposalAgencyId { get; set; }
+	public string ProposalClient { get; set; } = string.Empty;
 }

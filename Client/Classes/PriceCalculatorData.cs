@@ -123,14 +123,21 @@ namespace Merlin.Classes
 
 		/// <summary>
 		/// Полный путь шаблона КП агентства, как десктоп: папка <c>ProposalTemplateFolder</c> из настроек (относительная —
-		/// от папки программы, абсолютная — как есть) и имя файла агентства; null — у агентства нет шаблона.
+		/// от папки программы, абсолютная — как есть) и имя файла агентства; null — у агентства нет шаблона. От имени файла
+		/// берётся только имя (<c>Path.GetFileName</c>): путь из карточки агентства не уводит службу веба из папки шаблонов.
 		/// </summary>
 		public static string ProposalTemplatePath(int agencyId)
 		{
 			string file = ProposalTemplateFile(agencyId);
 			if (string.IsNullOrWhiteSpace(file))
 				return null;
-			return System.IO.Path.Combine(AppDomain.CurrentDomain.BaseDirectory, ConfigurationUtil.ProposalTemplateFolder, file);
+			return System.IO.Path.Combine(ProposalTemplateFolder(), System.IO.Path.GetFileName(file.Trim()));
+		}
+
+		/// <summary>Папка шаблонов КП: <c>ProposalTemplateFolder</c> из настроек, относительная — от папки программы.</summary>
+		public static string ProposalTemplateFolder()
+		{
+			return System.IO.Path.Combine(AppDomain.CurrentDomain.BaseDirectory, ConfigurationUtil.ProposalTemplateFolder);
 		}
 
 		// список агентств (sl_agencies) отдаёт все поля агентства, в том числе имя файла шаблона КП
