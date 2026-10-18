@@ -488,6 +488,7 @@
       <QuotedIdentifier>Off</QuotedIdentifier>
     </Build>
     <Build Include="dbo\Stored Procedures\sponsorPLIUD.sql" />
+    <Build Include="dbo\Stored Procedures\pc_CalcDiscountsModel.sql" />
     <Build Include="dbo\Stored Procedures\pc_PackageDiscountCalculateModel.sql" />
     <Build Include="dbo\Stored Procedures\PackModuleContentRetrieve.sql" />
     <Build Include="dbo\Stored Procedures\ComboModules.sql" />
@@ -599,6 +600,7 @@
     <Build Include="dbo\User Defined Types\DF_TIME.sql" />
     <Build Include="dbo\User Defined Types\DF_DATETIME.sql" />
     <Build Include="dbo\User Defined Types\timeDuration.sql" />
+    <Build Include="dbo\User Defined Types\pc_CalcRow.sql" />
     <Build Include="dbo\User Defined Types\pc_SelectedMassmedia.sql" />
     <Build Include="Security\RoleMemberships.sql" />
     <Build Include="Security\Permissions.sql" />
