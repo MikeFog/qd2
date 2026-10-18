@@ -128,6 +128,147 @@
     margin: 0;
 }
 
+/* Режим редактирования сохранённого варианта — как плашка переноса выпусков (ActionWindowsTab). */
+.editing-bar {
+    display: flex;
+    align-items: center;
+    gap: var(--s-2);
+    padding: var(--s-1) var(--s-2);
+    border-radius: 6px;
+    background: var(--c-accent-soft);
+    font-size: 13px;
+}
+
+.editing-bar .btn {
+    margin-left: auto;
+    white-space: nowrap;
+}
+
+/* Вкладки — отдельной строкой со своей линией, как у Browser/Passport; скрытая вкладка остаётся в DOM. */
+.tabs {
+    display: flex;
+    gap: 2px;
+    margin-bottom: calc(-1 * var(--s-2));
+    border-bottom: 1px solid var(--c-border);
+}
+
+.tab {
+    padding: var(--s-2) var(--s-3);
+    border: none;
+    border-bottom: 2px solid transparent;
+    background: none;
+    font-size: 13px;
+    color: var(--c-text-muted);
+    white-space: nowrap;
+}
+
+.tab:hover {
+    color: var(--c-text);
+}
+
+.tab-active {
+    color: var(--c-accent);
+    border-bottom-color: var(--c-accent);
+    font-weight: 600;
+}
+
+.tab .count {
+    margin-left: var(--s-1);
+    font-weight: 400;
+    color: var(--c-text-muted);
+}
+
+.tab-pane {
+    flex: 1 1 auto;
+    display: flex;
+    flex-direction: column;
+    gap: var(--s-3);
+    min-height: 0;
+}
+
+.tab-pane[hidden] {
+    display: none;
+}
+
+/* Сохранённые варианты: строка действий, ниже карточки столбиком с прокруткой. */
+.variants-bar {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: var(--s-2) var(--s-4);
+}
+
+/* не уже одной карточки: на невысоком экране прокручивается вся страница, а не схлопывается список */
+.variants {
+    flex: 1 1 auto;
+    display: flex;
+    flex-direction: column;
+    gap: var(--s-2);
+    min-height: 180px;
+    overflow: auto;
+}
+
+.variant {
+    display: flex;
+    flex-direction: column;
+    gap: var(--s-2);
+    padding: var(--s-3);
+    background: var(--c-surface);
+    border: 1px solid var(--c-border);
+    border-radius: 6px;
+}
+
+.variant:hover {
+    background: var(--c-accent-soft);
+}
+
+.variant-editing {
+    border-color: var(--c-accent);
+}
+
+.variant-text {
+    display: flex;
+    align-items: flex-start;
+    gap: var(--s-2);
+    margin: 0;
+    cursor: pointer;
+}
+
+.variant-text .form-check-input {
+    margin-top: 3px;
+}
+
+.variant-body {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+}
+
+.variant-title {
+    font-weight: 600;
+}
+
+.variant-total {
+    font-weight: 600;
+    font-variant-numeric: tabular-nums;
+}
+
+.variant-badge {
+    margin-left: var(--s-2);
+    padding: 0 var(--s-1);
+    font-size: 12px;
+    font-weight: 400;
+    color: var(--c-accent);
+    background: var(--c-accent-soft);
+    border-radius: 3px;
+}
+
+.variant-actions {
+    display: flex;
+    gap: var(--s-2);
+    padding-left: calc(1em + var(--s-2));
+}
+
 .data-table {
     flex: 1 1 auto;
     min-height: 140px;

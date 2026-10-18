@@ -1,0 +1,24 @@
+@using FogSoft.WinForm.Classes
+
+@*
+    Окно «Сохранить» калькулятора цены, когда редактируется сохранённый вариант, — веб-аналог PCSaveVariantQuestion:
+    вопрос и два варианта дословно из десктопа, по умолчанию «Сохранить — …» (перезаписать вариант на его месте).
+    Заголовок и кнопка — «Сохранить» (UI_RULES, п. 2.5), у десктопа «Сохранение» и «Ок».
+*@
+
+<div class="mb-2">@Tr.T("Вы редактируете ранее сохранённый вариант. Что вы хотите сделать?")</div>
+<div class="form-check">
+    <input class="form-check-input" type="radio" name="pcSaveMode" id="pcSaveReplace" checked="@Replace"
+           @onchange="() => Replace = true" />
+    <label class="form-check-label" for="pcSaveReplace">@Tr.T("Сохранить — применить правки в текущем варианте.")</label>
+</div>
+<div class="form-check">
+    <input class="form-check-input" type="radio" name="pcSaveMode" id="pcSaveClone" checked="@(!Replace)"
+           @onchange="() => Replace = false" />
+    <label class="form-check-label" for="pcSaveClone">@Tr.T("Клонировать — создать копию с изменениями, сохранив исходный расчёт.")</label>
+</div>
+
+@code {
+    /// <summary>true — перезаписать редактируемый вариант, false — сохранить копию.</summary>
+    public bool Replace { get; private set; } = true;
+}

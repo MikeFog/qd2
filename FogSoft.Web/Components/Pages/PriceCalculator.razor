@@ -7,13 +7,15 @@
 @inject MenuAccess Access
 @inject BusyService Busy
 @inject PriceCalculatorMemory Memory
+@inject DialogService Dialogs
 
 @*
-    «Калькулятор цены» — веб-экран вместо PriceCalculatorForm (docs/tasks/web-price-calculator.md, этап К.2: вкладка
-    «Расчёты»). Сверху параметры в порядке десктопной панели (TemplateEditorControl), ниже таблица станций с правкой
-    длительности, позиции и выходов. Кнопки «Рассчитать» нет: любое изменение пересчитывает, смена периода, группы или
-    менеджера перечитывает цены (§4.5). Расчёт — ядро PriceCalculatorSession / PriceCalculatorEngine, состояние —
-    PriceCalculatorMemory (страница пересоздаётся при смене языка).
+    «Калькулятор цены» — веб-экран вместо PriceCalculatorForm (docs/tasks/web-price-calculator.md, этапы К.2–К.3).
+    Сверху параметры в порядке десктопной панели (TemplateEditorControl), под ними вкладки, как у десктопа: «Расчёты» —
+    таблица станций с правкой длительности, позиции и выходов, «Сохранённые варианты» — карточки вариантов. Кнопки
+    «Рассчитать» нет: любое изменение пересчитывает, смена периода, группы или менеджера перечитывает цены (§4.5).
+    «Сохранить» — в шапке, видна на обеих вкладках. Расчёт и варианты — ядро PriceCalculatorSession / PriceCalculatorEngine,
+    состояние — PriceCalculatorMemory (страница пересоздаётся при смене языка).
 *@
 
 <PageTitle>@_title</PageTitle>
@@ -42,6 +44,10 @@ else if (Memory.Session is { } s)
 
     <div class="price-calculator screen-dense">
         <ScreenToolbar Title="@_title">
+            <button class="btn btn-sm btn-primary" disabled="@(!s.CanSave)" @onclick="() => SaveVariant(s)"
+                    title="@(s.CanSave ? null : s.Result == null ? Tr.T("Сохранить можно после расчёта.") : Tr.T("Отметьте хотя бы одну станцию; в периоде должны быть выбранные дни."))">
+                <i class="bi bi-floppy" aria-hidden="true"></i>@Tr.T("Сохранить")
+            </button>
             @if (periodProblem == null && s.Result != null)
             {
                 <span class="head-total tabular">@Tr.T("Итог:") <b>@s.Result.Total.ToString("C")</b></span>
@@ -193,6 +199,30 @@ else if (Memory.Session is { } s)
             }
         </section>
 
+        @if (s.Editing is { } editing)
+        {
+            <div class="editing-bar" role="status">
+                <i class="bi bi-pencil" aria-hidden="true"></i>
+                <span>@Tr.Format("Редактируется сохранённый вариант за период с {0} до {1}.", DisplayFormat.Date(editing.Snapshot.DateFrom), DisplayFormat.Date(editing.Snapshot.DateTo))</span>
+                <button type="button" class="btn btn-sm btn-outline-secondary" @onclick="() => s.FinishEditing()"
+                        title="@(Tr.T("Расчёт останется на экране, «Сохранить» добавит его новым вариантом."))">
+                    @Tr.T("Выйти из редактирования")
+                </button>
+            </div>
+        }
+
+        <div class="tabs" role="tablist">
+            <button type="button" role="tab" class="tab @(Memory.VariantsTab ? null : "tab-active")" aria-selected="@(!Memory.VariantsTab)"
+                    @onclick="() => Memory.VariantsTab = false">
+                @Tr.T("Расчёты")
+            </button>
+            <button type="button" role="tab" class="tab @(Memory.VariantsTab ? "tab-active" : null)" aria-selected="@Memory.VariantsTab"
+                    @onclick="() => Memory.VariantsTab = true">
+                @Tr.T("Сохранённые варианты") <span class="count">@s.Variants.Count</span>
+            </button>
+        </div>
+
+        <div class="tab-pane" hidden="@Memory.VariantsTab">
         @if (s.DroppedStations.Count > 0)
         {
             <div class="alert alert-warning alert-dismissible note" role="status">
@@ -365,6 +395,69 @@ else if (Memory.Session is { } s)
                 </table>
             </div>
         }
+        </div>
+
+        <div class="tab-pane" hidden="@(!Memory.VariantsTab)">
+            @if (s.Variants.Count == 0)
+            {
+                <div class="state">
+                    <div class="state-title">@Tr.T("Сохранённых вариантов нет")</div>
+                    @Tr.T("Сохраните расчёт кнопкой «Сохранить».")
+                </div>
+            }
+            else
+            {
+                @* место под агентство, фирму и «Создать КП» (этап К.4) — в этой же строке, как у десктопа *@
+                <div class="variants-bar">
+                    <label class="inline">
+                        <input type="checkbox" class="form-check-input" checked="@s.Variants.All(v => v.Checked)"
+                               @onchange="e => CheckAllVariants(s, e.Value is true)" />
+                        @Tr.T("Выбрать все")
+                    </label>
+                    <button type="button" class="btn btn-sm btn-outline-secondary" disabled="@(!s.Variants.Any(v => v.Checked))"
+                            @onclick="() => DeleteChecked(s)">
+                        <i class="bi bi-trash3" aria-hidden="true"></i>@Tr.T("Удалить отмеченные")
+                    </button>
+                </div>
+                <div class="variants">
+                    @foreach (PriceCalculatorVariant v in s.Variants)
+                    {
+                        PriceCalculatorVariant variant = v;
+                        CampaignCalcSnapshot snap = variant.Snapshot;
+                        bool isEditing = ReferenceEquals(variant, s.Editing);
+                        <section @key="variant" class="variant @(isEditing ? "variant-editing" : null)">
+                            @* щелчок по тексту карточки переключает отметку, как у десктопа *@
+                            <label class="variant-text">
+                                <input type="checkbox" class="form-check-input" checked="@variant.Checked"
+                                       @onchange="e => variant.Checked = e.Value is true" />
+                                <span class="variant-body">
+                                    <span class="variant-title">
+                                        @Tr.Format("Период: с {0} до {1}", DisplayFormat.Date(snap.DateFrom), DisplayFormat.Date(snap.DateTo))
+                                        @if (isEditing)
+                                        {
+                                            <span class="variant-badge">@Tr.T("редактируется")</span>
+                                        }
+                                    </span>
+                                    <span>@Tr.Format("Радиостанции: {0}", snap.GetRadiostationsList())</span>
+                                    <span>@Tr.Format("Количество дней рекламной акции: {0}", snap.TotalDays)</span>
+                                    <span>@Tr.Format("Продолжительность ролика: {0}", snap.DurationSec)</span>
+                                    <span>@Tr.Format("Суммарный хронометраж эфирного времени: {0}", PriceCalculatorExport.FormatDuration(snap.TotalDuration))</span>
+                                    <span class="variant-total">@Tr.Format("Итог: {0}", snap.GrandTotal.ToString("C"))</span>
+                                </span>
+                            </label>
+                            <div class="variant-actions">
+                                <button type="button" class="btn btn-sm btn-outline-secondary" @onclick="() => EditVariant(s, variant)">
+                                    @Tr.T("Редактировать")
+                                </button>
+                                <button type="button" class="btn btn-sm btn-outline-secondary" @onclick="() => DeleteVariant(s, variant)">
+                                    @Tr.T("Удалить")
+                                </button>
+                            </div>
+                        </section>
+                    }
+                </div>
+            }
+        </div>
     </div>
 }
 else if (_error != null)
@@ -503,6 +596,78 @@ else if (_error != null)
             return Task.CompletedTask;
         s.Template.ManagerId = id;
         return Run(() => s.SetManager(id));
+    }
+
+    // «Сохранить»: при редактировании варианта — окно «перезаписать или копия», как у десктопа (PCSaveVariantQuestion);
+    // дубль — сообщение. Новая карточка видна по счётчику на вкладке — отдельного сообщения нет.
+    private async Task SaveVariant(PriceCalculatorSession s)
+    {
+        if (!s.CanSave)
+            return;
+        bool replace = false;
+        if (s.Editing != null)
+        {
+            PriceCalculatorSaveDialog? dialog = null;
+            RenderFragment body = builder =>
+            {
+                builder.OpenComponent<PriceCalculatorSaveDialog>(0);
+                builder.AddComponentReferenceCapture(1, c => dialog = (PriceCalculatorSaveDialog)c);
+                builder.CloseComponent();
+            };
+            if (await Dialogs.ShowAsync(Tr.T("Сохранить"), body, okText: Tr.T("Сохранить")) != DialogOutcome.Ok || dialog == null)
+                return;
+            replace = dialog.Replace;
+        }
+        PriceCalculatorSaveOutcome outcome = PriceCalculatorSaveOutcome.Added;
+        bool saved = false;
+        Edit(() =>
+        {
+            outcome = s.Save(replace);
+            saved = true;
+        });
+        if (saved && outcome == PriceCalculatorSaveOutcome.Duplicate)
+            await Dialogs.ShowAsync(Tr.T("Сохранить"), builder => builder.AddContent(0, Tr.T("Данный вариант уже добавлен.")),
+                okText: Tr.T("Ок"), showCancel: false);
+    }
+
+    // «Редактировать»: цены перечитываются — под слоем ожидания; менеджер варианта — в списке «Менеджер:».
+    private async Task EditVariant(PriceCalculatorSession s, PriceCalculatorVariant variant)
+    {
+        await Run(() =>
+        {
+            s.Edit(variant);
+            if (_isAdmin && _managers.All(m => m.Key != s.Template.ManagerId) && SecurityManager.GetUser(s.Template.ManagerId) is { } manager)
+                _managers = _managers.Append(new KeyValuePair<int, string>(manager.Id, manager.FullName))
+                    .OrderBy(m => m.Value, StringComparer.CurrentCulture).ToList();
+        });
+        Memory.VariantsTab = false;
+    }
+
+    private async Task DeleteVariant(PriceCalculatorSession s, PriceCalculatorVariant variant)
+    {
+        string text = Tr.Format("Удалить вариант за период с {0} до {1}?", DisplayFormat.Date(variant.Snapshot.DateFrom), DisplayFormat.Date(variant.Snapshot.DateTo));
+        if (await Dialogs.ShowAsync(Tr.T("Удаление"), builder => builder.AddContent(0, text), okText: Tr.T("Удалить")) != DialogOutcome.Ok)
+            return;
+        Edit(() => s.Delete(new[] { variant }));
+    }
+
+    // Десктоп удалял без подтверждения, а новые карточки были отмечены — «Удалить отмеченные» сразу после сохранения
+    // удаляла все варианты (К-16).
+    private async Task DeleteChecked(PriceCalculatorSession s)
+    {
+        List<PriceCalculatorVariant> list = s.Variants.Where(v => v.Checked).ToList();
+        if (list.Count == 0)
+            return;
+        if (await Dialogs.ShowAsync(Tr.T("Удаление"), builder => builder.AddContent(0, Tr.Format("Удалить отмеченные варианты ({0})?", list.Count)),
+                okText: Tr.T("Удалить")) != DialogOutcome.Ok)
+            return;
+        Edit(() => s.Delete(list));
+    }
+
+    private static void CheckAllVariants(PriceCalculatorSession s, bool on)
+    {
+        foreach (PriceCalculatorVariant v in s.Variants)
+            v.Checked = on;
     }
 
     private void Sort(PriceCalculatorSession s, string column, string? alias)
