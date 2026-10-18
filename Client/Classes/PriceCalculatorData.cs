@@ -97,6 +97,47 @@ namespace Merlin.Classes
 			return user.GetDiscount(dateFrom, dateTo);
 		}
 
+		/// <summary>Агентства с шаблоном КП (поле агентства «path2proposalTemplate») — список «Создать КП».</summary>
+		public static List<KeyValuePair<int, string>> ProposalAgencies()
+		{
+			var result = new List<KeyValuePair<int, string>>();
+			foreach (DataRow r in Agency.LoadAgencies(true).Tables[0].Rows)
+			{
+				if (!string.IsNullOrWhiteSpace(TemplateFile(r)))
+					result.Add(new KeyValuePair<int, string>(Convert.ToInt32(r[Agency.ParamNames.AgencyId]),
+						Convert.ToString(r[FogSoft.WinForm.Constants.Parameters.Name])));
+			}
+			return result;
+		}
+
+		/// <summary>
+		/// Полный путь шаблона КП агентства, как десктоп: папка <c>ProposalTemplateFolder</c> из настроек (относительная —
+		/// от папки программы, абсолютная — как есть) и имя файла агентства; null — у агентства нет шаблона.
+		/// </summary>
+		public static string ProposalTemplatePath(int agencyId)
+		{
+			string file = ProposalTemplateFile(agencyId);
+			if (string.IsNullOrWhiteSpace(file))
+				return null;
+			return System.IO.Path.Combine(AppDomain.CurrentDomain.BaseDirectory, ConfigurationUtil.ProposalTemplateFolder, file);
+		}
+
+		// список агентств (sl_agencies) отдаёт все поля агентства, в том числе имя файла шаблона КП
+		private static string ProposalTemplateFile(int agencyId)
+		{
+			DataRow row = Agency.LoadAgencies(true).Tables[0].AsEnumerable()
+				.FirstOrDefault(r => Convert.ToInt32(r[Agency.ParamNames.AgencyId]) == agencyId);
+			return row == null ? null : TemplateFile(row);
+		}
+
+		private static string TemplateFile(DataRow agencyRow)
+		{
+			if (!agencyRow.Table.Columns.Contains(Agency.ParamNames.Path2ProposalTemplate))
+				return null;
+			object file = agencyRow[Agency.ParamNames.Path2ProposalTemplate];
+			return file == DBNull.Value ? null : Convert.ToString(file);
+		}
+
 		/// <summary>
 		/// «Объёмная скидка» каждой строки и «Пакетная скидка» отмеченных — одним вызовом <c>pc_CalcDiscountsModel</c>
 		/// вместо вызова на строку (десктоп звал <c>hlp_CompanyDiscountCalculate</c> по строке и пакет отдельно, К-18).

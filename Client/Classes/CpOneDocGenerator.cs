@@ -298,11 +298,50 @@ namespace Merlin.Cp
             if (saved == null || saved.Count == 0)
                 throw new Exception("Нет данных для формирования КП.");
 
-            var split = Cp1Split.SplitGroupsAndRemainder(saved);
-
             File.Copy(templatePath, outputPath, true);
 
             using (var doc = WordprocessingDocument.Open(outputPath, true))
+                Fill(doc, saved, clientName, docDate, contactName, contactEmail, contactPhone);
+
+            return outputPath;
+        }
+
+        /// <summary>
+        /// То же КП в памяти — для веба (docs/tasks/web-price-calculator.md, К.1): шаблон агентства байтами, документ байтами,
+        /// без файлов на сервере.
+        /// </summary>
+        public static byte[] GenerateOneDoc(
+            List<CampaignCalcSnapshot> saved,
+            byte[] template,
+            string clientName,
+            DateTime docDate,
+            string contactName,
+            string contactEmail,
+            string contactPhone)
+        {
+            if (saved == null || saved.Count == 0)
+                throw new Exception("Нет данных для формирования КП.");
+
+            using (var ms = new MemoryStream())
+            {
+                ms.Write(template, 0, template.Length);
+                ms.Position = 0;
+                using (var doc = WordprocessingDocument.Open(ms, true))
+                    Fill(doc, saved, clientName, docDate, contactName, contactEmail, contactPhone);
+                return ms.ToArray();
+            }
+        }
+
+        private static void Fill(
+            WordprocessingDocument doc,
+            List<CampaignCalcSnapshot> saved,
+            string clientName,
+            DateTime docDate,
+            string contactName,
+            string contactEmail,
+            string contactPhone)
+        {
+            var split = Cp1Split.SplitGroupsAndRemainder(saved);
             {
                 var body = doc.MainDocumentPart.Document.Body;
 
@@ -360,8 +399,6 @@ namespace Merlin.Cp
 
                 doc.MainDocumentPart.Document.Save();
             }
-
-            return outputPath;
         }
 
         private static Paragraph FindAnchorParagraph(Body body, string anchorToken)

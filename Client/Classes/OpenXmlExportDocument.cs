@@ -273,6 +273,8 @@ namespace Merlin.Classes
 		private readonly Dictionary<int, double> _columnWidths = new Dictionary<int, double>();
 		private readonly Dictionary<int, double> _rowHeights = new Dictionary<int, double>();
 		private readonly List<Image> _images = new List<Image>();
+		private readonly Dictionary<int, string> _columnFormats = new Dictionary<int, string>();
+		private readonly HashSet<int> _autoFitRows = new HashSet<int>();
 		private readonly XlsxCellFormat _baseFormat;
 		private bool _landscape;
 
@@ -369,7 +371,13 @@ namespace Merlin.Classes
 				{
 					if (kv.Key.col != c || kv.Key.row < topRow || kv.Key.row > lastRow || kv.Value.Kind == Kind.Empty)
 						continue;
-					maxPx = Math.Max(maxPx, TextMeasure.ContentWidthPx(DisplayText(kv.Value), kv.Value.Format));
+					// текст с переносом занимает в ширину не меньше своего самого длинного слова — остальное переносится
+					string text = DisplayText(kv.Value);
+					double px = kv.Value.Format.Wrap && kv.Value.Format.Rotation == 0
+						? text.Split(new[] { ' ', '\n' }, StringSplitOptions.RemoveEmptyEntries)
+							.Select(w => TextMeasure.ContentWidthPx(w, kv.Value.Format)).DefaultIfEmpty(0).Max()
+						: TextMeasure.ContentWidthPx(text, kv.Value.Format);
+					maxPx = Math.Max(maxPx, px);
 				}
 				// Пустую колонку Excel при автоподборе не трогает.
 				if (maxPx > 0)
@@ -476,7 +484,10 @@ namespace Merlin.Classes
 
 		public void SetColumnNumberFormat(int columnIndex, string format)
 		{
-			throw new NotSupportedException("OpenXmlDocumentSheet: SetColumnNumberFormat не реализован — медиаплан его не использует.");
+			// Как формат всей колонки в Excel: и у уже записанных ячеек, и у тех, что появятся потом (GetCell).
+			_columnFormats[columnIndex] = format;
+			foreach (var kv in _cells.Where(kv => kv.Key.col == columnIndex))
+				kv.Value.Format.NumFmt = format;
 		}
 
 		public void SetWrapText(int top, int left, int bottom, int right, bool wrap)
@@ -486,7 +497,9 @@ namespace Merlin.Classes
 
 		public void SetAutoFitRows(int top, int bottom)
 		{
-			throw new NotSupportedException("OpenXmlDocumentSheet: SetAutoFitRows не реализован — медиаплан его не использует.");
+			// Высота строк с переносом текста считается при записи (RowHeight) — по ширине колонок на тот момент.
+			for (int r = top; r <= bottom; r++)
+				_autoFitRows.Add(r);
 		}
 
 		#endregion
@@ -498,6 +511,8 @@ namespace Merlin.Classes
 			if (!_cells.TryGetValue((row, col), out Cell cell))
 			{
 				cell = new Cell { Kind = Kind.Empty, Format = _baseFormat.Clone() };
+				if (_columnFormats.TryGetValue(col, out string columnFormat))
+					cell.Format.NumFmt = columnFormat;
 				_cells[(row, col)] = cell;
 			}
 			return cell;
@@ -624,6 +639,8 @@ namespace Merlin.Classes
 				case "h:mm:ss": case "hh:mm:ss": return DateTime.FromOADate(cell.Number).ToString("H:mm:ss", ru);
 				case "dd.mm.yyyy": case "dd/mm/yyyy": return DateTime.FromOADate(cell.Number).ToString("dd.MM.yyyy", ru);
 				case "#,##0.00\\ \\p": return cell.Number.ToString("#,##0.00", ru) + " p";
+				case "#,##0.00": return cell.Number.ToString("#,##0.00", ru);
+				case "0.00": return cell.Number.ToString("0.00", ru);
 				default: return cell.Number.ToString(ru);
 			}
 		}
@@ -658,7 +675,7 @@ namespace Merlin.Classes
 				var row = new S.Row
 				{
 					RowIndex = (uint)rowGroup.Key,
-					Height = RowHeight(rowGroup.Key, rowGroup.Select(kv => kv.Value)),
+					Height = RowHeight(rowGroup.Key, rowGroup),
 					CustomHeight = true,
 				};
 				foreach (var kv in rowGroup.OrderBy(kv => kv.Key.col))
@@ -704,20 +721,49 @@ namespace Merlin.Classes
 
 		// Высота строки: заданная (картинка) или как у Excel при автоподборе — по
 		// крупному шрифту и по повёрнутому тексту, но не меньше высоты по умолчанию.
-		private double RowHeight(int row, IEnumerable<Cell> cells)
+		private double RowHeight(int row, IEnumerable<KeyValuePair<(int row, int col), Cell>> cells)
 		{
 			if (_rowHeights.TryGetValue(row, out double custom))
 				return custom;
 			double height = DefaultRowHeight;
-			foreach (Cell cell in cells)
+			bool autoFit = _autoFitRows.Contains(row);
+			foreach (var kv in cells)
 			{
+				Cell cell = kv.Value;
 				if (cell.Kind == Kind.Empty) continue;
 				double h = cell.Format.Rotation != 0
 					? TextMeasure.RotatedHeightPt(DisplayText(cell), cell.Format)
 					: TextMeasure.LineHeightPt(cell.Format);
+				// SetAutoFitRows: текст с переносом — столько строк, сколько выйдет при ширине колонки
+				if (autoFit && cell.Format.Wrap && cell.Format.Rotation == 0)
+					h *= WrappedLineCount(DisplayText(cell), cell.Format, GetColumnWidth(kv.Key.col) * MaxDigitWidth);
 				height = Math.Max(height, h);
 			}
 			return height;
+		}
+
+		// Перенос по словам, как у Excel: слово, которое не помещается в строку, начинает следующую.
+		private static int WrappedLineCount(string text, XlsxCellFormat f, double columnPx)
+		{
+			double available = Math.Max(1, columnPx - TextMeasure.ColumnPaddingPx);
+			int lines = 0;
+			foreach (string paragraph in (text ?? string.Empty).Split('\n'))
+			{
+				lines++;
+				double used = 0;
+				foreach (string word in paragraph.Split(new[] { ' ' }, StringSplitOptions.RemoveEmptyEntries))
+				{
+					double w = TextMeasure.TextWidthPx(used > 0 ? " " + word : word, f);
+					if (used > 0 && used + w > available)
+					{
+						lines++;
+						used = TextMeasure.TextWidthPx(word, f);
+					}
+					else
+						used += w;
+				}
+			}
+			return Math.Max(1, lines);
 		}
 
 		private static S.Cell BuildCell(int row, int col, Cell cell, OpenXmlExportDocument.StyleTable styles, OpenXmlExportDocument.SharedStrings strings)
@@ -811,7 +857,7 @@ namespace Merlin.Classes
 		private static System.Drawing.Graphics _graphics;
 
 		// Поля, которые Excel добавляет к тексту при автоподборе колонки.
-		private const double ColumnPaddingPx = 6;
+		internal const double ColumnPaddingPx = 6;
 		// Ширина повёрнутого текста на пункт размера шрифта (подобрано по Excel).
 		private const double RotatedWidthPxPerPt = 2.35;
 		// Поле при автоподборе высоты строки с повёрнутым на 90° текстом.

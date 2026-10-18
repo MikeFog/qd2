@@ -131,6 +131,48 @@ namespace Merlin.Classes
 		public decimal? Total { get; set; }
 	}
 
+	/// <summary>
+	/// Поля панели параметров (десктоп — <c>TemplateEditorControl</c>): группа, «Период акции», дни, шаблон выходов в день,
+	/// «Ролик (сек.)», «Позиция:», правило коэффициента, «Менеджер:». Умолчания — как в десктопе.
+	/// </summary>
+	public sealed class PcTemplate
+	{
+		public int MassmediaGroupId { get; set; }
+		public DateTime PeriodFrom { get; set; } = DateTime.Today;
+		public DateTime PeriodTo { get; set; } = DateTime.Today.AddMonths(1);
+		public bool UseDaysOfWeek { get; set; } = true;
+		/// <summary>Пн … Вс.</summary>
+		public bool[] DaysOfWeek { get; set; } = { true, true, true, true, true, true, true };
+		/// <summary>Без <see cref="UseDaysOfWeek"/>: true — чётные числа, false — нечётные; по умолчанию «Чётные», как в десктопе.</summary>
+		public bool EvenDays { get; set; } = true;
+		public int Duration { get; set; } = 20;
+		public int PrimeWeekdayPerDay { get; set; } = 3;
+		public int NonPrimeWeekdayPerDay { get; set; } = 3;
+		public int PrimeWeekendPerDay { get; set; } = 3;
+		public int NonPrimeWeekendPerDay { get; set; } = 3;
+		public int Position { get; set; }
+		public bool RatioSingle { get; set; }
+		/// <summary>Значение поля «Сезонный коэфф.:» как есть (в расчёт 0 и меньше идёт как 1).</summary>
+		public decimal SingleRatio { get; set; } = 1m;
+		public int ManagerId { get; set; }
+
+		public List<DateTime> SelectedDates()
+		{
+			return PriceCalculatorEngine.SelectDates(PeriodFrom, PeriodTo, UseDaysOfWeek, DaysOfWeek, EvenDays);
+		}
+
+		public PcRatioRule RatioRule(PcModel model)
+		{
+			return new PcRatioRule { Single = RatioSingle, SingleRatio = SingleRatio, Periods = model.RatioPeriods };
+		}
+
+		public PcRowInput TemplateRow(int massmediaId, IList<DateTime> dates, bool selected)
+		{
+			return PriceCalculatorEngine.TemplateRow(massmediaId, dates, Duration, PrimeWeekdayPerDay, NonPrimeWeekdayPerDay,
+				PrimeWeekendPerDay, NonPrimeWeekendPerDay, Position, selected);
+		}
+	}
+
 	public sealed class PcResult
 	{
 		public List<PcRowResult> Rows { get; } = new List<PcRowResult>();
@@ -406,6 +448,132 @@ namespace Merlin.Classes
 			if (station == null || station.Segments.Count == 0) return;
 			min = station.Segments.Min(price);
 			max = station.Segments.Max(price);
+		}
+
+		/// <summary>
+		/// «Сохранить» — снимок варианта, как <c>PriceCalculatorForm.BuildSnapshot</c>: период — первый и последний
+		/// выбранный день (карточка, КП) и введённый (К-26), поля шаблона, строки — отмеченные, в порядке таблицы.
+		/// Без выбранных дней снимка нет (десктоп закрывает «Сохранить», К-9).
+		/// </summary>
+		public static CampaignCalcSnapshot BuildSnapshot(PcTemplate template, PcModel model, PcResult result)
+		{
+			var dates = template.SelectedDates();
+			if (dates.Count == 0)
+				throw new InvalidOperationException("Нет выбранных дней — вариант не сохраняется.");
+
+			var stations = model.Stations.ToDictionary(s => s.MassmediaId);
+			var snap = new CampaignCalcSnapshot
+			{
+				DateFrom = dates.Min(),
+				DateTo = dates.Max(),
+				PeriodFrom = template.PeriodFrom.Date,
+				PeriodTo = template.PeriodTo.Date,
+				TotalDays = dates.Count,
+				TotalDuration = result.Seconds,
+				GrandTotal = result.Total,
+				MassmediaGroupId = template.MassmediaGroupId,
+				DurationSec = template.Duration,
+				PrimePerDayWeekday = template.PrimeWeekdayPerDay,
+				NonPrimePerDayWeekday = template.NonPrimeWeekdayPerDay,
+				PrimePerDayWeekend = template.PrimeWeekendPerDay,
+				NonPrimePerDayWeekend = template.NonPrimeWeekendPerDay,
+				ManagerDiscountValue = template.SingleRatio,
+				ManagerDiscountModeSingle = template.RatioSingle,
+				CurrentUserId = template.ManagerId,
+				PositionValue = template.Position,
+				UseDaysOfWeek = template.UseDaysOfWeek,
+				EvenDaysSelected = template.EvenDays,
+				DaysOfWeekChecked = (bool[])template.DaysOfWeek.Clone(),
+				Rows = new List<CampaignCalcRow>(),
+			};
+
+			foreach (var r in result.Rows.Where(x => x.Input.Selected))
+			{
+				PcStation station;
+				stations.TryGetValue(r.Input.MassmediaId, out station);
+				snap.Rows.Add(new CampaignCalcRow
+				{
+					StationName = station != null ? station.Name : null,
+					MassmediaId = r.Input.MassmediaId,
+					GroupName = station != null ? station.GroupName : null,
+					ShortName = station != null ? station.ShortName : null,
+					PrimeTotalSpotsWeekday = r.Input.PrimeWeekday,
+					NonPrimeTotalSpotsWeekday = r.Input.NonPrimeWeekday,
+					PrimeTotalSpotsWeekend = r.Input.PrimeWeekend,
+					NonPrimeTotalSpotsWeekend = r.Input.NonPrimeWeekend,
+					RollerDuration = Convert.ToInt32(r.Input.Duration),
+					Position = r.Input.Position,
+					TotalBeforePackage = r.TotalBeforePackage,
+					PackageDiscount = r.PackageDiscount ?? 0m,
+					TotalAfterPackage = r.Total ?? 0m,
+					CompanyDiscount = r.CompanyDiscount,
+					TotalWithDiscount = r.TotalWithDiscount,
+					ManagerDiscount = r.Price.ManagerRatio,
+					TotalAmount = r.Price.TariffPrice,
+				});
+			}
+			return snap;
+		}
+
+		/// <summary>Поля шаблона из варианта — «Редактировать»; период — введённый (К-26), у старых вариантов — первый и последний день.</summary>
+		public static PcTemplate TemplateFromSnapshot(CampaignCalcSnapshot snap)
+		{
+			return new PcTemplate
+			{
+				MassmediaGroupId = snap.MassmediaGroupId,
+				PeriodFrom = snap.PeriodFrom != default(DateTime) ? snap.PeriodFrom : snap.DateFrom,
+				PeriodTo = snap.PeriodTo != default(DateTime) ? snap.PeriodTo : snap.DateTo,
+				UseDaysOfWeek = snap.UseDaysOfWeek,
+				DaysOfWeek = snap.DaysOfWeekChecked != null && snap.DaysOfWeekChecked.Length == 7
+					? (bool[])snap.DaysOfWeekChecked.Clone()
+					: new[] { true, true, true, true, true, true, true },
+				EvenDays = snap.EvenDaysSelected,
+				Duration = snap.DurationSec,
+				PrimeWeekdayPerDay = snap.PrimePerDayWeekday,
+				NonPrimeWeekdayPerDay = snap.NonPrimePerDayWeekday,
+				PrimeWeekendPerDay = snap.PrimePerDayWeekend,
+				NonPrimeWeekendPerDay = snap.NonPrimePerDayWeekend,
+				Position = snap.PositionValue,
+				RatioSingle = snap.ManagerDiscountModeSingle,
+				SingleRatio = snap.ManagerDiscountValue,
+				ManagerId = snap.CurrentUserId,
+			};
+		}
+
+		/// <summary>
+		/// Строки таблицы для «Редактировать», как <c>PriceCalculatorForm.LoadVariant</c>: все станции модели — по шаблону
+		/// варианта, отмечены станции варианта, у них — сохранённые длительность, позиция и количества
+		/// (<c>RestoreRowDetails</c>). Позиция вне списка позиций — «Не определен».
+		/// </summary>
+		public static List<PcRowInput> RowsFromSnapshot(PcModel model, CampaignCalcSnapshot snap, IList<DateTime> dates)
+		{
+			var template = TemplateFromSnapshot(snap);
+			var saved = (snap.Rows ?? new List<CampaignCalcRow>()).GroupBy(r => r.MassmediaId).ToDictionary(g => g.Key, g => g.First());
+			var rows = new List<PcRowInput>();
+			foreach (var station in model.Stations)
+			{
+				CampaignCalcRow s;
+				bool selected = saved.TryGetValue(station.MassmediaId, out s);
+				var row = template.TemplateRow(station.MassmediaId, dates, selected);
+				if (selected)
+				{
+					row.Duration = s.RollerDuration;
+					row.Position = IsKnownPosition(s.Position) ? s.Position : (int)RollerPositions.Undefined;
+					row.PrimeWeekday = s.PrimeTotalSpotsWeekday;
+					row.NonPrimeWeekday = s.NonPrimeTotalSpotsWeekday;
+					row.PrimeWeekend = s.PrimeTotalSpotsWeekend;
+					row.NonPrimeWeekend = s.NonPrimeTotalSpotsWeekend;
+				}
+				rows.Add(row);
+			}
+			return rows;
+		}
+
+		/// <summary>Позиции, которые можно выбрать в калькуляторе: «Не определен», «Первый», «Второй», «Последний».</summary>
+		public static bool IsKnownPosition(int position)
+		{
+			return position == (int)RollerPositions.Undefined || position == (int)RollerPositions.First
+				|| position == (int)RollerPositions.Second || position == (int)RollerPositions.Last;
 		}
 
 		public static decimal RoundMoney(decimal value)
