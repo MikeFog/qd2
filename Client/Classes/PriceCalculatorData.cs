@@ -89,12 +89,23 @@ namespace Merlin.Classes
 		/// 1, остальным — наименьший maxRatio периодов UserDiscount, пересекающих период (<c>GetUserDiscount</c>), без них — 1.
 		/// У не-администратора это и нижняя граница поля.
 		/// </summary>
-		public static decimal DefaultManagerRatio(int userId, DateTime dateFrom, DateTime dateTo)
+		public static decimal DefaultManagerRatio(SecurityManager.User user, DateTime dateFrom, DateTime dateTo)
 		{
-			SecurityManager.User user = SecurityManager.GetUser(userId);
 			if (user == null || user.IsAdmin)
 				return 1m;
 			return user.GetDiscount(dateFrom, dateTo);
+		}
+
+		/// <summary>
+		/// «Менеджер:» (ВК-3 а, только администратору): активные пользователи, кому пункт калькулятора выдан группой или лично,
+		/// без служебных администраторов и «admin» — <c>pc_CalculatorManagers</c> (Deploy/55); по фамилии и имени.
+		/// </summary>
+		public static List<KeyValuePair<int, string>> Managers()
+		{
+			DataSet ds = DataAccessor.LoadDataSet("pc_CalculatorManagers", DataAccessor.CreateParametersDictionary());
+			return ds.Tables[0].Rows.Cast<DataRow>()
+				.Select(r => new KeyValuePair<int, string>(Convert.ToInt32(r["userID"]), Convert.ToString(r["name"])))
+				.ToList();
 		}
 
 		/// <summary>Агентства с шаблоном КП (поле агентства «path2proposalTemplate») — список «Создать КП».</summary>

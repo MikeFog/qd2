@@ -220,6 +220,9 @@ public static class ScreenRoutes
 	/// <summary>«Баланс для конкретной фирмы-заказчика» из «Бухгалтерии».</summary>
 	public const string FirmBalance = "miFirmBalance";
 
+	/// <summary>«Калькулятор цены» из «Рекламного отдела».</summary>
+	public const string PriceCalculator = "miPriceCalculator";
+
 	/// <summary>«Выписать акт выполненных работ» из «Бухгалтерии».</summary>
 	public const string ActJournal = "miActPrint";
 
@@ -266,6 +269,9 @@ public static class ScreenRoutes
 			// Десктоп — FrmFirmIssuesBalance (контролы на форме, без метаданных); в вебе — отбор на
 			// FilterPanel, итоги и два списка. Данные — ядро FirmBalanceReport.
 			{ FirmBalance, "/firm-balance" },
+			// Десктоп — PriceCalculatorForm (сетка PriceCalculatorGrid с расчётом внутри); в вебе — свой экран без кнопки
+			// «Рассчитать», расчёт — ядро PriceCalculatorEngine (docs/tasks/web-price-calculator.md).
+			{ PriceCalculator, "/price-calculator" },
 			// Десктоп — ActJournalForm (журнал сущности 156 с doNotRefresh и пересборкой таблицы); в
 			// вебе — свой экран: данные только по «Применить», пересборка — ядро ActJournal.
 			{ ActJournal, "/act-journal" },

@@ -225,6 +225,7 @@
     <Compile Include="..\Client\Classes\PriceCalculatorEngine.cs" Link="Domain\PriceCalculatorEngine.cs" />
     <Compile Include="..\Client\Classes\PriceCalculatorData.cs" Link="Domain\PriceCalculatorData.cs" />
     <Compile Include="..\Client\Classes\PriceCalculatorExport.cs" Link="Domain\PriceCalculatorExport.cs" />
+    <Compile Include="..\Client\Classes\PriceCalculatorSession.cs" Link="Domain\PriceCalculatorSession.cs" />
     <!-- Документы из Word-шаблонов (docs/tasks/web-reports.md §8). Только веб: десктоп
          печатает через Crystal до решения о переводе (§7 п.1), в Client.csproj не входят. -->
     <Compile Include="..\Client\Classes\Documents\DocumentData.cs" Link="Domain\Documents\DocumentData.cs" />

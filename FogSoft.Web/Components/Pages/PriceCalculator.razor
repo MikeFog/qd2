@@ -1,0 +1,555 @@
+@page "/price-calculator"
+@using System.Data
+@using System.Globalization
+@using FogSoft.Web.Infrastructure
+@using FogSoft.WinForm.Classes
+@using Merlin.Classes
+@inject MenuAccess Access
+@inject BusyService Busy
+@inject PriceCalculatorMemory Memory
+
+@*
+    «Калькулятор цены» — веб-экран вместо PriceCalculatorForm (docs/tasks/web-price-calculator.md, этап К.2: вкладка
+    «Расчёты»). Сверху параметры в порядке десктопной панели (TemplateEditorControl), ниже таблица станций с правкой
+    длительности, позиции и выходов. Кнопки «Рассчитать» нет: любое изменение пересчитывает, смена периода, группы или
+    менеджера перечитывает цены (§4.5). Расчёт — ядро PriceCalculatorSession / PriceCalculatorEngine, состояние —
+    PriceCalculatorMemory (страница пересоздаётся при смене языка).
+*@
+
+<PageTitle>@_title</PageTitle>
+
+@if (SecurityManager.LoggedUser == null)
+{
+    <div class="state">
+        <div class="state-title">@Tr.T("Вы не вошли в систему")</div>
+        <a href="/">@Tr.T("Перейти к входу")</a>
+    </div>
+}
+else if (_access != JournalAccess.Allowed)
+{
+    <div class="state">
+        <div class="state-title">@Tr.T("Доступ закрыт")</div>
+        @Tr.T("Этот экран вам не разрешён. Права на экраны выдаются вместе с пунктами меню — обратитесь к администратору системы.")
+    </div>
+}
+else if (Memory.Session is { } s)
+{
+    PcTemplate t = s.Template;
+    string? periodProblem = s.PeriodProblem();
+    List<DateTime> dates = s.SelectedDates();
+    int weekendDays = dates.Count(PriceCalculatorEngine.IsWeekend);
+    int weekdayDays = dates.Count - weekendDays;
+
+    <div class="price-calculator screen-dense">
+        <ScreenToolbar Title="@_title">
+            @if (periodProblem == null && s.Result != null)
+            {
+                <span class="head-total tabular">@Tr.T("Итог:") <b>@s.Result.Total.ToString("C")</b></span>
+            }
+        </ScreenToolbar>
+
+        @if (_error != null)
+        {
+            <div class="alert alert-danger alert-dismissible screen-error" role="alert">
+                @_error
+                <button type="button" class="btn-close" aria-label="@(Tr.T("Закрыть"))" @onclick="() => _error = null"></button>
+            </div>
+        }
+
+        <section class="params" aria-label="@(Tr.T("Параметры расчёта"))">
+            <label class="field">
+                @Tr.T("Группа:")
+                <select class="form-select form-select-sm" @bind:get="t.MassmediaGroupId" @bind:set="ChangeGroup">
+                    @foreach (DataRowView g in _groups)
+                    {
+                        int id = Convert.ToInt32(g[0]);
+                        <option value="@id">@g[1]</option>
+                    }
+                </select>
+            </label>
+
+            <div class="field">
+                @Tr.T("Период акции:")
+                <div class="period">
+                    <input type="date" class="form-control form-control-sm" min="1900-01-01" max="9998-12-31"
+                           aria-label="@(Tr.T("Начало периода"))" @bind:get="t.PeriodFrom"
+                           @bind:set="v => ChangePeriod(v, start: true)" />
+                    <span aria-hidden="true">—</span>
+                    <input type="date" class="form-control form-control-sm" min="1900-01-01" max="9998-12-31"
+                           aria-label="@(Tr.T("Окончание периода"))" @bind:get="t.PeriodTo"
+                           @bind:set="v => ChangePeriod(v, start: false)" />
+                </div>
+            </div>
+
+            <fieldset class="days-mode">
+                <div class="mode-line">
+                    <label class="inline">
+                        <input type="radio" class="form-check-input" name="pc-days-mode" checked="@t.UseDaysOfWeek"
+                               @onchange="() => Edit(() => s.SetTemplate(x => x.UseDaysOfWeek = true))" />
+                        @Tr.T("Дни недели:")
+                    </label>
+                    <div class="days @(t.UseDaysOfWeek ? null : "off")">
+                        @for (int d = 0; d < 7; d++)
+                        {
+                            int day = d;
+                            <label class="inline">
+                                <input type="checkbox" class="form-check-input" disabled="@(!t.UseDaysOfWeek)" checked="@t.DaysOfWeek[day]"
+                                       @onchange="e => Edit(() => s.SetTemplate(x => x.DaysOfWeek[day] = e.Value is true))" />
+                                @DayNames[day]
+                            </label>
+                        }
+                    </div>
+                </div>
+                <div class="mode-line">
+                    <label class="inline">
+                        <input type="radio" class="form-check-input" name="pc-days-mode" checked="@(!t.UseDaysOfWeek)"
+                               @onchange="() => Edit(() => s.SetTemplate(x => x.UseDaysOfWeek = false))" />
+                        @Tr.T("Чётные/нечётные:")
+                    </label>
+                    <div class="parity @(t.UseDaysOfWeek ? "off" : null)">
+                        <label class="inline">
+                            <input type="radio" class="form-check-input" name="pc-parity" disabled="@t.UseDaysOfWeek" checked="@t.EvenDays"
+                                   @onchange="() => Edit(() => s.SetTemplate(x => x.EvenDays = true))" />
+                            @Tr.T("Чётные")
+                        </label>
+                        <label class="inline">
+                            <input type="radio" class="form-check-input" name="pc-parity" disabled="@t.UseDaysOfWeek" checked="@(!t.EvenDays)"
+                                   @onchange="() => Edit(() => s.SetTemplate(x => x.EvenDays = false))" />
+                            @Tr.T("Нечётные")
+                        </label>
+                    </div>
+                </div>
+            </fieldset>
+
+            <fieldset class="spots">
+                <legend>@Tr.T("Шаблон выходов")</legend>
+                <label class="spot">
+                    <span>@Tr.T("Будни прайм:")</span>
+                    <input type="number" class="form-control form-control-sm" min="0" max="200" @bind:get="t.PrimeWeekdayPerDay"
+                           @bind:set="v => Edit(() => s.SetTemplate(x => x.PrimeWeekdayPerDay = Math.Clamp(v, 0, 200)))" />
+                </label>
+                <label class="spot">
+                    <span>@Tr.T("Будни офф прайм:")</span>
+                    <input type="number" class="form-control form-control-sm" min="0" max="200" @bind:get="t.NonPrimeWeekdayPerDay"
+                           @bind:set="v => Edit(() => s.SetTemplate(x => x.NonPrimeWeekdayPerDay = Math.Clamp(v, 0, 200)))" />
+                </label>
+                <label class="spot">
+                    <span>@Tr.T("Выходные прайм")</span>
+                    <input type="number" class="form-control form-control-sm" min="0" max="100" @bind:get="t.PrimeWeekendPerDay"
+                           @bind:set="v => Edit(() => s.SetTemplate(x => x.PrimeWeekendPerDay = Math.Clamp(v, 0, 100)))" />
+                </label>
+                <label class="spot">
+                    <span>@Tr.T("Выходные офф прайм")</span>
+                    <input type="number" class="form-control form-control-sm" min="0" max="100" @bind:get="t.NonPrimeWeekendPerDay"
+                           @bind:set="v => Edit(() => s.SetTemplate(x => x.NonPrimeWeekendPerDay = Math.Clamp(v, 0, 100)))" />
+                </label>
+            </fieldset>
+
+            <label class="field narrow">
+                @Tr.T("Ролик (сек.):")
+                <input type="number" class="form-control form-control-sm" min="1" max="1200" @bind:get="(int?)t.Duration"
+                       @bind:set="(int? v) => { if (v is int d) Edit(() => s.SetTemplate(x => x.Duration = Math.Clamp(d, 1, 1200))); }" />
+            </label>
+            <label class="field narrow">
+                @Tr.T("Позиция:")
+                <select class="form-select form-select-sm" @bind:get="t.Position" @bind:set="v => Edit(() => s.SetPosition(v))">
+                    @foreach (KeyValuePair<int, string> p in _positions)
+                    {
+                        <option value="@p.Key">@p.Value</option>
+                    }
+                </select>
+            </label>
+
+            <fieldset class="ratio-mode">
+                <div class="mode-line">
+                    <label class="inline">
+                        <input type="radio" class="form-check-input" name="pc-ratio-mode" checked="@t.RatioSingle"
+                               @onchange="() => Edit(() => s.SetTemplate(x => x.RatioSingle = true))" />
+                        @Tr.T("Сезонный коэфф.:")
+                    </label>
+                    <input type="number" class="form-control form-control-sm ratio-input" step="0.01" max="100"
+                           min="@s.RatioMinimum.ToString(CultureInfo.InvariantCulture)" disabled="@(!t.RatioSingle)"
+                           aria-label="@(Tr.T("Сезонный коэфф."))" @bind:get="(decimal?)t.SingleRatio"
+                           @bind:set="(decimal? v) => { if (v is decimal r) Edit(() => s.SetRatio(Math.Min(r, 100m))); }" />
+                </div>
+                <label class="inline">
+                    <input type="radio" class="form-check-input" name="pc-ratio-mode" checked="@(!t.RatioSingle)"
+                           @onchange="() => Edit(() => s.SetTemplate(x => x.RatioSingle = false))" />
+                    @Tr.T("Актуальный сезонный коэфф.")
+                </label>
+            </fieldset>
+
+            @if (_isAdmin)
+            {
+                <label class="field">
+                    @Tr.T("Менеджер:")
+                    <select class="form-select form-select-sm" @bind:get="t.ManagerId" @bind:set="ChangeManager">
+                        @foreach (KeyValuePair<int, string> m in _managers)
+                        {
+                            <option value="@m.Key">@m.Value</option>
+                        }
+                    </select>
+                </label>
+            }
+        </section>
+
+        @if (s.DroppedStations.Count > 0)
+        {
+            <div class="alert alert-warning alert-dismissible note" role="status">
+                @Tr.Format("Отмеченные станции выпали из расчёта (нет прайс-листа на период или станция не входит в группу): {0}.", string.Join(", ", s.DroppedStations))
+                <button type="button" class="btn-close" aria-label="@(Tr.T("Закрыть"))" @onclick="() => s.DroppedStations.Clear()"></button>
+            </div>
+        }
+
+        @if (periodProblem != null)
+        {
+            <div class="state">
+                <div class="state-title">@periodProblem</div>
+            </div>
+        }
+        else if (s.Model == null || s.Result == null)
+        {
+            @* база не ответила: причина — в сообщении выше (его можно закрыть), здесь — повтор *@
+            <div class="state">
+                <div class="state-title">@Tr.T("Расчёт не выполнен")</div>
+                <button type="button" class="btn btn-sm btn-outline-secondary" @onclick="() => Run(s.Start)">@Tr.T("Повторить")</button>
+            </div>
+        }
+        else if (s.Model.Stations.Count == 0)
+        {
+            <div class="state">
+                <div class="state-title">@Tr.T("На период нет станций с прайс-листом")</div>
+                @Tr.T("Выберите другой период или группу.")
+            </div>
+        }
+        else
+        {
+            bool fourPrices = !PriceCalculatorExport.WeekdayEqualsWeekend(s.Model.Stations);
+            Dictionary<int, PcStation> stations = s.Model.Stations.ToDictionary(x => x.MassmediaId);
+            List<PcRowResult> selected = s.Result.Rows.Where(r => r.Input.Selected).ToList();
+
+            @if (dates.Count == 0)
+            {
+                <div class="alert alert-warning note" role="status">
+                    @(t.UseDaysOfWeek && !t.DaysOfWeek.Any(on => on) ? Tr.T("Выберите хотя бы один день недели.") : Tr.T("В периоде нет выбранных дней."))
+                </div>
+            }
+
+            <div class="data-table">
+                <table class="table table-sm">
+                    <thead>
+                        <tr>
+                            <th class="col-check">
+                                <input type="checkbox" class="form-check-input" title="@(Tr.T("Выбрать все"))" aria-label="@(Tr.T("Выбрать все"))"
+                                       checked="@(s.Rows.Count > 0 && s.Rows.All(r => r.Selected))" @onchange="e => Edit(() => s.SetAllSelected(e.Value is true))" />
+                            </th>
+                            @Header(s, "name", Tr.T("Радиостанция"), "col-name")
+                            @Header(s, "duration", Tr.T("Пр-ть ролика"), "num")
+                            @Header(s, "position", Tr.T("Позиция"), null)
+                            @if (fourPrices)
+                            {
+                                @Header(s, "price-pwd", Tr.T("Цена будни прайм"), "num")
+                                @Header(s, "price-npwd", Tr.T("Цена будни офф прайм"), "num")
+                                @Header(s, "price-pwe", Tr.T("Цена выходные прайм"), "num")
+                                @Header(s, "price-npwe", Tr.T("Цена выходные офф прайм"), "num")
+                            }
+                            else
+                            {
+                                @* у всех станций цены будней и выходных равны: сортировка по скрытой колонке выходных — та же *@
+                                @Header(s, "price-pwd", Tr.T("Цена прайм"), "num", "price-pwe")
+                                @Header(s, "price-npwd", Tr.T("Цена офф прайм"), "num", "price-npwe")
+                            }
+                            @Header(s, "spots-pwd", Tr.T("Кол-во выходов будни прайм"), "num")
+                            @Header(s, "spots-npwd", Tr.T("Кол-во выходов будни офф прайм"), "num")
+                            @Header(s, "spots-pwe", Tr.T("Кол-во выходов выходные прайм"), "num")
+                            @Header(s, "spots-npwe", Tr.T("Кол-во выходов выходные офф прайм"), "num")
+                            @Header(s, "tariff", Tr.T("Цена кампании"), "num")
+                            @Header(s, "company", Tr.T("Объёмная скидка"), "num")
+                            @Header(s, "ratio", Tr.T("Сезонный коэфф."), "num")
+                            @Header(s, "before", Tr.T("Цена до пакетной скидки"), "num")
+                            @Header(s, "package", Tr.T("Пакетная скидка"), "num")
+                            @Header(s, "total", Tr.T("Итог"), "num")
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (PcRowResult r in s.Result.Rows)
+                        {
+                            PcRowInput row = r.Input;
+                            int id = row.MassmediaId;
+                            stations.TryGetValue(id, out PcStation? station);
+                            PcRowInput tpl = t.TemplateRow(id, dates, row.Selected);
+                            string name = station?.Name ?? id.ToString(CultureInfo.InvariantCulture);
+                            <tr @key="id" class="@(row.Selected ? "row-selected" : null)">
+                                <td class="col-check">
+                                    <input type="checkbox" class="form-check-input" checked="@row.Selected" aria-label="@name"
+                                           @onchange="e => Edit(() => s.SetSelected(id, e.Value is true))" />
+                                </td>
+                                <td class="col-name">
+                                    @name
+                                    @if (r.Price.UncoveredDays > 0)
+                                    {
+                                        <span class="uncovered" title="@(Tr.T("На эти дни у станции нет прайс-листа: выходы, которые на них приходятся, считаются по нулевой цене."))">
+                                            @Tr.Format("нет прайс-листа на {0} дн.", r.Price.UncoveredDays)
+                                        </span>
+                                    }
+                                </td>
+                                <td class="@EditedClass(row.Duration != tpl.Duration)">
+                                    <input type="number" class="form-control form-control-sm cell-input" min="0" max="3600"
+                                           aria-label="@($"{Tr.T("Пр-ть ролика")}: {name}")" @bind:get="row.Duration"
+                                           @bind:set="v => Edit(() => s.EditRow(id, x => x.Duration = Math.Clamp(Math.Round(v), 0m, PriceCalculatorEngine.MaxDuration)))" />
+                                </td>
+                                <td class="@EditedClass(row.Position != tpl.Position)">
+                                    <select class="form-select form-select-sm cell-select" aria-label="@($"{Tr.T("Позиция")}: {name}")"
+                                            @bind:get="row.Position" @bind:set="v => Edit(() => s.EditRow(id, x => x.Position = v))">
+                                        @foreach (KeyValuePair<int, string> p in _positions)
+                                        {
+                                            <option value="@p.Key">@p.Value</option>
+                                        }
+                                    </select>
+                                </td>
+                                @if (fourPrices)
+                                {
+                                    <td class="num">@PriceText(station, x => x.PrimeWeekday)</td>
+                                    <td class="num">@PriceText(station, x => x.NonPrimeWeekday)</td>
+                                    <td class="num">@PriceText(station, x => x.PrimeWeekend)</td>
+                                    <td class="num">@PriceText(station, x => x.NonPrimeWeekend)</td>
+                                }
+                                else
+                                {
+                                    <td class="num">@PriceText(station, x => x.PrimeWeekday)</td>
+                                    <td class="num">@PriceText(station, x => x.NonPrimeWeekday)</td>
+                                }
+                                <td class="@EditedClass(row.PrimeWeekday != tpl.PrimeWeekday)">
+                                    <input type="number" class="form-control form-control-sm cell-input" min="0" max="1000000" disabled="@(weekdayDays == 0)"
+                                           aria-label="@($"{Tr.T("Кол-во выходов будни прайм")}: {name}")" @bind:get="row.PrimeWeekday"
+                                           @bind:set="v => Edit(() => s.EditRow(id, x => x.PrimeWeekday = Math.Clamp(v, 0, PriceCalculatorEngine.MaxSpots)))" />
+                                </td>
+                                <td class="@EditedClass(row.NonPrimeWeekday != tpl.NonPrimeWeekday)">
+                                    <input type="number" class="form-control form-control-sm cell-input" min="0" max="1000000" disabled="@(weekdayDays == 0)"
+                                           aria-label="@($"{Tr.T("Кол-во выходов будни офф прайм")}: {name}")" @bind:get="row.NonPrimeWeekday"
+                                           @bind:set="v => Edit(() => s.EditRow(id, x => x.NonPrimeWeekday = Math.Clamp(v, 0, PriceCalculatorEngine.MaxSpots)))" />
+                                </td>
+                                <td class="@EditedClass(row.PrimeWeekend != tpl.PrimeWeekend)">
+                                    <input type="number" class="form-control form-control-sm cell-input" min="0" max="1000000" disabled="@(weekendDays == 0)"
+                                           aria-label="@($"{Tr.T("Кол-во выходов выходные прайм")}: {name}")" @bind:get="row.PrimeWeekend"
+                                           @bind:set="v => Edit(() => s.EditRow(id, x => x.PrimeWeekend = Math.Clamp(v, 0, PriceCalculatorEngine.MaxSpots)))" />
+                                </td>
+                                <td class="@EditedClass(row.NonPrimeWeekend != tpl.NonPrimeWeekend)">
+                                    <input type="number" class="form-control form-control-sm cell-input" min="0" max="1000000" disabled="@(weekendDays == 0)"
+                                           aria-label="@($"{Tr.T("Кол-во выходов выходные офф прайм")}: {name}")" @bind:get="row.NonPrimeWeekend"
+                                           @bind:set="v => Edit(() => s.EditRow(id, x => x.NonPrimeWeekend = Math.Clamp(v, 0, PriceCalculatorEngine.MaxSpots)))" />
+                                </td>
+                                <td class="num">@r.Price.TariffPrice.ToString("C")</td>
+                                <td class="num">@r.CompanyDiscount.ToString("N2")</td>
+                                <td class="num">@r.Price.ManagerRatio.ToString("N2")</td>
+                                <td class="num">@r.TotalBeforePackage.ToString("C")</td>
+                                <td class="num">@r.PackageDiscount?.ToString("N2")</td>
+                                <td class="num total">@r.Total?.ToString("C")</td>
+                            </tr>
+                        }
+                    </tbody>
+                    <tfoot>
+                        <tr>
+                            <td class="col-check"></td>
+                            <td class="col-name">@Tr.T("Итог:")</td>
+                            <td class="num" title="@(Tr.T("Хронометраж эфирного времени"))">@PriceCalculatorExport.FormatDuration(s.Result.Seconds)</td>
+                            <td colspan="@(fourPrices ? 5 : 3)"></td>
+                            <td class="num">@selected.Sum(r => r.Input.PrimeWeekday).ToString("N0")</td>
+                            <td class="num">@selected.Sum(r => r.Input.NonPrimeWeekday).ToString("N0")</td>
+                            <td class="num">@selected.Sum(r => r.Input.PrimeWeekend).ToString("N0")</td>
+                            <td class="num">@selected.Sum(r => r.Input.NonPrimeWeekend).ToString("N0")</td>
+                            <td colspan="5" class="num" title="@(Tr.T("Количество рекламных выпусков"))">@Tr.Format("Выходов: {0}", s.Result.Spots.ToString("N0"))</td>
+                            <td class="num total">@s.Result.Total.ToString("C")</td>
+                        </tr>
+                    </tfoot>
+                </table>
+            </div>
+        }
+    </div>
+}
+else if (_error != null)
+{
+    <div class="alert alert-danger">@_error</div>
+}
+
+@code {
+    // Ключи сортировки колонок: статические, потому что сеанс с выбранным ключом переживает пересоздание страницы.
+    private static readonly Dictionary<string, Func<PcRowResult, PcStation?, IComparable?>> SortKeys = new()
+    {
+        ["name"] = (r, s) => s?.Name,
+        ["duration"] = (r, s) => r.Input.Duration,
+        ["position"] = (r, s) => r.Input.Position,
+        ["price-pwd"] = (r, s) => MinPrice(s, x => x.PrimeWeekday),
+        ["price-npwd"] = (r, s) => MinPrice(s, x => x.NonPrimeWeekday),
+        ["price-pwe"] = (r, s) => MinPrice(s, x => x.PrimeWeekend),
+        ["price-npwe"] = (r, s) => MinPrice(s, x => x.NonPrimeWeekend),
+        ["spots-pwd"] = (r, s) => r.Input.PrimeWeekday,
+        ["spots-npwd"] = (r, s) => r.Input.NonPrimeWeekday,
+        ["spots-pwe"] = (r, s) => r.Input.PrimeWeekend,
+        ["spots-npwe"] = (r, s) => r.Input.NonPrimeWeekend,
+        ["tariff"] = (r, s) => r.Price.TariffPrice,
+        ["company"] = (r, s) => r.CompanyDiscount,
+        ["ratio"] = (r, s) => r.Price.ManagerRatio,
+        ["before"] = (r, s) => r.TotalBeforePackage,
+        ["package"] = (r, s) => r.PackageDiscount,
+        ["total"] = (r, s) => r.Total,
+    };
+
+    private static string[] DayNames => DisplayFormat.WeekDaysFromMonday();
+
+    private string _title = Tr.T("Калькулятор цены");
+    private JournalAccess _access = JournalAccess.Allowed;
+    private string? _error;
+    private bool _initialized;
+    private bool _isAdmin;
+    private DataView _groups = new DataTable().DefaultView;
+    private List<KeyValuePair<int, string>> _positions = new();
+    private List<KeyValuePair<int, string>> _managers = new();
+
+    protected override async Task OnParametersSetAsync()
+    {
+        if (SecurityManager.LoggedUser == null || _initialized)
+            return;
+        _initialized = true;
+
+        _access = Access.CheckScreen(ScreenRoutes.PriceCalculator);
+        if (_access != JournalAccess.Allowed)
+            return;
+        _title = Access.MenuText(ScreenRoutes.PriceCalculator) ?? _title;
+        SecurityManager.User user = SecurityManager.LoggedUser;
+        _isAdmin = user.IsAdmin;
+        _positions = PriceCalculatorExport.Positions().ToList();
+
+        // сеанс запоминается до расчёта: если база не ответила, экран остаётся с параметрами и «Повторить»; при возврате на
+        // экран после такого сбоя расчёт повторяется сам
+        await Run(() =>
+        {
+            _groups = Massmedia.LoadGroupsWithShowAllOption();
+            if (Memory.Session == null)
+            {
+                // десктоп: менеджер по умолчанию — вошедший, группа — «Показать все»
+                Memory.Session = new PriceCalculatorSession(user.Id);
+                Memory.Session.Start();
+            }
+            else if (Memory.Session.Result == null && !Memory.Session.PeriodInvalid)
+                Memory.Session.Start();
+        });
+        // список «Менеджер:» — отдельно: без него (нет Deploy/55) калькулятор работает на вошедшего; сообщение о сбое
+        // расчёта выше не стирается
+        if (_isAdmin && Memory.Session is { } s)
+            await Busy.RunAsync(() =>
+            {
+                try
+                {
+                    LoadManagers(s, user);
+                }
+                catch (Exception ex)
+                {
+                    _error ??= ErrorPresenter.Describe(ex);
+                }
+            });
+    }
+
+    // «Менеджер:» — пользователи с доступом к калькулятору (pc_CalculatorManagers); вошедший и выбранный — всегда в списке,
+    // выбранного отключили за время сеанса — расчёт возвращается на вошедшего.
+    private void LoadManagers(PriceCalculatorSession s, SecurityManager.User user)
+    {
+        _managers = new List<KeyValuePair<int, string>> { new(user.Id, user.FullName) };
+        List<KeyValuePair<int, string>> list = PriceCalculatorData.Managers();
+        if (list.All(m => m.Key != user.Id))
+            list.Add(new KeyValuePair<int, string>(user.Id, user.FullName));
+        if (list.All(m => m.Key != s.Template.ManagerId))
+        {
+            if (SecurityManager.GetUser(s.Template.ManagerId) is { } selected)
+                list.Add(new KeyValuePair<int, string>(selected.Id, selected.FullName));
+            else
+                s.SetManager(user.Id);
+        }
+        _managers = list.OrderBy(m => m.Value, StringComparer.CurrentCulture).ToList();
+    }
+
+    // Поля чисел, дат и списки — через @bind:get/@bind:set: Blazor знает, что значение в поле ввёл пользователь, и после
+    // прижатия к границам (или отказа от непонятного ввода) показывает значение расчёта, даже если оно не изменилось; у
+    // списков значение ставится свойством, а не атрибутом selected пунктов, который браузер не применяет к пункту,
+    // выбранному руками.
+    private Task ChangePeriod(DateTime date, bool start)
+    {
+        PriceCalculatorSession? s = Memory.Session;
+        // стёртое поле Blazor отдаёт как DateTime.MinValue — оставить прежнюю дату
+        if (s == null || date == default)
+            return Task.CompletedTask;
+        DateTime from = start ? date : s.Template.PeriodFrom;
+        DateTime to = start ? s.Template.PeriodTo : date;
+        // Синхронно, без слоя ожидания (перечитывание — 2–3 запроса по 10–20 мс): с ожиданием обработчик отпускает circuit
+        // до записи нового значения, промежуточная отрисовка пишет в поле прежнюю дату, и браузер теряет начатый набор
+        // (день «25» становится «05»). Неверный период (в том числе год, набранный наполовину) только запоминается.
+        Edit(() => s.SetPeriod(from, to));
+        return Task.CompletedTask;
+    }
+
+    // Новое значение — в параметры до слоя ожидания: промежуточная отрисовка показывает уже его, шаг стрелкой по списку
+    // идёт от нового пункта. Сеанс перечитывает по расхождению модели с параметрами, так что это безопасно.
+    private Task ChangeGroup(int id)
+    {
+        if (Memory.Session is not { } s)
+            return Task.CompletedTask;
+        s.Template.MassmediaGroupId = id;
+        return Run(() => s.SetGroup(id));
+    }
+
+    private Task ChangeManager(int id)
+    {
+        if (Memory.Session is not { } s)
+            return Task.CompletedTask;
+        s.Template.ManagerId = id;
+        return Run(() => s.SetManager(id));
+    }
+
+    private void Sort(PriceCalculatorSession s, string column, string? alias)
+    {
+        bool descending = (s.SortColumn == column || s.SortColumn == alias) && !s.SortDescending;
+        Func<PcRowResult, PcStation?, IComparable?> key = SortKeys[column];
+        Edit(() => s.SortBy(column, descending, (r, station) => key(r, station)!));
+    }
+
+    // alias — колонка, сортировка по которой даёт тот же порядок (скрытые цены выходных при двух колонках цен)
+    private RenderFragment Header(PriceCalculatorSession s, string column, string text, string? css, string? alias = null) => __builder =>
+    {
+        bool sorted = s.SortColumn == column || (alias != null && s.SortColumn == alias);
+        <th class="sortable @css" @onclick="() => Sort(s, column, alias)">
+            @text<span class="sort-mark">@(sorted ? (s.SortDescending ? " ▾" : " ▴") : null)</span>
+        </th>
+    };
+
+    // Правка без слоя ожидания: пересчёт — движок и один запрос скидок.
+    private void Edit(System.Action work)
+    {
+        try
+        {
+            _error = null;
+            work();
+        }
+        catch (Exception ex)
+        {
+            _error = ErrorPresenter.Describe(ex);
+        }
+    }
+
+    // Перечитывание цен — под слоем ожидания.
+    private Task Run(System.Action work) => Busy.RunAsync(() => Edit(work));
+
+    private static decimal MinPrice(PcStation? station, Func<PcSegment, decimal> price)
+    {
+        PriceCalculatorEngine.PriceRange(station, price, out decimal min, out _);
+        return min;
+    }
+
+    /// <summary>Цена за секунду: одно число или «от – до», если по прайс-листам периода она разная (К-30).</summary>
+    private static string PriceText(PcStation? station, Func<PcSegment, decimal> price)
+    {
+        PriceCalculatorEngine.PriceRange(station, price, out decimal min, out decimal max);
+        return min == max ? min.ToString("C") : $"{min:N2} – {max:C}";
+    }
+
+    private static string EditedClass(bool edited) => edited ? "cell-edit cell-edited" : "cell-edit";
+}

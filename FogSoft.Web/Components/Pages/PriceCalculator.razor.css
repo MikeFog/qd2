@@ -1,0 +1,246 @@
+/*
+    Калькулятор цены: сверху параметры одной полосой с переносом (порядок десктопной панели), под ними таблица станций
+    на всю оставшуюся высоту — шапка и строка итогов закреплены при прокрутке.
+*/
+
+.price-calculator {
+    flex: 1 1 auto;
+    display: flex;
+    flex-direction: column;
+    gap: var(--s-3);
+    min-height: 0;
+}
+
+.head-total {
+    color: var(--c-text-muted);
+    white-space: nowrap;
+}
+
+.head-total b {
+    font-size: 15px;
+    color: var(--c-accent);
+}
+
+.params {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: flex-start;
+    gap: var(--s-3) var(--s-5);
+    padding: var(--s-3) var(--s-4);
+    background: var(--c-surface);
+    border: 1px solid var(--c-border);
+    border-radius: 6px;
+}
+
+.field {
+    display: flex;
+    flex-direction: column;
+    gap: var(--s-1);
+    min-width: 200px;
+    max-width: 320px;
+    margin: 0;
+    color: var(--c-text-muted);
+}
+
+.field.narrow {
+    min-width: 0;
+    width: 140px;
+}
+
+.period {
+    display: flex;
+    align-items: center;
+    gap: var(--s-2);
+}
+
+.period input {
+    width: 140px;
+}
+
+/* Дни недели и чётность — как в TemplateForm, но каждая строка: переключатель и его варианты рядом. */
+.inline {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--s-1);
+    margin: 0;
+    white-space: nowrap;
+}
+
+.days-mode,
+.ratio-mode {
+    display: flex;
+    flex-direction: column;
+    gap: var(--s-2);
+    margin: 0;
+    padding: 0;
+    border: 0;
+}
+
+.mode-line {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: var(--s-2) var(--s-3);
+}
+
+.days,
+.parity {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--s-3);
+}
+
+.off {
+    opacity: 0.55;
+}
+
+.spots {
+    display: grid;
+    grid-template-columns: auto 72px auto 72px;
+    align-items: center;
+    gap: var(--s-1) var(--s-2);
+    margin: 0;
+    padding: 0;
+    border: 0;
+}
+
+.spots legend {
+    float: none;
+    margin: 0;
+    font-size: inherit;
+    color: var(--c-text-muted);
+}
+
+/* label с display: contents — подпись и поле встают в две клетки сетки, щелчок по подписи по-прежнему ставит фокус. */
+.spot {
+    display: contents;
+}
+
+.spot span {
+    white-space: nowrap;
+}
+
+.ratio-input {
+    width: 90px;
+}
+
+.note {
+    margin: 0;
+}
+
+.data-table {
+    flex: 1 1 auto;
+    min-height: 140px;
+}
+
+/* Колонок до 18: шапка мельче и переносится по словам, отступы уже — на 1920 px таблица помещается целиком,
+   на меньшем экране прокручивается, а отметка и название станции стоят на месте. */
+.data-table .table {
+    border-collapse: separate;
+    border-spacing: 0;
+}
+
+.data-table .table > thead > tr > th {
+    padding: var(--s-1) 6px;
+    font-size: 11px;
+    letter-spacing: 0;
+    white-space: normal;
+    vertical-align: bottom;
+}
+
+.data-table .table > tbody > tr > td,
+.data-table .table > tfoot > tr > td {
+    padding: 2px 6px;
+    vertical-align: middle;
+}
+
+.data-table .table > * > tr > .col-check {
+    position: sticky;
+    left: 0;
+    width: 32px;
+    min-width: 32px;
+    max-width: 32px;
+}
+
+.data-table .table > * > tr > .col-name {
+    position: sticky;
+    left: 32px;
+    min-width: 180px;
+    border-right: 1px solid var(--c-border);
+}
+
+.data-table .table > tbody > tr > .col-check,
+.data-table .table > tbody > tr > .col-name {
+    z-index: 1;
+    background: var(--c-surface);
+}
+
+.data-table .table > thead > tr > .col-check,
+.data-table .table > thead > tr > .col-name {
+    z-index: 3;
+}
+
+.sortable {
+    cursor: pointer;
+    user-select: none;
+}
+
+.sortable:hover {
+    color: var(--c-text);
+}
+
+.sort-mark {
+    color: var(--c-accent);
+}
+
+.num {
+    text-align: right;
+    white-space: nowrap;
+}
+
+.cell-input {
+    width: 60px;
+    margin-left: auto;
+    text-align: right;
+}
+
+.cell-select {
+    width: 116px;
+}
+
+.data-table .table > tbody > tr.row-selected > td {
+    background: var(--c-accent-soft);
+}
+
+/* Значение отличается от шаблона выходов — правили вручную. */
+.data-table .table > tbody > tr > td.cell-edited {
+    background: var(--c-warn-soft);
+}
+
+.total {
+    font-weight: 600;
+}
+
+.uncovered {
+    margin-left: var(--s-2);
+    padding: 0 var(--s-1);
+    font-size: 12px;
+    white-space: nowrap;
+    color: var(--c-warn);
+    background: var(--c-warn-soft);
+    border-radius: 3px;
+}
+
+.data-table .table > tfoot > tr > td {
+    position: sticky;
+    bottom: 0;
+    z-index: 1;
+    font-weight: 600;
+    background: var(--c-bg);
+    border-top: 1px solid var(--c-border-strong);
+}
+
+.data-table .table > tfoot > tr > .col-check,
+.data-table .table > tfoot > tr > .col-name {
+    z-index: 3;
+}

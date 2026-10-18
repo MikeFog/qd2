@@ -49,6 +49,7 @@ Concrete examples:
   - `SetManagerDiscount` wraps `campaign.SetFinalPrice(...)` + `campaign.Action.Recalculate(...)` in `DataAccessor.BeginTransaction/CommitTransaction` with rollback on exception.
 - Price calculation flow (`Client/Forms/PriceCalculatorForm.cs`):
   - UI inputs -> `grdPriceCalculator.LoadData(...)` -> `ApplyCalculation(...)` -> package discount via `pc_PackageDiscountCalculateModel` + TVP parameter (`dbo.pc_SelectedMassmedia`) -> totals update.
+  - Web (`/price-calculator`, `FogSoft.Web/Components/Pages/PriceCalculator.razor`): `PriceCalculatorSession` (state, reload by model/parameter mismatch) -> `PriceCalculatorData.LoadModel` (`pc_GetStationsPriceModel`) -> `PriceCalculatorEngine.Calculate` -> discounts in one call `pc_CalcDiscountsModel` (TVP `dbo.pc_CalcRow`); «Менеджер:» list — `pc_CalculatorManagers`. Same arithmetic as the desktop grid after К.0 (`docs/tasks/web-price-calculator.md`).
 - Payment allocation flow (`Client/Forms/PaymentCandidatesForm.cs`, `Client/Classes/PaymentCommon.cs`):
   - Candidate actions loaded through metadata action (`DataAccessor.DoAction`), selected rows converted into payment-action updates via `PresentationObject.Update()`.
 - Report flow (`Client/Forms/GridReport/GridReportCreator.cs`):
@@ -124,7 +125,7 @@ Examples of C# to proc mappings:
 - Pricing/tariffs: `GetPriceByPeriod`, `TariffWindowRetrieveByDate`, `GenerateTariffWindowByTemplate`.
 - Payments: `PaymentAction_CorrectByActionTotalPrice`, payment candidate actions (metadata-based).
 - Reports/statistics: `rpt_Grid_v3`, `stat_FillPercentage`, `rpt_OrderActionBill`.
-- Price calculator: `pc_PackageDiscountCalculateModel`.
+- Price calculator: `pc_PackageDiscountCalculateModel`; web — `pc_GetStationsPriceModel`, `pc_CalcDiscountsModel`, `pc_CalculatorManagers`.
 
 Safe SQL modification rules:
 - Search both explicit callers and metadata-driven callers before changes.

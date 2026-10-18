@@ -489,6 +489,7 @@
     </Build>
     <Build Include="dbo\Stored Procedures\sponsorPLIUD.sql" />
     <Build Include="dbo\Stored Procedures\pc_CalcDiscountsModel.sql" />
+    <Build Include="dbo\Stored Procedures\pc_CalculatorManagers.sql" />
     <Build Include="dbo\Stored Procedures\pc_PackageDiscountCalculateModel.sql" />
     <Build Include="dbo\Stored Procedures\PackModuleContentRetrieve.sql" />
     <Build Include="dbo\Stored Procedures\ComboModules.sql" />

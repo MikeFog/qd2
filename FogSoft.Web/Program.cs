@@ -62,6 +62,8 @@ builder.Services.AddScoped<FilterMemory>();
 builder.Services.AddScoped<PlacementUndo>();
 // Строки «Показать модули» вкладки «Модули» и созданные ею кампании — на время сеанса, см. ModuleRowsMemory.
 builder.Services.AddScoped<ModuleRowsMemory>();
+// Расчёт «Калькулятора цены» (параметры, правки, отметки) — на время сеанса, см. PriceCalculatorMemory.
+builder.Services.AddScoped<PriceCalculatorMemory>();
 
 var app = builder.Build();
 
