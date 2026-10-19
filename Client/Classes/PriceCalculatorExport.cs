@@ -110,11 +110,11 @@ namespace Merlin.Classes
 		{
 			if (template.UseDaysOfWeek)
 			{
-				string[] names = { "Пн", "Вт", "Ср", "Чт", "Пт", "Сб", "Вс" };
+				string[] names = { "Пн", "Вт", "Ср", "Чт", "Пт", "Сб", "Вс" }; // i18n-ok: ключи, переводятся Tr.T(n) ниже
 				var active = names.Where((n, i) => template.DaysOfWeek[i]).Select(n => Tr.T(n)).ToList();
 				return active.Count > 0 ? string.Join(", ", active) : "—";
 			}
-			return Tr.T(template.EvenDays ? "Чётные дни" : "Нечётные дни");
+			return template.EvenDays ? Tr.T("Чётные дни") : Tr.T("Нечётные дни");
 		}
 
 		/// <summary>Хронометраж часами без переноса в сутки: 93 000 с — «25:50:00» (К-8).</summary>

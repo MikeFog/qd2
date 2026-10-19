@@ -89,7 +89,7 @@ sed -n '/private void MenuItemClick/,/catch (Exception ex)/p' Client/Forms/MDIFo
 | Дерево на своём контейнере | 6 | перенесены все: «Предмет рекламы» (2026-09-18), 5 журналов акций (2026-09-20) |
 | `MasterDetail` | 4 | движка не будет (решение владельца 2026-09-21): `miAgencyTax` и `miHeadOrganizations` перенесены деревом; два журнала оплат — отдельным экраном `/payments` (2026-09-26) |
 | Журнал-наследник со своей логикой | 4 | перенесены `miStats.Balance` (2026-09-18), `miAnnouncements` (2026-09-21), `miActPrint` (`/act-journal`, 2026-09-30); `miRoller` (`/rollers`, 2026-10-02) |
-| Собственная форма | 6 | перенесены 5: `miFirmBalance` (`/firm-balance`, 09-30), `miRollerStatistic` и `miRollerStatisticWithFilter` (`/roller-statistic`, 09-24), `miTrafficManagement` (`/traffic`, 09-23), `miTariffWindow` (вкладка «Рекламные окна» дерева, 09-23); **нет: `miPriceCalculator`** (§11) |
+| Собственная форма | 6 | перенесены все: `miFirmBalance` (`/firm-balance`, 09-30), `miRollerStatistic` и `miRollerStatisticWithFilter` (`/roller-statistic`, 09-24), `miTrafficManagement` (`/traffic`, 09-23), `miTariffWindow` (вкладка «Рекламные окна» дерева, 09-23), `miPriceCalculator` (`/price-calculator`, 10-18, `web-price-calculator.md`) |
 | Диалог → журнал(ы) | 1 | отложено 2026-09-21: нужно своё решение (§10) |
 | Мастер: диалоги → карточка акции (новая) | 3 | нет — три формы-монстра (§11) |
 | Действие без экрана | 3 | отложено 2026-09-21: пока не делаем (§10) |
@@ -109,9 +109,9 @@ sed -n '/private void MenuItemClick/,/catch (Exception ex)/p' Client/Forms/MDIFo
 
 | Статус | Пунктов |
 |---|---:|
-| перенесён (включая `miExit`, сделанный выходом из сеанса, и оба журнала оплат на `/payments`; `miComboModulePlacement` — 2026-10-17) | 64 |
+| перенесён (включая `miExit`, сделанный выходом из сеанса, и оба журнала оплат на `/payments`; `miComboModulePlacement` — 2026-10-17; `miPriceCalculator` — `/price-calculator`, 2026-10-18; до 2026-10-18 счётчик отставал на единицу — `miComboModulePlacement` ушёл из монстров без прибавки здесь) | 66 |
 | формы-монстры: нет (`miCreateUnconfirmedAction`, `miMasterCreateActions` — мастер `/action/new`, 2026-10-07; `miComboModulePlacement` — `/action/new?menu=miComboModulePlacement`, 2026-10-17, этап 6.7 `web-action-forms.md`) | 0 |
-| нужен свой экран: `miPriceCalculator` (`miRoller` перенесён 2026-10-02) | 1 |
+| нужен свой экран: нет (`miRoller` перенесён 2026-10-02, `miPriceCalculator` — 2026-10-18) | 0 |
 | ждёт решения владельца: `miPaymentByManager` (§10) | 1 |
 | отложено: три «удаления», `miFirmImport` (§10) | 4 |
 | не экран: `miAccounting` (папка) | 1 |
@@ -286,7 +286,8 @@ sed -n '/private void MenuItemClick/,/catch (Exception ex)/p' Client/Forms/MDIFo
 - **`miPriceCalculator`** — `PriceCalculatorForm`, 1002 строки, свои процедуры
   расчёта (`pc_PackageDiscountCalculateModel`). Разбор и план переноса (17.10.2026):
   `docs/tasks/web-price-calculator.md`; «25 + 26» в таблице — пересекающиеся
-  множества, доступ у 29 из 39 активных.
+  множества, доступ у 29 из 39 активных. Перенесён 2026-10-18: `/price-calculator`
+  (этапы К.2–К.5 плана — расчёт, сохранённые варианты, Excel и КП).
 - **`miPrintGrid`, `miPrintGridFromRSection`** — `FrmGridReport`, просмотрщик
   Crystal Reports. **`miExportGrid`** — `ExportGridForm`: выгрузка сеток на диск
   (Crystal/Word/txt). **`miMultiActionMediaPlan`** — диалог `FrmMultiActionMediaPlan`
@@ -400,6 +401,7 @@ Ctrl+Shift+A. В вебе их нет и не будет: решение вла�
   1670) держат устаревшие «70/22» (§1).
 - Заглушка `NotYetPorted.razor` для любого неперенесённого пункта пишет «этап 2
   или этап 3»; пункты этапа 4 (отчёты, выгрузки, импорт) она называет неточно.
+  Исправлено 2026-10-18: «Пока им можно пользоваться в десктопе.»
 
 ## 7. Права
 
@@ -483,7 +485,7 @@ Ctrl+Shift+A. В вебе их нет и не будет: решение вла�
 | 68 | Рекламный отдел → Внести макет рекламной акции | `miCreateUnconfirmedAction` | `:159` → CreateMassmediaAction:526 | Мастер: диалоги → карточка акции | `Firm.SelectFirm` → `ActionOnMassmedia.ShowPassport` | перенесён (мастер `/action/new`, 2026-10-07: фирма, кампании, запись одной транзакцией — `web-action-forms.md` §10, этап 3) | 6 | +3/−0 | 24 |
 | 153 | Рекламный отдел → Веерное размещение... | `miMasterCreateActions` | `:161` → MasterCreateAction:543 | Мастер: диалоги → карточка акции | `Firm.SelectFirm` → `SelectMassmediasStep` → `EditIssuesForm` → `ActionForm` | перенесён (тот же мастер `/action/new`, 2026-10-07; веер — на странице акции, этап 4 `web-action-forms.md`) | 5 | +3/−0 | 24 |
 | 180 | Рекламный отдел → Размещение комбо-модулями... | `miComboModulePlacement` | `:163` → MasterPlaceComboModules:574 | Мастер: диалоги → карточка акции | `Firm.SelectFirm` → `SelectComboModuleStep` → `ComboModulePlacementForm` → `ActionForm` | перенесён 2026-10-17 (третий вход мастера `/action/new?menu=miComboModulePlacement` → вкладка «Модули», этап 6.7 `web-action-forms.md`; решение 2026-10-07); на 2026-10-06 выдан 4 группам, 17 пользователям | 0 | — | 0 |
-| 175 | Рекламный отдел → Калькулятор цены | `miPriceCalculator` | `:251` → ShowPriceCalculator:622 | Собственная форма | `PriceCalculatorForm` (1002 строки) | этап 3 (п.2 плана) | 5 | +26/−0 | 25 |
+| 175 | Рекламный отдел → Калькулятор цены | `miPriceCalculator` | `:251` → ShowPriceCalculator:622 | Собственная форма | `PriceCalculatorForm` (1002 строки) | перенесён 2026-10-18 (`/price-calculator`, этапы К.2–К.5 `web-price-calculator.md`; движок расчёта в ядре, Excel и КП — «Сохранить как» браузера) | 5 | +26/−0 | 25 |
 | 11 | Рекламный отдел → Журнал подтверждённых рекламных акций | `miActionJournal` | `:165` → ShowMassmediaActions:395 | Дерево на своём контейнере | `ActionContainer(ConfirmedAction)`: 118 / 77 / 1255 | перенесён (Browser, 2026-09-20); действия по строке — этапы 3-4 | 6 | +3/−0 | 24 |
 | 158 | Рекламный отдел → Журнал макетов рекламных акций | `miActionJournalUnconfirmed` | `:169` → ShowMassmediaActions:395 | Дерево на своём контейнере | `ActionContainer(UnconfirmedAction)`: 137 / 77 / 1256 | перенесён (Browser, 2026-09-20); действия по строке — этапы 3-4 | 5 | +8/−0 | 24 |
 | 157 | Рекламный отдел → Журнал удалённых рекламных акций | `miActionJournalDeleted` | `:172` → ShowMassmediaActions:395 | Дерево на своём контейнере | `ActionContainer(DeletedAction)`: 1229 / 1236 / 1257 | перенесён (Browser, 2026-09-20); действия по строке — этапы 3-4 | 5 | +7/−0 | 23 |
@@ -653,11 +655,16 @@ Ctrl+Shift+A. В вебе их нет и не будет: решение вла�
 (режим М) и `ComboModulePlacementForm` перенесены этапом 6 — вкладка «Модули» страницы акции и третий вход мастера
 «Размещение комбо-модулями» (`miComboModulePlacement`, `/action/new?menu=miComboModulePlacement`).
 
+Обновление 18.10.2026: «Калькулятор цены» (`miPriceCalculator`) перенесён — `/price-calculator`, план
+`web-price-calculator.md`. Из экранов меню остались `miPaymentByManager` (ждёт решения) и отложенные три «удаления» и
+`miFirmImport`; их заглушка `NotYetPorted.razor` теперь пишет «Пока им можно пользоваться в десктопе.» вместо этапов
+плана.
+
 ### Экраны меню
 
 | Пункт | Что нужно | Заметки |
 |---|---|---|
-| `miPriceCalculator` | `PriceCalculatorForm` (1002 строки) + `PriceCalculatorGrid` (2095) | Самый востребованный из неперенесённых: 25 пользователей, +26 личных выдач (по прод-логу частоту не измерить: его запросы быстрее порога 100 мс). Плана переноса нет. Сетку использует и Шаблон №3 (оценка цены), поэтому связан с монстрами. По размеру — как монстр. Два дефекта расчёта (найдены 2026-10-05) исправлены в десктопе 2026-10-15: будни офф-прайм считались по цене выходных (`PriceCalculatorGrid.cs:850`, `:1357` — `NonPrimePricePerSecWeekend` вместо `…Weekday`; на ArtvisDev 2025–2027 цены различались только у тестовой «Радио Аргентина (Ярославль)»); `SetManagerDiscount` пересчитывал строки одним коэффициентом и в режиме «по периодам» (при смене дат, до «Рассчитать»). |
+| `miPriceCalculator` | `PriceCalculatorForm` (1002 строки) + `PriceCalculatorGrid` (2095) | **Перенесён 2026-10-18** — `/price-calculator`, план и журнал этапов — `web-price-calculator.md` (оценку цены Шаблона №3 в веб не переносили; десктоп и Ш3 переводятся на тот же движок этапом К.6). Ниже — запись на 2026-10-02. Самый востребованный из неперенесённых: 25 пользователей, +26 личных выдач (по прод-логу частоту не измерить: его запросы быстрее порога 100 мс). Плана переноса нет. Сетку использует и Шаблон №3 (оценка цены), поэтому связан с монстрами. По размеру — как монстр. Два дефекта расчёта (найдены 2026-10-05) исправлены в десктопе 2026-10-15: будни офф-прайм считались по цене выходных (`PriceCalculatorGrid.cs:850`, `:1357` — `NonPrimePricePerSecWeekend` вместо `…Weekday`; на ArtvisDev 2025–2027 цены различались только у тестовой «Радио Аргентина (Ярославль)»); `SetManagerDiscount` пересчитывал строки одним коэффициентом и в режиме «по периодам» (при смене дат, до «Рассчитать»). |
 | `miPaymentByManager` | решение владельца | Варианты — §10. Рекомендация: вариант 1 (колонка «Менеджер» в журнале 146 вместо диалога выбора). 8 пользователей. |
 | три «удаления», `miFirmImport` | — | Отложены, см. §10 и решение 2026-09-30. |
 
@@ -705,9 +712,11 @@ Ctrl+Shift+A. В вебе их нет и не будет: решение вла�
   (`web-migration.md`, §9 п.3) не начаты.
 - Мелкие наблюдения: «Обновить» на корне дерева не перечитывает детей корня в дереве;
   `ObjectSelector` показывает булевы как True/False и дроби сырыми.
-- Заглушка `NotYetPorted.razor` называет всё «этапом 2 или 3» — после сверки её увидят только
+- ~~Заглушка `NotYetPorted.razor` называет всё «этапом 2 или 3» — после сверки её увидят только
   девять пунктов: три монстра, `miPriceCalculator`, `miPaymentByManager`, три «удаления»
-  и `miFirmImport` (уточнить текст при случае).
+  и `miFirmImport` (уточнить текст при случае).~~ Сделано 2026-10-18: монстры и калькулятор перенесены,
+  заглушку видят пять пунктов (`miPaymentByManager`, три «удаления», `miFirmImport`), текст — «Пока им можно
+  пользоваться в десктопе.»
 
 ## Как воспроизвести
 

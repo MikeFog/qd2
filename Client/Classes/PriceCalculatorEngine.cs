@@ -459,7 +459,7 @@ namespace Merlin.Classes
 		{
 			var dates = template.SelectedDates();
 			if (dates.Count == 0)
-				throw new InvalidOperationException("Нет выбранных дней — вариант не сохраняется.");
+				throw new InvalidOperationException("Нет выбранных дней — вариант не сохраняется."); // i18n-ok: экран закрывает «Сохранить» раньше
 
 			var stations = model.Stations.ToDictionary(s => s.MassmediaId);
 			var snap = new CampaignCalcSnapshot

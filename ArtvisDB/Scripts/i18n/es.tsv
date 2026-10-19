@@ -638,7 +638,6 @@ code	Отметьте хотя бы один день недели, к кото�
 code	Отметьте хотя бы один день недели.	Marque al menos un día de la semana.
 code	Отметьте хотя бы одну станцию.	Marque al menos una emisora.
 code	Отмечено: {0}	Marcados: {0}
-code	Относится к этапу 2 (свои движки — FakeContainer/MasterDetail) или этапу 3 (специализированные экраны) плана веб-миграции.	Corresponde a la etapa 2 (motores propios — FakeContainer/MasterDetail) o a la etapa 3 (pantallas especializadas) del plan de migración web.
 code	Очистить	Limpiar
 code,column,entity	Ошибка	Error
 code	Ошибка.	Error.
@@ -2160,3 +2159,122 @@ code	Выпуск изменили после размещения: другой
 code	У радиостанций нет агентства, их модули добавлены не будут: {0}.	Las emisoras no tienen agencia, sus módulos no se agregarán: {0}.
 code	В комбо-модуле нет модулей.	El módulo combo no tiene módulos.
 code	Ни у одной радиостанции нет агентства — разместить комбо-модуль нельзя.	Ninguna emisora tiene agencia: no se puede colocar el módulo combo.
+code	Excel	Excel
+code	Актуальный сезонный коэфф.	Coef. de temporada vigente
+code	Будни прайм:	Entre semana, prime:
+code	Будни офф прайм:	Entre semana, fuera de prime:
+code	Выходные прайм	Fin de semana, prime
+code	Выходные офф прайм	Fin de semana, fuera de prime
+code	В периоде нет выбранных дней.	No hay días seleccionados en el período.
+code	Вы редактируете ранее сохранённый вариант. Что вы хотите сделать?	Está editando una variante guardada anteriormente. ¿Qué desea hacer?
+code	Выберите другой период или группу.	Seleccione otro período u otro grupo.
+code	Выберите хотя бы один день недели.	Seleccione al menos un día de la semana.
+code	Выбрать все	Seleccionar todos
+code	Выбрать фирму	Seleccionar empresa
+code	Выгрузить можно после расчёта.	Se puede exportar después del cálculo.
+code	Выйти из редактирования	Salir de la edición
+code	Выходов: {0}	Emisiones: {0}
+code	Город:	Ciudad:
+code	График:	Días de emisión:
+code	Данный вариант уже добавлен.	Esta variante ya fue agregada.
+code	Дата начала периода акции не может быть больше даты окончания.	La fecha de inicio del período de la campaña no puede ser posterior a la fecha de fin.
+code	Дни недели:	Días de la semana:
+code	Итог	Total
+code	Итог:	Total:
+code	Итог: {0}	Total: {0}
+code	Клонировать — создать копию с изменениями, сохранив исходный расчёт.	Clonar: crear una copia con los cambios y conservar el cálculo original.
+code	Кол-во выходов будни прайм	Cant. de emisiones entre semana prime
+code	Кол-во выходов будни офф прайм	Cant. de emisiones entre semana fuera de prime
+code	Кол-во выходов выходные прайм	Cant. de emisiones fin de semana prime
+code	Кол-во выходов выходные офф прайм	Cant. de emisiones fin de semana fuera de prime
+code	Количество дней рекламной акции: {0}	Cantidad de días de la campaña publicitaria: {0}
+code	Количество рекламных выпусков:	Cantidad de emisiones publicitarias:
+code	Количество рекламных выпусков	Cantidad de emisiones publicitarias
+code	На период нет станций с прайс-листом	No hay emisoras con lista de precios para el período
+code	На эти дни у станции нет прайс-листа: выходы, которые на них приходятся, считаются по нулевой цене.	La emisora no tiene lista de precios para estos días: las emisiones que les corresponden se calculan a precio cero.
+code	Начало периода	Inicio del período
+code	Окончание периода	Fin del período
+code	Не удалось прочитать шаблон коммерческого предложения для агентства «{0}» (нет прав на чтение или файл занят):\n{1}	No se pudo leer la plantilla de propuesta comercial de la agencia «{0}» (sin permiso de lectura o el archivo está en uso):\n{1}
+code	Нет отмеченных вариантов для создания коммерческого предложения.	No hay variantes marcadas para crear la propuesta comercial.
+code	Нечётные	Impares
+code	Ни у одного агентства не задан шаблон коммерческого предложения.	Ninguna agencia tiene configurada una plantilla de propuesta comercial.
+code	Отмеченные	Marcadas
+code	Отмеченные станции выпали из расчёта (нет прайс-листа на период или станция не входит в группу): {0}.	Las emisoras marcadas quedaron fuera del cálculo (no tienen lista de precios para el período o no pertenecen al grupo): {0}.
+code	Отметьте хотя бы одну станцию; в периоде должны быть выбранные дни.	Marque al menos una emisora; el período debe tener días seleccionados.
+code	Параметры расчета:	Parámetros del cálculo:
+code	Параметры расчёта	Parámetros del cálculo
+code	Период акции слишком длинный: не больше 10 лет.	El período de la campaña es demasiado largo: no más de 10 años.
+code	Период акции:	Período de la campaña:
+code	Период: {0:d} - {1:d}	Período: {0:d} - {1:d}
+code	Период: с {0} до {1}	Período: del {0} al {1}
+code	Пожалуйста, выберите агентство.	Seleccione la agencia, por favor.
+code	Позиция	Posición
+code	Пр-ть ролика	Duración del spot
+code	Продолжительность ролика: {0}	Duración del spot: {0}
+code	Радиостанции: {0}	Emisoras: {0}
+code	Расчёт не выполнен	No se realizó el cálculo
+code	Расчёт останется на экране, «Сохранить» добавит его новым вариантом.	El cálculo seguirá en pantalla; «Guardar» lo agregará como una variante nueva.
+code	Расчёты	Cálculos
+code	Редактируется сохранённый вариант за период с {0} до {1}.	Se está editando la variante guardada del período del {0} al {1}.
+code	Ролик (сек.):	Spot (seg.):
+code	Сезонный коэфф.	Coef. de temporada
+code	Сезонный коэфф.:	Coef. de temporada:
+code	Создать КП	Crear propuesta
+code	Сохранить можно после расчёта.	Se puede guardar después del cálculo.
+code	Сохраните расчёт кнопкой «Сохранить».	Guarde el cálculo con el botón «Guardar».
+code	Сохранить — применить правки в текущем варианте.	Guardar: aplicar los cambios a la variante actual.
+code	Сохранённые варианты	Variantes guardadas
+code	Сохранённых вариантов нет	No hay variantes guardadas
+code	Суммарный хронометраж эфирного времени: {0}	Duración total al aire: {0}
+code	Удалить вариант за период с {0} до {1}?	¿Eliminar la variante del período del {0} al {1}?
+code	Удалить отмеченные	Eliminar marcadas
+code	Удалить отмеченные варианты ({0})?	¿Eliminar las variantes marcadas ({0})?
+code	Хронометраж эфирного времени:	Duración al aire:
+code	Хронометраж эфирного времени	Duración al aire
+code	Цена будни прайм	Precio entre semana prime
+code	Цена будни офф прайм	Precio entre semana fuera de prime
+code	Цена выходные прайм	Precio fin de semana prime
+code	Цена выходные офф прайм	Precio fin de semana fuera de prime
+code	Цена до пакетной скидки	Precio antes del descuento por paquete
+code	Цена кампании	Precio de la pauta
+code	Цена прайм	Precio prime
+code	Цена офф прайм	Precio fuera de prime
+code	Чётные	Pares
+code	Чётные/нечётные:	Pares/impares:
+code	Шаблон выходов	Plantilla de emisiones
+code	Шаблон коммерческого предложения для агентства «{0}» не найден по пути:\n{1}	No se encontró la plantilla de propuesta comercial de la agencia «{0}» en la ruta:\n{1}
+code	Шаблон коммерческого предложения для агентства «{0}» не подходит: {1}	La plantilla de propuesta comercial de la agencia «{0}» no es válida: {1}
+code	нет прайс-листа на {0} дн.	días sin lista de precios: {0}
+code	редактируется	en edición
+code	— выберите агентство —	— seleccione la agencia —
+code	Пн	Lu
+code	Вт	Ma
+code	Ср	Mi
+code	Чт	Ju
+code	Пт	Vi
+code	Сб	Sá
+code	Вс	Do
+code	{0} / Рекламные окна	{0} / Ventanas publicitarias
+code	В вебе пока нет	Aún no está en la web
+code	Выполняется загрузка	Cargando
+code	Действия со временем	Acciones con la hora
+code	Действия со временем {0}	Acciones con la hora {0}
+code	День обработан по этой дате	Día procesado hasta esta fecha
+code	День обработан: выпуски менять может только трафик-менеджер и администратор	Día procesado: solo el gestor de tráfico y el administrador pueden modificar las emisiones
+code	Занято подтверждёнными выпусками больше, чем есть в окне	Las emisiones confirmadas ocupan más tiempo del que tiene la ventana
+code	Карточка окна	Ficha de la ventana
+code	Окно изменено точечно: продолжительность, цена, время выхода или вместимость не как в тарифе	Ventana modificada individualmente: duración, precio, hora de emisión o capacidad distintos de la tarifa
+code	Окно склеено с соседним	Ventana unida con la contigua
+code	Окон за день	Ventanas del día
+code	Отметить обработанным по {0}	Marcar como procesado hasta el {0}
+code	По отбору акций нет.	No hay campañas que cumplan el filtro.
+code	Показывать в окнах номера роликов текущей акции вместо остатка времени	Mostrar en las ventanas los números de spots de esta campaña en lugar del tiempo libre
+code	Развернуть	Expandir
+code	Свернуть	Contraer
+code	Снять отметку «обработан» с {0}	Quitar la marca «procesado» a partir del {0}
+code	У выбранного узла нет вложенных записей.	El nodo seleccionado no tiene registros anidados.
+code	Язык интерфейса	Idioma de la interfaz
+code	не менять	sin cambios
+code	Пока им можно пользоваться в десктопе.	Por ahora se puede usar en la aplicación de escritorio.
+code	обработан	procesado
+code	Необходимо выбрать агентство 	Debe seleccionar la agencia.

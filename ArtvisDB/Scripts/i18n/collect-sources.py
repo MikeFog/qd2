@@ -21,6 +21,8 @@ spec.loader.exec_module(fu)
 
 CYR = re.compile(r"[А-Яа-яЁё]")
 LIT = re.compile(r'(\$?@|@\$|\$)?"((?:[^"\\\n]|\\.|"")*)"')
+# Аргумент Tr внутри атрибута razor (title="@Tr.T("…")"): LIT спаривает кавычку атрибута с кавычкой аргумента.
+TR_ARG = re.compile(r'Tr\.(?:T|Format)\(\s*(@)?"((?:[^"\\\n]|\\.|"")*)"')
 ESC = {'n': '\n', 't': '\t', 'r': '\r', '"': '"', '\\': '\\', '0': '\0'}
 
 
@@ -52,6 +54,8 @@ for path in code_files:
             if '$' in prefix:
                 continue
             add(body.replace('""', '"') if '@' in prefix else unescape(body), 'code')
+        for m in TR_ARG.finditer(line):
+            add(m.group(2).replace('""', '"') if m.group(1) else unescape(m.group(2)), 'code')
 
 # Ключи, которые процедуры переводят сами: dbo.fn_Translate(@язык, N'…') (этап 6).
 SQL_KEY = re.compile(r"fn_Translate\(\s*@\w+\s*,\s*N'((?:[^']|'')*)'\s*\)", re.I)
