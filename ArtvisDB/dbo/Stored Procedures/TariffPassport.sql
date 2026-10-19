@@ -16,8 +16,8 @@ Set @nextTariffId = dbo.fn_FindTariffIDForChain(@tariffId, @pricelistID)
 select 
 	(CONVERT(varchar(5), t.[time], 108) 
 	+ case t.monday when 1 then ',пн' else '' end 
-	+ case t.wednesday when 1 then ',вт' else '' end 
-	+ case t.tuesday when 1 then ',ср' else '' end 
+	+ case t.tuesday when 1 then ',вт' else '' end 
+	+ case t.wednesday when 1 then ',ср' else '' end 
 	+ case t.thursday when 1 then ',чт' else '' end 
 	+ case t.friday when 1 then ',пт' else '' end 
 	+ case t.saturday when 1 then ',сб' else '' end 

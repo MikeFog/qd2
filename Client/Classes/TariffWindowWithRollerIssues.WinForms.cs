@@ -1,12 +1,14 @@
+using System;
 using System.Windows.Forms;
 using FogSoft.WinForm;
 using FogSoft.WinForm.Classes;
+using FogSoft.WinForm.Forms;
 using Merlin.Forms;
 
 namespace Merlin.Classes
 {
 	// UI-часть TariffWindowWithRollerIssues: диспетчеризация и диалог продления
-	// окна. Дословный перенос, логика не менялась.
+	// окна. Дословный перенос; с 19.10.2026 продление начинается со следующего дня.
 	// Конвенция — docs/tasks/web-migration-dialogs.md.
 	internal partial class TariffWindowWithRollerIssues
 	{
@@ -28,7 +30,17 @@ namespace Merlin.Classes
 		private void Extend()
 		{
 			int mmId = int.Parse(parameters[Massmedia.ParamNames.MassmediaId].ToString());
-			FrmWindowTariffTemplate frm = new FrmWindowTariffTemplate(WindowDate, Duration, DurationTotal, Massmedia.GetMassmediaByID(mmId));
+			// Продление — со следующего дня: своя минута окна занята им самим, и генерация по шаблону писала бы
+			// «Окно … уже существует» на день окна (проверка занятой минуты, Р-7, Deploy/35). Дни без прайс-листа
+			// генерация молча пропускает — окно последнего дня прайс-листа продлевать некуда.
+			DateTime start = WindowDate.AddDays(1);
+			Massmedia massmedia = Massmedia.GetMassmediaByID(mmId);
+			if (massmedia.GetPriceList(start.Date) == null)
+			{
+				UserMessage.ShowExclamation(string.Format("Продлить окно нельзя: на {0:dd.MM.yyyy} у радиостанции нет прайс-листа.", start));
+				return;
+			}
+			FrmWindowTariffTemplate frm = new FrmWindowTariffTemplate(start, Duration, DurationTotal, massmedia);
 			if (frm.ShowDialog(Globals.MdiParent) == DialogResult.OK)
 			{
 				if (TariffExtend != null)

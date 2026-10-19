@@ -98,8 +98,23 @@ namespace Merlin.Classes
 		internal static void ShowUnsubstitutedRollers(DataTable unsubstituted)
 		{
 			if (unsubstituted != null && unsubstituted.Rows.Count > 0)
+			{
+				RenumberUnsubstituted(unsubstituted);
 				Globals.ShowSimpleJournal(EntityManager.GetEntity((int)Entities.RollerUnSubtitude), "Незамененные ролики",
 										  unsubstituted);
+			}
+		}
+
+		/// <summary>
+		/// Ключ сущности 212 — RowNum: SmartGrid ставит по нему DataTable.PrimaryKey. RollerSubstitute нумерует строки
+		/// с 1 в каждом вызове, а Ctrl+R склеивает выдачи нескольких вызовов (линейка — по выпуску, веер — по паре
+		/// «кампания + ролик»): без перенумерации RowNum повторяется — ошибка и пустой журнал
+		/// (docs/tasks/side-defects.md №8). RowNum не показывается.
+		/// </summary>
+		internal static void RenumberUnsubstituted(DataTable unsubstituted)
+		{
+			for (int i = 0; i < unsubstituted.Rows.Count; i++)
+				unsubstituted.Rows[i]["RowNum"] = i + 1;
 		}
 	}
 }

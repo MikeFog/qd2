@@ -47,16 +47,35 @@ userID smallint,
 firmID smallint,
 massmediaID smallint)
 
+-- Выпуски периода на выбранных станциях берём от окон периода (окно выхода, actualWindowID),
+-- а не от всех выпусков всех подтверждённых акций: иначе план перебирал ~3 млн выпусков и только
+-- потом отбирал окна периода (docs/tasks/side-defects.md №6). Строки других станций всё равно
+-- отбрасывает @massmedias ниже, поэтому станции отсекаются сразу.
+-- RECOMPILE: план не должен зависеть от первого вызова (квартал по всем станциям против одного дня).
+create table #issues (
+	issueID int not null,
+	rollerID int not null,
+	campaignID int not null,
+	dayOriginal smalldatetime not null,
+	massmediaID smallint not null)
+
+insert into #issues (issueID, rollerID, campaignID, dayOriginal, massmediaID)
+select i.issueID, i.rollerID, i.campaignID, tw.dayOriginal, tw.massmediaID
+from TariffWindow tw
+	inner join @massmedias mm on mm.massmediaID = tw.massmediaID
+	inner join Issue i on i.actualWindowID = tw.windowID
+where tw.dayOriginal between @startDate and @finishDate
+option (recompile)
+
 Insert Into @res1(rollerID, date, userID, firmID, massmediaID)
 Select 
 	i.rollerID,
-	tw.dayOriginal,
+	i.dayOriginal,
 	a.userID,
 	a.firmID,
-	tw.massmediaID
+	i.massmediaID
 FROM 
-	Issue i
-	inner join TariffWindow tw on i.actualWindowID = tw.windowID
+	#issues i
 	INNER JOIN Campaign c ON c.campaignID = i.campaignID
 	INNER JOIN [Action] a ON a.actionID = c.actionID
 	INNER JOIN Firm f ON f.firmID = a.firmID
@@ -71,11 +90,7 @@ FROM
 			left join @ugroups ug on gm.groupID = ug.id	
 		where u.userID = @loggedUserID or @isRightToViewForeignActions = 1 or (@isRightToViewGroupActions = 1 and ug.id is not null)
 	) as x on a.userID = x.userID
-	--inner join @massmedias mm on tw.massmediaID = mm.massmediaID
 where
-	--(a.userID = @loggedUserID and mm.myMassmedia = 1 
-	--	or a.userID <> @loggedUserID and mm.foreignMassmedia = 1) and
-	tw.dayOriginal between @startDate and @finishDate and 
 	a.userID = Coalesce(@userID, a.userID) 
 	AND a.[isConfirmed] = 1
 	and a.firmID = coalesce(@firmID, a.firmID)
@@ -85,7 +100,7 @@ where
 		(pt.isHidden = 1 or @isHideBlack = 0) and
 	((pt.IsHidden = 1 and @showBlack = 1)  or
 	(pt.IsHidden = 0 and @showWhite = 1)) 
-group by i.rollerID, tw.dayOriginal, a.userID, a.firmID, tw.massmediaID, i.issueID
+group by i.rollerID, i.dayOriginal, a.userID, a.firmID, i.massmediaID, i.issueID
 
 --for optimize
 insert into @rollerStat

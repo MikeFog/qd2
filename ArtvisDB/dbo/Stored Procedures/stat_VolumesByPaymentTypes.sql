@@ -104,8 +104,8 @@ begin
 			r.actionID as 'Акция',
 			coalesce(u.lastName,space(0)) + space(1) + coalesce(u.firstName,space(0)) + space(1) + coalesce(u.secondName,space(0)) as 'Менеджер',
 			f.name as 'Фирма',
-			Cast(r.not_hidden as decimal(8,2)) as 'С оплатой',
-			Cast(r.hidden as decimal(8,2)) 'Без оплаты'
+			Cast(r.not_hidden as decimal(18,2)) as 'С оплатой',
+			Cast(r.hidden as decimal(18,2)) 'Без оплаты'
 		from (
 				select r.actionID,
 					r.firmID,
@@ -143,7 +143,7 @@ begin
 		while @@fetch_status = 0
 		begin 
 			set @sqlsubselect = @sqlsubselect + ', sum(case when r.paymentTypeID = ' + cast(@paymentTypeID as varchar) + ' then r.price else 0 end) as pt' + cast(@index as varchar)
-			set @sqlselect = @sqlselect + ', cast(r.pt' + cast(@index as varchar) + ' as decimal(10, 2))  as ''' + replace(@name, '''', '''''') + ''''
+			set @sqlselect = @sqlselect + ', cast(r.pt' + cast(@index as varchar) + ' as decimal(18, 2))  as ''' + replace(@name, '''', '''''') + ''''
 
 			set @index = @index + 1		
 			fetch next from cur_paymentType into @paymentTypeID, @name

@@ -2278,3 +2278,5 @@ code	не менять	sin cambios
 code	Пока им можно пользоваться в десктопе.	Por ahora se puede usar en la aplicación de escritorio.
 code	обработан	procesado
 code	Необходимо выбрать агентство 	Debe seleccionar la agencia.
+code	В программе произошла ошибка.	Se produjo un error en el programa.
+message	Дата окончания периода не может быть раньше даты начала. Операция прервана.	La fecha de fin del período no puede ser anterior a la fecha de inicio. Operación cancelada.

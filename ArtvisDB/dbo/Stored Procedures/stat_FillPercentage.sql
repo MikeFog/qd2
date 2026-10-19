@@ -30,6 +30,12 @@ AS
 BEGIN
     SET NOCOUNT ON;
 
+    -- Отмеченные дни недели битами: бит 0 - понедельник ... бит 6 - воскресенье, как dayMask в fn_AgitationExcludeIntervals.
+    -- День окна - DATEDIFF от 01.01.1900 (понедельник) % 7: не зависит от DATEFIRST сессии (у логина с русским языком
+    -- DATEFIRST = 1, а прежнее сравнение номера дня недели считало 1 воскресеньем и сдвигало каждую галочку на день). NULL - день не отмечен.
+    DECLARE @dayMask int = ISNULL(@Monday, 0) * 1 + ISNULL(@Tuesday, 0) * 2 + ISNULL(@Wednesday, 0) * 4 + ISNULL(@Thursday, 0) * 8
+        + ISNULL(@Friday, 0) * 16 + ISNULL(@Saturday, 0) * 32 + ISNULL(@Sunday, 0) * 64;
+
     -- НЕ ТРОГАЕМ!
     DECLARE @MinDate datetime = CAST('19000101' AS datetime);
     DECLARE @MaxDate datetime = CAST('22001231' AS datetime);
@@ -123,15 +129,7 @@ BEGIN
                 and tw.massmediaID IN (select massmediaID from #massmedias)
                 AND (@IncludeEmptyBlocks = 1 OR tw.timeInUseConfirmed > 0)
                 and (mm.massmediaGroupID = coalesce(@massmediaGroupID, mm.massmediaGroupID) or (mm.massmediaGroupID is null and @massmediaGroupID is null))
-                AND (
-                    (@Sunday    = 1 AND DATEPART(WEEKDAY, tw.dayActual) = 1) OR
-                    (@Monday    = 1 AND DATEPART(WEEKDAY, tw.dayActual) = 2) OR
-                    (@Tuesday   = 1 AND DATEPART(WEEKDAY, tw.dayActual) = 3) OR
-                    (@Wednesday = 1 AND DATEPART(WEEKDAY, tw.dayActual) = 4) OR
-                    (@Thursday  = 1 AND DATEPART(WEEKDAY, tw.dayActual) = 5) OR
-                    (@Friday    = 1 AND DATEPART(WEEKDAY, tw.dayActual) = 6) OR
-                    (@Saturday  = 1 AND DATEPART(WEEKDAY, tw.dayActual) = 7)
-                )
+                AND (@dayMask & POWER(2, DATEDIFF(DAY, '19000101', tw.dayActual) % 7)) <> 0
             group by tw.massmediaID;
 
             insert into #issues (mmid, campaigntypeid, paymenttypeid, [date], tariffTime, duration, fulltime)
@@ -153,15 +151,7 @@ BEGIN
                 and i.isConfirmed = 1
                 and tw.dayActual BETWEEN COALESCE(@StartDay, @MinDate) AND COALESCE(@FinishDay, @MaxDate)
                 and tw.windowTime BETWEEN @StartTimeCoalesced AND @FinishTimeCoalesced
-                AND (
-                    (@Sunday    = 1 AND DATEPART(WEEKDAY, tw.dayActual) = 1) OR
-                    (@Monday    = 1 AND DATEPART(WEEKDAY, tw.dayActual) = 2) OR
-                    (@Tuesday   = 1 AND DATEPART(WEEKDAY, tw.dayActual) = 3) OR
-                    (@Wednesday = 1 AND DATEPART(WEEKDAY, tw.dayActual) = 4) OR
-                    (@Thursday  = 1 AND DATEPART(WEEKDAY, tw.dayActual) = 5) OR
-                    (@Friday    = 1 AND DATEPART(WEEKDAY, tw.dayActual) = 6) OR
-                    (@Saturday  = 1 AND DATEPART(WEEKDAY, tw.dayActual) = 7)
-                )
+                AND (@dayMask & POWER(2, DATEDIFF(DAY, '19000101', tw.dayActual) % 7)) <> 0
                 and EXISTS
                 (
                     select 1
@@ -202,15 +192,7 @@ BEGIN
                 and tw.massmediaID IN (select massmediaID from #massmedias)
                 AND (@IncludeEmptyBlocks = 1 OR tw.timeInUseConfirmed > 0)
                 and (mm.massmediaGroupID = coalesce(@massmediaGroupID, mm.massmediaGroupID) or (mm.massmediaGroupID is null and @massmediaGroupID is null))
-                AND (
-                    (@Sunday    = 1 AND DATEPART(WEEKDAY, tw.dayActual) = 1) OR
-                    (@Monday    = 1 AND DATEPART(WEEKDAY, tw.dayActual) = 2) OR
-                    (@Tuesday   = 1 AND DATEPART(WEEKDAY, tw.dayActual) = 3) OR
-                    (@Wednesday = 1 AND DATEPART(WEEKDAY, tw.dayActual) = 4) OR
-                    (@Thursday  = 1 AND DATEPART(WEEKDAY, tw.dayActual) = 5) OR
-                    (@Friday    = 1 AND DATEPART(WEEKDAY, tw.dayActual) = 6) OR
-                    (@Saturday  = 1 AND DATEPART(WEEKDAY, tw.dayActual) = 7)
-                )
+                AND (@dayMask & POWER(2, DATEDIFF(DAY, '19000101', tw.dayActual) % 7)) <> 0
             group by
                 tw.massmediaID,
                 cast(dateadd(minute, datediff(minute, 0, tw.windowDateActual), 0) as time(0));
@@ -239,15 +221,7 @@ BEGIN
                 and i.isConfirmed = 1
                 and tw.dayActual BETWEEN COALESCE(@StartDay, @MinDate) AND COALESCE(@FinishDay, @MaxDate)
                 and tw.windowTime BETWEEN @StartTimeCoalesced AND @FinishTimeCoalesced
-                AND (
-                    (@Sunday    = 1 AND DATEPART(WEEKDAY, tw.dayActual) = 1) OR
-                    (@Monday    = 1 AND DATEPART(WEEKDAY, tw.dayActual) = 2) OR
-                    (@Tuesday   = 1 AND DATEPART(WEEKDAY, tw.dayActual) = 3) OR
-                    (@Wednesday = 1 AND DATEPART(WEEKDAY, tw.dayActual) = 4) OR
-                    (@Thursday  = 1 AND DATEPART(WEEKDAY, tw.dayActual) = 5) OR
-                    (@Friday    = 1 AND DATEPART(WEEKDAY, tw.dayActual) = 6) OR
-                    (@Saturday  = 1 AND DATEPART(WEEKDAY, tw.dayActual) = 7)
-                )
+                AND (@dayMask & POWER(2, DATEDIFF(DAY, '19000101', tw.dayActual) % 7)) <> 0
                 and EXISTS
                 (
                     select 1
@@ -294,15 +268,7 @@ BEGIN
                 and tw.windowTime BETWEEN @StartTimeCoalesced AND @FinishTimeCoalesced
                 and tw.massmediaID IN (select massmediaID from #massmedias)
                 AND (@IncludeEmptyBlocks = 1 OR tw.timeInUseConfirmed > 0)
-                AND (
-                    (@Sunday    = 1 AND DATEPART(WEEKDAY, tw.dayActual) = 1) OR
-                    (@Monday    = 1 AND DATEPART(WEEKDAY, tw.dayActual) = 2) OR
-                    (@Tuesday   = 1 AND DATEPART(WEEKDAY, tw.dayActual) = 3) OR
-                    (@Wednesday = 1 AND DATEPART(WEEKDAY, tw.dayActual) = 4) OR
-                    (@Thursday  = 1 AND DATEPART(WEEKDAY, tw.dayActual) = 5) OR
-                    (@Friday    = 1 AND DATEPART(WEEKDAY, tw.dayActual) = 6) OR
-                    (@Saturday  = 1 AND DATEPART(WEEKDAY, tw.dayActual) = 7)
-                )
+                AND (@dayMask & POWER(2, DATEDIFF(DAY, '19000101', tw.dayActual) % 7)) <> 0
             group by tw.massmediaID, tw.dayActual;
 
             insert into #issues (mmid, campaigntypeid, paymenttypeid, [date], tariffTime, duration, fulltime)
@@ -324,15 +290,7 @@ BEGIN
                 and i.isConfirmed = 1
                 and tw.dayActual BETWEEN COALESCE(@StartDay, @MinDate) AND COALESCE(@FinishDay, @MaxDate)
                 and tw.windowTime BETWEEN @StartTimeCoalesced AND @FinishTimeCoalesced
-                AND (
-                    (@Sunday    = 1 AND DATEPART(WEEKDAY, tw.dayActual) = 1) OR
-                    (@Monday    = 1 AND DATEPART(WEEKDAY, tw.dayActual) = 2) OR
-                    (@Tuesday   = 1 AND DATEPART(WEEKDAY, tw.dayActual) = 3) OR
-                    (@Wednesday = 1 AND DATEPART(WEEKDAY, tw.dayActual) = 4) OR
-                    (@Thursday  = 1 AND DATEPART(WEEKDAY, tw.dayActual) = 5) OR
-                    (@Friday    = 1 AND DATEPART(WEEKDAY, tw.dayActual) = 6) OR
-                    (@Saturday  = 1 AND DATEPART(WEEKDAY, tw.dayActual) = 7)
-                )
+                AND (@dayMask & POWER(2, DATEDIFF(DAY, '19000101', tw.dayActual) % 7)) <> 0
                 and EXISTS
                 (
                     select 1
@@ -371,15 +329,7 @@ BEGIN
                 and tw.windowTime BETWEEN @StartTimeCoalesced AND @FinishTimeCoalesced
                 and tw.massmediaID IN (select massmediaID from #massmedias)
                 AND (@IncludeEmptyBlocks = 1 OR tw.timeInUseConfirmed > 0)
-                AND (
-                    (@Sunday    = 1 AND DATEPART(WEEKDAY, tw.dayActual) = 1) OR
-                    (@Monday    = 1 AND DATEPART(WEEKDAY, tw.dayActual) = 2) OR
-                    (@Tuesday   = 1 AND DATEPART(WEEKDAY, tw.dayActual) = 3) OR
-                    (@Wednesday = 1 AND DATEPART(WEEKDAY, tw.dayActual) = 4) OR
-                    (@Thursday  = 1 AND DATEPART(WEEKDAY, tw.dayActual) = 5) OR
-                    (@Friday    = 1 AND DATEPART(WEEKDAY, tw.dayActual) = 6) OR
-                    (@Saturday  = 1 AND DATEPART(WEEKDAY, tw.dayActual) = 7)
-                )
+                AND (@dayMask & POWER(2, DATEDIFF(DAY, '19000101', tw.dayActual) % 7)) <> 0
             group by
                 tw.massmediaID,
                 tw.dayActual,
@@ -409,15 +359,7 @@ BEGIN
                 and i.isConfirmed = 1
                 and tw.dayActual BETWEEN COALESCE(@StartDay, @MinDate) AND COALESCE(@FinishDay, @MaxDate)
                 and tw.windowTime BETWEEN @StartTimeCoalesced AND @FinishTimeCoalesced
-                AND (
-                    (@Sunday    = 1 AND DATEPART(WEEKDAY, tw.dayActual) = 1) OR
-                    (@Monday    = 1 AND DATEPART(WEEKDAY, tw.dayActual) = 2) OR
-                    (@Tuesday   = 1 AND DATEPART(WEEKDAY, tw.dayActual) = 3) OR
-                    (@Wednesday = 1 AND DATEPART(WEEKDAY, tw.dayActual) = 4) OR
-                    (@Thursday  = 1 AND DATEPART(WEEKDAY, tw.dayActual) = 5) OR
-                    (@Friday    = 1 AND DATEPART(WEEKDAY, tw.dayActual) = 6) OR
-                    (@Saturday  = 1 AND DATEPART(WEEKDAY, tw.dayActual) = 7)
-                )
+                AND (@dayMask & POWER(2, DATEDIFF(DAY, '19000101', tw.dayActual) % 7)) <> 0
                 and EXISTS
                 (
                     select 1

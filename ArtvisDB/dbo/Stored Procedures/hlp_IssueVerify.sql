@@ -194,7 +194,14 @@ if (@needByTypeVerify = 0 or @campaignTypeID in (1,2))
 	where tw.[windowId] = @windowID 
 else if @needByTypeVerify = 1 and @campaignTypeID = 3
 	Begin
-	select top 1 @msgError = 
+	-- окон у модуля за день несколько: сообщение - первой сработавшей проверки по порядку CASE, как в линейной ветке
+	-- (окно одно), а не наибольший по алфавиту ключ среди окон (WindowOverflow одного окна перебивал
+	-- FirstLastIssueError и закрытое окно соседнего); строки и TOP 1 прежние, окно без ошибки - последним
+	select top 1 @msgError = e.msgError
+	from [TariffWindow] tw
+		Inner Join ModuleTariff mt On mt.tariffId = tw.tariffId
+		Inner Join ModulePriceList mpl On mpl.modulePriceListID = mt.modulePriceListID
+		Cross Apply (Select
 		case 
 			when (@actionName = 'AddItem' Or @isConfirmed = 1) And @deadLine is not null and tw.dayActual <= @deadLine And @isAdmin = 0 And @isTrafficManager = 0 then 'DeadLineViolation' 
 			when (@actionName = 'AddItem' Or @isConfirmed = 1) And tw.dayOriginal < @tomorrow And @RightToGoBack <> 1 And @isTrafficManager = 0 then 'IncorrectIssueDate'
@@ -206,17 +213,24 @@ else if @needByTypeVerify = 1 and @campaignTypeID = 3
 			when @rightForMinus = 0 AND @isConfirmed = 1 and (tw.[maxCapacity] > 0 AND (tw.[maxCapacity] - (tw.[capacityInUseConfirmed] + @sumCapacity)) < 0) then 'WindowMaxCapacityOverflow'
 			when @rightForMinus = 0 AND @isConfirmed = 1 and tw.[timeInUseConfirmed] + @rollerDuration > tw.duration then 'WindowOverflow'
 			else null 
-		end 
-	from [TariffWindow] tw
-		Inner Join ModuleTariff mt On mt.tariffId = tw.tariffId
-		Inner Join ModulePriceList mpl On mpl.modulePriceListID = mt.modulePriceListID
+		end As msgError) e
 	where 
 		mt.modulePriceListID = @modulePricelistID
 		-- день модуля и пакета - по dayOriginal, как вставка выпусков (ModuleIssueIUD, PackModuleIssueID)
 		-- и IsModuleExist; индекс IX_TariffWindow_TariffID_DayOriginal; время окна переносится только
 		-- внутри дня, так что dayOriginal = dayActual
 		And tw.dayOriginal = @issueDate
-	order by 1 desc
+	order by
+		case e.msgError
+			when 'DeadLineViolation' then 1
+			when 'IncorrectIssueDate' then 2
+			when 'DisabledInsertRoller' then 3
+			when 'DisabledInsertSimpleRoller' then 4
+			when 'FirstLastIssueError' then 5
+			when 'WindowMaxCapacityOverflow' then 6
+			when 'WindowOverflow' then 7
+			else 8 -- окно без ошибки - последним (NULL при ASC встал бы первым)
+		end
 	if @msgError Is Null And @positionId <> 0
 	Begin
 	Select @msgError = 'MaxCapacityModuleSetPositionError'
@@ -247,8 +261,17 @@ else if @needByTypeVerify = 1 and @campaignTypeID = 4
 		Set @msgError = 'DeadLineViolation'
 
 	If @msgError Is Null
-		select top 1 @msgError = 
+		-- окон у пакета за день несколько: сообщение - по порядку проверок, как в модульной ветке (не по алфавиту)
+		select top 1 @msgError = e.msgError
+		from [PackModuleContent]  pmc
+			INNER JOIN [ModulePriceList] mpl ON pmc.[modulePriceListID] = mpl.[modulePriceListID]
+			INNER JOIN [ModuleTariff] mt ON mpl.[modulePriceListID] = mt.[modulePriceListID]
+			INNER JOIN [TariffWindow] tw ON tw.[tariffId] = mt.[tariffID]
+			inner join MassMedia mm on mm.massmediaID = tw.massmediaID
+			Cross Apply (Select
 			case 
+				-- дата в прошлом - одна на все окна пакета: первой, как в линейной и модульной ветках
+				when (@actionName = 'AddItem' Or @isConfirmed = 1) And @issueDate < @tomorrow And @RightToGoBack <> 1 And @isTrafficManager = 0 then 'IncorrectIssueDate'
 				when tw.isDisabled = 1 then 'DisabledInsertRoller'
 				when @rollerActionTypeID in (1, 8, 9) and tw.maxCapacity > 0 then 'DisabledInsertSimpleRoller'
 				when @positionId <> 0 and (( tw.isFirstPositionOccupied = 1 And @positionId = -20) 
@@ -256,18 +279,22 @@ else if @needByTypeVerify = 1 and @campaignTypeID = 4
 						or (tw.isLastPositionOccupied = 1	And @positionId = 10)) then 'FirstLastIssueError'
 				when @rightForMinus = 0 AND @isConfirmed = 1 and (tw.[maxCapacity] > 0 AND (tw.[maxCapacity] - (tw.[capacityInUseConfirmed] + @sumCapacity)) < 0) then 'WindowMaxCapacityOverflow'
 				when @rightForMinus = 0 AND @isConfirmed = 1 and tw.[timeInUseConfirmed] + @rollerDuration > tw.duration then 'WindowOverflow'
-				when (@actionName = 'AddItem' Or @isConfirmed = 1) And @issueDate < @tomorrow And @RightToGoBack <> 1And @isTrafficManager = 0 then 'IncorrectIssueDate'
 				else null 
-			end 
-		from [PackModuleContent]  pmc
-			INNER JOIN [ModulePriceList] mpl ON pmc.[modulePriceListID] = mpl.[modulePriceListID]
-			INNER JOIN [ModuleTariff] mt ON mpl.[modulePriceListID] = mt.[modulePriceListID]
-			INNER JOIN [TariffWindow] tw ON tw.[tariffId] = mt.[tariffID]
-			inner join MassMedia mm on mm.massmediaID = tw.massmediaID
+			end As msgError) e
 		WHERE 
 			pmc.[pricelistID] = @packModulePriceListId
 			AND tw.dayOriginal = @issueDate
-		order by 1 desc
+		order by
+			case e.msgError
+				when 'DeadLineViolation' then 1
+				when 'IncorrectIssueDate' then 2
+				when 'DisabledInsertRoller' then 3
+				when 'DisabledInsertSimpleRoller' then 4
+				when 'FirstLastIssueError' then 5
+				when 'WindowMaxCapacityOverflow' then 6
+				when 'WindowOverflow' then 7
+				else 8 -- окно без ошибки - последним (NULL при ASC встал бы первым)
+			end
 	if @msgError Is Null And @positionId <> 0
 		Begin
 		Select @msgError = 'MaxCapacityPackModuleSetPositionError'

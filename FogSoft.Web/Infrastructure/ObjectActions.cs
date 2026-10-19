@@ -213,15 +213,23 @@ public sealed partial class ObjectActions
 		},
 		// ModulePricelist.DoAction: «Редактировать рекламные окна» — тарифы станции галочками,
 		// уже входящие в модуль отмечены; новые отметки добавляются, снятые — удаляются.
+		// «Клонировать» — CloneTariffList десктопа: CreateCloneDraft (sourceModulePriceListID, прайс-лист станции
+		// нового периода) + карточка, то есть общий Clone. Своя запись обязательна: иначе пункт ловит
+		// ClassActions["Pricelist"] (предок через MassmediaPricelist) — ApplyClone без источника, и
+		// ModulePricelistIUD всегда отказывает.
 		["ModulePricelist"] = new()
 		{
 			[Merlin.Classes.ModuleTariffList.EditAction] = (s, t) => s.EditModuleTariffs((PresentationObject)t),
+			[Constants.EntityActions.Clone] = (s, t) => s.Clone(t),
 		},
 		// PackModulePricelist.AssignExisting: «Добавить модуль в пакет» — новая строка
 		// «Модули пакетного модуля» (135) с прайс-листом пакета, карточкой.
+		// «Клонировать» — CloneContent десктопа (CreateCloneDraft с sourcePricelistID + карточка); без своей записи
+		// ClassActions["Pricelist"] звал ApplyClone без источника, и PackModulePricelistIUD создавал пакет без содержимого.
 		["PackModulePricelist"] = new()
 		{
 			[Constants.EntityActions.AssignExisting] = (s, t) => s.AddModuleToPack((Merlin.Classes.PackModulePricelist)t),
+			[Constants.EntityActions.Clone] = (s, t) => s.Clone(t),
 		},
 		// HeadCompany.DoAction: «Редактировать дочерние фирмы» — добавить фирмы в группу
 		// компаний (выбранные уходят из своих групп; опустевшая группа исчезает).
@@ -269,10 +277,12 @@ public sealed partial class ObjectActions
 		},
 		// Pricelist.DoAction: диалог дат/режима, затем ApplyClone/ApplyMassClone —
 		// не тот же жест, что общий Clone (PresentationObject.CreateCloneDraft +
-		// карточка). Регистрация под именем базового класса "Pricelist" ловит и
-		// MassmediaPricelist (80), и SponsorPricelist (12): у обоих в метаданных
-		// объявлен Clone, а MassClone есть только у 80 — второе имя для 12 в
-		// ActionList просто не появится. Перекрывает собой общий Generic[Clone]
+		// карточка). Регистрация под именем базового класса "Pricelist" ловит всех
+		// наследников Pricelist: MassmediaPricelist (80) и SponsorPricelist (12) — у обоих в
+		// метаданных объявлен Clone, а MassClone есть только у 80 — второе имя для 12 в
+		// ActionList просто не появится. У ModulePricelist (83) и PackModulePricelist (134)
+		// жест другой (CreateCloneDraft + карточка) — их собственные записи Clone выше
+		// перекрывают эту (FindHandler идёт от производного класса к базовым). Перекрывает собой общий Generic[Clone]
 		// (ClassActions проверяется раньше него в FindHandler), CreateCloneDraft
 		// у Pricelist поэтому не трогаем.
 		["Pricelist"] = new()

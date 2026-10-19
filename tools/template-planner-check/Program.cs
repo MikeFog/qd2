@@ -5,13 +5,19 @@ using Merlin.Classes;
 
 // Проверки планировщика Шаблонов 1–3 (docs/tasks/web-action-forms.md, этап 5) на инвариантах, а не на «как десктоп»:
 // у десктопа жребий без зерна, побитовое совпадение недостижимо. Без ключей — только чистая логика (даты, интервал,
-// выбор окон дня); с ключом --db — ещё очередь роликов Шаблона 3 на настоящих роликах ArtvisDev; с ключом --load — только замер времени запуска на длинных периодах; с ключом --d15 — только сквозная проверка Д-15 (слот с двумя окнами).
+// выбор окон дня); с ключом --db — ещё очередь роликов Шаблона 3 на настоящих роликах ArtvisDev; с ключом --load — только замер времени запуска на длинных периодах; с ключом --d15 — только сквозная проверка Д-15 (слот с двумя окнами); с ключом --lockorder — только порядок записи пачек линейки (WindowsSource: окна по возрастанию номера).
 internal static class Program
 {
 	private static int failed;
 
 	private static int Main(string[] args)
 	{
+		if (args.Contains("--lockorder"))
+		{
+			LockOrderCases();
+			Console.WriteLine(failed == 0 ? "OK: порядок записи проверен" : $"ОШИБОК: {failed}");
+			return failed == 0 ? 0 : 1;
+		}
 		if (args.Contains("--d15"))
 		{
 			D15Cases();
@@ -777,6 +783,125 @@ internal static class Program
 	private static bool dbReady;
 
 	/// <summary>Как веб при старте: метаданные ссылаются на сборки десктопа; пользователь — администратор sveta (id 3).</summary>
+	// ---------- Порядок записи пачек линейки (WindowsSource, docs/tasks/side-defects.md) ----------
+
+	/// <summary>
+	/// «Удалить выпуски», «Заменить ролик» и «Перенести» пишут окна по возрастанию номера, как «Разместить ролик» и
+	/// «Отменить»: IssueIUD и RollerSubstitute держат строку TariffWindow до коммита, и пачки с разным порядком по одним
+	/// окнам станции ждали бы друг друга (1205). Макет акции 186408, кампания 412530, будущая неделя 26.10.2026: блок 2 строки
+	/// × 2 дня, выделение — в порядке сетки (строка, потом день), он с номерами окон не совпадает. Порядок вызовов — по логу
+	/// DbExecutionScope (порог 0 мс в App.config). Всё поставленное снимается в finally.
+	/// </summary>
+	private static void LockOrderCases()
+	{
+		InitDb();
+		var memory = new log4net.Appender.MemoryAppender();
+		memory.ActivateOptions();
+		log4net.Config.BasicConfigurator.Configure(
+			log4net.LogManager.GetRepository(typeof(FogSoft.WinForm.Classes.PresentationObject).Assembly), memory);
+		Func<List<(string Action, int IssueId, int WindowId)>> calls = () =>
+		{
+			var list = new List<(string, int, int)>();
+			foreach (var e in memory.GetEvents())
+			{
+				string m = e.RenderedMessage;
+				if (!m.Contains("IssueIUD") && !m.Contains("RollerSubstitute"))
+					continue;
+				var action = System.Text.RegularExpressions.Regex.Match(m, @"@actionName\s*=\s*N?'(\w+)'");
+				var issue = System.Text.RegularExpressions.Regex.Match(m, @"@issueID\s*=\s*(\d+)", System.Text.RegularExpressions.RegexOptions.IgnoreCase);
+				var window = System.Text.RegularExpressions.Regex.Match(m, @"@windowID\s*=\s*(\d+)", System.Text.RegularExpressions.RegexOptions.IgnoreCase);
+				list.Add((m.Contains("RollerSubstitute") ? "Substitute" : action.Success ? action.Groups[1].Value : "?",
+					issue.Success ? int.Parse(issue.Groups[1].Value) : 0, window.Success ? int.Parse(window.Groups[1].Value) : 0));
+			}
+			memory.Clear();
+			return list;
+		};
+		Func<IEnumerable<int>, bool> ascending = xs => xs.Zip(xs.Skip(1), (a, b) => a <= b).All(x => x);
+
+		ActionOnMassmedia action = ActionOnMassmedia.GetActionById(186408);
+		WindowsSource.OpenCampaign c = WindowsSource.Open(action, 412530);
+		Check("порядок: кампания открыта и правка разрешена", c != null && c.CanEdit);
+		if (c == null || !c.CanEdit)
+			return;
+		var rollers = WindowsSource.LoadRollers(c).Rows.Cast<System.Data.DataRow>().Where(r => !WindowsSource.IsDummy(r)).ToList();
+		int rollerId = WindowsSource.RollerIdOf(rollers[0]);
+		WindowsSource.WeekView view = new WindowsSource.WeekView();
+		PlacementWeek week = WindowsSource.LoadWeek(c, new DateTime(2026, 10, 26), view);
+		// Блок: вторник и среда, две строки времени от 10:00, в порядке сетки (строка, потом день)
+		List<PlacementCell> block = week.Cells
+			.Where(x => x.DayIndex == 1 || x.DayIndex == 2)
+			.GroupBy(x => x.Date.TimeOfDay).Where(g => g.Count() == 2 && g.Key >= TimeSpan.FromHours(10)).OrderBy(g => g.Key).Take(2)
+			.SelectMany(g => g.OrderBy(x => x.DayIndex)).ToList();
+		Check("порядок: блок 2 × 2 найден", block.Count == 4, "cells=" + block.Count);
+		if (block.Count != 4)
+			return;
+		Check("порядок: порядок сетки не совпадает с номерами окон", !ascending(block.Select(x => x.Key)),
+			string.Join(",", block.Select(x => x.Key)));
+		Func<PlacementCell, int> own = cell => WindowsSource.LoadWindowIssues(c, cell, true).Campaign.Rows.Count;
+		bool emptyBefore = block.All(x => own(x) == 0);
+		Check("порядок: в блоке нет своих выпусков до проверки", emptyBefore);
+		if (!emptyBefore)
+			return; // чужие для проверки выпуски кампании не трогаем: снятие и уборка удалили бы и их
+
+		try
+		{
+			// Удалить: 4 выпуска, снятие — по возрастанию окна
+			WindowsSource.BatchResult placed = WindowsSource.Place(c, block, rollerId, 0);
+			Check("порядок: размещено 4", placed.Done == 4, $"done={placed.Done} failed={placed.Failed}");
+			Dictionary<int, int> windowOf = placed.Created.ToDictionary(x => x.IssueId, x => x.WindowId);
+			calls();
+			WindowsSource.BatchResult removed = WindowsSource.Remove(c, WindowsSource.IssuesInWindows(c, block));
+			var deletes = calls().Where(x => x.Action == "DeleteItem").ToList();
+			Check("удалить: снято 4, отказов нет", removed.Done == 4 && removed.Failed == 0, $"done={removed.Done} failed={removed.Failed}");
+			Check("удалить: 4 вызова DeleteItem", deletes.Count == 4, "calls=" + deletes.Count);
+			Check("удалить: окна по возрастанию", deletes.All(x => windowOf.ContainsKey(x.IssueId)) && ascending(deletes.Select(x => windowOf[x.IssueId])),
+				string.Join(",", deletes.Select(x => windowOf.TryGetValue(x.IssueId, out int w) ? w : 0)));
+			Check("удалить: своих выпусков в блоке нет", block.All(x => own(x) == 0));
+
+			// Заменить ролик (если есть второй): замена — по возрастанию окна
+			if (rollers.Count > 1)
+			{
+				placed = WindowsSource.Place(c, block, rollerId, 0);
+				windowOf = placed.Created.ToDictionary(x => x.IssueId, x => x.WindowId);
+				calls();
+				WindowsSource.BatchResult replaced = WindowsSource.Replace(c, WindowsSource.IssuesInWindows(c, block), WindowsSource.RollerIdOf(rollers[1]));
+				var subs = calls().Where(x => x.Action == "Substitute").ToList();
+				Check("заменить: 4 замены", replaced.Done + replaced.Failed == 4 && subs.Count == 4, $"done={replaced.Done} failed={replaced.Failed} calls={subs.Count}");
+				Check("заменить: окна по возрастанию", subs.All(x => windowOf.ContainsKey(x.IssueId)) && ascending(subs.Select(x => windowOf[x.IssueId])),
+					string.Join(",", subs.Select(x => windowOf.TryGetValue(x.IssueId, out int w) ? w : 0)));
+				WindowsSource.Remove(c, WindowsSource.IssuesInWindows(c, block));
+				Check("заменить: блок убран", block.All(x => own(x) == 0));
+			}
+			else
+				Console.WriteLine("заменить: у кампании один ролик — пропущено");
+
+			// Перенести: из окна с бо́льшим номером в меньшее — сначала постановка, из меньшего в большее — сначала снятие
+			PlacementCell low = block.OrderBy(x => x.Key).First(), high = block.OrderBy(x => x.Key).Last();
+			foreach ((PlacementCell from, PlacementCell to, string first) in new[] { (high, low, "AddItem"), (low, high, "DeleteItem") })
+			{
+				if (own(from) == 0)
+					WindowsSource.Place(c, new[] { from }, rollerId, 0);
+				var entity = FogSoft.WinForm.Classes.EntityManager.GetEntity(98);
+				var issues = WindowsSource.LoadWindowIssues(c, from, true).Campaign.Rows.Cast<System.Data.DataRow>()
+					.Select(r => entity.CreateObject(r)).ToList();
+				calls();
+				WindowsSource.MovePlan plan = WindowsSource.PlanMove(c, issues, to);
+				var moved = WindowsSource.Move(c, plan);
+				var writes = calls().Where(x => x.Action == "AddItem" || x.Action == "DeleteItem").ToList();
+				string label = from == high ? "перенести вниз" : "перенести вверх";
+				Check($"{label}: перенесён 1 выпуск", moved.Count == 1 && issues.Count == 1, $"moved={moved.Count} issues={issues.Count}");
+				Check($"{label}: первым идёт {first}", writes.Count == 2 && writes[0].Action == first,
+					string.Join(" → ", writes.Select(x => x.Action + (x.WindowId > 0 ? "@" + x.WindowId : ""))));
+				Check($"{label}: выпуск в приёмнике, источник пуст", own(to) == 1 && own(from) == 0, $"to={own(to)} from={own(from)}");
+			}
+		}
+		finally
+		{
+			WindowsSource.BatchResult cleanup = WindowsSource.Remove(c, WindowsSource.IssuesInWindows(c, block));
+			Check("порядок: уборка — своих выпусков в блоке не осталось", block.All(x => own(x) == 0), "removed=" + cleanup.Done);
+		}
+	}
+
 	private static void InitDb()
 	{
 		if (dbReady)

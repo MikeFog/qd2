@@ -60,7 +60,10 @@ public static class ErrorPresenter
 			ErrorManager.Log.Error(ex);
 		}
 
-		return ErrorManager.GetErrorMessage(ex);
+		// null — нарушено ограничение без строки в iMessage (или имя ограничения не распознано). Десктоп в этом
+		// случае показывает общий текст (Globals.ShowExclamation: msg ?? Resources.ApplicationError) — тот же текст здесь
+		// (ресурсов FogSoft.WinForm в FogSoft.Core нет). Подробности уже в логе выше.
+		return ErrorManager.GetErrorMessage(ex) ?? Tr.T("В программе произошла ошибка.");
 	}
 
 	/// <summary>

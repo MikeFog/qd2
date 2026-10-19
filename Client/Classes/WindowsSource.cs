@@ -841,6 +841,20 @@ namespace Merlin.Classes
 			string.Format("{0:dd.MM.yyyy HH:mm} — {1}", row[RollerIssue.ParamNames.IssueDate], row[Constants.Parameters.Name]);
 
 		/// <summary>
+		/// Порядок записи пачки — по возрастанию окна выхода, как у Place, Undo и шаблонов: IssueIUD и RollerSubstitute держат
+		/// строку TariffWindow до коммита, и пачки с разным порядком по одним окнам станции ждали бы друг друга (1205).
+		/// Выделение приходит в порядке сетки (строка времени, потом день) — он не годится. Сортировка устойчивая: внутри окна
+		/// выпуски идут в прежнем порядке.
+		/// </summary>
+		private static IEnumerable<DataRow> InLockOrder(IEnumerable<DataRow> rows) =>
+			rows.OrderBy(r => Convert.ToInt32(r[Issue.ActualWindowIdParam]));
+
+		private static int WindowIdOf(PresentationObject issue) => Convert.ToInt32(issue[Issue.ActualWindowIdParam]);
+
+		/// <summary>Тип ролика «Политическая агитация» (iRollerActionType): его обвязку IssueIUD ведёт по цепочке окон.</summary>
+		private const int AgitationRollerType = 6;
+
+		/// <summary>
 		/// «Удалить выпуски» в выделенных окнах (десктоп — Del): IssueIUD DeleteItem на выпуск,
 		/// одна транзакция и один пересчёт.
 		/// </summary>
@@ -850,7 +864,7 @@ namespace Merlin.Classes
 			BatchResult result = new BatchResult();
 			RunInTransaction(() =>
 			{
-				foreach (DataRow row in issues.Rows)
+				foreach (DataRow row in InLockOrder(issues.Rows))
 				{
 					RollerIssue issue = new RollerIssue(row);
 					Step(result, IssueName(row), () =>
@@ -880,7 +894,7 @@ namespace Merlin.Classes
 			BatchResult result = new BatchResult();
 			RunInTransaction(() =>
 			{
-				foreach (DataRow row in issues.Rows)
+				foreach (DataRow row in InLockOrder(issues.Rows))
 				{
 					Roller oldRoller = oldRollers[RollerIdOf(row)];
 					Step(result, IssueName(row), () =>
@@ -977,14 +991,22 @@ namespace Merlin.Classes
 			{
 				moved.Clear();
 				foreach (RollerIssue issue in plan.Issues)
-				{
 					if (!IsUnchanged(issue))
 						throw new InvalidOperationException(Tr.T("Выпуск изменили или удалили, пока выбиралось окно. Выберите выпуски заново."));
-					int oldId = Convert.ToInt32(issue[Issue.ParamNames.IssueId]);
+
+				// Окна — по возрастанию номера, как у остальных пачек (см. InLockOrder): окно-источник ниже приёмника — сначала
+				// снятие, выше — сначала постановка. Проверки IssueIUD смотрят только своё окно. Исключение — агитация (тип 6):
+				// обвязку (анонс 7, 44/55) IssueIUD ведёт по всей цепочке склеенных окон, и постановка раньше снятия оставила бы
+				// старый анонс в окне-источнике — для неё прежний порядок «снять, потом поставить» (как IssueTransfer).
+				List<RollerIssue> ordered = plan.Issues.OrderBy(WindowIdOf).ToList();
+				bool deleteFirst = ordered.Any(i => ParseHelper.GetInt32FromObject(i.Roller[Roller.ParamNames.RolActionTypeID], 0) is 0 or AgitationRollerType);
+				foreach (RollerIssue issue in ordered.Where(i => deleteFirst || WindowIdOf(i) <= plan.Target.Key))
 					issue.Delete(silenceFlag: true);
-					moved.Add(new KeyValuePair<int, PlacedIssue>(oldId,
+				foreach (RollerIssue issue in ordered)
+					moved.Add(new KeyValuePair<int, PlacedIssue>(Convert.ToInt32(issue[Issue.ParamNames.IssueId]),
 						Capture(c, campaign.AddIssue(issue.Roller, plan.Target.Window, issue.Position, null), plan.Target, issue.Roller)));
-				}
+				foreach (RollerIssue issue in ordered.Where(i => !deleteFirst && WindowIdOf(i) > plan.Target.Key))
+					issue.Delete(silenceFlag: true);
 				campaign.RecalculateAction(false);
 			});
 			return moved;

@@ -112,7 +112,7 @@ stat_VolumeOfRealizationByMonth*, TariffPassport, строка после сох
 - Ключи `fn_Translate(…, N'…')` находит `collect-sources.py` (метка `sql`).
 - Не сделано (осознанно): `DiscountReleases`, `sl_TariffRetrieve`, `stat_VolumeOfRealizationByMonth*`
   — в репозитории у них невыкаченные правки (скидки, сортировка тарифов, `Deploy/06`),
-  деплой их бы притащил; `TariffPassport` — отдельная задача (перепутаны вт/ср);
+  деплой их бы притащил; `TariffPassport` — отдельная задача (вт/ср исправлены Deploy/59, 19.10.2026; `@languageCode` ещё нет);
   `GetPackModuleIssueDetails`, `DiscountChangeAffectedActions` — только десктопные формы;
   уведомления, которые пишутся в таблицы (`Announcement`), и логика на русских строках.
 - Известное: обёртки `ActionIUD`, `CampaignIUD`, `AgencyTaxIUD`, `PaymentsCommon`… вызывают
@@ -301,8 +301,8 @@ resx, переводы всех видов — в одном хранилище 
 
 - `MessageAccessor`: статический `parameters` и потоконебезопасный кэш — в
   вебе гонка между пользователями.
-- `TariffPassport.sql:19-20`: перепутаны «вт»/«ср» в имени тарифа.
+- `TariffPassport.sql:19-20`: перепутаны «вт»/«ср» в имени тарифа — исправлено Deploy/59 (19.10.2026).
 - `stat_FillPercentage.sql:127`: сравнивает `DATEPART(WEEKDAY)` как при
-  `DATEFIRST 7`, а у логина `AdvertAgUser` (dev) язык русский → `DATEFIRST 1`.
+  `DATEFIRST 7`, а у логина `AdvertAgUser` (dev) язык русский → `DATEFIRST 1` — исправлено Deploy/59 (19.10.2026).
 - `ReconnectModal`, `Error.razor`, `NotFound.razor` — английские тексты из
   шаблона, не переведены даже на русский.

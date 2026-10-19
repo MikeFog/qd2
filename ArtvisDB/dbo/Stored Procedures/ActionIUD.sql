@@ -85,7 +85,25 @@ ELSE IF @actionName = 'DeleteItem'
 		Return
 
 		End
-	
+
+	-- Журнал удалённых и уведомление администраторам - до ActionDeactivate: он снимает подтверждение со всех
+	-- выпусков акции, и отбор isConfirmed = 1 после него пуст (так было с первой версии, журнал не писался).
+	insert into [LogDeletedIssue] ([userId],actionID,rollerId, issueDate, massmediaID)
+	select @loggedUserID, c.actionID, i.rollerID, tw.windowDateActual, tw.massmediaID
+	from Issue i
+		inner join TariffWindow tw on i.actualWindowID = tw.windowId
+		inner join Campaign c on i.campaignID = c.campaignID
+	where c.actionID = @actionID and i.isConfirmed = 1
+
+	if exists(select *
+		from Issue i
+			inner join TariffWindow tw on i.actualWindowID = tw.windowId
+			inner join Campaign c on i.campaignID = c.campaignID
+		where c.actionID = @actionID and i.isConfirmed = 1 and datediff(day,dbo.ToShortDate(getdate()),tw.dayOriginal) <= dbo.f_SysParamsDaysLog())
+	begin
+		exec SayAdminThatIssuesDelete @loggedUserID, @actionID
+	end
+
 	Select @isConfirmed = IsConfirmed From Action Where actionID = @actionID
 	If @isConfirmed = 1	Begin
 		Exec [ActionDeactivate] @actionID = @actionID, @loggedUserID = @loggedUserID
@@ -157,22 +175,6 @@ ELSE IF @actionName = 'DeleteItem'
 		group by i.actualWindowID ) as t1
 	Where
 		TariffWindow.windowId = t1.windowID
-
-	insert into [LogDeletedIssue] ([userId],actionID,rollerId, issueDate, massmediaID) 
-	select @loggedUserID, c.actionID, i.rollerID, tw.windowDateActual, tw.massmediaID 
-	from Issue i 
-		inner join TariffWindow tw on i.actualWindowID = tw.windowId
-		inner join Campaign c on i.campaignID = c.campaignID 
-	where c.actionID = @actionID and i.isConfirmed = 1
-
-	if exists(select *
-		from Issue i 
-			inner join TariffWindow tw on i.actualWindowID = tw.windowId
-			inner join Campaign c on i.campaignID = c.campaignID 
-		where c.actionID = @actionID and i.isConfirmed = 1 and datediff(day,dbo.ToShortDate(getdate()),tw.dayOriginal) <= dbo.f_SysParamsDaysLog())
-	begin 
-		exec SayAdminThatIssuesDelete @loggedUserID, @actionID
-	end 
 END
 ELSE IF @actionName = 'UpdateItem' 
 	BEGIN

@@ -16,7 +16,7 @@ namespace FogSoft.WinForm.Classes
         // ── Удалены 8 locale-зависимых строковых констант (EN+RU ключевые слова).  ──
         // ── Единственная точка знания о "правильных" именах — префиксы ниже.       ──
         private static readonly string[] _knownConstraintPrefixes =
-            { "FK_", "PK_", "CK_", "UQ_", "UIX_", "IX_" };
+            { "FK_", "PK_", "CK_", "UQ_", "UK_", "UIX_", "UX_", "IX_" }; // UK_/UX_: UK_Bank_name, UK_MassmediaGroup_Name, UX_packageDiscountMassmedia_…
 
         public static readonly ILog Log =
             LogManager.GetLogger(MethodBase.GetCurrentMethod().DeclaringType);

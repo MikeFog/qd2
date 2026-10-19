@@ -1,5 +1,5 @@
 ﻿/*
-    ДЕПЛОЙ: переводы веб-версии на язык «es» (2279 строк). docs/tasks/web-i18n.md, этап 5.
+    ДЕПЛОЙ: переводы веб-версии на язык «es» (2281 строк). docs/tasks/web-i18n.md, этап 5.
     СГЕНЕРИРОВАН из ArtvisDB/Scripts/i18n/es.tsv скриптом build-seed.py — руками не править.
 
     ПРЕДУСЛОВИЕ     накачен web-i18n-translation-deploy.sql (таблица iTranslation).
@@ -2301,7 +2301,9 @@ INSERT INTO #t ([source], [text]) VALUES
 (N'не менять', N'sin cambios'),
 (N'Пока им можно пользоваться в десктопе.', N'Por ahora se puede usar en la aplicación de escritorio.'),
 (N'обработан', N'procesado'),
-(N'Необходимо выбрать агентство ', N'Debe seleccionar la agencia.');
+(N'Необходимо выбрать агентство ', N'Debe seleccionar la agencia.'),
+(N'В программе произошла ошибка.', N'Se produjo un error en el programa.'),
+(N'Дата окончания периода не может быть раньше даты начала. Операция прервана.', N'La fecha de fin del período no puede ser anterior a la fecha de inicio. Operación cancelada.');
 GO
 
 BEGIN TRANSACTION;
