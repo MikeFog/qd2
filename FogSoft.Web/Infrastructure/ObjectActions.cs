@@ -247,6 +247,15 @@ public sealed partial class ObjectActions
 		["PackModuleIssue"] = new()
 		{
 			[Constants.Actions.PlayRoller] = (s, t) => s.PlayRoller((PresentationObject)t),
+			// «Изменить предмет рекламы» — у пакета со своим роликом (PackModuleIssue.IsActionEnabled), ядро —
+			// CommonRollerAdvertType. Позиции и замена ролика у пакета серые: на данных не используются.
+			[Merlin.Classes.CommonRollerAdvertType.ActionName] = (s, t) => s.ChangeCommonRollerAdvertType((PresentationObject)t),
+		},
+		// CampaignModule.WinForms.cs, DoAction: «Изменить предмет рекламы» у ролика модульной кампании в дне (215) —
+		// у модуля со своим роликом. Замена ролика и «Прослушать» — от CampaignRoller ниже.
+		["CampaignModuleRollerInsideDay"] = new()
+		{
+			[Merlin.Classes.CommonRollerAdvertType.ActionName] = (s, t) => s.ChangeCommonRollerAdvertType((PresentationObject)t),
 		},
 		// Announcement.DoAction: «Пометить как прочтенное». Доступность гасит
 		// Announcement.IsActionEnabled (у прочитанного — серый).
@@ -396,8 +405,8 @@ public sealed partial class ObjectActions
 		// вход через CampaignChange.
 		["Campaign"] = new()
 		{
-			// CampaignPart.DoAction(Delete): удалить, пересчитать акцию, сказать о цене. Своё
-			// удаление остальных наследников CampaignPart (выпуски) по-прежнему серое (DesktopOverrides).
+			// CampaignPart.DoAction(Delete): удалить, пересчитать акцию, сказать о цене. Остальные
+			// наследники CampaignPart — запись «CampaignPart» ниже.
 			[Constants.EntityActions.Delete] = (s, t) => s.DeleteCampaign((PresentationObject)t),
 			// «Редактировать» (десктоп — CampaignForm): размещение на странице акции — у линейной
 			// вкладка «Рекламные окна» (web-action-forms.md, этап 2), у модульной — «Модули» (этап 6);
@@ -432,6 +441,19 @@ public sealed partial class ObjectActions
 		{
 			[Merlin.Classes.SponsorCampaignPartView.ShowDaysAction] = (s, t) => s.SwitchSponsorPartView(t, Merlin.Classes.SponsorCampaignPartView.ShowDaysAction),
 			[Merlin.Classes.SponsorCampaignPartView.ShowRollersAction] = (s, t) => s.SwitchSponsorPartView(t, Merlin.Classes.SponsorCampaignPartView.ShowRollersAction),
+		},
+		// CampaignPart.DoAction(Delete) у узлов дерева кампании: дни, ролики, модули, пакетные модули,
+		// спонсорские программы, выпуски программ и пакетов. Процедура DeleteItem по метаданным, пересчёт
+		// акции одной транзакцией, сообщение о цене — CampaignIssuesDeletion. Свои «Удалить» у Campaign,
+		// RollerIssue и ModuleIssue перекрывают эту (FindHandler идёт от производного класса к базовым).
+		["CampaignPart"] = new()
+		{
+			[Constants.EntityActions.Delete] = (s, t) => s.DeleteCampaignPart((PresentationObject)t),
+			// Campaign.DeleteIssues (CampaignDaysForm) у линейной и модульной кампании, ролика кампании, модуля кампании
+			// и роликов спонсорской; у пакетных и программ спонсорской пункт серый (ClassActionApplies).
+			[Merlin.Classes.CampaignIssuesDeletion.DeleteIssuesAction] = (s, t) => s.DeleteCampaignIssues((PresentationObject)t),
+			// CampaignPart.ChangePositions (ChangePositioningForm) — у тех же объектов; у пакетных серый (ClassActionApplies).
+			[Merlin.Classes.CampaignPositionChange.ActionName] = (s, t) => s.ChangePositions((PresentationObject)t),
 		},
 		// CampaignDay.WinForms.cs, DoAction: «Перенос дня» — дни линейной, модульной и пакетной
 		// кампании (ModuleCampaignDay, CampaignPackDay — наследники). Вход — CampaignDayTransfer.
@@ -516,6 +538,128 @@ public sealed partial class ObjectActions
 	}
 
 	/// <summary>
+	/// Campaign.DeleteIssues — веб-аналог CampaignDaysForm: паспорт CampaignDaysDelete, смена «Позиция:» перечитывает
+	/// дерево (отметки сбрасываются), запись и пересчёт — ядро CampaignIssuesDeletion. После — таблица отказов, как
+	/// десктопный журнал «Ошибки удаления», затем сообщение о цене акции. Эффект: у ролика и модуля узел может
+	/// исчезнуть — перечитывается родитель, иначе сам узел.
+	/// </summary>
+	private async Task<ActionEffect> DeleteCampaignIssues(PresentationObject target)
+	{
+		string action = Merlin.Classes.CampaignIssuesDeletion.DeleteIssuesAction;
+		string title = Tr.T(target.Entity.ActionList?.FirstOrDefault(a => a.Name == action)?.Alias ?? action);
+		var scope = await _busy.RunAsync(() => Merlin.Classes.CampaignIssuesDeletion.OpenIssuesDeletion(target));
+		// Черновик — носитель значений паспорта; в десктопе ChildEntity кампании на время окна — CampaignDay.
+		PresentationObject template = EntityManager.GetEntity((int)Merlin.Entities.CampaignDay).NewObject;
+		template["radiostation"] = scope.Station;
+		template["campaignType"] = Tr.T(scope.CampaignTypeName);
+
+		List<int> issueIds = new();
+		Merlin.Classes.CampaignIssuesDeletion.Result? result = null;
+		// Заголовок — название пункта (UI_RULES 2.5): у модульной «Удалить выпуски рекламных модулей» и т. д.
+		bool ok = await _namedPassports.ShowAsync(template, Merlin.Classes.CampaignIssuesDeletion.PassportName,
+			title, isNew: false,
+			values => Merlin.Classes.CampaignIssuesDeletion.Validate(
+				TreeSelection.AddedIDsOf(values, Merlin.Classes.CampaignIssuesDeletion.DaysField), out issueIds),
+			_ => result = Merlin.Classes.CampaignIssuesDeletion.DeleteIssues(scope, issueIds),
+			scope.Data,
+			fieldChanged: name =>
+			{
+				if (name == Merlin.Classes.CampaignIssuesDeletion.PositionField)
+					scope.Reload(template[name]);
+			},
+			okText: Tr.T("Удалить"));
+		if (!ok || result == null)
+			return ActionEffect.None;
+
+		if (result.Batch.Failed > 0)
+			await _tables.ShowAsync(Tr.Format("Удалено выпусков: {0}, не удалено: {1}", result.Batch.Done, result.NotDone), result.Batch.Errors,
+				new Entity.Attribute("name", "Выпуск", "nvarchar"), // i18n-ok: Alias переводится при показе (ObjectList)
+				new Entity.Attribute("description", "Ошибка", "nvarchar")); // i18n-ok: Alias переводится при показе (ObjectList)
+		if (result.PriceMessage != null)
+			await ShowInfo(title, result.PriceMessage);
+		return result.Batch.Done == 0 ? ActionEffect.None : scope.ReloadsParent ? ActionEffect.SiblingAdded : ActionEffect.Changed;
+	}
+
+	/// <summary>
+	/// CampaignPart.ChangePositions — веб-аналог ChangePositioningForm: паспорт IssueChangePositioning, смена «Показать:»
+	/// перечитывает дерево (отметки сбрасываются), запись и пересчёт — ядро CampaignPositionChange. После — сообщение о цене
+	/// акции, затем таблица отказов (порядок десктопа: пересчёт, потом журнал ошибок). Эффект Changed — FireContainerRefreshed.
+	/// </summary>
+	private async Task<ActionEffect> ChangePositions(PresentationObject target)
+	{
+		string title = Tr.T("Изменить позиционирование");
+		var change = await _busy.RunAsync(() => Merlin.Classes.CampaignPositionChange.Open(target));
+		PresentationObject template = EntityManager.GetEntity((int)Merlin.Entities.Issue).NewObject;
+		foreach (KeyValuePair<string, object> p in change.PassportValues())
+			template[p.Key] = p.Value;
+
+		List<int> issueIds = new();
+		int position = 0;
+		Merlin.Classes.CampaignPositionChange.Result? result = null;
+		bool ok = await _namedPassports.ShowAsync(template, Merlin.Classes.CampaignPositionChange.PassportName, title, isNew: false,
+			values =>
+			{
+				values.TryGetValue(Merlin.Classes.CampaignPositionChange.CurrentPositionField, out object? current);
+				values.TryGetValue(Merlin.Classes.CampaignPositionChange.FuturePositionField, out object? future);
+				return Merlin.Classes.CampaignPositionChange.Validate(current, future,
+					TreeSelection.AddedIDsOf(values, Merlin.Classes.CampaignPositionChange.DaysField), out issueIds, out position);
+			},
+			_ => result = change.Apply(issueIds, position),
+			change.Data,
+			fieldChanged: name =>
+			{
+				if (name == Merlin.Classes.CampaignPositionChange.CurrentPositionField)
+					change.Reload(template[name]);
+			},
+			okText: Tr.T("Изменить"));
+		if (!ok || result == null)
+			return ActionEffect.None;
+
+		if (result.PriceMessage != null)
+			await ShowInfo(title, result.PriceMessage);
+		if (result.Batch.Failed > 0)
+			await _tables.ShowAsync(Tr.Format("Изменено выпусков: {0}, не изменено: {1}", result.Batch.Done, result.NotDone), result.Batch.Errors,
+				new Entity.Attribute("name", "Выпуск", "nvarchar"), // i18n-ok: Alias переводится при показе (ObjectList)
+				new Entity.Attribute("description", "Ошибка", "nvarchar")); // i18n-ok: Alias переводится при показе (ObjectList)
+		return result.Batch.Done > 0 ? ActionEffect.Changed : ActionEffect.None;
+	}
+
+	/// <summary>
+	/// PackModuleIssue / CampaignModuleRollerInsideDay ChangeAdvertType — веб-аналог RollerChangeAdvertTypeForm:
+	/// паспорт ChangeAdvertType (предмет рекламы и дерево дней) с данными замены ролика, проверки и запись — ядро.
+	/// Черновик — носитель значений паспорта, как у замены ролика. Заголовок — название пункта (UI_RULES 2.6), а
+	/// не десктопное «Замена ролика». Эффект SiblingAdded — десктопный OnParentChanged(this, 1): ролик выпуска
+	/// сменился на клон, перечитывать надо родителя.
+	/// </summary>
+	private async Task<ActionEffect> ChangeCommonRollerAdvertType(PresentationObject issue)
+	{
+		var change = await _busy.RunAsync(() => Merlin.Classes.CommonRollerAdvertType.For(issue));
+		DataSet data = await _busy.RunAsync(change.LoadPassportData);
+		PresentationObject template = EntityManager.GetEntity((int)Merlin.Entities.CampaignRoller).NewObject;
+		foreach (KeyValuePair<string, object> p in change.CreatePassportParameters(data))
+			template[p.Key] = p.Value;
+
+		List<DateTime> days = new();
+		int advertTypeId = 0;
+		bool ok = await _namedPassports.ShowAsync(template, Merlin.Classes.CommonRollerAdvertType.PassportName,
+			Tr.T("Изменить предмет рекламы"), isNew: false,
+			values =>
+			{
+				values.TryGetValue(Merlin.Classes.CommonRollerAdvertType.AdvertTypeField, out object? advertType);
+				DataTable? table = values.TryGetValue(Merlin.Classes.CommonRollerAdvertType.DaysField, out object? d) && d is TreeSelection tree
+					? tree.Table : null;
+				string? error = Merlin.Classes.CommonRollerAdvertType.Validate(advertType, table!,
+					TreeSelection.AddedIDsOf(values, Merlin.Classes.CommonRollerAdvertType.DaysField).ToList(), out days);
+				if (error == null)
+					advertTypeId = Convert.ToInt32(advertType);
+				return error;
+			},
+			_ => change.Apply(days, advertTypeId),
+			data, okText: Tr.T("Изменить"));
+		return ok ? ActionEffect.SiblingAdded : ActionEffect.None;
+	}
+
+	/// <summary>
 	/// Предметные действия, которые десктопный DoAction класса передаёт общему.
 	/// Ключ — имя класса, как и в <see cref="DesktopOverrides"/>.
 	/// </summary>
@@ -547,10 +691,9 @@ public sealed partial class ObjectActions
 	/// </summary>
 	private static readonly Dictionary<string, string[]> DesktopOverrides = new()
 	{
-		// Своё удаление: пересчёт, каскад, подтверждение другим текстом. У кампании (Campaign) и
-		// выпуска модуля (ModuleIssue) оно уже перенесено — ClassActions проверяются раньше.
+		// Своё удаление: пересчёт, каскад, подтверждение другим текстом. У частей кампании
+		// (CampaignPart) оно уже перенесено — ClassActions проверяются раньше.
 		["MasterIssue"] = new[] { Constants.EntityActions.Delete },
-		["CampaignPart"] = new[] { Constants.EntityActions.Delete },
 		// Своё обновление в DoAction.
 		["SponsorProgramPart"] = new[] { Constants.EntityActions.Refresh },
 	};
@@ -776,6 +919,15 @@ public sealed partial class ObjectActions
 		// Размещение в вебе есть у линейной кампании (вкладка «Рекламные окна») и у модульной («Модули»).
 		["Campaign." + Constants.EntityActions.Edit] = t => Merlin.Classes.ActionWorkspace.IsLinearCampaign((PresentationObject)t)
 			|| Merlin.Classes.ActionWorkspace.IsModularCampaign((PresentationObject)t),
+		// «Удалить» — только у той части, чья сущность его объявляет: SponsorProgramPart (79) в списке узла спонсорской
+		// кампании переключается на 86/87, где DeleteItem нет, — иначе в строке висела бы иконка корзины, которая не работает.
+		["CampaignPart." + Constants.EntityActions.Delete] = t =>
+			((PresentationObject)t).Entity.TryGetActionRight(Constants.EntityActions.Delete, out _),
+		// Выпуски пакетов и программ спонсорской веб поставить обратно не умеет — их удаление с вкладками «Пакеты» и «Спонсорство».
+		["CampaignPart." + Merlin.Classes.CampaignIssuesDeletion.DeleteIssuesAction] = t =>
+			Merlin.Classes.CampaignIssuesDeletion.DeletesIssues((PresentationObject)t),
+		["CampaignPart." + Merlin.Classes.CampaignPositionChange.ActionName] = t =>
+			Merlin.Classes.CampaignPositionChange.Supports((PresentationObject)t),
 	};
 
 	private static Handler? FindHandler(object target, string actionName)
@@ -2160,6 +2312,23 @@ public sealed partial class ObjectActions
 	}
 
 	/// <summary>
+	/// CampaignPart.DoAction(Delete) у узла дерева кампании: вопрос тем же текстом, удаление и
+	/// пересчёт акции одной транзакцией, сообщение о её цене. На «Отмене» пересчёта нет.
+	/// </summary>
+	private async Task<ActionEffect> DeleteCampaignPart(PresentationObject part)
+	{
+		if (await _dialogs.ShowAsync(
+				Tr.T("Удаление"),
+				builder => builder.AddContent(0, part.DeleteConfirmationText),
+				okText: Tr.T("Удалить")) != DialogOutcome.Ok)
+			return ActionEffect.None;
+
+		string priceMessage = await _busy.RunAsync(() => Merlin.Classes.CampaignIssuesDeletion.DeletePart(part));
+		await ShowInfo(Tr.T("Удаление"), priceMessage);
+		return ActionEffect.Deleted;
+	}
+
+	/// <summary>
 	/// «Редактировать» у кампании (журналы акций, список кампаний страницы акции) — страница акции
 	/// с отмеченной кампанией: у модульной — вкладка «Модули», у линейной — «Рекламные окна».
 	/// </summary>
@@ -2475,6 +2644,17 @@ public sealed partial class ObjectActions
 		// строке списка или узла: у удалённой акции и без права погашены все. «Обновить» — как у всех.
 		PresentationObject po when IsModuleIssue(po) && ClassActions["ModuleIssue"].ContainsKey(actionName)
 			=> ModuleIssueEnabled(po).Contains(actionName),
+		// «Удалить рекламные выпуски»: в чужой акции — как «Удалить» (в десктопе правило чужих акций его не касается).
+		PresentationObject po when actionName == Merlin.Classes.CampaignIssuesDeletion.DeleteIssuesAction
+			&& Merlin.Classes.CampaignIssuesDeletion.DeletesIssues(po)
+			=> Merlin.Classes.CampaignIssuesDeletion.CanDeleteIssues(po, view),
+		// «Изменить позиционирование»: в чужой акции — как «Сделать первым» (в десктопе правило чужих акций его не касается).
+		PresentationObject po when actionName == Merlin.Classes.CampaignPositionChange.ActionName
+			&& Merlin.Classes.CampaignPositionChange.Supports(po)
+			=> Merlin.Classes.CampaignPositionChange.CanChange(po, view),
+		// Замена ролика и предмет рекламы у выпуска пакета и ролика модуля: десктоп забывает право группы.
+		PresentationObject po when Merlin.Classes.CommonRollerAdvertType.SkipsGroupRight(po, actionName)
+			=> po.IsActionEnabled(actionName, view) && po.Entity.IsActionEnabled(actionName, view),
 		PresentationObject po => Merlin.Classes.PricelistWindows.EnabledCheckTarget(po, actionName).IsActionEnabled(actionName, view),
 		FakeContainer fc => fc.IsActionEnabled(actionName, view),
 		_ => false

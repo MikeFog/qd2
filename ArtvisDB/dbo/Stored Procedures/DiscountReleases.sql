@@ -4,13 +4,16 @@ CREATE   PROC [dbo].[DiscountReleases]
 (
 @massmediaID smallint = NULL,
 @discountReleaseID smallint = NULL,
-@hideDiscountsInThePast bit = 0
+@hideDiscountsInThePast bit = 0,
+@languageCode VARCHAR(10) = 'ru' -- язык интерфейса веба (docs/tasks/web-i18n.md); десктоп не передаёт
 )
 as
 set nocount on
+DECLARE @tDiscountsFrom NVARCHAR(200) = dbo.fn_Translate(@languageCode, N'Скидки от ');
+DECLARE @tTo NVARCHAR(200) = dbo.fn_Translate(@languageCode, N' до ');
 SELECT 
 	dr.*,
-	'Скидки от ' + Convert(varchar(10), dr.[startDate], 104) + CASE WHEN dr.[finishDate] IS NOT NULL THEN ' до ' + Convert(varchar(10), dr.[finishDate], 104) ELSE '' END as name
+	@tDiscountsFrom + Convert(varchar(10), dr.[startDate], 104) + CASE WHEN dr.[finishDate] IS NOT NULL THEN @tTo + Convert(varchar(10), dr.[finishDate], 104) ELSE '' END as name
 FROM 
 	[DiscountRelease] dr
 WHERE

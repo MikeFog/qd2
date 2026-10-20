@@ -220,6 +220,9 @@
     <Compile Include="..\Client\Classes\TemplateRangeSource.cs" Link="Domain\TemplateRangeSource.cs" />
     <Compile Include="..\Client\Classes\RollerIssueChange.cs" Link="Domain\RollerIssueChange.cs" />
     <Compile Include="..\Client\Classes\ModuleIssueChange.cs" Link="Domain\ModuleIssueChange.cs" />
+    <Compile Include="..\Client\Classes\CampaignIssuesDeletion.cs" Link="Domain\CampaignIssuesDeletion.cs" />
+    <Compile Include="..\Client\Classes\CommonRollerAdvertType.cs" Link="Domain\CommonRollerAdvertType.cs" />
+    <Compile Include="..\Client\Classes\CampaignPositionChange.cs" Link="Domain\CampaignPositionChange.cs" />
     <!-- Калькулятор цены (docs/tasks/web-price-calculator.md, этап К.1): движок и данные. Пока только веб; десктоп
          переходит на них в К.6. Код совместим с C# 7.3 десктопа. -->
     <Compile Include="..\Client\Classes\PriceCalculatorEngine.cs" Link="Domain\PriceCalculatorEngine.cs" />

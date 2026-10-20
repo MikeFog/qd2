@@ -1,15 +1,17 @@
 ﻿
 
-CREATE     PROCEDURE [dbo].[sl_TariffRetrieve]
+CREATE     PROCEDURE [dbo].[sl_TariffRetrieve] (@languageCode VARCHAR(10) = 'ru' -- язык интерфейса веба (docs/tasks/web-i18n.md); десктоп не передаёт
+)
 AS
 SET NOCOUNT ON
+DECLARE @tTariff NVARCHAR(200) = dbo.fn_Translate(@languageCode, N'Тариф ');
 
 SELECT 
 	t.*,
 	CONVERT(varchar(5), t.[time], 108) as timeString, 
 	dbo.fn_Int2Time(t.[duration]) as durationString, 
 	dbo.fn_Int2Time(t.[duration_total]) as durationString_total, 
-	'Тариф ' + CONVERT(varchar(5), t.[time], 108) as name ,
+	@tTariff + CONVERT(varchar(5), t.[time], 108) as name ,
 	cast(case when tu.tariffUnionID is null then 0 else 1 end as bit) as isUnionEnable,
 	tu.tariffUnionID as tariffUnionID,
 	-- тариф объединён (TariffUnion) любой стороной — строка подсвечивается в списке

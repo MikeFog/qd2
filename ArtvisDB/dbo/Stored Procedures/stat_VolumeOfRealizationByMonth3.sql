@@ -24,12 +24,15 @@ CREATE Procedure [dbo].[stat_VolumeOfRealizationByMonth3]
     @IsGroupByAdvertTypeTop bit = 0,
     @ShowWhite bit = 1,
     @ShowBlack bit = 1,
-    @loggedUserID smallint 
+    @loggedUserID smallint,
+    @languageCode VARCHAR(10) = 'ru' -- язык интерфейса веба (docs/tasks/web-i18n.md); десктоп не передаёт
 )
 WITH EXECUTE AS OWNER
 AS
 BEGIN
     SET NOCOUNT ON;
+    -- «Январь 2026 г.»: месяц — данные (iMonthName), шаблон подписи — перевод.
+    DECLARE @tPeriod NVARCHAR(200) = dbo.fn_Translate(@languageCode, N'{0} {1} г.');
 
     IF @IsGroupByHeadCompany = 1 SET @IsGroupByFirm = 0;
 
@@ -129,7 +132,7 @@ INNER JOIN Firm f ON f.firmId = d.firmId
     SET @SQLString += N'
 SELECT
     ROW_NUMBER() OVER(ORDER BY d.y, d.m) AS RowNum,
-    MAX(iMonthName.name) + SPACE(1) + CAST(d.[y] AS varchar) + '' г.'' AS [period],
+    REPLACE(REPLACE(@tPeriod, N''{0}'', MAX(iMonthName.name)), N''{1}'', CAST(d.[y] AS varchar)) AS [period],
 ';
 
     IF @IsGroupByMassmedia <> 0
@@ -276,7 +279,7 @@ LEFT JOIN AdvertType atTop ON adt2.parentID = atTop.AdvertTypeID
         N'@startDate datetime, @finishDate datetime, @loggedUserID smallint,
           @FirmID smallint, @MassmediaID smallint, @PaymentTypeID smallint, @CampaignTypeID tinyint,
           @ManagerID smallint, @AgencyID smallint, @massmediaGroupID int, @advertTypeID smallint, @headCompanyID smallint,
-		  @ShowWhite bit, @ShowBlack bit',
+		  @ShowWhite bit, @ShowBlack bit, @tPeriod nvarchar(200)',
         @startDate = @StartDay, 
         @finishDate = @FinishDay, 
         @loggedUserID = @loggedUserID, 
@@ -290,5 +293,6 @@ LEFT JOIN AdvertType atTop ON adt2.parentID = atTop.AdvertTypeID
         @advertTypeID = @advertTypeID,
         @headCompanyID = @headCompanyID,
 		@ShowWhite = @ShowWhite,
-		@ShowBlack = @ShowBlack;
+		@ShowBlack = @ShowBlack,
+		@tPeriod = @tPeriod;
 END

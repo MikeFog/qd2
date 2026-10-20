@@ -1535,7 +1535,7 @@ namespace Merlin.Classes
 			DeleteStep(moduleIssueId, row => IssueRollerId(row) != acceptedRollerId ? Tr.T("Ролик выпуска изменили после вопроса — выпуск не удалён.") : null);
 
 		/// <summary>Шаг удаления выпуска модуля со своей сверкой свежей строки: <paramref name="refusal"/> — причина не удалять или null.</summary>
-		private static string DeleteStep(int moduleIssueId, Func<DataRow, string> refusal)
+		internal static string DeleteStep(int moduleIssueId, Func<DataRow, string> refusal)
 		{
 			DataRow row = LoadModuleIssue(moduleIssueId);
 			if (row == null)

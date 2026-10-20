@@ -81,10 +81,16 @@ public sealed class NamedPassportDialog
 	/// (карточка станций пакетной скидки пишет в прайс-лист, а поля описаны у станций).
 	/// null — сущность черновика.
 	/// </param>
+	/// <param name="fieldChanged">
+	/// Значение списка сменили — <see cref="Passport.FieldChanged"/>: перечитать наборы строк по выбору
+	/// (подменить таблицу в <paramref name="data"/>). null — не нужно.
+	/// </param>
+	/// <param name="okText">Подпись кнопки подтверждения (UI_RULES 2.3); null — «Сохранить».</param>
 	public Task<bool> ShowAsync(PresentationObject obj, string passportName, string caption, bool isNew,
 		Func<Dictionary<string, object>, string?> validate, Action<Dictionary<string, object>> apply,
-		DataSet? data = null, Func<string, bool>? fieldDisabled = null, Entity? fieldsEntity = null) =>
-		ShowCoreAsync(obj, passportName, caption, isNew, validate, apply, data, fieldDisabled, fieldsEntity);
+		DataSet? data = null, Func<string, bool>? fieldDisabled = null, Entity? fieldsEntity = null,
+		Action<string>? fieldChanged = null, string? okText = null) =>
+		ShowCoreAsync(obj, passportName, caption, isNew, validate, apply, data, fieldDisabled, fieldsEntity, fieldChanged, okText);
 
 	/// <summary>
 	/// Вариант «значения уходят прямо в процедуру» — веб-аналог второго
@@ -98,11 +104,11 @@ public sealed class NamedPassportDialog
 	public Task<bool> ShowAsync(PresentationObject obj, string passportName, string procedureName, string caption,
 		bool isNew, Func<Dictionary<string, object>, string?> validate) =>
 		ShowCoreAsync(obj, passportName, caption, isNew, validate,
-			parameters => DataAccessor.ExecuteNonQuery(procedureName, parameters), null, null, null);
+			parameters => DataAccessor.ExecuteNonQuery(procedureName, parameters), null, null, null, null, null);
 
 	private async Task<bool> ShowCoreAsync(PresentationObject obj, string passportName, string caption, bool isNew,
 		Func<Dictionary<string, object>, string?> validate, Action<Dictionary<string, object>> apply,
-		DataSet? data, Func<string, bool>? fieldDisabled, Entity? fieldsEntity)
+		DataSet? data, Func<string, bool>? fieldDisabled, Entity? fieldsEntity, Action<string>? fieldChanged, string? okText)
 	{
 		// Справочники — той же процедурой, что у обычной карточки объекта шаблона
 		// (сущности, к которой относится передаваемый черновик), если вызывающий
@@ -139,11 +145,12 @@ public sealed class NamedPassportDialog
 				builder.AddComponentParameter(8, nameof(Passport.Data), data);
 				builder.AddComponentParameter(9, nameof(Passport.InvalidField), invalidField);
 				builder.AddComponentParameter(10, nameof(Passport.FieldDisabled), fieldDisabled);
-				builder.AddComponentReferenceCapture(11, c => passport = (Passport)c);
+				builder.AddComponentParameter(11, nameof(Passport.FieldChanged), fieldChanged);
+				builder.AddComponentReferenceCapture(12, c => passport = (Passport)c);
 				builder.CloseComponent();
 			};
 
-			if (await _dialogs.ShowAsync(caption, body) != DialogOutcome.Ok)
+			if (await _dialogs.ShowAsync(caption, body, okText: okText) != DialogOutcome.Ok)
 				return false;
 
 			// Обязательность полей — тем же путём, что PassportDialog: до

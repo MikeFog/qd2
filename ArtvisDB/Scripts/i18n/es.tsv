@@ -1413,6 +1413,14 @@ sql	Тариф 	Tarifa
 sql	нет тарифных окон	sin ventanas de tarifa
 sql	р.	$
 sql	тарифные окна: 	ventanas de tarifa: 
+sql	пн	lu
+sql	вт	ma
+sql	ср	mi
+sql	чт	ju
+sql	пт	vi
+sql	сб	sá
+sql	вс	do
+sql	{0} {1} г.	{0} {1}
 code	Акций нет.	No hay campañas.
 code	Все ({0})	Todas ({0})
 code	Все менеджеры	Todos los gerentes
@@ -2280,3 +2288,6 @@ code	обработан	procesado
 code	Необходимо выбрать агентство 	Debe seleccionar la agencia.
 code	В программе произошла ошибка.	Se produjo un error en el programa.
 message	Дата окончания периода не может быть раньше даты начала. Операция прервана.	La fecha de fin del período no puede ser anterior a la fecha de inicio. Operación cancelada.
+code	Изменено выпусков: {0}, не изменено: {1}	Emisiones modificadas: {0}, no modificadas: {1}
+code	У окна выхода нет тарифа: позиция не меняется, иначе цена выпуска станет нулевой.	La ventana de emisión no tiene tarifa: la posición no se cambia, porque el precio de la emisión quedaría en cero.
+code	Изменение позиционирования прервано: {0} Выпуски этого дня не изменены, выпуски прежних дней изменены. Не обработано дней: {1}.	Cambio de posicionamiento interrumpido: {0} Las emisiones de este día no se modificaron; las de los días anteriores sí. Días sin procesar: {1}.

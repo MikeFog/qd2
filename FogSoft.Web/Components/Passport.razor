@@ -43,6 +43,11 @@ else
         </div>
     }
 
+    @if (_fieldChangedError != null)
+    {
+        <div class="alert alert-danger">@_fieldChangedError</div>
+    }
+
     <div class="passport-grid">
         @foreach (var field in CurrentPage.Fields)
         {
@@ -325,6 +330,14 @@ else
     /// диска» у ролика). Второй аргумент перерисовывает карточку. null — свой контрол не нужен.
     /// </summary>
     [Parameter] public Func<string, Action, RenderFragment?>? CustomControl { get; set; }
+
+    /// <summary>
+    /// Значение списка (lookup) сменили — имя поля. Так экран перечитывает наборы строк по выбору, как
+    /// смена «Позиция:» перечитывает дерево выпусков у CampaignDaysForm: вызывающий подменяет таблицу
+    /// в <see cref="Data"/> новым экземпляром (дерево по ней строится заново, отметки сбрасываются),
+    /// карточка перерисовывается сама. null — не нужно.
+    /// </summary>
+    [Parameter] public Action<string>? FieldChanged { get; set; }
 
     private bool IsDisabled(PassportField field) =>
         field.Locked || (FieldDisabled != null && field.Name.Length > 0 && FieldDisabled(field.Name));
@@ -691,7 +704,21 @@ else
 
         Object[field.Name] = result;
         ResetDependent(field.Name);
+        if (FieldChanged == null)
+            return;
+        // Перечитывание идёт в базу; отказ — строкой в карточке, а не необработанной ошибкой обработчика (она рвёт сеанс).
+        _fieldChangedError = null;
+        try
+        {
+            FieldChanged(field.Name);
+        }
+        catch (Exception ex)
+        {
+            _fieldChangedError = ErrorPresenter.Describe(ex);
+        }
     }
+
+    private string? _fieldChangedError;
 
     /// <summary>
     /// Смена родителя меняет состав зависимого списка, поэтому его значение

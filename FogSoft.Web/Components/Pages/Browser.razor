@@ -10,6 +10,7 @@
 @inject MenuAccess Access
 @inject BusyService Busy
 @inject FilterMemory Filters
+@inject UserSession Session
 
 @*
     Древовидный экран — веб-аналог ExplorerForm: слева дерево, справа список
@@ -379,29 +380,39 @@ else
         }
     }
 
-    /// <summary>
-    /// Перечитать выбранный узел. Заодно сбрасываются его уже загруженные
-    /// дети — состав мог измениться, и в десктопе Refresh делает то же самое
-    /// (OnContainerRefreshed очищает узел и раскрывает его заново).
-    /// </summary>
     private FilterPanel? _filterPanel;
 
     /// <summary>
     /// «Обновить» перечитывает узел с текущими значениями отбора (у корня это
     /// тот же словарь, что правит панель) — поэтому та же проверка, что у
-    /// «Применить» (FilterPanel.Validate).
+    /// «Применить» (FilterPanel.Validate). Узел после этого раскрыт, как в десктопе.
     /// </summary>
-    private Task RefreshClicked() => _filterPanel?.Validate() == false ? Task.CompletedTask : RefreshSelected();
+    private Task RefreshClicked() => _filterPanel?.Validate() == false ? Task.CompletedTask : ReloadSelected(expand: true);
 
-    private Task RefreshSelected()
+    /// <summary>Перечитать выбранный узел после действия в строке списка или «Удалить»: раскрытый остаётся раскрытым.</summary>
+    private Task RefreshSelected() => ReloadSelected(expand: false);
+
+    /// <summary>
+    /// Перечитать выбранный узел и его детей — как десктопный TreeView2.OnContainerRefreshed (очищает узел и раскрывает
+    /// заново). Раньше дети выбрасывались, а узел сворачивался: от дерева на корне оставалась одна строка до щелчка по ▸.
+    /// Чтение одно, как в OpenRoot: Select сбрасывает кэш и читает, Toggle берёт детей из того же кэша (ReloadNode
+    /// читает дважды — [WEB-02], его не трогаем). Внуки сворачиваются. Нераскрываемый узел не раскрываем.
+    /// </summary>
+    private Task ReloadSelected(bool expand)
     {
         if (_selected == null)
             return Task.CompletedTask;
 
         BrowserNode node = _selected;
+        bool open = node.Expandable && (expand || node.Expanded);
         node.Children = null;
         node.Expanded = false;
-        return Busy.RunAsync(() => Select(node));
+        return Busy.RunAsync(() =>
+        {
+            Select(node);
+            if (open && _error == null)
+                Toggle(node);
+        });
     }
 
     // ---------- Меню узла ----------
@@ -455,7 +466,16 @@ else
             case ActionEffect.Changed:
                 // Карточку могли переименовать; обновление перечитывает детей.
                 if (node.Container is PresentationObject po)
+                {
+                    // Строку объекта после сохранения отдаёт IUD-процедура, а она языка не знает —
+                    // имя узла стало бы русским. Load передаёт язык (docs/tasks/web-i18n.md). У части
+                    // сущностей Load нет (части спонсорской кампании 86/87 — имя переводит сам код).
+                    if ((Session.Language ?? WebLanguage.Default) != WebLanguage.Russian
+                        && FogSoft.WinForm.DataAccess.DataAccessor.IsProcedureExist(FogSoft.WinForm.DataAccess.DataAccessor.PrepareParameters(
+                            po.Entity, InterfaceObjects.SimpleJournal, Constants.Actions.Load)))
+                        po.ReloadData();
                     node.Name = po.Name;
+                }
                 ReloadNode(node);
                 break;
 

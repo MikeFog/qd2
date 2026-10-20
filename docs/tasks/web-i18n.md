@@ -1,8 +1,9 @@
 # Многоязычность веб-версии (ru + es)
 
 Статус (29.09.2026): этапы 1–6 и трек U **на проде** (Deploy/08 и 10, накат 29.09.2026).
-Впереди: вычитка испанского носителем, хвосты этапа 6 (DiscountReleases, sl_TariffRetrieve,
-stat_VolumeOfRealizationByMonth*, TariffPassport, строка после сохранения в обёртках IUD).
+Впереди: вычитка испанского носителем. Хвосты этапа 6 (DiscountReleases, sl_TariffRetrieve,
+stat_VolumeOfRealizationByMonth3, TariffPassport, PaymentsCommon, строка после сохранения) — сделаны
+20.10.2026: Deploy/63 (на ArtvisDev, не на проде) и перечитывание узла дерева в вебе.
 
 Этап 1 — что есть: `Tr` (шов ядра), `WebLanguage`/`WebTranslator`
 (`FogSoft.Web/Infrastructure/WebLanguage.cs`), язык в `UserSession.Language`
@@ -110,14 +111,19 @@ stat_VolumeOfRealizationByMonth*, TariffPassport, строка после сох
   31 вызов до/после без языка — хэши результатов совпали все (десктоп не заметит);
   с `es` — «Lista de precios del …», «Descuentos del … al …», «Pago de la campaña N.º …».
 - Ключи `fn_Translate(…, N'…')` находит `collect-sources.py` (метка `sql`).
-- Не сделано (осознанно): `DiscountReleases`, `sl_TariffRetrieve`, `stat_VolumeOfRealizationByMonth*`
-  — в репозитории у них невыкаченные правки (скидки, сортировка тарифов, `Deploy/06`),
-  деплой их бы притащил; `TariffPassport` — отдельная задача (вт/ср исправлены Deploy/59, 19.10.2026; `@languageCode` ещё нет);
+- Хвосты — **сделаны 20.10.2026, `Deploy/63_web-i18n-sql-tails.sql`**: `@languageCode` в `DiscountReleases`,
+  `sl_TariffRetrieve` + `Tariffs`, `TariffPassport` (дни «пн»…«вс» — ключи `sql`), `stat_VolumeOfRealizationByMonth3`
+  (шаблон «{0} {1} г.» → «{0} {1}»; месяц — данные `iMonthName`) и `PaymentsCommon` (не передавал язык в
+  `sl_PaymentsCommon` — заголовок детали журнала оплат был русским всегда). Живая из трёх версий отчёта только v3
+  (сущность 201): v1 мёртвая (нет ни в метаданных, ни в C#), v2 удалена Deploy/20. Прежняя причина отсрочки
+  (невыкаченные правки скидок, сортировки тарифов, Deploy/06) снята: всё это на проде с 20.09 и 29.09.
+- Не сделано (осознанно):
   `GetPackModuleIssueDetails`, `DiscountChangeAffectedActions` — только десктопные формы;
   уведомления, которые пишутся в таблицы (`Announcement`), и логика на русских строках.
-- Известное: обёртки `ActionIUD`, `CampaignIUD`, `AgencyTaxIUD`, `PaymentsCommon`… вызывают
-  процедуры чтения без языка — строка, перечитанная сразу после сохранения, будет по-русски
-  до обновления экрана. Даты в подписях — стиль 104 (dd.mm.yyyy), «р.» переведено как «$»
+- Обёртки IUD (`ActionIUD`, `CampaignIUD`, `PricelistIUD`, `TariffIUD`, `DiscountReleaseIUD`, … — 14 штук)
+  вызывают процедуры чтения без языка. В SQL их не трогаем (у `ActionIUD`, `TariffIUD`, `PricelistIUD` цепочки
+  «не перезапускать»); журналы и списки после сохранения и так перечитываются `Load` с языком, а дерево
+  `Browser.razor` после действия с эффектом «изменено» при языке не `ru` перечитывает узел (`ReloadData`, 20.10.2026). Даты в подписях — стиль 104 (dd.mm.yyyy), «р.» переведено как «$»
   после числа — на вычитку.
 
 ## Решения

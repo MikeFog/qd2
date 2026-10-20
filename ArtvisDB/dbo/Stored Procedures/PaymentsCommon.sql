@@ -15,7 +15,8 @@
 	@filterAgencies bit = 0,
 	@loggedUserID int,
 	@showBlack bit = 1,
-	@showWhite bit = 1
+	@showWhite bit = 1,
+	@languageCode VARCHAR(10) = 'ru' -- язык интерфейса веба (docs/tasks/web-i18n.md); десктоп не передаёт
 )
 WITH EXECUTE AS OWNER
 AS
@@ -198,4 +199,4 @@ BEGIN
 		)
 END
 
-Exec sl_PaymentsCommon
+Exec sl_PaymentsCommon @languageCode = @languageCode

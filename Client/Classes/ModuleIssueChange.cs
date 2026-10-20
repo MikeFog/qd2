@@ -116,15 +116,29 @@ namespace Merlin.Classes
 			decimal oldPrice = action.TotalPrice;
 			WindowsSource.RunInTransaction(() =>
 			{
-				DataRow row = Load(moduleIssueId);
-				if (positionId != 0 && HasPositionInAction(action.ActionId, row, positionId))
-					throw new InvalidOperationException(MessageAccessor.GetMessage(PositionErrorForTheSameAction) ?? PositionErrorForTheSameAction);
-				Dictionary<string, object> parameters = ModuleDaySource.ModuleIssueParameters(row, Constants.Actions.Update);
-				parameters[Issue.ParamNames.PositionId] = positionId;
-				DataAccessor.LoadDataSet("ModuleIssueIUD", parameters);
+				string refusal = TryWritePosition(action.ActionId, moduleIssueId, positionId);
+				if (refusal != null)
+					throw new InvalidOperationException(refusal);
 				action.Recalculate(false);
 			});
 			return Priced(oldPrice, action);
+		}
+
+		/// <summary>
+		/// Запись позиции в открытой транзакции: свежая строка, проверка Д-20, ModuleIssueIUD UpdateItem. Причина отказа или null;
+		/// отказ процедуры — исключением. Общая с «Изменить позиционирование» (CampaignPositionChange).
+		/// </summary>
+		internal static string TryWritePosition(int actionId, int moduleIssueId, int positionId)
+		{
+			DataRow row = ModuleDaySource.LoadModuleIssue(moduleIssueId);
+			if (row == null)
+				return Tr.T("Выпуска уже нет.");
+			if (positionId != 0 && HasPositionInAction(actionId, row, positionId))
+				return MessageAccessor.GetMessage(PositionErrorForTheSameAction) ?? PositionErrorForTheSameAction;
+			Dictionary<string, object> parameters = ModuleDaySource.ModuleIssueParameters(row, Constants.Actions.Update);
+			parameters[Issue.ParamNames.PositionId] = positionId;
+			DataAccessor.LoadDataSet("ModuleIssueIUD", parameters);
+			return null;
 		}
 
 		/// <summary>Другой выпуск того же модуля этой акции в тот же день с той же позицией (условие PositionErrorForTheSameAction у AddItem).</summary>

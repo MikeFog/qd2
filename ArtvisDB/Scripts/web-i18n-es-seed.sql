@@ -1,5 +1,5 @@
 ﻿/*
-    ДЕПЛОЙ: переводы веб-версии на язык «es» (2281 строк). docs/tasks/web-i18n.md, этап 5.
+    ДЕПЛОЙ: переводы веб-версии на язык «es» (2292 строк). docs/tasks/web-i18n.md, этап 5.
     СГЕНЕРИРОВАН из ArtvisDB/Scripts/i18n/es.tsv скриптом build-seed.py — руками не править.
 
     ПРЕДУСЛОВИЕ     накачен web-i18n-translation-deploy.sql (таблица iTranslation).
@@ -1433,6 +1433,14 @@ INSERT INTO #t ([source], [text]) VALUES
 (N'нет тарифных окон', N'sin ventanas de tarifa'),
 (N'р.', N'$'),
 (N'тарифные окна: ', N'ventanas de tarifa: '),
+(N'пн', N'lu'),
+(N'вт', N'ma'),
+(N'ср', N'mi'),
+(N'чт', N'ju'),
+(N'пт', N'vi'),
+(N'сб', N'sá'),
+(N'вс', N'do'),
+(N'{0} {1} г.', N'{0} {1}'),
 (N'Акций нет.', N'No hay campañas.'),
 (N'Все ({0})', N'Todas ({0})'),
 (N'Все менеджеры', N'Todos los gerentes'),
@@ -1510,7 +1518,9 @@ INSERT INTO #t ([source], [text]) VALUES
 (N'График размещения по нескольким акциям № {0} для {1}.xlsx', N'Plan de colocación de varias campañas N.º {0} para {1}.xlsx'),
 (N'График размещения для рекламной акции № {0} для {1}.xlsx', N'Plan de colocación de la campaña publicitaria N.º {0} para {1}.xlsx'),
 (N'График размещения по нескольким акциям № {0}', N'Plan de colocación de varias campañas N.º {0}'),
-(N'График размещения для рекламной акции № {0}', N'Plan de colocación de la campaña publicitaria N.º {0}'),
+(N'График размещения для рекламной акции № {0}', N'Plan de colocación de la campaña publicitaria N.º {0}');
+GO
+INSERT INTO #t ([source], [text]) VALUES
 (N'Частичный график размещения для рекламной акции № {0}', N'Plan de colocación parcial de la campaña publicitaria N.º {0}'),
 (N'Программы:', N'Programas:'),
 (N'Всего трансляций: {0}', N'Total de emisiones: {0}'),
@@ -1518,9 +1528,7 @@ INSERT INTO #t ([source], [text]) VALUES
 (N'Стоимость спланированной рекламы: {0:c}', N'Costo de la publicidad planificada: {0:c}'),
 (N'Стоимость спланированной рекламы по тарифам: {0:c}', N'Costo de la publicidad planificada según tarifas: {0:c}'),
 (N'Стоимость спланированной рекламы с учетом скидки: {0:c}', N'Costo de la publicidad planificada con descuento: {0:c}'),
-(N'Скидка: {0}', N'Descuento: {0}');
-GO
-INSERT INTO #t ([source], [text]) VALUES
+(N'Скидка: {0}', N'Descuento: {0}'),
 (N'В том числе НДС ({0:0.##}%): {1:c}', N'IVA incluido ({0:0.##} %): {1:c}'),
 (N'В том числе НДС: {0:c}', N'IVA incluido: {0:c}'),
 (N'Исполнитель:', N'Contratista:'),
@@ -2012,7 +2020,9 @@ INSERT INTO #t ([source], [text]) VALUES
 (N'Акция №{0} ({1})', N'Campaña n.º {0} ({1})'),
 (N'В этом окне:', N'En esta ventana:'),
 (N'Отсутствуют:', N'Faltan:'),
-(N'Отметить все линейные кампании акции — веер по всем станциям', N'Marcar todas las pautas lineales de la campaña: abanico por todas las emisoras'),
+(N'Отметить все линейные кампании акции — веер по всем станциям', N'Marcar todas las pautas lineales de la campaña: abanico por todas las emisoras');
+GO
+INSERT INTO #t ([source], [text]) VALUES
 (N'Одна кампания — неделя рекламных окон её радиостанции: ставить ролики, смотреть выпуски окна, переносить их. Несколько — веер: слоты по всем отмеченным станциям.', N'Una pauta: la semana de ventanas publicitarias de su emisora: colocar spots, ver las emisiones de la ventana y trasladarlas. Varias: abanico, con franjas de todas las emisoras marcadas.'),
 (N'Выпусков акции за день по отмеченным кампаниям', N'Emisiones de la campaña en el día, en las pautas marcadas'),
 (N'Рекламные окна, веер: отмечено кампаний — {0}', N'Ventanas publicitarias, abanico: pautas marcadas — {0}'),
@@ -2020,9 +2030,7 @@ INSERT INTO #t ([source], [text]) VALUES
 (N'не у всех', N'no en todas'),
 (N'выпуски фирмы в других акциях на всех станциях', N'emisiones de la empresa en otras campañas en todas las emisoras'),
 (N'на части станций', N'en parte de las emisoras'),
-(N'выпуски акции не у всех отмеченных кампаний', N'emisiones de la campaña no en todas las pautas marcadas');
-GO
-INSERT INTO #t ([source], [text]) VALUES
+(N'выпуски акции не у всех отмеченных кампаний', N'emisiones de la campaña no en todas las pautas marcadas'),
 (N'выпуски фирмы в других акциях на части станций', N'emisiones de la empresa en otras campañas en parte de las emisoras'),
 (N'Нет права «Редактировать» на одну из отмеченных кампаний.', N'No tiene el permiso «Editar» para una de las pautas marcadas.'),
 (N'Окна выделяются щелчком (Shift — прямоугольник, Ctrl — добавить); ролик на все станции одним щелчком ставит «Режим добавления».', N'Las ventanas se seleccionan con un clic (Mayús: rectángulo, Ctrl: agregar); el «Modo de agregado» coloca el spot en todas las emisoras con un solo clic.'),
@@ -2303,7 +2311,10 @@ INSERT INTO #t ([source], [text]) VALUES
 (N'обработан', N'procesado'),
 (N'Необходимо выбрать агентство ', N'Debe seleccionar la agencia.'),
 (N'В программе произошла ошибка.', N'Se produjo un error en el programa.'),
-(N'Дата окончания периода не может быть раньше даты начала. Операция прервана.', N'La fecha de fin del período no puede ser anterior a la fecha de inicio. Operación cancelada.');
+(N'Дата окончания периода не может быть раньше даты начала. Операция прервана.', N'La fecha de fin del período no puede ser anterior a la fecha de inicio. Operación cancelada.'),
+(N'Изменено выпусков: {0}, не изменено: {1}', N'Emisiones modificadas: {0}, no modificadas: {1}'),
+(N'У окна выхода нет тарифа: позиция не меняется, иначе цена выпуска станет нулевой.', N'La ventana de emisión no tiene tarifa: la posición no se cambia, porque el precio de la emisión quedaría en cero.'),
+(N'Изменение позиционирования прервано: {0} Выпуски этого дня не изменены, выпуски прежних дней изменены. Не обработано дней: {1}.', N'Cambio de posicionamiento interrumpido: {0} Las emisiones de este día no se modificaron; las de los días anteriores sí. Días sin procesar: {1}.');
 GO
 
 BEGIN TRANSACTION;

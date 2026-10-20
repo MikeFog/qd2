@@ -33,14 +33,21 @@ namespace FogSoft.WinForm.Classes
 		private readonly Dictionary<int, EntityRelation> entityPairs = new Dictionary<int, EntityRelation>();
 		public readonly string Name;
 		public readonly int StartingEntityID;
-        public readonly Entity StartingEntity;
+        /// <summary>
+        /// Стартовая сущность — на каждое обращение, как <see cref="EntityRelation.ChildEntity"/>: сценарий лежит в кэше
+        /// на процесс, а Entity в вебе у каждого пользователя своя (права вшиты в метаданные) — запомненная ссылка
+        /// досталась бы всем от первого открывшего дерево (IMPROVEMENTS [WEB-01]).
+        /// </summary>
+        public Entity StartingEntity
+        {
+            get { return EntityManager.GetEntity(StartingEntityID); }
+        }
         public readonly string XmlFilter;
 
         public RelationScenario(XmlNode node)
 		{
 			Name = node.Attributes["name"].Value;
 			StartingEntityID = ParseHelper.ParseToInt32(node.Attributes["startingEntityID"].Value);
-			StartingEntity = EntityManager.GetEntity(StartingEntityID);
             XmlFilter = node.Attributes["filter"]?.Value;
 
             foreach (XmlNode xmlNode in node.SelectNodes("relation[@childEntityID]"))
@@ -62,27 +69,36 @@ namespace FogSoft.WinForm.Classes
 	{
 		private static readonly Dictionary<string, RelationScenario> scenarios =
 			new Dictionary<string, RelationScenario>();
+		// Веб: несколько circuit на холодном старте заполняли бы словарь одновременно.
+		private static readonly object sync = new object();
 
 		public static void Load()
 		{
 			XmlDocument xmlDoc = DataAccessor.LoadXml("as_relationScenarios");
-			foreach (XmlNode xmlNode in xmlDoc.DocumentElement.SelectNodes("scenario"))
+			lock (sync)
 			{
-				RelationScenario scenario = new RelationScenario(xmlNode);
-				scenarios[scenario.Name] = scenario;
+				foreach (XmlNode xmlNode in xmlDoc.DocumentElement.SelectNodes("scenario"))
+				{
+					RelationScenario scenario = new RelationScenario(xmlNode);
+					scenarios[scenario.Name] = scenario;
+				}
 			}
 		}
 
 		public static RelationScenario GetScenario(string scenarioName)
 		{
-			if (scenarios.Count <= 0)
-				Load();
-			return scenarios[scenarioName];
+			lock (sync)
+			{
+				if (scenarios.Count <= 0)
+					Load();
+				return scenarios[scenarioName];
+			}
 		}
 
 		public static void ClearHash()
 		{
-			scenarios.Clear();
+			lock (sync)
+				scenarios.Clear();
 		}
 	}
 }

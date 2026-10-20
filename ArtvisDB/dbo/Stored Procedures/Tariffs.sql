@@ -16,7 +16,8 @@ CREATE               PROC [dbo].[Tariffs]
 (
 @pricelistID smallint = NULL,
 @tariffID int = NULL,
-@excludeModuleTariffs bit = 0
+@excludeModuleTariffs bit = 0,
+@languageCode VARCHAR(10) = 'ru' -- язык интерфейса веба (docs/tasks/web-i18n.md); десктоп не передаёт
 )
 WITH EXECUTE AS OWNER
 AS
@@ -41,7 +42,7 @@ ELSE BEGIN
 	Insert Into #Tariff(tariffId) Values(@tariffID)
 END
 
-Exec sl_TariffRetrieve
+Exec sl_TariffRetrieve @languageCode = @languageCode
 GO
 GRANT EXECUTE
     ON OBJECT::[dbo].[Tariffs] TO PUBLIC
