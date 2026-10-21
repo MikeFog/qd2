@@ -98,6 +98,8 @@ begin
 		(pt.isHidden = 0 or @showBlack = 1) And
 		(pt.isHidden = 1 or @showWhite = 1) AND
 		a.[isConfirmed] = 1 AND
+		-- месяцы до начала акции не заводим (Deploy/66): строка всё равно отсеется по total > 0, а цена по ней считается
+		dbo.ToShortDate(a.[startDate]) <= dbo.fn_LastDateOfMonth(@tmpDate) AND
 		dbo.ToShortDate(a.[finishDate]) >= @tmpDate AND 
 		(dbo.fn_LastDateOfMonth(@tmpDate) <= (@finishDate) OR dbo.ToShortDate(a.[finishDate]) <= @finishDate)
 				
@@ -188,7 +190,8 @@ While @@fetch_status = 0 BEGIN
 			where i.campaignID = @campaignID and tw.massmediaID = m.massmediaID and pmi.issueDate between @startDate and @currentDate 
 			group by m.massmediaID
 		) as x on r.massmediaID = x.massmediaID
-		where r.campaignId = @campaignID
+		-- только строки этого месяца (Deploy/66): без currentdate выпуски месяца прибавлялись ко всем месяцам кампании
+		where r.campaignId = @campaignID and r.currentdate = @currentDate
 	END
 	ELSE
 	begin

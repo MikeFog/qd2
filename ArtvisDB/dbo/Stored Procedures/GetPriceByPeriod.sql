@@ -43,19 +43,27 @@ Set	@price = 0
 
 If	@campaignTypeID = 1 
 	begin
-	
+	-- CROSS APPLY + TOP 1 вместо inner join, как в GetIssuesPrice (Deploy/66): прямой join оптимизатор строит
+	-- как Hash Match и вычитывает все окна всех СМИ за период (59 тыс. на месяц), чтобы сматчить их с выпусками
+	-- одной кампании. ~15 мс вместо ~0,3 мс на вызов, а журнал актов, ActionRecalculate и отчёты зовут это
+	-- в курсоре. windowId — PK TariffWindow, совпадение не более одного: семантика та же.
 	if @withTax = 0
 		Select	@price = sum(i.[tariffPrice] * i.[ratio]), @tariffPrice = SUM(i.[tariffPrice])
 		From	
 			Issue i
-			inner join TariffWindow tw on i.actualWindowID = tw.windowId
+			cross apply
+			(
+				select top 1 tw.dayOriginal
+				from TariffWindow tw
+				where tw.windowId = i.actualWindowID and
+					tw.dayOriginal between @startDate and @finishDate
+			) tw
 			inner join Campaign c on i.campaignID = c.campaignID
 			inner join PaymentType pt On pt.PaymenttypeId = c.paymenttypeId
 				and (@showBlack = 1 or pt.IsHidden = 0)
 			left join fn_CreateTableFromString(@rollerIDString) rr on i.rollerID = rr.ID
 		Where	
 			i.campaignID = @campaignID	and
-			tw.dayOriginal between @startDate and @finishDate and
 			(@rollerIDString is null or rr.ID is not null)
 	else 
 		Select	@price = sum(i.[tariffPrice] * i.[ratio]), 
@@ -63,7 +71,13 @@ If	@campaignTypeID = 1
 			@taxPrice = sum(case when at.divisor is null then 0 else ((i.[tariffPrice] * i.[ratio])/at.divisor) end)
 		From	
 			Issue i
-			inner join TariffWindow tw on i.actualWindowID = tw.windowId
+			cross apply
+			(
+				select top 1 tw.dayOriginal
+				from TariffWindow tw
+				where tw.windowId = i.actualWindowID and
+					tw.dayOriginal between @startDate and @finishDate
+			) tw
 			inner join Campaign c on i.campaignID = c.campaignID
 			inner join PaymentType pt On pt.PaymenttypeId = c.paymenttypeId
 				and (@showBlack = 1 or pt.IsHidden = 0)
@@ -72,7 +86,6 @@ If	@campaignTypeID = 1
 			left join fn_CreateTableFromString(@rollerIDString) rr on i.rollerID = rr.ID
 		Where	
 			i.campaignID = @campaignID	and
-			tw.dayOriginal between @startDate and @finishDate and
 			(@rollerIDString is null or rr.ID is not null)
 
 	End
