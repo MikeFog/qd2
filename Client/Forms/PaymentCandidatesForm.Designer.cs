@@ -132,7 +132,7 @@
 		this.tableLayoutPanel1.RowStyles.Add(new System.Windows.Forms.RowStyle());
 		this.tableLayoutPanel1.RowStyles.Add(new System.Windows.Forms.RowStyle(System.Windows.Forms.SizeType.Percent, 100F));
 		this.tableLayoutPanel1.RowStyles.Add(new System.Windows.Forms.RowStyle());
-		this.tableLayoutPanel1.Size = new System.Drawing.Size(474, 277);
+		this.tableLayoutPanel1.Size = new System.Drawing.Size(640, 460);
 		this.tableLayoutPanel1.TabIndex = 12;
 		// 
 		// flowLayoutPanel1
@@ -153,12 +153,13 @@
 		this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
 		this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
 		this.CancelButton = this.btnCancel;
-		this.ClientSize = new System.Drawing.Size(474, 277);
+		this.ClientSize = new System.Drawing.Size(640, 460);
 		this.Controls.Add(this.tableLayoutPanel1);
 		this.Font = new System.Drawing.Font("Tahoma", 8.25F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(204)));
-		this.FormBorderStyle = System.Windows.Forms.FormBorderStyle.FixedSingle;
-		this.MaximizeBox = false;
+		this.FormBorderStyle = System.Windows.Forms.FormBorderStyle.Sizable;
 		this.MinimizeBox = false;
+		this.MinimumSize = new System.Drawing.Size(490, 316);
+		this.StartPosition = System.Windows.Forms.FormStartPosition.CenterParent;
 		this.Name = "PaymentCandidatesForm";
 		this.ShowIcon = false;
 		this.ShowInTaskbar = false;

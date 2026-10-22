@@ -72,7 +72,9 @@ GROUP BY
 SELECT 
 	a.actionID,
 	SUM(c.finalPrice) AS finalPrice,
-	pu.paidUp as paidUp
+	pu.paidUp as paidUp,
+	b.billNo,
+	b.billDate
 FROM 
 	[Action] a
 	INNER JOIN @paidUP pu ON a.[actionID] = pu.[actionID]
@@ -83,9 +85,11 @@ FROM
 		AND pt2.[isHidden] = pu.paymentIsHidden
 	INNER JOIN [PaymentType] pt ON c.[paymentTypeID] = pt.[paymentTypeID]
 		AND pt.[isHidden] = pu.paymentIsHidden
+	-- счёт по акции агентству платежа (Bill: не больше одного на акцию+агентство)
+	LEFT JOIN Bill b ON b.actionID = a.actionID AND b.agencyID = p.agencyID
 WHERE
 	p.paymentID = @paymentID AND a.[isConfirmed] = 1
 GROUP BY 
-	a.actionID, pu.paidUp
+	a.actionID, pu.paidUp, b.billNo, b.billDate
 HAVING
 	cast(SUM(c.finalPrice)*100 as int) - cast(pu.paidUp * 100 as int) > 0

@@ -4,6 +4,7 @@
 @*
     Содержимое диалога «Выбрать акции для оплаты» — веб-аналог десктопной
     PaymentCandidatesForm: акции-кандидаты галочками, остаток платежа к распределению.
+    «№ счёта»/«Дата счёта» — счёт по акции агентству платежа (ActionsForPaymentCommon, Deploy/67).
     Отмеченной акции достаётся её долг (Сумма − Оплачено), но не больше остатка —
     в порядке отметки, как в десктопе. Распределение пишется прямо в модель; запись
     в базу — Payment.PayActions по «ОК».
@@ -27,6 +28,8 @@
                     <tr>
                         <th class="col-check"></th>
                         <th>@Tr.T("№ Акции")</th>
+                        <th>@Tr.T("№ счёта")</th>
+                        <th>@Tr.T("Дата счёта")</th>
                         <th class="num">@Tr.T("Сумма")</th>
                         <th class="num">@Tr.T("Оплачено")</th>
                         <th class="num">@Tr.T("К оплате")</th>
@@ -45,6 +48,8 @@
                                        @onchange="e => Toggle(row, e.Value is true)" />
                             </td>
                             <td class="tabular">@id</td>
+                            <td class="tabular">@Bill(row, "billNo")</td>
+                            <td class="tabular">@(Bill(row, "billDate") is DateTime billDate ? DisplayFormat.Date(billDate) : "")</td>
                             <td class="num tabular">@Money(row, "finalPrice").ToString("C")</td>
                             <td class="num tabular">@Money(row, "paidUp").ToString("C")</td>
                             <td class="num tabular">@(on ? sum.ToString("C") : "")</td>
@@ -77,6 +82,10 @@
     }
 
     private static int ActionId(DataRow row) => Convert.ToInt32(row[Merlin.Classes.Action.ParamNames.ActionId]);
+
+    // Без Deploy/67 процедура колонок счёта не отдаёт — тогда пусто, а не падение.
+    private static object? Bill(DataRow row, string column) =>
+        row.Table.Columns.Contains(column) && row[column] != DBNull.Value ? row[column] : null;
 
     private static decimal Money(DataRow row, string column) =>
         row[column] == DBNull.Value ? 0 : Convert.ToDecimal(row[column]);
