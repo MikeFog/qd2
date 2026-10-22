@@ -24,7 +24,7 @@ namespace Merlin.Classes
 	/// CampaignDaysDelete, дерево «день → выпуски» (CampaignDaysTreePassport) с отбором по позиции, запись — DeleteItem
 	/// на выпуск (IssueIUD, у модульной — ModuleIssueIUD), один пересчёт в конце. Отличия от десктопа: по дням транзакциями
 	/// с точкой сохранения на выпуск (у десктопа — транзакция на выпуск); смена «Позиция:» сбрасывает отметки (десктоп
-	/// удалял и скрытые); в чужой акции — отказ, как у «Удалить» (в десктопе DeleteIssues в CheckLoggedUserRight не входит).
+	/// удалял и скрытые). Чужие акции — правило CheckLoggedUserRight по имени действия (DeleteIssues в нём с 20.10.2026).
 	/// Пакетные кампании и программы спонсорской — с вкладками «Пакеты» и «Спонсорство».
 	///
 	/// Только веб: в Client.csproj не входит.
@@ -78,13 +78,9 @@ namespace Merlin.Classes
 			return target is CampaignRoller || target is ModuleInCampaign || target is RollerPartOfSponsorCampaign;
 		}
 
-		/// <summary>Пункт доступен: перенесён, доступен у части (права группы, удалённая акция) и не чужая акция.</summary>
+		/// <summary>Пункт доступен: перенесён и доступен у части (права группы, чужая и удалённая акция — CampaignPart).</summary>
 		public static bool CanDeleteIssues(PresentationObject target, ViewType view) =>
-			DeletesIssues(target) && target.IsActionEnabled(DeleteIssuesAction, view) && !target.IsActionHidden(DeleteIssuesAction, view)
-			&& ActionOnMassmedia.CheckLoggedUserRight(Constants.EntityActions.Delete, ActionOf(target));
-
-		private static ActionOnMassmedia ActionOf(PresentationObject target) =>
-			target is Campaign campaign ? campaign.Action : ((CampaignPart)target).Campaign.Action;
+			DeletesIssues(target) && target.IsActionEnabled(DeleteIssuesAction, view) && !target.IsActionHidden(DeleteIssuesAction, view);
 
 		/// <summary>Что удаляется: кампания, ролик или модуль в ней, и наборы строк паспорта.</summary>
 		public sealed class Scope
@@ -208,7 +204,7 @@ namespace Merlin.Classes
 				throw new InvalidOperationException(Tr.T("Рекламная акция удалена. Обновите страницу."));
 			bool module = campaign.CampaignType == Campaign.CampaignTypes.Module;
 			// Модульная запись идёт мимо WebActionAuthorization (LoadDataSet), а отказ авторизации внутри шага порвал бы день.
-			if (!ActionOnMassmedia.CheckLoggedUserRight(Constants.EntityActions.Delete, action)
+			if (!ActionOnMassmedia.CheckLoggedUserRight(DeleteIssuesAction, action)
 				|| !EntityManager.GetEntity(module ? (int)Entities.ModuleIssue : (int)Entities.Issue).IsActionEnabled(Constants.EntityActions.Delete, ViewType.Journal))
 				throw new InvalidOperationException(Tr.T(Properties.Resources.OperationNotAllowed));
 			decimal oldPrice = action.TotalPrice;

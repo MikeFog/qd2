@@ -2644,14 +2644,6 @@ public sealed partial class ObjectActions
 		// строке списка или узла: у удалённой акции и без права погашены все. «Обновить» — как у всех.
 		PresentationObject po when IsModuleIssue(po) && ClassActions["ModuleIssue"].ContainsKey(actionName)
 			=> ModuleIssueEnabled(po).Contains(actionName),
-		// «Удалить рекламные выпуски»: в чужой акции — как «Удалить» (в десктопе правило чужих акций его не касается).
-		PresentationObject po when actionName == Merlin.Classes.CampaignIssuesDeletion.DeleteIssuesAction
-			&& Merlin.Classes.CampaignIssuesDeletion.DeletesIssues(po)
-			=> Merlin.Classes.CampaignIssuesDeletion.CanDeleteIssues(po, view),
-		// «Изменить позиционирование»: в чужой акции — как «Сделать первым» (в десктопе правило чужих акций его не касается).
-		PresentationObject po when actionName == Merlin.Classes.CampaignPositionChange.ActionName
-			&& Merlin.Classes.CampaignPositionChange.Supports(po)
-			=> Merlin.Classes.CampaignPositionChange.CanChange(po, view),
 		// Замена ролика и предмет рекламы у выпуска пакета и ролика модуля: десктоп забывает право группы.
 		PresentationObject po when Merlin.Classes.CommonRollerAdvertType.SkipsGroupRight(po, actionName)
 			=> po.IsActionEnabled(actionName, view) && po.Entity.IsActionEnabled(actionName, view),

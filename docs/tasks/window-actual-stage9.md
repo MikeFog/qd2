@@ -348,7 +348,7 @@ WHERE database_id = DB_ID('Artvis') AND object_id = OBJECT_ID('Artvis.dbo.job_De
 
 ## 6. Открытые вопросы к Мише
 
-1. На каких базах работает Merlin.exe (Artvis, Tumen, Belgorod, Artvis2, Univer) и какие сборки? Belgorod — девелоперская или база
+1. ~~На каких базах работает Merlin.exe (Artvis, Tumen, Belgorod, Artvis2, Univer) и какие сборки?~~ Ответ 22.10.2026: на проде только Artvis и Tumen, тест — ArtvisDev. Belgorod — девелоперская или база
    заказчика? Без этого не начать шаг 3.
 2. Планировщик на URANUS и `sys.dm_exec_procedure_stats` на проде (§3.6).
 3. `MassMedia.mediaPlusMassmediaID` и `grammofonMistake` — оставить (совет) или удалить отдельным шагом?

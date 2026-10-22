@@ -79,7 +79,7 @@ namespace Merlin.Properties {
         }
         
         /// <summary>
-        ///   Looks up a localized string similar to Для редактирования активированной спонскорской компании необходимо выбрать предмет рекламы..
+        ///   Looks up a localized string similar to Для редактирования активированной спонсорской кампании необходимо выбрать предмет рекламы..
         /// </summary>
         public static string AdvertTypeMastBeSelected {
             get {

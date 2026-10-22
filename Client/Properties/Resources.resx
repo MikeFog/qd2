@@ -238,7 +238,7 @@
     <value>Ошибка при проверке лицензии.{0}Лицензия зарегистрированная на другой продукт.</value>
   </data>
   <data name="AdvertTypeMastBeSelected" xml:space="preserve">
-    <value>Для редактирования активированной спонскорской компании необходимо выбрать предмет рекламы.</value>
+    <value>Для редактирования активированной спонсорской кампании необходимо выбрать предмет рекламы.</value>
   </data>
   <data name="TitleGetRollerForSubstitude" xml:space="preserve">
     <value>Выберите ролик для замены.</value>

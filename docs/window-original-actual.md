@@ -416,9 +416,10 @@
 
 Найдено 07.10 и перепроверено 11.10:
 - `CampaignTransferDay` не пересчитывал `tariffPrice` — **исправлено** (Deploy/27, Р-9).
-- `job_DeleteEmptyActions` (Protector, «Пересчитать остатки») — **открыто** (О-7): неподтверждённые пересчитываются без учёта
-  `Action.deleteDate` (`:94–106`) — после `ActionRestore` счёт двойной; подтверждённые — через INNER JOIN (`:57–68`), опустевшее
-  окно не обнуляется. Обе выборки уже по окну выхода.
+- `job_DeleteEmptyActions` (Protector, «Пересчитать остатки») — **исправлено 21.10.2026, Deploy/65** (О-7): было — неподтверждённые
+  пересчитывались без учёта `Action.deleteDate` (после `ActionRestore` счёт двойной), подтверждённые — через INNER JOIN, опустевшее
+  окно не обнулялось. Теперь одна выборка по окну выхода без удалённых акций и `LEFT JOIN` по всем окнам — то же правило, что
+  `ArtvisDB/Scripts/window-counters-check.sql`.
 - `TariffWindowMoveTime` пишет `windowDateActual`, но не `dayActual` (`:121–124`) — **не проявляется**: новое время строится от
   `dayOriginal`, ветка `@needaddday` (`:26–36`) мертва при начале эфирного дня 00:00. Если оживёт — окно уедет на день +1 в обход
   `TariffWindowDayChange` (запрет есть только в `TariffWindowIUD`; stage9 §4).

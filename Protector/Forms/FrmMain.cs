@@ -348,7 +348,9 @@ namespace Protector.Forms
 
 		private static void RecalculateWindows(object sender, System.ComponentModel.DoWorkEventArgs e)
 		{
-			DataAccessor.ExecuteNonQuery("job_DeleteEmptyActions", new Dictionary<string, object>());
+			// Пересчёт всех окон идёт десятки секунд — таймаут по умолчанию (30 с) его обрывал. Транзакцию ведёт сама
+			// процедура (XACT_ABORT, TRY/CATCH): клиентская при отказе сервера лишь заслонила бы его ошибку.
+			DataAccessor.ExecuteNonQuery("job_DeleteEmptyActions", new Dictionary<string, object>(), 600, false);
 		}
 
 		#region Paint MDI Client Area

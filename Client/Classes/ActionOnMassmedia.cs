@@ -602,7 +602,9 @@ namespace Merlin.Classes
 					Action.ActionNames.ChangeCreator, Issue.ActionNames.SetFirst, Issue.ActionNames.SetSecond,
 					Issue.ActionNames.SetLast, Issue.ActionNames.SetUnknow, Constants.EntityActions.Transfer,
 					Constants.Actions.Substitute, Campaign.ActionNames.ChangePaymentType,
-					Campaign.ActionNames.ChangeAgency, Action.ActionNames.ChangePaymentTypeMass}).Contains(actionName))
+					Campaign.ActionNames.ChangeAgency, Action.ActionNames.ChangePaymentTypeMass,
+					// Массовые снятие выпусков и смена позиций — как одиночные (решение 20.10.2026; до того в чужой акции проходили).
+					Campaign.ActionNames.DeleteIssues, Constants.Actions.ChangePositions}).Contains(actionName))
 				return false;
 			return true;
 		}

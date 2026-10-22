@@ -20,8 +20,8 @@ namespace Merlin.Classes
 	/// Отличия от десктопа: по дням транзакциями с точкой сохранения на выпуск (UpdateItem уменьшает счётчики окон до своих
 	/// проверок; у десктопа — транзакция на выпуск); смена «Показать:» сбрасывает отметки (десктоп менял и скрытые); две
 	/// проверки, которых у UpdateItem нет: окно выхода без тарифа (цена выпуска стала бы 0) и та же позиция у другого выпуска
-	/// этой акции в окне (у модуля — в дне), PositionErrorForTheSameAction; в чужой акции — отказ, как у «Сделать первым»
-	/// (в десктопе ChangePositions в CheckLoggedUserRight не входит). Пакетные кампании — с вкладкой «Пакеты».
+	/// этой акции в окне (у модуля — в дне), PositionErrorForTheSameAction. Чужие акции — правило CheckLoggedUserRight по имени
+	/// действия (ChangePositions в нём с 20.10.2026). Пакетные кампании — с вкладкой «Пакеты».
 	///
 	/// Только веб: в Client.csproj не входит.
 	/// </summary>
@@ -58,11 +58,9 @@ namespace Merlin.Classes
 			return target is CampaignRoller || target is ModuleInCampaign || target is RollerPartOfSponsorCampaign;
 		}
 
-		/// <summary>Пункт доступен: перенесён, доступен у части (права группы, удалённая акция) и не чужая акция.</summary>
+		/// <summary>Пункт доступен: перенесён и доступен у части (права группы, чужая и удалённая акция — CampaignPart).</summary>
 		public static bool CanChange(PresentationObject target, ViewType view) =>
-			Supports(target) && target.IsActionEnabled(ActionName, view) && !target.IsActionHidden(ActionName, view)
-			&& ActionOnMassmedia.CheckLoggedUserRight(Issue.ActionNames.SetFirst,
-				target is Campaign c ? c.Action : ((CampaignPart)target).Campaign.Action);
+			Supports(target) && target.IsActionEnabled(ActionName, view) && !target.IsActionHidden(ActionName, view);
 
 		public static CampaignPositionChange Open(PresentationObject target)
 		{
@@ -156,7 +154,7 @@ namespace Merlin.Classes
 			ActionOnMassmedia action = ActionWorkspace.Load(fresh.Action.ActionId);
 			if (action == null || ActionWorkspace.IsDeleted(action))
 				throw new InvalidOperationException(Tr.T("Рекламная акция удалена. Обновите страницу."));
-			if (!ActionOnMassmedia.CheckLoggedUserRight(Issue.ActionNames.SetFirst, action))
+			if (!ActionOnMassmedia.CheckLoggedUserRight(ActionName, action))
 				throw new InvalidOperationException(Tr.T(Properties.Resources.OperationNotAllowed));
 			bool module = fresh.CampaignType == Campaign.CampaignTypes.Module;
 			decimal oldPrice = action.TotalPrice;
