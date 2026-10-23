@@ -144,6 +144,15 @@ namespace Merlin.Classes
 		public const string ShowProgramsAction = ProgramPartOfSponsorCampaign.ActionNames.ShowPrograms;
 		public const string ShowRollersAction = RollerPartOfSponsorCampaign.ActionNames.ShowRollers;
 
+		// «Редактировать выпуски программ для спонсоров» (86, 151) и «Редактировать в эфир рекламных роликов» (87, 481):
+		// в вебе — вкладка «Спонсорство» страницы акции (этап 7). Имя действия у обеих частей одно.
+		public const string EditIssuesAction = ProgramPartOfSponsorCampaign.ActionNames.EditIssues;
+
+		/// <summary>Акция и кампания узла части — для перехода на вкладку «Спонсорство»; null — кампании нет (удалена).</summary>
+		public static int? ActionIdOf(PresentationObject part) => ((CampaignPart)part).Campaign?.ActionId;
+
+		public static int CampaignIdOf(PresentationObject part) => ((CampaignPart)part).CampaignId;
+
 		public static void SwitchView(PresentationObject part, string actionName)
 		{
 			if (part is ProgramPartOfSponsorCampaign programs)

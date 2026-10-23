@@ -25,6 +25,11 @@
     в ядре (WindowsSource), одно действие — одна транзакция и один пересчёт акции; после записи
     страница перечитывает шапку (Changed). Запись на «Модулях» меняет те же окна — скрытая вкладка
     перечитывает неделю при показе (PlacementVersion).
+
+    Та же вкладка — «Спонсорство» (Sponsorship, этап 7, решение В-27): спонсорские кампании акции по одной (веера нет), над
+    сеткой окон бонусных роликов — полоса «Программы» той же недели (ProgramSource: все действующие программы станции, каждый
+    тариф — строка). Бонусные ролики — тот же код, что у одной линейной кампании (в десктопе — тот же RollerIssuesGrid3);
+    бонус ядро сверяет пересчётом после каждого выпуска (В-33). Полоса программ пока на просмотр (щелчок — подэтап 7.2).
 *@
 
 <div class="windows-tab">
@@ -41,22 +46,31 @@
             <section class="side-block">
                 <div class="side-title">@Tr.T("Рекламные кампании")</div>
                 <ul class="campaign-list">
-                    @foreach (DataRow row in LinearRows)
+                    @foreach (DataRow row in CampaignRows)
                     {
                         int id = WindowsSource.CampaignIdOf(row);
                         bool on = _checked.Contains(id);
                         <li class="@(on ? "on" : null)">
-                            <input type="checkbox" class="form-check-input" checked="@on" aria-label="@CaptionOf(row)"
-                                   @onchange="e => ToggleCampaign(id, e.Value is true)" />
+                            @if (Sponsorship)
+                            {
+                                @* Спонсорские — по одной: веера у бонусных роликов нет (В-32). *@
+                                <input type="radio" class="form-check-input" name="sponsor-campaign" checked="@on" aria-label="@CaptionOf(row)"
+                                       @onchange="() => CheckOnly(id)" />
+                            }
+                            else
+                            {
+                                <input type="checkbox" class="form-check-input" checked="@on" aria-label="@CaptionOf(row)"
+                                       @onchange="e => ToggleCampaign(id, e.Value is true)" />
+                            }
                             <button type="button" class="campaign" title="@(Tr.T("Показать только эту кампанию"))" @onclick="() => CheckOnly(id)">
                                 @CaptionOf(row)
                             </button>
                         </li>
                     }
                 </ul>
-                @if (LinearRows.Count() > 1)
+                @if (!Sponsorship && CampaignRows.Count() > 1)
                 {
-                    <button type="button" class="btn btn-sm btn-link check-all" disabled="@(_checked.Count == LinearRows.Count())"
+                    <button type="button" class="btn btn-sm btn-link check-all" disabled="@(_checked.Count == CampaignRows.Count())"
                             title="@(Tr.T("Отметить все линейные кампании акции — веер по всем станциям"))" @onclick="CheckAll">
                         @Tr.T("Отметить все")
                     </button>
@@ -88,9 +102,13 @@
             {
                 <div class="state">
                     <div class="state-title">@Tr.T("Отметьте рекламную кампанию слева")</div>
-                    @(LinearRows.Any()
-                        ? Tr.T("Одна кампания — неделя рекламных окон её радиостанции: ставить ролики, смотреть выпуски окна, переносить их. Несколько — веер: слоты по всем отмеченным станциям.")
-                        : Tr.T("В акции нет линейных рекламных кампаний."))
+                    @(Sponsorship
+                        ? CampaignRows.Any()
+                            ? Tr.T("Спонсорская кампания — программы её радиостанции на неделю и рекламные окна для бонусных роликов.")
+                            : Tr.T("В акции нет спонсорских рекламных кампаний.")
+                        : CampaignRows.Any()
+                            ? Tr.T("Одна кампания — неделя рекламных окон её радиостанции: ставить ролики, смотреть выпуски окна, переносить их. Несколько — веер: слоты по всем отмеченным станциям.")
+                            : Tr.T("В акции нет линейных рекламных кампаний."))
                 </div>
             }
             else if (Scope == null)
@@ -99,6 +117,28 @@
             }
             else
             {
+                @if (_programs != null)
+                {
+                    @* Неделя полосы — неделя сетки окон ниже (листает она), все семь дней: у программ свои прайс-листы. *@
+                    <div class="program-strip">
+                        <PlacementGrid Model="_programs" Date="_date" Strip="true" CellTitle="ProgramCellTitle"
+                                       DayTotalTitle="@(Tr.T("Выпусков программ этой кампании за день"))">
+                            <Caption>
+                                <span class="mode-caption">@Tr.T("Программы")</span>
+                            </Caption>
+                            <Legend>
+                                <span class="legend">
+                                    <span><i class="sample mine">✓</i>@Tr.T("выпуск программы этой кампании")</span>
+                                    <span>@Tr.T("имя фирмы — программу спонсирует другая подтверждённая акция")</span>
+                                    @if (_view.ShowUnconfirmed)
+                                    {
+                                        <span><i class="sample tentative">@Tr.T("Макет")</i>@Tr.T("макеты других акций")</span>
+                                    }
+                                </span>
+                            </Legend>
+                        </PlacementGrid>
+                    </div>
+                }
                 @* Esc снимает выделение и отменяет перенос: клавиши ловит обёртка сетки, фокус ставит клик.
                    Тулбар вкладки — в строке недели сетки, подпись режима и легенда — тонкой строкой под ней:
                    сетке нужна вся высота. Переключатели вида — значками, подписи десктопа — в подсказках. *@
@@ -172,6 +212,10 @@
                                 {
                                     <span class="text-muted">@Tr.T("Окна выделяются щелчком (Shift — прямоугольник, Ctrl — добавить); ролик на все станции одним щелчком ставит «Режим добавления».")</span>
                                 }
+                            }
+                            else if (Sponsorship)
+                            {
+                                <span class="mode-caption">@Tr.Format("Бонусные ролики: {0}", OpenCaption)</span>
                             }
                             else
                             {
@@ -438,6 +482,9 @@
     /// </summary>
     [Parameter] public int PlacementVersion { get; set; }
 
+    /// <summary>Вкладка «Спонсорство»: спонсорские кампании по одной, над окнами бонусных роликов — полоса программ.</summary>
+    [Parameter] public bool Sponsorship { get; set; }
+
     private readonly List<int> _checked = new();
     private int _appliedRequest = -1;
     private bool _initialized;
@@ -450,6 +497,10 @@
     private bool _dateChosen;
     private PlacementWeek? _week;
     private string? _error;
+
+    // «Спонсорство»: программы открытой спонсорской кампании и их неделя (та же, что у окон).
+    private ProgramSource.ProgramScope? _programScope;
+    private PlacementWeek? _programs;
 
     // Кисть: ролики фирмы, их номера и ролик кисти (RollerBrush).
     private readonly RollerBrush.Model _brush = new();
@@ -486,7 +537,9 @@
 
     private string NoRightText => IsRange
         ? Tr.T("Нет права «Редактировать» на одну из отмеченных кампаний.")
-        : Tr.T("Нет права «Редактировать» на эту кампанию.");
+        : Sponsorship
+            ? Tr.T("Нет права «Редактировать» на эту акцию или «Редактировать в эфир рекламных роликов» спонсорской кампании.")
+            : Tr.T("Нет права «Редактировать» на эту кампанию.");
 
     /// <summary>Отмечено несколько кампаний — веер (получасовые слоты по всем станциям); иначе сетка окон одной кампании.</summary>
     private bool IsRange => _range != null;
@@ -494,10 +547,11 @@
     /// <summary>Открытое: одна кампания или веер — для того, что не зависит от режима (ролики кисти, права).</summary>
     private WindowsSource.IBrushScope? Scope => (WindowsSource.IBrushScope?)_open ?? _range;
 
-    private IEnumerable<DataRow> LinearRows => Campaigns.Rows.Cast<DataRow>().Where(WindowsSource.IsLinear);
+    /// <summary>Кампании вкладки: на «Рекламных окнах» — линейные, на «Спонсорстве» — спонсорские.</summary>
+    private IEnumerable<DataRow> CampaignRows => Campaigns.Rows.Cast<DataRow>().Where(Sponsorship ? ProgramSource.IsSponsor : WindowsSource.IsLinear);
 
     private DataRow? RowOf(int campaignId) =>
-        LinearRows.FirstOrDefault(r => WindowsSource.CampaignIdOf(r) == campaignId);
+        CampaignRows.FirstOrDefault(r => WindowsSource.CampaignIdOf(r) == campaignId);
 
     private DataRow? OpenRow => _open == null ? null : RowOf(_open.CampaignId);
 
@@ -511,7 +565,7 @@
     private string CaptionOf(DataRow row)
     {
         string caption = WindowsSource.CampaignCaption(row);
-        bool ambiguous = LinearRows.Count(r => WindowsSource.CampaignCaption(r) == caption) > 1;
+        bool ambiguous = CampaignRows.Count(r => WindowsSource.CampaignCaption(r) == caption) > 1;
         return ambiguous ? WindowsSource.CampaignCaption(row, withAgency: true) : caption;
     }
 
@@ -585,8 +639,8 @@
             else if (!_initialized)
             {
                 // Как при открытии десктопного веера: отмечены все линейные кампании акции (одна — сетка
-                // окон, несколько — веер); выбор между открытиями не запоминается.
-                _checked.AddRange(LinearRows.Select(WindowsSource.CampaignIdOf));
+                // окон, несколько — веер); выбор между открытиями не запоминается. Спонсорские — по одной: первая.
+                _checked.AddRange(CampaignRows.Select(WindowsSource.CampaignIdOf).Take(Sponsorship ? 1 : int.MaxValue));
             }
             _initialized = true;
             await ApplyChecked();
@@ -621,7 +675,7 @@
     private Task CheckAll()
     {
         _checked.Clear();
-        _checked.AddRange(LinearRows.Select(WindowsSource.CampaignIdOf));
+        _checked.AddRange(CampaignRows.Select(WindowsSource.CampaignIdOf));
         return ApplyChecked();
     }
 
@@ -641,6 +695,8 @@
         _open = null;
         _range = null;
         _week = null;
+        _programScope = null;
+        _programs = null;
         _brush.Clear();
         _brushOn = false;
         _transfer = null;
@@ -656,15 +712,23 @@
             DateTime? first;
             if (_checked.Count == 1)
             {
-                _open = WindowsSource.Open(Action, _checked[0]);
-                first = _open?.FirstIssueDate;
+                // Спонсорская открывается целиком — окна и программы — или никак: при сбое чтения программ кампания не
+                // считается открытой, и щелчок по ней повторяет открытие (иначе вкладка осталась бы без полосы программ).
+                WindowsSource.OpenCampaign? open = WindowsSource.Open(Action, _checked[0]);
+                ProgramSource.ProgramScope? programs = Sponsorship && open != null ? ProgramSource.Open(Action, open.CampaignId) : null;
+                first = open?.FirstIssueDate;
+                // Первая неделя — с самого раннего выпуска: программы или бонусного ролика.
+                if (programs?.FirstIssueDate is { } program && (first == null || program < first))
+                    first = program;
+                _open = open;
+                _programScope = programs;
             }
             else
             {
                 // Порядок кампаний веера — порядок списка, а не кликов: от него зависит лидер у «Добавить до полного пересечения»
                 // (в десктопе — порядок строк чек-листа).
                 _range = RangeSource.Open(Action,
-                    LinearRows.Select(WindowsSource.CampaignIdOf).Where(_checked.Contains)
+                    CampaignRows.Select(WindowsSource.CampaignIdOf).Where(_checked.Contains)
                         .Select(id => new KeyValuePair<int, string>(id, CaptionOf(RowOf(id)!))).ToList());
                 first = _range?.FirstIssueDate;
             }
@@ -704,6 +768,9 @@
         _week = _range != null ? RangeSource.LoadWeek(_range, _date, _view) : WindowsSource.LoadWeek(_open!, _date, _view);
         if (_range != null && _showNumbers)
             RangeSource.LoadAllSlotIssues(_range, _week);
+        // Программы — с понедельника той же недели, что окна (у окон она обрезана сроком прайс-листа станции).
+        if (_programScope != null)
+            _programs = ProgramSource.LoadWeek(_programScope, _week.FirstDay, _view.ShowUnconfirmed);
         _selection.Retain(_week);
         _selected = _selected == null ? null : _week.Find(_selected.Key);
         if (_selected == null)
@@ -794,6 +861,10 @@
             : cell.Details;
         return DisplayFormat.DateAndTime(cell.Date) + StatusText(cell) + (details != null ? "\n" + details : "");
     }
+
+    /// <summary>Подсказка места полосы программ: день и время выпуска, затем выпуски слота («Спонсирует: …», «Макет: …»).</summary>
+    private string ProgramCellTitle(PlacementCell cell) =>
+        DisplayFormat.DateAndTime(cell.Date) + (cell.Details != null ? "\n" + cell.Details : "");
 
     /// <summary>Состояние окна одной строкой — подсказка ячейки и подпись панели.</summary>
     private string StatusText(PlacementCell cell) =>

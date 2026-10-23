@@ -436,11 +436,21 @@ public sealed partial class ObjectActions
 			// «Назначить предмет рекламы выпускам спонсорских программ» — именованный паспорт
 			// ChangeAdvertTypeForSponsorIssues: предмет рекламы + дерево «день → выпуски».
 			[Merlin.Classes.SponsorCampaignPartView.SetAdvertTypeAction] = (s, t) => s.SetSponsorIssuesAdvertType((PresentationObject)t),
+			// «Редактировать выпуски программ для спонсоров» (151) — вкладка «Спонсорство» страницы акции (этап 7).
+			[Merlin.Classes.SponsorCampaignPartView.EditIssuesAction] = (s, t) => s.OpenSponsorPlacement((PresentationObject)t),
 		},
 		["RollerPartOfSponsorCampaign"] = new()
 		{
 			[Merlin.Classes.SponsorCampaignPartView.ShowDaysAction] = (s, t) => s.SwitchSponsorPartView(t, Merlin.Classes.SponsorCampaignPartView.ShowDaysAction),
 			[Merlin.Classes.SponsorCampaignPartView.ShowRollersAction] = (s, t) => s.SwitchSponsorPartView(t, Merlin.Classes.SponsorCampaignPartView.ShowRollersAction),
+			// «Редактировать в эфир рекламных роликов» (481) — та же вкладка: бонусные ролики под полосой программ.
+			[Merlin.Classes.SponsorCampaignPartView.EditIssuesAction] = (s, t) => s.OpenSponsorPlacement((PresentationObject)t),
+		},
+		// Строки частей в списке справа от узла спонсорской кампании: сущность 79 (SponsorProgramPart) в Init переключается
+		// на 86/87, а класс остаётся обёрткой — те же 151/481, что у узлов дерева.
+		["SponsorProgramPart"] = new()
+		{
+			[Merlin.Classes.SponsorCampaignPartView.EditIssuesAction] = (s, t) => s.OpenSponsorPlacement((PresentationObject)t),
 		},
 		// CampaignPart.DoAction(Delete) у узлов дерева кампании: дни, ролики, модули, пакетные модули,
 		// спонсорские программы, выпуски программ и пакетов. Процедура DeleteItem по метаданным, пересчёт
@@ -2343,6 +2353,20 @@ public sealed partial class ObjectActions
 				: FogSoft.Web.Components.Pages.ActionPage.WindowsUrl(actionId.Value, campaignId));
 		}
 		return Task.FromResult(ActionEffect.None);
+	}
+
+	/// <summary>
+	/// Пункты 151/481 у узлов «Программы для спонсоров» / «Рекламные ролики» спонсорской кампании (десктоп — CampaignForm в
+	/// режиме программ или роликов) — страница акции на вкладке «Спонсорство» с этой кампанией: программы и бонусные ролики
+	/// там на одной вкладке (В-27).
+	/// </summary>
+	private async Task<ActionEffect> OpenSponsorPlacement(PresentationObject part)
+	{
+		int? actionId = await _busy.RunAsync(() => Merlin.Classes.SponsorCampaignPartView.ActionIdOf(part));
+		if (actionId != null)
+			_navigation.NavigateTo(FogSoft.Web.Components.Pages.ActionPage.SponsorshipUrl(actionId.Value,
+				Merlin.Classes.SponsorCampaignPartView.CampaignIdOf(part)));
+		return ActionEffect.None;
 	}
 
 	/// <summary>Issue.UpdatePosition: позиция, пересчёт акции и сообщение о её цене.</summary>

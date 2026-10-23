@@ -19,7 +19,9 @@
     прайс-лист и легенда — тонкой строкой под ней.
 *@
 
-<div class="pgrid @(Brush ? "brush" : null) @(Model is { HasPrices: false } ? "no-price" : null) @(IsMonth ? "month" : null)">
+<div class="pgrid @(Brush ? "brush" : null) @(Model is { HasPrices: false } ? "no-price" : null) @(IsMonth ? "month" : null) @(Strip ? "strip" : null)">
+    @if (!Strip)
+    {
     <div class="pgrid-bar">
         @LeadingTools
         <div class="pgrid-nav">
@@ -44,6 +46,7 @@
         </div>
         @TrailingTools
     </div>
+    }
 
     <div class="pgrid-info">
         @Caption
@@ -139,7 +142,10 @@
                                 else
                                 {
                                     <td class="@CellClass(cell, day)" title="@CellTitle?.Invoke(cell)"
-                                        @onclick="ClickHandler(cell)">@(CellText?.Invoke(cell) ?? cell.Text)</td>
+                                        @onclick="ClickHandler(cell)">@(CellText?.Invoke(cell) ?? cell.Text)@if (cell.Note != null)
+                                        {
+                                            <span class="cell-note">@cell.Note</span>
+                                        }</td>
                                 }
                             }
                         </tr>
@@ -176,6 +182,12 @@
 
     /// <summary>Клик ставит выпуск («Режим добавления») — курсор-кисть над местами.</summary>
     [Parameter] public bool Brush { get; set; }
+
+    /// <summary>
+    /// Полоса над другой сеткой той же недели (программы над окнами на «Спонсорстве»): без строки недели — неделю листает
+    /// нижняя сетка, — высота по строкам.
+    /// </summary>
+    [Parameter] public bool Strip { get; set; }
 
     /// <summary>Инструменты владельца в строке недели — до навигации.</summary>
     [Parameter] public RenderFragment? LeadingTools { get; set; }
@@ -234,7 +246,7 @@
 
     /// <summary>
     /// Липкой колонке нужен известный отступ слева, поэтому ширина заголовочной колонки считается заранее —
-    /// по самому длинному тексту колонки в модели (шапка — 12 px прописными, строки — 13 px), в пределах
+    /// по самому длинному тексту колонки в модели (шапка — 12 px прописными, ~9,5 px на букву; строки — 13 px), в пределах
     /// 64–160 px; не поместилось — многоточие и подсказка. Последняя из трёх и более колонок (у модулей — «Тип оплаты»)
     /// не липкая: при открытых списке кампаний и панели места (1440 px) три липкие колонки занимали почти всю ширину
     /// сетки, и дни уходили под них.
@@ -252,7 +264,8 @@
             foreach (PlacementRow row in model.Rows)
                 if (row.Headers != null && h < row.Headers.Count)
                     longest = Math.Max(longest, row.Headers[h]?.Length ?? 0);
-            int width = (int)Math.Ceiling(Math.Max(heads[h].Length * 8.5, longest * 7.5)) + 2 * 8;
+            // Шапка — прописными, её буква шире строчной: «ПРОГРАММА» по 8,5 px на букву обрезалась.
+            int width = (int)Math.Ceiling(Math.Max(heads[h].Length * 9.5, longest * 7.5)) + 2 * 8;
             width = Math.Clamp(width, 64, 160);
             bool last = h == heads.Count - 1;
             bool free = last && heads.Count > 2;
@@ -292,6 +305,7 @@
         else if (cell.Has(PlacementFlags.FirmHere)) css += " firm";
         else if (cell.Has(PlacementFlags.FirmSome)) css += " firm-some";
         if (cell.Has(PlacementFlags.Match)) css += " match";
+        if (cell.Has(PlacementFlags.Tentative)) css += " tentative";
         // Фон — по приоритету десктопа: заблокировано, отмечено, прайм.
         if (Shown(cell, PlacementFlags.Disabled)) css += " bg-disabled";
         else if (Shown(cell, PlacementFlags.Marked)) css += " bg-marked";

@@ -85,8 +85,9 @@ namespace Merlin.Classes
 
 		/// <summary>
 		/// «Редактировать» у кампании в вебе есть у линейной — её размещение на вкладке
-		/// «Рекламные окна» — и у модульной (<see cref="IsModularCampaign"/>); у спонсорской и
-		/// пакетной вкладок пока нет (пункт серый).
+		/// «Рекламные окна» — и у модульной (<see cref="IsModularCampaign"/>); у спонсорской (93)
+		/// «Редактировать» в метаданных нет — её вход на «Спонсорство» — действие экрана (В-37), у пакетной
+		/// вкладки пока нет (пункт серый).
 		/// </summary>
 		public static bool IsLinearCampaign(PresentationObject campaign) =>
 			campaign is Campaign c && c.CampaignType == Campaign.CampaignTypes.Simple;
@@ -193,6 +194,7 @@ namespace Merlin.Classes
 		public const int PackModuleCampaignType = (int)Campaign.CampaignTypes.PackModule;
 		public const int LinearCampaignType = (int)Campaign.CampaignTypes.Simple;
 		public const int ModuleCampaignType = (int)Campaign.CampaignTypes.Module;
+		public const int SponsorCampaignType = (int)Campaign.CampaignTypes.Sponsor;
 
 		/// <summary>Действующие агентства станции (MassmediaAgencies): agencyID, name.</summary>
 		public static DataTable StationAgencies(DataRow station)

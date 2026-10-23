@@ -255,6 +255,35 @@
     font-weight: 700;
 }
 
+/* Полоса программ (В-31): чужие макеты — курсивом, и надписью места, и припиской «+1 макет» к своему или подтверждённому. */
+.table > tbody > tr > td.tentative,
+.cell-note {
+    font-style: italic;
+    color: var(--c-text-muted);
+}
+
+.cell-note {
+    margin-left: 4px;
+    font-size: 12px;
+}
+
+/* Полоса над другой сеткой (Strip): высота по строкам, длинное имя фирмы в месте — многоточием, полностью — в подсказке. */
+.pgrid.strip {
+    flex: 0 0 auto;
+}
+
+.pgrid.strip .pgrid-table {
+    flex: 0 0 auto;
+    min-height: 0;
+    max-height: 30vh;
+}
+
+.pgrid.strip .table > tbody > tr > td.cell {
+    max-width: 104px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
 .table > tbody > tr > td.bg-disabled {
     background: var(--c-danger-soft);
 }

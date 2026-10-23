@@ -233,6 +233,21 @@
     color: var(--c-text);
 }
 
+.sample.tentative {
+    font-style: italic;
+    color: var(--c-text-muted);
+}
+
+/* «Спонсорство»: полоса программ над сеткой окон бонусных роликов — высота по строкам (1–6), неделя общая. */
+.program-strip {
+    flex: 0 0 auto;
+    display: flex;
+    flex-direction: column;
+    min-width: 0;
+    padding-bottom: var(--s-2);
+    border-bottom: 1px solid var(--c-border);
+}
+
 .swatch {
     display: inline-block;
     width: 14px;

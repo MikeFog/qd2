@@ -107,6 +107,14 @@ namespace Merlin.Classes
 			ActionWorkspace.CanEdit(action)
 			&& EntityManager.GetEntity((int)Entities.ProgramPart).IsActionEnabled(ProgramPartOfSponsorCampaign.ActionNames.EditIssues, ViewType.Journal);
 
+		/// <summary>
+		/// Право на размещение спонсорской кампании — на выпуски программ (86/EditIssues, 151) или на бонусные ролики
+		/// (87/EditIssues, 481), как кнопки ActionForm: по нему виден вход «Редактировать» у строки спонсорской кампании (В-37).
+		/// </summary>
+		public static bool HasPlacementRight() =>
+			EntityManager.GetEntity((int)Entities.ProgramPart).IsActionEnabled(ProgramPartOfSponsorCampaign.ActionNames.EditIssues, ViewType.Journal)
+			|| EntityManager.GetEntity((int)Entities.RollerPart).IsActionEnabled(RollerPartOfSponsorCampaign.ActionNames.EditIssues, ViewType.Journal);
+
 		/// <summary>Строка спонсорской кампании акции по свежему списку (Campaigns @actionID); null — такой нет.</summary>
 		private static DataRow SponsorCampaignRow(ActionOnMassmedia action, int campaignId)
 		{

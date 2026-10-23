@@ -20,10 +20,12 @@
     шапка с итогами и меню акции (то же «⋯», что в журнале), вкладка «Кампании» — добавить и
     удалить кампании, скидка менеджера, цена акции. Вкладки размещения по виду места (Окна /
     Модули / Спонсорство / Пакеты) видны для тех видов, что есть в акции. Этап 2 — «Рекламные
-    окна» (ActionWindowsTab), этап 6 — «Модули» (ActionModulesTab), остальные пока серые.
+    окна» (ActionWindowsTab), этап 6 — «Модули» (ActionModulesTab), этап 7 — «Спонсорство» (та же
+    ActionWindowsTab с Sponsorship: программы и бонусные ролики), «Пакетные модули» пока серые.
 
-    Вкладка и кампания — в адресе (?tab=windows&campaign=N, ?tab=modules&campaign=N): так
-    открывает «Редактировать» у линейной и модульной кампании (ObjectActions). Переключение
+    Вкладка и кампания — в адресе (?tab=windows&campaign=N, ?tab=modules&campaign=N,
+    ?tab=sponsorship&campaign=N): так открывает «Редактировать» у линейной и модульной кампании
+    (ObjectActions), у спонсорской — пункты её узлов в дереве и действие экрана в списке. Переключение
     вкладок адрес заменяет, а не добавляет — «Назад» ведёт туда, откуда страницу открыли.
 
     Входы: «Редактировать» у акции в журналах и щелчок по акции в списке (ObjectActions). Права
@@ -195,6 +197,14 @@ else
                                   Changed="() => PlacementChanged(PageTab.Modules)" />
             </div>
         }
+        @if (Pane(PageTab.Sponsorship) is { } sponsorship)
+        {
+            <div class="tab-pane" hidden="@(_tab != PageTab.Sponsorship)">
+                <ActionWindowsTab Action="_action" Campaigns="_campaigns!" Sponsorship="true" RequestedCampaignId="sponsorship.RequestedCampaign"
+                                  RequestVersion="sponsorship.RequestVersion" Active="_tab == PageTab.Sponsorship" PlacementVersion="sponsorship.PlacementVersion"
+                                  Changed="() => PlacementChanged(PageTab.Sponsorship)" />
+            </div>
+        }
     </div>
 }
 
@@ -212,6 +222,7 @@ else
     private const string CampaignQuery = "campaign";
     private const string WindowsTabValue = "windows";
     private const string ModulesTabValue = "modules";
+    private const string SponsorshipTabValue = "sponsorship";
 
     /// <summary>Адрес страницы акции — для переходов из журналов (ObjectActions).</summary>
     public static string Url(int actionId) => $"/action/{actionId}";
@@ -228,10 +239,16 @@ else
     /// </summary>
     public static string ModulesUrl(int actionId, int? campaignId = null) => TabUrl(actionId, ModulesTabValue, campaignId);
 
+    /// <summary>
+    /// Вкладка «Спонсорство» с открытой кампанией — пункты 151/481 узлов спонсорской кампании в дереве и «Редактировать» у её
+    /// строки на «Рекламных кампаниях» (В-37); без кампании — первая спонсорская.
+    /// </summary>
+    public static string SponsorshipUrl(int actionId, int? campaignId = null) => TabUrl(actionId, SponsorshipTabValue, campaignId);
+
     private static string TabUrl(int actionId, string tab, int? campaignId) =>
         $"/action/{actionId}?{TabQuery}={tab}" + (campaignId is int id ? $"&{CampaignQuery}={id}" : "");
 
-    private enum PageTab { Campaigns, Windows, Modules }
+    private enum PageTab { Campaigns, Windows, Modules, Sponsorship }
 
     /// <summary>
     /// Вкладка размещения: вид места (вкладка есть, пока в акции есть такие кампании), значение в адресе
@@ -264,6 +281,7 @@ else
     {
         [PageTab.Windows] = new PlacementTab(ActionWorkspace.PlaceKinds.Windows, WindowsTabValue),
         [PageTab.Modules] = new PlacementTab(ActionWorkspace.PlaceKinds.Modules, ModulesTabValue),
+        [PageTab.Sponsorship] = new PlacementTab(ActionWorkspace.PlaceKinds.Sponsorship, SponsorshipTabValue),
     };
 
     private PageTab _tab = PageTab.Campaigns;
@@ -297,6 +315,7 @@ else
     private static readonly string[] CreateMenus = { ScreenRoutes.CreateAction, ScreenRoutes.CreateActionVeer, ScreenRoutes.CreateActionCombo };
 
     private const string ManagerDiscountAction = "SetManagerDiscount";
+    private const string SponsorshipEditAction = "EditSponsorship";
 
     private string _title = Tr.T("Рекламная акция");
     private bool _journalAccess = true;
@@ -308,6 +327,7 @@ else
     private bool _canEdit;
     private bool _canAddCampaigns;
     private bool _canAddModules;
+    private bool _sponsorPlacementRight;
 
     private Entity? _campaignEntity;
     private DataTable? _campaigns;
@@ -435,6 +455,7 @@ else
                 _canEdit = ActionWorkspace.CanEdit(action);
                 _canAddCampaigns = ActionWorkspace.CanAddCampaigns(action);
                 _canAddModules = ModuleDaySource.CanAddModuleCampaigns(action);
+                _sponsorPlacementRight = ProgramSource.HasPlacementRight();
                 _campaignEntity ??= ActionWorkspace.CampaignListEntity();
                 _campaigns = ActionWorkspace.LoadCampaigns(action);
                 _kinds = ActionWorkspace.KindsOf(_campaigns);
@@ -520,8 +541,19 @@ else
     {
         bool zeroPrice = ParseHelper.GetDecimalFromObject(row[ActionWorkspace.CampaignColumns.TariffPrice], 0) == 0;
         bool enabled = _canEdit && !zeroPrice;
-        return new[]
-        {
+        List<ActionMenuItem> items = new();
+        // «Редактировать» у спонсорской кампании (В-37): у сущности 93 его в метаданных нет, в десктопе это кнопки ActionForm
+        // «Редактировать выходы спонсорских программ» / «Редактировать размещение роликов» — видно при праве на любую из них.
+        if (ProgramSource.IsSponsor(row) && _sponsorPlacementRight)
+            items.Add(new ActionMenuItem
+            {
+                Name = SponsorshipEditAction,
+                Text = Tr.T("Редактировать"),
+                Icon = "bi-pencil",
+                Enabled = true,
+                Ported = true,
+            });
+        items.Add(
             new ActionMenuItem
             {
                 Name = ManagerDiscountAction,
@@ -532,14 +564,16 @@ else
                 DisabledReason = enabled ? null
                     : !_canEdit ? Tr.T("Нет права «Редактировать» на эту акцию.")
                     : Tr.T("Невозможно установить итоговую стоимость кампании и менеджерскую скидку, так как стоимость кампании по тарифам равна нулю."),
-            },
-        };
+            });
+        return items;
     }
 
     private async Task OnCampaignScreenAction((DataRow Row, string Action) args)
     {
         if (args.Action == ManagerDiscountAction)
             await SetManagerDiscount(args.Row);
+        else if (args.Action == SponsorshipEditAction)
+            Nav.NavigateTo(SponsorshipUrl(ActionId, WindowsSource.CampaignIdOf(args.Row)));
     }
 
     private async Task AddCampaigns()

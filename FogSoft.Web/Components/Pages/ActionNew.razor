@@ -329,8 +329,8 @@ else
 
     /// <summary>
     /// Линейные — на «Рекламные окна»: одна кампания — сразу её неделя, несколько — веер по всем;
-    /// модульные — на «Модули» (одна кампания — она, несколько — все). Другим видам вкладок
-    /// размещения в вебе пока нет — «Рекламные кампании».
+    /// модульные — на «Модули» (одна кампания — она, несколько — все); спонсорские — на «Спонсорство»
+    /// (кампании по одной: первая). Пакетным вкладки размещения в вебе пока нет — «Рекламные кампании».
     /// </summary>
     private static string LandingUrl(ActionWorkspace.CreatedAction created, int campaignTypeId)
     {
@@ -339,6 +339,8 @@ else
             return ActionPage.WindowsUrl(created.ActionId, single);
         if (campaignTypeId == ActionWorkspace.ModuleCampaignType)
             return ActionPage.ModulesUrl(created.ActionId, single);
+        if (campaignTypeId == ActionWorkspace.SponsorCampaignType)
+            return ActionPage.SponsorshipUrl(created.ActionId, created.CampaignIds.Count > 0 ? created.CampaignIds[0] : null);
         return ActionPage.Url(created.ActionId);
     }
 
