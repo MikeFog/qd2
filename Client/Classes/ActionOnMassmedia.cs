@@ -471,7 +471,10 @@ namespace Merlin.Classes
                 else if (selectedCampaign.CampaignType == Campaign.CampaignTypes.Sponsor)
                 {
                     CloneProgramIssues(selectedCampaign, newCampaign, shiftInDays, tableErrors);
-                    CloneRollerIssues(selectedCampaign, newCampaign, shiftInDays, tableErrors);
+                    // Бонус роликов сверяется с Campaign.timeBonus/issuesDuration, которые ведёт только ActionRecalculate
+                    // (Д-27): пересчёт после программ и после каждого ролика (Д-31, как у веба — В-33).
+                    newAction.Recalculate(false);
+                    CloneRollerIssues(selectedCampaign, newCampaign, shiftInDays, tableErrors, newAction);
                 }
                 else if (selectedCampaign.CampaignType == Campaign.CampaignTypes.PackModule)
                 {
@@ -570,11 +573,18 @@ namespace Merlin.Classes
             }
         }
 
-        private void CloneRollerIssues(ObjectContainer campaign, Campaign newCampaign, int shiftInDays, DataTable tableErrors)
+        /// <summary>
+        /// Выпуски роликов кампании — в новую со сдвигом. <paramref name="recalculateAfterEach"/> — акция, которую
+        /// пересчитать после каждого поставленного выпуска (бонусные ролики спонсорской).
+        /// </summary>
+        private void CloneRollerIssues(ObjectContainer campaign, Campaign newCampaign, int shiftInDays, DataTable tableErrors,
+            ActionOnMassmedia recalculateAfterEach = null)
         {
 			Massmedia mm = (new CampaignOnSingleMassmedia(newCampaign.CampaignId)).Massmedia;
 			campaign.ChildEntity = EntityManager.GetEntity((int)Entities.Issue);
-			foreach (DataRow item in campaign.GetContent().Rows)
+			// GetContent(Filter) — то же, что базовый GetContent(), но у спонсорской кампании GetContent() перекрыт и
+			// отдаёт строки частей «Программы» / «Ролики», а не выпуски (Д-31).
+			foreach (DataRow item in campaign.GetContent(campaign.Filter).Rows)
 			{
                 RollerIssue issue = new RollerIssue(item);
 				DateTime newDate = issue.IssueDateOriginal.AddDays(shiftInDays);
@@ -585,6 +595,7 @@ namespace Merlin.Classes
 					try
 					{
 						newCampaign.AddIssue(issue.Roller, window, issue.Position, null);
+						recalculateAfterEach?.Recalculate(false);
 					}
 					catch (Exception ex)
 					{

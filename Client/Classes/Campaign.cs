@@ -371,7 +371,12 @@ namespace Merlin.Classes
 				{
 					item.Refresh();
 					ErrorManager.AddErrorRow(tableErrors, DateTime.Parse(item[CampaignDay.ParamNames.IssueDate].ToString()), MessageAccessor.GetMessage(ex.Message));
+					continue;
 				}
+				// ProgramIssueIUD DeleteItem сверяет бонус с Campaign.timeBonus, который ведёт только ActionRecalculate:
+				// без пересчёта снятая программа ещё числится, и следующая снимется сверх занятого роликами (Д-32).
+				if (isSponsorProgram)
+					RecalculateAction(false);
 			}
 			return tableErrors;
 		}
