@@ -516,9 +516,10 @@ namespace Merlin.Classes
             {
                 ProgramIssue issue = new ProgramIssue(item);
                 DateTime newDate = issue.IssueDate.AddDays(shiftInDays);
-				// есть ли прайс-лист для этой программы в новом дне ?
-				SponsorPricelist pricelist = issue.SponsorProgram.GetPricelist(newDate);
-                if (pricelist == null) 
+				// есть ли прайс-лист для этой программы в новом дне ? По дню, а не по моменту выпуска: SponsorPricelistByDate
+				// сверяет дату с датами срока без времени и без прайс-листа на дату отдаёт ближайший будущий.
+				SponsorPricelist pricelist = issue.SponsorProgram.GetPricelist(newDate.Date);
+                if (pricelist == null || newDate.Date < pricelist.StartDate.Date || newDate.Date > pricelist.FinishDate.Date)
 				{
                     ErrorManager.AddErrorRow(tableErrors, newDate, Tr.Format(Properties.Resources.SponsorPricelistNotFound, issue.SponsorProgram.Name));
                     continue; 
@@ -531,7 +532,15 @@ namespace Merlin.Classes
                     continue;
                 }
 
-				newCampaign.AddProgramIssue(issue.SponsorProgram, tariff.TariffId, newDate, tariff.Price, pricelist.Bonus, false);
+                try
+                {
+					newCampaign.AddProgramIssue(issue.SponsorProgram, tariff.TariffId, newDate, tariff.Price, pricelist.Bonus, false);
+                }
+                catch (Exception ex)
+                {
+                    // Текст отказа по ключу iMessage, иначе — текст ошибки (MessageAccessor.GetMessage без ключа дал бы пустую строку).
+                    ErrorManager.AddErrorRow(tableErrors, newDate, ErrorManager.GetErrorMessage(ex));
+                }
             }
         }
 

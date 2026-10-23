@@ -33,6 +33,8 @@ namespace Merlin.Classes
 		/// текст); на всех станциях — <see cref="FirmHere"/>.
 		/// </summary>
 		FirmSome = 128,
+		/// <summary>Надпись места — только чужие макеты (полоса программ, В-31: курсивом «Макет: фирма» / «Макеты: N»).</summary>
+		Tentative = 256,
 	}
 
 	/// <summary>Вид периода сетки размещения: подписи навигации, выходные, ширина колонок дня.</summary>
@@ -222,6 +224,9 @@ namespace Merlin.Classes
 		/// <summary>Подсказка к месту строками (веер: каких кампаний не хватает, чьи акции фирмы здесь); null — нет.</summary>
 		public string Details { get; internal set; }
 
+		/// <summary>Приписка к надписи курсивом (полоса программ: «+1 макет» — чужие макеты рядом со своим или подтверждённым); null — нет.</summary>
+		public string Note { get; internal set; }
+
 		/// <summary>Ролики текущей кампании в месте — в порядке выпусков, с повторами.</summary>
 		public IReadOnlyList<int> OwnRollerIds { get; internal set; } = Array.Empty<int>();
 
@@ -269,5 +274,8 @@ namespace Merlin.Classes
 
 		/// <summary>Модуль и кампания строки за день — у места вкладки «Модули» (ModuleDaySource), иначе null.</summary>
 		internal ModuleDaySource.ModuleDay ModuleDay { get; set; }
+
+		/// <summary>Тариф программы за день — у места полосы «Программы» вкладки «Спонсорство» (ProgramSource), иначе null.</summary>
+		internal ProgramSource.ProgramDay ProgramDay { get; set; }
 	}
 }

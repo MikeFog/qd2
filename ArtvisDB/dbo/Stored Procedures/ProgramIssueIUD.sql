@@ -63,10 +63,14 @@ IF @actionName = 'AddItem'
 	declare @datepart tinyint 
 	set @datepart = datepart(dw, @issueDate)
 
-	if not exists(select * 
-		from SponsorTariff t 
+	-- Тариф этой программы, отмеченный день недели и день в сроке прайс-листа тарифа (Д-25). Срок — дни
+	-- startDate…finishDate включительно, выпуск идёт во время тарифа: конец — finishDate + 1 день, как в sponsorPLIUD
+	-- (SponsorPricelistInUse); BETWEEN отказал бы выпускам последнего дня.
+	if not exists(select *
+		from SponsorTariff t
 			inner join SponsorProgramPricelist sppl on t.pricelistID = sppl.pricelistID
 		where t.tariffID = @tariffID and sppl.sponsorProgramID = @programID
+			and @issueDate >= sppl.startDate and @issueDate < dateadd(day, 1, sppl.finishDate)
 			and ((t.monday = 1 and @datepart = 1)
 				or (t.tuesday = 1 and @datepart = 2)
 				or (t.wednesday = 1 and @datepart = 3)
@@ -83,7 +87,11 @@ IF @actionName = 'AddItem'
 	begin 
 		raiserror('UIX_ProgramIssue_program_issueDate',16,1)
 		return
-	end 
+	end
+
+	-- Цена выпуска — из тарифа, а не от клиента (Д-26; как IssueIUD с 03.10.2026): в давно открытой форме она могла
+	-- устареть. Параметр @tariffPrice оставлен в контракте и не используется.
+	select @tariffPrice = t.price from SponsorTariff t where t.tariffID = @tariffID
 
 	INSERT INTO [ProgramIssue](campaignID, programID, tariffID, issueDate, [tariffPrice], isConfirmed, advertTypeID)
 	select @campaignID, @programID, @tariffID, @issueDate, @tariffPrice, @isConfirmed, @advertTypeID

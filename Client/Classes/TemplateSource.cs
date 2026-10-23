@@ -20,7 +20,8 @@ namespace Merlin.Classes
 	/// запись — по дням, каждый день в своей транзакции (дни независимы, как в десктопе, но блокировки
 	/// держатся доли секунды). Бизнес-отказ шага — строка таблицы, запуск идёт дальше; любая другая
 	/// ошибка (взаимоблокировка, таймаут) откатывает день и прерывает запуск: выпуски прежних дней остаются.
-	/// Пересчёт акции — один, в конце. Права — как у остальных записей вкладки (LoadForWrite).
+	/// Пересчёт акции — один, в конце; у бонусных роликов спонсорской кампании (этап 7) — ещё и после каждого выпуска
+	/// (В-33, см. WriteDay). Права — как у остальных записей вкладки (LoadForWrite).
 	///
 	/// Только веб: в Client.csproj не входит.
 	/// </summary>
@@ -202,23 +203,31 @@ namespace Merlin.Classes
 			public Roller Roller { get; }
 		}
 
-		/// <summary>Один день линейки: выпуски в окна по порядку, каждое — шаг <see cref="WindowsSource.Step"/>.</summary>
+		/// <summary>
+		/// Один день линейки: выпуски в окна по порядку, каждое — шаг <see cref="WindowsSource.Step"/>. У спонсорской кампании
+		/// после каждого поставленного выпуска — пересчёт акции в транзакции дня (<see cref="WindowsSource.RecalculatesPerStep"/>):
+		/// иначе внутри дня бонус сверяется с расходом до дня и превышается — так превышает десктопный генератор (Д-27).
+		/// </summary>
 		private static bool WriteDay(WindowsSource.OpenCampaign c, Campaign campaign, int position, List<DayWrite> writes,
-			string dayText, int daysLeft, TemplateResult result, string kind) =>
-			WriteDayCore(kind, "campaign " + c.CampaignId, dayText, daysLeft, writes.Count, result, () =>
+			string dayText, int daysLeft, TemplateResult result, string kind)
+		{
+			bool perStep = WindowsSource.RecalculatesPerStep(campaign);
+			return WriteDayCore(kind, "campaign " + c.CampaignId, dayText, daysLeft, writes.Count, result, () =>
 			{
 				WindowsSource.BatchResult dayResult = new WindowsSource.BatchResult();
 				WindowsSource.RunInTransaction(() =>
 				{
 					foreach (DayWrite w in writes)
-						WindowsSource.Step(dayResult, w.Start.ToString("dd.MM.yyyy HH:mm"), () =>
-						{
-							dayResult.Created.Add(WindowsSource.Capture(c, campaign.AddIssue(w.Roller, w.Window, (RollerPositions)position, null), w.WindowId, w.Start, w.Roller));
-							return null;
-						});
+						if (WindowsSource.Step(dayResult, w.Start.ToString("dd.MM.yyyy HH:mm"), () =>
+							{
+								dayResult.Created.Add(WindowsSource.Capture(c, campaign.AddIssue(w.Roller, w.Window, (RollerPositions)position, null), w.WindowId, w.Start, w.Roller));
+								return null;
+							}) && perStep)
+							campaign.RecalculateAction(false);
 				});
 				return dayResult;
 			});
+		}
 
 		/// <summary>
 		/// Один день в одной транзакции (её открывает <paramref name="attempt"/>): отказ шага — строка таблицы, остальные пишутся.

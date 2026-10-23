@@ -15,7 +15,8 @@ namespace Merlin.Classes
 	/// «Изменить позиционирование» (ChangePositions) у линейной и модульной кампании, ролика кампании, модуля кампании и
 	/// роликов спонсорской — веб-аналог ChangePositioningForm и CampaignPart.ApplyPositionChanges: паспорт
 	/// IssueChangePositioning, дерево «день → выпуски» с отбором «Показать:» по текущей позиции, «Сделать:» — новая позиция;
-	/// запись — UpdateItem на выпуск (IssueIUD, у модульной — ModuleIssueIUD), один пересчёт в конце.
+	/// запись — UpdateItem на выпуск (IssueIUD, у модульной — ModuleIssueIUD), один пересчёт в конце; у роликов спонсорской —
+	/// ещё и после каждого выпуска (В-33: позиция меняет расход бонуса).
 	///
 	/// Отличия от десктопа: по дням транзакциями с точкой сохранения на выпуск (UpdateItem уменьшает счётчики окон до своих
 	/// проверок; у десктопа — транзакция на выпуск); смена «Показать:» сбрасывает отметки (десктоп менял и скрытые); две
@@ -157,6 +158,7 @@ namespace Merlin.Classes
 			if (!ActionOnMassmedia.CheckLoggedUserRight(ActionName, action))
 				throw new InvalidOperationException(Tr.T(Properties.Resources.OperationNotAllowed));
 			bool module = fresh.CampaignType == Campaign.CampaignTypes.Module;
+			bool perStep = WindowsSource.RecalculatesPerStep(fresh);
 			decimal oldPrice = action.TotalPrice;
 
 			HashSet<int> wanted = new HashSet<int>(issueIds);
@@ -182,7 +184,7 @@ namespace Merlin.Classes
 					{
 						try
 						{
-							day = WriteDay(action.ActionId, fresh.CampaignId, module, days[i], position);
+							day = WriteDay(action, fresh.CampaignId, module, perStep, days[i], position);
 						}
 						catch (SqlException ex) when (ex.Number == 1205 && n == 0)
 						{
@@ -225,8 +227,14 @@ namespace Merlin.Classes
 			return result;
 		}
 
-		private static WindowsSource.BatchResult WriteDay(int actionId, int campaignId, bool module, IEnumerable<Planned> day, int position)
+		/// <summary>
+		/// Один день. У роликов спонсорской кампании (<paramref name="perStep"/>) — пересчёт акции после каждого изменённого
+		/// выпуска (В-33): позиция меняет наценку бонуса (f_GetSponsorDuration), а UpdateItem сверяет бонус с
+		/// Campaign.issuesDuration, которое ведёт только пересчёт, — без него пачка превысила бы бонус.
+		/// </summary>
+		private static WindowsSource.BatchResult WriteDay(ActionOnMassmedia action, int campaignId, bool module, bool perStep, IEnumerable<Planned> day, int position)
 		{
+			int actionId = action.ActionId;
 			WindowsSource.BatchResult work = new WindowsSource.BatchResult();
 			WindowsSource.RunInTransaction(() =>
 			{
@@ -248,7 +256,8 @@ namespace Merlin.Classes
 				}
 				// Порядок блокировок — по окну выхода, как у пачек вкладки «Рекламные окна».
 				foreach (KeyValuePair<Planned, DataRow> x in rows.OrderBy(x => Convert.ToInt32(x.Value[Issue.ActualWindowIdParam])))
-					RangeSource.Step(work, x.Key.Name, 1, () => WriteIssue(actionId, x.Value, position));
+					if (RangeSource.Step(work, x.Key.Name, 1, () => WriteIssue(actionId, x.Value, position)) && perStep)
+						action.Recalculate(false);
 			});
 			return work;
 		}

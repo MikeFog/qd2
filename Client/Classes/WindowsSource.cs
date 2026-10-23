@@ -29,6 +29,10 @@ namespace Merlin.Classes
 	/// знают, а IssueIUD не проверяет ни станцию окна, ни фирму ролика — окно берётся только из модели
 	/// недели, ролик — только из списка роликов фирмы.
 	///
+	/// Спонсорская кампания (этап 7, вкладка «Спонсорство») — те же окна станции для бонусных роликов, с одним
+	/// отличием: бонус IssueIUD и RollerSubstitute сверяют с полями кампании, которые ведёт только пересчёт, поэтому
+	/// у неё пачки пересчитывают акцию после каждого выпуска (В-33, <see cref="RecalculatesPerStep"/>).
+	///
 	/// Только веб: в Client.csproj не входит.
 	/// </summary>
 	public static class WindowsSource
@@ -68,7 +72,7 @@ namespace Merlin.Classes
 		/// </summary>
 		public static IReadOnlyList<KeyValuePair<string, string>> CampaignStats(DataRow campaign)
 		{
-			return new List<KeyValuePair<string, string>>
+			List<KeyValuePair<string, string>> stats = new List<KeyValuePair<string, string>>
 			{
 				Stat(Tr.T("Начало"), DateText(campaign[Campaign.ParamNames.StartDate])),
 				Stat(Tr.T("Окончание"), DateText(campaign[Campaign.ParamNames.FinishDate])),
@@ -78,6 +82,14 @@ namespace Merlin.Classes
 				Stat(Tr.T("Объёмная скидка"), ParseHelper.GetDecimalFromObject(campaign[Campaign.ParamNames.Discount], 1).ToString("0.00")),
 				Stat(Tr.T("Цена с учётом объёмной скидки"), ParseHelper.GetDecimalFromObject(campaign[Campaign.ParamNames.Price], 0).ToString("C")),
 			};
+			// Спонсорская — ещё программы и остаток бонуса, как Campaign.DisplayCampaignData (остаток бывает отрицательным).
+			if (ParseHelper.GetInt32FromObject(campaign[Campaign.ParamNames.CampaignTypeId], 0) == (int)Campaign.CampaignTypes.Sponsor)
+			{
+				stats.Add(Stat(Tr.T("Программ"), ParseHelper.GetInt32FromObject(campaign[Campaign.ParamNames.ProgramIssuesCount], 0).ToString()));
+				stats.Add(Stat(Tr.T("Бонус"), DateTimeUtils.Time2String(ParseHelper.GetInt32FromObject(campaign[Campaign.ParamNames.TimeBonus], 0)
+					- ParseHelper.GetInt32FromObject(campaign[Campaign.ParamNames.IssuesDuration], 0))));
+			}
+			return stats;
 		}
 
 		private static KeyValuePair<string, string> Stat(string caption, string value) => new KeyValuePair<string, string>(caption, value);
@@ -116,8 +128,11 @@ namespace Merlin.Classes
 			public int MassmediaId { get; internal set; }
 			public int FirmId { get; internal set; }
 
-			/// <summary>Можно ли менять размещение: «Редактировать» у акции и у кампании.</summary>
+			/// <summary>Можно ли менять размещение: «Редактировать» у акции и у кампании (у спонсорской — право на бонусные ролики).</summary>
 			public bool CanEdit { get; internal set; }
+
+			/// <summary>Спонсорская кампания — её бонусные ролики (вкладка «Спонсорство»); иначе линейная.</summary>
+			public bool IsSponsor { get; internal set; }
 
 			/// <summary>День первого выпуска; null — выпусков нет. С этой недели открывается сетка.</summary>
 			public DateTime? FirstIssueDate { get; internal set; }
@@ -125,11 +140,15 @@ namespace Merlin.Classes
 			public DataTable Rollers { get; set; }
 		}
 
-		/// <summary>Линейная кампания этой акции; null — нет такой (удалена, другая акция, не линейная).</summary>
+		/// <summary>
+		/// Линейная или спонсорская кампания этой акции; null — нет такой (удалена, другая акция, другой тип). Какие
+		/// кампании показывать, решает вкладка: «Рекламные окна» — линейные (<see cref="IsLinear"/>), «Спонсорство» — спонсорские.
+		/// </summary>
 		public static OpenCampaign Open(ActionOnMassmedia action, int campaignId)
 		{
 			Campaign campaign = Campaign.GetCampaignById(campaignId);
-			if (campaign == null || campaign.ActionId != action.ActionId || campaign.CampaignType != Campaign.CampaignTypes.Simple)
+			if (campaign == null || campaign.ActionId != action.ActionId
+				|| campaign.CampaignType != Campaign.CampaignTypes.Simple && campaign.CampaignType != Campaign.CampaignTypes.Sponsor)
 				return null;
 
 			return new OpenCampaign
@@ -139,16 +158,30 @@ namespace Merlin.Classes
 				MassmediaId = ParseHelper.GetInt32FromObject(campaign[Campaign.ParamNames.MassmediaId], 0),
 				FirmId = action.FirmID,
 				CanEdit = CanEdit(action, campaign),
+				IsSponsor = campaign.CampaignType == Campaign.CampaignTypes.Sponsor,
 				FirstIssueDate = campaign.StartDate == DateTime.MinValue ? (DateTime?)null : campaign.StartDate.Date,
 			};
 		}
 
 		/// <summary>
 		/// Править размещение — как вход в CampaignForm из ActionForm (campaign.IsActionEnabled(Edit):
-		/// права группы и правило своих / чужих акций) плюс «Редактировать» самой акции (В-7).
+		/// права группы и правило своих / чужих акций) плюс «Редактировать» самой акции (В-7). У спонсорской кампании
+		/// (сущность 93) «Редактировать» в метаданных нет: бонусные ролики правит право «Редактировать в эфир рекламных
+		/// роликов» части роликов (87/EditIssues, 481), как кнопка ActionForm; правило своих / чужих — правом на акцию.
 		/// </summary>
 		private static bool CanEdit(ActionOnMassmedia action, Campaign campaign) =>
-			ActionWorkspace.CanEdit(action) && campaign.IsActionEnabled(Constants.EntityActions.Edit, ViewType.Journal);
+			ActionWorkspace.CanEdit(action) && (campaign.CampaignType == Campaign.CampaignTypes.Sponsor
+				? EntityManager.GetEntity((int)Entities.RollerPart).IsActionEnabled(RollerPartOfSponsorCampaign.ActionNames.EditIssues, ViewType.Journal)
+				: campaign.IsActionEnabled(Constants.EntityActions.Edit, ViewType.Journal));
+
+		/// <summary>
+		/// Пересчитывать акцию после каждого выпуска пачки — у спонсорской кампании (В-33). Бонус IssueIUD (TimeBonusExceed
+		/// в hlp_IssueVerify) и RollerSubstitute сверяют с Campaign.timeBonus / issuesDuration, которые ведёт только
+		/// ActionRecalculate: с одним пересчётом в конце каждый выпуск пачки сверялся бы с бонусом до неё, и пачка
+		/// превысила бы бонус (Д-27). Пересчёт идёт после удачного шага, вне Step: его отказ откатывает всё действие, как
+		/// пересчёт в конце у линейной. У линейной — по-прежнему один пересчёт на действие.
+		/// </summary>
+		internal static bool RecalculatesPerStep(Campaign campaign) => campaign.CampaignType == Campaign.CampaignTypes.Sponsor;
 
 		/// <summary>Свежая кампания для записи; без права — отказ.</summary>
 		internal static Campaign LoadForWrite(OpenCampaign c)
@@ -656,23 +689,26 @@ namespace Merlin.Classes
 
 		/// <summary>
 		/// «Разместить ролик» в выделенные окна (десктоп — Insert): ролик кисти с позицией кисти в
-		/// каждое окно, одна транзакция и один пересчёт (десктоп пересчитывал на каждое окно, П-1).
+		/// каждое окно, одна транзакция и один пересчёт (десктоп пересчитывал на каждое окно, П-1); у спонсорской —
+		/// пересчёт после каждого окна (<see cref="RecalculatesPerStep"/>).
 		/// </summary>
 		public static BatchResult Place(OpenCampaign c, IEnumerable<PlacementCell> cells, int rollerId, int position)
 		{
 			Campaign campaign = LoadForWrite(c);
 			Roller roller = BrushRoller(c, rollerId, campaign.Action.FirmID);
+			bool perStep = RecalculatesPerStep(campaign);
 			BatchResult result = new BatchResult();
 			RunInTransaction(() =>
 			{
 				// По возрастанию номера окна — один порядок блокировок у всех пачек.
 				foreach (PlacementCell cell in cells.OrderBy(x => x.Key))
-					Step(result, cell.Date.ToString("dd.MM.yyyy HH:mm"), () =>
-					{
-						result.Created.Add(Capture(c, campaign.AddIssue(roller, cell.Window, (RollerPositions)position, null), cell, roller));
-						return null;
-					});
-				if (result.Done > 0)
+					if (Step(result, cell.Date.ToString("dd.MM.yyyy HH:mm"), () =>
+						{
+							result.Created.Add(Capture(c, campaign.AddIssue(roller, cell.Window, (RollerPositions)position, null), cell, roller));
+							return null;
+						}) && perStep)
+						campaign.RecalculateAction(false);
+				if (result.Done > 0 && !perStep)
 					campaign.RecalculateAction(false);
 			});
 			return result;
@@ -883,13 +919,16 @@ namespace Merlin.Classes
 		/// «Заменить ролики» в выделенных окнах (десктоп — Ctrl+R): RollerSubstitute на каждый выпуск
 		/// (@issueID + @originalWindowID, как CampaignForm.ReplaceRollerInSelectedWindows). Пересчёт —
 		/// один и только если длина роликов разная: ролик той же длины цену не меняет. Незаменённые
-		/// по правилам процедуры (прошлое, закрытый день…) — в отказах с её текстом.
+		/// по правилам процедуры (прошлое, закрытый день…) — в отказах с её текстом. У спонсорской — пересчёт после каждой
+		/// замены на ролик другой длины (<see cref="RecalculatesPerStep"/>): RollerSubstitute считает бонус только внутри
+		/// своего вызова.
 		/// </summary>
 		public static BatchResult Replace(OpenCampaign c, CampaignIssues issues, int newRollerId)
 		{
 			Campaign campaign = LoadForWrite(c);
 			Roller newRoller = BrushRoller(c, newRollerId, campaign.Action.FirmID);
 			Dictionary<int, Roller> oldRollers = issues.RollerIds.ToDictionary(id => id, id => new Roller(id));
+			bool perStep = RecalculatesPerStep(campaign);
 			bool durationChanged = false;
 			BatchResult result = new BatchResult();
 			RunInTransaction(() =>
@@ -897,17 +936,18 @@ namespace Merlin.Classes
 				foreach (DataRow row in InLockOrder(issues.Rows))
 				{
 					Roller oldRoller = oldRollers[RollerIdOf(row)];
-					Step(result, IssueName(row), () =>
-					{
-						DataTable unsubstituted = CampaignRoller.ApplyRollerSubstitutionForIssue(campaign, oldRoller, newRoller,
-							Convert.ToInt32(row[Issue.ParamNames.IssueId]), Convert.ToInt32(row[TariffWindow.ParamNames.OriginalWindowId]));
-						if (unsubstituted != null && unsubstituted.Rows.Count > 0)
-							return Convert.ToString(unsubstituted.Rows[0]["message"]);
-						durationChanged |= oldRoller.Duration != newRoller.Duration;
-						return null;
-					});
+					if (Step(result, IssueName(row), () =>
+						{
+							DataTable unsubstituted = CampaignRoller.ApplyRollerSubstitutionForIssue(campaign, oldRoller, newRoller,
+								Convert.ToInt32(row[Issue.ParamNames.IssueId]), Convert.ToInt32(row[TariffWindow.ParamNames.OriginalWindowId]));
+							if (unsubstituted != null && unsubstituted.Rows.Count > 0)
+								return Convert.ToString(unsubstituted.Rows[0]["message"]);
+							durationChanged |= oldRoller.Duration != newRoller.Duration;
+							return null;
+						}) && perStep && oldRoller.Duration != newRoller.Duration)
+						campaign.RecalculateAction(false);
 				}
-				if (durationChanged)
+				if (durationChanged && !perStep)
 					campaign.RecalculateAction(false);
 			});
 			return result;
@@ -986,7 +1026,25 @@ namespace Merlin.Classes
 		public static IReadOnlyList<KeyValuePair<int, PlacedIssue>> Move(OpenCampaign c, MovePlan plan)
 		{
 			Campaign campaign = LoadForWrite(c);
+			bool perStep = RecalculatesPerStep(campaign);
 			List<KeyValuePair<int, PlacedIssue>> moved = new List<KeyValuePair<int, PlacedIssue>>();
+			// «Снять, потом поставить» (агитация, спонсорская) при окне-приёмнике ниже источника нарушает общий порядок окон
+			// по возрастанию — встречная пачка той же станции может дать взаимоблокировку. Жертва откатана целиком, перенос
+			// повторяется один раз: выпуски перечитываются заново, снятые воскресли вместе с откатом.
+			for (int attempt = 0; ; attempt++)
+				try
+				{
+					MoveOnce(c, plan, campaign, perStep, moved);
+					return moved;
+				}
+				catch (SqlException ex) when (ex.Number == 1205 && attempt == 0)
+				{
+					Log.Warn($"Move: deadlock (campaign {c.CampaignId}), retrying", ex);
+				}
+		}
+
+		private static void MoveOnce(OpenCampaign c, MovePlan plan, Campaign campaign, bool perStep, List<KeyValuePair<int, PlacedIssue>> moved)
+		{
 			RunInTransaction(() =>
 			{
 				moved.Clear();
@@ -998,18 +1056,27 @@ namespace Merlin.Classes
 				// снятие, выше — сначала постановка. Проверки IssueIUD смотрят только своё окно. Исключение — агитация (тип 6):
 				// обвязку (анонс 7, 44/55) IssueIUD ведёт по всей цепочке склеенных окон, и постановка раньше снятия оставила бы
 				// старый анонс в окне-источнике — для неё прежний порядок «снять, потом поставить» (как IssueTransfer).
+				// Спонсорская — тоже «снять, пересчитать, потом поставить» (пересчёт после каждой постановки): иначе постановка
+				// сверила бы бонус с полями кампании, где переносимые выпуски ещё числятся, и кампании на полном бонусе перенос
+				// отказал бы, хотя расход бонуса не меняется.
 				List<RollerIssue> ordered = plan.Issues.OrderBy(WindowIdOf).ToList();
-				bool deleteFirst = ordered.Any(i => ParseHelper.GetInt32FromObject(i.Roller[Roller.ParamNames.RolActionTypeID], 0) is 0 or AgitationRollerType);
+				bool deleteFirst = perStep || ordered.Any(i => ParseHelper.GetInt32FromObject(i.Roller[Roller.ParamNames.RolActionTypeID], 0) is 0 or AgitationRollerType);
 				foreach (RollerIssue issue in ordered.Where(i => deleteFirst || WindowIdOf(i) <= plan.Target.Key))
 					issue.Delete(silenceFlag: true);
+				if (perStep)
+					campaign.RecalculateAction(false);
 				foreach (RollerIssue issue in ordered)
+				{
 					moved.Add(new KeyValuePair<int, PlacedIssue>(Convert.ToInt32(issue[Issue.ParamNames.IssueId]),
 						Capture(c, campaign.AddIssue(issue.Roller, plan.Target.Window, issue.Position, null), plan.Target, issue.Roller)));
+					if (perStep)
+						campaign.RecalculateAction(false);
+				}
 				foreach (RollerIssue issue in ordered.Where(i => !deleteFirst && WindowIdOf(i) > plan.Target.Key))
 					issue.Delete(silenceFlag: true);
-				campaign.RecalculateAction(false);
+				if (!perStep)
+					campaign.RecalculateAction(false);
 			});
-			return moved;
 		}
 
 		/// <summary>Выпуск в базе такой же, как в строке панели: тот же ролик, позиция, окно и кампания.</summary>
@@ -1104,21 +1171,25 @@ namespace Merlin.Classes
 		/// <summary>
 		/// Одно место пачки. Отказ по бизнес-правилу (RAISERROR с ключом iMessage, у IssueIUD и
 		/// RollerSubstitute — до записи) или причина, которую вернула запись, — в отказы, пачка идёт
-		/// дальше. Любая другая ошибка рвёт пачку: транзакцию откатит вызывающий.
+		/// дальше. Любая другая ошибка рвёт пачку: транзакцию откатит вызывающий. true — место записано.
 		/// </summary>
-		internal static void Step(BatchResult result, string name, Func<string> write)
+		internal static bool Step(BatchResult result, string name, Func<string> write)
 		{
 			try
 			{
 				string refusal = write();
 				if (refusal == null)
+				{
 					result.Done++;
-				else
-					result.Refuse(name, refusal);
+					return true;
+				}
+				result.Refuse(name, refusal);
+				return false;
 			}
 			catch (SqlException ex) when (ex.Number == 50000 && ex.Class == 16)
 			{
 				result.Refuse(name, ErrorManager.GetErrorMessage(ex));
+				return false;
 			}
 		}
 	}
