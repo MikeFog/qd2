@@ -29,7 +29,9 @@
     Та же вкладка — «Спонсорство» (Sponsorship, этап 7, решение В-27): спонсорские кампании акции по одной (веера нет), над
     сеткой окон бонусных роликов — полоса «Программы» той же недели (ProgramSource: все действующие программы станции, каждый
     тариф — строка). Бонусные ролики — тот же код, что у одной линейной кампании (в десктопе — тот же RollerIssuesGrid3);
-    бонус ядро сверяет пересчётом после каждого выпуска (В-33). Полоса программ пока на просмотр (щелчок — подэтап 7.2).
+    бонус ядро сверяет пересчётом после каждого выпуска (В-33). Щелчок по полосе в «Режиме добавления» ставит или снимает
+    выпуск программы (ProgramSource.Toggle) с предметом рекламы из поля над полосой (В-30); режим общий для полосы и окон и
+    включается и без ролика кисти, если программы править можно. «Отменить» — и для программ (запись вида Programs).
 *@
 
 <div class="windows-tab">
@@ -121,10 +123,23 @@
                 {
                     @* Неделя полосы — неделя сетки окон ниже (листает она), все семь дней: у программ свои прайс-листы. *@
                     <div class="program-strip">
-                        <PlacementGrid Model="_programs" Date="_date" Strip="true" CellTitle="ProgramCellTitle"
-                                       DayTotalTitle="@(Tr.T("Выпусков программ этой кампании за день"))">
+                        <PlacementGrid Model="_programs" Date="_date" Strip="true" CellTitle="ProgramCellTitle" Brush="_brushOn && ProgramsEditable"
+                                       DayTotalTitle="@(Tr.T("Выпусков программ этой кампании за день"))" OnCellClick="ClickProgram">
                             <Caption>
                                 <span class="mode-caption">@Tr.T("Программы")</span>
+                                @* В-30: предмет рекламы выпусков программ — всегда на виду; у подтверждённой акции без него программу не поставить. *@
+                                <span class="program-advert" title="@ProgramAdvertHint">
+                                    @Tr.T("Предмет рекламы:")
+                                    <button type="button" class="btn btn-link btn-sm advert-pick" disabled="@(!ProgramsEditable)"
+                                            @onclick="() => Exclusive(PickProgramAdvertType)">@(_programAdvertTypeName ?? Tr.T("не выбран"))</button>
+                                    @if (_programAdvertTypeId != null && ProgramsEditable)
+                                    {
+                                        <button type="button" class="btn btn-link btn-sm advert-clear" title="@(Tr.T("Убрать предмет рекламы"))"
+                                                aria-label="@(Tr.T("Убрать предмет рекламы"))" @onclick="ClearProgramAdvertType">
+                                            <i class="bi bi-x-lg" aria-hidden="true"></i>
+                                        </button>
+                                    }
+                                </span>
                             </Caption>
                             <Legend>
                                 <span class="legend">
@@ -143,19 +158,19 @@
                    Тулбар вкладки — в строке недели сетки, подпись режима и легенда — тонкой строкой под ней:
                    сетке нужна вся высота. Переключатели вида — значками, подписи десктопа — в подсказках. *@
                 <div class="grid-box" tabindex="-1" @ref="_gridBox" @onkeydown="GridKey">
-                    <PlacementGrid Model="_week" Date="_date" SelectedKeys="_selection.Keys" Brush="_brushOn && _transfer == null && _rangeTransfer == null"
+                    <PlacementGrid Model="_week" Date="_date" SelectedKeys="_selection.Keys" Brush="_brushOn && CanBrush && _transfer == null && _rangeTransfer == null"
                                    ShownBackgrounds="ShownBackgrounds" CellText="CellText" CellTitle="CellTitle" ExtraCellClass="TransferCellClass"
                                    DayTotalTitle="@(IsRange ? Tr.T("Выпусков акции за день по отмеченным кампаниям") : Tr.T("Выпусков этой кампании за день"))"
                                    OnPrevious="PreviousWeek" OnNext="NextWeek" OnJump="JumpTo" OnCellClick="ClickCell">
                         <LeadingTools>
                             <button type="button" class="btn btn-sm @(_brushOn ? "btn-primary" : "btn-outline-secondary")" aria-pressed="@_brushOn"
-                                    disabled="@(!CanBrush)" title="@BrushHint" @onclick="ToggleBrush">
+                                    disabled="@(!CanToggleBrush)" title="@ToggleBrushHint" @onclick="ToggleBrush">
                                 <i class="bi bi-brush" aria-hidden="true"></i>@Tr.T("Режим добавления")
                             </button>
                             @if (UndoEntry is { } undo)
                             {
-                                <button type="button" class="btn btn-sm btn-outline-secondary" disabled="@(!Scope.CanEdit)"
-                                        title="@(Scope.CanEdit ? Tr.Format("{0} ({1} шт.)", Tr.T("Отменить последнее добавление выпусков"), undo.Issues.Count) : NoRightText)"
+                                <button type="button" class="btn btn-sm btn-outline-secondary" disabled="@(!CanUndo(undo))"
+                                        title="@(CanUndo(undo) ? Tr.Format("{0} ({1} шт.)", Tr.T("Отменить последнее добавление выпусков"), undo.Count) : NoRightText)"
                                         @onclick="() => Exclusive(UndoLast)">
                                     <i class="bi bi-arrow-counterclockwise" aria-hidden="true"></i>@Tr.T("Отменить")
                                 </button>
@@ -315,7 +330,7 @@
                                     </button>
                                 </div>
                             }
-                            else if (_open != null && !_brushOn && _selection.Count > 0)
+                            else if (_open != null && !(_brushOn && CanBrush) && _selection.Count > 0)
                             {
                                 <div class="selection-bar">
                                     <span class="selection-count">@Tr.Format("Выделено окон: {0}", _selection.Count)</span>
@@ -498,9 +513,12 @@
     private PlacementWeek? _week;
     private string? _error;
 
-    // «Спонсорство»: программы открытой спонсорской кампании и их неделя (та же, что у окон).
+    // «Спонсорство»: программы открытой спонсорской кампании и их неделя (та же, что у окон); предмет рекламы для выпусков
+    // программ, которые ставит щелчок (В-30; десктоп спрашивал его при включении «Режима добавления» у подтверждённой).
     private ProgramSource.ProgramScope? _programScope;
     private PlacementWeek? _programs;
+    private int? _programAdvertTypeId;
+    private string? _programAdvertTypeName;
 
     // Кисть: ролики фирмы, их номера и ролик кисти (RollerBrush).
     private readonly RollerBrush.Model _brush = new();
@@ -576,6 +594,21 @@
 
     private bool CanBrush => Scope is { CanEdit: true } && BrushRow != null;
 
+    /// <summary>«Спонсорство»: программы можно ставить и снимать (право 151) — щелчком в «Режиме добавления».</summary>
+    private bool ProgramsEditable => Sponsorship && _programScope is { CanEdit: true };
+
+    /// <summary>
+    /// «Режим добавления» включается, если есть что ставить: ролик кисти (окна) или, на «Спонсорстве», программы — им ролик
+    /// не нужен (режим общий для полосы и окон, В-27).
+    /// </summary>
+    private bool CanToggleBrush => CanBrush || ProgramsEditable;
+
+    private string? ToggleBrushHint => CanToggleBrush ? (CanBrush ? null : Tr.T("Щелчок по программе ставит или снимает её выпуск. Для бонусных роликов выберите ролик в списке «Ролики».")) : BrushHint;
+
+    private string ProgramAdvertHint => Action.IsConfirmed
+        ? Tr.T("Предмет рекламы выпусков программ, которые ставит щелчок. Акция подтверждена — без него программу не поставить.")
+        : Tr.T("Предмет рекламы выпусков программ, которые ставит щелчок. У макета необязателен: перед активацией его спросят.");
+
     /// <summary>
     /// Запись «Отменить последнее» этой акции, если она про то, что открыто: у линейки — про открытую кампанию, у веера —
     /// веерная и только про отмеченные кампании (иначе отмена задела бы то, чего на экране нет).
@@ -584,7 +617,12 @@
         Undo.Of(Action.ActionId) is not { } entry ? null
         : _range != null ? (entry.Kind == PlacementUndo.Kind.Range && entry.Issues.All(i => _range.CampaignIds.Contains(i.CampaignId)) ? entry : null)
         : _open != null && entry.Kind == PlacementUndo.Kind.Windows && entry.CampaignId == _open.CampaignId ? entry
+        : _programScope != null && entry.Kind == PlacementUndo.Kind.Programs && entry.CampaignId == _programScope.CampaignId ? entry
         : null;
+
+    /// <summary>Отменить запись можно с правом на то, что она ставила: программы (151) или ролики (окна, веер).</summary>
+    private bool CanUndo(PlacementUndo.Entry entry) =>
+        entry.Kind == PlacementUndo.Kind.Programs ? ProgramsEditable : Scope is { CanEdit: true };
 
     private string? BrushHint =>
         Scope is not { CanEdit: true } ? NoRightText
@@ -625,6 +663,8 @@
         {
             _open = null;
             _range = null;
+            _programAdvertTypeId = null;
+            _programAdvertTypeName = null;
             await ApplyChecked();
         }
 
@@ -912,7 +952,9 @@
             return;
         }
 
-        if (_brushOn)
+        // На «Спонсорстве» режим бывает включён только ради программ (ролика кисти или права на ролики нет) — тогда щелчок по
+        // окну обычный: выделение и панель, а не молчаливая «кисть».
+        if (_brushOn && CanBrush)
         {
             // Второй щелчок двойного (detail > 1) второй выпуск не ставит: Blazor выполняет события
             // по очереди, и без этой проверки он пришёл бы уже после первой постановки. Осознанный
@@ -1209,10 +1251,10 @@
     private async Task UndoLast()
     {
         PlacementUndo.Entry? entry = UndoEntry;
-        if (entry == null || Scope is not { CanEdit: true })
+        if (entry == null || !CanUndo(entry))
             return;
 
-        string question = Tr.Format("Отменить последнее добавление выпусков? ({0} шт.)", entry.Issues.Count);
+        string question = Tr.Format("Отменить последнее добавление выпусков? ({0} шт.)", entry.Count);
         if (Action.IsConfirmed)
             question += " " + Tr.T("Акция подтверждена: цена акции будет пересчитана, привязки оплат могут быть сокращены.");
         if (!await Confirm(Tr.T("Отменить"), question, Tr.T("Отменить")))
@@ -1221,7 +1263,9 @@
         WindowsSource.BatchResult? result = null;
         await Run(() =>
         {
-            result = _range != null ? RangeSource.Undo(_range, entry.Issues) : WindowsSource.Undo(_open!, entry.Issues);
+            result = entry.Kind == PlacementUndo.Kind.Programs ? ProgramSource.Undo(_programScope!, entry.ProgramIssues)
+                : _range != null ? RangeSource.Undo(_range, entry.Issues)
+                : WindowsSource.Undo(_open!, entry.Issues);
             ReloadWeekCore();
             if (_selected != null && _open != null)
                 _panel = WindowsSource.LoadWindowIssues(_open, _selected, _view.ShowUnconfirmed);
@@ -1719,15 +1763,79 @@
     private void LoadRollersCore()
     {
         _brush.Load(Scope!);
-        if (!_brush.HasRollers)
+        if (!_brush.HasRollers && !ProgramsEditable)
             _brushOn = false;
     }
 
     /// <summary>Кисть выбрала другой ролик или добавила пустышку — тулбар показывает ролик кисти и «Режим добавления».</summary>
     private void BrushChanged()
     {
-        if (!_brush.HasRollers)
+        if (!_brush.HasRollers && !ProgramsEditable)
             _brushOn = false;
+    }
+
+    // ---------- Программы («Спонсорство») ----------
+
+    /// <summary>
+    /// Щелчок по месту полосы «Программы» в «Режиме добавления» — как десктопная сетка программ: своего выпуска нет — поставить
+    /// программу (с предметом рекламы поля), есть — снять; пересчёт акции и запись — одной транзакцией в ядре
+    /// (ProgramSource.Toggle). Поставленный выпуск становится записью «Отменить». Отказ (прошлое, место занято подтверждённым,
+    /// нет предмета рекламы у подтверждённой, бонус занят роликами) — сообщением над сеткой. После записи — полоса заново
+    /// и шапка страницы (бонус и цена акции).
+    /// </summary>
+    private async Task ClickProgram(PlacementGrid.CellEvent e)
+    {
+        // Второй щелчок двойного (detail > 1) не снимает только что поставленное — как у окон.
+        if (!_brushOn || !ProgramsEditable || e.Mouse.Detail > 1 || _week == null)
+            return;
+
+        bool written = false;
+        ProgramSource.ProgramScope scope = _programScope!;
+        DateTime monday = _week.FirstDay;
+        await Run(() =>
+        {
+            ProgramSource.ToggleResult result = ProgramSource.Toggle(scope, e.Cell, _programAdvertTypeId);
+            written = true;
+            // Запись «Отменить» — сразу после коммита, до перечитывания полосы: сбой чтения не должен оставить выпуск без записи.
+            // Снятый щелчком выпуск из записи уходит: отменять его нечего (пустая запись гаснет).
+            if (result.Placed != null)
+                Undo.RememberPrograms(Action.ActionId, scope.CampaignId, new[] { result.Placed });
+            else if (Undo.Of(Action.ActionId) is { Kind: PlacementUndo.Kind.Programs } entry)
+                Undo.Remember(entry with { ProgramIssues = entry.ProgramIssues.Where(p => p.IssueId != result.RemovedIssueId).ToList() });
+            _programs = ProgramSource.LoadWeek(scope, monday, _view.ShowUnconfirmed);
+        });
+        if (written)
+            await Changed.InvokeAsync();
+    }
+
+    /// <summary>
+    /// «Предмет рекламы» над полосой (В-30): выбор из предметов рекламы 2-го уровня — та же сущность, что у десктопа
+    /// (AdvertTypeChild, окно «Выбор предмета рекламы»). Запоминается на вкладке до смены фирмы акции.
+    /// </summary>
+    private async Task PickProgramAdvertType()
+    {
+        Entity entity = EntityManager.GetEntity((int)Merlin.Entities.AdvertTypeChild);
+        var picker = new PassportPicker(entity.CodeName, null, false, Array.Empty<PassportFilterValue>());
+        ObjectSelector? selector = null;
+        if (await Dialogs.ShowAsync(Tr.T("Выбор предмета рекламы"), builder =>
+            {
+                builder.OpenComponent<ObjectSelector>(0);
+                builder.AddComponentParameter(1, nameof(ObjectSelector.Picker), picker);
+                builder.AddComponentReferenceCapture(2, c => selector = (ObjectSelector)c);
+                builder.CloseComponent();
+            }, okText: Tr.T("Выбрать")) != DialogOutcome.Ok
+            || selector?.SelectedRow == null)
+            return;
+
+        PresentationObject advertType = entity.CreateObject(selector.SelectedRow);
+        _programAdvertTypeId = Convert.ToInt32(advertType.IDs[0]);
+        _programAdvertTypeName = advertType.Name;
+    }
+
+    private void ClearProgramAdvertType()
+    {
+        _programAdvertTypeId = null;
+        _programAdvertTypeName = null;
     }
 
     /// <summary>Ролик изменили из меню «⋯» кисти: предмет рекламы мог смениться — список и отбор по предмету перечитать.</summary>

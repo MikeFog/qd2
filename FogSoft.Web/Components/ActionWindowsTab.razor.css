@@ -238,6 +238,27 @@
     color: var(--c-text-muted);
 }
 
+/* Поле «Предмет рекламы» в строке подписи полосы программ (В-30): значение — ссылкой-кнопкой, рядом «убрать». */
+.program-advert {
+    display: inline-flex;
+    align-items: baseline;
+    gap: var(--s-1);
+}
+
+.program-advert .btn {
+    padding: 0;
+    font-size: 12px;
+    line-height: inherit;
+    vertical-align: baseline;
+}
+
+.program-advert .advert-pick {
+    max-width: 260px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
 /* «Спонсорство»: полоса программ над сеткой окон бонусных роликов — высота по строкам (1–6), неделя общая. */
 .program-strip {
     flex: 0 0 auto;

@@ -32,39 +32,47 @@ public sealed class PlacementUndo
 
 		/// <summary>Модули — ModuleDaySource.Undo.</summary>
 		Modules,
+
+		/// <summary>Выпуски спонсорских программ одной кампании (полоса «Программы» на «Спонсорстве») — ProgramSource.Undo.</summary>
+		Programs,
 	}
 
-	/// <summary>Выпуски, поставленные одним действием; создаётся только через RememberWindows / RememberRange / RememberModules.</summary>
+	/// <summary>Выпуски, поставленные одним действием; создаётся только через RememberWindows / RememberRange / RememberModules / RememberPrograms.</summary>
 	public sealed record Entry
 	{
 		internal Entry(int actionId, Kind kind, int campaignId, IReadOnlyList<WindowsSource.PlacedIssue> issues,
-			IReadOnlyList<ModuleDaySource.PlacedModuleIssue> moduleIssues)
+			IReadOnlyList<ModuleDaySource.PlacedModuleIssue> moduleIssues, IReadOnlyList<ProgramSource.PlacedProgramIssue> programIssues)
 		{
 			ActionId = actionId;
 			Kind = kind;
 			CampaignId = campaignId;
 			Issues = issues;
 			ModuleIssues = moduleIssues;
+			ProgramIssues = programIssues;
 		}
 
 		public int ActionId { get; }
 		public Kind Kind { get; }
 
-		/// <summary>Кампания записи окон; у веера и модулей — 0: кампании — в самих выпусках.</summary>
+		/// <summary>Кампания записи окон и программ; у веера и модулей — 0: кампании — в самих выпусках.</summary>
 		public int CampaignId { get; }
 
-		/// <summary>Выпуски окон и веера; у модулей пусто.</summary>
+		/// <summary>Выпуски окон и веера; у модулей и программ пусто.</summary>
 		public IReadOnlyList<WindowsSource.PlacedIssue> Issues { get; init; }
 
-		/// <summary>Выпуски модулей (номер ModuleIssue, кампания, модуль, день, ролик); у окон и веера пусто.</summary>
+		/// <summary>Выпуски модулей (номер ModuleIssue, кампания, модуль, день, ролик); у остальных пусто.</summary>
 		public IReadOnlyList<ModuleDaySource.PlacedModuleIssue> ModuleIssues { get; init; }
 
+		/// <summary>Выпуски программ (номер ProgramIssue, кампания, программа, тариф, время); у остальных пусто.</summary>
+		public IReadOnlyList<ProgramSource.PlacedProgramIssue> ProgramIssues { get; init; }
+
 		/// <summary>Выпусков в записи — для «Отменить последнее добавление выпусков (N шт.)».</summary>
-		public int Count => Issues.Count + ModuleIssues.Count;
+		public int Count => Issues.Count + ModuleIssues.Count + ProgramIssues.Count;
 	}
 
 	private static readonly IReadOnlyList<WindowsSource.PlacedIssue> NoIssues = Array.Empty<WindowsSource.PlacedIssue>();
 	private static readonly IReadOnlyList<ModuleDaySource.PlacedModuleIssue> NoModuleIssues = Array.Empty<ModuleDaySource.PlacedModuleIssue>();
+	private static readonly IReadOnlyList<ProgramSource.PlacedProgramIssue> NoProgramIssues = Array.Empty<ProgramSource.PlacedProgramIssue>();
 
 	private readonly Dictionary<int, Entry> _byAction = new();
 	private SecurityManager.User? _user;
@@ -86,15 +94,19 @@ public sealed class PlacementUndo
 
 	/// <summary>Размещение в окнах одной кампании (линейная сетка).</summary>
 	public void RememberWindows(int actionId, int campaignId, IReadOnlyList<WindowsSource.PlacedIssue> issues) =>
-		Remember(new Entry(actionId, Kind.Windows, campaignId, issues, NoModuleIssues));
+		Remember(new Entry(actionId, Kind.Windows, campaignId, issues, NoModuleIssues, NoProgramIssues));
 
 	/// <summary>Размещение в веере: выпуски отмеченных кампаний.</summary>
 	public void RememberRange(int actionId, IReadOnlyList<WindowsSource.PlacedIssue> issues) =>
-		Remember(new Entry(actionId, Kind.Range, 0, issues, NoModuleIssues));
+		Remember(new Entry(actionId, Kind.Range, 0, issues, NoModuleIssues, NoProgramIssues));
 
 	/// <summary>Размещение модулей: выпуски с номерами из ответа ModuleIssueIUD, только записанные (после коммита).</summary>
 	public void RememberModules(int actionId, IReadOnlyList<ModuleDaySource.PlacedModuleIssue> issues) =>
-		Remember(new Entry(actionId, Kind.Modules, 0, NoIssues, issues));
+		Remember(new Entry(actionId, Kind.Modules, 0, NoIssues, issues, NoProgramIssues));
+
+	/// <summary>Выпуск программы, поставленный щелчком по полосе «Программы» (номер из ответа ProgramIssueIUD).</summary>
+	public void RememberPrograms(int actionId, int campaignId, IReadOnlyList<ProgramSource.PlacedProgramIssue> issues) =>
+		Remember(new Entry(actionId, Kind.Programs, campaignId, NoIssues, NoModuleIssues, issues));
 
 	/// <summary>
 	/// Запомнить запись — в том числе то, что осталось от прерванной отмены (<c>entry with { Issues = … }</c>, вид прежний);
@@ -110,11 +122,11 @@ public sealed class PlacementUndo
 
 	/// <summary>
 	/// Выпуски перенесли в другое окно (перенос пересоздаёт выпуск с новым номером): в записи окон или веера прежние номера
-	/// заменяются новыми, остальное остаётся. Запись модулей не трогается: номера в ней — другого счётчика.
+	/// заменяются новыми, остальное остаётся. Запись модулей и программ не трогается: номера в ней — другого счётчика.
 	/// </summary>
 	public void Moved(int actionId, IEnumerable<KeyValuePair<int, WindowsSource.PlacedIssue>> moved)
 	{
-		if (!_byAction.TryGetValue(actionId, out Entry? entry) || entry.Kind == Kind.Modules)
+		if (!_byAction.TryGetValue(actionId, out Entry? entry) || entry.Kind is Kind.Modules or Kind.Programs)
 			return;
 		Dictionary<int, WindowsSource.PlacedIssue> byOld = moved.ToDictionary(x => x.Key, x => x.Value);
 		_byAction[actionId] = entry with { Issues = entry.Issues.Select(i => byOld.GetValueOrDefault(i.IssueId, i)).ToList() };
