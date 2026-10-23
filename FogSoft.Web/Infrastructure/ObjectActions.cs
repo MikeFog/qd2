@@ -459,10 +459,11 @@ public sealed partial class ObjectActions
 		["CampaignPart"] = new()
 		{
 			[Constants.EntityActions.Delete] = (s, t) => s.DeleteCampaignPart((PresentationObject)t),
-			// Campaign.DeleteIssues (CampaignDaysForm) у линейной и модульной кампании, ролика кампании, модуля кампании
-			// и роликов спонсорской; у пакетных и программ спонсорской пункт серый (ClassActionApplies).
+			// Campaign.DeleteIssues (CampaignDaysForm) у линейной и модульной кампании, ролика кампании, модуля кампании,
+			// роликов и программ спонсорской (программы — этап 7.4); у пакетных пункт серый (ClassActionApplies).
 			[Merlin.Classes.CampaignIssuesDeletion.DeleteIssuesAction] = (s, t) => s.DeleteCampaignIssues((PresentationObject)t),
-			// CampaignPart.ChangePositions (ChangePositioningForm) — у тех же объектов; у пакетных серый (ClassActionApplies).
+			// CampaignPart.ChangePositions (ChangePositioningForm) — у тех же объектов, кроме программ спонсорской (у них
+			// пункта нет); у пакетных серый (ClassActionApplies).
 			[Merlin.Classes.CampaignPositionChange.ActionName] = (s, t) => s.ChangePositions((PresentationObject)t),
 		},
 		// CampaignDay.WinForms.cs, DoAction: «Перенос дня» — дни линейной, модульной и пакетной

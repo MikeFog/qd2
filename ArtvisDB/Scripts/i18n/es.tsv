@@ -2291,3 +2291,32 @@ message	Дата окончания периода не может быть ра
 code	Изменено выпусков: {0}, не изменено: {1}	Emisiones modificadas: {0}, no modificadas: {1}
 code	У окна выхода нет тарифа: позиция не меняется, иначе цена выпуска станет нулевой.	La ventana de emisión no tiene tarifa: la posición no se cambia, porque el precio de la emisión quedaría en cero.
 code	Изменение позиционирования прервано: {0} Выпуски этого дня не изменены, выпуски прежних дней изменены. Не обработано дней: {1}.	Cambio de posicionamiento interrumpido: {0} Las emisiones de este día no se modificaron; las de los días anteriores sí. Días sin procesar: {1}.
+code	+{0} макет	+{0} borrador
+code	+{0} макета	+{0} borradores
+code	+{0} макетов	+{0} borradores
+code	Бонусные ролики: {0}	Spots de bonificación: {0}
+code	В акции нет спонсорских рекламных кампаний.	La campaña no tiene pautas publicitarias de patrocinio.
+code	Выпуск изменили после размещения: другая программа или время.	La emisión se modificó después de colocarla: otro programa u otra hora.
+code	Выпуск программы в этом месте уже стоит. Обновите страницу.	Ya hay una emisión del programa en este lugar. Actualice la página.
+code	Выпуска программы уже нет. Обновите страницу.	La emisión del programa ya no existe. Actualice la página.
+code	Выпусков программ этой кампании за день	Emisiones de programas de esta pauta en el día
+code	Макет	Borrador
+code	Макет: {0}	Borrador: {0}
+code	Макеты: {0}	Borradores: {0}
+code	Место не относится к спонсорской кампании вкладки. Обновите страницу.	El lugar no pertenece a la pauta de patrocinio de la pestaña. Actualice la página.
+code	На эту неделю у радиостанции нет спонсорских программ.	La emisora no tiene programas de patrocinio para esta semana.
+code	Нет права «Редактировать» на эту акцию или «Редактировать в эфир рекламных роликов» спонсорской кампании.	No tiene el permiso «Editar» para esta campaña o «Editar salida al aire de spots publicitarios» para la pauta de patrocinio.
+code	Предмет рекламы выпусков программ, которые ставит щелчок. Акция подтверждена — без него программу не поставить.	Rubro publicitario de las emisiones de programas que coloca el clic. La campaña está confirmada: sin él no se puede colocar el programa.
+code	Предмет рекламы выпусков программ, которые ставит щелчок. У макета необязателен: перед активацией его спросят.	Rubro publicitario de las emisiones de programas que coloca el clic. En un borrador es opcional: se pedirá antes de la activación.
+code	Программ	Programas
+code	Программы	Programas
+code	Программы и их прайс-листы ведутся в справочнике радиостанции.	Los programas y sus listas de precios se gestionan en la ficha de la emisora.
+code	Спонсирует: {0}	Patrocina: {0}
+code	Спонсорская кампания — программы её радиостанции на неделю и рекламные окна для бонусных роликов.	Pauta de patrocinio: los programas de su emisora en la semana y las ventanas publicitarias para los spots de bonificación.
+code	Убрать предмет рекламы	Quitar el rubro publicitario
+code	Щелчок по программе ставит или снимает её выпуск. Для бонусных роликов выберите ролик в списке «Ролики».	Un clic en el programa coloca o quita su emisión. Para los spots de bonificación, elija el spot en la lista «Spots».
+code	выпуск программы этой кампании	emisión del programa de esta pauta
+code	имя фирмы — программу спонсирует другая подтверждённая акция	nombre de la empresa: el programa lo patrocina otra campaña confirmada
+code	макеты других акций	borradores de otras campañas
+code	не выбран	no seleccionado
+code	Для редактирования активированной спонсорской кампании необходимо выбрать предмет рекламы.	Para editar una pauta de patrocinio activada es necesario seleccionar el rubro publicitario.

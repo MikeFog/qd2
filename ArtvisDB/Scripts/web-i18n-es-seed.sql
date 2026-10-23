@@ -1,5 +1,5 @@
 ﻿/*
-    ДЕПЛОЙ: переводы веб-версии на язык «es» (2292 строк). docs/tasks/web-i18n.md, этап 5.
+    ДЕПЛОЙ: переводы веб-версии на язык «es» (2321 строк). docs/tasks/web-i18n.md, этап 5.
     СГЕНЕРИРОВАН из ArtvisDB/Scripts/i18n/es.tsv скриптом build-seed.py — руками не править.
 
     ПРЕДУСЛОВИЕ     накачен web-i18n-translation-deploy.sql (таблица iTranslation).
@@ -2314,7 +2314,36 @@ INSERT INTO #t ([source], [text]) VALUES
 (N'Дата окончания периода не может быть раньше даты начала. Операция прервана.', N'La fecha de fin del período no puede ser anterior a la fecha de inicio. Operación cancelada.'),
 (N'Изменено выпусков: {0}, не изменено: {1}', N'Emisiones modificadas: {0}, no modificadas: {1}'),
 (N'У окна выхода нет тарифа: позиция не меняется, иначе цена выпуска станет нулевой.', N'La ventana de emisión no tiene tarifa: la posición no se cambia, porque el precio de la emisión quedaría en cero.'),
-(N'Изменение позиционирования прервано: {0} Выпуски этого дня не изменены, выпуски прежних дней изменены. Не обработано дней: {1}.', N'Cambio de posicionamiento interrumpido: {0} Las emisiones de este día no se modificaron; las de los días anteriores sí. Días sin procesar: {1}.');
+(N'Изменение позиционирования прервано: {0} Выпуски этого дня не изменены, выпуски прежних дней изменены. Не обработано дней: {1}.', N'Cambio de posicionamiento interrumpido: {0} Las emisiones de este día no se modificaron; las de los días anteriores sí. Días sin procesar: {1}.'),
+(N'+{0} макет', N'+{0} borrador'),
+(N'+{0} макета', N'+{0} borradores'),
+(N'+{0} макетов', N'+{0} borradores'),
+(N'Бонусные ролики: {0}', N'Spots de bonificación: {0}'),
+(N'В акции нет спонсорских рекламных кампаний.', N'La campaña no tiene pautas publicitarias de patrocinio.'),
+(N'Выпуск изменили после размещения: другая программа или время.', N'La emisión se modificó después de colocarla: otro programa u otra hora.'),
+(N'Выпуск программы в этом месте уже стоит. Обновите страницу.', N'Ya hay una emisión del programa en este lugar. Actualice la página.'),
+(N'Выпуска программы уже нет. Обновите страницу.', N'La emisión del programa ya no existe. Actualice la página.'),
+(N'Выпусков программ этой кампании за день', N'Emisiones de programas de esta pauta en el día'),
+(N'Макет', N'Borrador'),
+(N'Макет: {0}', N'Borrador: {0}'),
+(N'Макеты: {0}', N'Borradores: {0}'),
+(N'Место не относится к спонсорской кампании вкладки. Обновите страницу.', N'El lugar no pertenece a la pauta de patrocinio de la pestaña. Actualice la página.'),
+(N'На эту неделю у радиостанции нет спонсорских программ.', N'La emisora no tiene programas de patrocinio para esta semana.'),
+(N'Нет права «Редактировать» на эту акцию или «Редактировать в эфир рекламных роликов» спонсорской кампании.', N'No tiene el permiso «Editar» para esta campaña o «Editar salida al aire de spots publicitarios» para la pauta de patrocinio.'),
+(N'Предмет рекламы выпусков программ, которые ставит щелчок. Акция подтверждена — без него программу не поставить.', N'Rubro publicitario de las emisiones de programas que coloca el clic. La campaña está confirmada: sin él no se puede colocar el programa.'),
+(N'Предмет рекламы выпусков программ, которые ставит щелчок. У макета необязателен: перед активацией его спросят.', N'Rubro publicitario de las emisiones de programas que coloca el clic. En un borrador es opcional: se pedirá antes de la activación.'),
+(N'Программ', N'Programas'),
+(N'Программы', N'Programas'),
+(N'Программы и их прайс-листы ведутся в справочнике радиостанции.', N'Los programas y sus listas de precios se gestionan en la ficha de la emisora.'),
+(N'Спонсирует: {0}', N'Patrocina: {0}'),
+(N'Спонсорская кампания — программы её радиостанции на неделю и рекламные окна для бонусных роликов.', N'Pauta de patrocinio: los programas de su emisora en la semana y las ventanas publicitarias para los spots de bonificación.'),
+(N'Убрать предмет рекламы', N'Quitar el rubro publicitario'),
+(N'Щелчок по программе ставит или снимает её выпуск. Для бонусных роликов выберите ролик в списке «Ролики».', N'Un clic en el programa coloca o quita su emisión. Para los spots de bonificación, elija el spot en la lista «Spots».'),
+(N'выпуск программы этой кампании', N'emisión del programa de esta pauta'),
+(N'имя фирмы — программу спонсирует другая подтверждённая акция', N'nombre de la empresa: el programa lo patrocina otra campaña confirmada'),
+(N'макеты других акций', N'borradores de otras campañas'),
+(N'не выбран', N'no seleccionado'),
+(N'Для редактирования активированной спонсорской кампании необходимо выбрать предмет рекламы.', N'Para editar una pauta de patrocinio activada es necesario seleccionar el rubro publicitario.');
 GO
 
 BEGIN TRANSACTION;

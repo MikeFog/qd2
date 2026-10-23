@@ -184,7 +184,7 @@ namespace Merlin.Classes
 			};
 
 			Dictionary<(int TariffId, DateTime Day), List<DataRow>> slots = new Dictionary<(int, DateTime), List<DataRow>>();
-			foreach (DataRow issue in StationIssues(s.MassmediaId, monday, sunday).Rows)
+			foreach (DataRow issue in StationIssues(s.MassmediaId, monday, sunday, s.CampaignId).Rows)
 			{
 				(int, DateTime) key = (Convert.ToInt32(issue[Issue.ParamNames.TariffId]), IssueDateOf(issue).Date);
 				if (!slots.TryGetValue(key, out List<DataRow> list))
@@ -337,22 +337,32 @@ namespace Merlin.Classes
 
 		private static DateTime FinishOf(DataRow pricelist) => Convert.ToDateTime(pricelist[Pricelist.ParamNames.FinishDate]).Date;
 
-		/// <summary>Выпуски программ станции за дни <paramref name="start"/>…<paramref name="finish"/>, с макетами, без удалённых акций.</summary>
-		private static DataTable StationIssues(int massmediaId, DateTime start, DateTime finish)
+		/// <summary>
+		/// Выпуски программ станции за дни <paramref name="start"/>…<paramref name="finish"/>, с макетами, без удалённых акций —
+		/// кроме кампании <paramref name="ownCampaignId"/>: у удалённой акции полоса показывает её выпуски, как сетка окон.
+		/// </summary>
+		private static DataTable StationIssues(int massmediaId, DateTime start, DateTime finish, int? ownCampaignId = null)
 		{
 			Dictionary<string, object> parameters = DataAccessor.PrepareParameters(ProgramIssue.GetEntity());
 			parameters[Massmedia.ParamNames.MassmediaId] = massmediaId;
 			parameters[RollerIssue.ParamNames.StartDate] = start;
 			parameters[RollerIssue.ParamNames.FinishDate] = finish;
 			parameters[ShowUnconfirmedParam] = true;
-			return ((DataSet)DataAccessor.DoAction(parameters)).Tables[Constants.TableNames.Data];
+			parameters[ShowDeletedParam] = ownCampaignId != null;
+			DataTable data = ((DataSet)DataAccessor.DoAction(parameters)).Tables[Constants.TableNames.Data];
+			if (ownCampaignId != null)
+				foreach (DataRow issue in data.Rows.Cast<DataRow>().ToList())
+					if (issue[Action.ParamNames.DeleteDate] != DBNull.Value && CampaignIdOf(issue) != ownCampaignId)
+						data.Rows.Remove(issue);
+			return data;
 		}
 
-		/// <summary>Выпуски программ кампании (ProgramIssues @campaignID).</summary>
+		/// <summary>Выпуски программ кампании (ProgramIssues @campaignID), и у удалённой акции.</summary>
 		private static DataTable CampaignIssues(int campaignId)
 		{
 			Dictionary<string, object> parameters = DataAccessor.PrepareParameters(ProgramIssue.GetEntity());
 			parameters[Campaign.ParamNames.CampaignId] = campaignId;
+			parameters[ShowDeletedParam] = true;
 			return ((DataSet)DataAccessor.DoAction(parameters)).Tables[Constants.TableNames.Data];
 		}
 
@@ -367,6 +377,8 @@ namespace Merlin.Classes
 
 		/// <summary>Параметр процедуры ProgramIssues — с опечаткой, как в базе.</summary>
 		private const string ShowUnconfirmedParam = "showUncorfirmed";
+
+		private const string ShowDeletedParam = "showDeleted";
 
 		private static int CampaignIdOf(DataRow issue) => Convert.ToInt32(issue[Campaign.ParamNames.CampaignId]);
 
