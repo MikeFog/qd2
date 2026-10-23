@@ -13,7 +13,8 @@ namespace Merlin.Classes
 	/// Медиаплан («График размещения») для веба: публичный вход в
 	/// <see cref="MediaPlanBuilder"/> (он и Campaign — internal). Источник — то же,
 	/// что у десктопных точек входа (docs/mediaplan.md, §1.1): кампании акции,
-	/// одна кампания, кампания строки акта, набор акций. Разбивка (месяцы или
+	/// одна кампания, кампания строки акта, набор акций, акция раскладкой «по
+	/// станциям». Разбивка (месяцы или
 	/// период), настройки печати и выбранные ролики задаются при построении —
 	/// после диалогов, как в десктопе.
 	/// </summary>
@@ -62,6 +63,7 @@ namespace Merlin.Classes
 		private readonly IList<Action> _actions;
 		private readonly int? _actionId;
 		private readonly int? _campaignId;
+		private readonly Action _byMassmedias; // раскладка «по станциям» одной акции; null — остальные режимы
 
 		/// <summary>Выборочная печать по роликам («Распечатать частичный»).</summary>
 		public bool Selectively { get; }
@@ -71,8 +73,9 @@ namespace Merlin.Classes
 		public DateTime PeriodFinish { get; }
 
 		private MediaPlanJob(IList<Campaign> campaigns, IList<Action> actions, int? actionId, int? campaignId,
-			bool selectively, DateTime periodStart, DateTime periodFinish)
+			bool selectively, DateTime periodStart, DateTime periodFinish, Action byMassmedias = null)
 		{
+			_byMassmedias = byMassmedias;
 			_campaigns = campaigns;
 			_actions = actions;
 			_actionId = actionId;
@@ -88,6 +91,17 @@ namespace Merlin.Classes
 			action.Refresh();
 			return new MediaPlanJob(Action.GetCampaigns(action.Campaigns()), null, action.ActionId, null,
 				selectively, action.StartDate, action.FinishDate);
+		}
+
+		/// <summary>
+		/// «Распечатать график размещения рекламной акции»: раскладка «по станциям» (лист на агентство, блок на
+		/// станцию) за весь срок акции — галочка ActionForm.chkPrintMediaPlan десктопа
+		/// (Action.PrintMediaPlan(Massmedias, false)).
+		/// </summary>
+		public static MediaPlanJob ForActionByMassmedias(Action action)
+		{
+			action.Refresh();
+			return new MediaPlanJob(null, null, action.ActionId, null, false, action.StartDate, action.FinishDate, action);
 		}
 
 		/// <summary>«График размещения» кампании любого вида (Campaign.PrintMediaPlan).</summary>
@@ -152,7 +166,7 @@ namespace Merlin.Classes
 		}
 
 		private MediaPlanBuilder CreateBuilder(IList<DateTime> months, DateTime? from, DateTime? to) =>
-			new MediaPlanBuilder(null, _campaigns, months, from, to, Selectively, _actions);
+			new MediaPlanBuilder(_byMassmedias, _campaigns, months, from, to, Selectively, _actions);
 
 		#region Сводный план по нескольким акциям
 

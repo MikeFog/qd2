@@ -1,5 +1,5 @@
 ﻿/*
-    ДЕПЛОЙ: переводы веб-версии на язык «es» (2321 строк). docs/tasks/web-i18n.md, этап 5.
+    ДЕПЛОЙ: переводы веб-версии на язык «es» (2322 строк). docs/tasks/web-i18n.md, этап 5.
     СГЕНЕРИРОВАН из ArtvisDB/Scripts/i18n/es.tsv скриптом build-seed.py — руками не править.
 
     ПРЕДУСЛОВИЕ     накачен web-i18n-translation-deploy.sql (таблица iTranslation).
@@ -2343,7 +2343,8 @@ INSERT INTO #t ([source], [text]) VALUES
 (N'имя фирмы — программу спонсирует другая подтверждённая акция', N'nombre de la empresa: el programa lo patrocina otra campaña confirmada'),
 (N'макеты других акций', N'borradores de otras campañas'),
 (N'не выбран', N'no seleccionado'),
-(N'Для редактирования активированной спонсорской кампании необходимо выбрать предмет рекламы.', N'Para editar una pauta de patrocinio activada es necesario seleccionar el rubro publicitario.');
+(N'Для редактирования активированной спонсорской кампании необходимо выбрать предмет рекламы.', N'Para editar una pauta de patrocinio activada es necesario seleccionar el rubro publicitario.'),
+(N'Распечатать график размещения рекламной акции', N'Imprimir plan de colocación de la campaña publicitaria');
 GO
 
 BEGIN TRANSACTION;

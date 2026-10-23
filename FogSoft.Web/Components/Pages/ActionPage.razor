@@ -316,6 +316,9 @@ else
 
     private const string ManagerDiscountAction = "SetManagerDiscount";
     private const string SponsorshipEditAction = "EditSponsorship";
+    private const string PrintMediaPlanByMassmediasAction = "PrintMediaPlanByMassmedias";
+    // Пункт-группа «График размещения» меню акции (iEntityAction 856): пункт экрана встаёт сразу за ней.
+    private const string MediaPlanGroupAction = "MediaPlan";
 
     private string _title = Tr.T("Рекламная акция");
     private bool _journalAccess = true;
@@ -507,8 +510,9 @@ else
 
     /// <summary>
     /// То же меню, что у акции в журнале, — без «Редактировать» и «Открыть акцию»: страница уже
-    /// открыта. После любого действия страница перечитывает акцию и кампании (у удалённой или
-    /// объединённой акции — состояние «не найдена»).
+    /// открыта, — плюс пункт экрана «Распечатать график размещения рекламной акции». После любого
+    /// действия страница перечитывает акцию и кампании (у удалённой или объединённой акции —
+    /// состояние «не найдена»).
     /// </summary>
     private async Task OpenActionMenu(MouseEventArgs e)
     {
@@ -518,12 +522,31 @@ else
         try
         {
             PresentationObject target = ActionWorkspace.MenuTarget(_action);
-            IReadOnlyList<ActionMenuItem> items = Actions.BuildMenu(target, ViewType.Journal)
+            List<ActionMenuItem> items = Actions.BuildMenu(target, ViewType.Journal)
                 .Where(i => i.Name != Constants.EntityActions.Edit && i.Name != Constants.EntityActions.ShowPassport)
                 .ToList();
+            // Раскладка «по станциям» одной акции — галочка ActionForm.chkPrintMediaPlan десктопа, своего права нет
+            // (решение 22.10.2026, docs/tasks/web-mediaplan.md §2 п. 2). У удалённой акции пункта нет, как в десктопе.
+            if (!ActionWorkspace.IsDeleted(_action))
+            {
+                int at = items.FindIndex(i => i.Name == MediaPlanGroupAction);
+                items.Insert(at < 0 ? items.Count : at + 1, new ActionMenuItem
+                {
+                    Name = PrintMediaPlanByMassmediasAction,
+                    Text = Tr.T("Распечатать график размещения рекламной акции"),
+                    Icon = "bi-printer",
+                    Enabled = true,
+                    Ported = true,
+                });
+            }
             string? picked = await Menu.ShowAsync(items, e.ClientX, e.ClientY, fromButton: true);
             if (picked == null)
                 return;
+            if (picked == PrintMediaPlanByMassmediasAction)
+            {
+                await Actions.PrintActionMediaPlanByMassmedias(_action);
+                return;
+            }
 
             ActionEffect? effect = await Actions.ExecuteAsync(target, picked, ViewType.Journal);
             if (effect is not null and not ActionEffect.None)

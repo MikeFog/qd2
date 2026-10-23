@@ -13,7 +13,8 @@ namespace FogSoft.Web.Infrastructure;
 /// у строки акта выполненных работ. Шаги как в десктопе: разбивка (месяцы / период) и
 /// настройки печати — одним окном, затем выбор роликов для «частичного», затем файл
 /// через «Сохранить как» браузера. Строит файл ядро — <see cref="MediaPlanJob"/>.
-/// Сводный план по нескольким акциям — отдельный экран (MultiActionMediaPlan.razor).
+/// Сводный план по нескольким акциям — отдельный экран (MultiActionMediaPlan.razor); раскладка
+/// «по станциям» одной акции — пункт меню «⋯» страницы акции (<see cref="PrintActionMediaPlanByMassmedias"/>).
 /// </summary>
 public sealed partial class ObjectActions
 {
@@ -85,6 +86,14 @@ public sealed partial class ObjectActions
 		await SaveMediaPlan(file);
 		return ActionEffect.None;
 	}
+
+	/// <summary>
+	/// «Распечатать график размещения рекламной акции» меню «⋯» страницы акции (действие экрана, в метаданных
+	/// его нет): раскладка «по станциям» за весь срок, как галочка ActionForm десктопа, — только настройки
+	/// печати, затем файл.
+	/// </summary>
+	internal Task<ActionEffect> PrintActionMediaPlanByMassmedias(Merlin.Classes.Action action) =>
+		PrintMediaPlan(() => MediaPlanJob.ForActionByMassmedias(action), MediaPlanJob.Breakdown.Whole);
 
 	/// <summary>
 	/// Окно разбивки и настроек печати; повторяется, пока ввод неверен. Общее с экраном
