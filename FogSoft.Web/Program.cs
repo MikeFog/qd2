@@ -131,6 +131,8 @@ if (Directory.Exists(helpFolder))
     {
         FileProvider = new PhysicalFileProvider(helpFolder),
         RequestPath = "/help",
+        // Адрес без отпечатка: без no-cache браузер днями показывал бы прежнюю справку после замены файла.
+        OnPrepareResponse = ctx => ctx.Context.Response.Headers.CacheControl = "no-cache",
     });
 
 app.MapStaticAssets();
