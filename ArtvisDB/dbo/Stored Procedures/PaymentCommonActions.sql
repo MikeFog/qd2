@@ -52,7 +52,8 @@ select distinct
 	a.name as agencyName,
 	pt.name as paymentTypeName,
 	b.billNo,
-	b.billDate
+	b.billDate,
+	u.userName as manager
 FROM
 	[PaymentAction] psoa
 	INNER JOIN [Action] soa ON soa.actionID = psoa.actionID
@@ -63,6 +64,8 @@ FROM
 	INNER JOIN PaymentType pt ON pt.paymentTypeID = pso.paymentTypeID
 	-- счёт, выписанный по акции агентству платежа (Bill: не больше одного на акцию+агентство)
 	left join Bill b on b.actionID = psoa.actionID and b.agencyID = pso.agencyID
+	-- менеджер акции; имя — как у колонки «Менеджер» в «Остатке» (SpecialActions) и статистике
+	left join [User] u on u.userID = soa.userID
 	left join @massmedias umm on c.massmediaID = umm.massmediaID
 	left join GroupMember gm on soa.userID = gm.userID
 	left join @ugroups ug on gm.groupID = ug.id

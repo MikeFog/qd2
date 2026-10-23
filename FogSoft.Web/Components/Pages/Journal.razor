@@ -230,8 +230,14 @@ else
             // Значение пункта меню сильнее метаданных (в десктопе присваивание идёт
             // следом за ResolveFilterInitialValues). Только здесь, при первой загрузке:
             // «Применить» зовёт Load(), и выбор пользователя не затирается.
+            // Значение null — поле выключено.
             if (_route?.FilterDefault is { } def)
-                _filterValues[def.Field] = Globals.ResolveInitialValue(def.Value);
+            {
+                if (def.Value == null)
+                    _filterValues.Remove(def.Field);
+                else
+                    _filterValues[def.Field] = Globals.ResolveInitialValue(def.Value);
+            }
 
             // Отбор, применённый в этом журнале раньше за сеанс, сильнее и того и другого.
             Filters.Restore(FilterScreen, _filterValues);

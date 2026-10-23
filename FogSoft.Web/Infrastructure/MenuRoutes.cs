@@ -37,6 +37,12 @@ namespace FogSoft.Web.Infrastructure;
 /// (<see cref="JournalRoute.EntitySwitch"/>). Итого к тем 22 веткам добавляются
 /// miMassMedia и 14 пунктов статистики, плюс miStats.Balance.
 ///
+/// <c>miPaymentByManager</c> (2026-10-23) — тоже не из тех 22: десктоп
+/// (<c>MDIForm.ShowCommonOrderByManager</c>) открывает диалог выбора менеджеров и по
+/// окну журнала 146 на каждого. В вебе (решение владельца 22.10.2026, вариант 1) — один
+/// журнал 146 за период: чьи оплаты — видно колонкой «Менеджер» (Deploy/72), отбор по
+/// менеджеру, который метаданные ставят на текущего пользователя, снят.
+///
 /// Правило <c>ManagerFilter</c> привязано к пункту меню, а не к сущности
 /// (десктоп передаёт <c>ManagerFilter.FilterClick</c> в <c>ShowSimpleJournal</c>
 /// только из части веток), поэтому признак лежит здесь, в
@@ -66,6 +72,8 @@ public static class MenuRoutes
 			{ "miManagerDiscountHistory", new JournalRoute(Entities.ManagerDiscountHistory) },
 			{ "miManagerDiscountReason", new JournalRoute(Entities.ManagerDiscountReason) },
 			{ "miMassMedia", new JournalRoute(Entities.MassMedia) },
+			{ "miPaymentByManager", new JournalRoute(Entities.PaymentCommonAction, ManagerFilter: true,
+				FilterDefault: new FilterDefault("managerID", null)) },
 			{ "miPaymentByManagerFromRSection", new JournalRoute(Entities.PaymentCommonAction, ManagerFilter: true) },
 			{ "miPaymentType", new JournalRoute(Entities.PaymentType) },
 			{ "miSpecialActions", new JournalRoute(Entities.SpecialAction, ManagerFilter: true) },
@@ -332,8 +340,10 @@ public sealed record BulkAction(string ActionName, string Caption);
 /// Значение в том же виде, что в метаданных фильтра (атрибут <c>value</c>): сокращение из
 /// <see cref="PageControl.InitialValueAbbreviations"/> или готовое значение. Разбирается
 /// <see cref="Globals.ResolveInitialValue"/> — тем же кодом, что и значения из метаданных.
+/// <c>null</c> — поле выключено (галочка снята), хотя метаданные дают ему значение: в панели
+/// выключенное поле — отсутствие ключа, как DBNull в <c>FilterMemory.Preset</c>.
 /// </param>
-public sealed record FilterDefault(string Field, string Value);
+public sealed record FilterDefault(string Field, string? Value);
 
 /// <param name="FilterField">Булево поле отбора.</param>
 /// <param name="WhenTrue">Сущность данных, когда поле включено; иначе — сущность маршрута.</param>
