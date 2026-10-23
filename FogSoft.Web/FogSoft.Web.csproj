@@ -27,4 +27,12 @@
     <None Update="log4net.config" CopyToOutputDirectory="PreserveNewest" />
   </ItemGroup>
 
+  <ItemGroup>
+    <!-- Справка веера (В-15, docs/tasks/web-action-forms.md): тот же файл, что у десктопа, Client/Help/veer.html
+         (ведёт заказчик, не править), в папку Help рядом с exe, как у десктопа; отдаётся /help/veer.html
+         (Program.cs, UseStaticFiles). Не статикой wwwroot: файл по ссылке MapStaticAssets в разработке не находит,
+         а с диска правка копии на сервере подхватывается без пересборки, как у десктопа. -->
+    <None Include="..\Client\Help\veer.html" Link="Help\veer.html" CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="PreserveNewest" />
+  </ItemGroup>
+
 </Project>

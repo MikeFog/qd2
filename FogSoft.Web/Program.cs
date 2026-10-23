@@ -5,6 +5,7 @@ using FogSoft.Web.Infrastructure;
 using FogSoft.WinForm.Classes;
 using FogSoft.WinForm.DataAccess;
 using Microsoft.AspNetCore.Components.Server.Circuits;
+using Microsoft.Extensions.FileProviders;
 
 // Кодовые страницы Windows: выгрузка сетки для эфира (DJin) пишется в windows-1251
 // (DJinParam.Encoding). В .NET Framework они встроены, в .NET — только через провайдер.
@@ -121,6 +122,16 @@ app.UseStatusCodePagesWithReExecute("/not-found", createScopeForStatusCodePages:
 app.UseHttpsRedirection();
 
 app.UseAntiforgery();
+
+// Справка веера (В-15): файл заказчика Client/Help/veer.html из папки Help рядом с exe (FogSoft.Web.csproj).
+// Без папки (неполный пакет на сервере) веб работает, кнопка «Справка» отвечает 404.
+string helpFolder = Path.Combine(AppContext.BaseDirectory, "Help");
+if (Directory.Exists(helpFolder))
+    app.UseStaticFiles(new StaticFileOptions
+    {
+        FileProvider = new PhysicalFileProvider(helpFolder),
+        RequestPath = "/help",
+    });
 
 app.MapStaticAssets();
 app.MapRazorComponents<App>()

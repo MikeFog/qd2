@@ -32,6 +32,9 @@
     бонус ядро сверяет пересчётом после каждого выпуска (В-33). Щелчок по полосе в «Режиме добавления» ставит или снимает
     выпуск программы (ProgramSource.Toggle) с предметом рекламы из поля над полосой (В-30); режим общий для полосы и окон и
     включается и без ролика кисти, если программы править можно. «Отменить» — и для программ (запись вида Programs).
+
+    «Справка» на «Рекламных окнах» (не на «Спонсорстве», В-15) — файл заказчика Client/Help/veer.html как есть, в новой
+    вкладке браузера; у десктопа такая кнопка есть у веера (EditIssuesForm).
 *@
 
 <div class="windows-tab">
@@ -217,6 +220,14 @@
                                         @onclick="RefreshAll">
                                     <i class="bi bi-arrow-clockwise" aria-hidden="true"></i>
                                 </button>
+                                @if (!Sponsorship)
+                                {
+                                    @* В-15: справка веера — файл заказчика Client/Help/veer.html (ссылка в FogSoft.Web.csproj). *@
+                                    <a class="btn btn-sm btn-outline-secondary" href="help/veer.html" target="_blank" rel="noopener"
+                                       title="@(Tr.T("Открыть справку по этому экрану"))">
+                                        <i class="bi bi-question-circle" aria-hidden="true"></i>@Tr.T("Справка")
+                                    </a>
+                                }
                             </span>
                         </TrailingTools>
                         <Caption>
