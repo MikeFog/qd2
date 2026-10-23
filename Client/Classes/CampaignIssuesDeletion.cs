@@ -25,7 +25,9 @@ namespace Merlin.Classes
 	/// на выпуск (IssueIUD, у модульной — ModuleIssueIUD), один пересчёт в конце. Отличия от десктопа: по дням транзакциями
 	/// с точкой сохранения на выпуск (у десктопа — транзакция на выпуск); смена «Позиция:» сбрасывает отметки (десктоп
 	/// удалял и скрытые). Чужие акции — правило CheckLoggedUserRight по имени действия (DeleteIssues в нём с 20.10.2026).
-	/// Пакетные кампании и программы спонсорской — с вкладками «Пакеты» и «Спонсорство».
+	/// Выпуски программ спонсорской (86 — все, 89 — одной программы; этап 7.4, В-35): ветка дерева 100, ProgramIssueIUD
+	/// DeleteItem с датой выпуска (прошлое снимает только администратор, как одиночное «Удалить»; десктопное массовое дату не
+	/// передаёт) и пересчёт после каждого снятия (Д-32). Пакетные кампании — с вкладкой «Пакеты».
 	///
 	/// Только веб: в Client.csproj не входит.
 	/// </summary>
@@ -68,15 +70,29 @@ namespace Merlin.Classes
 		private const string PositionsTable = "positions";
 
 		/// <summary>
-		/// Перенесено ли для объекта: линейная и модульная кампании, ролик кампании, модуль кампании, ролики спонсорской.
+		/// Перенесено ли для объекта: линейная и модульная кампании, ролик кампании, модуль кампании, ролики спонсорской, её
+		/// программы (86, «Удалить выпуски спонсорских программ») и программа в ней (89, «… спонсорской программы») — В-35.
 		/// Только по классу и строке — зовётся при построении меню.
 		/// </summary>
 		public static bool DeletesIssues(PresentationObject target)
 		{
 			if (target is Campaign campaign)
 				return campaign.CampaignType == Campaign.CampaignTypes.Simple || campaign.CampaignType == Campaign.CampaignTypes.Module;
-			return target is CampaignRoller || target is ModuleInCampaign || target is RollerPartOfSponsorCampaign;
+			return target is CampaignRoller || target is ModuleInCampaign || IsSponsorPart(target, Entities.RollerPart)
+				|| IsSponsorPart(target, Entities.ProgramPart) || target is SponsorCampaignProgram;
 		}
+
+		/// <summary>
+		/// Часть спонсорской кампании: узел дерева (ProgramPartOfSponsorCampaign / RollerPartOfSponsorCampaign) или строка
+		/// списка справа от узла кампании — обёртка SponsorProgramPart, чья сущность в Init становится 86 или 87.
+		/// </summary>
+		internal static bool IsSponsorPart(PresentationObject target, Entities part) =>
+			part == Entities.ProgramPart
+				? target is ProgramPartOfSponsorCampaign || target is SponsorProgramPart && target.Entity.Id == (int)Entities.ProgramPart
+				: target is RollerPartOfSponsorCampaign || target is SponsorProgramPart && target.Entity.Id == (int)Entities.RollerPart;
+
+		/// <summary>Ветка CampaignDaysTreePassport для выпусков программ спонсорской кампании (такого типа кампании нет).</summary>
+		private const int ProgramIssuesTreeType = 100;
 
 		/// <summary>Пункт доступен: перенесён и доступен у части (права группы, чужая и удалённая акция — CampaignPart).</summary>
 		public static bool CanDeleteIssues(PresentationObject target, ViewType view) =>
@@ -87,6 +103,9 @@ namespace Merlin.Classes
 		{
 			internal Campaign Campaign;
 			internal object ObjectId;
+
+			/// <summary>Выпуски программ спонсорской кампании (ProgramIssue), а не роликов или модулей.</summary>
+			internal bool Programs;
 
 			/// <summary>Наборы паспорта: days и positions.</summary>
 			public DataSet Data { get; internal set; }
@@ -119,12 +138,20 @@ namespace Merlin.Classes
 			if (campaign == null)
 				throw new InvalidOperationException(Tr.T("Рекламная кампания удалена. Обновите страницу."));
 
-			// Ветки DoAction частей: ролик — @objectID = rollerID, модуль — moduleID, остальное — вся кампания.
+			// Ветки DoAction частей: ролик — @objectID = rollerID, модуль — moduleID, программа в кампании — programID (ветка
+			// выпусков программ, как SponsorCampaignProgram.DeleteIssues), программы — все выпуски программ, остальное — вся кампания.
 			Scope s = new Scope { Campaign = campaign };
 			if (target is CampaignRoller roller)
 				s.ObjectId = roller.Roller.RollerId;
 			else if (target is ModuleInCampaign)
 				s.ObjectId = target[Module.ParamNames.ModuleId];
+			else if (target is SponsorCampaignProgram)
+			{
+				s.Programs = true;
+				s.ObjectId = target[SponsorCampaignProgram.ParamNames.ProgramId];
+			}
+			else if (IsSponsorPart(target, Entities.ProgramPart))
+				s.Programs = true;
 			s.Data = Load(s, null);
 			return s;
 		}
@@ -134,7 +161,7 @@ namespace Merlin.Classes
 		{
 			Dictionary<string, object> procParameters = DataAccessor.CreateParametersDictionary();
 			procParameters[Campaign.ParamNames.CampaignId] = s.Campaign.CampaignId;
-			procParameters[Campaign.ParamNames.CampaignTypeId] = (int)s.Campaign.CampaignType;
+			procParameters[Campaign.ParamNames.CampaignTypeId] = s.Programs ? ProgramIssuesTreeType : (int)s.Campaign.CampaignType;
 			if (s.ObjectId != null)
 				procParameters[CampaignPart.OBJECT_ID] = s.ObjectId;
 			if (positionId != null && positionId != DBNull.Value)
@@ -186,6 +213,7 @@ namespace Merlin.Classes
 		{
 			public int Id;
 			public DateTime Day;
+			public DateTime Time;
 			public string Name;
 		}
 
@@ -204,8 +232,9 @@ namespace Merlin.Classes
 				throw new InvalidOperationException(Tr.T("Рекламная акция удалена. Обновите страницу."));
 			bool module = campaign.CampaignType == Campaign.CampaignTypes.Module;
 			// Модульная запись идёт мимо WebActionAuthorization (LoadDataSet), а отказ авторизации внутри шага порвал бы день.
+			Entities issueEntity = s.Programs ? Entities.ProgramIssue : module ? Entities.ModuleIssue : Entities.Issue;
 			if (!ActionOnMassmedia.CheckLoggedUserRight(DeleteIssuesAction, action)
-				|| !EntityManager.GetEntity(module ? (int)Entities.ModuleIssue : (int)Entities.Issue).IsActionEnabled(Constants.EntityActions.Delete, ViewType.Journal))
+				|| !EntityManager.GetEntity((int)issueEntity).IsActionEnabled(Constants.EntityActions.Delete, ViewType.Journal))
 				throw new InvalidOperationException(Tr.T(Properties.Resources.OperationNotAllowed));
 			decimal oldPrice = action.TotalPrice;
 
@@ -216,6 +245,7 @@ namespace Merlin.Classes
 				{
 					Id = int.Parse(Convert.ToString(r["id"])),
 					Day = Convert.ToDateTime(r[Issue.ParamNames.IssueDate]).Date,
+					Time = Convert.ToDateTime(r[Issue.ParamNames.IssueDate]),
 					Name = Convert.ToString(r["parentID"]) + " " + Convert.ToString(r[Constants.Parameters.Name]),
 				})
 				.GroupBy(p => p.Day).OrderBy(g => g.Key).ToList();
@@ -232,7 +262,7 @@ namespace Merlin.Classes
 					{
 						try
 						{
-							day = DeleteDay(campaign.CampaignId, module, days[i]);
+							day = s.Programs ? DeleteProgramDay(campaign.CampaignId, action, days[i]) : DeleteDay(campaign.CampaignId, module, days[i]);
 						}
 						catch (SqlException ex) when (ex.Number == 1205 && n == 0)
 						{
@@ -273,6 +303,24 @@ namespace Merlin.Classes
 			}
 			Log.Info($"Campaign issues delete completed in {watch.ElapsedMilliseconds}ms: campaign={campaign.CampaignId} removed={result.Batch.Done} notRemoved={result.NotDone} days={days.Count}");
 			return result;
+		}
+
+		/// <summary>
+		/// День выпусков программ одной транзакцией (В-35): шаг — ProgramSource.DeleteStep с точкой сохранения, по времени выпуска.
+		/// После каждого снятия — пересчёт акции, вне шага: ProgramIssueIUD DeleteItem сверяет занятое роликами с бонусом кампании,
+		/// который ведёт только пересчёт, — без него второе снятие сверялось бы с бонусом до первого и бонус ушёл бы ниже
+		/// занятого (Д-32, так снимает десктоп). Отказ пересчёта откатывает день.
+		/// </summary>
+		private static WindowsSource.BatchResult DeleteProgramDay(int campaignId, ActionOnMassmedia action, IEnumerable<Planned> day)
+		{
+			WindowsSource.BatchResult work = new WindowsSource.BatchResult();
+			WindowsSource.RunInTransactionKeepingPrice(action, () =>
+			{
+				foreach (Planned p in day.OrderBy(x => x.Time).ThenBy(x => x.Id))
+					if (RangeSource.Step(work, p.Name, 1, () => ProgramSource.DeleteStep(p.Id, campaignId)))
+						action.Recalculate(false);
+			});
+			return work;
 		}
 
 		/// <summary>День одной транзакцией: свежие строки выпусков (исчезнувший — отказ, а не ошибка 515 LogDeletedIssue), шаги.</summary>

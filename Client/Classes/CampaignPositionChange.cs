@@ -56,7 +56,7 @@ namespace Merlin.Classes
 		{
 			if (target is Campaign c)
 				return c.CampaignType == Campaign.CampaignTypes.Simple || c.CampaignType == Campaign.CampaignTypes.Module;
-			return target is CampaignRoller || target is ModuleInCampaign || target is RollerPartOfSponsorCampaign;
+			return target is CampaignRoller || target is ModuleInCampaign || CampaignIssuesDeletion.IsSponsorPart(target, Entities.RollerPart);
 		}
 
 		/// <summary>Пункт доступен: перенесён и доступен у части (права группы, чужая и удалённая акция — CampaignPart).</summary>
@@ -236,7 +236,8 @@ namespace Merlin.Classes
 		{
 			int actionId = action.ActionId;
 			WindowsSource.BatchResult work = new WindowsSource.BatchResult();
-			WindowsSource.RunInTransaction(() =>
+			// День повторяется при взаимоблокировке: цена акции в объекте не должна остаться от откатанных пересчётов на шаг.
+			WindowsSource.RunInTransactionKeepingPrice(action, () =>
 			{
 				if (module)
 				{

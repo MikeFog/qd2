@@ -933,7 +933,8 @@ public sealed partial class ObjectActions
 		// кампании переключается на 86/87, где DeleteItem нет, — иначе в строке висела бы иконка корзины, которая не работает.
 		["CampaignPart." + Constants.EntityActions.Delete] = t =>
 			((PresentationObject)t).Entity.TryGetActionRight(Constants.EntityActions.Delete, out _),
-		// Выпуски пакетов и программ спонсорской веб поставить обратно не умеет — их удаление с вкладками «Пакеты» и «Спонсорство».
+		// Выпуски пакетов веб поставить обратно не умеет — их удаление с вкладкой «Пакеты»; программ спонсорской — с этапа 7.4
+		// (поставить их обратно можно на «Спонсорстве»).
 		["CampaignPart." + Merlin.Classes.CampaignIssuesDeletion.DeleteIssuesAction] = t =>
 			Merlin.Classes.CampaignIssuesDeletion.DeletesIssues((PresentationObject)t),
 		["CampaignPart." + Merlin.Classes.CampaignPositionChange.ActionName] = t =>

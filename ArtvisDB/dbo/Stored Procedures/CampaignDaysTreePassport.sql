@@ -149,10 +149,12 @@ else if @campaignTypeID = 4
 	End
 else if @campaignTypeID = 100 -- такого типа нет, это для выпусков программ спонсорской кампании
 	Begin
+	-- День — по дате без времени: у выпуска программы issueDate — день и время тарифа, и distinct по полной дате давал по
+	-- строке дня на каждое время (дерево показывало день дважды, с теми же выпусками в каждой копии).
 	insert into @days(id, issueDate,[image], [name])
 	select distinct
 		convert(varchar, mi.issueDate, 104),
-		mi.issueDate,
+		dbo.ToShortDate(mi.issueDate),
 		'Day.png',
 		convert(varchar, mi.issueDate, 104)
 	from
@@ -168,7 +170,8 @@ else if @campaignTypeID = 100 -- такого типа нет, это для в�
 		pi.[issueID],
 		Convert(varchar, pi.issueDate, 104),
 		'SponsorProgram.png',
-		sp.name + COALESCE(' - ' + adv.name, ''),
+		-- Время выхода, как у выпусков роликов: программы дня в разное время различимы.
+		CONVERT(varchar(5), pi.issueDate, 108) + ' ' + sp.name + COALESCE(' - ' + adv.name, ''),
 		pi.[issueDate]
 	FROM 
 		[ProgramIssue] pi

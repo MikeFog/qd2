@@ -1045,7 +1045,8 @@ namespace Merlin.Classes
 
 		private static void MoveOnce(OpenCampaign c, MovePlan plan, Campaign campaign, bool perStep, List<KeyValuePair<int, PlacedIssue>> moved)
 		{
-			RunInTransaction(() =>
+			// Перенос повторяется при взаимоблокировке: цена акции в объекте не должна остаться от откатанного пересчёта.
+			RunInTransactionKeepingPrice(campaign.Action, () =>
 			{
 				moved.Clear();
 				foreach (RollerIssue issue in plan.Issues)
@@ -1164,6 +1165,26 @@ namespace Merlin.Classes
 					// Сервер мог откатить транзакцию сам (жертва взаимоблокировки) — Rollback тогда бросает,
 					// и его ошибка заслонила бы настоящую причину; транзакция в любом случае закрыта.
 				}
+				throw;
+			}
+		}
+
+		/// <summary>
+		/// Транзакция, внутри которой акция пересчитывается (пересчёт на шаг, В-33). Пересчёт кладёт новую цену в объект акции, а
+		/// коррекцию оплат подтверждённой акции Recalculate делает, только если цена упала относительно цены в объекте: при откате
+		/// (взаимоблокировка, затем повтор) объект хранил бы цену откатанного пересчёта, и повтор не урезал бы оплаты. Поэтому при
+		/// откате цена в объекте возвращается к той, что была до транзакции.
+		/// </summary>
+		internal static void RunInTransactionKeepingPrice(ActionOnMassmedia action, System.Action work)
+		{
+			object price = action[ActionOnMassmedia.ParamNames.TotalPrice];
+			try
+			{
+				RunInTransaction(work);
+			}
+			catch
+			{
+				action[ActionOnMassmedia.ParamNames.TotalPrice] = price;
 				throw;
 			}
 		}

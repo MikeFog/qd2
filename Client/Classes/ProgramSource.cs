@@ -499,6 +499,20 @@ namespace Merlin.Classes
 			return new PresentationObject(EntityManager.GetEntity((int)Entities.AdvertType), parameters);
 		}
 
+		/// <summary>
+		/// Шаг пачки снятия выпусков программ («Удалить выпуски спонсорских программ», В-35, CampaignIssuesDeletion): выпуск
+		/// читается заново — нет или уже не этой кампании — причина отказа, иначе DeleteItem свежей строкой (с датой — запрет
+		/// прошлого PastIssue работает, и с кампанией — бонус сверяется). Пересчёт после шага — у вызывающего (Д-32).
+		/// </summary>
+		internal static string DeleteStep(int issueId, int campaignId)
+		{
+			DataRow row = LoadIssue(issueId);
+			if (row == null || CampaignIdOf(row) != campaignId)
+				return Tr.T("Выпуска уже нет.");
+			new ProgramIssue(row).Delete(silenceFlag: true);
+			return null;
+		}
+
 		// ---------- «Отменить последнее» ----------
 
 		/// <summary>

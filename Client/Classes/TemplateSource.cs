@@ -215,7 +215,8 @@ namespace Merlin.Classes
 			return WriteDayCore(kind, "campaign " + c.CampaignId, dayText, daysLeft, writes.Count, result, () =>
 			{
 				WindowsSource.BatchResult dayResult = new WindowsSource.BatchResult();
-				WindowsSource.RunInTransaction(() =>
+				// День повторяется при взаимоблокировке: цена акции в объекте не должна остаться от откатанных пересчётов.
+				WindowsSource.RunInTransactionKeepingPrice(campaign.Action, () =>
 				{
 					foreach (DayWrite w in writes)
 						if (WindowsSource.Step(dayResult, w.Start.ToString("dd.MM.yyyy HH:mm"), () =>
