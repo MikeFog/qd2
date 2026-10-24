@@ -8,7 +8,7 @@
 AS
 SET NOCOUNT on
 
-DECLARE @avgDuration float, @campaignsCount tinyint, @priceByCampaigns decimal(18,2)
+DECLARE @avgDuration float, @maxDuration float, @baseDuration float, @campaignsCount tinyint, @priceByCampaigns decimal(18,2)
 
 Select @priceByCampaigns = Sum([price]) From Campaign where actionID = @actionID
 
@@ -17,12 +17,18 @@ Select @priceByCampaigns = Sum([price]) From Campaign where actionID = @actionID
 -- ИСПРАВЛЕНО: пустые кампании (без единого размещения) в расчёте пакета не участвуют -
 -- иначе они тянут вниз avgDuration и завышают @campaignsCount, срывая пакетную скидку.
 -- Предикат тот же, что ActionRecalculate использует для oldTotalCount.
-SELECT @avgDuration=AVG(CAST(c.issuesDuration AS float)), @campaignsCount=COUNT(*)
+SELECT @avgDuration=AVG(CAST(c.issuesDuration AS float)), @maxDuration=MAX(CAST(c.issuesDuration AS float)), @campaignsCount=COUNT(*)
 FROM Campaign c
 WHERE c.actionID=@actionID and c.campaignTypeID < 4
 	and (ISNULL(c.issuesCount, 0) + ISNULL(c.programsCount, 0)) > 0
 
-SELECT @avgDuration=COALESCE(@avgDuration,0), @campaignsCount=COALESCE(@campaignsCount,0)
+SELECT @avgDuration=COALESCE(@avgDuration,0), @maxDuration=COALESCE(@maxDuration,0), @campaignsCount=COALESCE(@campaignsCount,0)
+
+-- «Процент заполнения» прайс-листа (eachVolume) считается от средней длительности кампаний акции; для акций, начавшихся
+-- с даты системной настройки «PackageDiscountMaxBasisFrom» (Протектор: «Настройки...»), — от максимальной. Дата не задана —
+-- везде от средней. @startDate — начало акции (ActionRecalculate передаёт MIN(Campaign.startDate)).
+DECLARE @maxBasisFrom datetime = dbo.f_SysParamsPackageDiscountMaxBasisFrom()
+SELECT @baseDuration = CASE WHEN @maxBasisFrom IS NOT NULL AND @startDate >= @maxBasisFrom THEN @maxDuration ELSE @avgDuration END
 
 -- Самый выгодный клиенту прайс-лист; при равных скидках — меньший ID, чтобы ссылка была однозначной
 SELECT @discountValue = 1, @packageDiscountPriceListID = NULL
@@ -39,7 +45,7 @@ SELECT TOP 1 @discountValue=pl.discount, @packageDiscountPriceListID=pl.packageD
 																OR (c.campaignTypeID=2 AND m.isForType2=1)
 																OR (c.campaignTypeID=3 AND m.isForType3=1)
 																)
-														AND CAST(c.issuesDuration as float) >= @avgDuration*p.eachVolume/100
+														AND CAST(c.issuesDuration as float) >= @baseDuration*p.eachVolume/100
 		WHERE
 			c.actionID=@actionID
 			-- пустые кампании исключаем и здесь, чтобы HAVING сравнивал только реальные

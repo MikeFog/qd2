@@ -12,10 +12,15 @@ BEGIN
     SET NOCOUNT ON;
 
     DECLARE @campaignsCount int;
-	Declare @avgDurationSec float;
+	Declare @avgDurationSec float, @maxDurationSec float, @baseDurationSec float;
     -- станции без выходов в пакете не участвуют, как пустые кампании в hlp_ActionDiscountCalculate: иначе они
     -- тянули вниз среднюю длительность и завышали число станций, и пакет срывался
-    SELECT @campaignsCount = COUNT(DISTINCT massmediaID), @avgDurationSec = AVG(CAST(durationSec as float)) FROM @sel WHERE durationSec > 0;
+    SELECT @campaignsCount = COUNT(DISTINCT massmediaID), @avgDurationSec = AVG(CAST(durationSec as float)), @maxDurationSec = MAX(CAST(durationSec as float)) FROM @sel WHERE durationSec > 0;
+
+    -- как в hlp_ActionDiscountCalculate: «процент заполнения» (eachVolume) — от средней длительности, а для акций,
+    -- начавшихся с даты системной настройки «PackageDiscountMaxBasisFrom», — от максимальной
+    DECLARE @maxBasisFrom datetime = dbo.f_SysParamsPackageDiscountMaxBasisFrom();
+    SET @baseDurationSec = CASE WHEN @maxBasisFrom IS NOT NULL AND @startDate >= @maxBasisFrom THEN @maxDurationSec ELSE @avgDurationSec END;
 
     SET @discountValue = 1;
     SET @packageDiscountPriceListID = NULL;
@@ -39,7 +44,7 @@ BEGIN
            AND p.value <= @priceTotal
         WHERE
             s.durationSec > 0
-            AND CAST(s.durationSec as float) >= @avgDurationSec * p.eachVolume / 100.0
+            AND CAST(s.durationSec as float) >= @baseDurationSec * p.eachVolume / 100.0
         GROUP BY
             m.packageDiscountPriceListID
         HAVING

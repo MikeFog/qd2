@@ -9,6 +9,7 @@ CREATE procedure [dbo].[SysParamsUpdate]
 	@daysHistorySave smallint = null,
 	@deletedActionsLifetime smallint,
 	@unconfirmedActionsLifetime smallint,
+	@packageDiscountMaxBasisFrom datetime = null, -- NULL — настройка не задана (удаляется)
 	@actionName varchar(16) = null 
 )
 as 
@@ -48,4 +49,13 @@ begin
 	update iInternalVariable set [value] = Cast(@deletedActionsLifetime as binary(500)) where [name] = 'DeletedActionsLifetime'
 
 	update iInternalVariable set [value] = Cast(@unconfirmedActionsLifetime as binary(500)) where [name] = 'UnconfirmedActionsLifetime'
+
+	-- Дата начала акции, с которой «процент заполнения» пакетной скидки считается от максимальной длительности
+	-- (hlp_ActionDiscountCalculate, pc_PackageDiscountCalculateModel); не задана — везде от средней
+	if @packageDiscountMaxBasisFrom is null
+		delete from iInternalVariable where [name] = 'PackageDiscountMaxBasisFrom'
+	else if exists(select * from iInternalVariable where [name] = 'PackageDiscountMaxBasisFrom')
+		update iInternalVariable set [value] = Cast(Cast(Cast(@packageDiscountMaxBasisFrom as date) as datetime) as binary(500)) where [name] = 'PackageDiscountMaxBasisFrom'
+	else
+		insert into iInternalVariable ([name],[value]) values ('PackageDiscountMaxBasisFrom', Cast(Cast(Cast(@packageDiscountMaxBasisFrom as date) as datetime) as binary(500)))
 end

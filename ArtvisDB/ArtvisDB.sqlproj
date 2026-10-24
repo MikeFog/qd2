@@ -225,6 +225,7 @@
     <Build Include="dbo\Functions\fn_ProductListByRollerId.sql" />
     <Build Include="dbo\Functions\fn_IsAcceptRatioForUser.sql" />
     <Build Include="dbo\Functions\f_SysParamsDaysLog.sql" />
+    <Build Include="dbo\Functions\f_SysParamsPackageDiscountMaxBasisFrom.sql" />
     <Build Include="dbo\Functions\fn_GetIssuePrice.sql" />
     <Build Include="dbo\Functions\fn_IssuesInModule.sql" />
     <Build Include="dbo\Functions\fn_IsRightToEditGroupActions.sql" />
