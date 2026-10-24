@@ -330,7 +330,7 @@ namespace Merlin.Classes
 					foreach (var item in form.SelectedItems)
 						items.Add((item.date, item.presentationObject));
 
-					ActionOnMassmedia newAction = ApplyClone(items, out DataTable tableErrors);
+					ActionOnMassmedia newAction = ApplyClone(items, out DataTable tableErrors, form.ChosenAgencies);
 
 					if (tableErrors.Rows.Count > 0)
 						Globals.ShowSimpleJournal(EntityManager.GetEntity((int)Entities.ErrTmplGen), "Ошибки клонирования", tableErrors);

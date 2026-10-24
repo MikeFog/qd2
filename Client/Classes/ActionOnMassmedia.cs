@@ -435,32 +435,208 @@ namespace Merlin.Classes
             }
         }
 
+        /// <summary>Что делать с агентством кампании при клонировании.</summary>
+        internal enum CloneAgencyState
+        {
+            /// <summary>Агентство по-прежнему у станции — остаётся.</summary>
+            Keep,
+            /// <summary>Агентства уже нет у станции, действующее одно — подставляется оно.</summary>
+            Replace,
+            /// <summary>Агентства уже нет у станции, действующих несколько — выбирает пользователь.</summary>
+            Choose,
+            /// <summary>У станции нет действующих агентств — кампанию клонировать нельзя.</summary>
+            Missing
+        }
+
+        /// <summary>
+        /// Проверка агентства одной клонируемой кампании. Клон берёт агентство из исходной кампании, а станция
+        /// за это время могла сменить агентство, и счета по новой акции ушли бы не тому агентству: действующие
+        /// агентства станции (MassmediaAgencies) сверяются до клонирования, а не после.
+        /// </summary>
+        internal sealed class CloneAgencyPlan
+        {
+            /// <param name="get">Читает параметр исходной кампании по имени (строка журнала или объект).</param>
+            public CloneAgencyPlan(Func<string, object> get)
+            {
+                CampaignId = Convert.ToInt32(get(Campaign.ParamNames.CampaignId));
+                CampaignTypeId = Convert.ToInt32(get(Campaign.ParamNames.CampaignTypeId));
+                PaymentTypeId = Convert.ToInt32(get(Campaign.ParamNames.PaymentTypeID));
+                OldAgencyId = Convert.ToInt32(get(Campaign.ParamNames.AgencyID));
+                // у пакетной кампании станции нет
+                if (CampaignTypeId != (int)Campaign.CampaignTypes.PackModule)
+                    MassmediaId = Convert.ToInt32(get(Campaign.ParamNames.MassmediaId));
+            }
+
+            public int CampaignId { get; }
+            public int CampaignTypeId { get; }
+            public int PaymentTypeId { get; }
+            public int? MassmediaId { get; }
+            public int OldAgencyId { get; }
+
+            public CloneAgencyState State { get; internal set; }
+            /// <summary>Агентство новой кампании; null, пока при <see cref="CloneAgencyState.Choose"/> не выбрано.</summary>
+            public int? NewAgencyId { get; internal set; }
+            /// <summary>Действующие агентства: ключ — agencyID, значение — название.</summary>
+            public IReadOnlyList<KeyValuePair<int, string>> Candidates { get; internal set; }
+
+            /// <summary>
+            /// Выбор пользователя там, где у станции несколько действующих агентств: когда прежнее не подходит
+            /// (<see cref="CloneAgencyState.Choose"/>) или подходит, но пользователь хочет другое
+            /// (<see cref="CloneAgencyState.Keep"/>). Не из <see cref="Candidates"/> — отказ.
+            /// </summary>
+            public bool TryChoose(int agencyId)
+            {
+                if ((State != CloneAgencyState.Choose && State != CloneAgencyState.Keep) || AgencyName(agencyId) == null)
+                    return false;
+                NewAgencyId = agencyId;
+                return true;
+            }
+
+            public string AgencyName(int agencyId)
+            {
+                foreach (var c in Candidates)
+                    if (c.Key == agencyId)
+                        return c.Value;
+                return null;
+            }
+        }
+
+        /// <summary>
+        /// Определяет для каждой кампании, что будет с её агентством. Действующие агентства станции читаются
+        /// один раз на станцию; у пакетной кампании станции нет — берутся агентства пользователя, как при её создании.
+        /// </summary>
+        internal static void PlanCloneAgencies(IEnumerable<CloneAgencyPlan> plans)
+        {
+            var byStation = new Dictionary<int, List<KeyValuePair<int, string>>>();
+            List<KeyValuePair<int, string>> userAgencies = null;
+
+            foreach (CloneAgencyPlan plan in plans)
+            {
+                List<KeyValuePair<int, string>> candidates;
+                if (plan.MassmediaId == null)
+                {
+                    if (userAgencies == null)
+                        userAgencies = AgencyOptions(SecurityManager.LoggedUser.Agencies);
+                    candidates = userAgencies;
+                }
+                else if (!byStation.TryGetValue(plan.MassmediaId.Value, out candidates))
+                {
+                    candidates = AgencyOptions(StationAgencies(plan.MassmediaId.Value));
+                    byStation[plan.MassmediaId.Value] = candidates;
+                }
+
+                plan.Candidates = candidates;
+                plan.NewAgencyId = null;
+                if (candidates.Exists(c => c.Key == plan.OldAgencyId))
+                {
+                    plan.State = CloneAgencyState.Keep;
+                    plan.NewAgencyId = plan.OldAgencyId;
+                }
+                else if (candidates.Count == 1)
+                {
+                    plan.State = CloneAgencyState.Replace;
+                    plan.NewAgencyId = candidates[0].Key;
+                }
+                else
+                    plan.State = candidates.Count > 1 ? CloneAgencyState.Choose : CloneAgencyState.Missing;
+            }
+        }
+
+        // Действующие агентства станции (MassmediaAgencies); то же, что ActionWorkspace.StationAgencies, которого в Client нет.
+        private static DataTable StationAgencies(int massmediaId)
+        {
+            Dictionary<string, object> station = DataAccessor.CreateParametersDictionary();
+            station[Massmedia.ParamNames.MassmediaId] = massmediaId;
+            return ((Massmedia)EntityManager.GetEntity((int)Entities.MassMedia).CreateObject(station)).Agencies;
+        }
+
+        private static List<KeyValuePair<int, string>> AgencyOptions(DataTable agencies)
+        {
+            var result = new List<KeyValuePair<int, string>>();
+            foreach (DataRow row in agencies.Rows)
+                result.Add(new KeyValuePair<int, string>(Convert.ToInt32(row["agencyID"]), row["name"].ToString()));
+            return result;
+        }
+
+        /// <summary>
+        /// Первая пара кампаний, которые после замены агентств совпали по ключу кампании
+        /// (станция, вид, тип оплаты, агентство — UIX_Campaign): было два агентства на одной станции, действующее осталось одно.
+        /// Только среди плановых кампаний с уже определённым агентством. null — совпадений нет.
+        /// </summary>
+        internal static (CloneAgencyPlan first, CloneAgencyPlan second)? FindCloneAgencyCollision(IEnumerable<CloneAgencyPlan> plans)
+        {
+            var seen = new Dictionary<(int?, int, int, int), CloneAgencyPlan>();
+            foreach (CloneAgencyPlan plan in plans)
+            {
+                if (plan.NewAgencyId == null)
+                    continue;
+                var key = (plan.MassmediaId, plan.CampaignTypeId, plan.PaymentTypeId, plan.NewAgencyId.Value);
+                if (seen.TryGetValue(key, out CloneAgencyPlan other))
+                    return (other, plan);
+                seen[key] = plan;
+            }
+            return null;
+        }
+
         /// <summary>
         /// Клонирует акцию с выбранными кампаниями (<paramref name="selectedItems"/> —
         /// дата клонирования и исходная кампания). Возвращает новую акцию;
         /// <paramref name="tableErrors"/> — таблица ошибок по отдельным кампаниям
         /// (пустая, если ошибок не было).
         /// </summary>
-        internal ActionOnMassmedia ApplyClone(IEnumerable<(DateTime date, PresentationObject campaign)> selectedItems, out DataTable tableErrors)
+        /// <param name="chosenAgencies">
+        /// Выбор пользователя там, где действующих агентств станции несколько (в том числе вместо прежнего, которое ещё подходит):
+        /// campaignID исходной кампании → agencyID.
+        /// Где агентство нельзя определить (нет действующих, выбор не сделан, пара совпала по ключу) —
+        /// InvalidOperationException до создания акции: форма выбора кампаний такого не пропускает.
+        /// </param>
+        internal ActionOnMassmedia ApplyClone(IEnumerable<(DateTime date, PresentationObject campaign)> selectedItems, out DataTable tableErrors,
+            IReadOnlyDictionary<int, int> chosenAgencies = null)
         {
+            var items = new List<(DateTime date, PresentationObject campaign)>(selectedItems);
+            var plans = new Dictionary<int, CloneAgencyPlan>();
+            foreach (var item in items)
+            {
+                PresentationObject campaign = item.campaign;
+                var plan = new CloneAgencyPlan(name => campaign[name]);
+                plans[plan.CampaignId] = plan;
+            }
+            PlanCloneAgencies(plans.Values);
+            foreach (CloneAgencyPlan plan in plans.Values)
+            {
+                if (chosenAgencies != null && chosenAgencies.TryGetValue(plan.CampaignId, out int chosen))
+                    plan.TryChoose(chosen);
+                if (plan.NewAgencyId == null)
+                    throw new InvalidOperationException(
+                        $"Клон кампании {plan.CampaignId}: агентство {plan.OldAgencyId} больше не действует у станции, новое не определено ({plan.State}).");
+            }
+            var collision = FindCloneAgencyCollision(plans.Values);
+            if (collision != null)
+                throw new InvalidOperationException(
+                    $"Клон кампаний {collision.Value.first.CampaignId} и {collision.Value.second.CampaignId}: после замены агентств они совпали по станции, виду, типу оплаты и агентству.");
+
             ActionOnMassmedia newAction = new ActionOnMassmedia(Firm);
             newAction.Update();
 
             tableErrors = ErrorManager.CreateErrorsTable();
 
-            foreach (var item in selectedItems)
+            foreach (var item in items)
             {
                 int campaignTypeId = int.Parse(item.campaign[Campaign.ParamNames.CampaignTypeId].ToString());
+                CloneAgencyPlan agencyPlan = plans[Convert.ToInt32(item.campaign[Campaign.ParamNames.CampaignId])];
 
                 Campaign newCampaign = Campaign.CreateInstance(
                     campaignTypeId,
                     int.Parse(item.campaign[Campaign.ParamNames.PaymentTypeID].ToString()),
                     campaignTypeId == (int)Campaign.CampaignTypes.PackModule ?
                         null : (int?)int.Parse(item.campaign[Campaign.ParamNames.MassmediaId].ToString()),
-                    int.Parse(item.campaign[Campaign.ParamNames.AgencyID].ToString()));
+                    agencyPlan.NewAgencyId.Value);
                 newCampaign[ParamNames.ActionId] = newAction[ParamNames.ActionId];
                 newCampaign.Update();
-                int shiftInDays = (item.date - DateTime.Parse(item.campaign[Campaign.ParamNames.StartDate].ToString())).Days;
+                // У кампании без выпусков даты начала нет (NULL), переносить нечего — сдвиг не нужен;
+                // раньше DateTime.Parse("") ронял клон уже после создания новой акции и кампании.
+                string startDateText = item.campaign[Campaign.ParamNames.StartDate]?.ToString();
+                int shiftInDays = string.IsNullOrEmpty(startDateText) ? 0 : (item.date - DateTime.Parse(startDateText)).Days;
 
                 Campaign selectedCampaign = (Campaign)item.campaign;
 

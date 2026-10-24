@@ -466,6 +466,24 @@ namespace Merlin.Properties {
         }
         
         /// <summary>
+        ///   Looks up a localized string similar to Для кампании «{0}» выберите агентство: прежнего агентства у радиостанции уже нет..
+        /// </summary>
+        public static string CloneAgencyNotChosen {
+            get {
+                return ResourceManager.GetString("CloneAgencyNotChosen", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to После замены агентства кампании «{0}» и «{1}» совпали бы по радиостанции, типу и типу оплаты. Оставьте в клоне только одну из них..
+        /// </summary>
+        public static string CloneAgencyCollision {
+            get {
+                return ResourceManager.GetString("CloneAgencyCollision", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   Looks up a localized string similar to Вы ничего не выбрали. Пожалуйста, выберите хотя бы один рекламный выпуск. Операция прервана..
         /// </summary>
         public static string NoIssueSelected {

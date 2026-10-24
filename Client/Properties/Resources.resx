@@ -123,6 +123,12 @@
   <data name="NoContractDateSet" xml:space="preserve">
     <value>Необходимо указать дату подписания договора для всех выбранных агентств</value>
   </data>
+  <data name="CloneAgencyNotChosen" xml:space="preserve">
+    <value>Для кампании «{0}» выберите агентство: прежнего агентства у радиостанции уже нет.</value>
+  </data>
+  <data name="CloneAgencyCollision" xml:space="preserve">
+    <value>После замены агентства кампании «{0}» и «{1}» совпали бы по радиостанции, типу и типу оплаты. Оставьте в клоне только одну из них.</value>
+  </data>
   <assembly alias="System.Windows.Forms" name="System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089" />
   <data name="GoRight" type="System.Resources.ResXFileRef, System.Windows.Forms">
     <value>..\Icons\GoRight.ICO;System.Drawing.Bitmap, System.Drawing, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a</value>
