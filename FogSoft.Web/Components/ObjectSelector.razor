@@ -169,10 +169,11 @@ else
         try
         {
             Entity entity = SourceEntity ?? EntityManager.GetEntity(Picker!.EntityName);
-            _columns = entity.SortedAttributes;
             _data = SourceEntity != null
                 ? SourceRows ?? entity.GetContent()
                 : PickerData.Candidates(Picker!, PassportData, Owner);
+            // Как десктопный SmartGrid (SetColumnHeaders): колонки сущности, которых нет в наборе, не показываем.
+            _columns = entity.SortedAttributes.Where(a => _data.Columns.Contains(a.Name)).ToList();
 
             if (InitialSelectedRows != null)
                 foreach (DataRow row in InitialSelectedRows)

@@ -875,8 +875,19 @@ else
         return changes;
     }
 
-    private IReadOnlyList<Entity.Attribute> SelectorColumns(PassportField field) =>
-        EntityManager.GetEntity(field.Selector!.EntityName).SortedAttributes;
+    // Только колонки, которые пришли в наборе: метаданные сущности (selector=0) объявляют их больше, чем отдаёт, например,
+    // agencyPassport (название, группа, активность). Десктопный SmartGrid пропускает остальные
+    // (SmartGrid.SetColumnHeaders: columns.Contains), иначе в карточке агентства «Радиостанции» шли бы
+    // наценки, СМИ и медиа-планер с вечно пустыми ячейками.
+    private IReadOnlyList<Entity.Attribute> SelectorColumns(PassportField field)
+    {
+        IReadOnlyList<Entity.Attribute> attributes = EntityManager.GetEntity(field.Selector!.EntityName).SortedAttributes;
+        string source = field.Selector.Source;
+        if (Data == null || !Data.Tables.Contains(source))
+            return attributes;
+        DataTable table = Data.Tables[source]!;
+        return attributes.Where(a => table.Columns.Contains(a.Name)).ToList();
+    }
 
     private DataView SelectorRows(PassportField field)
     {
