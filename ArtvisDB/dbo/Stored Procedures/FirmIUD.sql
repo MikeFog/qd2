@@ -36,8 +36,36 @@ BEGIN
     SET @egrn    = REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(@egrn,    ' ', ''), CHAR(9), ''), CHAR(10), ''), CHAR(13), ''), CHAR(160), '');
     SET @account = REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(@account, ' ', ''), CHAR(9), ''), CHAR(10), ''), CHAR(13), ''), CHAR(160), '');
 
-    -- Проверка уникальности: сравнение по ключу без знаков препинания ('333-555-6666' = '3335556666')
+    -- Формат реквизитов (пустое значение допустимо - так оставляют поле, когда ИНН/КПП/ОГРН нет, например у иностранных заказчиков).
+    -- Правка старой карточки с мусором в поле (заглушка '-', 'ИНН/КПП' в одном поле) не сохранится, пока поле не исправлено.
     IF @actionName IN ('AddItem', 'UpdateItem')
+    BEGIN
+        SET @kpp = UPPER(@kpp);
+
+        IF ISNULL(@inn, '') <> '' AND (@inn LIKE '%[^0-9]%' OR LEN(@inn) NOT IN (10, 12))
+        BEGIN
+            RAISERROR('FirmInnFormat', 16, 1);
+            RETURN;
+        END
+
+        IF ISNULL(@kpp, '') <> ''
+           AND NOT (LEN(@kpp) = 9 AND @kpp COLLATE Latin1_General_BIN LIKE '[0-9][0-9][0-9][0-9][0-9A-Z][0-9A-Z][0-9][0-9][0-9]')
+        BEGIN
+            RAISERROR('FirmKppFormat', 16, 1);
+            RETURN;
+        END
+
+        IF ISNULL(@egrn, '') <> '' AND (@egrn LIKE '%[^0-9]%' OR LEN(@egrn) NOT IN (13, 15))
+        BEGIN
+            RAISERROR('FirmOgrnFormat', 16, 1);
+            RETURN;
+        END
+    END
+
+    -- Проверка уникальности: сравнение по ключу без знаков препинания ('333-555-6666' = '3335556666');
+    -- без ИНН фирмы дублями не считаются
+    IF @actionName IN ('AddItem', 'UpdateItem')
+       AND ISNULL(@inn, '') <> ''
        AND EXISTS(
            SELECT 1
            FROM Firm
