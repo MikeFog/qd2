@@ -9,7 +9,9 @@
     окна где есть ролики данной фирмы»; режима «Удалить выбранные» нет. «Шаблон №2» (FrmTemplate2): то же, но вместо
     времени — интервал времени и «в день» или с разбивкой на прайм и офф-прайм. «Шаблон №3» (FrmTemplate3): как №2, но
     вместо одного ролика — таблица роликов фирмы с количеством выходов на каждый и «Статистика» (общее количество,
-    распределено, хронометраж); блока оценки цены нет (решение 14.10.2026). Подписи десктопа дословно. Значения
+    распределено, хронометраж); блока оценки цены нет (решение 14.10.2026). Подписи полей — десктопа дословно, названия
+    режимов придуманы для веба (решение Миши 24.10.2026) вместо №1/№2/№3: «В конкретное окно», «На интервале времени»,
+    «С указанием количества». Значения
     пишутся в модель — её читает вкладка по кнопке; проверки (Model.Validate) тоже по ней, ошибка — в диалоге.
 *@
 
@@ -19,25 +21,20 @@
 }
 
 <div class="template-form">
+    @* Режимы — закладками, как страницы паспорта; «Добавить» применяет открытую. Ролик кисти есть только у первых двух. *@
+    <div class="tabs" role="tablist">
+        <button type="button" role="tab" class="tab @(Value.Mode == Kind.Single ? "tab-active" : null)" aria-selected="@(Value.Mode == Kind.Single)"
+                @onclick="() => Value.Mode = Kind.Single">@Tr.T("В конкретное окно")</button>
+        <button type="button" role="tab" class="tab @(Value.Mode == Kind.Interval ? "tab-active" : null)" aria-selected="@(Value.Mode == Kind.Interval)"
+                @onclick="() => Value.Mode = Kind.Interval">@Tr.T("На интервале времени")</button>
+        <button type="button" role="tab" class="tab @(Value.Mode == Kind.Multi ? "tab-active" : null)" aria-selected="@(Value.Mode == Kind.Multi)"
+                @onclick="() => Value.Mode = Kind.Multi">@Tr.T("С указанием количества")</button>
+    </div>
+
     @if (Value.Mode != Kind.Multi)
     {
         <div class="roller"><span class="text-muted">@Tr.T("Ролик:")</span> <b>@(Value.HasBrushRoller ? Value.RollerName : "—")</b></div>
     }
-
-    <fieldset class="modes">
-        <label class="inline">
-            <input type="radio" class="form-check-input" name="template-mode" checked="@(Value.Mode == Kind.Single)" @onchange="() => Value.Mode = Kind.Single" />
-            @Tr.T("Шаблон №1 для внесения роликов")
-        </label>
-        <label class="inline">
-            <input type="radio" class="form-check-input" name="template-mode" checked="@(Value.Mode == Kind.Interval)" @onchange="() => Value.Mode = Kind.Interval" />
-            @Tr.T("Шаблон №2 для внесения роликов")
-        </label>
-        <label class="inline">
-            <input type="radio" class="form-check-input" name="template-mode" checked="@(Value.Mode == Kind.Multi)" @onchange="() => Value.Mode = Kind.Multi" />
-            @Tr.T("Шаблон №3 для внесения роликов")
-        </label>
-    </fieldset>
 
     @if (Value.Mode == Kind.Multi)
     {

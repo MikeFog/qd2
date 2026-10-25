@@ -1188,7 +1188,7 @@
             model.SingleTime = picked.Date.ToString("HH:mm");
         while (true)
         {
-            if (await Dialogs.ShowAsync(Tr.T("Шаблон"), builder =>
+            if (await Dialogs.ShowAsync(Tr.T("Шаблон для внесения роликов"), builder =>
                 {
                     builder.OpenComponent<TemplateForm>(0);
                     builder.AddComponentParameter(1, nameof(TemplateForm.Value), model);
