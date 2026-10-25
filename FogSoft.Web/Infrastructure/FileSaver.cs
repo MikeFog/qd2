@@ -79,6 +79,28 @@ public sealed class FileSaver : IAsyncDisposable
 		return picked;
 	}
 
+	/// <summary>
+	/// Несколько готовых файлов в одну папку: выбор папки и запись. Как <see cref="SaveAsAsync"/>, если браузер
+	/// отказал открыть окно выбора (SecurityError), <paramref name="askAgain"/> даёт новый щелчок.
+	/// </summary>
+	/// <returns>false — пользователь закрыл окно выбора.</returns>
+	public async Task<bool> SaveToFolderAsync(IEnumerable<ExportFile> files, Func<Task<bool>> askAgain)
+	{
+		bool picked;
+		try
+		{
+			picked = await PickFolderAsync();
+		}
+		catch (JSException ex) when (ex.Message.Contains("SecurityError") || ex.Message.Contains("user activation"))
+		{
+			picked = await askAgain() && await PickFolderAsync();
+		}
+		if (picked)
+			foreach (ExportFile file in files)
+				await WriteToFolderAsync(file);
+		return picked;
+	}
+
 	public async ValueTask DisposeAsync()
 	{
 		if (_module != null)

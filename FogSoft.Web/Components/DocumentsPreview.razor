@@ -1,0 +1,32 @@
+@using FogSoft.WinForm.Classes
+
+@*
+    Просмотр готовых документов (ObjectActions.Documents): один документ — сразу, несколько (по агентствам, месяцам,
+    станциям) — закладками, ходить можно в любую сторону. Скачивает окно, которое показывает этот компонент:
+    «Скачать Word» — один файл, «Скачать все» — все в выбранную папку.
+*@
+
+<div class="documents-preview">
+    @if (Files.Count > 1)
+    {
+        <div class="tabs" role="tablist">
+            @for (int i = 0; i < Files.Count; i++)
+            {
+                int index = i;
+                <button type="button" role="tab" class="tab @(index == _selected ? "tab-active" : null)" aria-selected="@(index == _selected)"
+                        title="@Files[index].Name" @onclick="() => _selected = index">@Files[index].Label</button>
+            }
+        </div>
+    }
+    @* Просмотр отрисовывает файл один раз при создании, поэтому у каждого документа свой экземпляр. *@
+    <DocxPreview @key="_selected" Content="Files[_selected].Content" />
+</div>
+
+@code {
+    /// <summary>Документ в просмотре: надпись закладки (агентство или имя файла), имя файла и содержимое.</summary>
+    public sealed record Item(string Label, string Name, byte[] Content);
+
+    [Parameter, EditorRequired] public IReadOnlyList<Item> Files { get; set; } = default!;
+
+    private int _selected;
+}

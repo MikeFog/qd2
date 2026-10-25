@@ -1,0 +1,28 @@
+/* Закладки документов — как страницы паспорта (Passport.razor.css). */
+.tabs {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 2px;
+    margin-bottom: var(--s-3);
+    border-bottom: 1px solid var(--c-border);
+}
+
+.tab {
+    padding: var(--s-2) var(--s-3);
+    border: none;
+    border-bottom: 2px solid transparent;
+    background: none;
+    font-size: 13px;
+    color: var(--c-text-muted);
+    white-space: nowrap;
+}
+
+.tab:hover {
+    color: var(--c-text);
+}
+
+.tab-active {
+    color: var(--c-accent);
+    border-bottom-color: var(--c-accent);
+    font-weight: 600;
+}

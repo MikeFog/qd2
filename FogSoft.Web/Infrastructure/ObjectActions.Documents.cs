@@ -13,8 +13,8 @@ namespace FogSoft.Web.Infrastructure;
 /// несколько; номер и дата счёта (FrmBill) — одним окном на все агентства, для счёта по месяцам —
 /// ещё месяцы; флажок подписи вместо вопроса при печати; счёт записывается в базу. Договор из
 /// карточки фирмы (Firm.PrintContract) — агентства с датой договора. Эфирная справка у кампании
-/// и строки журнала актов — месяцы, «Включать цену». Затем документы по одному в окне просмотра и
-/// «Скачать Word». Строит документы ядро — <see cref="ClientDocuments"/>.
+/// и строки журнала актов — месяцы, «Включать цену». Затем все документы в одном окне просмотра
+/// закладками; «Скачать Word» — один файл, «Скачать все» — все файлы в выбранную папку. Строит документы ядро — <see cref="ClientDocuments"/>.
 /// </summary>
 public sealed partial class ObjectActions
 {
@@ -87,7 +87,7 @@ public sealed partial class ObjectActions
 		IList<DateTime?> pickedMonths = model.Months == null
 			? new List<DateTime?> { null }
 			: model.Months.Where(m => m.Checked).Select(m => (DateTime?)m.Date).ToList();
-		var files = new List<ExportFile>();
+		var files = new List<DocumentFile>();
 		string? error = null;
 		await _busy.RunAsync(() =>
 		{
@@ -150,7 +150,7 @@ public sealed partial class ObjectActions
 				break;
 		}
 
-		var files = new List<ExportFile>();
+		var files = new List<DocumentFile>();
 		string? error = null;
 		await _busy.RunAsync(() =>
 		{
@@ -219,7 +219,7 @@ public sealed partial class ObjectActions
 				break;
 		}
 
-		var files = new List<ExportFile>();
+		var files = new List<DocumentFile>();
 		string? error = null;
 		await _busy.RunAsync(() =>
 		{
@@ -234,12 +234,12 @@ public sealed partial class ObjectActions
 	}
 
 	/// <summary>Строит документы; ошибка шаблона агентства — текст для пользователя, иначе null.</summary>
-	private static string? BuildDocuments(string agencyName, List<ExportFile> files, IEnumerable<Func<ExportFile>> jobs)
+	private static string? BuildDocuments(string agencyName, List<DocumentFile> files, IEnumerable<Func<ExportFile>> jobs)
 	{
 		try
 		{
 			foreach (Func<ExportFile> job in jobs)
-				files.Add(job());
+				files.Add(new DocumentFile(job(), agencyName));
 			return null;
 		}
 		catch (DocumentTemplateException e)
@@ -248,12 +248,12 @@ public sealed partial class ObjectActions
 		}
 	}
 
-	private async Task<ActionEffect> ShowDocumentsOrError(string caption, IList<ExportFile> files, string? error)
+	private async Task<ActionEffect> ShowDocumentsOrError(string caption, IList<DocumentFile> files, string? error)
 	{
 		if (error != null)
 			await ShowInfo(caption, error);
 		else
-			await ShowDocuments(files);
+			await ShowDocuments(caption, files);
 		return ActionEffect.None;
 	}
 
@@ -280,29 +280,75 @@ public sealed partial class ObjectActions
 			table.Rows.Add(agency.AgencyId, agency.Name);
 		Entity entity = EntityManager.CreateVirtualEntity(DocumentAgenciesEntityId, Tr.T("Агентства"), "DocumentAgencies",
 			"agencyID", new Entity.Attribute("name", "Агентство", "nvarchar")); // i18n-ok: заголовок колонки переводит ObjectList при выводе (Tr.T(a.Alias))
+		// Обычно печатают по всем агентствам акции — отмечены все, лишние пользователь снимает.
 		IReadOnlyList<DataRow>? picked = await PickAsync(Tr.T("Выбор агентств"), entity, table, Tr.T("Выбрать"),
-			multiselect: true, validate: rows => rows.Count == 0 ? Tr.T("Отметьте хотя бы одно агентство.") : null);
+			multiselect: true, validate: rows => rows.Count == 0 ? Tr.T("Отметьте хотя бы одно агентство.") : null,
+			initiallySelected: table.Rows.Cast<DataRow>().ToList());
 		if (picked == null)
 			return null;
 		var ids = picked.Select(r => (int)r["agencyID"]).ToHashSet();
 		return agencies.Where(a => ids.Contains(a.AgencyId)).ToList();
 	}
 
-	/// <summary>Документы по одному в окне просмотра; «Скачать Word» — «Сохранить как» браузера.</summary>
-	private async Task ShowDocuments(IList<ExportFile> files)
+	/// <summary>Готовый документ и агентство, по шаблону которого он сделан.</summary>
+	private sealed record DocumentFile(ExportFile File, string Agency);
+
+	/// <summary>
+	/// Все документы в одном окне просмотра — закладками, в любую сторону. «Скачать Word» — один файл («Сохранить как»),
+	/// «Скачать все» — все файлы в выбранную папку.
+	/// </summary>
+	private async Task ShowDocuments(string caption, IList<DocumentFile> documents)
 	{
-		for (int i = 0; i < files.Count; i++)
+		if (documents.Count == 0)
+			return;
+		IReadOnlyList<ExportFile> files = UniqueNames(documents);
+		// Закладка — агентство, если оно у каждого документа своё; иначе (месяцы, станции) — имя файла.
+		bool byAgency = documents.Select(d => d.Agency).Distinct().Count() == documents.Count;
+		var items = documents.Select((d, i) => new DocumentsPreview.Item(
+			byAgency ? d.Agency : Path.GetFileNameWithoutExtension(files[i].Name), files[i].Name, files[i].Content)).ToList();
+
+		DialogOutcome outcome = await _dialogs.ShowAsync(files.Count == 1 ? files[0].Name : caption, builder =>
 		{
-			ExportFile file = files[i];
-			string title = files.Count == 1 ? file.Name : Tr.Format("{0} ({1} из {2})", file.Name, i + 1, files.Count);
-			DialogOutcome outcome = await _dialogs.ShowAsync(title, builder =>
-			{
-				builder.OpenComponent<DocxPreview>(0);
-				builder.AddComponentParameter(1, nameof(DocxPreview.Content), file.Content);
-				builder.CloseComponent();
-			}, okText: Tr.T("Скачать Word"), cancelText: i < files.Count - 1 ? Tr.T("Следующий") : Tr.T("Закрыть"), wide: true);
-			if (outcome == DialogOutcome.Ok)
-				await SaveMediaPlan(file); // общее «Сохранить как» с повтором по новому щелчку
+			builder.OpenComponent<DocumentsPreview>(0);
+			builder.AddComponentParameter(1, nameof(DocumentsPreview.Files), items);
+			builder.CloseComponent();
+		}, okText: files.Count == 1 ? Tr.T("Скачать Word") : Tr.Format("Скачать все ({0})", files.Count),
+			cancelText: Tr.T("Закрыть"), wide: true);
+		if (outcome != DialogOutcome.Ok)
+			return;
+
+		if (files.Count == 1)
+		{
+			await SaveMediaPlan(files[0]); // общее «Сохранить как» с повтором по новому щелчку
+			return;
 		}
+		bool saved = await _saver.SaveToFolderAsync(files, async () =>
+			await _dialogs.ShowAsync(caption, b => b.AddContent(0, Tr.T("Файл готов. Выберите, куда сохранить файл.")),
+				okText: Tr.T("Сохранить…")) == DialogOutcome.Ok);
+		if (saved)
+			await ShowInfo(caption, Tr.Format("Сохранено файлов: {0}.", files.Count));
+	}
+
+	/// <summary>
+	/// Имена файлов в одной папке не повторяются: у двух агентств счёт может получить один и тот же номер, а договор фирмы
+	/// у всех агентств называется одинаково — одноимённым добавляется агентство, а если и оно не развело — номер.
+	/// </summary>
+	private static IReadOnlyList<ExportFile> UniqueNames(IList<DocumentFile> documents)
+	{
+		HashSet<string> repeated = documents.GroupBy(d => d.File.Name, StringComparer.CurrentCultureIgnoreCase)
+			.Where(g => g.Count() > 1).Select(g => g.Key).ToHashSet(StringComparer.CurrentCultureIgnoreCase);
+		var used = new HashSet<string>(StringComparer.CurrentCultureIgnoreCase);
+		var result = new List<ExportFile>();
+		foreach (DocumentFile document in documents)
+		{
+			string stem = Path.GetFileNameWithoutExtension(document.File.Name);
+			if (repeated.Contains(document.File.Name))
+				stem += " — " + Path.GetInvalidFileNameChars().Aggregate(document.Agency, (name, c) => name.Replace(c, '_'));
+			string name = stem + ".docx";
+			for (int n = 2; !used.Add(name); n++)
+				name = $"{stem} ({n}).docx";
+			result.Add(new ExportFile { Name = name, Content = document.File.Content });
+		}
+		return result;
 	}
 }
