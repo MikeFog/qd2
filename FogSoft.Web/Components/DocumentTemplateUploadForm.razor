@@ -4,7 +4,7 @@
 @*
     Окно «Загрузить новую версию» (экран «Шаблоны документов»): файл Word проверяется сразу
     при выборе (DocxTemplate.Validate по каталогу полей вида), дата «действует с» и
-    комментарий; до сохранения шаблон можно примерить на акции. Сохраняет вызывающий по «ОК».
+    комментарий; до сохранения шаблон можно проверить на акции. Сохраняет вызывающий по «ОК».
 *@
 
 @if (Value.Message != null)
@@ -46,7 +46,7 @@
 
     <div class="row g-2 mt-2 align-items-end">
         <div class="col-auto">
-            <label class="form-label">@Tr.T("Примерить на акции №")</label>
+            <label class="form-label">@Tr.T("Проверить на акции №")</label>
             <input type="number" class="form-control form-control-sm" @bind="Value.ActionId" />
         </div>
         <div class="col-auto">
@@ -90,7 +90,7 @@
         public DateTime StartDate { get; set; } = DateTime.Today;
         public string? Comment { get; set; }
         public int? ActionId { get; set; }
-        /// <summary>Примерка файла на акции (окно просмотра открывает экран).</summary>
+        /// <summary>Проверка файла на акции (окно просмотра открывает экран).</summary>
         public Func<byte[], int, Task> Preview { get; init; } = default!;
         public string? Message { get; set; }
     }

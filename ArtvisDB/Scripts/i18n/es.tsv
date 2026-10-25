@@ -1541,7 +1541,7 @@ code	Сформировать	Generar
 code	Сформировать…	Generar…
 code	Счёт	Factura
 code	Спонсорский договор	Contrato de patrocinio
-code	У акции нет кампаний на одной радиостанции — эфирную справку примерить не на чем.	La campaña no tiene pautas en una sola emisora: no hay con qué probar el certificado de emisión.
+code	У акции нет кампаний на одной радиостанции — эфирную справку проверить не на чем.	La campaña no tiene pautas en una sola emisora: no hay con qué comprobar el certificado de emisión.
 code	{0} №{1} к акции {2} за {3} для {4}	{0} n.º {1} de la campaña {2} de {3} para {4}
 code	{0} №{1} к акции {2} для {3}	{0} n.º {1} de la campaña {2} para {3}
 code	{0} от {1:dd.MM.yyyy} для {2}	{0} del {1:dd.MM.yyyy} para {2}
@@ -1687,7 +1687,7 @@ code	Шаблон не принят:	La plantilla no fue aceptada:
 code	Файл «{0}» проверен: ошибок нет.	Archivo «{0}» verificado: sin errores.
 code	Действует с	Vigente desde
 code	Комментарий (что изменилось)	Comentario (qué cambió)
-code	Примерить на акции №	Probar en la campaña n.º
+code	Проверить на акции №	Comprobar en la campaña n.º
 code	Файл больше 20 МБ — это не похоже на шаблон документа.	El archivo supera los 20 MB: no parece una plantilla de documento.
 code	Документ печатается по шаблону, который действует на дату документа. Пока шаблон вида не загружен, печатается начальный — из «Текста отчётов», тем же текстом, что в qd2.	El documento se imprime con la plantilla vigente en la fecha del documento. Mientras no se cargue una plantilla del tipo, se imprime la inicial, a partir del «Texto para informes», con el mismo texto que en qd2.
 code	Действует шаблон с {0:d} — «{1}»	Plantilla vigente desde el {0:d}: «{1}»
@@ -1695,7 +1695,7 @@ code	Загруженные версии начнут действовать п�
 code	Шаблон не загружен — печатается начальный из «Текста отчётов»	No hay plantilla cargada: se imprime la inicial a partir del «Texto para informes»
 code	Скачать	Descargar
 code	Загрузить новую версию…	Cargar nueva versión…
-code	Примерить на акции…	Probar en una campaña…
+code	Проверить на акции…	Comprobar en una campaña…
 code	Поля	Campos
 code	Файл	Archivo
 code	Загрузил	Cargado por
@@ -1707,8 +1707,8 @@ code	{0}: новая версия шаблона — {1}	{0}: nueva versión de 
 code	Загрузить	Cargar
 code	Выберите файл шаблона.	Seleccione el archivo de la plantilla.
 code	Шаблон с ошибками не загружается — исправьте его в Word и выберите файл заново.	Una plantilla con errores no se carga: corríjala en Word y vuelva a seleccionar el archivo.
-code	Примерить на акции	Probar en una campaña
-code	{0}: примерка на акции №{1}	{0}: prueba en la campaña n.º {1}
+code	Проверить на акции	Comprobar en una campaña
+code	{0}: проверка на акции №{1}	{0}: comprobación en la campaña n.º {1}
 code	Документ не построен.	El documento no se generó.
 code	Поля шаблона: {0}	Campos de la plantilla: {0}
 code	Удалить версию «{0}», действующую с {1:d}? Файл будет удалён без возможности восстановления.	¿Eliminar la versión «{0}», vigente desde el {1:d}? El archivo se eliminará sin posibilidad de recuperarlo.

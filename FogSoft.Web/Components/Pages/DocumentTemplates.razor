@@ -15,7 +15,7 @@
     «Шаблоны документов» (docs/tasks/web-reports.md §6.0, §8 этап 6) — в вебе вместо журнала
     «Текст отчётов»: у каждого агентства свой Word-шаблон на каждый вид документа, с версиями
     «действует с». Скачать, поправить в Word, загрузить новую версию (проверка по каталогу
-    полей), примерить на акции. Пока шаблон вида не загружен, печатается начальный — из
+    полей), проверить на акции. Пока шаблон вида не загружен, печатается начальный — из
     «Текста отчётов», как в qd2 (StartingTemplates.ForPrint).
 *@
 
@@ -88,7 +88,7 @@ else
                             <i class="bi bi-upload"></i> @Tr.T("Загрузить новую версию…")
                         </button>
                         <button class="btn btn-outline-secondary btn-sm" @onclick="() => TryOn(kind, current)">
-                            <i class="bi bi-eye"></i> @Tr.T("Примерить на акции…")
+                            <i class="bi bi-eye"></i> @Tr.T("Проверить на акции…")
                         </button>
                         <button class="btn btn-outline-secondary btn-sm" @onclick="() => ShowFields(kind)">
                             <i class="bi bi-braces"></i> @Tr.T("Поля")
@@ -272,11 +272,11 @@ else
         }));
     }
 
-    /// <summary>Примерка того, что сейчас печатается (загруженного или начального шаблона).</summary>
+    /// <summary>Проверка на акции того, что сейчас печатается (загруженного или начального шаблона).</summary>
     private async Task TryOn(DocumentKind kind, DocumentTemplateVersion? current)
     {
         var model = new ActionNumberModel();
-        DialogOutcome outcome = await Dialogs.ShowAsync(Tr.T("Примерить на акции"), builder =>
+        DialogOutcome outcome = await Dialogs.ShowAsync(Tr.T("Проверить на акции"), builder =>
         {
             builder.OpenElement(0, "label");
             builder.AddAttribute(1, "class", "form-label");
@@ -326,7 +326,7 @@ else
                 problem = ErrorPresenter.Describe(ex);
             }
         });
-        string caption = Tr.Format("{0}: примерка на акции №{1}", ClientDocuments.KindName(kind), actionId);
+        string caption = Tr.Format("{0}: проверка на акции №{1}", ClientDocuments.KindName(kind), actionId);
         if (problem != null || result == null)
         {
             await Dialogs.ShowAsync(caption, b => b.AddContent(0, problem ?? Tr.T("Документ не построен.")), okText: Tr.T("Ок"), showCancel: false);

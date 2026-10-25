@@ -144,10 +144,10 @@ namespace Merlin.Classes.Documents
 		}
 
 		/// <summary>
-		/// Данные документа для примерки шаблона на акции (экран «Шаблоны документов»): номер и дата —
+		/// Данные документа для проверки шаблона на акции (экран «Шаблоны документов»): номер и дата —
 		/// из выставленного счёта агентства (нет счёта — номер 0 и сегодня), подписи включены;
 		/// эфирная справка — по первой кампании акции на одной радиостанции (своего агентства,
-		/// если есть), за месяц её начала. null и <paramref name="problem"/> — примерить не на чем.
+		/// если есть), за месяц её начала. null и <paramref name="problem"/> — проверить не на чем.
 		/// </summary>
 		public static DocumentData Sample(DocumentKind kind, int actionId, Agency agency, out string problem)
 		{
@@ -170,7 +170,7 @@ namespace Merlin.Classes.Documents
 						?? campaigns.FirstOrDefault();
 					if (campaign == null)
 					{
-						problem = Tr.T("У акции нет кампаний на одной радиостанции — эфирную справку примерить не на чем.");
+						problem = Tr.T("У акции нет кампаний на одной радиостанции — эфирную справку проверить не на чем.");
 						return null;
 					}
 					return OnAirInquire(campaign, agency, campaign.Massmedia, campaign.StartDate, true, true);

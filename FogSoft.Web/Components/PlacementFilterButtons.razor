@@ -16,7 +16,7 @@
 @if (Unconfirmed)
 {
     <button type="button" class="btn btn-sm btn-outline-secondary @(View.ShowUnconfirmed ? "active" : null)" aria-pressed="@View.ShowUnconfirmed"
-            title="@(Tr.T("Учитывать макеты") + "\n" + Tr.T("Показывать неподтвержденные выпуски"))" aria-label="@(Tr.T("Учитывать макеты"))" @onclick="ToggleUnconfirmed">
+            title="@(Tr.T("Показывать неподтвержденные выпуски"))" aria-label="@(Tr.T("Учитывать макеты"))" @onclick="ToggleUnconfirmed">
         <i class="bi bi-file-earmark-text" aria-hidden="true"></i>
     </button>
 }

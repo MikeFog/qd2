@@ -182,7 +182,7 @@
                             @if (Scope is { } templateScope)
                             {
                                 <button type="button" class="btn btn-sm btn-outline-secondary" disabled="@(!templateScope.CanEdit || !_brush.HasRollers)"
-                                        title="@(Tr.T("Шаблон") + "\n" + (!templateScope.CanEdit ? NoRightText : !_brush.HasRollers ? Tr.T("У фирмы нет активных роликов. Можно добавить ролик-пустышку.") : Tr.T("Шаблон для внесения роликов")))"
+                                        title="@(!templateScope.CanEdit ? Titled(Tr.T("Шаблон"), NoRightText) : !_brush.HasRollers ? Titled(Tr.T("Шаблон"), Tr.T("У фирмы нет активных роликов. Можно добавить ролик-пустышку.")) : Tr.T("Шаблон для внесения роликов"))"
                                         aria-label="@(Tr.T("Шаблон"))" @onclick="() => Exclusive(RunTemplate)">
                                     <i class="bi bi-calendar-range" aria-hidden="true"></i>
                                 </button>
@@ -204,19 +204,19 @@
                                         <i class="bi bi-trash3" aria-hidden="true"></i>
                                     </button>
                                     <button type="button" class="btn btn-sm btn-outline-secondary" disabled="@(!selecting || !CanReplace)"
-                                            title="@Titled(Tr.T("Заменить ролики"), selecting ? ReplaceHint : null)" aria-label="@(Tr.T("Заменить ролики"))"
+                                            title="@(selecting && CanReplace ? ReplaceHint : Titled(Tr.T("Заменить ролики"), selecting ? ReplaceHint : null))" aria-label="@(Tr.T("Заменить ролики"))"
                                             @onclick="() => Exclusive(ReplaceSelection)">
                                         <i class="bi bi-arrow-left-right" aria-hidden="true"></i>
                                     </button>
                                     @if (IsRange)
                                     {
                                         <button type="button" class="btn btn-sm btn-outline-secondary" disabled="@(!selecting || !CanFixRollers)"
-                                                title="@Titled(Tr.T("Добавить до полного пересечения"), selecting ? FixRollersHint ?? Tr.T("Добавить ролики до полного пересечения") : null)"
+                                                title="@(selecting && CanFixRollers ? Tr.T("Добавить ролики до полного пересечения") : Titled(Tr.T("Добавить до полного пересечения"), selecting ? FixRollersHint : null))"
                                                 aria-label="@(Tr.T("Добавить до полного пересечения"))" @onclick="() => Exclusive(FillSlotsToIntersection)">
                                             <i class="bi bi-intersect" aria-hidden="true"></i>
                                         </button>
                                         <button type="button" class="btn btn-sm btn-outline-secondary" disabled="@(!selecting || !CanFixRollers)"
-                                                title="@Titled(Tr.T("Удалить дубли"), selecting ? FixRollersHint ?? Tr.T("Удалить дубли роликов из выделенных окон") : null)"
+                                                title="@(selecting && CanFixRollers ? Tr.T("Удалить дубли роликов из выделенных окон") : Titled(Tr.T("Удалить дубли"), selecting ? FixRollersHint : null))"
                                                 aria-label="@(Tr.T("Удалить дубли"))" @onclick="() => Exclusive(DeleteDuplicatesInSlots)">
                                             <i class="bi bi-eraser" aria-hidden="true"></i>
                                         </button>
@@ -233,11 +233,11 @@
                             <span class="toggles">
                                 <PlacementFilterButtons View="_view" Unconfirmed="true" Changed="ReloadWeekAndPanel" />
                                 <button type="button" class="btn btn-sm btn-outline-secondary @(_showNumbers ? "active" : null)" aria-pressed="@_showNumbers"
-                                        title="@(Tr.T("Номера роликов") + "\n" + (IsRange ? Tr.T("Показывать в окнах номера роликов отмеченных кампаний вместо остатка времени") : Tr.T("Показывать в окнах номера роликов текущей кампании вместо остатка времени")))" aria-label="@(Tr.T("Номера роликов"))" @onclick="ToggleNumbers">
+                                        title="@(IsRange ? Tr.T("Показывать в окнах номера роликов отмеченных кампаний вместо остатка времени") : Tr.T("Показывать в окнах номера роликов текущей кампании вместо остатка времени"))" aria-label="@(Tr.T("Номера роликов"))" @onclick="ToggleNumbers">
                                     <i class="bi bi-123" aria-hidden="true"></i>
                                 </button>
                                 <button type="button" class="btn btn-sm btn-outline-secondary @(_showPrime ? "active" : null)" aria-pressed="@_showPrime"
-                                        title="@(Tr.T("Видеть прайм") + "\n" + Tr.T("Показать окна прайм-тайм"))" aria-label="@(Tr.T("Видеть прайм"))" @onclick="() => _showPrime = !_showPrime">
+                                        title="@(Tr.T("Показать окна прайм-тайм"))" aria-label="@(Tr.T("Видеть прайм"))" @onclick="() => _showPrime = !_showPrime">
                                     <i class="bi bi-star" aria-hidden="true"></i>
                                 </button>
                                 @if (!IsRange)
@@ -255,7 +255,7 @@
                                 {
                                     @* В-15: справка веера — файл заказчика Client/Help/veer.html (ссылка в FogSoft.Web.csproj). *@
                                     <a class="btn btn-sm btn-outline-secondary" href="help/veer.html" target="_blank" rel="noopener"
-                                       title="@(Tr.T("Справка") + "\n" + Tr.T("Открыть справку по этому экрану"))" aria-label="@(Tr.T("Справка"))">
+                                       title="@(Tr.T("Открыть справку по этому экрану"))" aria-label="@(Tr.T("Справка"))">
                                         <i class="bi bi-question-circle" aria-hidden="true"></i>
                                     </a>
                                 }

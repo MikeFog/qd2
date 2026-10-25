@@ -163,7 +163,7 @@
                                 <PlacementFilterButtons View="_view" Unconfirmed="true" Changed="Reload" />
                                 @* Как tbbShowRollerNumbers десктопного комбо: номера роликов кампании в ячейке вместо остатка. *@
                                 <button type="button" class="btn btn-sm btn-outline-secondary @(_showNumbers ? "active" : null)" aria-pressed="@_showNumbers"
-                                        title="@(Tr.T("Номера роликов") + "\n" + Tr.T("Показывать в окнах номера роликов текущей акции вместо остатка времени"))"
+                                        title="@(Tr.T("Показывать в окнах номера роликов текущей акции вместо остатка времени"))"
                                         aria-label="@(Tr.T("Номера роликов"))" @onclick="() => _showNumbers = !_showNumbers">
                                     <i class="bi bi-123" aria-hidden="true"></i>
                                 </button>
