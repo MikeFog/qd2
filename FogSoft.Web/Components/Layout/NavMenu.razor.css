@@ -85,6 +85,19 @@
     color: var(--c-text-muted);
 }
 
+/* Значок пункта — в колонке фиксированной ширины; у пункта без значка колонка пустая. */
+::deep .nav-icon {
+    flex: 0 0 auto;
+    width: 16px;
+    text-align: center;
+    font-size: 14px;
+    color: var(--c-text-muted);
+}
+
+::deep .nav-link.active .nav-icon {
+    color: inherit;
+}
+
 ::deep .nav-separator {
     height: 1px;
     background: var(--c-border);

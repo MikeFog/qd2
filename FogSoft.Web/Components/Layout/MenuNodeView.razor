@@ -35,6 +35,13 @@ else
 {
     <div class="nav-item">
         <button type="button" class="nav-link" disabled="@(!Node.Enabled)" @onclick="Navigate">
+            @* Место под значок есть у каждого пункта, чтобы тексты в группе стояли ровно (MenuIcons). *@
+            <span class="nav-icon" aria-hidden="true">
+                @if (MenuIcons.For(Node.CodeName) is { } icon)
+                {
+                    <i class="@icon"></i>
+                }
+            </span>
             @Node.Name
         </button>
     </div>
