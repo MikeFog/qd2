@@ -125,7 +125,7 @@ else
                 </div>
 
                 <div class="head-actions">
-                    <button type="button" class="btn btn-sm btn-outline-secondary" @onclick="Load">
+                    <button type="button" class="btn btn-sm btn-outline-secondary" @onclick="Refresh">
                         <i class="bi bi-arrow-clockwise" aria-hidden="true"></i>@Tr.T("Обновить")
                     </button>
                     <button type="button" class="btn btn-sm btn-outline-secondary" title="@(Tr.T("Действия с акцией"))" aria-label="@(Tr.T("Действия с акцией"))" aria-haspopup="menu"
@@ -487,6 +487,17 @@ else
     /// выпусков, смена фирмы): обе вкладки размещения перечитают период, когда их покажут.
     /// </summary>
     private Task PlacementChangedOutside() => PlacementChanged(PageTab.Campaigns);
+
+    /// <summary>
+    /// «Обновить» шапки: акция и кампании, плюс неделя, ролики и выпуски вкладок размещения — открытая перечитывается сразу,
+    /// скрытые — когда их покажут (отдельной кнопки на вкладках нет).
+    /// </summary>
+    private Task Refresh()
+    {
+        foreach (PlacementTab placement in _placement.Values)
+            placement.PlacementVersion++;
+        return Load();
+    }
 
     /// <summary>
     /// Запись на вкладке размещения <paramref name="source"/>: остальные вкладки размещения перечитают свой период, когда их

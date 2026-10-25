@@ -131,15 +131,16 @@
                                    OnPrevious="Previous" OnNext="Next" OnJump="JumpTo" OnCellClick="ClickCell">
                         <LeadingTools>
                             <button type="button" class="btn btn-sm @(_brushOn ? "btn-primary" : "btn-outline-secondary")" aria-pressed="@_brushOn"
-                                    disabled="@(!_brushOn && !CanBrush)" title="@BrushHint" @onclick="ToggleBrush">
-                                <i class="bi bi-brush" aria-hidden="true"></i>@Tr.T("Режим добавления")
+                                    disabled="@(!_brushOn && !CanBrush)" title="@(Tr.T("Режим добавления") + (BrushHint == null ? null : "\n" + BrushHint))"
+                                    aria-label="@(Tr.T("Режим добавления"))" @onclick="ToggleBrush">
+                                <i class="bi bi-brush" aria-hidden="true"></i>
                             </button>
                             @if (UndoEntry is { } undo)
                             {
                                 <button type="button" class="btn btn-sm btn-outline-secondary" disabled="@(!CanRemove)"
                                         title="@(RemoveHint ?? Tr.Format("{0} ({1} шт.)", Tr.T("Отменить последнее добавление выпусков"), undo.Count))"
-                                        @onclick="() => Exclusive(UndoLast)">
-                                    <i class="bi bi-arrow-counterclockwise" aria-hidden="true"></i>@Tr.T("Отменить")
+                                        aria-label="@(Tr.T("Отменить"))" @onclick="() => Exclusive(UndoLast)">
+                                    <i class="bi bi-arrow-counterclockwise" aria-hidden="true"></i>
                                 </button>
                             }
                             @ShowModulesButton
@@ -155,12 +156,6 @@
                                     <i class="bi bi-calendar-month" aria-hidden="true"></i>
                                 </button>
                             </span>
-                            @if (_brush.Row is { } brush)
-                            {
-                                <span class="brush-roller" title="@(Tr.T("Ролик, который ставится в модули, — выбран в списке «Ролики»"))">
-                                    <b class="tabular">@brush[WindowsSource.RollerNumberColumn]</b> @WindowsSource.RollerName(brush) · <span class="tabular">@WindowsSource.RollerDuration(brush)</span>
-                                </span>
-                            }
                             <PlacementFilterButtons View="_view" @bind-AdvertTypeName="_advertTypeName" Changed="Reload" />
                         </LeadingTools>
                         <TrailingTools>
@@ -171,10 +166,6 @@
                                         title="@(Tr.T("Номера роликов") + "\n" + Tr.T("Показывать в окнах номера роликов текущей акции вместо остатка времени"))"
                                         aria-label="@(Tr.T("Номера роликов"))" @onclick="() => _showNumbers = !_showNumbers">
                                     <i class="bi bi-123" aria-hidden="true"></i>
-                                </button>
-                                <button type="button" class="btn btn-sm btn-outline-secondary" title="@(Tr.T("Обновить информацию"))" aria-label="@(Tr.T("Обновить информацию"))"
-                                        @onclick="RefreshAll">
-                                    <i class="bi bi-arrow-clockwise" aria-hidden="true"></i>
                                 </button>
                             </span>
                         </TrailingTools>

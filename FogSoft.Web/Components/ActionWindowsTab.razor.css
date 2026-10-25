@@ -158,15 +158,6 @@
     color: var(--c-text);
 }
 
-.brush-roller {
-    max-width: 220px;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
-    font-size: 13px;
-    color: var(--c-text-muted);
-}
-
 .toggles {
     display: inline-flex;
     flex-wrap: wrap;
@@ -207,18 +198,6 @@
 
 .sample.mine {
     color: var(--c-place-mine);
-}
-
-.sample.firm {
-    color: var(--c-place-firm);
-}
-
-.sample.partial {
-    color: var(--c-place-partial);
-}
-
-.sample.firm-some {
-    color: var(--c-place-firm-some);
 }
 
 /* «Отметить все» под списком кампаний — ссылка-кнопка в одну строку. */
@@ -289,27 +268,19 @@
     background: var(--c-danger-soft);
 }
 
-.selection-bar {
-    display: flex;
-    flex-wrap: wrap;
+/* Операции над выделенными окнами — на панели вкладки, отделены чертой от «Шаблона». */
+.selection-tools {
+    display: inline-flex;
     align-items: center;
-    gap: var(--s-2);
-    padding: var(--s-1) var(--s-2);
-    border-radius: 6px;
-    background: var(--c-bg);
+    gap: var(--s-1);
+    padding-left: var(--s-2);
+    border-left: 1px solid var(--c-border);
 }
 
 .selection-count {
     font-weight: 600;
+    color: var(--c-accent);
     white-space: nowrap;
-}
-
-.selection-bar .btn {
-    white-space: nowrap;
-}
-
-.selection-bar .btn > .bi {
-    margin-right: var(--s-1);
 }
 
 .transfer-bar {

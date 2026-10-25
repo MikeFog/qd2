@@ -167,29 +167,64 @@
                                    OnPrevious="PreviousWeek" OnNext="NextWeek" OnJump="JumpTo" OnCellClick="ClickCell">
                         <LeadingTools>
                             <button type="button" class="btn btn-sm @(_brushOn ? "btn-primary" : "btn-outline-secondary")" aria-pressed="@_brushOn"
-                                    disabled="@(!CanToggleBrush)" title="@ToggleBrushHint" @onclick="ToggleBrush">
-                                <i class="bi bi-brush" aria-hidden="true"></i>@Tr.T("Режим добавления")
+                                    disabled="@(!CanToggleBrush)" title="@(Tr.T("Режим добавления") + (ToggleBrushHint == null ? null : "\n" + ToggleBrushHint))"
+                                    aria-label="@(Tr.T("Режим добавления"))" @onclick="ToggleBrush">
+                                <i class="bi bi-brush" aria-hidden="true"></i>
                             </button>
                             @if (UndoEntry is { } undo)
                             {
                                 <button type="button" class="btn btn-sm btn-outline-secondary" disabled="@(!CanUndo(undo))"
                                         title="@(CanUndo(undo) ? Tr.Format("{0} ({1} шт.)", Tr.T("Отменить последнее добавление выпусков"), undo.Count) : NoRightText)"
-                                        @onclick="() => Exclusive(UndoLast)">
-                                    <i class="bi bi-arrow-counterclockwise" aria-hidden="true"></i>@Tr.T("Отменить")
+                                        aria-label="@(Tr.T("Отменить"))" @onclick="() => Exclusive(UndoLast)">
+                                    <i class="bi bi-arrow-counterclockwise" aria-hidden="true"></i>
                                 </button>
                             }
                             @if (Scope is { } templateScope)
                             {
                                 <button type="button" class="btn btn-sm btn-outline-secondary" disabled="@(!templateScope.CanEdit || !_brush.HasRollers)"
-                                        title="@(!templateScope.CanEdit ? NoRightText : !_brush.HasRollers ? Tr.T("У фирмы нет активных роликов. Можно добавить ролик-пустышку.") : Tr.T("Шаблон для внесения роликов"))"
-                                        @onclick="() => Exclusive(RunTemplate)">
-                                    <i class="bi bi-calendar-range" aria-hidden="true"></i>@Tr.T("Шаблон")
+                                        title="@(Tr.T("Шаблон") + "\n" + (!templateScope.CanEdit ? NoRightText : !_brush.HasRollers ? Tr.T("У фирмы нет активных роликов. Можно добавить ролик-пустышку.") : Tr.T("Шаблон для внесения роликов")))"
+                                        aria-label="@(Tr.T("Шаблон"))" @onclick="() => Exclusive(RunTemplate)">
+                                    <i class="bi bi-calendar-range" aria-hidden="true"></i>
                                 </button>
                             }
-                            @if (BrushRow is { } brush)
+                            @if (Scope is { } selectionScope)
                             {
-                                <span class="brush-roller" title="@(Tr.T("Ролик, который ставится в окна, — выбран в списке «Ролики»"))">
-                                    <b class="tabular">@brush[WindowsSource.RollerNumberColumn]</b> @WindowsSource.RollerName(brush) · <span class="tabular">@WindowsSource.RollerDuration(brush)</span>
+                                @* Операции над выделенными окнами (десктоп — Insert, Del, Ctrl+R): всегда на месте, без выделения — серые,
+                                   чтобы панель не меняла высоту и сетка не прыгала. Счётчик выделенного — в подписи под панелью. *@
+                                bool selecting = Selecting;
+                                <span class="selection-tools" role="group">
+                                    <button type="button" class="btn btn-sm btn-outline-secondary" disabled="@(!selecting || !CanBrush)"
+                                            title="@Titled(Tr.T("Разместить ролик"), selecting ? BrushHint : null)" aria-label="@(Tr.T("Разместить ролик"))"
+                                            @onclick="() => Exclusive(PlaceSelection)">
+                                        <i class="bi bi-plus-lg" aria-hidden="true"></i>
+                                    </button>
+                                    <button type="button" class="btn btn-sm btn-outline-secondary" disabled="@(!selecting || !selectionScope.CanEdit)"
+                                            title="@Titled(Tr.T("Удалить выпуски"), selecting && !selectionScope.CanEdit ? NoRightText : null)" aria-label="@(Tr.T("Удалить выпуски"))"
+                                            @onclick="() => Exclusive(RemoveSelection)">
+                                        <i class="bi bi-trash3" aria-hidden="true"></i>
+                                    </button>
+                                    <button type="button" class="btn btn-sm btn-outline-secondary" disabled="@(!selecting || !CanReplace)"
+                                            title="@Titled(Tr.T("Заменить ролики"), selecting ? ReplaceHint : null)" aria-label="@(Tr.T("Заменить ролики"))"
+                                            @onclick="() => Exclusive(ReplaceSelection)">
+                                        <i class="bi bi-arrow-left-right" aria-hidden="true"></i>
+                                    </button>
+                                    @if (IsRange)
+                                    {
+                                        <button type="button" class="btn btn-sm btn-outline-secondary" disabled="@(!selecting || !CanFixRollers)"
+                                                title="@Titled(Tr.T("Добавить до полного пересечения"), selecting ? FixRollersHint ?? Tr.T("Добавить ролики до полного пересечения") : null)"
+                                                aria-label="@(Tr.T("Добавить до полного пересечения"))" @onclick="() => Exclusive(FillSlotsToIntersection)">
+                                            <i class="bi bi-intersect" aria-hidden="true"></i>
+                                        </button>
+                                        <button type="button" class="btn btn-sm btn-outline-secondary" disabled="@(!selecting || !CanFixRollers)"
+                                                title="@Titled(Tr.T("Удалить дубли"), selecting ? FixRollersHint ?? Tr.T("Удалить дубли роликов из выделенных окон") : null)"
+                                                aria-label="@(Tr.T("Удалить дубли"))" @onclick="() => Exclusive(DeleteDuplicatesInSlots)">
+                                            <i class="bi bi-eraser" aria-hidden="true"></i>
+                                        </button>
+                                    }
+                                    <button type="button" class="btn btn-sm btn-outline-secondary" disabled="@(!selecting)"
+                                            title="@(Tr.T("Снять выделение (Esc)"))" aria-label="@(Tr.T("Снять выделение"))" @onclick="ClearSelection">
+                                        <i class="bi bi-x-lg" aria-hidden="true"></i>
+                                    </button>
                                 </span>
                             }
                             <PlacementFilterButtons View="_view" @bind-AdvertTypeName="_advertTypeName" Changed="ReloadWeek" />
@@ -216,16 +251,12 @@
                                         <i class="bi bi-lock" aria-hidden="true"></i>
                                     </button>
                                 }
-                                <button type="button" class="btn btn-sm btn-outline-secondary" title="@(Tr.T("Обновить информацию"))" aria-label="@(Tr.T("Обновить информацию"))"
-                                        @onclick="RefreshAll">
-                                    <i class="bi bi-arrow-clockwise" aria-hidden="true"></i>
-                                </button>
                                 @if (!Sponsorship)
                                 {
                                     @* В-15: справка веера — файл заказчика Client/Help/veer.html (ссылка в FogSoft.Web.csproj). *@
                                     <a class="btn btn-sm btn-outline-secondary" href="help/veer.html" target="_blank" rel="noopener"
-                                       title="@(Tr.T("Открыть справку по этому экрану"))">
-                                        <i class="bi bi-question-circle" aria-hidden="true"></i>@Tr.T("Справка")
+                                       title="@(Tr.T("Справка") + "\n" + Tr.T("Открыть справку по этому экрану"))" aria-label="@(Tr.T("Справка"))">
+                                        <i class="bi bi-question-circle" aria-hidden="true"></i>
                                     </a>
                                 }
                             </span>
@@ -247,24 +278,16 @@
                             {
                                 <span class="mode-caption">@Tr.Format("Рекламные окна: {0}", OpenCaption)</span>
                             }
+                            @if (Selecting)
+                            {
+                                <span class="selection-count">@Tr.Format("Выделено окон: {0}", _selection.Count)</span>
+                            }
                         </Caption>
                         <Legend>
                             <span class="legend">
-                                @if (IsRange)
+                                @if (IsRange && _showNumbers)
                                 {
-                                    <span><i class="sample mine">00:30</i>@Tr.T("выпуски акции у всех отмеченных кампаний")</span>
-                                    <span><i class="sample partial">00:30</i>@Tr.T("не у всех")</span>
-                                    <span><i class="sample firm">00:30</i>@Tr.T("выпуски фирмы в других акциях на всех станциях")</span>
-                                    <span><i class="sample firm-some">00:30</i>@Tr.T("на части станций")</span>
-                                    @if (_showNumbers)
-                                    {
-                                        <span>@Tr.T("«Н» — число ролика не одинаково у кампаний, «Д» — дубли")</span>
-                                    }
-                                }
-                                else
-                                {
-                                    <span><i class="sample mine">00:30</i>@Tr.T("выпуски этой кампании")</span>
-                                    <span><i class="sample firm">00:30</i>@Tr.T("выпуски фирмы в других кампаниях")</span>
+                                    <span>@Tr.T("«Н» — число ролика не одинаково у кампаний, «Д» — дубли")</span>
                                 }
                                 @if (_showPrime)
                                 {
@@ -310,54 +333,6 @@
                                     </span>
                                     <button type="button" class="btn btn-sm btn-outline-secondary" title="@(Tr.T("Отменить перенос (Esc)"))" @onclick="CancelTransfer">
                                         @Tr.T("Отмена")
-                                    </button>
-                                </div>
-                            }
-                            else if (_range != null && !_brushOn && _selection.Count > 0)
-                            {
-                                <div class="selection-bar">
-                                    <span class="selection-count">@Tr.Format("Выделено окон: {0}", _selection.Count)</span>
-                                    <button type="button" class="btn btn-sm btn-primary" disabled="@(!CanBrush)" title="@BrushHint" @onclick="() => Exclusive(PlaceSelectedSlots)">
-                                        <i class="bi bi-plus-lg" aria-hidden="true"></i>@Tr.T("Разместить ролик")
-                                    </button>
-                                    <button type="button" class="btn btn-sm btn-outline-secondary" disabled="@(!_range.CanEdit)"
-                                            title="@(_range.CanEdit ? null : NoRightText)" @onclick="() => Exclusive(RemoveSelectedSlots)">
-                                        <i class="bi bi-trash3" aria-hidden="true"></i>@Tr.T("Удалить выпуски")
-                                    </button>
-                                    <button type="button" class="btn btn-sm btn-outline-secondary" disabled="@(!CanReplace)" title="@ReplaceHint" @onclick="() => Exclusive(ReplaceSelectedSlots)">
-                                        <i class="bi bi-arrow-left-right" aria-hidden="true"></i>@Tr.T("Заменить ролики")
-                                    </button>
-                                    <button type="button" class="btn btn-sm btn-outline-secondary" disabled="@(!CanFixRollers)"
-                                            title="@(FixRollersHint ?? Tr.T("Добавить ролики до полного пересечения"))" @onclick="() => Exclusive(FillSlotsToIntersection)">
-                                        <i class="bi bi-intersect" aria-hidden="true"></i>@Tr.T("Добавить до полного пересечения")
-                                    </button>
-                                    <button type="button" class="btn btn-sm btn-outline-secondary" disabled="@(!CanFixRollers)"
-                                            title="@(FixRollersHint ?? Tr.T("Удалить дубли роликов из выделенных окон"))" @onclick="() => Exclusive(DeleteDuplicatesInSlots)">
-                                        <i class="bi bi-eraser" aria-hidden="true"></i>@Tr.T("Удалить дубли")
-                                    </button>
-                                    <button type="button" class="btn btn-sm btn-outline-secondary" title="@(Tr.T("Снять выделение (Esc)"))" aria-label="@(Tr.T("Снять выделение"))"
-                                            @onclick="ClearSelection">
-                                        <i class="bi bi-x-lg" aria-hidden="true"></i>
-                                    </button>
-                                </div>
-                            }
-                            else if (_open != null && !(_brushOn && CanBrush) && _selection.Count > 0)
-                            {
-                                <div class="selection-bar">
-                                    <span class="selection-count">@Tr.Format("Выделено окон: {0}", _selection.Count)</span>
-                                    <button type="button" class="btn btn-sm btn-primary" disabled="@(!CanBrush)" title="@BrushHint" @onclick="() => Exclusive(PlaceSelected)">
-                                        <i class="bi bi-plus-lg" aria-hidden="true"></i>@Tr.T("Разместить ролик")
-                                    </button>
-                                    <button type="button" class="btn btn-sm btn-outline-secondary" disabled="@(!_open.CanEdit)"
-                                            title="@(_open.CanEdit ? null : NoRightText)" @onclick="() => Exclusive(RemoveSelected)">
-                                        <i class="bi bi-trash3" aria-hidden="true"></i>@Tr.T("Удалить выпуски")
-                                    </button>
-                                    <button type="button" class="btn btn-sm btn-outline-secondary" disabled="@(!CanReplace)" title="@ReplaceHint" @onclick="() => Exclusive(ReplaceSelected)">
-                                        <i class="bi bi-arrow-left-right" aria-hidden="true"></i>@Tr.T("Заменить ролики")
-                                    </button>
-                                    <button type="button" class="btn btn-sm btn-outline-secondary" title="@(Tr.T("Снять выделение (Esc)"))" aria-label="@(Tr.T("Снять выделение"))"
-                                            @onclick="ClearSelection">
-                                        <i class="bi bi-x-lg" aria-hidden="true"></i>
                                     </button>
                                 </div>
                             }
@@ -639,6 +614,21 @@
         Scope is not { CanEdit: true } ? NoRightText
         : BrushRow == null ? Tr.T("Не выбран рекламный ролик.")
         : null;
+
+    /// <summary>
+    /// Окна выделены и их можно менять: не «Режим добавления» с роликом (там щелчок сразу ставит ролик) и не перенос выпусков.
+    /// Включает кнопки операций над выделенными окнами на панели.
+    /// </summary>
+    private bool Selecting =>
+        _selection.Count > 0 && _transfer == null && _rangeTransfer == null
+        && (IsRange ? !_brushOn : _open != null && !(_brushOn && CanBrush));
+
+    private static string Titled(string name, string? hint) => hint == null ? name : name + "\n" + hint;
+
+    // Одни кнопки на панели для одной кампании и веера: операции у них свои.
+    private Task PlaceSelection() => IsRange ? PlaceSelectedSlots() : PlaceSelected();
+    private Task RemoveSelection() => IsRange ? RemoveSelectedSlots() : RemoveSelected();
+    private Task ReplaceSelection() => IsRange ? ReplaceSelectedSlots() : ReplaceSelected();
 
     private bool CanReplace => CanBrush && _showNumbers;
 

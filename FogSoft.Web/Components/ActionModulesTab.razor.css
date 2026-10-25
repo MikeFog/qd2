@@ -192,16 +192,6 @@
     white-space: nowrap;
 }
 
-/* Ролик кисти — рядом с «Позиционированием»: что ставит «Режим добавления». */
-.brush-roller {
-    max-width: 220px;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
-    font-size: 13px;
-    color: var(--c-text-muted);
-}
-
 .period-switch .btn.active {
     background: var(--c-accent-soft);
     border-color: var(--c-accent);
