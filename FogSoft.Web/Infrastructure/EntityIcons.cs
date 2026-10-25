@@ -36,6 +36,7 @@ public static class EntityIcons
 		["MassmediaGroup.png"] = "bi-collection",
 		["Message.png"] = "bi-chat-left-text",
 		["Module.png"] = "bi-grid",
+		["Money.png"] = "bi-receipt",
 		["PackModule.png"] = "bi-grid-3x3-gap",
 		["payment.png"] = "bi-cash",
 		["PriceList.png"] = "bi-card-list",

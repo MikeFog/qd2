@@ -185,6 +185,8 @@ namespace Merlin.Forms
 					ShowCommonOrderByManager(mi);
 				else if (strMiName == "miPaymentByManagerFromRSection")
 					ShowCommonOrderByManagerFromRSection(mi);
+				else if (strMiName == "miBillRegister")
+					ShowBillRegister(mi);
 				else if (strMiName == "miPrintGrid" || strMiName == "miPrintGridFromRSection")
 					ShowPrintGridForm();
 				else if (strMiName == "miPackModules")
@@ -623,6 +625,13 @@ namespace Merlin.Forms
 		private static void ShowCommonOrderByManagerFromRSection(ToolStripItem mi)
 		{
 			Globals.ShowSimpleJournal(EntityManager.GetEntity((int)Entities.PaymentCommonAction), ManagerFilter.FilterClick, mi.Text);
+		}
+
+		/// <summary>Реестр счетов: менеджер по умолчанию — вошедший (value="LoggedUser" в фильтре сущности);
+		/// без права смотреть чужие акции поле блокирует ManagerFilter, а процедура всё равно отдаёт только свои.</summary>
+		private static void ShowBillRegister(ToolStripItem mi)
+		{
+			Globals.ShowSimpleJournal(EntityManager.GetEntity((int)Entities.BillRegister), ManagerFilter.FilterClick, mi.Text);
 		}
 
 		private void ShowPrintGridForm()

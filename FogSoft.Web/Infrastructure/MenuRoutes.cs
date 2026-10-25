@@ -65,6 +65,9 @@ public static class MenuRoutes
 			{ "miAnnouncements", new JournalRoute(Entities.Announcement,
 				BulkAction: new BulkAction("MarkAsRead", "Пометить все как прочтенное")) }, // i18n-ok: подпись кнопки, переводить при показе (Journal.razor, bulk.Caption)
 			{ "miBank", new JournalRoute(Entities.Bank) },
+			// Реестр счетов: менеджер по умолчанию — вошедший (value="LoggedUser" в фильтре сущности), без права
+			// смотреть чужие акции поле заблокировано (ManagerFilter), а BillRegister всё равно отдаёт только свои.
+			{ "miBillRegister", new JournalRoute(Entities.BillRegister, ManagerFilter: true) },
 			{ "miBonusesStat", new JournalRoute(Entities.StatBonuses) },
 			{ "miFirm", new JournalRoute(Entities.Firm) },
 			{ "miGroupMassmedia", new JournalRoute(Entities.MassmediaGroup) },
