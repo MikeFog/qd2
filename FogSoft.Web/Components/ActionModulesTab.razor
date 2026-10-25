@@ -840,7 +840,7 @@
             return;
 
         IReadOnlyList<PlacementCell> cells = _selection.Selected(_week);
-        if (!await Confirm(Tr.T("Разместить ролик"), Tr.Format("Разместить ролик в выбранных ячейках? ({0} шт.)", cells.Count), Tr.T("Разместить")))
+        if (!await Confirm(Tr.T("Разместить ролик"), Tr.Format("Разместить ролик «{0}» в выбранных ячейках? ({1} шт.)", WindowsSource.RollerName(_brush.Row!), cells.Count), Tr.T("Разместить")))
             return;
 
         ModuleDaySource.ModuleScope scope = _scope;

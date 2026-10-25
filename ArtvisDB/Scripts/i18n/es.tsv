@@ -1954,7 +1954,7 @@ code	Прайс-лист: {0} - {1}	Lista de precios: {0} - {1}
 code	Предыдущая неделя	Semana anterior
 code	Разместить	Colocar
 code	Разместить ролик	Colocar spot
-code	Разместить ролик в выбранных окнах? ({0} шт.)	¿Colocar el spot en las ventanas seleccionadas? ({0} uds.)
+code	Разместить ролик «{0}» в выбранных окнах? ({1} шт.)	¿Colocar el spot «{0}» en las ventanas seleccionadas? ({1} uds.)
 code	Размещение сразу по нескольким радиостанциям (веер) в вебе появится позже — пока отметьте одну кампанию.	La colocación en varias emisoras a la vez (abanico) llegará a la web más adelante; por ahora marque una sola pauta.
 code	Режим добавления	Modo de agregado
 code	Рекламная кампания не найдена — её удалили. Обновите страницу.	No se encontró la pauta publicitaria: fue eliminada. Actualice la página.
@@ -2010,7 +2010,7 @@ code	выпуски акции не у всех отмеченных кампа�
 code	выпуски фирмы в других акциях на части станций	emisiones de la empresa en otras campañas en parte de las emisoras
 code	Нет права «Редактировать» на одну из отмеченных кампаний.	No tiene el permiso «Editar» para una de las pautas marcadas.
 code	Окна выделяются щелчком (Shift — прямоугольник, Ctrl — добавить); ролик на все станции одним щелчком ставит «Режим добавления».	Las ventanas se seleccionan con un clic (Mayús: rectángulo, Ctrl: agregar); el «Modo de agregado» coloca el spot en todas las emisoras con un solo clic.
-code	Разместить ролик в выбранных окнах по выбранным кампаниям? ({0} шт.)	¿Colocar el spot en las ventanas seleccionadas, en las pautas marcadas? ({0} uds.)
+code	Разместить ролик «{0}» в выбранных окнах по выбранным кампаниям? ({1} шт.)	¿Colocar el spot «{0}» en las ventanas seleccionadas, en las pautas marcadas? ({1} uds.)
 code	Удалить выпуски в выбранных окнах по выбранным кампаниям? ({0} шт.)	¿Eliminar las emisiones de las ventanas seleccionadas, en las pautas marcadas? ({0} uds.)
 code	В выбранных окнах нет выпусков этой акции.	En las ventanas seleccionadas no hay emisiones de esta campaña.
 code	Дубли:	Duplicados:
@@ -2155,7 +2155,7 @@ code	Модули: строки без рекламной кампании	Módu
 code	Размещение прервано: {0} Выпуски этого дня не добавлены, добавленные ранее — сохранены. Не обработано дней: {1}.	Colocación interrumpida: {0} Las emisiones de este día no se agregaron; las agregadas antes se conservan. Días sin procesar: {1}.
 code	Удаление прервано: {0} Выпуски этого дня не удалены, выпуски прежних дней удалены. Не обработано дней: {1}.	Eliminación interrumpida: {0} Las emisiones de este día no se eliminaron; las de los días anteriores sí se eliminaron. Días sin procesar: {1}.
 code	Выделено ячеек: {0}	Celdas seleccionadas: {0}
-code	Разместить ролик в выбранных ячейках? ({0} шт.)	¿Colocar el spot en las celdas seleccionadas? ({0} uds.)
+code	Разместить ролик «{0}» в выбранных ячейках? ({1} шт.)	¿Colocar el spot «{0}» en las celdas seleccionadas? ({1} uds.)
 code	В выбранных ячейках нет выпусков этой акции.	En las celdas seleccionadas no hay emisiones de esta campaña.
 code	Какие ролики удалить в выбранных ячейках?	¿Qué spots eliminar en las celdas seleccionadas?
 code	Удалить выпуски в выбранных ячейках? ({0} шт.)	¿Eliminar las emisiones de las celdas seleccionadas? ({0} uds.)

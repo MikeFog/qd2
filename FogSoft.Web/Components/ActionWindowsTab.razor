@@ -1091,7 +1091,7 @@
             return;
 
         IReadOnlyList<PlacementCell> cells = _selection.Selected(_week);
-        if (!await Confirm(Tr.T("Разместить ролик"), Tr.Format("Разместить ролик в выбранных окнах? ({0} шт.)", cells.Count), Tr.T("Разместить")))
+        if (!await Confirm(Tr.T("Разместить ролик"), Tr.Format("Разместить ролик «{0}» в выбранных окнах? ({1} шт.)", WindowsSource.RollerName(BrushRow!), cells.Count), Tr.T("Разместить")))
             return;
 
         WindowsSource.BatchResult? result = null;
@@ -1339,7 +1339,7 @@
             return;
 
         IReadOnlyList<PlacementCell> cells = _selection.Selected(_week);
-        if (!await Confirm(Tr.T("Разместить ролик"), Tr.Format("Разместить ролик в выбранных окнах по выбранным кампаниям? ({0} шт.)", cells.Count), Tr.T("Разместить")))
+        if (!await Confirm(Tr.T("Разместить ролик"), Tr.Format("Разместить ролик «{0}» в выбранных окнах по выбранным кампаниям? ({1} шт.)", WindowsSource.RollerName(BrushRow!), cells.Count), Tr.T("Разместить")))
             return;
 
         WindowsSource.BatchResult? result = null;
