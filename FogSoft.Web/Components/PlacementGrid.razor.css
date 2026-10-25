@@ -184,6 +184,11 @@
     font-variant-numeric: tabular-nums;
 }
 
+/* Последний день подводит итог правой чертой — у остальных колонок граница слева. */
+.table > tbody > tr > td.cell:last-child {
+    border-right: 1px solid var(--c-border);
+}
+
 .table > tbody > tr > td.cell:hover {
     box-shadow: inset 0 0 0 1px var(--c-accent);
 }
