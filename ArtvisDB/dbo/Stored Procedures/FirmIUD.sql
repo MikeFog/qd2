@@ -28,15 +28,23 @@ AS
 BEGIN
     SET NOCOUNT ON;
 
-    -- Проверка уникальности
-    IF @actionName IN ('AddItem', 'UpdateItem') 
+    -- Реквизиты хранятся и сравниваются без пробелов (обычных, неразрывных, табуляций, переводов строк):
+    -- иначе ' 7701234567' и '7701234567' считались разными и проходили проверку уникальности
+    SET @name    = LTRIM(RTRIM(@name));
+    SET @inn     = REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(@inn,     ' ', ''), CHAR(9), ''), CHAR(10), ''), CHAR(13), ''), CHAR(160), '');
+    SET @kpp     = REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(@kpp,     ' ', ''), CHAR(9), ''), CHAR(10), ''), CHAR(13), ''), CHAR(160), '');
+    SET @egrn    = REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(@egrn,    ' ', ''), CHAR(9), ''), CHAR(10), ''), CHAR(13), ''), CHAR(160), '');
+    SET @account = REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(@account, ' ', ''), CHAR(9), ''), CHAR(10), ''), CHAR(13), ''), CHAR(160), '');
+
+    -- Проверка уникальности: сравнение по ключу без знаков препинания ('333-555-6666' = '3335556666')
+    IF @actionName IN ('AddItem', 'UpdateItem')
        AND EXISTS(
-           SELECT 1 
-           FROM Firm 
-           WHERE ISNULL(@firmID, -1) <> firmID 
-             AND inn = @inn 
-             AND ISNULL(kpp, '') = ISNULL(@kpp, '') 
-             AND ISNULL(account, '') = ISNULL(@account, '')
+           SELECT 1
+           FROM Firm
+           WHERE ISNULL(@firmID, -1) <> firmID
+             AND dbo.fn_FirmKey(Firm.inn) = dbo.fn_FirmKey(@inn)
+             AND ISNULL(dbo.fn_FirmKey(Firm.kpp), '') = ISNULL(dbo.fn_FirmKey(@kpp), '')
+             AND ISNULL(dbo.fn_FirmKey(Firm.account), '') = ISNULL(dbo.fn_FirmKey(@account), '')
        )
     BEGIN
         RAISERROR('FirmInnUnique', 16, 1);

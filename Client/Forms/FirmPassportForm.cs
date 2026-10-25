@@ -23,9 +23,40 @@ namespace Merlin.Forms
 			InitializeComponent();
 		}
 
+		protected override void FormBuildCompleted()
+		{
+			// пробелы в реквизитах не нужны ни в каком виде (сервер их тоже убирает, FirmIUD)
+			foreach (string name in RequisiteNames)
+			{
+				TextBox textBox = FindControl(name) as TextBox;
+				if (textBox != null)
+					textBox.Validating += (sender, e) => RemoveWhiteSpace((TextBox)sender);
+			}
+		}
+
+		private static readonly string[] RequisiteNames = { "inn", "kpp", "egrn", "account" };
+
+		private static string WithoutWhiteSpace(string text)
+		{
+			return Regex.Replace(text, @"[\s ]+", string.Empty);
+		}
+
+		private static void RemoveWhiteSpace(TextBox textBox)
+		{
+			string clean = WithoutWhiteSpace(textBox.Text);
+			if (clean != textBox.Text)
+				textBox.Text = clean;
+		}
+
 		protected override void ApplyChanges(Button clickedButton)
 		{
 			bool needSave = true;
+			foreach (string name in RequisiteNames)
+			{
+				TextBox textBox = FindControl(name) as TextBox;
+				if (textBox != null)
+					RemoveWhiteSpace(textBox);
+			}
 			TextBox tbINN = FindControl("inn") as TextBox;
 			if (!StringUtil.IsNullOrEmpty(tbINN.Text))
 			{
@@ -39,7 +70,7 @@ namespace Merlin.Forms
 
 		private bool CheckINN(TextBox tbINN)
 		{
-			Match match = Regex.Match(tbINN.Text, @"^(\d)+");
+			Match match = Regex.Match(WithoutWhiteSpace(tbINN.Text), @"^(\d)+");
 			Dictionary<string, object> parameters = new Dictionary<string, object>();
 			parameters["inn"] = match.Value;
 			if (!pageContext.PresentationObject.IsNew && pageContext.PresentationObject.IDs.Length > 0)
