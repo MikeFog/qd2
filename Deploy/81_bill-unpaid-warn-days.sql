@@ -1,13 +1,13 @@
 ﻿-- «Реестр счетов»: настройка «за сколько рабочих дней до эфира» в «Протектор → Администрирование → Настройки...».
 -- Оранжевый кружок («Внимание») у активированной, но не оплаченной акции появляется за N РАБОЧИХ дней до её первого дня
 -- (суббота и воскресенье не считаются; праздничного календаря в системе нет). N хранится в iInternalVariable,
--- имя 'BillUnpaidWarnDays'; не задана — 4. Читает f_SysParamsBillUnpaidWarnDays (Deploy/80, BillRegister).
+-- имя 'BillUnpaidWarnDays'; не задана — 2. Читает f_SysParamsBillUnpaidWarnDays (Deploy/80, BillRegister).
 --
 -- Что меняется:
---   1. SysParams — новая колонка billUnpaidWarnDays (значение или 4);
---   2. SysParamsUpdate — новый необязательный параметр @billUnpaidWarnDays (NULL — настройка удаляется, действует 4);
+--   1. SysParams — новая колонка billUnpaidWarnDays (значение или 2);
+--   2. SysParamsUpdate — новый необязательный параметр @billUnpaidWarnDays (NULL — настройка удаляется, действует 2);
 --   3. паспорт сущности 214 «Системные настройки» — поле «Реестр счетов: рабочих дней до эфира для оранжевого сигнала».
--- Без этого скрипта реестр работает с N = 4; поле в «Настройках...» появится только после него.
+-- Без этого скрипта реестр работает с N = 2; поле в «Настройках...» появится только после него.
 --
 -- Порядок: после 76 (SysParams и SysParamsUpdate с датой пакетной скидки; без неё скрипт отказывается: «Ничего не
 -- изменено») и после 80 (f_SysParamsBillUnpaidWarnDays). Не перезапускать после 81: 76, 08 и ArtvisDB/Scripts
@@ -50,7 +50,7 @@ begin
 		coalesce((select top 1 cast([value] as int) from iInternalVariable where [name] = 'UnconfirmedActionsLifetime'), 365) as UnconfirmedActionsLifetime, 
 		-- в паспорте у даты нет пустого значения (при «ОК» она всегда сохраняется): «не задана» показываем как 31.12.2099 = выключено
 		coalesce(dbo.f_SysParamsPackageDiscountMaxBasisFrom(), '20991231') as packageDiscountMaxBasisFrom, 
-		-- «Реестр счетов»: за сколько рабочих дней до эфира оранжевый кружок у не оплаченной акции (по умолчанию 4)
+		-- «Реестр счетов»: за сколько рабочих дней до эфира оранжевый кружок у не оплаченной акции (по умолчанию 2)
 		dbo.f_SysParamsBillUnpaidWarnDays() as billUnpaidWarnDays, 
 		@tSysParams as [name]
 
@@ -69,7 +69,7 @@ CREATE OR ALTER PROCEDURE [dbo].[SysParamsUpdate]
 	@deletedActionsLifetime smallint,
 	@unconfirmedActionsLifetime smallint,
 	@packageDiscountMaxBasisFrom datetime = null, -- NULL — настройка не задана (удаляется)
-	@billUnpaidWarnDays smallint = null, -- NULL — настройка не задана (удаляется), действует 4
+	@billUnpaidWarnDays smallint = null, -- NULL — настройка не задана (удаляется), действует 2
 	@actionName varchar(16) = null 
 )
 as 
@@ -120,7 +120,7 @@ begin
 		insert into iInternalVariable ([name],[value]) values ('PackageDiscountMaxBasisFrom', Cast(Cast(Cast(@packageDiscountMaxBasisFrom as date) as datetime) as binary(500)))
 
 	-- «Реестр счетов»: за сколько рабочих дней до первого дня акции не оплаченная активированная акция получает оранжевый кружок
-	-- (f_SysParamsBillUnpaidWarnDays, BillRegister); не задана — 4
+	-- (f_SysParamsBillUnpaidWarnDays, BillRegister); не задана — 2
 	if @billUnpaidWarnDays is null
 		delete from iInternalVariable where [name] = 'BillUnpaidWarnDays'
 	else if exists(select * from iInternalVariable where [name] = 'BillUnpaidWarnDays')
@@ -161,7 +161,7 @@ GO
 IF CHARINDEX(N'billUnpaidWarnDays', OBJECT_DEFINITION(OBJECT_ID(N'dbo.SysParams'))) > 0
    AND CHARINDEX(N'billUnpaidWarnDays', OBJECT_DEFINITION(OBJECT_ID(N'dbo.SysParamsUpdate'))) > 0
    AND EXISTS (SELECT 1 FROM dbo.iEntity WHERE entityID = 214 AND CAST(passport AS nvarchar(max)) LIKE N'%billUnpaidWarnDays%')
-    PRINT N'ГОТОВО: настройка «рабочих дней до эфира» для реестра счетов (по умолчанию 4)';
+    PRINT N'ГОТОВО: настройка «рабочих дней до эфира» для реестра счетов (по умолчанию 2)';
 ELSE
     PRINT N'ОШИБКА: что-то не накатилось';
 GO
