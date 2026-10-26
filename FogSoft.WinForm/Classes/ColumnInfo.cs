@@ -147,4 +147,43 @@ namespace FogSoft.WinForm.Classes
 			return columnInfo != null && !String.IsNullOrEmpty(columnInfo.DataType) && columnInfo.DataType.ToLower() == type.ToString().ToLower();
 		}
 	}
+
+	/// <summary>
+	/// Колонка-светофор: атрибут с <c>iEntityAttribute.dataType = 'signal'</c>. Процедура отдаёт в колонке
+	/// название цвета (green, yellow, orange, red, bordeaux, gray) или NULL — пусто, ячейка без кружка;
+	/// грид (десктопный SmartGrid и веб-ObjectList) рисует вместо текста цветной кружок. Подсказка к
+	/// кружку — необязательная колонка того же результата с именем <c>&lt;колонка&gt;Hint</c> (в метаданных
+	/// её заводить не нужно). Цвета — одна таблица на обе платформы. Образец — «Реестр счетов» (BillRegister).
+	/// </summary>
+	public static class SignalColumn
+	{
+		public const string DataType = "signal";
+
+		public static bool IsSignal(Entity.Attribute attribute)
+		{
+			return attribute != null && string.Equals(attribute.DataType, DataType, StringComparison.OrdinalIgnoreCase);
+		}
+
+		/// <summary>Имя необязательной колонки подсказки для колонки-светофора с именем <paramref name="columnName"/>.</summary>
+		public static string HintColumn(string columnName)
+		{
+			return columnName + "Hint";
+		}
+
+		/// <summary>Цвет кружка по названию (#RRGGBB); null — названия нет в таблице, кружок не рисуется.</summary>
+		public static string Hex(object value)
+		{
+			if (value == null || value == DBNull.Value) return null;
+			switch (value.ToString().Trim().ToLowerInvariant())
+			{
+				case "green": return "#2F9E44";
+				case "yellow": return "#F2B705";
+				case "orange": return "#F57C00";
+				case "red": return "#D32F2F";
+				case "bordeaux": return "#7B1E2E"; // бордовый
+				case "gray": return "#9E9E9E";
+				default: return null;
+			}
+		}
+	}
 }

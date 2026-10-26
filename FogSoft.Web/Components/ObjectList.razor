@@ -96,7 +96,14 @@ else
                         @foreach (var a in Columns)
                         {
                             <td class="@NumClass(a)" title="@Display(row, a)">
-                                @if (IsBoolean(a))
+                                @if (SignalColumn.IsSignal(a))
+                                {
+                                    @if (SignalColumn.Hex(row.Table.Columns.Contains(a.Name) ? row[a.Name] : null) is { } signalColor)
+                                    {
+                                        <span class="signal-dot" style="background:@signalColor" role="img" aria-label="@Display(row, a)"></span>
+                                    }
+                                }
+                                else if (IsBoolean(a))
                                 {
                                     @if (Display(row, a) == Tr.T("Да"))
                                     {
@@ -338,6 +345,15 @@ else
     {
         if (!row.Table.Columns.Contains(attribute.Name))
             return "";
+
+        // Колонка-светофор: текст — подсказка к кружку (колонка «имя+Hint»), а не название цвета.
+        if (SignalColumn.IsSignal(attribute))
+        {
+            string hintColumn = SignalColumn.HintColumn(attribute.Name);
+            return row.Table.Columns.Contains(hintColumn) && row[hintColumn] != DBNull.Value
+                ? row[hintColumn].ToString() ?? ""
+                : "";
+        }
 
         object v = row[attribute.Name];
         if (v == DBNull.Value)

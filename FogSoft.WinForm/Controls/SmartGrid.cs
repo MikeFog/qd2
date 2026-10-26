@@ -93,6 +93,20 @@ namespace FogSoft.WinForm.Controls
             dataGrid.CellContentClick += DataGrid_CellContentClick;
             dataGrid.KeyDown += DataGrid_KeyDown;
             dataGrid.CellFormatting += DataGrid_RowNumberCellFormatting;
+            dataGrid.CellToolTipTextNeeded += DataGrid_SignalCellToolTip;
+        }
+
+        /// <summary>Подсказка к кружку колонки-светофора (<see cref="SignalColumn"/>): колонка «имя+Hint» того же результата.</summary>
+        private void DataGrid_SignalCellToolTip(object sender, DataGridViewCellToolTipTextNeededEventArgs e)
+        {
+            if (e.RowIndex < 0 || e.ColumnIndex < 0) return;
+            DataGridViewColumn column = dataGrid.Columns[e.ColumnIndex];
+            if (!(column.CellTemplate is DataGridViewSignalCell)) return;
+            if (!(dataGrid.Rows[e.RowIndex].DataBoundItem is DataRowView rowView)) return;
+
+            string hintColumn = SignalColumn.HintColumn(column.DataPropertyName);
+            if (rowView.Row.Table.Columns.Contains(hintColumn) && rowView.Row[hintColumn] != DBNull.Value)
+                e.ToolTipText = rowView.Row[hintColumn].ToString();
         }
 
         private void DataGrid_RowNumberCellFormatting(object sender, DataGridViewCellFormattingEventArgs e)
@@ -1184,6 +1198,18 @@ namespace FogSoft.WinForm.Controls
         {
             entity.ColumnsInfo.TryGetValue(attribute.Name, out ColumnInfo columnInfo);
 
+            if (SignalColumn.IsSignal(attribute))
+            {
+                // Светофор: текстовая колонка (значение — название цвета, сортировка и выгрузка работают как у
+                // текста), а кружок рисует клетка. Ширина — по кружку, а не по слову «orange».
+                return new DataGridViewTextBoxColumn
+                {
+                    CellTemplate = new DataGridViewSignalCell(),
+                    SortMode = DataGridViewColumnSortMode.Automatic,
+                    Resizable = DataGridViewTriState.False
+                };
+            }
+
             if (ColumnInfo.IsBooleanData(columnInfo, attribute))
             {
                 DataGridViewImageColumn column = new DataGridViewImageColumn
@@ -2101,6 +2127,49 @@ namespace FogSoft.WinForm.Controls
                 return value;
 
             return ParseHelper.GetBooleanFromObject(value, false) ? Properties.Resources.Tick : null;
+        }
+    }
+
+    /// <summary>
+    /// Клетка колонки-светофора (<see cref="SignalColumn"/>): вместо текста — цветной кружок по названию цвета в
+    /// значении; пусто или неизвестное название — ничего. Фон, выделение строки и рамки рисует база.
+    /// </summary>
+    public class DataGridViewSignalCell : DataGridViewTextBoxCell
+    {
+        private const int DiameterAt96Dpi = 12;
+
+        protected override Size GetPreferredSize(Graphics graphics, DataGridViewCellStyle cellStyle, int rowIndex, Size constraintSize)
+        {
+            int side = Scale(DiameterAt96Dpi + 8);
+            return new Size(side, side);
+        }
+
+        protected override void Paint(Graphics graphics, Rectangle clipBounds, Rectangle cellBounds, int rowIndex,
+            DataGridViewElementStates cellState, object value, object formattedValue, string errorText,
+            DataGridViewCellStyle cellStyle, DataGridViewAdvancedBorderStyle advancedBorderStyle,
+            DataGridViewPaintParts paintParts)
+        {
+            // Без текста: слово «orange» в ячейке не нужно.
+            base.Paint(graphics, clipBounds, cellBounds, rowIndex, cellState, value, null, errorText, cellStyle,
+                advancedBorderStyle, paintParts & ~DataGridViewPaintParts.ContentForeground);
+
+            string hex = SignalColumn.Hex(value);
+            if (hex == null || (paintParts & DataGridViewPaintParts.ContentForeground) == 0) return;
+
+            int diameter = Scale(DiameterAt96Dpi);
+            var circle = new Rectangle(cellBounds.X + (cellBounds.Width - diameter) / 2,
+                cellBounds.Y + (cellBounds.Height - diameter) / 2, diameter, diameter);
+
+            var oldMode = graphics.SmoothingMode;
+            graphics.SmoothingMode = System.Drawing.Drawing2D.SmoothingMode.AntiAlias;
+            using (var brush = new SolidBrush(ColorTranslator.FromHtml(hex)))
+                graphics.FillEllipse(brush, circle);
+            graphics.SmoothingMode = oldMode;
+        }
+
+        private int Scale(int pixelsAt96Dpi)
+        {
+            return DataGridView == null ? pixelsAt96Dpi : DataGridView.LogicalToDeviceUnits(pixelsAt96Dpi);
         }
     }
 

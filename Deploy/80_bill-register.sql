@@ -1,20 +1,29 @@
 ﻿-- Реестр счетов: «Рекламный отдел → Реестр счетов» (сущность 1272 BillRegister), десктоп и веб.
--- Одна строка — один счёт (пара «акция + агентство» из Bill). Колонки: Дата счёта, № счёта, № Акции, Фирма-заказчик,
--- Сумма (с НДС, как в печатном счёте), Агентство, Менеджер, Оплата (Не оплачен / Частично / Оплачен).
--- Отбор: период по дате счёта (с начала месяца по сегодня), менеджер (по умолчанию — вошедший; без права смотреть
--- чужие акции поле заблокировано клиентом, а процедура всё равно подставляет только его), агентство, статус оплаты.
--- Решение владельца 26.10.2026: пункт — в «Рекламном отделе» рядом с «Журналом оплат» (позиция 22), а не в «Бухгалтерии».
+-- Одна строка — один счёт (пара «акция + агентство» из Bill). Колонки: «Внимание» (светофор), Дата счёта, № счёта,
+-- № Акции, Статус акции (Активирована / Макет), Дата начала акции, Фирма-заказчик, Сумма (с НДС, как в печатном счёте),
+-- Агентство, Менеджер, Оплата (Не оплачен / Частично / Оплачен).
+-- Отбор: период ЭФИРА акции (пересечение Action.startDate..finishDate с выбранным; по умолчанию с 1-го числа прошлого
+-- месяца, конец не задан), менеджер (по умолчанию вошедший; без права смотреть чужие акции поле заблокировано клиентом,
+-- процедура сама подставляет только его), агентство, статус оплаты, «Показывать активированные» (вкл.), «Показывать
+-- макеты» (выкл.), «Не показывать нулевые счета» (вкл.). Удалённые акции не показываются.
+-- Светофор («Внимание»): только активированные акции с оплатой не «Оплачен» — бордовый кружок, если акция уже в эфире;
+-- оранжевый, если до выхода в эфир осталось не больше N РАБОЧИХ дней (суббота и воскресенье не считаются; N — настройка
+-- BillUnpaidWarnDays, по умолчанию 4; её поле в «Настройках...» Протектора добавляет Deploy/81). Остальным — пусто.
+-- Решения владельца 26.10.2026: пункт — в «Рекламном отделе» рядом с «Журналом оплат» (позиция 22), а не в «Бухгалтерии»;
+-- светофор колонкой, а не заливкой строки; зелёных кружков нет.
 --
 -- Что делает скрипт (идемпотентен, сразу COMMIT-ится — транзакции нет, каждый шаг сам проверяет «уже есть»):
---   1. CREATE OR ALTER процедур BillRegister (данные) и BillRegisterFilter (списки фильтра).
---   2. Метаданные: iEntity 1272 (SET IDENTITY_INSERT — id одинаковый на всех базах; на ArtvisDev, Artvis, Tumen он свободен),
---      iEntityAttribute (8 колонок), iStoredProcedure ×2, iTableAlias (managers, bill_payment_status),
---      iModuleProcedure (Simple Journal Load и FilterPage Load).
---   3. Пункт меню miBillRegister (iMenu, позиция 22) и права: те же группы и личные разрешения, что у «Журнала оплат»
+--   1. CREATE OR ALTER функций fn_AddWorkDays (дата ± N рабочих дней) и f_SysParamsBillUnpaidWarnDays (настройка N).
+--   2. CREATE OR ALTER процедур BillRegister (данные) и BillRegisterFilter (списки фильтра).
+--   3. Метаданные: iEntity 1272 (класс строки Merlin.Classes.BillRegisterRow), iEntityAction «Открыть журнал акций» (ПКМ) (SET IDENTITY_INSERT — id одинаковый на всех базах; на ArtvisDev, Artvis, Tumen он свободен),
+--      iEntityAttribute (11 колонок, «Внимание» — dataType 'signal'), iStoredProcedure ×2, iTableAlias (managers,
+--      bill_payment_status), iModuleProcedure (Simple Journal Load и FilterPage Load).
+--   4. Пункт меню miBillRegister (iMenu, позиция 22) и права: те же группы и личные разрешения, что у «Журнала оплат»
 --      (miPaymentFRS) — то есть администраторы и менеджеры, не бухгалтерия.
---   4. Испанский для веба (iTranslation): подписи колонок, фильтра, статусов, пункта меню (iMenu.name_es).
--- Клиент: нужен новый Merlin.exe (ветка miBillRegister в MDIForm) и новая сборка веба (маршрут в MenuRoutes).
--- После наката — перезапустить qd2 и веб (метаданные читаются при старте).
+--   5. Испанский для веба (iTranslation): подписи колонок, фильтра, статусов, подсказок, пункта меню (iMenu.name_es).
+-- Клиент: нужен новый Merlin.exe (ветка miBillRegister в MDIForm, колонка-светофор в SmartGrid) и новая сборка веба
+-- (маршрут в MenuRoutes, колонка-светофор в ObjectList, действие «Открыть журнал акций»): накатывать вместе с ними или после —
+-- старый клиент не знает класс BillRegisterRow, и журнал в нём не откроется. После наката — перезапустить qd2 и веб (метаданные читаются при старте).
 --   sqlcmd -S <сервер> -d <база> -E -f 65001 -I -b -i 80_bill-register.sql
 
 SET NOCOUNT ON;
@@ -31,6 +40,52 @@ BEGIN
 END
 GO
 
+-- =============================================
+-- Дата, сдвинутая на @days рабочих дней (отрицательное число — назад). Рабочие дни — понедельник–пятница;
+-- праздничного календаря в системе нет, поэтому выходные — только суббота и воскресенье (появится таблица
+-- праздников — учитывать здесь). Как WORKDAY в Excel: от выходного дня назад первый рабочий — пятница.
+-- День недели считается от понедельника 01.01.1900, а не DATEPART(weekday), чтобы не зависеть от SET DATEFIRST.
+-- Читают: BillRegister («Реестр счетов», светофор по акциям, не оплаченным к выходу в эфир).
+-- =============================================
+CREATE OR ALTER FUNCTION [dbo].[fn_AddWorkDays]
+(
+	@date date,
+	@days int
+)
+RETURNS date
+AS
+BEGIN
+	DECLARE @step int = CASE WHEN @days < 0 THEN -1 ELSE 1 END,
+		@left int = CASE WHEN ABS(@days) > 366 THEN 366 ELSE ABS(@days) END
+
+	WHILE @left > 0
+	BEGIN
+		SET @date = DATEADD(day, @step, @date)
+		IF DATEDIFF(day, '19000101', @date) % 7 < 5 -- 0 = пн ... 4 = пт
+			SET @left = @left - 1
+	END
+
+	RETURN @date
+END
+
+GO
+
+-- =============================================
+-- Настройка «Системные настройки» (iInternalVariable, 'BillUnpaidWarnDays'): за сколько РАБОЧИХ дней до
+-- первого дня акции «Реестр счетов» начинает показывать оранжевый кружок у активированной, но не оплаченной акции.
+-- Не задана — 4. Читает BillRegister; поле в паспорте сущности 214 («Настройки...» Протектора) — Deploy/81.
+-- =============================================
+CREATE OR ALTER FUNCTION [dbo].[f_SysParamsBillUnpaidWarnDays]
+(
+)
+RETURNS int
+AS
+BEGIN
+	RETURN COALESCE((SELECT TOP 1 CAST([value] AS int) FROM iInternalVariable WHERE [name] = 'BillUnpaidWarnDays'), 4)
+END
+
+GO
+
 -- =============================================================================
 -- Реестр счетов (Рекламный отдел → Реестр счетов, сущность 1272 BillRegister).
 -- Одна строка — один счёт: пара «акция + агентство» из Bill.
@@ -44,13 +99,27 @@ GO
 -- Статус оплаты: 1 — не оплачен (оплачено 0), 2 — частично, 3 — оплачен (оплачено >= суммы; нулевой
 -- счёт и переплата тоже «оплачен» — платить нечего).
 --
+-- Период (@startOfInterval, @endOfInterval) — по ЭФИРУ акции: акция попадает, если её период
+-- Action.startDate..finishDate пересекается с выбранным (граница не задана — не ограничивает).
+-- Не по дате счёта (решение заказчика, 26.10.2026).
+-- @showActivated / @showUnconfirmed — активированные акции / макеты (по умолчанию только активированные);
+-- @hideZero — не показывать счета с нулевой суммой (по умолчанию да).
+--
+-- Колонка-светофор paymentSignal (iEntityAttribute.dataType = 'signal', см. SignalColumn): только для АКТИВИРОВАННЫХ
+-- акций, оплата которых не «Оплачен» (не оплачен или частично):
+--   bordeaux — акция уже в эфире (Action.startDate <= сегодня);
+--   orange   — до выхода в эфир осталось не больше N РАБОЧИХ дней (суббота и воскресенье не считаются;
+--              N — настройка BillUnpaidWarnDays, по умолчанию 4, Протектор → «Настройки...»).
+-- Остальным — NULL (кружка нет). Подсказка к кружку — paymentSignalHint. Сегодня — по дате сервера.
+--
 -- Видимость акций — как в PaymentCommonActions/ActionsForPaymentCommon: свои, чужие по праву
 -- fn_IsRightToViewForeignActions, группы по fn_IsRightToViewGroupActions, станции — по fn_GetMassmediasForUser.
 -- Пользователь без права смотреть чужие акции всегда получает только свои: @managerID подменяется
 -- на @loggedUserID, даже если клиент прислал пусто (фильтр «Менеджер» в клиенте для него заблокирован).
 -- Удалённые акции (Action.deleteDate) в реестр не попадают.
 --
--- Параметры периода — по дате счёта (Bill.billDate), включительно.
+-- Служебные колонки результата (в iEntityAttribute их нет, в таблице не видны): agencyID (ключ), isConfirmed
+-- (статус акции — для перехода в журнал акций по ПКМ), paymentSignalHint.
 -- =============================================================================
 CREATE OR ALTER PROCEDURE [dbo].[BillRegister]
 (
@@ -59,6 +128,9 @@ CREATE OR ALTER PROCEDURE [dbo].[BillRegister]
 @agencyID smallint = null,
 @managerID smallint = null,
 @paymentStatusID tinyint = null, -- 1 не оплачен, 2 частично, 3 оплачен; NULL — все
+@showActivated bit = 1,
+@showUnconfirmed bit = 0,
+@hideZero bit = 1,
 @loggedUserID smallint,
 @languageCode VARCHAR(10) = 'ru' -- язык интерфейса веба (docs/tasks/web-i18n.md); десктоп не передаёт
 )
@@ -68,7 +140,14 @@ SET NOCOUNT ON
 
 DECLARE @tNotPaid NVARCHAR(50) = dbo.fn_Translate(@languageCode, N'Не оплачен'),
 	@tPartial NVARCHAR(50) = dbo.fn_Translate(@languageCode, N'Частично'),
-	@tPaid NVARCHAR(50) = dbo.fn_Translate(@languageCode, N'Оплачен');
+	@tPaid NVARCHAR(50) = dbo.fn_Translate(@languageCode, N'Оплачен'),
+	@tActivated NVARCHAR(50) = dbo.fn_Translate(@languageCode, N'Активирована'),
+	@tUnconfirmed NVARCHAR(50) = dbo.fn_Translate(@languageCode, N'Макет'),
+	@tOnAir NVARCHAR(200) = dbo.fn_Translate(@languageCode, N'Акция уже в эфире с {0}; оплата: {1}'),
+	@tSoon NVARCHAR(200) = dbo.fn_Translate(@languageCode, N'Акция выходит в эфир {0}; оплата: {1}');
+
+DECLARE @today date = CAST(GETDATE() AS date),
+	@warnDays int = dbo.f_SysParamsBillUnpaidWarnDays()
 
 DECLARE @isRightToViewForeignActions bit, @isRightToViewGroupActions bit
 SELECT @isRightToViewForeignActions = dbo.fn_IsRightToViewForeignActions(@loggedUserID),
@@ -86,14 +165,15 @@ DECLARE @ugroups TABLE(id int)
 INSERT INTO @ugroups (id)
 SELECT * FROM dbo.[fn_GetUserGroups](@loggedUserID)
 
--- счета периода по акциям, которые пользователь вправе видеть
-SELECT b.actionID, b.agencyID, b.billNo, b.billDate, a.firmID, a.userID
+-- счета акций, чей эфир пересекается с периодом, и которые пользователь вправе видеть
+SELECT b.actionID, b.agencyID, b.billNo, b.billDate, a.firmID, a.userID, a.isConfirmed, a.startDate
 INTO #bill
 FROM Bill b
 	INNER JOIN [Action] a ON a.actionID = b.actionID
 WHERE a.deleteDate IS NULL
-	AND b.billDate BETWEEN COALESCE(@startOfInterval, b.billDate)
-		AND COALESCE(DATEADD(ss, -1, DATEADD(day, 1, @endOfInterval)), b.billDate)
+	AND ((@showActivated = 1 AND a.isConfirmed = 1) OR (@showUnconfirmed = 1 AND a.isConfirmed = 0))
+	AND (@startOfInterval IS NULL OR ISNULL(a.finishDate, a.startDate) >= @startOfInterval)
+	AND (@endOfInterval IS NULL OR a.startDate < DATEADD(day, 1, CAST(@endOfInterval AS date)))
 	AND (@agencyID IS NULL OR b.agencyID = @agencyID)
 	AND (@managerID IS NULL OR a.userID = @managerID)
 	AND (a.userID = @loggedUserID OR @isRightToViewForeignActions = 1
@@ -120,38 +200,70 @@ WHERE a.deleteDate IS NULL
 							OR (a.userID <> @loggedUserID AND ummm.foreignMassmedia = 0))))))
 
 SELECT
-	b.actionID,
-	b.agencyID,
-	b.billNo,
-	b.billDate,
-	f.name AS firmName,
-	s.billSum,
-	ag.name AS agencyName,
-	u.userName AS manager,
-	CASE s.statusID WHEN 1 THEN @tNotPaid WHEN 2 THEN @tPartial ELSE @tPaid END AS paymentStatus
-FROM #bill b
-	INNER JOIN Firm f ON f.firmID = b.firmID
-	INNER JOIN Agency ag ON ag.agencyID = b.agencyID
-	LEFT JOIN [User] u ON u.userID = b.userID
-	CROSS APPLY (
-		SELECT ISNULL(SUM(c.finalPrice), 0) AS billSum
-		FROM Campaign c
-			INNER JOIN PaymentType pt ON pt.paymentTypeID = c.paymentTypeID AND pt.isHidden = 0
-		WHERE c.actionID = b.actionID AND c.agencyID = b.agencyID
-	) sm
-	CROSS APPLY (
-		SELECT ISNULL(SUM(pa.summa), 0) AS paid
-		FROM PaymentAction pa
-			INNER JOIN Payment p ON p.paymentID = pa.paymentID AND p.agencyID = b.agencyID
-			INNER JOIN PaymentType pt ON pt.paymentTypeID = p.paymentTypeID AND pt.isHidden = 0
-		WHERE pa.actionID = b.actionID
-	) pd
-	CROSS APPLY (
-		SELECT sm.billSum,
-			CASE WHEN pd.paid >= sm.billSum THEN 3 WHEN pd.paid = 0 THEN 1 ELSE 2 END AS statusID
-	) s
-WHERE @paymentStatusID IS NULL OR s.statusID = @paymentStatusID
-ORDER BY b.billDate DESC, b.actionID DESC, ag.name, b.billNo DESC
+	x.actionID,
+	x.agencyID,
+	x.billNo,
+	x.billDate,
+	CASE WHEN x.isConfirmed = 1 THEN @tActivated ELSE @tUnconfirmed END AS actionStatus,
+	CAST(x.startDate AS date) AS actionStartDate,
+	x.firmName,
+	x.billSum,
+	x.agencyName,
+	x.manager,
+	x.paymentStatus,
+	x.isConfirmed,
+	x.paymentSignal,
+	CASE
+		WHEN x.paymentSignal IS NULL THEN NULL
+		ELSE REPLACE(REPLACE(CASE x.paymentSignal WHEN 'bordeaux' THEN @tOnAir ELSE @tSoon END,
+			N'{0}', CONVERT(nvarchar(10), x.startDate, 104)), N'{1}', LOWER(x.paymentStatus))
+	END AS paymentSignalHint
+FROM (
+	SELECT
+		b.actionID,
+		b.agencyID,
+		b.billNo,
+		b.billDate,
+		b.isConfirmed,
+		b.startDate,
+		f.name AS firmName,
+		s.billSum,
+		ag.name AS agencyName,
+		u.userName AS manager,
+		CASE s.statusID WHEN 1 THEN @tNotPaid WHEN 2 THEN @tPartial ELSE @tPaid END AS paymentStatus,
+		s.statusID,
+		CASE
+			WHEN b.isConfirmed = 1 AND s.statusID <> 3 THEN
+				CASE
+					WHEN CAST(b.startDate AS date) <= @today THEN 'bordeaux'
+					WHEN @today >= dbo.fn_AddWorkDays(b.startDate, -@warnDays) THEN 'orange'
+				END
+		END AS paymentSignal
+	FROM #bill b
+		INNER JOIN Firm f ON f.firmID = b.firmID
+		INNER JOIN Agency ag ON ag.agencyID = b.agencyID
+		LEFT JOIN [User] u ON u.userID = b.userID
+		CROSS APPLY (
+			SELECT ISNULL(SUM(c.finalPrice), 0) AS billSum
+			FROM Campaign c
+				INNER JOIN PaymentType pt ON pt.paymentTypeID = c.paymentTypeID AND pt.isHidden = 0
+			WHERE c.actionID = b.actionID AND c.agencyID = b.agencyID
+		) sm
+		CROSS APPLY (
+			SELECT ISNULL(SUM(pa.summa), 0) AS paid
+			FROM PaymentAction pa
+				INNER JOIN Payment p ON p.paymentID = pa.paymentID AND p.agencyID = b.agencyID
+				INNER JOIN PaymentType pt ON pt.paymentTypeID = p.paymentTypeID AND pt.isHidden = 0
+			WHERE pa.actionID = b.actionID
+		) pd
+		CROSS APPLY (
+			SELECT sm.billSum,
+				CASE WHEN pd.paid >= sm.billSum THEN 3 WHEN pd.paid = 0 THEN 1 ELSE 2 END AS statusID
+		) s
+) x
+WHERE (@paymentStatusID IS NULL OR x.statusID = @paymentStatusID)
+	AND (@hideZero = 0 OR x.billSum > 0)
+ORDER BY x.billDate DESC, x.actionID DESC, x.agencyName, x.billNo DESC
 
 GO
 
@@ -187,13 +299,17 @@ DECLARE @moduleSimpleJournal int = 118, @moduleFilterPage int = 2, @actionLoad i
 
 DECLARE @filter nvarchar(max) = N'<filter>
 	<page caption="Общие">
-		<field caption="Начало интервала: " name="startOfInterval" type="df_date" value="StartOfTheMonth"/>
-		<field caption="Окончание интервала: " name="endOfInterval" type="df_date" value="TODAY"/>
+		<field caption="Эфир акции с: " name="startOfInterval" type="df_date" value="StartOfTheLastMonth"/>
+		<field caption="Эфир акции по: " name="endOfInterval" type="df_date"/>
 		<objectPicker caption="Менеджер:" name="managerID" source="managers" entity="user" value="LoggedUser"/>
 		<lookup caption="Агенство:" name="agencyID" entity="agency">
 			<filter name="ShowActive" value="true" type="boolean" />
 		</lookup>
 		<lookup caption="Оплата:" name="paymentStatusID" source="bill_payment_status" columnWithID="paymentStatusID"/>
+		<separator/>
+		<field caption="Показывать активированные" name="showActivated" type="boolean" value="true"/>
+		<field caption="Показывать макеты" name="showUnconfirmed" type="boolean" value="false"/>
+		<field caption="Не показывать нулевые счета" name="hideZero" type="boolean" value="true"/>
 	</page>
 </filter>';
 
@@ -201,12 +317,22 @@ SET IDENTITY_INSERT dbo.iEntity ON;
 IF NOT EXISTS (SELECT 1 FROM dbo.iEntity WHERE entityID = @entity)
     INSERT INTO dbo.iEntity (entityID, name, passport, tableName, className, assemblyName, pkColumn, codeName, filter,
                              isGrantingAllowed, iconName, entityClassName, parentId, isObsolete, isMassDeleteAllowed)
-    VALUES (@entity, N'Реестр счетов', NULL, 'Bill', 'FogSoft.WinForm.Classes.PresentationObject', NULL,
+    VALUES (@entity, N'Реестр счетов', NULL, 'Bill', 'Merlin.Classes.BillRegisterRow', 'Merlin',
             'actionID,agencyID', 'BillRegister', @filter, 0, 'Money.png', NULL, NULL, 0, 0);
 SET IDENTITY_INSERT dbo.iEntity OFF;
 
 -- значок: стопка монет (Action.png у реестра был по ошибке — он у акций и оплат акций); обновляем всегда
 UPDATE dbo.iEntity SET iconName = 'Money.png' WHERE entityID = @entity AND ISNULL(iconName, '') <> 'Money.png';
+
+-- класс строки (ради действия «Открыть журнал акций», по образцу BalanceStatRow у сущности 1269); обновляем всегда
+UPDATE dbo.iEntity SET className = 'Merlin.Classes.BillRegisterRow', assemblyName = 'Merlin'
+WHERE entityID = @entity AND (ISNULL(className, '') <> 'Merlin.Classes.BillRegisterRow' OR ISNULL(assemblyName, '') <> 'Merlin');
+
+-- действие ПКМ «Открыть журнал акций»: активированная акция — в журнал подтверждённых, макет — в журнал макетов.
+-- Вне контроля прав (isGrantingAllowed = 0): открывает только чтение, доступ к журналу акций проверяет меню.
+IF NOT EXISTS (SELECT 1 FROM dbo.iEntityAction WHERE entityID = @entity AND name = 'OpenActionJournal')
+    INSERT INTO dbo.iEntityAction (entityID, alias, name, ordinal_position, isHidden, isGrantingAllowed, imgResourceName, parentID)
+    VALUES (@entity, N'Открыть журнал акций', 'OpenActionJournal', 1, 0, 0, NULL, NULL);
 
 -- фильтр обновляем всегда: это единственное место его хранения
 UPDATE dbo.iEntity SET filter = @filter
@@ -214,14 +340,17 @@ WHERE entityID = @entity AND CAST(filter AS nvarchar(max)) <> @filter;
 
 -- колонки (billSum — «Сумма»; agencyID в результате есть, но не колонка: нужен ключу pkColumn)
 MERGE dbo.iEntityAttribute AS dst
-USING (VALUES (1, N'Дата счёта',      'billDate',      'date2'),
-              (2, N'№ счёта',         'billNo',        NULL),
-              (3, N'№ Акции',         'actionID',      NULL),
-              (4, N'Фирма-заказчик',  'firmName',      NULL),
-              (5, N'Сумма',           'billSum',       'money'),
-              (6, N'Агентство',       'agencyName',    NULL),
-              (7, N'Менеджер',        'manager',       NULL),
-              (8, N'Оплата',          'paymentStatus', NULL))
+USING (VALUES (1,  N'Внимание',           'paymentSignal',   'signal'),
+              (2,  N'Дата счёта',         'billDate',        'date2'),
+              (3,  N'№ счёта',            'billNo',          NULL),
+              (4,  N'№ Акции',            'actionID',        NULL),
+              (5,  N'Статус акции',       'actionStatus',    NULL),
+              (6,  N'Дата начала акции',  'actionStartDate', 'date2'),
+              (7,  N'Фирма-заказчик',     'firmName',        NULL),
+              (8,  N'Сумма',              'billSum',         'money'),
+              (9,  N'Агентство',          'agencyName',      NULL),
+              (10, N'Менеджер',           'manager',         NULL),
+              (11, N'Оплата',             'paymentStatus',   NULL))
       AS src (ordinal_position, alias, name, dataType)
    ON dst.entityID = @entity AND dst.name = src.name AND dst.selector = 0
  WHEN MATCHED AND (dst.alias <> src.alias OR dst.ordinal_position <> src.ordinal_position
@@ -295,7 +424,21 @@ IF OBJECT_ID('dbo.iTranslation') IS NOT NULL
                   ('es', '', N'Оплата:',         N'Pago:'),
                   ('es', '', N'Не оплачен',      N'No pagada'),
                   ('es', '', N'Частично',        N'Parcial'),
-                  ('es', '', N'Оплачен',         N'Pagada')) AS src (lang, context, [source], [text])
+                  ('es', '', N'Оплачен',         N'Pagada'),
+                  ('es', '', N'Внимание',        N'Atención'),
+                  ('es', '', N'Статус акции',    N'Estado de la acción'),
+                  ('es', '', N'Дата начала акции', N'Fecha de inicio de la acción'),
+                  ('es', '', N'Активирована',    N'Activada'),
+                  ('es', '', N'Макет',           N'Borrador'),
+                  ('es', '', N'Эфир акции с: ',  N'Emisión de la acción desde: '),
+                  ('es', '', N'Эфир акции по: ', N'Emisión de la acción hasta: '),
+                  ('es', '', N'Показывать активированные', N'Mostrar activadas'),
+                  ('es', '', N'Показывать макеты', N'Mostrar borradores'),
+                  ('es', '', N'Не показывать нулевые счета', N'No mostrar facturas en cero'),
+                  ('es', '', N'Акция уже в эфире с {0}; оплата: {1}', N'La acción ya está en el aire desde {0}; pago: {1}'),
+                  ('es', '', N'Акция выходит в эфир {0}; оплата: {1}', N'La acción sale al aire el {0}; pago: {1}'),
+                  ('es', '', N'Открыть журнал акций', N'Abrir el registro de campañas'),
+                  ('es', '', N'Нет доступа к журналу макетов рекламных акций.', N'Sin acceso al registro de borradores de campañas publicitarias.')) AS src (lang, context, [source], [text])
        ON dst.lang = src.lang AND dst.context = src.context
       AND dst.sourceHash = CONVERT(binary(32), HASHBYTES('SHA2_256', src.[source]))
     WHEN NOT MATCHED BY TARGET THEN
@@ -306,9 +449,10 @@ GO
 -- Проверка
 -- =====================================================================
 SELECT 'iEntity' AS [объект], COUNT(*) AS [есть], '1' AS [ожидается] FROM dbo.iEntity WHERE entityID = 1272 AND codeName = 'BillRegister'
-UNION ALL SELECT 'iEntityAttribute', COUNT(*), '8' FROM dbo.iEntityAttribute WHERE entityID = 1272
+UNION ALL SELECT 'iEntityAttribute', COUNT(*), '11' FROM dbo.iEntityAttribute WHERE entityID = 1272
 UNION ALL SELECT 'iModuleProcedure', COUNT(*), '2' FROM dbo.iModuleProcedure WHERE entityID = 1272
 UNION ALL SELECT 'iTableAlias', COUNT(*), '2' FROM dbo.iTableAlias a JOIN dbo.iStoredProcedure sp ON sp.storedProcedureID = a.storedProcedureID WHERE sp.name = 'BillRegisterFilter'
+UNION ALL SELECT 'iEntityAction', COUNT(*), '1' FROM dbo.iEntityAction WHERE entityID = 1272 AND name = 'OpenActionJournal'
 UNION ALL SELECT 'iMenu', COUNT(*), '1' FROM dbo.iMenu WHERE codeName = 'miBillRegister'
 UNION ALL SELECT 'GroupMenu (как у miPaymentFRS)', COUNT(*), CAST((SELECT COUNT(*) FROM dbo.GroupMenu g JOIN dbo.iMenu m ON m.menuID = g.menuID WHERE m.codeName = 'miPaymentFRS') AS varchar(10))
     FROM dbo.GroupMenu g JOIN dbo.iMenu m ON m.menuID = g.menuID WHERE m.codeName = 'miBillRegister';

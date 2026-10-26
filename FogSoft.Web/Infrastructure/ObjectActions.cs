@@ -187,6 +187,12 @@ public sealed partial class ObjectActions
 		{
 			[Merlin.Classes.BonusStatRow.OpenActionJournalAction] = (s, t) => s.OpenActionJournal((PresentationObject)t),
 		},
+		// BillRegisterRow.DoAction: из строки реестра счетов — журнал подтверждённых акций (акция активирована)
+		// или макетов (макет) с отбором по № акции; в десктопе — новое окно, здесь — переход на экран.
+		["BillRegisterRow"] = new()
+		{
+			[Merlin.Classes.BillRegisterRowActions.OpenActionJournalAction] = (s, t) => s.OpenBillRegisterActionJournal((PresentationObject)t),
+		},
 		// FirmBalance.DoAction: «Перейти к балансу для фирмы» у строки «Баланса для всех фирм» —
 		// экран «Баланс для фирмы» с этой фирмой; в десктопе — новое окно, здесь — переход.
 		["FirmBalanceIssues"] = new()
@@ -1970,6 +1976,30 @@ public sealed partial class ObjectActions
 		}
 
 		_filters.Preset("browser/" + code, Merlin.Classes.BonusStatRow.ActionJournalFilter(row));
+		_navigation.NavigateTo("/browser/" + code);
+		return ActionEffect.None;
+	}
+
+	/// <summary>
+	/// «Открыть журнал акций» из реестра счетов: активированная акция — журнал подтверждённых, макет — журнал
+	/// макетов; отбор — только № акции (даты не задаём, чтобы журнал не спрятал акцию периодом по умолчанию).
+	/// </summary>
+	private async Task<ActionEffect> OpenBillRegisterActionJournal(PresentationObject row)
+	{
+		bool confirmed = Merlin.Classes.BillRegisterRowActions.IsActionConfirmed(row);
+		string? code = (confirmed
+				? new[] { "miActionJournal", "miActionJournalBuh", "miActionJournalTraffic" }
+				: new[] { "miActionJournalUnconfirmed" })
+			.FirstOrDefault(c => _menuAccess.CheckBrowser(c) == JournalAccess.Allowed);
+		if (code == null)
+		{
+			await ShowInfo(Tr.T("Открыть журнал акций"), confirmed
+				? Tr.T("Нет доступа к журналу подтверждённых рекламных акций.")
+				: Tr.T("Нет доступа к журналу макетов рекламных акций."));
+			return ActionEffect.None;
+		}
+
+		_filters.Preset("browser/" + code, Merlin.Classes.BillRegisterRowActions.ActionJournalFilter(row));
 		_navigation.NavigateTo("/browser/" + code);
 		return ActionEffect.None;
 	}

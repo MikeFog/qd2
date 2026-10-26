@@ -165,6 +165,8 @@
     <Build Include="Security\AdvertAgUser_1.sql" />
     <Build Include="dbo\Functions\fn_GetTariffTimesWithBroadcast.sql" />
     <Build Include="dbo\Functions\fn_FindTariffIDForChain.sql" />
+    <Build Include="dbo\Functions\fn_AddWorkDays.sql" />
+    <Build Include="dbo\Functions\f_SysParamsBillUnpaidWarnDays.sql" />
     <Build Include="dbo\Functions\fn_FirmKey.sql" />
     <Build Include="dbo\Functions\f_SysParamsDateHistorySave.sql" />
     <Build Include="dbo\Functions\fn_IsRightToViewGroupActions.sql" />

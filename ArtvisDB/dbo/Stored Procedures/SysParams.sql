@@ -16,6 +16,8 @@ begin
 		coalesce((select top 1 cast([value] as int) from iInternalVariable where [name] = 'UnconfirmedActionsLifetime'), 365) as UnconfirmedActionsLifetime, 
 		-- в паспорте у даты нет пустого значения (при «ОК» она всегда сохраняется): «не задана» показываем как 31.12.2099 = выключено
 		coalesce(dbo.f_SysParamsPackageDiscountMaxBasisFrom(), '20991231') as packageDiscountMaxBasisFrom, 
+		-- «Реестр счетов»: за сколько рабочих дней до эфира оранжевый кружок у не оплаченной акции (по умолчанию 4)
+		dbo.f_SysParamsBillUnpaidWarnDays() as billUnpaidWarnDays, 
 		@tSysParams as [name]
 
 end

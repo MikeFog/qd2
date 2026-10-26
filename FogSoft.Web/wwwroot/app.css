@@ -396,6 +396,16 @@ a:hover {
     font-weight: 700;
 }
 
+/* Колонка-светофор (iEntityAttribute.dataType = 'signal', SignalColumn): цветной кружок вместо текста,
+   как DataGridViewSignalCell десктопа. Цвет приходит из SignalColumn.Hex — одна таблица на обе платформы. */
+.signal-dot {
+    display: inline-block;
+    width: .8rem;
+    height: .8rem;
+    border-radius: 50%;
+    vertical-align: middle;
+}
+
 /* Плотный экран (страница акции): отступ рабочей области вдвое меньше — сетке окон нужна высота.
    «main» в селекторе — чтобы перебить scoped-стиль MainLayout (.shell-content[b-…]). */
 main.shell-content:has(> .screen-dense) {

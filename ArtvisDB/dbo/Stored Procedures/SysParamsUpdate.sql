@@ -10,6 +10,7 @@ CREATE procedure [dbo].[SysParamsUpdate]
 	@deletedActionsLifetime smallint,
 	@unconfirmedActionsLifetime smallint,
 	@packageDiscountMaxBasisFrom datetime = null, -- NULL — настройка не задана (удаляется)
+	@billUnpaidWarnDays smallint = null, -- NULL — настройка не задана (удаляется), действует 4
 	@actionName varchar(16) = null 
 )
 as 
@@ -58,4 +59,13 @@ begin
 		update iInternalVariable set [value] = Cast(Cast(Cast(@packageDiscountMaxBasisFrom as date) as datetime) as binary(500)) where [name] = 'PackageDiscountMaxBasisFrom'
 	else
 		insert into iInternalVariable ([name],[value]) values ('PackageDiscountMaxBasisFrom', Cast(Cast(Cast(@packageDiscountMaxBasisFrom as date) as datetime) as binary(500)))
+
+	-- «Реестр счетов»: за сколько рабочих дней до первого дня акции не оплаченная активированная акция получает оранжевый кружок
+	-- (f_SysParamsBillUnpaidWarnDays, BillRegister); не задана — 4
+	if @billUnpaidWarnDays is null
+		delete from iInternalVariable where [name] = 'BillUnpaidWarnDays'
+	else if exists(select * from iInternalVariable where [name] = 'BillUnpaidWarnDays')
+		update iInternalVariable set [value] = Cast(@billUnpaidWarnDays as binary(500)) where [name] = 'BillUnpaidWarnDays'
+	else
+		insert into iInternalVariable ([name],[value]) values ('BillUnpaidWarnDays', Cast(@billUnpaidWarnDays as binary(500)))
 end
