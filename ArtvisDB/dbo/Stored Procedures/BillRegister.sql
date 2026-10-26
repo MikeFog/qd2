@@ -30,8 +30,9 @@
 -- на @loggedUserID, даже если клиент прислал пусто (фильтр «Менеджер» в клиенте для него заблокирован).
 -- Удалённые акции (Action.deleteDate) в реестр не попадают.
 --
--- Служебные колонки результата (в iEntityAttribute их нет, в таблице не видны): agencyID (ключ), isConfirmed
--- (статус акции — для перехода в журнал акций по ПКМ), paymentSignalHint.
+-- Служебные колонки результата (в iEntityAttribute их нет, в таблице не видны): agencyID (ключ), paymentSignalHint.
+-- isConfirmed — колонка «Активирована» (галочка, dataType 'bit', как в журнале акций); по ней же ПКМ выбирает журнал акций
+-- (подтверждённых или макетов).
 -- =============================================================================
 CREATE   PROCEDURE [dbo].[BillRegister]
 (
@@ -53,8 +54,6 @@ SET NOCOUNT ON
 DECLARE @tNotPaid NVARCHAR(50) = dbo.fn_Translate(@languageCode, N'Не оплачен'),
 	@tPartial NVARCHAR(50) = dbo.fn_Translate(@languageCode, N'Частично'),
 	@tPaid NVARCHAR(50) = dbo.fn_Translate(@languageCode, N'Оплачен'),
-	@tActivated NVARCHAR(50) = dbo.fn_Translate(@languageCode, N'Активирована'),
-	@tUnconfirmed NVARCHAR(50) = dbo.fn_Translate(@languageCode, N'Макет'),
 	@tOnAir NVARCHAR(200) = dbo.fn_Translate(@languageCode, N'Акция уже в эфире с {0}; оплата: {1}'),
 	@tSoon NVARCHAR(200) = dbo.fn_Translate(@languageCode, N'Акция выходит в эфир {0}; оплата: {1}');
 
@@ -116,7 +115,6 @@ SELECT
 	x.agencyID,
 	x.billNo,
 	x.billDate,
-	CASE WHEN x.isConfirmed = 1 THEN @tActivated ELSE @tUnconfirmed END AS actionStatus,
 	CAST(x.startDate AS date) AS actionStartDate,
 	x.firmName,
 	x.billSum,

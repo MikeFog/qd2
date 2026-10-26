@@ -1,12 +1,12 @@
 ﻿-- Реестр счетов: «Рекламный отдел → Реестр счетов» (сущность 1272 BillRegister), десктоп и веб.
--- Одна строка — один счёт (пара «акция + агентство» из Bill). Колонки: «Внимание» (светофор), Дата счёта, № счёта,
--- № Акции, Статус акции (Активирована / Макет), Дата начала акции, Фирма-заказчик, Сумма (с НДС, как в печатном счёте),
+-- Одна строка — один счёт (пара «акция + агентство» из Bill). Колонки: «Статус» (светофор), Дата счёта, № счёта,
+-- № Акции, Активирована (галочка: акция активирована, у макета пусто), Дата начала акции, Фирма-заказчик, Сумма (с НДС, как в печатном счёте),
 -- Агентство, Менеджер, Оплата (Не оплачен / Частично / Оплачен).
--- Отбор: период ЭФИРА акции (пересечение Action.startDate..finishDate с выбранным; по умолчанию с 1-го числа прошлого
+-- Отбор: период «Есть выпуски с / по» (пересечение Action.startDate..finishDate с выбранным; по умолчанию с 1-го числа прошлого
 -- месяца, конец не задан), менеджер (по умолчанию вошедший; без права смотреть чужие акции поле заблокировано клиентом,
 -- процедура сама подставляет только его), агентство, статус оплаты, «Показывать активированные» (вкл.), «Показывать
 -- макеты» (выкл.), «Не показывать нулевые счета» (вкл.). Удалённые акции не показываются.
--- Светофор («Внимание»): только активированные акции с оплатой не «Оплачен» — бордовый кружок, если акция уже в эфире;
+-- Светофор («Статус»): только активированные акции с оплатой не «Оплачен» — бордовый кружок, если акция уже в эфире;
 -- оранжевый, если до выхода в эфир осталось не больше N РАБОЧИХ дней (суббота и воскресенье не считаются; N — настройка
 -- BillUnpaidWarnDays, по умолчанию 2; её поле в «Настройках...» Протектора добавляет Deploy/81). Остальным — пусто.
 -- Решения владельца 26.10.2026: пункт — в «Рекламном отделе» рядом с «Журналом оплат» (позиция 22), а не в «Бухгалтерии»;
@@ -16,7 +16,7 @@
 --   1. CREATE OR ALTER функций fn_AddWorkDays (дата ± N рабочих дней) и f_SysParamsBillUnpaidWarnDays (настройка N).
 --   2. CREATE OR ALTER процедур BillRegister (данные) и BillRegisterFilter (списки фильтра).
 --   3. Метаданные: iEntity 1272 (класс строки Merlin.Classes.BillRegisterRow), iEntityAction «Открыть журнал акций» (ПКМ) (SET IDENTITY_INSERT — id одинаковый на всех базах; на ArtvisDev, Artvis, Tumen он свободен),
---      iEntityAttribute (11 колонок, «Внимание» — dataType 'signal'), iStoredProcedure ×2, iTableAlias (managers,
+--      iEntityAttribute (11 колонок, «Статус» — dataType 'signal'), iStoredProcedure ×2, iTableAlias (managers,
 --      bill_payment_status), iModuleProcedure (Simple Journal Load и FilterPage Load).
 --   4. Пункт меню miBillRegister (iMenu, позиция 22) и права: те же группы и личные разрешения, что у «Журнала оплат»
 --      (miPaymentFRS) — то есть администраторы и менеджеры, не бухгалтерия.
@@ -118,8 +118,9 @@ GO
 -- на @loggedUserID, даже если клиент прислал пусто (фильтр «Менеджер» в клиенте для него заблокирован).
 -- Удалённые акции (Action.deleteDate) в реестр не попадают.
 --
--- Служебные колонки результата (в iEntityAttribute их нет, в таблице не видны): agencyID (ключ), isConfirmed
--- (статус акции — для перехода в журнал акций по ПКМ), paymentSignalHint.
+-- Служебные колонки результата (в iEntityAttribute их нет, в таблице не видны): agencyID (ключ), paymentSignalHint.
+-- isConfirmed — колонка «Активирована» (галочка, dataType 'bit', как в журнале акций); по ней же ПКМ выбирает журнал акций
+-- (подтверждённых или макетов).
 -- =============================================================================
 CREATE OR ALTER PROCEDURE [dbo].[BillRegister]
 (
@@ -141,8 +142,6 @@ SET NOCOUNT ON
 DECLARE @tNotPaid NVARCHAR(50) = dbo.fn_Translate(@languageCode, N'Не оплачен'),
 	@tPartial NVARCHAR(50) = dbo.fn_Translate(@languageCode, N'Частично'),
 	@tPaid NVARCHAR(50) = dbo.fn_Translate(@languageCode, N'Оплачен'),
-	@tActivated NVARCHAR(50) = dbo.fn_Translate(@languageCode, N'Активирована'),
-	@tUnconfirmed NVARCHAR(50) = dbo.fn_Translate(@languageCode, N'Макет'),
 	@tOnAir NVARCHAR(200) = dbo.fn_Translate(@languageCode, N'Акция уже в эфире с {0}; оплата: {1}'),
 	@tSoon NVARCHAR(200) = dbo.fn_Translate(@languageCode, N'Акция выходит в эфир {0}; оплата: {1}');
 
@@ -204,7 +203,6 @@ SELECT
 	x.agencyID,
 	x.billNo,
 	x.billDate,
-	CASE WHEN x.isConfirmed = 1 THEN @tActivated ELSE @tUnconfirmed END AS actionStatus,
 	CAST(x.startDate AS date) AS actionStartDate,
 	x.firmName,
 	x.billSum,
@@ -299,8 +297,8 @@ DECLARE @moduleSimpleJournal int = 118, @moduleFilterPage int = 2, @actionLoad i
 
 DECLARE @filter nvarchar(max) = N'<filter>
 	<page caption="Общие">
-		<field caption="Эфир акции с: " name="startOfInterval" type="df_date" value="StartOfTheLastMonth"/>
-		<field caption="Эфир акции по: " name="endOfInterval" type="df_date"/>
+		<field caption="Есть выпуски с: " name="startOfInterval" type="df_date" value="StartOfTheLastMonth"/>
+		<field caption="Есть выпуски по: " name="endOfInterval" type="df_date"/>
 		<objectPicker caption="Менеджер:" name="managerID" source="managers" entity="user" value="LoggedUser"/>
 		<lookup caption="Агенство:" name="agencyID" entity="agency">
 			<filter name="ShowActive" value="true" type="boolean" />
@@ -339,12 +337,15 @@ UPDATE dbo.iEntity SET filter = @filter
 WHERE entityID = @entity AND CAST(filter AS nvarchar(max)) <> @filter;
 
 -- колонки (billSum — «Сумма»; agencyID в результате есть, но не колонка: нужен ключу pkColumn)
+-- колонка «Статус акции» (actionStatus) заменена галочкой «Активирована» (isConfirmed) — старую строку убираем
+DELETE FROM dbo.iEntityAttribute WHERE entityID = @entity AND name = 'actionStatus';
+
 MERGE dbo.iEntityAttribute AS dst
-USING (VALUES (1,  N'Внимание',           'paymentSignal',   'signal'),
+USING (VALUES (1,  N'Статус',              'paymentSignal',   'signal'),
               (2,  N'Дата счёта',         'billDate',        'date2'),
               (3,  N'№ счёта',            'billNo',          NULL),
               (4,  N'№ Акции',            'actionID',        NULL),
-              (5,  N'Статус акции',       'actionStatus',    NULL),
+              (5,  N'Активирована',       'isConfirmed',     'bit'),
               (6,  N'Дата начала акции',  'actionStartDate', 'date2'),
               (7,  N'Фирма-заказчик',     'firmName',        NULL),
               (8,  N'Сумма',              'billSum',         'money'),
@@ -425,13 +426,10 @@ IF OBJECT_ID('dbo.iTranslation') IS NOT NULL
                   ('es', '', N'Не оплачен',      N'No pagada'),
                   ('es', '', N'Частично',        N'Parcial'),
                   ('es', '', N'Оплачен',         N'Pagada'),
-                  ('es', '', N'Внимание',        N'Atención'),
-                  ('es', '', N'Статус акции',    N'Estado de la acción'),
                   ('es', '', N'Дата начала акции', N'Fecha de inicio de la acción'),
                   ('es', '', N'Активирована',    N'Activada'),
-                  ('es', '', N'Макет',           N'Borrador'),
-                  ('es', '', N'Эфир акции с: ',  N'Emisión de la acción desde: '),
-                  ('es', '', N'Эфир акции по: ', N'Emisión de la acción hasta: '),
+                  ('es', '', N'Есть выпуски с: ',  N'Con emisiones desde: '),
+                  ('es', '', N'Есть выпуски по: ', N'Con emisiones hasta: '),
                   ('es', '', N'Показывать активированные', N'Mostrar activadas'),
                   ('es', '', N'Показывать макеты', N'Mostrar borradores'),
                   ('es', '', N'Не показывать нулевые счета', N'No mostrar facturas en cero'),
