@@ -158,6 +158,7 @@ else
     private readonly HashSet<DataRow> _selectedRows = new();
     private DataTable? _data;
     private IReadOnlyList<Entity.Attribute> _columns = Array.Empty<Entity.Attribute>();
+    private Entity? _entity;
     private string? _error;
 
     // Список грузится под слоем ожидания: диалог открывается сразу с «Загрузка…»,
@@ -169,6 +170,7 @@ else
         try
         {
             Entity entity = SourceEntity ?? EntityManager.GetEntity(Picker!.EntityName);
+            _entity = entity;
             _data = SourceEntity != null
                 ? SourceRows ?? entity.GetContent()
                 : PickerData.Candidates(Picker!, PassportData, Owner);
@@ -295,13 +297,16 @@ else
             _selectedRows.Remove(row);
     }
 
-    private static string Display(DataRow row, Entity.Attribute attribute)
+    private string Display(DataRow row, Entity.Attribute attribute)
     {
         if (!row.Table.Columns.Contains(attribute.Name))
             return "";
         object v = row[attribute.Name];
         if (v is DateTime date)
             return DisplayFormat.Value(date, attribute.DataType is "date" or "date2");
-        return v == DBNull.Value ? "" : v.ToString() ?? "";
+        if (v == DBNull.Value)
+            return "";
+        // Деньги и дроби — как в списках и десктопном окне выбора (SmartGrid), а не «0,8000».
+        return (_entity != null ? DisplayFormat.Number(v, _entity, attribute) : null) ?? v.ToString() ?? "";
     }
 }

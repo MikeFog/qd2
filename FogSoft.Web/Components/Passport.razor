@@ -285,7 +285,7 @@ else
                 else
                 {
                     <input class="form-control form-control-sm@(InvalidClass(field))" disabled="@disabled"
-                           value="@ReadString(field.Name)"
+                           value="@(DisplayFormat.FieldNumber(Object[field.Name], Entity ?? Object.Entity, field.Name, readOnly: false) ?? ReadString(field.Name))"
                            @onchange="e => WriteString(field.Name, e.Value)" />
                 }
             </div>
@@ -537,7 +537,7 @@ else
             return ReadBool(field.Name) ? Tr.T("Да") : Tr.T("Нет");
         if ((IsDateField(field) || IsDateTimeField(field)) && (v is DateTime || DateTime.TryParse(v.ToString(), out _)))
             return DisplayFormat.Value(v is DateTime d ? d : DateTime.Parse(v.ToString()!), IsDateField(field));
-        return v.ToString() ?? "";
+        return DisplayFormat.FieldNumber(v, Entity ?? Object.Entity, field.Name, readOnly: true) ?? v.ToString() ?? "";
     }
 
     /// <summary>
@@ -589,7 +589,7 @@ else
             return DisplayFormat.Value(date, IsDateField(field));
         }
 
-        return AsText(v);
+        return DisplayFormat.FieldNumber(v, Entity ?? Object.Entity, field.Name, readOnly: true) ?? AsText(v);
     }
 
     private string ReadString(string name) => AsText(Object[name]);
@@ -630,7 +630,7 @@ else
         if (IsBooleanColumn(field, attribute))
             return ParseHelper.GetBooleanFromObject(v, false) ? Tr.T("Да") : "";
 
-        return v.ToString() ?? "";
+        return DisplayFormat.Number(v, EntityManager.GetEntity(field.Selector!.EntityName), attribute) ?? v.ToString() ?? "";
     }
 
     /// <summary>

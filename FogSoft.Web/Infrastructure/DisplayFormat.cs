@@ -1,5 +1,6 @@
 using System.Globalization;
 using System.Text.RegularExpressions;
+using FogSoft.WinForm.Classes;
 
 namespace FogSoft.Web.Infrastructure;
 
@@ -40,6 +41,52 @@ public static class DisplayFormat
 	}
 
 	private static readonly DateTime TimeOfDayBase = new(1900, 1, 1);
+
+	/// <summary>
+	/// Деньги и дроби в ячейке списка — по типу колонки, как десктопный SmartGrid.CreateDataGridColumn: Style.Format "c"
+	/// (валюта, с разделителем тысяч и знаком ₽) для money-колонок и "f" (два знака после запятой) для decimal/float.
+	/// Признак — ColumnInfo.IsMoneyData/IsFloatData: сначала тип атрибута из метаданных, потом тип колонки БД.
+	/// null — не деньги и не дробь, значение показывает вызывающий. Общее для ObjectList, ObjectSelector и
+	/// selector-грида карточки (решение Миши 29.10.2026 — правило веба по типу колонки, а не разметка метаданных).
+	/// </summary>
+	public static string? Number(object value, Entity entity, Entity.Attribute attribute)
+	{
+		if (value is not IConvertible)
+			return null;
+		entity.ColumnsInfo.TryGetValue(attribute.Name, out ColumnInfo? columnInfo);
+		if (ColumnInfo.IsMoneyData(columnInfo, attribute))
+			return Convert.ToDecimal(value).ToString("C");
+		if (ColumnInfo.IsFloatData(columnInfo, attribute))
+			return Convert.ToDecimal(value).ToString("F");
+		return null;
+	}
+
+	/// <summary>
+	/// Число в поле карточки по типу одноимённой колонки таблицы сущности — тот же признак, что у списков
+	/// (<see cref="Number"/>), но без округления: из поля ввода значение уходит обратно в базу. Деньги — на чтение
+	/// «5 360,00 ₽», в поле ввода «5360,00»; прочие дроби — без лишних нулей («1,0000000000» → «1», «0,8000» → «0,8»).
+	/// null — не число из базы (в том числе уже введённый текст) или у поля нет колонки: показать как есть.
+	/// </summary>
+	public static string? FieldNumber(object? value, Entity entity, string column, bool readOnly)
+	{
+		if (value is not (decimal or double or float))
+			return null;
+		// Тип атрибута списка важнее типа колонки (ColumnInfo.IsSQLType): «Сумма» порога — decimal(18,2), но в списке деньги.
+		Entity.Attribute attribute = entity.SortedAttributes.Find(a => string.Equals(a.Name, column, StringComparison.OrdinalIgnoreCase))
+			?? new Entity.Attribute(column, column, string.Empty);
+		entity.ColumnsInfo.TryGetValue(column, out ColumnInfo? columnInfo);
+		decimal number = Convert.ToDecimal(value);
+		if (ColumnInfo.IsMoneyData(columnInfo, attribute))
+		{
+			if (readOnly)
+				return number.ToString("C");
+			if (number == decimal.Round(number, 2))
+				return number.ToString("F2");
+		}
+		else if (!ColumnInfo.IsFloatData(columnInfo, attribute))
+			return null;
+		return number.ToString("0.############################");
+	}
 
 	/// <summary>24.09</summary>
 	public static string DayMonth(DateTime value) => value.ToString(DayMonthPattern);
