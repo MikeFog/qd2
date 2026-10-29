@@ -21,11 +21,13 @@ public sealed class PassportDialog
 {
 	private readonly DialogService _dialogs;
 	private readonly BusyService _busy;
+	private readonly TableDialog _tables;
 
-	public PassportDialog(DialogService dialogs, BusyService busy)
+	public PassportDialog(DialogService dialogs, BusyService busy, TableDialog tables)
 	{
 		_dialogs = dialogs;
 		_busy = busy;
+		_tables = tables;
 	}
 
 	/// <summary>
@@ -51,6 +53,9 @@ public sealed class PassportDialog
 		string? message = null;
 		string? invalidField = null;
 		Passport? passport = null;
+		// Введённое уже лежит в объекте, а запись отменена вопросом GetSaveWarning: при закрытии карточки
+		// объект перечитывается из базы, как ConfirmSave десктопа (иначе в списке видна несохранённая правка).
+		bool warningRefused = false;
 
 		while (true)
 		{
@@ -78,7 +83,11 @@ public sealed class PassportDialog
 			};
 
 			if (await _dialogs.ShowAsync(title, body) != DialogOutcome.Ok)
+			{
+				if (warningRefused && !isNew)
+					await _busy.RunAsync(() => obj.Refresh());
 				return false;
+			}
 
 			// Обязательные поля проверяются до обращения к процедуре — как
 			// ValidateUserInput в ApplyChanges.
@@ -95,6 +104,16 @@ public sealed class PassportDialog
 				// после него: связь пишется по идентификатору родителя,
 				// которого у нового объекта до Update() ещё нет.
 				passport?.ApplyChanges();
+
+				// Запись задевает другие данные (правка посчитанной скидки) — спросить до Update(); десктоп
+				// спрашивает изнутри Update() (DiscountAffectedActionsForm). «Отмена» — назад в карточку.
+				SaveWarning? warning = await _busy.RunAsync(obj.GetSaveWarning);
+				if (warning != null && !await _tables.ConfirmAsync(warning))
+				{
+					warningRefused = true;
+					message = null;
+					continue;
+				}
 
 				bool saved = await _busy.RunAsync(() =>
 				{

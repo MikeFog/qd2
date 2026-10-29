@@ -87,4 +87,33 @@ public sealed class TableDialog
 
 		await _dialogs.ShowAsync(caption, body, okText: Tr.T("Закрыть"), wide: wide, showCancel: false);
 	}
+
+	/// <summary>
+	/// Вопрос с таблицей задетого (<see cref="SaveWarning"/> ядра — «Изменение затронет акции» и т. п.): абзацы
+	/// текста, таблица с «Экспорт в Excel», кнопки согласия и «Отмена». true — пользователь согласился.
+	/// Веб-аналог DiscountAffectedActionsForm десктопа.
+	/// </summary>
+	public async Task<bool> ConfirmAsync(SaveWarning warning)
+	{
+		Entity entity = EntityManager.CreateVirtualEntity(
+			VirtualEntityId, warning.Title, "VirtualTable", pkColumn: string.Empty, attributes: warning.Columns);
+
+		RenderFragment body = builder =>
+		{
+			foreach (string paragraph in warning.Paragraphs)
+			{
+				builder.OpenElement(0, "p");
+				builder.AddContent(1, paragraph);
+				builder.CloseElement();
+			}
+			builder.OpenComponent<Components.ExportableList>(2);
+			builder.AddComponentParameter(3, nameof(Components.ExportableList.Entity), entity);
+			builder.AddComponentParameter(4, nameof(Components.ExportableList.Data), warning.Table);
+			builder.AddComponentParameter(5, nameof(Components.ExportableList.ReadOnly), true);
+			builder.AddComponentParameter(6, nameof(Components.ExportableList.Title), warning.Title);
+			builder.CloseComponent();
+		};
+
+		return await _dialogs.ShowAsync(warning.Title, body, okText: warning.OkText, wide: true) == DialogOutcome.Ok;
+	}
 }

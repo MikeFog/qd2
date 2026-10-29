@@ -261,6 +261,7 @@
     <Compile Include="Classes\Interfaces.WinForms.cs" />
     <Compile Include="Classes\PresentationObject.WinForms.cs" />
     <Compile Include="Classes\UserInteraction.cs" />
+    <Compile Include="Classes\SaveWarning.cs" />
     <Compile Include="Classes\ViewType.cs" />
     <Compile Include="Classes\Export\ExportManager.cs">
       <SubType>Code</SubType>

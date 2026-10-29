@@ -309,6 +309,21 @@ namespace FogSoft.WinForm.Classes
 			return UserInteraction.Confirm(DeleteConfirmationText);
 		}
 
+		/// <summary>
+		/// Что спросить перед записью (Update) — когда запись задевает другие данные; null — спрашивать нечего.
+		/// Как и <see cref="DeleteConfirmationText"/>, только собирает вопрос: спрашивает UI (<see cref="SaveWarning"/>).
+		/// </summary>
+		public virtual SaveWarning GetSaveWarning()
+		{
+			return null;
+		}
+
+		/// <summary>То же перед удалением, после обычного вопроса «Удалить?»; null — спрашивать нечего.</summary>
+		public virtual SaveWarning GetDeleteWarning()
+		{
+			return null;
+		}
+
 		protected virtual bool ConfirmDetach()
 		{
 			return UserInteraction.Confirm(Tr.Format(DETACH_PROMPT, Name));

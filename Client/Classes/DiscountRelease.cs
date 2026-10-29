@@ -11,6 +11,12 @@ namespace Merlin.Classes
     // Конвенция — docs/tasks/web-migration-dialogs.md.
     internal partial class DiscountRelease : ObjectContainer
     {
+        // Перед записью — акции, в которых скидка уже посчитана и которые правка может задеть (DiscountChangeImpact)
+        public override SaveWarning GetSaveWarning()
+        {
+            return DiscountChangeImpact.ForSave(this);
+        }
+
         private struct ParamNames
         {
             public const string discountReleaseID = "discountReleaseID";

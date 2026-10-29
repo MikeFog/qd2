@@ -2346,3 +2346,12 @@ code	Укажите начало новой акции.	Indique el inicio de la 
 code	У радиостанции кампании «{0}» нет действующего агентства: снимите с неё галочку.	La emisora de la pauta «{0}» no tiene ninguna agencia vigente: desmárquela.
 code	Для кампании «{0}» выберите агентство: прежнего агентства у радиостанции уже нет.	Elija una agencia para la pauta «{0}»: la emisora ya no tiene la agencia anterior.
 code	После замены агентства кампании «{0}» и «{1}» совпали бы по радиостанции, типу и типу оплаты. Оставьте в клоне только одну из них.	Tras cambiar la agencia, las pautas «{0}» y «{1}» coincidirían en emisora, tipo y tipo de pago. Deje solo una de ellas en el clon.
+code	Изменение затронет акции	El cambio afectará a campañas
+code	Скидка уже используется в рекламных кампаниях. Внесённые изменения могут повлиять на сумму этих кампаний и акций.	El descuento ya se usa en pautas publicitarias. Los cambios pueden afectar al importe de estas pautas y campañas.
+code	Скидка уже используется в акциях. Внесённые изменения могут повлиять на сумму этих акций.	El descuento ya se usa en campañas. Los cambios pueden afectar al importe de estas campañas.
+code	Сами акции сейчас не пересчитываются: скидка у них может измениться при следующем пересчёте (любая правка выпусков).	Las campañas no se recalculan ahora: su descuento puede cambiar en el próximo recálculo (cualquier cambio de las emisiones).
+code	Сохранить изменения?	¿Guardar los cambios?
+column	Начало акции	Inicio de la campaña
+column	Окончание акции	Fin de la campaña
+column	Скидка кампании	Descuento de la pauta
+sql	Подтверждена	Confirmada

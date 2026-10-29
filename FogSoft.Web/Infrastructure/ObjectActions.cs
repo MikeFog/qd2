@@ -1030,6 +1030,11 @@ public sealed partial class ObjectActions
 				okText: Tr.T("Удалить")) != DialogOutcome.Ok)
 			return ActionEffect.None;
 
+		// Удаление задевает другие данные (порог посчитанной скидки) — второй вопрос; десктоп задаёт его в ConfirmDelete().
+		SaveWarning? warning = await _busy.RunAsync(obj.GetDeleteWarning);
+		if (warning != null && !await _tables.ConfirmAsync(warning))
+			return ActionEffect.None;
+
 		return await _busy.RunAsync(() => obj.Delete(silenceFlag: true)) ? ActionEffect.Deleted : ActionEffect.None;
 	}
 

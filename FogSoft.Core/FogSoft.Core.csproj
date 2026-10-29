@@ -68,6 +68,7 @@
     <Compile Include="..\FogSoft.WinForm\Classes\InternalVariable.cs" Link="Classes\InternalVariable.cs" />
     <Compile Include="..\FogSoft.WinForm\Classes\PresentationObject.cs" Link="Classes\PresentationObject.cs" />
     <Compile Include="..\FogSoft.WinForm\Classes\UserInteraction.cs" Link="Classes\UserInteraction.cs" />
+    <Compile Include="..\FogSoft.WinForm\Classes\SaveWarning.cs" Link="Classes\SaveWarning.cs" />
     <Compile Include="..\FogSoft.WinForm\Classes\ViewType.cs" Link="Classes\ViewType.cs" />
     <Compile Include="..\FogSoft.WinForm\Classes\Money.cs" Link="Classes\Money.cs" />
     <Compile Include="..\FogSoft.WinForm\Classes\ObjectsIterator.cs" Link="Classes\ObjectsIterator.cs" />
@@ -159,6 +160,7 @@
     <Compile Include="..\Client\Classes\PackModuleIssue.cs" Link="Domain\PackModuleIssue.cs" />
     <Compile Include="..\Client\Classes\PackModulePricelist.cs" Link="Domain\PackModulePricelist.cs" />
     <Compile Include="..\Client\Classes\DiscountRelease.cs" Link="Domain\DiscountRelease.cs" />
+    <Compile Include="..\Client\Classes\DiscountChangeImpact.cs" Link="Domain\DiscountChangeImpact.cs" />
     <Compile Include="..\Client\Classes\DiscountValue.cs" Link="Domain\DiscountValue.cs" />
     <Compile Include="..\Client\Classes\PackageDiscount.cs" Link="Domain\PackageDiscount.cs" />
     <Compile Include="..\Client\Classes\PackageDiscountMassmedia.cs" Link="Domain\PackageDiscountMassmedia.cs" />

@@ -20,7 +20,8 @@
 @discount decimal(9,4) = NULL,
 @value decimal(18,2) = NULL,
 @eachVolume tinyint = NULL,              -- как в PackageDiscountPriceListIUD
-@count tinyint = NULL
+@count tinyint = NULL,
+@languageCode VARCHAR(10) = 'ru'        -- язык интерфейса веба (docs/tasks/web-i18n.md); десктоп не передаёт
 )
 WITH EXECUTE AS OWNER
 AS
@@ -28,6 +29,9 @@ SET NOCOUNT ON
 
 DECLARE @campaigns TABLE (campaignID int PRIMARY KEY)   -- объёмная скидка: по кампаниям
 DECLARE @actions TABLE (actionID int PRIMARY KEY)       -- пакетная скидка: по акциям
+
+DECLARE @tConfirmed NVARCHAR(200) = dbo.fn_Translate(@languageCode, N'Подтверждена');
+DECLARE @tDraft NVARCHAR(200) = dbo.fn_Translate(@languageCode, N'Макет');
 
 SET @startDate = CAST(@startDate AS date)
 SET @finishDate = CAST(@finishDate AS date)
@@ -93,7 +97,7 @@ SELECT
 FROM (
 	SELECT a.actionID, c.campaignID, mm.name AS massmedia, f.name AS firm, u.userName AS manager,
 		a.startDate, a.finishDate,
-		CASE WHEN a.isConfirmed = 1 THEN N'Подтверждена' ELSE N'Макет' END AS status,
+		CASE WHEN a.isConfirmed = 1 THEN @tConfirmed ELSE @tDraft END AS status,
 		c.discount
 	FROM @campaigns t
 		JOIN Campaign c ON c.campaignID = t.campaignID
@@ -105,7 +109,7 @@ FROM (
 	UNION ALL
 	SELECT a.actionID, NULL, NULL, f.name, u.userName,
 		a.startDate, a.finishDate,
-		CASE WHEN a.isConfirmed = 1 THEN N'Подтверждена' ELSE N'Макет' END,
+		CASE WHEN a.isConfirmed = 1 THEN @tConfirmed ELSE @tDraft END,
 		a.discount
 	FROM @actions t
 		JOIN [Action] a ON a.actionID = t.actionID

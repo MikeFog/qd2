@@ -127,7 +127,7 @@ stat_VolumeOfRealizationByMonth3, TariffPassport, PaymentsCommon, строка �
   (сущность 201): v1 мёртвая (нет ни в метаданных, ни в C#), v2 удалена Deploy/20. Прежняя причина отсрочки
   (невыкаченные правки скидок, сортировки тарифов, Deploy/06) снята: всё это на проде с 20.09 и 29.09.
 - Не сделано (осознанно):
-  `GetPackModuleIssueDetails`, `DiscountChangeAffectedActions` — только десктопные формы;
+  `GetPackModuleIssueDetails` — только десктопные формы (`DiscountChangeAffectedActions` — переведена 29.10.2026, Deploy/86);
   уведомления, которые пишутся в таблицы (`Announcement`), и логика на русских строках.
 - Обёртки IUD (`ActionIUD`, `CampaignIUD`, `PricelistIUD`, `TariffIUD`, `DiscountReleaseIUD`, … — 14 штук)
   вызывают процедуры чтения без языка. В SQL их не трогаем (у `ActionIUD`, `TariffIUD`, `PricelistIUD` цепочки

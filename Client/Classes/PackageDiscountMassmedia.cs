@@ -9,6 +9,17 @@ namespace Merlin.Classes
 	// Конвенция — docs/tasks/web-migration-dialogs.md.
 	internal partial class PackageDiscountMassmedia : PresentationObject
 	{
+		// Перед записью — акции, в которых скидка уже посчитана и которые правка может задеть (DiscountChangeImpact)
+		public override SaveWarning GetSaveWarning()
+		{
+			return DiscountChangeImpact.ForSave(this);
+		}
+
+		public override SaveWarning GetDeleteWarning()
+		{
+			return DiscountChangeImpact.ForDelete(this);
+		}
+
 		public PackageDiscountMassmedia() : base(EntityManager.GetEntity((int)Entities.PackageDiscountMassmedia))
 		{
 		}

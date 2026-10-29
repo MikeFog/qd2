@@ -1,26 +1,23 @@
 using System;
-using System.Collections.Generic;
-using System.Data;
 using System.Drawing;
 using System.Windows.Forms;
 using FogSoft.WinForm;
 using FogSoft.WinForm.Classes;
 using FogSoft.WinForm.Classes.Export;
 using FogSoft.WinForm.Controls;
-using FogSoft.WinForm.DataAccess;
 
 namespace Merlin.Forms
 {
 	/// <summary>
 	/// Предупреждение перед сохранением правки скидки (объёмной или пакетной): список акций, в которых
-	/// эта скидка уже посчитана и которым правка может её поменять при следующем пересчёте
-	/// (процедура DiscountChangeAffectedActions). Решает человек: «Сохранить» — правка пишется,
+	/// эта скидка уже посчитана и которым правка может её поменять при следующем пересчёте.
+	/// Что спросить, собирает ядро (DiscountChangeImpact → PresentationObject.GetSaveWarning/GetDeleteWarning,
+	/// то же спрашивает веб); форма только показывает. Решает человек: «Сохранить» — правка пишется,
 	/// акции не пересчитываются; «Отмена» — сохранение не происходит.
 	/// </summary>
 	public class DiscountAffectedActionsForm : Form
 	{
 		private const int VirtualEntityId = -5200;
-		private const string ProcedureName = "DiscountChangeAffectedActions";
 
 		private readonly SmartGrid grid;
 
@@ -33,15 +30,10 @@ namespace Merlin.Forms
 		/// </summary>
 		public static bool ConfirmSave(PresentationObject po)
 		{
-			// Копия исходную скидку не меняет
-			if (po.Parameters.TryGetValue(Constants.ParamNames.ActionName, out object action)
-				&& action as string == Constants.Actions.Clone)
-				return true;
-
 			bool confirmed = false;
 			try
 			{
-				confirmed = Confirm(po, po.IsNew ? Constants.Actions.AddItem : Constants.Actions.Update);
+				confirmed = Confirm(po.GetSaveWarning());
 				return confirmed;
 			}
 			finally
@@ -54,44 +46,23 @@ namespace Merlin.Forms
 		/// <summary>Перед удалением строки, которая входит в содержимое скидки (порог, станция пакета).</summary>
 		public static bool ConfirmDelete(PresentationObject po)
 		{
-			return Confirm(po, Constants.Actions.Delete);
+			return Confirm(po.GetDeleteWarning());
 		}
 
-		private static bool Confirm(PresentationObject po, string actionName)
+		private static bool Confirm(SaveWarning warning)
 		{
-			Dictionary<string, object> parameters = po.Parameters;
-			parameters["entityID"] = po.Entity.Id;
-			parameters[Constants.ParamNames.ActionName] = actionName;
-
-			DataTable affected = DataAccessor.LoadDataSet(ProcedureName, parameters).Tables[0];
-			if (affected.Rows.Count == 0)
+			if (warning == null)
 				return true;
 
-			bool byCampaign = po.Entity.Id == (int)Entities.DiscountRelease || po.Entity.Id == (int)Entities.DiscountValue;
-			using (DiscountAffectedActionsForm form = new DiscountAffectedActionsForm(affected, byCampaign))
+			using (DiscountAffectedActionsForm form = new DiscountAffectedActionsForm(warning))
 				return form.ShowDialog(Form.ActiveForm) == DialogResult.OK;
 		}
 
-		private DiscountAffectedActionsForm(DataTable affected, bool byCampaign)
+		private DiscountAffectedActionsForm(SaveWarning warning)
 		{
-			List<Entity.Attribute> attributes = new List<Entity.Attribute>
-			{
-				new Entity.Attribute("actionID", "Акция", "int"),
-				new Entity.Attribute("firm", "Фирма", "nvarchar"),
-				new Entity.Attribute("manager", "Менеджер", "nvarchar"),
-				new Entity.Attribute("startDate", "Начало акции", "datetime"),
-				new Entity.Attribute("finishDate", "Окончание акции", "datetime"),
-				new Entity.Attribute("status", "Статус", "nvarchar"),
-			};
-			if (byCampaign)
-			{
-				attributes.Add(new Entity.Attribute("massmedia", "Радиостанция", "nvarchar"));
-			}
-			attributes.Add(new Entity.Attribute("discount", byCampaign ? "Скидка кампании" : "Пакетная скидка", "float"));
-
 			Entity entity = EntityManager.CreateVirtualEntity(
 				VirtualEntityId, "Затронутые акции", "DiscountAffectedActions", "rowID", string.Empty,
-				attributes.ToArray());
+				warning.Columns);
 
 			grid = new SmartGrid { Dock = DockStyle.Fill, MenuEnabled = false };
 
@@ -100,16 +71,10 @@ namespace Merlin.Forms
 				AutoSize = true,
 				Dock = DockStyle.Fill,
 				Padding = new Padding(0, 0, 0, 6),
-				Text = string.Format(
-					"Скидка уже используется в {0}. Внесённые изменения могут повлиять на сумму {1}.{2}" +
-					"Сами акции сейчас не пересчитываются: скидка у них может измениться при следующем пересчёте " +
-					"(любая правка выпусков).{2}Сохранить изменения?",
-					byCampaign ? "рекламных кампаниях" : "акциях",
-					byCampaign ? "этих кампаний и акций" : "этих акций",
-					Environment.NewLine)
+				Text = string.Join(Environment.NewLine, warning.Paragraphs)
 			};
 
-			Button btnOk = new Button { Text = "Сохранить", Size = new Size(100, 33), DialogResult = DialogResult.OK, FlatStyle = FlatStyle.System };
+			Button btnOk = new Button { Text = warning.OkText, Size = new Size(100, 33), DialogResult = DialogResult.OK, FlatStyle = FlatStyle.System };
 			Button btnCancel = new Button { Text = "Отмена", Size = new Size(100, 33), DialogResult = DialogResult.Cancel, FlatStyle = FlatStyle.System };
 
 			ToolStripButton tsbExcel = new ToolStripButton
@@ -138,7 +103,7 @@ namespace Merlin.Forms
 			layout.Controls.Add(grid, 0, 2);
 			layout.Controls.Add(buttons, 0, 3);
 
-			Text = "Изменение затронет акции";
+			Text = warning.Title;
 			Font = new Font("Segoe UI Variable Text", 9F, FontStyle.Regular, GraphicsUnit.Point, 204);
 			ClientSize = new Size(1150, 520);
 			StartPosition = FormStartPosition.CenterParent;
@@ -149,7 +114,7 @@ namespace Merlin.Forms
 			Controls.Add(layout);
 
 			grid.Entity = entity;
-			grid.DataSource = affected.DefaultView;
+			grid.DataSource = warning.Table.DefaultView;
 			Shown += (s, e) => grid.AdjustColumnsWidth();
 		}
 
