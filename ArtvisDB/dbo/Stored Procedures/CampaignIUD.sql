@@ -217,7 +217,10 @@ ELSE IF @actionName = 'UpdateItem' BEGIN
           AND p.isEnabled  = 1;
 
         IF @conflictingPaymentID IS NOT NULL
+        BEGIN
             RAISERROR('CannotChangeAgency_PaymentExists', 16, 1);
+            RETURN;
+        END
     END
 
     -- Check paymentTypeID change: block if a linked payment has the old paymentTypeID
@@ -234,7 +237,10 @@ ELSE IF @actionName = 'UpdateItem' BEGIN
           AND p.isEnabled         = 1;
 
         IF @conflictingPaymentID2 IS NOT NULL
+        BEGIN
             RAISERROR('CannotChangePaymentType_PaymentExists', 16, 1);
+            RETURN;
+        END
     END
 
     -- Вид оплаты (PaymentType.isHidden) кампании сменился или она уходит в другую акцию
