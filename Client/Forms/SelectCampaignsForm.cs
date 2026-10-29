@@ -22,7 +22,6 @@ namespace Merlin.Forms
     internal partial class SelectCampaignsForm : Form
     {
         private const string SELECTION_COLUMN_NAME = "isSelected";
-        private const string CLONEDATE_COLUMN_NAME = "cloneDate";
         private const string SPLITTYPE_COLUMN_NAME = "splitType";
         private const string SPLITDATE_COLUMN_NAME = "splitDate";
         private const string CONTRACTDATE_COLUMN_NAME = "contractDate";
@@ -37,6 +36,9 @@ namespace Merlin.Forms
         private Dictionary<int, ActionOnMassmedia.CloneAgencyPlan> _agencyPlans;
         private Dictionary<int, int> _chosenAgencies;
         private int _newAgencyColumnIndex = -1;
+        // Режим Clone: одна дата — начало новой акции (решение заказчика 29.10.2026; было — своя дата у каждой кампании).
+        private DateTimePicker _dtpCloneStart;
+        private DateTime _cloneStartDate;
 
         public SelectCampaignsForm()
         {
@@ -66,6 +68,12 @@ namespace Merlin.Forms
         public List<ActionOnMassmedia.SplitRule> SplitRules
         {
             get => _splitRules; 
+        }
+
+        /// <summary>Режим Clone: начало новой акции.</summary>
+        public DateTime CloneStartDate
+        {
+            get => _cloneStartDate;
         }
 
         /// <summary>Режим Clone: campaignID → выбранное пользователем агентство (где действующих у станции несколько).</summary>
@@ -101,7 +109,7 @@ namespace Merlin.Forms
             {
                 dtData = _action.Campaigns();
                 _entity.AttributeSelector = 1;
-                dtData.Columns.Add(CLONEDATE_COLUMN_NAME, typeof(DateTime));
+                AddCloneStartDate();
                 PrepareCloneAgencies(dtData);
                 EnlargeForCloneAgencies();
             }
@@ -142,10 +150,48 @@ namespace Merlin.Forms
                 PrepareAgencyData();
         }
 
+        // Строка над таблицей: «Начало новой акции» — одна дата на все кампании.
+        private void AddCloneStartDate()
+        {
+            _dtpCloneStart = new DateTimePicker
+            {
+                Format = DateTimePickerFormat.Short,
+                Value = DateTime.Today,
+                Width = 140,
+                Anchor = AnchorStyles.Left
+            };
+            var panel = new FlowLayoutPanel { AutoSize = true, Dock = DockStyle.Fill, Margin = new Padding(0, 0, 0, 8), WrapContents = false };
+            panel.Controls.Add(new Label { Text = "Начало новой акции:", AutoSize = true, Anchor = AnchorStyles.Left, Margin = new Padding(0, 6, 6, 0) });
+            panel.Controls.Add(_dtpCloneStart);
+            panel.Controls.Add(new Label
+            {
+                Text = "Все кампании сдвигаются на одно число дней: самая ранняя из отмеченных начнётся в этот день.",
+                AutoSize = true,
+                Anchor = AnchorStyles.Left,
+                ForeColor = SystemColors.GrayText,
+                Margin = new Padding(12, 6, 0, 0)
+            });
+
+            tableLayoutPanel1.SuspendLayout();
+            tableLayoutPanel1.RowCount = 3;
+            tableLayoutPanel1.RowStyles.Insert(0, new RowStyle(SizeType.AutoSize));
+            tableLayoutPanel1.SetRow(flowLayoutPanel1, 2);
+            tableLayoutPanel1.SetRow(grdObjects, 1);
+            tableLayoutPanel1.Controls.Add(panel, 0, 0);
+            tableLayoutPanel1.ResumeLayout(true);
+        }
+
         private void PrepareCloneData()
         {
             _selectedItems = new List<ObjectAndDate>();
             _chosenAgencies = new Dictionary<int, int>();
+            _cloneStartDate = _dtpCloneStart.Value.Date;
+            if (_cloneStartDate < DateTime.Today)
+            {
+                UserMessage.ShowExclamation(MessageAccessor.GetMessage("NotAllowedDataInThePast"));
+                DialogResult = DialogResult.None;
+                return;
+            }
             var selectedPlans = new List<ActionOnMassmedia.CloneAgencyPlan>();
             var selectedNames = new Dictionary<int, string>();
 
@@ -165,22 +211,7 @@ namespace Merlin.Forms
                     if (agencyPlan.Candidates.Count > 1)
                         _chosenAgencies[agencyPlan.CampaignId] = agencyPlan.NewAgencyId.Value;
 
-                    if (row[CLONEDATE_COLUMN_NAME] == DBNull.Value)
-                    {
-                        UserMessage.ShowExclamation(MessageAccessor.GetMessage("NoCloneDataSelected"));
-                        DialogResult = DialogResult.None;
-                        return;
-                    }
-
-                    DateTime newDate = (DateTime)row[CLONEDATE_COLUMN_NAME];
-                    if (newDate < DateTime.Today)
-                    {
-                        UserMessage.ShowExclamation(MessageAccessor.GetMessage("NotAllowedDataInThePast"));
-                        DialogResult = DialogResult.None;
-                        return;
-                    }
-
-                    _selectedItems.Add(new ObjectAndDate { date = (DateTime)row[CLONEDATE_COLUMN_NAME], presentationObject = Campaign.GetCampaignById((int)row["campaignID"]) });
+                    _selectedItems.Add(new ObjectAndDate { date = _cloneStartDate, presentationObject = Campaign.GetCampaignById((int)row["campaignID"]) });
                 }
             }
 

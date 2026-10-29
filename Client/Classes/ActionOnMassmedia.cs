@@ -394,7 +394,7 @@ namespace Merlin.Classes
         // в CampaignIUD/MergeActions). Здесь — проверки до создания новой акции (клон,
         // разделение), чтобы отказ не оставлял недоделанную акцию.
 
-        internal const string PaymentKindMixedMessage = "PaymentKindMixedInAction";
+        public const string PaymentKindMixedMessage = "PaymentKindMixedInAction";
 
         /// <summary>Типы оплаты с признаком «Не включать в счет на предоплату».</summary>
         private static HashSet<int> PaymentTypesExcludedFromBill()
@@ -408,7 +408,7 @@ namespace Merlin.Classes
         }
 
         /// <summary>Среди типов оплаты есть и с признаком «Не включать в счет на предоплату», и без.</summary>
-        internal static bool ArePaymentKindsMixed(IEnumerable<int> paymentTypeIds)
+        public static bool ArePaymentKindsMixed(IEnumerable<int> paymentTypeIds)
         {
             HashSet<int> excluded = PaymentTypesExcludedFromBill();
             bool hasExcluded = false, hasIncluded = false;
@@ -560,7 +560,7 @@ namespace Merlin.Classes
         }
 
         /// <summary>Что делать с агентством кампании при клонировании.</summary>
-        internal enum CloneAgencyState
+        public enum CloneAgencyState
         {
             /// <summary>Агентство по-прежнему у станции — остаётся.</summary>
             Keep,
@@ -577,7 +577,7 @@ namespace Merlin.Classes
         /// за это время могла сменить агентство, и счета по новой акции ушли бы не тому агентству: действующие
         /// агентства станции (MassmediaAgencies) сверяются до клонирования, а не после.
         /// </summary>
-        internal sealed class CloneAgencyPlan
+        public sealed class CloneAgencyPlan
         {
             /// <param name="get">Читает параметр исходной кампании по имени (строка журнала или объект).</param>
             public CloneAgencyPlan(Func<string, object> get)
@@ -629,7 +629,7 @@ namespace Merlin.Classes
         /// Определяет для каждой кампании, что будет с её агентством. Действующие агентства станции читаются
         /// один раз на станцию; у пакетной кампании станции нет — берутся агентства пользователя, как при её создании.
         /// </summary>
-        internal static void PlanCloneAgencies(IEnumerable<CloneAgencyPlan> plans)
+        public static void PlanCloneAgencies(IEnumerable<CloneAgencyPlan> plans)
         {
             var byStation = new Dictionary<int, List<KeyValuePair<int, string>>>();
             List<KeyValuePair<int, string>> userAgencies = null;
@@ -687,7 +687,7 @@ namespace Merlin.Classes
         /// (станция, вид, тип оплаты, агентство — UIX_Campaign): было два агентства на одной станции, действующее осталось одно.
         /// Только среди плановых кампаний с уже определённым агентством. null — совпадений нет.
         /// </summary>
-        internal static (CloneAgencyPlan first, CloneAgencyPlan second)? FindCloneAgencyCollision(IEnumerable<CloneAgencyPlan> plans)
+        public static (CloneAgencyPlan first, CloneAgencyPlan second)? FindCloneAgencyCollision(IEnumerable<CloneAgencyPlan> plans)
         {
             var seen = new Dictionary<(int?, int, int, int), CloneAgencyPlan>();
             foreach (CloneAgencyPlan plan in plans)
@@ -703,8 +703,29 @@ namespace Merlin.Classes
         }
 
         /// <summary>
-        /// Клонирует акцию с выбранными кампаниями (<paramref name="selectedItems"/> —
-        /// дата клонирования и исходная кампания). Возвращает новую акцию;
+        /// Сдвиг клона в днях: самая ранняя из <paramref name="campaigns"/> начнётся <paramref name="newStartDate"/>,
+        /// остальные сдвигаются на столько же — взаимное расположение кампаний сохраняется (решение заказчика 29.10.2026:
+        /// одна дата — начало новой акции, а не своя дата у каждой кампании). Кампании без выпусков (начала нет) не в счёт.
+        /// </summary>
+        public static int CloneShiftDays(DateTime newStartDate, IEnumerable<PresentationObject> campaigns)
+        {
+            DateTime? first = null;
+            foreach (PresentationObject campaign in campaigns)
+            {
+                // У кампании без выпусков даты начала нет (NULL); DateTime.Parse("") ронял бы клон.
+                string startDateText = campaign[Campaign.ParamNames.StartDate]?.ToString();
+                if (string.IsNullOrEmpty(startDateText))
+                    continue;
+                DateTime start = DateTime.Parse(startDateText).Date;
+                if (first == null || start < first)
+                    first = start;
+            }
+            return first == null ? 0 : (newStartDate.Date - first.Value).Days;
+        }
+
+        /// <summary>
+        /// Клонирует акцию с выбранными кампаниями так, что новая акция начинается
+        /// <paramref name="newStartDate"/> (<see cref="CloneShiftDays"/>). Возвращает новую акцию;
         /// <paramref name="tableErrors"/> — таблица ошибок по отдельным кампаниям
         /// (пустая, если ошибок не было).
         /// </summary>
@@ -714,15 +735,25 @@ namespace Merlin.Classes
         /// Где агентство нельзя определить (нет действующих, выбор не сделан, пара совпала по ключу) —
         /// InvalidOperationException до создания акции: форма выбора кампаний такого не пропускает.
         /// </param>
-        internal ActionOnMassmedia ApplyClone(IEnumerable<(DateTime date, PresentationObject campaign)> selectedItems, out DataTable tableErrors,
+        public ActionOnMassmedia ApplyClone(DateTime newStartDate, IEnumerable<int> campaignIds, out DataTable tableErrors,
             IReadOnlyDictionary<int, int> chosenAgencies = null)
         {
-            var items = new List<(DateTime date, PresentationObject campaign)>(selectedItems);
-            EnsurePaymentKindsNotMixed(items.ConvertAll(item => item.campaign));
+            var campaigns = new List<PresentationObject>();
+            foreach (int campaignId in campaignIds)
+                campaigns.Add(Campaign.GetCampaignById(campaignId));
+            return ApplyClone(newStartDate, campaigns, out tableErrors, chosenAgencies);
+        }
+
+        /// <inheritdoc cref="ApplyClone(DateTime, IEnumerable{int}, out DataTable, IReadOnlyDictionary{int, int})"/>
+        public ActionOnMassmedia ApplyClone(DateTime newStartDate, IEnumerable<PresentationObject> campaigns, out DataTable tableErrors,
+            IReadOnlyDictionary<int, int> chosenAgencies = null)
+        {
+            var items = new List<PresentationObject>(campaigns);
+            EnsurePaymentKindsNotMixed(items);
+            int shiftInDays = CloneShiftDays(newStartDate, items);
             var plans = new Dictionary<int, CloneAgencyPlan>();
-            foreach (var item in items)
+            foreach (PresentationObject campaign in items)
             {
-                PresentationObject campaign = item.campaign;
                 var plan = new CloneAgencyPlan(name => campaign[name]);
                 plans[plan.CampaignId] = plan;
             }
@@ -745,25 +776,21 @@ namespace Merlin.Classes
 
             tableErrors = ErrorManager.CreateErrorsTable();
 
-            foreach (var item in items)
+            foreach (PresentationObject campaign in items)
             {
-                int campaignTypeId = int.Parse(item.campaign[Campaign.ParamNames.CampaignTypeId].ToString());
-                CloneAgencyPlan agencyPlan = plans[Convert.ToInt32(item.campaign[Campaign.ParamNames.CampaignId])];
+                int campaignTypeId = int.Parse(campaign[Campaign.ParamNames.CampaignTypeId].ToString());
+                CloneAgencyPlan agencyPlan = plans[Convert.ToInt32(campaign[Campaign.ParamNames.CampaignId])];
 
                 Campaign newCampaign = Campaign.CreateInstance(
                     campaignTypeId,
-                    int.Parse(item.campaign[Campaign.ParamNames.PaymentTypeID].ToString()),
+                    int.Parse(campaign[Campaign.ParamNames.PaymentTypeID].ToString()),
                     campaignTypeId == (int)Campaign.CampaignTypes.PackModule ?
-                        null : (int?)int.Parse(item.campaign[Campaign.ParamNames.MassmediaId].ToString()),
+                        null : (int?)int.Parse(campaign[Campaign.ParamNames.MassmediaId].ToString()),
                     agencyPlan.NewAgencyId.Value);
                 newCampaign[ParamNames.ActionId] = newAction[ParamNames.ActionId];
                 newCampaign.Update();
-                // У кампании без выпусков даты начала нет (NULL), переносить нечего — сдвиг не нужен;
-                // раньше DateTime.Parse("") ронял клон уже после создания новой акции и кампании.
-                string startDateText = item.campaign[Campaign.ParamNames.StartDate]?.ToString();
-                int shiftInDays = string.IsNullOrEmpty(startDateText) ? 0 : (item.date - DateTime.Parse(startDateText)).Days;
 
-                Campaign selectedCampaign = (Campaign)item.campaign;
+                Campaign selectedCampaign = (Campaign)campaign;
 
                 if (selectedCampaign.CampaignType == Campaign.CampaignTypes.Simple)
                     CloneRollerIssues(selectedCampaign, newCampaign, shiftInDays, tableErrors);

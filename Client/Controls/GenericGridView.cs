@@ -20,7 +20,6 @@ namespace Merlin.Controls
             public const int ComboBox = 6;
             public const int Calendar = 7;
             public const int Calendar_Agency = 2;
-            public const int Calendar_Clone = 6;
         }
 
         public GenericGridView()
@@ -102,13 +101,7 @@ namespace Merlin.Controls
                     }
                 }
             }
-            else
-            {
-                var calendarCell = row.Cells[ColumnIndex.Calendar_Clone];
-                enableCell(calendarCell, isChecked);
-                if (isChecked)
-                    StartCalendarEdit(calendarCell);
-            }
+            // Clone: календаря в строках нет — дата одна на всю акцию, над таблицей (SelectCampaignsForm).
         }
 
         protected override void OnEditingControlShowing(DataGridViewEditingControlShowingEventArgs e)

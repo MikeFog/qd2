@@ -400,6 +400,7 @@ public sealed partial class ObjectActions
 			[Merlin.Classes.Action.ActionNames.Deactivate] = (s, t) => s.DeactivateAction((Merlin.Classes.ActionOnMassmedia)t),
 			[Merlin.Classes.Action.ActionNames.Merge] = (s, t) => s.MergeActions((Merlin.Classes.ActionOnMassmedia)t),
 			[Merlin.Classes.Action.ActionNames.SplitAction] = (s, t) => s.SplitAction((Merlin.Classes.ActionOnMassmedia)t),
+			[Merlin.Classes.Action.ActionNames.Clone] = (s, t) => s.CloneAction((Merlin.Classes.ActionOnMassmedia)t),
 			[Merlin.Classes.Action.ActionNames.ActionRollers] = (s, t) => s.ShowActionRollers((Merlin.Classes.ActionOnMassmedia)t),
 			[Merlin.Classes.Action.ActionNames.Restore] = (s, t) => s.RestoreAction((Merlin.Classes.ActionOnMassmedia)t),
 			[Merlin.Classes.Action.ActionNames.ChangePaymentTypeMass] = (s, t) => s.ChangePaymentTypeMass((Merlin.Classes.ActionOnMassmedia)t),
@@ -1889,6 +1890,99 @@ public sealed partial class ObjectActions
 		List<PresentationObject> toMove = picked.Select(entity.CreateObject).ToList();
 		await _busy.RunAsync(() => action.ApplySplitAction(toMove));
 		return ActionEffect.SiblingAdded;
+	}
+
+	/// <summary>
+	/// ActionOnMassmedia.Clone: одна дата — начало новой акции (решение заказчика 29.10.2026), кампании галочками,
+	/// агентство новой кампании — по проверке ядра (PlanCloneAgencies, Д-46). Отказы по выпускам — таблицей,
+	/// затем — страница новой акции (десктоп показывает её выпуски журналом).
+	/// </summary>
+	private async Task<ActionEffect> CloneAction(Merlin.Classes.ActionOnMassmedia action)
+	{
+		var model = await _busy.RunAsync(() =>
+		{
+			DataTable campaigns = action.Campaigns();
+			var plans = new Dictionary<int, Merlin.Classes.ActionOnMassmedia.CloneAgencyPlan>();
+			foreach (DataRow row in campaigns.Rows)
+			{
+				DataRow source = row;
+				var plan = new Merlin.Classes.ActionOnMassmedia.CloneAgencyPlan(name => source[name]);
+				plans[plan.CampaignId] = plan;
+			}
+			Merlin.Classes.ActionOnMassmedia.PlanCloneAgencies(plans.Values);
+			return new ActionCloneForm.Model
+			{
+				CampaignEntity = Merlin.Classes.ActionOnMassmedia.CampaignListEntity(),
+				Campaigns = campaigns,
+				Plans = plans,
+				Chosen = plans.Values.Where(p => p.Candidates.Count > 1).ToDictionary(p => p.CampaignId, p => p.NewAgencyId),
+				StartDate = DateTime.Today,
+			};
+		});
+
+		string caption = Tr.Format("Клонировать рекламную акцию № {0}", action.ActionId);
+		while (true)
+		{
+			if (await _dialogs.ShowAsync(caption, builder =>
+				{
+					builder.OpenComponent<ActionCloneForm>(0);
+					builder.AddComponentParameter(1, nameof(ActionCloneForm.Value), model);
+					builder.CloseComponent();
+				}, okText: Tr.T("Клонировать"), wide: true) != DialogOutcome.Ok)
+				return ActionEffect.None;
+
+			model.Message = await _busy.RunAsync(() => CloneProblem(model));
+			if (model.Message == null)
+				break;
+		}
+
+		Merlin.Classes.ActionOnMassmedia? newAction = null;
+		DataTable? errors = null;
+		await _busy.RunAsync(() =>
+		{
+			List<int> campaignIds = model.Selected.Select(r => Convert.ToInt32(r["campaignID"])).ToList();
+			var chosen = model.Chosen.Where(c => c.Value != null && model.Selected.Any(r => model.PlanOf(r).CampaignId == c.Key))
+				.ToDictionary(c => c.Key, c => c.Value!.Value);
+			newAction = action.ApplyClone(model.StartDate!.Value.Date, campaignIds, out errors, chosen);
+		});
+		if (errors is { Rows.Count: > 0 })
+			await _tables.ShowAsync(Tr.T("Ошибки клонирования"), errors,
+				new Entity.Attribute("issueDate", "Дата", "datetime"), // i18n-ok: Alias переводится при показе (ObjectList)
+				new Entity.Attribute("description", "Ошибка", "nvarchar")); // i18n-ok: Alias переводится при показе (ObjectList)
+		_navigation.NavigateTo(FogSoft.Web.Components.Pages.ActionPage.Url(newAction!.ActionId));
+		return ActionEffect.SiblingAdded;
+	}
+
+	/// <summary>Почему по «ОК» клонировать нельзя (то же, что SelectCampaignsForm.PrepareCloneData); null — можно.</summary>
+	private static string? CloneProblem(ActionCloneForm.Model model)
+	{
+		if (model.StartDate == null)
+			return Tr.T("Укажите начало новой акции.");
+		if (model.StartDate.Value.Date < DateTime.Today)
+			return MessageAccessor.GetMessage("NotAllowedDataInThePast");
+		if (model.Selected.Count == 0)
+			return MessageAccessor.GetMessage("NoCampaignSelected");
+
+		var plans = new List<Merlin.Classes.ActionOnMassmedia.CloneAgencyPlan>();
+		var names = new Dictionary<int, string>();
+		foreach (DataRow row in model.Selected)
+		{
+			var plan = model.PlanOf(row);
+			if (plan.State == Merlin.Classes.ActionOnMassmedia.CloneAgencyState.Missing)
+				return Tr.Format("У радиостанции кампании «{0}» нет действующего агентства: снимите с неё галочку.", row["name"]);
+			// Где агентств несколько, выбор — в списке окна (по умолчанию прежнее, если оно ещё действует).
+			if (model.Chosen.TryGetValue(plan.CampaignId, out int? chosen) && (chosen == null || !plan.TryChoose(chosen.Value)))
+				return Tr.Format(Merlin.Properties.Resources.CloneAgencyNotChosen, row["name"]);
+			plans.Add(plan);
+			names[plan.CampaignId] = Convert.ToString(row["name"]) ?? "";
+		}
+		var collision = Merlin.Classes.ActionOnMassmedia.FindCloneAgencyCollision(plans);
+		if (collision != null)
+			return Tr.Format(Merlin.Properties.Resources.CloneAgencyCollision,
+				names[collision.Value.first.CampaignId], names[collision.Value.second.CampaignId]);
+		if (Merlin.Classes.ActionOnMassmedia.ArePaymentKindsMixed(model.Selected.Select(r => Convert.ToInt32(r["paymentTypeID"]))))
+			return MessageAccessor.GetMessage(Merlin.Classes.ActionOnMassmedia.PaymentKindMixedMessage);
+		return null;
 	}
 
 	/// <summary>ActionOnMassmedia.ShowRollers: журнал «Статистика по роликам» под одну акцию.</summary>

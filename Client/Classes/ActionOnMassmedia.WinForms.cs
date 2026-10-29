@@ -338,20 +338,16 @@ namespace Merlin.Classes
 				{
 					Cursor.Current = Cursors.WaitCursor;
 
-					var items = new List<(DateTime, PresentationObject)>();
 					var campaigns = new List<PresentationObject>();
 					foreach (var item in form.SelectedItems)
-					{
-						items.Add((item.date, item.presentationObject));
 						campaigns.Add(item.presentationObject);
-					}
 					if (ArePaymentKindsMixed(campaigns))
 					{
 						UserMessage.ShowExclamation(MessageAccessor.GetMessage(PaymentKindMixedMessage));
 						return;
 					}
 
-					ActionOnMassmedia newAction = ApplyClone(items, out DataTable tableErrors, form.ChosenAgencies);
+					ActionOnMassmedia newAction = ApplyClone(form.CloneStartDate, campaigns, out DataTable tableErrors, form.ChosenAgencies);
 
 					if (tableErrors.Rows.Count > 0)
 						Globals.ShowSimpleJournal(EntityManager.GetEntity((int)Entities.ErrTmplGen), "Ошибки клонирования", tableErrors);

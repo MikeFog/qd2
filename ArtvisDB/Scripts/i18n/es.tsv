@@ -2334,3 +2334,15 @@ message	В одной рекламной акции все кампании до
 message	У выбранного типа оплаты признак «Не включать в счет на предоплату» другой, чем у остальных кампаний акции, а в одной акции все кампании должны быть одного вида. Отметьте все кампании акции. Операция прервана.	El tipo de pago elegido tiene la marca «No incluir en la factura de anticipo» distinta de la de las demás pautas de la campaña publicitaria, y en una misma campaña publicitaria todas las pautas deben ser del mismo grupo. Marque todas las pautas de la campaña. Operación cancelada.
 message	Тип оплаты не изменён ни у одной кампании: при смене признака «Не включать в счет на предоплату» кампании акции меняются только все вместе.	El tipo de pago no se cambió en ninguna pauta: al cambiar la marca «No incluir en la factura de anticipo», las pautas de la campaña publicitaria solo se cambian todas juntas.
 message	Признак «Не включать в счет на предоплату» нельзя изменить: этот тип оплаты стоит в рекламных акциях вместе с другими типами оплаты, а в одной акции все кампании должны быть одного вида. Операция прервана.	No se puede cambiar la marca «No incluir en la factura de anticipo»: este tipo de pago se usa en campañas publicitarias junto con otros tipos de pago, y en una misma campaña publicitaria todas las pautas deben ser del mismo grupo. Operación cancelada.
+
+code	Клонировать рекламную акцию № {0}	Clonar la campaña publicitaria n.º {0}
+code	Начало новой акции	Inicio de la nueva campaña
+code	Все кампании сдвигаются на одно число дней: самая ранняя из отмеченных начнётся в этот день.	Todas las pautas se desplazan el mismo número de días: la más temprana de las marcadas empezará ese día.
+code	Было: {0} – {1}, станет: {2} – {3}	Antes: {0} – {1}, después: {2} – {3}
+code	Агентство в новой акции:	Agencia en la nueva campaña:
+code	У станции нет действующего агентства: клонировать нельзя	La emisora no tiene ninguna agencia vigente: no se puede clonar
+code	{0} (прежнего «{1}» у станции уже нет)	{0} (la emisora ya no tiene la anterior, «{1}»)
+code	Укажите начало новой акции.	Indique el inicio de la nueva campaña.
+code	У радиостанции кампании «{0}» нет действующего агентства: снимите с неё галочку.	La emisora de la pauta «{0}» no tiene ninguna agencia vigente: desmárquela.
+code	Для кампании «{0}» выберите агентство: прежнего агентства у радиостанции уже нет.	Elija una agencia para la pauta «{0}»: la emisora ya no tiene la agencia anterior.
+code	После замены агентства кампании «{0}» и «{1}» совпали бы по радиостанции, типу и типу оплаты. Оставьте в клоне только одну из них.	Tras cambiar la agencia, las pautas «{0}» y «{1}» coincidirían en emisora, tipo y tipo de pago. Deje solo una de ellas en el clon.

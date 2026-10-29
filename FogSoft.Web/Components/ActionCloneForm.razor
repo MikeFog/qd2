@@ -1,0 +1,108 @@
+@using System.Data
+@using FogSoft.Web.Infrastructure
+@using FogSoft.WinForm.Classes
+@using Merlin.Classes
+
+@*
+    Содержимое диалога «Клонировать» у акции — веб-аналог десктопного SelectCampaignsForm
+    (режим Clone): одна дата — начало новой акции (решение заказчика 29.10.2026), кампании
+    галочками, агентство новой кампании — по проверке ActionOnMassmedia.PlanCloneAgencies (Д-46).
+    Значения пишутся прямо в модель — её читает ObjectActions по «ОК».
+*@
+
+@if (Value.Message != null)
+{
+    <div class="alert alert-danger">@Value.Message</div>
+}
+
+<div class="start">
+    <label class="field">
+        @Tr.T("Начало новой акции")
+        <input type="date" class="form-control form-control-sm" @bind="Value.StartDate" />
+    </label>
+    <div class="text-muted preview tabular">@Preview()</div>
+</div>
+
+<p class="text-muted hint">@Tr.T("Все кампании сдвигаются на одно число дней: самая ранняя из отмеченных начнётся в этот день.")</p>
+<ObjectList @ref="_list" Entity="Value.CampaignEntity" Data="Value.Campaigns" ReadOnly="true" Selectable="true"
+            SelectionChanged="_ => Value.Selected = _list?.SelectedRows.ToList() ?? new List<DataRow>()" />
+
+@if (Value.AgencyRows.Count > 0)
+{
+    <div class="agencies">
+        <div class="agencies-title">@Tr.T("Агентство в новой акции:")</div>
+        @foreach (DataRow row in Value.AgencyRows)
+        {
+            ActionOnMassmedia.CloneAgencyPlan plan = Value.PlanOf(row);
+            <div class="agency-row">
+                <span>@row["name"]</span>
+                @if (plan.State == ActionOnMassmedia.CloneAgencyState.Missing)
+                {
+                    <span class="text-danger">@Tr.T("У станции нет действующего агентства: клонировать нельзя")</span>
+                }
+                else if (plan.Candidates.Count > 1)
+                {
+                    <select class="form-select form-select-sm" @bind="Value.Chosen[plan.CampaignId]">
+                        <option value="">@Tr.T("— выберите —")</option>
+                        @foreach (var a in plan.Candidates)
+                        {
+                            <option value="@a.Key">@a.Value</option>
+                        }
+                    </select>
+                }
+                else
+                {
+                    <span>@Tr.Format("{0} (прежнего «{1}» у станции уже нет)", plan.AgencyName(plan.NewAgencyId!.Value), row["agencyName"])</span>
+                }
+            </div>
+        }
+    </div>
+}
+
+@code {
+    [Parameter, EditorRequired] public Model Value { get; set; } = default!;
+
+    private ObjectList? _list;
+
+    // Галочки отмечены заранее: обычно клонируют акцию целиком, лишнее снимают. Кампании без агентства — без галочки.
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender && _list != null)
+            await _list.SelectRows(Value.Campaigns.Rows.Cast<DataRow>()
+                .Where(r => Value.PlanOf(r).State != ActionOnMassmedia.CloneAgencyState.Missing));
+    }
+
+    private string Preview()
+    {
+        if (Value.StartDate is not DateTime start || Value.Selected.Count == 0)
+            return "";
+        var dated = Value.Selected.Where(r => r["startDate"] != DBNull.Value && r["finishDate"] != DBNull.Value).ToList();
+        if (dated.Count == 0)
+            return "";
+        DateTime from = dated.Min(r => Convert.ToDateTime(r["startDate"]).Date);
+        DateTime to = dated.Max(r => Convert.ToDateTime(r["finishDate"]).Date);
+        int shift = (start.Date - from).Days;
+        return Tr.Format("Было: {0} – {1}, станет: {2} – {3}", DisplayFormat.Date(from), DisplayFormat.Date(to),
+            DisplayFormat.Date(from.AddDays(shift)), DisplayFormat.Date(to.AddDays(shift)));
+    }
+
+    public sealed class Model
+    {
+        public Entity CampaignEntity { get; init; } = default!;
+        public DataTable Campaigns { get; init; } = new();
+        /// <summary>campaignID → что будет с агентством кампании.</summary>
+        public Dictionary<int, ActionOnMassmedia.CloneAgencyPlan> Plans { get; init; } = new();
+        /// <summary>campaignID → выбранное агентство, где действующих у станции несколько.</summary>
+        public Dictionary<int, int?> Chosen { get; init; } = new();
+        public DateTime? StartDate { get; set; }
+        public List<DataRow> Selected { get; set; } = new();
+        public string? Message { get; set; }
+
+        public ActionOnMassmedia.CloneAgencyPlan PlanOf(DataRow row) => Plans[Convert.ToInt32(row["campaignID"])];
+
+        /// <summary>Отмеченные кампании, у которых с агентством что-то не так или есть из чего выбрать.</summary>
+        public IReadOnlyList<DataRow> AgencyRows => Selected
+            .Where(r => PlanOf(r) is var p && (p.State != ActionOnMassmedia.CloneAgencyState.Keep || p.Candidates.Count > 1))
+            .ToList();
+    }
+}
