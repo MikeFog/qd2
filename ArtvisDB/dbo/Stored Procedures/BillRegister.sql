@@ -10,6 +10,9 @@
 -- «акция + агентство» один, поэтому однозначно).
 -- Статус оплаты: 1 — не оплачен (оплачено 0), 2 — частично, 3 — оплачен (оплачено >= суммы; нулевой
 -- счёт и переплата тоже «оплачен» — платить нечего).
+-- Фильтр по статусу — три флажка @showNotPaid / @showPartial / @showPaid (по умолчанию все три): отметьте нужные,
+-- например «не оплачен» и «частично» — всё, кроме оплаченных. Прежний одиночный выбор @paymentStatusID (1/2/3)
+-- оставлен ради окон старой версии, открытых во время обновления: новый фильтр его не шлёт, а если пришёл — работает как раньше.
 --
 -- Период (@startOfInterval, @endOfInterval) — по ЭФИРУ акции: акция попадает, если её период
 -- Action.startDate..finishDate пересекается с выбранным (граница не задана — не ограничивает).
@@ -40,7 +43,10 @@ CREATE   PROCEDURE [dbo].[BillRegister]
 @endOfInterval datetime = null,
 @agencyID smallint = null,
 @managerID smallint = null,
-@paymentStatusID tinyint = null, -- 1 не оплачен, 2 частично, 3 оплачен; NULL — все
+@paymentStatusID tinyint = null, -- устарел (см. выше): 1 не оплачен, 2 частично, 3 оплачен; NULL — все
+@showNotPaid bit = 1,
+@showPartial bit = 1,
+@showPaid bit = 1,
 @showActivated bit = 1,
 @showUnconfirmed bit = 0,
 @hideZero bit = 1,
@@ -171,6 +177,7 @@ FROM (
 				CASE WHEN pd.paid >= sm.billSum THEN 3 WHEN pd.paid = 0 THEN 1 ELSE 2 END AS statusID
 		) s
 ) x
-WHERE (@paymentStatusID IS NULL OR x.statusID = @paymentStatusID)
+WHERE ((@showNotPaid = 1 AND x.statusID = 1) OR (@showPartial = 1 AND x.statusID = 2) OR (@showPaid = 1 AND x.statusID = 3))
+	AND (@paymentStatusID IS NULL OR x.statusID = @paymentStatusID)
 	AND (@hideZero = 0 OR x.billSum > 0)
 ORDER BY x.billDate DESC, x.actionID DESC, x.agencyName, x.billNo DESC
