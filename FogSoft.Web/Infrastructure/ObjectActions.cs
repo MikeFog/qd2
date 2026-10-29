@@ -1881,7 +1881,8 @@ public sealed partial class ObjectActions
 		IReadOnlyList<DataRow>? picked = await PickAsync(
 			Tr.T("Выберите рекламные кампании, которые хотите перенести в новую акцию"), entity, campaigns,
 			Tr.T("Разделить"), multiselect: true,
-			validate: rows => action.IsSplitSelectionValid(rows.Count, out string key) ? null : MessageAccessor.GetMessage(key));
+			validate: rows => action.IsSplitSelectionValid(rows.Select(r => Convert.ToInt32(r["paymentTypeID"])).ToList(), out string key)
+				? null : MessageAccessor.GetMessage(key));
 		if (picked == null)
 			return ActionEffect.None;
 

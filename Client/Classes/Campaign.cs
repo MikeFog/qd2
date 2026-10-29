@@ -61,6 +61,8 @@ namespace Merlin.Classes
 			// TariffWindowWithRange). NULL в процедурах = все линейные кампании акции.
 			public const string CampaignIds = "campaignIDs";
 			public const string CampaignTypeId = "campaignTypeID";
+			// false — CampaignIUD не проверяет вид оплаты (только массовая смена типа оплаты акции)
+			public const string CheckPaymentKind = "checkPaymentKind";
             public const string CampaignTypeName = "campaignTypeName";
             public const string Discount = "discount";
 			public const string FinalPrice = "finalPrice";

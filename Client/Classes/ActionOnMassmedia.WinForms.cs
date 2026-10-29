@@ -232,7 +232,10 @@ namespace Merlin.Classes
 
 		private bool CheckCampaignsSelectionResultForActionSplit(SelectionForm selectionForm)
 		{
-			if (IsSplitSelectionValid(selectionForm.AddedItems.Count, out string messageKey)) return true;
+			var paymentTypeIds = new List<int>();
+			foreach (PresentationObject campaign in selectionForm.AddedItems)
+				paymentTypeIds.Add(Convert.ToInt32(campaign[Campaign.ParamNames.PaymentTypeID]));
+			if (IsSplitSelectionValid(paymentTypeIds, out string messageKey)) return true;
 
 			UserMessage.ShowExclamation(MessageAccessor.GetMessage(messageKey));
 			return false;
@@ -282,6 +285,15 @@ namespace Merlin.Classes
 
 			if (fSelector.ShowDialog(Globals.MdiParent) == DialogResult.OK)
 			{
+				var campaigns = new List<PresentationObject>();
+				foreach (SplitRule rule in fSelector.SplitRules)
+					campaigns.Add(rule.campaign);
+				if (ArePaymentKindsMixed(campaigns))
+				{
+					UserMessage.ShowExclamation(MessageAccessor.GetMessage(PaymentKindMixedMessage));
+					return;
+				}
+
 				try
 				{
 					Cursor.Current = Cursors.WaitCursor;
@@ -327,8 +339,17 @@ namespace Merlin.Classes
 					Cursor.Current = Cursors.WaitCursor;
 
 					var items = new List<(DateTime, PresentationObject)>();
+					var campaigns = new List<PresentationObject>();
 					foreach (var item in form.SelectedItems)
+					{
 						items.Add((item.date, item.presentationObject));
+						campaigns.Add(item.presentationObject);
+					}
+					if (ArePaymentKindsMixed(campaigns))
+					{
+						UserMessage.ShowExclamation(MessageAccessor.GetMessage(PaymentKindMixedMessage));
+						return;
+					}
 
 					ActionOnMassmedia newAction = ApplyClone(items, out DataTable tableErrors, form.ChosenAgencies);
 

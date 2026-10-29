@@ -32,6 +32,20 @@ BEGIN
 		return
 	end 
 
+	-- Объединение не должно делать акцию смешанной по виду оплаты (PaymentType.isHidden):
+	-- две акции одного вида — можно, разных — нельзя. Если одна уже смешанная (старые данные),
+	-- не мешаем.
+	if dbo.fn_ActionPaymentKindsMixed(@firstActionID) = 0
+		and dbo.fn_ActionPaymentKindsMixed(@secondActionID) = 0
+		and exists(select * from Campaign c inner join PaymentType pt on pt.paymentTypeID = c.paymentTypeID
+					where c.actionID in (@firstActionID, @secondActionID) and pt.isHidden = 1)
+		and exists(select * from Campaign c inner join PaymentType pt on pt.paymentTypeID = c.paymentTypeID
+					where c.actionID in (@firstActionID, @secondActionID) and pt.isHidden = 0)
+	begin
+		raiserror('PaymentKindMixedInAction', 16, 1)
+		return
+	end
+
 	DECLARE @deletedActionID INT, @managerDiscount DECIMAL(18, 10), @managerDiscount2 DECIMAL(18, 10)
 	
 	IF @firstActionID < @secondActionID

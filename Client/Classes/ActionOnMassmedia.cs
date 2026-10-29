@@ -136,9 +136,16 @@ namespace Merlin.Classes
 		/// <summary>
 		/// Проверяет выбор пользователя для деления акции.
 		/// </summary>
-		public bool IsSplitSelectionValid(int selectedCount, out string messageKey)
+		/// <param name="selectedPaymentTypeIds">Типы оплаты выбранных кампаний, по одному на кампанию.</param>
+		public bool IsSplitSelectionValid(ICollection<int> selectedPaymentTypeIds, out string messageKey)
 		{
 			messageKey = null;
+			int selectedCount = selectedPaymentTypeIds.Count;
+			if (ArePaymentKindsMixed(selectedPaymentTypeIds))
+			{
+				messageKey = PaymentKindMixedMessage;
+				return false;
+			}
 			if (selectedCount == Campaigns().Rows.Count)
 			{
 				messageKey = "TooManyCampaignsSelected";
@@ -157,6 +164,7 @@ namespace Merlin.Classes
 		/// </summary>
 		public void ApplySplitAction(IList<PresentationObject> campaignsToMove)
 		{
+			EnsurePaymentKindsNotMixed(campaignsToMove);
 			ActionOnMassmedia newAction = CreateNewActionForSplit();
 			foreach (var campaign in campaignsToMove)
 			{
@@ -196,9 +204,11 @@ namespace Merlin.Classes
         /// <summary>Делит акцию по правилам <paramref name="splitRules"/> на новую акцию.</summary>
         internal void ApplySplitCampaign(IEnumerable<SplitRule> splitRules)
         {
+            var rules = new List<SplitRule>(splitRules);
+            EnsurePaymentKindsNotMixed(rules.ConvertAll(rule => (PresentationObject)rule.campaign));
             ActionOnMassmedia newAction = CreateNewActionForSplit();
 
-            foreach (SplitRule rule in splitRules)
+            foreach (SplitRule rule in rules)
             {
                 Campaign newCampaign = Campaign.CreateInstance(
                     int.Parse(rule.campaign[Campaign.ParamNames.CampaignTypeId].ToString()),
@@ -271,15 +281,19 @@ namespace Merlin.Classes
         }
 
         /// <summary>
-        /// Массово меняет тип оплаты у выбранных кампаний акции. Каждая кампания —
-        /// своя транзакция (CampaignIUD), best-effort: сбойные попадают в
-        /// <paramref name="tableErrors"/> (пустая, если ошибок не было), остальные
-        /// применяются. Пересчёт не нужен — тип оплаты на цену не влияет.
+        /// Массово меняет тип оплаты у выбранных кампаний акции. Отказы попадают в
+        /// <paramref name="tableErrors"/> (пустая, если ошибок не было). Пересчёт не нужен —
+        /// тип оплаты на цену не влияет.
+        /// В пределах вида оплаты (признак «Не включать в счет на предоплату») — best-effort,
+        /// каждая кампания своей транзакцией (CampaignIUD). Смена вида — только для всех
+        /// кампаний акции разом и всё-или-ничего: по одной CampaignIUD отказал бы на первой
+        /// же кампании (остальные ещё старого вида — PaymentKindMixedInAction).
         /// </summary>
         public void ApplyPaymentTypeChangeMass(int paymentTypeId, IEnumerable<PresentationObject> campaigns, out DataTable tableErrors)
         {
             tableErrors = ErrorManager.CreateErrorsTable();
 
+            var toChange = new List<(Campaign campaign, string label)>();
             foreach (PresentationObject checkedCampaign in campaigns)
             {
                 int campaignId = int.Parse(checkedCampaign.IDs[0].ToString());
@@ -292,15 +306,7 @@ namespace Merlin.Classes
                     Campaign campaign = Campaign.GetCampaignById(campaignId);
                     if (campaign == null) continue;
                     if (campaign.PaymentTypeId == paymentTypeId) continue;
-
-                    if (!campaign.IsChangePossible)
-                    {
-                        ErrorManager.AddErrorRow(tableErrors, DateTime.Now,
-                            string.Format("{0}: {1}", label, MessageAccessor.GetMessage("ChangePaymentTypeIsForbidden")));
-                        continue;
-                    }
-
-                    campaign.ApplyPaymentTypeChange(paymentTypeId);
+                    toChange.Add((campaign, label));
                 }
                 catch (Exception ex)
                 {
@@ -308,6 +314,124 @@ namespace Merlin.Classes
                         string.Format("{0}: {1}", label, ErrorManager.GetErrorMessage(ex)));
                 }
             }
+
+            HashSet<int> excluded = PaymentTypesExcludedFromBill();
+            bool newKind = excluded.Contains(paymentTypeId);
+            if (!toChange.Exists(item => excluded.Contains(item.campaign.PaymentTypeId) != newKind))
+            {
+                foreach (var (campaign, label) in toChange)
+                    ApplyPaymentTypeChange(campaign, label, paymentTypeId, tableErrors);
+                return;
+            }
+
+            var changingIds = new HashSet<int>();
+            foreach (var item in toChange)
+                changingIds.Add(item.campaign.CampaignId);
+            foreach (DataRow row in Campaigns().Rows)
+            {
+                if (!changingIds.Contains(Convert.ToInt32(row[Campaign.ParamNames.CampaignId]))
+                    && excluded.Contains(Convert.ToInt32(row[Campaign.ParamNames.PaymentTypeID])) != newKind)
+                {
+                    ErrorManager.AddErrorRow(tableErrors, DateTime.Now, MessageAccessor.GetMessage("PaymentKindChangeNeedsAllCampaigns"));
+                    return;
+                }
+            }
+
+            foreach (var (campaign, label) in toChange)
+                if (!campaign.IsChangePossible)
+                    ErrorManager.AddErrorRow(tableErrors, DateTime.Now,
+                        string.Format("{0}: {1}", label, MessageAccessor.GetMessage("ChangePaymentTypeIsForbidden")));
+
+            if (tableErrors.Rows.Count == 0)
+            {
+                DataAccessor.BeginTransaction();
+                try
+                {
+                    foreach (var (campaign, label) in toChange)
+                    {
+                        campaign[Campaign.ParamNames.CheckPaymentKind] = false;
+                        ApplyPaymentTypeChange(campaign, label, paymentTypeId, tableErrors);
+                    }
+
+                    if (tableErrors.Rows.Count == 0)
+                        DataAccessor.CommitTransaction();
+                    else
+                        DataAccessor.RollbackTransaction();
+                }
+                catch
+                {
+                    DataAccessor.RollbackTransaction();
+                    throw;
+                }
+            }
+
+            if (tableErrors.Rows.Count > 0)
+                ErrorManager.AddErrorRow(tableErrors, DateTime.Now, MessageAccessor.GetMessage("PaymentKindChangeRolledBack"));
+        }
+
+        private static void ApplyPaymentTypeChange(Campaign campaign, string label, int paymentTypeId, DataTable tableErrors)
+        {
+            try
+            {
+                if (!campaign.IsChangePossible)
+                {
+                    ErrorManager.AddErrorRow(tableErrors, DateTime.Now,
+                        string.Format("{0}: {1}", label, MessageAccessor.GetMessage("ChangePaymentTypeIsForbidden")));
+                    return;
+                }
+
+                campaign.ApplyPaymentTypeChange(paymentTypeId);
+            }
+            catch (Exception ex)
+            {
+                ErrorManager.AddErrorRow(tableErrors, DateTime.Now,
+                    string.Format("{0}: {1}", label, ErrorManager.GetErrorMessage(ex)));
+            }
+        }
+
+        // ---- Вид оплаты: в акции все кампании либо с «Не включать в счет на предоплату»
+        // (PaymentType.isHidden), либо все без (с 29.10.2026; сервер — PaymentKindMixedInAction
+        // в CampaignIUD/MergeActions). Здесь — проверки до создания новой акции (клон,
+        // разделение), чтобы отказ не оставлял недоделанную акцию.
+
+        internal const string PaymentKindMixedMessage = "PaymentKindMixedInAction";
+
+        /// <summary>Типы оплаты с признаком «Не включать в счет на предоплату».</summary>
+        private static HashSet<int> PaymentTypesExcludedFromBill()
+        {
+            var result = new HashSet<int>();
+            DataTable types = DataAccessor.LoadDataSet("PaymentTypesLoad", DataAccessor.CreateParametersDictionary()).Tables[0];
+            foreach (DataRow row in types.Rows)
+                if (Convert.ToBoolean(row["isHidden"]))
+                    result.Add(Convert.ToInt32(row["paymentTypeID"]));
+            return result;
+        }
+
+        /// <summary>Среди типов оплаты есть и с признаком «Не включать в счет на предоплату», и без.</summary>
+        internal static bool ArePaymentKindsMixed(IEnumerable<int> paymentTypeIds)
+        {
+            HashSet<int> excluded = PaymentTypesExcludedFromBill();
+            bool hasExcluded = false, hasIncluded = false;
+            foreach (int id in paymentTypeIds)
+            {
+                if (excluded.Contains(id)) hasExcluded = true;
+                else hasIncluded = true;
+            }
+            return hasExcluded && hasIncluded;
+        }
+
+        internal static bool ArePaymentKindsMixed(IEnumerable<PresentationObject> campaigns)
+        {
+            var ids = new List<int>();
+            foreach (PresentationObject campaign in campaigns)
+                ids.Add(Convert.ToInt32(campaign[Campaign.ParamNames.PaymentTypeID]));
+            return ArePaymentKindsMixed(ids);
+        }
+
+        private static void EnsurePaymentKindsNotMixed(IEnumerable<PresentationObject> campaigns)
+        {
+            if (ArePaymentKindsMixed(campaigns))
+                throw new InvalidOperationException(MessageAccessor.GetMessage(PaymentKindMixedMessage));
         }
 
         // ---- Карточка акции: кампании и цена (ActionForm в десктопе, страница акции в вебе) ----
@@ -594,6 +718,7 @@ namespace Merlin.Classes
             IReadOnlyDictionary<int, int> chosenAgencies = null)
         {
             var items = new List<(DateTime date, PresentationObject campaign)>(selectedItems);
+            EnsurePaymentKindsNotMixed(items.ConvertAll(item => item.campaign));
             var plans = new Dictionary<int, CloneAgencyPlan>();
             foreach (var item in items)
             {

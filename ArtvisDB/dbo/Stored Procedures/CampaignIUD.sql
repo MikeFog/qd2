@@ -9,7 +9,10 @@
 @loggedUserId smallint,
 @actionName varchar(32),
 @needShow bit = 1,
-@managerDiscount decimal(18, 10) = 1
+@managerDiscount decimal(18, 10) = 1,
+-- 0 — только массовая смена типа оплаты акции (ActionOnMassmedia.ApplyPaymentTypeChangeMass):
+-- она меняет все кампании в одной транзакции, а вид проверяет заранее
+@checkPaymentKind bit = 1
 )
 WITH EXECUTE AS OWNER
 as
@@ -48,6 +51,21 @@ IF @actionName = 'AddItem' begin
 		raiserror('CannotAddCampaignInConfirmedFinishedAction', 16, 1)
 		return 
 	end 
+
+	-- В акции все кампании одного вида оплаты: либо все с «Не включать в счет на предоплату»
+	-- (PaymentType.isHidden), либо все без. В старую смешанную акцию можно добавить кампанию
+	-- того вида, который в ней уже есть.
+	if @checkPaymentKind = 1
+		and exists(select * from Campaign c inner join PaymentType pt on pt.paymentTypeID = c.paymentTypeID
+					where c.actionID = @actionID
+						and pt.isHidden <> (select isHidden from PaymentType where paymentTypeID = @paymentTypeID))
+		and not exists(select * from Campaign c inner join PaymentType pt on pt.paymentTypeID = c.paymentTypeID
+					where c.actionID = @actionID
+						and pt.isHidden = (select isHidden from PaymentType where paymentTypeID = @paymentTypeID))
+	begin
+		raiserror('PaymentKindMixedInAction', 16, 1)
+		return
+	end
 
 	select @managerDiscount = [dbo].[fn_GetMaxUserDiscount](@loggedUserId, GETDATE(), [dbo].[GetMaxDate]())
 
@@ -217,6 +235,23 @@ ELSE IF @actionName = 'UpdateItem' BEGIN
 
         IF @conflictingPaymentID2 IS NOT NULL
             RAISERROR('CannotChangePaymentType_PaymentExists', 16, 1);
+    END
+
+    -- Вид оплаты (PaymentType.isHidden) кампании сменился или она уходит в другую акцию
+    -- (разделение акции): остальные кампании акции должны быть того же вида. Смена типа
+    -- в пределах вида старую смешанную акцию не задевает.
+    IF @checkPaymentKind = 1
+    BEGIN
+        DECLARE @newIsHidden BIT = (SELECT isHidden FROM dbo.PaymentType WHERE paymentTypeID = @paymentTypeID);
+
+        IF EXISTS (SELECT 1 FROM dbo.Campaign c INNER JOIN dbo.PaymentType pt ON pt.paymentTypeID = c.paymentTypeID
+                   WHERE c.campaignID = @campaignID AND (pt.isHidden <> @newIsHidden OR c.actionID <> @actionID))
+           AND EXISTS (SELECT 1 FROM dbo.Campaign c INNER JOIN dbo.PaymentType pt ON pt.paymentTypeID = c.paymentTypeID
+                       WHERE c.actionID = @actionID AND c.campaignID <> @campaignID AND pt.isHidden <> @newIsHidden)
+        BEGIN
+            RAISERROR('PaymentKindMixedInAction', 16, 1);
+            RETURN;
+        END
     END
 
     UPDATE dbo.Campaign
