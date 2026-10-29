@@ -699,6 +699,15 @@ namespace FogSoft.WinForm.DataAccess
         /// </summary>
         private static bool IsHandledBusinessMessage(Exception exp)
         {
+            // Дубль кампании в акции ловит уникальный индекс, а не процедура: UI показывает
+            // пользователю текст iMessage.UIX_Campaign (AddCampaigns, Д-4) — это отказ, не сбой.
+            if (exp is SqlException dupEx && (dupEx.Number == 2627 || dupEx.Number == 2601)
+                && string.Equals(Classes.ErrorManager.GetSqlIndexName(dupEx), "UIX_Campaign", StringComparison.OrdinalIgnoreCase))
+            {
+                try { return MessageAccessor.GetMessage("UIX_Campaign") != null; }
+                catch { return false; }
+            }
+
             if (!(exp is SqlException sqlEx) || sqlEx.Number != 50000 || sqlEx.Class != 16)
                 return false; // не прикладной RAISERROR: таймаут (-2), дедлок (1205), FK (547) и т.п.
 
