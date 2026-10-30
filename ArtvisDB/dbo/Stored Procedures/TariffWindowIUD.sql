@@ -191,7 +191,9 @@ BEGIN
 		Pricelist pl 
 	where 
 		@massmediaID = pl.massmediaID 
-		and @windowDateActual between pl.startDate and pl.finishDate 
+		-- finishDate хранится с 00:00: «between» не находил прайс-лист в его последний день после полуночи
+		-- (InternalError у «Создать новое окно…»), условие то же, что у проверки BadTariffWindowDay выше (SQL-BS-03)
+		and @windowDateActual >= pl.startDate and @windowDateActual < pl.finishDate + 1
 	
 	if @@rowcount <> 1
 	begin
