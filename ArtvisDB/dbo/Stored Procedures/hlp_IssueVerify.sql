@@ -22,7 +22,8 @@
 @msgError varchar(64) out,
 @modulePricelistID int = null,
 @needByTypeVerify bit = 0,
-@packModulePriceListId int = null
+@packModulePriceListId int = null,
+@moduleIssueID int = null      -- смена позиции выпуска модуля: проверять окна, где его строки стоят на самом деле (Р-16)
 )
 AS
 SET NOCOUNT ON
@@ -194,13 +195,35 @@ if (@needByTypeVerify = 0 or @campaignTypeID in (1,2))
 	where tw.[windowId] = @windowID 
 else if @needByTypeVerify = 1 and @campaignTypeID = 3
 	Begin
+	-- Окна проверки. Постановка - окна тарифов модуля в день модуля. Смена позиции существующего выпуска (@moduleIssueID) -
+	-- окна, где его строки стоят на самом деле (Issue.actualWindowID): трафик мог перенести часть строк в чужие окна, и
+	-- проверка по слоту пропускала там занятую позицию (две «первых» в окне выхода), а окно слота, откуда строку унесли,
+	-- проверяла зря. Счётчики этого выпуска ModuleIssueIUD к этому моменту уже снял в тех же окнах выхода (Р-16, Д-24)
+	declare @windows table (windowID int primary key)
+	if @moduleIssueID is null
+		insert into @windows (windowID)
+		select tw.windowID
+		from [TariffWindow] tw
+			Inner Join ModuleTariff mt On mt.tariffId = tw.tariffId
+			Inner Join ModulePriceList mpl On mpl.modulePriceListID = mt.modulePriceListID
+		where
+			mt.modulePriceListID = @modulePricelistID
+			-- день модуля и пакета - по dayOriginal, как вставка выпусков (ModuleIssueIUD, PackModuleIssueID)
+			-- и IsModuleExist; индекс IX_TariffWindow_TariffID_DayOriginal; время окна переносится только
+			-- внутри дня, так что dayOriginal = dayActual
+			And tw.dayOriginal = @issueDate
+	else
+		insert into @windows (windowID)
+		select distinct i.actualWindowID
+		from Issue i
+		where i.moduleIssueID = @moduleIssueID
+
 	-- окон у модуля за день несколько: сообщение - первой сработавшей проверки по порядку CASE, как в линейной ветке
 	-- (окно одно), а не наибольший по алфавиту ключ среди окон (WindowOverflow одного окна перебивал
 	-- FirstLastIssueError и закрытое окно соседнего); строки и TOP 1 прежние, окно без ошибки - последним
 	select top 1 @msgError = e.msgError
-	from [TariffWindow] tw
-		Inner Join ModuleTariff mt On mt.tariffId = tw.tariffId
-		Inner Join ModulePriceList mpl On mpl.modulePriceListID = mt.modulePriceListID
+	from @windows w
+		Inner Join [TariffWindow] tw On tw.windowID = w.windowID
 		Cross Apply (Select
 		case 
 			when (@actionName = 'AddItem' Or @isConfirmed = 1) And @deadLine is not null and tw.dayActual <= @deadLine And @isAdmin = 0 And @isTrafficManager = 0 then 'DeadLineViolation' 
@@ -214,12 +237,6 @@ else if @needByTypeVerify = 1 and @campaignTypeID = 3
 			when @rightForMinus = 0 AND @isConfirmed = 1 and tw.[timeInUseConfirmed] + @rollerDuration > tw.duration then 'WindowOverflow'
 			else null 
 		end As msgError) e
-	where 
-		mt.modulePriceListID = @modulePricelistID
-		-- день модуля и пакета - по dayOriginal, как вставка выпусков (ModuleIssueIUD, PackModuleIssueID)
-		-- и IsModuleExist; индекс IX_TariffWindow_TariffID_DayOriginal; время окна переносится только
-		-- внутри дня, так что dayOriginal = dayActual
-		And tw.dayOriginal = @issueDate
 	order by
 		case e.msgError
 			when 'DeadLineViolation' then 1

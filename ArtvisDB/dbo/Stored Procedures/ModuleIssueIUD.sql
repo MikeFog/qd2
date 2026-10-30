@@ -348,7 +348,8 @@ begin
 			@rolActionTypeID, --  tinyint
 			@msgError out,
 			@modulePricelistID,
-			1
+			1,
+			@moduleIssueID = @moduleIssueID -- позиция проверяется в окнах выхода строк выпуска (Р-16)
 		
 		if @res = 1 
 		begin
