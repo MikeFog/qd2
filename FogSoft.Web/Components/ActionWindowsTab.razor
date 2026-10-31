@@ -1183,9 +1183,14 @@
             AdvertType = Convert.ToString(r[Roller.ParamNames.AdvertTypeName]) ?? string.Empty,
         }));
         model.Message = null;
-        // Время Шаблона 1 — от выбранного места (десктоп берёт его из щелчка): у веера — начало слота.
+        // Время Шаблона 1 — только из окон показанной сетки (десктоп берёт его щелчком по видимому окну), у веера — начала
+        // слотов; по умолчанию — выбранное место, иначе прежнее, если такое окно есть, иначе первое.
+        model.SingleTimes = (_week?.Cells ?? Enumerable.Empty<PlacementCell>()).Select(c => c.Date.ToString("HH:mm"))
+            .Distinct().OrderBy(t => t, StringComparer.Ordinal).ToList();
         if ((range != null ? _rangeSlot : _selected) is { } picked)
             model.SingleTime = picked.Date.ToString("HH:mm");
+        else if (!model.SingleTimes.Contains(model.SingleTime))
+            model.SingleTime = model.SingleTimes.FirstOrDefault() ?? string.Empty;
         while (true)
         {
             if (await Dialogs.ShowAsync(Tr.T("Шаблон для внесения роликов"), builder =>

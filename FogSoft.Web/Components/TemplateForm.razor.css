@@ -50,10 +50,6 @@
     color: var(--c-text-muted);
 }
 
-.note {
-    font-size: 12px;
-}
-
 .roller-table {
     max-height: 240px;
     overflow: auto;

@@ -94,10 +94,18 @@
         {
             <label>
                 @Tr.T("Время выхода:")
-                <input type="time" class="form-control form-control-sm" value="@Value.SingleTime" @onchange="e => Value.SingleTime = e.Value?.ToString() ?? string.Empty" />
-                <span class="note">@(Value.StationCount > 1
-                    ? Tr.T("Выпуск ставится в получасовой слот, накрывающий это время (время округляется вниз до получаса), на всех отмеченных станциях.")
-                    : Tr.T("Выпуск ставится в окно, накрывающее это время."))</span>
+                @* Только время окон, которые есть в сетке: ввести время несуществующего окна нельзя. *@
+                <select class="form-select form-select-sm" value="@Value.SingleTime" disabled="@(Value.SingleTimes.Count == 0)"
+                        @onchange="e => Value.SingleTime = e.Value?.ToString() ?? string.Empty">
+                    @if (Value.SingleTimes.Count == 0)
+                    {
+                        <option value="">—</option>
+                    }
+                    @foreach (string time in Value.SingleTimes)
+                    {
+                        <option value="@time">@time</option>
+                    }
+                </select>
             </label>
         }
         else
@@ -236,6 +244,9 @@
         public Kind Mode { get; set; } = Kind.Interval;
         public string SingleTime { get; set; } = "06:00";
 
+        /// <summary>Время окон для Шаблона №1 («ЧЧ:ММ» по возрастанию) — из показанной сетки; задаёт вкладка при каждом открытии.</summary>
+        public List<string> SingleTimes { get; set; } = new();
+
         /// <summary>Сколько станций получает каждый выпуск: у веера — число отмеченных кампаний, у линейки — 1.</summary>
         public int StationCount { get; set; } = 1;
 
@@ -300,7 +311,7 @@
             if (Mode != Kind.Multi && !HasBrushRoller)
                 return MessageAccessor.GetMessage("RollerNotSelected");
             if (Mode == Kind.Single)
-                return !TimeSpan.TryParse(SingleTime, out _) ? Tr.T("Укажите время выхода.") : ToTemplate().SingleProblem();
+                return !SingleTimes.Contains(SingleTime) || !TimeSpan.TryParse(SingleTime, out _) ? Tr.T("Укажите время выхода.") : ToTemplate().SingleProblem();
             if (!TimeSpan.TryParse(StartTime, out _) || !TimeSpan.TryParse(FinishTime, out _))
                 return Tr.T("Укажите время начала и окончания интервала.");
             if (!Split && (Quantity < 1 || Quantity > 100) || Split && (QuantityPrime is < 0 or > 100 || QuantityOffPrime is < 0 or > 100))
