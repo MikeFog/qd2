@@ -197,7 +197,7 @@ namespace FogSoft.WinForm.Classes.Export
 					{
 						ColumnInfo columnInfo;
 						entity.ColumnsInfo.TryGetValue(entityAttribute.Name, out columnInfo);
-						int index = GetColumnIndex(greed, entityAttribute);
+						int index = GetColumnIndex(greed, dv, entityAttribute);
 						if (index >= 0)
 						{
 							Type type = null;
@@ -220,12 +220,15 @@ namespace FogSoft.WinForm.Classes.Export
 			}
 		}
 
-		private static int GetColumnIndex(DataGridView greed, Entity.Attribute entityAttribute)
+		// Позиция колонки в листе: считаем те же колонки, что выгружает GetColumns (привязанные к данным).
+		// Раньше пропускались колонки-картинки, а булева колонка (DataGridViewImageColumn) выгружается
+		// «Да/Нет» — и форматы всех колонок правее неё съезжали на соседнюю (реестр счетов, 31.10.2026).
+		private static int GetColumnIndex(DataGridView greed, DataView dv, Entity.Attribute entityAttribute)
 		{
 			int index = -1;
 			foreach (DataGridViewColumn column in greed.Columns)
 			{
-				if (column.GetType() != typeof(DataGridViewImageColumn))
+				if (dv.Table.Columns.Contains(column.DataPropertyName))
 				{
 					index++;
 					if (column.DataPropertyName == entityAttribute.Name)
@@ -285,7 +288,7 @@ namespace FogSoft.WinForm.Classes.Export
 			for (int i = 0; i < dv.Count; i++)
 				for (int j = 0; j < columns.Count; j++)
 				{
-					data[i, j] = SheetWriter.ConvertCellValue(columns[j].FormatValue(dv[i][columns[j].MappingName]));
+					data[i, j] = columns[j].FormatValue(dv[i][columns[j].MappingName]);
 					//ErrorManager.Log.Info(data[i, j]);
 				}
 			return data;

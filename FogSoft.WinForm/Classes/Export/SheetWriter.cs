@@ -1,6 +1,4 @@
-﻿using System;
-using System.Data;
-using System.Globalization;
+﻿using System.Data;
 
 namespace FogSoft.WinForm.Classes.Export
 {
@@ -31,45 +29,19 @@ namespace FogSoft.WinForm.Classes.Export
 			ws.SetBordersStyles(top, left, bottom, right, height > 1);
 		}
 
-		public static object ConvertCellValue(object val)
-		{
-			if (val is string s && TryParseMonthYear(s, out DateTime dt))
-				return dt;
-			return val;
-		}
-
-		private static bool TryParseMonthYear(string s, out DateTime result)
-		{
-			result = default(DateTime);
-			if (string.IsNullOrWhiteSpace(s)) return false;
-
-			string cleaned = s.Trim();
-			if (cleaned.EndsWith("г.", StringComparison.OrdinalIgnoreCase))
-				cleaned = cleaned.Substring(0, cleaned.Length - 2).Trim();
-			else if (cleaned.EndsWith("г", StringComparison.OrdinalIgnoreCase))
-				cleaned = cleaned.Substring(0, cleaned.Length - 1).Trim();
-
-			if (DateTime.TryParseExact(cleaned, new[] { "MMMM yyyy", "MMM yyyy" },
-					new CultureInfo("ru-RU"), DateTimeStyles.None, out result))
-			{
-				result = new DateTime(result.Year, result.Month, 1);
-				return true;
-			}
-
-			return false;
-		}
-
+		// Строки «Октябрь 2026 г.» передаются как есть: лист (MSDocumentSheet, OpenXmlDocumentSheet)
+		// сам узнаёт месяц-год и ставит формат «MMMM YYYY». Раньше их здесь заранее превращали в DateTime,
+		// лист их уже не узнавал, и на Excel 2010 (прод) «Период» выходил числом (31.10.2026).
 		private static object[,] ProcessData(DataTable dt, bool rotate)
 		{
 			object[,] data = rotate ? new object[dt.Columns.Count, dt.Rows.Count] : new object[dt.Rows.Count, dt.Columns.Count];
 			for (int i = 0; i < dt.Rows.Count; i++)
 				for (int j = 0; j < dt.Columns.Count; j++)
 				{
-					object converted = ConvertCellValue(dt.Rows[i][j]);
 					if (rotate)
-						data[j, i] = converted;
+						data[j, i] = dt.Rows[i][j];
 					else
-						data[i, j] = converted;
+						data[i, j] = dt.Rows[i][j];
 				}
 			return data;
 		}

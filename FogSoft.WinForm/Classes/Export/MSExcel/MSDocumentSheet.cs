@@ -80,6 +80,8 @@ namespace FogSoft.WinForm.Classes.Export.MSExcel
             rg.set_Value(XlRangeValueDataType.xlRangeValueDefault, data);
             Marshal.ReleaseComObject(rg);
 
+            SetDateTimeFormats(top, left, data);
+
             // Применяем формат "Март 2026" (русский) к ячейкам, которые были DateTime
             foreach (var (r, c) in monthYearCells)
             {
@@ -87,6 +89,33 @@ namespace FogSoft.WinForm.Classes.Export.MSExcel
                 cell.NumberFormat = "[$-419]MMMM YYYY";
                 Marshal.ReleaseComObject(cell);
             }
+		}
+
+		// Excel 2010 (прод-сервер) оставляет DateTime из массива в «Общем» формате и показывает число
+		// (46296); Excel 16 ставит формат даты сам. Поэтому формат задаём явно — одним вызовом на
+		// каждый непрерывный кусок колонки. Форматы колонок по метаданным (SetFormatForCell) ставятся
+		// позже и перекрывают этот.
+		private void SetDateTimeFormats(int top, int left, object[,] data)
+		{
+			int rows = data.GetLength(0);
+			int cols = data.GetLength(1);
+			for (int c = 0; c < cols; c++)
+			{
+				int start = -1;
+				string runFormat = null;
+				for (int r = 0; r <= rows; r++)
+				{
+					string format = r < rows && data[r, c] is DateTime dt
+						? (dt.TimeOfDay == TimeSpan.Zero ? "dd/mm/yyyy" : "dd/mm/yyyy hh:mm")
+						: null;
+					if (format == runFormat)
+						continue;
+					if (runFormat != null)
+						SetRangeFormat(top + start, left + c, top + r - 1, left + c, runFormat);
+					start = r;
+					runFormat = format;
+				}
+			}
 		}
 
 		public void SetBordersStyles(int top, int left, int bottom, int right, bool fNeedInsideVertical)
