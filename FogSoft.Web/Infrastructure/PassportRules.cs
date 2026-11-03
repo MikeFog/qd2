@@ -1,3 +1,4 @@
+using System.Data;
 using FogSoft.WinForm.Classes;
 using Microsoft.AspNetCore.Components;
 
@@ -28,6 +29,14 @@ public sealed class PassportRules
 	/// </summary>
 	public Func<string?>? Validate { get; init; }
 
-	public static PassportRules? For(PresentationObject obj, bool isNew) =>
-		obj is Merlin.Classes.Roller roller ? RollerPassport.Rules(roller, isNew) : null;
+	/// <summary>Поле сменили — см. Passport.FieldChanged. Может поправить значения объекта.</summary>
+	public Action<string>? FieldChanged { get; init; }
+
+	/// <param name="data">Справочники карточки (процедура паспорта) — те же, что получает Passport.</param>
+	public static PassportRules? For(PresentationObject obj, bool isNew, DataSet? data) => obj switch
+	{
+		Merlin.Classes.Roller roller => RollerPassport.Rules(roller, isNew),
+		Merlin.Classes.Agency agency => AgencyPassport.Rules(agency, data),
+		_ => null,
+	};
 }

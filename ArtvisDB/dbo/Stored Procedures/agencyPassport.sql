@@ -22,6 +22,15 @@ FROM
 		AND am.agencyID = @agencyID
 ORDER BY
 	isObjectSelected desc, mm.[name]
+
+-- счета агентства по банкам: паспорт подставляет счёт при выборе банка
+SELECT
+	ab.bankID,
+	ab.account
+FROM
+	AgencyBank ab
+WHERE
+	ab.agencyID = @agencyID
 GO
 GRANT EXECUTE
     ON OBJECT::[dbo].[agencyPassport] TO PUBLIC

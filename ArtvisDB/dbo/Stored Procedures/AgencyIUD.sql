@@ -34,11 +34,20 @@ CREATE           PROCEDURE [dbo].[AgencyIUD]
 WITH EXECUTE AS OWNER
 as
 SET NOCOUNT ON
+
+-- Расчётный счёт — счёт агентства в выбранном банке (AgencyBank), без банка не хранится.
+SET @account = NULLIF(LTRIM(RTRIM(@account)), '')
+IF @actionName IN ('AddItem', 'UpdateItem') AND @bankID IS NOT NULL AND @account IS NULL
+begin
+	raiserror('AgencyBankAccountRequired', 16, 1)
+	return
+end
+
 IF @actionName = 'AddItem' BEGIN
-	INSERT INTO [Agency](name, address, phone, fax, email, account, inn, okpo, okonh, bankID, director, 
+	INSERT INTO [Agency](name, address, phone, fax, email, inn, okpo, okonh, bankID, director,
 		bookkeeper, prefix, isActive, directorSignature, bookkeeperSignature, fullPrefix, reportString, 
 		registration, kpp, egrn, okved, painting, reportPlace, path2proposalTemplate)
-	VALUES(@name, @address, @phone, @fax, @email, @account, @inn, @okpo, @okonh, @bankID, @director, 
+	VALUES(@name, @address, @phone, @fax, @email, @inn, @okpo, @okonh, @bankID, @director,
 		@bookkeeper, @prefix, @isActive, @directorSignature, @bookkeeperSignature, @fullPrefix, @reportString, 
 		@registration, @kpp, @egrn, @okved, @painting, @reportPlace, @path2proposalTemplate)
 
@@ -48,7 +57,11 @@ IF @actionName = 'AddItem' BEGIN
 		return 
 	end 
 
-	SET @agencyID = SCOPE_IDENTITY()	
+	SET @agencyID = SCOPE_IDENTITY()
+
+	IF @bankID IS NOT NULL
+		INSERT INTO [AgencyBank](agencyID, bankID, account) VALUES(@agencyID, @bankID, @account)
+
 	IF @withResultset = 1 EXEC agencies @agencyID = @agencyID
 END
 ELSE IF @actionName = 'DeleteItem' BEGIN
@@ -63,7 +76,6 @@ ELSE IF @actionName = 'UpdateItem' BEGIN
 		phone = @phone, 
 		fax = @fax, 
 		email = @email,
-		account = @account, 
 		inn = @inn, 
 		kpp = @kpp,
 		okpo = @okpo, 
@@ -83,8 +95,16 @@ ELSE IF @actionName = 'UpdateItem' BEGIN
 		painting = @painting,
 		reportPlace = @reportPlace,
 		path2proposalTemplate = @path2proposalTemplate
-	WHERE		
+	WHERE
 		AgencyID = @AgencyID
+
+	-- счета в других банках остаются: вернут банк — вернётся и счёт
+	IF @bankID IS NOT NULL
+	BEGIN
+		UPDATE [AgencyBank] SET account = @account WHERE agencyID = @agencyID AND bankID = @bankID
+		IF @@ROWCOUNT = 0
+			INSERT INTO [AgencyBank](agencyID, bankID, account) VALUES(@agencyID, @bankID, @account)
+	END
 
 	IF @withResultset = 1 EXEC agencies @agencyID = @agencyID
 END

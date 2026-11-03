@@ -113,6 +113,7 @@
     <Build Include="dbo\Tables\AgencyTax.sql" />
     <Build Include="dbo\Tables\PackModule.sql" />
     <Build Include="dbo\Tables\Agency.sql" />
+    <Build Include="dbo\Tables\AgencyBank.sql" />
     <Build Include="dbo\Tables\PackModulePriceList.sql" />
     <Build Include="dbo\Tables\iPassport.sql" />
     <Build Include="dbo\Tables\User.sql" />

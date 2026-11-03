@@ -4,7 +4,6 @@
     [address]               NVARCHAR (128)       NULL,
     [phone]                 VARCHAR (32)         NULL,
     [fax]                   VARCHAR (32)         NULL,
-    [account]               VARCHAR (32)         NULL,
     [inn]                   VARCHAR (32)         NULL,
     [okpo]                  VARCHAR (32)         NULL,
     [okonh]                 VARCHAR (32)         NULL,

@@ -332,7 +332,7 @@ else
     [Parameter] public Func<string, Action, RenderFragment?>? CustomControl { get; set; }
 
     /// <summary>
-    /// Значение списка (lookup) сменили — имя поля. Так экран перечитывает наборы строк по выбору, как
+    /// Значение списка (lookup) или выбора объекта (objectPicker) сменили — имя поля. Так экран перечитывает наборы строк по выбору, как
     /// смена «Позиция:» перечитывает дерево выпусков у CampaignDaysForm: вызывающий подменяет таблицу
     /// в <see cref="Data"/> новым экземпляром (дерево по ней строится заново, отметки сбрасываются),
     /// карточка перерисовывается сама. null — не нужно.
@@ -704,13 +704,18 @@ else
 
         Object[field.Name] = result;
         ResetDependent(field.Name);
+        NotifyFieldChanged(field.Name);
+    }
+
+    private void NotifyFieldChanged(string name)
+    {
         if (FieldChanged == null)
             return;
         // Перечитывание идёт в базу; отказ — строкой в карточке, а не необработанной ошибкой обработчика (она рвёт сеанс).
         _fieldChangedError = null;
         try
         {
-            FieldChanged(field.Name);
+            FieldChanged(name);
         }
         catch (Exception ex)
         {
@@ -811,6 +816,7 @@ else
         // то есть в процедуру значение не уходит вовсе.
         Object[field.Name] = DBNull.Value;
         Forget(field);
+        NotifyFieldChanged(field.Name);
     }
 
     /// <summary>
@@ -821,6 +827,7 @@ else
     {
         Object[field.Name] = selected.IDs[0] ?? (object)DBNull.Value;
         Forget(field);
+        NotifyFieldChanged(field.Name);
     }
 
     private void Forget(PassportField field)
