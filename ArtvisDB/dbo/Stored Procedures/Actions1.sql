@@ -125,20 +125,55 @@ SET NOCOUNT on
 	else if @issueDay is not null or @rollerId is not null or @issueDate is not null or @moduleID is not null or @packModuleID is not null
 	begin 
 		declare @issues table (actionID int primary key )
+		if @moduleID is not null or @packModuleID is not null
+		begin
+			-- Отбор по модулю / пакетному модулю: сначала выпуски этого модуля (индексы Issue.moduleIssueID /
+			-- packModuleIssueID), потом окна и кампании только для них. Общий запрос ниже проходил по всем выпускам
+			-- и окнам базы: прод 05.11.2026 — 14–22 с на вызов (agv, модуль 614), копия прода — 10–12 с.
+			-- option (loop join): без подсказки оптимизатор ждёт сотни тысяч выпусков модуля и всё равно сканирует Issue
+			-- (подсказка у соединения дала бы ту же скорость, но предупреждение «порядок соединения задан принудительно»).
+			declare @moduleIssues table (issueID int primary key, actualWindowID int not null, campaignID int not null, rollerID int not null)
+			if @moduleID is not null
+				insert into @moduleIssues (issueID, actualWindowID, campaignID, rollerID)
+				select i.issueID, i.actualWindowID, i.campaignID, i.rollerID
+				from ModuleIssue mi
+					inner join Issue i on i.moduleIssueID = mi.moduleIssueID
+				where mi.moduleID = @moduleID
+					and (@packModuleID is null or exists(select 1 from PackModuleIssue pmi
+							inner join PackModulePriceList pmpl on pmi.pricelistID = pmpl.priceListID
+						where pmi.packModuleIssueID = i.packModuleIssueID and pmpl.packModuleID = @packModuleID))
+				option (loop join)
+			else
+				insert into @moduleIssues (issueID, actualWindowID, campaignID, rollerID)
+				select i.issueID, i.actualWindowID, i.campaignID, i.rollerID
+				from PackModulePriceList pmpl
+					inner join PackModuleIssue pmi on pmi.pricelistID = pmpl.priceListID
+					inner join Issue i on i.packModuleIssueID = pmi.packModuleIssueID
+				where pmpl.packModuleID = @packModuleID
+				option (loop join)
+
+			insert into @issues
+			select distinct c.actionID
+			from @moduleIssues i
+				inner join TariffWindow tw on i.actualWindowID = tw.windowId
+				inner join Campaign c on i.campaignID = c.campaignID
+				Inner Join MassMedia mm On mm.massmediaID = tw.massmediaID
+			where i.rollerID = coalesce(@rollerId, i.rollerID)
+				and (@issueDate is null or ((datepart(hh, tw.windowDateActual) = datepart(hh, @issueDate)) and (datepart(minute, tw.windowDateActual) = datepart(minute, @issueDate))) )
+				and (@issueDay is null or (@issueDay is not null and (tw.dayOriginal = @issueDay)) )
+				and mm.massmediaGroupID = Coalesce(@massmediaGroupID, mm.massmediaGroupID)
+				and tw.massmediaID = Coalesce(@massmediaId, tw.massmediaId)
+		end
+		else
 		insert into @issues
 		select distinct c.actionID 
 		from Issue i 
 			inner join TariffWindow tw on i.actualWindowID = tw.windowId
 			inner join Campaign c on i.campaignID = c.campaignID
 			Inner Join MassMedia mm On mm.massmediaID = tw.massmediaID
-			left join ModuleIssue mi on i.moduleIssueID = mi.moduleIssueID
-			left join PackModuleIssue pmi on i.packModuleIssueID = pmi.packModuleIssueID
-			left join PackModulePriceList pmpl on pmi.pricelistID = pmpl.priceListID
 		where i.rollerID = coalesce(@rollerId, i.rollerID)
 			and (@issueDate is null or ((datepart(hh, tw.windowDateActual) = datepart(hh, @issueDate)) and (datepart(minute, tw.windowDateActual) = datepart(minute, @issueDate))) )
 			and (@issueDay is null or (@issueDay is not null and (tw.dayOriginal = @issueDay)) )
-			and (@moduleID is null or mi.moduleID = @moduleID)
-			and (@packModuleID is null or pmpl.packModuleID = @packModuleID)	
 			and mm.massmediaGroupID = Coalesce(@massmediaGroupID, mm.massmediaGroupID)
 			and tw.massmediaID = Coalesce(@massmediaId, tw.massmediaId)
 										
