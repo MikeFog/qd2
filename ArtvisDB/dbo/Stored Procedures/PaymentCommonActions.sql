@@ -53,7 +53,9 @@ select distinct
 	pt.name as paymentTypeName,
 	b.billNo,
 	b.billDate,
-	u.userName as manager
+	u.userName as manager,
+	soa.startDate as actionStartDate,
+	soa.finishDate as actionFinishDate
 FROM
 	[PaymentAction] psoa
 	INNER JOIN [Action] soa ON soa.actionID = psoa.actionID
