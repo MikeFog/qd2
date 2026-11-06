@@ -990,7 +990,7 @@ namespace FogSoft.WinForm.Controls
             foreach (Entity.Attribute entityAttribute in entity.SortedAttributes)
             {
                 if (columns.Contains(entityAttribute.Name))
-                    AddColumn(entityAttribute);
+                    AddColumn(entityAttribute, columns[entityAttribute.Name].DataType);
             }
 
             if (showRowNumbers && !numbersFromData)
@@ -1036,9 +1036,13 @@ namespace FogSoft.WinForm.Controls
             dataGrid.Columns.Add(column);
         }
 
-        private void AddColumn(Entity.Attribute entityAttribute)
+        private void AddColumn(Entity.Attribute entityAttribute, Type dataType)
         {
             DataGridViewColumn column = CreateDataGridColumn(entityAttribute);
+            // Даты и время — по правому краю, как деньги и числа. Тип — по колонке данных: у вычисляемых
+            // полей (startDate журнала акций и т.п.) в метаданных тип не задан.
+            if (dataType == typeof(DateTime) && column is DataGridViewTextBoxColumn)
+                column.CellTemplate.Style.Alignment = DataGridViewContentAlignment.MiddleRight;
             column.DataPropertyName = entityAttribute.Name;
             column.HeaderText = entityAttribute.Alias;
             if (!(column is DataGridViewComboBoxColumn))

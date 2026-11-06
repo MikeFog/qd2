@@ -386,11 +386,16 @@ else
         return ColumnInfo.IsBooleanData(columnInfo, attribute);
     }
 
-    /// <summary>Деньги и дробные числа — по правому краю, как в десктопном гриде (формат "c"/"f").</summary>
+    /// <summary>
+    /// Деньги, дробные числа и даты — по правому краю, как в десктопном гриде (SmartGrid). Дата — по типу
+    /// колонки данных: у вычисляемых полей тип в метаданных не задан.
+    /// </summary>
     private string NumClass(Entity.Attribute attribute)
     {
         ColumnInfoOf(attribute, out ColumnInfo? columnInfo);
-        return ColumnInfo.IsMoneyData(columnInfo, attribute) || ColumnInfo.IsFloatData(columnInfo, attribute)
+        bool isDate = Data != null && Data.Columns.Contains(attribute.Name)
+                      && Data.Columns[attribute.Name]!.DataType == typeof(DateTime);
+        return isDate || ColumnInfo.IsMoneyData(columnInfo, attribute) || ColumnInfo.IsFloatData(columnInfo, attribute)
             ? "num"
             : "";
     }

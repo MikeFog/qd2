@@ -29,7 +29,7 @@
                         <th class="col-check"></th>
                         <th>@Tr.T("№ Акции")</th>
                         <th>@Tr.T("№ счёта")</th>
-                        <th>@Tr.T("Дата счёта")</th>
+                        <th class="num">@Tr.T("Дата счёта")</th>
                         <th class="num">@Tr.T("Сумма")</th>
                         <th class="num">@Tr.T("Оплачено")</th>
                         <th class="num">@Tr.T("К оплате")</th>
@@ -49,7 +49,7 @@
                             </td>
                             <td class="tabular">@id</td>
                             <td class="tabular">@Bill(row, "billNo")</td>
-                            <td class="tabular">@(Bill(row, "billDate") is DateTime billDate ? DisplayFormat.Date(billDate) : "")</td>
+                            <td class="num tabular">@(Bill(row, "billDate") is DateTime billDate ? DisplayFormat.Date(billDate) : "")</td>
                             <td class="num tabular">@Money(row, "finalPrice").ToString("C")</td>
                             <td class="num tabular">@Money(row, "paidUp").ToString("C")</td>
                             <td class="num tabular">@(on ? sum.ToString("C") : "")</td>
