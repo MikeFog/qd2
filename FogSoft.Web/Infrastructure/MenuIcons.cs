@@ -24,6 +24,7 @@ public static class MenuIcons
 
 		// Деньги: оплаты — сущность «оплата»; реестр счетов — свой значок.
 		["miBillRegister"] = "receipt",
+		["miBillRegisterBuh"] = "receipt",
 		["miPaymentFRS"] = "payment.png",
 		["miPaymentCommon"] = "payment.png",
 		["miPaymentByManagerFromRSection"] = "payment.png",
@@ -43,6 +44,7 @@ public static class MenuIcons
 		["miHeadOrganizations"] = "headcompany.png",
 		["miAdvertSubject"] = "bookmark",
 		["miBank"] = "bank.png",
+		["miBankBuh"] = "bank.png",
 
 		// Справочники эфира: радиостанции, тарифы, модули, скидки.
 		["miMassMedia"] = "Massmedia.png",

@@ -168,7 +168,7 @@ namespace Merlin.Forms
 				else if (strMiName == "miActionJournalDeleted")
 					ShowMassmediaActions(mi, RelationScenarios.DeletedAction, "Удалённые рекламные акции", 
 						Entities.FirmWithDeletedActions, Entities.ActionDeleted, Entities.HeadCompanyWithDeletedActions);
-				else if (strMiName == "miBank")
+				else if (strMiName == "miBank" || strMiName == "miBankBuh")
 					ShowBanks(mi);
 				else if (strMiName == "miFirm")
 					ShowFirms(mi);
@@ -187,6 +187,8 @@ namespace Merlin.Forms
 					ShowCommonOrderByManagerFromRSection(mi);
 				else if (strMiName == "miBillRegister")
 					ShowBillRegister(mi);
+				else if (strMiName == "miBillRegisterBuh")
+					ShowBillRegisterAllManagers(mi);
 				else if (strMiName == "miPrintGrid" || strMiName == "miPrintGridFromRSection")
 					ShowPrintGridForm();
 				else if (strMiName == "miPackModules")
@@ -632,6 +634,19 @@ namespace Merlin.Forms
 		private static void ShowBillRegister(ToolStripItem mi)
 		{
 			Globals.ShowSimpleJournal(EntityManager.GetEntity((int)Entities.BillRegister), ManagerFilter.FilterClick, mi.Text);
+		}
+
+		/// <summary>Реестр счетов из «Бухгалтерии»: тот же журнал, но менеджер по умолчанию не задан — все акции
+		/// (бухгалтер своих акций не ведёт, со значением «вошедший» список был бы пуст). Остальные значения — из метаданных.</summary>
+		private static void ShowBillRegisterAllManagers(ToolStripItem mi)
+		{
+			Entity entity = EntityManager.GetEntity((int)Entities.BillRegister);
+			Dictionary<string, object> filterValues = new Dictionary<string, object>(StringComparer.InvariantCultureIgnoreCase);
+			Globals.ResolveFilterInitialValues(filterValues, entity.XmlFilter);
+			filterValues.Remove("managerID");
+			JournalForm journal = new JournalForm(entity, mi.Text, filterValues) { MdiParent = Globals.MdiParent, Icon = Globals.MdiParent.Icon };
+			journal.OnFilterClick += ManagerFilter.FilterClick;
+			journal.Show();
 		}
 
 		private void ShowPrintGridForm()
