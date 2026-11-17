@@ -4,24 +4,38 @@
 AS
 BEGIN
 	-- =============================================================================
-	-- Обрезает оплаты акции (PaymentAction) до новой цены акции.
+	-- Подгоняет оплаты акции (PaymentAction) под новую цену акции — в обе стороны.
 	--
-	-- Кто вызывает: клиент, ActionOnMassmedia.CorrectPaymentAction() — после сохранения
-	-- ПОДТВЕРЖДЁННОЙ акции, если её цена уменьшилась (старая TotalPrice > новой).
+	-- Кто вызывает: клиент, ActionOnMassmedia.CorrectPaymentAction() — после пересчёта
+	-- ПОДТВЕРЖДЁННОЙ акции, если её цена изменилась (до Deploy/94 — только если уменьшилась).
 	-- Параметры: @actionID; @targetTotalPrice — целевая цена (NULL = текущая Action.totalPrice).
 	--
-	-- Что делает: излишек = SUM(PaymentAction.summa) по акции минус цена. Если излишка нет —
-	-- ничего не делает. Иначе идёт по платежам акции от самых свежих (paymentDate DESC,
-	-- paymentID DESC): если доля платежа в акции не больше оставшегося излишка — строка
-	-- PaymentAction удаляется целиком, иначе её summa уменьшается на остаток излишка.
-	-- Сами платежи (Payment) не трогаются — только их привязка к акции.
+	-- Излишек = SUM(PaymentAction.summa) по акции минус цена.
+	-- Группа — «агентство + вид оплаты (PaymentType.isHidden)» платежа; баланс группы = сумма finalPrice
+	-- кампаний акции этого агентства и вида минус привязки платежей этого агентства и вида (так долг
+	-- акции считает журнал оплат, ActionsForPaymentCommon). Баланс < 0 — группа переплачена.
+	--
+	-- Излишек > 0 (акция подешевела). Всего снимается ровно излишек, как и до Deploy/94; меняется
+	-- только, с каких привязок (Deploy/94, раньше — с самых свежих платежей любого агентства):
+	--   1) по платежам от самых свежих (paymentDate DESC, paymentID DESC) — только привязки
+	--      переплаченных групп, не больше переплаты группы;
+	--   2) если излишек остался (сумма finalPrice кампаний больше цены акции или задан
+	--      @targetTotalPrice) — как раньше, с самых свежих платежей любой группы.
+	--   Привязка, снятая целиком, удаляется, иначе её summa уменьшается.
+	-- Излишек < 0 (акция подорожала или недоплачена) — Deploy/94: доливает в те же строки
+	-- PaymentAction (summa > 0) из свободного остатка их платежей (Payment.summa минус все его
+	-- привязки), от самых свежих платежей, не больше долга акции и долга группы платежа.
+	-- Новых строк не создаёт: платёж, чья привязка была удалена целиком, обратно не привязывается.
+	-- Выключенные платежи (isEnabled = 0) не используются. Свободный остаток читается под UPDLOCK
+	-- на Payment. Сами платежи (Payment) не меняются — только их привязка к акции.
 	--
 	-- Транзакцию открывает вызывающий: клиент зовёт ExecuteNonQuery(..., isTransactionRequired = true),
 	-- поэтому BEGIN/COMMIT внутри закомментированы.
 	--
 	-- История: создана прямо в БД 26.05.2026, правилась там же 31.05.2026 (клиентский вызов добавлен
 	-- коммитом 997d08f от 27.05.2026, файл процедуры в него не попал). В репозиторий добавлена
-	-- 20.09.2026 — текст взят из определения в базе (копия прода).
+	-- 20.09.2026 — текст взят из определения в базе (копия прода). Deploy/94 (17.11.2026) — группы
+	-- при урезании и доливка.
 	-- =============================================================================
 	SET NOCOUNT ON;
 	SET XACT_ABORT ON;
@@ -30,7 +44,24 @@ BEGIN
 	DECLARE @excessSum decimal(18, 2);
 	DECLARE @paymentID int;
 	DECLARE @paymentActionSum decimal(18, 2);
-	DECLARE @delta decimal(18, 2);
+	DECLARE @agencyID smallint;
+	DECLARE @isHidden bit;
+	DECLARE @groupBalance decimal(18, 2);
+	DECLARE @freeSum decimal(18, 2);
+	DECLARE @moveSum decimal(18, 2);
+	DECLARE @groups TABLE (
+		agencyID smallint NOT NULL,
+		isHidden bit NOT NULL,
+		balance decimal(18, 2) NOT NULL,
+		PRIMARY KEY (agencyID, isHidden));
+	DECLARE @links TABLE (
+		ord int IDENTITY(1, 1) PRIMARY KEY,
+		paymentID int NOT NULL,
+		agencyID smallint NOT NULL,
+		isHidden bit NOT NULL,
+		isEnabled bit NOT NULL);
+	DECLARE @ord int;
+	DECLARE @pass tinyint;
 	SELECT @currentTotalPrice = a.totalPrice
 	FROM dbo.[Action] a --WITH (UPDLOCK, HOLDLOCK)
 	WHERE a.actionID = @actionID;
@@ -51,40 +82,105 @@ BEGIN
 	FROM dbo.PaymentAction pa --WITH (UPDLOCK, HOLDLOCK)
 	WHERE pa.actionID = @actionID;
 	SET @excessSum = @paidSum - @targetTotalPrice;
-	IF @excessSum <= 0
+	IF @excessSum = 0
 	BEGIN
 		--COMMIT TRANSACTION;
 		RETURN;
 	END;
-	DECLARE payment_cursor CURSOR LOCAL FAST_FORWARD FOR
-	SELECT pa.paymentID, pa.summa
-	FROM dbo.PaymentAction pa --WITH (UPDLOCK, READPAST)
-	JOIN dbo.Payment p /*WITH (UPDLOCK, READPAST)*/ ON p.paymentID = pa.paymentID
+
+	-- Привязки акции от самых свежих платежей и балансы их групп.
+	INSERT INTO @links (paymentID, agencyID, isHidden, isEnabled)
+	SELECT pa.paymentID, p.agencyID, pt.isHidden, p.isEnabled
+	FROM dbo.PaymentAction pa
+	JOIN dbo.Payment p ON p.paymentID = pa.paymentID
+	JOIN dbo.PaymentType pt ON pt.paymentTypeID = p.paymentTypeID
 	WHERE pa.actionID = @actionID
 	ORDER BY p.paymentDate DESC, p.paymentID DESC;
-	OPEN payment_cursor;
-	FETCH NEXT FROM payment_cursor INTO @paymentID, @paymentActionSum;
-	WHILE @@FETCH_STATUS = 0 AND @excessSum > 0
+
+	INSERT INTO @groups (agencyID, isHidden, balance)
+	SELECT g.agencyID, g.isHidden,
+		ISNULL((SELECT SUM(c.finalPrice)
+				FROM dbo.Campaign c
+				JOIN dbo.PaymentType ptc ON ptc.paymentTypeID = c.paymentTypeID
+				WHERE c.actionID = @actionID AND c.agencyID = g.agencyID AND ptc.isHidden = g.isHidden), 0)
+		- ISNULL((SELECT SUM(pa.summa)
+				FROM dbo.PaymentAction pa
+				JOIN @links l ON l.paymentID = pa.paymentID
+				WHERE pa.actionID = @actionID AND l.agencyID = g.agencyID AND l.isHidden = g.isHidden), 0)
+	FROM (SELECT DISTINCT agencyID, isHidden FROM @links) g;
+
+	IF @excessSum > 0
 	BEGIN
-		IF @paymentActionSum <= @excessSum
+		-- Проход 1 — только переплаченные группы; проход 2 — остаток излишка с любых привязок.
+		SET @pass = 1;
+		WHILE @pass <= 2 AND @excessSum > 0
 		BEGIN
-			DELETE FROM dbo.PaymentAction
-			WHERE paymentID = @paymentID
-				  AND actionID = @actionID;
-			SET @excessSum = @excessSum - @paymentActionSum;
-		END
-		ELSE
-		BEGIN
-			SET @delta = @excessSum;
-			UPDATE dbo.PaymentAction
-			SET summa = summa - @delta
-			WHERE paymentID = @paymentID
-				  AND actionID = @actionID;
-			SET @excessSum = 0;
+			SET @ord = 0;
+			WHILE @excessSum > 0
+			BEGIN
+				SELECT TOP (1) @ord = l.ord, @paymentID = l.paymentID, @agencyID = l.agencyID, @isHidden = l.isHidden
+				FROM @links l WHERE l.ord > @ord ORDER BY l.ord;
+				IF @@ROWCOUNT = 0 BREAK;
+
+				SET @paymentActionSum = NULL;
+				SELECT @paymentActionSum = summa FROM dbo.PaymentAction
+				WHERE paymentID = @paymentID AND actionID = @actionID;
+				IF ISNULL(@paymentActionSum, 0) <= 0 CONTINUE;
+
+				SET @moveSum = CASE WHEN @paymentActionSum < @excessSum THEN @paymentActionSum ELSE @excessSum END;
+				IF @pass = 1
+				BEGIN
+					SELECT @groupBalance = balance FROM @groups WHERE agencyID = @agencyID AND isHidden = @isHidden;
+					IF -@groupBalance < @moveSum SET @moveSum = -@groupBalance;
+				END;
+				IF @moveSum <= 0 CONTINUE;
+
+				IF @moveSum >= @paymentActionSum
+					DELETE FROM dbo.PaymentAction
+					WHERE paymentID = @paymentID AND actionID = @actionID;
+				ELSE
+					UPDATE dbo.PaymentAction
+					SET summa = summa - @moveSum
+					WHERE paymentID = @paymentID AND actionID = @actionID;
+				UPDATE @groups SET balance = balance + @moveSum WHERE agencyID = @agencyID AND isHidden = @isHidden;
+				SET @excessSum = @excessSum - @moveSum;
+			END;
+			SET @pass = @pass + 1;
 		END;
-		FETCH NEXT FROM payment_cursor INTO @paymentID, @paymentActionSum;
+		--COMMIT TRANSACTION;
+		RETURN;
 	END;
-	CLOSE payment_cursor;
-	DEALLOCATE payment_cursor;
+
+	-- Излишек < 0: доливка из свободного остатка уже привязанных платежей.
+	SET @excessSum = -@excessSum; -- дальше это долг акции
+	SET @ord = 0;
+	WHILE @excessSum > 0
+	BEGIN
+		SELECT TOP (1) @ord = l.ord, @paymentID = l.paymentID, @agencyID = l.agencyID, @isHidden = l.isHidden
+		FROM @links l WHERE l.ord > @ord AND l.isEnabled = 1 ORDER BY l.ord;
+		IF @@ROWCOUNT = 0 BREAK;
+
+		SET @paymentActionSum = NULL;
+		SELECT @paymentActionSum = summa FROM dbo.PaymentAction
+		WHERE paymentID = @paymentID AND actionID = @actionID;
+		IF ISNULL(@paymentActionSum, 0) <= 0 CONTINUE;
+
+		SELECT @freeSum = p.summa - ISNULL(
+			(SELECT SUM(x.summa) FROM dbo.PaymentAction x WHERE x.paymentID = p.paymentID), 0)
+		FROM dbo.Payment p WITH (UPDLOCK)
+		WHERE p.paymentID = @paymentID;
+		SELECT @groupBalance = balance FROM @groups WHERE agencyID = @agencyID AND isHidden = @isHidden;
+
+		SET @moveSum = @excessSum;
+		IF @freeSum < @moveSum SET @moveSum = @freeSum;
+		IF @groupBalance < @moveSum SET @moveSum = @groupBalance;
+		IF @moveSum <= 0 CONTINUE;
+
+		UPDATE dbo.PaymentAction
+		SET summa = summa + @moveSum
+		WHERE paymentID = @paymentID AND actionID = @actionID;
+		UPDATE @groups SET balance = balance - @moveSum WHERE agencyID = @agencyID AND isHidden = @isHidden;
+		SET @excessSum = @excessSum - @moveSum;
+	END;
 	--COMMIT TRANSACTION;
 END;

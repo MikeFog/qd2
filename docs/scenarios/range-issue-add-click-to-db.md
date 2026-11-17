@@ -79,7 +79,7 @@ TariffWithRangeGrid.AddIssuesRange(DateTime windowDate, bool ignoreWindowsWithTh
   │   DataAccessor.ExecuteNonQuery("ActionRecalculate", {actionID})
   │       OUTPUT: @totalPrice → _action[TotalPrice]
   │   _action.Refresh()  ← перечитывает поля акции из БД
-  │   Если TotalPrice уменьшился и IsConfirmed → CorrectPaymentAction()
+  │   Если TotalPrice изменился и IsConfirmed → CorrectPaymentAction()
   │       DataAccessor.ExecuteNonQuery("PaymentAction_CorrectByActionTotalPrice")
   │
   ├── AddedIssues.NewRow() + InsertIssueRowSorted(row)
@@ -164,7 +164,7 @@ EditIssuesForm.TariffGridRefreshed()                  [EditIssuesForm.cs:78]
 | `[dbo].[AddRangeIssues]` | `DataAccessor.ExecuteNonQuery` из `AddIssuesRange` | Курсор по кампаниям акции, выбирает `TOP 1` окно в получасе `[issueDate; +30 мин)`: при позиции сначала окна, где её не отклонят (позиция свободна, ролик помещается), затем с наибольшим свободным временем (Д-15, Deploy/48); вызывает `IssueIUD` для каждой |
 | `[dbo].[IssueIUD]` @actionName='AddItem' | Внутри курсора `AddRangeIssues` | Создаёт один выпуск на одной радиостанции (`@ratio=1` hardcode) |
 | `[dbo].[ActionRecalculate]` | `ActionOnMassmedia.Recalculate` | Пересчёт суммы акции; OUTPUT: `@totalPrice` |
-| `[dbo].[PaymentAction_CorrectByActionTotalPrice]` | `ActionOnMassmedia.CorrectPaymentAction` | Побочный: корректирует платёж, если `TotalPrice` уменьшился у подтверждённой акции |
+| `[dbo].[PaymentAction_CorrectByActionTotalPrice]` | `ActionOnMassmedia.CorrectPaymentAction` | Побочный: подгоняет привязки оплат, если `TotalPrice` подтверждённой акции изменился (уменьшился — урезает, вырос — доливает из свободного остатка привязанных платежей, Deploy/94) |
 | `[dbo].[TariffWindowWithRange]` | `TariffWithRangeGrid.populateGrid` | Загрузка тарифной сетки по всем радиостанциям акции на неделю |
 
 ---
@@ -174,7 +174,7 @@ EditIssuesForm.TariffGridRefreshed()                  [EditIssuesForm.cs:78]
 | # | Риск | Описание |
 |---|---|---|
 | 1 | **Атомарность только внутри `AddRangeIssues`** | Весь курсор `AddRangeIssues` атомарен (локальная транзакция DataAccessor). Но `Recalculate()` — отдельная транзакция. Если пересчёт упадёт, выпуски уже записаны. |
-| 2 | **`CorrectPaymentAction` как скрытый побочный эффект** | После `Recalculate` при уменьшении `TotalPrice` у подтверждённой акции вызывается `PaymentAction_CorrectByActionTotalPrice`. Срабатывает при каждом добавлении, если цена пересчиталась вниз. |
+| 2 | **`CorrectPaymentAction` как скрытый побочный эффект** | После `Recalculate` при изменении `TotalPrice` у подтверждённой акции вызывается `PaymentAction_CorrectByActionTotalPrice`. Срабатывает при каждом добавлении, если цена пересчиталась (вниз — урезание, вверх — доливка, Deploy/94). |
 | 3 | **Полный `RefreshGrid()` после каждого клика** | В линейном сценарии обновляется одна ячейка. Здесь — полный перечёт грида (`TariffWindowWithRange`). При большом числе радиостанций или широком диапазоне дат блокирует UI. |
 | 4 | **`AddedIssues` — in-memory, не синхронизируется с БД при RefreshGrid** | `AddedIssues` пополняется вручную строками после каждого клика, но не перестраивается при `RefreshGrid()`. При ошибке в `AddRangeIssues` (raiserror + откат) `AddedIssues` тем не менее не изменится — но если исключение не было поймано в C#, строка не добавится (исключение прокинется до `ErrorManager.PublishError`). |
 | 5 | **`MarkCellAsHavingCurrentCampaignIssues` до `RefreshGrid()`** | Ячейка визуально помечается как занятая до того, как `RefreshGrid()` отработал. Если `RefreshGrid()` упадёт — визуальное состояние грида расходится с БД до следующего открытия формы. |

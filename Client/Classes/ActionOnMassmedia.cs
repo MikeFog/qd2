@@ -1051,7 +1051,9 @@ namespace Merlin.Classes
 			if (refreshFlag)
 				Refresh();
 
-			if (oldTiotalPrice > TotalPrice && IsConfirmed)
+			// цена изменилась в любую сторону: подешевела — привязки оплат урезаются,
+			// подорожала — доливаются из свободного остатка уже привязанных платежей (Deploy/94)
+			if (oldTiotalPrice != TotalPrice && IsConfirmed)
 				CorrectPaymentAction();
 		}
 		}
