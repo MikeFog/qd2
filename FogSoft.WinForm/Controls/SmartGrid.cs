@@ -327,7 +327,7 @@ namespace FogSoft.WinForm.Controls
                 RestoreColumnLayouts(columnLayouts);
                 if (dataGrid.Columns.Count > 0)
                 {
-                    currentColumn = CheckCurrentColumnData(dataGrid.Columns[0]);
+                    currentColumn = InitialSearchColumn(value) ?? CheckCurrentColumnData(dataGrid.Columns[0]);
                     if (currentColumn != null)
                     {
                         txQuickSearch.ReadOnly = false;
@@ -466,6 +466,24 @@ namespace FogSoft.WinForm.Controls
             return Color.FromArgb(ColorHighlight != WinForm.Controls.ColorHighlight.Red ? colorVal : maxColor
                                   , ColorHighlight != WinForm.Controls.ColorHighlight.Green ? colorVal : maxColor
                                   , ColorHighlight != WinForm.Controls.ColorHighlight.Blue ? colorVal : maxColor);
+        }
+
+        /// <summary>
+        /// Колонка быстрого поиска после загрузки — первая текстовая. QuickSearch ищет только по строковым
+        /// колонкам: если первая числовая (номер фирмы, «№ Акции»), набор текста давал бы предупреждение
+        /// SearchForTextColumnsOnlyWarning. Текстовых нет — null, тогда как раньше: первая колонка с данными.
+        /// </summary>
+        private DataGridViewColumn InitialSearchColumn(DataView view)
+        {
+            foreach (DataGridViewColumn column in dataGrid.Columns)
+            {
+                if (!column.Visible || string.IsNullOrEmpty(column.DataPropertyName))
+                    continue;
+                DataColumn dataColumn = view.Table.Columns[column.DataPropertyName];
+                if (dataColumn != null && dataColumn.DataType == typeof(string))
+                    return column;
+            }
+            return null;
         }
 
         private DataGridViewColumn CheckCurrentColumnData(DataGridViewColumn column)
