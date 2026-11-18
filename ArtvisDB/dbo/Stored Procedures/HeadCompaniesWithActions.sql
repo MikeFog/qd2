@@ -40,6 +40,12 @@ BEGIN
 	-- Решение — сдвиг границы, а не обрезка колонки
 	SET @createDateEnd = DATEADD(DAY, 1, CAST(@createDateEnd AS date));
 
+	-- Не убирать: обход ошибки SQL Server (Deploy/95). Decimal-параметр прямо в запросе с OPTION (RECOMPILE):
+	-- если первый вызов после сброса кэша пришёл без @managerDiscount, все следующие вызовы из программы
+	-- с этим параметром падают с 8114 «Error converting data type void type to decimal» до сброса плана.
+	-- Ошибка воспроизведена на 16.0.1000 RTM и 16.0.1220; через локальную переменную её нет.
+	declare @managerDiscountValue decimal(8,2) = @managerDiscount
+
 	-- Права на просмотр чужих/групповых акций и видимость по СМИ (как в FirmWithActions1/Actions1)
 	declare @massmedias table(massmediaID smallint primary key, myMassmedia bit, foreignMassmedia bit)
 	insert into @massmedias (massmediaID, myMassmedia, foreignMassmedia)
@@ -126,7 +132,7 @@ BEGIN
 													and a1.isConfirmed = 1
 													and a1.finishDate >= @withoutActionsSince
 													and (@startOfInterval is null or a1.startDate < @startOfInterval)))
-        and (@managerDiscount is null or (c.managerDiscount - @managerDiscount) < -0.005)
+        and (@managerDiscountValue is null or (c.managerDiscount - @managerDiscountValue) < -0.005)
           -- Фильтры дат (SARGable)
           AND (@startOfInterval IS NULL OR a.finishDate >= @startOfInterval)
           AND (@endOfInterval IS NULL OR a.startDate <= @endOfInterval)
