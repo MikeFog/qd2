@@ -2355,3 +2355,7 @@ column	Начало акции	Inicio de la campaña
 column	Окончание акции	Fin de la campaña
 column	Скидка кампании	Descuento de la pauta
 sql	Подтверждена	Confirmada
+caption	Максимальный процент прайма (%):	Porcentaje máximo de prime (%):
+column	Максимальный процент прайма	Porcentaje máximo de prime
+code	Прайм	Prime
+code	Прайм, макс.	Prime, máx.

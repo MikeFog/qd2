@@ -88,23 +88,35 @@ SET NOCOUNT on
 			End  
 			as decimal(5,2)) as finalRatio,
 			a.startDate,
-			a.finishDate
+			a.finishDate,
+			-- статистика веера: наибольшая доля прайма среди линейных и модульных кампаний и её станция
+			-- (docs/tasks/package-discount-prime-limit.md)
+			pm.primePercent as primePercentMax,
+			pm.massmediaName as primePercentMaxMassmedia
 		from [Action] a
 			INNER JOIN [vUser] us ON us.userID = a.userID
 			INNER JOIN [Firm] f ON f.firmID = a.firmID
 			left join (PackageDiscountPriceList pkgpl
 				inner join PackageDiscount pkg on pkg.packageDiscountId = pkgpl.packageDiscountID
 				) on pkgpl.packageDiscountPriceListID = a.packageDiscountPriceListID
-			left join 
+			left join
 			(
 				select c.actionID, count(distinct i.issueID) as iCount,
 					dbo.fn_Int2Time(coalesce(sum(r.duration), 0)) as duration
-				from dbo.Campaign c 
+				from dbo.Campaign c
 					inner join Issue i on c.campaignID = i.campaignID
 					inner join Roller r on i.rollerID = r.rollerID
-				where c.actionID = @actionID 
+				where c.actionID = @actionID
 				group by c.actionID
 			) x on a.actionID = x.actionID
+			outer apply
+			(
+				select top 1 c.primePercent, mm.nameWithGroup as massmediaName
+				from dbo.Campaign c
+					inner join vMassMedia mm on mm.massmediaID = c.massmediaID
+				where c.actionID = a.actionID and c.campaignTypeID in (1, 3) and c.primePercent is not null
+				order by c.primePercent desc, mm.nameWithGroup
+			) pm
 		where 
 			a.actionID = @actionID 
             -- Фильтр по дате создания

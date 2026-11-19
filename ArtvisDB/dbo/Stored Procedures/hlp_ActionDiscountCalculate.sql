@@ -46,6 +46,9 @@ SELECT TOP 1 @discountValue=pl.discount, @packageDiscountPriceListID=pl.packageD
 																OR (c.campaignTypeID=3 AND m.isForType3=1)
 																)
 														AND CAST(c.issuesDuration as float) >= @baseDuration*p.eachVolume/100
+														-- доля прайма линейной и модульной кампании не выше порога прайс-листа (включительно);
+														-- спонсорские не проверяются (docs/tasks/package-discount-prime-limit.md)
+														AND (c.campaignTypeID NOT IN (1, 3) OR ISNULL(c.primePercent, 0) <= p.maxPrimePercent)
 		WHERE
 			c.actionID=@actionID
 			-- пустые кампании исключаем и здесь, чтобы HAVING сравнивал только реальные

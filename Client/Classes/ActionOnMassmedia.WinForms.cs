@@ -373,6 +373,7 @@ namespace Merlin.Classes
             lstStat.Items.Add($"Стоимость акции без скидок: {TariffPrice:c}");
             lstStat.Items.Add($"Стоимость акции со всеми скидками: {TotalPrice:c}");
             lstStat.Items.Add($"Пакетная скидка: {this[ParamNames.Discount]:F2}");
+            lstStat.Items.Add($"Прайм, макс.: {PrimePercentMaxText()}");
         }
 	}
 }

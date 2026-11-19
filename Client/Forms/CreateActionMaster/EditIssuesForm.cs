@@ -73,10 +73,10 @@ namespace Merlin.Forms.CreateActionMaster
 
 				// Remove All Issues Grid
 				splitContainer4.Panel1Collapsed = true;
-				// Дизайнерская высота splitContainer3 (285px) рассчитана с запасом; 7 строк
-				// статистики (lstStat.ItemHeight=25) реально занимают ~187px — лишнее место
-				// отдаём вниз, «Добавленным выпускам».
-				splitContainer3.SplitterDistance = lstStat.ItemHeight * 7 + 12;
+				// Дизайнерская высота splitContainer3 (285px) рассчитана с запасом; 8 строк
+				// статистики (lstStat.ItemHeight=25, ActionOnMassmedia.DisplayData) реально занимают
+				// ~212px — лишнее место отдаём вниз, «Добавленным выпускам».
+				splitContainer3.SplitterDistance = lstStat.ItemHeight * 8 + 12;
 				// SplitContainer.FixedPanel=Panel2, выставленный в Designer.cs, не переживает
 				// первый реальный layout формы (там Panel2 ужимался до дизайнерского значения
 				// ~74px вместо ожидаемого) — высоту grdCampaigns фиксируем здесь, когда форма

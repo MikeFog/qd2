@@ -20,6 +20,7 @@
 @discount decimal(9,4) = NULL,
 @value decimal(18,2) = NULL,
 @eachVolume tinyint = NULL,              -- как в PackageDiscountPriceListIUD
+@maxPrimePercent tinyint = NULL,         -- как в PackageDiscountPriceListIUD
 @count tinyint = NULL,
 @languageCode VARCHAR(10) = 'ru'        -- язык интерфейса веба (docs/tasks/web-i18n.md); десктоп не передаёт
 )
@@ -60,14 +61,19 @@ ELSE IF @entityID = 23 AND @actionName IN ('AddItem', 'UpdateItem', 'DeleteItem'
 				AND summa = @summa AND discount = @discount))
 
 ELSE IF @entityID = 191 AND @actionName = 'UpdateItem'
-	-- Даты: акция выпадает из периода; значения: любое изменение скидки, порога суммы, процента заполнения
+	-- Даты: акция выпадает из периода; значения: любое изменение скидки, порога суммы, процента заполнения;
+	-- порог прайма — только понижение ниже доли прайма кампании акции
 	INSERT INTO @actions
 	SELECT a.actionID
 	FROM [Action] a
 		JOIN PackageDiscountPriceList pl ON pl.packageDiscountPriceListID = a.packageDiscountPriceListID
 	WHERE pl.packageDiscountPriceListID = @packageDiscountPriceListID
 		AND (a.startDate < @startDate OR a.startDate > @finishDate
-			OR pl.discount <> @discount OR pl.value <> @value OR pl.eachVolume <> @eachVolume)
+			OR pl.discount <> @discount OR pl.value <> @value OR pl.eachVolume <> @eachVolume
+			-- порог прайма понижен, и доля прайма линейной или модульной кампании акции выше нового порога
+			OR (@maxPrimePercent < pl.maxPrimePercent AND EXISTS(
+				SELECT * FROM Campaign c
+				WHERE c.actionID = a.actionID AND c.campaignTypeID IN (1, 3) AND c.primePercent > @maxPrimePercent)))
 
 ELSE IF @entityID = 190 AND @actionName IN ('UpdateItem', 'DeleteItem')
 	-- Станция убрана или изменена: задеты акции, у которых есть кампания на этой станции.

@@ -89,6 +89,14 @@
                         }
                     </dl>
                 }
+                else if (!Sponsorship && _checked.Count > 1)
+                {
+                    @* Веер: наибольшая доля прайма по акции, как статистика веера в qd2 (docs/tasks/package-discount-prime-limit.md) *@
+                    KeyValuePair<string, string> maxPrime = WindowsSource.MaxPrimeStat(Campaigns);
+                    <dl class="stats">
+                        <div><dt>@maxPrime.Key</dt><dd>@maxPrime.Value</dd></div>
+                    </dl>
+                }
             </section>
 
             @if (Scope != null)

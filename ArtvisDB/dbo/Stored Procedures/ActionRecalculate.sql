@@ -92,6 +92,39 @@ BEGIN
     WHERE c.actionID = @actionID;
 
     /* =========================
+       Phase 1.0. Выпуски линейных и модульных кампаний с окном выхода — одним проходом:
+       из них суммы кампаний (1A, 1C) и доля прайма (hlp_ActionCampaignPrimePercent, порог пакетной скидки)
+       ========================= */
+    IF OBJECT_ID('tempdb..#ActionIssue') IS NOT NULL
+        DROP TABLE #ActionIssue;
+    IF OBJECT_ID('tempdb..#ActionPrime') IS NOT NULL
+        DROP TABLE #ActionPrime;
+
+    CREATE TABLE #ActionIssue
+    (
+        campaignID INT NOT NULL,
+        campaignTypeID TINYINT NOT NULL,
+        massmediaID SMALLINT NOT NULL,
+        dayActual SMALLDATETIME NOT NULL,
+        dayOriginal SMALLDATETIME NOT NULL,
+        price DECIMAL(18,2) NOT NULL,
+        tariffPrice DECIMAL(18,2) NOT NULL,
+        duration INT NOT NULL
+    );
+    CREATE TABLE #ActionPrime (campaignID INT NOT NULL PRIMARY KEY, primePercent DECIMAL(4,1) NOT NULL);
+
+    INSERT INTO #ActionIssue (campaignID, campaignTypeID, massmediaID, dayActual, dayOriginal, price, tariffPrice, duration)
+    SELECT i.campaignID, p.campaignTypeID, tw.massmediaID, tw.dayActual, tw.dayOriginal, tw.price, i.tariffPrice, r.duration
+    FROM dbo.Issue i
+    INNER JOIN dbo.TariffWindow tw ON tw.windowId = i.actualWindowID -- день выхода (docs/tasks/window-actual-switch.md, этап 4)
+    INNER JOIN dbo.Roller r ON r.rollerID = i.rollerID
+    INNER JOIN #CampaignPhase1 p ON p.campaignID = i.campaignID AND p.campaignTypeID IN (1, 3)
+    -- без подсказки план с хеш-соединением просматривал индекс TariffWindow целиком: +500 мс на любой акции
+    OPTION (LOOP JOIN);
+
+    EXEC dbo.hlp_ActionCampaignPrimePercent;
+
+    /* =========================
        Phase 1A. Type 1
        ========================= */
     ;WITH Type1Agg AS
@@ -99,14 +132,12 @@ BEGIN
         SELECT
             i.campaignID,
             tariffPrice   = SUM(i.tariffPrice),
-            issuesDuration = SUM(r.duration),
+            issuesDuration = SUM(i.duration),
             issuesCount   = COUNT(*),
-            startDate     = MIN(tw.dayOriginal),
-            finishDate    = MAX(tw.dayOriginal)
-        FROM dbo.Issue i
-        INNER JOIN dbo.TariffWindow tw ON tw.windowId = i.actualWindowID -- день выхода (docs/tasks/window-actual-switch.md, этап 4)
-        INNER JOIN dbo.Roller r ON r.rollerID = i.rollerID
-        INNER JOIN #CampaignPhase1 p ON p.campaignID = i.campaignID AND p.campaignTypeID = 1
+            startDate     = MIN(i.dayOriginal),
+            finishDate    = MAX(i.dayOriginal)
+        FROM #ActionIssue i
+        WHERE i.campaignTypeID = 1
         GROUP BY i.campaignID
     )
     UPDATE p
@@ -200,11 +231,10 @@ BEGIN
     (
         SELECT
             i.campaignID,
-            issuesDuration = SUM(r.duration),
+            issuesDuration = SUM(i.duration),
             issuesCount = COUNT(*)
-        FROM dbo.Issue i
-        INNER JOIN dbo.Roller r ON r.rollerID = i.rollerID
-        INNER JOIN #CampaignPhase1 p ON p.campaignID = i.campaignID AND p.campaignTypeID = 3
+        FROM #ActionIssue i
+        WHERE i.campaignTypeID = 3
         GROUP BY i.campaignID
     ),
     ModuleAgg AS
@@ -342,9 +372,12 @@ BEGIN
         c.timeBonus = ISNULL(p.timeBonus, 0),
         c.programsCount = ISNULL(p.programsCount, 0),
         c.managerDiscount = ISNULL(p.managerDiscountCampaign, c.managerDiscount),
-        c.discountReleaseID = p.discountReleaseID
+        c.discountReleaseID = p.discountReleaseID,
+        -- у спонсорских, пакетных и кампаний без выпусков — NULL
+        c.primePercent = pp.primePercent
     FROM dbo.Campaign c
-    INNER JOIN #CampaignPhase1 p ON p.campaignID = c.campaignID;
+    INNER JOIN #CampaignPhase1 p ON p.campaignID = c.campaignID
+    LEFT JOIN #ActionPrime pp ON pp.campaignID = c.campaignID;
 
     /* =========================
        Phase 2. Recalculate action

@@ -337,6 +337,7 @@
     <Build Include="dbo\Stored Procedures\TariffWindowChangeDuration.sql" />
     <Build Include="dbo\Stored Procedures\PackModuleContentIUD.sql" />
     <Build Include="dbo\Stored Procedures\CampaignSetFinalPrice.sql" />
+    <Build Include="dbo\Stored Procedures\hlp_ActionCampaignPrimePercent.sql" />
     <Build Include="dbo\Stored Procedures\hlp_ActionDiscountCalculate.sql" />
     <Build Include="dbo\Stored Procedures\TariffWindowChangeDurationInDay.sql" />
     <Build Include="dbo\Stored Procedures\SponsorPricelistByDate.sql">

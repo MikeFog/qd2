@@ -12,6 +12,7 @@ CREATE PROCEDURE [dbo].[PackageDiscountPriceListIUD]
 	@value decimal(18,2) = NULL,
 	@discount decimal(9,4) = NULL,
 	@eachVolume TINYINT = NULL,
+	@maxPrimePercent TINYINT = NULL, -- максимальная доля прайма кампании, %; пусто: новый — 100, копия — как у исходного, правка — прежнее
 	@sourcePackageDiscountPriceListId INT = NULL,
 	@actionName varchar(32)
 )
@@ -45,8 +46,8 @@ END
 	end
 
 	IF @actionName = 'AddItem' BEGIN
-		INSERT INTO [PackageDiscountPriceList](packageDiscountId, startDate, finishDate, [value], discount, eachVolume)
-		VALUES(@packageDiscountId, @startDate, @finishDate, @value, @discount, @eachVolume)
+		INSERT INTO [PackageDiscountPriceList](packageDiscountId, startDate, finishDate, [value], discount, eachVolume, maxPrimePercent)
+		VALUES(@packageDiscountId, @startDate, @finishDate, @value, @discount, @eachVolume, ISNULL(@maxPrimePercent, 100))
 
 		if @@rowcount <> 1
 		begin
@@ -60,7 +61,7 @@ END
 	END
 	ELSE IF @actionName = 'Clone' BEGIN
 		-- Копия прайс-листа пакетной скидки на новый период: те же радиостанции и типы кампаний,
-		-- значения (сумма, скидка, процент заполнения) берутся из паспорта.
+		-- значения (сумма, скидка, процент заполнения, процент прайма) берутся из паспорта.
 		IF @packageDiscountId IS NULL
 		BEGIN
 			raiserror('InternalError', 16, 1)
@@ -71,8 +72,10 @@ END
 		SET XACT_ABORT ON
 		BEGIN TRANSACTION
 
-		INSERT INTO [PackageDiscountPriceList](packageDiscountId, startDate, finishDate, [value], discount, eachVolume)
-		VALUES(@packageDiscountId, @startDate, @finishDate, @value, @discount, @eachVolume)
+		INSERT INTO [PackageDiscountPriceList](packageDiscountId, startDate, finishDate, [value], discount, eachVolume, maxPrimePercent)
+		SELECT @packageDiscountId, @startDate, @finishDate, @value, @discount, @eachVolume, ISNULL(@maxPrimePercent, src.maxPrimePercent)
+		FROM PackageDiscountPriceList src
+		WHERE src.packageDiscountPriceListID = @sourcePackageDiscountPriceListId
 
 		SET @packageDiscountPriceListId = SCOPE_IDENTITY()
 
@@ -103,7 +106,8 @@ END
 			finishDate = @finishDate, 
 			[value] = @value,
 			discount = @discount,
-			eachVolume = @eachVolume
+			eachVolume = @eachVolume,
+			maxPrimePercent = ISNULL(@maxPrimePercent, maxPrimePercent) -- старый клиент без поля порог не сбрасывает
 		WHERE		
 			packageDiscountPriceListId = @packageDiscountPriceListId
 

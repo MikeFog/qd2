@@ -501,6 +501,18 @@ namespace Merlin.Classes
         /// </summary>
         internal const string RollerNumberColumn = "rollerNumber";
 
+        /// <summary>
+        /// Статистика веера: наибольшая доля прайма линейных и модульных кампаний акции и её станция — «42,0% (Европа Плюс)»
+        /// (Actions1 по номеру акции; docs/tasks/package-discount-prime-limit.md). Нет значения — пусто.
+        /// </summary>
+        internal string PrimePercentMaxText()
+        {
+            object value = this["primePercentMax"];
+            if (value == null || value == DBNull.Value)
+                return string.Empty;
+            return Campaign.PrimePercentText(value) + " (" + Convert.ToString(this["primePercentMaxMassmedia"]).Trim() + ")";
+        }
+
         private static DataTable CreateAddedIssuesTable()
         {
             DataTable table = new DataTable("AddedIssues");

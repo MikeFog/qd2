@@ -231,6 +231,8 @@ namespace Merlin.Classes
 			lstStat.Items.Add("Цена по тарифам: " + TariffPrice.ToString("c"));
 			lstStat.Items.Add("Объёмная скидка: " + Discount.ToString("0.00"));
 			lstStat.Items.Add("Цена с учётом объёмной скидки: " + Price.ToString("c"));
+			if (HasPrimePercent((int)CampaignType))
+				lstStat.Items.Add("Прайм: " + PrimePercentText(this[ParamNames.PrimePercent]));
 
 			if (CampaignType == CampaignTypes.Sponsor)
 			{

@@ -1,5 +1,5 @@
 ﻿/*
-    ДЕПЛОЙ: переводы веб-версии на язык «es» (2328 строк). docs/tasks/web-i18n.md, этап 5.
+    ДЕПЛОЙ: переводы веб-версии на язык «es» (2359 строк). docs/tasks/web-i18n.md, этап 5.
     СГЕНЕРИРОВАН из ArtvisDB/Scripts/i18n/es.tsv скриптом build-seed.py — руками не править.
 
     ПРЕДУСЛОВИЕ     накачен web-i18n-translation-deploy.sql (таблица iTranslation).
@@ -2350,7 +2350,38 @@ INSERT INTO #t ([source], [text]) VALUES
 (N'В конкретное окно', N'En una ventana concreta'),
 (N'На интервале времени', N'En un intervalo de tiempo'),
 (N'С указанием количества', N'Indicando la cantidad'),
-(N'Скачать все ({0})', N'Descargar todo ({0})');
+(N'Скачать все ({0})', N'Descargar todo ({0})'),
+(N'ИНН указан неверно: нужно 10 цифр (организация) или 12 цифр (ИП, физическое лицо) без пробелов, дефисов, букв и знаков. Если в поле записаны ИНН и КПП вместе — разнесите их по своим полям. Если ИНН нет — оставьте поле пустым. Операция прервана.', N'El ИНН es incorrecto: deben ser 10 dígitos (organización) o 12 dígitos (empresario individual, persona física), sin espacios, guiones, letras ni signos. Si el campo contiene el ИНН y el КПП juntos, sepárelos en sus campos. Si no hay ИНН, deje el campo vacío. Operación cancelada.'),
+(N'КПП указан неверно: нужно 9 знаков — цифры, на 5-й и 6-й позициях допустимы также заглавные латинские буквы; без пробелов, дефисов и других знаков. Если КПП нет — оставьте поле пустым. Операция прервана.', N'El КПП es incorrecto: deben ser 9 caracteres — dígitos; en las posiciones 5 y 6 también se admiten letras latinas mayúsculas; sin espacios, guiones ni otros signos. Si no hay КПП, deje el campo vacío. Operación cancelada.'),
+(N'ОГРН указан неверно: нужно 13 цифр (организация) или 15 цифр (ИП) без пробелов, дефисов, букв и знаков. Если ОГРН нет — оставьте поле пустым. Операция прервана.', N'El ОГРН es incorrecto: deben ser 13 dígitos (organización) o 15 dígitos (empresario individual), sin espacios, guiones, letras ni signos. Si no hay ОГРН, deje el campo vacío. Operación cancelada.'),
+(N'В одной рекламной акции все кампании должны быть с типами оплаты одного вида: либо все с признаком «Не включать в счет на предоплату», либо все без него. Операция прервана.', N'En una misma campaña publicitaria todas las pautas deben tener tipos de pago del mismo grupo: o todos con la marca «No incluir en la factura de anticipo», o todos sin ella. Operación cancelada.'),
+(N'У выбранного типа оплаты признак «Не включать в счет на предоплату» другой, чем у остальных кампаний акции, а в одной акции все кампании должны быть одного вида. Отметьте все кампании акции. Операция прервана.', N'El tipo de pago elegido tiene la marca «No incluir en la factura de anticipo» distinta de la de las demás pautas de la campaña publicitaria, y en una misma campaña publicitaria todas las pautas deben ser del mismo grupo. Marque todas las pautas de la campaña. Operación cancelada.'),
+(N'Тип оплаты не изменён ни у одной кампании: при смене признака «Не включать в счет на предоплату» кампании акции меняются только все вместе.', N'El tipo de pago no se cambió en ninguna pauta: al cambiar la marca «No incluir en la factura de anticipo», las pautas de la campaña publicitaria solo se cambian todas juntas.'),
+(N'Признак «Не включать в счет на предоплату» нельзя изменить: этот тип оплаты стоит в рекламных акциях вместе с другими типами оплаты, а в одной акции все кампании должны быть одного вида. Операция прервана.', N'No se puede cambiar la marca «No incluir en la factura de anticipo»: este tipo de pago se usa en campañas publicitarias junto con otros tipos de pago, y en una misma campaña publicitaria todas las pautas deben ser del mismo grupo. Operación cancelada.'),
+(N'Клонировать рекламную акцию № {0}', N'Clonar la campaña publicitaria n.º {0}'),
+(N'Начало новой акции', N'Inicio de la nueva campaña'),
+(N'Все кампании сдвигаются на одно число дней: самая ранняя из отмеченных начнётся в этот день.', N'Todas las pautas se desplazan el mismo número de días: la más temprana de las marcadas empezará ese día.'),
+(N'Было: {0} – {1}, станет: {2} – {3}', N'Antes: {0} – {1}, después: {2} – {3}'),
+(N'Агентство в новой акции:', N'Agencia en la nueva campaña:'),
+(N'У станции нет действующего агентства: клонировать нельзя', N'La emisora no tiene ninguna agencia vigente: no se puede clonar'),
+(N'{0} (прежнего «{1}» у станции уже нет)', N'{0} (la emisora ya no tiene la anterior, «{1}»)'),
+(N'Укажите начало новой акции.', N'Indique el inicio de la nueva campaña.'),
+(N'У радиостанции кампании «{0}» нет действующего агентства: снимите с неё галочку.', N'La emisora de la pauta «{0}» no tiene ninguna agencia vigente: desmárquela.'),
+(N'Для кампании «{0}» выберите агентство: прежнего агентства у радиостанции уже нет.', N'Elija una agencia para la pauta «{0}»: la emisora ya no tiene la agencia anterior.'),
+(N'После замены агентства кампании «{0}» и «{1}» совпали бы по радиостанции, типу и типу оплаты. Оставьте в клоне только одну из них.', N'Tras cambiar la agencia, las pautas «{0}» y «{1}» coincidirían en emisora, tipo y tipo de pago. Deje solo una de ellas en el clon.'),
+(N'Изменение затронет акции', N'El cambio afectará a campañas'),
+(N'Скидка уже используется в рекламных кампаниях. Внесённые изменения могут повлиять на сумму этих кампаний и акций.', N'El descuento ya se usa en pautas publicitarias. Los cambios pueden afectar al importe de estas pautas y campañas.'),
+(N'Скидка уже используется в акциях. Внесённые изменения могут повлиять на сумму этих акций.', N'El descuento ya se usa en campañas. Los cambios pueden afectar al importe de estas campañas.'),
+(N'Сами акции сейчас не пересчитываются: скидка у них может измениться при следующем пересчёте (любая правка выпусков).', N'Las campañas no se recalculan ahora: su descuento puede cambiar en el próximo recálculo (cualquier cambio de las emisiones).'),
+(N'Сохранить изменения?', N'¿Guardar los cambios?'),
+(N'Начало акции', N'Inicio de la campaña'),
+(N'Окончание акции', N'Fin de la campaña'),
+(N'Скидка кампании', N'Descuento de la pauta'),
+(N'Подтверждена', N'Confirmada'),
+(N'Максимальный процент прайма (%):', N'Porcentaje máximo de prime (%):'),
+(N'Максимальный процент прайма', N'Porcentaje máximo de prime'),
+(N'Прайм', N'Prime'),
+(N'Прайм, макс.', N'Prime, máx.');
 GO
 
 BEGIN TRANSACTION;

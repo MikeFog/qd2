@@ -78,6 +78,8 @@ namespace Merlin.Classes
 			public const string PackDiscount = "packDiscount";
 			public const string PaymentTypeID = "paymentTypeID";
 			public const string Price = "price";
+			// доля прайма линейной и модульной кампании, % (ActionRecalculate; docs/tasks/package-discount-prime-limit.md)
+			public const string PrimePercent = "primePercent";
 			public const string ProgramIssuesCount = "programsCount";
 			public const string StartDate = "startDate";
 			public const string TariffPrice = "tariffPrice";
@@ -96,6 +98,19 @@ namespace Merlin.Classes
 			PackModule = 4
 		}
 
+		/// <summary>
+		/// У каких кампаний считается доля прайма (порог пакетной скидки, статистика): линейные и модульные.
+		/// </summary>
+		public static bool HasPrimePercent(int campaignTypeId)
+		{
+			return campaignTypeId == (int)CampaignTypes.Simple || campaignTypeId == (int)CampaignTypes.Module;
+		}
+
+		/// <summary>Доля прайма для статистики: «27,4%»; нет значения (нет выпусков, база без Deploy/97) — пусто.</summary>
+		public static string PrimePercentText(object value)
+		{
+			return value == null || value == DBNull.Value ? string.Empty : Convert.ToDecimal(value).ToString("0.0") + "%";
+		}
 
 		public Campaign(Entity entity) : base(entity)
 		{

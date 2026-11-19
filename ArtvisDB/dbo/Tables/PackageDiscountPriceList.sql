@@ -6,6 +6,7 @@
     [finishDate]                 DATETIME        NOT NULL,
     [discount]                   DECIMAL (9, 4)  NOT NULL,
     [eachVolume]                 DECIMAL (9, 4)  NOT NULL,
+    [maxPrimePercent]            TINYINT         CONSTRAINT [DF_PackageDiscountPriceList_maxPrimePercent] DEFAULT ((100)) NOT NULL, -- максимальная доля прайма кампании, % (docs/tasks/package-discount-prime-limit.md)
     CONSTRAINT [PK_PackageDiscountPriceList] PRIMARY KEY CLUSTERED ([packageDiscountPriceListID] ASC) WITH (FILLFACTOR = 90),
     CONSTRAINT [FK_PackageDiscountPriceList_PackageDiscount] FOREIGN KEY ([packageDiscountID]) REFERENCES [dbo].[PackageDiscount] ([packageDiscountId]) ON DELETE CASCADE
 );

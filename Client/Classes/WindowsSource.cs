@@ -82,6 +82,9 @@ namespace Merlin.Classes
 				Stat(Tr.T("Объёмная скидка"), ParseHelper.GetDecimalFromObject(campaign[Campaign.ParamNames.Discount], 1).ToString("0.00")),
 				Stat(Tr.T("Цена с учётом объёмной скидки"), ParseHelper.GetDecimalFromObject(campaign[Campaign.ParamNames.Price], 0).ToString("C")),
 			};
+			// Доля прайма линейной и модульной — порог пакетной скидки (docs/tasks/package-discount-prime-limit.md)
+			if (Campaign.HasPrimePercent(ParseHelper.GetInt32FromObject(campaign[Campaign.ParamNames.CampaignTypeId], 0)))
+				stats.Add(Stat(Tr.T("Прайм"), Campaign.PrimePercentText(PrimePercentOf(campaign))));
 			// Спонсорская — ещё программы и остаток бонуса, как Campaign.DisplayCampaignData (остаток бывает отрицательным).
 			if (ParseHelper.GetInt32FromObject(campaign[Campaign.ParamNames.CampaignTypeId], 0) == (int)Campaign.CampaignTypes.Sponsor)
 			{
@@ -91,6 +94,28 @@ namespace Merlin.Classes
 			}
 			return stats;
 		}
+
+		/// <summary>
+		/// Статистика веера, как ActionOnMassmedia.DisplayData в qd2: наибольшая доля прайма среди линейных и модульных
+		/// кампаний акции (не только отмеченных) и её станция — «42,0% (Европа Плюс)».
+		/// </summary>
+		public static KeyValuePair<string, string> MaxPrimeStat(DataTable campaigns)
+		{
+			DataRow max = campaigns.Rows.Cast<DataRow>()
+				.Where(r => Campaign.HasPrimePercent(ParseHelper.GetInt32FromObject(r[Campaign.ParamNames.CampaignTypeId], 0))
+					&& PrimePercentOf(r) is decimal)
+				.OrderByDescending(r => (decimal)PrimePercentOf(r))
+				.ThenBy(r => Convert.ToString(r["name"]), StringComparer.CurrentCulture)
+				.FirstOrDefault();
+			string text = max == null
+				? string.Empty
+				: Campaign.PrimePercentText(PrimePercentOf(max)) + " (" + Convert.ToString(max["name"]).Trim() + ")";
+			return Stat(Tr.T("Прайм, макс."), text);
+		}
+
+		// База без Deploy/97 колонку не отдаёт
+		private static object PrimePercentOf(DataRow campaign) =>
+			campaign.Table.Columns.Contains(Campaign.ParamNames.PrimePercent) ? campaign[Campaign.ParamNames.PrimePercent] : null;
 
 		private static KeyValuePair<string, string> Stat(string caption, string value) => new KeyValuePair<string, string>(caption, value);
 
