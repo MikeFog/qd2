@@ -366,6 +366,11 @@ namespace Merlin.Forms
             // decimal(18,2) параметра отсекает дробные копейки, а не округляет — округляем сами (К-29)
             p["priceTotal"] = Math.Round(priceTotal, 2, MidpointRounding.AwayFromZero);
             p["sel"] = new FogSoft.WinForm.DataAccess.TvpValue(tvpTable, "dbo.pc_SelectedMassmedia");
+            // секунды прайма станций — порог «Максимальный процент прайма» пакета (docs/tasks/package-discount-prime-limit.md)
+            p["primes"] = new FogSoft.WinForm.DataAccess.TvpValue(PackageDiscountPrime.PrimeTable(selectedRows.Select(drv =>
+                new KeyValuePair<int, int>(Convert.ToInt32(drv["massmediaID"]),
+                    PackageDiscountPrime.PrimeSeconds(Convert.ToInt32(drv["RollerDuration"]), grdPriceCalculator.GetPrimeSpots(drv.Row))))),
+                "dbo.pc_MassmediaPrime");
 
             p["discountValue"] = null;               // OUT
             p["packageDiscountPriceListID"] = null;  // OUT (если нужно показать какой пакет)

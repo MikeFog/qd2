@@ -35,6 +35,9 @@ namespace Merlin.Forms
         // в OnLoad (см. LoadExistingCampaignState), переиспользуется в btnEstimatePrice_Click.
         private Dictionary<int, decimal> _existingTariffPriceByMassmedia;
         private Dictionary<int, int> _existingIssuesDurationByMassmedia;
+        // Секунды прайма существующих выпусков по станциям — Campaign.primePercent × issuesDuration (доля хранится до 0,1 %,
+        // отсюда погрешность до 0,05 % хронометража кампании) — для порога «Максимальный процент прайма» пакета.
+        private Dictionary<int, int> _existingPrimeDurationByMassmedia;
 
         // Агрегаты по всем станциям сразу — базис для блока "Статистика": то, что там показано
         // при открытии формы и после любого сброса (см. DisplayBaselinePrices).
@@ -256,6 +259,15 @@ namespace Merlin.Forms
         // с реальными выпусками управленческий коэффициент уже корректно посчитан — используем
         // его (_hasExistingIssues/_existingManagerDiscount, см. LoadExistingCampaignState), без
         // обращения к SP.
+        // Секунды прайма существующих выпусков кампании: доля прайма (Campaign.primePercent, ActionRecalculate) × хронометраж.
+        private static int ExistingPrimeDuration(Campaign campaign)
+        {
+            object percent = campaign[Campaign.ParamNames.PrimePercent];
+            if (percent == null || percent == DBNull.Value)
+                return 0;
+            return (int)Math.Round(campaign.IssuesDuration * Convert.ToDecimal(percent) / 100m, MidpointRounding.AwayFromZero);
+        }
+
         private decimal GetEffectiveManagerDiscount(DateTime startDate, DateTime finishDate)
         {
             if (_hasExistingIssues)
@@ -426,7 +438,8 @@ namespace Merlin.Forms
                 // но считаем тем же способом, что и реальный Калькулятор цены, независимо от их числа.
                 // priceTotal и durationSec-и в TVP — с учётом уже существующих данных кампании (см. выше),
                 // иначе порог пакета подбирался бы только по добавляемым роликам, без контекста акции.
-                decimal packageDiscount = GetPackageDiscount(selectedDates.Min(), combinedDiscountedSum, targetRows, durationSec, _existingIssuesDurationByMassmedia);
+                decimal packageDiscount = GetPackageDiscount(selectedDates.Min(), combinedDiscountedSum, targetRows, durationSec, _existingIssuesDurationByMassmedia,
+                    calcGrid, _existingPrimeDurationByMassmedia);
                 decimal grandTotal = combinedDiscountedSum * managerDiscount * packageDiscount;
 
                 lblPackageDiscountValue.Text = packageDiscount.ToString("N2");
@@ -482,8 +495,12 @@ namespace Merlin.Forms
         // не PriceCalculatorGrid. durationSec в TVP — существующий хронометраж станции (Campaign.issuesDuration)
         // ПЛЮС добавляемый, иначе порог eachVolume сравнивался бы со средней длительностью только по
         // добавляемым роликам, без остальной акции (см. hlp_ActionDiscountCalculate).
+        // Порог «Максимальный процент прайма» (docs/tasks/package-discount-prime-limit.md): секунды прайма станции — существующие
+        // (Campaign.primePercent) плюс добавляемые. Добавляемые — выходы прайма по правилу калькулятора (PriceCalculatorGrid.GetPrimeSpots);
+        // без разбивки на прайм и офф прайм шаблон, как и в цене оценки, считает все выходы офф праймом — фактическую долю
+        // определит генерация.
         private static decimal GetPackageDiscount(DateTime startDate, decimal priceTotal, List<DataRow> rows, decimal durationSec,
-            Dictionary<int, int> existingDurationByMassmedia)
+            Dictionary<int, int> existingDurationByMassmedia, PriceCalculatorGrid calcGrid, Dictionary<int, int> existingPrimeByMassmedia)
         {
             if (rows.Count == 0)
                 return 1m;
@@ -491,6 +508,7 @@ namespace Merlin.Forms
             var tvpTable = new DataTable();
             tvpTable.Columns.Add("massmediaID", typeof(short));
             tvpTable.Columns.Add("durationSec", typeof(int));
+            var primes = new List<KeyValuePair<int, int>>();
             foreach (DataRow row in rows)
             {
                 int massmediaId = Convert.ToInt32(row["massmediaID"]);
@@ -502,6 +520,10 @@ namespace Merlin.Forms
                 int addedDurationSec = (int)Math.Round(durationSec * totalSpots);
                 int existingDurationSec = existingDurationByMassmedia.TryGetValue(massmediaId, out int existing) ? existing : 0;
                 tvpTable.Rows.Add((short)massmediaId, existingDurationSec + addedDurationSec);
+
+                int addedPrimeSec = PackageDiscountPrime.PrimeSeconds(durationSec, calcGrid.GetPrimeSpots(row));
+                int existingPrimeSec = existingPrimeByMassmedia.TryGetValue(massmediaId, out int existingPrime) ? existingPrime : 0;
+                primes.Add(new KeyValuePair<int, int>(massmediaId, existingPrimeSec + addedPrimeSec));
             }
 
             var p = DataAccessor.CreateParametersDictionary();
@@ -510,6 +532,7 @@ namespace Merlin.Forms
             // decimal(18,2) параметра отсекает дробные копейки, а не округляет (К-29 калькулятора)
             p["priceTotal"] = Math.Round(priceTotal, 2, MidpointRounding.AwayFromZero);
             p["sel"] = new TvpValue(tvpTable, "dbo.pc_SelectedMassmedia");
+            p["primes"] = new TvpValue(PackageDiscountPrime.PrimeTable(primes), "dbo.pc_MassmediaPrime");
             p["discountValue"] = null;
             p["packageDiscountPriceListID"] = null;
 
@@ -541,6 +564,7 @@ namespace Merlin.Forms
         {
             _existingTariffPriceByMassmedia = new Dictionary<int, decimal>();
             _existingIssuesDurationByMassmedia = new Dictionary<int, int>();
+            _existingPrimeDurationByMassmedia = new Dictionary<int, int>();
             _baselineTariffSum = 0m;
             _baselineDiscountedSum = 0m;
             _baselineStationCompanyDiscounts = new List<decimal>();
@@ -551,6 +575,7 @@ namespace Merlin.Forms
                 // Линейная — _campaign гарантированно не null (см. CampaignForm.GetTemplateMassmediaIds).
                 _existingTariffPriceByMassmedia[_massmediaIds[0]] = _campaign.TariffPrice;
                 _existingIssuesDurationByMassmedia[_massmediaIds[0]] = _campaign.IssuesDuration;
+                _existingPrimeDurationByMassmedia[_massmediaIds[0]] = ExistingPrimeDuration(_campaign);
                 _baselineTariffSum = _campaign.TariffPrice;
                 _baselineDiscountedSum = _campaign.Price;
                 // Одна кампания в акции — ActionRecalculate жёстко пишет discount=1
@@ -572,6 +597,7 @@ namespace Merlin.Forms
                     int massmediaId = Convert.ToInt32(campaign[Campaign.ParamNames.MassmediaId]);
                     _existingTariffPriceByMassmedia[massmediaId] = campaign.TariffPrice;
                     _existingIssuesDurationByMassmedia[massmediaId] = campaign.IssuesDuration;
+                    _existingPrimeDurationByMassmedia[massmediaId] = ExistingPrimeDuration(campaign);
                     _baselineTariffSum += campaign.TariffPrice;
                     // Цена с учётом объёмной скидки веерной акции — сумма Campaign.Price по станциям
                     // (Campaign.Price = tariffPrice*discount, уже готовое поле, см. Campaign.sql).

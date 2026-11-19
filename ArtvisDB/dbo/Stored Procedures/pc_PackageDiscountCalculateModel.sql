@@ -4,6 +4,10 @@
     @campaignTypeID tinyint,     -- у вас всегда 1
     @priceTotal decimal(18,2),           -- сумма по выбранным станциям (аналог Sum(Campaign.price))
     @sel dbo.pc_SelectedMassmedia READONLY,
+    -- секунды прайма станций (docs/tasks/package-discount-prime-limit.md): доля прайма линейной станции не выше
+    -- порога прайс-листа maxPrimePercent, как в hlp_ActionDiscountCalculate; станции нет — прайма 0; параметр не
+    -- передан (старые qd2 и веб) — порог не проверяется
+    @primes dbo.pc_MassmediaPrime READONLY,
     @discountValue decimal(9,4) OUTPUT,
     @packageDiscountPriceListID int OUTPUT
 )
@@ -24,6 +28,7 @@ BEGIN
 
     SET @discountValue = 1;
     SET @packageDiscountPriceListID = NULL;
+    DECLARE @checkPrime bit = CASE WHEN @campaignTypeID = 1 AND EXISTS (SELECT 1 FROM @primes) THEN 1 ELSE 0 END;
 
     ;WITH t AS
     (
@@ -31,6 +36,7 @@ BEGIN
             m.packageDiscountPriceListID,
             campaignsCount = COUNT(DISTINCT s.massmediaID)
         FROM @sel s
+        LEFT JOIN @primes pr ON pr.massmediaID = s.massmediaID
         JOIN PackageDiscountMassmedia m
             ON m.massmediaID = s.massmediaID
            AND (
@@ -45,6 +51,9 @@ BEGIN
         WHERE
             s.durationSec > 0
             AND CAST(s.durationSec as float) >= @baseDurationSec * p.eachVolume / 100.0
+            -- доля прайма до 0,1, как Campaign.primePercent; граница включительно
+            AND (@checkPrime = 0
+                OR ROUND(100.0 * ISNULL(pr.primeDurationSec, 0) / s.durationSec, 1) <= p.maxPrimePercent)
         GROUP BY
             m.packageDiscountPriceListID
         HAVING

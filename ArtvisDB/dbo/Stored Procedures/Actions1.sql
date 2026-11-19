@@ -89,7 +89,7 @@ SET NOCOUNT on
 			as decimal(5,2)) as finalRatio,
 			a.startDate,
 			a.finishDate,
-			-- статистика веера: наибольшая доля прайма среди линейных и модульных кампаний и её станция
+			-- статистика веера: наибольшая доля прайма среди линейных кампаний и её станция
 			-- (docs/tasks/package-discount-prime-limit.md)
 			pm.primePercent as primePercentMax,
 			pm.massmediaName as primePercentMaxMassmedia
@@ -114,7 +114,7 @@ SET NOCOUNT on
 				select top 1 c.primePercent, mm.nameWithGroup as massmediaName
 				from dbo.Campaign c
 					inner join vMassMedia mm on mm.massmediaID = c.massmediaID
-				where c.actionID = a.actionID and c.campaignTypeID in (1, 3) and c.primePercent is not null
+				where c.actionID = a.actionID and c.campaignTypeID = 1 and c.primePercent is not null
 				order by c.primePercent desc, mm.nameWithGroup
 			) pm
 		where 

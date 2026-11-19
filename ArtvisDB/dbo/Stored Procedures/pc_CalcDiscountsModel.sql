@@ -2,7 +2,8 @@
 (
     @startDate       datetime,
     @campaignTypeID  tinyint = 1,
-    @rows            dbo.pc_CalcRow READONLY
+    @rows            dbo.pc_CalcRow READONLY,
+    @primes          dbo.pc_MassmediaPrime READONLY   -- секунды прайма станций (порог прайма пакета); не передан — без порога
 )
 AS
 BEGIN
@@ -49,6 +50,7 @@ BEGIN
             @campaignTypeID = @campaignTypeID,
             @priceTotal = @priceTotal,
             @sel = @sel,
+            @primes = @primes,
             @discountValue = @packageDiscount OUTPUT,
             @packageDiscountPriceListID = @packageDiscountPriceListID OUTPUT;
 

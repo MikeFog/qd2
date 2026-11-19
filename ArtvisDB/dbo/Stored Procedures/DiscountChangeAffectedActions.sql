@@ -70,10 +70,10 @@ ELSE IF @entityID = 191 AND @actionName = 'UpdateItem'
 	WHERE pl.packageDiscountPriceListID = @packageDiscountPriceListID
 		AND (a.startDate < @startDate OR a.startDate > @finishDate
 			OR pl.discount <> @discount OR pl.value <> @value OR pl.eachVolume <> @eachVolume
-			-- порог прайма понижен, и доля прайма линейной или модульной кампании акции выше нового порога
+			-- порог прайма понижен, и доля прайма линейной кампании акции выше нового порога
 			OR (@maxPrimePercent < pl.maxPrimePercent AND EXISTS(
 				SELECT * FROM Campaign c
-				WHERE c.actionID = a.actionID AND c.campaignTypeID IN (1, 3) AND c.primePercent > @maxPrimePercent)))
+				WHERE c.actionID = a.actionID AND c.campaignTypeID = 1 AND c.primePercent > @maxPrimePercent)))
 
 ELSE IF @entityID = 190 AND @actionName IN ('UpdateItem', 'DeleteItem')
 	-- Станция убрана или изменена: задеты акции, у которых есть кампания на этой станции.

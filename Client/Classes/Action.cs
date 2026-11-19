@@ -502,7 +502,7 @@ namespace Merlin.Classes
         internal const string RollerNumberColumn = "rollerNumber";
 
         /// <summary>
-        /// Статистика веера: наибольшая доля прайма линейных и модульных кампаний акции и её станция — «42,0% (Европа Плюс)»
+        /// Статистика веера: наибольшая доля прайма линейных кампаний акции и её станция — «42,0% (Европа Плюс)»
         /// (Actions1 по номеру акции; docs/tasks/package-discount-prime-limit.md). Нет значения — пусто.
         /// </summary>
         internal string PrimePercentMaxText()

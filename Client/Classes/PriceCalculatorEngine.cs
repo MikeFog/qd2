@@ -106,6 +106,8 @@ namespace Merlin.Classes
 		public int MassmediaId { get; set; }
 		public decimal TariffPrice { get; set; }
 		public int DurationSec { get; set; }
+		/// <summary>Секунды прайма — порог «Максимальный процент прайма» пакетной скидки (<see cref="PackageDiscountPrime"/>).</summary>
+		public int PrimeDurationSec { get; set; }
 		public bool Selected { get; set; }
 	}
 
@@ -358,17 +360,26 @@ namespace Merlin.Classes
 			return result;
 		}
 
-		/// <summary>Строки для процедуры скидок: T и хронометраж строки (длительность × выходы).</summary>
-		public static PcDiscountRow DiscountRow(PcRowInput row, PcRowPrice price)
+		/// <summary>
+		/// Строки для процедуры скидок: T, хронометраж строки (длительность × выходы) и его прайм — порог «Максимальный процент
+		/// прайма» пакетной скидки (<see cref="PackageDiscountPrime.PrimeSpots"/>).
+		/// </summary>
+		public static PcDiscountRow DiscountRow(PcStation station, PcRowInput row, PcRowPrice price, IList<DateTime> selectedDates)
 		{
+			int duration = Convert.ToInt32(Clamp(row.Duration, 0m, MaxDuration));
 			return new PcDiscountRow
 			{
 				MassmediaId = row.MassmediaId,
 				TariffPrice = price.TariffPrice,
-				DurationSec = Convert.ToInt32(Clamp(row.Duration, 0m, MaxDuration)) * row.Spots,
+				DurationSec = duration * row.Spots,
+				PrimeDurationSec = PackageDiscountPrime.PrimeSeconds(duration, PackageDiscountPrime.PrimeSpots(
+					(station?.Segments ?? new List<PcSegment>()).Select(sg => new PackageDiscountPrime.Segment(
+						sg.Start, sg.End, sg.PrimeWeekday, sg.NonPrimeWeekday, sg.PrimeWeekend, sg.NonPrimeWeekend)),
+					selectedDates, row.PrimeWeekday, row.PrimeWeekend)),
 				Selected = row.Selected,
 			};
 		}
+
 
 		/// <summary>Дата объёмной и пакетной скидки — первый выбранный день; без выбранных дней — переданная (начало периода).</summary>
 		public static DateTime DiscountDate(IList<DateTime> selectedDates, DateTime fallback)
@@ -429,7 +440,7 @@ namespace Merlin.Classes
 				stations.TryGetValue(row.MassmediaId, out station);
 				var price = Price(station, row, selectedDates, rule);
 				prices[row.MassmediaId] = price;
-				discountRows.Add(DiscountRow(row, price));
+				discountRows.Add(DiscountRow(station, row, price, selectedDates));
 			}
 
 			DateTime date = DiscountDate(selectedDates, model.DateFrom);

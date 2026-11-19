@@ -1047,6 +1047,25 @@ namespace Merlin.Controls
                 : new List<DateTime>();
         }
 
+        /// <summary>
+        /// Выходы прайма строки для порога «Максимальный процент прайма» пакетной скидки — общее правило
+        /// (<see cref="PackageDiscountPrime.PrimeSpots"/>) по сегментам станции и выбранным дням этой таблицы.
+        /// </summary>
+        public decimal GetPrimeSpots(DataRow row)
+        {
+            if (SegmentsTable == null || row == null)
+                return 0m;
+            int stationId = Convert.ToInt32(row["massmediaID"]);
+            var segments = SegmentsTable.Select("massmediaID = " + stationId, "SegmentStart ASC")
+                .Select(r => new PackageDiscountPrime.Segment(
+                    Convert.ToDateTime(r["SegmentStart"]), Convert.ToDateTime(r["SegmentEnd"]),
+                    Convert.ToDecimal(r["PrimePricePerSecWeekday"]), Convert.ToDecimal(r["NonPrimePricePerSecWeekday"]),
+                    Convert.ToDecimal(r["PrimePricePerSecWeekend"]), Convert.ToDecimal(r["NonPrimePricePerSecWeekend"])));
+            return PackageDiscountPrime.PrimeSpots(segments, GetSelectedDates(),
+                Convert.ToInt32(row[ColumnName(PriceCalculatorColumn.PrimeTotalSpotsWeekday)]),
+                Convert.ToInt32(row[ColumnName(PriceCalculatorColumn.PrimeTotalSpotsWeekend)]));
+        }
+
         public void ApplyCalculation(
             List<DateTime> selectedDates,
             decimal durationSec,

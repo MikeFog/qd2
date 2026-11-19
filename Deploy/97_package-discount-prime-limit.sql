@@ -1,29 +1,33 @@
-﻿-- Пакетная скидка: максимальный процент прайма (docs/tasks/package-discount-prime-limit.md, постановка Миши 18.11.2026).
+﻿-- Пакетная скидка: максимальный процент прайма (docs/tasks/package-discount-prime-limit.md, постановка Миши 18.11.2026,
+-- уточнения заказчика 19.11.2026).
 --
 -- Менеджеры добирают порог пакетной скидки «Минимальная сумма (с учётом объёмных скидок)» праймом. Новая настройка прайс-листа
--- пакетной скидки «Максимальный процент прайма (%):» (0–100): если доля прайма хоть одной линейной или модульной кампании акции
--- больше порога, этот прайс-лист пакета акции не подходит. Спонсорские кампании не проверяются (вопрос у заказчика).
--- Прайм — окно с максимальной ценой окон станции в этот день (как генератор шаблонов); однотарифный день — прайм целиком.
--- Доля = секунды роликов в прайм-окнах / все секунды роликов кампании, округление до 0,1.
+-- пакетной скидки «Максимальный процент прайма (%):» (0–100): если доля прайма хоть одной ЛИНЕЙНОЙ кампании акции больше порога,
+-- этот прайс-лист пакета акции не подходит. Модульные и спонсорские кампании не проверяются.
+-- Прайм — окно с максимальной ценой обычных платных окон станции в этот день (как генератор шаблонов); если у обычных
+-- платных окон станции в этот день одна цена, прайма в этот день нет. Окна «только для модулей» и окна с нулевой ценой
+-- в расчёт не входят. Доля = секунды роликов в прайм-окнах / секунды роликов кампании в платных окнах, округление до 0,1.
+-- Калькулятор цены (qd2 и веб) и оценка Шаблона №3 проверяют тот же порог: передают секунды прайма станций.
 --
 -- Что делает скрипт:
 --   1. PackageDiscountPriceList.maxPrimePercent tinyint NOT NULL DEFAULT 100 — всем существующим прайс-листам 100
 --      (прайм без ограничения), скидки старых акций не меняются;
---   2. Campaign.primePercent decimal(4,1) NULL — доля прайма линейной и модульной кампании;
+--   2. Campaign.primePercent decimal(4,1) NULL — доля прайма линейной кампании;
 --   3. процедура hlp_ActionCampaignPrimePercent (правило доли прайма — только здесь);
 --   4. ActionRecalculate (выпуски акции — одним проходом для сумм кампаний и доли прайма; пишет долю),
 --      hlp_ActionDiscountCalculate (сверяет с порогом), PackageDiscountPriceListIUD (поле;
 --      старый клиент без поля порог не сбрасывает), DiscountChangeAffectedActions (окно «Изменение затронет акции» при
 --      понижении порога), Actions1 (наибольшая доля прайма для статистики веера qd2);
---   5. паспорт и колонка прайс-листа пакетной скидки (iEntity/iEntityAttribute 191) + испанский;
---   6. заполнение Campaign.primePercent у существующих линейных и модульных кампаний — порциями по 500 акций (на ArtvisDev
---      всё вместе около 1 мин); нужно для статистики и окна предупреждения, скидки не меняет. Повторный запуск
---      пропускает уже заполненные кампании.
+--   5. калькулятор: тип pc_MassmediaPrime и необязательный параметр @primes у pc_PackageDiscountCalculateModel и
+--      pc_CalcDiscountsModel (старые qd2 и веб его не передают — считают без порога);
+--   6. паспорт и колонка прайс-листа пакетной скидки (iEntity/iEntityAttribute 191) + испанский;
+--   7. заполнение Campaign.primePercent у существующих линейных кампаний — порциями по 500 акций; нужно для статистики,
+--      окна предупреждения и оценки Шаблона №3, скидки не меняет. Повторный запуск пропускает уже заполненные кампании.
 --
--- Пересчёт акции (ArtvisDev): до 500 выпусков — как было, 500–2000 — +14 мс, 2000+ — +93 мс в среднем.
--- Строки «Прайм» в статистике — с новыми qd2 и вебом; со старым клиентом всё работает, строк статистики нет, а поле паспорта
--- появится и в старом qd2 (паспорт читается из базы). После наката перезапустить qd2 и веб.
--- После 08, 24, 28, 29, 33, 42, 76, 86, 93 (несут прежние тексты этих процедур). Не перезапускать после 97: их же и
+-- Пересчёт акции (ArtvisDev): до 500 выпусков — как было, больше — до +0,1 с (см. README).
+-- Строки «Прайм» в статистике и порог в калькуляторе — с новыми qd2 и вебом; со старым клиентом всё работает, а поле
+-- паспорта появится и в старом qd2 (паспорт читается из базы). После наката перезапустить qd2 и веб.
+-- После 08, 24, 28, 29, 33, 42, 53, 54, 76, 86, 93 (несут прежние тексты этих процедур). Не перезапускать после 97: их же и
 -- ArtvisDB/Scripts/ campaign-finalprice-with-pack-deploy.sql, discount-applied-pricelist-id-deploy.sql, discount-clone-deploy.sql,
 -- actions-createdate-end-boundary-deploy.sql, actions1-actionid-userid-deploy.sql, web-i18n-sql-deploy.sql — вернут процедуры
 -- без порога и доли прайма; если перезапустили — повторить 97. В любое время, на Artvis и Tumen. Идемпотентен.
@@ -71,35 +75,71 @@ GO
 DROP FUNCTION IF EXISTS dbo.f_ActionCampaignPrimePercent;   -- черновой вариант правила, был только на ArtvisDev
 GO
 
--- Доля прайма линейных и модульных кампаний, % с округлением до 0,1 (docs/tasks/package-discount-prime-limit.md).
--- Правило — только здесь:
---   прайм — окно, цена которого равна максимальной цене окон станции в этот день (как генератор шаблонов, GetMaxPriceByDay);
---   день, где все окна станции по одной цене, — прайм целиком; окно и день — фактические (Issue.actualWindowID, dayActual);
---   доля = секунды роликов в прайм-окнах / все секунды роликов кампании; кампании без выпусков в результат не попадают.
--- Вход — #ActionIssue вызывающего (выпуски с окном выхода: campaignID, massmediaID, dayActual, price, duration), выход —
--- #ActionPrime (campaignID, primePercent). Выпуски собирает вызывающий: ActionRecalculate (тем же проходом считает суммы
--- кампаний — второй проход по выпускам и окнам на большой акции стоил +250 мс) и заполнение в Deploy/97.
--- Максимум цены — один раз на станцию и день (индекс IX_TariffWindow_MassmediaID_DayActual_Price).
+IF TYPE_ID(N'dbo.pc_MassmediaPrime') IS NULL
+BEGIN
+    CREATE TYPE [dbo].[pc_MassmediaPrime] AS TABLE (
+        [massmediaID]      SMALLINT NOT NULL PRIMARY KEY,
+        [primeDurationSec] INT      NOT NULL);
+    PRINT N'Тип pc_MassmediaPrime создан.';
+END
+GO
+
+-- Доля прайма линейных кампаний, % с округлением до 0,1 (docs/tasks/package-discount-prime-limit.md).
+-- Правило — только здесь (уточнения заказчика 19.11.2026):
+--   только линейные кампании (тип 1); у модульных, спонсорских и пакетных доли нет;
+--   прайм — окно, цена которого равна максимальной цене обычных платных окон станции в этот день (как генератор шаблонов
+--   и подсветка ₽); если у обычных платных окон станции в этот день одна цена, прайма в этот день нет. Обычные — окна тарифов
+--   не «только для модулей» (у станций Переславля модульные окна по 0); платные — с ценой больше 0: окна с нулевой ценой
+--   заказчик просил не учитывать — их 1–5 в день у Авторадио, Европы Плюс, Ретро FM, Русского радио и Хит FM, с ними
+--   1 460 станций-дней 2026 года не были бы однотарифными;
+--   окно и день — фактические (Issue.actualWindowID, dayActual);
+--   доля = секунды роликов в прайм-окнах / секунды роликов кампании в платных окнах (выпуски в нулевых окнах не считаются
+--   вовсе — иначе бесплатными выходами можно было бы разбавить прайм); кампании без таких выпусков в результат не попадают.
+-- Вход — #ActionIssue вызывающего (выпуски с окном выхода: campaignID, campaignTypeID, massmediaID, dayActual, price,
+-- duration), выход — #ActionPrime (campaignID, primePercent). Выпуски собирает вызывающий: ActionRecalculate (тем же
+-- проходом считает суммы кампаний — второй проход по выпускам и окнам на большой акции стоил +250 мс) и заполнение в Deploy/97.
+-- Скорость (ArtvisDev 19.11.2026, цены дня): окна дня — поиском по индексу IX_TariffWindow_ActualDate (станция,
+-- windowDateActual; цена и тариф в нём есть), день окна dayActual — дата его windowDateActual (0 расхождений на 2 011 204
+-- окнах; broadcastStart закрыт); тариф окна — поиском по ключу Tariff. Не годится (замерено): по (станция, dayActual) —
+-- до 325 мс на акции в 18 тыс. выпусков; без FORCESEEK и LOOP JOIN — просмотр индекса окон, 0,7–1,5 с на любой акции;
+-- модульные тарифы в табличной переменной — оптимизатор считает её почти пустой и просматривает целиком на каждый день,
+-- +170 мс на акции в 300 выпусков; условие на цену в WHERE — FORCESEEK уходит на индекс с поиском только по станции.
 CREATE OR ALTER PROCEDURE [dbo].[hlp_ActionCampaignPrimePercent]
 AS
 SET NOCOUNT ON;
 
-DECLARE @dayMax TABLE (massmediaID SMALLINT NOT NULL, dayActual SMALLDATETIME NOT NULL, maxPrice DECIMAL(18,2) NULL,
-    PRIMARY KEY (massmediaID, dayActual));
+DECLARE @day TABLE (massmediaID SMALLINT NOT NULL, dayActual SMALLDATETIME NOT NULL,
+    maxPrice DECIMAL(18,2) NULL, minPrice DECIMAL(18,2) NULL, PRIMARY KEY (massmediaID, dayActual));
 
-INSERT INTO @dayMax (massmediaID, dayActual)
-SELECT DISTINCT massmediaID, dayActual FROM #ActionIssue;
+INSERT INTO @day (massmediaID, dayActual)
+SELECT DISTINCT massmediaID, dayActual FROM #ActionIssue WHERE campaignTypeID = 1 AND price > 0;
 
 UPDATE k
-SET k.maxPrice = (SELECT MAX(d.price) FROM dbo.TariffWindow d WHERE d.massmediaID = k.massmediaID AND d.dayActual = k.dayActual)
-FROM @dayMax k;
+SET k.maxPrice = p.maxPrice, k.minPrice = p.minPrice
+FROM @day k
+    CROSS APPLY
+    (
+        -- нулевые окна — в CASE, а не в WHERE: с условием на цену FORCESEEK выбирал индекс, где поиск только по станции,
+        -- и пересчёт большой акции дорожал на 1,1 с. Без NULL в CASE — иначе предупреждение «Значение NULL исключено» на
+        -- каждом пересчёте; день только из нулевых окон: максимум 0, минимум «бесконечность» — прайма нет
+        SELECT maxPrice = MAX(CASE WHEN d.price > 0 THEN d.price ELSE 0 END),
+            minPrice = MIN(CASE WHEN d.price > 0 THEN d.price ELSE 9999999999999999.99 END)
+        FROM dbo.TariffWindow d WITH (FORCESEEK)
+            INNER JOIN dbo.Tariff t ON t.tariffID = d.tariffId
+        WHERE d.massmediaID = k.massmediaID
+            AND d.windowDateActual >= k.dayActual AND d.windowDateActual < DATEADD(DAY, 1, k.dayActual)
+            AND t.isForModuleOnly = 0
+    ) p
+OPTION (LOOP JOIN);
 
 INSERT INTO #ActionPrime (campaignID, primePercent)
 SELECT
     x.campaignID,
-    CAST(ROUND(100.0 * SUM(CASE WHEN x.price = k.maxPrice THEN x.duration ELSE 0 END) / SUM(x.duration), 1) AS DECIMAL(4,1))
+    CAST(ROUND(100.0 * SUM(CASE WHEN x.price = k.maxPrice AND k.maxPrice > k.minPrice THEN x.duration ELSE 0 END)
+        / SUM(x.duration), 1) AS DECIMAL(4,1))
 FROM #ActionIssue x
-    INNER JOIN @dayMax k ON k.massmediaID = x.massmediaID AND k.dayActual = x.dayActual
+    INNER JOIN @day k ON k.massmediaID = x.massmediaID AND k.dayActual = x.dayActual
+WHERE x.campaignTypeID = 1 AND x.price > 0
 GROUP BY x.campaignID
 HAVING SUM(x.duration) > 0;
 GO
@@ -199,7 +239,7 @@ BEGIN
 
     /* =========================
        Phase 1.0. Выпуски линейных и модульных кампаний с окном выхода — одним проходом:
-       из них суммы кампаний (1A, 1C) и доля прайма (hlp_ActionCampaignPrimePercent, порог пакетной скидки)
+       из них суммы кампаний (1A, 1C) и доля прайма линейных (hlp_ActionCampaignPrimePercent, порог пакетной скидки)
        ========================= */
     IF OBJECT_ID('tempdb..#ActionIssue') IS NOT NULL
         DROP TABLE #ActionIssue;
@@ -479,7 +519,7 @@ BEGIN
         c.programsCount = ISNULL(p.programsCount, 0),
         c.managerDiscount = ISNULL(p.managerDiscountCampaign, c.managerDiscount),
         c.discountReleaseID = p.discountReleaseID,
-        -- у спонсорских, пакетных и кампаний без выпусков — NULL
+        -- у модульных, спонсорских, пакетных и кампаний без выпусков — NULL
         c.primePercent = pp.primePercent
     FROM dbo.Campaign c
     INNER JOIN #CampaignPhase1 p ON p.campaignID = c.campaignID
@@ -679,9 +719,9 @@ SELECT TOP 1 @discountValue=pl.discount, @packageDiscountPriceListID=pl.packageD
 																OR (c.campaignTypeID=3 AND m.isForType3=1)
 																)
 														AND CAST(c.issuesDuration as float) >= @baseDuration*p.eachVolume/100
-														-- доля прайма линейной и модульной кампании не выше порога прайс-листа (включительно);
-														-- спонсорские не проверяются (docs/tasks/package-discount-prime-limit.md)
-														AND (c.campaignTypeID NOT IN (1, 3) OR ISNULL(c.primePercent, 0) <= p.maxPrimePercent)
+														-- доля прайма линейной кампании не выше порога прайс-листа (включительно);
+														-- модульные и спонсорские не проверяются (docs/tasks/package-discount-prime-limit.md)
+														AND (c.campaignTypeID <> 1 OR ISNULL(c.primePercent, 0) <= p.maxPrimePercent)
 		WHERE
 			c.actionID=@actionID
 			-- пустые кампании исключаем и здесь, чтобы HAVING сравнивал только реальные
@@ -893,10 +933,10 @@ ELSE IF @entityID = 191 AND @actionName = 'UpdateItem'
 	WHERE pl.packageDiscountPriceListID = @packageDiscountPriceListID
 		AND (a.startDate < @startDate OR a.startDate > @finishDate
 			OR pl.discount <> @discount OR pl.value <> @value OR pl.eachVolume <> @eachVolume
-			-- порог прайма понижен, и доля прайма линейной или модульной кампании акции выше нового порога
+			-- порог прайма понижен, и доля прайма линейной кампании акции выше нового порога
 			OR (@maxPrimePercent < pl.maxPrimePercent AND EXISTS(
 				SELECT * FROM Campaign c
-				WHERE c.actionID = a.actionID AND c.campaignTypeID IN (1, 3) AND c.primePercent > @maxPrimePercent)))
+				WHERE c.actionID = a.actionID AND c.campaignTypeID = 1 AND c.primePercent > @maxPrimePercent)))
 
 ELSE IF @entityID = 190 AND @actionName IN ('UpdateItem', 'DeleteItem')
 	-- Станция убрана или изменена: задеты акции, у которых есть кампания на этой станции.
@@ -1043,7 +1083,7 @@ SET NOCOUNT on
 			as decimal(5,2)) as finalRatio,
 			a.startDate,
 			a.finishDate,
-			-- статистика веера: наибольшая доля прайма среди линейных и модульных кампаний и её станция
+			-- статистика веера: наибольшая доля прайма среди линейных кампаний и её станция
 			-- (docs/tasks/package-discount-prime-limit.md)
 			pm.primePercent as primePercentMax,
 			pm.massmediaName as primePercentMaxMassmedia
@@ -1068,7 +1108,7 @@ SET NOCOUNT on
 				select top 1 c.primePercent, mm.nameWithGroup as massmediaName
 				from dbo.Campaign c
 					inner join vMassMedia mm on mm.massmediaID = c.massmediaID
-				where c.actionID = a.actionID and c.campaignTypeID in (1, 3) and c.primePercent is not null
+				where c.actionID = a.actionID and c.campaignTypeID = 1 and c.primePercent is not null
 				order by c.primePercent desc, mm.nameWithGroup
 			) pm
 		where 
@@ -1302,8 +1342,146 @@ SET NOCOUNT on
 		End
 GO
 
+CREATE OR ALTER PROC [dbo].[pc_PackageDiscountCalculateModel]
+(
+    @startDate datetime,
+    @campaignTypeID tinyint,     -- у вас всегда 1
+    @priceTotal decimal(18,2),           -- сумма по выбранным станциям (аналог Sum(Campaign.price))
+    @sel dbo.pc_SelectedMassmedia READONLY,
+    -- секунды прайма станций (docs/tasks/package-discount-prime-limit.md): доля прайма линейной станции не выше
+    -- порога прайс-листа maxPrimePercent, как в hlp_ActionDiscountCalculate; станции нет — прайма 0; параметр не
+    -- передан (старые qd2 и веб) — порог не проверяется
+    @primes dbo.pc_MassmediaPrime READONLY,
+    @discountValue decimal(9,4) OUTPUT,
+    @packageDiscountPriceListID int OUTPUT
+)
+AS
+BEGIN
+    SET NOCOUNT ON;
+
+    DECLARE @campaignsCount int;
+	Declare @avgDurationSec float, @maxDurationSec float, @baseDurationSec float;
+    -- станции без выходов в пакете не участвуют, как пустые кампании в hlp_ActionDiscountCalculate: иначе они
+    -- тянули вниз среднюю длительность и завышали число станций, и пакет срывался
+    SELECT @campaignsCount = COUNT(DISTINCT massmediaID), @avgDurationSec = AVG(CAST(durationSec as float)), @maxDurationSec = MAX(CAST(durationSec as float)) FROM @sel WHERE durationSec > 0;
+
+    -- как в hlp_ActionDiscountCalculate: «процент заполнения» (eachVolume) — от средней длительности, а для акций,
+    -- начавшихся с даты системной настройки «PackageDiscountMaxBasisFrom», — от максимальной
+    DECLARE @maxBasisFrom datetime = dbo.f_SysParamsPackageDiscountMaxBasisFrom();
+    SET @baseDurationSec = CASE WHEN @maxBasisFrom IS NOT NULL AND @startDate >= @maxBasisFrom THEN @maxDurationSec ELSE @avgDurationSec END;
+
+    SET @discountValue = 1;
+    SET @packageDiscountPriceListID = NULL;
+    DECLARE @checkPrime bit = CASE WHEN @campaignTypeID = 1 AND EXISTS (SELECT 1 FROM @primes) THEN 1 ELSE 0 END;
+
+    ;WITH t AS
+    (
+        SELECT
+            m.packageDiscountPriceListID,
+            campaignsCount = COUNT(DISTINCT s.massmediaID)
+        FROM @sel s
+        LEFT JOIN @primes pr ON pr.massmediaID = s.massmediaID
+        JOIN PackageDiscountMassmedia m
+            ON m.massmediaID = s.massmediaID
+           AND (
+                (@campaignTypeID=1 AND m.isForType1=1) OR
+                (@campaignTypeID=2 AND m.isForType2=1) OR
+                (@campaignTypeID=3 AND m.isForType3=1)
+           )
+        JOIN PackageDiscountPriceList p
+            ON p.packageDiscountPriceListID = m.packageDiscountPriceListID
+           AND @startDate BETWEEN p.startDate AND p.finishDate
+           AND p.value <= @priceTotal
+        WHERE
+            s.durationSec > 0
+            AND CAST(s.durationSec as float) >= @baseDurationSec * p.eachVolume / 100.0
+            -- доля прайма до 0,1, как Campaign.primePercent; граница включительно
+            AND (@checkPrime = 0
+                OR ROUND(100.0 * ISNULL(pr.primeDurationSec, 0) / s.durationSec, 1) <= p.maxPrimePercent)
+        GROUP BY
+            m.packageDiscountPriceListID
+        HAVING
+            -- пакет должен включать ровно столько станций, сколько выбрано (как в hlp_ActionDiscountCalculate)
+            COUNT(DISTINCT m.massmediaID) = @campaignsCount
+            AND COUNT(DISTINCT s.massmediaID) = @campaignsCount
+    )
+    SELECT TOP 1
+        @discountValue = COALESCE(pl.discount, 1),
+        @packageDiscountPriceListID = pl.packageDiscountPriceListID
+    FROM t
+    JOIN PackageDiscountPriceList pl ON pl.packageDiscountPriceListID = t.packageDiscountPriceListID
+    JOIN PackageDiscount d ON d.packageDiscountId = pl.packageDiscountID
+    WHERE
+        d.count = t.campaignsCount
+    ORDER BY
+        pl.discount ASC,  -- самый выгодный клиенту (минимальный коэффициент)
+        pl.packageDiscountPriceListID;  -- при равных — меньший ID, как в hlp_ActionDiscountCalculate
+END
+GO
+
+CREATE OR ALTER PROCEDURE [dbo].[pc_CalcDiscountsModel]
+(
+    @startDate       datetime,
+    @campaignTypeID  tinyint = 1,
+    @rows            dbo.pc_CalcRow READONLY,
+    @primes          dbo.pc_MassmediaPrime READONLY   -- секунды прайма станций (порог прайма пакета); не передан — без порога
+)
+AS
+BEGIN
+    -- Скидки строк калькулятора цены одним вызовом (docs/tasks/web-price-calculator.md, этап К.1): «Объёмная скидка»
+    -- каждой строки и «Пакетная скидка» отмеченных. Правила не дублируются: объёмная — hlp_CompanyDiscountCalculate,
+    -- как ActionRecalculate, пакетная — pc_PackageDiscountCalculateModel.
+    SET NOCOUNT ON;
+
+    DECLARE @result TABLE (massmediaID smallint NOT NULL PRIMARY KEY, companyDiscount decimal(9,4) NOT NULL);
+    DECLARE @massmediaID smallint, @tariffPrice decimal(18,2), @discount decimal(9,4);
+
+    DECLARE row_cursor CURSOR LOCAL FAST_FORWARD FOR
+        SELECT massmediaID, tariffPrice FROM @rows;
+    OPEN row_cursor;
+    FETCH NEXT FROM row_cursor INTO @massmediaID, @tariffPrice;
+    WHILE @@FETCH_STATUS = 0
+    BEGIN
+        EXEC dbo.hlp_CompanyDiscountCalculate
+            @massMediaID = @massmediaID,
+            @campaignTypeID = @campaignTypeID,
+            @startDate = @startDate,
+            @tariffPrice = @tariffPrice,
+            @discountValue = @discount OUTPUT;
+        INSERT INTO @result (massmediaID, companyDiscount) VALUES (@massmediaID, @discount);
+        FETCH NEXT FROM row_cursor INTO @massmediaID, @tariffPrice;
+    END
+    CLOSE row_cursor;
+    DEALLOCATE row_cursor;
+
+    -- пакетная — по отмеченным строкам, сумма «цена × объёмная», округлённая до копеек; как система (ActionRecalculate) —
+    -- только когда станций с выходами больше одной (пакетов на одну станцию и так нет)
+    DECLARE @sel dbo.pc_SelectedMassmedia, @priceTotal decimal(18,2),
+            @packageDiscount decimal(9,4) = 1, @packageDiscountPriceListID int = NULL;
+    INSERT INTO @sel (massmediaID, durationSec)
+        SELECT massmediaID, durationSec FROM @rows WHERE isSelected = 1 AND durationSec > 0; -- без станций без выходов и до Deploy/53
+    SELECT @priceTotal = ROUND(SUM(r.tariffPrice * d.companyDiscount), 2)
+    FROM @rows r
+        JOIN @result d ON d.massmediaID = r.massmediaID
+    WHERE r.isSelected = 1;
+
+    IF (SELECT COUNT(*) FROM @rows WHERE isSelected = 1 AND durationSec > 0) > 1
+        EXEC dbo.pc_PackageDiscountCalculateModel
+            @startDate = @startDate,
+            @campaignTypeID = @campaignTypeID,
+            @priceTotal = @priceTotal,
+            @sel = @sel,
+            @primes = @primes,
+            @discountValue = @packageDiscount OUTPUT,
+            @packageDiscountPriceListID = @packageDiscountPriceListID OUTPUT;
+
+    SELECT massmediaID, companyDiscount FROM @result ORDER BY massmediaID;
+    SELECT packageDiscount = ISNULL(@packageDiscount, 1), packageDiscountPriceListID = @packageDiscountPriceListID;
+END
+GO
+
 -- =====================================================================
--- 5. Паспорт (iEntity 191): поле после «Процент заполнения (%):»; колонка списка; испанский
+-- 6. Паспорт (iEntity 191): поле после «Процент заполнения (%):»; колонка списка; испанский
 -- =====================================================================
 DECLARE @after nvarchar(200) = N'name="eachVolume" min="0" max="100"/>';
 DECLARE @name  nvarchar(100) = N'name="maxPrimePercent"';
@@ -1357,7 +1535,7 @@ IF OBJECT_ID('dbo.iTranslation') IS NOT NULL
 GO
 
 -- =====================================================================
--- 6. Доля прайма существующих линейных и модульных кампаний — порциями по 500 акций
+-- 7. Доля прайма существующих линейных кампаний — порциями по 500 акций
 -- =====================================================================
 DECLARE @from int = 0, @to int, @done int = 0, @batches int = 0, @t datetime2 = SYSDATETIME();
 CREATE TABLE #ActionIssue
@@ -1378,7 +1556,7 @@ BEGIN
     SELECT @to = MAX(t.actionID)
     FROM (SELECT DISTINCT TOP (500) c.actionID
           FROM dbo.Campaign c
-          WHERE c.actionID > @from AND c.campaignTypeID IN (1, 3) AND c.primePercent IS NULL AND c.issuesCount > 0
+          WHERE c.actionID > @from AND c.campaignTypeID = 1 AND c.primePercent IS NULL AND c.issuesCount > 0
           ORDER BY c.actionID) t;
     IF @to IS NULL BREAK;
 
@@ -1391,7 +1569,7 @@ BEGIN
         INNER JOIN dbo.Issue i ON i.campaignID = c.campaignID
         INNER JOIN dbo.TariffWindow tw ON tw.windowId = i.actualWindowID
         INNER JOIN dbo.Roller r ON r.rollerID = i.rollerID
-    WHERE c.actionID > @from AND c.actionID <= @to AND c.campaignTypeID IN (1, 3) AND c.primePercent IS NULL;
+    WHERE c.actionID > @from AND c.actionID <= @to AND c.campaignTypeID = 1 AND c.primePercent IS NULL;
 
     EXEC dbo.hlp_ActionCampaignPrimePercent;
 
@@ -1420,6 +1598,9 @@ IF COL_LENGTH('dbo.PackageDiscountPriceList', 'maxPrimePercent') IS NOT NULL
    AND OBJECT_DEFINITION(OBJECT_ID(N'dbo.PackageDiscountPriceListIUD')) LIKE N'%@maxPrimePercent%'
    AND OBJECT_DEFINITION(OBJECT_ID(N'dbo.DiscountChangeAffectedActions')) LIKE N'%@maxPrimePercent%'
    AND OBJECT_DEFINITION(OBJECT_ID(N'dbo.Actions1')) LIKE N'%primePercentMax%'
+   AND TYPE_ID(N'dbo.pc_MassmediaPrime') IS NOT NULL
+   AND OBJECT_DEFINITION(OBJECT_ID(N'dbo.pc_PackageDiscountCalculateModel')) LIKE N'%@primes%'
+   AND OBJECT_DEFINITION(OBJECT_ID(N'dbo.pc_CalcDiscountsModel')) LIKE N'%@primes%'
    AND (SELECT CAST(passport AS nvarchar(max)) FROM dbo.iEntity WHERE entityID = 191) LIKE N'%name="maxPrimePercent"%'
    AND EXISTS (SELECT 1 FROM dbo.iEntityAttribute WHERE entityID = 191 AND name = 'maxPrimePercent')
     PRINT N'ГОТОВО: максимальный процент прайма в пакетной скидке — колонки, процедуры, паспорт, колонка списка.';

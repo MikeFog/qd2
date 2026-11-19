@@ -179,6 +179,9 @@ namespace Merlin.Classes
 			p["startDate"] = startDate.Date;
 			p["campaignTypeID"] = (byte)1;
 			p["rows"] = new TvpValue(table, "dbo.pc_CalcRow");
+			// секунды прайма станций — порог «Максимальный процент прайма» пакета (docs/tasks/package-discount-prime-limit.md)
+			p["primes"] = new TvpValue(PackageDiscountPrime.PrimeTable(rows.Select(r => new KeyValuePair<int, int>(r.MassmediaId, r.PrimeDurationSec))),
+				"dbo.pc_MassmediaPrime");
 			DataSet ds = DataAccessor.LoadDataSet("pc_CalcDiscountsModel", p);
 
 			foreach (DataRow r in ds.Tables[0].Rows)

@@ -82,7 +82,7 @@ namespace Merlin.Classes
 				Stat(Tr.T("Объёмная скидка"), ParseHelper.GetDecimalFromObject(campaign[Campaign.ParamNames.Discount], 1).ToString("0.00")),
 				Stat(Tr.T("Цена с учётом объёмной скидки"), ParseHelper.GetDecimalFromObject(campaign[Campaign.ParamNames.Price], 0).ToString("C")),
 			};
-			// Доля прайма линейной и модульной — порог пакетной скидки (docs/tasks/package-discount-prime-limit.md)
+			// Доля прайма линейной — порог пакетной скидки (docs/tasks/package-discount-prime-limit.md)
 			if (Campaign.HasPrimePercent(ParseHelper.GetInt32FromObject(campaign[Campaign.ParamNames.CampaignTypeId], 0)))
 				stats.Add(Stat(Tr.T("Прайм"), Campaign.PrimePercentText(PrimePercentOf(campaign))));
 			// Спонсорская — ещё программы и остаток бонуса, как Campaign.DisplayCampaignData (остаток бывает отрицательным).
@@ -96,8 +96,8 @@ namespace Merlin.Classes
 		}
 
 		/// <summary>
-		/// Статистика веера, как ActionOnMassmedia.DisplayData в qd2: наибольшая доля прайма среди линейных и модульных
-		/// кампаний акции (не только отмеченных) и её станция — «42,0% (Европа Плюс)».
+		/// Статистика веера, как ActionOnMassmedia.DisplayData в qd2: наибольшая доля прайма среди линейных кампаний акции
+		/// (не только отмеченных) и её станция — «42,0% (Европа Плюс)».
 		/// </summary>
 		public static KeyValuePair<string, string> MaxPrimeStat(DataTable campaigns)
 		{

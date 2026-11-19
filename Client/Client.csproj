@@ -641,6 +641,7 @@
     <Compile Include="Classes\PaintingType.cs" />
     <Compile Include="Classes\PaymentCommon.cs" />
     <Compile Include="Classes\PaymentCommon.WinForms.cs" />
+    <Compile Include="Classes\PackageDiscountPrime.cs" />
     <Compile Include="Classes\PriceCalculatorClasses.cs" />
     <Compile Include="Classes\PrintSettings.cs" />
     <Compile Include="Classes\ProgramIssue.cs" />

@@ -169,6 +169,7 @@
     <Compile Include="..\Client\Classes\Payment.cs" Link="Domain\Payment.cs" />
     <Compile Include="..\Client\Classes\PaymentCommon.cs" Link="Domain\PaymentCommon.cs" />
     <Compile Include="..\Client\Classes\PriceCalculatorClasses.cs" Link="Domain\PriceCalculatorClasses.cs" />
+    <Compile Include="..\Client\Classes\PackageDiscountPrime.cs" Link="Domain\PackageDiscountPrime.cs" />
     <Compile Include="..\Client\Classes\Pricelist.cs" Link="Domain\Pricelist.cs" />
     <Compile Include="..\Client\Classes\PrintSettings.cs" Link="Domain\PrintSettings.cs" />
     <Compile Include="..\Client\Classes\MediaPlanBuilder.cs" Link="Domain\MediaPlanBuilder.cs" />

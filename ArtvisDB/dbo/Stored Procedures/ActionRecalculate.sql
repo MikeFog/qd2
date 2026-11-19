@@ -93,7 +93,7 @@ BEGIN
 
     /* =========================
        Phase 1.0. Выпуски линейных и модульных кампаний с окном выхода — одним проходом:
-       из них суммы кампаний (1A, 1C) и доля прайма (hlp_ActionCampaignPrimePercent, порог пакетной скидки)
+       из них суммы кампаний (1A, 1C) и доля прайма линейных (hlp_ActionCampaignPrimePercent, порог пакетной скидки)
        ========================= */
     IF OBJECT_ID('tempdb..#ActionIssue') IS NOT NULL
         DROP TABLE #ActionIssue;
@@ -373,7 +373,7 @@ BEGIN
         c.programsCount = ISNULL(p.programsCount, 0),
         c.managerDiscount = ISNULL(p.managerDiscountCampaign, c.managerDiscount),
         c.discountReleaseID = p.discountReleaseID,
-        -- у спонсорских, пакетных и кампаний без выпусков — NULL
+        -- у модульных, спонсорских, пакетных и кампаний без выпусков — NULL
         c.primePercent = pp.primePercent
     FROM dbo.Campaign c
     INNER JOIN #CampaignPhase1 p ON p.campaignID = c.campaignID
