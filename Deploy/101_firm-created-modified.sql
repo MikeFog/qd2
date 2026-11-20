@@ -8,7 +8,7 @@
 --      «Группы компаний» сохраняют через FirmIUD. Служебная фирма агитации (AgitationFraming) получает только дату создания.
 --   3. Firms (CREATE OR ALTER, текст firms-plan-stability плюс два поля): creator, modifier — имена пользователей.
 --   4. Карточка фирмы (паспорт сущности 16), «Общие», под «Активным объектом»: «Создана:», «Создатель:», «Изменена:»,
---      «Изменил:» — только для чтения, как в карточке акции.
+--      «Изменил:» — только для чтения, как в карточке акции. Разделитель над «Активным объектом» убран.
 --   5. Журнал «Фирмы-заказчики» — только его набор колонок (selector 1, Deploy/100), в конце: «Дата создания», «Создатель»,
 --      «Дата изменения», «Изменил». В выборе фирмы и других таблицах фирм их нет.
 --   6. Испанский: недостающие подписи (уже переведённые не трогаем).
@@ -343,6 +343,15 @@ BEGIN
 END
 GO
 
+-- Разделитель над «Активным объектом» убран (Миша, 20.11.2026): «Активный объект» идёт сразу за строками договора,
+-- а разделитель отделяет его от блока «Создана / Изменена».
+UPDATE dbo.iEntity
+SET passport = REPLACE(REPLACE(CAST(passport AS nvarchar(max)),
+        N'<separator />' + NCHAR(13) + NCHAR(10) + NCHAR(9) + NCHAR(9) + N'<field caption="Активный объект"', N'<field caption="Активный объект"'),
+        N'<separator />' + NCHAR(10) + NCHAR(9) + NCHAR(9) + N'<field caption="Активный объект"', N'<field caption="Активный объект"')
+WHERE entityID = 16;
+GO
+
 -- =====================================================================
 -- 5. Журнал фирм (набор 1): колонки в конце
 -- =====================================================================
@@ -385,6 +394,9 @@ IF COL_LENGTH(N'dbo.Firm', N'createDate') IS NOT NULL AND COL_LENGTH(N'dbo.Firm'
    AND CHARINDEX(N'AS modifier', ISNULL(OBJECT_DEFINITION(OBJECT_ID(N'dbo.Firms')), N'')) > 0
    AND CHARINDEX(N'OPTION (RECOMPILE)', ISNULL(OBJECT_DEFINITION(OBJECT_ID(N'dbo.Firms')), N'')) > 0
    AND EXISTS (SELECT 1 FROM dbo.iEntity WHERE entityID = 16 AND CAST(passport AS nvarchar(max)) LIKE N'%name="modifier"%')
+   AND NOT EXISTS (SELECT 1 FROM dbo.iEntity WHERE entityID = 16
+        AND (CAST(passport AS nvarchar(max)) LIKE N'%<separator />' + NCHAR(13) + NCHAR(10) + NCHAR(9) + NCHAR(9) + N'<field caption="Активный объект"%'
+          OR CAST(passport AS nvarchar(max)) LIKE N'%<separator />' + NCHAR(10) + NCHAR(9) + NCHAR(9) + N'<field caption="Активный объект"%'))
    AND (SELECT COUNT(*) FROM dbo.iEntityAttribute WHERE entityID = 16 AND selector = 1 AND name IN ('createDate', 'creator', 'modDate', 'modifier')) = 4
    AND NOT EXISTS (SELECT 1 FROM dbo.iEntityAttribute WHERE entityID = 16 AND selector = 0 AND name IN ('createDate', 'creator', 'modDate', 'modifier'))
     PRINT N'ГОТОВО: фирмы — создание и изменение в карточке и в журнале.';
