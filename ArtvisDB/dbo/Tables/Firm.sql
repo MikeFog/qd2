@@ -19,6 +19,11 @@
     [reportString]  [dbo].[doubleString] NULL,
     [registration]  [dbo].[doubleString] NULL,
     [headCompanyID] INT                  NULL,
+    -- кто и когда создал и последним изменил карточку (Deploy/101, 20.11.2026; у фирм, созданных раньше, — пусто)
+    [createDate]    DATETIME             CONSTRAINT [DF_Firm_createDate] DEFAULT (getdate()) NULL,
+    [createUserID]  SMALLINT             NULL,
+    [modDate]       DATETIME             NULL,
+    [modUserID]     SMALLINT             NULL,
     CONSTRAINT [PK_Firm] PRIMARY KEY NONCLUSTERED ([firmID] ASC) WITH (FILLFACTOR = 90),
     CONSTRAINT [FK_Firm_Bank] FOREIGN KEY ([bankID]) REFERENCES [dbo].[Bank] ([bankId])
 );

@@ -566,7 +566,7 @@ namespace Merlin.Forms
 
 		private void ShowFirms(ToolStripItem mi)
 		{
-            Globals.ShowSimpleJournal (EntityManager.GetEntity((int)Entities.Firm), mi.Text);
+            Globals.ShowSimpleJournal(Firm.JournalEntity(), mi.Text);
         }
 
         private void ShowHeadCompanies(ToolStripItem mi)

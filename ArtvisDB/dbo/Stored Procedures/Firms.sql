@@ -30,7 +30,9 @@ BEGIN
         f.*,
         ai.finishDate AS lastDate,
         u.userName   AS lastManager,
-		hc.name as headCompanyName
+		hc.name as headCompanyName,
+        cu.userName  AS creator,     -- кто создал / последним изменил карточку (Deploy/101)
+        mu.userName  AS modifier
     FROM 
         [Firm] f
 		Left Join HeadCompany hc on hc.headCompanyID = f.headCompanyID
@@ -52,6 +54,8 @@ BEGIN
             ON f.firmID = ai.firmID
         LEFT JOIN [User] u 
             ON u.userID = ai.userID
+        LEFT JOIN [User] cu ON cu.userID = f.createUserID
+        LEFT JOIN [User] mu ON mu.userID = f.modUserID
     WHERE
         f.firmID = COALESCE(@firmID, f.firmID)
         AND (@headCompanyID IS NULL OR f.HeadCompanyID = @headCompanyID)   -- фильтрация по новой колонке

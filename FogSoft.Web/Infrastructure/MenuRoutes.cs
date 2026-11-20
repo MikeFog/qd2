@@ -73,7 +73,8 @@ public static class MenuRoutes
 			{ "miBillRegisterBuh", new JournalRoute(Entities.BillRegister, ManagerFilter: true,
 				FilterDefault: new FilterDefault("managerID", null)) },
 			{ "miBonusesStat", new JournalRoute(Entities.StatBonuses) },
-			{ "miFirm", new JournalRoute(Entities.Firm) },
+			// Свой набор колонок журнала — с «Идентификатором» (Deploy/100); пикеры фирм берут общий, без него.
+			{ "miFirm", new JournalRoute(Entities.Firm, AttributeSelector: Merlin.Classes.Firm.JournalAttributeSelector) },
 			{ "miGroupMassmedia", new JournalRoute(Entities.MassmediaGroup) },
 			{ "miLog", new JournalRoute(Entities.LogDeletedIssue) },
 			{ "miManagerDiscountHistory", new JournalRoute(Entities.ManagerDiscountHistory) },
@@ -328,8 +329,14 @@ public static class ScreenRoutes
 /// (<c>miStats.VolumeOfRealization</c>) должен открываться с пустым отбором.
 /// <c>null</c> — отбор только из метаданных.
 /// </param>
+/// <param name="AttributeSelector">
+/// Набор колонок журнала (<c>iEntityAttribute.selector</c>), если он не общий (0): журнал «Фирмы-заказчики»
+/// показывает «Идентификатор», а выбор фирмы — нет (<c>Firm.JournalAttributeSelector</c>, как в десктопе
+/// <c>MDIForm.ShowFirms</c>). Журнал тогда работает с клоном сущности.
+/// </param>
 public sealed record JournalRoute(Entities Entity, bool ManagerFilter = false, string? Caption = null,
-	EntitySwitch? EntitySwitch = null, BulkAction? BulkAction = null, FilterDefault? FilterDefault = null)
+	EntitySwitch? EntitySwitch = null, BulkAction? BulkAction = null, FilterDefault? FilterDefault = null,
+	int AttributeSelector = 0)
 {
 	public int EntityId => (int)Entity;
 }

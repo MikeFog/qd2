@@ -212,6 +212,13 @@ else
         try
         {
             _entity = EntityManager.GetEntity(EntityId);
+            // Свой набор колонок пункта меню — на клоне: AttributeSelector общей кэшированной сущности
+            // увидели бы остальные таблицы (GetEntity его, правда, сбрасывает в 0 при каждом вызове).
+            if (_route?.AttributeSelector is int selector and not 0)
+            {
+                _entity = (Entity)_entity.Clone();
+                _entity.AttributeSelector = selector;
+            }
             _filterPages = PassportSchema.Parse(_entity.XmlFilter, _entity, pageType: PageTypes.Filter);
 
             _canAdd = _entity.IsActionEnabled(Constants.EntityActions.AddNew, ViewType.Journal);

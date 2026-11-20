@@ -2,10 +2,10 @@
 -- Реестр счетов (Рекламный отдел → Реестр счетов, сущность 1272 BillRegister).
 -- Одна строка — один счёт: пара «акция + агентство» из Bill.
 --
--- Сумма счёта — как в печатной форме (rpt_GenericBill): finalPrice кампаний акции у этого агентства
--- по «белым» видам оплаты (PaymentType.isHidden = 0). НДС входит в сумму («в том числе»), отдельно его
--- не считаем и не вычитаем.
--- Оплачено — PaymentAction по акции из платежей ЭТОГО агентства, тоже «белых» видов оплаты (агентство
+-- Сумма счёта (billSum, колонка «Стоимость» — стоимость акции в разрезе агентства) — как в печатной форме
+-- (rpt_GenericBill): finalPrice кампаний акции у этого агентства по «белым» видам оплаты (PaymentType.isHidden = 0).
+-- НДС входит в сумму («в том числе»), отдельно его не считаем и не вычитаем.
+-- Оплачено (paidSum, колонка «Присвоено оплат», Deploy/99) — PaymentAction по акции из платежей ЭТОГО агентства, тоже «белых» видов оплаты (агентство
 -- берётся из платежа, как в журнале оплат: платежи привязаны к акции, а не к счёту; счёт на пару
 -- «акция + агентство» один, поэтому однозначно).
 -- Статус оплаты: 1 — не оплачен (оплачено 0), 2 — частично, 3 — оплачен (оплачено >= суммы; нулевой
@@ -124,6 +124,7 @@ SELECT
 	CAST(x.startDate AS date) AS actionStartDate,
 	x.firmName,
 	x.billSum,
+	x.paidSum,
 	x.agencyName,
 	x.manager,
 	x.paymentStatus,
@@ -144,6 +145,7 @@ FROM (
 		b.startDate,
 		f.name AS firmName,
 		s.billSum,
+		pd.paid AS paidSum,
 		ag.name AS agencyName,
 		u.userName AS manager,
 		CASE s.statusID WHEN 1 THEN @tNotPaid WHEN 2 THEN @tPartial ELSE @tPaid END AS paymentStatus,

@@ -690,6 +690,20 @@ namespace Merlin.Classes
 			ws.Append(new S.PageMargins { Left = 0.7, Right = 0.7, Top = 0.75, Bottom = 0.75, Header = 0.3, Footer = 0.3 });
 			ws.Append(new S.PageSetup { PaperSize = 9, Orientation = _landscape ? S.OrientationValues.Landscape : S.OrientationValues.Portrait });
 
+			// Блок из одних строк пишется текстом («@», SetValuesForRange) нарочно — «1,2» и «02:29» не должны стать
+			// числом или временем. Но текст, похожий на число («1» в сетке медиаплана, «140» выходов ролика), Excel
+			// помечает зелёным уголком «число сохранено как текст» (жалоба 20.11.2026) — это предупреждение гасим.
+			// Порядок элементов листа по схеме: после pageSetup, до drawing.
+			if (_cells.Count > 0 && _cells.Values.Any(cell => cell.Kind == Kind.Text && cell.Format.NumFmt == "@"))
+				ws.Append(new S.IgnoredErrors(new S.IgnoredError
+				{
+					SequenceOfReferences = new ListValue<StringValue>
+					{
+						InnerText = "A1:" + ColumnName(_cells.Keys.Max(k => k.col)) + _cells.Keys.Max(k => k.row)
+					},
+					NumberStoredAsText = true,
+				}));
+
 			if (_images.Count > 0)
 			{
 				DrawingsPart drawings = part.AddNewPart<DrawingsPart>();

@@ -14,6 +14,23 @@ namespace Merlin.Classes
 	// Конвенция — docs/tasks/web-migration-dialogs.md.
 	public partial class Firm : Organization
 	{
+		/// <summary>
+		/// Набор колонок журнала «Фирмы-заказчики» (iEntityAttribute.selector сущности 16, Deploy/100): с «Идентификатором».
+		/// Остальные таблицы фирм (выбор фирмы, «Группы компаний», пикеры веба) берут selector 0 — без него (просьба заказчика 19.11.2026).
+		/// </summary>
+		public const int JournalAttributeSelector = 1;
+
+		/// <summary>
+		/// Сущность фирм для журнала: клон с набором колонок журнала. Клон — потому что AttributeSelector у общей
+		/// кэшированной сущности увидели бы и остальные таблицы фирм.
+		/// </summary>
+		public static Entity JournalEntity()
+		{
+			Entity entity = (Entity)EntityManager.GetEntity((int)Entities.Firm).Clone();
+			entity.AttributeSelector = JournalAttributeSelector;
+			return entity;
+		}
+
 		#region Constructors ----------------------------------
 
 		public Firm(int firmID)

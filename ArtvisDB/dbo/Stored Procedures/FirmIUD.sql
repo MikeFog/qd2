@@ -21,7 +21,8 @@ CREATE PROCEDURE [dbo].[FirmIUD]
 @director         NVARCHAR(32)   = NULL,
 @reportString     NVARCHAR(256) = NULL,
 @registration     NVARCHAR(256) = NULL,
-@actionName       VARCHAR(32)
+@actionName       VARCHAR(32),
+@loggedUserID     SMALLINT      = NULL         -- подставляет DataAccessor: кто создал / изменил (Deploy/101)
 )
 WITH EXECUTE AS OWNER
 AS
@@ -95,10 +96,10 @@ BEGIN
 
             INSERT INTO [Firm]
                 (firmID, headCompanyID, name, address, phone, fax, email, account, inn, okonh, okpo, bankID, prefix, 
-                 isIdle, kpp, egrn, okved, director, reportString, registration)
+                 isIdle, kpp, egrn, okved, director, reportString, registration, createDate, createUserID)
             VALUES
                 (@firmID, @headCompanyID, @name, @address, @phone, @fax, @email, @account, @inn, @okonh, @okpo, 
-                 @bankID, @prefix, @isIdle, @kpp, @egrn, @okved, @director, @reportString, @registration);
+                 @bankID, @prefix, @isIdle, @kpp, @egrn, @okved, @director, @reportString, @registration, GETDATE(), @loggedUserID);
 
             SET IDENTITY_INSERT [Firm] OFF;
         END
@@ -106,10 +107,10 @@ BEGIN
         BEGIN
             INSERT INTO [Firm]
                 (headCompanyID, name, address, phone, fax, email, account, inn, okonh, okpo, bankID, prefix, 
-                 isIdle, kpp, egrn, okved, director, reportString, registration)
+                 isIdle, kpp, egrn, okved, director, reportString, registration, createDate, createUserID)
             VALUES
                 (@headCompanyID, @name, @address, @phone, @fax, @email, @account, @inn, @okonh, @okpo, 
-                 @bankID, @prefix, @isIdle, @kpp, @egrn, @okved, @director, @reportString, @registration);
+                 @bankID, @prefix, @isIdle, @kpp, @egrn, @okved, @director, @reportString, @registration, GETDATE(), @loggedUserID);
 
             IF @@ROWCOUNT <> 1
             BEGIN
@@ -132,6 +133,29 @@ BEGIN
     END
     ELSE IF @actionName = 'UpdateItem'
     BEGIN
+        -- «Изменена» / «Изменил» (Deploy/101) ставим, только если сохранение что-то меняет: Ok без правок
+        -- последнего изменившего не подменяет. Строки — с учётом регистра («ООО» → «Ооо» — изменение).
+        DECLARE @changed BIT = 0;
+        IF EXISTS (
+            SELECT headCompanyID, name COLLATE Cyrillic_General_BIN, address COLLATE Cyrillic_General_BIN,
+                   phone COLLATE Cyrillic_General_BIN, fax COLLATE Cyrillic_General_BIN, email COLLATE Cyrillic_General_BIN,
+                   account COLLATE Cyrillic_General_BIN, inn COLLATE Cyrillic_General_BIN, kpp COLLATE Cyrillic_General_BIN,
+                   okonh COLLATE Cyrillic_General_BIN, okpo COLLATE Cyrillic_General_BIN, egrn COLLATE Cyrillic_General_BIN,
+                   okved COLLATE Cyrillic_General_BIN, bankID, prefix COLLATE Cyrillic_General_BIN, isIdle,
+                   director COLLATE Cyrillic_General_BIN, reportString COLLATE Cyrillic_General_BIN,
+                   registration COLLATE Cyrillic_General_BIN
+            FROM [Firm] WHERE firmID = @firmID
+            EXCEPT
+            SELECT COALESCE(@headCompanyID, headCompanyID), @name COLLATE Cyrillic_General_BIN, @address COLLATE Cyrillic_General_BIN,
+                   @phone COLLATE Cyrillic_General_BIN, @fax COLLATE Cyrillic_General_BIN, @email COLLATE Cyrillic_General_BIN,
+                   @account COLLATE Cyrillic_General_BIN, @inn COLLATE Cyrillic_General_BIN, @kpp COLLATE Cyrillic_General_BIN,
+                   @okonh COLLATE Cyrillic_General_BIN, @okpo COLLATE Cyrillic_General_BIN, @egrn COLLATE Cyrillic_General_BIN,
+                   @okved COLLATE Cyrillic_General_BIN, @bankID, @prefix COLLATE Cyrillic_General_BIN, CAST(@isIdle AS BIT),
+                   @director COLLATE Cyrillic_General_BIN, @reportString COLLATE Cyrillic_General_BIN,
+                   @registration COLLATE Cyrillic_General_BIN
+            FROM [Firm] WHERE firmID = @firmID)
+            SET @changed = 1;
+
         -- Обновляем саму фирму
         UPDATE [Firm]
         SET headCompanyID = COALESCE(@headCompanyID, headCompanyID),
@@ -152,7 +176,9 @@ BEGIN
             isIdle        = @isIdle,
             director      = @director,
             reportString  = @reportString,
-            registration  = @registration
+            registration  = @registration,
+            modDate       = CASE WHEN @changed = 1 THEN GETDATE() ELSE modDate END,
+            modUserID     = CASE WHEN @changed = 1 THEN @loggedUserID ELSE modUserID END
         WHERE firmID = @firmID;
 
 		DELETE FROM HeadCompany WHERE NOT EXISTS (SELECT 1 FROM Firm WHERE HeadCompany.headCompanyID = Firm.headCompanyID)
