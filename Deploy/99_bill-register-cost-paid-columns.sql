@@ -1,13 +1,13 @@
-﻿-- Реестр счетов (сущность 1272, десктоп и веб): «Сумма» → «Стоимость», после неё колонка «Присвоено оплат» (20.11.2026, просьба
+﻿-- Реестр счетов (сущность 1272, десктоп и веб): «Сумма» → «Стоимость по агентству», после неё колонка «Присвоено оплат» (20.11.2026, просьба
 -- заказчика: стоимость акции в разрезе агентства и сколько оплат к ней присвоено).
 --
 -- «Сумма» реестра и есть стоимость акции в разрезе агентства (finalPrice кампаний акции у агентства счёта по «белым» видам
 -- оплаты) — колонка только переименована. «Присвоено оплат» — сумма привязок PaymentAction из платежей этого агентства
 -- «белых» видов оплаты; по ней же процедура уже считала статус («Оплата»), теперь отдаёт и число (paidSum). Тип money.
 --   1. BillRegister (CREATE OR ALTER): текст Deploy/83 плюс поле paidSum. Параметры прежние.
---   2. iEntityAttribute сущности 1272: billSum — подпись «Стоимость»; новая paidSum «Присвоено оплат» на месте 9, «Агентство»,
+--   2. iEntityAttribute сущности 1272: billSum — подпись «Стоимость по агентству» (у акции с несколькими агентствами это часть её цены); новая paidSum «Присвоено оплат» на месте 9, «Агентство»,
 --      «Менеджер», «Оплата» сдвигаются на 10–12.
---   3. Испанский: «Стоимость» — Costo, «Присвоено оплат» — Pagos asignados.
+--   3. Испанский: «Стоимость по агентству» — Costo por agencia, «Присвоено оплат» — Pagos asignados.
 --
 -- После 80 и 83 (и 08). В любое время, на Artvis и Tumen. Клиент и веб не нужны; после наката перезапустить qd2 и веб
 -- (метаданные читаются при старте). Идемпотентен. Не перезапускать после 99: 80 и 83 (старый текст BillRegister — колонка
@@ -31,7 +31,7 @@ GO
 -- Реестр счетов (Рекламный отдел → Реестр счетов, сущность 1272 BillRegister).
 -- Одна строка — один счёт: пара «акция + агентство» из Bill.
 --
--- Сумма счёта (billSum, колонка «Стоимость» — стоимость акции в разрезе агентства) — как в печатной форме
+-- Сумма счёта (billSum, колонка «Стоимость по агентству» — стоимость акции в разрезе агентства) — как в печатной форме
 -- (rpt_GenericBill): finalPrice кампаний акции у этого агентства по «белым» видам оплаты (PaymentType.isHidden = 0).
 -- НДС входит в сумму («в том числе»), отдельно его не считаем и не вычитаем.
 -- Оплачено (paidSum, колонка «Присвоено оплат», Deploy/99) — PaymentAction по акции из платежей ЭТОГО агентства, тоже «белых» видов оплаты (агентство
@@ -215,9 +215,9 @@ ORDER BY x.billDate DESC, x.actionID DESC, x.agencyName, x.billNo DESC
 GO
 
 -- =====================================================================
--- Метаданные: «Стоимость», «Присвоено оплат» сущности 1272
+-- Метаданные: «Стоимость по агентству», «Присвоено оплат» сущности 1272
 -- =====================================================================
-UPDATE dbo.iEntityAttribute SET alias = N'Стоимость' WHERE entityID = 1272 AND name = 'billSum' AND alias <> N'Стоимость';
+UPDATE dbo.iEntityAttribute SET alias = N'Стоимость по агентству' WHERE entityID = 1272 AND name = 'billSum' AND alias <> N'Стоимость по агентству';
 IF NOT EXISTS (SELECT 1 FROM dbo.iEntityAttribute WHERE entityID = 1272 AND name = 'paidSum')
 BEGIN
     UPDATE dbo.iEntityAttribute SET ordinal_position = 12 WHERE entityID = 1272 AND name = 'paymentStatus';
@@ -231,7 +231,7 @@ GO
 IF OBJECT_ID('dbo.iTranslation') IS NOT NULL
     MERGE dbo.iTranslation AS dst
     USING (VALUES
-        (N'Стоимость', N'Costo'),
+        (N'Стоимость по агентству', N'Costo por agencia'),
         (N'Присвоено оплат', N'Pagos asignados')
         ) AS src ([source], [text])
        ON dst.lang = 'es' AND dst.context = ''
@@ -248,13 +248,13 @@ GO
 SELECT entityID, alias, name, ordinal_position, dataType FROM dbo.iEntityAttribute WHERE entityID = 1272 ORDER BY ordinal_position;
 IF CHARINDEX(N'pd.paid AS paidSum', ISNULL(OBJECT_DEFINITION(OBJECT_ID(N'dbo.BillRegister')), N'')) > 0
    AND CHARINDEX(N'@showPartial', ISNULL(OBJECT_DEFINITION(OBJECT_ID(N'dbo.BillRegister')), N'')) > 0
-   AND EXISTS (SELECT 1 FROM dbo.iEntityAttribute WHERE entityID = 1272 AND name = 'billSum' AND alias = N'Стоимость' AND ordinal_position = 8)
+   AND EXISTS (SELECT 1 FROM dbo.iEntityAttribute WHERE entityID = 1272 AND name = 'billSum' AND alias = N'Стоимость по агентству' AND ordinal_position = 8)
    AND EXISTS (SELECT 1 FROM dbo.iEntityAttribute WHERE entityID = 1272 AND name = 'paidSum' AND ordinal_position = 9 AND dataType = 'money')
    AND (SELECT COUNT(*) FROM dbo.iEntityAttribute WHERE entityID = 1272 AND selector = 0)
      = (SELECT COUNT(DISTINCT ordinal_position) FROM dbo.iEntityAttribute WHERE entityID = 1272 AND selector = 0)
-    PRINT N'ГОТОВО: реестр счетов — «Стоимость» и «Присвоено оплат».';
+    PRINT N'ГОТОВО: реестр счетов — «Стоимость по агентству» и «Присвоено оплат».';
 ELSE
-    RAISERROR(N'99: колонки «Стоимость» / «Присвоено оплат» реестра счетов не записаны.', 16, 1);
+    RAISERROR(N'99: колонки «Стоимость по агентству» / «Присвоено оплат» реестра счетов не записаны.', 16, 1);
 GO
 SET NOEXEC OFF;
 GO
